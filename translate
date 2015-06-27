@@ -1,0 +1,10 @@
+#!/bin/bash
+
+home=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+engines=$home/engines
+moses=$home/bin/mosesdecoder/moses
+moses_ini=$engines/decoder/cfg/moses.ini
+
+export LC_ALL=C
+
+echo "$1" | $moses -f $moses_ini --context-string "$2" -v 0 2> /dev/null

@@ -1,0 +1,202 @@
+#!/bin/bash
+
+if [ "$(id -u)" != "0" ]; then
+	>&2 echo "ERROR: Sorry, you need to be superuser to execute this script. Please use sudo"
+	exit 1
+fi
+
+ca_port="$2"
+ms_port="$3"
+rs_port="$4"
+
+if [ -z "$ca_port" ]; then
+	ca_port=7531
+fi
+if [ -z "$ms_port" ]; then
+	ms_port=7532
+fi
+if [ -z "$rs_port" ]; then
+	rs_port=7533
+fi
+
+user="ubuntu"
+
+home=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+bin=$home/bin
+engines=$home/engines
+logs=$home/logs
+
+# Context Analyzer section
+ca_process_name="mmt-context-analyzer"
+ca_home=$home/bin/context-analyzer
+ca_classpath="$ca_home/context-analyzer.jar"
+ca_main_class="net.translated.contextanalyzer.http.Server"
+ca_lucene_index=$engines/lucene/ca_index
+ca_stdout_log="$logs/$ca_process_name.out"
+ca_stderr_log="$logs/$ca_process_name.err"
+
+ca_pid_file="/var/run/$ca_process_name.pid"
+
+java_home=$(dirname $(dirname $(readlink -e /usr/bin/javac)))
+jsvc=$(which jsvc)
+
+jsvc_exec() {
+	cmd="$1"
+	args="${*:2}"
+
+	if [ "$cmd" != "-stop" ]; then
+		cmd=
+	fi
+
+	$jsvc -home $java_home -cwd $ca_home -cp $ca_classpath -user $user -outfile $ca_stdout_log -errfile $ca_stderr_log -pidfile $ca_pid_file $cmd $ca_main_class $args
+}
+
+# Moses decoder section
+ms_process_name="mmt-moses-decoder"
+ms_home=$home/bin/mosesdecoder
+ms_exec=$ms_home/moses
+ms_moses_ini=$engines/decoder/cfg/moses.ini
+ms_log="$logs/$ms_process_name.log"
+
+ms_pid_file="/var/run/$ms_process_name.pid"
+
+moses_exec() {
+	case "$1" in
+		start)
+			rm -rf $ms_log
+			$ms_exec -f $ms_moses_ini --server --server-port $ms_port >> $ms_log 2>&1 &
+			echo "$!" > $ms_pid_file
+		;;
+		stop)
+			ms_pid=$(head -n 1 $ms_pid_file 2>/dev/null)
+			if [ ! -z "$ms_pid" ]; then
+				kill -9 $ms_pid &> /dev/null
+				rm -rf $ms_pid_file
+			fi
+		;;
+	esac
+}
+
+# REST interface section
+rs_process_name="mmt-rest-service"
+rs_exec=$home/bin/rest-client.py
+rs_log="$logs/$rs_process_name.log"
+
+rs_pid_file="/var/run/$rs_process_name.pid"
+
+rest_exec() {
+	case "$1" in
+		start)
+			$rs_exec $rs_port $ms_port >> $rs_log 2>&1 &
+			echo "$!" > $rs_pid_file
+		;;
+		stop)
+			rs_pid=$(head -n 1 $rs_pid_file 2>/dev/null)
+			if [ ! -z "$rs_pid" ]; then
+				kill -9 $rs_pid &> /dev/null
+				rm -rf $rs_pid_file
+			fi
+		;;
+	esac
+}
+
+# Executing command
+case "$1" in
+	status)
+		ca_pid=$(head -n 1 $ca_pid_file 2>/dev/null)
+		ms_pid=$(head -n 1 $ms_pid_file 2>/dev/null)
+		rs_pid=$(head -n 1 $rs_pid_file 2>/dev/null)
+
+		if ps -p $ca_pid &> /dev/null; then
+			echo "running"
+			exit 0
+		fi
+		if ps -p $ms_pid &> /dev/null; then
+			echo "running"
+			exit 0
+		fi
+		if ps -p $rs_pid &> /dev/null; then
+			echo "running"
+			exit 0
+		fi
+
+		echo "stopped"
+	;;
+	start)
+		echo -n "Starting Context Analyzer on port $ca_port...   "
+		jsvc_exec -start -p $ca_port -i "$ca_lucene_index"
+		echo "DONE"
+
+		echo -n "Starting Moses Decoder on port $ms_port...   "
+		moses_exec start
+		echo "DONE"
+
+		echo -n "Starting REST Interface on port $rs_port...   "
+		rest_exec start
+		echo "DONE"
+	;;
+	stop)
+		echo -n "Stopping Context Analyzer...   "
+		jsvc_exec -stop
+		echo "DONE"
+
+		echo -n "Stopping Moses Decoder...   "
+		moses_exec stop
+		echo "DONE"
+
+		echo -n "Stopping REST Interface...   "
+		rest_exec stop
+		echo "DONE"
+	;;
+	restart)
+		echo -n "Restarting Context Analyzer on port $ca_port...   "
+		jsvc_exec -stop
+		jsvc_exec -start -p $ca_port -i "$ca_lucene_index"
+		echo "DONE"
+
+		echo -n "Restarting Moses Decoder on port $ms_port...   "
+		moses_exec stop
+		moses_exec start
+		echo "DONE"
+
+		echo -n "Restarting REST Interface on port $rs_port...   "
+		rest_exec stop
+		rest_exec start
+		echo "DONE"
+	;;
+	*)
+		>&2 echo "ERROR: invalid command"
+		>&2 echo
+		>&2 echo "Usage:"
+		>&2 echo "    $0 start [context-analyzer-port] [moses-decoder-port]"
+		>&2 echo "    $0 stop"
+		>&2 echo "    $0 status"
+		>&2 echo "    $0 restart [context-analyzer-port] [moses-decoder-port]"
+		exit 3
+	;;
+esac
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
