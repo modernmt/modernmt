@@ -137,7 +137,7 @@ echo
 echo "========== INPUT VALIDATION =========="
 echo
 
-linfo -n "(1 of 2) Checkin source corpora...                               "
+linfo -n "(1 of 2) Checking source corpora...                              "
 timer_start
 
 for source_file in $( find $train_data -type f -name *.$source_lang ); do
@@ -163,7 +163,7 @@ done
 
 echo "DONE (in $(timer_stop)s)"
 
-linfo -n "(2 of 2) Checkin target corpora...                               "
+linfo -n "(2 of 2) Checking target corpora...                              "
 timer_start
 
 for target_file in $( find $train_data -type f -name *.$target_lang ); do
