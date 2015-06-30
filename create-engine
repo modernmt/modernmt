@@ -219,7 +219,7 @@ tokenizer_log=$logs/tokenizer.log
 
 mkdir $tokenized_train_data
 
-linfo -n "(1 of 7) Corpus tokenization...                                  "
+linfo -n "(1 of 6) Corpus tokenization...                                  "
 timer_start
 
 iteration_count=0
@@ -255,7 +255,7 @@ cleaner_log=$logs/cleaner.log
 
 mkdir $clean_train_data
 
-linfo -n "(2 of 7) Corpus cleaning...                                      "
+linfo -n "(2 of 6) Corpus cleaning...                                      "
 timer_start
 
 for source_file in $( find $tokenized_train_data -type f -name *.$source_lang ); do
@@ -279,7 +279,7 @@ ca_log=$logs/context-analyzer.log
 ca_lucene_index=$engines/lucene/ca_index
 mkdir -p $ca_lucene_index
 
-linfo -n "(3 of 7) Training Context Analyzer...                            "
+linfo -n "(3 of 6) Training Context Analyzer...                            "
 timer_start
 
 java -cp $home/bin/context-analyzer/context-analyzer.jar net.translated.contextanalyzer.cli.CreateIndex -i "$ca_lucene_index" -c "$clean_train_data" >> $ca_log 2>&1
@@ -301,12 +301,12 @@ create_lm=$home/bin/lm/lm.sh
 source_lm=$lm_dir/$source_lang.blm
 target_lm=$lm_dir/$target_lang.blm
 
-linfo -n "(4 of 7) Creating source language model...                       "
+linfo -n "(4 of 6) Creating source language model...                       "
 timer_start
 $create_lm "$clean_train_data/*.$source_lang" "$source_lm" $lm_order >> $source_lm_log 2>&1
 echo "DONE (in $(timer_stop)s)"
 
-linfo -n "(5 of 7) Creating target language model...                       "
+linfo -n "(5 of 6) Creating target language model...                       "
 timer_start
 $create_lm "$clean_train_data/*.$target_lang" "$target_lm" $lm_order >> $target_lm_log 2>&1
 echo "DONE (in $(timer_stop)s)"
@@ -353,19 +353,10 @@ if [ "$make_threads" -lt "3" ]; then
 	make_threads=3
 fi
 
-linfo -n "(6 of 7) Setting up Moses decoder with Suffix Arrays...          "
+linfo -n "(6 of 6) Setting up Moses decoder with Suffix Arrays...          "
 timer_start
 export LC_ALL=C
 make -f $makefile decoder_setup="$decoder_setup" -j $make_threads >> $decoder_log 2>&1
-echo "DONE (in $(timer_stop)s)"
-
-# ================================================================================
-# Step 4 - Launch server
-# ================================================================================
-
-linfo -n "(7 of 7) Starting server...                                      "
-timer_start
-sudo ./server start &> /dev/null
 echo "DONE (in $(timer_stop)s)"
 
 
@@ -373,13 +364,16 @@ echo "DONE (in $(timer_stop)s)"
 echo
 echo "========== SETUP COMPLETED ==========="
 echo
-echo "To try it via API:"
+echo "You can start/stop the server:"
+echo "      sudo ./server start|stop|restart|status "
+echo "if you want to explicity set the service ports you can use:"
+echo "      sudo ./server start [context-analyzer-port] [moses-decoder-port] [rest-api-port]"
+echo
+echo "Once you have started the service, you can try it via API:"
 echo "      curl \"http://localhost:7533/?text=jobs&context=parliament\""
-echo "To try it via CLI:"
+echo "or via CLI:"
 echo "      ./translate \"jobs\" \"parliament\""
 echo
-echo "You can also start/stop the server:"
-echo "      sudo ./server [start|stop]"
 echo
 
 
