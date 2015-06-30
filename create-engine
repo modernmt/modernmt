@@ -71,8 +71,6 @@ bin=$home/bin
 engines=$home/engines
 logs=$home/logs/create-engine
 
-context_analyzer_port=7531
-
 lm_order=5
 train_data=
 source_lang=
@@ -288,7 +286,7 @@ java -cp $home/bin/context-analyzer/context-analyzer.jar net.translated.contexta
 
 echo "DONE (in $(timer_stop)s)"
 
-bias_url="http://localhost:$context_analyzer_port/context"
+bias_url="http://__CONTEXT_ANALYZER_DOMAIN__/context"
 
 # ================================================================================
 # Step 2 - Train language model

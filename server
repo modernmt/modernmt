@@ -55,7 +55,8 @@ jsvc_exec() {
 ms_process_name="mmt-moses-decoder"
 ms_home=$home/bin/mosesdecoder
 ms_exec=$ms_home/moses
-ms_moses_ini=$engines/decoder/cfg/moses.ini
+ms_moses_ini_src=$engines/decoder/cfg/moses.ini
+ms_moses_ini=$engines/decoder/cfg/~moses.ini
 ms_log="$logs/$ms_process_name.log"
 
 ms_pid_file="/var/run/$ms_process_name.pid"
@@ -64,6 +65,7 @@ moses_exec() {
 	case "$1" in
 		start)
 			rm -rf $ms_log
+			sed "s/__CONTEXT_ANALYZER_DOMAIN__/localhost:$ca_port/g" $ms_moses_ini_src > $ms_moses_ini
 			$ms_exec -f $ms_moses_ini --server --server-port $ms_port >> $ms_log 2>&1 &
 			echo "$!" > $ms_pid_file
 		;;
