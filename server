@@ -1,10 +1,5 @@
 #!/bin/bash
 
-if [ "$(id -u)" != "0" ]; then
-	>&2 echo "ERROR: Sorry, you need to be superuser to execute this script. Please use sudo"
-	exit 1
-fi
-
 ca_port="$2"
 ms_port="$3"
 rs_port="$4"
@@ -24,7 +19,10 @@ user="ubuntu"
 home=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 bin=$home/bin
 engines=$home/engines
+pids_dir=$engines/pids
 logs=$home/logs
+
+mkdir -p $pids_dir
 
 # Context Analyzer section
 ca_process_name="mmt-context-analyzer"
@@ -35,7 +33,7 @@ ca_lucene_index=$engines/lucene/ca_index
 ca_stdout_log="$logs/$ca_process_name.out"
 ca_stderr_log="$logs/$ca_process_name.err"
 
-ca_pid_file="/var/run/$ca_process_name.pid"
+ca_pid_file="$pids_dir/$ca_process_name.pid"
 
 java_home=$(dirname $(dirname $(readlink -e /usr/bin/javac)))
 jsvc=$(which jsvc)
@@ -59,7 +57,7 @@ ms_moses_ini_src=$engines/decoder/cfg/moses.ini
 ms_moses_ini=$engines/decoder/cfg/~moses.ini
 ms_log="$logs/$ms_process_name.log"
 
-ms_pid_file="/var/run/$ms_process_name.pid"
+ms_pid_file="$pids_dir/$ms_process_name.pid"
 
 moses_exec() {
 	case "$1" in
@@ -84,7 +82,7 @@ rs_process_name="mmt-rest-service"
 rs_exec=$home/bin/rest-client.py
 rs_log="$logs/$rs_process_name.log"
 
-rs_pid_file="/var/run/$rs_process_name.pid"
+rs_pid_file="$pids_dir/$rs_process_name.pid"
 
 rest_exec() {
 	case "$1" in
