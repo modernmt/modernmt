@@ -347,16 +347,10 @@ echo	"zcat = cat"							>> $decoder_setup
 
 # Start makefile
 
-make_threads=$(( $cpu_cores / 4 ))
-
-if [ "$make_threads" -lt "3" ]; then
-	make_threads=3
-fi
-
 linfo -n "(6 of 6) Setting up Moses decoder with Suffix Arrays...          "
 timer_start
 export LC_ALL=C
-make -f $makefile decoder_setup="$decoder_setup" -j $make_threads >> $decoder_log 2>&1
+make -f $makefile decoder_setup="$decoder_setup" >> $decoder_log 2>&1
 echo "DONE (in $(timer_stop)s)"
 
 
