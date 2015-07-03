@@ -39,7 +39,11 @@ function lerr {
 
 function printhelp {
 	echo "Usage:"
-	echo "    create-engine -i <train-data-directory> -s <source-language> -t <target-language>"
+	echo "    $0 -i <train-data-directory> -s <source-language> -t <target-language> [-n <engine-name>] [-o <lm-order>] [--debug]"
+	echo
+	echo "Default values:"
+	echo "    engine-name: default"
+	echo "    lm-order: 5"
 	echo
 	echo "Example of usage:"
 	echo "    create-engine -i ./example/train-data -s en -t it"
@@ -47,7 +51,7 @@ function printhelp {
 }
 
 # Usage:
-#	create-engine -i <train-data-directory> -s <source-language> -t <target-language>
+#	create-engine -i <train-data-directory> -s <source-language> -t <target-language> [-n <engine-name>] [-o <lm-order>] [--debug]
 #	
 # Train data directory notes:
 #	Train data must be organized in plaint text file pairs: one pair for each corpus.
@@ -66,16 +70,12 @@ function printhelp {
 
 cpu_cores=$(grep -c ^processor /proc/cpuinfo)
 
-home=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-bin=$home/bin
-engines=$home/engines
-logs=$home/logs/create-engine
-
-lm_order=5
-train_data=
-source_lang=
-target_lang=
-debug=
+arg_lm_order=5
+arg_train_data=
+arg_source_lang=
+arg_target_lang=
+arg_debug=
+arg_engine="default"
 
 # Args parsing
 
@@ -84,19 +84,27 @@ while [[ $# > 0 ]]; do
 
 	case $key in
 	-i|--input)
-		train_data="$2"
+		arg_train_data="$2"
 		shift
 	;;
 	-s|--source-lang)
-		source_lang="$2"
+		arg_source_lang="$2"
 		shift
 	;;
 	-t|--target-lang)
-		target_lang="$2"
+		arg_target_lang="$2"
+		shift
+	;;
+	-n|--name)
+		arg_engine="$2"
+		shift
+	;;
+	-o|--lm-order)
+		arg_lm_order="$2"
 		shift
 	;;
 	--debug)
-		debug=1
+		arg_debug=1
 	;;
 	*)
 		# unknown option
@@ -108,24 +116,24 @@ done
 
 # Args validation
 
-if [ -z "$train_data" ]; then
+if [ -z "$arg_train_data" ]; then
 	lerr "missing parameter 'input' (-i, --input)"
 	printhelp
 	exit 1
 fi
-if [ ! -d "$train_data" ]; then
-	lerr "'input' parameter is not a valid directory: $train_data"
+if [ ! -d "$arg_train_data" ]; then
+	lerr "'input' parameter is not a valid directory: $arg_train_data"
 	printhelp
 	exit 2
 fi
 
-if [ -z "$source_lang" ]; then
+if [ -z "$arg_source_lang" ]; then
 	lerr "missing parameter 'source language' (-s, --source-lang)"
 	printhelp
 	exit 1
 fi
 
-if [ -z "$target_lang" ]; then
+if [ -z "$arg_target_lang" ]; then
 	lerr "missing parameter 'target language' (-t, --target-lang)"
 	printhelp
 	exit 1
@@ -138,12 +146,12 @@ echo
 linfo -n "(1 of 2) Checking source corpora...                              "
 timer_start
 
-for source_file in $( find $train_data -type f -name *.$source_lang ); do
+for source_file in $( find $arg_train_data -type f -name *.$arg_source_lang ); do
 	dir=$(dirname "$source_file")
 	filename=$(basename "$source_file")
 	filename="${filename%.*}"
 
-	target_file="$dir/$filename.$target_lang"
+	target_file="$dir/$filename.$arg_target_lang"
 	
 	if [ ! -f "$target_file" ]; then
 		lerr "invalid train data, missing parallel corpus '$target_file'"
@@ -164,12 +172,12 @@ echo "DONE (in $(timer_stop)s)"
 linfo -n "(2 of 2) Checking target corpora...                              "
 timer_start
 
-for target_file in $( find $train_data -type f -name *.$target_lang ); do
+for target_file in $( find $arg_train_data -type f -name *.$arg_target_lang ); do
 	dir=$(dirname "$target_file")
 	filename=$(basename "$target_file")
 	filename="${filename%.*}"
 
-	source_file="$dir/$filename.$source_lang"
+	source_file="$dir/$filename.$arg_source_lang"
 	
 	if [ ! -f "$source_file" ]; then
 		lerr "invalid train data, missing parallel corpus '$source_file'"
@@ -179,27 +187,28 @@ done
 
 echo "DONE (in $(timer_stop)s)"
 
+# Import environment
+
+__home=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+source $__home/scripts/env.sh $arg_engine
+
 # Clean up data
 
-rm -rf $engines
-mkdir -p $engines
-rm -rf $logs
-mkdir -p $logs
-
-# Creating temporary directory
-
-tmp=$engines/temp
-decoder_tmp=$tmp/decoder
+rm -rf $engine_dir
+mkdir -p $engine_runtime_dir
+mkdir -p $engine_temp_dir
+mkdir -p $engine_log_dir
+mkdir -p $engine_build_log_dir
+mkdir -p $engine_context_analyzer_dir
+mkdir -p $engine_context_analyzer_index_dir
+mkdir -p $engine_moses_dir
+mkdir -p $engine_models_dir
 
 function cleanup_temp {
-	if [ -z "$debug" ]; then
-		rm -rf $tmp
+	if [ -z "$arg_debug" ]; then
+		rm -rf $engine_temp_dir
 	fi
 }
-
-cleanup_temp
-mkdir -p $tmp
-mkdir -p $decoder_tmp
 
 trap cleanup_temp EXIT
 
@@ -210,16 +219,18 @@ trap cleanup_temp EXIT
 echo
 echo "=========== SETUP STARTED ============"
 echo
+echo "Creation of engine: $arg_engine"
+echo
 
 # Tokenizing
 
-tokenizer=$home/bin/tokenizer/tokenize.sh
-tokenized_train_data=$tmp/corpus.tokenized
-tokenizer_log=$logs/tokenizer.log
+tokenizer=$tokenizer_home/tokenize.sh
+tokenizer_out=$engine_temp_dir/corpus.tokenized
+tokenizer_log=$engine_build_log_dir/tokenizer.log
 
-mkdir $tokenized_train_data
+mkdir -p $tokenizer_out
 
-linfo -n "(1 of 6) Corpus tokenization...                                  "
+linfo -n "(1 of 5) Corpus tokenization...                                  "
 timer_start
 
 iteration_count=0
@@ -229,7 +240,7 @@ if [ $max_threads -lt 1 ]; then
 	max_threads=1
 fi
 
-for corpus in $( find $train_data -type f \( -name "*.$target_lang" -or -name "*.$source_lang" \) | xargs du | sort -rn | awk '{print $2}'); do
+for corpus in $( find $arg_train_data -type f \( -name "*.$arg_target_lang" -or -name "*.$arg_source_lang" \) | xargs du | sort -rn | awk '{print $2}'); do
 	filename=$(basename "$corpus")
 	lang="${filename##*.}"
 
@@ -240,7 +251,7 @@ for corpus in $( find $train_data -type f \( -name "*.$target_lang" -or -name "*
 		iteration_count=$(( $iteration_count + 1 ))
 	fi
 
-	cat $corpus | $tokenizer $lang > $tokenized_train_data/$filename 2>> $tokenizer_log &
+	cat $corpus | $tokenizer $lang > $tokenizer_out/$filename 2>> $tokenizer_log &
 done
 
 wait
@@ -249,24 +260,24 @@ echo "DONE (in $(timer_stop)s)"
 
 # Cleaning
 
-cleaner=$home/bin/clean-corpus/clean.sh
-clean_train_data=$tmp/corpus.clean
-cleaner_log=$logs/cleaner.log
+corpus_cleaner=$corpus_cleaner_home/clean.sh
+corpus_cleaner_out=$engine_temp_dir/corpus.clean
+corpus_cleaner_log=$engine_build_log_dir/cleaner.log
 
-mkdir $clean_train_data
+mkdir -p $corpus_cleaner_out
 
-linfo -n "(2 of 6) Corpus cleaning...                                      "
+linfo -n "(2 of 5) Corpus cleaning...                                      "
 timer_start
 
-for source_file in $( find $tokenized_train_data -type f -name *.$source_lang ); do
+for source_file in $( find $tokenizer_out -type f -name *.$arg_source_lang ); do
 	dir=$(dirname "$source_file")
 	filename=$(basename "$source_file")
 	filename="${filename%.*}"
 
 	file=$dir/$filename
-	out=$clean_train_data/$filename
+	out=$corpus_cleaner_out/$filename
 
-	$cleaner "$file" "$source_lang" "$target_lang" "$out" 2>> $cleaner_log
+	$corpus_cleaner "$file" "$arg_source_lang" "$arg_target_lang" "$out" 2>> $corpus_cleaner_log
 done
 
 echo "DONE (in $(timer_stop)s)"
@@ -275,40 +286,26 @@ echo "DONE (in $(timer_stop)s)"
 # Step 1 - Create Lucene index for context analysis
 # ================================================================================
 
-ca_log=$logs/context-analyzer.log
-ca_lucene_index=$engines/lucene/ca_index
-mkdir -p $ca_lucene_index
+context_analyzer_log=$engine_build_log_dir/context-analyzer.log
+context_analyzer_url="http://$CONTEXT_ANALYZER_PLACEHOLDER/context"
 
-linfo -n "(3 of 6) Training Context Analyzer...                            "
+linfo -n "(3 of 5) Training Context Analyzer...                            "
 timer_start
 
-java -cp $home/bin/context-analyzer/context-analyzer.jar net.translated.contextanalyzer.cli.CreateIndex -i "$ca_lucene_index" -c "$clean_train_data" >> $ca_log 2>&1
+java -cp $context_analyzer_home/context-analyzer.jar net.translated.contextanalyzer.cli.CreateIndex -i "$engine_context_analyzer_index_dir" -c "$corpus_cleaner_out" >> $context_analyzer_log 2>&1
 
 echo "DONE (in $(timer_stop)s)"
-
-bias_url="http://__CONTEXT_ANALYZER_DOMAIN__/context"
 
 # ================================================================================
 # Step 2 - Train language model
 # ================================================================================
 
-lm_dir=$engines/models
-mkdir -p $lm_dir
+lm_target_model=$engine_models_dir/$arg_target_lang.blm
+lm_target_model_log=$engine_build_log_dir/target-lm.log
 
-source_lm_log=$logs/source-lm.log
-target_lm_log=$logs/target-lm.log
-create_lm=$home/bin/lm/lm.sh
-source_lm=$lm_dir/$source_lang.blm
-target_lm=$lm_dir/$target_lang.blm
-
-linfo -n "(4 of 6) Creating source language model...                       "
+linfo -n "(4 of 5) Creating target language model...                       "
 timer_start
-$create_lm "$clean_train_data/*.$source_lang" "$source_lm" $lm_order >> $source_lm_log 2>&1
-echo "DONE (in $(timer_stop)s)"
-
-linfo -n "(5 of 6) Creating target language model...                       "
-timer_start
-$create_lm "$clean_train_data/*.$target_lang" "$target_lm" $lm_order >> $target_lm_log 2>&1
+$language_model_home/lm.sh "$corpus_cleaner_out/*.$arg_target_lang" "$lm_target_model" $arg_lm_order >> $lm_target_model_log 2>&1
 echo "DONE (in $(timer_stop)s)"
 
 # ================================================================================
@@ -317,40 +314,36 @@ echo "DONE (in $(timer_stop)s)"
 
 # Create decoder-setup.cfg
 
-moses_bin=$home/bin/mosesdecoder
-makefile=$moses_bin/Makefile.setup-decoder
-decoder_setup=$engines/decoder-setup.cfg
-decoder_data=$engines/decoder
-decoder_log=$logs/decoder.log
+moses_makefile=$moses_home/Makefile.setup-decoder
+moses_decoder_setup=$engine_temp_dir/decoder-setup.cfg
+moses_temp=$engine_temp_dir/moses
+moses_log=$engine_build_log_dir/moses.log
 
-mkdir -p $decoder_data
-touch $decoder_setup
+echo	"L1 = $arg_source_lang"					>  $moses_decoder_setup
+echo	"L2 = $arg_target_lang"					>> $moses_decoder_setup
 
-echo	"L1 = $source_lang"						>> $decoder_setup
-echo	"L2 = $target_lang"						>> $decoder_setup
+echo	"lm.path = $lm_target_model"			>> $moses_decoder_setup
+echo	"lm.type = IRSTLM"						>> $moses_decoder_setup
+echo	"lm.order = $arg_lm_order"				>> $moses_decoder_setup
 
-echo	"lm.path = $target_lm"					>> $decoder_setup
-echo	"lm.type = IRSTLM"						>> $decoder_setup
-echo	"lm.order = $lm_order"					>> $decoder_setup
+echo	"DATADIR = $corpus_cleaner_out"			>> $moses_decoder_setup
+echo	"PREFIX = $engine_moses_dir"			>> $moses_decoder_setup
+echo	"MOSES_BIN = $moses_home/bin"			>> $moses_decoder_setup
+echo	"WDIR = $moses_temp"					>> $moses_decoder_setup
 
-echo	"DATADIR = $clean_train_data"			>> $decoder_setup
-echo	"PREFIX = $decoder_data"				>> $decoder_setup
-echo	"MOSES_BIN = $moses_bin"				>> $decoder_setup
-echo	"WDIR = $decoder_tmp"					>> $decoder_setup
+echo	"bias_url = $context_analyzer_url"		>> $moses_decoder_setup
+echo	"bias_srclang = $arg_source_lang"		>> $moses_decoder_setup
 
-echo	"bias_url = $bias_url"					>> $decoder_setup
-echo	"bias_srclang = $source_lang"			>> $decoder_setup
-
-echo	"zipped = "								>> $decoder_setup
-echo	"zipper = "								>> $decoder_setup
-echo	"zcat = cat"							>> $decoder_setup
+echo	"zipped = "								>> $moses_decoder_setup
+echo	"zipper = "								>> $moses_decoder_setup
+echo	"zcat = cat"							>> $moses_decoder_setup
 
 # Start makefile
 
-linfo -n "(6 of 6) Setting up Moses decoder with Suffix Arrays...          "
+linfo -n "(5 of 5) Setting up Moses decoder with Suffix Arrays...          "
 timer_start
 export LC_ALL=C
-make -f $makefile decoder_setup="$decoder_setup" >> $decoder_log 2>&1
+make -f $moses_makefile decoder_setup="$moses_decoder_setup" >> $moses_log 2>&1
 echo "DONE (in $(timer_stop)s)"
 
 
@@ -359,9 +352,9 @@ echo
 echo "========== SETUP COMPLETED ==========="
 echo
 echo "You can start/stop the server:"
-echo "      sudo ./server start|stop|restart|status "
+echo "      ./server start|stop|status "
 echo "if you want to explicity set the service ports you can use:"
-echo "      sudo ./server start [context-analyzer-port] [moses-decoder-port] [rest-api-port]"
+echo "      ./server start [context-analyzer-port moses-decoder-port rest-api-port]"
 echo
 echo "Once you have started the service, you can try it via API:"
 echo "      curl \"http://localhost:7533/?text=jobs&context=parliament\""
