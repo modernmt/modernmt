@@ -97,7 +97,9 @@ jsvc_exec() {
 		cmd=
 	fi
 
-	$jsvc -home $java_home -cwd $context_analyzer_home -cp $ca_classpath -user $user -outfile $ca_stdout_log -errfile $ca_stderr_log -pidfile $ca_pid_file $cmd $ca_main_class $args
+	pushd $context_analyzer_home &> /dev/null
+	$jsvc -home $java_home -cp $ca_classpath -user $user -outfile $ca_stdout_log -errfile $ca_stderr_log -pidfile $ca_pid_file $cmd $ca_main_class $args
+	popd &> /dev/null
 }
 
 # Moses decoder section
