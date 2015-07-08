@@ -1,0 +1,310 @@
+#!/bin/bash
+
+declare timer_time
+
+function timer_start {
+	timer_time=$(date +%s)
+}
+
+function timer_stop {
+	timer_time_stop=$(date +%s)
+	timer_elapsed_ms=$(( $timer_time_stop - $timer_time ))
+
+	echo -n "$timer_elapsed_ms"
+}
+
+function linfo {
+	if [ $# -eq 2 ]; then
+		echo $1 "INFO: $2"
+	else
+		echo "INFO: $1"
+	fi
+}
+
+function lwarn {
+	if [ $# -eq 2 ]; then
+		echo $1 "WARNING: $2"
+	else
+		echo "WARNING: $1"
+	fi
+}
+
+function lerr {
+	if [ $# -eq 2 ]; then
+		>&2 echo $1 "ERROR: $2"
+	else
+		>&2 echo "ERROR: $1"
+	fi
+}
+
+function printhelp {
+	echo "Usage:"
+	echo "    $0 -i <dev-data-directory> -s <source-language> -t <target-language> [-n <engine-name>] [--debug]"
+	echo
+	echo "Default values:"
+	echo "    engine-name: default"
+	echo
+	echo "Example of usage:"
+	echo "    $0 -i ./example/dev-data -s en -t it"
+	echo
+}
+
+cpu_cores=$(grep -c ^processor /proc/cpuinfo)
+
+arg_context_lines=5
+arg_dev_data=
+arg_source_lang=
+arg_target_lang=
+arg_debug=
+arg_engine="default"
+
+# Args parsing
+
+while [[ $# > 0 ]]; do
+	key="$1"
+
+	case $key in
+	-i|--input)
+		arg_dev_data="$2"
+		shift
+	;;
+	-s|--source-lang)
+		arg_source_lang="$2"
+		shift
+	;;
+	-t|--target-lang)
+		arg_target_lang="$2"
+		shift
+	;;
+	-n|--name)
+		arg_engine="$2"
+		shift
+	;;
+	-o|--lm-order)
+		arg_lm_order="$2"
+		shift
+	;;
+	--debug)
+		arg_debug=1
+	;;
+	*)
+		# unknown option
+	;;
+	esac
+
+	shift
+done
+
+# Args validation
+
+if [ -z "$arg_dev_data" ]; then
+	lerr "missing parameter 'input' (-i, --input)"
+	printhelp
+	exit 1
+fi
+if [ ! -d "$arg_dev_data" ]; then
+	lerr "'input' parameter is not a valid directory: $arg_dev_data"
+	printhelp
+	exit 2
+fi
+
+if [ -z "$arg_source_lang" ]; then
+	lerr "missing parameter 'source language' (-s, --source-lang)"
+	printhelp
+	exit 1
+fi
+
+if [ -z "$arg_target_lang" ]; then
+	lerr "missing parameter 'target language' (-t, --target-lang)"
+	printhelp
+	exit 1
+fi
+
+echo
+echo "========== INPUT VALIDATION =========="
+echo
+
+linfo -n "(1 of 2) Checking source corpora...                              "
+timer_start
+
+for source_file in $( find $arg_dev_data -type f -name *.$arg_source_lang ); do
+	dir=$(dirname "$source_file")
+	filename=$(basename "$source_file")
+	filename="${filename%.*}"
+
+	target_file="$dir/$filename.$arg_target_lang"
+	
+	if [ ! -f "$target_file" ]; then
+		lerr "invalid train data, missing parallel corpus '$target_file'"
+		exit 3
+	fi
+
+	sflc=$(wc -l < $source_file)
+	tflc=$(wc -l < $target_file)
+
+	if [ "$sflc" != "$tflc" ]; then
+		lerr "invalid parellel files, line count does not match for corpus '$filename'"
+		exit 4
+	fi
+done
+
+echo "DONE (in $(timer_stop)s)"
+
+linfo -n "(2 of 2) Checking target corpora...                              "
+timer_start
+
+for target_file in $( find $arg_dev_data -type f -name *.$arg_target_lang ); do
+	dir=$(dirname "$target_file")
+	filename=$(basename "$target_file")
+	filename="${filename%.*}"
+
+	source_file="$dir/$filename.$arg_source_lang"
+	
+	if [ ! -f "$source_file" ]; then
+		lerr "invalid train data, missing parallel corpus '$source_file'"
+		exit 3
+	fi
+done
+
+echo "DONE (in $(timer_stop)s)"
+
+# Import environment
+
+__home=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+source $__home/scripts/env.sh $arg_engine
+
+# Clean up data
+
+mert_temp_dir=$engine_temp_dir/mert
+
+rm -rf $engine_mert_log_dir && mkdir -p $engine_mert_log_dir
+rm -rf $mert_temp_dir && mkdir -p $mert_temp_dir
+
+function cleanup_temp {
+	if [ -z "$arg_debug" ]; then
+		rm -rf $mert_temp_dir
+	fi
+}
+
+trap cleanup_temp EXIT
+
+# ================================================================================
+# Step 0 - Data setup
+# ================================================================================
+
+echo  
+echo "============ MERT STARTED ============"
+echo
+echo "Mert for engine: $arg_engine"
+echo
+
+# Tokenizing
+
+tokenizer=$tokenizer_home/tokenize.sh
+tokenizer_out=$mert_temp_dir/corpus.tokenized
+tokenizer_log=$engine_mert_log_dir/tokenizer.log
+
+mkdir -p $tokenizer_out
+
+linfo -n "(1 of 5) Corpus tokenization...                                  "
+timer_start
+
+iteration_count=0
+max_threads=$(( $cpu_cores * 2 / 3 ))
+
+if [ $max_threads -lt 1 ]; then
+	max_threads=1
+fi
+
+for corpus in $( find $arg_dev_data -type f \( -name "*.$arg_target_lang" -or -name "*.$arg_source_lang" \) | xargs du | sort -rn | awk '{print $2}'); do
+	filename=$(basename "$corpus")
+	lang="${filename##*.}"
+
+	if [ $iteration_count -gt $max_threads ]; then
+		wait
+		iteration_count=0
+	else
+		iteration_count=$(( $iteration_count + 1 ))
+	fi
+
+	cat $corpus | $tokenizer $lang > $tokenizer_out/$filename 2>> $tokenizer_log &
+done
+
+wait
+
+echo "DONE (in $(timer_stop)s)"
+
+# Creating meta-lines (lines + context)
+
+encoder="java -jar $scripts_dir/EncodeContext.jar"
+encoder_out=$mert_temp_dir/corpus.encoded
+encoder_log=$engine_mert_log_dir/encoder.log
+
+mkdir -p $encoder_out
+
+linfo -n "(2 of 5) Encode lines and context...                             "
+timer_start
+
+for corpus in $( find $tokenizer_out -type f -name "*.$arg_source_lang" ); do
+	dir=$(dirname "$corpus")
+	filename=$(basename "$corpus")
+
+	$encoder "$arg_context_lines" "$dir/$filename" "$encoder_out/$filename"
+done
+
+echo "DONE (in $(timer_stop)s)"
+
+# Creating unique parallel corpus
+
+corpus_target_file=$mert_temp_dir/all.$arg_target_lang
+corpus_source_file=$mert_temp_dir/all.$arg_source_lang
+
+linfo -n "(3 of 5) Merging corpora...                                      "
+timer_start
+
+rm -f $corpus_target_file
+touch $corpus_target_file
+find $tokenizer_out -type f -name "*.$arg_target_lang" | sort | xargs cat > $corpus_target_file
+
+rm -f $corpus_source_file
+touch $corpus_source_file
+find $encoder_out -type f -name "*.$arg_source_lang" | sort | xargs cat > $corpus_source_file
+
+echo "DONE (in $(timer_stop)s)"
+
+# ================================================================================
+# Step 1 - Executing MERT
+# ================================================================================
+
+mert=$moses_home/scripts/training/mert-moses.pl
+mert_out=$mert_temp_dir/result
+mert_log=$engine_mert_log_dir/mert.log
+moseswrapper=$scripts_dir/mertmoses.sh
+moses_ini=$engine_moses_dir/cfg/~moses.ini
+
+rm -f $mert_log
+touch $mert_log
+
+linfo -n "(4 of 5) Running MERT...                                         "
+timer_start
+
+$home/server start $arg_engine &> /dev/null
+function server_stop {
+	$home/server stop $arg_engine &> /dev/null
+}
+
+trap server_stop EXIT
+
+mkdir -p $mert_out
+
+$mert $corpus_source_file $corpus_target_file $moseswrapper $moses_ini --mertdir $moses_home/bin --mertargs '--binary --sctype BLEU' --working-dir $mert_out --nbest 200 --decoder-flags '' --nonorm --closest --no-filter-phrase-table >> $mert_log 2>&1
+
+echo "DONE (in $(timer_stop)s)"
+
+
+
+
+
+
+
+

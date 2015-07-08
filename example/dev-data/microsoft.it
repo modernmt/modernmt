@@ -1,0 +1,123 @@
+Per verificare se un controllo dispone di una finestra di dialogo delle proprietà personalizzate, cercare la proprietà Custom nella finestra delle proprietà di Microsoft Access relativa al controllo.
+Il controllo Casella combinata riunisce le caratteristiche di una casella di testo e di una casella di riepilogo .
+L'evento Attivato si differenzia dall'evento Invio in quanto l'evento Attivato si verifica ogni volta che un controllo acquista lo stato attivo. Si supponga ad esempio che si scelga una casella di controllo di una maschera, quindi un report e infine la casella di controllo della maschera per portarla in primo piano. L'evento Attivato si verifica tutte e due le volte in cui la casella di controllo acquista lo stato attivo. Al contrario, l'evento Invio si verifica solo dopo la prima volta che si sceglie la casella di controllo. L'evento Attivato si verifica dopo l'evento Invio.
+Per informazioni su come ottenere tali pubblicazioni, vedere il sito Supporto del carattere Euro da parte di Microsoft Office e dei sistemi operativi Microsoft.
+Repliche di database
+colore Valore di tipo Long che indica il colore RGB (rosso-verde-blu) del profilo del cerchio.
+Il metodo HyperlinkPart restituisce informazioni sui dati memorizzati come tipo di dati Collegamento ipertestuale . Elemento String .
+Ciascun oggetto Control è caratterizzato da una determinata costante intrinseca . Ad esempio, la costante intrinseca di acTextBox è associata al controllo Casella di testo e la costante acCommandButton è associata al Pulsante di comando . Le costanti dei diversi controlli di Microsoft Access vengono impostate nella proprietà ControlType del controllo.
+msoAutomationSecurityForceDisable Non viene aperto alcun database contenente macro , codice di Visual Basic, Applications Edition, maschere contenenti controlli ActiveX, query di aggiornamento , query di definizione dati , query pass-through o query di comando . Non viene visualizzato alcun messaggio relativo alla protezione.
+CurrentSectionTop, proprietà
+espressione . FillColor
+Cifra o spazio. Immissione facoltativa. Gli spazi vengono visualizzati come vuoti in modalità Modifica, ma i vuoti vengono rimossi quando i dati vengono memorizzati. Segni più e meno consentiti.
+È possibile utilizzare la proprietà ObjectVerbsCount in Visual Basic per determinare il numero di verbi supportati da un oggetto OLE . Elemento Long di sola lettura.
+Per creare un pulsante di comando o un interruttore con un'etichetta e un'immagine, è possibile includere l'etichetta desiderata come parte della bitmap e assegnare la bitmap alla proprietà Picture del controllo.
+Variabile che rappresenta un oggetto CurrentData .
+Controllo Struttura a schede
+Quando si immettono dati nuovi o modificati in un controllo di una maschera e si passa a un altro record o si salva il record scegliendo Salva record dal menu Record , l'evento AfterUpdate per la maschera si verifica immediatamente dopo l'evento AfterUpdate per il controllo.
+Prima di poter utilizzare questo metodo, è necessario definire un flusso di lavoro per l'elenco in 2nd_WSS_3 .
+È possibile utilizzare la proprietà ImageWidth per determinare la larghezza in twip di un'immagine in un controllo immagine .
+Per modificare il nome di un campo, rimuovere il campo e quindi ricrearlo.
+L'utente o il gruppo dispone dell'autorizzazione necessaria per creare nuovi oggetti di questo tipo.
+L'utilizzo di insiemi e proprietà di un oggetto Hierarchy consente di:
+Schema.ini contiene le specifiche di un'origine dati: il tipo di formattazione dei dati e i nomi delle colonne a cui accedere.
+Si sta tentando di creare una replica utilizzando come origine una replica parziale. Le repliche parziali non possono essere replicate.
+Il database non è stato reso replicabile perché non è stato possibile replicare l'oggetto specificato.
+Si è verificato un problema di accesso alla directory TEMP nel computer.
+Specifica varie informazioni di connessione, incluse le password.
+Direction, proprietà
+Clausola CONSTRAINT che definisce un indice a campo singolo. Per ulteriori informazioni su come creare questo tipo di indici, vedere Clausola CONSTRAINT .
+La risoluzione dei conflitti a livello di colonna consente di unire due report e comporta la segnalazione di un conflitto solo se sono state apportate modifiche allo stesso campo contemporaneamente.
+Se si verificano errori di aggiornamento, questi verranno intercettati in una routine di gestione degli errori. Filtrare l'oggetto Recordset con la costante adFilterConflictingRecords in modo da visualizzare solo le righe in conflitto. In questo esempio la strategia di risoluzione degli errori si basa semplicemente sulla stampa del nome e del cognome dell'autore ( au_fname e au_lname ).
+Prima di aprire un oggetto Connection , è necessario definire informazioni specifiche sull'origine dati e sul tipo di connessione. Il parametro ConnectionString del metodo Open dell'oggetto Connection oppure la proprietà ConnectionString dell'oggetto Connection in genere include la maggior parte di queste informazioni. Una stringa di connessione è una stringa di caratteri che definisce un numero variabile di argomenti. Gli argomenti, alcuni richiesti da ADO, altri invece specifici del provider, contengono informazioni di cui l'oggetto Connection deve disporre per l'esecuzione delle varie attività. Gli argomenti che compongono il parametro ConnectionString sono separati da un punto e virgola (;).
+Insieme di funzioni per server Internet, ad esempio Windows NT Server/Windows 2000 Server in cui Microsoft Internet Information Services (IIS) è in esecuzione.
+Per modificare il valore predefinito, è necessario aggiungere la chiave seguente al Registro di sistema sul server IIS:
+Riepilogo sul modello a oggetti RDS | Oggetto DataControl (RDS) | Oggetto DataFactory (RDSServer) | Oggetto DataSpace (RDS) | Esercitazione su RDS | Oggetto Recordset | Utilizzo di RDS e protezione
+In questo esempio viene illustrato come creare copie di un file utilizzando oggetti Stream o oggetti Record . Una copia viene eseguita su una cartella Web per la pubblicazione Internet. Altre proprietà e metodi illustrati includono Stream Type , Open , LoadFromFile e Record Open .
+L'oggetto Record può inoltre essere utilizzato dai provider di dati semistrutturati, ad esempio Microsoft OLE DB Provider for Internet Publishing per modellare gli spazi dei nomi con struttura ad albero. Ogni nodo della struttura rappresenta un oggetto Record con colonne associate. Le colonne possono rappresentare gli attributi del nodo e altre informazioni rilevanti. L'oggetto Record può rappresentare sia un nodo foglia che un nodo non foglia nella struttura ad albero. I nodi non foglia contengono altri nodi, mentre i nodi foglia no. In genere, i nodi foglia contengono flussi binari di dati, mentre ai nodi non foglia può anche essere associato un flusso binario predefinito. Le proprietà dell'oggetto Record identificano il tipo di nodo.
+Nella tabella seguente viene riportato un indice incrociato dei nomi ADO e OLE DB di ogni proprietà dinamica standard dei provider OLE DB. I provider possono aggiungere altre proprietà oltre a quelle elencate in questo argomento. Per informazioni sulle proprietà dinamiche specifiche del provider, vedere la documentazione del provider in uso.
+Lo spostamento delle informazioni su Internet e tra le applicazioni si è sempre rivelata un'operazione difficoltosa, a causa dei diversi formati dei dati e delle strutture proprietarie.
+Oggetto che supporta il protocollo OLE per il collegamento e l'incorporamento di oggetti.
+Annulla un'operazione di aggiornamento in corso
+Le funzioni e le proprietà non sicure vengono bloccate solo quando sono utilizzate in espressioni quali, ad esempio, valori predefiniti, origini di controlli o istruzioni SQL. Questi elementi non vengono bloccati nel codice di Visual Basic, Applications Edition (VBA).
+Le query con parametri che includono parametri denominati mantengono il nome testuale originale utilizzato nel database di Access e vengono convertite in stored procedure o in funzioni inline definite dall'utente.
+Ogni campo rappresenta un fatto relativo a un argomento specifico. Ad esempio, è possibile memorizzare i seguenti fatti relativi ai clienti: nome della società, indirizzo, città, paese e numero telefonico. Per ogni fatto è necessario creare un campo distinto. Nel definire i campi necessari, tenere presenti i seguenti suggerimenti a livello di strutturazione:
+Il set di repliche dovrà avere un periodo di memorizzazione lungo se le repliche non vengono sincronizzate di frequente.
+È possibile ad esempio utilizzare il campo Città della tabella Impiegati come campo pagina per visualizzare i risultati delle vendite per categoria di prodotto dei soli rappresentanti di Londra.
+C:\Programmi\Microsoft Office\Office11\MSAccess.exe C:\Programmi\Microsoft Office\Office11\Samples\Northwind.mdb /excl
+Se si desidera creare un report che utilizza i dati di più tabelle, basare il report su una query.
+Il pulsante Ripristina è disponibile solo se la barra degli strumenti predefinita selezionata o la barra dei menu predefinita selezionata è stata modificata.
+Fare clic sul controllo Sottoreport.
+Nella casella di gruppo Direzione effettuare una delle seguenti operazioni:
+Fare clic sul pulsante Definisci colori personalizzati per espandere la finestra di dialogo.
+Per visualizzare anni di quattro cifre nel file di Microsoft Access corrente, selezionare la casella di controllo Database corrente .
+Se Internet Explorer è il browser predefinito, in Esplora risorse di Windows fare doppio clic sul file HTML per aprire la pagina in Internet Explorer.
+Risolvere i conflitti di sincronizzazione tra i membri del set di repliche
+Premere F5 per eseguire la procedura.
+Importa una cartella di Exchange o Outlook in un database di Microsoft Access.
+Inoltre, la funzione Conteggio è ottimizzata in modo significativo per query che utilizzano la tecnica Rushmore.
+Nei progetti di Access 0 viene interpretato come False, mentre +1 come True.
+Vengono inoltre elencati i tipi di dati Microsoft SQL Server equivalenti.
+Una tabella può includere indici di ricerca completa.
+Totale dei valori di una colonna.
+Per impostare le proprietà di colonna da visualizzare nelle tabelle di un diagramma di database, è inoltre possibile utilizzare il comando Visualizzazione personalizzata del sottomenu Tabella del menu Visualizza .
+Sono state apportate modifiche alla tabella corrente. Tali modifiche verranno perse se si chiude la tabella senza salvarla. Specificare se si desidera salvare le modifiche.
+Indica il nome del vincolo di cui si stanno visualizzando le proprietà.
+Tecnologia basata su oggetti di Microsoft che consente di creare applicazioni che includono componenti di diverse altre applicazioni.
+Questa tabella include le informazioni sulle sincronizzazioni delle repliche effettuate. Si tratta di una tabella locale che non viene replicata.
+Analisi utilizzo software consente di raccogliere informazioni sulla configurazione hardware e su come l'utente utilizza i programmi e i servizi Microsoft Office, al fine di identificare le tendenze e i modelli di utilizzo.
+Selezionare facoltativamente la casella di controllo Consenti valori multipli .
+Spostarsi in altro di una proprietà. Se la proprietà selezionata è quella superiore, lo spostamento viene eseguito nell'elenco a discesa del controllo
+Tenere presente che non è possibile utilizzare query di accodamento per modificare i dati di singoli campi in record esistenti.
+Nella tabella seguente sono illustrate le espressioni che utilizzano queste funzioni. Le funzioni presuppongono che i dati si trovino in un campo di tabella denominato IDParte.
+Unire in join tali tabelle nei campi contenenti le informazioni correlate.
+Le maschere di input sono costituite da set di caratteri letterali e di simboli segnaposto che controllano i dati che gli utenti possono immettere in un campo ed è possibile applicarle a campi contenuti in tabelle e set di risultati di una query, nonché a controlli in maschere e report.
+Quando si crea una maschera o un report e, prima di salvarlo, si applica un filtro, il filtro non può essere disattivato. Nella maschera o nel report verrà mostrata sempre la visualizzazione filtrata della tabella o della query sottostante.
+Trovare le date più recenti o meno recenti per record che rientrano in categorie o gruppi
+Se si pensa che si dovrà ripetere la stessa operazioni di importazione in futuro, fare clic su Salvare i passaggi dell'operazione di importazione e quindi specificare i dettagli.
+Verrà visualizzato il Generatore di macro.
+1st_Access12 attende di completare gli aggiornamenti in sospeso dello schermo finché non sono state completate le altre attività in sospeso. Tramite questa azione è possibile forzare l'aggiornamento immediato della visualizzazione dei controlli nell'oggetto specificato. È possibile utilizzare questa azione:
+A tale scopo, selezionare la categoria personalizzata, selezionare il gruppo che si desidera spostare e quindi fare clic sulla corrispondente freccia in su o in giù.
+Nel riquadro di spostamento fare clic con il pulsante destro del mouse sull'oggetto per il quale si desidera creare un nuovo gruppo personalizzato, scegliere Aggiungi a gruppo e quindi Nuovo gruppo .
+Ad esempio, il gruppo di opzioni Zona è associato al campo Zona contenuto in una tabella .
+Controllare ogni alias per assicurarsi che non corrisponda al nome di altri campi inclusi nell'espressione dell'alias.
+Durante una sessione di lavoro in 1st_Access12 è possibile che sia necessario utilizzare valori che non si trovano direttamente nei dati disponibili.
+Griglia della query con i criteri AssegnatoA contenenti "Angela Barbariol"
+Condizione che si applica a più azioni macro
+Per copiare le righe selezionate negli Appunti, eseguire una delle operazioni seguenti:
+Esaminare le opzioni disponibili nella finestra di dialogo Opzioni raccolta dati tramite posta elettronica .
+Preparare l'operazione di importazione
+Dalla sezione Campi disponibili nelle tabelle correlate trascinare nella maschera il primo campo che si desidera includere nel foglio dati. Verrà creato automaticamente un foglio dati al quale verrà aggiunto il campo.
+In questo caso, la funzione CVErr consente di restituire un numero di errore che indica l'azione da eseguire.
+Utilizzare la funzione GetObject se esiste un'istanza corrente dell'oggetto o se si desidera creare l'oggetto con un file già caricato.
+ora
+Deselezionare la casella di controllo Utilizza Microsoft Office Word 2003 per leggere messaggi di posta in formato RTF e quindi scegliere OK .
+Dopo aver creato i record necessari, le informazioni sulle interazioni con i clienti possono essere memorizzate come elementi della cronologia in tali record.
+Per creare una cronologia più dettagliata relativa all'account, fare clic su Nuovo e quindi collegare un elemento, ad esempio una nota commerciale, una nota telefonata, un appuntamento o un'attività, al record.
+Se i file di backup si trovano in più unità di memoria USB, CD, dischi floppy o unità ZIP, inserire per primo l'ultimo supporto della serie, perché contiene istruzioni sui file da ripristinare.
+Attività di progetto Consente di avviare una nuova attività oppure visualizzare le attività aperte.
+Filtrare i record delle attività di progetto
+Ereditarietà I tipi di contenuto basati su un tipo di contenuto padre possono ereditare le impostazioni di conversione dal padre o disporre delle proprie.
+Tipo di contenuto Sono disponibili due impostazioni per il tipo di contenuto, ovvero Gruppo tipo di contenuto e Tipo di contenuto . Queste impostazioni sono facoltative e possono essere utilizzate per limitare la query a elementi di particolari tipi di contenuto definiti nella raccolta siti.
+Se il flusso di lavoro che si sta aggiungendo include la pagina Personalizza flusso di lavoro, fare clic su Avanti per passare alla pagina Personalizza flusso di lavoro, quindi scegliere le impostazioni desiderate e fare clic su OK .
+Nella pagina Stato flusso di lavoro, in Informazioni flusso di lavoro fare clic su Interrompi subito questo flusso di lavoro .
+Immettere i valori di parametro, quindi fare clic su Applica .
+Aprire una cartella di lavoro o uno snapshot in Excel nel computer in uso e salvarla.
+Se la funzione SQLExecQuery non è in grado di eseguire la query nell'origine dati specificata, restituirà l'errore 2042.
+Attiva un'applicazione Microsoft. Se l'applicazione è già in esecuzione, questa verrà attivata. Se non è in esecuzione, verrà avviata una nuova istanza dell'applicazione.
+Se SegmentType è msoSegmentLine , EditingType deve essere msoEditingAuto .
+Data Argomento necessario di tipo Variant . L'oggetto Recordset da copiare nell'intervallo.
+Un valore positivo sposta la forma verso destra, mentre un valore negativo la sposta verso sinistra.
+SourceType Argomento facoltativo di tipo XlPivotTableSourceType .
+Per ulteriori informazioni sulle finestre di dialogo incorporate, vedere l'insieme Dialogs .
+L'esempio che segue determina il nome del secondo campo del cubo nel primo rapporto di tabella pivot del foglio di lavoro attivo.
+Per visualizzare i metadati aggiunti, utilizzare la proprietà XML dell'oggetto SmartTag . Questo esempio, costruito su quello precedente, visualizza i metadati aggiunti allo smart tag nella cella A1. I metadati per questo smart tag rappresentano l'XML che passerebbe al gestore dell'azione. L'esempio prevede che il sistema host sia connesso a Internet.
+Proprietà di tipo Single di lettura/scrittura.
+Proprietà di tipo XlPivotFieldDataType di sola lettura .
+Questo esempio imposta il formato di riempimento per grafico 2 allo stesso stile utilizzato per grafico 1.
+Proprietà MailSystem
+Per le tabelle query, questa proprietà ha valore True se l'eventuale formattazione comune alle prime cinque righe di dati viene applicata ai nuovi dati inclusi nella tabella query.
+Restituisce o imposta una proprietà Boolean per indicare la modalità di visualizzazione dei nomi delle serie per le etichette dati in un grafico.
+Proprietà VerticalAlignment applicata agli oggetti Style e TextFrame
+Il primo membro dell'insieme DocumentWindows , Windows(1) , restituisce sempre la finestra di documento attiva. In alternativa, è possibile utilizzare la proprietà ActiveWindow per tornare alla finestra di documento attiva. L'esempio che segue ingrandisce la finestra attiva.
+Restituisce o imposta il modo in cui le colonne o le righe vengono utilizzate come serie di dati sul grafico. Può essere una delle costanti PpRowCol seguenti: ppColumns o ppRows . Valore Long di lettura/scrittura.

@@ -1,0 +1,154 @@
+ Compliance with federal and state regulations that require application security testing.
+"CONTAINS IBM PL/I for Windows Version 6.0 Runtime Modules
+"None of this software is required for using WebSphere Process Server."
+"Web page"
+# Connections.
+# Specify the path of the DB2 install image.
+# then specify the userid for that configuration.
+%1 argument must have type EVENT.
+%1$s name '%2$s'
+%1$s: 0711-794 SEVERE ERROR: Object %2$s, RLD address 0x%3$x in section %4$d: \tThe instruction at address 0x%5$x cannot be fixed up: \tThe opcode is %6$d.
+%1$s: 2651-251 The -%2$c flag requires an argument.
+%9d Passed pre-deinstall verification
+%s was not in the name table.
+%s: invalid alias name.
+&&Printers
+&Column
+&Greater Than
+&My Team Spaces
+&Restore Defaults
+&Unique
+&lt;/activity&gt;
+&lt;config
+&nbsp; Can be relative or absolute.
+&was_nd; product (if it has not already been installed)
+(1) If You are licensed under a P8 Base - Application License, as evidenced on the PoE, the following will apply: The P8 Base - Application License is granted only in conjunction with the other IBM P8 Programs specifically identified on the PoE and in Section A.1(k)(2) below (the "Application Related IBM Programs") and provides You with the right to install one (1) instance of the Application Related IBM Programs on one (1) Server.
+(AMQ4104)
+(Configuring the <ph conref="../share/entities.dita#entities/CEI"></ph>)
+(Map)null );
+(Sent automatically if you use the form above.)
+(a) all third party components, including third party components included or embedded in the Program and components referenced in any LICENSE.TXT and ABOUT.HTML files included with the Program or a fixpack or update to the Program, and (b) all source code included with the Program, including but not limited to source code included with the Eclipse components.
+(i) Hospital Bed.
+(requestQname);
+* The implementation was written so as to conform with Netscapes SSL.
+*Embedded Eclipse Help System 3.0.1*
+- BOM Manager Collaboration
+- select the model user or user group to duplicate and click OK
+-O5
+-dev Specifies the device logical name, indicated by the Name parameter, whose characteristics are to be changed.
+-p port Connect to the specified port.
+...\Tools\mqax\samples\html
+/* public Command getCommand() {
+/dancer.src:
+/var/mqm/exits (32-bit channel exits)
+0042-211 %s: The member %s already exists in group %s.
+0453-043 Unable to put %s attribute into ODM object class SWservAt.
+0503-753 %1$s: Cannot make the directory %2$s \tspecified in the inventory file %3$s.
+0511-801 %s is not a supported JFS filesystem version.
+0516-1341 %1$s Please reboot with the 64bit kernel and try again.
+0781-062 Error opening %1$s.
+1 - Commit every record.
+1. IPv4 address.
+10 pairs of sneakers
+1400-211 projctl: project definitions are already loaded.
+16 MB Memory SIMM
+192.3.3/24 en0host2 UGc 0 0 en0 1500 -
+2. Edge Components: The Program's Edge components can be broken into two (2) categories: main components and sub-components.
+2.6 Terms Applicable to HP-UX Java RTE
+2645-058 The online request cannot be completed because a constituent resource is already online.
+2650-962 ctskeygen Failure: The following option was specified more than once: \t %1$s Please verify that the command was issued correctly.
+3. Data Collector has problem to get JMX data from JMX Engine
+30 min
+4 98298 sys/sys0
+4050-108 Cannot read super block on filesystem %s
+5.2 Searching for specific messages
+6. DB2 UDB Components: The Application Server - Express for OS/400 CD-ROM includes portions of DB2 Universal Database ("DB2 UDB Components").
+7) "IBM Maximo Change Manager for IBM Change and Configuration Management Database" is defined as follows: The Program includes a copy of IBM Maximo Asset Management, IBM Maximo Asset Management for IT and IBM Tivoli Service Desk (herein refered to as the Maximo EAM, ITAM and Service Desk respectively).
+8.3 Terms Applicable to Eclipse Code Components
+:wsmfsBundle.WSMFS_JFS_MOUNT
+<!ENTITY mf40inn "GC34-6072">
+</a><img src="<%=wpsBaseURL%><twb##/images/icons/CalendarWebConference.gif" height="13" width="13" alt="##twb>Web Conference icon<twb##"/>
+</a><strong>Instrumentation Level</strong> The PMI instrumentation level set for collecting dynamic cache data.
+</a><strong>SQL Query Time (ms)</strong> The average time (in milliseconds) this request spent querying a JDBC database; this field can have a zero value if the total time is less than the number of requests, due to truncation.
+</ibmbibentry><ibmbibentry docname="amq81" id="amq81"><doctitle><titleblk> <title>&mqs; for &as400; V6 System Administration Guide</title></titleblk> </doctitle>
+<A NAME="HDRCLLOGSAM" HREF="#PToC_70">Use the same file for information messages</A>
+<A NAME="IDX150"></A> Enter a value in the range 0 through 2&nbsp;097&nbsp;151, to specify the maximum size in kilobytes of the log file.
+<A NAME="PToC_127" HREF="#HDREPR1">Pipe reuse model</A>
+<A NAME="ToC_147" HREF="cclhlp16.htm#HDRACKEYS">Keys</A>
+<B>Home</B>
+<STRONG><FONT size="+1">Domino-WebSphere Portal Integration Wizard Status</STRONG></FONT><p><br><STRONG><FONT color="#FF0000">The wizard exited with the following $L(com.ibm.wps.dpi.wizard.DPIWizardMsg,DPIError.PortalVersion.NoVersion)</STRONG></FONT><br><br>Refer to the configuration message file $W(getWpsHome.propertyValue)/log/dpitasks.log for additional information.
+<a NAME=BYTE_SENT></a><span style="font-weight: bold;"><b>Sent (bytes)</b></span><span id=shorttext> The number of bytes of data sent to network attached WMQ JMS clients.</span>
+<a NAME=LKTO_PRC></a><span style="font-weight: bold;"><b>Lock Timeout Percent</b></span><span id=shorttext> The percent of timeouts to accesses for the lock manager for the interval since the previous sample.</span>
+<a NAME=RTE_DRAIN></a><span style="font-weight: bold;"><b>Drain Rate (per sec)</b></span><span id=shorttext> The drain rate (per second) for the bean object pool during the interval.</span>
+<a class="help" href="#mail_view_setprefs">Personalizing mail</a>
+<a href="#3-c-userselectioncomponent-LR" class="help">Selecting users or groups</a>
+<a href="../../com.ibm.commerce.base.doc/misc/mabhelp.htm#conventions"><img class="noborder" src="../images/ngwin.gif" alt="##twb>Windows<twb##"/></a><a href="http://www.elink.ibmlink.ibm.com/public/applications/publications/cgibin/pbi.cgi?CTY=US&amp;FNC=SRX&amp;PBL=GC104268" target="_blank">IBM WebSphere Commerce 6.0 Migration Guide (from Version 5.6 to Version 6.0)</a>
+<a href="../com.ibm.websphere.bpc.612.doc/doc/bpc/cescalations.html">Escalations</a>
+<a href="../com.ibm.websphere.cei.612.doc/doc/ccei_introduction.html">Common Event Infrastructure</a>
+<a href="../concepts/cct_imcontract.htm">Contract and account assets</a>
+<a href="BASIC.web_server_admin.htm#servermanagment">administration</a>
+<a href="Setting_a_Server_Resource_Trap.htm#Setting_a_Server_Resource_Trap">creating</a>
+<a href="attr_kynapp.htm" title="##twb>Use the Web Applications attributes to create situations that monitor Web application performance and application server loads.
+<a href="doc/covw_mediation_flow.html">Mediation flows</a>
+<a href="doc/tins_installingthedocumentation.html">Installing the documentation</a>
+<a href="e_remote_administering.htm">Administering remote queue managers
+<a href="http://www14.software.ibm.com/webapp/wsbroker/redirect?version=pix&amp;product=wps-dist&amp;topic=tadm_delete_top" target="_blank">Deleting deployment environment definitions</a> (online)
+<a href="tpnsearch.htm">Find the product you want to change</a>.
+<a name="C2"><b>Sample Date and Time</b></a> <span id="shorttext">The date and time the Tivoli Enterprise Management Agent collected the data.</span>
+<a name="SERVER_NAM"><b> Server Name</b></a> <span id="shorttext">The name of the WebSphere application server.</span>
+<a name="x2012788"/>access control
+<a target="_blank" href="http://publib.boulder.ibm.com/infocenter/dmndhelp/v6r1mx/index.jsp?tab=search&amp;searchWord=com.ibm.websphere.wbpmhelp.610.doc/com.ibm.ws.console.wbi.wbifailedeventmanager/boeditorcollectionform.html">Check for updates to this topic</a> (online)
+<b xmlns="" class="+ topic/ph hi-d/b ">Name</b>: id
+<b>:</b> [<varname>Argument</varname> ...]
+<b>Advanced profile augmentation of a <tm trademark="WebSphere" tmowner="IBM Corporation" tmtype="reg" tmclass="ibm">WebSphere</tm> Enterprise Service Bus profile</b> and the Common Event Infrastructure <i>is</i> already configured on your system
+<b>Check your backups periodically.</b>
+<b>DailyStats</b> – Runs once a day at 11:00 AM by default.
+<b>Endpoints</b>
+<b>Failure</b>: If any of the <codeph>820/834/837d</codeph> transaction sets are not supported or cannot be processed <codeph>DebulkingSOAPException</codeph> is displayed in response.
+<b>Identifying Apply component instances</b>
+<b>Logging results:</b> The installver_wbi tool creates messages for each component.
+<b>New Server-connection channel...</b> Click this menu item to create a new server-connection channel definition on the selected queue manager.
+<b>On <tm trademark="Linux" tmowner="Linus Torvalds" tmtype="reg" tmclass="special">Linux</tm> and <tm trademark="UNIX" tmowner="The Open Group" tmtype="reg" tmclass="special">UNIX</tm> platforms:</b> <i>profile_root</i><tt>/config/cells/</tt><i>cell_name</i><tt>/nodes</tt>
+<b>On <tm trademark="Windows" tmowner="Microsoft Corporation" tmtype="reg" tmclass="special">Windows</tm> platforms:</b> <tt><i>install_root</i>\profiles\<i>profile_name</i></tt>
+<b>On <tm trademark="i5/OS" tmowner="IBM Corporation" tmtype="reg" tmclass="ibm">i5/OS</tm> platforms:</b> The name of the database on <tm trademark="i5/OS" tmowner="IBM Corporation" tmtype="reg" tmclass="ibm">i5/OS</tm> using Independent Auxiliary Storage Pools (IASPs) can be the name of the IASP.
+<b>On Linux and UNIX platforms:</b> <tt><i>profile_root</i>/bin/startManager.sh</tt>
+<b>On Windows platforms:</b> <tt><i>profile_root</i>\bin\startManager.bat</tt>
+<b>PRI</b>
+<b>RSVP agent (<filepath>/usr/sbin/rsvpd</filepath>)</b>
+<b>Security credentials dialog</b> To connect to the LDAP server, enter the User Distinguished Name and password for the context.
+<b>Support for non-taxable charges</b>
+<b>Timer-Terminated Busy Mode (all frame types)</b>
+<b>User Response:</b>Ensure you only attempt to administer <tm trademark="WebSphere" tmtype="reg" tmclass="ibm" tmowner="IBM Corporation">WebSphere</tm> MQ JMS objects through the JMSAdmin tool.
+<b>command</b>
+<b>queues/</b>
+<br><br><b>Group suffix</b><br>Type the DN suffix attribute name for group entries.
+<cmdname>&amp;X0</cmdname>
+<cmdname>routed</cmdname>
+<codeph>/var/mqm/qmgrs/<synph><var>qmname</var></synph>/errors</codeph>
+<codeph>MQI commands are standard across all supported procedural languages, including C, COBOL and Visual Basic.</codeph>
+<codeph>local</codeph> (default)
+<draft-comment><twb++Is this step needed? (JH)++twb></draft-comment>Download the feature pack from the product Web site.
+<filepath rev="wesb61rev1">dmgr.esbserver</filepath>: for a <tm trademark="WebSphere" tmowner="IBM Corporation" tmtype="reg" tmclass="ibm">WebSphere</tm> Enterprise Service Bus deployment manager profile, which defines a <xref href="cins_depman.dita" keyref="cins_depman" otherprops="not-pdf"></xref><ph otherprops="pdf-only">deployment manager</ph>.
+<glentry id="gladbag" xreftext="administration bag">
+<html><b>Installation types</b></html>
+<i>Delivery of attachments has been disabled</i>
+<i>qmgr_name</i>, <i>qmgr_name</i>, .
+<image href="../../../images/ci/bglo/crt/extbusglo.jpg" placement="break"> <alt>The class and its property without any stereotypes</alt></image>
+<image href="uj25640a.gif" placement="break"><alt>The diagram illustrates the relationship between the various objects and the activities described in the list following the figure.</alt></image>
+<img src="../images/osreqlu.gif" alt="##twb>Diagram of the URL structure: the URL starts with the fully qualified name of your WebSphere Commerce Server and the configuration path, followed by the URL name, RequisitionListUpdate and the ?
+<keyword conref="../../com.ibm.swg.im.iis.functional.doc/topics/iisconref.dita#iisconref/st_qrep"></keyword>IBMQREP_EXCEPTIONS table
+<kwd> -systemBusDataSource</kwd><sep> </sep><var>nameOfSystemBusSource</var>
+<kwd>TDATA</kwd><delim>(</delim><var>string</var><delim>)</delim>
+<mmobj placement="inline" props="review"> <objref obj="ngsun"><textalt></textalt></mmobj><mmobj placement="inline" props="review"> <objref obj="ngaix"><textalt></textalt></mmobj><mmobj placement="inline" props="review"> <objref obj="nglinux"><textalt></textalt></mmobj><mmobj placement="inline" props="review"><objref obj="ngwin"><textalt></textalt></mmobj><mmobj placement="inline" props="BE_PE"><objref obj="ngdb2"><textalt>DB2 users only</textalt></mmobj> <mmobj placement="inline" props="linux #AND BE_PE"><objref obj="ngxseries"><textalt></textalt> </mmobj><mmobj placement="inline" props="linux #AND BE_PE"><objref obj="ngiseries"> <textalt></textalt></mmobj><mmobj placement="inline" props="linux #AND BE_PE"> <objref obj="ngpseries"><textalt></textalt></mmobj>
+<mmobj><objref obj="hc0ug042"><textalt>Tear Automatic Options path</textalt> </mmobj>
+<ph TWB="ibmbooklibrary" class="- topic/ph bookmap/booklibrary ibmbook/ibmbooklibrary ">Websphere MQ for Linux</ph TWB="ibmbooklibrary"><ph TWB="ibmmainbooktitle" class="- topic/ph bookmap/mainbooktitle ibmbook/ibmmainbooktitle ">Quick Beginnings</ph TWB="ibmmainbooktitle"><ph TWB="ibmlibraryshorttitle" class="- topic/ph bookmap/booktitlealt ibmbook/ibmlibraryshorttitle ">Websphere MQ for Linux</ph TWB="ibmlibraryshorttitle"><ph TWB="ibmshorttitle" class="- topic/ph bookmap/booktitlealt ibmbook/ibmshorttitle ">Quick Beginnings</ph TWB="ibmshorttitle">
+<ph conref="csq99sym.dita#csq99sym/qmlx6i"></ph> now supports the <ph conref="csq99sym.dita#csq99sym/wmq"></ph> Explorer.
+<ph conref="symbols.dita#symbols/Symbol.SecurityExpert"></ph> can be run from <ph conref="symbols.dita#symbols/Symbol.websm"></ph>, SMIT, or you can use the <xref href="../../../com.ibm.aix.cmds/doc/aixcmds1/aixpert.htm" format="html" scope="local"><cmdname>aixpert</cmdname></xref> command.
+<ph id="Symbol.InfoCenter"><tm tmclass="ibm" tmowner="IBM Corporation" tmtype="reg" trademark="IBM">IBM</tm> <tm tmclass="ibm" tmowner="IBM Corporation" tmtype="reg" trademark="AIX">AIX</tm> Information Center</ph>
+<ph id="dsservjdev">Server Job Developer Guide</ph>
+<ph id="prod_wcssdk_imspi_long">Instant Messaging SPI for <tm tmclass="ibm" tmowner="IBM Corporation" tmtype="reg" trademark="IBM">IBM</tm> <tm tmclass="ibm" tmowner="IBM Corporation" tmtype="tm" trademark="Workplace">Workplace</tm> Server Products</ph>
+<ph id="rmig_wbipostupgrade"><cite>WBIPostUpgrade command</cite> in the <xref href="wesb612_zseries_installing.pdf" type="reference" format="pdf" scope="external">Installing WebSphere ESB for z/OS</xref> document.</ph>
+<ph id="webfap">Message Service Client for Web Browsers</ph>
+<ph platform="multi">On Windows systems, create <codeph><varname>install_root</varname>\profiles\<varname>Profile_name</varname>\databases</codeph >.
+<ph rev="100230.IT6">WebSphere MQ classes for JMS</ph> provides an implementation of Version 1.1 of Sun's JMS API specification.
+<ph style="bold"> 3. IBM WebSphere Portal Experience Solution for Multiplatforms Version 2.1 </ph>

@@ -2,6 +2,7 @@
 
 # Constants
 CONTEXT_ANALYZER_PLACEHOLDER="__CONTEXT_ANALYZER_DOMAIN__"
+METALINE_CONTEXT_SEPARATOR="___CONTEXT___"
 
 # Args
 engine="$1"
@@ -28,6 +29,7 @@ engine_runtime_dir=$engine_dir/run
 engine_temp_dir=$engine_dir/tmp
 engine_log_dir=$engine_dir/logs
 engine_build_log_dir=$engine_log_dir/build
+engine_mert_log_dir=$engine_log_dir/mert
 engine_context_analyzer_dir=$engine_dir/data/context-analyzer
 engine_context_analyzer_index_dir=$engine_context_analyzer_dir/index
 engine_moses_dir=$engine_dir/data/moses
