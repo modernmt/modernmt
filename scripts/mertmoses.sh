@@ -133,19 +133,17 @@ cat ${input_file} | ( while read line ; do
 	sentence=${line%"$METALINE_CONTEXT_SEPARATOR"*}
 	context=${line##*"$METALINE_CONTEXT_SEPARATOR"}
 
-	cw="--context-string \"$context\""
-
 	if [ -z "${weight_overwrite}" ]; then
 		if [ -z "${print_id}" ] ; then
-			echo $sentence | $moses -f ${config_file} ${decoder_pars} ${cw} ${nbest_pars}
+			echo "$sentence" | $moses -f ${config_file} ${decoder_pars} --context-string "$context" ${nbest_pars}
 		else
-			echo $sentence | $moses -f ${config_file} ${decoder_pars} ${cw} ${nbest_pars} | update_first_id_with_counter $count_lines
+			echo "$sentence" | $moses -f ${config_file} ${decoder_pars} --context-string "$context" ${nbest_pars} | update_first_id_with_counter $count_lines
 		fi
 	else
 		if [ -z "${print_id}" ] ; then
-			echo $sentence | $moses -f ${config_file} ${decoder_pars} ${cw} ${nbest_pars} -weight-overwrite "${weight_overwrite}"
+			echo "$sentence" | $moses -f ${config_file} ${decoder_pars} --context-string "$context" ${nbest_pars} -weight-overwrite "${weight_overwrite}"
 		else
-			echo $sentence | $moses -f ${config_file} ${decoder_pars} ${cw} ${nbest_pars} -weight-overwrite "${weight_overwrite}" | update_first_id_with_counter $count_lines
+			echo "$sentence" | $moses -f ${config_file} ${decoder_pars} --context-string "$context" ${nbest_pars} -weight-overwrite "${weight_overwrite}" | update_first_id_with_counter $count_lines
 		fi
 	fi
 
