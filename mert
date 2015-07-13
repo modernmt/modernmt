@@ -301,6 +301,29 @@ $mert $corpus_source_file $corpus_target_file $moseswrapper $moses_ini --mertdir
 
 echo "DONE (in $(timer_stop)s)"
 
+# ================================================================================
+# Step 1 - Applying results
+# ================================================================================
+
+result_mert_ini=$mert_out/moses.ini 
+dest_moses_ini=$engine_moses_dir/cfg/moses.ini
+
+linfo -n "(5 of 5) Applying changes...                                     "
+timer_start
+
+sed "s/localhost:[0-9][0-9]*\/context/$CONTEXT_ANALYZER_PLACEHOLDER\/context/g" $result_mert_ini > $dest_moses_ini
+
+echo "DONE (in $(timer_stop)s)"
+
+
+
+
+
+
+
+
+
+
 
 
 
