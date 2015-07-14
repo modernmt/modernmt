@@ -146,7 +146,7 @@ echo
 linfo -n "(1 of 2) Checking source corpora...                              "
 timer_start
 
-for source_file in $( find $arg_train_data -type f -name *.$arg_source_lang ); do
+for source_file in $( find $arg_train_data -type f -name "*.$arg_source_lang" ); do
 	dir=$(dirname "$source_file")
 	filename=$(basename "$source_file")
 	filename="${filename%.*}"
@@ -172,7 +172,7 @@ echo "DONE (in $(timer_stop)s)"
 linfo -n "(2 of 2) Checking target corpora...                              "
 timer_start
 
-for target_file in $( find $arg_train_data -type f -name *.$arg_target_lang ); do
+for target_file in $( find $arg_train_data -type f -name "*.$arg_target_lang" ); do
 	dir=$(dirname "$target_file")
 	filename=$(basename "$target_file")
 	filename="${filename%.*}"
@@ -269,7 +269,7 @@ mkdir -p $corpus_cleaner_out
 linfo -n "(2 of 5) Corpus cleaning...                                      "
 timer_start
 
-for source_file in $( find $tokenizer_out -type f -name *.$arg_source_lang ); do
+for source_file in $( find $tokenizer_out -type f -name "*.$arg_source_lang" ); do
 	dir=$(dirname "$source_file")
 	filename=$(basename "$source_file")
 	filename="${filename%.*}"
