@@ -20,12 +20,36 @@ In general:
 
 Note: domain-id must be [a-zA-Z0-9] only without spaces.
 
+### Multi-engines support
+
+Starting from release 0.10, MMT supports multiple engines running on the same machine: you can specify the name of the engine with option "-n" as follows:
+
+./create-engine -i example/train-data -s en -t it -n example
+
+To create the new engine called "example" and the command:
+
+./server start example
+
+to start the "example" engine. By default the "server" script will choose 3 avalilable random ports, if you want to specify custom ports you can use the following command:
+
+./server start example 8000 8001 8002
+
+If you omit the engine name, "default" will be used instead.
+
+### MERT script
+
+Starting from release 0.10 in MMT is available a custom "mert" script that optimizes the Moses weights using the context-string during translation process.
+You can run the MERT process with the command:
+
+./mert -i example/dev-data -s en -t it -n example
+
+It will automatically replace the moses.ini file with the optimized one.
+
 ## Current Limitations
 
-- This alpha only support of 1 engine live at a time. You will need to move the old engine to create a new one.
-- It only support latin languages.
-- context and query needs to be tokenized before input.
-- incremental training not implemented.
+- It only supports latin languages.
+- context and query need to be tokenized before input.
+- incremental training not implemented yet.
 
 ## Requirements
 
