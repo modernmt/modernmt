@@ -1,2 +1,7 @@
-*
+/*
 !.gitignore
+!versions
+versions/*
+!versions/clean-corpus-0.1
+!versions/lm-0.1
+!versions/tokenizer-0.1
