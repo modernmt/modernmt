@@ -302,10 +302,13 @@ echo "DONE (in $(timer_stop)s)"
 
 lm_target_model=$engine_models_dir/$arg_target_lang.blm
 lm_target_model_log=$engine_build_log_dir/target-lm.log
+lm_temp=$engine_temp_dir/lm
+
+mkdir -p $lm_temp
 
 linfo -n "(4 of 5) Creating target language model...                       "
 timer_start
-$language_model_home/lm.sh "$corpus_cleaner_out/*.$arg_target_lang" "$lm_target_model" $arg_lm_order >> $lm_target_model_log 2>&1
+$language_model_home/lm.sh "$corpus_cleaner_out/*.$arg_target_lang" "$lm_target_model" $arg_lm_order "$lm_temp" >> $lm_target_model_log 2>&1
 echo "DONE (in $(timer_stop)s)"
 
 # ================================================================================
