@@ -1,5 +1,9 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
+#
+# This file is part of moses.  Its use is licensed under the GNU Lesser General
+# Public License version 2.1 or, at your option, any later version.
 
+use warnings;
 use strict;
 
 my $language = "en";
@@ -75,7 +79,6 @@ while(<STDIN>) {
 	s/(\.+)\"(\s*[^<])/\"$1$2/g; # don't fix period at end of sentence
     }
 
-    print STDERR $_ if /﻿/;
 
     if ($language eq "de" || $language eq "es" || $language eq "cz" || $language eq "cs" || $language eq "fr") {
 	s/(\d) (\d)/$1,$2/g;
