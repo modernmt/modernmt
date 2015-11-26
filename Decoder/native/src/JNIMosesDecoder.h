@@ -6,11 +6,15 @@
 #define MMTDECODERJNI_JNIMOSESDECODER_H
 
 #include <string>
+#include <moses/server/Server.h>
 
 class JNIMosesDecoder {
+    MosesServer::Server m_server;
+    xmlrpc_c::methodPtr const m_translator;
+    xmlrpc_c::methodPtr const m_close_session;
 
 public:
-    JNIMosesDecoder(std::string);
+    JNIMosesDecoder(Moses::Parameter params);
     std::string translate(std::string);
 };
 

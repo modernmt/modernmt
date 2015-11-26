@@ -1,17 +1,99 @@
 cmake_minimum_required(VERSION 3.3)
 project(MMTDecoderJNI)
 
-include_directories(
-        /Library/Java/JavaVirtualMachines/jdk1.8.0_40.jdk/Contents/Home/include
-        /Library/Java/JavaVirtualMachines/jdk1.8.0_40.jdk/Contents/Home/include/darwin
-)
+add_definitions(-DMAX_NUM_FACTORS=4)
+add_definitions(-DWITH_THREADS=1)
+add_definitions(-DHAVE_XMLRPC_C=1)
 
-include_directories(
-        jheaders
-)
+# Boost libraries
+set(Boost_USE_STATIC_LIBS        ON) # only find static libs
+set(Boost_USE_MULTITHREADED      ON)
+set(Boost_USE_STATIC_RUNTIME    OFF)
+find_package(Boost 1.57.0 COMPONENTS date_time filesystem system)
+include_directories(${Boost_INCLUDE_DIRS})
+include_directories(/usr/local/include)
+link_directories(/usr/local/lib)
+
+find_package(JNI)
+
+include_directories(libs/include)
+include_directories(jheaders)
+include_directories(${JNI_INCLUDE_DIRS})
+
+link_directories(libs)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-set(SOURCE_FILES src/main.cpp src/jni/handle.h src/JNIMosesDecoderInterface.cpp src/JNIMosesDecoder.cpp src/JNIMosesDecoder.h src/jni/tconv.h)
+set(SOURCE_FILES src/main.cpp src/jni/handle.h src/JNIMosesDecoderInterface.cpp src/JNIMosesDecoder.cpp src/JNIMosesDecoder.h src/jni/jconv.h)
+
 add_library(jnimoses SHARED ${SOURCE_FILES})
 add_executable(MMTDecoderJNI ${SOURCE_FILES})
+
+target_link_libraries(${PROJECT_NAME} moses)
+
+# Moses dependencies
+
+target_link_libraries(jnimoses moses)
+target_link_libraries(jnimoses z)
+target_link_libraries(jnimoses bz2)
+target_link_libraries(jnimoses pthread)
+
+target_link_libraries(jnimoses xmlrpc_abyss)
+target_link_libraries(jnimoses xmlrpc_util)
+target_link_libraries(jnimoses xmlrpc++)
+target_link_libraries(jnimoses xmlrpc_server_abyss++)
+target_link_libraries(jnimoses irstlm)
+target_link_libraries(jnimoses xmlrpc_server)
+target_link_libraries(jnimoses xmlrpc_packetsocket)
+target_link_libraries(jnimoses cmph)
+target_link_libraries(jnimoses xmlrpc_server++)
+target_link_libraries(jnimoses xmlrpc_xmltok)
+target_link_libraries(jnimoses xmlrpc_cpp)
+target_link_libraries(jnimoses xmlrpc_server_abyss)
+target_link_libraries(jnimoses xmlrpc_xmlparse)
+target_link_libraries(jnimoses xmlrpc_server_cgi)
+target_link_libraries(jnimoses xmlrpc_server_cgi++)
+target_link_libraries(jnimoses xmlrpc_server_pstream++)
+target_link_libraries(jnimoses xmlrpc)
+
+target_link_libraries(jnimoses boost_wserialization)
+target_link_libraries(jnimoses boost_mpi_python)
+target_link_libraries(jnimoses boost_math_tr1l)
+target_link_libraries(jnimoses boost_graph)
+target_link_libraries(jnimoses boost_math_tr1)
+target_link_libraries(jnimoses boost_context)
+target_link_libraries(jnimoses boost_locale)
+target_link_libraries(jnimoses boost_test_exec_monitor)
+target_link_libraries(jnimoses boost_math_c99f)
+target_link_libraries(jnimoses boost_signals)
+target_link_libraries(jnimoses boost_coroutine)
+target_link_libraries(jnimoses boost_exception)
+target_link_libraries(jnimoses boost_wave)
+target_link_libraries(jnimoses boost_mpi_python-py27)
+target_link_libraries(jnimoses boost_random)
+target_link_libraries(jnimoses boost_atomic)
+target_link_libraries(jnimoses boost_math_tr1f)
+target_link_libraries(jnimoses boost_program_options)
+target_link_libraries(jnimoses boost_mpi_python-py33)
+target_link_libraries(jnimoses boost_python)
+target_link_libraries(jnimoses boost_filesystem)
+target_link_libraries(jnimoses boost_chrono)
+target_link_libraries(jnimoses boost_thread)
+target_link_libraries(jnimoses boost_system)
+target_link_libraries(jnimoses boost_timer)
+target_link_libraries(jnimoses boost_math_c99)
+target_link_libraries(jnimoses boost_iostreams)
+target_link_libraries(jnimoses boost_serialization)
+target_link_libraries(jnimoses boost_log_setup)
+target_link_libraries(jnimoses boost_unit_test_framework)
+target_link_libraries(jnimoses boost_prg_exec_monitor)
+target_link_libraries(jnimoses boost_log)
+target_link_libraries(jnimoses boost_regex)
+target_link_libraries(jnimoses boost_mpi)
+target_link_libraries(jnimoses boost_math_c99l)
+target_link_libraries(jnimoses boost_python-py34)
+target_link_libraries(jnimoses boost_date_time)
+target_link_libraries(jnimoses boost_python-py33)
+target_link_libraries(jnimoses boost_python-py27)
+target_link_libraries(jnimoses boost_mpi_python-py34)
+target_link_libraries(jnimoses boost_graph_parallel)
