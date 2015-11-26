@@ -1,0 +1,106 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>mmt-root</artifactId>
+        <groupId>eu.modernmt</groupId>
+        <version>0.1-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>decoder</artifactId>
+    <packaging>jar</packaging>
+
+    <name>decoder</name>
+    <url>http://www.modernmt.eu/</url>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <project.nativedir>${project.basedir}/native</project.nativedir>
+        <project.nativedir.headers>${project.nativedir}/jheaders</project.nativedir.headers>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>${project.nativedir.headers}</directory>
+                            <includes>
+                                <include>**/*.h</include>
+                            </includes>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.4.0</version>
+                <executions>
+
+                    <!-- Generate headers with javah -->
+                    <execution>
+                        <id>headers-generate</id>
+                        <phase>generate-sources</phase>
+
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+
+                        <configuration>
+                            <executable>javah</executable>
+                            <workingDirectory>${project.build.sourceDirectory}</workingDirectory>
+                            <arguments>
+                                <argument>-d</argument>
+                                <argument>${project.nativedir.headers}</argument>
+
+                                <!-- All native classes -->
+                                <argument>eu.modernmt.decoder.moses.MosesDecoder</argument>
+
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <!-- Run CMake to generate makefile -->
+                    <execution>
+                        <id>cmake-generate</id>
+                        <phase>compile</phase>
+
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+
+                        <configuration>
+                            <executable>cmake</executable>
+                            <workingDirectory>${project.build.directory}</workingDirectory>
+                            <arguments>
+                                <argument>${project.nativedir}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <!-- Run Make to compile native project -->
+                    <execution>
+                        <id>cmake-compile</id>
+                        <phase>compile</phase>
+
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+
+                        <configuration>
+                            <executable>make</executable>
+                            <workingDirectory>${project.build.directory}</workingDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
