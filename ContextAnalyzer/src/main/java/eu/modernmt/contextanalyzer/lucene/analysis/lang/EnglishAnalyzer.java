@@ -12,30 +12,30 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 public class EnglishAnalyzer extends LanguageAnalyzer {
 
-	public EnglishAnalyzer(AnalyzerConfig config) {
-		super(config, org.apache.lucene.analysis.en.EnglishAnalyzer.getDefaultStopSet());
-	}
+    public EnglishAnalyzer(AnalyzerConfig config) {
+        super(config, org.apache.lucene.analysis.en.EnglishAnalyzer.getDefaultStopSet());
+    }
 
-	@Override
-	protected TokenStreamComponents createComponents(String fieldName) {
-		final Tokenizer source = new StandardTokenizer();
+    @Override
+    protected TokenStreamComponents createComponents(String fieldName) {
+        final Tokenizer source = new StandardTokenizer();
 
-		TokenStream result = new StandardFilter(source);
+        TokenStream result = new StandardFilter(source);
 
-		if (config.removeElisions)
-			result = new EnglishPossessiveFilter(result);
-		if (config.toLowerCase)
-			result = new LowerCaseFilter(result);
-		if (config.filterStopWords)
-			result = new StopFilter(result, stopwords);
-		if (config.enableStemming) {
-			if (stemmingExclusionSet != null && !stemmingExclusionSet.isEmpty())
-				result = new SetKeywordMarkerFilter(result, stemmingExclusionSet);
+        if (config.removeElisions)
+            result = new EnglishPossessiveFilter(result);
+        if (config.toLowerCase)
+            result = new LowerCaseFilter(result);
+        if (config.filterStopWords)
+            result = new StopFilter(result, stopwords);
+        if (config.enableStemming) {
+            if (stemmingExclusionSet != null && !stemmingExclusionSet.isEmpty())
+                result = new SetKeywordMarkerFilter(result, stemmingExclusionSet);
 
-			result = new PorterStemFilter(result);
-		}
+            result = new PorterStemFilter(result);
+        }
 
-		return new TokenStreamComponents(source, result);
-	}
+        return new TokenStreamComponents(source, result);
+    }
 
 }

@@ -1,10 +1,12 @@
 package eu.modernmt.contextanalyzer;
 
-import eu.modernmt.contextanalyzer.lucene.LuceneController;
+import eu.modernmt.contextanalyzer.lucene.ContextAnalyzerIndex;
+import eu.modernmt.contextanalyzer.lucene.LuceneTranslationContext;
 import eu.modernmt.contextanalyzer.lucene.ScoreDocument;
-import eu.modernmt.corpus.Corpus;
-import eu.modernmt.corpus.FileCorpus;
-import eu.modernmt.corpus.SimpleCorpus;
+import eu.modernmt.model.context.TranslationContext;
+import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.corpus.FileCorpus;
+import eu.modernmt.model.corpus.StringCorpus;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,34 +23,18 @@ import java.util.List;
  */
 public final class ContextAnalyzer {
 
-    private static final Logger logger = LogManager.getLogger(ContextAnalyzer.class);
-    private static ContextAnalyzer instance = null;
+    private final Logger logger = LogManager.getLogger(ContextAnalyzer.class);
+    private ContextAnalyzerIndex index;
 
-    public static void setConfig(ContextAnalyzerConfig config) {
-        if (instance != null)
-            throw new IllegalStateException("Context analyzer config already set");
-
-        instance = new ContextAnalyzer(config);
+    public ContextAnalyzer(File indexPath) throws IOException {
+        this.index = new ContextAnalyzerIndex(indexPath);
     }
 
-    public static ContextAnalyzer getInstance() {
-        if (instance == null)
-            throw new IllegalStateException("Context analyzer config not set");
-
-        return instance;
-    }
-
-    private final LuceneController lucene;
-
-    private ContextAnalyzer(ContextAnalyzerConfig config) {
-        this.lucene = new LuceneController(config.indexPath);
-    }
-
-    public void reindex(File basePath, String lang) throws IOException {
-        logger.info("Refreshing Lucene index...");
-
+    public void rebuild(File basePath, String lang) throws IOException {
         if (!basePath.exists())
-            throw new FileNotFoundException(basePath.toString());
+            throw new FileNotFoundException(basePath.getAbsolutePath());
+
+        logger.info("Rebuild ContextAnalyzer index...");
 
         String[] filter = lang == null ? null : new String[]{lang};
         Collection<File> files = FileUtils.listFiles(basePath, filter, false);
@@ -58,25 +44,24 @@ public final class ContextAnalyzer {
             corpora.add(new FileCorpus(file));
 
         long now = System.currentTimeMillis();
-        lucene.reindex(corpora);
+        this.index.clear();
+        this.index.addCorpora(corpora);
         long elapsed = (System.currentTimeMillis() - now) / 1000L;
 
-        logger.info("Lucene index refresh completed in " + elapsed + "s.");
+        logger.info("ContextAnalyzer index rebuild completed in " + elapsed + "s.");
     }
 
-    public Context getContext(String query, String lang, int limit) throws IOException {
-        return getContext(new SimpleCorpus("QueryDoc", lang, query), limit);
+    public TranslationContext getContext(String query, String lang, int limit) throws IOException {
+        return getContext(new StringCorpus("QueryDoc", lang, query), limit);
     }
 
-    public Context getContext(File source, String lang, int limit) throws IOException {
+    public TranslationContext getContext(File source, String lang, int limit) throws IOException {
         return getContext(new FileCorpus(source, "QueryDoc", lang), limit);
     }
 
-    public Context getContext(Corpus query, int limit) throws IOException {
-        long start = System.currentTimeMillis();
-        List<ScoreDocument> documents = lucene.getSimilarDocuments(query, limit);
-        double elapsedTime = (System.currentTimeMillis() - start);
+    public TranslationContext getContext(Corpus query, int limit) throws IOException {
+        List<ScoreDocument> documents = this.index.getSimilarDocuments(query, limit);
+        return new LuceneTranslationContext(documents);
 
-        return new Context(documents, elapsedTime / 1000.);
     }
 }

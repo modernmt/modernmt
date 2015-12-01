@@ -7,10 +7,10 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>decoder</artifactId>
+    <artifactId>mmt-decoder</artifactId>
     <packaging>jar</packaging>
 
-    <name>decoder</name>
+    <name>MMT Decoder (Moses based)</name>
     <url>http://www.modernmt.eu/</url>
 
     <properties>
@@ -103,4 +103,12 @@
             </plugin>
         </plugins>
     </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>eu.modernmt</groupId>
+            <artifactId>mmt-common</artifactId>
+            <version>0.1-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
 </project>

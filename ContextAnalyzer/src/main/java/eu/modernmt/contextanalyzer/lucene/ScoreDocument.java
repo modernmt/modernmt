@@ -1,9 +1,11 @@
 package eu.modernmt.contextanalyzer.lucene;
 
+import eu.modernmt.model.context.ContextDocument;
+
 /**
  * Created by davide on 10/07/15.
  */
-public class ScoreDocument implements Comparable<ScoreDocument> {
+public class ScoreDocument implements Comparable<ScoreDocument>, ContextDocument {
 
     public final String name;
     public float matchingScore;
@@ -11,6 +13,11 @@ public class ScoreDocument implements Comparable<ScoreDocument> {
 
     public ScoreDocument(String name) {
         this.name = name;
+    }
+
+    @Override
+    public String getId() {
+        return name;
     }
 
     @Override
@@ -33,16 +40,9 @@ public class ScoreDocument implements Comparable<ScoreDocument> {
         return name.hashCode();
     }
 
-
     @Override
     public String toString() {
-        StringBuilder result = new StringBuilder();
-        result.append(name);
-        result.append("<S:");
-        result.append(similarityScore);
-        result.append(", M:");
-        result.append(matchingScore);
-        result.append('>');
-        return result.toString();
+        return name + "<S:" + similarityScore + ", M:" + matchingScore + '>';
     }
+
 }

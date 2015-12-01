@@ -17,11 +17,35 @@ JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_init
 
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
- * Method:    translate
- * Signature: (Ljava/lang/String;)Ljava/lang/String;
+ * Method:    getFeatureWeights
+ * Signature: ()Ljava/util/List;
  */
-JNIEXPORT jstring JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_translate
-  (JNIEnv *, jobject, jstring);
+JNIEXPORT jobject JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_getFeatureWeights
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     eu_modernmt_decoder_moses_MosesDecoder
+ * Method:    createSession
+ * Signature: (Ljava/util/Map;)J
+ */
+JNIEXPORT jlong JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_createSession
+  (JNIEnv *, jobject, jobject);
+
+/*
+ * Class:     eu_modernmt_decoder_moses_MosesDecoder
+ * Method:    closeSession
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_closeSession
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     eu_modernmt_decoder_moses_MosesDecoder
+ * Method:    translate
+ * Signature: (Ljava/lang/String;JLjava/util/Map;I)Leu/modernmt/decoder/Translation;
+ */
+JNIEXPORT jobject JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_translate
+  (JNIEnv *, jobject, jstring, jlong, jobject, jint);
 
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder

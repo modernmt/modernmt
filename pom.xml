@@ -7,9 +7,12 @@
     <version>0.1-SNAPSHOT</version>
 
     <modules>
+        <module>Common</module>
         <module>Decoder</module>
         <module>ContextAnalyzer</module>
-        <module>Common</module>
+        <module>Messaging-ZeroMQ</module>
+        <module>Core</module>
+        <module>Messaging</module>
     </modules>
 
     <packaging>pom</packaging>
@@ -20,6 +23,8 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <lucene.version>5.2.1</lucene.version>
     </properties>
 
     <dependencies>

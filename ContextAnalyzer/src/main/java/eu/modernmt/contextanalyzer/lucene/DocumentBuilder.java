@@ -1,7 +1,7 @@
 package eu.modernmt.contextanalyzer.lucene;
 
 import eu.modernmt.contextanalyzer.lucene.analysis.CorpusContentField;
-import eu.modernmt.corpus.Corpus;
+import eu.modernmt.model.corpus.Corpus;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
