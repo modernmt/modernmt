@@ -1,12 +1,11 @@
 package eu.modernmt.decoder.moses;
 
+import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.*;
-import eu.modernmt.model.Sentence;
-import eu.modernmt.model.context.ContextDocument;
-import eu.modernmt.model.context.TranslationContext;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,79 +20,128 @@ public class MosesDecoder implements Decoder {
     }
 
     private long nativeHandle;
-    private File inifile;
 
-    public MosesDecoder(File inifile) {
-        this.inifile = inifile;
-        this.init(inifile.getAbsolutePath());
+    private MosesINI mosesINI;
+    private HashMap<Long, MosesSession> sessions;
+
+    public MosesDecoder(File file) throws IOException {
+        this.mosesINI = MosesINI.load(file);
+        this.sessions = new HashMap<>();
+
+        this.init(file.getAbsolutePath());
     }
 
-    private native void init(String mosesIni);
+    private native void init(String inifile);
 
-    @Override
-    public native List<DecoderFeature> getFeatureWeights();
+    public native MosesFeature[] getFeatures();
 
-    @Override
-    public void setFeatureWeights(List<DecoderFeature> features) {
-        // TODO:
-        throw new UnsupportedOperationException();
+    public native float[] getFeatureWeights(MosesFeature feature);
+
+    public void updateFeatureWeights(Map<String, float[]> featureName2Weights) {
+        mosesINI.updateWeights(featureName2Weights);
+        try {
+            mosesINI.save();
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to write moses.ini", e);
+        }
+
+        this.dispose();
+        this.init(mosesINI.getFile().getAbsolutePath());
     }
 
     @Override
-    public DecoderSession openSession(TranslationContext translationContext) {
-        long sessionId = this.createSession(context2map(translationContext));
-        return new MosesSession(this, sessionId, translationContext);
+    public TranslationSession openSession(List<ContextDocument> translationContext) {
+        long sessionId = createSession(parse(translationContext));
+        MosesSession session = new MosesSession(sessionId, translationContext, this);
+        this.sessions.put(sessionId, session);
+
+        return session;
+    }
+
+    private native long createSession(Map<String, Float> translationContext);
+
+    public void closeSession(long id) {
+        MosesSession session = this.sessions.remove(id);
+        if (session != null)
+            destroySession(id);
+    }
+
+    private native void destroySession(long id);
+
+    @Override
+    public TranslationSession getSession(long id) {
+        return sessions.get(id);
     }
 
     @Override
     public Translation translate(Sentence text) {
-        return translate(text.toString(), 0L, null, 0);
+        TranslationExchangeObject translation = translate(text.toString(), null, 0L, 0);
+        return new Translation(translation.text, text);
     }
 
     @Override
-    public Translation translate(Sentence text, TranslationContext translationContext) {
-        return translate(text.toString(), 0L, context2map(translationContext), 0);
+    public Translation translate(Sentence text, List<ContextDocument> translationContext) {
+        TranslationExchangeObject translation = translate(text.toString(), parse(translationContext), 0L, 0);
+        return new Translation(translation.text, text);
     }
 
     @Override
-    public Translation translate(Sentence text, DecoderSession session) {
-        return translate(text.toString(), session.getId(), null, 0);
+    public Translation translate(Sentence text, TranslationSession session) {
+        TranslationExchangeObject translation = translate(text.toString(), null, session.getId(), 0);
+        return new Translation(translation.text, text);
     }
 
     @Override
-    public Translation translate(Sentence text, DecoderSession session, int nbestListSize) {
-        return translate(text.toString(), session.getId(), null, nbestListSize);
+    public List<TranslationHypothesis> translate(Sentence text, int nbestListSize) {
+        return translate(text.toString(), null, 0L, nbestListSize).getHypotheses(text);
     }
 
-    protected native long createSession(Map<String, Float> translationContext);
-
-    protected native void closeSession(long session);
-
-    protected native Translation translate(String text, long session, Map<String, Float> translationContext, int nbestListSize);
-
-    protected native void dispose();
-
-    private Map<String, Float> context2map(TranslationContext translationContext) {
-        if (translationContext == null)
-            return null;
-
-        HashMap<String, Float> map = new HashMap<>();
-        for (ContextDocument document : translationContext.getDocuments()) {
-            map.put(document.getId(), translationContext.getScore(document));
-        }
-
-        return map;
+    @Override
+    public List<TranslationHypothesis> translate(Sentence text, List<ContextDocument> translationContext, int nbestListSize) {
+        return translate(text.toString(), parse(translationContext), 0L, nbestListSize).getHypotheses(text);
     }
 
+    @Override
+    public List<TranslationHypothesis> translate(Sentence text, TranslationSession session, int nbestListSize) {
+        return translate(text.toString(), null, session.getId(), nbestListSize).getHypotheses(text);
+    }
+
+    private native TranslationExchangeObject translate(String text, Map<String, Float> translationContext, long session, int nbest);
 
     @Override
     protected void finalize() throws Throwable {
-        dispose();
+        super.finalize();
+        close();
     }
 
     @Override
     public void close() throws IOException {
         dispose();
+    }
+
+    protected native void dispose();
+
+    private static Map<String, Float> parse(List<ContextDocument> translationContext) {
+        if (translationContext == null)
+            return null;
+
+        HashMap<String, Float> map = new HashMap<>();
+        for (ContextDocument document : translationContext) {
+            map.put(document.getId(), document.getScore());
+        }
+
+        return map;
+    }
+
+    public static void main(String[] args) throws Throwable {
+        MosesDecoder moses = new MosesDecoder(new File("/Users/davide/workspaces/mmt/ModernMT.bak/engines/default/data/moses.ini"));
+        MosesFeature[] features = moses.getFeatures();
+
+        System.out.println(Arrays.toString(features));
+
+        for (MosesFeature feature : features) {
+            System.out.println(feature + " " + Arrays.toString(moses.getFeatureWeights(feature)));
+        }
     }
 
 }

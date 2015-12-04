@@ -107,7 +107,7 @@
     <dependencies>
         <dependency>
             <groupId>eu.modernmt</groupId>
-            <artifactId>mmt-common</artifactId>
+            <artifactId>mmt-context-analyzer</artifactId>
             <version>0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>

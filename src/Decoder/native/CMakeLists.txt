@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.2)
 project(jnimoses)
 
+file(GLOB WRAPPER_SRC src/wrapper/*.h src/wrapper/*.cpp)
+file(GLOB JNI_SRC src/jni/*.h src/jni/*.cpp)
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-set(SOURCE_FILES src/main.cpp src/jni/handle.h src/jni/eu_modernmt_decoder_moses_MosesDecoder.cpp src/wrapper/MosesDecoder.cpp src/wrapper/MosesDecoder.h src/jni/jconv.h src/wrapper/Feature.cpp src/wrapper/Feature.h src/jni/jconv.cpp src/wrapper/Translation.cpp src/wrapper/Translation.h src/wrapper/TranslationHypothesis.cpp src/wrapper/TranslationHypothesis.h)
-add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
-# add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+add_library(${PROJECT_NAME} SHARED ${WRAPPER_SRC} ${JNI_SRC})
 
 include_directories(src)
 include_directories(libs/include)

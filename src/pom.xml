@@ -7,16 +7,13 @@
     <version>0.1-SNAPSHOT</version>
 
     <modules>
-        <module>Common</module>
-        <module>Decoder</module>
-        <module>ContextAnalyzer</module>
-        <module>Messaging-ZeroMQ</module>
         <module>Core</module>
-        <module>Messaging</module>
+        <module>ContextAnalyzer</module>
+        <module>Decoder</module>
     </modules>
 
     <packaging>pom</packaging>
-    <name>mmt-root</name>
+    <name>MMT Root project</name>
     <url>http://www.modernmt.eu/</url>
 
     <properties>

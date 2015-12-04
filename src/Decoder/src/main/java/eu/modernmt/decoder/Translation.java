@@ -1,7 +1,5 @@
 package eu.modernmt.decoder;
 
-import eu.modernmt.model.Sentence;
-
 import java.util.List;
 
 /**
@@ -9,25 +7,20 @@ import java.util.List;
  */
 public class Translation extends Sentence {
 
-    private List<TranslationHypothesis> nbestList;
+    private Sentence source;
 
-    public Translation(String rawText, List<TranslationHypothesis> nbestList) {
+    public Translation(String rawText, Sentence source) {
         super(rawText);
-        this.nbestList = nbestList;
+        this.source = source;
     }
 
-    public Translation(List<String> tokens, List<TranslationHypothesis> nbestList) {
+    public Translation(List<String> tokens, Sentence source) {
         super(tokens);
-        this.nbestList = nbestList;
+        this.source = source;
     }
 
-    public Translation(String[] tokens, List<TranslationHypothesis> nbestList) {
+    public Translation(String[] tokens, Sentence source) {
         super(tokens);
-        this.nbestList = nbestList;
+        this.source = source;
     }
-
-    public List<TranslationHypothesis> getNBestList() {
-        return nbestList;
-    }
-
 }

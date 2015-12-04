@@ -1,33 +1,56 @@
 //
-// Created by Davide  Caroselli on 26/11/15.
+// Created by Davide  Caroselli on 03/12/15.
 //
 
-#ifndef MMTDECODERJNI_JNIMOSESDECODER_H
-#define MMTDECODERJNI_JNIMOSESDECODER_H
+#ifndef JNIMOSES_MOSESDECODER_H
+#define JNIMOSES_MOSESDECODER_H
 
+#include <vector>
 #include <string>
-#include <moses/server/Server.h>
-#include "Feature.h"
-#include "Translation.h"
+#include <map>
+#include <float.h>
+
+typedef struct {
+    bool stateless;
+    bool tunable;
+    std::string name;
+    void *ptr;
+} feature_t;
+
+typedef struct {
+    std::string text;
+    float score;
+    std::string fvals;
+} hypothesis_t;
+
+typedef struct {
+    std::string text;
+    int64_t session;
+    std::vector<hypothesis_t> hypotheses;
+} translation_t;
 
 namespace JNIWrapper {
     class MosesDecoder {
-        MosesServer::Server m_server;
-        xmlrpc_c::methodPtr m_translator;
-
     public:
+        static constexpr float UNTUNEABLE_COMPONENT = FLT_MAX;
 
-        MosesDecoder(Moses::Parameter &);
+        static MosesDecoder *createInstance(const char *inifile);
 
-        std::vector<Feature> getFeatureWeights();
+        virtual std::vector<feature_t> getFeatures() = 0;
 
-        Translation translate(const std::string &text, uint64_t session,
-                              const std::map<std::string, float> *translationContext, size_t nbestListSize);
+        virtual std::vector<float> getFeatureWeights(feature_t &feature) = 0;
 
-        int64_t openSession(const std::map<std::string, float> &translationContext);
+        virtual int64_t openSession(const std::map<std::string, float> &translationContext) = 0;
 
-        void closeSession(uint64_t session);
+        virtual void closeSession(uint64_t session) = 0;
+
+        virtual translation_t translate(const std::string &text, uint64_t session,
+                                        const std::map<std::string, float> *translationContext,
+                                        size_t nbestListSize) = 0;
+
+        virtual ~MosesDecoder() { }
     };
 }
 
-#endif //MMTDECODERJNI_JNIMOSESDECODER_H
+
+#endif //JNIMOSES_MOSESDECODER_H

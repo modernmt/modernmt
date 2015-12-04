@@ -1,51 +1,54 @@
 package eu.modernmt.decoder.moses;
 
-import eu.modernmt.decoder.DecoderFeature;
-
 /**
  * Created by davide on 30/11/15.
  */
-public class MosesFeature implements DecoderFeature {
+public class MosesFeature {
+
+    public static final float UNTUNEABLE_COMPONENT = Float.MAX_VALUE;
 
     private String name;
-    private float[] weights;
+    private boolean tunable;
+    private boolean stateless;
+    private long ptr;
 
-    public MosesFeature(String name, float[] weights) {
+    public MosesFeature(String name, boolean tunable, boolean stateless, long ptr) {
         this.name = name;
-        this.weights = weights;
+        this.tunable = tunable;
+        this.stateless = stateless;
+        this.ptr = ptr;
     }
 
-    @Override
     public String getName() {
         return name;
     }
 
+    public boolean isTunable() {
+        return tunable;
+    }
+
+    public boolean isStateless() {
+        return stateless;
+    }
+
     @Override
-    public float[] getWeights() {
-        return weights;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MosesFeature feature = (MosesFeature) o;
+
+        return name.equals(feature.name);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return name.hashCode();
     }
 
     @Override
     public String toString() {
-        StringBuilder text = new StringBuilder();
-        text.append(name);
-
-        if (weights == null) {
-            text.append("[NULL]");
-        } else {
-            text.append('[');
-            for (int i = 0; i < weights.length; i++) {
-                if (weights[i] == UNTUNEABLE)
-                    text.append('*');
-                else
-                    text.append(weights[i]);
-
-                if (i < weights.length - 1)
-                    text.append(' ');
-            }
-            text.append(']');
-        }
-
-        return text.toString();
+        return name;
     }
 }

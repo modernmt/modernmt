@@ -1,7 +1,6 @@
 package eu.modernmt.decoder;
 
-import eu.modernmt.model.Sentence;
-import eu.modernmt.model.context.TranslationContext;
+import eu.modernmt.context.ContextDocument;
 
 import java.io.Closeable;
 import java.util.List;
@@ -11,19 +10,25 @@ import java.util.List;
  */
 public interface Decoder extends Closeable {
 
-    List<DecoderFeature> getFeatureWeights();
+    // Translation session
 
-    void setFeatureWeights(List<DecoderFeature> features);
+    TranslationSession openSession(List<ContextDocument> translationContext);
 
-    DecoderSession openSession(TranslationContext translationContext);
+    TranslationSession getSession(long id);
+
+    // Translate
 
     Translation translate(Sentence text);
 
-    Translation translate(Sentence text, TranslationContext translationContext);
+    Translation translate(Sentence text, List<ContextDocument> translationContext);
 
-    Translation translate(Sentence text, DecoderSession session);
+    Translation translate(Sentence text, TranslationSession session);
 
-    Translation translate(Sentence text, DecoderSession session, int nbestListSize);
+    List<TranslationHypothesis> translate(Sentence text, int nbestListSize);
+
+    List<TranslationHypothesis> translate(Sentence text, List<ContextDocument> translationContext, int nbestListSize);
+
+    List<TranslationHypothesis> translate(Sentence text, TranslationSession session, int nbestListSize);
 
 
 }

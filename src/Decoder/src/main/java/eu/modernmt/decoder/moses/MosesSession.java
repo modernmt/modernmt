@@ -1,24 +1,20 @@
 package eu.modernmt.decoder.moses;
 
-import eu.modernmt.decoder.DecoderSession;
-import eu.modernmt.model.context.TranslationContext;
+import eu.modernmt.context.ContextDocument;
+import eu.modernmt.decoder.TranslationSession;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Created by davide on 01/12/15.
  */
-public class MosesSession extends DecoderSession {
+public class MosesSession extends TranslationSession {
 
     private MosesDecoder moses;
 
-    public MosesSession(MosesDecoder moses, long id, TranslationContext translationContext) {
+    public MosesSession(long id, List<ContextDocument> translationContext, MosesDecoder moses) {
         super(id, translationContext);
-        this.moses = moses;
-    }
-
-    public MosesSession(MosesDecoder moses, long id, TranslationContext translationContext, long lifetime) {
-        super(id, translationContext, lifetime);
         this.moses = moses;
     }
 

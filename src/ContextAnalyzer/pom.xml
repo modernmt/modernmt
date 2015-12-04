@@ -19,12 +19,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>eu.modernmt</groupId>
-            <artifactId>mmt-common</artifactId>
-            <version>0.1-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
             <version>${lucene.version}</version>
