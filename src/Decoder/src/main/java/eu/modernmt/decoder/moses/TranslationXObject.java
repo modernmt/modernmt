@@ -8,12 +8,12 @@ import java.util.*;
 /**
  * Created by davide on 02/12/15.
  */
-class TranslationExchangeObject {
+class TranslationXObject {
 
     private static List<TranslationHypothesis.Score> parse(String fvals) {
         List<TranslationHypothesis.Score> result = new ArrayList<>();
 
-        String[] tokens = fvals.split("\\s+");
+        String[] tokens = fvals.trim().split("\\s+");
 
         String feature = null;
         float[] scores = new float[tokens.length];
@@ -41,7 +41,10 @@ class TranslationExchangeObject {
     }
 
     public List<TranslationHypothesis> getHypotheses(Sentence source) {
-        List<TranslationHypothesis> result = new ArrayList<>(nbestList.size());
+        if (nbestList == null || nbestList.length == 0)
+            return Collections.emptyList();
+
+        List<TranslationHypothesis> result = new ArrayList<>(nbestList.length);
 
         for (Hypothesis hyp : nbestList) {
             List<TranslationHypothesis.Score> scores = parse(hyp.fvals);
@@ -55,9 +58,20 @@ class TranslationExchangeObject {
         public String text;
         public float totalScore;
         public String fvals;
+
+        public Hypothesis(String text, float totalScore, String fvals) {
+            this.text = text;
+            this.totalScore = totalScore;
+            this.fvals = fvals;
+        }
     }
 
     public String text;
-    public List<Hypothesis> nbestList;
+    public Hypothesis[] nbestList;
+
+    public TranslationXObject(String text, Hypothesis[] nbestList) {
+        this.text = text;
+        this.nbestList = nbestList;
+    }
 
 }

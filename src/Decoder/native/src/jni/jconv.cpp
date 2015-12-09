@@ -24,38 +24,6 @@ float jni_jfloattofloat(JNIEnv *jvm, jobject value) {
     return jvm->CallFloatMethod(value, FloatValue);
 }
 
-// ArrayList
-
-typedef struct {
-    jclass _class = NULL;
-    jmethodID _constructor_I = NULL;
-    jmethodID add = NULL;
-} ArrayList_t;
-
-static ArrayList_t __ArrayList;
-
-ArrayList_t GetArrayList(JNIEnv *jvm) {
-    if (__ArrayList._class == NULL) {
-        __ArrayList._class = JNILoadClass(jvm, "Ljava/util/ArrayList;");
-        __ArrayList._constructor_I = jvm->GetMethodID(__ArrayList._class, "<init>", "(I)V");
-        __ArrayList.add = jvm->GetMethodID(__ArrayList._class, "add", "(Ljava/lang/Object;)Z");
-    }
-
-    return __ArrayList;
-}
-
-jobject jni_arraylist(JNIEnv *jvm, size_t size) {
-    ArrayList_t ArrayList = GetArrayList(jvm);
-
-    jsize listSize = (jsize) size;
-    return jvm->NewObject(ArrayList._class, ArrayList._constructor_I, listSize);
-}
-
-bool jni_arraylist_add(JNIEnv *jvm, jobject list, jobject element) {
-    ArrayList_t ArrayList = GetArrayList(jvm);
-    return jvm->CallBooleanMethod(list, ArrayList.add, element);
-}
-
 // Map
 
 typedef struct {

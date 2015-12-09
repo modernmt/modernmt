@@ -5,7 +5,6 @@ import eu.modernmt.decoder.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,19 +74,19 @@ public class MosesDecoder implements Decoder {
 
     @Override
     public Translation translate(Sentence text) {
-        TranslationExchangeObject translation = translate(text.toString(), null, 0L, 0);
+        TranslationXObject translation = translate(text.toString(), null, 0L, 0);
         return new Translation(translation.text, text);
     }
 
     @Override
     public Translation translate(Sentence text, List<ContextDocument> translationContext) {
-        TranslationExchangeObject translation = translate(text.toString(), parse(translationContext), 0L, 0);
+        TranslationXObject translation = translate(text.toString(), parse(translationContext), 0L, 0);
         return new Translation(translation.text, text);
     }
 
     @Override
     public Translation translate(Sentence text, TranslationSession session) {
-        TranslationExchangeObject translation = translate(text.toString(), null, session.getId(), 0);
+        TranslationXObject translation = translate(text.toString(), null, session.getId(), 0);
         return new Translation(translation.text, text);
     }
 
@@ -106,7 +105,7 @@ public class MosesDecoder implements Decoder {
         return translate(text.toString(), null, session.getId(), nbestListSize).getHypotheses(text);
     }
 
-    private native TranslationExchangeObject translate(String text, Map<String, Float> translationContext, long session, int nbest);
+    private native TranslationXObject translate(String text, Map<String, Float> translationContext, long session, int nbest);
 
     @Override
     protected void finalize() throws Throwable {
@@ -131,17 +130,6 @@ public class MosesDecoder implements Decoder {
         }
 
         return map;
-    }
-
-    public static void main(String[] args) throws Throwable {
-        MosesDecoder moses = new MosesDecoder(new File("/Users/davide/workspaces/mmt/ModernMT.bak/engines/default/data/moses.ini"));
-        MosesFeature[] features = moses.getFeatures();
-
-        System.out.println(Arrays.toString(features));
-
-        for (MosesFeature feature : features) {
-            System.out.println(feature + " " + Arrays.toString(moses.getFeatureWeights(feature)));
-        }
     }
 
 }

@@ -5,7 +5,7 @@
 #include "JMosesFeature.h"
 #include "jconv.h"
 
-static JMosesFeature *__instance = NULL;
+static JMosesFeature *__JMosesFeature_instance = NULL;
 
 JMosesFeature::JMosesFeature(JNIEnv *jvm) : _class(JNILoadClass(jvm, "eu/modernmt/decoder/moses/MosesFeature")) {
     constructor = jvm->GetMethodID(_class, "<init>", "(Ljava/lang/String;ZZJ)V");
@@ -16,10 +16,10 @@ JMosesFeature::JMosesFeature(JNIEnv *jvm) : _class(JNILoadClass(jvm, "eu/modernm
 }
 
 JMosesFeature *JMosesFeature::instance(JNIEnv *jvm) {
-    if (__instance == NULL)
-        __instance = new JMosesFeature(jvm);
+    if (__JMosesFeature_instance == NULL)
+        __JMosesFeature_instance = new JMosesFeature(jvm);
 
-    return __instance;
+    return __JMosesFeature_instance;
 }
 
 jobject JMosesFeature::create(JNIEnv *jvm, std::string &name, bool tunable, bool stateless, void *ptr) {

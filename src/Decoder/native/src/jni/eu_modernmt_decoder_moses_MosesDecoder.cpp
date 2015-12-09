@@ -8,10 +8,29 @@
 #include <wrapper/MosesDecoder.h>
 #include <stdlib.h>
 #include "JMosesFeature.h"
+#include "JTranslation.h"
 
 using namespace JNIWrapper;
 
-std::map<std::string, float> __parse_context(JNIEnv *, jobject);
+/*
+ * Util function to translate a Java hash map to a std::map
+ */
+std::map<std::string, float> __parse_context(JNIEnv *jvm, jobject jcontext) {
+    std::map<std::string, float> context;
+
+    jobject iterator = jni_mapiterator(jvm, jcontext);
+
+    while (jni_maphasnext(jvm, iterator)) {
+        jobject entry = jni_mapnext(jvm, iterator);
+
+        std::string key = jni_jstrtostr(jvm, (jstring) jni_mapgetkey(jvm, entry));
+        float value = jni_jfloattofloat(jvm, jni_mapgetvalue(jvm, entry));
+
+        context[key] = value;
+    }
+
+    return context;
+}
 
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
@@ -103,8 +122,43 @@ JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_destroySessio
  * Method:    translate
  * Signature: (Ljava/lang/String;Ljava/util/Map;JI)Leu/modernmt/decoder/moses/TranslationExchangeObject;
  */
-JNIEXPORT jobject JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_translate
-        (JNIEnv *, jobject, jstring, jobject, jlong, jint);
+JNIEXPORT jobject JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_translate(JNIEnv *jvm, jobject self, jstring text,
+                                                                                jobject translationContext,
+                                                                                jlong session, jint nbest) {
+    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, self);
+    std::string sentence = jni_jstrtostr(jvm, text);
+
+    translation_t translation;
+    if (translationContext != NULL) {
+        std::map<std::string, float> context = __parse_context(jvm, translationContext);
+        translation = instance->translate(sentence, (uint64_t) session, &context, (size_t) nbest);
+    } else {
+        translation = instance->translate(sentence, (uint64_t) session, NULL, (size_t) nbest);
+    }
+
+    jobjectArray hypothesesArray = NULL;
+    std::vector<hypothesis_t> hypotheses = translation.hypotheses;
+
+    if (hypotheses.size() > 0) {
+        JHypothesis *jHypothesis = JHypothesis::instance(jvm);
+        hypothesesArray = jvm->NewObjectArray((jsize) hypotheses.size(), jHypothesis->_class, nullptr);
+
+        for (size_t i = 0; i < hypotheses.size(); ++i) {
+            hypothesis_t hypothesis = hypotheses[i];
+            jobject jhypothesis = jHypothesis->create(jvm, hypothesis.text, hypothesis.score, hypothesis.fvals);
+            jvm->SetObjectArrayElement(hypothesesArray, (jsize) i, jhypothesis);
+            jvm->DeleteLocalRef(jhypothesis);
+        }
+    }
+
+    JTranslation *jTranslation = JTranslation::instance(jvm);
+    jobject jtranslation = jTranslation->create(jvm, translation.text, hypothesesArray);
+
+    if (hypothesesArray)
+        jvm->DeleteLocalRef(hypothesesArray);
+
+    return jtranslation;
+}
 
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
@@ -117,22 +171,7 @@ JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_dispose(JNIEn
     delete instance;
 }
 
-std::map<std::string, float> __parse_context(JNIEnv *jvm, jobject jcontext) {
-    std::map<std::string, float> context;
 
-    jobject iterator = jni_mapiterator(jvm, jcontext);
-
-    while (jni_maphasnext(jvm, iterator)) {
-        jobject entry = jni_mapnext(jvm, iterator);
-
-        std::string key = jni_jstrtostr(jvm, (jstring) jni_mapgetkey(jvm, entry));
-        float value = jni_jfloattofloat(jvm, jni_mapgetvalue(jvm, entry));
-
-        context[key] = value;
-    }
-
-    return context;
-}
 
 /*
  *
@@ -295,17 +334,5 @@ std::map<std::string, float> __parse_context(JNIEnv *jvm, jobject jcontext) {
 //                                                                                jlong session,
 //                                                                                jobject translationContext,
 //                                                                                jint nbestListSize) {
-//    std::string sentence = jni_jstrtostr(jvm, text);
 //
-//    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, self);
-//
-//    Translation translation;
-//    if (translationContext != NULL) {
-//        std::map<std::string, float> context = parse_context(jvm, translationContext);
-//        translation = instance->translate(sentence, (uint64_t) session, &context, (size_t) nbestListSize);
-//    } else {
-//        translation = instance->translate(sentence, (uint64_t) session, NULL, (size_t) nbestListSize);
-//    }
-//
-//    return create_Translation(jvm, translation);
 //}

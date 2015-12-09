@@ -51,4 +51,28 @@ public class TranslationHypothesis extends Translation implements Comparable<Tra
         return scores;
     }
 
+    @Override
+    public String toString() {
+        StringBuilder string = new StringBuilder();
+        string.append(super.toString());
+        string.append('{');
+
+        for (int j = 0; j < scores.size(); j++) {
+            Score score = scores.get(j);
+            string.append(score.component);
+            string.append(':');
+
+            for (int i = 0; i < score.scores.length; i++) {
+                string.append(score.scores[i]);
+                if (i < score.scores.length - 1)
+                    string.append(' ');
+            }
+
+            if (j < scores.size() - 1)
+                string.append(", ");
+        }
+
+        string.append('}');
+        return string.toString();
+    }
 }

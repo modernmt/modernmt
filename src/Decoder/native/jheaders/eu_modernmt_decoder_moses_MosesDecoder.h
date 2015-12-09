@@ -50,7 +50,7 @@ JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_destroySessio
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
  * Method:    translate
- * Signature: (Ljava/lang/String;Ljava/util/Map;JI)Leu/modernmt/decoder/moses/TranslationExchangeObject;
+ * Signature: (Ljava/lang/String;Ljava/util/Map;JI)Leu/modernmt/decoder/moses/TranslationXObject;
  */
 JNIEXPORT jobject JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_translate
   (JNIEnv *, jobject, jstring, jobject, jlong, jint);
