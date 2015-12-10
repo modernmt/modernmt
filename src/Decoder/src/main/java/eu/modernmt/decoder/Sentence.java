@@ -1,11 +1,12 @@
 package eu.modernmt.decoder;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  * Created by davide on 30/11/15.
  */
-public class Sentence {
+public class Sentence implements Serializable {
 
     protected String[] tokens;
 

@@ -12,7 +12,7 @@ public interface Decoder extends Closeable {
 
     // Translation session
 
-    TranslationSession openSession(List<ContextDocument> translationContext);
+    TranslationSession openSession(long id, List<ContextDocument> translationContext);
 
     TranslationSession getSession(long id);
 

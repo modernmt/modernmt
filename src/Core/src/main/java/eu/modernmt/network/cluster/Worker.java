@@ -24,7 +24,7 @@ public class Worker {
         this.id = UUIDSequence.next(UUIDSequence.SequenceType.WORKER);
         this.messagingService = messagingService;
         this.messagingService.setListener(new WorkerPacketListener());
-        this.messagingService.open();
+        this.messagingService.open(this.id);
     }
 
     public UUID getId() {
@@ -32,13 +32,16 @@ public class Worker {
     }
 
     protected CallableResponse execute(byte[] id, DistributedCallable<?> callable) {
-        CallableResponse response;
+        callable.setWorker(this);
 
+        CallableResponse response;
         try {
             response = new CallableResponse(id, callable.call());
         } catch (Exception e) {
-            response = new CallableResponse(id, e);
+            response = new CallableResponse(e, id);
         }
+
+        callable.setWorker(null);
 
         return response;
     }

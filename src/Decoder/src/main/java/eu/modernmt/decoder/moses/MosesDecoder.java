@@ -44,28 +44,28 @@ public class MosesDecoder implements Decoder {
             throw new RuntimeException("Unable to write moses.ini", e);
         }
 
-        this.dispose();
+        this.close();
         this.init(mosesINI.getFile().getAbsolutePath());
     }
 
     @Override
-    public TranslationSession openSession(List<ContextDocument> translationContext) {
-        long sessionId = createSession(parse(translationContext));
-        MosesSession session = new MosesSession(sessionId, translationContext, this);
-        this.sessions.put(sessionId, session);
+    public TranslationSession openSession(long id, List<ContextDocument> translationContext) {
+        long internalId = createSession(parse(translationContext));
+        MosesSession session = new MosesSession(id, translationContext, this, internalId);
+        this.sessions.put(id, session);
 
         return session;
     }
 
     private native long createSession(Map<String, Float> translationContext);
 
-    public void closeSession(long id) {
-        MosesSession session = this.sessions.remove(id);
+    void closeSession(MosesSession session) {
+        session = this.sessions.remove(session.getId());
         if (session != null)
-            destroySession(id);
+            destroySession(session.getInternalId());
     }
 
-    private native void destroySession(long id);
+    private native void destroySession(long internalId);
 
     @Override
     public TranslationSession getSession(long id) {
@@ -86,7 +86,7 @@ public class MosesDecoder implements Decoder {
 
     @Override
     public Translation translate(Sentence text, TranslationSession session) {
-        TranslationXObject translation = translate(text.toString(), null, session.getId(), 0);
+        TranslationXObject translation = translate(text.toString(), null, ((MosesSession) session).getInternalId(), 0);
         return new Translation(translation.text, text);
     }
 
@@ -102,7 +102,7 @@ public class MosesDecoder implements Decoder {
 
     @Override
     public List<TranslationHypothesis> translate(Sentence text, TranslationSession session, int nbestListSize) {
-        return translate(text.toString(), null, session.getId(), nbestListSize).getHypotheses(text);
+        return translate(text.toString(), null, ((MosesSession) session).getInternalId(), nbestListSize).getHypotheses(text);
     }
 
     private native TranslationXObject translate(String text, Map<String, Float> translationContext, long session, int nbest);
@@ -114,7 +114,8 @@ public class MosesDecoder implements Decoder {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
+        this.sessions.values().forEach(MosesSession::close);
         dispose();
     }
 

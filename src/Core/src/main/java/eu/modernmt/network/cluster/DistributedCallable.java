@@ -6,6 +6,16 @@ import java.util.concurrent.Callable;
 /**
  * Created by davide on 19/11/15.
  */
-public interface DistributedCallable<V extends Serializable> extends Serializable, Callable<V> {
+public abstract class DistributedCallable<V extends Serializable> implements Serializable, Callable<V> {
 
+    private Worker worker;
+
+    void setWorker(Worker worker) {
+        this.worker = worker;
+    }
+
+    public Worker getWorker() {
+        return worker;
+    }
+    
 }
