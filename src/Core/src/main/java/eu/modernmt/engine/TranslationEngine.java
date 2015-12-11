@@ -3,13 +3,17 @@ package eu.modernmt.engine;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.moses.MosesDecoder;
+import eu.modernmt.decoder.moses.MosesINI;
 import org.apache.commons.io.FileUtils;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -60,6 +64,8 @@ public class TranslationEngine {
     private Locale sourceLanguage;
     private ContextAnalyzer contextAnalyzer;
     private MosesDecoder decoder;
+    private File configFile;
+    private JSONObject config;
 
     private TranslationEngine(File engines, String id) throws IOException {
         this.id = id;
@@ -68,13 +74,19 @@ public class TranslationEngine {
         if (!root.isDirectory())
             throw new FileNotFoundException(root.toString());
 
-        File config = new File(this.root, ENGINE_CONFIG_PATH);
-        if (!config.isFile())
-            throw new FileNotFoundException(config.toString());
+        this.configFile = new File(this.root, ENGINE_CONFIG_PATH);
+        if (!configFile.isFile())
+            throw new FileNotFoundException(configFile.toString());
 
-        String content = FileUtils.readFileToString(config, "UTF-8");
-        JSONObject json = new JSONObject(content);
-        this.sourceLanguage = Locale.forLanguageTag(json.getJSONObject("engine").getString("source_language"));
+        String content = FileUtils.readFileToString(configFile, "UTF-8");
+        this.config = new JSONObject(content);
+        this.sourceLanguage = Locale.forLanguageTag(config.getJSONObject("engine").getString("source_language"));
+    }
+
+    public void setConfig(JSONObject config) throws IOException {
+        this.config = config;
+
+        FileUtils.write(configFile, config.toString(), "UTF-8", false);
     }
 
     public String getId() {
@@ -92,8 +104,15 @@ public class TranslationEngine {
 
     public Decoder getDecoder() throws IOException {
         if (decoder == null) {
-            File mosesIni = new File(this.root, MOSES_INI_PATH);
-            decoder = new MosesDecoder(mosesIni);
+            Map<String, float[]> weights = getDecoderWeights();
+            MosesINI mosesINI = MosesINI.load(new File(this.root, MOSES_INI_PATH));
+
+            if (weights != null) {
+                mosesINI.updateWeights(weights);
+                mosesINI.save();
+            }
+
+            decoder = new MosesDecoder(mosesINI);
         }
 
         return decoder;
@@ -102,4 +121,39 @@ public class TranslationEngine {
     public Locale getSourceLanguage() {
         return sourceLanguage;
     }
+
+    public Map<String, float[]> getDecoderWeights() {
+        JSONObject json = this.config.optJSONObject("weights");
+
+        if (json == null || json.length() == 0)
+            return null;
+
+        HashMap<String, float[]> weights = new HashMap<>();
+
+        for (String key : json.keySet()) {
+            JSONArray array = json.getJSONArray(key);
+
+            float[] floats = new float[array.length()];
+            for (int i = 0; i < array.length(); i++)
+                floats[i] = (float) array.getDouble(i);
+
+            weights.put(key, floats);
+        }
+
+        return weights;
+    }
+
+    public void setDecoderWeights(Map<String, float[]> weights) {
+        if (weights == null || weights.size() == 0)
+            this.config.remove("weights");
+        else
+            this.config.put("weights", weights);
+
+        try {
+            FileUtils.write(configFile, config.toString(), "UTF-8", false);
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to write engine config file");
+        }
+    }
+
 }

@@ -3,6 +3,7 @@ package eu.modernmt.network.cluster;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
@@ -13,10 +14,8 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class ExecutionQueue {
 
-    private static final DistributedTask<Serializable> POISON_PILL = new DistributedTask<>();
-
     private ConcurrentHashMap<UUID, DistributedTask<?>> pending = new ConcurrentHashMap<>();
-    private LinkedBlockingQueue<DistributedTask<?>> queue = new LinkedBlockingQueue<>();
+    private Queue<DistributedTask<?>> queue = new ConcurrentLinkedQueue<>();
     private boolean shutdown = false;
 
     private Lock terminationLock = new ReentrantLock();
@@ -24,23 +23,16 @@ public class ExecutionQueue {
 
     /**
      * Retrieves the next element in queue and moves it to pending queue.
-     * If this queue has been shut down, it returns null.
      *
-     * @return the next element in queue, or null if the queue has been shut down
+     * @return the next element in queue, or null if the queue is empty or has been shut down
      */
     public DistributedTask<?> next() {
         if (this.shutdown)
             return null;
 
-        DistributedTask<?> task;
+        DistributedTask<?> task = queue.poll();
 
-        try {
-            task = queue.take();
-        } catch (InterruptedException e) {
-            task = POISON_PILL;
-        }
-
-        if (task == POISON_PILL)
+        if (task == null)
             return null;
 
         if (!this.shutdown) {
@@ -53,6 +45,10 @@ public class ExecutionQueue {
         }
 
         return null;
+    }
+
+    public int size() {
+        return this.queue.size();
     }
 
     public boolean isShutdown() {
@@ -85,7 +81,6 @@ public class ExecutionQueue {
 
         this.shutdown = true;
         this.queue.clear();
-        this.queue.add(POISON_PILL);
 
         if (removeFromPending) {
             pending = new ArrayList<>(this.pending.size());

@@ -14,9 +14,8 @@ import java.util.UUID;
 public class UUIDSequence {
 
     public enum SequenceType {
-        TRANSLATION_SESSION(0),
+        MESSAGING_IDENTITY(0),
         DISTRIBUTED_TASK(1),
-        WORKER(2),
         ;
 
         private short id;

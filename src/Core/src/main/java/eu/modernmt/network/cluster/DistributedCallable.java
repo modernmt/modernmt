@@ -8,7 +8,7 @@ import java.util.concurrent.Callable;
  */
 public abstract class DistributedCallable<V extends Serializable> implements Serializable, Callable<V> {
 
-    private Worker worker;
+    private transient Worker worker;
 
     void setWorker(Worker worker) {
         this.worker = worker;
@@ -17,5 +17,5 @@ public abstract class DistributedCallable<V extends Serializable> implements Ser
     public Worker getWorker() {
         return worker;
     }
-    
+
 }

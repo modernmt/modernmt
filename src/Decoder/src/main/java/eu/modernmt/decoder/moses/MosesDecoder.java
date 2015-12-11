@@ -23,11 +23,11 @@ public class MosesDecoder implements Decoder {
     private MosesINI mosesINI;
     private HashMap<Long, MosesSession> sessions;
 
-    public MosesDecoder(File file) throws IOException {
-        this.mosesINI = MosesINI.load(file);
+    public MosesDecoder(MosesINI mosesINI) throws IOException {
+        this.mosesINI = mosesINI;
         this.sessions = new HashMap<>();
 
-        this.init(file.getAbsolutePath());
+        this.init(mosesINI.getFile().getAbsolutePath());
     }
 
     private native void init(String inifile);

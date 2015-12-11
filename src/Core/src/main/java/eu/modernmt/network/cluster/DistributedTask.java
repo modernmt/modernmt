@@ -9,7 +9,7 @@ import java.util.concurrent.*;
 /**
  * Created by davide on 20/11/15.
  */
-public class DistributedTask<V extends Serializable> implements RunnableFuture<V> {
+public class DistributedTask<V extends Serializable> implements Future<V> {
 
     private static final int ANY = -1;
     private static final int NEW = 0;
@@ -28,10 +28,6 @@ public class DistributedTask<V extends Serializable> implements RunnableFuture<V
     private DistributedCallable<V> callable;
     private Object outcome;
     private CountDownLatch completionCountDown;
-
-    DistributedTask() {
-
-    }
 
     public DistributedTask(Cluster cluster, DistributedCallable<V> callable) {
         this.id = UUIDSequence.next(UUIDSequence.SequenceType.DISTRIBUTED_TASK);
@@ -56,14 +52,6 @@ public class DistributedTask<V extends Serializable> implements RunnableFuture<V
         } else {
             return false;
         }
-    }
-
-    @Override
-    public void run() {
-        if (state != NEW)
-            return;
-
-        this.cluster.exec(this);
     }
 
     @Override

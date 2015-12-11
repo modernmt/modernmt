@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * Created by davide on 02/12/15.
  */
-class MosesINI {
+public class MosesINI {
 
     private File file;
     private ArrayList<Section> sections = new ArrayList<>();
