@@ -21,16 +21,17 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class TranslationEngine {
 
+    private static final String SYSPROP_ENGINES_PATH = "mmt.engines.path";
     private static final File ENGINES_PATH;
 
     static {
-        String path = System.getProperty("mmt.engines.path");
+        String path = System.getProperty(SYSPROP_ENGINES_PATH);
         if (path == null)
-            throw new IllegalStateException("The system property 'mmt.engines.path' must be initialized to the path of the engines folder.");
+            throw new IllegalStateException("The system property '" + SYSPROP_ENGINES_PATH + "' must be initialized to the path of the engines folder.");
 
         ENGINES_PATH = new File(path);
         if (!ENGINES_PATH.isDirectory())
-            throw new IllegalStateException("Invalid path for property 'mmt.engines.path': " + ENGINES_PATH + " must be a valid directory.");
+            throw new IllegalStateException("Invalid path for property '" + SYSPROP_ENGINES_PATH + "': " + ENGINES_PATH + " must be a valid directory.");
     }
 
     private static String path(String... path) {
