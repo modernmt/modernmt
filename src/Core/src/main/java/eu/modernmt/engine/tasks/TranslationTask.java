@@ -8,32 +8,39 @@ import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.engine.MMTWorker;
 import eu.modernmt.engine.TranslationEngine;
 import eu.modernmt.network.cluster.DistributedCallable;
+import eu.modernmt.tokenizer.DetokenizerPool;
+import eu.modernmt.tokenizer.TokenizerPool;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * Created by davide on 09/12/15.
  */
-public class TranslationTask extends DistributedCallable<Translation> {
+public class TranslationTask extends DistributedCallable<String> {
 
-    private Sentence sentence;
+    private String text;
     private List<ContextDocument> translationContext;
     private Long session;
+    private boolean processing;
 
-    public TranslationTask(Sentence sentence) {
-        this.sentence = sentence;
+    public TranslationTask(String text, boolean processing) {
+        this.text = text;
+        this.processing = processing;
     }
 
-    public TranslationTask(Sentence sentence, List<ContextDocument> translationContext) {
-        this.sentence = sentence;
+    public TranslationTask(String text, List<ContextDocument> translationContext, boolean processing) {
+        this.text = text;
         this.translationContext = translationContext;
+        this.processing = processing;
     }
 
-    public TranslationTask(Sentence sentence, TranslationSession session) {
-        this.sentence = sentence;
+    public TranslationTask(String text, TranslationSession session, boolean processing) {
+        this.text = text;
         this.session = session.getId();
         this.translationContext = session.getTranslationContext();
+        this.processing = processing;
     }
 
     @Override
@@ -42,9 +49,22 @@ public class TranslationTask extends DistributedCallable<Translation> {
     }
 
     @Override
-    public Translation call() throws IOException {
+    public String call() throws IOException {
         TranslationEngine engine = getWorker().getEngine();
         Decoder decoder = engine.getDecoder();
+
+        Sentence sentence;
+        Translation translation;
+
+        if (processing) {
+            TokenizerPool tokenizer = engine.getTokenizer();
+            String[] tokens = tokenizer.tokenize(Collections.singletonList(text)).get(0);
+            sentence = new Sentence(tokens);
+        } else {
+            sentence = new Sentence(text);
+        }
+
+        System.out.println(sentence);
 
         if (session != null) {
             TranslationSession session = decoder.getSession(this.session);
@@ -55,11 +75,18 @@ public class TranslationTask extends DistributedCallable<Translation> {
                 else
                     session = decoder.openSession(this.session, translationContext);
 
-            return decoder.translate(sentence, session);
+            translation = decoder.translate(sentence, session);
         } else if (translationContext != null) {
-            return decoder.translate(sentence, translationContext);
+            translation = decoder.translate(sentence, translationContext);
         } else {
-            return decoder.translate(sentence);
+            translation = decoder.translate(sentence);
+        }
+
+        if (processing) {
+            DetokenizerPool detokenizer = engine.getDetokenizer();
+            return detokenizer.detokenize(Collections.singletonList(translation.getTokens())).get(0);
+        } else {
+            return translation.toString();
         }
     }
 

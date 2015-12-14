@@ -10,6 +10,8 @@ import java.util.concurrent.*;
  */
 public class TokenizerPool {
 
+    // TODO: it should work with Tokenizers and Detokenizers
+
     public static final int DEFAULT_POOL_SIZE = Runtime.getRuntime().availableProcessors();
     private static final ConcurrentHashMap<Locale, TokenizerPool> cache = new ConcurrentHashMap<>();
 

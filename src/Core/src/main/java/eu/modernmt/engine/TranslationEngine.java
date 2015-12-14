@@ -4,6 +4,8 @@ import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.moses.MosesDecoder;
 import eu.modernmt.decoder.moses.MosesINI;
+import eu.modernmt.tokenizer.DetokenizerPool;
+import eu.modernmt.tokenizer.TokenizerPool;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -63,6 +65,7 @@ public class TranslationEngine {
     private String id;
 
     private Locale sourceLanguage;
+    private Locale targetLanguage;
     private ContextAnalyzer contextAnalyzer;
     private MosesDecoder decoder;
     private File configFile;
@@ -82,6 +85,7 @@ public class TranslationEngine {
         String content = FileUtils.readFileToString(configFile, "UTF-8");
         this.config = new JSONObject(content);
         this.sourceLanguage = Locale.forLanguageTag(config.getJSONObject("engine").getString("source_language"));
+        this.targetLanguage = Locale.forLanguageTag(config.getJSONObject("engine").getString("target_language"));
     }
 
     public void setConfig(JSONObject config) throws IOException {
@@ -119,8 +123,20 @@ public class TranslationEngine {
         return decoder;
     }
 
+    public TokenizerPool getTokenizer() {
+        return TokenizerPool.getCachedInstance(sourceLanguage);
+    }
+
+    public DetokenizerPool getDetokenizer() {
+        return DetokenizerPool.getCachedInstance(targetLanguage);
+    }
+
     public Locale getSourceLanguage() {
         return sourceLanguage;
+    }
+
+    public Locale getTargetLanguage() {
+        return targetLanguage;
     }
 
     public Map<String, float[]> getDecoderWeights() {

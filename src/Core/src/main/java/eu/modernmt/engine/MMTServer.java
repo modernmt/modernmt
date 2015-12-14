@@ -123,20 +123,20 @@ public class MMTServer extends Cluster {
     //  Translate
     // =============================
 
-    public Translation translate(Sentence sentence) throws IOException {
-        return execute(new TranslationTask(sentence));
+    public String translate(String sentence, boolean textProcessing) throws IOException {
+        return execute(new TranslationTask(sentence, textProcessing));
     }
 
-    public Translation translate(Sentence sentence, long sessionId) throws IOException {
+    public String translate(String sentence, long sessionId, boolean textProcessing) throws IOException {
         TranslationSession session = sessions.get(sessionId);
         if (session == null)
             throw new IllegalArgumentException("Invalid session id " + sessionId);
 
-        return execute(new TranslationTask(sentence, session));
+        return execute(new TranslationTask(sentence, session, textProcessing));
     }
 
-    public Translation translate(String engine, Sentence sentence, List<ContextDocument> translationContext) throws IOException {
-        return execute(new TranslationTask(sentence, translationContext));
+    public String translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing) throws IOException {
+        return execute(new TranslationTask(sentence, translationContext, textProcessing));
     }
 
     // =============================

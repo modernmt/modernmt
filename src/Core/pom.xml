@@ -21,7 +21,7 @@
     <dependencies>
         <dependency>
             <groupId>eu.modernmt</groupId>
-            <artifactId>mmt-tokenizer</artifactId>
+            <artifactId>mmt-textprocessing</artifactId>
             <version>0.1-SNAPSHOT</version>
         </dependency>
         <dependency>

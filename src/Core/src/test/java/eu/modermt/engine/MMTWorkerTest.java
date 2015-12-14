@@ -10,6 +10,7 @@ public class MMTWorkerTest {
 
     static {
         System.setProperty("mmt.engines.path", "/Users/davide/workspaces/mmt/ModernMT/engines");
+        System.setProperty("mmt.tokenizer.models.path", "/Users/davide/workspaces/mmt/ModernMT/data/tokenizer/models");
     }
 
     public static void main(String[] args) throws Throwable {

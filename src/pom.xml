@@ -10,7 +10,7 @@
         <module>Core</module>
         <module>ContextAnalyzer</module>
         <module>Decoder</module>
-        <module>Tokenizer</module>
+        <module>TextProcessing</module>
     </modules>
 
     <packaging>pom</packaging>

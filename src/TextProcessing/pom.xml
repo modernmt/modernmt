@@ -7,10 +7,10 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>mmt-tokenizer</artifactId>
+    <artifactId>mmt-textprocessing</artifactId>
     <packaging>jar</packaging>
 
-    <name>MMT Tokenizer</name>
+    <name>MMT Tokenizer and Detokenizer</name>
     <url>http://maven.apache.org</url>
 
     <properties>
