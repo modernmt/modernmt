@@ -3,7 +3,7 @@ package eu.modernmt.context.lucene.analysis;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.FieldInfo;
 
 import java.io.Reader;
 
@@ -13,12 +13,14 @@ public class CorpusContentField extends Field {
     public static final FieldType TYPE_STORED = new FieldType();
 
     static {
-        TYPE_NOT_STORED.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+        TYPE_NOT_STORED.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS);
+        TYPE_NOT_STORED.setIndexed(true);
         TYPE_NOT_STORED.setTokenized(true);
         TYPE_NOT_STORED.setStoreTermVectors(true);
         TYPE_NOT_STORED.freeze();
 
-        TYPE_STORED.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+        TYPE_STORED.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS);
+        TYPE_STORED.setIndexed(true);
         TYPE_STORED.setTokenized(true);
         TYPE_STORED.setStored(true);
         TYPE_STORED.setStoreTermVectors(true);

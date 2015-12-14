@@ -21,8 +21,8 @@ public class DefaultAnalyzer extends LanguageAnalyzer {
     }
 
     @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-        final StandardTokenizer source = new StandardTokenizer();
+    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        final StandardTokenizer source = new StandardTokenizer(reader);
 
         TokenStream tok = new StandardFilter(source);
 

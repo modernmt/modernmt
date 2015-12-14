@@ -7,6 +7,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 
 import java.io.IOException;
+import java.util.Locale;
 
 /**
  * Created by davide on 23/09/15.
@@ -17,12 +18,12 @@ public class DocumentBuilder {
     public static final String CONTENT_FIELD_PREFIX = "content:";
 
     public static String getContentField(IndexSourceDocument document) {
-        return CONTENT_FIELD_PREFIX + document.getLanguage();
+        return CONTENT_FIELD_PREFIX + document.getLanguage().toLanguageTag();
     }
 
-    public static String getLangOfContentField(String fieldName) throws IllegalArgumentException {
+    public static Locale getLangOfContentField(String fieldName) throws IllegalArgumentException {
         if (fieldName.startsWith(CONTENT_FIELD_PREFIX)) {
-            return fieldName.substring(CONTENT_FIELD_PREFIX.length());
+            return Locale.forLanguageTag(fieldName.substring(CONTENT_FIELD_PREFIX.length()));
         } else {
             throw new IllegalArgumentException("The field '" + fieldName + "' is not a valid content field name");
         }

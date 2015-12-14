@@ -120,9 +120,9 @@ public class MosesINI {
         section.lines.clear();
 
         for (Map.Entry<String, float[]> entry : weights.entrySet()) {
-
             StringBuilder line = new StringBuilder();
             line.append(entry.getKey());
+            line.append('=');
 
             for (float score : entry.getValue()) {
                 line.append(' ');

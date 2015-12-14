@@ -92,7 +92,7 @@ public abstract class ZMQAbstractLoop extends Thread implements Closeable, AutoC
 
     @Override
     public void run() {
-        while (!this.isInterrupted()) {
+        while (!this.isInterrupted() && !terminated) {
             ZMQ.Poller items = new ZMQ.Poller(2);
 
             items.register(subShutdownSocket, ZMQ.Poller.POLLIN);

@@ -23,7 +23,7 @@ public abstract class Cluster {
     public static final byte REQUEST_EXEC = 0x00;
     public static final byte REQUEST_CALLB = 0x01;
 
-    private final Logger logger = LogManager.getLogger(Cluster.class);
+    protected final Logger logger = LogManager.getLogger(getClass());
 
     private MessagingServer messagingServer;
     private ExecutionQueue executionQueue;

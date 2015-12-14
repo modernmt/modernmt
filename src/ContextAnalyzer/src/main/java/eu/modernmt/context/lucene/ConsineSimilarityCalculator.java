@@ -4,10 +4,12 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -133,7 +135,7 @@ public class ConsineSimilarityCalculator {
 
     protected HashMap<String, Float> getTermFrequencies(IndexReader reader, int docId) throws IOException {
         Terms vector = reader.getTermVector(docId, fieldName);
-        TermsEnum termsEnum = vector.iterator();
+        TermsEnum termsEnum = vector.iterator(null);
         HashMap<String, Float> frequencies = new HashMap<>();
 
         IDFTable idfTable = boost ? getIDFTable(fieldName) : null;
@@ -143,10 +145,9 @@ public class ConsineSimilarityCalculator {
             String term = text.utf8ToString();
 
             float f = 0;
-
-            PostingsEnum postings = termsEnum.postings(null, null);
-            if (postings.nextDoc() != PostingsEnum.NO_MORE_DOCS)
-                f = postings.freq();
+            DocsEnum docsEnum = termsEnum.docs(null, null);
+            if (docsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)
+                f = docsEnum.freq();
 
             if (idfTable != null && f > 0)
                 f = idfTable.getTFIDF(text, (int) f);
@@ -181,7 +182,7 @@ public class ConsineSimilarityCalculator {
                         IndexReader reader = null;
 
                         try {
-                            IndexWriterConfig indexConfig = new IndexWriterConfig(analyzer);
+                            IndexWriterConfig indexConfig = new IndexWriterConfig(Version.LUCENE_4_10_4, analyzer);
                             indexConfig.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
                             writer = new IndexWriter(directory, indexConfig);
                             writer.addDocument(document);

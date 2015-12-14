@@ -14,16 +14,16 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class Worker {
 
-    private final Logger logger = LogManager.getLogger(Worker.class);
+    protected final Logger logger = LogManager.getLogger(getClass());
 
     private MessagingClient messagingClient;
-    private boolean ready;
+    private boolean active;
     private WorkerExecutor executor;
 
     public Worker(MessagingClient messagingClient, int capacity) {
         this.messagingClient = messagingClient;
         this.messagingClient.setListener(new WorkerPacketListener());
-        this.ready = false;
+        this.active = false;
         this.executor = new WorkerExecutor(this, capacity);
     }
 
@@ -31,8 +31,12 @@ public abstract class Worker {
         this.messagingClient.connect();
     }
 
-    protected void ready() {
-        this.ready = true;
+    protected void setActive(boolean active) {
+        this.active = active;
+    }
+
+    protected boolean isActive() {
+        return active;
     }
 
     public void shutdown() {
@@ -83,8 +87,8 @@ public abstract class Worker {
             byte signal = payload[0];
 
             if (signal == Cluster.SIGNAL_EXEC) {
-                if (!ready) {
-                    logger.debug("Worker not ready, ignoring SIGNAL_EXEC.");
+                if (!active) {
+                    logger.debug("Worker not active, ignoring SIGNAL_EXEC.");
                     return;
                 }
 

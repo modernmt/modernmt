@@ -17,6 +17,7 @@ import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Version;
 
 import java.io.Closeable;
 import java.io.File;
@@ -44,11 +45,11 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
         if (!indexPath.isDirectory())
             FileUtils.forceMkdir(indexPath);
 
-        this.indexDirectory = FSDirectory.open(indexPath.toPath());
+        this.indexDirectory = FSDirectory.open(indexPath);
         this.analyzer = new CorpusAnalyzer();
 
         // Index writer setup
-        IndexWriterConfig indexConfig = new IndexWriterConfig(this.analyzer);
+        IndexWriterConfig indexConfig = new IndexWriterConfig(Version.LUCENE_4_10_4, this.analyzer);
         indexConfig.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
         indexConfig.setSimilarity(new DefaultSimilarity() {
 
@@ -83,11 +84,13 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
         this.add(Collections.singleton(document));
     }
 
-    public void add(Collection<IndexSourceDocument> documents) throws IOException {
+    public void add(Collection<? extends IndexSourceDocument> documents) throws IOException {
         for (IndexSourceDocument document : documents) {
             logger.info("Adding to index document " + document);
             this.indexWriter.addDocument(DocumentBuilder.createDocument(document));
         }
+
+        this.indexWriter.commit();
     }
 
     public void clear() throws IOException {
@@ -113,7 +116,7 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
         mlt.setBoost(true);
         mlt.setAnalyzer(analyzer);
 
-        TopScoreDocCollector collector = TopScoreDocCollector.create(rawLimit);
+        TopScoreDocCollector collector = TopScoreDocCollector.create(rawLimit, true);
         Query query = mlt.like(fieldName, queryDocument.getContentReader());
         searcher.search(query, collector);
 

@@ -10,6 +10,8 @@ import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
+import java.io.Reader;
+
 public class EnglishAnalyzer extends LanguageAnalyzer {
 
     public EnglishAnalyzer(AnalyzerConfig config) {
@@ -17,8 +19,8 @@ public class EnglishAnalyzer extends LanguageAnalyzer {
     }
 
     @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-        final Tokenizer source = new StandardTokenizer();
+    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        final Tokenizer source = new StandardTokenizer(reader);
 
         TokenStream result = new StandardFilter(source);
 

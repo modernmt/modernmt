@@ -3,13 +3,14 @@ package eu.modernmt.context;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Locale;
 
 /**
  * Created by davide on 02/12/15.
  */
 public interface IndexSourceDocument {
 
-    static IndexSourceDocument fromString(final String content, final String lang) {
+    static IndexSourceDocument fromString(final String content, final Locale lang) {
         return new IndexSourceDocument() {
             @Override
             public String getName() {
@@ -17,7 +18,7 @@ public interface IndexSourceDocument {
             }
 
             @Override
-            public String getLanguage() {
+            public Locale getLanguage() {
                 return lang;
             }
 
@@ -28,7 +29,7 @@ public interface IndexSourceDocument {
         };
     }
 
-    static IndexSourceDocument fromReader(final Reader content, final String lang) {
+    static IndexSourceDocument fromReader(final Reader content, final Locale lang) {
         return new IndexSourceDocument() {
             @Override
             public String getName() {
@@ -36,7 +37,7 @@ public interface IndexSourceDocument {
             }
 
             @Override
-            public String getLanguage() {
+            public Locale getLanguage() {
                 return lang;
             }
 
@@ -49,7 +50,7 @@ public interface IndexSourceDocument {
 
     String getName();
 
-    String getLanguage();
+    Locale getLanguage();
 
     Reader getContentReader() throws IOException;
 

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.Reader;
+import java.util.Locale;
 
 /**
  * Created by davide on 10/07/15.
@@ -12,7 +13,7 @@ public class FileCorpus implements Corpus {
 
     private File file;
     private String name;
-    private String lang;
+    private Locale lang;
 
     private static String getName(File file) {
         String fullname = file.getName();
@@ -37,7 +38,7 @@ public class FileCorpus implements Corpus {
     public FileCorpus(File file, String name, String lang) {
         this.file = file;
         this.name = name;
-        this.lang = lang;
+        this.lang = Locale.forLanguageTag(lang);
     }
 
     @Override
@@ -46,7 +47,7 @@ public class FileCorpus implements Corpus {
     }
 
     @Override
-    public String getLanguage() {
+    public Locale getLanguage() {
         return lang;
     }
 

@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Created by davide on 02/12/15.
@@ -24,7 +25,7 @@ public class ContextAnalyzer {
         this.index = new ContextAnalyzerIndex(indexPath);
     }
 
-    public void rebuild(Collection<IndexSourceDocument> documents) throws IOException {
+    public void rebuild(Collection<? extends IndexSourceDocument> documents) throws IOException {
         logger.info("Rebuild ContextAnalyzer index...");
 
         long now = System.currentTimeMillis();
@@ -35,11 +36,11 @@ public class ContextAnalyzer {
         logger.info("ContextAnalyzer index rebuild completed in " + elapsed + "s.");
     }
 
-    public List<ContextDocument> getContext(String query, String lang, int limit) throws IOException {
+    public List<ContextDocument> getContext(String query, Locale lang, int limit) throws IOException {
         return getContext(IndexSourceDocument.fromString(query, lang), limit);
     }
 
-    public List<ContextDocument> getContext(File source, String lang, int limit) throws IOException {
+    public List<ContextDocument> getContext(File source, Locale lang, int limit) throws IOException {
         FileReader reader = null;
         try {
             reader = new FileReader(source);
@@ -49,7 +50,7 @@ public class ContextAnalyzer {
         }
     }
 
-    public List<ContextDocument> getContext(Reader reader, String lang, int limit) throws IOException {
+    public List<ContextDocument> getContext(Reader reader, Locale lang, int limit) throws IOException {
         return getContext(IndexSourceDocument.fromReader(reader, lang), limit);
     }
 

@@ -11,6 +11,7 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ElisionFilter;
 
+import java.io.Reader;
 import java.util.Arrays;
 
 public class ItalianAnalyzer extends LanguageAnalyzer {
@@ -23,8 +24,8 @@ public class ItalianAnalyzer extends LanguageAnalyzer {
     }
 
     @Override
-    protected TokenStreamComponents createComponents(String fieldName) {
-        final Tokenizer source = new StandardTokenizer();
+    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        final Tokenizer source = new StandardTokenizer(reader);
 
         TokenStream result = new StandardFilter(source);
 

@@ -1,16 +1,18 @@
 package eu.modernmt.decoder.moses;
 
+import java.io.Serializable;
+
 /**
  * Created by davide on 30/11/15.
  */
-public class MosesFeature {
+public class MosesFeature implements Serializable {
 
     public static final float UNTUNEABLE_COMPONENT = Float.MAX_VALUE;
 
     private String name;
     private boolean tunable;
     private boolean stateless;
-    private long ptr;
+    private transient long ptr;
 
     public MosesFeature(String name, boolean tunable, boolean stateless, long ptr) {
         this.name = name;

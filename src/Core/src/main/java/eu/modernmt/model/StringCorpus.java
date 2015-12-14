@@ -3,6 +3,7 @@ package eu.modernmt.model;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Locale;
 
 /**
  * Created by davide on 18/09/15.
@@ -10,12 +11,12 @@ import java.io.StringReader;
 public class StringCorpus implements Corpus {
 
     private String name;
-    private String language;
+    private Locale language;
     private String content;
 
     public StringCorpus(String name, String language, String content) {
         this.name = name;
-        this.language = language;
+        this.language = Locale.forLanguageTag(language);
         this.content = content;
     }
 
@@ -25,7 +26,7 @@ public class StringCorpus implements Corpus {
     }
 
     @Override
-    public String getLanguage() {
+    public Locale getLanguage() {
         return language;
     }
 
