@@ -1,15 +1,30 @@
 package eu.modernmt.model;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.Reader;
+import org.apache.commons.io.FileUtils;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 
 /**
  * Created by davide on 10/07/15.
  */
 public class FileCorpus implements Corpus {
+
+    public static List<FileCorpus> list(File folder, String lang) throws IOException {
+        if (!folder.isDirectory())
+            throw new IOException(folder + " is not a valid folder");
+
+        Collection<File> files = FileUtils.listFiles(folder, lang == null ? null : new String[]{lang}, false);
+        ArrayList<FileCorpus> corpora = new ArrayList<>(files.size());
+        for (File file : files) {
+            corpora.add(new FileCorpus(file));
+        }
+
+        return corpora;
+    }
 
     private File file;
     private String name;
@@ -60,4 +75,5 @@ public class FileCorpus implements Corpus {
     public String toString() {
         return name + "." + lang;
     }
+
 }

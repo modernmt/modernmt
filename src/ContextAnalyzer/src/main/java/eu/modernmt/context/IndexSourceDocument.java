@@ -1,8 +1,6 @@
 package eu.modernmt.context;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
+import java.io.*;
 import java.util.Locale;
 
 /**
@@ -29,7 +27,7 @@ public interface IndexSourceDocument {
         };
     }
 
-    static IndexSourceDocument fromReader(final Reader content, final Locale lang) {
+    static IndexSourceDocument fromFile(final File content, final Locale lang) {
         return new IndexSourceDocument() {
             @Override
             public String getName() {
@@ -43,7 +41,7 @@ public interface IndexSourceDocument {
 
             @Override
             public Reader getContentReader() throws IOException {
-                return content;
+                return new FileReader(content);
             }
         };
     }

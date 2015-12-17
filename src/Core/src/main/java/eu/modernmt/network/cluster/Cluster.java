@@ -2,8 +2,8 @@ package eu.modernmt.network.cluster;
 
 import eu.modernmt.network.messaging.MessagingServer;
 import org.apache.commons.lang3.SerializationUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -23,7 +23,7 @@ public abstract class Cluster {
     public static final byte REQUEST_EXEC = 0x00;
     public static final byte REQUEST_CALLB = 0x01;
 
-    protected final Logger logger = LogManager.getLogger(getClass());
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     private MessagingServer messagingServer;
     private ExecutionQueue executionQueue;

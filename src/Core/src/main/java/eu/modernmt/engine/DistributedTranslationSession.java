@@ -17,12 +17,15 @@ public class DistributedTranslationSession extends TranslationSession {
         return sequence++;
     }
 
-    public DistributedTranslationSession(List<ContextDocument> translationContext) {
+    private MMTServer server;
+
+    public DistributedTranslationSession(List<ContextDocument> translationContext, MMTServer server) {
         super(nextSeq(), translationContext);
+        this.server = server;
     }
 
     @Override
     public void close() throws IOException {
-        // Nothing to do
+        // TODO: should broadcast to workers to close their Moses Sessions - server.sendBroadcastSignal(CLOSE_SESSION, id);
     }
 }

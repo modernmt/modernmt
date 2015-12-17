@@ -1,5 +1,6 @@
 package eu.modernmt.decoder;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -33,7 +34,7 @@ public class TranslationHypothesis extends Translation implements Comparable<Tra
         return Float.compare(totalScore, o.totalScore);
     }
 
-    public static class Score {
+    public static class Score implements Serializable {
         public final String component;
         public final float[] scores;
 
@@ -49,6 +50,10 @@ public class TranslationHypothesis extends Translation implements Comparable<Tra
 
     public List<Score> getScores() {
         return scores;
+    }
+
+    public String getTranslation() {
+        return super.toString();
     }
 
     @Override

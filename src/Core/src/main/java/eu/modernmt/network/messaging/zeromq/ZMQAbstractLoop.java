@@ -3,8 +3,8 @@ package eu.modernmt.network.messaging.zeromq;
 import eu.modernmt.network.uuid.UUIDSequence;
 import eu.modernmt.network.uuid.UUIDUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.zeromq.ZMQ;
 
 import java.io.Closeable;
@@ -15,7 +15,7 @@ import java.util.UUID;
  */
 public abstract class ZMQAbstractLoop extends Thread implements Closeable, AutoCloseable {
 
-    private final Logger logger = LogManager.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static int threadId = 0;
 
@@ -99,7 +99,7 @@ public abstract class ZMQAbstractLoop extends Thread implements Closeable, AutoC
             items.register(listeningSocket, ZMQ.Poller.POLLIN);
 
             if (items.poll() < 0) {
-                logger.fatal("Failed to poll sockets");
+                logger.error("Failed to poll sockets");
                 break;
             }
 

@@ -1,14 +1,11 @@
 package eu.modernmt.context;
 
 import eu.modernmt.context.lucene.ContextAnalyzerIndex;
-import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -18,7 +15,7 @@ import java.util.Locale;
  */
 public class ContextAnalyzer {
 
-    protected final Logger logger = LogManager.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(getClass());
     protected ContextAnalyzerIndex index;
 
     public ContextAnalyzer(File indexPath) throws IOException {
@@ -41,17 +38,7 @@ public class ContextAnalyzer {
     }
 
     public List<ContextDocument> getContext(File source, Locale lang, int limit) throws IOException {
-        FileReader reader = null;
-        try {
-            reader = new FileReader(source);
-            return getContext(IndexSourceDocument.fromReader(reader, lang), limit);
-        } finally {
-            IOUtils.closeQuietly(reader);
-        }
-    }
-
-    public List<ContextDocument> getContext(Reader reader, Locale lang, int limit) throws IOException {
-        return getContext(IndexSourceDocument.fromReader(reader, lang), limit);
+        return getContext(IndexSourceDocument.fromFile(source, lang), limit);
     }
 
     public List<ContextDocument> getContext(IndexSourceDocument query, int limit) throws IOException {

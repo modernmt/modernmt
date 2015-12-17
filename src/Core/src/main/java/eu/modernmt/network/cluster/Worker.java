@@ -3,8 +3,8 @@ package eu.modernmt.network.cluster;
 import eu.modernmt.network.messaging.MessagingClient;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.lang3.SerializationUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class Worker {
 
-    protected final Logger logger = LogManager.getLogger(getClass());
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     private MessagingClient messagingClient;
     private boolean active;

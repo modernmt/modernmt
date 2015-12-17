@@ -5,8 +5,6 @@ import eu.modernmt.context.IndexSourceDocument;
 import eu.modernmt.context.lucene.analysis.CorpusAnalyzer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
@@ -18,6 +16,8 @@ import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.File;
@@ -34,7 +34,7 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
 
     private static final int MIN_RESULT_BATCH = 20;
 
-    private final Logger logger = LogManager.getLogger(ContextAnalyzerIndex.class);
+    private final Logger logger = LoggerFactory.getLogger(ContextAnalyzerIndex.class);
 
     private Directory indexDirectory;
     private Analyzer analyzer;
@@ -156,4 +156,5 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
         IOUtils.closeQuietly(this.indexWriter);
         IOUtils.closeQuietly(this.indexDirectory);
     }
+
 }

@@ -11,6 +11,7 @@
         <module>ContextAnalyzer</module>
         <module>Decoder</module>
         <module>TextProcessing</module>
+        <module>RESTInterface</module>
     </modules>
 
     <packaging>pom</packaging>
@@ -27,9 +28,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>2.4.1</version>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.13</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>

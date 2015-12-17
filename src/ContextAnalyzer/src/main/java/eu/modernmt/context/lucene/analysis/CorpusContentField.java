@@ -22,8 +22,8 @@ public class CorpusContentField extends Field {
         TYPE_STORED.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS);
         TYPE_STORED.setIndexed(true);
         TYPE_STORED.setTokenized(true);
-        TYPE_STORED.setStored(true);
         TYPE_STORED.setStoreTermVectors(true);
+        TYPE_STORED.setStored(true);
         TYPE_STORED.freeze();
     }
 

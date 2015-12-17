@@ -3,7 +3,6 @@ package eu.modernmt.engine;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.Sentence;
-import eu.modernmt.decoder.Translation;
 import eu.modernmt.decoder.TranslationHypothesis;
 import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.decoder.moses.MosesFeature;
@@ -15,7 +14,10 @@ import eu.modernmt.network.cluster.DistributedCallable;
 import eu.modernmt.network.messaging.zeromq.ZMQMessagingServer;
 import org.apache.commons.lang3.SerializationUtils;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,14 +87,9 @@ public class MMTServer extends Cluster {
     //  Context Analysis
     // =============================
 
-    public List<ContextDocument> getContext(Reader context, int limit) throws IOException {
+    public List<ContextDocument> getContext(File context, int limit) throws IOException {
         ContextAnalyzer analyzer = engine.getContextAnalyzer();
         return analyzer.getContext(context, engine.getSourceLanguage(), limit);
-    }
-
-    public List<ContextDocument> getContext(InputStream context, int limit) throws IOException {
-        ContextAnalyzer analyzer = engine.getContextAnalyzer();
-        return analyzer.getContext(new InputStreamReader(context), engine.getSourceLanguage(), limit);
     }
 
     public List<ContextDocument> getContext(String context, int limit) throws IOException {
@@ -105,7 +102,7 @@ public class MMTServer extends Cluster {
     // =============================
 
     public TranslationSession createTranslationSession(List<ContextDocument> context) throws IOException {
-        DistributedTranslationSession session = new DistributedTranslationSession(context);
+        DistributedTranslationSession session = new DistributedTranslationSession(context, this);
         sessions.put(session.getId(), session);
         return session;
     }
