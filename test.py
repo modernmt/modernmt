@@ -9,7 +9,7 @@ java_folder = os.path.join(root_folder, 'src', 'RESTInterface', 'target')
 # classpath = [os.path.join(libs_folder, jar) for jar in os.listdir(libs_folder) if jar.endswith('.jar')]
 # classpath.append(os.path.join(java_folder, 'mmt-rest-0.1-SNAPSHOT.jar'))
 # classpath = [os.path.join(java_folder, 'libs', '*'), os.path.join(java_folder, 'mmt-rest-0.1-SNAPSHOT.jar')]
-classpath = [os.path.join(java_folder, 'mmt-rest-0.1-SNAPSHOT-jar-with-dependencies.jar')]
+classpath = [os.path.join(java_folder, 'mmt-0.1-SNAPSHOT.jar')]
 sysprop = {
     'mmt.engines.path': os.path.join(root_folder, 'engines'),
     'mmt.tokenizer.models.path': os.path.join(root_folder, 'data', 'tokenizer', 'models'),

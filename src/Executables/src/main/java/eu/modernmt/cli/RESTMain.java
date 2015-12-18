@@ -1,4 +1,4 @@
-package eu.modernmt.rest.cli;
+package eu.modernmt.cli;
 
 import eu.modernmt.engine.MMTServer;
 import eu.modernmt.engine.TranslationEngine;
@@ -6,9 +6,9 @@ import eu.modernmt.rest.RESTServer;
 import org.apache.commons.cli.*;
 
 /**
- * Created by davide on 16/12/15.
+ * Created by davide on 17/12/15.
  */
-public class Main {
+public class RESTMain {
 
     private static final Options cliOptions;
 

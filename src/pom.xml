@@ -12,6 +12,7 @@
         <module>Decoder</module>
         <module>TextProcessing</module>
         <module>RESTInterface</module>
+        <module>Executables</module>
     </modules>
 
     <packaging>pom</packaging>

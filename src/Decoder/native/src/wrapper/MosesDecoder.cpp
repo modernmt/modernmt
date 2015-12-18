@@ -55,24 +55,25 @@ MosesDecoderImpl::MosesDecoderImpl(Moses::Parameter &param) : m_server(param),
     const std::vector<const Moses::StatelessFeatureFunction *> &slf = Moses::StatelessFeatureFunction::GetStatelessFeatureFunctions();
     for (size_t i = 0; i < slf.size(); ++i) {
         const Moses::FeatureFunction *feature = slf[i];
-        feature_t f = {
-                .name = feature->GetScoreProducerDescription(),
-                .stateless = feature->IsStateless(),
-                .tunable = feature->IsTuneable(),
-                .ptr = (void *) feature
-        };
+        feature_t f;
+        f.name = feature->GetScoreProducerDescription();
+        f.stateless = feature->IsStateless();
+        f.tunable = feature->IsTuneable();
+        f.ptr = (void *) feature;
+
         m_features.push_back(f);
     }
 
     const std::vector<const Moses::StatefulFeatureFunction *> &sff = Moses::StatefulFeatureFunction::GetStatefulFeatureFunctions();
     for (size_t i = 0; i < sff.size(); ++i) {
         const Moses::FeatureFunction *feature = sff[i];
-        feature_t f = {
-                .name = feature->GetScoreProducerDescription(),
-                .stateless = feature->IsStateless(),
-                .tunable = feature->IsTuneable(),
-                .ptr = (void *) feature
-        };
+
+        feature_t f;
+        f.name = feature->GetScoreProducerDescription();
+        f.stateless = feature->IsStateless();
+        f.tunable = feature->IsTuneable();
+        f.ptr = (void *) feature;
+
         m_features.push_back(f);
     }
 }
@@ -146,11 +147,10 @@ translation_t MosesDecoderImpl::translate(const std::string &text, uint64_t sess
     std::map<std::string, xmlrpc_c::value> result = xmlrpc_c::value_struct(retval);
 
     // Parse result
-    translation_t translation = {
-            .text = std::string(),
-            .session = -1,
-            .hypotheses = std::vector<hypothesis_t>()
-    };
+    translation_t translation;
+    translation.text = std::string();
+    translation.session = -1;
+    translation.hypotheses = std::vector<hypothesis_t>();
 
     std::map<std::string, xmlrpc_c::value>::iterator iterator;
 
@@ -169,11 +169,10 @@ translation_t MosesDecoderImpl::translate(const std::string &text, uint64_t sess
         for (size_t i = 0; i < nbestList.size(); ++i) {
             std::map<std::string, xmlrpc_c::value> value = xmlrpc_c::value_struct(nbestList[i]);
 
-            hypothesis_t hypothesis = {
-                    .text = xmlrpc_c::value_string(value["hyp"]),
-                    .score = (float) xmlrpc_c::value_double(value["totalScore"]),
-                    .fvals = (std::string) xmlrpc_c::value_string(value["fvals"])
-            };
+            hypothesis_t hypothesis;
+            hypothesis.text = xmlrpc_c::value_string(value["hyp"]);
+            hypothesis.score = (float) xmlrpc_c::value_double(value["totalScore"]);
+            hypothesis.fvals = (std::string) xmlrpc_c::value_string(value["fvals"]);
 
             translation.hypotheses.push_back(hypothesis);
         }

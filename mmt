@@ -1,0 +1,257 @@
+#!/usr/bin/python
+import argparse
+import logging
+import socket
+import sys
+
+from scripts import dependency
+from scripts.engine import MMTEngine
+from scripts.mt import ParallelCorpus
+from scripts.mt.contextanalysis import ContextAnalyzer
+from scripts.mt.lm import LanguageModel
+from scripts.mt.moses import Moses
+from scripts.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
+from scripts.mt.processing import Tokenizer, CorpusCleaner, Detokenizer
+
+__author__ = 'Davide Caroselli'
+__description = '''\
+  MMT is a context-aware, incremental and general purpose Machine Translation technology.
+
+  MMT goal is to make MT easy to adopt and scale.
+
+  With MMT you don\'t need anymore to train multiple custom engines,
+  you can push all your data to a single engine that will automatically
+  and in real-time adapt to the context you provide.
+  MMT aims to deliver the quality of a custom engine and the low sparsity
+  of your all data combined.
+
+  You can find more information on: http://www.modernmt.eu/
+'''
+
+_injectable_components = [Tokenizer, Detokenizer, CorpusCleaner, ContextAnalyzer, SuffixArraysPhraseTable, WordAligner,
+                          LanguageModel, Moses, MMTEngine]
+
+logging.basicConfig(
+        format='%(asctime)-15s [%(levelname)s] - %(message)s',
+        level=logging.DEBUG,
+        stream=sys.stderr
+)
+
+
+# def _get_freeport():
+#     sck = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#     sck.bind(('', 0))
+#     addr = sck.getsockname()
+#     port = addr[1]
+#     sck.close()
+#
+#     return port
+#
+#
+# def _is_freeport(port):
+#     sck = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#     error = sck.connect_ex(('', port))
+#     sck.close()
+#
+#     return error != 0
+#
+#
+
+#
+#
+# def _mmt_server(op, argv):
+#     parser = argparse.ArgumentParser(description='Start/Stop MMT engine server')
+#     parser.prog = 'mmt ' + op
+#     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
+#                         default='default')
+#     parser.add_argument('-p', '--ports', dest='ports', metavar='PORT',
+#                         help='server ports (Context Analyzer, Moses and MMT). The default behaviour is to choose 3 random available ports',
+#                         default=None, nargs=3, type=int)
+#     parser.add_argument('--skip-context-analysis', dest='context_enabled', help='if set, context analysis is skipped',
+#                         default=True, action='store_false')
+#
+#     args = parser.parse_args(argv)
+#
+#     engine = MMTEngine(name=args.engine)
+#
+#     if not engine.exists():
+#         raise Exception('Engine "' + args.engine + '" not found')
+#
+#     injector = dependency.Injector(*_injectable_components)
+#     injector.read_config(engine.config)
+#     engine = injector.inject(engine)
+#
+#     if op == 'start':
+#         ports = args.ports
+#
+#         if ports is None:
+#             ports = []
+#
+#             while not ports:
+#                 port = _get_freeport()
+#
+#                 if _is_freeport(port + 1) and _is_freeport(port + 2):
+#                     ports = [port, port + 1, port + 2]
+#
+#         print 'Starting server...',
+#         sys.stdout.flush()
+#
+#         if engine.start_server(ports, args.context_enabled, daemonize=True):
+#             print 'OK'
+#             if args.context_enabled:
+#                 print '  Context Analyzer running on port', ports[0]
+#             print '  Moses Server running on port', ports[1]
+#             print '  MMT Server running on port', ports[2]
+#             print
+#             print '  (log file:', engine.server.log_file, ')'
+#         else:
+#             print 'FAIL'
+#             print '  An error occurred during server startup. Please see the log file for more details.'
+#             print
+#             print '  (log file:', engine.server.log_file, ')'
+#     elif op == 'stop':
+#         print 'Stopping server...',
+#         engine.stop_server()
+#         print 'OK'
+#     else:  # status
+#         print 'running' if engine.is_server_running() else 'stopped'
+#
+#
+# def _mmt_tune(argv):
+#     parser = argparse.ArgumentParser(description='Tune MMT engine server')
+#     parser.prog = 'mmt tune'
+#     parser.add_argument('port', metavar='PORT', help='MMT server port', type=int)
+#     parser.add_argument('corpora_path', metavar='CORPORA', help='the path to the training corpora')
+#     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
+#                         default='default')
+#     parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='if debug is set, it enables verbose '
+#                                                                                  'logging and prevents temporary files '
+#                                                                                  'to be removed after execution')
+#     parser.add_argument('--skip-context-analysis', dest='context_enabled', help='if set, context analysis is skipped',
+#                         default=True, action='store_false')
+#
+#     args = parser.parse_args(argv)
+#
+#     engine = MMTEngine(name=args.engine)
+#
+#     if not engine.exists():
+#         raise Exception('Engine "' + args.engine + '" not found')
+#
+#     injector = dependency.Injector(*_injectable_components)
+#     injector.read_config(engine.config)
+#     engine = injector.inject(engine)
+#
+#     corpora = ParallelCorpus.list(args.corpora_path)
+#
+#     engine.tune(corpora, args.port, debug=args.debug, context_enabled=args.context_enabled)
+
+def main_stop_worker(argv):
+    print 'main_stop_worker'
+
+
+def main_stop_master(argv):
+    print 'main_stop_master'
+
+
+def main_start_worker(argv):
+    print 'main_start_worker'
+
+
+def main_start_master(argv):
+    print 'main_start_master'
+
+
+def main_tune(argv):
+    print 'main_tune'
+
+
+def main_create(argv):
+    parser = argparse.ArgumentParser(description='Train a new MMT engine from the input corpora')
+    parser.prog = 'mmt create engine'
+    parser.add_argument('source_lang', metavar='SOURCE_LANGUAGE', help='the source language (ISO 639-1)')
+    parser.add_argument('target_lang', metavar='TARGET_LANGUAGE', help='the target language (ISO 639-1)')
+    parser.add_argument('corpora_path', metavar='CORPORA', help='the path to the training corpora')
+    parser.add_argument('-n', '--name', dest='engine', help='the engine name, \'default\' will be used if absent',
+                        default=None)
+    parser.add_argument('-d', '--debug', action='store_true', dest='debug',
+                        help='if debug is set, it enables verbose logging and prevents temporary files to be removed '
+                             'after execution')
+    parser.add_argument('-s', '--steps', metavar='STEPS', dest='training_steps', choices=MMTEngine.training_steps,
+                        nargs='+', help='run only specified training steps {%(choices)s}')
+
+    for component in _injectable_components:
+        dependency.argparse_group(parser, component)
+
+    if len(argv) > 0:
+        args = parser.parse_args(argv)
+        injector = dependency.Injector(*_injectable_components)
+        injector.read_args(args)
+
+        corpora = ParallelCorpus.list(args.corpora_path)
+
+        engine = MMTEngine((args.source_lang, args.target_lang), args.engine)
+        engine = injector.inject(engine)
+        engine.build(corpora, debug=args.debug, steps=args.training_steps)
+    else:
+        parser.print_help()
+
+
+def main():
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=__description,
+                                     usage='%(prog)s [-h] ACTION [args]', add_help=False, prog='mmt')
+    parser.add_argument('action', metavar='ACTION',
+                        choices=['create engine', 'start', 'stop', 'start worker', 'stop worker', 'tune'],
+                        help='{%(choices)s}', nargs='?')
+    parser.add_argument('-h', '--help', dest='help', action='store_true', help='show this help message and exit')
+
+    argv = sys.argv[1:]
+    if ['create', 'engine'] == argv[:2]:
+        main_create(argv[2:])
+    elif ['start', 'worker'] == argv[:2]:
+        main_start_worker(argv[2:])
+    elif ['start'] == argv[:1]:
+        main_start_master(argv[1:])
+    elif ['stop', 'worker'] == argv[:2]:
+        main_stop_worker(argv[2:])
+    elif ['stop'] == argv[:1]:
+        main_stop_master(argv[1:])
+    elif ['tune'] == argv[:1]:
+        main_tune(argv[1:])
+    else:
+        parser.print_help()
+        #     == Welcome to MMT
+        #
+        # == Quickstart
+        #
+        # === Creating your first engine
+        #
+        # Come creare il primo engine in meno di 1 minuto
+        #
+        # Per lanciare MMT su una singola macchina esegui il comando:
+        # 	$> ./mmt start
+        #
+        # Crea un nuovo motore di traduzione con il comando:
+        # 	$> ./mmt create engine my-engine en it example/train
+        #
+        # === Creating your first distributed cluster
+        #
+        # Install MMT on a new machine, then, from its shell execute
+        #
+        # 	$> ./mmt worker start --master 10.1.1.1
+        #
+        # This will sync the data to the new machine.
+        # Translation requests will go to the master via the API and it will load balance the request from the 2 machines.
+        # Engine creation runs only on the master.
+        #
+        # You can run a cluster made of as many machine you want. We tested it with 100 machines.
+        #
+        #
+        # == Advanced HowTo (See www)
+        #
+        #
+        #
+        # How to remove a node from the cluster.
+
+
+if __name__ == '__main__':
+    main()

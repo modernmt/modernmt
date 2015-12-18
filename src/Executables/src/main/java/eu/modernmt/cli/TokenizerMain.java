@@ -1,4 +1,4 @@
-package eu.modernmt.tokenizer.cmd;
+package eu.modernmt.cli;
 
 import eu.modernmt.tokenizer.Languages;
 import eu.modernmt.tokenizer.TokenizerPool;
@@ -11,11 +11,11 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Created by davide on 23/11/15.
+ * Created by davide on 17/12/15.
  */
-public class Main {
+public class TokenizerMain {
 
-    private static final int BATCH_SIZE = 81;
+    private static final int BATCH_SIZE = 100;
 
     public static void main(String[] args) throws IOException {
         Locale language = Languages.getSupportedLanguage(args[0]);
@@ -57,5 +57,4 @@ public class Main {
             System.out.println();
         }
     }
-
 }

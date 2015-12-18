@@ -9,6 +9,7 @@ import org.apache.lucene.analysis.en.PorterStemFilter;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.util.Version;
 
 import java.io.Reader;
 
@@ -25,7 +26,7 @@ public class EnglishAnalyzer extends LanguageAnalyzer {
         TokenStream result = new StandardFilter(source);
 
         if (config.removeElisions)
-            result = new EnglishPossessiveFilter(result);
+            result = new EnglishPossessiveFilter(Version.LUCENE_4_10_4, result);
         if (config.toLowerCase)
             result = new LowerCaseFilter(result);
         if (config.filterStopWords)
