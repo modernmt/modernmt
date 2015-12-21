@@ -59,16 +59,19 @@ class CorpusCleaner:
 
 class Detokenizer:
     def __init__(self):
-        self._detokenizer_script = os.path.join(scripts.BIN_DIR, 'tokenizer-mosesofficial', 'scripts', 'detokenizer.perl')
+        self._detokenizer_jar = scripts.MMT_JAR
+        self._models_path = os.path.join(scripts.DATA_DIR, 'tokenizer', 'models')
+        self._java_mainclass = 'eu.modernmt.cli.DetokenizerMain'
+
+    def _get_detokenizer_command(self, lang):
+        return ['java', '-cp', self._detokenizer_jar, '-Dmmt.tokenizer.models.path=' + self._models_path,
+                self._java_mainclass, lang]
 
     def batch_detokenize(self, corpora, dest_folder):
         _pool_exec(self.detokenize_file,
                    [(corpus.get_file(lang), ParallelCorpus(corpus.name, dest_folder, [lang]).get_file(lang), lang) for
                     corpus in corpora for lang in corpus.langs])
         return ParallelCorpus.list(dest_folder)
-
-    def _get_detokenizer_command(self, lang):
-        return ['perl', self._detokenizer_script, '-l', lang]
 
     def detokenize(self, sentence, lang):
         command = self._get_detokenizer_command(lang)
@@ -89,21 +92,14 @@ class Detokenizer:
 
 
 class Tokenizer:
-    _binfolder = os.path.join(scripts.BIN_DIR, 'mmt-tokenizer-0.1')
-
     def __init__(self):
-        self._tokenizer_jar = os.path.join(self._binfolder, 'mmt-tokenizer-0.1.jar')
-        self._lib_path = os.path.join(self._binfolder, 'lib', '*')
-        self._models_path = os.path.join(self._binfolder, 'models')
-        self._java_mainclass = 'net.translated.mmt.tokenizer.SampleMain'
-
-        self._classpath = ':'.join([self._tokenizer_jar, self._lib_path]) \
-            # + [os.path.join(self._lib_path, jar) for jar in
-        #                         os.listdir(self._lib_path) if
-        #                         os.path.isfile(os.path.join(self._lib_path, jar))]
+        self._tokenizer_jar = scripts.MMT_JAR
+        self._models_path = os.path.join(scripts.DATA_DIR, 'tokenizer', 'models')
+        self._java_mainclass = 'eu.modernmt.cli.TokenizerMain'
 
     def _get_tokenizer_command(self, lang):
-        return ['java', '-cp', self._classpath, '-Dmodels.path=' + self._models_path, self._java_mainclass, lang]
+        return ['java', '-cp', self._tokenizer_jar, '-Dmmt.tokenizer.models.path=' + self._models_path,
+                self._java_mainclass, lang]
 
     def tokenize(self, sentence, lang):
         command = self._get_tokenizer_command(lang)
