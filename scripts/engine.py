@@ -87,7 +87,7 @@ class MMTEngine:
         self._temp_path = os.path.join(self._root_path, 'temp')
         self._runtime_path = os.path.join(self._root_path, 'runtime')
 
-        self._config_file = os.path.join(self._root_path, 'engine.cfg')
+        self._config_file = os.path.join(self._root_path, 'engine.ini')
         self._server_pid_file = os.path.join(self._runtime_path, 'pid')
         self._pt_model = os.path.join(self._data_path, 'phrase_tables')
         self._lm_model = os.path.join(self._data_path, 'lm', 'target.lm')
@@ -220,7 +220,7 @@ class MMTEngine:
             with open(self._config_file, 'wb') as out:
                 self._config.write(out)
 
-            logger.info("Writing Moses INI file...")
+            logger.info("Writing Moses INI template file...")
             with open(self._moses_ini_file, 'wb') as out:
                 out.write(self._moses.create_ini())
 

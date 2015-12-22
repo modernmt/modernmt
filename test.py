@@ -4,7 +4,7 @@ from subprocess import call
 __author__ = 'Davide Caroselli'
 
 root_folder = os.path.realpath(os.path.join(__file__, os.path.pardir))
-java_folder = os.path.join(root_folder, 'src', 'RESTInterface', 'target')
+java_folder = os.path.join(root_folder, 'src', 'Executables', 'target')
 
 # classpath = [os.path.join(libs_folder, jar) for jar in os.listdir(libs_folder) if jar.endswith('.jar')]
 # classpath.append(os.path.join(java_folder, 'mmt-rest-0.1-SNAPSHOT.jar'))
@@ -20,7 +20,7 @@ command = ['java', '-cp', ':'.join(classpath)]
 for key, value in sysprop.iteritems():
     command.append('-D' + key + '=' + value)
 
-command.append('eu.modernmt.rest.cli.Main')
+command.append('eu.modernmt.cli.RESTMain')
 
 command.append('-e')
 command.append('worker-default')

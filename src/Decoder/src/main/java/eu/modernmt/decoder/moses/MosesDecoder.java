@@ -15,19 +15,24 @@ import java.util.Map;
 public class MosesDecoder implements Decoder {
 
     static {
-        System.loadLibrary("jnimoses");
+        try {
+            System.loadLibrary("jnimoses");
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     private long nativeHandle;
 
-    private MosesINI mosesINI;
+    private File inifile;
     private HashMap<Long, MosesSession> sessions;
 
-    public MosesDecoder(MosesINI mosesINI) throws IOException {
-        this.mosesINI = mosesINI;
+    public MosesDecoder(File inifile) throws IOException {
+        this.inifile = inifile;
         this.sessions = new HashMap<>();
 
-        this.init(mosesINI.getFile().getAbsolutePath());
+        this.init(inifile.getAbsolutePath());
     }
 
     private native void init(String inifile);
@@ -35,18 +40,6 @@ public class MosesDecoder implements Decoder {
     public native MosesFeature[] getFeatures();
 
     public native float[] getFeatureWeights(MosesFeature feature);
-
-    public void updateFeatureWeights(Map<String, float[]> featureName2Weights) {
-        mosesINI.updateWeights(featureName2Weights);
-        try {
-            mosesINI.save();
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to write moses.ini", e);
-        }
-
-        this.close();
-        this.init(mosesINI.getFile().getAbsolutePath());
-    }
 
     @Override
     public TranslationSession openSession(long id, List<ContextDocument> translationContext) {

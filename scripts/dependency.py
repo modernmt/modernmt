@@ -1,5 +1,5 @@
-from ConfigParser import ConfigParser
 import re
+from ConfigParser import ConfigParser
 
 __author__ = 'Davide Caroselli'
 
@@ -111,6 +111,8 @@ class Injector:
             config.add_section(section)
 
             for field in fields:
-                config.set(section, field, self._get_actual_param(field, section))
+                value = self._get_actual_param(field, section)
+                if value is not None:
+                    config.set(section, field, value)
 
         return config

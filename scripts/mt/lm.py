@@ -79,7 +79,8 @@ class KenLM(LanguageModel):
                 log.close()
 
     def get_iniline(self):
-        return self.name + ' name=LM0 factor=0 order={order} path={model}'.format(order=self._order, model=self._model)
+        return self.name + ' name=LM0 factor=0 order={order} path={model}'.format(order=self._order,
+                                                                                  model=self.get_relpath(self._model))
 
 
 class AdaptiveIRSTLM(LanguageModel):
@@ -102,16 +103,18 @@ class AdaptiveIRSTLM(LanguageModel):
             if log_file is not None:
                 log = open(log_file, 'w')
 
-            lmconfig_content = ['LMINTERPOLATION X MAP']
+            lmconfig_content = ['LMINTERPOLATION ' + str(len(corpora)) + ' MAP']
             w = 1. / len(corpora)
+
+            models_folder = os.path.dirname(self._model)
 
             for corpus in corpora:
                 file = corpus.get_file(lang)
-                lm = os.path.join(self._model_dir, corpus.name + '.alm')
+                lm = corpus.name + '.alm'
 
                 lmconfig_content.append('{weight} {name} {lm}'.format(weight=str(w), name=corpus.name, lm=lm))
 
-                self._train_lm(file, lm, working_dir, log)
+                self._train_lm(file, os.path.join(models_folder, lm), working_dir, log)
 
             with open(self._model, 'w') as model:
                 for line in lmconfig_content:
@@ -141,4 +144,4 @@ class AdaptiveIRSTLM(LanguageModel):
         shell.execute(command, stderr=log)
 
     def get_iniline(self):
-        return self.name + ' name=LM0 factor=0 path={model} dub=10000000'.format(model=self._model)
+        return self.name + ' name=LM0 factor=0 path={model} dub=10000000'.format(model=self.get_relpath(self._model))

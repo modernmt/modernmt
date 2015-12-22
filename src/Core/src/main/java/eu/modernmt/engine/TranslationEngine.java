@@ -7,13 +7,10 @@ import eu.modernmt.decoder.moses.MosesINI;
 import eu.modernmt.tokenizer.DetokenizerPool;
 import eu.modernmt.tokenizer.TokenizerPool;
 import org.apache.commons.io.FileUtils;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,10 +20,18 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class TranslationEngine {
 
+    private static final String CONTEXT_ANALYZER_INDEX_PATH = path("data", "context", "index");
+    private static final String MOSES_INI_PATH = path("data", "moses.ini");
+    private static final String ENGINE_CONFIG_PATH = "engine.ini";
+    private static final String ENGINE_RUNTIME_PATH = "runtime";
+
+    private static final int DEFAULT_DECODER_THREADS;
+    private static final int DEFAULT_SA_WORKERS;
     private static final String SYSPROP_ENGINES_PATH = "mmt.engines.path";
     private static final File ENGINES_PATH;
 
     static {
+        // ENGINES_PATH
         String path = System.getProperty(SYSPROP_ENGINES_PATH);
         if (path == null)
             throw new IllegalStateException("The system property '" + SYSPROP_ENGINES_PATH + "' must be initialized to the path of the engines folder.");
@@ -34,6 +39,11 @@ public class TranslationEngine {
         ENGINES_PATH = new File(path);
         if (!ENGINES_PATH.isDirectory())
             throw new IllegalStateException("Invalid path for property '" + SYSPROP_ENGINES_PATH + "': " + ENGINES_PATH + " must be a valid directory.");
+
+        // DEFAULT_DECODER_THREADS and DEFAULT_SA_WORKERS
+        int cores = Runtime.getRuntime().availableProcessors();
+        DEFAULT_DECODER_THREADS = cores > 3 ? cores - 2 : cores;
+        DEFAULT_SA_WORKERS = cores > 3 ? 2 : 1;
     }
 
     private static String path(String... path) {
@@ -48,10 +58,6 @@ public class TranslationEngine {
         return result.toString();
     }
 
-    private static final String CONTEXT_ANALYZER_INDEX_PATH = path("data", "context", "index");
-    private static final String MOSES_INI_PATH = path("data", "moses.ini");
-    private static final String ENGINE_CONFIG_PATH = "engine.json";
-
     private static final ConcurrentHashMap<String, TranslationEngine> engines = new ConcurrentHashMap<>();
 
     public static TranslationEngine get(String id) throws IOException {
@@ -64,16 +70,18 @@ public class TranslationEngine {
     private File root;
     private String id;
 
-    private Locale sourceLanguage;
-    private Locale targetLanguage;
     private ContextAnalyzer contextAnalyzer;
     private MosesDecoder decoder;
     private File configFile;
-    private JSONObject config;
+    private File runtimePath;
+    private TranslationEngineConfig config;
 
     private TranslationEngine(File engines, String id) throws IOException {
         this.id = id;
         this.root = new File(engines, id);
+        this.runtimePath = new File(this.root, ENGINE_RUNTIME_PATH);
+
+        FileUtils.forceMkdir(runtimePath);
 
         if (!root.isDirectory())
             throw new FileNotFoundException(root.toString());
@@ -82,16 +90,7 @@ public class TranslationEngine {
         if (!configFile.isFile())
             throw new FileNotFoundException(configFile.toString());
 
-        String content = FileUtils.readFileToString(configFile, "UTF-8");
-        this.config = new JSONObject(content);
-        this.sourceLanguage = Locale.forLanguageTag(config.getJSONObject("engine").getString("source_language"));
-        this.targetLanguage = Locale.forLanguageTag(config.getJSONObject("engine").getString("target_language"));
-    }
-
-    public void setConfig(JSONObject config) throws IOException {
-        this.config = config;
-
-        FileUtils.write(configFile, config.toString(), "UTF-8", false);
+        this.config = TranslationEngineConfig.read(configFile);
     }
 
     public String getId() {
@@ -110,66 +109,59 @@ public class TranslationEngine {
     public Decoder getDecoder() throws IOException {
         if (decoder == null) {
             Map<String, float[]> weights = getDecoderWeights();
-            MosesINI mosesINI = MosesINI.load(new File(this.root, MOSES_INI_PATH));
+            File templateFile = new File(this.root, MOSES_INI_PATH);
+            MosesINI mosesINI = MosesINI.load(templateFile, this.root);
 
-            if (weights != null) {
-                mosesINI.updateWeights(weights);
-                mosesINI.save();
-            }
+            if (weights != null)
+                mosesINI.setWeights(weights);
 
-            decoder = new MosesDecoder(mosesINI);
+            mosesINI.setThreads(getDecoderThreads());
+            mosesINI.setWorkers(getSuffixArraysWorkers());
+
+
+            File inifile = new File(runtimePath, "moses.ini");
+            FileUtils.write(inifile, mosesINI.toString(), false);
+            decoder = new MosesDecoder(inifile);
         }
 
         return decoder;
     }
 
     public TokenizerPool getTokenizer() {
-        return TokenizerPool.getCachedInstance(sourceLanguage);
+        return TokenizerPool.getCachedInstance(getSourceLanguage());
     }
 
     public DetokenizerPool getDetokenizer() {
-        return DetokenizerPool.getCachedInstance(targetLanguage);
+        return DetokenizerPool.getCachedInstance(getTargetLanguage());
     }
 
     public Locale getSourceLanguage() {
-        return sourceLanguage;
+        return config.getSourceLanguage();
     }
 
     public Locale getTargetLanguage() {
-        return targetLanguage;
+        return config.getTargetLanguage();
     }
 
     public Map<String, float[]> getDecoderWeights() {
-        JSONObject json = this.config.optJSONObject("weights");
+        return config.getDecoderWeights();
+    }
 
-        if (json == null || json.length() == 0)
-            return null;
+    public int getDecoderThreads() {
+        return config.getDecoderThreads(DEFAULT_DECODER_THREADS);
+    }
 
-        HashMap<String, float[]> weights = new HashMap<>();
-
-        for (String key : json.keySet()) {
-            JSONArray array = json.getJSONArray(key);
-
-            float[] floats = new float[array.length()];
-            for (int i = 0; i < array.length(); i++)
-                floats[i] = (float) array.getDouble(i);
-
-            weights.put(key, floats);
-        }
-
-        return weights;
+    public int getSuffixArraysWorkers() {
+        return config.getSuffixArraysWorkers(DEFAULT_SA_WORKERS);
     }
 
     public void setDecoderWeights(Map<String, float[]> weights) {
-        if (weights == null || weights.size() == 0)
-            this.config.remove("weights");
-        else
-            this.config.put("weights", weights);
+        config.setDecoderWeights(weights);
 
         try {
-            FileUtils.write(configFile, config.toString(), "UTF-8", false);
+            config.save(configFile);
         } catch (IOException e) {
-            throw new RuntimeException("Unable to write engine config file");
+            throw new RuntimeException("Unable to write engine config file", e);
         }
     }
 
