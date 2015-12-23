@@ -6,6 +6,7 @@ import os
 import random
 import shutil
 import signal
+import subprocess
 import time
 import urllib
 import urllib2
@@ -31,7 +32,10 @@ class _Api:
     def __init__(self, port):
         self.port = port
 
-    def get(self, endpoint, params=None):
+        logging.getLogger('requests').setLevel(1000)
+        logging.getLogger('urllib3').setLevel(1000)
+
+    def _get(self, endpoint, params=None):
         url = 'http://localhost:{port}/{endpoint}'.format(port=self.port, endpoint=endpoint)
 
         if params is not None:
@@ -39,6 +43,9 @@ class _Api:
 
         raw_text = urllib2.urlopen(url).read()
         return json.loads(raw_text)
+
+    def stats(self):
+        return self._get('_stat')
 
 
 class _CommandLogger:
@@ -57,7 +64,6 @@ class _CommandLogger:
         self._logger.info('%s finished, took %ds', self._step, self._end_time - self._start_time)
 
 
-# noinspection PyBroadException
 class MMTEngine:
     injector_section = 'engine'
     injectable_fields = {
@@ -69,7 +75,7 @@ class MMTEngine:
     training_steps = ['tokenize', 'clean', 'context_analyzer', 'lm', 'tm']
 
     def __init__(self, langs=None, name=None):
-        self._name = name if name is not None else 'default'
+        self.name = name if name is not None else 'default'
         self._source_lang = langs[0] if langs is not None else None
         self._target_lang = langs[1] if langs is not None else None
 
@@ -81,20 +87,17 @@ class MMTEngine:
         self._mert_script = os.path.join(Moses.bin_path, 'scripts', 'mert-moses.pl')
         self._mert_i_script = os.path.join(scripts.MMT_ROOT, 'pymmt', 'mertinterface.py')
 
-        self._root_path = os.path.join(scripts.ENGINES_DIR, self._name)
+        self._root_path = os.path.join(scripts.ENGINES_DIR, self.name)
         self._data_path = os.path.join(self._root_path, 'data')
         self._logs_path = os.path.join(self._root_path, 'logs')
         self._temp_path = os.path.join(self._root_path, 'temp')
-        self._runtime_path = os.path.join(self._root_path, 'runtime')
+        self.runtime_path = os.path.join(self._root_path, 'runtime')
 
         self._config_file = os.path.join(self._root_path, 'engine.ini')
-        self._server_pid_file = os.path.join(self._runtime_path, 'pid')
         self._pt_model = os.path.join(self._data_path, 'phrase_tables')
         self._lm_model = os.path.join(self._data_path, 'lm', 'target.lm')
         self._context_index = os.path.join(self._data_path, 'context', 'index')
         self._moses_ini_file = os.path.join(self._data_path, 'moses.ini')
-
-        self.server = None
 
     def exists(self):
         return os.path.isfile(self._config_file)
@@ -153,7 +156,7 @@ class MMTEngine:
 
         return folder
 
-    def _get_logfile(self, name, ensure=True):
+    def get_logfile(self, name, ensure=True):
         if ensure and not os.path.isdir(self._logs_path):
             fileutils.makedirs(self._logs_path, exist_ok=True)
 
@@ -170,7 +173,7 @@ class MMTEngine:
             if len(unknown_steps) > 0:
                 raise Exception('Unknown training steps: ' + str(unknown_steps))
 
-        logger.info("MMT training started. ENGINE = %s, CORPORA = %s (%d documents), LANGS = %s > %s", self._name,
+        logger.info("MMT training started. ENGINE = %s, CORPORA = %s (%d documents), LANGS = %s > %s", self.name,
                     corpora[0].root, len(corpora), self._source_lang, self._target_lang)
 
         shutil.rmtree(self._root_path, ignore_errors=True)
@@ -198,21 +201,21 @@ class MMTEngine:
             # Training Context Analyzer
             if 'context_analyzer' in steps:
                 with _CommandLogger('Context Analyzer training') as _:
-                    log_file = self._get_logfile('build.context')
+                    log_file = self.get_logfile('build.context')
                     self._analyzer.create_index(self._context_index, original_corpora[0].root, log_file)
 
             # Training Language Model
             if 'lm' in steps:
                 with _CommandLogger('Language Model training') as _:
                     working_dir = self._get_tempdir('lm')
-                    log_file = self._get_logfile('build.lm')
+                    log_file = self.get_logfile('build.lm')
                     self._lm.train(tokenized_corpora, self._target_lang, working_dir, log_file)
 
             # Training Translation Model
             if 'tm' in steps:
                 with _CommandLogger('Translation Model training') as _:
                     working_dir = self._get_tempdir('tm')
-                    log_file = self._get_logfile('build.tm')
+                    log_file = self.get_logfile('build.tm')
                     self._pt.train(cleaned_corpora, self._aligner, working_dir, log_file)
 
             # Writing config file
@@ -232,140 +235,31 @@ class MMTEngine:
             if not debug:
                 shutil.rmtree(self._temp_path, ignore_errors=True)
 
-    def tune(self, corpora, port, tokenize=True, debug=False, context_enabled=True):
-        if len(corpora) == 0:
-            raise Exception('Empty corpora')
 
-        logger.info("MMT tuning started. ENGINE = %s, CORPORA = %s (%d documents), LANGS = %s > %s", self._name,
-                    corpora[0].root, len(corpora), self._source_lang, self._target_lang)
+class _ProcessMonitor:
+    def __init__(self, pidfile):
+        self._pidfile = pidfile
+        self._process = None
 
-        working_dir = self._get_tempdir('tuning')
-
-        try:
-            original_corpora = corpora
-
-            # Tokenization
-            tokenized_corpora = original_corpora
-
-            if tokenize:
-                tokenizer_output = os.path.join(working_dir, 'tokenized_corpora')
-                fileutils.makedirs(tokenizer_output, exist_ok=True)
-
-                with _CommandLogger('Tokenization process') as _:
-                    tokenized_corpora = self._tokenizer.batch_tokenize(corpora, tokenizer_output)
-
-            # Create merged corpus
-            source_merged_corpus = os.path.join(working_dir, 'corpus.' + self._source_lang)
-            with open(source_merged_corpus, 'wb') as out:
-                original_root = original_corpora[0].root
-
-                for corpus in tokenized_corpora:
-                    tokenized = corpus.get_file(self._source_lang)
-                    original = os.path.join(original_root, corpus.name + '.' + self._source_lang)
-                    out.write(tokenized + ':' + original + '\n')
-
-            target_merged_corpus = os.path.join(working_dir, 'corpus.' + self._target_lang)
-            fileutils.merge([corpus.get_file(self._target_lang) for corpus in tokenized_corpora], target_merged_corpus)
-
-            # Run MERT algorithm
-            with _CommandLogger('MERT tuning') as _:
-                decoder_flags = ['--port', str(port)]
-
-                if not context_enabled:
-                    decoder_flags.append('--skip-context-analysis')
-                    decoder_flags.append('1')
-
-                mert_wd = os.path.join(working_dir, 'mert')
-                fileutils.makedirs(mert_wd, exist_ok=True)
-
-                command = [self._mert_script, source_merged_corpus, target_merged_corpus,
-                           self._mert_i_script, self._moses_ini_file, '--mertdir', os.path.join(Moses.bin_path, 'bin'),
-                           '--mertargs', '\'--binary --sctype BLEU\'', '--working-dir', mert_wd,
-                           '--nbest', '100', '--decoder-flags', '"' + ' '.join(decoder_flags) + '"', '--nonorm',
-                           '--closest', '--no-filter-phrase-table']
-
-                with open(self._get_logfile('mert'), 'wb') as log:
-                    shell.execute(' '.join(command), stdout=log, stderr=log)
-
-            # Read optimized configuration
-            bleu_score = 0
-            weights = {}
-            found_weights = False
-
-            with open(os.path.join(working_dir, 'moses.ini')) as moses_ini:
-                for line in moses_ini:
-                    line = line.strip()
-
-                    if len(line) == 0:
-                        continue
-                    elif found_weights:
-                        tokens = line.split()
-                        weights[tokens[0].rstrip('=')] = [float(val) for val in tokens[1:]]
-                    elif line.startswith('# BLEU'):
-                        bleu_score = float(line.split()[2])
-                    elif line == '[weight]':
-                        found_weights = True
-
-            with _CommandLogger('Applying changes') as _:
-                _ = _Api(port).get('weights/set', {'w': json.dumps(weights)})
-
-            logger.info("MMT tuning process finished with BLEU of " + str(bleu_score))
-        except Exception as e:
-            logger.exception(e)
-            raise
-        finally:
-            if not debug:
-                shutil.rmtree(self._temp_path, ignore_errors=True)
-
-    def start_server(self, ports, context_enabled=True, daemonize=True):
-        if self.is_server_running():
-            raise Exception('Engine server is already running')
-
-        analyzer_port, moses_port, server_port = ports
-        self.server = MMTEngineServer(analyzer_port, moses_port, server_port, self)
-        self.server.set_context_enabled(context_enabled)
-
-        i_am_a_daemon = daemon.daemonize() if daemonize else True
-
-        if i_am_a_daemon:
-            self.server.start()
-        else:
-            success = False
-            for _ in range(0, 5):
-                logging.getLogger('requests').setLevel(1000)
-                logging.getLogger('urllib3').setLevel(1000)
-
-                try:
-                    response = requests.get('http://localhost:{port}/'.format(port=server_port))
-                    if response.status_code == 200:
-                        success = True
-                        break
-                except:
-                    pass
-
-                time.sleep(1)
-
-            return success
-
-    def _get_server_pid(self):
+    def _get_pid(self):
         pid = 0
 
-        if os.path.isfile(self._server_pid_file):
-            with open(self._server_pid_file) as pid_file:
+        if os.path.isfile(self._pidfile):
+            with open(self._pidfile) as pid_file:
                 pid = int(pid_file.read())
 
         return pid
 
-    def _set_server_pid(self, pid):
-        parent_dir = os.path.abspath(os.path.join(self._server_pid_file, os.pardir))
+    def _set_pid(self, pid):
+        parent_dir = os.path.abspath(os.path.join(self._pidfile, os.pardir))
         if not os.path.isdir(parent_dir):
             fileutils.makedirs(parent_dir, exist_ok=True)
 
-        with open(self._server_pid_file, 'w') as pid_file:
+        with open(self._pidfile, 'w') as pid_file:
             pid_file.write(str(pid))
 
-    def is_server_running(self):
-        pid = self._get_server_pid()
+    def is_running(self):
+        pid = self._get_pid()
 
         if pid == 0:
             return False
@@ -386,8 +280,208 @@ class MMTEngine:
         else:
             return True
 
-    def stop_server(self):
-        if not self.is_server_running():
-            raise Exception('Server is not running')
+    def start(self, daemonize=True):
+        if self.is_running():
+            raise Exception('Process is already running')
 
-        os.kill(self._get_server_pid(), signal.SIGTERM)
+        i_am_a_daemon = daemon.daemonize() if daemonize else True
+
+        if i_am_a_daemon:
+            self._set_pid(os.getpid())
+
+            signal.signal(signal.SIGINT, self._kill_handler)
+            signal.signal(signal.SIGTERM, self._kill_handler)
+
+            code = 1
+
+            while code > 0:
+                self._process = self._start_process()
+                self._process.wait()
+                code = self._process.returncode
+        else:
+            success = False
+            for _ in range(0, 5):
+                success = self._check_process_status()
+                if success:
+                    break
+                else:
+                    time.sleep(1)
+
+            return success
+
+    def _start_process(self):
+        pass
+
+    def _check_process_status(self):
+        pass
+
+    def _kill_handler(self, sign, _):
+        self._process.send_signal(sign)
+        exit(0)
+
+    def stop(self):
+        if not self.is_running():
+            raise Exception('Process is not running')
+
+        os.kill(self._get_pid(), signal.SIGTERM)
+
+
+class MMTServer(_ProcessMonitor):
+    def __init__(self, engine, api_port, cluster_ports):
+        _ProcessMonitor.__init__(self, os.path.join(engine.runtime_path, 'server_pid'))
+
+        self.engine = engine
+        self.cluster_ports = cluster_ports
+        self.api_port = api_port
+
+        self.log_file = engine.get_logfile('mmtserver', ensure=False)
+        self.api = _Api(api_port)
+
+    def _start_process(self):
+        classpath = [scripts.MMT_JAR]
+        sysprop = {
+            'mmt.engines.path': scripts.ENGINES_DIR,
+            'mmt.tokenizer.models.path': os.path.join(scripts.DATA_DIR, 'tokenizer', 'models'),
+            'java.library.path': scripts.BIN_DIR,
+        }
+
+        command = ['java', '-cp', ':'.join(classpath)]
+        for key, value in sysprop.iteritems():
+            command.append('-D' + key + '=' + value)
+
+        command += ['eu.modernmt.cli.RESTMain', '-e', self.engine.name, '-a', str(self.api_port), '-p',
+                    str(self.cluster_ports[0]), str(self.cluster_ports[1])]
+
+        self.engine.get_logfile('mmtserver', ensure=True)
+        log = open(self.log_file, 'wa')
+        return subprocess.Popen(command, stdout=log, stderr=log, shell=False)
+
+    def _check_process_status(self):
+        try:
+            self.api.stats()
+            return True
+        except:
+            return False
+
+
+class MMTWorker(_ProcessMonitor):
+    def __init__(self, engine, cluster_ports, master=None):
+        _ProcessMonitor.__init__(self, os.path.join(engine.runtime_path, 'worker_pid'))
+
+        self.engine = engine
+        self.cluster_ports = cluster_ports
+        self._master = master
+
+        self.log_file = engine.get_logfile('mmtworker', ensure=False)
+
+    def _start_process(self):
+        classpath = [scripts.MMT_JAR]
+        sysprop = {
+            'mmt.engines.path': scripts.ENGINES_DIR,
+            'mmt.tokenizer.models.path': os.path.join(scripts.DATA_DIR, 'tokenizer', 'models'),
+            'java.library.path': scripts.BIN_DIR,
+        }
+
+        command = ['java', '-cp', ':'.join(classpath)]
+        for key, value in sysprop.iteritems():
+            command.append('-D' + key + '=' + value)
+
+        command += ['eu.modernmt.cli.WorkerMain', '-e', self.engine.name, '-p', str(self.cluster_ports[0]),
+                    str(self.cluster_ports[1])]
+
+        if self._master is not None:
+            for key, value in self._master.iteritems():
+                command.append('--master-' + key)
+                command.append(value)
+
+        self.engine.get_logfile('mmtworker', ensure=True)
+        log = open(self.log_file, 'wa')
+        return subprocess.Popen(command, stdout=log, stderr=log, shell=False)
+
+    def _check_process_status(self):
+        return True
+
+            # def tune(self, corpora, port, tokenize=True, debug=False, context_enabled=True):
+            #     if len(corpora) == 0:
+            #         raise Exception('Empty corpora')
+            #
+            #     logger.info("MMT tuning started. ENGINE = %s, CORPORA = %s (%d documents), LANGS = %s > %s", self.name,
+            #                 corpora[0].root, len(corpora), self._source_lang, self._target_lang)
+            #
+            #     working_dir = self._get_tempdir('tuning')
+            #
+            #     try:
+            #         original_corpora = corpora
+            #
+            #         # Tokenization
+            #         tokenized_corpora = original_corpora
+            #
+            #         if tokenize:
+            #             tokenizer_output = os.path.join(working_dir, 'tokenized_corpora')
+            #             fileutils.makedirs(tokenizer_output, exist_ok=True)
+            #
+            #             with _CommandLogger('Tokenization process') as _:
+            #                 tokenized_corpora = self._tokenizer.batch_tokenize(corpora, tokenizer_output)
+            #
+            #         # Create merged corpus
+            #         source_merged_corpus = os.path.join(working_dir, 'corpus.' + self._source_lang)
+            #         with open(source_merged_corpus, 'wb') as out:
+            #             original_root = original_corpora[0].root
+            #
+            #             for corpus in tokenized_corpora:
+            #                 tokenized = corpus.get_file(self._source_lang)
+            #                 original = os.path.join(original_root, corpus.name + '.' + self._source_lang)
+            #                 out.write(tokenized + ':' + original + '\n')
+            #
+            #         target_merged_corpus = os.path.join(working_dir, 'corpus.' + self._target_lang)
+            #         fileutils.merge([corpus.get_file(self._target_lang) for corpus in tokenized_corpora], target_merged_corpus)
+            #
+            #         # Run MERT algorithm
+            #         with _CommandLogger('MERT tuning') as _:
+            #             decoder_flags = ['--port', str(port)]
+            #
+            #             if not context_enabled:
+            #                 decoder_flags.append('--skip-context-analysis')
+            #                 decoder_flags.append('1')
+            #
+            #             mert_wd = os.path.join(working_dir, 'mert')
+            #             fileutils.makedirs(mert_wd, exist_ok=True)
+            #
+            #             command = [self._mert_script, source_merged_corpus, target_merged_corpus,
+            #                        self._mert_i_script, self._moses_ini_file, '--mertdir', os.path.join(Moses.bin_path, 'bin'),
+            #                        '--mertargs', '\'--binary --sctype BLEU\'', '--working-dir', mert_wd,
+            #                        '--nbest', '100', '--decoder-flags', '"' + ' '.join(decoder_flags) + '"', '--nonorm',
+            #                        '--closest', '--no-filter-phrase-table']
+            #
+            #             with open(self._get_logfile('mert'), 'wb') as log:
+            #                 shell.execute(' '.join(command), stdout=log, stderr=log)
+            #
+            #         # Read optimized configuration
+            #         bleu_score = 0
+            #         weights = {}
+            #         found_weights = False
+            #
+            #         with open(os.path.join(working_dir, 'moses.ini')) as moses_ini:
+            #             for line in moses_ini:
+            #                 line = line.strip()
+            #
+            #                 if len(line) == 0:
+            #                     continue
+            #                 elif found_weights:
+            #                     tokens = line.split()
+            #                     weights[tokens[0].rstrip('=')] = [float(val) for val in tokens[1:]]
+            #                 elif line.startswith('# BLEU'):
+            #                     bleu_score = float(line.split()[2])
+            #                 elif line == '[weight]':
+            #                     found_weights = True
+            #
+            #         with _CommandLogger('Applying changes') as _:
+            #             _ = _Api(port).get('weights/set', {'w': json.dumps(weights)})
+            #
+            #         logger.info("MMT tuning process finished with BLEU of " + str(bleu_score))
+            #     except Exception as e:
+            #         logger.exception(e)
+            #         raise
+            #     finally:
+            #         if not debug:
+            #             shutil.rmtree(self._temp_path, ignore_errors=True)

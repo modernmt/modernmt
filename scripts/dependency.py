@@ -1,5 +1,5 @@
 import re
-from ConfigParser import ConfigParser
+from ConfigParser import ConfigParser, NoOptionError
 
 __author__ = 'Davide Caroselli'
 
@@ -70,12 +70,15 @@ class Injector:
                 if isinstance(ftype, tuple):
                     ftype = ftype[0]
 
-                value = config.get(section, field)
+                try:
+                    value = config.get(section, field)
 
-                if ftype is bool:
-                    value = (value == 'True')
-                elif ftype is not basestring:
-                    value = ftype(value)
+                    if ftype is bool:
+                        value = (value == 'True')
+                    elif ftype is not basestring:
+                        value = ftype(value)
+                except NoOptionError:
+                    value = defval
 
                 self._params[section][field] = value
 

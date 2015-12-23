@@ -50,6 +50,13 @@ public class MMTServer extends Cluster {
     public void start() throws IOException {
         super.start();
         sendBroadcastSignal(SIGNAL_RESET, null);
+        logger.info("MMT Cluster Server startup.");
+    }
+
+    @Override
+    public void shutdown() {
+        super.shutdown();
+        logger.info("MMT Cluster Server shutdown.");
     }
 
     @Override
@@ -160,6 +167,8 @@ public class MMTServer extends Cluster {
         try {
             return this.submit(task).get();
         } catch (ExecutionException e) {
+            logger.warn("Task execution failed with exception", e.getCause());
+
             Throwable cause = e.getCause();
             if (cause instanceof IOException)
                 throw (IOException) cause;

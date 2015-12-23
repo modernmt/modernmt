@@ -1,11 +1,11 @@
 #!/usr/bin/python
 import argparse
 import logging
-import socket
+import os
 import sys
 
 from scripts import dependency
-from scripts.engine import MMTEngine
+from scripts.engine import MMTEngine, MMTServer, MMTWorker
 from scripts.mt import ParallelCorpus
 from scripts.mt.contextanalysis import ContextAnalyzer
 from scripts.mt.lm import LanguageModel
@@ -38,83 +38,6 @@ logging.basicConfig(
 )
 
 
-# def _get_freeport():
-#     sck = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#     sck.bind(('', 0))
-#     addr = sck.getsockname()
-#     port = addr[1]
-#     sck.close()
-#
-#     return port
-#
-#
-# def _is_freeport(port):
-#     sck = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#     error = sck.connect_ex(('', port))
-#     sck.close()
-#
-#     return error != 0
-#
-#
-
-#
-#
-# def _mmt_server(op, argv):
-#     parser = argparse.ArgumentParser(description='Start/Stop MMT engine server')
-#     parser.prog = 'mmt ' + op
-#     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
-#                         default='default')
-#     parser.add_argument('-p', '--ports', dest='ports', metavar='PORT',
-#                         help='server ports (Context Analyzer, Moses and MMT). The default behaviour is to choose 3 random available ports',
-#                         default=None, nargs=3, type=int)
-#     parser.add_argument('--skip-context-analysis', dest='context_enabled', help='if set, context analysis is skipped',
-#                         default=True, action='store_false')
-#
-#     args = parser.parse_args(argv)
-#
-#     engine = MMTEngine(name=args.engine)
-#
-#     if not engine.exists():
-#         raise Exception('Engine "' + args.engine + '" not found')
-#
-#     injector = dependency.Injector(*_injectable_components)
-#     injector.read_config(engine.config)
-#     engine = injector.inject(engine)
-#
-#     if op == 'start':
-#         ports = args.ports
-#
-#         if ports is None:
-#             ports = []
-#
-#             while not ports:
-#                 port = _get_freeport()
-#
-#                 if _is_freeport(port + 1) and _is_freeport(port + 2):
-#                     ports = [port, port + 1, port + 2]
-#
-#         print 'Starting server...',
-#         sys.stdout.flush()
-#
-#         if engine.start_server(ports, args.context_enabled, daemonize=True):
-#             print 'OK'
-#             if args.context_enabled:
-#                 print '  Context Analyzer running on port', ports[0]
-#             print '  Moses Server running on port', ports[1]
-#             print '  MMT Server running on port', ports[2]
-#             print
-#             print '  (log file:', engine.server.log_file, ')'
-#         else:
-#             print 'FAIL'
-#             print '  An error occurred during server startup. Please see the log file for more details.'
-#             print
-#             print '  (log file:', engine.server.log_file, ')'
-#     elif op == 'stop':
-#         print 'Stopping server...',
-#         engine.stop_server()
-#         print 'OK'
-#     else:  # status
-#         print 'running' if engine.is_server_running() else 'stopped'
 #
 #
 # def _mmt_tune(argv):
@@ -145,24 +68,125 @@ logging.basicConfig(
 #
 #     engine.tune(corpora, args.port, debug=args.debug, context_enabled=args.context_enabled)
 
-def main_stop_worker(argv):
-    print 'main_stop_worker'
-
-
-def main_stop_master(argv):
-    print 'main_stop_master'
-
-
-def main_start_worker(argv):
-    print 'main_start_worker'
-
-
-def main_start_master(argv):
-    print 'main_start_master'
-
 
 def main_tune(argv):
     print 'main_tune'
+
+
+def main_master(op, argv):
+    parser = argparse.ArgumentParser(description='Start/Stop MMT Master server')
+    parser.prog = 'mmt ' + op
+    parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
+                        default='default')
+    parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
+                        help='the public available REST Api port. (default is 8080)',
+                        default=8080, type=int)
+    parser.add_argument('--cluster-ports', dest='cluster_ports', metavar='CLUSTER_PORTS',
+                        help='two network ports used internally by the cluster to data exchange between Master Server '
+                             'and Slave Workers. (default is 5000 and 5001)',
+                        default=[5000, 5001], nargs=2, type=int)
+    args = parser.parse_args(argv)
+
+    engine = MMTEngine(name=args.engine)
+
+    if not engine.exists():
+        raise Exception('Engine "' + args.engine + '" not found')
+
+    injector = dependency.Injector(*_injectable_components)
+    injector.read_config(engine.config)
+    engine = injector.inject(engine)
+
+    server = MMTServer(engine, args.api_port, args.cluster_ports)
+
+    if op == 'start':
+        print 'Starting server...',
+        sys.stdout.flush()
+
+        if server.start(daemonize=True):
+            print 'OK'
+            print '  MMT Server running on port', args.api_port
+            print
+            print '  (log file:', server.log_file, ')'
+        else:
+            print 'FAIL'
+            print '  An error occurred during server startup. Please see the log file for more details.'
+            print
+            print '  (log file:', server.log_file, ')'
+    elif op == 'stop':
+        print 'Stopping server...',
+        server.stop()
+        print 'OK'
+    else:  # status
+        print 'running' if server.is_running() else 'stopped'
+
+
+def main_worker(op, argv):
+    parser = argparse.ArgumentParser(description='Start/Stop MMT Slave worker')
+    parser.prog = 'mmt ' + op + ' worker'
+    parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
+                        default='default')
+    parser.add_argument('-m', '--master', dest='master', help='the master remote host as user[:password]@host. Default '
+                                                              'is localhost', default=None)
+    parser.add_argument('--master-pem', dest='master_pem', help='the PEM file needed to connect to the '
+                                                                'master remote host', default=None)
+    parser.add_argument('--cluster-ports', dest='cluster_ports', metavar='CLUSTER_PORTS',
+                        help='two network ports used internally by the cluster to data exchange between Master Server '
+                             'and Slave Workers. (default is 5000 and 5001)',
+                        default=[5000, 5001], nargs=2, type=int)
+    args = parser.parse_args(argv)
+
+    # Create engine
+    engine = MMTEngine(name=args.engine)
+
+    if not engine.exists():
+        raise Exception('Engine "' + args.engine + '" not found')
+
+    injector = dependency.Injector(*_injectable_components)
+    injector.read_config(engine.config)
+    engine = injector.inject(engine)
+
+    # Parse Master parameters
+    master = None
+
+    if args.master is not None:
+        if args.master.count('@') != 1:
+            raise Exception('Master must be in the format "user[:password]@host"')
+        credentials, host = args.master.split('@')
+        user, passwd = credentials.split(':', 1) if ':' in credentials else [credentials, None]
+
+        if args.master_pem is not None and not os.path.isfile(args.master_pem):
+            raise Exception('Master PEM file "' + args.master_pem + '" not found ')
+
+        master = {
+            'host': host,
+            'user': user,
+            'passwd': passwd,
+            'pem': args.master_pem
+        }
+
+    # Run worker
+    worker = MMTWorker(engine, args.cluster_ports, master)
+
+    if op == 'start':
+        print 'Starting server...',
+        sys.stdout.flush()
+
+        if worker.start(daemonize=True):
+            print 'OK'
+            print '  MMT Wroker connected to', (master['host'] if master is not None else 'localhost')
+            print
+            print '  (log file:', worker.log_file, ')'
+        else:
+            print 'FAIL'
+            print '  An error occurred during worker startup. Please see the log file for more details.'
+            print
+            print '  (log file:', worker.log_file, ')'
+    elif op == 'stop':
+        print 'Stopping worker...',
+        worker.stop()
+        print 'OK'
+    else:  # status
+        print 'running' if worker.is_running() else 'stopped'
 
 
 def main_create(argv):
@@ -171,7 +195,7 @@ def main_create(argv):
     parser.add_argument('source_lang', metavar='SOURCE_LANGUAGE', help='the source language (ISO 639-1)')
     parser.add_argument('target_lang', metavar='TARGET_LANGUAGE', help='the target language (ISO 639-1)')
     parser.add_argument('corpora_path', metavar='CORPORA', help='the path to the training corpora')
-    parser.add_argument('-n', '--name', dest='engine', help='the engine name, \'default\' will be used if absent',
+    parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default=None)
     parser.add_argument('-d', '--debug', action='store_true', dest='debug',
                         help='if debug is set, it enables verbose logging and prevents temporary files to be removed '
@@ -200,58 +224,23 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=__description,
                                      usage='%(prog)s [-h] ACTION [args]', add_help=False, prog='mmt')
     parser.add_argument('action', metavar='ACTION',
-                        choices=['create engine', 'start', 'stop', 'start worker', 'stop worker', 'tune'],
+                        choices=['create engine', 'start', 'stop', 'status', 'start worker', 'stop worker',
+                                 'status worker', 'tune'],
                         help='{%(choices)s}', nargs='?')
     parser.add_argument('-h', '--help', dest='help', action='store_true', help='show this help message and exit')
 
     argv = sys.argv[1:]
     if ['create', 'engine'] == argv[:2]:
         main_create(argv[2:])
-    elif ['start', 'worker'] == argv[:2]:
-        main_start_worker(argv[2:])
-    elif ['start'] == argv[:1]:
-        main_start_master(argv[1:])
-    elif ['stop', 'worker'] == argv[:2]:
-        main_stop_worker(argv[2:])
-    elif ['stop'] == argv[:1]:
-        main_stop_master(argv[1:])
+    elif ['start', 'worker'] == argv[:2] or ['stop', 'worker'] == argv[:2] or ['status', 'worker'] == argv[:2]:
+        main_worker(argv[0], argv[2:])
+    elif ['start'] == argv[:1] or ['stop'] == argv[:1] or ['status'] == argv[:1]:
+        main_master(argv[0], argv[1:])
     elif ['tune'] == argv[:1]:
         main_tune(argv[1:])
     else:
         parser.print_help()
-        #     == Welcome to MMT
-        #
-        # == Quickstart
-        #
-        # === Creating your first engine
-        #
-        # Come creare il primo engine in meno di 1 minuto
-        #
-        # Per lanciare MMT su una singola macchina esegui il comando:
-        # 	$> ./mmt start
-        #
-        # Crea un nuovo motore di traduzione con il comando:
-        # 	$> ./mmt create engine my-engine en it example/train
-        #
-        # === Creating your first distributed cluster
-        #
-        # Install MMT on a new machine, then, from its shell execute
-        #
-        # 	$> ./mmt worker start --master 10.1.1.1
-        #
-        # This will sync the data to the new machine.
-        # Translation requests will go to the master via the API and it will load balance the request from the 2 machines.
-        # Engine creation runs only on the master.
-        #
-        # You can run a cluster made of as many machine you want. We tested it with 100 machines.
-        #
-        #
-        # == Advanced HowTo (See www)
-        #
-        #
-        #
-        # How to remove a node from the cluster.
-
+        
 
 if __name__ == '__main__':
     main()

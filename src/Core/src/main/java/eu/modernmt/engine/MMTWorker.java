@@ -35,12 +35,14 @@ public class MMTWorker extends Worker {
     public void start() throws IOException {
         super.start();
         this.initializer.start();
+        logger.info("MMT Cluster Worker startup.");
     }
 
     @Override
     public void shutdown() {
         super.shutdown();
         this.initializer.interrupt();
+        logger.info("MMT Cluster Worker shutdown.");
     }
 
     @Override

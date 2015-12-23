@@ -32,16 +32,17 @@ public class WorkerMain {
         TranslationEngine engine = TranslationEngine.get(cli.getOptionValue("engine"));
         String master = cli.hasOption("master") ? cli.getOptionValue("master") : null;
 
+        int threads = engine.getDecoderThreads();
         MMTWorker worker;
 
         if (cli.hasOption("cluster-ports")) {
             String[] sPorts = cli.getOptionValues("cluster-ports");
             int[] ports = new int[]{Integer.parseInt(sPorts[0]), Integer.parseInt(sPorts[1])};
-            worker = new MMTWorker(engine, master, ports, 1);
+            worker = new MMTWorker(engine, master, ports, threads);
         } else if (master != null) {
-            worker = new MMTWorker(engine, master, MMTServer.DEFAULT_SERVER_PORTS, 1);
+            worker = new MMTWorker(engine, master, MMTServer.DEFAULT_SERVER_PORTS, threads);
         } else {
-            worker = new MMTWorker(engine, 1);
+            worker = new MMTWorker(engine, threads);
         }
 
         Runtime.getRuntime().addShutdownHook(new ShutdownHook(worker));

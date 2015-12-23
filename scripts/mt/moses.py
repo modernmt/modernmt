@@ -12,13 +12,11 @@ class MosesFeature:
     def get_relpath(self, path):
         path = os.path.abspath(path)
         root = os.path.abspath(scripts.ENGINES_DIR)
-        path = path.replace(root, '')
-
-        if path[0] != os.sep:
-            path = os.sep + path
+        path = path.replace(root, '').lstrip(os.sep)
 
         path = os.sep.join(path.split(os.sep)[1:])
-        return '${ENGINE_PATH}' + path
+
+        return '${ENGINE_PATH}/' + path
 
     def get_iniline(self):
         return self.name
