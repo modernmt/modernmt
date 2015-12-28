@@ -107,15 +107,11 @@ public class MMTWorker extends Worker {
 
     private class Killer extends Thread {
 
-        public Killer() {
-            setDaemon(true);
-        }
-
         @Override
         public void run() {
             try {
                 shutdown();
-                awaitTermination(1, TimeUnit.MINUTES);
+                awaitTermination(2, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 // Nothing to do
             } finally {

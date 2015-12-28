@@ -11,6 +11,9 @@ include_directories(src)
 include_directories(libs/include)
 include_directories(jheaders)
 
+add_executable(wrappertest src/main.cpp)
+target_link_libraries(wrappertest ${PROJECT_NAME})
+
 # External Libraries
 
 ## BZip2
@@ -32,7 +35,7 @@ else (XMLRPC_FOUND)
 endif (XMLRPC_FOUND)
 
 ## Boost
-set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 

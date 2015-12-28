@@ -56,7 +56,7 @@ public class MosesINI {
 
         if (weights != null) {
             StringBuilder weightsSection = new StringBuilder();
-            weightsSection.append("\n[weights]\n");
+            weightsSection.append("\n[weight]\n");
 
             for (Map.Entry<String, float[]> entry : weights.entrySet()) {
                 weightsSection.append(entry.getKey());

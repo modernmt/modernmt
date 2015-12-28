@@ -122,7 +122,6 @@ protected:
   std::pair<std::string,std::string> m_xmlBrackets; //! strings to use as XML tags' opening and closing brackets. Default are "<" and ">"
 
   size_t m_lmcache_cleanup_threshold; //! number of translations after which LM claenup is performed (0=never, N=after N translations; default is 1)
-  bool m_lmEnableOOVFeature;
 
   bool m_isAlwaysCreateDirectTranslationOption;
   //! constructor. only the 1 static variable can be created
@@ -372,10 +371,6 @@ public:
     return m_lmcache_cleanup_threshold;
   }
 
-  bool GetLMEnableOOVFeature() const {
-    return m_lmEnableOOVFeature;
-  }
-
   const std::string& GetOutputUnknownsFile() const {
     return m_outputUnknownsFile;
   }
@@ -589,20 +584,35 @@ public:
   }
 
 //the setting function must be protected wih locks; the reading function does not required protection
-  ttasksptr GetTask() const{
-//    VERBOSE(1, "ttasksptr GetTask() const START" << std::endl);
+  ttasksptr GetTask(){
+#ifdef WITH_THREADS
+  boost::mutex::scoped_lock lock(m_ttasks_lock);
+#endif
+
 #ifdef BOOST_HAS_PTHREADS
     pthread_t tid = pthread_self();
 #else
     pthread_t tid = 0;
 #endif
-//    VERBOSE(1, "ttasksptr GetTask() const tid:|" << tid << "| m_ttasks.at(tid):|" << m_ttasks.at(tid) << "|" << std::endl);
-//    VERBOSE(1, "ttasksptr GetTask() const just before return" << std::endl);
+//It assumes that all thread have its own Task associated
     return m_ttasks.at(tid);
   }
 
+  void SetTask(){
+#ifdef WITH_THREADS
+    boost::mutex::scoped_lock lock(m_ttasks_lock);
+#endif
+
+#ifdef BOOST_HAS_PTHREADS
+    pthread_t tid = pthread_self();
+#else
+    pthread_t tid = 0;
+#endif
+    ttasksptr T;
+    m_ttasks[tid] = T;
+
+  }
   void SetTask(ttasksptr ttask){
-//    VERBOSE(1, "void SetTask(ttasksptr ttask) const START" << std::endl);
 #ifdef WITH_THREADS
   boost::mutex::scoped_lock lock(m_ttasks_lock);
 #endif
@@ -613,8 +623,6 @@ public:
     pthread_t tid = 0;
 #endif
     m_ttasks[tid] = ttask;
-//    VERBOSE(1, "void SetTask(ttasksptr ttask) tid:|" << tid << "| ttask:|" << ttask << "| m_ttasks.at(tid):|" << m_ttasks.at(tid) << "|" << std::endl);
-//    //    VERBOSE(1, "void SetTask(ttasksptr ttask) const END" << std::endl);
   }
 
 

@@ -2,6 +2,8 @@ package eu.modernmt.decoder.moses;
 
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,11 +16,15 @@ import java.util.Map;
  */
 public class MosesDecoder implements Decoder {
 
+    private static final Logger logger = LoggerFactory.getLogger(MosesDecoder.class);
+
     static {
         try {
+            logger.info("Loading jnimoses library");
             System.loadLibrary("jnimoses");
-        } catch (RuntimeException e) {
-            e.printStackTrace();
+            logger.info("Library jnimoses loaded successfully");
+        } catch (Throwable e) {
+            logger.error("Unable to load library jnimoses", e);
             throw e;
         }
     }

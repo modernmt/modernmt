@@ -119,17 +119,14 @@ translation_t MosesDecoderImpl::translate(const std::string &text, uint64_t sess
         params["session-id"] = xmlrpc_c::value_int((const int) session);
 
     if (translationContext != nullptr) {
-        std::string context;
+        std::map<std::string, xmlrpc_c::value> context;
 
         for (std::map<std::string, float>::const_iterator iterator = translationContext->begin();
              iterator != translationContext->end(); iterator++) {
-            context += (std::string) iterator->first;
-            context += ',';
-            context += std::to_string(iterator->second);
-            context += ':';
+            context[iterator->first] = xmlrpc_c::value_double((double) iterator->second);
         }
 
-        params["context-weights"] = xmlrpc_c::value_string(context.substr(0, context.length() - 1));
+        params["context-weights"] = xmlrpc_c::value_struct(context);
     }
 
     if (nbestListSize > 0) {

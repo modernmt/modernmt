@@ -38,39 +38,33 @@ logging.basicConfig(
 )
 
 
-#
-#
-# def _mmt_tune(argv):
-#     parser = argparse.ArgumentParser(description='Tune MMT engine server')
-#     parser.prog = 'mmt tune'
-#     parser.add_argument('port', metavar='PORT', help='MMT server port', type=int)
-#     parser.add_argument('corpora_path', metavar='CORPORA', help='the path to the training corpora')
-#     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
-#                         default='default')
-#     parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='if debug is set, it enables verbose '
-#                                                                                  'logging and prevents temporary files '
-#                                                                                  'to be removed after execution')
-#     parser.add_argument('--skip-context-analysis', dest='context_enabled', help='if set, context analysis is skipped',
-#                         default=True, action='store_false')
-#
-#     args = parser.parse_args(argv)
-#
-#     engine = MMTEngine(name=args.engine)
-#
-#     if not engine.exists():
-#         raise Exception('Engine "' + args.engine + '" not found')
-#
-#     injector = dependency.Injector(*_injectable_components)
-#     injector.read_config(engine.config)
-#     engine = injector.inject(engine)
-#
-#     corpora = ParallelCorpus.list(args.corpora_path)
-#
-#     engine.tune(corpora, args.port, debug=args.debug, context_enabled=args.context_enabled)
-
-
 def main_tune(argv):
-    print 'main_tune'
+    parser = argparse.ArgumentParser(description='Tune MMT Engine Server')
+    parser.prog = 'mmt tune'
+    parser.add_argument('api_port', metavar='API_PORT', help='MMT Server api port', type=int)
+    parser.add_argument('corpora_path', metavar='CORPORA', help='the path to the training corpora')
+    parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
+                        default='default')
+    parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='if debug is set, it enables verbose '
+                                                                                 'logging and prevents temporary files '
+                                                                                 'to be removed after execution')
+    parser.add_argument('--skip-context-analysis', dest='context_enabled', help='if set, context analysis is skipped',
+                        default=True, action='store_false')
+
+    args = parser.parse_args(argv)
+
+    engine = MMTEngine(name=args.engine)
+
+    if not engine.exists():
+        raise Exception('Engine "' + args.engine + '" not found')
+
+    injector = dependency.Injector(*_injectable_components)
+    injector.read_config(engine.config)
+    engine = injector.inject(engine)
+    server = MMTServer(engine, args.api_port)
+    corpora = ParallelCorpus.list(args.corpora_path)
+
+    server.tune(corpora, debug=args.debug, context_enabled=args.context_enabled)
 
 
 def main_master(op, argv):
@@ -240,7 +234,7 @@ def main():
         main_tune(argv[1:])
     else:
         parser.print_help()
-        
+
 
 if __name__ == '__main__':
     main()

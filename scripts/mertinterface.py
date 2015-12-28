@@ -1,115 +1,119 @@
 #!/usr/bin/python
 import argparse
-import json
+import collections
 import os
 import sys
-import tempfile
-import urllib
-import urllib2
+import time
+
+sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
+
+from scripts.engine import MMTServerApi
+from scripts.libs import multithread
 
 __author__ = 'Davide Caroselli'
 
 
-class ApiClass:
-    def __init__(self, port):
-        self.port = port
+class _DocumentTranslator:
+    def __init__(self, corpus, nbest, nbest_file, workers=100):
+        self.corpus = corpus
+        self.nbest = nbest
+        self.nbest_file = nbest_file
 
-    def get(self, endpoint, params=None):
-        url = 'http://localhost:{port}/{endpoint}'.format(port=self.port, endpoint=endpoint)
+        self.weights = None
+        self.skip_context = False
+        self._line_id = 0
 
-        if params is not None:
-            url += '?' + urllib.urlencode(params)
+        self._jobs = None
+        self._pool = multithread.Pool(workers)
 
-        raw_text = urllib2.urlopen(url).read()
-        return json.loads(raw_text)
+    def set_skipcontext(self, skip_context):
+        self.skip_context = skip_context
 
+    def set_weights(self, raw):
+        self.weights = {}
 
-Api = None
+        if raw is None:
+            return
+
+        array = []
+
+        for token in raw.split():
+            if token[-1:] == '=':
+                self.weights[token.rstrip('=')] = array = []
+            else:
+                array.append(float(token))
+
+    @staticmethod
+    def _get_translations(line, nbest, session):
+        return Api.nbest_list(line, size=nbest, session=session)
+
+    def _print(self, translations, nbest_out):
+        if len(translations) == 0:
+            return
+
+        print translations[0]['translation'].encode('utf-8')
+        sys.stdout.flush()
+
+        for translation in translations:
+            scores = []
+
+            for score in translation['scores']:
+                scores.append(score['component'] + '=')
+                for s in score['scores']:
+                    scores.append(str(s))
+
+            nbest_out.write(str(self._line_id))
+            nbest_out.write(' ||| ')
+            nbest_out.write(translation['translation'].encode('utf-8'))
+            nbest_out.write(' ||| ')
+            nbest_out.write(' '.join(scores))
+            nbest_out.write(' ||| ')
+            nbest_out.write(str(translation['totalScore']))
+            nbest_out.write('\n')
+
+    def start(self):
+        self._line_id = 0
+        self._jobs = []
+
+        time.sleep(1)
+
+        with open(self.corpus) as source:
+            for line in source:
+                tokenized, original = line.strip().split(':')
+
+                session = None
+
+                if not self.skip_context:
+                    context = Api.get_context_f(original)
+                    session = Api.create_session(context)['id']
+
+                with open(self.nbest_file, 'ab') as nbest_out:
+                    with open(tokenized) as doc:
+                        for docline in doc:
+                            result = self._pool.apply_async(self._get_translations, (docline, self.nbest, session))
+                            self._jobs.append(result)
+
+                        for job in self._jobs:
+                            translations = job.get()
+                            self._print(translations, nbest_out)
+                            self._line_id += 1
+
+                if session is not None:
+                    Api.close_session(session)
 
 
 def show_weighs():
-    features = Api.get('features')
+    features = Api.get_features()
 
-    for feature in features:
-        if 'weights' in feature:
-            print feature['name'] + '=', ' '.join([str(w) for w in feature['weights']])
+    for feature, weights in features.iteritems():
+        if weights is not None and isinstance(weights, collections.Iterable):
+            print feature + '=', ' '.join([str(w) for w in weights])
         else:
-            print feature['name'], 'UNTUNEABLE'
-
-
-def _parse_weights(raw):
-    result = {}
-    array = []
-
-    for token in raw.split():
-        if token[-1:] == '=':
-            result[token.rstrip('=')] = array = []
-        else:
-            array.append(float(token))
-
-    return result
-
-
-def _translate_document(document, tokenized_document, nbest, nbest_file, skip_context, line_id):
-    session = None
-
-    if not skip_context:
-        session = Api.get('session/open', {
-            'document': document
-        })['session-id']
-
-    with open(nbest_file, 'ab') as nbest_out:
-        with open(tokenized_document) as doc:
-            for line in doc:
-                translation = Api.get('translate', {
-                    'text': line,
-                    'processing': 'false',
-                    'nbest': nbest
-                })
-
-                if session is not None:
-                    translation['session'] = session
-
-                print translation['text'].encode('utf-8')
-                sys.stdout.flush()
-
-                for nbest_element in translation['nbest']:
-                    nbest_out.write(str(line_id))
-                    nbest_out.write(' ||| ')
-                    nbest_out.write(nbest_element['text'].encode('utf-8'))
-                    nbest_out.write(' ||| ')
-                    nbest_out.write(nbest_element['fvals'])
-                    nbest_out.write(' ||| ')
-                    nbest_out.write(str(nbest_element['score']))
-                    nbest_out.write('\n')
-
-                line_id += 1
-
-    if session is not None:
-        _ = Api.get('session/close', {
-            'session-id': session
-        })
-
-    return line_id
-
-
-def translate_merged_corpus(corpus, nbest, nbest_file, weights, skip_context):
-    if weights is not None:
-        weights = _parse_weights(weights)
-        _ = Api.get('weights/set', {
-            'w': json.dumps(weights)
-        })
-
-    line_id = 0
-
-    with open(corpus) as source:
-        for line in source:
-            tokenized, original = line.strip().split(':')
-            line_id = _translate_document(original, tokenized, nbest, nbest_file, skip_context, line_id)
+            print feature, 'UNTUNEABLE'
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='MMT engine wrapper for \'mert-moses.pl\' script.')
+    parser = argparse.ArgumentParser(description='MMT Server wrapper script for \'mert-moses.pl\' script.')
     parser.add_argument('--port', '-p', dest='port', type=int, help='MMT engine port')
     parser.add_argument('--skip-context-analysis', dest='context_analysis', type=int,
                         help='if present, skip context analysis')
@@ -132,11 +136,16 @@ if __name__ == '__main__':
         parser.print_help()
         exit(1)
 
-    Api = ApiClass(args.port)
+    Api = MMTServerApi(args.port)
 
     if args.show_weights:
+        # Show weights
         show_weighs()
     else:
-        skip_context = args.context_analysis is not None
-        translate_merged_corpus(args.input_file, int(args.nbest_list[1]), args.nbest_list[0], args.weights,
-                                skip_context)
+        translator = _DocumentTranslator(args.input_file, int(args.nbest_list[1]), args.nbest_list[0])
+        translator.set_weights(args.weights)
+
+        if args.context_analysis is not None:
+            translator.set_skipcontext(True)
+
+        translator.start()
