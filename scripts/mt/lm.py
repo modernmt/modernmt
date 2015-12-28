@@ -9,7 +9,7 @@ __author__ = 'Davide Caroselli'
 
 
 class LanguageModel(MosesFeature):
-    available_types = ['KenLM', 'AdaptiveIRSTLM']
+    available_types = ['AdaptiveIRSTLM', 'KenLM']
 
     injector_section = 'lm'
     injectable_fields = {

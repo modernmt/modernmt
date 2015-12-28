@@ -13,6 +13,15 @@ from scripts.libs import multithread
 __author__ = 'Davide Caroselli'
 
 
+def _sorted_features_list(features=None):
+    if features is None:
+        features = Api.get_features()
+
+    l = [str(f) for f, _ in features.iteritems()]
+    l.sort()
+    return l
+
+
 class _DocumentTranslator:
     def __init__(self, corpus, nbest, nbest_file, workers=100):
         self.corpus = corpus
@@ -23,8 +32,8 @@ class _DocumentTranslator:
         self.skip_context = False
         self._line_id = 0
 
-        self._jobs = None
         self._pool = multithread.Pool(workers)
+        self._features = None
 
     def set_skipcontext(self, skip_context):
         self.skip_context = skip_context
@@ -55,12 +64,17 @@ class _DocumentTranslator:
         sys.stdout.flush()
 
         for translation in translations:
+            score_map = {}
+            for score in translation['scores']:
+                score_map[score['component']] = score['scores']
+
             scores = []
 
-            for score in translation['scores']:
-                scores.append(score['component'] + '=')
-                for s in score['scores']:
-                    scores.append(str(s))
+            for feature in self._features:
+                if feature in score_map:
+                    scores.append(feature + '=')
+                    for s in score_map[feature]:
+                        scores.append(str(s))
 
             nbest_out.write(str(self._line_id))
             nbest_out.write(' ||| ')
@@ -71,41 +85,47 @@ class _DocumentTranslator:
             nbest_out.write(str(translation['totalScore']))
             nbest_out.write('\n')
 
-    def start(self):
+    def run(self):
         self._line_id = 0
-        self._jobs = []
 
         time.sleep(1)
 
-        with open(self.corpus) as source:
-            for line in source:
-                tokenized, original = line.strip().split(':')
+        self._features = _sorted_features_list()
 
-                session = None
+        with open(self.nbest_file, 'ab') as nbest_out:
+            with open(self.corpus) as source:
+                for line in source:
+                    tokenized, original = line.strip().split(':')
 
-                if not self.skip_context:
-                    context = Api.get_context_f(original)
-                    session = Api.create_session(context)['id']
+                    session = None
 
-                with open(self.nbest_file, 'ab') as nbest_out:
+                    if not self.skip_context:
+                        context = Api.get_context_f(original)
+                        session = Api.create_session(context)['id']
+
                     with open(tokenized) as doc:
+                        jobs = []
                         for docline in doc:
                             result = self._pool.apply_async(self._get_translations, (docline, self.nbest, session))
-                            self._jobs.append(result)
+                            jobs.append(result)
 
-                        for job in self._jobs:
+                        for job in jobs:
                             translations = job.get()
                             self._print(translations, nbest_out)
                             self._line_id += 1
 
-                if session is not None:
-                    Api.close_session(session)
+                    if session is not None:
+                        Api.close_session(session)
+
+        self._pool.terminate()
 
 
 def show_weighs():
-    features = Api.get_features()
+    features_map = Api.get_features()
+    features = _sorted_features_list(features_map)
 
-    for feature, weights in features.iteritems():
+    for feature in features:
+        weights = features_map[feature]
         if weights is not None and isinstance(weights, collections.Iterable):
             print feature + '=', ' '.join([str(w) for w in weights])
         else:
@@ -148,4 +168,4 @@ if __name__ == '__main__':
         if args.context_analysis is not None:
             translator.set_skipcontext(True)
 
-        translator.start()
+        translator.run()

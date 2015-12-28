@@ -431,6 +431,7 @@ class MMTServer(_ProcessMonitor):
                     corpora[0].root, len(corpora), source_lang, target_lang)
 
         working_dir = self.engine.get_tempdir('tuning')
+        mert_wd = os.path.join(working_dir, 'mert')
 
         try:
             original_corpora = corpora
@@ -466,7 +467,6 @@ class MMTServer(_ProcessMonitor):
                     decoder_flags.append('--skip-context-analysis')
                     decoder_flags.append('1')
 
-                mert_wd = os.path.join(working_dir, 'mert')
                 fileutils.makedirs(mert_wd, exist_ok=True)
 
                 runtime_moses_ini = os.path.join(self.engine.runtime_path, 'moses.ini')
@@ -484,7 +484,7 @@ class MMTServer(_ProcessMonitor):
             weights = {}
             found_weights = False
 
-            with open(os.path.join(working_dir, 'moses.ini')) as moses_ini:
+            with open(os.path.join(mert_wd, 'moses.ini')) as moses_ini:
                 for line in moses_ini:
                     line = line.strip()
 
