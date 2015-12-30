@@ -1,3 +1,17 @@
+## HW Requirements
+
+Storage: 4 times the corpus size 
+
+CPU: No minimum required. 
+  More cores generally will give you a faster training and translation throughput. 
+  More clock speed will generally give you a faster response time to the single translation request.
+
+Memory: >30GB needed to train 1B wor
+
+# Support
+You can report issues to davide.caroselli@translated.net
+
+
 # Use an Amazon AWS Istance
 
 To try MMT, we prepared this AMI on Amazon AWS: ami-XXXXXX
@@ -7,7 +21,9 @@ A Micro instance will work fine for the demo.
 
 For training models from 10M words to 1B words we recommend a c3.4xlarge instance. (30GB RAM, 16 core, circa $0.90/hour)
 
-# Linux - Using MMT Binaries
+# Linux - Using MMT Binaries Release
+
+See: https://github.com/ModernMT/MMT/releases
 
 Only works on: 
 - Ubuntu 14.04
@@ -17,31 +33,27 @@ AMI: thefactory-ubuntu-14.04-base-2014-09-02T00-42-39Z - ami-028c2b6a
 Instance: c3.4xlarge (30GB RAM, 16 core, circa $0.90/hour)
 
 ### Libraries required to run MMT:
-- sudo apt-get update
-- sudo apt-get install openjdk-7-jdk
-- sudo apt-get install jsvc
-- sudo apt-get install make
 
-## HW Requirements
+```bash
+sudo apt-get update
+sudo apt-get install openjdk-7-jdk
+sudo apt-get install jsvc
+sudo apt-get install make 
+```
 
-Storage: 4 times the corpus size 
-
-CPU: No minimum required. 
-  More cores generally will give you a faster training and translation throughput. 
-  More clock speed will generally give you a faster response time to the single translation request.
-
-Memory: >30GB needed to train 1B words model.
-
-# Support
-You can report issues to davide.caroselli@translated.net
-
-# Optional Stuff (for Private Open Source Contributors)
+# Installing from Sources (for Private Open Source Contributors)
 
 ## Instructions to compile MMT:
 
-### General-purpose
+### General-purpose requirements
 sudo apt-get install build-essential
 sudo apt-get install cmake
+
+
+
+# Deprecated Stuff
+
+## Instruction to compile IRSTLM and MOSES (Optional, binay for Ubuntu already provided)
 
 ### IRSTLM
 sudo apt-get install autoconf
@@ -59,6 +71,7 @@ pushd mmt-mvp-v0.2.1
 make -f Makefile.install-moses >& Makefile.install-moses.log &
 
 cd /mnt/mvp
+
 create-mvp.sh 1.0
 
 ### Installing tools
