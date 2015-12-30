@@ -23,13 +23,14 @@ For training models from 10M words to 1B words we recommend a c3.4xlarge instanc
 
 # Linux - Using MMT Binaries Release
 
-See: https://github.com/ModernMT/MMT/releases
+Download from here: [https://github.com/ModernMT/MMT/releases]
 
-Only works on: 
-- Ubuntu 14.04
+**Only works on Ubuntu 14.04##**
 
 You get a clean Ubuntu 14.04 server from Amazon AWS.
+
 AMI: thefactory-ubuntu-14.04-base-2014-09-02T00-42-39Z - ami-028c2b6a
+
 Instance: c3.4xlarge (30GB RAM, 16 core, circa $0.90/hour)
 
 ### Libraries required to run MMT:
@@ -46,48 +47,52 @@ sudo apt-get install make
 ## Instructions to compile MMT:
 
 ### General-purpose requirements
+
+```bash
 sudo apt-get install build-essential
 sudo apt-get install cmake
-
-
+```
 
 # Deprecated Stuff
 
 ## Instruction to compile IRSTLM and MOSES (Optional, binay for Ubuntu already provided)
 
 ### IRSTLM
+
+```bash
 sudo apt-get install autoconf
 sudo apt-get install libtool
 sudo apt-get install zlib1g-dev
+```
 
 ### MOSES
+
+```bash
 sudo apt-get install libboost1.55-all-dev
 sudo apt-get install libbz2-dev
+```
 
 and here the steps to "install" all software
 
+```bash
 tar xzf mmt-mvp-v0.2.1-makefiles.tgz (Ask Uli or Nicola for the .tgz)
 pushd mmt-mvp-v0.2.1
 make -f Makefile.install-moses >& Makefile.install-moses.log &
-
 cd /mnt/mvp
-
 create-mvp.sh 1.0
+```
 
 ### Installing tools
 
+```bash
 pushd /mnt/mvp/res/software_code/GPERFTOOLS ; bash -x README >& README.log ; popd
 pushd /mnt/mvp/res/software_code/IRSTLM ; bash -x README >& README.log ; popd
-
 pushd /mnt/mvp/res/software_code/SPARSEHASH ; bash -x README >& README.log ; popd
-
 pushd /mnt/mvp/res/software_code/FAST_ALIGN ; bash -x README >& README.log ; popd
 pushd /mnt/mvp/res/software_code/FAST_ALIGN_enhanced ; bash -x README >& README.log ; popd
 pushd /mnt/mvp/res/software_code/FAST_ALIGN_uli ; bash -x README >& README.log ; popd
-
 pushd /mnt/mvp/res/software_code/SALM ; bash -x README >& README.log ; popd
-
 pushd /mnt/mvp/res/software_code/MGIZA ; bash -x README >& README.log ; popd
-
 pushd /mnt/mvp/res/software_code/MOSES ; bash -x README >& README.log ; popd
 pushd /mnt/mvp/res/software_code/FILTER-PT ; bash -x README >& README.log ; popd
+```
