@@ -1,16 +1,18 @@
 ## HW Requirements
 
-Storage: 4 times the corpus size 
+Storage: 4 times the corpus size, min 10GB 
 
 CPU: No minimum required. 
-  More cores generally will give you a faster training and translation throughput. 
-  More clock speed will generally give you a faster response time to the single translation request.
+  More cores generally will give you a faster training and translation request throughput. 
+  More clock speed will generally give you a faster translation for the single request.
 
-Memory: >30GB needed to train 1B wor
+Memory: >30GB needed to train 1B words
 
 # Support
-You can report issues to davide.caroselli@translated.net
 
+You can report issues on (GitHub)[https://github.com/ModernMT/MMT/issues] 
+
+For customizations and enterprise support: davide.caroselli@translated.net
 
 # Use an Amazon AWS Istance
 
