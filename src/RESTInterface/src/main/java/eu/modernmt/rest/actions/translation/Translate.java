@@ -10,7 +10,9 @@ import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
 import eu.modernmt.rest.framework.actions.JSONObjectAction;
+import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
+import eu.modernmt.rest.model.TranslationResult;
 
 import java.io.IOException;
 import java.util.List;
@@ -19,33 +21,30 @@ import java.util.List;
  * Created by davide on 17/12/15.
  */
 @Route(aliases = "translation", method = HttpMethod.GET)
-public class Translate extends JSONObjectAction {
+public class Translate extends ObjectAction<TranslationResult> {
 
     private RESTServer server = RESTServer.getInstance();
 
     @Override
-    protected JsonObject execute(RESTRequest req, Parameters _params) throws IOException {
+    protected TranslationResult execute(RESTRequest req, Parameters _params) throws IOException {
         Params params = (Params) _params;
-
-        long session;
-        String translation;
-
         MMTServer mmtServer = server.getMMTServer();
+
+        TranslationResult result = new TranslationResult();
+
         if (params.sessionId > 0) {
-            translation = mmtServer.translate(params.query, params.sessionId, params.textProcessing);
-            session = params.sessionId;
+            result.translation = mmtServer.translate(params.query, params.sessionId, params.textProcessing);
+            result.session = params.sessionId;
         } else if (params.context != null) {
-            translation = mmtServer.translate(params.query, params.context, params.textProcessing);
-            session = mmtServer.createTranslationSession(params.context).getId();
+            result.translation = mmtServer.translate(params.query, params.context, params.textProcessing);
+        } else if (params.contextString != null) {
+            result.context = mmtServer.getContext(params.contextString, params.contextLimit);
+            System.out.println(result.context);
+            result.translation = mmtServer.translate(params.query, result.context, params.textProcessing);
         } else {
-            translation = mmtServer.translate(params.query, params.textProcessing);
-            session = 0L;
+            result.translation = mmtServer.translate(params.query, params.textProcessing);
         }
 
-        JsonObject result = new JsonObject();
-        result.addProperty("translation", translation);
-        if (session > 0)
-            result.addProperty("session", session);
         return result;
     }
 
@@ -59,6 +58,8 @@ public class Translate extends JSONObjectAction {
         public final String query;
         public final long sessionId;
         public final List<ContextDocument> context;
+        public final String contextString;
+        public final int contextLimit;
         public final boolean textProcessing;
 
         public Params(RESTRequest req) throws ParameterParsingException {
@@ -67,6 +68,7 @@ public class Translate extends JSONObjectAction {
             textProcessing = getBoolean("processing", true);
             query = getString("q", false);
             sessionId = getLong("session", 0L);
+            contextLimit = getInt("context_limit", 10);
 
             if (sessionId == 0) {
                 JsonArray json = getJSONArray("context", null);
@@ -77,11 +79,14 @@ public class Translate extends JSONObjectAction {
                     } catch (JsonParseException e) {
                         throw new ParameterParsingException("context", json.toString(), e);
                     }
+                    contextString = null;
                 } else {
                     context = null;
+                    contextString = getString("context_string", false, null);
                 }
             } else {
                 context = null;
+                contextString = null;
             }
         }
     }

@@ -4,7 +4,9 @@ import eu.modernmt.decoder.TranslationHypothesis;
 import eu.modernmt.engine.MMTServer;
 import eu.modernmt.rest.framework.JSONSerializer;
 import eu.modernmt.rest.framework.routing.RouterServlet;
+import eu.modernmt.rest.model.TranslationResult;
 import eu.modernmt.rest.serializers.TranslationHypothesisSerializer;
+import eu.modernmt.rest.serializers.TranslationResultSerializer;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.eclipse.jetty.server.Server;
@@ -24,6 +26,7 @@ public class RESTServer {
 
     static {
         JSONSerializer.registerCustomSerializer(TranslationHypothesis.class, new TranslationHypothesisSerializer());
+        JSONSerializer.registerCustomSerializer(TranslationResult.class, new TranslationResultSerializer());
     }
 
     public static final int DEFAULT_PORT = 8080;
