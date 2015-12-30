@@ -1,16 +1,18 @@
-## System Requirements
+# Use an Amazon AWS Istance
 
-###Storage:
+To try MMT, we prepared this AMI on Amazon AWS: ami-XXXXXX
+This AMI has MMT pre-installed in /home/ubuntu/mmt
 
-Make sure you have available space in:
-- engines/ (at least 4 times the corpus size) 
+A Micro instance will work fine for the demo.
 
-### Linux Version
+For training models from 10M words to 1B words we recommend a c3.4xlarge instance. (30GB RAM, 16 core, circa $0.90/hour)
+
+# Linux - Using MMT Binaries
 
 Only works on: 
 - Ubuntu 14.04
 
-On Amazon AWS:
+You get a clean Ubuntu 14.04 server from Amazon AWS.
 AMI: thefactory-ubuntu-14.04-base-2014-09-02T00-42-39Z - ami-028c2b6a
 Instance: c3.4xlarge (30GB RAM, 16 core, circa $0.90/hour)
 
@@ -20,19 +22,20 @@ Instance: c3.4xlarge (30GB RAM, 16 core, circa $0.90/hour)
 - sudo apt-get install jsvc
 - sudo apt-get install make
 
+## HW Requirements
 
-## Current Limitations
+Storage: 4 times the corpus size 
 
-- It only supports latin languages.
-- context and query need to be tokenized before input.
-- incremental training not implemented yet.
+CPU: No minimum required. 
+  More cores generally will give you a faster training and translation throughput. 
+  More clock speed will generally give you a faster response time to the single translation request.
 
+Memory: >30GB needed to train 1B words model.
 
-### Support
+# Support
 You can report issues to davide.caroselli@translated.net
 
-
-# Optional Stuff (for Open Source Contributors)
+# Optional Stuff (for Private Open Source Contributors)
 
 ## Instructions to compile MMT:
 
@@ -51,8 +54,6 @@ sudo apt-get install libbz2-dev
 
 and here the steps to "install" all software
 
-Note: Pay attention to the disk space:   /home is very small
-
 tar xzf mmt-mvp-v0.2.1-makefiles.tgz (Ask Uli or Nicola for the .tgz)
 pushd mmt-mvp-v0.2.1
 make -f Makefile.install-moses >& Makefile.install-moses.log &
@@ -61,6 +62,7 @@ cd /mnt/mvp
 create-mvp.sh 1.0
 
 ### Installing tools
+
 pushd /mnt/mvp/res/software_code/GPERFTOOLS ; bash -x README >& README.log ; popd
 pushd /mnt/mvp/res/software_code/IRSTLM ; bash -x README >& README.log ; popd
 

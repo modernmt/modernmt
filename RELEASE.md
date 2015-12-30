@@ -8,11 +8,11 @@
 
 # Current Known Bug and Limitations
 
-- It only supports latin languages.
+- It only supports 42 languages. List here...
 - context and query need to be tokenized before input.
 - incremental training not implemented yet.
 
-# Release 0.10.0
+# Release 0.11
 
 ## Major Features and Improvements
 
@@ -42,7 +42,7 @@
 * APIs.
 * Requirements
 
-# Release 0.9.0 - Deprecated
+# Release 0.9 - Deprecated
 
 Initial release of MMT, done during the Co-Development Week in Trento. Jun 2014.
 
