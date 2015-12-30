@@ -30,7 +30,7 @@ Check the system requirements in the paragraph below.
 ### Create an Engine
 
 ```bash
-# mmt create engine en fr example/data/
+# mmt create engine en it example-data/train-data
 ```
 
 ### To Start/Stop an existing engine
@@ -44,12 +44,14 @@ http://localhost:8000/?text=party&context=President&source=en&target=fr
 
 ### MMT distributed
 
-Let's distribute MMT to a second machine. 
-The engine will be synced from the master and translation requests will be load balanced across the 2 istances.
+Let's distribute MMT to a second machine. Login into the new second machine and run
 
 ```bash 
 # mmt start --master 3.14.15.16
 ```
+
+The engine will be synced from the master and translation requests will be load balanced across the 2 istances.
+Only the master will respond to the Translation API and distribute load.
 
 Every time you start a slave the model data will be rsynced to the slave.
 
