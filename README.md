@@ -30,12 +30,12 @@ Assuming you read INSTALL.
 ### Create an Engine
 
 ```bash
-# ./mmt create engine en it example-data/train-data
+./mmt create engine en it example-data/train-data
 ```
 
 ### To Start/Stop an existing engine
-```
-# ./mmt start|stop
+```bash
+./mmt start|stop
 ```
 
 ### Translate via API
@@ -47,7 +47,7 @@ http://localhost:8000/?text=party&context=President&source=en&target=fr
 Let's distribute MMT to a second machine. Login into the new second machine and run
 
 ```bash 
-# ./mmt start --master 3.14.15.16
+./mmt start --master 3.14.15.16
 ```
 
 The engine will be synced from the master and translation requests will be load balanced across the 2 istances.
