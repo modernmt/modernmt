@@ -35,18 +35,45 @@ AMI: thefactory-ubuntu-14.04-base-2014-09-02T00-42-39Z - ami-028c2b6a
 
 Instance: c3.4xlarge (30GB RAM, 16 core, circa $0.90/hour)
 
-### Libraries required to run MMT:
+### Libraries use MMT:
 
 ```bash
 sudo apt-get update
 sudo apt-get install openjdk-7-jdk
 sudo apt-get install jsvc
 sudo apt-get install make 
+
 ```
+
+Done! go to README 
 
 # Installing from Sources (for Private Open Source Contributors)
 
 ## Instructions to compile MMT:
+
+Get sources from GitHub
+
+```bash
+git clone https://github.com/ModernMT/MMT.git
+git checkout ?
+```
+
+Install Maven to build the packadge
+
+```bash
+sudo apt-get install maven 
+```
+
+```bash
+sudo apt-get install maven 
+```
+
+Davide to continue here....
+
+
+```bash
+mvn 
+```
 
 ### General-purpose requirements
 

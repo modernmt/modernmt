@@ -47,8 +47,11 @@ http://localhost:8000/?text=party&context=President&source=en&target=fr
 Let's distribute MMT to a second machine. Login into the new second machine and run
 
 ```bash 
-./mmt start --master 3.14.15.16
+./mmt start --master 3.14.15.16 -i master-credentials.pem
 ```
+
+3.14.15.16 being the IP address of the machine where is.
+master-credentials.pem being your ssh key to the master machine for rsync.
 
 The engine will be synced from the master and translation requests will be load balanced across the 2 istances.
 Only the master will respond to the Translation API and distribute load.
