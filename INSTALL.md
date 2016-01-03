@@ -8,6 +8,8 @@ CPU: No minimum required.
 
 Memory: >30GB needed to train 1B words
 
+IMPORTANT: Due to unresolved bug, please make sure /tmp/ is on the device that has 3x the data size available.
+
 # Support
 
 You can report issues on (GitHub)[https://github.com/ModernMT/MMT/issues] 
