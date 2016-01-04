@@ -39,7 +39,6 @@ public class Translate extends ObjectAction<TranslationResult> {
             result.translation = mmtServer.translate(params.query, params.context, params.textProcessing);
         } else if (params.contextString != null) {
             result.context = mmtServer.getContext(params.contextString, params.contextLimit);
-            System.out.println(result.context);
             result.translation = mmtServer.translate(params.query, result.context, params.textProcessing);
         } else {
             result.translation = mmtServer.translate(params.query, params.textProcessing);
