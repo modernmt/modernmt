@@ -50,4 +50,5 @@ public class ContextAnalyzer {
         super.finalize();
         this.index.close();
     }
+
 }
