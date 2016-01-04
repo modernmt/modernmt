@@ -8,11 +8,11 @@
 
 # Current Known Bug and Limitations
 
-- It only supports latin languages.
+- It only supports 42 languages. List here...
 - context and query need to be tokenized before input.
 - incremental training not implemented yet.
 
-# Release 0.10.0
+# Release 0.11
 
 ## Major Features and Improvements
 
@@ -39,34 +39,26 @@
 
 ## Backwards-incompatible changes
 
-* APIs.
-* Requirements
+* 0.11 has a completely new paradigm and is no longer compatible with previous models and mmt script syntax.
 
-# Release 0.9.0 - Deprecated
+# Release 0.10 - Deprecated
 
 Initial release of MMT, done during the Co-Development Week in Trento. Jun 2014.
 
 ## Multi-engines support
 
-Starting from release 0.10, MMT supports multiple engines running on the same machine: you can specify the name of the engine with option "-n" as follows:
-
-./create-engine -i example/train-data -s en -t it -n example
-
-To create the new engine called "example" and the command:
-
-./server start example
-
-to start the "example" engine. By default the "server" script will choose 3 avalilable random ports, if you want to specify custom ports you can use the following command:
-
-./server start example 8000 8001 8002
-
-If you omit the engine name, "default" will be used instead.
+MMT supports multiple engines running on the same machine: you can specify the name of the engine with option "-n".
 
 ## MERT script
 
-Starting from release 0.10 in MMT is available a custom "mert" script that optimizes the Moses weights using the context-string during translation process.
+Custom "mert" script that optimizes the Moses weights using the context-string during translation process.
+
 You can run the MERT process with the command:
 
 ./mert -i example/dev-data -s en -t it -n example
 
 It will automatically replace the moses.ini file with the optimized one.
+
+# Release 0.9 - Deprecated
+
+Original release after the co-development week in Trento.
