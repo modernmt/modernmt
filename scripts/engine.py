@@ -1,11 +1,11 @@
 import errno
+import json as js
 import logging
 import os
 import shutil
 import signal
 import subprocess
 import time
-import json as js
 from ConfigParser import ConfigParser
 
 import requests
@@ -333,7 +333,7 @@ class _ProcessMonitor:
 
     def start(self, daemonize=True):
         if self.is_running():
-            raise Exception('Process is already running')
+            raise Exception('process is already running')
 
         i_am_a_daemon = daemon.daemonize() if daemonize else True
 
@@ -372,14 +372,14 @@ class _ProcessMonitor:
 
     def stop(self):
         if not self.is_running():
-            raise Exception('Process is not running')
+            raise Exception('process is not running')
 
         os.kill(self._get_pid(), signal.SIGTERM)
 
 
 class MMTServer(_ProcessMonitor):
     def __init__(self, engine, api_port=None, cluster_ports=None):
-        _ProcessMonitor.__init__(self, os.path.join(engine.runtime_path, 'server_pid'))
+        _ProcessMonitor.__init__(self, os.path.join(engine.runtime_path, 'master_pid'))
 
         self._mert_script = os.path.join(Moses.bin_path, 'scripts', 'mert-moses.pl')
         self._mert_i_script = os.path.join(scripts.MMT_ROOT, 'scripts', 'mertinterface.py')
@@ -388,7 +388,7 @@ class MMTServer(_ProcessMonitor):
         self.cluster_ports = cluster_ports if cluster_ports is not None else [5000, 5001]
         self.api_port = api_port if api_port is not None else 8080
 
-        self.log_file = engine.get_logfile('mmtserver', ensure=False)
+        self.log_file = engine.get_logfile('mmtmaster', ensure=False)
         self.api = MMTServerApi(api_port)
 
     def _start_process(self):
@@ -406,7 +406,7 @@ class MMTServer(_ProcessMonitor):
         command += ['eu.modernmt.cli.RESTMain', '-e', self.engine.name, '-a', str(self.api_port), '-p',
                     str(self.cluster_ports[0]), str(self.cluster_ports[1])]
 
-        self.engine.get_logfile('mmtserver', ensure=True)
+        self.engine.get_logfile(self.log_file, ensure=True)
         log = open(self.log_file, 'wa')
         return subprocess.Popen(command, stdout=log, stderr=log, shell=False)
 
@@ -419,10 +419,10 @@ class MMTServer(_ProcessMonitor):
 
     def tune(self, corpora, tokenize=True, debug=False, context_enabled=True):
         if len(corpora) == 0:
-            raise Exception('Empty corpora')
+            raise Exception('empty corpora')
 
         if not self.is_running():
-            raise Exception('No MMT Server running')
+            raise Exception('no MMT Server running')
 
         target_lang = self.engine.target_lang
         source_lang = self.engine.source_lang
@@ -512,13 +512,13 @@ class MMTServer(_ProcessMonitor):
 
 class MMTWorker(_ProcessMonitor):
     def __init__(self, engine, cluster_ports, master=None):
-        _ProcessMonitor.__init__(self, os.path.join(engine.runtime_path, 'worker_pid'))
+        _ProcessMonitor.__init__(self, os.path.join(engine.runtime_path, 'slave_pid'))
 
         self.engine = engine
         self.cluster_ports = cluster_ports
         self._master = master
 
-        self.log_file = engine.get_logfile('mmtworker', ensure=False)
+        self.log_file = engine.get_logfile('mmtslave', ensure=False)
 
     def _start_process(self):
         classpath = [scripts.MMT_JAR]
@@ -532,18 +532,15 @@ class MMTWorker(_ProcessMonitor):
         for key, value in sysprop.iteritems():
             command.append('-D' + key + '=' + value)
 
-        # command += ['-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005',
-        #             '-XX:ErrorFile=/home/davide/ModernMT/hs_err_pid%p.log']
-
         command += ['eu.modernmt.cli.WorkerMain', '-e', self.engine.name, '-p', str(self.cluster_ports[0]),
                     str(self.cluster_ports[1])]
 
         if self._master is not None:
             for key, value in self._master.iteritems():
                 command.append('--master-' + key)
-                command.append(value)
+                command.append(str(value))
 
-        self.engine.get_logfile('mmtworker', ensure=True)
+        self.engine.get_logfile(self.log_file, ensure=True)
         log = open(self.log_file, 'wa')
         return subprocess.Popen(command, stdout=log, stderr=log, shell=False)
 
