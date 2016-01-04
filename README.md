@@ -40,7 +40,7 @@ Assuming you read INSTALL.
 
 ### Translate via API
 
-http://localhost:8000/?text=party&context=President&source=en&target=fr
+http://localhost:8000/translate?text=party&context=President
 
 ### MMT distributed
 
