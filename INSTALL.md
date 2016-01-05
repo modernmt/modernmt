@@ -29,11 +29,9 @@ c3.4xlarge (30GB RAM, 16 core, circa $0.90/hour)
 ### Libraries that MMT requires:
 
 ```bash
+sudo add-apt-repository ppa:openjdk-r/ppa
 sudo apt-get update
-sudo apt-get install openjdk-7-jdk
-sudo apt-get install jsvc
-sudo apt-get install make 
-
+sudo apt-get install openjdk-8-jdk
 ```
 
 Done! go to README 
