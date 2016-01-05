@@ -29,6 +29,8 @@ Assuming you read INSTALL.
 
 ### Create an Engine
 
+We included a very small dataset, just to verify that training works.
+
 ```bash
 ./mmt create engine en it examples/data/train
 ```
@@ -42,7 +44,7 @@ Assuming you read INSTALL.
 
 http://localhost:8000/translate?q=party&context=President
 
-### MMT distributed
+### MMT distributed (Expert)
 
 Let's distribute MMT to a second machine. Login into the new second machine and run
 
@@ -65,15 +67,19 @@ Every time you start a slave the model data will be rsynced to the slave.
 
 MMT uses standard sentence aligned corpora, optionally divided into files by domain. 
 
-eg.
+Example:
+```
 data/microsoft.en
 data/microsoft.fr
 data/europarl.en
 data/europarl.fr
 data/wmt10.en
 data/wmt10.fr
+```
 
 In general:
-<domain-id>.<2 letters iso lang code|5 letters RFC3066>
+```
+domain-id.(2 letters iso lang code|5 letters RFC3066)
+```
 
 Note: domain-id must be [a-zA-Z0-9] only without spaces.
