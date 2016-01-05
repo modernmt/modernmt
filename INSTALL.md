@@ -18,13 +18,13 @@ For customizations and enterprise support: davide.caroselli@translated.net
 
 Download from here: [https://github.com/ModernMT/MMT/releases]
 
-**Only works on Ubuntu 14.04##**
+** Only works on Ubuntu 14.04 **
 
-You get a clean Ubuntu 14.04 server from Amazon AWS.
+This release was tested on a clean Ubuntu 14.04 server from Amazon AWS.
+AMI: Ubuntu Server 14.04 LTS (HVM), SSD Volume Type -  ami-accff2b1
 
-AMI: thefactory-ubuntu-14.04-base-2014-09-02T00-42-39Z - ami-028c2b6a
-
-Instance: c3.4xlarge (30GB RAM, 16 core, circa $0.90/hour)
+For training >100M words we suggest to use this instance: 
+c3.4xlarge (30GB RAM, 16 core, circa $0.90/hour)
 
 ### Libraries use MMT:
 
