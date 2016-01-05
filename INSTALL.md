@@ -26,7 +26,7 @@ AMI: Ubuntu Server 14.04 LTS (HVM), SSD Volume Type -  ami-accff2b1
 For training >100M words we suggest to use this instance: 
 c3.4xlarge (30GB RAM, 16 core, circa $0.90/hour)
 
-### Libraries use MMT:
+### Libraries that MMT requires:
 
 ```bash
 sudo apt-get update
