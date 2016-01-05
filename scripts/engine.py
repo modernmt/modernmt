@@ -544,9 +544,11 @@ class MMTWorker(_ProcessMonitor):
                     str(self.cluster_ports[1])]
 
         if self._master is not None:
-            for key, value in self._master.iteritems():
-                command.append('--master-' + key)
-                command.append(str(value))
+            command.append('--master')
+            command.append(self._master['host'])
+            # for key, value in self._master.iteritems():
+            #     command.append('--master-' + key)
+            #     command.append(str(value))
 
         self.engine.get_logfile(self.log_file, ensure=True)
         log = open(self.log_file, 'wa')
