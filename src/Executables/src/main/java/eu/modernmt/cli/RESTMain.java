@@ -14,8 +14,8 @@ public class RESTMain {
 
     static {
         Option engine = Option.builder("e").longOpt("engine").hasArg().required().build();
-        Option restPort = Option.builder("a").longOpt("api-port").hasArg().type(Integer.class).required(false).build();
-        Option clusterPorts = Option.builder("p").longOpt("cluster-ports").hasArgs().numberOfArgs(2).type(Integer.class).required(false).build();
+        Option restPort = Option.builder("a").longOpt("api-port").hasArg().type(Integer.class).required().build();
+        Option clusterPorts = Option.builder("p").longOpt("cluster-ports").hasArgs().numberOfArgs(2).type(Integer.class).required().build();
 
         cliOptions = new Options();
         cliOptions.addOption(engine);
@@ -28,22 +28,13 @@ public class RESTMain {
         CommandLine cli = parser.parse(cliOptions, args);
 
         TranslationEngine engine = TranslationEngine.get(cli.getOptionValue("engine"));
-        MMTServer mmtServer;
 
-        if (cli.hasOption("cluster-ports")) {
-            String[] sPorts = cli.getOptionValues("cluster-ports");
-            int[] ports = new int[]{Integer.parseInt(sPorts[0]), Integer.parseInt(sPorts[1])};
-            mmtServer = new MMTServer(engine, ports);
-        } else {
-            mmtServer = new MMTServer(engine);
-        }
+        String[] sPorts = cli.getOptionValues("cluster-ports");
+        int[] ports = new int[]{Integer.parseInt(sPorts[0]), Integer.parseInt(sPorts[1])};
+        MMTServer mmtServer = new MMTServer(engine, ports);
 
-        if (cli.hasOption("api-port")) {
-            int port = Integer.parseInt(cli.getOptionValue("api-port"));
-            RESTServer.setup(port, mmtServer);
-        } else {
-            RESTServer.setup(mmtServer);
-        }
+        int port = Integer.parseInt(cli.getOptionValue("api-port"));
+        RESTServer.setup(port, mmtServer);
 
         Runtime.getRuntime().addShutdownHook(new ShutdownHook());
         RESTServer server = RESTServer.getInstance();

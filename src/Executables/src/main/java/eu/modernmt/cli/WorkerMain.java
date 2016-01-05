@@ -1,6 +1,5 @@
 package eu.modernmt.cli;
 
-import eu.modernmt.engine.MMTServer;
 import eu.modernmt.engine.MMTWorker;
 import eu.modernmt.engine.TranslationEngine;
 import org.apache.commons.cli.*;
@@ -17,7 +16,7 @@ public class WorkerMain {
     static {
         Option engine = Option.builder("e").longOpt("engine").hasArg().required().build();
         Option master = Option.builder("m").longOpt("master").hasArg().required(false).build();
-        Option clusterPorts = Option.builder("p").longOpt("cluster-ports").hasArgs().numberOfArgs(2).type(Integer.class).required(false).build();
+        Option clusterPorts = Option.builder("p").longOpt("cluster-ports").hasArgs().numberOfArgs(2).type(Integer.class).required().build();
 
         cliOptions = new Options();
         cliOptions.addOption(engine);
@@ -30,20 +29,12 @@ public class WorkerMain {
         CommandLine cli = parser.parse(cliOptions, args);
 
         TranslationEngine engine = TranslationEngine.get(cli.getOptionValue("engine"));
+
         String master = cli.hasOption("master") ? cli.getOptionValue("master") : null;
-
         int threads = engine.getDecoderThreads();
-        MMTWorker worker;
-
-        if (cli.hasOption("cluster-ports")) {
-            String[] sPorts = cli.getOptionValues("cluster-ports");
-            int[] ports = new int[]{Integer.parseInt(sPorts[0]), Integer.parseInt(sPorts[1])};
-            worker = new MMTWorker(engine, master, ports, threads);
-        } else if (master != null) {
-            worker = new MMTWorker(engine, master, MMTServer.DEFAULT_SERVER_PORTS, threads);
-        } else {
-            worker = new MMTWorker(engine, threads);
-        }
+        String[] sPorts = cli.getOptionValues("cluster-ports");
+        int[] ports = new int[]{Integer.parseInt(sPorts[0]), Integer.parseInt(sPorts[1])};
+        MMTWorker worker = new MMTWorker(engine, master, ports, threads);
 
         Runtime.getRuntime().addShutdownHook(new ShutdownHook(worker));
         worker.start();

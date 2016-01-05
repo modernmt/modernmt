@@ -28,6 +28,9 @@ __description = '''\
   You can find more information on: http://www.modernmt.eu/
 '''
 
+__DEFAULT_MMT_API_PORT = 8000
+__DEFAULT_MMT_CLUSTER_PORTS = [5000, 5001]
+
 _injectable_components = [Tokenizer, Detokenizer, CorpusCleaner, ContextAnalyzer, SuffixArraysPhraseTable, WordAligner,
                           LanguageModel, Moses, MMTEngine]
 
@@ -133,8 +136,8 @@ def main_start(argv):
 
     args.has_master = True if args.master is None else False
     args.has_slave = args.slave
-    args.api_port = args.api_port if args.api_port is not None else 8080
-    args.cluster_ports = args.cluster_ports if args.cluster_ports is not None else [5000, 5001]
+    args.api_port = args.api_port if args.api_port is not None else __DEFAULT_MMT_API_PORT
+    args.cluster_ports = args.cluster_ports if args.cluster_ports is not None else __DEFAULT_MMT_CLUSTER_PORTS
 
     # Exec command
     engine = MMTEngine(name=args.engine)

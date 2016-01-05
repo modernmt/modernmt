@@ -17,10 +17,6 @@ public class MMTWorker extends Worker {
     private TranslationEngine engine;
     private Initializer initializer;
 
-    public MMTWorker(TranslationEngine engine, int threads) throws IOException {
-        this(engine, null, MMTServer.DEFAULT_SERVER_PORTS, threads);
-    }
-
     public MMTWorker(TranslationEngine engine, String host, int[] ports, int threads) throws IOException {
         super(new ZMQMessagingClient(host == null ? "localhost" : host, ports[0], ports[1]), threads);
         this.engine = engine;

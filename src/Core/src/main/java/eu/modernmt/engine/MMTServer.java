@@ -28,17 +28,11 @@ import java.util.concurrent.ExecutionException;
  */
 public class MMTServer extends Cluster {
 
-    public static final int[] DEFAULT_SERVER_PORTS = {5000, 5001};
-
     public static final byte SIGNAL_RESET = 0x01;
     public static final byte REQUEST_FWEIGHTS = 0x03;
 
     private TranslationEngine engine;
     private HashMap<Long, TranslationSession> sessions;
-
-    public MMTServer(TranslationEngine engine) throws IOException {
-        this(engine, DEFAULT_SERVER_PORTS);
-    }
 
     public MMTServer(TranslationEngine engine, int[] ports) throws IOException {
         super(new ZMQMessagingServer(ports[0], ports[1]));

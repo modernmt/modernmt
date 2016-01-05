@@ -29,12 +29,7 @@ public class RESTServer {
         JSONSerializer.registerCustomSerializer(TranslationResult.class, new TranslationResultSerializer());
     }
 
-    public static final int DEFAULT_PORT = 8080;
     private static RESTServer instance = null;
-
-    public static void setup(MMTServer mmtServer) {
-        setup(DEFAULT_PORT, mmtServer);
-    }
 
     public static void setup(int restPort, MMTServer mmtServer) {
         if (instance != null)
