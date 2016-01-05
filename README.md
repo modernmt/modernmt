@@ -30,7 +30,7 @@ Assuming you read INSTALL.
 ### Create an Engine
 
 ```bash
-./mmt create engine en it example-data/train-data
+./mmt create engine en it examples/data/train
 ```
 
 ### To Start/Stop an existing engine
@@ -40,7 +40,7 @@ Assuming you read INSTALL.
 
 ### Translate via API
 
-http://localhost:8000/translate?text=party&context=President
+http://localhost:8000/translate?q=party&context=President
 
 ### MMT distributed
 
