@@ -396,7 +396,7 @@ class MMTServer(_ProcessMonitor):
         sysprop = {
             'mmt.engines.path': scripts.ENGINES_DIR,
             'mmt.tokenizer.models.path': os.path.join(scripts.DATA_DIR, 'tokenizer', 'models'),
-            'java.library.path': scripts.BIN_DIR,
+            'java.library.path': scripts.MMT_LIBS,
         }
 
         command = ['java', '-cp', ':'.join(classpath)]
@@ -525,7 +525,7 @@ class MMTWorker(_ProcessMonitor):
         sysprop = {
             'mmt.engines.path': scripts.ENGINES_DIR,
             'mmt.tokenizer.models.path': os.path.join(scripts.DATA_DIR, 'tokenizer', 'models'),
-            'java.library.path': scripts.BIN_DIR,
+            'java.library.path': scripts.MMT_LIBS,
         }
 
         command = ['java', '-cp', ':'.join(classpath)]
