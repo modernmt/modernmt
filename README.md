@@ -59,7 +59,7 @@ Let's distribute MMT to a second machine. Login into the new second machine and 
 ```bash 
 ./mmt start --master user:pass@3.14.15.16
 or for private key auth 
-./mmt start --master user@3.14.15.16 -i master-credentials.pem
+./mmt start --master user@3.14.15.16 --master-pem master-credentials.pem
 ```
 
 3.14.15.16 being the IP address of the machine where is.
@@ -70,6 +70,7 @@ Only the master will respond to the Translation API and distribute load.
 
 Every time you start a slave the model data will be rsynced to the slave.
 
+Note: rsyncing  of the models has been temporanealy disabled in 0.11 and models files have to be copied manually. To test the release please contact davide.caroselli@translated.net 
 
 ## How to prepare your data
 
