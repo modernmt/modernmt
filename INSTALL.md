@@ -14,15 +14,6 @@ You can report issues on (GitHub)[https://github.com/ModernMT/MMT/issues]
 
 For customizations and enterprise support: davide.caroselli@translated.net
 
-# Use an Amazon AWS Istance
-
-To try MMT, we prepared this AMI on Amazon AWS: ami-XXXXXX
-This AMI has MMT pre-installed in /home/ubuntu/mmt
-
-A Micro instance will work fine for the demo.
-
-For training models from 10M words to 1B words we recommend a c3.4xlarge instance. (30GB RAM, 16 core, circa $0.90/hour)
-
 # Linux - Using MMT Binaries Release
 
 Download from here: [https://github.com/ModernMT/MMT/releases]
