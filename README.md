@@ -40,14 +40,16 @@ Assuming you read INSTALL.
 
 ### Translate via API
 
-http://localhost:8000/?text=party&context=President&source=en&target=fr
+http://localhost:8000/translate?text=party&context=President
 
 ### MMT distributed
 
 Let's distribute MMT to a second machine. Login into the new second machine and run
 
 ```bash 
-./mmt start --master 3.14.15.16 -i master-credentials.pem
+./mmt start --master user:pass@3.14.15.16
+or for private key auth 
+./mmt start --master user@3.14.15.16 -i master-credentials.pem
 ```
 
 3.14.15.16 being the IP address of the machine where is.
