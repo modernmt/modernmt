@@ -393,6 +393,10 @@ class MMTServer(_ProcessMonitor):
 
     def _start_process(self):
         classpath = [scripts.MMT_JAR]
+
+        env = os.environ.copy()
+        env['LD_LIBRARY_PATH'] = scripts.LIB_DIR
+
         sysprop = {
             'mmt.engines.path': scripts.ENGINES_DIR,
             'mmt.tokenizer.models.path': os.path.join(scripts.DATA_DIR, 'tokenizer', 'models'),
@@ -408,7 +412,7 @@ class MMTServer(_ProcessMonitor):
 
         self.engine.get_logfile(self.log_file, ensure=True)
         log = open(self.log_file, 'wa')
-        return subprocess.Popen(command, stdout=log, stderr=log, shell=False)
+        return subprocess.Popen(command, stdout=log, stderr=log, shell=False, env=env)
 
     def _check_process_status(self):
         try:
@@ -522,6 +526,10 @@ class MMTWorker(_ProcessMonitor):
 
     def _start_process(self):
         classpath = [scripts.MMT_JAR]
+
+        env = os.environ.copy()
+        env['LD_LIBRARY_PATH'] = scripts.LIB_DIR
+
         sysprop = {
             'mmt.engines.path': scripts.ENGINES_DIR,
             'mmt.tokenizer.models.path': os.path.join(scripts.DATA_DIR, 'tokenizer', 'models'),
@@ -542,7 +550,7 @@ class MMTWorker(_ProcessMonitor):
 
         self.engine.get_logfile(self.log_file, ensure=True)
         log = open(self.log_file, 'wa')
-        return subprocess.Popen(command, stdout=log, stderr=log, shell=False)
+        return subprocess.Popen(command, stdout=log, stderr=log, shell=False, env=env)
 
     def _check_process_status(self):
         return True

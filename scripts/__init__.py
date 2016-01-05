@@ -9,6 +9,7 @@ MMT_VERSION = '0.1-SNAPSHOT'
 MMT_ROOT = os.path.abspath(os.path.join(__self_dir, os.pardir))
 ENGINES_DIR = os.path.join(MMT_ROOT, 'engines')
 OPT_DIR = os.path.join(MMT_ROOT, 'opt')
+LIB_DIR = os.path.join(MMT_ROOT, 'lib')
 DATA_DIR = os.path.join(MMT_ROOT, 'data')
 BUILD_DIR = os.path.join(MMT_ROOT, 'build')
 
