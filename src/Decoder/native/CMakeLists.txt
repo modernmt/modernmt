@@ -8,11 +8,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 add_library(${PROJECT_NAME} SHARED ${WRAPPER_SRC} ${JNI_SRC})
 
 include_directories(src)
-include_directories(libs/include)
 include_directories(jheaders)
-
-add_executable(wrappertest src/main.cpp)
-target_link_libraries(wrappertest ${PROJECT_NAME})
 
 # External Libraries
 
@@ -57,15 +53,22 @@ else (JNI_FOUND)
 endif (JNI_FOUND)
 
 ## Moses
-find_library(MOSES moses ${PROJECT_SOURCE_DIR}/libs)
-if (MOSES)
-    add_definitions(-DMAX_NUM_FACTORS=4)
-    add_definitions(-DWITH_THREADS=1)
-    add_definitions(-DHAVE_XMLRPC_C=1)
-    target_link_libraries(${PROJECT_NAME} ${MOSES})
-else (MOSES)
-    message(FATAL_ERROR "Could not locate Moses.")
-endif (MOSES)
+find_path(Moses_INCLUDE_DIRS moses/FF/StatefulFeatureFunction.h PATHS ENV MOSESDECODER_HOME)
+if (Moses_INCLUDE_DIRS STREQUAL "Moses_INCLUDE_DIRS-NOTFOUND")
+    message(FATAL_ERROR "Could not locate Moses home path. Try setting environment variable MOSESDECODER_HOME to the root path of mosesdecoder distribution.")
+endif()
+
+find_path(Moses_LIBRARIES lib/${CMAKE_SHARED_LIBRARY_PREFIX}moses${CMAKE_SHARED_LIBRARY_SUFFIX} PATHS ENV MOSESDECODER_HOME)
+if (Moses_LIBRARIES STREQUAL "Moses_LIBRARIES-NOTFOUND")
+    message(FATAL_ERROR "Could not locate moses shared library. Try setting environment variable MOSESDECODER_HOME to the root path of mosesdecoder distribution or recompiling Moses.")
+endif()
+
+find_library(MOSES moses ${Moses_LIBRARIES}/lib)
+add_definitions(-DMAX_NUM_FACTORS=4)
+add_definitions(-DWITH_THREADS=1)
+add_definitions(-DHAVE_XMLRPC_C=1)
+include_directories(${Moses_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} ${MOSES})
 
 ## CMPH
 find_library(CMPH cmph)
