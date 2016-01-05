@@ -44,6 +44,14 @@ We included a very small dataset, just to verify that training works.
 
 http://localhost:8000/translate?q=party&context=President
 
+### MMT Tuning (Expert)
+
+MMT quality can be increased by tuning the parameters providing unseen translation examples. 
+
+```
+./mmt tune examples/data/dev
+```
+
 ### MMT distributed (Expert)
 
 Let's distribute MMT to a second machine. Login into the new second machine and run
