@@ -60,7 +60,7 @@ If you want to try, you can download the WMT10 corpus from here:
 
 (WMT 10 Corpus)[http://www.statmt.org/wmt10/training-giga-fren.tar]
 
-Untar the archive and place the ungipped giga-fren.release2.?? corpus in a training directory.
+Untar the archive and place the ungipped giga-fren.release2.XX corpus in a training directory.
 
 
 ### MMT distributed (Expert)
