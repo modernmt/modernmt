@@ -42,7 +42,9 @@ We included a very small dataset, just to verify that training works.
 
 ### Translate via API
 
-http://localhost:8000/translate?q=party&context=President
+```
+curl 'http://localhost:8000/translate?q=party&context=this%20amendment%20was%20approved'
+```
 
 ### MMT Tuning (Expert)
 
@@ -58,10 +60,13 @@ You can create a 1B words engine in around 8 hours of training using 16 Cores an
 
 If you want to try, you can download the WMT10 corpus from here:
 
-(WMT 10 Corpus)[http://www.statmt.org/wmt10/training-giga-fren.tar]
+[WMT 10 Corpus](http://www.statmt.org/wmt10/training-giga-fren.tar)
 
-Untar the archive and place the ungipped giga-fren.release2.XX corpus in a training directory.
+Untar the archive and place the unzipped giga-fren.release2.XX corpus in a training directory (eg. wmt-train-dir) and run:
 
+```bash
+./mmt create engine en fr wmt-train-dir
+```
 
 ### MMT distributed (Expert)
 

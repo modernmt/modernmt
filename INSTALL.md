@@ -10,13 +10,13 @@ Memory: >30GB needed to train 1B words
 
 # Support
 
-You can report issues on (GitHub)[https://github.com/ModernMT/MMT/issues] 
+You can report issues on [GitHub](https://github.com/ModernMT/MMT/issues)
 
 For customizations and enterprise support: davide.caroselli@translated.net
 
 # Linux - Using MMT Binaries Release
 
-Download from here: [https://github.com/ModernMT/MMT/releases]
+Download from here: https://github.com/ModernMT/MMT/releases
 
 ** Only works on Ubuntu 14.04 **
 
