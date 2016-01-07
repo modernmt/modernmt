@@ -159,7 +159,7 @@ def main_start(argv):
     success = False
 
     try:
-        print 'Starting MMT engine \'{engine}\'...'.format(engine=engine.name),
+        print '\nStarting MMT engine \'{engine}\'...'.format(engine=engine.name),
         sys.stdout.flush()
 
         if master is not None:
@@ -176,7 +176,7 @@ def main_start(argv):
         if master is not None:
             print 'You can try the API with:'
             print '\tcurl "http://localhost:{port}/translate?q=world&context=computer"' \
-                  ' | python -mjson.tool'.format(port=args.api_port)
+                  ' | python -mjson.tool\n'.format(port=args.api_port)
         sys.stdout.flush()
 
         success = True
@@ -215,7 +215,7 @@ def main_stop(argv):
 
     stop_error = None
 
-    print 'Stopping MMT engine \'{engine}\'...'.format(engine=engine.name),
+    print '\nStopping MMT engine \'{engine}\'...'.format(engine=engine.name),
     sys.stdout.flush()
 
     try:
@@ -231,7 +231,7 @@ def main_stop(argv):
         stop_error = e
 
     if stop_error is None:
-        print 'OK'
+        print 'OK\n'
     else:
         print 'FAIL'
         print 'ERROR: {message}\n'.format(message=stop_error.message)
@@ -297,6 +297,15 @@ def main_create(argv):
 
         engine = MMTEngine((args.source_lang, args.target_lang), args.engine)
         engine = injector.inject(engine)
+
+        master = MMTServer(engine)
+        slave = MMTWorker(engine, None)
+
+        if master.is_running():
+            master.stop()
+        if slave.is_running():
+            slave.stop()
+
         engine.build(corpora, debug=args.debug, steps=args.training_steps)
     else:
         parser.print_help()
