@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Created by davide on 17/12/15.
  */
-@Route(aliases = "translation", method = HttpMethod.GET)
+@Route(aliases = "translate", method = HttpMethod.GET)
 public class Translate extends ObjectAction<TranslationResult> {
 
     private RESTServer server = RESTServer.getInstance();
@@ -70,18 +70,18 @@ public class Translate extends ObjectAction<TranslationResult> {
             contextLimit = getInt("context_limit", 10);
 
             if (sessionId == 0) {
-                JsonArray json = getJSONArray("context", null);
+                JsonArray json = getJSONArray("context_array", null);
 
                 if (json != null) {
                     try {
                         context = CreateTranslationSession.parseContext(json);
                     } catch (JsonParseException e) {
-                        throw new ParameterParsingException("context", json.toString(), e);
+                        throw new ParameterParsingException("context_array", json.toString(), e);
                     }
                     contextString = null;
                 } else {
                     context = null;
-                    contextString = getString("context_string", false, null);
+                    contextString = getString("context", false, null);
                 }
             } else {
                 context = null;
