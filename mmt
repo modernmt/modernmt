@@ -2,10 +2,12 @@
 import argparse
 import logging
 import os
+import subprocess
 import sys
 
 from scripts import dependency
 from scripts.engine import MMTEngine, MMTServer, MMTWorker
+from scripts.libs import shell
 from scripts.mt import ParallelCorpus
 from scripts.mt.contextanalysis import ContextAnalyzer
 from scripts.mt.lm import LanguageModel
@@ -33,6 +35,24 @@ __DEFAULT_MMT_CLUSTER_PORTS = [5000, 5001]
 
 _injectable_components = [Tokenizer, Detokenizer, CorpusCleaner, ContextAnalyzer, SuffixArraysPhraseTable, WordAligner,
                           LanguageModel, Moses, MMTEngine]
+
+
+def __check_java():
+    try:
+        _, stderr = shell.execute(['java', '-version'])
+
+        ok = False
+        for token in stderr.split('\n')[0].split():
+            if '"1.8' in token:
+                ok = True
+                break
+
+        if not ok:
+            print 'ERROR: Wrong version of Java, required Java 8'
+            exit(1)
+    except OSError:
+        print 'ERROR: Missing Java executable, please check INSTALL.md'
+        exit(1)
 
 
 class CLIArgsException(Exception):
@@ -346,4 +366,5 @@ def main():
 
 
 if __name__ == '__main__':
+    __check_java()
     main()
