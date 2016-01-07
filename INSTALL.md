@@ -3,12 +3,12 @@
 Storage: 4 times the corpus size, min 10GB 
 
 CPU: No minimum required. 
-  More cores generally will give you a faster training and translation request throughput. 
-  More clock speed will generally give you a faster translation for the single request.
+  - More cores generally will give you a faster training and translation request throughput. 
+  - More clock speed will generally give you a faster translation for the single request.
 
 Memory: 
-  Min 5GB
-  + ~5GB each 100M words of training.
+  - Min 5GB
+  - ~5GB each 100M words of training.
 
 # Support
 
