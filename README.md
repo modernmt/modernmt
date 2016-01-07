@@ -75,9 +75,11 @@ You will get:
 
 You can create a 1B words engine in around 8 hours of training using 16 Cores and 50GB of RAM.
 
-If you want to try, you can download the WMT10 corpus from here:
+If you want to try, you can download the [WMT 10 Corpus](http://www.statmt.org/wmt10/training-giga-fren.tar) corpus from here:
 
-[WMT 10 Corpus](http://www.statmt.org/wmt10/training-giga-fren.tar)
+```
+wget http://www.statmt.org/wmt10/training-giga-fren.tar
+```
 
 Untar the archive and place the unzipped giga-fren.release2.XX corpus in a training directory (eg. wmt-train-dir) and run:
 
