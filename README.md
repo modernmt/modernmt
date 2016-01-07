@@ -1,4 +1,4 @@
-# MMT 0.11 - ALPHA RELEASE 
+# MMT 0.11 - ALPHA RELEASE for Ubuntu 14.04 
 
 ## About MMT
 MMT is a context-aware, incremental and distributed general purpose Machine Translation technology.
@@ -23,16 +23,18 @@ In general:
 
 Note: domain-id must be [a-zA-Z0-9] only without spaces.
 
-## Your first translation with MMT
+## Installation
 
-Assuming you read INSTALL.
+Read INSTALL.md
+
+## Your first translation with MMT
 
 ### Create an Engine
 
 We included a very small dataset, just to verify that training works.
 
 ```bash
-./mmt create engine en it examples/data/train
+./mmt create en it examples/data/train
 ```
 
 ### To Start/Stop an existing engine
@@ -65,7 +67,7 @@ If you want to try, you can download the WMT10 corpus from here:
 Untar the archive and place the unzipped giga-fren.release2.XX corpus in a training directory (eg. wmt-train-dir) and run:
 
 ```bash
-./mmt create engine en fr wmt-train-dir
+./mmt create  en fr wmt-train-dir
 ```
 
 ### MMT distributed (Expert)
