@@ -159,29 +159,24 @@ def main_start(argv):
     success = False
 
     try:
-        if master is not None:
-            print 'Starting master instance...',
-            sys.stdout.flush()
+        print 'Starting MMT engine \'{engine}\'...'.format(engine=engine.name),
+        sys.stdout.flush()
 
+        if master is not None:
             if not master.start(daemonize=True):
                 raise Exception('failed to start master instance, check log file for more details: ' + master.log_file)
-            print 'OK'
-            print '\tMaster instance listening on port', str(args.api_port)
-            print '\tMaster instance log file', master.log_file
-            sys.stdout.flush()
             master_started = True
 
         if slave is not None:
-            print 'Starting slave instance...',
-            sys.stdout.flush()
             if not slave.start(daemonize=True):
                 raise Exception('failed to start slave instance, check log file for more details: ' + slave.log_file)
-            print 'OK'
-            print '\tSlave instance connected to', (args.master_info['host'] if args.master_info is not None
-                                                    else 'localhost')
-            print '\tSlave instance log file', slave.log_file
-            sys.stdout.flush()
             slave_started = True
+
+        print 'OK'
+        if master is not None:
+            print 'You can try the API with:'
+            print '\tcurl "http://localhost:{port}/translate?q=hello+world&context=computer"'.format(port=args.api_port)
+        sys.stdout.flush()
 
         success = True
     except Exception as e:
