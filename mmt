@@ -212,33 +212,29 @@ def main_stop(argv):
     master = MMTServer(engine)
     slave = MMTWorker(engine, None)
 
+    stop_error = None
+
+    print 'Stopping MMT engine \'{engine}\'...'.format(engine=engine.name),
+    sys.stdout.flush()
+
     try:
         if master.is_running():
-            print 'Stopping master instance...',
-            sys.stdout.flush()
-
             master.stop()
-
-            print 'OK'
-            sys.stdout.flush()
     except Exception as e:
-        print 'FAIL'
-        print 'ERROR: {message}\n'.format(message=e.message)
-        sys.stdout.flush()
+        stop_error = e
 
     try:
         if slave.is_running():
-            print 'Stopping slave instance...',
-            sys.stdout.flush()
-
             slave.stop()
-
-            print 'OK'
-            sys.stdout.flush()
     except Exception as e:
+        stop_error = e
+
+    if stop_error is None:
+        print 'OK'
+    else:
         print 'FAIL'
-        print 'ERROR: {message}\n'.format(message=e.message)
-        sys.stdout.flush()
+        print 'ERROR: {message}\n'.format(message=stop_error.message)
+    sys.stdout.flush()
 
 
 def main_status(argv):
