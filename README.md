@@ -39,24 +39,39 @@ We included a very small dataset, just to verify that training works.
 
 ### To Start/Stop an existing engine
 ```bash
-./mmt start|stop
+./mmt start
 ```
 
 ### Translate via API
 
 ```
-curl 'http://localhost:8000/translate?q=party&context=this%20amendment%20was%20approved'
+curl "http://localhost:8000/translate?q=world&context=computer" | python -mjson.tool
 ```
 
-### MMT Tuning (Expert)
-
-MMT quality can be increased by tuning the parameters providing unseen translation examples. 
+You will get:
 
 ```
-./mmt tune examples/data/dev
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   107  100   107    0     0    624      0 --:--:-- --:--:-- --:--:--   625
+{
+    "context": [
+        {
+            "id": "ibm",
+            "score": 0.050385196
+        },
+        {
+            "id": "europarl",
+            "score": 0.0074931374
+        }
+    ],
+    "translation": "mondo"
+}
 ```
 
-### Creating a large translation model
+### Increasing the quality
+
+#### Creating a large translation model
 
 You can create a 1B words engine in around 8 hours of training using 16 Cores and 50GB of RAM.
 
@@ -68,6 +83,14 @@ Untar the archive and place the unzipped giga-fren.release2.XX corpus in a train
 
 ```bash
 ./mmt create  en fr wmt-train-dir
+```
+
+#### MMT Tuning (Expert)
+
+MMT quality can be increased by tuning the parameters providing unseen translation examples. 
+
+```
+./mmt tune examples/data/dev
 ```
 
 ### MMT distributed (Expert)
