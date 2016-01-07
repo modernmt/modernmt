@@ -23,9 +23,11 @@ In general:
 
 Note: domain-id must be [a-zA-Z0-9] only without spaces.
 
-## Your first translation with MMT
+## Installation
 
-Assuming you read INSTALL.
+Read INSTALL.md
+
+## Your first translation with MMT
 
 ### Create an Engine
 
