@@ -25,7 +25,7 @@ Note: domain_id must be [a-zA-Z0-9] only without spaces.
 
 ## Installation
 
-Read INSTALL.md
+Read [INSTALL.md](INSTALL.md)
 
 ## Your first translation with MMT
 
