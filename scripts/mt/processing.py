@@ -60,7 +60,7 @@ class CorpusCleaner:
 class Detokenizer:
     def __init__(self):
         self._detokenizer_jar = scripts.MMT_JAR
-        self._models_path = os.path.join(scripts.DATA_DIR, 'tokenizer', 'models')
+        self._models_path = scripts.TKMODELS_DIR
         self._java_mainclass = 'eu.modernmt.cli.DetokenizerMain'
 
     def _get_detokenizer_command(self, lang):
@@ -94,7 +94,7 @@ class Detokenizer:
 class Tokenizer:
     def __init__(self):
         self._tokenizer_jar = scripts.MMT_JAR
-        self._models_path = os.path.join(scripts.DATA_DIR, 'tokenizer', 'models')
+        self._models_path = scripts.TKMODELS_DIR
         self._java_mainclass = 'eu.modernmt.cli.TokenizerMain'
 
     def _get_tokenizer_command(self, lang):
