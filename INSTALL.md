@@ -6,7 +6,9 @@ CPU: No minimum required.
   More cores generally will give you a faster training and translation request throughput. 
   More clock speed will generally give you a faster translation for the single request.
 
-Memory: >50GB needed to train 1B words
+Memory: 
+  Min 5GB
+  + ~5GB each 100M words of training.
 
 # Support
 
