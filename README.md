@@ -29,8 +29,10 @@ Assuming you read INSTALL.
 
 ### Create an Engine
 
+We included a very small dataset, just to verify that training works.
+
 ```bash
-./mmt create engine en it example-data/train-data
+./mmt create engine en it examples/data/train
 ```
 
 ### To Start/Stop an existing engine
@@ -40,40 +42,65 @@ Assuming you read INSTALL.
 
 ### Translate via API
 
-http://localhost:8000/translate?text=party&context=President
+http://localhost:8000/translate?q=party&context=President
 
-### MMT distributed
+### MMT Tuning (Expert)
+
+MMT quality can be increased by tuning the parameters providing unseen translation examples. 
+
+```
+./mmt tune examples/data/dev
+```
+
+### Creating a large translation model
+
+You can create a 1B words engine in around 8 hours of training using 16 Cores and 50GB of RAM.
+
+If you want to try, you can download the WMT10 corpus from here:
+
+(WMT 10 Corpus)[http://www.statmt.org/wmt10/training-giga-fren.tar]
+
+Untar the archive and place the ungipped giga-fren.release2.XX corpus in a training directory.
+
+
+### MMT distributed (Expert)
 
 Let's distribute MMT to a second machine. Login into the new second machine and run
 
 ```bash 
 ./mmt start --master user:pass@3.14.15.16
-or for private key auth 
-./mmt start --master user@3.14.15.16 -i master-credentials.pem
+
+or for private key auth (eg. AWS)
+./mmt start --master user@3.14.15.16 --master-pem master-credentials.pem
 ```
 
 3.14.15.16 being the IP address of the machine where is.
 master-credentials.pem being your ssh key to the master machine for rsync.
 
-The engine will be synced from the master and translation requests will be load balanced across the 2 istances.
+The engine files will be synced from the master and translation requests will be load balanced across the 2 instances.
 Only the master will respond to the Translation API and distribute load.
 
-Every time you start a slave the model data will be rsynced to the slave.
+If you updated the model on the master, just stop and start the slave and the model data will be rsynced again.
 
+Note: rsyncing  of the models has been temporarily disabled in 0.11 and models files have to be copied manually. To test the release please contact davide.caroselli@translated.net 
 
 ## How to prepare your data
 
 MMT uses standard sentence aligned corpora, optionally divided into files by domain. 
 
-eg.
+Example:
+```
 data/microsoft.en
 data/microsoft.fr
 data/europarl.en
 data/europarl.fr
 data/wmt10.en
 data/wmt10.fr
+```
 
 In general:
-<domain-id>.<2 letters iso lang code|5 letters RFC3066>
+```
+domain-id.(2 letters iso lang code|5 letters RFC3066)
+```
 
 Note: domain-id must be [a-zA-Z0-9] only without spaces.
