@@ -19,9 +19,9 @@ This application is the binary version of MMT (open source distribution expected
 This MMT release will allow you to create an MT engine, available via a REST API, given your training data (folder with line aligned text files)
 Ex. domain1.en domain1.it domain2.en domain2.it 
 In general:
-<domain-id>.<2 letters iso lang code|5 letters RFC3066>
+<domain_id>.<2 letters iso lang code|5 letters RFC3066>
 
-Note: domain-id must be [a-zA-Z0-9] only without spaces.
+Note: domain_id must be [a-zA-Z0-9] only without spaces.
 
 ## Installation
 
@@ -82,7 +82,7 @@ If you want to try, you can download the WMT10 corpus from here:
 Untar the archive and place the unzipped giga-fren.release2.XX corpus in a training directory (eg. wmt-train-dir) and run:
 
 ```bash
-./mmt create  en fr wmt-train-dir
+./mmt create en fr wmt-train-dir
 ```
 
 #### MMT Tuning (Expert)
@@ -99,10 +99,13 @@ Let's distribute MMT to a second machine. Login into the new second machine and 
 
 ```bash 
 ./mmt start --master user:pass@3.14.15.16
-
+```
 or for private key auth (eg. AWS)
+```
 ./mmt start --master user@3.14.15.16 --master-pem master-credentials.pem
 ```
+
+**That's all folks!**
 
 3.14.15.16 being the IP address of the machine where is.
 master-credentials.pem being your ssh key to the master machine for rsync.
