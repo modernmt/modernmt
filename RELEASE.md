@@ -1,41 +1,32 @@
 # Changes since last release
 
-## Changes to the APIs
-
-* bla bla bla
-* bla bla bla
-* bla bla ble
+Notthing.
 
 # Current Known Bug and Limitations
 
-- It only supports 42 languages. List here...
-- context and query need to be tokenized before input.
+- Context and query need to be tokenized before input.
+- It only supports 42 languages.
 - incremental training not implemented yet.
-
+- Rsyncing on distributed MMT disabled. Copy files manually.
+- Distruted MMT still does not support fail-over if a node is down.
+- 
 # Release 0.11
 
 ## Major Features and Improvements
 
-### Tokenizers in XX languages 
+### Tokenizers in 42 languages 
 
 * Merged Moses tokenizers (22 languages) and developed tokenizers for extra 20 languages adapting Lucene tokenizers to machine translation requirements.
 
-* Packed all tokenizers into a single binary (tokenize.xxx).
+* Packed all tokenizers into a single Java binary.
 
 ### Distributed MMT
 
-* Merged Moses tokenizers (22 languages) and developed tokenizers for extra 20 languages adapting Lucene tokenizers to machine translation requirements.
-
-### Added Support for Mac OSX
-
-* bla bla bla bla.
+You can run MMT on multiple servers, load balancing supported.
 
 ## Bug fixes
 
-* Lots of fixes to documentation and tutorials, many contributed
-  by the public.
-
-* XX closed issues on github issues.
+* Many...
 
 ## Backwards-incompatible changes
 
