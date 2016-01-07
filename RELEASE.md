@@ -9,7 +9,8 @@ Nothing.
 - incremental training not implemented yet.
 - Rsyncing on distributed MMT disabled. Copy files manually.
 - Distruted MMT still does not support fail-over if a node is down.
-- 
+
+
 # Release 0.11
 
 ## Major Features and Improvements
