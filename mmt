@@ -175,7 +175,8 @@ def main_start(argv):
         print 'OK'
         if master is not None:
             print 'You can try the API with:'
-            print '\tcurl "http://localhost:{port}/translate?q=hello+world&context=computer"'.format(port=args.api_port)
+            print '\tcurl "http://localhost:{port}/translate?q=world&context=computer"' \
+                  ' | python -mjson.tool'.format(port=args.api_port)
         sys.stdout.flush()
 
         success = True

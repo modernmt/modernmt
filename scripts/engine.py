@@ -535,7 +535,7 @@ class MMTServer(_ProcessMonitor):
                 fileutils.merge([corpus.get_file(target_lang) for corpus in tokenized_corpora], target_merged_corpus)
 
             # Run MERT algorithm
-            with cmdlogger.step('Running MERT tuning') as _:
+            with cmdlogger.step('Tuning') as _:
                 # Ensure moses.ini file existence
                 self.api.nbest_list('mert start', size=1)
 
