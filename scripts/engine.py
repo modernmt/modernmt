@@ -5,6 +5,7 @@ import os
 import shutil
 import signal
 import subprocess
+import sys
 import time
 from ConfigParser import ConfigParser
 
@@ -99,20 +100,45 @@ class MMTServerApi:
         return self._get('translation/nbest', params=p)
 
 
-class _CommandLogger:
-    def __init__(self, step, logger_=None):
+class _TrainingProcessLogger:
+    def __init__(self, count, line_len=70):
+        self.line_len = line_len
+        self.count = count
+        self._current_step = 0
+        self._step = None
+
+    def start(self, engine, corpora):
+        print '\n=========== TRAINING STARTED ===========\n'
+        print 'ENGINE:  %s' % engine.name
+        print 'CORPORA: %s (%d documents)' % (corpora[0].root, len(corpora))
+        print 'LANGS:   %s > %s' % (engine.source_lang, engine.target_lang)
+        print
+        sys.stdout.flush()
+
+    def step(self, step):
         self._step = step
-        self._logger = logger_ if logger_ is not None else logger
+        self._current_step += 1
+        return self
+
+    def completed(self):
+        print '\n=========== TRAINING SUCCESS ===========\n'
+        print 'You can now start, stop or check the status of the server with command:'
+        print '\t./mmt start|stop|status'
+        print
+        sys.stdout.flush()
 
     def __enter__(self):
-        self._logger.info('%s is taking place...', self._step)
-        self._start_time = time.time()
+        message = 'INFO: (%d of %d) %s... ' % (self._current_step, self.count, self._step)
+        print message.ljust(self.line_len),
+        sys.stdout.flush()
 
+        self._start_time = time.time()
         return self
 
     def __exit__(self, *_):
         self._end_time = time.time()
-        self._logger.info('%s finished, took %ds', self._step, self._end_time - self._start_time)
+        print 'DONE (in %ds)' % int(self._end_time - self._start_time)
+        sys.stdout.flush()
 
 
 class MMTEngine:
@@ -221,8 +247,8 @@ class MMTEngine:
             if len(unknown_steps) > 0:
                 raise Exception('Unknown training steps: ' + str(unknown_steps))
 
-        logger.info("MMT training started. ENGINE = %s, CORPORA = %s (%d documents), LANGS = %s > %s", self.name,
-                    corpora[0].root, len(corpora), self.source_lang, self.target_lang)
+        cmdlogger = _TrainingProcessLogger(len(steps) + 1)
+        cmdlogger.start(self, corpora)
 
         shutil.rmtree(self._root_path, ignore_errors=True)
         os.makedirs(self._root_path)
@@ -234,7 +260,7 @@ class MMTEngine:
             tokenized_corpora = original_corpora
 
             if 'tokenize' in steps:
-                with _CommandLogger('Tokenization process') as _:
+                with cmdlogger.step('Corpora tokenization') as _:
                     tokenizer_output = self.get_tempdir('tokenizer')
                     tokenized_corpora = self.tokenizer.batch_tokenize(corpora, tokenizer_output)
 
@@ -242,40 +268,38 @@ class MMTEngine:
             cleaned_corpora = tokenized_corpora
 
             if 'clean' in steps:
-                with _CommandLogger('Corpora cleaning process') as _:
+                with cmdlogger.step('Corpora cleaning') as _:
                     cleaner_output = self.get_tempdir('cleaner')
                     cleaned_corpora = self._cleaner.batch_clean(tokenized_corpora, cleaner_output)
 
             # Training Context Analyzer
             if 'context_analyzer' in steps:
-                with _CommandLogger('Context Analyzer training') as _:
+                with cmdlogger.step('Context Analyzer training') as _:
                     log_file = self.get_logfile('build.context')
                     self._analyzer.create_index(self._context_index, original_corpora[0].root, log_file)
 
             # Training Language Model
             if 'lm' in steps:
-                with _CommandLogger('Language Model training') as _:
+                with cmdlogger.step('Language Model training') as _:
                     working_dir = self.get_tempdir('lm')
                     log_file = self.get_logfile('build.lm')
                     self._lm.train(tokenized_corpora, self.target_lang, working_dir, log_file)
 
             # Training Translation Model
             if 'tm' in steps:
-                with _CommandLogger('Translation Model training') as _:
+                with cmdlogger.step('Translation Model training') as _:
                     working_dir = self.get_tempdir('tm')
                     log_file = self.get_logfile('build.tm')
                     self._pt.train(cleaned_corpora, self._aligner, working_dir, log_file)
 
             # Writing config file
-            logger.info("Writing '%s' file...", self._config_file)
-            with open(self._config_file, 'wb') as out:
-                self._config.write(out)
+            with cmdlogger.step('Writing config files') as _:
+                with open(self._config_file, 'wb') as out:
+                    self._config.write(out)
+                with open(self._moses_ini_file, 'wb') as out:
+                    out.write(self._moses.create_ini())
 
-            logger.info("Writing Moses INI template file...")
-            with open(self._moses_ini_file, 'wb') as out:
-                out.write(self._moses.create_ini())
-
-            logger.info("MMT training process finished with SUCCESS")
+            cmdlogger.completed()
         except Exception as e:
             logger.exception(e)
             raise
