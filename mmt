@@ -290,8 +290,8 @@ def main_status(argv):
 
 
 def main_create(argv):
-    parser = argparse.ArgumentParser(description='Train a new MMT engine from the input corpora')
-    parser.prog = 'mmt create engine'
+    parser = argparse.ArgumentParser(description='Create a new MMT engine from the input corpora')
+    parser.prog = 'mmt create'
     parser.add_argument('source_lang', metavar='SOURCE_LANGUAGE', help='the source language (ISO 639-1)')
     parser.add_argument('target_lang', metavar='TARGET_LANGUAGE', help='the target language (ISO 639-1)')
     parser.add_argument('corpora_path', metavar='CORPORA', help='the path to the training corpora')
@@ -335,15 +335,15 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=__description,
                                      usage='%(prog)s [-h] ACTION [args]', add_help=False, prog='mmt')
     parser.add_argument('action', metavar='ACTION',
-                        choices=['create engine', 'start', 'stop', 'status', 'tune'],
+                        choices=['create', 'start', 'stop', 'status', 'tune'],
                         help='{%(choices)s}', nargs='?')
     parser.add_argument('-h', '--help', dest='help', action='store_true', help='show this help message and exit')
 
     argv = sys.argv[1:]
 
     try:
-        if ['create', 'engine'] == argv[:2]:
-            main_create(argv[2:])
+        if ['create'] == argv[:1]:
+            main_create(argv[1:])
         elif ['start'] == argv[:1]:
             main_start(argv[1:])
         elif ['stop'] == argv[:1]:
