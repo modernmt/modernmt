@@ -32,7 +32,7 @@ Assuming you read INSTALL.
 We included a very small dataset, just to verify that training works.
 
 ```bash
-./mmt create engine en it examples/data/train
+./mmt create en it examples/data/train
 ```
 
 ### To Start/Stop an existing engine
@@ -65,7 +65,7 @@ If you want to try, you can download the WMT10 corpus from here:
 Untar the archive and place the unzipped giga-fren.release2.XX corpus in a training directory (eg. wmt-train-dir) and run:
 
 ```bash
-./mmt create engine en fr wmt-train-dir
+./mmt create  en fr wmt-train-dir
 ```
 
 ### MMT distributed (Expert)
