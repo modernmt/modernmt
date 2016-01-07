@@ -3,12 +3,11 @@
     <parent>
         <artifactId>mmt-root</artifactId>
         <groupId>eu.modernmt</groupId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.11</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>mmt-core</artifactId>
-    <version>0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>MMT Core Components</name>
@@ -22,17 +21,17 @@
         <dependency>
             <groupId>eu.modernmt</groupId>
             <artifactId>mmt-textprocessing</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>${mmt.version}</version>
         </dependency>
         <dependency>
             <groupId>eu.modernmt</groupId>
             <artifactId>mmt-context-analyzer</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>${mmt.version}</version>
         </dependency>
         <dependency>
             <groupId>eu.modernmt</groupId>
             <artifactId>mmt-decoder</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>${mmt.version}</version>
         </dependency>
 
         <dependency>

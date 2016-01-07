@@ -3,7 +3,7 @@
     <parent>
         <artifactId>mmt-root</artifactId>
         <groupId>eu.modernmt</groupId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.11</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -91,17 +91,17 @@
         <dependency>
             <groupId>eu.modernmt</groupId>
             <artifactId>mmt-core</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>${mmt.version}</version>
         </dependency>
         <dependency>
             <groupId>eu.modernmt</groupId>
             <artifactId>mmt-textprocessing</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>${mmt.version}</version>
         </dependency>
         <dependency>
             <groupId>eu.modernmt</groupId>
             <artifactId>mmt-rest</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>${mmt.version}</version>
         </dependency>
 
         <dependency>
