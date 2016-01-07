@@ -19,13 +19,13 @@ This application is the binary version of MMT (open source distribution expected
 This MMT release will allow you to create an MT engine, available via a REST API, given your training data (folder with line aligned text files)
 Ex. domain1.en domain1.it domain2.en domain2.it 
 In general:
-<domain-id>.<2 letters iso lang code|5 letters RFC3066>
+<domain_id>.<2 letters iso lang code|5 letters RFC3066>
 
-Note: domain-id must be [a-zA-Z0-9] only without spaces.
+Note: domain_id must be [a-zA-Z0-9] only without spaces.
 
 ## Installation
 
-Read INSTALL.md
+Read [INSTALL.md](INSTALL.md)
 
 ## Your first translation with MMT
 
@@ -39,35 +39,60 @@ We included a very small dataset, just to verify that training works.
 
 ### To Start/Stop an existing engine
 ```bash
-./mmt start|stop
+./mmt start
 ```
 
 ### Translate via API
 
 ```
-curl 'http://localhost:8000/translate?q=party&context=this%20amendment%20was%20approved'
+curl "http://localhost:8000/translate?q=world&context=computer" | python -mjson.tool
 ```
 
-### MMT Tuning (Expert)
+You will get:
+
+```
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   107  100   107    0     0    624      0 --:--:-- --:--:-- --:--:--   625
+{
+    "context": [
+        {
+            "id": "ibm",
+            "score": 0.050385196
+        },
+        {
+            "id": "europarl",
+            "score": 0.0074931374
+        }
+    ],
+    "translation": "mondo"
+}
+```
+
+### Increasing the quality
+
+#### Creating a large translation model
+
+You can create a 1B words engine in around 8 hours of training using 16 Cores and 50GB of RAM.
+
+If you want to try, you can download the [WMT 10 Corpus](http://www.statmt.org/wmt10/training-giga-fren.tar) corpus from here:
+
+```
+wget http://www.statmt.org/wmt10/training-giga-fren.tar
+```
+
+Untar the archive and place the unzipped giga-fren.release2.XX corpus in a training directory (eg. wmt-train-dir) and run:
+
+```bash
+./mmt create en fr wmt-train-dir
+```
+
+#### MMT Tuning (Expert)
 
 MMT quality can be increased by tuning the parameters providing unseen translation examples. 
 
 ```
 ./mmt tune examples/data/dev
-```
-
-### Creating a large translation model
-
-You can create a 1B words engine in around 8 hours of training using 16 Cores and 50GB of RAM.
-
-If you want to try, you can download the WMT10 corpus from here:
-
-[WMT 10 Corpus](http://www.statmt.org/wmt10/training-giga-fren.tar)
-
-Untar the archive and place the unzipped giga-fren.release2.XX corpus in a training directory (eg. wmt-train-dir) and run:
-
-```bash
-./mmt create  en fr wmt-train-dir
 ```
 
 ### MMT distributed (Expert)
@@ -76,10 +101,13 @@ Let's distribute MMT to a second machine. Login into the new second machine and 
 
 ```bash 
 ./mmt start --master user:pass@3.14.15.16
-
+```
 or for private key auth (eg. AWS)
+```
 ./mmt start --master user@3.14.15.16 --master-pem master-credentials.pem
 ```
+
+**That's all folks!**
 
 3.14.15.16 being the IP address of the machine where is.
 master-credentials.pem being your ssh key to the master machine for rsync.
