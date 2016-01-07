@@ -5,10 +5,7 @@ import eu.modernmt.tokenizer.ITokenizerFactory;
 import eu.modernmt.tokenizer.Languages;
 import org.apache.commons.io.IOUtils;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -71,9 +68,9 @@ public class MosesTokenizer extends ITokenizer implements Closeable {
     private Process detokenizer = null;
 
     private OutputStream tokenizerStdin;
-    private Scanner tokenizerStdout = null;
+    private BufferedReader tokenizerStdout = null;
     private OutputStream detokenizerStdin;
-    private Scanner detokenizerStdout = null;
+    private BufferedReader detokenizerStdout = null;
 
     public MosesTokenizer(String languageCode) {
         File moses = new File(ITokenizer.MODELS_PATH, "moses");
@@ -89,38 +86,42 @@ public class MosesTokenizer extends ITokenizer implements Closeable {
         try {
             this.tokenizer = runtime.exec(tokenizerCommand);
             this.detokenizer = runtime.exec(detokenizerCommand);
+
+            this.tokenizerStdin = tokenizer.getOutputStream();
+            this.tokenizerStdout = new BufferedReader(new InputStreamReader(tokenizer.getInputStream(), "UTF-8"));
+            this.detokenizerStdin = detokenizer.getOutputStream();
+            this.detokenizerStdout = new BufferedReader(new InputStreamReader(detokenizer.getInputStream(), "UTF-8"));
         } catch (IOException e) {
             this.close();
             throw new RuntimeException("Error while executing processes", e);
         }
-
-        this.tokenizerStdin = tokenizer.getOutputStream();
-        this.tokenizerStdout = new Scanner(tokenizer.getInputStream(), "UTF-8");
-        this.detokenizerStdin = detokenizer.getOutputStream();
-        this.detokenizerStdout = new Scanner(detokenizer.getInputStream(), "UTF-8");
     }
 
     @Override
     public String[] tokenize(String text) {
+        String detokenized;
+
         try {
             this.detokenizerStdin.write(text.getBytes("utf-8"));
             this.detokenizerStdin.write('\n');
             this.detokenizerStdin.flush();
+
+            detokenized = this.detokenizerStdout.readLine();
         } catch (IOException e) {
             throw new RuntimeException("Error while running detokenizer", e);
         }
 
-        String detokenized = this.detokenizerStdout.nextLine();
+        String tokenized;
 
         try {
             this.tokenizerStdin.write(detokenized.getBytes("utf-8"));
             this.tokenizerStdin.write('\n');
             this.tokenizerStdin.flush();
+
+            tokenized = this.tokenizerStdout.readLine();
         } catch (IOException e) {
             throw new RuntimeException("Error while running detokenizer", e);
         }
-
-        String tokenized = this.tokenizerStdout.nextLine();
 
         return tokenized.split("\\s+");
     }
