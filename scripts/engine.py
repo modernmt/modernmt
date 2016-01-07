@@ -401,6 +401,52 @@ class _ProcessMonitor:
         os.kill(self._get_pid(), signal.SIGTERM)
 
 
+class _TuningProcessLogger:
+    def __init__(self, count, line_len=70):
+        self.line_len = line_len
+        self.count = count
+        self._current_step = 0
+        self._step = None
+        self._api_port = None
+
+    def start(self, server, corpora):
+        engine = server.engine
+        self._api_port = server.api_port
+
+        print '\n============ TUNING STARTED ============\n'
+        print 'ENGINE:  %s' % engine.name
+        print 'CORPORA: %s (%d documents)' % (corpora[0].root, len(corpora))
+        print 'LANGS:   %s > %s' % (engine.source_lang, engine.target_lang)
+        print
+        sys.stdout.flush()
+
+    def step(self, step):
+        self._step = step
+        self._current_step += 1
+        return self
+
+    def completed(self, bleu):
+        print '\n============ TUNING SUCCESS ============\n'
+        print '\nFinal BLEU: %f\n' % bleu
+        print 'You can try the API with:'
+        print '\tcurl "http://localhost:{port}/translate?q=hello+world&context=computer"'.format(port=self._api_port)
+        print
+        sys.stdout.flush()
+
+    def __enter__(self):
+        message = 'INFO: (%d of %d) %s... ' % (self._current_step, self.count, self._step)
+        print message.ljust(self.line_len),
+        sys.stdout.flush()
+
+        self._start_time = time.time()
+        return self
+
+    def __exit__(self, *_):
+        self._end_time = time.time()
+        print 'DONE (in %ds)' % int(self._end_time - self._start_time)
+        sys.stdout.flush()
+
+
 class MMTServer(_ProcessMonitor):
     def __init__(self, engine, api_port=None, cluster_ports=None):
         _ProcessMonitor.__init__(self, os.path.join(engine.runtime_path, 'master_pid'))
@@ -455,8 +501,8 @@ class MMTServer(_ProcessMonitor):
         target_lang = self.engine.target_lang
         source_lang = self.engine.source_lang
 
-        logger.info("MMT tuning started. ENGINE = %s, CORPORA = %s (%d documents), LANGS = %s > %s", self.engine.name,
-                    corpora[0].root, len(corpora), source_lang, target_lang)
+        cmdlogger = _TuningProcessLogger(4 if tokenize else 3)
+        cmdlogger.start(self, corpora)
 
         working_dir = self.engine.get_tempdir('tuning')
         mert_wd = os.path.join(working_dir, 'mert')
@@ -471,24 +517,29 @@ class MMTServer(_ProcessMonitor):
                 tokenizer_output = os.path.join(working_dir, 'tokenized_corpora')
                 fileutils.makedirs(tokenizer_output, exist_ok=True)
 
-                with _CommandLogger('Tokenization process') as _:
+                with cmdlogger.step('Corpus tokenization') as _:
                     tokenized_corpora = self.engine.tokenizer.batch_tokenize(corpora, tokenizer_output)
 
             # Create merged corpus
-            source_merged_corpus = os.path.join(working_dir, 'corpus.' + source_lang)
-            with open(source_merged_corpus, 'wb') as out:
-                original_root = original_corpora[0].root
+            with cmdlogger.step('Merging corpus') as _:
+                source_merged_corpus = os.path.join(working_dir, 'corpus.' + source_lang)
+                with open(source_merged_corpus, 'wb') as out:
+                    original_root = original_corpora[0].root
 
-                for corpus in tokenized_corpora:
-                    tokenized = corpus.get_file(source_lang)
-                    original = os.path.join(original_root, corpus.name + '.' + source_lang)
-                    out.write(tokenized + ':' + original + '\n')
+                    for corpus in tokenized_corpora:
+                        tokenized = corpus.get_file(source_lang)
+                        original = os.path.join(original_root, corpus.name + '.' + source_lang)
+                        out.write(tokenized + ':' + original + '\n')
 
-            target_merged_corpus = os.path.join(working_dir, 'corpus.' + target_lang)
-            fileutils.merge([corpus.get_file(target_lang) for corpus in tokenized_corpora], target_merged_corpus)
+                target_merged_corpus = os.path.join(working_dir, 'corpus.' + target_lang)
+                fileutils.merge([corpus.get_file(target_lang) for corpus in tokenized_corpora], target_merged_corpus)
 
             # Run MERT algorithm
-            with _CommandLogger('MERT tuning') as _:
+            with cmdlogger.step('Running MERT tuning') as _:
+                # Ensure moses.ini file existence
+                self.api.nbest_list('mert start', size=1)
+
+                # Start MERT
                 decoder_flags = ['--port', str(self.api_port)]
 
                 if not context_enabled:
@@ -508,28 +559,28 @@ class MMTServer(_ProcessMonitor):
                     shell.execute(' '.join(command), stdout=log, stderr=log)
 
             # Read optimized configuration
-            bleu_score = 0
-            weights = {}
-            found_weights = False
+            with cmdlogger.step('Applying changes') as _:
+                bleu_score = 0
+                weights = {}
+                found_weights = False
 
-            with open(os.path.join(mert_wd, 'moses.ini')) as moses_ini:
-                for line in moses_ini:
-                    line = line.strip()
+                with open(os.path.join(mert_wd, 'moses.ini')) as moses_ini:
+                    for line in moses_ini:
+                        line = line.strip()
 
-                    if len(line) == 0:
-                        continue
-                    elif found_weights:
-                        tokens = line.split()
-                        weights[tokens[0].rstrip('=')] = [float(val) for val in tokens[1:]]
-                    elif line.startswith('# BLEU'):
-                        bleu_score = float(line.split()[2])
-                    elif line == '[weight]':
-                        found_weights = True
+                        if len(line) == 0:
+                            continue
+                        elif found_weights:
+                            tokens = line.split()
+                            weights[tokens[0].rstrip('=')] = [float(val) for val in tokens[1:]]
+                        elif line.startswith('# BLEU'):
+                            bleu_score = float(line.split()[2])
+                        elif line == '[weight]':
+                            found_weights = True
 
-            with _CommandLogger('Applying changes') as _:
                 _ = self.api.update_features(weights)
 
-            logger.info("MMT tuning process finished with BLEU of " + str(bleu_score))
+            cmdlogger.completed(bleu_score)
         except Exception as e:
             logger.exception(e)
             raise
