@@ -2,9 +2,8 @@
 
 Nothing.
 
-# Current Known Bug and Limitations
+# Current known bugs and limitations
 
-- It only supports 42 languages.
 - Incremental training not implemented yet.
 - Resyncing on distributed MMT disabled. Copy files manually.
 - Distruted MMT still does not support fail-over if a node is down.
