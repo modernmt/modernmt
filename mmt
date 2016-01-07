@@ -55,10 +55,12 @@ def _logconfig(debug=True):
 def main_tune(argv):
     parser = argparse.ArgumentParser(description='Tune MMT engine')
     parser.prog = 'mmt tune'
-    parser.add_argument('api_port', metavar='API_PORT', help='MMT Server api port', type=int)
     parser.add_argument('corpora_path', metavar='CORPORA', help='the path to the training corpora')
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
+    parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
+                        help='the MMT API port. (default is 8000)',
+                        default=None, type=int)
     parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='if debug is set, it enables verbose '
                                                                                  'logging and prevents temporary files '
                                                                                  'to be removed after execution')
@@ -66,12 +68,13 @@ def main_tune(argv):
                         default=True, action='store_false')
 
     args = parser.parse_args(argv)
+    args.api_port = args.api_port if args.api_port is not None else __DEFAULT_MMT_API_PORT
+
     _logconfig(args.debug)
 
     engine = MMTEngine(name=args.engine)
-
     if not engine.exists():
-        raise Exception('Engine "' + args.engine + '" not found')
+        raise IllegalStateException('engine not found: ' + args.engine)
 
     injector = dependency.Injector(*_injectable_components)
     injector.read_config(engine.config)
@@ -90,7 +93,7 @@ def main_start(argv):
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
     parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
-                        help='the public available REST Api port. (default is 8080)',
+                        help='the public available REST Api port. (default is 8000)',
                         default=None, type=int)
     parser.add_argument('--cluster-ports', dest='cluster_ports', metavar='CLUSTER_PORTS',
                         help='two network ports used internally by the cluster to data exchange between '
