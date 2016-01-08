@@ -18,7 +18,7 @@ For customizations and enterprise support: davide.caroselli@translated.net
 
 # Setup up the server
 
-** MMT 0.11 only works on Ubuntu 14.04 **
+**MMT 0.11 only works on Ubuntu 14.04**
 
 This release was tested on a clean Ubuntu 14.04 server from Amazon AWS.
 AMI: Ubuntu Server 14.04 LTS (HVM), SSD Volume Type -  ami-accff2b1
@@ -28,9 +28,12 @@ c3.4xlarge (30GB RAM, 16 core, circa $0.90/hour)
 
 ## Libraries that MMT requires:
 
+Install **Java 8** if not present
 ```bash
 sudo add-apt-repository ppa:openjdk-r/ppa && sudo apt-get update && sudo apt-get install openjdk-8-jdk
 ```
+
+**Python 2.7** is also required but it is pre-installed in Ubuntu.
 
 # Install the MMT Binaries
 
