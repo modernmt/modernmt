@@ -34,10 +34,11 @@ sudo add-apt-repository ppa:openjdk-r/ppa && sudo apt-get update && sudo apt-get
 
 # Install the MMT Binaries
 
-Download from here: https://github.com/ModernMT/MMT/releases
+Download from here: https://github.com/ModernMT/MMT/releases and then untar the files:
 
 ```
 tar xvf mmt-0.11-ubuntu14_04.tar.gz
+cd mmt
 ```
 
 Done! go to [README.md](README.md)
