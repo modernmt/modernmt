@@ -17,11 +17,6 @@ You can find more information on: http://www.modermmt.eu
 This application is the binary version of MMT (open source distribution expected by the end 2016). 
 
 This MMT release will allow you to create an MT engine, available via a REST API, given your training data (folder with line aligned text files)
-Ex. domain1.en domain1.it domain2.en domain2.it 
-In general:
-<domain_id>.<2 letters iso lang code|5 letters RFC3066>
-
-Note: domain_id must be [a-zA-Z0-9] only without spaces.
 
 ## Installation
 
@@ -100,24 +95,24 @@ MMT quality can be increased by tuning the parameters providing unseen translati
 Let's distribute MMT to a second machine. Login into the new second machine and run
 
 ```bash 
-./mmt start --master user:pass@3.14.15.16
+./mmt start --master ubuntu:pass123@3.14.15.92
 ```
-or for private key auth (eg. AWS)
+
+Where *ubuntu* and *pass123* are your ssh credentials to the master machine (ip *3.14.15.92*).
+If you're running your experiments on Amazon, copy your .pem file to the second machine and run the command as:
+
 ```
-./mmt start --master user@3.14.15.16 --master-pem master-credentials.pem
+./mmt start --master ubuntu@3.14.15.92 --master-pem /path/to/master-credentials.pem
 ```
 
 **That's all folks!**
-
-3.14.15.16 being the IP address of the machine where is.
-master-credentials.pem being your ssh key to the master machine for rsync.
 
 The engine files will be synced from the master and translation requests will be load balanced across the 2 instances.
 Only the master will respond to the Translation API and distribute load.
 
 If you updated the model on the master, just stop and start the slave and the model data will be rsynced again.
 
-> Note: rsyncing  of the models has been temporarily disabled in 0.11 and models files have to be copied manually. To test the release please contact davide.caroselli@translated.net 
+> **Note: rsyncing  of the models has been temporarily disabled in 0.11 and models files have to be copied manually. To test the release please contact davide.caroselli@translated.net**
 
 ## How to prepare your data
 
