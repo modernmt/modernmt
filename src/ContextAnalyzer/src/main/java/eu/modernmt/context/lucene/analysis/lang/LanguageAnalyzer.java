@@ -1,6 +1,7 @@
 package eu.modernmt.context.lucene.analysis.lang;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.miscellaneous.LimitTokenCountAnalyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 
@@ -12,6 +13,7 @@ import java.util.Map;
 
 public abstract class LanguageAnalyzer extends StopwordAnalyzerBase {
 
+    public static final int MAX_INDEXED_WORDS_PER_DOCUMENT = 100000000;
     private static final Map<String, Class<? extends Analyzer>> ANALYZERS;
 
     static {
@@ -102,15 +104,19 @@ public abstract class LanguageAnalyzer extends StopwordAnalyzerBase {
         if (analyzerClass == null)
             analyzerClass = DefaultAnalyzer.class;
 
+        Analyzer analyzer;
+
         try {
             if (LanguageAnalyzer.class.isAssignableFrom(analyzerClass))
-                return analyzerClass.getConstructor(AnalyzerConfig.class).newInstance(config);
+                analyzer = analyzerClass.getConstructor(AnalyzerConfig.class).newInstance(config);
             else
-                return analyzerClass.newInstance();
+                analyzer = analyzerClass.newInstance();
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
                 | SecurityException e) {
             throw new RuntimeException("Unable to instantiate class " + analyzerClass.getCanonicalName(), e);
         }
+
+        return new LimitTokenCountAnalyzer(analyzer, MAX_INDEXED_WORDS_PER_DOCUMENT, false);
     }
 
 
