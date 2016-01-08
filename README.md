@@ -66,9 +66,9 @@ You will get:
 }
 ```
 
-### Increasing the quality
+## Increasing the quality
 
-#### Creating a large translation model
+### Creating a large translation model
 
 You can create a 1B words engine in around 8 hours of training using 16 Cores and 50GB of RAM.
 
@@ -84,7 +84,7 @@ Untar the archive and place the unzipped giga-fren.release2.XX corpus in a train
 ./mmt create en fr wmt-train-dir
 ```
 
-#### MMT Tuning (Expert)
+### MMT Tuning (Expert)
 
 MMT quality can be increased by tuning the parameters providing unseen translation examples. 
 
@@ -95,7 +95,7 @@ MMT quality can be increased by tuning the parameters providing unseen translati
 Example engine will take around 10 minutes. 
 After the tuning translation requests will use the new parameters. No other action required.
 
-### MMT distributed (Expert)
+## MMT distributed (Expert)
 
 Let's distribute MMT to a second machine. 
 Make sure port 8000 is open on the master and 5000 and 5001 on both the master and the slave.
@@ -122,7 +122,7 @@ curl "http://3.14.15.92:8000/translate?q=world&context=computer" | python -mjson
 
 **That's all folks!**
 
-#### Distributed MMT Notes
+### Distributed MMT Notes
 
 The engine files will be synced from the master and translation requests will be load balanced across the 2 instances.
 Only the master will respond to the Translation API and distribute load.
