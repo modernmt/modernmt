@@ -117,7 +117,7 @@ Only the master will respond to the Translation API and distribute load.
 
 If you updated the model on the master, just stop and start the slave and the model data will be rsynced again.
 
-Note: rsyncing  of the models has been temporarily disabled in 0.11 and models files have to be copied manually. To test the release please contact davide.caroselli@translated.net 
+> Note: rsyncing  of the models has been temporarily disabled in 0.11 and models files have to be copied manually. To test the release please contact davide.caroselli@translated.net 
 
 ## How to prepare your data
 
