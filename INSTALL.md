@@ -40,4 +40,4 @@ Download from here: https://github.com/ModernMT/MMT/releases
 tar xvf mmt-0.11-ubuntu14_04.tar.gz
 ```
 
-Done! go to README 
+Done! go to [README.md](README.md)
