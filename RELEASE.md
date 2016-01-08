@@ -5,7 +5,7 @@ Nothing.
 # Current known bugs and limitations
 
 - Incremental training not implemented yet.
-- Resyncing on distributed MMT disabled. Copy files manually.
+- Rsyncing on distributed MMT disabled. Copy files manually.
 - Distruted MMT still does not support fail-over if a node is down.
 
 # Release 0.11
