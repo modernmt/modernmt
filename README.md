@@ -32,10 +32,12 @@ We included a very small dataset, just to verify that training works.
 ./mmt create en it examples/data/train
 ```
 
-### To Start/Stop an existing engine
+### Start an existing engine
+
 ```bash
 ./mmt start
 ```
+use *stop* for stopping it :)
 
 ### Translate via API
 
@@ -90,12 +92,13 @@ MMT quality can be increased by tuning the parameters providing unseen translati
 ./mmt tune examples/data/dev
 ```
 
-Example engine will take around 10 minutes. Every translation will use the new parameters. You are done. 
+Example engine will take around 10 minutes. 
+After the tuning translation requests will use the new parameters. No other action required.
 
 ### MMT distributed (Expert)
 
 Let's distribute MMT to a second machine. 
-Make sure port 8000, 5000 and 5001 are open on the master.
+Make sure port 8000 is open on the master and 5000 and 5001 on both the master and the slave.
 
 Login into the new machine and run
 
