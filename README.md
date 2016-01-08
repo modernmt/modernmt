@@ -37,7 +37,7 @@ We included a very small dataset, just to verify that training works.
 ```bash
 ./mmt start
 ```
-use *stop* for stopping it :)
+use **stop** for stopping it.
 
 ### Translate via API
 
