@@ -90,22 +90,36 @@ MMT quality can be increased by tuning the parameters providing unseen translati
 ./mmt tune examples/data/dev
 ```
 
+Example engine will take around 10 minutes. Every translation will use the new parameters. You are done. 
+
 ### MMT distributed (Expert)
 
-Let's distribute MMT to a second machine. Login into the new second machine and run
+Let's distribute MMT to a second machine. 
+Make sure port 8000, 5000 and 5001 are open on the master.
+
+Login into the new machine and run
 
 ```bash 
 ./mmt start --master ubuntu:pass123@3.14.15.92
 ```
 
 Where *ubuntu* and *pass123* are your ssh credentials to the master machine (ip *3.14.15.92*).
+
 If you're running your experiments on Amazon, copy your .pem file to the second machine and run the command as:
 
 ```
 ./mmt start --master ubuntu@3.14.15.92 --master-pem /path/to/master-credentials.pem
 ```
 
+Query the master, the requests are load balanced across the istances:
+
+```
+curl "http://3.14.15.92:8000/translate?q=world&context=computer" | python -mjson.tool
+```
+
 **That's all folks!**
+
+#### Distributed MMT Notes
 
 The engine files will be synced from the master and translation requests will be load balanced across the 2 instances.
 Only the master will respond to the Translation API and distribute load.
