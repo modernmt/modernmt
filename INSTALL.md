@@ -1,14 +1,14 @@
 # HW Requirements
 
-Storage: 4 times the corpus size, min 10GB 
+**Storage**: at least 5 times the corpus size, min 10GB 
 
-CPU: No minimum required. 
+**CPU**: No minimum required. 
   - More cores generally will give you a faster training and translation request throughput. 
   - More clock speed will generally give you a faster translation for the single request.
 
-Memory: 
+**Memory**: 
   - Min 5GB
-  - ~5GB each 100M words of training.
+  - 3GB each 100M words (soruce+target) of training.
 
 # Support
 
