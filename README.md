@@ -84,6 +84,8 @@ Untar the archive and place the unzipped giga-fren.release2.XX corpus in a train
 ./mmt create en fr wmt-train-dir
 ```
 
+On a Amazon 16 core, 30GB Ram it took 4 hours.
+
 ### MMT Tuning (Expert)
 
 MMT quality can be increased by tuning the parameters providing unseen translation examples. 
@@ -150,4 +152,4 @@ In general:
 domain-id.(2 letters iso lang code|5 letters RFC3066)
 ```
 
-Note: domain-id must be [a-zA-Z0-9] only without spaces.
+Note: domain-id must be [a-zA-Z0-9] only, without spaces.
