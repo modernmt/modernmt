@@ -70,7 +70,7 @@ You will get:
 
 ### Creating a large translation model
 
-You can create a 1B words engine in around 8 hours of training using 16 Cores and 50GB of RAM.
+You can create a 1B words engine in around 4 hours of training using 16 Cores and 30GB of RAM.
 
 If you want to try, you can download the [WMT 10 Corpus](http://www.statmt.org/wmt10/training-giga-fren.tar) corpus from here:
 
@@ -84,7 +84,20 @@ Untar the archive and place the unzipped giga-fren.release2.XX corpus in a train
 ./mmt create en fr wmt-train-dir
 ```
 
-On a Amazon 16 core, 30GB Ram it took 4 hours.
+The corpus contains 575,799,111 source tokens and 1,247,735,635 total words.
+
+Training statistics:
+```
+Speed          :  81,578 words/second
+Total time     :  15,295s
+  - Tokenization   :   5,801s (will improve in v0.12)
+  - Context Index  :      95s
+  - Lang Model     :   8,180s
+  - Model (Suffix) :  13,878s
+
+```
+
+
 
 ### MMT Tuning (Expert)
 
@@ -94,8 +107,15 @@ MMT quality can be increased by tuning the parameters providing unseen translati
 ./mmt tune examples/data/dev
 ```
 
-Example engine will take around 10 minutes. 
+This dev data used to tune the small engine created with the example data will take around 10 minutes. 
 After the tuning translation requests will use the new parameters. No other action required.
+
+Tuning speed depends on many factors:
+ - Translation speed (bigger model, slower translations);
+ - Number of sentences as dev set for tuning;
+ - Luck. How close the random initial parameters are to the convergence.
+
+Expect a few days for a 1B words model with 1000 sentences used for tuning.
 
 ## MMT distributed (Expert)
 
