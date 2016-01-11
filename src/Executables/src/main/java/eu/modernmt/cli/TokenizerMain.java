@@ -3,21 +3,23 @@ package eu.modernmt.cli;
 import eu.modernmt.tokenizer.Languages;
 import eu.modernmt.tokenizer.TokenizerPool;
 import eu.modernmt.tokenizer.moses.MosesTokenizer;
+import eu.modernmt.tokenizer.utils.UnixLineReader;
 import org.apache.commons.configuration.SystemConfiguration;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Created by davide on 17/12/15.
  */
 public class TokenizerMain {
 
-    private static final int BATCH_SIZE = 100;
+    private static final int BATCH_SIZE = 300;
 
     public static void main(String[] args) throws IOException {
         tokenize(args[0], System.in, System.out);
@@ -30,13 +32,14 @@ public class TokenizerMain {
             throw new IllegalArgumentException("Unsupported language: " + lang);
 
         TokenizerPool tokenizer = TokenizerPool.getCachedInstance(language);
-
         ArrayList<String> batch = new ArrayList<>(BATCH_SIZE);
 
         try {
-            LineIterator stdin = IOUtils.lineIterator(input, "UTF-8");
-            while (stdin.hasNext()) {
-                batch.add(stdin.next());
+            UnixLineReader reader = new UnixLineReader(new InputStreamReader(input, "UTF-8"));
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                batch.add(line);
 
                 if (batch.size() >= BATCH_SIZE) {
                     process(tokenizer, batch, output);
@@ -63,4 +66,5 @@ public class TokenizerMain {
             output.write('\n');
         }
     }
+
 }

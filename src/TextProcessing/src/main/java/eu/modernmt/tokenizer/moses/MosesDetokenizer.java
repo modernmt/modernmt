@@ -2,12 +2,10 @@ package eu.modernmt.tokenizer.moses;
 
 import eu.modernmt.tokenizer.IDetokenizer;
 import eu.modernmt.tokenizer.ITokenizer;
+import eu.modernmt.tokenizer.utils.UnixLineReader;
 import org.apache.commons.io.IOUtils;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.Scanner;
 
 /**
@@ -17,7 +15,7 @@ public class MosesDetokenizer extends IDetokenizer implements Closeable {
 
     private Process detokenizer = null;
     private OutputStream detokenizerStdin;
-    private Scanner detokenizerStdout = null;
+    private UnixLineReader detokenizerStdout = null;
 
     public MosesDetokenizer(String languageCode) {
         File moses = new File(ITokenizer.MODELS_PATH, "moses");
@@ -30,13 +28,12 @@ public class MosesDetokenizer extends IDetokenizer implements Closeable {
 
         try {
             this.detokenizer = runtime.exec(detokenizerCommand);
+            this.detokenizerStdin = detokenizer.getOutputStream();
+            this.detokenizerStdout = new UnixLineReader(new InputStreamReader(detokenizer.getInputStream(), "UTF-8"));
         } catch (IOException e) {
             this.close();
             throw new RuntimeException("Error while executing processes", e);
         }
-
-        this.detokenizerStdin = detokenizer.getOutputStream();
-        this.detokenizerStdout = new Scanner(detokenizer.getInputStream(), "UTF-8");
     }
 
     @Override
@@ -50,11 +47,12 @@ public class MosesDetokenizer extends IDetokenizer implements Closeable {
                     this.detokenizerStdin.write('\n');
             }
             this.detokenizerStdin.flush();
+
+            return this.detokenizerStdout.readLine();
         } catch (IOException e) {
             throw new RuntimeException("Error while running detokenizer", e);
         }
 
-        return this.detokenizerStdout.nextLine();
     }
 
     @Override

@@ -3,6 +3,7 @@ package eu.modernmt.tokenizer.moses;
 import eu.modernmt.tokenizer.ITokenizer;
 import eu.modernmt.tokenizer.ITokenizerFactory;
 import eu.modernmt.tokenizer.Languages;
+import eu.modernmt.tokenizer.utils.UnixLineReader;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
@@ -68,9 +69,9 @@ public class MosesTokenizer extends ITokenizer implements Closeable {
     private Process detokenizer = null;
 
     private OutputStream tokenizerStdin;
-    private BufferedReader tokenizerStdout = null;
+    private UnixLineReader tokenizerStdout = null;
     private OutputStream detokenizerStdin;
-    private BufferedReader detokenizerStdout = null;
+    private UnixLineReader detokenizerStdout = null;
 
     public MosesTokenizer(String languageCode) {
         File moses = new File(ITokenizer.MODELS_PATH, "moses");
@@ -88,9 +89,9 @@ public class MosesTokenizer extends ITokenizer implements Closeable {
             this.detokenizer = runtime.exec(detokenizerCommand);
 
             this.tokenizerStdin = tokenizer.getOutputStream();
-            this.tokenizerStdout = new BufferedReader(new InputStreamReader(tokenizer.getInputStream(), "UTF-8"));
+            this.tokenizerStdout = new UnixLineReader(new InputStreamReader(tokenizer.getInputStream(), "UTF-8"));
             this.detokenizerStdin = detokenizer.getOutputStream();
-            this.detokenizerStdout = new BufferedReader(new InputStreamReader(detokenizer.getInputStream(), "UTF-8"));
+            this.detokenizerStdout = new UnixLineReader(new InputStreamReader(detokenizer.getInputStream(), "UTF-8"));
         } catch (IOException e) {
             this.close();
             throw new RuntimeException("Error while executing processes", e);

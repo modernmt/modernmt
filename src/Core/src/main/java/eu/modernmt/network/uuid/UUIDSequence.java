@@ -4,6 +4,7 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.UUID;
@@ -15,13 +16,12 @@ public class UUIDSequence {
 
     public enum SequenceType {
         MESSAGING_IDENTITY(0),
-        DISTRIBUTED_TASK(1),
-        ;
+        DISTRIBUTED_TASK(1),;
 
         private short id;
 
         SequenceType(int id) {
-            this.id = (short)id;
+            this.id = (short) id;
         }
     }
 
@@ -36,7 +36,15 @@ public class UUIDSequence {
         try {
             InetAddress localhost = InetAddress.getLocalHost();
             NetworkInterface localNetworkInterface = NetworkInterface.getByInetAddress(localhost);
-            address = localNetworkInterface.getHardwareAddress();
+
+            if (localNetworkInterface == null) {
+                Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+                if (interfaces.hasMoreElements())
+                    localNetworkInterface = interfaces.nextElement();
+            }
+
+            if (localNetworkInterface != null)
+                address = localNetworkInterface.getHardwareAddress();
         } catch (UnknownHostException | SocketException e) {
             // Nothing to do
         }
@@ -85,4 +93,5 @@ public class UUIDSequence {
 
         return new UUID(msb, lsb);
     }
+
 }
