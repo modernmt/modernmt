@@ -1,6 +1,7 @@
 # HW Requirements
 
-**Storage**: at least 5 times the corpus size, min 10GB 
+**Storage**: at least 6 times the corpus size, min 10GB. If your training data is 10GB, make sure you have at least 60GB on drive.
+
 
 **CPU**: No minimum required. 
   - More cores generally will give you a faster training and translation request throughput. 
