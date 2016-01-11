@@ -18,7 +18,7 @@ This application is the binary version of MMT (open source distribution expected
 
 This MMT release will allow you to create an MT engine, available via a REST API, given your training data (folder with line aligned text files)
 
-Intro video: https://www.youtube.com/watch?v=UbUZqZyM3Fc
+Intro video: http://87k.eu/lk9l
 
 ## Installation
 
