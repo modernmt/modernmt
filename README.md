@@ -92,7 +92,7 @@ Training statistics:
 ```
 Speed          :  41,791 words/second
 Total time     :  29,159s
-  - Tokenization   :   5,801s (will improve in v0.12)
+  - Tokenization   :   5,801s
   - Cleaning       :   1,205s
   - Context Index  :      95s
   - Lang Model     :   8,180s
