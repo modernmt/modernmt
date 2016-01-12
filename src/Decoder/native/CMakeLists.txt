@@ -12,15 +12,6 @@ include_directories(jheaders)
 
 # External Libraries
 
-## BZip2
-find_package(BZip2)
-if (BZIP2_FOUND)
-    include_directories(${BZIP_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} ${BZIP2_LIBRARIES})
-else (BZIP2_FOUND)
-    message(FATAL_ERROR "Could not locate BZip2.")
-endif (BZIP2_FOUND)
-
 ## XMLRPC
 find_package(XMLRPC REQUIRED c++2 abyss-server)
 if (XMLRPC_FOUND)
@@ -58,17 +49,30 @@ if (Moses_INCLUDE_DIRS STREQUAL "Moses_INCLUDE_DIRS-NOTFOUND")
     message(FATAL_ERROR "Could not locate Moses home path. Try setting environment variable MOSESDECODER_HOME to the root path of mosesdecoder distribution.")
 endif()
 
-find_path(Moses_LIBRARIES lib/${CMAKE_SHARED_LIBRARY_PREFIX}moses${CMAKE_SHARED_LIBRARY_SUFFIX} PATHS ENV MOSESDECODER_HOME)
+find_path(Moses_LIBRARIES build/lib/${CMAKE_SHARED_LIBRARY_PREFIX}moses${CMAKE_SHARED_LIBRARY_SUFFIX} PATHS ENV MOSESDECODER_HOME)
 if (Moses_LIBRARIES STREQUAL "Moses_LIBRARIES-NOTFOUND")
-    message(FATAL_ERROR "Could not locate moses shared library. Try setting environment variable MOSESDECODER_HOME to the root path of mosesdecoder distribution or recompiling Moses.")
+    message(FATAL_ERROR "Could not locate Moses shared library. Try setting environment variable MOSESDECODER_HOME to the root path of mosesdecoder distribution or recompiling Moses.")
+else()
+    set(Moses_LIBRARIES ${Moses_LIBRARIES}/build/lib)
 endif()
 
-find_library(MOSES moses ${Moses_LIBRARIES}/lib)
+find_library(MOSES moses ${Moses_LIBRARIES})
 add_definitions(-DMAX_NUM_FACTORS=4)
 add_definitions(-DWITH_THREADS=1)
 add_definitions(-DHAVE_XMLRPC_C=1)
 include_directories(${Moses_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} ${MOSES})
+
+## IRSTLM
+find_path(IRSTLM_LIBRARIES build/lib/${CMAKE_SHARED_LIBRARY_PREFIX}irstlm${CMAKE_SHARED_LIBRARY_SUFFIX} PATHS ENV IRSTLM_HOME)
+if (IRSTLM_LIBRARIES STREQUAL "IRSTLM_LIBRARIES-NOTFOUND")
+    message(FATAL_ERROR "Could not locate IRSTLM shared library. Try setting environment variable IRSTLM_HOME to the root path of IRSTLM distribution or recompiling IRSTLM.")
+else()
+    set(IRSTLM_LIBRARIES ${IRSTLM_LIBRARIES}/build/lib)
+endif()
+
+find_library(IRSTLM irstlm ${IRSTLM_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${IRSTLM})
 
 ## CMPH
 find_library(CMPH cmph)
