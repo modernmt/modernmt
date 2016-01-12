@@ -2,6 +2,7 @@
 import argparse
 import logging
 import os
+import socket
 import subprocess
 import sys
 
@@ -53,6 +54,17 @@ def __check_java():
     except OSError:
         print 'ERROR: Missing Java executable, please check INSTALL.md'
         exit(1)
+
+
+def __is_freeport(port):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    result = s.connect_ex(('127.0.0.1', port))
+
+    if result == 0:
+        return False
+    else:
+        s.close()
+        return True
 
 
 class CLIArgsException(Exception):
@@ -162,6 +174,19 @@ def main_start(argv):
     args.has_slave = args.slave
     args.api_port = args.api_port if args.api_port is not None else __DEFAULT_MMT_API_PORT
     args.cluster_ports = args.cluster_ports if args.cluster_ports is not None else __DEFAULT_MMT_CLUSTER_PORTS
+
+    # Check ports
+    if args.has_master and not __is_freeport(args.api_port):
+        raise IllegalStateException(
+            'port %d is already in use, please specify another port with option -p/--api-port' % args.api_port)
+    if args.has_slave and not __is_freeport(args.cluster_ports[0]):
+        raise IllegalStateException(
+                'port %d is already in use, please specify another port pair with option --cluster-ports' %
+                args.cluster_ports[0])
+    if args.has_slave and not __is_freeport(args.cluster_ports[1]):
+        raise IllegalStateException(
+                'port %d is already in use, please specify another port pair with option --cluster-ports' %
+                args.cluster_ports[1])
 
     # Exec command
     engine = MMTEngine(name=args.engine)
