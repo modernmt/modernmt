@@ -90,9 +90,10 @@ The corpus contains 575,799,111 source tokens and 1,247,735,635 total words.
 
 Training statistics:
 ```
-Speed          :  81,578 words/second
-Total time     :  15,295s
+Speed          :  41,791 words/second
+Total time     :  29,159s
   - Tokenization   :   5,801s (will improve in v0.12)
+  - Cleaning       :   1,205s
   - Context Index  :      95s
   - Lang Model     :   8,180s
   - Model (Suffix) :  13,878s
