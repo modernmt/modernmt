@@ -30,8 +30,8 @@ __description = '''\
   You can find more information on: http://www.modernmt.eu/
 '''
 
-__DEFAULT_MMT_API_PORT = 8000
-__DEFAULT_MMT_CLUSTER_PORTS = [5000, 5001]
+__DEFAULT_MMT_API_PORT = 8045
+__DEFAULT_MMT_CLUSTER_PORTS = [5016, 5017]
 
 _injectable_components = [Tokenizer, Detokenizer, CorpusCleaner, ContextAnalyzer, SuffixArraysPhraseTable, WordAligner,
                           LanguageModel, Moses, MMTEngine]
@@ -79,7 +79,7 @@ def main_tune(argv):
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
     parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
-                        help='the MMT API port. (default is 8000)',
+                        help='the MMT API port. (default is {port})'.format(port=__DEFAULT_MMT_API_PORT),
                         default=None, type=int)
     parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='if debug is set, it enables verbose '
                                                                                  'logging and prevents temporary files '
@@ -113,11 +113,12 @@ def main_start(argv):
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
     parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
-                        help='the public available REST Api port. (default is 8000)',
-                        default=None, type=int)
+                        help='the public available REST Api port. (default is {port})'
+                        .format(port=__DEFAULT_MMT_API_PORT), default=None, type=int)
     parser.add_argument('--cluster-ports', dest='cluster_ports', metavar='CLUSTER_PORTS',
                         help='two network ports used internally by the cluster to data exchange between '
-                             'Master instance and Slave instances. (default is 5000 and 5001)',
+                             'Master instance and Slave instances. (default is {port0} and {port1})'
+                        .format(port0=__DEFAULT_MMT_CLUSTER_PORTS[0], port1=__DEFAULT_MMT_CLUSTER_PORTS[1]),
                         default=None, nargs=2, type=int)
     parser.add_argument('-m', '--master', dest='master', help='the master remote host as user[:password]@host. Default '
                                                               'is localhost', default=None)
