@@ -90,7 +90,6 @@ class AdaptiveIRSTLM(LanguageModel):
         self._model_dir = os.path.abspath(os.path.join(model, os.pardir))
 
         self._irstlm_dir = os.path.join(scripts.BIN_DIR, 'irstlm-adaptivelm-v0.6')
-        self._addbound_bin = os.path.join(self._irstlm_dir, 'scripts', 'add-start-end.sh')
         self._buildlm_bin = os.path.join(self._irstlm_dir, 'scripts', 'build-lm.sh')
         self._compilelm_bin = os.path.join(self._irstlm_dir, 'bin', 'compile-lm')
 
@@ -109,12 +108,12 @@ class AdaptiveIRSTLM(LanguageModel):
             models_folder = os.path.dirname(self._model)
 
             for corpus in corpora:
-                file = corpus.get_file(lang)
+                cfile = corpus.get_file(lang)
                 lm = corpus.name + '.alm'
 
                 lmconfig_content.append('{weight} {name} {lm}'.format(weight=str(w), name=corpus.name, lm=lm))
 
-                self._train_lm(file, os.path.join(models_folder, lm), working_dir, log)
+                self._train_lm(cfile, os.path.join(models_folder, lm), working_dir, log)
 
             with open(self._model, 'w') as model:
                 for line in lmconfig_content:
@@ -125,18 +124,13 @@ class AdaptiveIRSTLM(LanguageModel):
                 log.close()
 
     def _train_lm(self, source, dest, working_dir, log):
-        input_se = os.path.join(working_dir, 'input.se')
         temp = os.path.join(working_dir, 'temp')
         arpa_file = os.path.join(working_dir, 'arpa')
 
-        # Add start and end symbols
-        with open(source) as stdin:
-            with open(input_se, 'w') as stdout:
-                shell.execute([self._addbound_bin], stdin=stdin, stdout=stdout, stderr=log)
-
         # Creating lm in ARPA format
-        command = [self._buildlm_bin, '-i', input_se, '-k', str(cpu_count()), '-o', arpa_file, '-n', str(self._order),
-                   '-s', 'witten-bell', '-t', temp, '-l', '/dev/stdout', '-irstlm', self._irstlm_dir]
+        command = [self._buildlm_bin, '-i', source, '-k', str(cpu_count()), '-o', arpa_file, '-n', str(self._order),
+                   '-s', 'witten-bell', '-t', temp, '-l', '/dev/stdout', '-irstlm', self._irstlm_dir, '--add-start-end',
+                   '--zipping']
         shell.execute(command, stderr=log)
 
         # Create binary lm
