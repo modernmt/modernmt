@@ -34,7 +34,14 @@ Install **Java 8** if not present
 sudo add-apt-repository ppa:openjdk-r/ppa && sudo apt-get update && sudo apt-get install openjdk-8-jdk
 ```
 
-**Python 2.7** is also required but it is pre-installed in Ubuntu.
+**Python 2.7** with module **Requests** is also required but it is pre-installed in Ubuntu.
+
+Just in case *Requests* in not installed:
+```
+sudo apt-get install python-pip
+sudo pip install -U requests
+```
+
 
 # Install the MMT Binaries
 
