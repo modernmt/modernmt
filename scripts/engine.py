@@ -246,21 +246,21 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
             # Training Context Analyzer
             if 'context_analyzer' in steps:
                 with cmdlogger.step('Context Analyzer training') as _:
-                    log_file = self._get_logfile('build.context')
+                    log_file = self._get_logfile('context')
                     self._engine.analyzer.create_index(original_corpora[0].root, log_file)
 
             # Training Language Model
             if 'lm' in steps:
                 with cmdlogger.step('Language Model training') as _:
                     working_dir = self._get_tempdir('lm')
-                    log_file = self._get_logfile('build.lm')
+                    log_file = self._get_logfile('lm')
                     self._engine.lm.train(tokenized_corpora, self._engine.target_lang, working_dir, log_file)
 
             # Training Translation Model
             if 'tm' in steps:
                 with cmdlogger.step('Translation Model training') as _:
                     working_dir = self._get_tempdir('tm')
-                    log_file = self._get_logfile('build.tm')
+                    log_file = self._get_logfile('tm')
                     self._engine.pt.train(cleaned_corpora, self._engine.aligner, working_dir, log_file)
 
             # Writing config file

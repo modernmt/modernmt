@@ -33,14 +33,12 @@ class SuffixArraysPhraseTable(MosesFeature):
     injector_section = 'suffixarrays'
     injectable_fields = {
         'sample': ('number of samples for phrase table', int, 1000),
-        'workers': ('workers', int, None),
     }
 
     def __init__(self, model, langs):
         MosesFeature.__init__(self, 'Mmsapt')
 
         self._sample = None  # Injected
-        self._workers = None  # Injected
 
         self._model = model
         self._source_lang = langs[0]

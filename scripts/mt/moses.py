@@ -36,7 +36,6 @@ class Moses:
         'stack_size': ('search algorithm stack size', int, 5000),
         'cube_pruning_pop_limit': ('pop limit of cube pruning algorithm', int, 5000),
         'distortion_limit': ('distortion limit', int, 6),
-        'threads': ('decoder threads', int, None)
     }
 
     bin_path = os.path.join(scripts.BIN_DIR, 'moses-mmt-dev_4a82__6baa')
@@ -45,7 +44,6 @@ class Moses:
         self._stack_size = None  # Injected
         self._cube_pruning_pop_limit = None  # Injected
         self._distortion_limit = None  # Injected
-        self._threads = None  # Injected
 
         self._moses_bin = os.path.join(Moses.bin_path, 'bin', 'moses')
         self._ini_file = ini_file
