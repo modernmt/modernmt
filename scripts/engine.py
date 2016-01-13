@@ -547,7 +547,7 @@ class MMTServer(_MMTDistributedComponent):
         cmdlogger = _TuningProcessLogger(4 if tokenize else 3)
         cmdlogger.start(self, corpora)
 
-        working_dir = self.engine.get_tempdir('tuning')
+        working_dir = self._get_tempdir('tuning')
         mert_wd = os.path.join(working_dir, 'mert')
 
         try:
@@ -629,7 +629,7 @@ class MMTServer(_MMTDistributedComponent):
             raise
         finally:
             if not debug:
-                self.engine.clear_tempfiles()
+                self._clear_tempdir()
 
 
 class MMTWorker(_MMTDistributedComponent):
