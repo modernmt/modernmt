@@ -21,293 +21,50 @@ from scripts.mt.processing import Tokenizer, Detokenizer, CorpusCleaner
 
 __author__ = 'Davide Caroselli'
 
+DEFAULT_MMT_API_PORT = 8045
+DEFAULT_MMT_CLUSTER_PORTS = [5016, 5017]
+
 logger = logging.getLogger()
 
 
-class MMTServerApi:
-    def __init__(self, port):
-        self.port = port
-        self._url_template = 'http://localhost:{port}/{endpoint}'
+# ==============================
+# Base classes
+# ==============================
 
-        logging.getLogger('requests').setLevel(1000)
-        logging.getLogger('urllib3').setLevel(1000)
+class _MMTRuntimeComponent:
+    def __init__(self, engine_name, component_name):
+        self.__engine = engine_name
+        self.__component = component_name
 
-    def _unpack(self, r):
-        if r.status_code != requests.codes.ok:
-            raise Exception('HTTP request failed with code ' + str(r.status_code) + ': ' + r.url)
+        self.__runtime_path = os.path.join(scripts.RUNTIME_DIR, engine_name, component_name)
+        self.__logs_path = os.path.join(self.__runtime_path, 'logs')
+        self.__temp_path = os.path.join(self.__runtime_path, 'tmp')
 
-        return r.json()
+    def _get_runtimedir(self, ensure=True):
+        if ensure and not os.path.isdir(self.__logs_path):
+            fileutils.makedirs(self.__runtime_path, exist_ok=True)
+        return self.__runtime_path
 
-    def _get(self, endpoint, params=None):
-        url = self._url_template.format(port=self.port, endpoint=endpoint)
-        r = requests.get(url, params=params)
-        return self._unpack(r)
+    def _get_logfile(self, name, ensure=True):
+        if ensure and not os.path.isdir(self.__logs_path):
+            fileutils.makedirs(self.__logs_path, exist_ok=True)
 
-    def _delete(self, endpoint):
-        url = self._url_template.format(port=self.port, endpoint=endpoint)
-        r = requests.delete(url)
-        return self._unpack(r)
+        return os.path.join(self.__logs_path, name + '.log')
 
-    def _put(self, endpoint, json=None):
-        url = self._url_template.format(port=self.port, endpoint=endpoint)
+    def _get_tempdir(self, name, ensure=True):
+        if ensure and not os.path.isdir(self.__temp_path):
+            fileutils.makedirs(self.__temp_path, exist_ok=True)
 
-        data = headers = None
-        if json is not None:
-            data = js.dumps(json)
-            headers = {'Content-type': 'application/json'}
+        folder = os.path.join(self.__temp_path, name)
 
-        r = requests.put(url, data=data, headers=headers)
-        return self._unpack(r)
+        if ensure:
+            shutil.rmtree(folder, ignore_errors=True)
+            os.makedirs(folder)
 
-    def _post(self, endpoint, json=None):
-        url = self._url_template.format(port=self.port, endpoint=endpoint)
+        return folder
 
-        data = headers = None
-        if json is not None:
-            data = js.dumps(json)
-            headers = {'Content-type': 'application/json'}
-
-        r = requests.post(url, data=data, headers=headers)
-        return self._unpack(r)
-
-    def stats(self):
-        return self._get('_stat')
-
-    def update_features(self, features):
-        return self._put('decoder/features', json=features)
-
-    def get_features(self):
-        return self._get('decoder/features')
-
-    def get_context_f(self, document):
-        return self._get('context', params={'local_file': document})
-
-    def create_session(self, context):
-        return self._post('sessions', json=context)
-
-    def close_session(self, session):
-        return self._delete('sessions/' + str(session))
-
-    def nbest_list(self, text, size=100, session=None):
-        p = {
-            'q': text,
-            'nbest': str(size),
-        }
-
-        if session is not None:
-            p['session'] = session
-
-        return self._get('translation/nbest', params=p)
-
-
-class _TrainingProcessLogger:
-    def __init__(self, count, line_len=70):
-        self.line_len = line_len
-        self.count = count
-        self._current_step = 0
-        self._step = None
-
-    def start(self, engine, corpora):
-        print '\n=========== TRAINING STARTED ===========\n'
-        print 'ENGINE:  %s' % engine.name
-        print 'CORPORA: %s (%d documents)' % (corpora[0].root, len(corpora))
-        print 'LANGS:   %s > %s' % (engine.source_lang, engine.target_lang)
-        print
-        sys.stdout.flush()
-
-    def step(self, step):
-        self._step = step
-        self._current_step += 1
-        return self
-
-    def completed(self):
-        print '\n=========== TRAINING SUCCESS ===========\n'
-        print 'You can now start, stop or check the status of the server with command:'
-        print '\t./mmt start|stop|status'
-        print
-        sys.stdout.flush()
-
-    def __enter__(self):
-        message = 'INFO: (%d of %d) %s... ' % (self._current_step, self.count, self._step)
-        print message.ljust(self.line_len),
-        sys.stdout.flush()
-
-        self._start_time = time.time()
-        return self
-
-    def __exit__(self, *_):
-        self._end_time = time.time()
-        print 'DONE (in %ds)' % int(self._end_time - self._start_time)
-        sys.stdout.flush()
-
-
-class MMTEngine:
-    injector_section = 'engine'
-    injectable_fields = {
-        'lm_type': ('LM implementation', (basestring, LanguageModel.available_types), LanguageModel.available_types[0]),
-        'aligner_type': (
-            'Aligner implementation', (basestring, WordAligner.available_types), WordAligner.available_types[0]),
-    }
-
-    training_steps = ['tokenize', 'clean', 'context_analyzer', 'lm', 'tm']
-
-    def __init__(self, langs=None, name=None):
-        self.name = name if name is not None else 'default'
-        self.source_lang = langs[0] if langs is not None else None
-        self.target_lang = langs[1] if langs is not None else None
-
-        self._lm_type = None  # Injected
-        self._aligner_type = None  # Injected
-
-        self._config = None
-
-        self._root_path = os.path.join(scripts.ENGINES_DIR, self.name)
-        self._data_path = os.path.join(self._root_path, 'data')
-        self._logs_path = os.path.join(self._root_path, 'logs')
-        self._temp_path = os.path.join(self._root_path, 'temp')
-
-        self._config_file = os.path.join(self._root_path, 'engine.ini')
-        self._pt_model = os.path.join(self._data_path, 'phrase_tables')
-        self._lm_model = os.path.join(self._data_path, 'lm', 'target.lm')
-        self._context_index = os.path.join(self._data_path, 'context', 'index')
-        self._moses_ini_file = os.path.join(self._data_path, 'moses.ini')
-
-    def exists(self):
-        return os.path.isfile(self._config_file)
-
-    def _on_fields_injected(self, injector):
-        if self.target_lang is None or self.source_lang is None:
-            config = self.config
-
-            if config is not None:
-                self.target_lang = config.get(self.injector_section, 'target_lang')
-                self.source_lang = config.get(self.injector_section, 'source_lang')
-
-        if self.target_lang is None or self.source_lang is None:
-            raise Exception('Engine target language or source language must be specified')
-
-        self.tokenizer = injector.inject(Tokenizer())
-        self._detokenizer = injector.inject(Detokenizer())
-        self._cleaner = injector.inject(CorpusCleaner())
-
-        self._analyzer = injector.inject(ContextAnalyzer())
-
-        self._pt = injector.inject(SuffixArraysPhraseTable(self._pt_model, (self.source_lang, self.target_lang)))
-        self._aligner = injector.inject(WordAligner.instantiate(self._aligner_type))
-        self._lm = injector.inject(LanguageModel.instantiate(self._lm_type, self._lm_model))
-
-        self._moses = injector.inject(Moses(self._moses_ini_file))
-        self._moses.add_feature(MosesFeature('UnknownWordPenalty'))
-        self._moses.add_feature(MosesFeature('WordPenalty'))
-        self._moses.add_feature(MosesFeature('Distortion'))
-        self._moses.add_feature(MosesFeature('PhrasePenalty'))
-        self._moses.add_feature(self._pt)
-        self._moses.add_feature(LexicalReordering())
-        self._moses.add_feature(self._lm)
-
-        if self._config is None:
-            self._config = injector.to_config()
-            self._config.set(self.injector_section, 'source_lang', self.source_lang)
-            self._config.set(self.injector_section, 'target_lang', self.target_lang)
-
-    @property
-    def config(self):
-        if self._config is None and os.path.isfile(self._config_file):
-            self._config = ConfigParser()
-            self._config.read(self._config_file)
-        return self._config
-
-    # def get_tempdir(self, name, ensure=True):
-    #     if ensure and not os.path.isdir(self._temp_path):
-    #         fileutils.makedirs(self._temp_path, exist_ok=True)
-    #
-    #     folder = os.path.join(self._temp_path, name)
-    #
-    #     if ensure:
-    #         shutil.rmtree(folder, ignore_errors=True)
-    #         os.makedirs(folder)
-    #
-    #     return folder
-    #
-    # def get_logfile(self, name, ensure=True):
-    #     if ensure and not os.path.isdir(self._logs_path):
-    #         fileutils.makedirs(self._logs_path, exist_ok=True)
-    #
-    #     return os.path.join(self._logs_path, name + '.log')
-
-    def build(self, corpora, debug=False, steps=None):
-        if len(corpora) == 0:
-            raise Exception('Empty corpora')
-
-        if steps is None:
-            steps = self.training_steps
-        else:
-            unknown_steps = [step for step in steps if step not in self.training_steps]
-            if len(unknown_steps) > 0:
-                raise Exception('Unknown training steps: ' + str(unknown_steps))
-
-        cmdlogger = _TrainingProcessLogger(len(steps) + 1)
-        cmdlogger.start(self, corpora)
-
-        shutil.rmtree(self._root_path, ignore_errors=True)
-        os.makedirs(self._root_path)
-
-        try:
-            original_corpora = corpora
-
-            # Tokenization
-            tokenized_corpora = original_corpora
-
-            if 'tokenize' in steps:
-                with cmdlogger.step('Corpora tokenization') as _:
-                    tokenizer_output = self.get_tempdir('tokenizer')
-                    tokenized_corpora = self.tokenizer.batch_tokenize(corpora, tokenizer_output)
-
-            # Cleaning
-            cleaned_corpora = tokenized_corpora
-
-            if 'clean' in steps:
-                with cmdlogger.step('Corpora cleaning') as _:
-                    cleaner_output = self.get_tempdir('cleaner')
-                    cleaned_corpora = self._cleaner.batch_clean(tokenized_corpora, cleaner_output)
-
-            # Training Context Analyzer
-            if 'context_analyzer' in steps:
-                with cmdlogger.step('Context Analyzer training') as _:
-                    log_file = self.get_logfile('build.context')
-                    self._analyzer.create_index(self._context_index, original_corpora[0].root, log_file)
-
-            # Training Language Model
-            if 'lm' in steps:
-                with cmdlogger.step('Language Model training') as _:
-                    working_dir = self.get_tempdir('lm')
-                    log_file = self.get_logfile('build.lm')
-                    self._lm.train(tokenized_corpora, self.target_lang, working_dir, log_file)
-
-            # Training Translation Model
-            if 'tm' in steps:
-                with cmdlogger.step('Translation Model training') as _:
-                    working_dir = self.get_tempdir('tm')
-                    log_file = self.get_logfile('build.tm')
-                    self._pt.train(cleaned_corpora, self._aligner, working_dir, log_file)
-
-            # Writing config file
-            with cmdlogger.step('Writing config files') as _:
-                with open(self._config_file, 'wb') as out:
-                    self._config.write(out)
-                with open(self._moses_ini_file, 'wb') as out:
-                    out.write(self._moses.create_ini())
-
-            cmdlogger.completed()
-        except Exception as e:
-            logger.exception(e)
-            raise
-        finally:
-            if not debug:
-                self.clear_tempfiles()
-
-    def clear_tempfiles(self):
-        shutil.rmtree(self._temp_path, ignore_errors=True)
+    def _clear_tempdir(self):
+        shutil.rmtree(self.__temp_path, ignore_errors=True)
 
 
 class _ProcessMonitor:
@@ -400,6 +157,212 @@ class _ProcessMonitor:
         os.kill(self._get_pid(), signal.SIGTERM)
 
 
+# ==============================
+# Engine
+# ==============================
+
+class _MMTEngineBuilderLogger:
+    def __init__(self, count, line_len=70):
+        self.line_len = line_len
+        self.count = count
+        self._current_step = 0
+        self._step = None
+
+    def start(self, engine, corpora):
+        print '\n=========== TRAINING STARTED ===========\n'
+        print 'ENGINE:  %s' % engine.name
+        print 'CORPORA: %s (%d documents)' % (corpora[0].root, len(corpora))
+        print 'LANGS:   %s > %s' % (engine.source_lang, engine.target_lang)
+        print
+        sys.stdout.flush()
+
+    def step(self, step):
+        self._step = step
+        self._current_step += 1
+        return self
+
+    def completed(self):
+        print '\n=========== TRAINING SUCCESS ===========\n'
+        print 'You can now start, stop or check the status of the server with command:'
+        print '\t./mmt start|stop|status'
+        print
+        sys.stdout.flush()
+
+    def __enter__(self):
+        message = 'INFO: (%d of %d) %s... ' % (self._current_step, self.count, self._step)
+        print message.ljust(self.line_len),
+        sys.stdout.flush()
+
+        self._start_time = time.time()
+        return self
+
+    def __exit__(self, *_):
+        self._end_time = time.time()
+        print 'DONE (in %ds)' % int(self._end_time - self._start_time)
+        sys.stdout.flush()
+
+
+class _MMTEngineBuilder(_MMTRuntimeComponent):
+    def __init__(self, engine):
+        _MMTRuntimeComponent.__init__(self, engine.name, 'training')
+        self._engine = engine
+
+    def build(self, corpora, debug=False, steps=None):
+        if len(corpora) == 0:
+            raise Exception('Empty corpora')
+
+        if steps is None:
+            steps = self._engine.training_steps
+        else:
+            unknown_steps = [step for step in steps if step not in self._engine.training_steps]
+            if len(unknown_steps) > 0:
+                raise Exception('Unknown training steps: ' + str(unknown_steps))
+
+        cmdlogger = _MMTEngineBuilderLogger(len(steps) + 1)
+        cmdlogger.start(self._engine, corpora)
+
+        shutil.rmtree(self._engine.path, ignore_errors=True)
+        os.makedirs(self._engine.path)
+
+        try:
+            original_corpora = corpora
+
+            # Tokenization
+            tokenized_corpora = original_corpora
+
+            if 'tokenize' in steps:
+                with cmdlogger.step('Corpora tokenization') as _:
+                    tokenizer_output = self._get_tempdir('tokenizer')
+                    tokenized_corpora = self._engine.tokenizer.batch_tokenize(corpora, tokenizer_output)
+
+            # Cleaning
+            cleaned_corpora = tokenized_corpora
+
+            if 'clean' in steps:
+                with cmdlogger.step('Corpora cleaning') as _:
+                    cleaner_output = self._get_tempdir('cleaner')
+                    cleaned_corpora = self._engine.cleaner.batch_clean(tokenized_corpora, cleaner_output)
+
+            # Training Context Analyzer
+            if 'context_analyzer' in steps:
+                with cmdlogger.step('Context Analyzer training') as _:
+                    log_file = self._get_logfile('build.context')
+                    self._engine.analyzer.create_index(original_corpora[0].root, log_file)
+
+            # Training Language Model
+            if 'lm' in steps:
+                with cmdlogger.step('Language Model training') as _:
+                    working_dir = self._get_tempdir('lm')
+                    log_file = self._get_logfile('build.lm')
+                    self._engine.lm.train(tokenized_corpora, self._engine.target_lang, working_dir, log_file)
+
+            # Training Translation Model
+            if 'tm' in steps:
+                with cmdlogger.step('Translation Model training') as _:
+                    working_dir = self._get_tempdir('tm')
+                    log_file = self._get_logfile('build.tm')
+                    self._engine.pt.train(cleaned_corpora, self._engine.aligner, working_dir, log_file)
+
+            # Writing config file
+            with cmdlogger.step('Writing config files') as _:
+                self._engine.write_config()
+                self._engine.moses.create_ini()
+
+            cmdlogger.completed()
+        except Exception as e:
+            logger.exception(e)
+            raise
+        finally:
+            if not debug:
+                self._clear_tempdir()
+
+
+class MMTEngine:
+    injector_section = 'engine'
+    injectable_fields = {
+        'lm_type': ('LM implementation', (basestring, LanguageModel.available_types), LanguageModel.available_types[0]),
+        'aligner_type': (
+            'Aligner implementation', (basestring, WordAligner.available_types), WordAligner.available_types[0]),
+    }
+
+    training_steps = ['tokenize', 'clean', 'context_analyzer', 'lm', 'tm']
+
+    def __init__(self, langs=None, name=None):
+        self.name = name if name is not None else 'default'
+        self.source_lang = langs[0] if langs is not None else None
+        self.target_lang = langs[1] if langs is not None else None
+
+        self._lm_type = None  # Injected
+        self._aligner_type = None  # Injected
+
+        self._config = None
+
+        self.path = os.path.join(scripts.ENGINES_DIR, self.name)
+
+        data_path = os.path.join(self.path, 'data')
+        self._config_file = os.path.join(self.path, 'engine.ini')
+        self._pt_model = os.path.join(data_path, 'phrase_tables')
+        self._lm_model = os.path.join(data_path, 'lm', 'target.lm')
+        self._context_index = os.path.join(data_path, 'context', 'index')
+        self._moses_ini_file = os.path.join(data_path, 'moses.ini')
+
+        self.builder = _MMTEngineBuilder(self)
+
+    def exists(self):
+        return os.path.isfile(self._config_file)
+
+    def _on_fields_injected(self, injector):
+        if self.target_lang is None or self.source_lang is None:
+            config = self.config
+
+            if config is not None:
+                self.target_lang = config.get(self.injector_section, 'target_lang')
+                self.source_lang = config.get(self.injector_section, 'source_lang')
+
+        if self.target_lang is None or self.source_lang is None:
+            raise Exception('Engine target language or source language must be specified')
+
+        self.tokenizer = injector.inject(Tokenizer())
+        self.detokenizer = injector.inject(Detokenizer())
+        self.cleaner = injector.inject(CorpusCleaner())
+
+        self.analyzer = injector.inject(ContextAnalyzer(self._context_index))
+
+        self.pt = injector.inject(SuffixArraysPhraseTable(self._pt_model, (self.source_lang, self.target_lang)))
+        self.aligner = injector.inject(WordAligner.instantiate(self._aligner_type))
+        self.lm = injector.inject(LanguageModel.instantiate(self._lm_type, self._lm_model))
+
+        self.moses = injector.inject(Moses(self._moses_ini_file))
+        self.moses.add_feature(MosesFeature('UnknownWordPenalty'))
+        self.moses.add_feature(MosesFeature('WordPenalty'))
+        self.moses.add_feature(MosesFeature('Distortion'))
+        self.moses.add_feature(MosesFeature('PhrasePenalty'))
+        self.moses.add_feature(self.pt)
+        self.moses.add_feature(LexicalReordering())
+        self.moses.add_feature(self.lm)
+
+        if self._config is None:
+            self._config = injector.to_config()
+            self._config.set(self.injector_section, 'source_lang', self.source_lang)
+            self._config.set(self.injector_section, 'target_lang', self.target_lang)
+
+    @property
+    def config(self):
+        if self._config is None and os.path.isfile(self._config_file):
+            self._config = ConfigParser()
+            self._config.read(self._config_file)
+        return self._config
+
+    def write_config(self):
+        with open(self._config_file, 'wb') as out:
+            self._config.write(out)
+
+
+# ==============================
+# MMT Components
+# ==============================
+
+
 class _TuningProcessLogger:
     def __init__(self, count, line_len=70):
         self.line_len = line_len
@@ -446,25 +409,101 @@ class _TuningProcessLogger:
         sys.stdout.flush()
 
 
-class MMTServer(_ProcessMonitor):
-    def _get_runtimedir(self, ensure=True):
-        path = os.path.join(scripts.RUNTIME_DIR, self.engine.name, 'master')
-        if ensure:
-            os.makedirs(path)
-        return path
+class MMTServerApi:
+    def __init__(self, port):
+        self.port = port
+        self._url_template = 'http://localhost:{port}/{endpoint}'
 
-    def __init__(self, engine, api_port=None, cluster_ports=None):
-        self._mert_script = os.path.join(Moses.bin_path, 'scripts', 'mert-moses.pl')
-        self._mert_i_script = os.path.join(scripts.MMT_ROOT, 'scripts', 'mertinterface.py')
+        logging.getLogger('requests').setLevel(1000)
+        logging.getLogger('urllib3').setLevel(1000)
+
+    def _unpack(self, r):
+        if r.status_code != requests.codes.ok:
+            raise Exception('HTTP request failed with code ' + str(r.status_code) + ': ' + r.url)
+
+        return r.json()
+
+    def _get(self, endpoint, params=None):
+        url = self._url_template.format(port=self.port, endpoint=endpoint)
+        r = requests.get(url, params=params)
+        return self._unpack(r)
+
+    def _delete(self, endpoint):
+        url = self._url_template.format(port=self.port, endpoint=endpoint)
+        r = requests.delete(url)
+        return self._unpack(r)
+
+    def _put(self, endpoint, json=None):
+        url = self._url_template.format(port=self.port, endpoint=endpoint)
+
+        data = headers = None
+        if json is not None:
+            data = js.dumps(json)
+            headers = {'Content-type': 'application/json'}
+
+        r = requests.put(url, data=data, headers=headers)
+        return self._unpack(r)
+
+    def _post(self, endpoint, json=None):
+        url = self._url_template.format(port=self.port, endpoint=endpoint)
+
+        data = headers = None
+        if json is not None:
+            data = js.dumps(json)
+            headers = {'Content-type': 'application/json'}
+
+        r = requests.post(url, data=data, headers=headers)
+        return self._unpack(r)
+
+    def stats(self):
+        return self._get('_stat')
+
+    def update_features(self, features):
+        return self._put('decoder/features', json=features)
+
+    def get_features(self):
+        return self._get('decoder/features')
+
+    def get_context_f(self, document):
+        return self._get('context', params={'local_file': document})
+
+    def create_session(self, context):
+        return self._post('sessions', json=context)
+
+    def close_session(self, session):
+        return self._delete('sessions/' + str(session))
+
+    def nbest_list(self, text, size=100, session=None):
+        p = {
+            'q': text,
+            'nbest': str(size),
+        }
+
+        if session is not None:
+            p['session'] = session
+
+        return self._get('translation/nbest', params=p)
+
+
+class _MMTDistributedComponent(_MMTRuntimeComponent, _ProcessMonitor):
+    def __init__(self, component, engine, cluster_ports=None):
+        _MMTRuntimeComponent.__init__(self, engine.name, component)
+        _ProcessMonitor.__init__(self, os.path.join(self._get_runtimedir(), 'process.pid'))
 
         self.engine = engine
-        self.cluster_ports = cluster_ports if cluster_ports is not None else [5000, 5001]
-        self.api_port = api_port if api_port is not None else 8080
+        self.cluster_ports = cluster_ports if cluster_ports is not None else DEFAULT_MMT_CLUSTER_PORTS
 
-        self.log_file = engine.get_logfile('mmtmaster', ensure=False)
+
+class MMTServer(_MMTDistributedComponent):
+    def __init__(self, engine, api_port=None, cluster_ports=None):
+        _MMTDistributedComponent.__init__(self, 'master', engine, cluster_ports)
+
+        self.api_port = api_port if api_port is not None else DEFAULT_MMT_API_PORT
         self.api = MMTServerApi(api_port)
 
-        _ProcessMonitor.__init__(self, os.path.join(self._get_runtimedir(), 'process.pid'))
+        self._mert_script = os.path.join(Moses.bin_path, 'scripts', 'mert-moses.pl')
+        self._mert_i_script = os.path.join(scripts.MMT_ROOT, 'scripts', 'mertinterface.py')
+        self.log_file = self._get_logfile('process', ensure=False)
 
     def _start_process(self):
         classpath = [scripts.MMT_JAR]
@@ -594,21 +633,12 @@ class MMTServer(_ProcessMonitor):
                 self.engine.clear_tempfiles()
 
 
-class MMTWorker(_ProcessMonitor):
-    def _get_runtimedir(self, ensure=True):
-        path = os.path.join(scripts.RUNTIME_DIR, self.engine.name, 'slave')
-        if ensure:
-            os.makedirs(path)
-        return path
+class MMTWorker(_MMTDistributedComponent):
+    def __init__(self, engine, cluster_ports=None, master=None):
+        _MMTDistributedComponent.__init__(self, 'slave', engine, cluster_ports)
 
-    def __init__(self, engine, cluster_ports, master=None):
-        self.engine = engine
-        self.cluster_ports = cluster_ports
         self._master = master
-
-        self.log_file = engine.get_logfile('mmtslave', ensure=False)
-
-        _ProcessMonitor.__init__(self, os.path.join(self._get_runtimedir(), 'process.pid'))
+        self.log_file = self._get_logfile('process', ensure=False)
 
     def _start_process(self):
         classpath = [scripts.MMT_JAR]
@@ -630,11 +660,9 @@ class MMTWorker(_ProcessMonitor):
                     str(self.cluster_ports[1])]
 
         if self._master is not None:
-            command.append('--master')
-            command.append(self._master['host'])
-            # for key, value in self._master.iteritems():
-            #     command.append('--master-' + key)
-            #     command.append(str(value))
+            for key, value in self._master.iteritems():
+                command.append('--master-' + key)
+                command.append(str(value))
 
         self.engine.get_logfile(self.log_file, ensure=True)
         log = open(self.log_file, 'wa')

@@ -48,7 +48,7 @@ class Moses:
         self._threads = None  # Injected
 
         self._moses_bin = os.path.join(Moses.bin_path, 'bin', 'moses')
-        self._server_ini_file = ini_file
+        self._ini_file = ini_file
 
         self._server_process = None
         self._server_port = None
@@ -80,4 +80,6 @@ class Moses:
                 lines.append(' '.join([feature + '='] + [str(el) for el in w]))
 
         lines.append('')
-        return '\n'.join(lines)
+
+        with open(self._ini_file, 'wb') as out:
+            out.write('\n'.join(lines))

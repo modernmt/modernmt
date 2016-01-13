@@ -3,11 +3,11 @@ import argparse
 import logging
 import os
 import socket
-import subprocess
 import sys
 
 from scripts import dependency
 from scripts.engine import MMTEngine, MMTServer, MMTWorker
+from scripts.engine import DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORTS
 from scripts.libs import shell
 from scripts.mt import ParallelCorpus
 from scripts.mt.contextanalysis import ContextAnalyzer
@@ -30,9 +30,6 @@ __description = '''\
 
   You can find more information on: http://www.modernmt.eu/
 '''
-
-__DEFAULT_MMT_API_PORT = 8045
-__DEFAULT_MMT_CLUSTER_PORTS = [5016, 5017]
 
 _injectable_components = [Tokenizer, Detokenizer, CorpusCleaner, ContextAnalyzer, SuffixArraysPhraseTable, WordAligner,
                           LanguageModel, Moses, MMTEngine]
@@ -91,7 +88,7 @@ def main_tune(argv):
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
     parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
-                        help='the MMT API port. (default is {port})'.format(port=__DEFAULT_MMT_API_PORT),
+                        help='the MMT API port. (default is {port})'.format(port=DEFAULT_MMT_API_PORT),
                         default=None, type=int)
     parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='if debug is set, it enables verbose '
                                                                                  'logging and prevents temporary files '
@@ -100,7 +97,7 @@ def main_tune(argv):
                         default=True, action='store_false')
 
     args = parser.parse_args(argv)
-    args.api_port = args.api_port if args.api_port is not None else __DEFAULT_MMT_API_PORT
+    args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
 
     _logconfig(args.debug)
 
@@ -126,11 +123,11 @@ def main_start(argv):
                         default='default')
     parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
                         help='the public available REST Api port. (default is {port})'
-                        .format(port=__DEFAULT_MMT_API_PORT), default=None, type=int)
+                        .format(port=DEFAULT_MMT_API_PORT), default=None, type=int)
     parser.add_argument('--cluster-ports', dest='cluster_ports', metavar='CLUSTER_PORTS',
                         help='two network ports used internally by the cluster to data exchange between '
                              'Master instance and Slave instances. (default is {port0} and {port1})'
-                        .format(port0=__DEFAULT_MMT_CLUSTER_PORTS[0], port1=__DEFAULT_MMT_CLUSTER_PORTS[1]),
+                        .format(port0=DEFAULT_MMT_CLUSTER_PORTS[0], port1=DEFAULT_MMT_CLUSTER_PORTS[1]),
                         default=None, nargs=2, type=int)
     parser.add_argument('-m', '--master', dest='master', help='the master remote host as user[:password]@host. Default '
                                                               'is localhost', default=None)
@@ -172,8 +169,8 @@ def main_start(argv):
 
     args.has_master = True if args.master is None else False
     args.has_slave = args.slave
-    args.api_port = args.api_port if args.api_port is not None else __DEFAULT_MMT_API_PORT
-    args.cluster_ports = args.cluster_ports if args.cluster_ports is not None else __DEFAULT_MMT_CLUSTER_PORTS
+    args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
+    args.cluster_ports = args.cluster_ports if args.cluster_ports is not None else DEFAULT_MMT_CLUSTER_PORTS
 
     # Check ports
     if args.has_master and not __is_freeport(args.api_port):
@@ -352,7 +349,7 @@ def main_create(argv):
         if slave.is_running():
             slave.stop()
 
-        engine.build(corpora, debug=args.debug, steps=args.training_steps)
+        engine.builder.build(corpora, debug=args.debug, steps=args.training_steps)
     else:
         parser.print_help()
 

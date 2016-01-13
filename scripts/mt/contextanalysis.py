@@ -12,16 +12,17 @@ class ContextAnalyzer:
             None),
     }
 
-    def __init__(self):
+    def __init__(self, index):
         self._index_lang = None  # Injected
+        self._index = index
 
         self._analyzer_jar = scripts.MMT_JAR
         self._java_mainclass = 'eu.modernmt.cli.ContextAnalyzerMain'
 
-    def create_index(self, index, source_path, log_file=None):
-        fileutils.makedirs(index, exist_ok=True)
+    def create_index(self, source_path, log_file=None):
+        fileutils.makedirs(self._index, exist_ok=True)
 
-        command = ['java', '-cp', self._analyzer_jar, self._java_mainclass, '-i', index, '-c', source_path]
+        command = ['java', '-cp', self._analyzer_jar, self._java_mainclass, '-i', self._index, '-c', source_path]
         if self._index_lang is not None:
             command += ['-l', self._index_lang]
 
