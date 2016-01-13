@@ -50,14 +50,14 @@ public class TranslationTask extends DistributedCallable<String> {
 
     @Override
     public String call() throws IOException {
-        TranslationEngine engine = getWorker().getEngine();
-        Decoder decoder = engine.getDecoder();
+        MMTWorker worker = getWorker();
+        Decoder decoder = worker.getDecoder();
 
         Sentence sentence;
         Translation translation;
 
         if (processing) {
-            TokenizerPool tokenizer = engine.getTokenizer();
+            TokenizerPool tokenizer = worker.getTokenizer();
             String[] tokens = tokenizer.tokenize(Collections.singletonList(text)).get(0);
             sentence = new Sentence(tokens);
         } else {
@@ -83,7 +83,7 @@ public class TranslationTask extends DistributedCallable<String> {
         }
 
         if (processing) {
-            DetokenizerPool detokenizer = engine.getDetokenizer();
+            DetokenizerPool detokenizer = worker.getDetokenizer();
             return detokenizer.detokenize(Collections.singletonList(translation.getTokens())).get(0);
         } else {
             return translation.toString();

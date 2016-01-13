@@ -4,6 +4,7 @@ import eu.modernmt.engine.MMTWorker;
 import eu.modernmt.engine.TranslationEngine;
 import org.apache.commons.cli.*;
 
+import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -15,12 +16,18 @@ public class WorkerMain {
 
     static {
         Option engine = Option.builder("e").longOpt("engine").hasArg().required().build();
-        Option master = Option.builder("m").longOpt("master").hasArg().required(false).build();
+        Option masterHost = Option.builder().longOpt("master-host").hasArg().required(false).build();
+        Option masterUser = Option.builder().longOpt("master-user").hasArg().required(false).build();
+        Option masterPasswd = Option.builder().longOpt("master-passwd").hasArg().required(false).build();
+        Option masterPem = Option.builder().longOpt("master-pem").hasArg().required(false).build();
         Option clusterPorts = Option.builder("p").longOpt("cluster-ports").hasArgs().numberOfArgs(2).type(Integer.class).required().build();
 
         cliOptions = new Options();
         cliOptions.addOption(engine);
-        cliOptions.addOption(master);
+        cliOptions.addOption(masterHost);
+        cliOptions.addOption(masterUser);
+        cliOptions.addOption(masterPasswd);
+        cliOptions.addOption(masterPem);
         cliOptions.addOption(clusterPorts);
     }
 
@@ -28,13 +35,21 @@ public class WorkerMain {
         CommandLineParser parser = new DefaultParser();
         CommandLine cli = parser.parse(cliOptions, args);
 
-        TranslationEngine engine = TranslationEngine.get(cli.getOptionValue("engine"));
+        TranslationEngine engine = new TranslationEngine(cli.getOptionValue("engine"));
 
-        String master = cli.hasOption("master") ? cli.getOptionValue("master") : null;
-        int threads = engine.getDecoderThreads();
+        MMTWorker.MasterHost master = null;
+
+        if (cli.hasOption("master-host")) {
+            master = new MMTWorker.MasterHost();
+            master.host = cli.getOptionValue("master-host");
+            master.user = cli.getOptionValue("master-user");
+            master.password = cli.getOptionValue("master-passwd");
+            master.pem = cli.hasOption("master-pem") ? new File(cli.getOptionValue("master-pem")) : null;
+        }
+
         String[] sPorts = cli.getOptionValues("cluster-ports");
         int[] ports = new int[]{Integer.parseInt(sPorts[0]), Integer.parseInt(sPorts[1])};
-        MMTWorker worker = new MMTWorker(engine, master, ports, threads);
+        MMTWorker worker = new MMTWorker(engine, master, ports);
 
         Runtime.getRuntime().addShutdownHook(new ShutdownHook(worker));
         worker.start();

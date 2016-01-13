@@ -187,12 +187,13 @@ def main_start(argv):
 
     # Exec command
     engine = MMTEngine(name=args.engine)
-    if not engine.exists():
+    if not engine.exists() and args.has_master:
         raise IllegalStateException('engine not found: ' + args.engine)
 
-    injector = dependency.Injector(*_injectable_components)
-    injector.read_config(engine.config)
-    engine = injector.inject(engine)
+    if engine.exists():
+        injector = dependency.Injector(*_injectable_components)
+        injector.read_config(engine.config)
+        engine = injector.inject(engine)
 
     master = MMTServer(engine, args.api_port, args.cluster_ports) if args.has_master else None
     slave = MMTWorker(engine, args.cluster_ports, args.master_info) if args.has_slave else None
@@ -246,13 +247,6 @@ def main_stop(argv):
 
     # Exec command
     engine = MMTEngine(name=args.engine)
-    if not engine.exists():
-        raise IllegalStateException('engine not found: ' + args.engine)
-
-    injector = dependency.Injector(*_injectable_components)
-    injector.read_config(engine.config)
-    engine = injector.inject(engine)
-
     master = MMTServer(engine)
     slave = MMTWorker(engine, None)
 

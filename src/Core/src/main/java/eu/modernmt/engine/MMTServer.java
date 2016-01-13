@@ -14,10 +14,7 @@ import eu.modernmt.network.cluster.DistributedCallable;
 import eu.modernmt.network.messaging.zeromq.ZMQMessagingServer;
 import org.apache.commons.lang3.SerializationUtils;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,9 +26,10 @@ import java.util.concurrent.ExecutionException;
 public class MMTServer extends Cluster {
 
     public static final byte SIGNAL_RESET = 0x01;
-    public static final byte REQUEST_FWEIGHTS = 0x03;
+    public static final byte REQUEST_SYNC_PATH = 0x03;
 
     private TranslationEngine engine;
+    private ContextAnalyzer contextAnalyzer;
     private HashMap<Long, TranslationSession> sessions;
 
     public MMTServer(TranslationEngine engine, int[] ports) throws IOException {
@@ -56,13 +54,19 @@ public class MMTServer extends Cluster {
     @Override
     protected byte[] onCustomRequestReceived(byte signal, byte[] payload, int offset, int length) {
         switch (signal) {
-            case REQUEST_FWEIGHTS:
+            case REQUEST_SYNC_PATH:
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
                 stream.write(signal);
 
-                Serializable weights = (Serializable) engine.getDecoderWeights();
-                if (weights != null)
-                    SerializationUtils.serialize(weights, stream);
+                String enginePath = engine.getPath().getAbsolutePath();
+                try {
+                    stream.write(enginePath.getBytes("UTF-8"));
+                } catch (UnsupportedEncodingException e) {
+                    throw new Error("UTF-8 not supported", e);
+                } catch (IOException e) {
+                    throw new Error("This could not happen", e);
+                }
+
                 return stream.toByteArray();
             default:
                 logger.warn("Unknown request received: " + Integer.toHexString(signal));
@@ -88,13 +92,21 @@ public class MMTServer extends Cluster {
     //  Context Analysis
     // =============================
 
+    private ContextAnalyzer getContextAnalyzer() throws IOException {
+        if (contextAnalyzer == null) {
+            contextAnalyzer = new ContextAnalyzer(engine.getContextAnalyzerIndexPath());
+        }
+
+        return contextAnalyzer;
+    }
+
     public List<ContextDocument> getContext(File context, int limit) throws IOException {
-        ContextAnalyzer analyzer = engine.getContextAnalyzer();
+        ContextAnalyzer analyzer = getContextAnalyzer();
         return analyzer.getContext(context, engine.getSourceLanguage(), limit);
     }
 
     public List<ContextDocument> getContext(String context, int limit) throws IOException {
-        ContextAnalyzer analyzer = engine.getContextAnalyzer();
+        ContextAnalyzer analyzer = getContextAnalyzer();
         return analyzer.getContext(context, engine.getSourceLanguage(), limit);
     }
 

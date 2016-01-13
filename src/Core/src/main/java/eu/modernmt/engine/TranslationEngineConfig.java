@@ -51,16 +51,6 @@ public class TranslationEngineConfig {
         return Locale.forLanguageTag(section.getString("target_lang"));
     }
 
-    public int getDecoderThreads(int defaultValue) {
-        SubnodeConfiguration section = config.configurationAt("moses");
-        return section.getInt("threads", defaultValue);
-    }
-
-    public int getSuffixArraysWorkers(int defaultValue) {
-        SubnodeConfiguration section = config.configurationAt("suffixarrays");
-        return section.getInt("workers", defaultValue);
-    }
-
     public Map<String, float[]> getDecoderWeights() {
         SubnodeConfiguration section;
         try {

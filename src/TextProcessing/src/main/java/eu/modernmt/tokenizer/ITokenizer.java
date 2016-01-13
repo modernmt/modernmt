@@ -7,17 +7,17 @@ import java.io.File;
  */
 public abstract class ITokenizer {
 
-    private static final String SYSPROP_MODELS_PATH = "mmt.tokenizer.models.path";
+    private static final String SYSPROP_MMT_HOME = "mmt.home";
     public static final File MODELS_PATH;
 
     static {
-        String path = System.getProperty(SYSPROP_MODELS_PATH);
-        if (path == null)
-            throw new IllegalStateException("The system property '" + SYSPROP_MODELS_PATH + "' must be initialized to the path of the tokenizer models folder.");
+        String home = System.getProperty(SYSPROP_MMT_HOME);
+        if (home == null)
+            throw new IllegalStateException("The system property '" + SYSPROP_MMT_HOME + "' must be initialized to the path of MMT installation.");
 
-        MODELS_PATH = new File(path);
+        MODELS_PATH = new File(home, "opt" + File.separatorChar + "tokenizer" + File.separatorChar + "models");
         if (!MODELS_PATH.isDirectory())
-            throw new IllegalStateException("Invalid path for property '" + SYSPROP_MODELS_PATH + "': " + MODELS_PATH + " must be a valid directory.");
+            throw new IllegalStateException("Invalid path for property '" + SYSPROP_MMT_HOME + "': " + MODELS_PATH + " must be a valid directory.");
     }
 
     public abstract String[] tokenize(String text);

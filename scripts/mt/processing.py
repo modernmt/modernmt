@@ -60,12 +60,10 @@ class CorpusCleaner:
 class Detokenizer:
     def __init__(self):
         self._detokenizer_jar = scripts.MMT_JAR
-        self._models_path = scripts.TKMODELS_DIR
         self._java_mainclass = 'eu.modernmt.cli.DetokenizerMain'
 
     def _get_detokenizer_command(self, lang):
-        return ['java', '-cp', self._detokenizer_jar, '-Dmmt.tokenizer.models.path=' + self._models_path,
-                self._java_mainclass, lang]
+        return ['java', '-cp', self._detokenizer_jar, '-Dmmt.home=' + scripts.MMT_ROOT, self._java_mainclass, lang]
 
     def batch_detokenize(self, corpora, dest_folder):
         _pool_exec(self.detokenize_file,
@@ -94,12 +92,10 @@ class Detokenizer:
 class Tokenizer:
     def __init__(self):
         self._tokenizer_jar = scripts.MMT_JAR
-        self._models_path = scripts.TKMODELS_DIR
         self._java_mainclass = 'eu.modernmt.cli.TokenizerMain'
 
     def _get_tokenizer_command(self, lang):
-        return ['java', '-cp', self._tokenizer_jar, '-Dmmt.tokenizer.models.path=' + self._models_path,
-                self._java_mainclass, lang]
+        return ['java', '-cp', self._tokenizer_jar, '-Dmmt.home=' + scripts.MMT_ROOT, self._java_mainclass, lang]
 
     def tokenize(self, sentence, lang):
         command = self._get_tokenizer_command(lang)

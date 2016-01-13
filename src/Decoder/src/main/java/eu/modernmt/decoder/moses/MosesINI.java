@@ -11,9 +11,9 @@ import java.util.Map;
  */
 public class MosesINI {
 
-    public static MosesINI load(File templateFile, File engineRoot) throws IOException {
+    public static MosesINI load(File templateFile, File enginePath) throws IOException {
         String template = FileUtils.readFileToString(templateFile, "UTF-8");
-        String engine = engineRoot.getAbsolutePath();
+        String engine = enginePath.getAbsolutePath();
         if (!engine.endsWith(File.separator))
             engine = engine + File.separator;
 

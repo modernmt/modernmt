@@ -14,7 +14,6 @@ LIB_DIR = os.path.join(MMT_ROOT, 'lib')
 BUILD_DIR = os.path.join(MMT_ROOT, 'build')
 
 BIN_DIR = os.path.join(OPT_DIR, 'bin')
-TKMODELS_DIR = os.path.join(OPT_DIR, 'tokenizer', 'models')
 
 MMT_JAR = os.path.join(BUILD_DIR, 'mmt-' + MMT_VERSION + ".jar")
 MMT_LIBS = BUILD_DIR

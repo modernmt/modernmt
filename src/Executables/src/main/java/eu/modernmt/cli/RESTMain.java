@@ -27,7 +27,8 @@ public class RESTMain {
         CommandLineParser parser = new DefaultParser();
         CommandLine cli = parser.parse(cliOptions, args);
 
-        TranslationEngine engine = TranslationEngine.get(cli.getOptionValue("engine"));
+        TranslationEngine engine = new TranslationEngine(cli.getOptionValue("engine"));
+        engine.ensure();
 
         String[] sPorts = cli.getOptionValues("cluster-ports");
         int[] ports = new int[]{Integer.parseInt(sPorts[0]), Integer.parseInt(sPorts[1])};

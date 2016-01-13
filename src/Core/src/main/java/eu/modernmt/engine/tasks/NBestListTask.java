@@ -48,8 +48,8 @@ public class NBestListTask extends DistributedCallable<ArrayList<TranslationHypo
 
     @Override
     public ArrayList<TranslationHypothesis> call() throws IOException {
-        TranslationEngine engine = getWorker().getEngine();
-        Decoder decoder = engine.getDecoder();
+        MMTWorker worker = getWorker();
+        Decoder decoder = worker.getDecoder();
 
         List<TranslationHypothesis> result;
 

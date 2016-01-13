@@ -21,8 +21,7 @@ public class GetFeatureWeightsTask extends DistributedCallable<HashMap<MosesFeat
 
     @Override
     public HashMap<MosesFeature, float[]> call() throws IOException {
-        TranslationEngine engine = getWorker().getEngine();
-        MosesDecoder decoder = (MosesDecoder) engine.getDecoder();
+        MosesDecoder decoder = (MosesDecoder) getWorker().getDecoder();
 
         HashMap<MosesFeature, float[]> result = new HashMap<>();
         for (MosesFeature feature : decoder.getFeatures()) {

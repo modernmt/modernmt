@@ -512,8 +512,7 @@ class MMTServer(_MMTDistributedComponent):
         env['LD_LIBRARY_PATH'] = scripts.LIB_DIR
 
         sysprop = {
-            'mmt.engines.path': scripts.ENGINES_DIR,
-            'mmt.tokenizer.models.path': scripts.TKMODELS_DIR,
+            'mmt.home': scripts.MMT_ROOT,
             'java.library.path': scripts.MMT_LIBS,
         }
 
@@ -524,7 +523,7 @@ class MMTServer(_MMTDistributedComponent):
         command += ['eu.modernmt.cli.RESTMain', '-e', self.engine.name, '-a', str(self.api_port), '-p',
                     str(self.cluster_ports[0]), str(self.cluster_ports[1])]
 
-        self.engine.get_logfile(self.log_file, ensure=True)
+        self._get_logfile(self.log_file, ensure=True)
         log = open(self.log_file, 'wa')
         return subprocess.Popen(command, stdout=log, stderr=log, shell=False, env=env)
 
@@ -599,7 +598,7 @@ class MMTServer(_MMTDistributedComponent):
                            '--nbest', '100', '--decoder-flags', '"' + ' '.join(decoder_flags) + '"', '--nonorm',
                            '--closest', '--no-filter-phrase-table']
 
-                with open(self.engine.get_logfile('mert'), 'wb') as log:
+                with open(self._get_logfile('mert'), 'wb') as log:
                     shell.execute(' '.join(command), stdout=log, stderr=log)
 
             # Read optimized configuration
@@ -647,8 +646,7 @@ class MMTWorker(_MMTDistributedComponent):
         env['LD_LIBRARY_PATH'] = scripts.LIB_DIR
 
         sysprop = {
-            'mmt.engines.path': scripts.ENGINES_DIR,
-            'mmt.tokenizer.models.path': scripts.TKMODELS_DIR,
+            'mmt.home': scripts.MMT_ROOT,
             'java.library.path': scripts.MMT_LIBS,
         }
 
@@ -661,10 +659,11 @@ class MMTWorker(_MMTDistributedComponent):
 
         if self._master is not None:
             for key, value in self._master.iteritems():
-                command.append('--master-' + key)
-                command.append(str(value))
+                if value is not None:
+                    command.append('--master-' + key)
+                    command.append(str(value))
 
-        self.engine.get_logfile(self.log_file, ensure=True)
+        self._get_logfile(self.log_file, ensure=True)
         log = open(self.log_file, 'wa')
         return subprocess.Popen(command, stdout=log, stderr=log, shell=False, env=env)
 
