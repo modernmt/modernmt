@@ -8,6 +8,7 @@ MMT_VERSION = '0.11'
 
 MMT_ROOT = os.path.abspath(os.path.join(__self_dir, os.pardir))
 ENGINES_DIR = os.path.join(MMT_ROOT, 'engines')
+RUNTIME_DIR = os.path.join(MMT_ROOT, 'runtime')
 OPT_DIR = os.path.join(MMT_ROOT, 'opt')
 LIB_DIR = os.path.join(MMT_ROOT, 'lib')
 BUILD_DIR = os.path.join(MMT_ROOT, 'build')

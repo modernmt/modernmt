@@ -165,7 +165,6 @@ class MMTEngine:
         self._data_path = os.path.join(self._root_path, 'data')
         self._logs_path = os.path.join(self._root_path, 'logs')
         self._temp_path = os.path.join(self._root_path, 'temp')
-        self.runtime_path = os.path.join(self._root_path, 'runtime')
 
         self._config_file = os.path.join(self._root_path, 'engine.ini')
         self._pt_model = os.path.join(self._data_path, 'phrase_tables')
@@ -218,23 +217,23 @@ class MMTEngine:
             self._config.read(self._config_file)
         return self._config
 
-    def get_tempdir(self, name, ensure=True):
-        if ensure and not os.path.isdir(self._temp_path):
-            fileutils.makedirs(self._temp_path, exist_ok=True)
-
-        folder = os.path.join(self._temp_path, name)
-
-        if ensure:
-            shutil.rmtree(folder, ignore_errors=True)
-            os.makedirs(folder)
-
-        return folder
-
-    def get_logfile(self, name, ensure=True):
-        if ensure and not os.path.isdir(self._logs_path):
-            fileutils.makedirs(self._logs_path, exist_ok=True)
-
-        return os.path.join(self._logs_path, name + '.log')
+    # def get_tempdir(self, name, ensure=True):
+    #     if ensure and not os.path.isdir(self._temp_path):
+    #         fileutils.makedirs(self._temp_path, exist_ok=True)
+    #
+    #     folder = os.path.join(self._temp_path, name)
+    #
+    #     if ensure:
+    #         shutil.rmtree(folder, ignore_errors=True)
+    #         os.makedirs(folder)
+    #
+    #     return folder
+    #
+    # def get_logfile(self, name, ensure=True):
+    #     if ensure and not os.path.isdir(self._logs_path):
+    #         fileutils.makedirs(self._logs_path, exist_ok=True)
+    #
+    #     return os.path.join(self._logs_path, name + '.log')
 
     def build(self, corpora, debug=False, steps=None):
         if len(corpora) == 0:
@@ -448,9 +447,13 @@ class _TuningProcessLogger:
 
 
 class MMTServer(_ProcessMonitor):
-    def __init__(self, engine, api_port=None, cluster_ports=None):
-        _ProcessMonitor.__init__(self, os.path.join(engine.runtime_path, 'master_pid'))
+    def _get_runtimedir(self, ensure=True):
+        path = os.path.join(scripts.RUNTIME_DIR, self.engine.name, 'master')
+        if ensure:
+            os.makedirs(path)
+        return path
 
+    def __init__(self, engine, api_port=None, cluster_ports=None):
         self._mert_script = os.path.join(Moses.bin_path, 'scripts', 'mert-moses.pl')
         self._mert_i_script = os.path.join(scripts.MMT_ROOT, 'scripts', 'mertinterface.py')
 
@@ -460,6 +463,8 @@ class MMTServer(_ProcessMonitor):
 
         self.log_file = engine.get_logfile('mmtmaster', ensure=False)
         self.api = MMTServerApi(api_port)
+
+        _ProcessMonitor.__init__(self, os.path.join(self._get_runtimedir(), 'process.pid'))
 
     def _start_process(self):
         classpath = [scripts.MMT_JAR]
@@ -548,7 +553,7 @@ class MMTServer(_ProcessMonitor):
 
                 fileutils.makedirs(mert_wd, exist_ok=True)
 
-                runtime_moses_ini = os.path.join(self.engine.runtime_path, 'moses.ini')
+                runtime_moses_ini = os.path.join(self._get_runtimedir(ensure=False), 'moses.ini')
                 command = [self._mert_script, source_merged_corpus, target_merged_corpus,
                            self._mert_i_script, runtime_moses_ini, '--mertdir', os.path.join(Moses.bin_path, 'bin'),
                            '--mertargs', '\'--binary --sctype BLEU\'', '--working-dir', mert_wd,
@@ -590,14 +595,20 @@ class MMTServer(_ProcessMonitor):
 
 
 class MMTWorker(_ProcessMonitor):
-    def __init__(self, engine, cluster_ports, master=None):
-        _ProcessMonitor.__init__(self, os.path.join(engine.runtime_path, 'slave_pid'))
+    def _get_runtimedir(self, ensure=True):
+        path = os.path.join(scripts.RUNTIME_DIR, self.engine.name, 'slave')
+        if ensure:
+            os.makedirs(path)
+        return path
 
+    def __init__(self, engine, cluster_ports, master=None):
         self.engine = engine
         self.cluster_ports = cluster_ports
         self._master = master
 
         self.log_file = engine.get_logfile('mmtslave', ensure=False)
+
+        _ProcessMonitor.__init__(self, os.path.join(self._get_runtimedir(), 'process.pid'))
 
     def _start_process(self):
         classpath = [scripts.MMT_JAR]
