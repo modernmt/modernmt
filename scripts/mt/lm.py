@@ -127,14 +127,16 @@ class AdaptiveIRSTLM(LanguageModel):
         temp = os.path.join(working_dir, 'temp')
         arpa_file = os.path.join(working_dir, 'arpa')
 
+        if os.path.isfile(arpa_file):
+            os.remove(arpa_file)
+
         # Creating lm in ARPA format
         command = [self._buildlm_bin, '-i', source, '-k', str(cpu_count()), '-o', arpa_file, '-n', str(self._order),
-                   '-s', 'witten-bell', '-t', temp, '-l', '/dev/stdout', '-irstlm', self._irstlm_dir, '--add-start-end',
-                   '--zipping']
+                   '-s', 'witten-bell', '-t', temp, '-l', '/dev/stdout', '-irstlm', self._irstlm_dir, '--add-start-end']
         shell.execute(command, stderr=log)
 
         # Create binary lm
-        command = [self._compilelm_bin, arpa_file + '.gz', dest]
+        command = [self._compilelm_bin, arpa_file, dest]
         shell.execute(command, stderr=log)
 
     def get_iniline(self):
