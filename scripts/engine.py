@@ -390,7 +390,7 @@ class _TuningProcessLogger:
 
     def completed(self, bleu):
         print '\n============ TUNING SUCCESS ============\n'
-        print '\nFinal BLEU: %f\n' % bleu
+        print '\nFinal BLEU: %.2f\n' % (bleu * 100.)
         print 'You can try the API with:'
         print '\tcurl "http://localhost:{port}/translate?q=hello+world&context=computer"'.format(port=self._api_port)
         print
