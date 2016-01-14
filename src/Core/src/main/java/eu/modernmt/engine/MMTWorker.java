@@ -36,7 +36,7 @@ public class MMTWorker extends Worker {
 
     static {
         int cores = Runtime.getRuntime().availableProcessors();
-        DEFAULT_DECODER_THREADS = cores > 3 ? cores - 2 : cores;
+        DEFAULT_DECODER_THREADS = cores;
         DEFAULT_SA_WORKERS = cores > 3 ? 2 : 1;
     }
 

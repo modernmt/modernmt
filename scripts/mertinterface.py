@@ -39,11 +39,11 @@ class _DocumentTranslator:
         self.skip_context = skip_context
 
     def set_weights(self, raw):
-        self.weights = {}
-
         if raw is None:
+            self.weights = None
             return
 
+        self.weights = {}
         array = []
 
         for token in raw.split():
@@ -88,6 +88,8 @@ class _DocumentTranslator:
     def run(self):
         self._line_id = 0
 
+        if self.weights is not None:
+            Api.update_features(self.weights)
         time.sleep(1)
 
         self._features = _sorted_features_list()

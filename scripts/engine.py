@@ -6,6 +6,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 from ConfigParser import ConfigParser
 
@@ -579,9 +580,6 @@ class MMTServer(_MMTDistributedComponent):
 
             # Run MERT algorithm
             with cmdlogger.step('Tuning') as _:
-                # Ensure moses.ini file existence
-                self.api.nbest_list('mert start', size=1)
-
                 # Start MERT
                 decoder_flags = ['--port', str(self.api_port)]
 
@@ -591,15 +589,15 @@ class MMTServer(_MMTDistributedComponent):
 
                 fileutils.makedirs(mert_wd, exist_ok=True)
 
-                runtime_moses_ini = os.path.join(self._get_runtimedir(ensure=False), 'moses.ini')
-                command = [self._mert_script, source_merged_corpus, target_merged_corpus,
-                           self._mert_i_script, runtime_moses_ini, '--mertdir', os.path.join(Moses.bin_path, 'bin'),
-                           '--mertargs', '\'--binary --sctype BLEU\'', '--working-dir', mert_wd,
-                           '--nbest', '100', '--decoder-flags', '"' + ' '.join(decoder_flags) + '"', '--nonorm',
-                           '--closest', '--no-filter-phrase-table']
+                with tempfile.NamedTemporaryFile() as runtime_moses_ini:
+                    command = [self._mert_script, source_merged_corpus, target_merged_corpus,
+                               self._mert_i_script, runtime_moses_ini.name, '--mertdir',
+                               os.path.join(Moses.bin_path, 'bin'), '--mertargs', '\'--binary --sctype BLEU\'',
+                               '--working-dir', mert_wd, '--nbest', '100', '--decoder-flags',
+                               '"' + ' '.join(decoder_flags) + '"', '--nonorm', '--closest', '--no-filter-phrase-table']
 
-                with open(self._get_logfile('mert'), 'wb') as log:
-                    shell.execute(' '.join(command), stdout=log, stderr=log)
+                    with open(self._get_logfile('mert'), 'wb') as log:
+                        shell.execute(' '.join(command), stdout=log, stderr=log)
 
             # Read optimized configuration
             with cmdlogger.step('Applying changes') as _:
