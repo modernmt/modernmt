@@ -32,7 +32,7 @@ Goal: with 2 billion words perform better than commercially available technology
 
 - Quality measure against Google Translate and Microsoft integrated in the training process. Measure first :)
 - More accurate context score and suffix sampling. 
-- Tuning by domain, global weights does not work.
+- Tuning by domain, global weights do not work.
 - Porting Matecat/Moses tag management to MMT.
 - Allowing monolingual LM data input
 - Adding more languages and quality to tokenization
