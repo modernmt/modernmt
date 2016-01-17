@@ -72,4 +72,4 @@ MMT is free, is open source and welcomes contributions and donations.
 
 MMT is currently sponsored by its funding members (Translated, FBK, UEDIN and TAUS) and the European Commission. 
 
-For donations, customizations and word of support contact alessandro@translated.net
+For donations, customizations and words of encouragement contact alessandro@translated.net
