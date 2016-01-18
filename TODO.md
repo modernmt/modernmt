@@ -53,7 +53,7 @@ Goal: with 2 billion words stay below 400ms for the average sentence length (15 
 - Pruning of models. 
 - Better caching.
 - Fine tuning the max number LM requests per translation and other parameters.
-- Translation time is not below 400ms yet for 2B world model, distribute LM across multiple servers.
+- With 2B word model, translation time is not below 400ms yet: distribute LM across multiple servers.
 
 ## Product Market Fit
 
