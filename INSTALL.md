@@ -188,7 +188,6 @@ git checkout mmt-dev
 Finally compile Moses:
 
 ```
-cd mosesdecoder
 /usr/bin/bjam -j$(nproc) -q --with-mm          \
          --mmt=$(pwd)/../mmt-submodule         \
          --with-irstlm=$(pwd)/../irstlm/build  \
