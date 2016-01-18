@@ -176,7 +176,7 @@ cd ../../
 
 ## Install Moses
 
-Clone Moses repository and move to mmt-dev branch:
+Clone MMT Moses submodule, clone Moses repository and move to mmt-dev branch:
 
 ```
 git clone https://github.com/ModernMT/mosesdecoder.git mosesdecoder
