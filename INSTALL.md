@@ -221,6 +221,14 @@ git clone https://github.com/ModernMT/MMT.git ModernMT
 cd ModernMT
 ```
 
+Download `opt` resources for Ubuntu 14.04:
+
+```
+wget "http://labs.mmt.rocks/builds/mmt-opt-0.11-ubuntu14_04.tar.gz"
+tar xvf mmt-opt-0.11-ubuntu14_04.tar.gz
+rm mmt-opt-0.11-ubuntu14_04.tar.gz
+```
+
 Install custom maven dependencies:
 
 ```
