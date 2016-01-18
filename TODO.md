@@ -30,7 +30,7 @@ Items should be in order of priority.
 
 Goal: with 2 billion words perform better than commercially available technology.
 
-- Quality measure against Google Translate and Microsoft integrated in the training process. Measure first :)
+- Quality measure against Google Translate and Microsoft integrated in the training process. Measure first!
 - More accurate context score and suffix sampling. 
 - Tuning by domain, global weights do not work.
 - Porting Matecat/Moses tag management to MMT.
@@ -41,7 +41,7 @@ Goal: with 2 billion words perform better than commercially available technology
 
 #### Training
 
-Goal: Initial training to stay below 8 hours for each 1B word (36 cores). Incremental available.
+Goal: Initial training to stay below 8 hours for each 1B word (36 cores). Make incremental training available.
 
 - Better multi-treads tokenization. +15% in total training speed
 - Better LM parallelization. +10% in total training speed.
@@ -52,8 +52,8 @@ Goal: with 2 billion words stay below 400ms for the average sentence length (15 
 
 - Pruning of models. 
 - Better caching.
-- Fine tine number of max LM requests and other parameters.
-- It still not below 400ms for 2B world model, distribute LM across multiple servers.
+- Fine tuning the max number LM requests per translation and other parameters.
+- Translation time is not below 400ms yet for 2B world model, distribute LM across multiple servers.
 
 ## Product Market Fit
 
