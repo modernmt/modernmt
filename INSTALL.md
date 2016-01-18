@@ -171,6 +171,7 @@ cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=$(pwd) -DCXX0:BOOL=OFF
 make
 make install
+cd ../../
 ```
 
 ## Install Moses
@@ -200,6 +201,7 @@ cd mosesdecoder
          --with-xmlrpc-c=/usr/local            \
          link=shared                           \
          --prefix=$(pwd)/build
+cd ..
 ```
 
 ## Install MMT
