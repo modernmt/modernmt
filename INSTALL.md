@@ -105,6 +105,7 @@ sudo make install
 You can safely remove downloaded files now:
 
 ```
+cd ..
 rm cmph-2.0.tar.gz
 rm -rf cmph-2.0
 ```
@@ -135,6 +136,7 @@ sudo make install
 You can safely remove downloaded files now:
 
 ```
+cd ..
 rm xmlrpc-c-1.39.07.tgz
 rm -rf xmlrpc-c-1.39.07
 ```
