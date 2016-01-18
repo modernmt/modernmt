@@ -179,15 +179,10 @@ cd ../../
 Clone MMT Moses submodule, clone Moses repository and move to mmt-dev branch:
 
 ```
+git clone http://github.com/modernmt/moses-submodule mmt-submodule
 git clone https://github.com/ModernMT/mosesdecoder.git mosesdecoder
 cd mosesdecoder
 git checkout mmt-dev
-```
-
-Clone MMT Moses submodule:
-
-```
-git clone http://github.com/modernmt/moses-submodule mmt-submodule
 ```
 
 Finally compile Moses:
