@@ -14,7 +14,6 @@ class LanguageModel(MosesFeature):
     injector_section = 'lm'
     injectable_fields = {
         'order': ('LM order (N-grams length)', int, 5),
-        'zipping': ('if 1 the training process will zip temporary files if supported. (default 0)', int, 0)
     }
 
     @staticmethod
@@ -30,8 +29,6 @@ class LanguageModel(MosesFeature):
         MosesFeature.__init__(self, feature_name)
 
         self._order = None  # Injected
-        self._zipping = None  # Injected
-
         self._model = model
 
     def train(self, corpora, lang, working_dir='.', log_file=None):
@@ -92,6 +89,7 @@ class AdaptiveIRSTLM(LanguageModel):
         self._model_dir = os.path.abspath(os.path.join(model, os.pardir))
 
         self._irstlm_dir = os.path.join(scripts.BIN_DIR, 'irstlm-adaptivelm-v0.6')
+        self._addbound_bin = os.path.join(self._irstlm_dir, 'scripts', 'add-start-end.sh')
         self._buildlm_bin = os.path.join(self._irstlm_dir, 'scripts', 'build-lm.sh')
         self._compilelm_bin = os.path.join(self._irstlm_dir, 'bin', 'compile-lm')
 
@@ -126,23 +124,22 @@ class AdaptiveIRSTLM(LanguageModel):
                 log.close()
 
     def _train_lm(self, source, dest, working_dir, log):
+        input_se = os.path.join(working_dir, 'input.se')
         temp = os.path.join(working_dir, 'temp')
-        arpa_filename = os.path.join(working_dir, 'arpa')
-        arpa_file = arpa_filename if self._zipping == 0 else arpa_filename + '.gz'
+        arpa_file = os.path.join(working_dir, 'arpa')
 
-        if os.path.isfile(arpa_file):
-            os.remove(arpa_file)
+        # Add start and end symbols
+        with open(source) as stdin:
+            with open(input_se, 'w') as stdout:
+                shell.execute([self._addbound_bin], stdin=stdin, stdout=stdout, stderr=log)
 
         # Creating lm in ARPA format
-        command = [self._buildlm_bin, '-i', source, '-k', str(cpu_count()), '-o', arpa_filename, '-n', str(self._order),
-                   '-s', 'witten-bell', '-t', temp, '-l', '/dev/stdout', '-irstlm', self._irstlm_dir, '--add-start-end']
-        if self._zipping != 0:
-            command.append('--zipping')
-
-        shell.execute(command, stdout=log)
+        command = [self._buildlm_bin, '-i', input_se, '-k', str(cpu_count()), '-o', arpa_file, '-n', str(self._order),
+                   '-s', 'witten-bell', '-t', temp, '-l', '/dev/stdout', '-irstlm', self._irstlm_dir]
+        shell.execute(command, stderr=log)
 
         # Create binary lm
-        command = [self._compilelm_bin, arpa_file, dest]
+        command = [self._compilelm_bin, arpa_file + '.gz', dest]
         shell.execute(command, stderr=log)
 
     def get_iniline(self):
