@@ -3,13 +3,13 @@ import argparse
 import logging
 import os
 import socket
-import stat
 import sys
 
 from scripts import dependency
-from scripts.engine import MMTEngine, MMTServer, MMTWorker
 from scripts.engine import DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORTS
-from scripts.libs import shell
+from scripts.engine import MMTEngine, MMTServer, MMTWorker
+from scripts.libs import shell, ssh
+from scripts.libs.ssh import SSHException
 from scripts.mt import ParallelCorpus
 from scripts.mt.contextanalysis import ContextAnalyzer
 from scripts.mt.lm import LanguageModel
@@ -165,12 +165,7 @@ def main_start(argv):
                 raise CLIArgsException(parser, 'pem file not found: ' + pemfile)
 
             pemfile = os.path.abspath(args.master_pem)
-            permissions = os.stat(pemfile).st_mode
-
-            if (permissions & (stat.S_IRWXG | stat.S_IRWXO)) > 0:
-                raise CLIArgsException(parser, 'Permissions %s for \'%s\' are too open. '
-                                               'Your private key files MUST NOT be accessible by others.'
-                                       % (oct(permissions & 0777), pemfile))
+            ssh.verify(host, pemfile)
 
         args.master_info = {
             'host': host,
@@ -393,6 +388,9 @@ def main():
         exit(1)
     except IllegalStateException as e:
         sys.stderr.write('ERROR Illegal State: {message}\n'.format(message=e.message))
+        exit(1)
+    except SSHException as e:
+        sys.stderr.write('ERROR SSH connection problem: {message}\n'.format(message=e.message))
         exit(1)
 
 
