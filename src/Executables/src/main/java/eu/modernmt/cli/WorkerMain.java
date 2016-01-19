@@ -3,6 +3,7 @@ package eu.modernmt.cli;
 import eu.modernmt.engine.MMTWorker;
 import eu.modernmt.engine.TranslationEngine;
 import org.apache.commons.cli.*;
+import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
@@ -21,6 +22,7 @@ public class WorkerMain {
         Option masterPasswd = Option.builder().longOpt("master-passwd").hasArg().required(false).build();
         Option masterPem = Option.builder().longOpt("master-pem").hasArg().required(false).build();
         Option clusterPorts = Option.builder("p").longOpt("cluster-ports").hasArgs().numberOfArgs(2).type(Integer.class).required().build();
+        Option statusFile = Option.builder().longOpt("status-file").hasArg().required().build();
 
         cliOptions = new Options();
         cliOptions.addOption(engine);
@@ -29,30 +31,44 @@ public class WorkerMain {
         cliOptions.addOption(masterPasswd);
         cliOptions.addOption(masterPem);
         cliOptions.addOption(clusterPorts);
+        cliOptions.addOption(statusFile);
     }
 
     public static void main(String[] args) throws Throwable {
         CommandLineParser parser = new DefaultParser();
         CommandLine cli = parser.parse(cliOptions, args);
 
-        TranslationEngine engine = new TranslationEngine(cli.getOptionValue("engine"));
+        boolean ready = false;
 
-        MMTWorker.MasterHost master = null;
+        try {
+            TranslationEngine engine = new TranslationEngine(cli.getOptionValue("engine"));
 
-        if (cli.hasOption("master-host")) {
-            master = new MMTWorker.MasterHost();
-            master.host = cli.getOptionValue("master-host");
-            master.user = cli.getOptionValue("master-user");
-            master.password = cli.getOptionValue("master-passwd");
-            master.pem = cli.hasOption("master-pem") ? new File(cli.getOptionValue("master-pem")) : null;
+            MMTWorker.MasterHost master = null;
+
+            if (cli.hasOption("master-host")) {
+                master = new MMTWorker.MasterHost();
+                master.host = cli.getOptionValue("master-host");
+                master.user = cli.getOptionValue("master-user");
+                master.password = cli.getOptionValue("master-passwd");
+                master.pem = cli.hasOption("master-pem") ? new File(cli.getOptionValue("master-pem")) : null;
+            }
+
+            String[] sPorts = cli.getOptionValues("cluster-ports");
+            int[] ports = new int[]{Integer.parseInt(sPorts[0]), Integer.parseInt(sPorts[1])};
+            MMTWorker worker = new MMTWorker(engine, master, ports);
+
+            Runtime.getRuntime().addShutdownHook(new ShutdownHook(worker));
+
+            worker.start();
+            worker.awaitInitialization();
+
+            ready = worker.isActive();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            File statusFile = new File(cli.getOptionValue("status-file"));
+            FileUtils.write(statusFile, ready ? "ready" : "error", false);
         }
-
-        String[] sPorts = cli.getOptionValues("cluster-ports");
-        int[] ports = new int[]{Integer.parseInt(sPorts[0]), Integer.parseInt(sPorts[1])};
-        MMTWorker worker = new MMTWorker(engine, master, ports);
-
-        Runtime.getRuntime().addShutdownHook(new ShutdownHook(worker));
-        worker.start();
     }
 
     public static class ShutdownHook extends Thread {
@@ -69,7 +85,7 @@ public class WorkerMain {
                 worker.shutdown();
                 worker.awaitTermination(1, TimeUnit.DAYS);
             } catch (Exception e) {
-                e.printStackTrace();
+                // Nothing to do
             }
         }
 

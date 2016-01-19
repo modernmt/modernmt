@@ -8,9 +8,7 @@ import eu.modernmt.network.messaging.zeromq.ZMQMessagingClient;
 import eu.modernmt.tokenizer.DetokenizerPool;
 import eu.modernmt.tokenizer.TokenizerPool;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.SerializationUtils;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -42,6 +40,7 @@ public class MMTWorker extends Worker {
 
     private TranslationEngine engine;
     private Initializer initializer;
+    private Throwable initializationError;
     private Decoder decoder;
     private File runtimePath;
     private MasterHost master;
@@ -94,6 +93,19 @@ public class MMTWorker extends Worker {
         logger.info("MMT Cluster Worker startup.");
     }
 
+    public void awaitInitialization() throws Throwable {
+        if (isActive())
+            return;
+
+        if (initializationError != null)
+            throw initializationError;
+
+        this.initializer.join();
+
+        if (initializationError != null)
+            throw initializationError;
+    }
+
     @Override
     public void shutdown() {
         super.shutdown();
@@ -107,17 +119,11 @@ public class MMTWorker extends Worker {
         unit.timedJoin(this.initializer, timeout);
     }
 
-    protected void onSyncPathReceived(String remotePath) {
+    protected void onSyncPathReceived(String remotePath) throws IOException {
         logger.info("Synchronizing models with " + (master == null ? "localhost" : master.host));
         EngineSynchronizer synchronizer = new EngineSynchronizer(master, engine.getPath(), remotePath);
-
-        try {
-            synchronizer.sync();
-            setActive(true);
-        } catch (IOException e) {
-            logger.error("Error while syncronizing with " + (master == null ? "localhost" : master.host), e);
-            throw new RuntimeException(e);
-        }
+        synchronizer.sync();
+        setActive(true);
 
         logger.info("Synchronization complete");
     }
@@ -139,33 +145,40 @@ public class MMTWorker extends Worker {
 
         @Override
         public void run() {
-            byte[] response = null;
+            try {
+                byte[] response = null;
 
-            while (!isInterrupted() && response == null) {
-                try {
-                    response = sendRequest(MMTServer.REQUEST_SYNC_PATH, null, TimeUnit.MINUTES, 1);
-                } catch (IOException e) {
-                    logger.warn("Exception while receiving decoder weights.", e);
-                    response = null;
-                } catch (InterruptedException e) {
-                    response = null;
+                while (!isInterrupted() && response == null) {
+                    try {
+                        response = sendRequest(MMTServer.REQUEST_SYNC_PATH, null, TimeUnit.MINUTES, 1);
+                    } catch (IOException e) {
+                        logger.warn("Exception while receiving decoder weights.", e);
+                        response = null;
+                    } catch (InterruptedException e) {
+                        response = null;
+                    }
+
+                    if (response != null && response[0] != MMTServer.REQUEST_SYNC_PATH) {
+                        logger.warn("Response to REQUEST_FWEIGHTS has wrong type: " + response[0]);
+                        response = null;
+                    }
                 }
 
-                if (response != null && response[0] != MMTServer.REQUEST_SYNC_PATH) {
-                    logger.warn("Response to REQUEST_FWEIGHTS has wrong type: " + response[0]);
-                    response = null;
-                }
-            }
+                if (response != null) {
+                    String remotePath;
+                    try {
+                        remotePath = new String(response, 1, response.length - 1, "UTF-8");
+                    } catch (UnsupportedEncodingException e) {
+                        throw new Error("UTF-8 not supported", e);
+                    }
 
-            if (response != null) {
-                String remotePath;
-                try {
-                    remotePath = new String(response, 1, response.length - 1, "UTF-8");
-                } catch (UnsupportedEncodingException e) {
-                    throw new Error("UTF-8 not supported", e);
+                    onSyncPathReceived(remotePath);
                 }
+            } catch (Throwable e) {
+                logger.error("Error while syncronizing with " + (master == null ? "localhost" : master.host), e);
+                initializationError = e;
 
-                onSyncPathReceived(remotePath);
+                shutdown();
             }
         }
 
@@ -180,8 +193,6 @@ public class MMTWorker extends Worker {
                 awaitTermination(2, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 // Nothing to do
-            } finally {
-                System.exit(101);
             }
         }
     }

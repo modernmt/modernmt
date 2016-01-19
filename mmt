@@ -226,6 +226,15 @@ def main_start(argv):
             slave_started = True
 
         print 'OK'
+        sys.stdout.flush()
+
+        if slave is not None:
+            print 'Synchronizing models...',
+            sys.stdout.flush()
+            if not slave.wait_modelsync():
+                raise Exception('failed to start slave instance, check log file for more details: ' + slave.log_file)
+            print 'OK'
+
         if master is not None:
             print 'You can try the API with:'
             print '\tcurl "http://localhost:{port}/translate?q=world&context=computer"' \

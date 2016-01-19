@@ -133,11 +133,11 @@ class _ProcessMonitor:
         else:
             success = False
             for _ in range(0, 5):
+                time.sleep(1)
+
                 success = self._check_process_status()
                 if success:
                     break
-                else:
-                    time.sleep(1)
 
             return success
 
@@ -145,7 +145,7 @@ class _ProcessMonitor:
         pass
 
     def _check_process_status(self):
-        pass
+        return self.is_running()
 
     def _kill_handler(self, sign, _):
         self._process.send_signal(sign)
@@ -636,6 +636,24 @@ class MMTWorker(_MMTDistributedComponent):
 
         self._master = master
         self.log_file = self._get_logfile('process', ensure=False)
+        self._status_file = os.path.join(self._get_runtimedir(), 'process.status')
+
+    def _get_status(self):
+        if os.path.isfile(self._status_file):
+            with open(self._status_file) as content:
+                status = content.read()
+            return status.strip().lower()
+
+        return None
+
+    def wait_modelsync(self):
+        status = self._get_status()
+
+        while status is None:
+            time.sleep(1)
+            status = self._get_status()
+
+        return status == 'ready'
 
     def _start_process(self):
         classpath = [scripts.MMT_JAR]
@@ -653,7 +671,7 @@ class MMTWorker(_MMTDistributedComponent):
             command.append('-D' + key + '=' + value)
 
         command += ['eu.modernmt.cli.WorkerMain', '-e', self.engine.name, '-p', str(self.cluster_ports[0]),
-                    str(self.cluster_ports[1])]
+                    str(self.cluster_ports[1]), '--status-file', self._status_file]
 
         if self._master is not None:
             for key, value in self._master.iteritems():
@@ -663,7 +681,8 @@ class MMTWorker(_MMTDistributedComponent):
 
         self._get_logfile(self.log_file, ensure=True)
         log = open(self.log_file, 'wa')
-        return subprocess.Popen(command, stdout=log, stderr=log, shell=False, env=env)
 
-    def _check_process_status(self):
-        return True
+        if os.path.isfile(self._status_file):
+            os.remove(self._status_file)
+
+        return subprocess.Popen(command, stdout=log, stderr=log, shell=False, env=env)

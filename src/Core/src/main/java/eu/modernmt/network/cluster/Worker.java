@@ -35,7 +35,7 @@ public abstract class Worker {
         this.active = active;
     }
 
-    protected boolean isActive() {
+    public boolean isActive() {
         return active;
     }
 
