@@ -3,6 +3,7 @@ import argparse
 import logging
 import os
 import socket
+import stat
 import sys
 
 from scripts import dependency
@@ -130,7 +131,7 @@ def main_start(argv):
                         .format(port0=DEFAULT_MMT_CLUSTER_PORTS[0], port1=DEFAULT_MMT_CLUSTER_PORTS[1]),
                         default=None, nargs=2, type=int)
     parser.add_argument('--master', dest='master', help='the master remote host as user[:password]@host. Default '
-                                                              'is localhost', default=None)
+                                                        'is localhost', default=None)
     parser.add_argument('--master-pem', dest='master_pem', help='the PEM file needed to connect to the '
                                                                 'master remote host', default=None)
     parser.add_argument('--no-slave', action='store_false', dest='slave', help='if no-slave is set, this command '
@@ -155,14 +156,27 @@ def main_start(argv):
         credentials, host = args.master.split('@')
         user, passwd = credentials.split(':', 1) if ':' in credentials else [credentials, None]
 
-        if args.master_pem is not None and not os.path.isfile(args.master_pem):
-            raise CLIArgsException(parser, 'pem file not found: ' + args.master_pem)
+        pemfile = None
+
+        if args.master_pem is not None:
+            pemfile = args.master_pem
+
+            if not os.path.isfile(pemfile):
+                raise CLIArgsException(parser, 'pem file not found: ' + pemfile)
+
+            pemfile = os.path.abspath(args.master_pem)
+            permissions = os.stat(pemfile).st_mode
+
+            if (permissions & (stat.S_IRWXG | stat.S_IRWXO)) > 0:
+                raise CLIArgsException(parser, 'Permissions %s for \'%s\' are too open. '
+                                               'Your private key files MUST NOT be accessible by others.'
+                                       % (oct(permissions & 0777), pemfile))
 
         args.master_info = {
             'host': host,
             'user': user,
             'passwd': passwd,
-            'pem': args.master_pem
+            'pem': pemfile
         }
     else:
         args.master_info = None
@@ -175,7 +189,7 @@ def main_start(argv):
     # Check ports
     if args.has_master and not __is_freeport(args.api_port):
         raise IllegalStateException(
-            'port %d is already in use, please specify another port with option -p/--api-port' % args.api_port)
+                'port %d is already in use, please specify another port with option -p/--api-port' % args.api_port)
     if args.has_slave and not __is_freeport(args.cluster_ports[0]):
         raise IllegalStateException(
                 'port %d is already in use, please specify another port pair with option --cluster-ports' %
