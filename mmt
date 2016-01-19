@@ -129,7 +129,7 @@ def main_start(argv):
                              'Master instance and Slave instances. (default is {port0} and {port1})'
                         .format(port0=DEFAULT_MMT_CLUSTER_PORTS[0], port1=DEFAULT_MMT_CLUSTER_PORTS[1]),
                         default=None, nargs=2, type=int)
-    parser.add_argument('-m', '--master', dest='master', help='the master remote host as user[:password]@host. Default '
+    parser.add_argument('--master', dest='master', help='the master remote host as user[:password]@host. Default '
                                                               'is localhost', default=None)
     parser.add_argument('--master-pem', dest='master_pem', help='the PEM file needed to connect to the '
                                                                 'master remote host', default=None)
