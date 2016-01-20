@@ -105,9 +105,9 @@ public class ExecutionQueue {
         if (removeFromPendingQueue) {
             /*
              * We accept the risk that:
-             *   1 • next() take the task from the queue
-             *   2 • remove() completes the execution
-             *   3 • next() add the task to the pending map
+             *   1. next() take the task from the queue
+             *   2. remove() completes the execution
+             *   3. next() add the task to the pending map
              *
              * This is a safe condition because the task has been marked
              * as cancelled and its result won't be dispatched anymore.
