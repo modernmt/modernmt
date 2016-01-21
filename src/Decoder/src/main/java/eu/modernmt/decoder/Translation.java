@@ -7,7 +7,8 @@ import java.util.List;
  */
 public class Translation extends Sentence {
 
-    private Sentence source;
+    protected Sentence source;
+    protected List<TranslationHypothesis> nbest;
 
     public Translation(String rawText, Sentence source) {
         super(rawText);
@@ -23,4 +24,17 @@ public class Translation extends Sentence {
         super(tokens);
         this.source = source;
     }
+
+    public Sentence getSource() {
+        return source;
+    }
+
+    public List<TranslationHypothesis> getNbest() {
+        return nbest;
+    }
+
+    public void setNbest(List<TranslationHypothesis> nbest) {
+        this.nbest = nbest;
+    }
+
 }

@@ -1,30 +1,30 @@
 package eu.modernmt.decoder;
 
-import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by davide on 30/11/15.
  */
-public class TranslationHypothesis extends Translation implements Comparable<TranslationHypothesis> {
+public class TranslationHypothesis extends Sentence implements Comparable<TranslationHypothesis> {
 
     private float totalScore;
-    private List<Score> scores;
+    private Map<String, float[]> scores;
 
-    public TranslationHypothesis(String rawText, Sentence source, float totalScore, List<Score> scores) {
-        super(rawText, source);
+    public TranslationHypothesis(String rawText, float totalScore, Map<String, float[]> scores) {
+        super(rawText);
         this.totalScore = totalScore;
         this.scores = scores;
     }
 
-    public TranslationHypothesis(List<String> tokens, Sentence source, float totalScore, List<Score> scores) {
-        super(tokens, source);
+    public TranslationHypothesis(List<String> tokens, float totalScore, Map<String, float[]> scores) {
+        super(tokens);
         this.totalScore = totalScore;
         this.scores = scores;
     }
 
-    public TranslationHypothesis(String[] tokens, Sentence source, float totalScore, List<Score> scores) {
-        super(tokens, source);
+    public TranslationHypothesis(String[] tokens, float totalScore, Map<String, float[]> scores) {
+        super(tokens);
         this.totalScore = totalScore;
         this.scores = scores;
     }
@@ -34,21 +34,11 @@ public class TranslationHypothesis extends Translation implements Comparable<Tra
         return Float.compare(totalScore, o.totalScore);
     }
 
-    public static class Score implements Serializable {
-        public final String component;
-        public final float[] scores;
-
-        public Score(String component, float[] scores) {
-            this.component = component;
-            this.scores = scores;
-        }
-    }
-
     public float getTotalScore() {
         return totalScore;
     }
 
-    public List<Score> getScores() {
+    public Map<String, float[]> getScores() {
         return scores;
     }
 
@@ -62,22 +52,20 @@ public class TranslationHypothesis extends Translation implements Comparable<Tra
         string.append(super.toString());
         string.append('{');
 
-        for (int j = 0; j < scores.size(); j++) {
-            Score score = scores.get(j);
-            string.append(score.component);
+        for (Map.Entry<String, float[]> score : scores.entrySet()) {
+            string.append(score.getKey());
             string.append(':');
 
-            for (int i = 0; i < score.scores.length; i++) {
-                string.append(score.scores[i]);
-                if (i < score.scores.length - 1)
+            float[] weights = score.getValue();
+            for (int i = 0; i < weights.length; i++) {
+                string.append(weights[i]);
+                if (i < weights.length - 1)
                     string.append(' ');
             }
 
-            if (j < scores.size() - 1)
-                string.append(", ");
+            string.append(", ");
         }
 
-        string.append('}');
-        return string.toString();
+        return string.substring(0, string.length()) + '}';
     }
 }

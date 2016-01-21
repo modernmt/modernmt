@@ -3,16 +3,14 @@ package eu.modernmt.engine;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.Sentence;
-import eu.modernmt.decoder.TranslationHypothesis;
+import eu.modernmt.decoder.Translation;
 import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.decoder.moses.MosesFeature;
 import eu.modernmt.engine.tasks.GetFeatureWeightsTask;
-import eu.modernmt.engine.tasks.NBestListTask;
 import eu.modernmt.engine.tasks.TranslationTask;
 import eu.modernmt.network.cluster.Cluster;
 import eu.modernmt.network.cluster.DistributedCallable;
 import eu.modernmt.network.messaging.zeromq.ZMQMessagingServer;
-import org.apache.commons.lang3.SerializationUtils;
 
 import java.io.*;
 import java.util.HashMap;
@@ -133,40 +131,32 @@ public class MMTServer extends Cluster {
     //  Translate
     // =============================
 
-    public String translate(String sentence, boolean textProcessing) throws IOException {
-        return execute(new TranslationTask(sentence, textProcessing));
+    public Translation translate(String sentence, boolean textProcessing) throws IOException {
+        return translate(sentence, textProcessing, 0);
     }
 
-    public String translate(String sentence, long sessionId, boolean textProcessing) throws IOException {
+    public Translation translate(String sentence, long sessionId, boolean textProcessing) throws IOException {
+        return translate(sentence, sessionId, textProcessing, 0);
+    }
+
+    public Translation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing) throws IOException {
+        return translate(sentence, translationContext, textProcessing, 0);
+    }
+
+    public Translation translate(String sentence, boolean textProcessing, int nbest) throws IOException {
+        return execute(new TranslationTask(new Sentence(sentence), textProcessing, nbest));
+    }
+
+    public Translation translate(String sentence, long sessionId, boolean textProcessing, int nbest) throws IOException {
         TranslationSession session = sessions.get(sessionId);
         if (session == null)
             throw new IllegalArgumentException("Invalid session id " + sessionId);
 
-        return execute(new TranslationTask(sentence, session, textProcessing));
+        return execute(new TranslationTask(new Sentence(sentence), session, textProcessing, nbest));
     }
 
-    public String translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing) throws IOException {
-        return execute(new TranslationTask(sentence, translationContext, textProcessing));
-    }
-
-    // =============================
-    //  Compute NBest list
-    // =============================
-
-    public List<TranslationHypothesis> translate(Sentence sentence, int nbest) throws IOException {
-        return execute(new NBestListTask(sentence, nbest));
-    }
-
-    public List<TranslationHypothesis> translate(Sentence sentence, long sessionId, int nbest) throws IOException {
-        TranslationSession session = sessions.get(sessionId);
-        if (session == null)
-            throw new IllegalArgumentException("Invalid session id " + sessionId);
-
-        return execute(new NBestListTask(sentence, session, nbest));
-    }
-
-    public List<TranslationHypothesis> translate(Sentence sentence, List<ContextDocument> translationContext, int nbest) throws IOException {
-        return execute(new NBestListTask(sentence, translationContext, nbest));
+    public Translation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing, int nbest) throws IOException {
+        return execute(new TranslationTask(new Sentence(sentence), translationContext, textProcessing, nbest));
     }
 
     private <R extends Serializable> R execute(DistributedCallable<R> task) throws IOException {

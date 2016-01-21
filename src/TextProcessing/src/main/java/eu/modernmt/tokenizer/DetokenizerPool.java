@@ -3,6 +3,7 @@ package eu.modernmt.tokenizer;
 import eu.modernmt.tokenizer.moses.MosesDetokenizerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.*;
@@ -42,6 +43,10 @@ public class DetokenizerPool {
 
         this.executor = Executors.newFixedThreadPool(size);
         this.detokenizerInstances = new ArrayBlockingQueue<>(size);
+    }
+
+    public String detokenize(String[] tokens) {
+        return this.detokenize(Collections.singletonList(tokens)).get(0);
     }
 
     public List<String> detokenize(List<String[]> strings) {

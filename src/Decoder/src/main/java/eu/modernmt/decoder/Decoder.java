@@ -24,11 +24,10 @@ public interface Decoder extends Closeable {
 
     Translation translate(Sentence text, TranslationSession session);
 
-    List<TranslationHypothesis> translate(Sentence text, int nbestListSize);
+    Translation translate(Sentence text, int nbestListSize);
 
-    List<TranslationHypothesis> translate(Sentence text, List<ContextDocument> translationContext, int nbestListSize);
+    Translation translate(Sentence text, List<ContextDocument> translationContext, int nbestListSize);
 
-    List<TranslationHypothesis> translate(Sentence text, TranslationSession session, int nbestListSize);
-
+    Translation translate(Sentence text, TranslationSession session, int nbestListSize);
 
 }

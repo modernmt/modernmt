@@ -1,7 +1,6 @@
 package eu.modernmt.rest.actions.translation;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.engine.MMTServer;
@@ -9,10 +8,9 @@ import eu.modernmt.rest.RESTServer;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
-import eu.modernmt.rest.framework.actions.JSONObjectAction;
 import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
-import eu.modernmt.rest.model.TranslationResult;
+import eu.modernmt.rest.model.TranslationResponse;
 
 import java.io.IOException;
 import java.util.List;
@@ -21,27 +19,27 @@ import java.util.List;
  * Created by davide on 17/12/15.
  */
 @Route(aliases = "translate", method = HttpMethod.GET)
-public class Translate extends ObjectAction<TranslationResult> {
+public class Translate extends ObjectAction<TranslationResponse> {
 
     private RESTServer server = RESTServer.getInstance();
 
     @Override
-    protected TranslationResult execute(RESTRequest req, Parameters _params) throws IOException {
+    protected TranslationResponse execute(RESTRequest req, Parameters _params) throws IOException {
         Params params = (Params) _params;
         MMTServer mmtServer = server.getMMTServer();
 
-        TranslationResult result = new TranslationResult();
+        TranslationResponse result = new TranslationResponse();
 
         if (params.sessionId > 0) {
-            result.translation = mmtServer.translate(params.query, params.sessionId, params.textProcessing);
             result.session = params.sessionId;
+            result.translation = mmtServer.translate(params.query, params.sessionId, params.textProcessing, params.nbest);
         } else if (params.context != null) {
-            result.translation = mmtServer.translate(params.query, params.context, params.textProcessing);
+            result.translation = mmtServer.translate(params.query, params.context, params.textProcessing, params.nbest);
         } else if (params.contextString != null) {
             result.context = mmtServer.getContext(params.contextString, params.contextLimit);
-            result.translation = mmtServer.translate(params.query, result.context, params.textProcessing);
+            result.translation = mmtServer.translate(params.query, result.context, params.textProcessing, params.nbest);
         } else {
-            result.translation = mmtServer.translate(params.query, params.textProcessing);
+            result.translation = mmtServer.translate(params.query, params.textProcessing, params.nbest);
         }
 
         return result;
@@ -60,6 +58,7 @@ public class Translate extends ObjectAction<TranslationResult> {
         public final String contextString;
         public final int contextLimit;
         public final boolean textProcessing;
+        public final int nbest;
 
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
@@ -68,6 +67,7 @@ public class Translate extends ObjectAction<TranslationResult> {
             query = getString("q", false);
             sessionId = getLong("session", 0L);
             contextLimit = getInt("context_limit", 10);
+            nbest = getInt("nbest", 0);
 
             if (sessionId == 0) {
                 JsonArray json = getJSONArray("context_array", null);

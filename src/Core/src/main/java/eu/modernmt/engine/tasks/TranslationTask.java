@@ -1,46 +1,46 @@
 package eu.modernmt.engine.tasks;
 
 import eu.modernmt.context.ContextDocument;
-import eu.modernmt.decoder.Decoder;
-import eu.modernmt.decoder.Sentence;
-import eu.modernmt.decoder.Translation;
-import eu.modernmt.decoder.TranslationSession;
+import eu.modernmt.decoder.*;
 import eu.modernmt.engine.MMTWorker;
-import eu.modernmt.engine.TranslationEngine;
 import eu.modernmt.network.cluster.DistributedCallable;
 import eu.modernmt.tokenizer.DetokenizerPool;
 import eu.modernmt.tokenizer.TokenizerPool;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by davide on 09/12/15.
  */
-public class TranslationTask extends DistributedCallable<String> {
+public class TranslationTask extends DistributedCallable<Translation> {
 
-    private String text;
+    private Sentence source;
     private List<ContextDocument> translationContext;
     private Long session;
     private boolean processing;
+    private int nbest;
 
-    public TranslationTask(String text, boolean processing) {
-        this.text = text;
+    public TranslationTask(Sentence source, boolean processing, int nbest) {
+        this.source = source;
         this.processing = processing;
+        this.nbest = nbest;
     }
 
-    public TranslationTask(String text, List<ContextDocument> translationContext, boolean processing) {
-        this.text = text;
+    public TranslationTask(Sentence source, List<ContextDocument> translationContext, boolean processing, int nbest) {
+        this.source = source;
         this.translationContext = translationContext;
         this.processing = processing;
+        this.nbest = nbest;
     }
 
-    public TranslationTask(String text, TranslationSession session, boolean processing) {
-        this.text = text;
+    public TranslationTask(Sentence source, TranslationSession session, boolean processing, int nbest) {
+        this.source = source;
         this.session = session.getId();
         this.translationContext = session.getTranslationContext();
         this.processing = processing;
+        this.nbest = nbest;
     }
 
     @Override
@@ -49,22 +49,19 @@ public class TranslationTask extends DistributedCallable<String> {
     }
 
     @Override
-    public String call() throws IOException {
+    public Translation call() throws IOException {
         MMTWorker worker = getWorker();
         Decoder decoder = worker.getDecoder();
 
-        Sentence sentence;
+        Sentence tokenizedSource;
         Translation translation;
 
         if (processing) {
             TokenizerPool tokenizer = worker.getTokenizer();
-            String[] tokens = tokenizer.tokenize(Collections.singletonList(text)).get(0);
-            sentence = new Sentence(tokens);
+            tokenizedSource = new Sentence(tokenizer.tokenize(source.toString()));
         } else {
-            sentence = new Sentence(text);
+            tokenizedSource = source;
         }
-
-        System.out.println(sentence);
 
         if (session != null) {
             TranslationSession session = decoder.getSession(this.session);
@@ -75,19 +72,42 @@ public class TranslationTask extends DistributedCallable<String> {
                 else
                     session = decoder.openSession(this.session, translationContext);
 
-            translation = decoder.translate(sentence, session);
+            translation = nbest > 0 ? decoder.translate(tokenizedSource, session, nbest) : decoder.translate(tokenizedSource, session);
         } else if (translationContext != null) {
-            translation = decoder.translate(sentence, translationContext);
+            translation = nbest > 0 ? decoder.translate(tokenizedSource, translationContext, nbest) : decoder.translate(tokenizedSource, translationContext);
         } else {
-            translation = decoder.translate(sentence);
+            translation = nbest > 0 ? decoder.translate(tokenizedSource, nbest) : decoder.translate(tokenizedSource);
         }
 
         if (processing) {
             DetokenizerPool detokenizer = worker.getDetokenizer();
-            return detokenizer.detokenize(Collections.singletonList(translation.getTokens())).get(0);
-        } else {
-            return translation.toString();
+
+            List<TranslationHypothesis> nbest = translation.getNbest();
+            translation = new Translation(detokenizer.detokenize(translation.getTokens()), source);
+
+            if (nbest != null) {
+                List<TranslationHypothesis> detokNBest = new ArrayList<>(nbest.size());
+                List<String[]> strings = new ArrayList<>(nbest.size());
+
+                for (TranslationHypothesis hyp : nbest)
+                    strings.add(hyp.getTokens());
+
+
+                List<String> detokStrings = detokenizer.detokenize(strings);
+
+                for (int i = 0; i < detokStrings.size(); i++) {
+                    TranslationHypothesis original = nbest.get(i);
+                    String newtext = detokStrings.get(i);
+
+                    TranslationHypothesis hyp = new TranslationHypothesis(newtext, original.getTotalScore(), original.getScores());
+                    detokNBest.add(hyp);
+                }
+
+                translation.setNbest(detokNBest);
+            }
         }
+
+        return translation;
     }
 
 }

@@ -42,6 +42,10 @@ public class TokenizerPool {
         this.tokenizerInstances = new ArrayBlockingQueue<>(size);
     }
 
+    public String[] tokenize(String string) {
+        return this.tokenize(new String[]{string}).get(0);
+    }
+
     public List<String[]> tokenize(List<String> strings) {
         return this.tokenize(strings.toArray(new String[strings.size()]));
     }
