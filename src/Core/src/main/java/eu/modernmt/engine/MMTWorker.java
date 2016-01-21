@@ -193,6 +193,8 @@ public class MMTWorker extends Worker {
                 awaitTermination(2, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 // Nothing to do
+            } finally {
+                System.exit(101);
             }
         }
     }
