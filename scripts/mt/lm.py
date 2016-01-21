@@ -143,4 +143,5 @@ class AdaptiveIRSTLM(LanguageModel):
         shell.execute(command, stderr=log)
 
     def get_iniline(self):
-        return self.name + ' name=LM0 factor=0 path={model} dub=10000000'.format(model=self.get_relpath(self._model))
+        return self.name + ' name=LM0 factor=0 path={model} dub=10000000 weight_normalization=yes'.format(
+            model=self.get_relpath(self._model))
