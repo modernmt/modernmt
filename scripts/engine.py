@@ -474,16 +474,14 @@ class MMTServerApi:
     def close_session(self, session):
         return self._delete('sessions/' + str(session))
 
-    def nbest_list(self, text, size=100, session=None):
-        p = {
-            'q': text,
-            'nbest': str(size),
-        }
-
+    def translate(self, source, session=None, processing=True, nbest=None):
+        p = {'q': source, 'processing': (1 if processing else 0)}
         if session is not None:
             p['session'] = session
+        if nbest is not None:
+            p['nbest'] = nbest
 
-        return self._get('translation/nbest', params=p)
+        return self._get('translate', params=p)
 
 
 class _MMTDistributedComponent(_MMTRuntimeComponent, _ProcessMonitor):

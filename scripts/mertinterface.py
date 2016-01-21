@@ -53,36 +53,29 @@ class _DocumentTranslator:
                 array.append(float(token))
 
     @staticmethod
-    def _get_translations(line, nbest, session):
-        return Api.nbest_list(line, size=nbest, session=session)
+    def _get_translation(line, nbest, session):
+        return Api.translate(line, session=session, processing=False, nbest=nbest)
 
-    def _print(self, translations, nbest_out):
-        if len(translations) == 0:
-            return
-
-        print translations[0]['translation'].encode('utf-8')
+    def _print(self, translation, nbest_out):
+        print translation['translation'].encode('utf-8')
         sys.stdout.flush()
 
-        for translation in translations:
-            score_map = {}
-            for score in translation['scores']:
-                score_map[score['component']] = score['scores']
-
+        for hyp in translation['nbest']:
             scores = []
 
             for feature in self._features:
-                if feature in score_map:
+                if feature in hyp['scores']:
                     scores.append(feature + '=')
-                    for s in score_map[feature]:
+                    for s in hyp['scores'][feature]:
                         scores.append(str(s))
 
             nbest_out.write(str(self._line_id))
             nbest_out.write(' ||| ')
-            nbest_out.write(translation['translation'].encode('utf-8'))
+            nbest_out.write(hyp['translation'].encode('utf-8'))
             nbest_out.write(' ||| ')
             nbest_out.write(' '.join(scores))
             nbest_out.write(' ||| ')
-            nbest_out.write(str(translation['totalScore']))
+            nbest_out.write(str(hyp['totalScore']))
             nbest_out.write('\n')
 
     def run(self):
@@ -108,12 +101,12 @@ class _DocumentTranslator:
                     with open(tokenized) as doc:
                         jobs = []
                         for docline in doc:
-                            result = self._pool.apply_async(self._get_translations, (docline, self.nbest, session))
+                            result = self._pool.apply_async(self._get_translation, (docline, self.nbest, session))
                             jobs.append(result)
 
                         for job in jobs:
-                            translations = job.get()
-                            self._print(translations, nbest_out)
+                            translation = job.get()
+                            self._print(translation, nbest_out)
                             self._line_id += 1
 
                     if session is not None:
