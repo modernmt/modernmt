@@ -41,7 +41,7 @@ public class EngineSynchronizer {
     private String[] getRSyncCommand() {
         ArrayList<String> command = new ArrayList<>(6);
         command.add("rsync");
-        command.add("-r");
+        command.add("-Wau");
 
         if (master != null && master.pem != null) {
             command.add("-e");
