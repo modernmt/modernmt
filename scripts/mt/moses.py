@@ -64,8 +64,8 @@ class Moses:
     def create_ini(self, weights=None):
         lines = ['[input-factors]', '0', '', '[search-algorithm]', '1', '', '[stack]', str(self._stack_size), '',
                  '[cube-pruning-pop-limit]', str(self._cube_pruning_pop_limit), '', '[mapping]', '0 T 0', '',
-                 '[distortion-limit]', str(self._distortion_limit), '', '[threads]', '${DECODER_THREADS}', '', '[v]',
-                 '0', '', '[feature]']
+                 '[distortion-limit]', str(self._distortion_limit), '', '[threads]', '${DECODER_THREADS}', '',
+                 '[verbose]', '0', '', '[feature]']
 
         for feature in self._features:
             lines.append(feature.get_iniline())
