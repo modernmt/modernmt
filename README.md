@@ -1,4 +1,4 @@
-# MMT 0.11 - ALPHA RELEASE for Ubuntu 14.04 
+# MMT 0.11.1 - Release for Ubuntu 14.04 
 
 ## About MMT
 MMT is a context-aware, incremental and distributed general purpose Machine Translation technology.
@@ -44,7 +44,7 @@ use **stop** for stopping it.
 ### Translate via API
 
 ```
-curl "http://localhost:8000/translate?q=world&context=computer" | python -mjson.tool
+curl "http://localhost:8045/translate?q=world&context=computer" | python -mjson.tool
 ```
 
 You will get:
@@ -128,7 +128,7 @@ Expect a few days for a 1B words model with 1000 sentences used for tuning.
 ## MMT distributed (Expert)
 
 Let's distribute MMT to a second machine. 
-Make sure port 8000 is open on the master and 5000 and 5001 on both the master and the slave.
+Make sure port 8045 is open on the master and 5016 and 5017 on both the master and the slave.
 
 Login into the new machine and run
 
@@ -147,7 +147,7 @@ If you're running your experiments on Amazon, copy your .pem file to the second 
 Query the master, the requests are load balanced across the istances:
 
 ```
-curl "http://3.14.15.92:8000/translate?q=world&context=computer" | python -mjson.tool
+curl "http://3.14.15.92:8045/translate?q=world&context=computer" | python -mjson.tool
 ```
 
 **That's all folks!**
@@ -158,8 +158,6 @@ The engine files will be synced from the master and translation requests will be
 Only the master will respond to the Translation API and distribute load.
 
 If you updated the model on the master, just stop and start the slave and the model data will be rsynced again.
-
-> **Note: rsyncing  of the models has been temporarily disabled in 0.11 and models files have to be copied manually. To test the release please contact davide.caroselli@translated.net**
 
 ## How to prepare your data
 
