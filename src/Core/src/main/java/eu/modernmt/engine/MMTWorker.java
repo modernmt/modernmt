@@ -60,19 +60,23 @@ public class MMTWorker extends Worker {
 
     public Decoder getDecoder() throws IOException {
         if (decoder == null) {
-            Map<String, float[]> weights = engine.getDecoderWeights();
-            MosesINI mosesINI = MosesINI.load(engine.getDecoderINITemplate(), engine.getPath());
+            synchronized (this) {
+                if (decoder == null) {
+                    Map<String, float[]> weights = engine.getDecoderWeights();
+                    MosesINI mosesINI = MosesINI.load(engine.getDecoderINITemplate(), engine.getPath());
 
-            if (weights != null)
-                mosesINI.setWeights(weights);
+                    if (weights != null)
+                        mosesINI.setWeights(weights);
 
-            mosesINI.setThreads(DEFAULT_DECODER_THREADS);
-            mosesINI.setWorkers(DEFAULT_SA_WORKERS);
+                    mosesINI.setThreads(DEFAULT_DECODER_THREADS);
+                    mosesINI.setWorkers(DEFAULT_SA_WORKERS);
 
 
-            File inifile = new File(runtimePath, "moses.ini");
-            FileUtils.write(inifile, mosesINI.toString(), false);
-            decoder = new MosesDecoder(inifile);
+                    File inifile = new File(runtimePath, "moses.ini");
+                    FileUtils.write(inifile, mosesINI.toString(), false);
+                    decoder = new MosesDecoder(inifile);
+                }
+            }
         }
 
         return decoder;
