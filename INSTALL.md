@@ -19,7 +19,7 @@ For customizations and enterprise support: davide.caroselli@translated.net
 
 # Setup up the server
 
-**MMT 0.11 only works on Ubuntu 14.04**
+**MMT 0.11.x only works on Ubuntu 14.04**
 
 This release was tested on a clean Ubuntu 14.04 server from Amazon AWS.
 AMI: Ubuntu Server 14.04 LTS (HVM), SSD Volume Type -  ami-accff2b1
@@ -48,7 +48,7 @@ sudo pip install -U requests
 Download from here: https://github.com/ModernMT/MMT/releases and then untar the files:
 
 ```
-tar xvfz mmt-0.11-ubuntu14_04.tar.gz
+tar xvfz mmt-0.11.1-ubuntu14_04.tar.gz
 cd mmt
 ```
 
