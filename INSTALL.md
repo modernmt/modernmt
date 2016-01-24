@@ -9,7 +9,7 @@
 
 **Memory**: 
   - Min 5GB
-  - 3GB each 100M words (soruce+target) of training.
+  - 3GB each 100M words (source+target) of training.
 
 # Support
 
