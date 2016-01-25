@@ -127,6 +127,10 @@ public class MMTWorker extends Worker {
         logger.info("Synchronizing models with " + (master == null ? "localhost" : master.host));
         EngineSynchronizer synchronizer = new EngineSynchronizer(master, engine.getPath(), remotePath);
         synchronizer.sync();
+
+        // Forces Decoder startup
+        getDecoder();
+
         setActive(true);
 
         logger.info("Synchronization complete");
@@ -156,26 +160,20 @@ public class MMTWorker extends Worker {
                     try {
                         response = sendRequest(MMTServer.REQUEST_SYNC_PATH, null, TimeUnit.MINUTES, 1);
                     } catch (IOException e) {
-                        logger.warn("Exception while receiving decoder weights.", e);
+                        logger.warn("Exception while receiving sync path.", e);
                         response = null;
                     } catch (InterruptedException e) {
                         response = null;
                     }
 
                     if (response != null && response[0] != MMTServer.REQUEST_SYNC_PATH) {
-                        logger.warn("Response to REQUEST_FWEIGHTS has wrong type: " + response[0]);
+                        logger.warn("Response to REQUEST_SYNC_PATH has wrong type: " + response[0]);
                         response = null;
                     }
                 }
 
                 if (response != null) {
-                    String remotePath;
-                    try {
-                        remotePath = new String(response, 1, response.length - 1, "UTF-8");
-                    } catch (UnsupportedEncodingException e) {
-                        throw new Error("UTF-8 not supported", e);
-                    }
-
+                    String remotePath = new String(response, 1, response.length - 1, "UTF-8");
                     onSyncPathReceived(remotePath);
                 }
             } catch (Throwable e) {
