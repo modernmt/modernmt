@@ -9,7 +9,7 @@
 
 **Memory**: 
   - Min 5GB
-  - 3GB each 100M words (soruce+target) of training.
+  - 3GB each 100M words (source+target) of training.
 
 # Support
 
@@ -32,6 +32,33 @@ c3.4xlarge (30GB RAM, 16 core, circa $0.90/hour)
 Install **Java 8** if not present
 ```bash
 sudo add-apt-repository ppa:openjdk-r/ppa && sudo apt-get update && sudo apt-get install openjdk-8-jdk
+```
+
+Check Java version with command:
+
+```
+java -version
+```
+
+If the first line report a version of Java prior 1.8, you need to **update default Java version**. Run command:
+
+```
+sudo update-alternatives --config java
+```
+
+and type the number of the option that contains **java-8-openjdk**, then press ENTER. Here's an example:
+
+```
+$ sudo update-alternatives --config java
+There are 2 choices for the alternative java (providing /usr/bin/java).
+
+  Selection    Path                                            Priority   Status
+------------------------------------------------------------
+* 0            /usr/lib/jvm/java-7-openjdk-amd64/jre/bin/java   1071      auto mode
+  1            /usr/lib/jvm/java-7-openjdk-amd64/jre/bin/java   1071      manual mode
+  2            /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java   1069      manual mode
+
+Press enter to keep the current choice[*], or type selection number: 2
 ```
 
 **Python 2.7** with module **Requests** is also required but it is pre-installed in Ubuntu.
