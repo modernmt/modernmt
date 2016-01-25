@@ -96,6 +96,14 @@ public class RESTResponse {
         output(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, encode(e));
     }
 
+    public void unavailable() {
+        unavailable(null);
+    }
+
+    public void unavailable(Throwable e) {
+        output(HttpServletResponse.SC_SERVICE_UNAVAILABLE, encode(e));
+    }
+
     private void output(int httpStatus, String json) {
         if (logger.isDebugEnabled()) {
             if (json.length() > 200) {

@@ -1,4 +1,3 @@
-import errno
 import json as js
 import logging
 import os
@@ -72,6 +71,7 @@ class _ProcessMonitor:
     def __init__(self, pidfile):
         self._pidfile = pidfile
         self._process = None
+        self._stop_requested = False
 
     def _get_pid(self):
         pid = 0
@@ -96,21 +96,7 @@ class _ProcessMonitor:
         if pid == 0:
             return False
 
-        try:
-            os.kill(pid, 0)
-        except OSError as err:
-            if err.errno == errno.ESRCH:
-                # ESRCH == No such process
-                return False
-            elif err.errno == errno.EPERM:
-                # EPERM clearly means there's a process to deny access to
-                return True
-            else:
-                # According to "man 2 kill" possible error values are
-                # (EINVAL, EPERM, ESRCH)
-                raise
-        else:
-            return True
+        return daemon.is_running(pid)
 
     def start(self, daemonize=True):
         if self.is_running():
@@ -126,7 +112,7 @@ class _ProcessMonitor:
 
             code = 1
 
-            while code > 0 and code != -signal.SIGINT and code != -signal.SIGTERM:
+            while not self._stop_requested and code > 0 and code != -signal.SIGINT and code != -signal.SIGTERM:
                 self._process = self._start_process()
                 self._process.wait()
                 code = self._process.returncode
@@ -148,14 +134,21 @@ class _ProcessMonitor:
         return self.is_running()
 
     def _kill_handler(self, sign, _):
+        self._stop_requested = True
+
         self._process.send_signal(sign)
+        self._process.wait()
+
         exit(0)
 
     def stop(self):
+        pid = self._get_pid()
+
         if not self.is_running():
             raise Exception('process is not running')
 
-        os.kill(self._get_pid(), signal.SIGTERM)
+        os.kill(pid, signal.SIGTERM)
+        daemon.wait(pid)
 
 
 # ==============================
@@ -516,6 +509,8 @@ class MMTServer(_MMTDistributedComponent):
         }
 
         command = ['java', '-cp', ':'.join(classpath)]
+        # command.append('-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005')
+
         for key, value in sysprop.iteritems():
             command.append('-D' + key + '=' + value)
 

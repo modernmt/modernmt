@@ -10,6 +10,7 @@ import eu.modernmt.engine.tasks.GetFeatureWeightsTask;
 import eu.modernmt.engine.tasks.TranslationTask;
 import eu.modernmt.network.cluster.Cluster;
 import eu.modernmt.network.cluster.DistributedCallable;
+import eu.modernmt.network.cluster.DistributedTask;
 import eu.modernmt.network.messaging.zeromq.ZMQMessagingServer;
 
 import java.io.*;
@@ -50,6 +51,13 @@ public class MMTServer extends Cluster {
     }
 
     @Override
+    public List<DistributedTask<?>> shutdownNow() {
+        List<DistributedTask<?>> tasks = super.shutdownNow();
+        logger.info("MMT Cluster Server forced shutdown.");
+        return tasks;
+    }
+
+    @Override
     protected byte[] onCustomRequestReceived(byte signal, byte[] payload, int offset, int length) {
         switch (signal) {
             case REQUEST_SYNC_PATH:
@@ -76,7 +84,7 @@ public class MMTServer extends Cluster {
     //  Decoder Weights
     // =============================
 
-    public Map<MosesFeature, float[]> getFeatureWeights() throws IOException {
+    public Map<MosesFeature, float[]> getFeatureWeights() throws IOException, InterruptedException {
         GetFeatureWeightsTask task = new GetFeatureWeightsTask();
         return execute(task);
     }
@@ -131,23 +139,23 @@ public class MMTServer extends Cluster {
     //  Translate
     // =============================
 
-    public Translation translate(String sentence, boolean textProcessing) throws IOException {
+    public Translation translate(String sentence, boolean textProcessing) throws IOException, InterruptedException {
         return translate(sentence, textProcessing, 0);
     }
 
-    public Translation translate(String sentence, long sessionId, boolean textProcessing) throws IOException {
+    public Translation translate(String sentence, long sessionId, boolean textProcessing) throws IOException, InterruptedException {
         return translate(sentence, sessionId, textProcessing, 0);
     }
 
-    public Translation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing) throws IOException {
+    public Translation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing) throws IOException, InterruptedException {
         return translate(sentence, translationContext, textProcessing, 0);
     }
 
-    public Translation translate(String sentence, boolean textProcessing, int nbest) throws IOException {
+    public Translation translate(String sentence, boolean textProcessing, int nbest) throws IOException, InterruptedException {
         return execute(new TranslationTask(new Sentence(sentence), textProcessing, nbest));
     }
 
-    public Translation translate(String sentence, long sessionId, boolean textProcessing, int nbest) throws IOException {
+    public Translation translate(String sentence, long sessionId, boolean textProcessing, int nbest) throws IOException, InterruptedException {
         TranslationSession session = sessions.get(sessionId);
         if (session == null)
             throw new IllegalArgumentException("Invalid session id " + sessionId);
@@ -155,11 +163,11 @@ public class MMTServer extends Cluster {
         return execute(new TranslationTask(new Sentence(sentence), session, textProcessing, nbest));
     }
 
-    public Translation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing, int nbest) throws IOException {
+    public Translation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing, int nbest) throws IOException, InterruptedException {
         return execute(new TranslationTask(new Sentence(sentence), translationContext, textProcessing, nbest));
     }
 
-    private <R extends Serializable> R execute(DistributedCallable<R> task) throws IOException {
+    private <R extends Serializable> R execute(DistributedCallable<R> task) throws IOException, InterruptedException {
         try {
             return this.submit(task).get();
         } catch (ExecutionException e) {
@@ -172,8 +180,6 @@ public class MMTServer extends Cluster {
                 throw (RuntimeException) cause;
             else
                 throw new RuntimeException("Unexpected exception", cause);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         }
     }
 

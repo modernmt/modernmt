@@ -62,8 +62,12 @@ public class RESTServer {
         jettyServer.start();
     }
 
-    public void stop() throws Exception {
-        mmtServer.shutdown();
+    public void stop(boolean forced) throws Exception {
+        if (forced)
+            mmtServer.shutdownNow();
+        else
+            mmtServer.shutdown();
+
         jettyServer.stop();
     }
 

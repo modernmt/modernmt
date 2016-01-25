@@ -22,7 +22,7 @@ public class GetFeatures extends JSONObjectAction {
     private RESTServer server = RESTServer.getInstance();
 
     @Override
-    protected JsonObject execute(RESTRequest req, Parameters params) throws IOException {
+    protected JsonObject execute(RESTRequest req, Parameters params) throws IOException, InterruptedException {
         JsonObject result = new JsonObject();
 
         Map<MosesFeature, float[]> features = server.getMMTServer().getFeatureWeights();

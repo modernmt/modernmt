@@ -24,7 +24,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
     private RESTServer server = RESTServer.getInstance();
 
     @Override
-    protected TranslationResponse execute(RESTRequest req, Parameters _params) throws IOException {
+    protected TranslationResponse execute(RESTRequest req, Parameters _params) throws IOException, InterruptedException {
         Params params = (Params) _params;
         MMTServer mmtServer = server.getMMTServer();
 

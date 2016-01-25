@@ -49,7 +49,7 @@ public class RESTMain {
             RESTServer server = RESTServer.getInstance();
 
             try {
-                server.stop();
+                server.stop(true);
                 server.join();
             } catch (Exception e) {
                 e.printStackTrace();

@@ -28,6 +28,10 @@ public abstract class JSONAction implements Action {
             if (logger.isDebugEnabled())
                 logger.debug("Auth exception while executing action " + this, e);
             resp.forbidden(e);
+        } catch (InterruptedException e) {
+            if (logger.isDebugEnabled())
+                logger.debug("interrupted Exception while executing action " + this, e);
+            resp.unavailable(e);
         } catch (Throwable e) {
             logger.error("Unexpected error while executing action " + this, e);
             resp.unexpectedError(e);
