@@ -29,7 +29,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
         MMTServer mmtServer = server.getMMTServer();
 
         TranslationResponse result = new TranslationResponse();
-
+        
         if (params.sessionId > 0) {
             result.session = params.sessionId;
             result.translation = mmtServer.translate(params.query, params.sessionId, params.textProcessing, params.nbest);

@@ -69,13 +69,20 @@ public class ZMQMessagingClient implements MessagingClient {
         public byte[] request(byte[] payload, TimeUnit unit, long timeout) throws InterruptedException {
             dataSocket.send(payload, 0);
 
-            ZMQ.Poller items = new ZMQ.Poller(1);
+            ZMQ.Poller items = new ZMQ.Poller(2);
+
+            items.register(subShutdownSocket, ZMQ.Poller.POLLIN);
             items.register(dataSocket, ZMQ.Poller.POLLIN);
 
-            if (items.poll(unit.toMillis(timeout)) == 0)
+            if (items.poll(unit.toMillis(timeout)) == 0) {
                 throw new InterruptedException();
-            else
-                return dataSocket.recv();
+            } else {
+                if (items.pollin(1)) {
+                    return dataSocket.recv();
+                } else {
+                    throw new InterruptedException();
+                }
+            }
         }
 
         @Override

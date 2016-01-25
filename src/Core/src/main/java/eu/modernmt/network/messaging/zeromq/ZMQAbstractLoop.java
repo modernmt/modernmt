@@ -15,13 +15,13 @@ import java.util.UUID;
  */
 public abstract class ZMQAbstractLoop extends Thread implements Closeable, AutoCloseable {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static int threadId = 0;
 
     private ZMQ.Context context;
     private ZMQ.Socket pubShutdownSocket;
-    private ZMQ.Socket subShutdownSocket;
+    protected ZMQ.Socket subShutdownSocket;
     protected ZMQ.Socket signalingSocket;
     protected ZMQ.Socket dataSocket;
 

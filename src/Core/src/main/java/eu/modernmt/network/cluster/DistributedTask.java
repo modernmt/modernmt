@@ -22,16 +22,16 @@ public class DistributedTask<V extends Serializable> implements Future<V> {
 
     private UUID id;
 
-    private Cluster cluster;
+    private ExecutionQueue queue;
     private int state;
 
     private DistributedCallable<V> callable;
     private Object outcome;
     private CountDownLatch completionCountDown;
 
-    public DistributedTask(Cluster cluster, DistributedCallable<V> callable) {
+    public DistributedTask(ExecutionQueue queue, DistributedCallable<V> callable) {
         this.id = UUIDSequence.next(UUIDSequence.SequenceType.DISTRIBUTED_TASK);
-        this.cluster = cluster;
+        this.queue = queue;
         this.callable = callable;
         this.state = NEW;
         this.completionCountDown = new CountDownLatch(1);
@@ -60,7 +60,7 @@ public class DistributedTask<V extends Serializable> implements Future<V> {
             return false;
 
         try {
-            this.cluster.removeFromExecution(this, mayInterruptIfRunning);
+            this.queue.remove(this, mayInterruptIfRunning);
         } finally {
             this.compareAndSwapState(ANY, INTERRUPTED);
             onTaskComplete();

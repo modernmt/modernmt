@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.List;
 import java.util.concurrent.*;
 
 /**
@@ -50,24 +49,9 @@ public abstract class Cluster {
         this.execDispatcher.start();
     }
 
-    public boolean isShutdown() {
-        return this.executionQueue.isShutdown();
-    }
-
-    public boolean isTerminated() {
-        return this.executionQueue.isTerminated();
-    }
-
     public void shutdown() {
-        this.executionQueue.shutdown(false);
+        this.executionQueue.shutdown();
         this.startTerminator();
-    }
-
-    public List<DistributedTask<?>> shutdownNow() {
-        List<DistributedTask<?>> pending = this.executionQueue.shutdown(true);
-        this.startTerminator();
-
-        return pending;
     }
 
     private synchronized void startTerminator() {
@@ -80,10 +64,6 @@ public abstract class Cluster {
     public void awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
         if (this.terminator != null)
             this.terminator.awaitTermination(timeout, unit);
-    }
-
-    void removeFromExecution(DistributedTask<?> task, boolean interruptIfRunning) {
-        this.executionQueue.remove(task, interruptIfRunning);
     }
 
     public void sendBroadcastSignal(byte signal, byte[] payload) throws IOException {
@@ -104,7 +84,7 @@ public abstract class Cluster {
     }
 
     protected <V extends Serializable> Future<V> submit(DistributedCallable<V> callable) {
-        DistributedTask<V> task = new DistributedTask<>(this, callable);
+        DistributedTask<V> task = new DistributedTask<>(this.executionQueue, callable);
         this.executionQueue.add(task);
         return task;
     }
@@ -180,11 +160,9 @@ public abstract class Cluster {
                 if (response == null)
                     break;
 
-                DistributedTask<?> task = executionQueue.removePendingTask(response.id);
+                DistributedTask<?> task = executionQueue.removeRunningTask(response.id);
 
                 if (task != null) {
-                    executionQueue.removePendingTask(task.getId());
-
                     if (response.hasError())
                         task.setException(response.throwable);
                     else
@@ -215,12 +193,6 @@ public abstract class Cluster {
                 try {
                     callbDispatcher.terminate();
                     callbDispatcher.join();
-                } catch (Throwable e) {
-                    // Nothing to do
-                }
-
-                try {
-                    executionQueue.awaitTermination();
                 } catch (Throwable e) {
                     // Nothing to do
                 }

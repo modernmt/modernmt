@@ -1,33 +1,28 @@
 package eu.modernmt.network.cluster;
 
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
-import java.util.concurrent.*;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
  * Created by davide on 20/11/15.
  */
 public class ExecutionQueue {
 
-    private ConcurrentHashMap<UUID, DistributedTask<?>> pending = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<UUID, DistributedTask<?>> running = new ConcurrentHashMap<>();
     private Queue<DistributedTask<?>> queue = new ConcurrentLinkedQueue<>();
     private boolean shutdown = false;
 
-    private Lock terminationLock = new ReentrantLock();
-    private CountDownLatch terminationCountDown;
-
     /**
-     * Retrieves the next element in queue and moves it to pending queue.
+     * Retrieves the next element in queue and moves it to running queue.
      *
      * @return the next element in queue, or null if the queue is empty or has been shut down
      */
     public DistributedTask<?> next() {
-        if (this.shutdown)
+        if (shutdown)
             return null;
 
         DistributedTask<?> task = queue.poll();
@@ -35,16 +30,23 @@ public class ExecutionQueue {
         if (task == null)
             return null;
 
-        if (!this.shutdown) {
-            synchronized (this) {
-                if (!this.shutdown) {
-                    this.pending.put(task.getId(), task);
-                    return task;
-                }
+        boolean cancelTask;
+
+        synchronized (this) {
+            if (shutdown) {
+                cancelTask = true;
+            } else {
+                cancelTask = false;
+                this.running.put(task.getId(), task);
             }
         }
 
-        return null;
+        if (cancelTask) {
+            task.cancel(true);
+            return null;
+        } else {
+            return task;
+        }
     }
 
     public int size() {
@@ -55,20 +57,6 @@ public class ExecutionQueue {
         return shutdown;
     }
 
-    public boolean isTerminated() {
-        return terminationCountDown != null && terminationCountDown.getCount() == 0;
-    }
-
-    public void awaitTermination() throws InterruptedException {
-        if (terminationCountDown != null)
-            terminationCountDown.await();
-    }
-
-    public void awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
-        if (terminationCountDown != null)
-            terminationCountDown.await(timeout, unit);
-    }
-
     public synchronized void add(DistributedTask<?> task) {
         if (this.shutdown)
             throw new RejectedExecutionException();
@@ -76,60 +64,38 @@ public class ExecutionQueue {
         this.queue.add(task);
     }
 
-    public synchronized List<DistributedTask<?>> shutdown(boolean removeFromPending) {
-        ArrayList<DistributedTask<?>> pending = null;
+    public void shutdown() {
+        if (!this.shutdown) {
+            synchronized (this) {
+                if (!this.shutdown) {
+                    this.shutdown = true;
+                } else {
+                    return;
+                }
+            }
+        }
 
-        this.shutdown = true;
+        ArrayList<DistributedTask<?>> pending = new ArrayList<>(this.queue.size() + this.running.size());
+        pending.addAll(this.queue);
+        pending.addAll(this.running.values());
+
         this.queue.clear();
+        this.running.clear();
 
-        if (removeFromPending) {
-            pending = new ArrayList<>(this.pending.size());
-            pending.addAll(this.pending.values());
-            this.pending.clear();
+        for (DistributedTask<?> task : pending) {
+            task.cancel(true);
         }
-
-        terminationLock.lock();
-
-        try {
-            terminationCountDown = new CountDownLatch(this.pending.size());
-        } finally {
-            terminationLock.unlock();
-        }
-
-        return pending;
     }
 
-    public void remove(DistributedTask<?> task, boolean removeFromPendingQueue) {
+    void remove(DistributedTask<?> task, boolean removeFromRunningQueue) {
         queue.remove(task);
 
-        if (removeFromPendingQueue) {
-            /*
-             * We accept the risk that:
-             *   1. next() take the task from the queue
-             *   2. remove() completes the execution
-             *   3. next() add the task to the pending map
-             *
-             * This is a safe condition because the task has been marked
-             * as cancelled and its result won't be dispatched anymore.
-             */
-
-            pending.remove(task.getId());
-        }
+        if (removeFromRunningQueue)
+            this.removeRunningTask(task.getId());
     }
 
-    public DistributedTask<?> removePendingTask(UUID id) {
-        DistributedTask<?> task;
-
-        terminationLock.lock();
-        try {
-            task = this.pending.remove(id);
-            if (task != null && terminationCountDown != null)
-                terminationCountDown.countDown();
-        } finally {
-            terminationLock.unlock();
-        }
-
-        return task;
+    DistributedTask<?> removeRunningTask(UUID id) {
+        return this.running.remove(id);
     }
 
 }

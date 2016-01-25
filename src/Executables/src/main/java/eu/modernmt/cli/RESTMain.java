@@ -4,6 +4,8 @@ import eu.modernmt.engine.MMTServer;
 import eu.modernmt.engine.TranslationEngine;
 import eu.modernmt.rest.RESTServer;
 import org.apache.commons.cli.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by davide on 17/12/15.
@@ -44,13 +46,17 @@ public class RESTMain {
 
     public static class ShutdownHook extends Thread {
 
+        protected final Logger logger = LoggerFactory.getLogger(getClass());
+
         @Override
         public void run() {
+            logger.info("Received KILL signal, stopping server.");
             RESTServer server = RESTServer.getInstance();
 
             try {
-                server.stop(true);
+                server.stop();
                 server.join();
+                logger.info("Server terminated successfully");
             } catch (Exception e) {
                 e.printStackTrace();
             }

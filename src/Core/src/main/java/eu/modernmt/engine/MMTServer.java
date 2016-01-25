@@ -10,13 +10,13 @@ import eu.modernmt.engine.tasks.GetFeatureWeightsTask;
 import eu.modernmt.engine.tasks.TranslationTask;
 import eu.modernmt.network.cluster.Cluster;
 import eu.modernmt.network.cluster.DistributedCallable;
-import eu.modernmt.network.cluster.DistributedTask;
 import eu.modernmt.network.messaging.zeromq.ZMQMessagingServer;
 
 import java.io.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -47,14 +47,7 @@ public class MMTServer extends Cluster {
     @Override
     public void shutdown() {
         super.shutdown();
-        logger.info("MMT Cluster Server shutdown.");
-    }
-
-    @Override
-    public List<DistributedTask<?>> shutdownNow() {
-        List<DistributedTask<?>> tasks = super.shutdownNow();
-        logger.info("MMT Cluster Server forced shutdown.");
-        return tasks;
+        logger.info("MMT Cluster Server shutdown");
     }
 
     @Override
@@ -180,6 +173,8 @@ public class MMTServer extends Cluster {
                 throw (RuntimeException) cause;
             else
                 throw new RuntimeException("Unexpected exception", cause);
+        } catch (CancellationException e) {
+            throw new InterruptedException();
         }
     }
 

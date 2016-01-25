@@ -2,6 +2,7 @@ package eu.modernmt.rest;
 
 import eu.modernmt.decoder.TranslationHypothesis;
 import eu.modernmt.engine.MMTServer;
+import eu.modernmt.network.cluster.DistributedTask;
 import eu.modernmt.rest.framework.JSONSerializer;
 import eu.modernmt.rest.framework.routing.RouterServlet;
 import eu.modernmt.rest.model.TranslationResponse;
@@ -11,12 +12,15 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -30,6 +34,7 @@ public class RESTServer {
     }
 
     private static RESTServer instance = null;
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     public static void setup(int restPort, MMTServer mmtServer) {
         if (instance != null)
@@ -62,12 +67,8 @@ public class RESTServer {
         jettyServer.start();
     }
 
-    public void stop(boolean forced) throws Exception {
-        if (forced)
-            mmtServer.shutdownNow();
-        else
-            mmtServer.shutdown();
-
+    public void stop() throws Exception {
+        mmtServer.shutdown();
         jettyServer.stop();
     }
 
