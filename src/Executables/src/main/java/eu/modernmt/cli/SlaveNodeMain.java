@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by davide on 17/12/15.
  */
-public class WorkerMain {
+public class SlaveNodeMain {
 
     private static final Options cliOptions;
 

@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Created by davide on 17/12/15.
  */
-public class RESTMain {
+public class MasterNodeMain {
 
     private static final Options cliOptions;
 

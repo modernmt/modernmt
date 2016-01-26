@@ -514,7 +514,7 @@ class MMTServer(_MMTDistributedComponent):
         for key, value in sysprop.iteritems():
             command.append('-D' + key + '=' + value)
 
-        command += ['eu.modernmt.cli.RESTMain', '-e', self.engine.name, '-a', str(self.api_port), '-p',
+        command += ['eu.modernmt.cli.MasterNodeMain', '-e', self.engine.name, '-a', str(self.api_port), '-p',
                     str(self.cluster_ports[0]), str(self.cluster_ports[1])]
 
         self._get_logfile(self.log_file, ensure=True)
@@ -663,7 +663,7 @@ class MMTWorker(_MMTDistributedComponent):
         for key, value in sysprop.iteritems():
             command.append('-D' + key + '=' + value)
 
-        command += ['eu.modernmt.cli.WorkerMain', '-e', self.engine.name, '-p', str(self.cluster_ports[0]),
+        command += ['eu.modernmt.cli.SlaveNodeMain', '-e', self.engine.name, '-p', str(self.cluster_ports[0]),
                     str(self.cluster_ports[1]), '--status-file', self._status_file]
 
         if self._master is not None:
