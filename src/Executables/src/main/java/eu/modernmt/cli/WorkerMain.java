@@ -1,6 +1,6 @@
 package eu.modernmt.cli;
 
-import eu.modernmt.engine.MMTWorker;
+import eu.modernmt.engine.SlaveNode;
 import eu.modernmt.engine.TranslationEngine;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
@@ -43,10 +43,10 @@ public class WorkerMain {
         try {
             TranslationEngine engine = new TranslationEngine(cli.getOptionValue("engine"));
 
-            MMTWorker.MasterHost master = null;
+            SlaveNode.MasterHost master = null;
 
             if (cli.hasOption("master-host")) {
-                master = new MMTWorker.MasterHost();
+                master = new SlaveNode.MasterHost();
                 master.host = cli.getOptionValue("master-host");
                 master.user = cli.getOptionValue("master-user");
                 master.password = cli.getOptionValue("master-passwd");
@@ -55,7 +55,7 @@ public class WorkerMain {
 
             String[] sPorts = cli.getOptionValues("cluster-ports");
             int[] ports = new int[]{Integer.parseInt(sPorts[0]), Integer.parseInt(sPorts[1])};
-            MMTWorker worker = new MMTWorker(engine, master, ports);
+            SlaveNode worker = new SlaveNode(engine, master, ports);
 
             Runtime.getRuntime().addShutdownHook(new ShutdownHook(worker));
 
@@ -73,9 +73,9 @@ public class WorkerMain {
 
     public static class ShutdownHook extends Thread {
 
-        private MMTWorker worker;
+        private SlaveNode worker;
 
-        public ShutdownHook(MMTWorker worker) {
+        public ShutdownHook(SlaveNode worker) {
             this.worker = worker;
         }
 

@@ -16,11 +16,11 @@ public class EngineSynchronizer {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private MMTWorker.MasterHost master;
+    private SlaveNode.MasterHost master;
     private String remotePath;
     private File localPath;
 
-    public EngineSynchronizer(MMTWorker.MasterHost master, File localPath, String remotePath) {
+    public EngineSynchronizer(SlaveNode.MasterHost master, File localPath, String remotePath) {
         this.master = master;
         this.localPath = localPath;
         this.remotePath = remotePath;

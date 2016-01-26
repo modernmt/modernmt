@@ -1,8 +1,7 @@
 package eu.modernmt.rest;
 
 import eu.modernmt.decoder.TranslationHypothesis;
-import eu.modernmt.engine.MMTServer;
-import eu.modernmt.network.cluster.DistributedTask;
+import eu.modernmt.engine.MasterNode;
 import eu.modernmt.rest.framework.JSONSerializer;
 import eu.modernmt.rest.framework.routing.RouterServlet;
 import eu.modernmt.rest.model.TranslationResponse;
@@ -20,7 +19,6 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -36,11 +34,11 @@ public class RESTServer {
     private static RESTServer instance = null;
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public static void setup(int restPort, MMTServer mmtServer) {
+    public static void setup(int restPort, MasterNode masterNode) {
         if (instance != null)
             throw new IllegalStateException("Setup has been called twice.");
 
-        instance = new RESTServer(restPort, mmtServer);
+        instance = new RESTServer(restPort, masterNode);
     }
 
     public static RESTServer getInstance() {
@@ -51,10 +49,10 @@ public class RESTServer {
     }
 
     private Server jettyServer;
-    private MMTServer mmtServer;
+    private MasterNode masterNode;
 
-    private RESTServer(int restPort, MMTServer mmtServer) {
-        this.mmtServer = mmtServer;
+    private RESTServer(int restPort, MasterNode masterNode) {
+        this.masterNode = masterNode;
         this.jettyServer = new Server(restPort);
 
         ServletHandler handler = new ServletHandler();
@@ -63,22 +61,22 @@ public class RESTServer {
     }
 
     public void start() throws Exception {
-        mmtServer.start();
+        masterNode.start();
         jettyServer.start();
     }
 
     public void stop() throws Exception {
-        mmtServer.shutdown();
+        masterNode.shutdown();
         jettyServer.stop();
     }
 
     public void join() throws InterruptedException {
-        mmtServer.awaitTermination(1, TimeUnit.DAYS);
+        masterNode.awaitTermination(1, TimeUnit.DAYS);
         jettyServer.join();
     }
 
-    public MMTServer getMMTServer() {
-        return mmtServer;
+    public MasterNode getMasterNode() {
+        return masterNode;
     }
 
     public static class Router extends RouterServlet {

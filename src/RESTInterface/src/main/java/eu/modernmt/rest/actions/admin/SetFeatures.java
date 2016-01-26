@@ -27,7 +27,7 @@ public class SetFeatures extends VoidAction {
     @Override
     protected void execute(RESTRequest req, Parameters _params) throws IOException {
         Params params = (Params) _params;
-        server.getMMTServer().setFeatureWeights(params.weights);
+        server.getMasterNode().setFeatureWeights(params.weights);
     }
 
     @Override

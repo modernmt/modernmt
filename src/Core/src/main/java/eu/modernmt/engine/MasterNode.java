@@ -9,7 +9,7 @@ import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.decoder.moses.MosesFeature;
 import eu.modernmt.engine.tasks.GetFeatureWeightsTask;
 import eu.modernmt.engine.tasks.TranslationTask;
-import eu.modernmt.network.cluster.Cluster;
+import eu.modernmt.network.cluster.ClusterManager;
 import eu.modernmt.network.cluster.DistributedCallable;
 import eu.modernmt.network.messaging.zeromq.ZMQMessagingServer;
 
@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutionException;
 /**
  * Created by davide on 09/12/15.
  */
-public class MMTServer extends Cluster {
+public class MasterNode extends ClusterManager {
 
     public static final byte SIGNAL_RESET = 0x01;
     public static final byte REQUEST_SYNC_PATH = 0x03;
@@ -32,7 +32,7 @@ public class MMTServer extends Cluster {
     private ContextAnalyzer contextAnalyzer;
     private HashMap<Long, TranslationSession> sessions;
 
-    public MMTServer(TranslationEngine engine, int[] ports) throws IOException {
+    public MasterNode(TranslationEngine engine, int[] ports) throws IOException {
         super(new ZMQMessagingServer(ports[0], ports[1]));
         this.engine = engine;
         this.sessions = new HashMap<>();

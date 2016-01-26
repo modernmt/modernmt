@@ -2,12 +2,11 @@ package eu.modernmt.engine.tasks;
 
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.*;
-import eu.modernmt.engine.MMTWorker;
+import eu.modernmt.engine.SlaveNode;
 import eu.modernmt.network.cluster.DistributedCallable;
 import eu.modernmt.tokenizer.DetokenizerPool;
 import eu.modernmt.tokenizer.TokenizerPool;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,13 +43,13 @@ public class TranslationTask extends DistributedCallable<Translation> {
     }
 
     @Override
-    public MMTWorker getWorker() {
-        return (MMTWorker) super.getWorker();
+    public SlaveNode getWorker() {
+        return (SlaveNode) super.getWorker();
     }
 
     @Override
     public Translation call() {
-        MMTWorker worker = getWorker();
+        SlaveNode worker = getWorker();
         Decoder decoder = worker.getDecoder();
 
         Sentence tokenizedSource;

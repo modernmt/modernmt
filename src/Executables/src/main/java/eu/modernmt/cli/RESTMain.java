@@ -1,6 +1,6 @@
 package eu.modernmt.cli;
 
-import eu.modernmt.engine.MMTServer;
+import eu.modernmt.engine.MasterNode;
 import eu.modernmt.engine.TranslationEngine;
 import eu.modernmt.rest.RESTServer;
 import org.apache.commons.cli.*;
@@ -34,10 +34,10 @@ public class RESTMain {
 
         String[] sPorts = cli.getOptionValues("cluster-ports");
         int[] ports = new int[]{Integer.parseInt(sPorts[0]), Integer.parseInt(sPorts[1])};
-        MMTServer mmtServer = new MMTServer(engine, ports);
+        MasterNode masterNode = new MasterNode(engine, ports);
 
         int port = Integer.parseInt(cli.getOptionValue("api-port"));
-        RESTServer.setup(port, mmtServer);
+        RESTServer.setup(port, masterNode);
 
         Runtime.getRuntime().addShutdownHook(new ShutdownHook());
         RESTServer server = RESTServer.getInstance();

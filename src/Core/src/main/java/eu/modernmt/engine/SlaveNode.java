@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by davide on 09/12/15.
  */
-public class MMTWorker extends Worker {
+public class SlaveNode extends Worker {
 
     public static class MasterHost {
 
@@ -44,7 +44,7 @@ public class MMTWorker extends Worker {
     private File runtimePath;
     private MasterHost master;
 
-    public MMTWorker(TranslationEngine engine, MasterHost master, int[] ports) throws IOException {
+    public SlaveNode(TranslationEngine engine, MasterHost master, int[] ports) throws IOException {
         super(new ZMQMessagingClient(master == null ? "localhost" : master.host, ports[0], ports[1]), DEFAULT_DECODER_THREADS);
 
         this.engine = engine;
@@ -141,7 +141,7 @@ public class MMTWorker extends Worker {
     @Override
     protected void onCustomBroadcastSignalReceived(byte signal, byte[] payload, int offset, int length) {
         switch (signal) {
-            case MMTServer.SIGNAL_RESET:
+            case MasterNode.SIGNAL_RESET:
                 setActive(false);
                 new Killer().start();
                 break;
@@ -160,7 +160,7 @@ public class MMTWorker extends Worker {
 
                 while (!isInterrupted() && response == null) {
                     try {
-                        response = sendRequest(MMTServer.REQUEST_SYNC_PATH, null, TimeUnit.MINUTES, 1);
+                        response = sendRequest(MasterNode.REQUEST_SYNC_PATH, null, TimeUnit.MINUTES, 1);
                     } catch (IOException e) {
                         logger.warn("Exception while receiving sync path.", e);
                         response = null;
@@ -168,7 +168,7 @@ public class MMTWorker extends Worker {
                         response = null;
                     }
 
-                    if (response != null && response[0] != MMTServer.REQUEST_SYNC_PATH) {
+                    if (response != null && response[0] != MasterNode.REQUEST_SYNC_PATH) {
                         logger.warn("Response to REQUEST_SYNC_PATH has wrong type: " + response[0]);
                         response = null;
                     }

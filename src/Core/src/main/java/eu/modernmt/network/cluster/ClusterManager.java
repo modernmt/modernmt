@@ -13,7 +13,7 @@ import java.util.concurrent.*;
 /**
  * Created by davide on 19/11/15.
  */
-public abstract class Cluster {
+public abstract class ClusterManager {
 
     public static final long DEFAULT_EXEC_SIGNAL_MIN_INTERVAL = 200;
 
@@ -31,11 +31,11 @@ public abstract class Cluster {
     private CallbDispatcher callbDispatcher;
     private Terminator terminator;
 
-    public Cluster(MessagingServer messagingServer) {
+    public ClusterManager(MessagingServer messagingServer) {
         this(messagingServer, DEFAULT_EXEC_SIGNAL_MIN_INTERVAL);
     }
 
-    public Cluster(MessagingServer messagingServer, long execSignalMinInterval) {
+    public ClusterManager(MessagingServer messagingServer, long execSignalMinInterval) {
         this.executionQueue = new ExecutionQueue();
         this.messagingServer = messagingServer;
         this.messagingServer.setListener(new ClusterPacketListener());

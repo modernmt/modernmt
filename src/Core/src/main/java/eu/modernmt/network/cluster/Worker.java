@@ -52,7 +52,7 @@ public abstract class Worker {
     protected abstract void onCustomBroadcastSignalReceived(byte signal, byte[] payload, int offset, int length);
 
     public byte[] sendRequest(byte type, byte[] payload, TimeUnit unit, long timeout) throws IOException, InterruptedException {
-        if (type <= Cluster.REQUEST_CALLB)
+        if (type <= ClusterManager.REQUEST_CALLB)
             throw new IllegalArgumentException("Signal " + Integer.toHexString(type) + " is reserved.");
 
         byte[] buffer = new byte[1 + (payload == null ? 0 : payload.length)];
@@ -66,7 +66,7 @@ public abstract class Worker {
 
     void sendResponse(CallableResponse response) {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        stream.write(Cluster.REQUEST_CALLB);
+        stream.write(ClusterManager.REQUEST_CALLB);
         SerializationUtils.serialize(response, stream);
 
         try {
@@ -86,7 +86,7 @@ public abstract class Worker {
         public void onBroadcastSignalReceived(byte[] payload) {
             byte signal = payload[0];
 
-            if (signal == Cluster.SIGNAL_EXEC) {
+            if (signal == ClusterManager.SIGNAL_EXEC) {
                 if (!active) {
                     logger.debug("Worker not active, ignoring SIGNAL_EXEC.");
                     return;
@@ -99,7 +99,7 @@ public abstract class Worker {
 
                 byte[] job = null;
                 try {
-                    job = internalSendRequest(new byte[]{Cluster.REQUEST_EXEC}, TimeUnit.MINUTES, 1);
+                    job = internalSendRequest(new byte[]{ClusterManager.REQUEST_EXEC}, TimeUnit.MINUTES, 1);
                 } catch (IOException | InterruptedException e) {
                     // Nothing to do
                 }

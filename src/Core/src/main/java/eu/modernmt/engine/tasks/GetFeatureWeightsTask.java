@@ -2,11 +2,9 @@ package eu.modernmt.engine.tasks;
 
 import eu.modernmt.decoder.moses.MosesDecoder;
 import eu.modernmt.decoder.moses.MosesFeature;
-import eu.modernmt.engine.MMTWorker;
-import eu.modernmt.engine.TranslationEngine;
+import eu.modernmt.engine.SlaveNode;
 import eu.modernmt.network.cluster.DistributedCallable;
 
-import java.io.IOException;
 import java.util.HashMap;
 
 /**
@@ -15,8 +13,8 @@ import java.util.HashMap;
 public class GetFeatureWeightsTask extends DistributedCallable<HashMap<MosesFeature, float[]>> {
 
     @Override
-    public MMTWorker getWorker() {
-        return (MMTWorker) super.getWorker();
+    public SlaveNode getWorker() {
+        return (SlaveNode) super.getWorker();
     }
 
     @Override

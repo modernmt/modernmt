@@ -30,10 +30,10 @@ public class GetContext extends CollectionAction<ContextDocument> {
         Params params = (Params) _params;
 
         if (params.file == null) {
-            return server.getMMTServer().getContext(params.context, params.limit);
+            return server.getMasterNode().getContext(params.context, params.limit);
         } else {
             try {
-                return server.getMMTServer().getContext(params.file, params.limit);
+                return server.getMasterNode().getContext(params.file, params.limit);
             } finally {
                 if (params.deleteOnExit)
                     FileUtils.deleteQuietly(params.file);

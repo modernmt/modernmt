@@ -27,7 +27,7 @@ public class CreateTranslationSession extends ObjectAction<TranslationSession> {
     @Override
     protected TranslationSession execute(RESTRequest req, Parameters _params) {
         Params params = (Params) _params;
-        return server.getMMTServer().createTranslationSession(params.context);
+        return server.getMasterNode().createTranslationSession(params.context);
     }
 
     @Override

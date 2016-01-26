@@ -17,9 +17,9 @@ public class DistributedTranslationSession extends TranslationSession {
         return sequence++;
     }
 
-    private MMTServer server;
+    private MasterNode server;
 
-    public DistributedTranslationSession(List<ContextDocument> translationContext, MMTServer server) {
+    public DistributedTranslationSession(List<ContextDocument> translationContext, MasterNode server) {
         super(nextSeq(), translationContext);
         this.server = server;
     }

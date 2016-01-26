@@ -7,9 +7,6 @@ import eu.modernmt.rest.framework.RESTRequest;
 import eu.modernmt.rest.framework.actions.VoidAction;
 import eu.modernmt.rest.framework.routing.Route;
 import eu.modernmt.rest.framework.routing.TemplateException;
-import org.apache.commons.io.FileUtils;
-
-import java.io.IOException;
 
 /**
  * Created by davide on 15/12/15.
@@ -22,7 +19,7 @@ public class CloseTranslationSession extends VoidAction {
     @Override
     protected void execute(RESTRequest req, Parameters _params) {
         Params params = (Params) _params;
-        server.getMMTServer().closeTranslationSession(params.id);
+        server.getMasterNode().closeTranslationSession(params.id);
     }
 
     @Override

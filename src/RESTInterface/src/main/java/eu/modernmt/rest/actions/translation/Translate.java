@@ -4,7 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonParseException;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextDocument;
-import eu.modernmt.engine.MMTServer;
+import eu.modernmt.engine.MasterNode;
 import eu.modernmt.rest.RESTServer;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
@@ -26,20 +26,20 @@ public class Translate extends ObjectAction<TranslationResponse> {
     @Override
     protected TranslationResponse execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException {
         Params params = (Params) _params;
-        MMTServer mmtServer = server.getMMTServer();
+        MasterNode masterNode = server.getMasterNode();
 
         TranslationResponse result = new TranslationResponse();
 
         if (params.sessionId > 0) {
             result.session = params.sessionId;
-            result.translation = mmtServer.translate(params.query, params.sessionId, params.textProcessing, params.nbest);
+            result.translation = masterNode.translate(params.query, params.sessionId, params.textProcessing, params.nbest);
         } else if (params.context != null) {
-            result.translation = mmtServer.translate(params.query, params.context, params.textProcessing, params.nbest);
+            result.translation = masterNode.translate(params.query, params.context, params.textProcessing, params.nbest);
         } else if (params.contextString != null) {
-            result.context = mmtServer.getContext(params.contextString, params.contextLimit);
-            result.translation = mmtServer.translate(params.query, result.context, params.textProcessing, params.nbest);
+            result.context = masterNode.getContext(params.contextString, params.contextLimit);
+            result.translation = masterNode.translate(params.query, result.context, params.textProcessing, params.nbest);
         } else {
-            result.translation = mmtServer.translate(params.query, params.textProcessing, params.nbest);
+            result.translation = masterNode.translate(params.query, params.textProcessing, params.nbest);
         }
 
         return result;

@@ -24,7 +24,7 @@ public class GetFeatures extends JSONObjectAction {
     protected JsonObject execute(RESTRequest req, Parameters params) {
         JsonObject result = new JsonObject();
 
-        Map<MosesFeature, float[]> features = server.getMMTServer().getFeatureWeights();
+        Map<MosesFeature, float[]> features = server.getMasterNode().getFeatureWeights();
         for (Map.Entry<MosesFeature, float[]> entry : features.entrySet()) {
             MosesFeature feature = entry.getKey();
             JsonArray weights = null;
