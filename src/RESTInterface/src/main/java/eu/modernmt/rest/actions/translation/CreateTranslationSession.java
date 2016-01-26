@@ -13,7 +13,6 @@ import eu.modernmt.rest.framework.RESTRequest;
 import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,7 +25,7 @@ public class CreateTranslationSession extends ObjectAction<TranslationSession> {
     private RESTServer server = RESTServer.getInstance();
 
     @Override
-    protected TranslationSession execute(RESTRequest req, Parameters _params) throws IOException {
+    protected TranslationSession execute(RESTRequest req, Parameters _params) {
         Params params = (Params) _params;
         return server.getMMTServer().createTranslationSession(params.context);
     }

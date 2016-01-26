@@ -1,11 +1,13 @@
 package eu.modernmt.context.lucene;
 
+import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.context.IndexSourceDocument;
 import eu.modernmt.context.lucene.analysis.CorpusAnalyzer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.IndexSearcher;
@@ -22,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -63,15 +66,31 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
         this.indexWriter = new IndexWriter(this.indexDirectory, indexConfig);
     }
 
-    private synchronized IndexReader getIndexReader() throws IOException {
+    private synchronized IndexReader getIndexReader() throws ContextAnalyzerException {
         if (this.indexReader == null) {
-            this.indexReader = DirectoryReader.open(this.indexDirectory);
+            try {
+                this.indexReader = DirectoryReader.open(this.indexDirectory);
+            } catch (IOException e) {
+                throw new ContextAnalyzerException("Could not open index directory: " + this.indexDirectory, e);
+            }
+
             this.indexReader.incRef();
         } else {
-            DirectoryReader reader = DirectoryReader.openIfChanged(this.indexReader);
+            DirectoryReader reader;
+
+            try {
+                reader = DirectoryReader.openIfChanged(this.indexReader);
+            } catch (IOException e) {
+                throw new ContextAnalyzerException("Could not open index directory: " + this.indexDirectory, e);
+            }
 
             if (reader != null) {
-                this.indexReader.close();
+                try {
+                    this.indexReader.close();
+                } catch (IOException e) {
+                    logger.warn("Could not close old indexReader", e);
+                }
+
                 this.indexReader = reader;
                 this.indexReader.incRef();
             }
@@ -80,25 +99,38 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
         return this.indexReader;
     }
 
-    public void add(IndexSourceDocument document) throws IOException {
+    public void add(IndexSourceDocument document) throws ContextAnalyzerException {
         this.add(Collections.singleton(document));
     }
 
-    public void add(Collection<? extends IndexSourceDocument> documents) throws IOException {
+    public void add(Collection<? extends IndexSourceDocument> documents) throws ContextAnalyzerException {
         for (IndexSourceDocument document : documents) {
             logger.info("Adding to index document " + document);
-            this.indexWriter.addDocument(DocumentBuilder.createDocument(document));
+
+            try {
+                this.indexWriter.addDocument(DocumentBuilder.createDocument(document));
+            } catch (IOException e) {
+                throw new ContextAnalyzerException("Failed to add document " + document.getName() + " to index", e);
+            }
         }
 
-        this.indexWriter.commit();
+        try {
+            this.indexWriter.commit();
+        } catch (IOException e) {
+            throw new ContextAnalyzerException("Unable to commit changes to context analyzer index", e);
+        }
     }
 
-    public void clear() throws IOException {
-        this.indexWriter.deleteAll();
-        this.indexWriter.commit();
+    public void clear() throws ContextAnalyzerException {
+        try {
+            this.indexWriter.deleteAll();
+            this.indexWriter.commit();
+        } catch (IOException e) {
+            throw new ContextAnalyzerException("Unable to clear context analyzer index", e);
+        }
     }
 
-    public List<ContextDocument> getSimilarDocuments(IndexSourceDocument queryDocument, int limit) throws IOException {
+    public List<ContextDocument> getSimilarDocuments(IndexSourceDocument queryDocument, int limit) throws ContextAnalyzerException {
         IndexReader reader = this.getIndexReader();
         IndexSearcher searcher = new IndexSearcher(reader);
 
@@ -117,8 +149,20 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
         mlt.setAnalyzer(analyzer);
 
         TopScoreDocCollector collector = TopScoreDocCollector.create(rawLimit, true);
-        Query query = mlt.like(fieldName, queryDocument.getContentReader());
-        searcher.search(query, collector);
+
+        Reader queryDocumentReader;
+        try {
+            queryDocumentReader = queryDocument.getContentReader();
+        } catch (IOException e) {
+            throw new ContextAnalyzerException("Could not read content for similar documents query", e);
+        }
+
+        try {
+            Query query = mlt.like(fieldName, queryDocumentReader);
+            searcher.search(query, collector);
+        } catch (IOException e) {
+            throw new ContextAnalyzerException("Failed to execute MoreLikeThis query", e);
+        }
 
         ScoreDoc[] topDocs = collector.topDocs().scoreDocs;
 
@@ -133,10 +177,23 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
 
         calculator.calculateSimilarity();
 
-        for (int i = 0; i < topDocs.length; i++) {
-            ScoreDoc scoreDoc = topDocs[i];
-            String name = searcher.doc(scoreDoc.doc).get(DocumentBuilder.DOCUMENT_NAME_FIELD);
-            float similarityScore = calculator.getSimilarity(topDocs[i].doc);
+        for (ScoreDoc topDocRef : topDocs) {
+            Document topDoc;
+            try {
+                topDoc = searcher.doc(topDocRef.doc);
+            } catch (IOException e) {
+                throw new ContextAnalyzerException("Could not resolve document " + topDocRef.doc + " in index", e);
+            }
+
+            String name = topDoc.get(DocumentBuilder.DOCUMENT_NAME_FIELD);
+
+            float similarityScore;
+            try {
+                similarityScore = calculator.getSimilarity(topDocRef.doc);
+            } catch (IOException e) {
+                throw new ContextAnalyzerException("Could not compute cosine similarity for doc " + name, e);
+            }
+
             result.add(new ContextDocument(name, similarityScore));
         }
 

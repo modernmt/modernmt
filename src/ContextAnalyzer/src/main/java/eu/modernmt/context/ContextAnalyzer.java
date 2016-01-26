@@ -22,7 +22,7 @@ public class ContextAnalyzer {
         this.index = new ContextAnalyzerIndex(indexPath);
     }
 
-    public void rebuild(Collection<? extends IndexSourceDocument> documents) throws IOException {
+    public void rebuild(Collection<? extends IndexSourceDocument> documents) throws ContextAnalyzerException {
         logger.info("Rebuild ContextAnalyzer index...");
 
         long now = System.currentTimeMillis();
@@ -33,15 +33,15 @@ public class ContextAnalyzer {
         logger.info("ContextAnalyzer index rebuild completed in " + elapsed + "s.");
     }
 
-    public List<ContextDocument> getContext(String query, Locale lang, int limit) throws IOException {
+    public List<ContextDocument> getContext(String query, Locale lang, int limit) throws ContextAnalyzerException {
         return getContext(IndexSourceDocument.fromString(query, lang), limit);
     }
 
-    public List<ContextDocument> getContext(File source, Locale lang, int limit) throws IOException {
+    public List<ContextDocument> getContext(File source, Locale lang, int limit) throws ContextAnalyzerException {
         return getContext(IndexSourceDocument.fromFile(source, lang), limit);
     }
 
-    public List<ContextDocument> getContext(IndexSourceDocument query, int limit) throws IOException {
+    public List<ContextDocument> getContext(IndexSourceDocument query, int limit) throws ContextAnalyzerException {
         return this.index.getSimilarDocuments(query, limit);
     }
 

@@ -49,7 +49,7 @@ public class TranslationTask extends DistributedCallable<Translation> {
     }
 
     @Override
-    public Translation call() throws IOException {
+    public Translation call() {
         MMTWorker worker = getWorker();
         Decoder decoder = worker.getDecoder();
 

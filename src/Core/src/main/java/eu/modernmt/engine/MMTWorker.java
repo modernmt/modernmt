@@ -11,7 +11,6 @@ import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -58,7 +57,14 @@ public class MMTWorker extends Worker {
         return engine;
     }
 
-    public Decoder getDecoder() throws IOException {
+    public Decoder getDecoder() {
+        if (decoder == null)
+            throw new IllegalStateException("Decoder has not been initialized yet");
+
+        return decoder;
+    }
+
+    private void loadDecoder() throws IOException {
         if (decoder == null) {
             synchronized (this) {
                 if (decoder == null) {
@@ -78,8 +84,6 @@ public class MMTWorker extends Worker {
                 }
             }
         }
-
-        return decoder;
     }
 
     public TokenizerPool getTokenizer() {
@@ -128,10 +132,8 @@ public class MMTWorker extends Worker {
         EngineSynchronizer synchronizer = new EngineSynchronizer(master, engine.getPath(), remotePath);
         synchronizer.sync();
 
-        // Forces Decoder startup
-        getDecoder();
-
-        setActive(true);
+        this.loadDecoder();
+        this.setActive(true);
 
         logger.info("Synchronization complete");
     }

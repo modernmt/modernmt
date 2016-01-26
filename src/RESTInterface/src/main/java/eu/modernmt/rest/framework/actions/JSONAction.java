@@ -1,6 +1,7 @@
 package eu.modernmt.rest.framework.actions;
 
 import com.google.gson.JsonElement;
+import eu.modernmt.engine.SystemShutdownException;
 import eu.modernmt.rest.framework.*;
 import eu.modernmt.rest.framework.routing.TemplateException;
 import org.slf4j.Logger;
@@ -28,9 +29,9 @@ public abstract class JSONAction implements Action {
             if (logger.isDebugEnabled())
                 logger.debug("Auth exception while executing action " + this, e);
             resp.forbidden(e);
-        } catch (InterruptedException e) {
+        } catch (SystemShutdownException e) {
             if (logger.isDebugEnabled())
-                logger.debug("interrupted Exception while executing action " + this, e);
+                logger.debug("Unable to complete action " + this + ": system is shutting down", e);
             resp.unavailable(e);
         } catch (Throwable e) {
             logger.error("Unexpected error while executing action " + this, e);

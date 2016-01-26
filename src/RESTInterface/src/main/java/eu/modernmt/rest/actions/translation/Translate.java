@@ -2,6 +2,7 @@ package eu.modernmt.rest.actions.translation;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParseException;
+import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.engine.MMTServer;
 import eu.modernmt.rest.RESTServer;
@@ -12,7 +13,6 @@ import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
 import eu.modernmt.rest.model.TranslationResponse;
 
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -24,12 +24,12 @@ public class Translate extends ObjectAction<TranslationResponse> {
     private RESTServer server = RESTServer.getInstance();
 
     @Override
-    protected TranslationResponse execute(RESTRequest req, Parameters _params) throws IOException, InterruptedException {
+    protected TranslationResponse execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException {
         Params params = (Params) _params;
         MMTServer mmtServer = server.getMMTServer();
 
         TranslationResponse result = new TranslationResponse();
-        
+
         if (params.sessionId > 0) {
             result.session = params.sessionId;
             result.translation = mmtServer.translate(params.query, params.sessionId, params.textProcessing, params.nbest);

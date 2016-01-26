@@ -1,6 +1,7 @@
 package eu.modernmt.engine;
 
 import eu.modernmt.context.ContextAnalyzer;
+import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.Sentence;
 import eu.modernmt.decoder.Translation;
@@ -35,6 +36,7 @@ public class MMTServer extends Cluster {
         super(new ZMQMessagingServer(ports[0], ports[1]));
         this.engine = engine;
         this.sessions = new HashMap<>();
+        this.contextAnalyzer = new ContextAnalyzer(engine.getContextAnalyzerIndexPath());
     }
 
     @Override
@@ -77,9 +79,17 @@ public class MMTServer extends Cluster {
     //  Decoder Weights
     // =============================
 
-    public Map<MosesFeature, float[]> getFeatureWeights() throws IOException, InterruptedException {
+    public Map<MosesFeature, float[]> getFeatureWeights() {
         GetFeatureWeightsTask task = new GetFeatureWeightsTask();
-        return execute(task);
+
+        try {
+            return this.execute(task);
+        } catch (Throwable e) {
+            if (e instanceof RuntimeException)
+                throw (RuntimeException) e;
+            else
+                throw new Error("Unexpected exception: " + e.getMessage(), e);
+        }
     }
 
     public void setFeatureWeights(Map<String, float[]> weights) throws IOException {
@@ -91,20 +101,19 @@ public class MMTServer extends Cluster {
     //  Context Analysis
     // =============================
 
-    private ContextAnalyzer getContextAnalyzer() throws IOException {
-        if (contextAnalyzer == null) {
-            contextAnalyzer = new ContextAnalyzer(engine.getContextAnalyzerIndexPath());
-        }
+    private ContextAnalyzer getContextAnalyzer() {
+        if (contextAnalyzer == null)
+            throw new IllegalStateException("ContextAnalyzer has not been initialized yet");
 
         return contextAnalyzer;
     }
 
-    public List<ContextDocument> getContext(File context, int limit) throws IOException {
+    public List<ContextDocument> getContext(File context, int limit) throws ContextAnalyzerException {
         ContextAnalyzer analyzer = getContextAnalyzer();
         return analyzer.getContext(context, engine.getSourceLanguage(), limit);
     }
 
-    public List<ContextDocument> getContext(String context, int limit) throws IOException {
+    public List<ContextDocument> getContext(String context, int limit) throws ContextAnalyzerException {
         ContextAnalyzer analyzer = getContextAnalyzer();
         return analyzer.getContext(context, engine.getSourceLanguage(), limit);
     }
@@ -113,17 +122,21 @@ public class MMTServer extends Cluster {
     //  Translation session
     // =============================
 
-    public TranslationSession createTranslationSession(List<ContextDocument> context) throws IOException {
+    public TranslationSession createTranslationSession(List<ContextDocument> context) {
         DistributedTranslationSession session = new DistributedTranslationSession(context, this);
         sessions.put(session.getId(), session);
         return session;
     }
 
-    public TranslationSession closeTranslationSession(long id) throws IOException {
+    public TranslationSession closeTranslationSession(long id) {
         TranslationSession session = sessions.remove(id);
 
         if (session != null)
-            session.close();
+            try {
+                session.close();
+            } catch (IOException e) {
+                logger.warn("Problem while closing session " + id + ": " + e.getMessage(), e);
+            }
 
         return session;
     }
@@ -132,49 +145,67 @@ public class MMTServer extends Cluster {
     //  Translate
     // =============================
 
-    public Translation translate(String sentence, boolean textProcessing) throws IOException, InterruptedException {
-        return translate(sentence, textProcessing, 0);
+    public Translation translate(String sentence, boolean textProcessing) {
+        return translate(sentence, null, 0L, textProcessing, 0);
     }
 
-    public Translation translate(String sentence, long sessionId, boolean textProcessing) throws IOException, InterruptedException {
-        return translate(sentence, sessionId, textProcessing, 0);
+    public Translation translate(String sentence, long sessionId, boolean textProcessing) {
+        return translate(sentence, null, sessionId, textProcessing, 0);
     }
 
-    public Translation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing) throws IOException, InterruptedException {
-        return translate(sentence, translationContext, textProcessing, 0);
+    public Translation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing) {
+        return translate(sentence, translationContext, 0L, textProcessing, 0);
     }
 
-    public Translation translate(String sentence, boolean textProcessing, int nbest) throws IOException, InterruptedException {
-        return execute(new TranslationTask(new Sentence(sentence), textProcessing, nbest));
+    public Translation translate(String sentence, boolean textProcessing, int nbest) {
+        return translate(sentence, null, 0L, textProcessing, nbest);
     }
 
-    public Translation translate(String sentence, long sessionId, boolean textProcessing, int nbest) throws IOException, InterruptedException {
-        TranslationSession session = sessions.get(sessionId);
-        if (session == null)
-            throw new IllegalArgumentException("Invalid session id " + sessionId);
-
-        return execute(new TranslationTask(new Sentence(sentence), session, textProcessing, nbest));
+    public Translation translate(String sentence, long sessionId, boolean textProcessing, int nbest) {
+        return translate(sentence, null, sessionId, textProcessing, nbest);
     }
 
-    public Translation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing, int nbest) throws IOException, InterruptedException {
-        return execute(new TranslationTask(new Sentence(sentence), translationContext, textProcessing, nbest));
+    public Translation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing, int nbest) {
+        return translate(sentence, translationContext, 0L, textProcessing, nbest);
     }
 
-    private <R extends Serializable> R execute(DistributedCallable<R> task) throws IOException, InterruptedException {
+    private Translation translate(String text, List<ContextDocument> translationContext, long sessionId, boolean textProcessing, int nbest) {
+        Sentence sentence = new Sentence(text);
+        TranslationTask task;
+
+        if (translationContext != null) {
+            task = new TranslationTask(sentence, translationContext, textProcessing, nbest);
+        } else if (sessionId > 0) {
+            TranslationSession session = sessions.get(sessionId);
+            if (session == null)
+                throw new IllegalArgumentException("Invalid session id " + sessionId);
+
+            task = new TranslationTask(sentence, session, textProcessing, nbest);
+        } else {
+            task = new TranslationTask(sentence, textProcessing, nbest);
+        }
+
         try {
-            return this.submit(task).get();
-        } catch (ExecutionException e) {
-            logger.warn("Task execution failed with exception", e.getCause());
-
-            Throwable cause = e.getCause();
-            if (cause instanceof IOException)
-                throw (IOException) cause;
-            else if (cause instanceof RuntimeException)
-                throw (RuntimeException) cause;
+            return this.execute(task);
+        } catch (Throwable e) {
+            if (e instanceof RuntimeException)
+                throw (RuntimeException) e;
             else
-                throw new RuntimeException("Unexpected exception", cause);
-        } catch (CancellationException e) {
-            throw new InterruptedException();
+                throw new Error("Unexpected exception: " + e.getMessage(), e);
+        }
+    }
+
+    private <R extends Serializable> R execute(DistributedCallable<R> task) throws Throwable {
+        try {
+            return super.submit(task).get();
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+
+            logger.warn(task.getClass().getSimpleName() + " execution failed with exception: " + cause.getMessage(), cause);
+
+            throw cause;
+        } catch (InterruptedException | CancellationException e) {
+            throw new SystemShutdownException(e);
         }
     }
 

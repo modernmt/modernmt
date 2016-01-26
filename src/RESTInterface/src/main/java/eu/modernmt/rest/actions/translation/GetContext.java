@@ -1,5 +1,6 @@
 package eu.modernmt.rest.actions.translation;
 
+import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.rest.RESTServer;
 import eu.modernmt.rest.framework.HttpMethod;
@@ -25,7 +26,7 @@ public class GetContext extends CollectionAction<ContextDocument> {
     private RESTServer server = RESTServer.getInstance();
 
     @Override
-    protected Collection<ContextDocument> execute(RESTRequest req, Parameters _params) throws IOException {
+    protected Collection<ContextDocument> execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException {
         Params params = (Params) _params;
 
         if (params.file == null) {

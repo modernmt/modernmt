@@ -10,7 +10,6 @@ import eu.modernmt.rest.framework.RESTRequest;
 import eu.modernmt.rest.framework.actions.JSONObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
 
-import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -22,7 +21,7 @@ public class GetFeatures extends JSONObjectAction {
     private RESTServer server = RESTServer.getInstance();
 
     @Override
-    protected JsonObject execute(RESTRequest req, Parameters params) throws IOException, InterruptedException {
+    protected JsonObject execute(RESTRequest req, Parameters params) {
         JsonObject result = new JsonObject();
 
         Map<MosesFeature, float[]> features = server.getMMTServer().getFeatureWeights();

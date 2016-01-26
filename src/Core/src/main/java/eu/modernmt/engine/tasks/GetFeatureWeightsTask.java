@@ -20,7 +20,7 @@ public class GetFeatureWeightsTask extends DistributedCallable<HashMap<MosesFeat
     }
 
     @Override
-    public HashMap<MosesFeature, float[]> call() throws IOException {
+    public HashMap<MosesFeature, float[]> call() {
         MosesDecoder decoder = (MosesDecoder) getWorker().getDecoder();
 
         HashMap<MosesFeature, float[]> result = new HashMap<>();

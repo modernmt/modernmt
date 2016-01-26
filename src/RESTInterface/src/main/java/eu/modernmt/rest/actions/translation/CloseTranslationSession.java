@@ -20,7 +20,7 @@ public class CloseTranslationSession extends VoidAction {
     private RESTServer server = RESTServer.getInstance();
 
     @Override
-    protected void execute(RESTRequest req, Parameters _params) throws IOException {
+    protected void execute(RESTRequest req, Parameters _params) {
         Params params = (Params) _params;
         server.getMMTServer().closeTranslationSession(params.id);
     }

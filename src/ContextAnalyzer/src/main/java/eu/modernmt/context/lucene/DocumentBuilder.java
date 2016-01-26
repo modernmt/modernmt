@@ -1,5 +1,6 @@
 package eu.modernmt.context.lucene;
 
+import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.IndexSourceDocument;
 import eu.modernmt.context.lucene.analysis.CorpusContentField;
 import org.apache.lucene.document.Document;
@@ -30,12 +31,17 @@ public class DocumentBuilder {
         }
     }
 
-    public static Document createDocument(IndexSourceDocument document) throws IOException {
+    public static Document createDocument(IndexSourceDocument document) throws ContextAnalyzerException {
         String fieldName = getContentField(document);
 
         Document doc = new Document();
         doc.add(new StringField(DOCUMENT_NAME_FIELD, document.getName(), Field.Store.YES));
-        doc.add(new CorpusContentField(fieldName, document.getContentReader(), Field.Store.NO));
+
+        try {
+            doc.add(new CorpusContentField(fieldName, document.getContentReader(), Field.Store.NO));
+        } catch (IOException e) {
+            throw new ContextAnalyzerException("Unable to build document " + document.getName(), e);
+        }
 
         return doc;
     }
