@@ -98,7 +98,7 @@ public class SlaveNode extends Worker {
     public void start() throws IOException {
         super.start();
         this.initializer.start();
-        logger.info("MMT Cluster Worker startup.");
+        logger.info("Slave node startup");
     }
 
     public void awaitInitialization() throws Throwable {
@@ -116,15 +116,16 @@ public class SlaveNode extends Worker {
 
     @Override
     public void shutdown() {
-        super.shutdown();
         this.initializer.interrupt();
-        logger.info("MMT Cluster Worker shutdown.");
+        super.shutdown();
+
+        logger.info("Slave node shutdown");
     }
 
     @Override
     public void awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
-        super.awaitTermination(timeout, unit);
         unit.timedJoin(this.initializer, timeout);
+        super.awaitTermination(timeout, unit);
     }
 
     protected void onSyncPathReceived(String remotePath) throws IOException {

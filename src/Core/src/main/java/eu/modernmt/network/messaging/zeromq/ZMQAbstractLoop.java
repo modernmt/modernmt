@@ -2,12 +2,13 @@ package eu.modernmt.network.messaging.zeromq;
 
 import eu.modernmt.network.uuid.UUIDSequence;
 import eu.modernmt.network.uuid.UUIDUtils;
-import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeromq.ZMQ;
+import zmq.ZError;
 
 import java.io.Closeable;
+import java.nio.channels.ClosedChannelException;
 import java.util.UUID;
 
 /**
@@ -98,28 +99,46 @@ public abstract class ZMQAbstractLoop extends Thread implements Closeable, AutoC
             items.register(subShutdownSocket, ZMQ.Poller.POLLIN);
             items.register(listeningSocket, ZMQ.Poller.POLLIN);
 
-            if (items.poll() < 0) {
-                logger.error("Failed to poll sockets");
-                break;
-            }
+            try {
+                if (items.poll() < 0) {
+                    logger.error("Failed to poll sockets");
+                    break;
+                }
 
-            if (items.pollin(0)) {
-                logger.debug("Received shutdown request");
-                break;
-            } else {
-                onDataAvailable(listeningSocket);
+                if (items.pollin(0)) {
+                    logger.debug("Received shutdown request");
+                    break;
+                } else {
+                    onDataAvailable(listeningSocket);
+                }
+            } catch (ZError.IOException e) {
+                Throwable cause = e.getCause();
+
+                if (cause instanceof ClosedChannelException) {
+                    break;
+                } else {
+                    throw e;
+                }
             }
         }
-
-        close();
     }
 
     @Override
     public void close() {
-        IOUtils.closeQuietly(pubShutdownSocket);
-        IOUtils.closeQuietly(subShutdownSocket);
-        IOUtils.closeQuietly(signalingSocket);
-        IOUtils.closeQuietly(dataSocket);
-        IOUtils.closeQuietly(context);
+        closeQuietly(pubShutdownSocket);
+        closeQuietly(subShutdownSocket);
+        closeQuietly(signalingSocket);
+        closeQuietly(dataSocket);
+        closeQuietly(context);
+    }
+
+    private static void closeQuietly(Closeable closeable) {
+        try {
+            if (closeable != null) {
+                closeable.close();
+            }
+        } catch (Throwable e) {
+            // ignore
+        }
     }
 }

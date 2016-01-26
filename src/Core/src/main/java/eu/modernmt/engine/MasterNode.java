@@ -43,13 +43,13 @@ public class MasterNode extends ClusterManager {
     public void start() throws IOException {
         super.start();
         sendBroadcastSignal(SIGNAL_RESET, null);
-        logger.info("MMT Cluster Server startup.");
+        logger.info("Master node startup");
     }
 
     @Override
     public void shutdown() {
         super.shutdown();
-        logger.info("MMT Cluster Server shutdown");
+        logger.info("Master node shutdown");
     }
 
     @Override

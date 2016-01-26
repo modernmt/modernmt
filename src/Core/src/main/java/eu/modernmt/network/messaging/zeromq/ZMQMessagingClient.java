@@ -2,8 +2,10 @@ package eu.modernmt.network.messaging.zeromq;
 
 import eu.modernmt.network.messaging.MessagingClient;
 import org.zeromq.ZMQ;
+import zmq.ZError;
 
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -74,13 +76,23 @@ public class ZMQMessagingClient implements MessagingClient {
             items.register(subShutdownSocket, ZMQ.Poller.POLLIN);
             items.register(dataSocket, ZMQ.Poller.POLLIN);
 
-            if (items.poll(unit.toMillis(timeout)) == 0) {
-                throw new InterruptedException();
-            } else {
-                if (items.pollin(1)) {
-                    return dataSocket.recv();
-                } else {
+            try {
+                if (items.poll(unit.toMillis(timeout)) == 0) {
                     throw new InterruptedException();
+                } else {
+                    if (items.pollin(1)) {
+                        return dataSocket.recv();
+                    } else {
+                        throw new InterruptedException();
+                    }
+                }
+            } catch (ZError.IOException e) {
+                Throwable cause = e.getCause();
+
+                if (cause instanceof ClosedChannelException) {
+                    throw new InterruptedException();
+                } else {
+                    throw e;
                 }
             }
         }
