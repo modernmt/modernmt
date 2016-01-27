@@ -28,7 +28,7 @@ public class ProcessingJob<P, R> {
         this.input = input;
         this.output = output;
 
-        int size = Math.max(10, pipeline.getThreads() * 2);
+        int size = Math.max(50, pipeline.getThreads() * 2);
         this.inputQueue = new ArrayBlockingQueue<>(size);
         this.outputQueue = new LinkedBlockingQueue<>();
     }

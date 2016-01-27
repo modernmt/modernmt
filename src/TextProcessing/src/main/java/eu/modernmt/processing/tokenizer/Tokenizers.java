@@ -1,27 +1,64 @@
 package eu.modernmt.processing.tokenizer;
 
 import eu.modernmt.processing.Languages;
-import eu.modernmt.processing.tokenizer.corenlp.CoreNLPTokenizer;
-import eu.modernmt.processing.tokenizer.hebmorph.HebMorphTokenizer;
-import eu.modernmt.processing.tokenizer.kuromoji.KuromojiTokenizer;
-import eu.modernmt.processing.tokenizer.languagetool.LanguageToolTokenizer;
-import eu.modernmt.processing.tokenizer.lucene.LuceneTokenizer;
-import eu.modernmt.processing.tokenizer.moses.MosesTokenizer;
-import eu.modernmt.processing.tokenizer.opennlp.OpenNLPTokenizer;
-import eu.modernmt.processing.tokenizer.paoding.PaodingTokenizer;
 
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Created by davide on 27/01/16.
  */
 public class Tokenizers {
 
-    private static final HashMap<Locale, Tokenizer> tokenizers;
+    private static class TokenizerLoader {
 
-    private static void setTokenizer(Locale language, Tokenizer factory) {
-        Tokenizer old = tokenizers.putIfAbsent(language, factory);
+        private Map<Locale, Tokenizer> tokenizers = null;
+        private String className;
+
+        public TokenizerLoader(String className) {
+            this.className = className;
+        }
+
+        @SuppressWarnings("unchecked")
+        private Map<Locale, Tokenizer> getTokenizers() {
+            if (tokenizers == null) {
+                synchronized (this) {
+                    if (tokenizers == null) {
+                        try {
+                            Class<?> c = Class.forName(this.className);
+                            Field field = c.getDeclaredField("ALL");
+                            tokenizers = (Map<Locale, Tokenizer>) field.get(null);
+                        } catch (Exception e) {
+                            throw new Error("Unable to load class " + this.className, e);
+                        }
+                    }
+                }
+            }
+
+            return tokenizers;
+        }
+
+        public Tokenizer load(Locale locale) {
+            return getTokenizers().get(locale);
+        }
+
+    }
+
+    private static final TokenizerLoader CoreNLP = new TokenizerLoader("eu.modernmt.processing.tokenizer.corenlp.CoreNLPTokenizer");
+    private static final TokenizerLoader HebMorph = new TokenizerLoader("eu.modernmt.processing.tokenizer.hebmorph.HebMorphTokenizer");
+    private static final TokenizerLoader Kuromoji = new TokenizerLoader("eu.modernmt.processing.tokenizer.kuromoji.KuromojiTokenizer");
+    private static final TokenizerLoader LanguageTool = new TokenizerLoader("eu.modernmt.processing.tokenizer.languagetool.LanguageToolTokenizer");
+    private static final TokenizerLoader Lucene = new TokenizerLoader("eu.modernmt.processing.tokenizer.lucene.LuceneTokenizer");
+    private static final TokenizerLoader Moses = new TokenizerLoader("eu.modernmt.processing.tokenizer.moses.MosesTokenizer");
+    private static final TokenizerLoader OpenNLP = new TokenizerLoader("eu.modernmt.processing.tokenizer.opennlp.OpenNLPTokenizer");
+    private static final TokenizerLoader Paoding = new TokenizerLoader("eu.modernmt.processing.tokenizer.paoding.PaodingTokenizer");
+
+    private static final HashMap<Locale, TokenizerLoader> tokenizers;
+
+    private static void setTokenizer(Locale language, TokenizerLoader loader) {
+        TokenizerLoader old = tokenizers.putIfAbsent(language, loader);
 
         if (old != null)
             throw new RuntimeException("Duplicate value for language " + language.getLanguage());
@@ -31,65 +68,66 @@ public class Tokenizers {
         tokenizers = new HashMap<>();
 
         // Moses
-        setTokenizer(Languages.CATALAN, MosesTokenizer.CATALAN);
-        setTokenizer(Languages.CZECH, MosesTokenizer.CZECH);
-        setTokenizer(Languages.GERMAN, MosesTokenizer.GERMAN);
-        setTokenizer(Languages.GREEK, MosesTokenizer.GREEK);
-        setTokenizer(Languages.ENGLISH, MosesTokenizer.ENGLISH);
-        setTokenizer(Languages.SPANISH, MosesTokenizer.SPANISH);
-        setTokenizer(Languages.FINNISH, MosesTokenizer.FINNISH);
-        setTokenizer(Languages.FRENCH, MosesTokenizer.FRENCH);
-        setTokenizer(Languages.HUNGARIAN, MosesTokenizer.HUNGARIAN);
-        setTokenizer(Languages.ICELANDIC, MosesTokenizer.ICELANDIC);
-        setTokenizer(Languages.ITALIAN, MosesTokenizer.ITALIAN);
-        setTokenizer(Languages.LATVIAN, MosesTokenizer.LATVIAN);
-        setTokenizer(Languages.DUTCH, MosesTokenizer.DUTCH);
-        setTokenizer(Languages.POLISH, MosesTokenizer.POLISH);
-        setTokenizer(Languages.PORTUGUESE, MosesTokenizer.PORTUGUESE);
-        setTokenizer(Languages.ROMANIAN, MosesTokenizer.ROMANIAN);
-        setTokenizer(Languages.RUSSIAN, MosesTokenizer.RUSSIAN);
-        setTokenizer(Languages.SLOVAK, MosesTokenizer.SLOVAK);
-        setTokenizer(Languages.SLOVENE, MosesTokenizer.SLOVENE);
-        setTokenizer(Languages.SWEDISH, MosesTokenizer.SWEDISH);
-        setTokenizer(Languages.TAMIL, MosesTokenizer.TAMIL);
+        setTokenizer(Languages.CATALAN, Moses);
+        setTokenizer(Languages.CZECH, Moses);
+        setTokenizer(Languages.GERMAN, Moses);
+        setTokenizer(Languages.GREEK, Moses);
+        setTokenizer(Languages.ENGLISH, Moses);
+        setTokenizer(Languages.SPANISH, Moses);
+        setTokenizer(Languages.FINNISH, Moses);
+        setTokenizer(Languages.FRENCH, Moses);
+        setTokenizer(Languages.HUNGARIAN, Moses);
+        setTokenizer(Languages.ICELANDIC, Moses);
+        setTokenizer(Languages.ITALIAN, Moses);
+        setTokenizer(Languages.LATVIAN, Moses);
+        setTokenizer(Languages.DUTCH, Moses);
+        setTokenizer(Languages.POLISH, Moses);
+        setTokenizer(Languages.PORTUGUESE, Moses);
+        setTokenizer(Languages.ROMANIAN, Moses);
+        setTokenizer(Languages.RUSSIAN, Moses);
+        setTokenizer(Languages.SLOVAK, Moses);
+        setTokenizer(Languages.SLOVENE, Moses);
+        setTokenizer(Languages.SWEDISH, Moses);
+        setTokenizer(Languages.TAMIL, Moses);
 
         // CoreNLP
-        setTokenizer(Languages.ARABIC, CoreNLPTokenizer.ARABIC);
+        setTokenizer(Languages.ARABIC, CoreNLP);
 
         // OpenNLP
-        setTokenizer(Languages.DANISH, OpenNLPTokenizer.DANISH);
-        setTokenizer(Languages.NORTHERN_SAMI, OpenNLPTokenizer.NORTHERN_SAMI);
+        setTokenizer(Languages.DANISH, OpenNLP);
+        setTokenizer(Languages.NORTHERN_SAMI, OpenNLP);
 
         // Lucene
-        setTokenizer(Languages.PERSIAN, LuceneTokenizer.PERSIAN);
-        setTokenizer(Languages.HINDI, LuceneTokenizer.HINDI);
-        setTokenizer(Languages.THAI, LuceneTokenizer.THAI);
-        setTokenizer(Languages.BULGARIAN, LuceneTokenizer.BULGARIAN);
-        setTokenizer(Languages.BRAZILIAN, LuceneTokenizer.BRAZILIAN);
-        setTokenizer(Languages.BASQUE, LuceneTokenizer.BASQUE);
-        setTokenizer(Languages.IRISH, LuceneTokenizer.IRISH);
-        setTokenizer(Languages.ARMENIAN, LuceneTokenizer.ARMENIAN);
-        setTokenizer(Languages.INDONESIAN, LuceneTokenizer.INDONESIAN);
-        setTokenizer(Languages.NORWEGIAN, LuceneTokenizer.NORWEGIAN);
-        setTokenizer(Languages.TURKISH, LuceneTokenizer.TURKISH);
+        setTokenizer(Languages.PERSIAN, Lucene);
+        setTokenizer(Languages.HINDI, Lucene);
+        setTokenizer(Languages.THAI, Lucene);
+        setTokenizer(Languages.BULGARIAN, Lucene);
+        setTokenizer(Languages.BRAZILIAN, Lucene);
+        setTokenizer(Languages.BASQUE, Lucene);
+        setTokenizer(Languages.IRISH, Lucene);
+        setTokenizer(Languages.ARMENIAN, Lucene);
+        setTokenizer(Languages.INDONESIAN, Lucene);
+        setTokenizer(Languages.NORWEGIAN, Lucene);
+        setTokenizer(Languages.TURKISH, Lucene);
 
         // Language Tool
-        setTokenizer(Languages.BRETON, LanguageToolTokenizer.BRETON);
-        setTokenizer(Languages.ESPERANTO, LanguageToolTokenizer.ESPERANTO);
-        setTokenizer(Languages.KHMER, LanguageToolTokenizer.KHMER);
-        setTokenizer(Languages.MALAYALAM, LanguageToolTokenizer.MALAYALAM);
-        setTokenizer(Languages.UKRAINIAN, LanguageToolTokenizer.UKRAINIAN);
-        setTokenizer(Languages.GALICIAN, LanguageToolTokenizer.GALICIAN);
-        setTokenizer(Languages.TAGALOG, LanguageToolTokenizer.TAGALOG);
+        setTokenizer(Languages.BRETON, LanguageTool);
+        setTokenizer(Languages.ESPERANTO, LanguageTool);
+        setTokenizer(Languages.KHMER, LanguageTool);
+        setTokenizer(Languages.MALAYALAM, LanguageTool);
+        setTokenizer(Languages.UKRAINIAN, LanguageTool);
+        setTokenizer(Languages.GALICIAN, LanguageTool);
+        setTokenizer(Languages.TAGALOG, LanguageTool);
 
         // Customs
-        setTokenizer(Languages.HEBREW, HebMorphTokenizer.HEBREW);
-        setTokenizer(Languages.JAPANESE, KuromojiTokenizer.JAPANESE);
-        setTokenizer(Languages.CHINESE, PaodingTokenizer.CHINESE);
+        setTokenizer(Languages.HEBREW, HebMorph);
+        setTokenizer(Languages.JAPANESE, Kuromoji);
+        setTokenizer(Languages.CHINESE, Paoding);
     }
 
     public static Tokenizer forLanguage(Locale locale) {
-        Tokenizer tokenizer = tokenizers.get(locale);
+        TokenizerLoader loader = tokenizers.get(locale);
+        Tokenizer tokenizer = loader == null ? null : loader.load(locale);
 
         if (tokenizer == null)
             throw new IllegalArgumentException("Unsupported language: " + locale.getLanguage());
