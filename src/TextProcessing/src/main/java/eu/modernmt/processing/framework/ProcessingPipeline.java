@@ -70,7 +70,7 @@ public class ProcessingPipeline<P, R> implements Closeable {
         }
     }
 
-    Future<R> submit(P value) {
+    public Future<R> submit(P value) {
         return executor.submit(new Task(value));
     }
 

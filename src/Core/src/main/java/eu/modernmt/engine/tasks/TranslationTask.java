@@ -4,9 +4,12 @@ import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.*;
 import eu.modernmt.engine.SlaveNode;
 import eu.modernmt.network.cluster.DistributedCallable;
-import eu.modernmt.tokenizer.DetokenizerPool;
-import eu.modernmt.tokenizer.TokenizerPool;
+import eu.modernmt.processing.framework.PipelineInputStream;
+import eu.modernmt.processing.framework.PipelineOutputStream;
+import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.framework.ProcessingPipeline;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,7 +51,7 @@ public class TranslationTask extends DistributedCallable<Translation> {
     }
 
     @Override
-    public Translation call() {
+    public Translation call() throws ProcessingException {
         SlaveNode worker = getWorker();
         Decoder decoder = worker.getDecoder();
 
@@ -56,8 +59,8 @@ public class TranslationTask extends DistributedCallable<Translation> {
         Translation translation;
 
         if (processing) {
-            TokenizerPool tokenizer = worker.getTokenizer();
-            tokenizedSource = new Sentence(tokenizer.tokenize(source.toString()));
+            ProcessingPipeline<String, String[]> tokenizer = worker.getTokenizer();
+            tokenizedSource = new Sentence(tokenizer.process(source.toString()));
         } else {
             tokenizedSource = source;
         }
@@ -79,34 +82,58 @@ public class TranslationTask extends DistributedCallable<Translation> {
         }
 
         if (processing) {
-            DetokenizerPool detokenizer = worker.getDetokenizer();
+            ProcessingPipeline<String[], String> detokenizer = worker.getDetokenizer();
+            translation = new Translation(detokenizer.process(translation.getTokens()), source);
 
             List<TranslationHypothesis> nbest = translation.getNbest();
-            translation = new Translation(detokenizer.detokenize(translation.getTokens()), source);
-
             if (nbest != null) {
-                List<TranslationHypothesis> detokNBest = new ArrayList<>(nbest.size());
-                List<String[]> strings = new ArrayList<>(nbest.size());
-
-                for (TranslationHypothesis hyp : nbest)
-                    strings.add(hyp.getTokens());
-
-
-                List<String> detokStrings = detokenizer.detokenize(strings);
-
-                for (int i = 0; i < detokStrings.size(); i++) {
-                    TranslationHypothesis original = nbest.get(i);
-                    String newtext = detokStrings.get(i);
-
-                    TranslationHypothesis hyp = new TranslationHypothesis(newtext, original.getTotalScore(), original.getScores());
-                    detokNBest.add(hyp);
+                NBestDetokenizer nBestDetokenizer = new NBestDetokenizer(nbest);
+                try {
+                    detokenizer.processAll(nBestDetokenizer, nBestDetokenizer);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException("Unexpected exception", e);
                 }
 
-                translation.setNbest(detokNBest);
+                translation.setNbest(nBestDetokenizer.getResult());
             }
         }
 
         return translation;
+    }
+
+    private static class NBestDetokenizer implements PipelineInputStream<String[]>, PipelineOutputStream<String> {
+
+        private List<TranslationHypothesis> source;
+        private List<TranslationHypothesis> result;
+        private int readIndex;
+        private int writeIndex;
+
+        public NBestDetokenizer(List<TranslationHypothesis> nbest) {
+            this.source = nbest;
+            this.result = new ArrayList<>(nbest.size());
+            this.readIndex = 0;
+            this.writeIndex = 0;
+        }
+
+        @Override
+        public String[] read() {
+            return source.get(readIndex++).getTokens();
+        }
+
+        @Override
+        public void write(String value) {
+            TranslationHypothesis original = source.get(writeIndex++);
+            TranslationHypothesis hyp = new TranslationHypothesis(value, original.getTotalScore(), original.getScores());
+            result.add(hyp);
+        }
+
+        @Override
+        public void close() throws IOException {
+        }
+
+        public List<TranslationHypothesis> getResult() {
+            return result;
+        }
     }
 
 }

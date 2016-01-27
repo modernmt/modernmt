@@ -1,13 +1,14 @@
 package eu.modernmt.cli;
 
-import eu.modernmt.tokenizer.DetokenizerPool;
-import eu.modernmt.tokenizer.Languages;
+import eu.modernmt.processing.Languages;
+import eu.modernmt.processing.detokenizer.moses.MosesDetokenizer;
+import eu.modernmt.processing.framework.PipelineInputStream;
+import eu.modernmt.processing.framework.PipelineOutputStream;
+import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.framework.ProcessingPipeline;
+import eu.modernmt.processing.util.Splitter;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.LineIterator;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 /**
@@ -15,39 +16,24 @@ import java.util.Locale;
  */
 public class DetokenizerMain {
 
-    private static final int BATCH_SIZE = 100;
-
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws InterruptedException, ProcessingException {
         Locale language = Languages.getSupportedLanguage(args[0]);
 
         if (language == null)
             throw new IllegalArgumentException("Unsupported language: " + args[0]);
 
-        DetokenizerPool detokenizer = DetokenizerPool.getCachedInstance(language);
+        String languageTag = language.toLanguageTag().substring(0, 2);
 
-        ArrayList<String[]> batch = new ArrayList<>(BATCH_SIZE);
+        ProcessingPipeline<String, String> pipeline = new ProcessingPipeline.Builder<String, String>()
+                .add(new Splitter())
+                .add(new MosesDetokenizer(languageTag))
+                .create();
 
         try {
-            LineIterator stdin = IOUtils.lineIterator(System.in, "UTF-8");
-            while (stdin.hasNext()) {
-                batch.add(stdin.next().split("\\s+"));
-
-                if (batch.size() >= BATCH_SIZE) {
-                    process(detokenizer, batch);
-                    batch.clear();
-                }
-            }
-
-            if (batch.size() > 0)
-                process(detokenizer, batch);
+            pipeline.processAll(PipelineInputStream.fromInputStream(System.in), PipelineOutputStream.fromOutputStream(System.out));
         } finally {
-            detokenizer.terminate();
+            IOUtils.closeQuietly(pipeline);
         }
     }
 
-    private static void process(DetokenizerPool detokenizer, ArrayList<String[]> batch) {
-        for (String line : detokenizer.detokenize(batch)) {
-            System.out.println(line);
-        }
-    }
 }

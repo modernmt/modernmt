@@ -12,6 +12,7 @@ import eu.modernmt.engine.tasks.TranslationTask;
 import eu.modernmt.network.cluster.ClusterManager;
 import eu.modernmt.network.cluster.DistributedCallable;
 import eu.modernmt.network.messaging.zeromq.ZMQMessagingServer;
+import eu.modernmt.processing.framework.ProcessingException;
 
 import java.io.*;
 import java.util.HashMap;
@@ -145,31 +146,31 @@ public class MasterNode extends ClusterManager {
     //  Translate
     // =============================
 
-    public Translation translate(String sentence, boolean textProcessing) {
+    public Translation translate(String sentence, boolean textProcessing) throws TranslationException {
         return translate(sentence, null, 0L, textProcessing, 0);
     }
 
-    public Translation translate(String sentence, long sessionId, boolean textProcessing) {
+    public Translation translate(String sentence, long sessionId, boolean textProcessing) throws TranslationException {
         return translate(sentence, null, sessionId, textProcessing, 0);
     }
 
-    public Translation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing) {
+    public Translation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing) throws TranslationException {
         return translate(sentence, translationContext, 0L, textProcessing, 0);
     }
 
-    public Translation translate(String sentence, boolean textProcessing, int nbest) {
+    public Translation translate(String sentence, boolean textProcessing, int nbest) throws TranslationException {
         return translate(sentence, null, 0L, textProcessing, nbest);
     }
 
-    public Translation translate(String sentence, long sessionId, boolean textProcessing, int nbest) {
+    public Translation translate(String sentence, long sessionId, boolean textProcessing, int nbest) throws TranslationException {
         return translate(sentence, null, sessionId, textProcessing, nbest);
     }
 
-    public Translation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing, int nbest) {
+    public Translation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing, int nbest) throws TranslationException {
         return translate(sentence, translationContext, 0L, textProcessing, nbest);
     }
 
-    private Translation translate(String text, List<ContextDocument> translationContext, long sessionId, boolean textProcessing, int nbest) {
+    private Translation translate(String text, List<ContextDocument> translationContext, long sessionId, boolean textProcessing, int nbest) throws TranslationException {
         Sentence sentence = new Sentence(text);
         TranslationTask task;
 
@@ -188,7 +189,9 @@ public class MasterNode extends ClusterManager {
         try {
             return this.execute(task);
         } catch (Throwable e) {
-            if (e instanceof RuntimeException)
+            if (e instanceof ProcessingException)
+                throw new TranslationException("Problem while processing translation", e);
+            else if (e instanceof RuntimeException)
                 throw (RuntimeException) e;
             else
                 throw new Error("Unexpected exception: " + e.getMessage(), e);
