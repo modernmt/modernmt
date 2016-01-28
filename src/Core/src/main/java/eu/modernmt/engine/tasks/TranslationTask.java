@@ -82,10 +82,11 @@ public class TranslationTask extends DistributedCallable<Translation> {
         }
 
         if (processing) {
+            List<TranslationHypothesis> nbest = translation.getNbest();
+
             ProcessingPipeline<String[], String> detokenizer = worker.getDetokenizer();
             translation = new Translation(detokenizer.process(translation.getTokens()), source);
 
-            List<TranslationHypothesis> nbest = translation.getNbest();
             if (nbest != null) {
                 NBestDetokenizer nBestDetokenizer = new NBestDetokenizer(nbest);
                 try {
@@ -117,7 +118,10 @@ public class TranslationTask extends DistributedCallable<Translation> {
 
         @Override
         public String[] read() {
-            return source.get(readIndex++).getTokens();
+            if (readIndex < source.size())
+                return source.get(readIndex++).getTokens();
+            else
+                return null;
         }
 
         @Override

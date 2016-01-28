@@ -660,6 +660,8 @@ class MMTWorker(_MMTDistributedComponent):
         }
 
         command = ['java', '-cp', ':'.join(classpath)]
+        # command.append('-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005')
+
         for key, value in sysprop.iteritems():
             command.append('-D' + key + '=' + value)
 
