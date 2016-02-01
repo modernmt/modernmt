@@ -24,10 +24,9 @@ public class MyTokenizer {
     }
 
 //    public static void main(String[] args) throws Throwable {
-//        String text = "In 2009, farms with an area of up to 5 hectares made up 52,5% of all farms.";
-//        MyTokenizer tokenizer = new MyTokenizer();
+//        String text = "L'un l'altro armati +39.00,9% př. n. l. Α΄Χρον. jhv";
 //
-//        String[] tokens = tokenizer.call(text);
+//        String[] tokens = JFlexTokenizer.GREEK.call(text);
 //        for (String token : tokens) {
 //            System.out.println("'" + token + "'");
 //        }

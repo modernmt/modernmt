@@ -15,19 +15,55 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <mmt.textprocessing.pyflex>${project.basedir}/script/pyflex.py</mmt.textprocessing.pyflex>
+        <project.build.generatedSources>${project.build.directory}/generated-sources/jflex/</project.build.generatedSources>
     </properties>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.4.0</version>
+                <executions>
+                    <execution>
+                        <id>generate-jflex</id>
+                        <phase>generate-sources</phase>
+
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+
+                        <configuration>
+                            <executable>python</executable>
+                            <workingDirectory>${project.build.sourceDirectory}</workingDirectory>
+                            <arguments>
+                                <argument>${mmt.textprocessing.pyflex}</argument>
+                                <argument>${project.basedir}/src/main/jflex</argument>
+                                <argument>${project.build.generatedSources}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>de.jflex</groupId>
                 <artifactId>maven-jflex-plugin</artifactId>
                 <version>1.4.3</version>
                 <executions>
                     <execution>
+                        <id>compile-jflex</id>
+                        <phase>generate-sources</phase>
+
                         <goals>
                             <goal>generate</goal>
                         </goals>
+
+                        <configuration>
+                            <lexDefinitions>
+                                <lexDefinition>${project.build.generatedSources}</lexDefinition>
+                            </lexDefinitions>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

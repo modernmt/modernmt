@@ -1,0 +1,13 @@
+//pyflex init
+
+%%
+
+//pyflex declarations
+
+//pyflex include ../common.macro
+
+//pyflex prefixes ../prefixes/el.txt
+
+%%
+
+//pyflex include ../common.lex
