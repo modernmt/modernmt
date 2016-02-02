@@ -7,10 +7,8 @@ import eu.modernmt.processing.tokenizer.jflex.annotators.*;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.regex.Pattern;
 
 /**
  * Created by davide on 29/01/16.
@@ -38,9 +36,6 @@ public class JFlexTokenizer extends MultiInstanceTokenizer {
     public static final JFlexTokenizer SLOVENE = new JFlexTokenizer(SloveneAnnotator.class);
     public static final JFlexTokenizer SWEDISH = new JFlexTokenizer(SwedishAnnotator.class);
     public static final JFlexTokenizer TAMIL = new JFlexTokenizer(TamilAnnotator.class);
-
-    private static final Pattern UTF8_CONTROL = Pattern.compile("[\\000-\\037]");
-    private static final Pattern UTF8_SPACES = Pattern.compile("[\\s\\u0020\\u00A0\\u1680\\u2000-\\u200A\\u202F\\u205F\\u3000]+");
 
     private static class JFlexTokenizerFactory implements TokenizerFactory {
 
@@ -74,12 +69,10 @@ public class JFlexTokenizer extends MultiInstanceTokenizer {
         }
 
         @Override
-        public String[] call(String text) throws ProcessingException {
-            text = UTF8_SPACES.matcher(text).replaceAll(" ");
-            text = UTF8_CONTROL.matcher(text).replaceAll("");
-            text = ' ' + text + ' ';
+        public String[] call(String string) throws ProcessingException {
+            AnnotatedString text = new AnnotatedString(string);
 
-            char[] chars = text.toCharArray();
+            char[] chars = text.getCharArray();
 
             // Mark splitting
             boolean[] splits = new boolean[text.length() + 1];
@@ -94,7 +87,7 @@ public class JFlexTokenizer extends MultiInstanceTokenizer {
 
             // Annotate protected patterns
             boolean[] protectedArray = new boolean[text.length() + 1];
-            annotator.yyreset(new StringReader(text));
+            annotator.yyreset(text.getReader());
 
             int type;
             while ((type = next(annotator)) != JFlexAnnotator.YYEOF) {
