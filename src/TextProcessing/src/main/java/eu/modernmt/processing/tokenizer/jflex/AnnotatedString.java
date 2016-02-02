@@ -2,30 +2,38 @@ package eu.modernmt.processing.tokenizer.jflex;
 
 import java.io.CharArrayReader;
 import java.io.Reader;
+import java.util.ArrayList;
 
 /**
  * Created by davide on 01/02/16.
  */
 public class AnnotatedString {
 
+    public static final byte SPLIT_FLAG = (byte) (1);
+    public static final byte PROTECTED_FLAG = (byte) (1 << 1);
+
     private static final int WHITESPACE = 1;
     private static final int CONTROL = 2;
+    private static final int BREAK = 3;
 
     private char[] chars;
+    private byte[] flags;
+    private int length;
 
     public AnnotatedString(String string) {
         this(string.toCharArray());
     }
 
-    public AnnotatedString(char[] chars) {
-        char[] tempChars = new char[chars.length];
+    public AnnotatedString(char[] source) {
+        this.chars = new char[source.length + 2];
+        this.flags = new byte[source.length + 3];
 
         boolean start = true;
         boolean whitespace = false;
 
-        int index = 0;
+        int index = 1;
 
-        for (char c : chars) {
+        for (char c : source) {
             int type = 0;
 
             if ((0x0009 <= c && c <= 0x000D) || c == 0x0020 || c == 0x00A0 || c == 0x1680 ||
@@ -33,6 +41,8 @@ public class AnnotatedString {
                 type = WHITESPACE;
             } else if (c <= 0x001F) {
                 type = CONTROL;
+            } else if (c != '-' && !Character.isLetterOrDigit(c)) {
+                type = BREAK;
             }
 
             switch (type) {
@@ -47,39 +57,82 @@ public class AnnotatedString {
                         start = false;
                         whitespace = false;
                     } else if (whitespace) {
-                        tempChars[index++] = ' ';
+                        this.chars[index] = ' ';
+                        this.flags[index] = this.flags[index + 1] = SPLIT_FLAG;
+
                         whitespace = false;
+                        index++;
                     }
 
-                    tempChars[index++] = c;
+                    this.chars[index] = c;
+                    if (type == BREAK) {
+                        this.flags[index] = this.flags[index + 1] = SPLIT_FLAG;
+                    }
+
+                    index++;
                     break;
             }
         }
 
-        this.chars = new char[index + 2];
-        this.chars[0] = ' ';
-        System.arraycopy(tempChars, 0, this.chars, 1, index);
-        this.chars[index + 1] = ' ';
+        this.length = index + 1;
+        this.chars[0] = this.chars[this.length - 1] = ' ';
+        this.flags[this.length] = SPLIT_FLAG;
     }
 
-    public int length() {
-        return chars.length;
+    public void protect(int start, int end) {
+        for (int i = start; i < end; i++) {
+            this.flags[i] |= PROTECTED_FLAG;
+        }
     }
 
-    public char[] getCharArray() {
-        return chars;
+    public void protect(int index) {
+        this.flags[index] |= PROTECTED_FLAG;
     }
 
     public Reader getReader() {
-        return new CharArrayReader(chars);
+        return new CharArrayReader(chars, 0, length);
+    }
+
+    public String[] toTokenArray() {
+        ArrayList<String> tokens = new ArrayList<>();
+
+        int tokenStart = 0;
+        int tokenEnd = 0;
+        boolean foundNonWhitespace = false;
+
+        for (int i = 0; i < length + 1; i++) {
+            byte flag = this.flags[i];
+
+            boolean protect = (flag & AnnotatedString.PROTECTED_FLAG) > 0;
+            boolean split = (flag & AnnotatedString.SPLIT_FLAG) > 0;
+
+            if (!protect && split) {
+                int tokenLength = 1 + tokenEnd - tokenStart;
+
+                if (tokenLength > 0) {
+                    tokens.add(new String(chars, tokenStart, tokenLength));
+                    tokenStart = tokenEnd = i;
+                    foundNonWhitespace = false;
+                }
+            }
+
+            if (i < chars.length) {
+                if (chars[i] == ' ') {
+                    if (!foundNonWhitespace)
+                        tokenStart++;
+                } else {
+                    foundNonWhitespace = true;
+                    tokenEnd = i;
+                }
+            }
+        }
+
+        return tokens.toArray(new String[tokens.size()]);
     }
 
     @Override
     public String toString() {
-        return new String(chars);
+        return new String(chars, 0, length);
     }
 
-    public static void main(String[] args) throws Throwable {
-        System.out.println("'" + new AnnotatedString("Ciao\t\ncome stai?      \t \t") + "'");
-    }
 }

@@ -8,7 +8,6 @@ import eu.modernmt.processing.tokenizer.jflex.annotators.*;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 
 /**
  * Created by davide on 29/01/16.
@@ -72,41 +71,14 @@ public class JFlexTokenizer extends MultiInstanceTokenizer {
         public String[] call(String string) throws ProcessingException {
             AnnotatedString text = new AnnotatedString(string);
 
-            char[] chars = text.getCharArray();
-
-            // Mark splitting
-            boolean[] splits = new boolean[text.length() + 1];
-
-            for (int i = 0; i < chars.length; i++) {
-                int c = chars[i];
-                if (c != '-' && !Character.isLetterOrDigit(c)) {
-                    splits[i] = splits[i + 1] = true;
-                }
-            }
-            splits[splits.length - 1] = true;
-
-            // Annotate protected patterns
-            boolean[] protectedArray = new boolean[text.length() + 1];
             annotator.yyreset(text.getReader());
 
             int type;
             while ((type = next(annotator)) != JFlexAnnotator.YYEOF) {
-                annotator.annotate(protectedArray, type);
+                annotator.annotate(text, type);
             }
 
-            // Create tokens
-            ArrayList<String> tokens = new ArrayList<>();
-            int start = 0;
-
-            for (int i = 1; i < splits.length; i++) {
-                if (!protectedArray[i] && splits[i]) {
-                    if (!isEmpty(chars, start, i - start))
-                        tokens.add(new String(chars, start, i - start).trim());
-                    start = i;
-                }
-            }
-
-            return tokens.toArray(new String[tokens.size()]);
+            return text.toTokenArray();
         }
 
         private static int next(JFlexAnnotator annotator) throws ProcessingException {
@@ -115,15 +87,6 @@ public class JFlexTokenizer extends MultiInstanceTokenizer {
             } catch (IOException e) {
                 throw new ProcessingException(e);
             }
-        }
-
-        private static boolean isEmpty(char[] chars, int offset, int count) {
-            for (int i = 0; i < count; i++) {
-                if (chars[offset + i] != ' ')
-                    return false;
-            }
-
-            return true;
         }
 
         @Override
