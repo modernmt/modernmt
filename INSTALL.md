@@ -63,7 +63,7 @@ Press enter to keep the current choice[*], or type selection number: 2
 
 **Python 2.7** with module **Requests** is also required but it is pre-installed in Ubuntu.
 
-Just in case *Requests* in not installed:
+Just in case *Requests* is not installed:
 ```
 sudo apt-get install python-pip
 sudo pip install -U requests

@@ -31,10 +31,10 @@ Items should be in order of priority.
 Goal: with 2 billion words perform better than commercially available technology.
 
 - Quality measure against Google Translate and Microsoft integrated in the training process. Measure first!
+- Allowing monolingual LM data input
 - More accurate context score and suffix sampling. 
 - Tuning by domain, global weights do not work.
 - Porting Matecat/Moses tag management to MMT.
-- Allowing monolingual LM data input
 - Adding more languages and quality to tokenization
 
 ## Speed
@@ -63,7 +63,7 @@ Need Marcello and Philipp input.
 
 ### Industry
 
-- Provide more data to the users as baseline. Large enterprises want to customize MT with their data but still having a base model. MS translation Hub do this well. 
+- Provide more data to the users as baseline. Large enterprises want to customize MT with their data but still having a base model. MS translation Hub does this well. 
 - Add support TMX input.
 
 # Donate
