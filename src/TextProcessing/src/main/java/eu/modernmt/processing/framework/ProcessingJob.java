@@ -30,7 +30,7 @@ public class ProcessingJob<P, R> {
 
         int size = Math.max(50, pipeline.getThreads() * 2);
         this.inputQueue = new ArrayBlockingQueue<>(size);
-        this.outputQueue = new LinkedBlockingQueue<>();
+        this.outputQueue = new ArrayBlockingQueue<>(size);
     }
 
     public void start() {
@@ -125,10 +125,19 @@ public class ProcessingJob<P, R> {
 
             while ((param = next()) != null) {
                 Future<R> future = pipeline.submit(param);
-                outputQueue.offer(future);
+                try {
+                    outputQueue.put(future);
+                } catch (InterruptedException e) {
+                    signalException(e);
+                    break;
+                }
             }
 
-            outputQueue.offer(POISON_PILL);
+            try {
+                outputQueue.put(POISON_PILL);
+            } catch (InterruptedException e) {
+                // Ignore
+            }
         }
 
     }
@@ -160,7 +169,7 @@ public class ProcessingJob<P, R> {
             } catch (InterruptedException e) {
                 // break
             } catch (IOException e) {
-                signalException(new ProcessingException("Unable to write from PipelineOutputStream", e));
+                signalException(new ProcessingException("Unable to write to PipelineOutputStream", e));
             }
         }
 

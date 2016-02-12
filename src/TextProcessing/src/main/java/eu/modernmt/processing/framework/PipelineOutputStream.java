@@ -23,6 +23,21 @@ public interface PipelineOutputStream<V> extends Closeable {
         };
     }
 
+    static PipelineOutputStream<String> fromWriter(final Writer writer) {
+        return new PipelineOutputStream<String>() {
+            @Override
+            public void write(String value) throws IOException {
+                writer.write(value);
+                writer.write('\n');
+            }
+
+            @Override
+            public void close() throws IOException {
+                writer.close();
+            }
+        };
+    }
+
     static PipelineOutputStream<String> fromOutputStream(OutputStream _stream) {
         return new PipelineOutputStream<String>() {
 
@@ -43,7 +58,8 @@ public interface PipelineOutputStream<V> extends Closeable {
 
             @Override
             public void write(String value) throws IOException {
-                stream.print(value + '\n');
+                stream.print(value);
+                stream.print('\n');
             }
         };
     }

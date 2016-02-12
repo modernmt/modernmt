@@ -4,10 +4,7 @@ import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.*;
 import eu.modernmt.engine.SlaveNode;
 import eu.modernmt.network.cluster.DistributedCallable;
-import eu.modernmt.processing.framework.PipelineInputStream;
-import eu.modernmt.processing.framework.PipelineOutputStream;
-import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.framework.ProcessingPipeline;
+import eu.modernmt.processing.framework.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -90,7 +87,9 @@ public class TranslationTask extends DistributedCallable<Translation> {
             if (nbest != null) {
                 NBestDetokenizer nBestDetokenizer = new NBestDetokenizer(nbest);
                 try {
-                    detokenizer.processAll(nBestDetokenizer, nBestDetokenizer);
+                    ProcessingJob<String[], String> job = detokenizer.createJob(nBestDetokenizer, nBestDetokenizer);
+                    job.start();
+                    job.join();
                 } catch (InterruptedException e) {
                     throw new RuntimeException("Unexpected exception", e);
                 }

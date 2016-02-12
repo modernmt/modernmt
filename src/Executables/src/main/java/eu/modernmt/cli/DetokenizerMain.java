@@ -2,10 +2,7 @@ package eu.modernmt.cli;
 
 import eu.modernmt.processing.Languages;
 import eu.modernmt.processing.detokenizer.moses.MosesDetokenizer;
-import eu.modernmt.processing.framework.PipelineInputStream;
-import eu.modernmt.processing.framework.PipelineOutputStream;
-import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.framework.ProcessingPipeline;
+import eu.modernmt.processing.framework.*;
 import eu.modernmt.processing.util.Splitter;
 import org.apache.commons.io.IOUtils;
 
@@ -30,7 +27,9 @@ public class DetokenizerMain {
                 .create();
 
         try {
-            pipeline.processAll(PipelineInputStream.fromInputStream(System.in), PipelineOutputStream.fromOutputStream(System.out));
+            ProcessingJob<String, String> job = pipeline.createJob(PipelineInputStream.fromInputStream(System.in), PipelineOutputStream.fromOutputStream(System.out));
+            job.start();
+            job.join();
         } finally {
             IOUtils.closeQuietly(pipeline);
         }

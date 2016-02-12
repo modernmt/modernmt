@@ -1,9 +1,14 @@
 package eu.modernmt.model;
 
 import eu.modernmt.processing.framework.UnixLineReader;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -19,6 +24,18 @@ public class ParallelFilesCorpus implements ParallelCorpus {
     private Locale sourceLanguage;
     private Locale targetLanguage;
     private int lineCount = -1;
+
+    public static List<ParallelFilesCorpus> list(File directory, String sourceLangCode, String targetLangCode) {
+        Collection<File> sourceFiles = FileUtils.listFiles(directory, new String[]{sourceLangCode}, false);
+        ArrayList<ParallelFilesCorpus> corpora = new ArrayList<>(sourceFiles.size());
+
+        for (File sourceFile : sourceFiles) {
+            String name = FilenameUtils.removeExtension(sourceFile.getName());
+            corpora.add(new ParallelFilesCorpus(directory, name, sourceLangCode, targetLangCode));
+        }
+
+        return corpora;
+    }
 
     public ParallelFilesCorpus(File directory, String name, String sourceLangCode, String targetLangCode) {
         this(directory, name, Locale.forLanguageTag(sourceLangCode), Locale.forLanguageTag(targetLangCode));
@@ -81,22 +98,73 @@ public class ParallelFilesCorpus implements ParallelCorpus {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ParallelFilesCorpus that = (ParallelFilesCorpus) o;
+
+        if (!source.equals(that.source)) return false;
+        return target.equals(that.target);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = source.hashCode();
+        result = 31 * result + target.hashCode();
+        return result;
+    }
+
+    @Override
     public ParallelLineReader getContentReader() throws FileNotFoundException {
         return new ParallelFilesLineReader(source, target);
     }
 
+    @Override
+    public Reader getContentReader(Locale language) throws IOException {
+        File file;
+
+        if (language.equals(sourceLanguage))
+            file = source;
+        else if (language.equals(targetLanguage))
+            file = target;
+        else
+            throw new IllegalArgumentException("Language " + language.toLanguageTag() + " not found");
+
+        return new InputStreamReader(new FileInputStream(file), "UTF-8");
+    }
+
+    @Override
+    public ParallelLineWriter getContentWriter(boolean append) throws IOException {
+        return new ParallelFilesWriter(append, source, target);
+    }
+
+    @Override
+    public Writer getContentWriter(Locale language, boolean append) throws IOException {
+        File file;
+
+        if (language.equals(sourceLanguage))
+            file = source;
+        else if (language.equals(targetLanguage))
+            file = target;
+        else
+            throw new IllegalArgumentException("Language " + language.toLanguageTag() + " not found");
+
+        return new FileWriter(file, append);
+    }
 
     private static class ParallelFilesLineReader implements ParallelLineReader {
 
-        private UnixLineReader sourceStream;
-        private UnixLineReader targetStream;
+        private UnixLineReader sourceReader;
+        private UnixLineReader targetReader;
 
         public ParallelFilesLineReader(File source, File target) throws FileNotFoundException {
             boolean success = false;
 
             try {
-                this.sourceStream = new UnixLineReader(new InputStreamReader(new FileInputStream(source), "UTF-8"));
-                this.targetStream = new UnixLineReader(new InputStreamReader(new FileInputStream(target), "UTF-8"));
+                this.sourceReader = new UnixLineReader(new InputStreamReader(new FileInputStream(source), "UTF-8"));
+                this.targetReader = new UnixLineReader(new InputStreamReader(new FileInputStream(target), "UTF-8"));
 
                 success = true;
             } catch (UnsupportedEncodingException e) {
@@ -109,8 +177,8 @@ public class ParallelFilesCorpus implements ParallelCorpus {
 
         @Override
         public String[] read() throws IOException {
-            String source = sourceStream.readLine();
-            String target = targetStream.readLine();
+            String source = sourceReader.readLine();
+            String target = targetReader.readLine();
 
             if (source == null || target == null)
                 return null;
@@ -123,9 +191,45 @@ public class ParallelFilesCorpus implements ParallelCorpus {
 
         @Override
         public void close() {
-            IOUtils.closeQuietly(this.sourceStream);
-            IOUtils.closeQuietly(this.targetStream);
+            IOUtils.closeQuietly(this.sourceReader);
+            IOUtils.closeQuietly(this.targetReader);
         }
+    }
+
+    private static class ParallelFilesWriter implements ParallelLineWriter {
+
+        private FileWriter sourceWriter;
+        private FileWriter targetWriter;
+
+        public ParallelFilesWriter(boolean append, File source, File target) throws IOException {
+            boolean success = false;
+
+            try {
+                this.sourceWriter = new FileWriter(source, append);
+                this.targetWriter = new FileWriter(target, append);
+
+                success = true;
+            } finally {
+                if (!success)
+                    this.close();
+            }
+        }
+
+        @Override
+        public void write(String source, String target) throws IOException {
+            sourceWriter.write(source);
+            sourceWriter.write('\n');
+
+            targetWriter.write(target);
+            targetWriter.write('\n');
+        }
+
+        @Override
+        public void close() throws IOException {
+            IOUtils.closeQuietly(this.sourceWriter);
+            IOUtils.closeQuietly(this.targetWriter);
+        }
+
     }
 
 }

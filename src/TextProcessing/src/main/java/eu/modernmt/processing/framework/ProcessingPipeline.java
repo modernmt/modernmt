@@ -74,14 +74,12 @@ public class ProcessingPipeline<P, R> implements Closeable {
         return executor.submit(new Task(value));
     }
 
-    public void processAll(PipelineInputStream<P> input, PipelineOutputStream<R> output) throws ProcessingException, InterruptedException {
-        ProcessingJob job = new ProcessingJob<>(this, input, output);
-        job.start();
-        job.join();
+    public ProcessingJob<P, R> createJob(PipelineInputStream<P> input, PipelineOutputStream<R> output) {
+        return new ProcessingJob<>(this, input, output);
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         executor.shutdownNow();
         try {
             executor.awaitTermination(1, TimeUnit.DAYS);
