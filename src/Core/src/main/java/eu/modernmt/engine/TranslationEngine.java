@@ -11,8 +11,9 @@ import java.util.Map;
  */
 public class TranslationEngine {
 
-    private static final String CONTEXT_ANALYZER_INDEX_PATH = path("data", "context", "index");
-    private static final String MOSES_INI_PATH = path("data", "moses.ini");
+
+    private static final String CONTEXT_ANALYZER_INDEX_PATH = path("models", "context", "index");
+    private static final String MOSES_INI_PATH = path("models", "moses.ini");
     private static final String ENGINE_CONFIG_PATH = "engine.ini";
 
     private static String path(String... path) {

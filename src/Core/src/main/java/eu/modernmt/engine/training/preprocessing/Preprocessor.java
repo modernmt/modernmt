@@ -204,23 +204,4 @@ public class Preprocessor {
         return count;
     }
 
-    public static void main(String[] args) throws Throwable {
-//        String input = args.length > 0 ? args[0] : "/Users/davide/Documents/consistency_test-10+30D/train";
-        String input = args.length > 0 ? args[0] : "/Users/davide/workspaces/mmt/ModernMT/examples/data/train";
-        String output = args.length > 1 ? args[1] : "/Users/davide/workspaces/mmt/ModernMT/src/Core/target/test";
-
-        FileUtils.deleteDirectory(new File(output));
-
-        List<? extends ParallelCorpus> corpora = ParallelFilesCorpus.list(new File(input), "en", "it");
-        FilesCorporaPartition partition = new FilesCorporaPartition(new File(output, "train"));
-        FilesCorporaPartition devPartition = new FilesCorporaPartition(new File(output, "dev"), 1200);
-        FilesCorporaPartition testPartition = new FilesCorporaPartition(new File(output, "test"), 1200);
-
-        Preprocessor preprocessor = new Preprocessor(partition, corpora);
-        preprocessor.addExtraPartition(devPartition);
-        preprocessor.addExtraPartition(testPartition);
-
-        preprocessor.process();
-    }
-
 }

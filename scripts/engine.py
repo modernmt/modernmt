@@ -13,11 +13,12 @@ import requests
 
 import scripts
 from scripts.libs import fileutils, daemon, shell
+from scripts.mt import ParallelCorpus
 from scripts.mt.contextanalysis import ContextAnalyzer
 from scripts.mt.lm import LanguageModel
 from scripts.mt.moses import Moses, MosesFeature, LexicalReordering
 from scripts.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
-from scripts.mt.processing import Tokenizer, Detokenizer, CorpusCleaner
+from scripts.mt.processing import Tokenizer, Detokenizer, CorpusCleaner, Preprocessor
 
 __author__ = 'Davide Caroselli'
 
@@ -221,21 +222,26 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
         try:
             original_corpora = corpora
 
-            # Tokenization
-            tokenized_corpora = original_corpora
+            # Preprocessing
+            preprocessed_corpora = original_corpora
 
-            if 'tokenize' in steps:
-                with cmdlogger.step('Corpora tokenization') as _:
-                    tokenizer_output = self._get_tempdir('tokenizer')
-                    tokenized_corpora = self._engine.tokenizer.batch_tokenize(corpora, tokenizer_output)
+            if 'preprocess' in steps:
+                with cmdlogger.step('Corpora proprocessing') as _:
+                    tokenizer_output = self._get_tempdir('preprocessed')
+
+                    # (source, target, input_path, output_path, data_path=None)
+                    preprocessed_corpora = self._engine.preprocessor.process(
+                        self._engine.source_lang, self._engine.target_lang,
+                        corpora[0].root, tokenizer_output, self._engine.data_path
+                    )
 
             # Cleaning
-            cleaned_corpora = tokenized_corpora
+            cleaned_corpora = preprocessed_corpora
 
             if 'clean' in steps:
                 with cmdlogger.step('Corpora cleaning') as _:
                     cleaner_output = self._get_tempdir('cleaner')
-                    cleaned_corpora = self._engine.cleaner.batch_clean(tokenized_corpora, cleaner_output)
+                    cleaned_corpora = self._engine.cleaner.batch_clean(preprocessed_corpora, cleaner_output)
 
             # Training Context Analyzer
             if 'context_analyzer' in steps:
@@ -248,7 +254,7 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
                 with cmdlogger.step('Language Model training') as _:
                     working_dir = self._get_tempdir('lm')
                     log_file = self._get_logfile('lm')
-                    self._engine.lm.train(tokenized_corpora, self._engine.target_lang, working_dir, log_file)
+                    self._engine.lm.train(preprocessed_corpora, self._engine.target_lang, working_dir, log_file)
 
             # Training Translation Model
             if 'tm' in steps:
@@ -279,7 +285,7 @@ class MMTEngine:
             'Aligner implementation', (basestring, WordAligner.available_types), WordAligner.available_types[0]),
     }
 
-    training_steps = ['tokenize', 'clean', 'context_analyzer', 'lm', 'tm']
+    training_steps = ['preprocess', 'clean', 'context_analyzer', 'lm', 'tm']
 
     def __init__(self, langs=None, name=None):
         self.name = name if name is not None else 'default'
@@ -293,12 +299,14 @@ class MMTEngine:
 
         self.path = os.path.join(scripts.ENGINES_DIR, self.name)
 
-        data_path = os.path.join(self.path, 'data')
+        self.data_path = os.path.join(self.path, 'data')
+        self.models_path = os.path.join(self.path, 'models')
+
         self._config_file = os.path.join(self.path, 'engine.ini')
-        self._pt_model = os.path.join(data_path, 'phrase_tables')
-        self._lm_model = os.path.join(data_path, 'lm', 'target.lm')
-        self._context_index = os.path.join(data_path, 'context', 'index')
-        self._moses_ini_file = os.path.join(data_path, 'moses.ini')
+        self._pt_model = os.path.join(self.models_path, 'phrase_tables')
+        self._lm_model = os.path.join(self.models_path, 'lm', 'target.lm')
+        self._context_index = os.path.join(self.models_path, 'context', 'index')
+        self._moses_ini_file = os.path.join(self.models_path, 'moses.ini')
 
         self.builder = _MMTEngineBuilder(self)
 
@@ -319,6 +327,7 @@ class MMTEngine:
         self.tokenizer = injector.inject(Tokenizer())
         self.detokenizer = injector.inject(Detokenizer())
         self.cleaner = injector.inject(CorpusCleaner())
+        self.preprocessor = injector.inject(Preprocessor())
 
         self.analyzer = injector.inject(ContextAnalyzer(self._context_index))
 
@@ -528,7 +537,10 @@ class MMTServer(_MMTDistributedComponent):
         except:
             return False
 
-    def tune(self, corpora, tokenize=True, debug=False, context_enabled=True):
+    def tune(self, corpora=None, tokenize=True, debug=False, context_enabled=True):
+        if corpora is None:
+            corpora = ParallelCorpus.list(os.path.join(self.engine.data_path, Preprocessor.DEV_FOLDER_NAME))
+
         if len(corpora) == 0:
             raise Exception('empty corpora')
 

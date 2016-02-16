@@ -57,6 +57,31 @@ class CorpusCleaner:
         shell.execute(command, stdout=shell.DEVNULL, stderr=shell.DEVNULL)
 
 
+class Preprocessor:
+    DEV_FOLDER_NAME = 'dev'
+    TEST_FOLDER_NAME = 'test'
+
+    def __init__(self):
+        self._jar = scripts.MMT_JAR
+        self._java_mainclass = 'eu.modernmt.cli.PreprocessorMain'
+
+    def process(self, source, target, input_path, output_path, data_path=None):
+        command = ['java', '-cp', self._jar, '-Dmmt.home=' + scripts.MMT_ROOT, self._java_mainclass,
+                   '-s', source, '-t', target,
+                   '--input', input_path,
+                   '--output', output_path]
+
+        if data_path is not None:
+            command.append('--dev')
+            command.append(os.path.join(data_path, Preprocessor.DEV_FOLDER_NAME))
+            command.append('--test')
+            command.append(os.path.join(data_path, Preprocessor.TEST_FOLDER_NAME))
+
+        shell.execute(command, stdin=shell.DEVNULL, stdout=shell.DEVNULL, stderr=shell.DEVNULL)
+
+        return ParallelCorpus.list(output_path)
+
+
 class Detokenizer:
     def __init__(self):
         self._detokenizer_jar = scripts.MMT_JAR

@@ -85,7 +85,8 @@ def _logconfig(debug=True):
 def main_tune(argv):
     parser = argparse.ArgumentParser(description='Tune MMT engine')
     parser.prog = 'mmt tune'
-    parser.add_argument('corpora_path', metavar='CORPORA', help='the path to the training corpora')
+    parser.add_argument('--path', dest='corpora_path', metavar='CORPORA', default=None,
+                        help='the path to the training corpora (default is preprocessed sample)')
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
     parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
@@ -110,9 +111,9 @@ def main_tune(argv):
     injector.read_config(engine.config)
     engine = injector.inject(engine)
     server = MMTServer(engine, args.api_port)
-    corpora = ParallelCorpus.list(args.corpora_path)
+    corpora = ParallelCorpus.list(args.corpora_path) if args.corpora_path is not None else None
 
-    server.tune(corpora, debug=args.debug, context_enabled=args.context_enabled)
+    server.tune(corpora=corpora, debug=args.debug, context_enabled=args.context_enabled)
 
 
 def main_start(argv):
@@ -184,15 +185,15 @@ def main_start(argv):
     # Check ports
     if args.has_master and not __is_freeport(args.api_port):
         raise IllegalStateException(
-                'port %d is already in use, please specify another port with option -p/--api-port' % args.api_port)
+            'port %d is already in use, please specify another port with option -p/--api-port' % args.api_port)
     if args.has_slave and not __is_freeport(args.cluster_ports[0]):
         raise IllegalStateException(
-                'port %d is already in use, please specify another port pair with option --cluster-ports' %
-                args.cluster_ports[0])
+            'port %d is already in use, please specify another port pair with option --cluster-ports' %
+            args.cluster_ports[0])
     if args.has_slave and not __is_freeport(args.cluster_ports[1]):
         raise IllegalStateException(
-                'port %d is already in use, please specify another port pair with option --cluster-ports' %
-                args.cluster_ports[1])
+            'port %d is already in use, please specify another port pair with option --cluster-ports' %
+            args.cluster_ports[1])
 
     # Exec command
     engine = MMTEngine(name=args.engine)
@@ -315,10 +316,10 @@ def main_status(argv):
     slave = MMTWorker(engine, None)
 
     sys.stderr.write('Master instance: {status}\n'.format(
-            status=('running' if master.is_running() else 'stopped')
+        status=('running' if master.is_running() else 'stopped')
     ))
     sys.stderr.write('Slave instance: {status}\n'.format(
-            status=('running' if slave.is_running() else 'stopped')
+        status=('running' if slave.is_running() else 'stopped')
     ))
 
     print ('running' if master.is_running() or slave.is_running() else 'stopped')
