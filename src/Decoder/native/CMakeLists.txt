@@ -13,15 +13,6 @@ include_directories(jheaders)
 
 # External Libraries
 
-## XMLRPC
-find_package(XMLRPC REQUIRED c++2 abyss-server)
-if (XMLRPC_FOUND)
-    include_directories(${XMLRPC_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} ${XMLRPC_LIBRARIES})
-else (XMLRPC_FOUND)
-    message(FATAL_ERROR "Could not locate xmlrpc-c.")
-endif (XMLRPC_FOUND)
-
 ## Boost
 set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
@@ -60,7 +51,7 @@ endif()
 find_library(MOSES moses ${Moses_LIBRARIES})
 add_definitions(-DMAX_NUM_FACTORS=4)
 add_definitions(-DWITH_THREADS=1)
-add_definitions(-DHAVE_XMLRPC_C=1)
+add_definitions(-DHAVE_XMLRPC_C=0)
 include_directories(${Moses_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} ${MOSES})
 
