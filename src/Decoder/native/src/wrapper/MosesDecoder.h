@@ -5,6 +5,7 @@
 #ifndef JNIMOSES_MOSESDECODER_H
 #define JNIMOSES_MOSESDECODER_H
 
+#include <stdint.h>
 #include <vector>
 #include <string>
 #include <map>

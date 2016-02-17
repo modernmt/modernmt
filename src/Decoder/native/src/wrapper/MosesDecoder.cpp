@@ -5,14 +5,14 @@
 #include "MosesDecoder.h"
 #include <moses/server/Server.h>
 #include <moses/FF/StatefulFeatureFunction.h>
+#include <contrib/jni-interface/JNITranslator.h>
 
 using namespace JNIWrapper;
 
 namespace JNIWrapper {
 
     class MosesDecoderImpl : public MosesDecoder {
-        MosesServer::Server m_server;
-        xmlrpc_c::methodPtr m_translator;
+        MosesServer::JNITranslator m_translator;
         std::vector<feature_t> m_features;
     public:
 
@@ -49,9 +49,7 @@ MosesDecoder *MosesDecoder::createInstance(const char *inifile) {
     return new MosesDecoderImpl(params);
 }
 
-MosesDecoderImpl::MosesDecoderImpl(Moses::Parameter &param) : m_server(param),
-                                                              m_translator(new MosesServer::Translator(m_server)),
-                                                              m_features() {
+MosesDecoderImpl::MosesDecoderImpl(Moses::Parameter &param) : m_features() {
     const std::vector<const Moses::StatelessFeatureFunction *> &slf = Moses::StatelessFeatureFunction::GetStatelessFeatureFunctions();
     for (size_t i = 0; i < slf.size(); ++i) {
         const Moses::FeatureFunction *feature = slf[i];
@@ -104,76 +102,29 @@ int64_t MosesDecoderImpl::openSession(const std::map<std::string, float> &transl
 }
 
 void MosesDecoderImpl::closeSession(uint64_t session) {
-    m_server.delete_session(session);
+    m_translator.delete_session(session);
 }
 
 translation_t MosesDecoderImpl::translate(const std::string &text, uint64_t session,
                                           const std::map<std::string, float> *translationContext,
-                                          size_t nbestListSize) {
-    // Create request parameters
-    std::map<std::string, xmlrpc_c::value> params;
+                                          size_t nbestListSize)
+{
+    MosesServer::TranslationRequest request;
+    request.sourceSent = text;
+    request.nBestListSize = nbestListSize;
+    request.sessionId = session;
+    if(translationContext != nullptr)
+        request.contextWeights = *translationContext;
 
-    params["text"] = xmlrpc_c::value_string(text);
-
-    if (session > 0)
-        params["session-id"] = xmlrpc_c::value_int((const int) session);
-
-    if (translationContext != nullptr) {
-        std::map<std::string, xmlrpc_c::value> context;
-
-        for (std::map<std::string, float>::const_iterator iterator = translationContext->begin();
-             iterator != translationContext->end(); iterator++) {
-            context[iterator->first] = xmlrpc_c::value_double((double) iterator->second);
-        }
-
-        params["context-weights"] = xmlrpc_c::value_struct(context);
-    }
-
-    if (nbestListSize > 0) {
-        params["add-score-breakdown"] = xmlrpc_c::value_string("true");
-        params["nbest-distinct"] = xmlrpc_c::value_string("true");
-        params["nbest"] = xmlrpc_c::value_int((const int) nbestListSize);
-    }
-
-    // Send request
-    xmlrpc_c::paramList rpcparams;
-    rpcparams.add(xmlrpc_c::value_struct(params));
-    xmlrpc_c::value retval;
-    m_translator->execute(rpcparams, &retval);
-
-    std::map<std::string, xmlrpc_c::value> result = xmlrpc_c::value_struct(retval);
-
-    // Parse result
     translation_t translation;
-    translation.text = std::string();
-    translation.session = -1;
-    translation.hypotheses = std::vector<hypothesis_t>();
 
-    std::map<std::string, xmlrpc_c::value>::iterator iterator;
+    MosesServer::TranslationResponse response;
+    m_translator.execute(request, &response);
 
-    iterator = result.find("text");
-    if (iterator != result.end())
-        translation.text = xmlrpc_c::value_string(iterator->second);
-
-    iterator = result.find("session-id");
-    if (iterator != result.end())
-        translation.session = xmlrpc_c::value_int(iterator->second);
-
-    iterator = result.find("nbest");
-    if (iterator != result.end()) {
-        std::vector<xmlrpc_c::value> nbestList = xmlrpc_c::value_array(iterator->second).vectorValueValue();
-
-        for (size_t i = 0; i < nbestList.size(); ++i) {
-            std::map<std::string, xmlrpc_c::value> value = xmlrpc_c::value_struct(nbestList[i]);
-
-            hypothesis_t hypothesis;
-            hypothesis.text = xmlrpc_c::value_string(value["hyp"]);
-            hypothesis.score = (float) xmlrpc_c::value_double(value["totalScore"]);
-            hypothesis.fvals = (std::string) xmlrpc_c::value_string(value["fvals"]);
-
-            translation.hypotheses.push_back(hypothesis);
-        }
-    }
+    translation.text = response.text;
+    for(auto h: response.hypotheses)
+        translation.hypotheses.push_back(hypothesis_t{h.text, h.score, h.fvals});
+    translation.session = response.session;
 
     return translation;
 }
