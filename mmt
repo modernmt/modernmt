@@ -116,6 +116,38 @@ def main_tune(argv):
     server.tune(corpora=corpora, debug=args.debug, context_enabled=args.context_enabled)
 
 
+def main_evaluate(argv):
+    parser = argparse.ArgumentParser(description='Evaluate MMT engine')
+    parser.prog = 'mmt evaluate'
+    parser.add_argument('--path', dest='corpora_path', metavar='CORPORA', default=None,
+                        help='the path to the training corpora (default is preprocessed sample)')
+    parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
+                        default='default')
+    parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
+                        help='the MMT API port. (default is {port})'.format(port=DEFAULT_MMT_API_PORT),
+                        default=None, type=int)
+    parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='if debug is set, it enables verbose '
+                                                                                 'logging and prevents temporary files '
+                                                                                 'to be removed after execution')
+
+    args = parser.parse_args(argv)
+    args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
+
+    _logconfig(args.debug)
+
+    engine = MMTEngine(name=args.engine)
+    if not engine.exists():
+        raise IllegalStateException('engine not found: ' + args.engine)
+
+    injector = dependency.Injector(*_injectable_components)
+    injector.read_config(engine.config)
+    engine = injector.inject(engine)
+    server = MMTServer(engine, args.api_port)
+    corpora = ParallelCorpus.list(args.corpora_path) if args.corpora_path is not None else None
+
+    server.evaluate(corpora=corpora)
+
+
 def main_start(argv):
     _logconfig()
 
@@ -388,6 +420,8 @@ def main():
             main_status(argv[1:])
         elif ['tune'] == argv[:1]:
             main_tune(argv[1:])
+        elif ['evaluate'] == argv[:1]:
+            main_evaluate(argv[1:])
         else:
             parser.print_help()
             exit(1)

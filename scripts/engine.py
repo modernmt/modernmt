@@ -12,6 +12,7 @@ from ConfigParser import ConfigParser
 import requests
 
 import scripts
+from scripts.evaluation import MMTTranslator, GoogleTranslate
 from scripts.libs import fileutils, daemon, shell
 from scripts.mt import ParallelCorpus
 from scripts.mt.contextanalysis import ContextAnalyzer
@@ -412,6 +413,49 @@ class _TuningProcessLogger:
         sys.stdout.flush()
 
 
+class _EvaluatingProcessLogger:
+    def __init__(self, count, line_len=70):
+        self.line_len = line_len
+        self.count = count
+        self._current_step = 0
+        self._step = None
+        self._api_port = None
+
+    def start(self, server, corpora):
+        engine = server.engine
+        self._api_port = server.api_port
+
+        print '\n=========== EVALUATE STARTED ===========\n'
+        print 'ENGINE:  %s' % engine.name
+        print 'CORPORA: %s (%d documents)' % (corpora[0].root, len(corpora))
+        print 'LANGS:   %s > %s' % (engine.source_lang, engine.target_lang)
+        print
+        sys.stdout.flush()
+
+    def step(self, step):
+        self._step = step
+        self._current_step += 1
+        return self
+
+    def completed(self, results):
+        print '\n=========== EVALUATE SUCCESS ===========\n'
+        print
+        sys.stdout.flush()
+
+    def __enter__(self):
+        message = 'INFO: (%d of %d) %s... ' % (self._current_step, self.count, self._step)
+        print message.ljust(self.line_len),
+        sys.stdout.flush()
+
+        self._start_time = time.time()
+        return self
+
+    def __exit__(self, *_):
+        self._end_time = time.time()
+        print 'DONE (in %ds)' % int(self._end_time - self._start_time)
+        sys.stdout.flush()
+
+
 class MMTServerApi:
     def __init__(self, port):
         self.port = port
@@ -633,6 +677,127 @@ class MMTServer(_MMTDistributedComponent):
         finally:
             if not debug:
                 self._clear_tempdir()
+
+    def evaluate(self, corpora=None, google_key=None):
+        if corpora is None:
+            corpora = ParallelCorpus.list(os.path.join(self.engine.data_path, Preprocessor.TEST_FOLDER_NAME))
+
+        if len(corpora) == 0:
+            raise Exception('empty corpora')
+
+        if not self.is_running():
+            raise Exception('no MMT Server running')
+
+        target_lang = self.engine.target_lang
+        source_lang = self.engine.source_lang
+
+        translators = [GoogleTranslate(source_lang, target_lang)]# [MMTTranslator(self)]
+
+        cmdlogger = _EvaluatingProcessLogger(1 + len(translators))
+        cmdlogger.start(self, corpora)
+
+        working_dir = self._get_tempdir('evaluate')
+
+        try:
+            translations_path = os.path.join(working_dir, 'translations')
+            tokenized_path = os.path.join(working_dir, 'tokenized')
+
+            # Translate
+            for translator in translators:
+                with cmdlogger.step('Translation with ' + translator.name()) as _:
+                    tid = translator.name().replace(' ', '_')
+
+                    translations_output = os.path.join(translations_path, tid)
+                    tokenized_output = os.path.join(tokenized_path, tid)
+
+                    fileutils.makedirs(translations_output, exist_ok=True)
+                    fileutils.makedirs(tokenized_output, exist_ok=True)
+
+                    for corpus in corpora:
+                        output_document = os.path.join(translations_output, corpus.name + '.' + target_lang)
+                        translator.translate(corpus.get_file(source_lang), output_document)
+
+                    self.engine.tokenizer.batch_tokenize(ParallelCorpus.list(translations_output), tokenized_output)
+
+            # BLEU
+            with cmdlogger.step('Calculating BLEU') as _:
+                pass
+            # # Tokenization
+            # tokenizer_output = os.path.join(working_dir, 'tokenized_corpora')
+            # fileutils.makedirs(tokenizer_output, exist_ok=True)
+            #
+            # with cmdlogger.step('Corpus tokenization') as _:
+            #     tokenized_corpora = self.engine.tokenizer.batch_tokenize(corpora, tokenizer_output)
+
+
+
+            # translator = GoogleTranslate(source_lang, target_lang)
+            # translator.translate(corpora[0].get_file(source_lang), '/home/ubuntu/test.txt')
+
+
+
+            #
+            # # Create merged corpus
+            # with cmdlogger.step('Merging corpus') as _:
+            #     source_merged_corpus = os.path.join(working_dir, 'corpus.' + source_lang)
+            #     with open(source_merged_corpus, 'wb') as out:
+            #         original_root = original_corpora[0].root
+            #
+            #         for corpus in tokenized_corpora:
+            #             tokenized = corpus.get_file(source_lang)
+            #             original = os.path.join(original_root, corpus.name + '.' + source_lang)
+            #             out.write(tokenized + ':' + original + '\n')
+            #
+            #     target_merged_corpus = os.path.join(working_dir, 'corpus.' + target_lang)
+            #     fileutils.merge([corpus.get_file(target_lang) for corpus in tokenized_corpora], target_merged_corpus)
+            #
+            # # Run MERT algorithm
+            # with cmdlogger.step('Tuning') as _:
+            #     # Start MERT
+            #     decoder_flags = ['--port', str(self.api_port)]
+            #
+            #     if not context_enabled:
+            #         decoder_flags.append('--skip-context-analysis')
+            #         decoder_flags.append('1')
+            #
+            #     fileutils.makedirs(mert_wd, exist_ok=True)
+            #
+            #     with tempfile.NamedTemporaryFile() as runtime_moses_ini:
+            #         command = [self._mert_script, source_merged_corpus, target_merged_corpus,
+            #                    self._mert_i_script, runtime_moses_ini.name, '--mertdir',
+            #                    os.path.join(Moses.bin_path, 'bin'), '--mertargs', '\'--binary --sctype BLEU\'',
+            #                    '--working-dir', mert_wd, '--nbest', '100', '--decoder-flags',
+            #                    '"' + ' '.join(decoder_flags) + '"', '--nonorm', '--closest', '--no-filter-phrase-table']
+            #
+            #         with open(self._get_logfile('mert'), 'wb') as log:
+            #             shell.execute(' '.join(command), stdout=log, stderr=log)
+            #
+            # # Read optimized configuration
+            # with cmdlogger.step('Applying changes') as _:
+            #     bleu_score = 0
+            #     weights = {}
+            #     found_weights = False
+            #
+            #     with open(os.path.join(mert_wd, 'moses.ini')) as moses_ini:
+            #         for line in moses_ini:
+            #             line = line.strip()
+            #
+            #             if len(line) == 0:
+            #                 continue
+            #             elif found_weights:
+            #                 tokens = line.split()
+            #                 weights[tokens[0].rstrip('=')] = [float(val) for val in tokens[1:]]
+            #             elif line.startswith('# BLEU'):
+            #                 bleu_score = float(line.split()[2])
+            #             elif line == '[weight]':
+            #                 found_weights = True
+            #
+            #     _ = self.api.update_features(weights)
+            #
+            # cmdlogger.completed(bleu_score)
+        except Exception as e:
+            logger.exception(e)
+            raise
 
 
 class MMTWorker(_MMTDistributedComponent):
