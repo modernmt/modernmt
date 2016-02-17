@@ -46,6 +46,8 @@ JNITranslationRequest : public virtual Moses::TranslationTask
   JNITranslator* m_translator;
   uint64_t m_session_id;
 
+  std::vector<Moses::FactorType> m_factorOrder;
+
   void
   parse_request();
 

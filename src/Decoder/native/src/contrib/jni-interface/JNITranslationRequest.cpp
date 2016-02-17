@@ -50,8 +50,8 @@ Run()
     SPTR<std::map<std::string,float> > M(new std::map<std::string, float>(m_paramList.contextWeights));
     m_scope->SetContextWeights(M);
   }
-  
-  if (is_syntax(m_options->search.algo))
+
+  if(StaticData::Instance().IsSyntax())
     run_chart_decoder();
   else
     run_phrase_decoder();
@@ -95,9 +95,13 @@ outputNBest(const Manager& manager, std::vector<ResponseHypothesis>& nBest)
 
   nBest.clear();
 
-  Moses::NBestOptions const& nbo = m_options->nbest; 
+  Moses::NBestOptions const& nbo = m_options.nbest;
   manager.CalcNBest(nbo.nbest_size, nBestList, nbo.only_distinct);
-  manager.OutputNBest(cout, nBestList); 
+  StaticData const& SD = StaticData::Instance();
+  manager.OutputNBest(cout, nBestList,
+                      SD.GetOutputFactorOrder(),
+                      m_source->GetTranslationId(),
+                      m_options.output.ReportSegmentation);
 
   BOOST_FOREACH(Moses::TrellisPath const* path, nBestList) {
     vector<const Hypothesis *> const& E = path->GetEdges();
@@ -125,8 +129,8 @@ JNITranslationRequest(TranslationRequest const& paramList,
                    boost::condition_variable& cond, boost::mutex& mut)
   : m_cond(cond), m_mutex(mut), m_done(false), m_paramList(paramList)
   , m_session_id(0)
-{ 
-
+{
+  m_factorOrder.push_back(0);
 }
 
 void
@@ -144,7 +148,8 @@ parse_request()
     m_scope.reset(new Moses::ContextScope);
   }
 
-  boost::shared_ptr<Moses::AllOptions> opts(new Moses::AllOptions(*StaticData::Instance().options()));
+  boost::shared_ptr<Moses::AllOptions> opts(new Moses::AllOptions());
+  *opts = StaticData::Instance().options();
 
   if (m_paramList.nBestListSize > 0) {
     opts->nbest.only_distinct = true;
@@ -153,11 +158,11 @@ parse_request()
     opts->nbest.enabled = true;
   }
 
-  m_options = opts;
+  m_options = *opts;
 
   XVERBOSE(1,"Input: " << m_paramList.sourceSent << endl);
 
-  m_source.reset(new Sentence(m_options,0,m_paramList.sourceSent));
+  m_source.reset(new Sentence(0, m_paramList.sourceSent, m_options));
 } // end of Translationtask::parse_request()
 
 
@@ -165,9 +170,9 @@ void
 JNITranslationRequest::
 run_chart_decoder()
 {
-  Moses::TreeInput tinput(m_options);
+  Moses::TreeInput tinput;
   istringstream buf(m_paramList.sourceSent + "\n");
-  tinput.Read(buf);
+  tinput.Read(buf, m_options.input.factor_order, m_options);
   
   Moses::ChartManager manager(this->self());
   manager.Decode();
@@ -216,7 +221,7 @@ run_phrase_decoder()
   manager.Decode();
   pack_hypothesis(manager, manager.GetBestHypothesis(), m_retData.text);
 
-  if (m_options->nbest.nbest_size) outputNBest(manager, m_retData.hypotheses);
+  if (m_options.nbest.nbest_size) outputNBest(manager, m_retData.hypotheses);
 
 }
 }
