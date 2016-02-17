@@ -28,6 +28,7 @@ typedef struct {
     std::string text;
     int64_t session;
     std::vector<hypothesis_t> hypotheses;
+    std::vector<std::pair<size_t, size_t> > alignment;
 } translation_t;
 
 namespace JNIWrapper {

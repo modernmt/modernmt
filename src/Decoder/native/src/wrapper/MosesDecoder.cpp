@@ -125,6 +125,7 @@ translation_t MosesDecoderImpl::translate(const std::string &text, uint64_t sess
     for(auto h: response.hypotheses)
         translation.hypotheses.push_back(hypothesis_t{h.text, h.score, h.fvals});
     translation.session = response.session;
+    translation.alignment = response.alignment;
 
     return translation;
 }
