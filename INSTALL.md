@@ -97,7 +97,7 @@ sudo add-apt-repository ppa:openjdk-r/ppa
 sudo apt-get update
 
 sudo apt-get install libboost1.55-all-dev
-sudo apt-get install libtcmalloc-minimal4
+sudo apt-get install libgoogle-perftools-dev
 sudo apt-get install cmake
 sudo apt-get install openjdk-8-jdk
 sudo apt-get install git
