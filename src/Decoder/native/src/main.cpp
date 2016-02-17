@@ -57,6 +57,9 @@ int main(int argc, const char *argv[]) {
   int64_t ibmSession = decoder->openSession(ibm);
   int64_t europarlSession = decoder->openSession(europarl);
 
+  std::cout << "Opened Translation Session IBM ID: " << ibmSession << "\n";
+  std::cout << "Opened Translation Session EUR ID: " << europarlSession << "\n";
+
   translation = decoder->translate(text, ibmSession, NULL, 0);
   std::cout << "Translation Session IBM: " << translation.text << "\n";
   translation = decoder->translate(text, europarlSession, NULL, 0);

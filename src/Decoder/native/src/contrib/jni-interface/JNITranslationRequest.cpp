@@ -144,7 +144,7 @@ JNITranslationRequest::
 JNITranslationRequest(TranslationRequest const& paramList,
                    boost::condition_variable& cond, boost::mutex& mut)
   : m_cond(cond), m_mutex(mut), m_done(false), m_paramList(paramList)
-  , m_session_id(0)
+  , m_session_id(paramList.sessionId)
 {
   m_factorOrder.push_back(0);
 }

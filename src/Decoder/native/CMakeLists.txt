@@ -55,6 +55,7 @@ find_library(MOSES moses ${Moses_LIBRARIES})
 add_definitions(-DMAX_NUM_FACTORS=4)
 add_definitions(-DWITH_THREADS=1)
 add_definitions(-DHAVE_XMLRPC_C=0)
+#add_definitions(-DTRACE_ENABLE)  # add this to enable verbose moses output in general (otherwise, not even --verbose level will help)
 include_directories(${Moses_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} ${MOSES})
 
