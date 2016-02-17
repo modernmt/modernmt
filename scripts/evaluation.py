@@ -135,8 +135,9 @@ class BLEUScore(Score):
 
     def calculate(self, document, reference):
         script = os.path.abspath(os.path.join(__file__, os.pardir, 'opt', 'multi-bleu.perl'))
-        command = ['perl', script, document]
+        command = ['perl', script, reference]
 
         with open(document) as input_stream:
             stdout, _ = shell.execute(command, stdin=input_stream)
-            
+
+        return float(stdout)

@@ -26,6 +26,15 @@ class ParallelCorpus:
 
         return sorted([ParallelCorpus(*corpus) for _, corpus in name2corpus.iteritems()], key=attrgetter('name'))
 
+    @staticmethod
+    def filter(corpora, lang):
+        result = []
+
+        for corpus in corpora:
+            result.append(ParallelCorpus(corpus.name, corpus.root, [lang]))
+
+        return result
+
     def __init__(self, name, root, langs=None):
         self.name = name
         self.langs = langs if langs is not None else []

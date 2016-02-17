@@ -12,8 +12,9 @@ from ConfigParser import ConfigParser
 import requests
 
 import scripts
-from scripts.evaluation import MMTTranslator, GoogleTranslate
+from scripts.evaluation import MMTTranslator, GoogleTranslate, BLEUScore
 from scripts.libs import fileutils, daemon, shell
+from scripts.libs.prettytable import PrettyTable
 from scripts.mt import ParallelCorpus
 from scripts.mt.contextanalysis import ContextAnalyzer
 from scripts.mt.lm import LanguageModel
@@ -227,7 +228,7 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
             preprocessed_corpora = original_corpora
 
             if 'preprocess' in steps:
-                with cmdlogger.step('Corpora proprocessing') as _:
+                with cmdlogger.step('Corpora preprocessing') as _:
                     tokenizer_output = self._get_tempdir('preprocessed')
 
                     # (source, target, input_path, output_path, data_path=None)
@@ -440,6 +441,15 @@ class _EvaluatingProcessLogger:
     def completed(self, results):
         print '\n=========== EVALUATE SUCCESS ===========\n'
         print
+        print 'Results: '
+
+        table = PrettyTable(['Translator', 'BLEU'])
+        for translator, scores in results.iteritems():
+            bleu = '%.2f' % (scores['BLEU'] * 100)
+            table.add_row([translator, bleu])
+        print table
+        print
+
         sys.stdout.flush()
 
     def __enter__(self):
@@ -691,7 +701,7 @@ class MMTServer(_MMTDistributedComponent):
         target_lang = self.engine.target_lang
         source_lang = self.engine.source_lang
 
-        translators = [GoogleTranslate(source_lang, target_lang)]# [MMTTranslator(self)]
+        translators = [GoogleTranslate(source_lang, target_lang), MMTTranslator(self)]
 
         cmdlogger = _EvaluatingProcessLogger(1 + len(translators))
         cmdlogger.start(self, corpora)
@@ -699,102 +709,57 @@ class MMTServer(_MMTDistributedComponent):
         working_dir = self._get_tempdir('evaluate')
 
         try:
-            translations_path = os.path.join(working_dir, 'translations')
-            tokenized_path = os.path.join(working_dir, 'tokenized')
+            translations = []
 
             # Translate
             for translator in translators:
                 with cmdlogger.step('Translation with ' + translator.name()) as _:
                     tid = translator.name().replace(' ', '_')
 
-                    translations_output = os.path.join(translations_path, tid)
-                    tokenized_output = os.path.join(tokenized_path, tid)
+                    translations_path = os.path.join(working_dir, 'translations', tid)
+                    tokenized_path = os.path.join(working_dir, 'tokenized', tid)
 
-                    fileutils.makedirs(translations_output, exist_ok=True)
-                    fileutils.makedirs(tokenized_output, exist_ok=True)
+                    fileutils.makedirs(translations_path, exist_ok=True)
+                    fileutils.makedirs(tokenized_path, exist_ok=True)
 
                     for corpus in corpora:
-                        output_document = os.path.join(translations_output, corpus.name + '.' + target_lang)
+                        output_document = os.path.join(translations_path, corpus.name + '.' + target_lang)
                         translator.translate(corpus.get_file(source_lang), output_document)
 
-                    self.engine.tokenizer.batch_tokenize(ParallelCorpus.list(translations_output), tokenized_output)
+                    translated = ParallelCorpus.list(translations_path)
+                    tokenized = self.engine.tokenizer.batch_tokenize(translated, tokenized_path)
 
-            # BLEU
-            with cmdlogger.step('Calculating BLEU') as _:
-                pass
-            # # Tokenization
-            # tokenizer_output = os.path.join(working_dir, 'tokenized_corpora')
-            # fileutils.makedirs(tokenizer_output, exist_ok=True)
-            #
-            # with cmdlogger.step('Corpus tokenization') as _:
-            #     tokenized_corpora = self.engine.tokenizer.batch_tokenize(corpora, tokenizer_output)
+                    translations.append((translator, translated, tokenized))
 
+            # Tokenize test set
+            references = None
 
+            with cmdlogger.step('Tokenize reference') as _:
+                references_path = os.path.join(working_dir, 'references')
+                filtered_corpus = ParallelCorpus.filter(corpora, target_lang)
+                references = self.engine.tokenizer.batch_tokenize(filtered_corpus, references_path)
 
-            # translator = GoogleTranslate(source_lang, target_lang)
-            # translator.translate(corpora[0].get_file(source_lang), '/home/ubuntu/test.txt')
+            # Scoring
+            scores = {}
 
+            with cmdlogger.step('Calculating score') as _:
+                # Merging references
+                reference_file = os.path.join(working_dir, 'reference.' + target_lang)
+                fileutils.merge([corpus.get_file(target_lang) for corpus in references], reference_file)
 
+                for (translator, translated, tokenized) in translations:
+                    name = translator.name().replace(' ', '_')
 
-            #
-            # # Create merged corpus
-            # with cmdlogger.step('Merging corpus') as _:
-            #     source_merged_corpus = os.path.join(working_dir, 'corpus.' + source_lang)
-            #     with open(source_merged_corpus, 'wb') as out:
-            #         original_root = original_corpora[0].root
-            #
-            #         for corpus in tokenized_corpora:
-            #             tokenized = corpus.get_file(source_lang)
-            #             original = os.path.join(original_root, corpus.name + '.' + source_lang)
-            #             out.write(tokenized + ':' + original + '\n')
-            #
-            #     target_merged_corpus = os.path.join(working_dir, 'corpus.' + target_lang)
-            #     fileutils.merge([corpus.get_file(target_lang) for corpus in tokenized_corpora], target_merged_corpus)
-            #
-            # # Run MERT algorithm
-            # with cmdlogger.step('Tuning') as _:
-            #     # Start MERT
-            #     decoder_flags = ['--port', str(self.api_port)]
-            #
-            #     if not context_enabled:
-            #         decoder_flags.append('--skip-context-analysis')
-            #         decoder_flags.append('1')
-            #
-            #     fileutils.makedirs(mert_wd, exist_ok=True)
-            #
-            #     with tempfile.NamedTemporaryFile() as runtime_moses_ini:
-            #         command = [self._mert_script, source_merged_corpus, target_merged_corpus,
-            #                    self._mert_i_script, runtime_moses_ini.name, '--mertdir',
-            #                    os.path.join(Moses.bin_path, 'bin'), '--mertargs', '\'--binary --sctype BLEU\'',
-            #                    '--working-dir', mert_wd, '--nbest', '100', '--decoder-flags',
-            #                    '"' + ' '.join(decoder_flags) + '"', '--nonorm', '--closest', '--no-filter-phrase-table']
-            #
-            #         with open(self._get_logfile('mert'), 'wb') as log:
-            #             shell.execute(' '.join(command), stdout=log, stderr=log)
-            #
-            # # Read optimized configuration
-            # with cmdlogger.step('Applying changes') as _:
-            #     bleu_score = 0
-            #     weights = {}
-            #     found_weights = False
-            #
-            #     with open(os.path.join(mert_wd, 'moses.ini')) as moses_ini:
-            #         for line in moses_ini:
-            #             line = line.strip()
-            #
-            #             if len(line) == 0:
-            #                 continue
-            #             elif found_weights:
-            #                 tokens = line.split()
-            #                 weights[tokens[0].rstrip('=')] = [float(val) for val in tokens[1:]]
-            #             elif line.startswith('# BLEU'):
-            #                 bleu_score = float(line.split()[2])
-            #             elif line == '[weight]':
-            #                 found_weights = True
-            #
-            #     _ = self.api.update_features(weights)
-            #
-            # cmdlogger.completed(bleu_score)
+                    translated_merged = os.path.join(working_dir, name + '.' + target_lang)
+                    tokenized_merged = os.path.join(working_dir, name + '.tok.' + target_lang)
+                    fileutils.merge([corpus.get_file(target_lang) for corpus in translated], translated_merged)
+                    fileutils.merge([corpus.get_file(target_lang) for corpus in tokenized], tokenized_merged)
+
+                    scores[translator.name()] = {
+                        'BLEU': BLEUScore().calculate(tokenized_merged, reference_file)
+                    }
+
+            cmdlogger.completed(scores)
         except Exception as e:
             logger.exception(e)
             raise
