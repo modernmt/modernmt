@@ -1,8 +1,9 @@
 import multiprocessing
+import os
 
 import requests
 
-from scripts.libs import multithread
+from scripts.libs import multithread, shell
 
 
 class TranslateError(Exception):
@@ -132,5 +133,10 @@ class BLEUScore(Score):
     def name(self):
         return 'BLEU'
 
-    def calculate(self, corpora, references):
-        pass
+    def calculate(self, document, reference):
+        script = os.path.abspath(os.path.join(__file__, os.pardir, 'opt', 'multi-bleu.perl'))
+        command = ['perl', script, document]
+
+        with open(document) as input_stream:
+            stdout, _ = shell.execute(command, stdin=input_stream)
+            
