@@ -8,6 +8,9 @@ file(GLOB JNI_SRC src/jni/*.h src/jni/*.cpp)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 add_library(${PROJECT_NAME} SHARED ${WRAPPER_SRC} ${JNI_SRC} ${MOSES_IFACE_SRC})
 
+add_executable(jnitest src/main.cpp)
+target_link_libraries(jnitest ${PROJECT_NAME})
+
 include_directories(src)
 include_directories(jheaders)
 
