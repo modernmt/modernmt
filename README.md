@@ -96,6 +96,11 @@ BLEU:
   MMT              : 37.50 (Winner)
   Google Translate : 36.10 | API Limit Exeeded | Connection Error
   Bing Translator  : Coming in next MMT release
+
+Translation Speed:
+  MMT              :  12 words/s
+  Google Translate :  100 words/s
+  
 ```
 
 If you want to test on a different Test Set just type:
