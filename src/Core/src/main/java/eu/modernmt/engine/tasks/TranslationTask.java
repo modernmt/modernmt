@@ -8,6 +8,7 @@ import eu.modernmt.processing.framework.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -82,7 +83,7 @@ public class TranslationTask extends DistributedCallable<Translation> {
             List<TranslationHypothesis> nbest = translation.getNbest();
 
             ProcessingPipeline<String[], String> detokenizer = worker.getDetokenizer();
-            translation = new Translation(detokenizer.process(translation.getTokens()), source);
+            translation = new Translation(detokenizer.process(translation.getTokens()), source, translation.getAlignment());
 
             if (nbest != null) {
                 NBestDetokenizer nBestDetokenizer = new NBestDetokenizer(nbest);
