@@ -114,7 +114,7 @@ Matecat kindly provide unlimited fair usage access to their API to MMT users.
 
 You can add your Google Translate editing this file:
 ```
-mmt.cong.json
+mmt.conf.json
 ```
 
 
