@@ -93,7 +93,7 @@ Matecat Post-Editing Effort:
   Bing Translator  : Coming in next MMT release
 
 BLEU:
-  MMT - BLEU       : 37.50 (Winner)
+  MMT              : 37.50 (Winner)
   Google Translate : 36.10 | API Limit Exeeded | Connection Error
   Bing Translator  : Coming in next MMT release
 ```
