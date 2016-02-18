@@ -79,7 +79,7 @@ Evaluate helps you answer these question.
 Before training MMT has removed up to 1200 test sentences from the training set.
 During evaluate this sentences are used to compute the BLUE Score and Matecat Post-Editing Effort against the MMT and Google Translate.
 
-Just type:
+With your engine running, just type:
 ```
 ./mmt evaluate
 ```
