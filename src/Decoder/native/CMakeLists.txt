@@ -2,11 +2,10 @@ cmake_minimum_required(VERSION 3.2)
 project(jnimoses)
 
 file(GLOB WRAPPER_SRC src/wrapper/*.h src/wrapper/*.cpp)
-file(GLOB MOSES_IFACE_SRC src/contrib/jni-interface/*.h src/contrib/jni-interface/*.cpp)
 file(GLOB JNI_SRC src/jni/*.h src/jni/*.cpp)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-add_library(${PROJECT_NAME} SHARED ${WRAPPER_SRC} ${JNI_SRC} ${MOSES_IFACE_SRC})
+add_library(${PROJECT_NAME} SHARED ${WRAPPER_SRC} ${JNI_SRC})
 
 add_executable(jnitest src/main.cpp)
 target_link_libraries(jnitest ${PROJECT_NAME})

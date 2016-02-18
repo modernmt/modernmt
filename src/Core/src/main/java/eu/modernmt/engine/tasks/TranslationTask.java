@@ -8,6 +8,7 @@ import eu.modernmt.tokenizer.DetokenizerPool;
 import eu.modernmt.tokenizer.TokenizerPool;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -78,11 +79,15 @@ public class TranslationTask extends DistributedCallable<Translation> {
             translation = nbest > 0 ? decoder.translate(tokenizedSource, nbest) : decoder.translate(tokenizedSource);
         }
 
+        for (int[] pair : translation.getAlignment()) {
+            System.out.println(Arrays.toString(pair));
+        }
+
         if (processing) {
             DetokenizerPool detokenizer = worker.getDetokenizer();
 
             List<TranslationHypothesis> nbest = translation.getNbest();
-            translation = new Translation(detokenizer.detokenize(translation.getTokens()), source);
+            translation = new Translation(detokenizer.detokenize(translation.getTokens()), source, translation.getAlignment());
 
             if (nbest != null) {
                 List<TranslationHypothesis> detokNBest = new ArrayList<>(nbest.size());

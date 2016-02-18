@@ -3,9 +3,9 @@
 //
 
 #include "MosesDecoder.h"
+#include "JNITranslator.h"
 #include <moses/server/Server.h>
 #include <moses/FF/StatefulFeatureFunction.h>
-#include <contrib/jni-interface/JNITranslator.h>
 
 using namespace JNIWrapper;
 

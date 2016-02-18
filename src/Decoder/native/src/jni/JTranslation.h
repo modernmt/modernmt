@@ -11,6 +11,7 @@
 
 class JTranslation {
     jmethodID constructor;
+
     JTranslation(JNIEnv *);
 
 public:
@@ -18,11 +19,14 @@ public:
 
     static JTranslation *instance(JNIEnv *);
 
-    jobject create(JNIEnv *jvm, std::string &text, jobjectArray nbestList);
+    jobjectArray getAlignment(JNIEnv *, std::vector <std::pair<size_t, size_t>>);
+
+    jobject create(JNIEnv *jvm, std::string &text, jobjectArray nbestList, jobjectArray alignment);
 };
 
 class JHypothesis {
     jmethodID constructor;
+
     JHypothesis(JNIEnv *);
 
 public:

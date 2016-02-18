@@ -56,14 +56,16 @@ class TranslationXObject {
 
     public String text;
     public Hypothesis[] nbestList;
+    public int[][] alignment;
 
-    public TranslationXObject(String text, Hypothesis[] nbestList) {
+    public TranslationXObject(String text, Hypothesis[] nbestList, int[][] alignment) {
         this.text = text;
         this.nbestList = nbestList;
+        this.alignment = alignment;
     }
 
     public Translation getTranslation(Sentence source) {
-        Translation translation = new Translation(text, source);
+        Translation translation = new Translation(text, source, alignment);
 
         if (nbestList != null && nbestList.length > 0) {
             List<TranslationHypothesis> nbest = new ArrayList<>(nbestList.length);
