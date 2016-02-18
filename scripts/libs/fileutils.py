@@ -1,5 +1,5 @@
-import os
 import errno
+import os
 import shutil
 
 __author__ = 'Davide Caroselli'
@@ -11,6 +11,16 @@ def makedirs(name, mode=0777, exist_ok=False):
     except OSError as exception:
         if not exist_ok or exception.errno != errno.EEXIST:
             raise
+
+
+def wordcount(f):
+    wc = 0
+
+    with open(f, 'r+') as stream:
+        for _ in stream.read().split():
+            wc += 1
+
+    return wc
 
 
 def merge(srcs, dest, buffer_size=10 * 1024 * 1024, delimiter=None):

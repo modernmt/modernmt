@@ -12,9 +12,8 @@ from ConfigParser import ConfigParser
 import requests
 
 import scripts
-from scripts.evaluation import MMTTranslator, GoogleTranslate, BLEUScore
+from scripts.evaluation import MMTTranslator, GoogleTranslate, BLEUScore, MatecatScore, TranslateError, BingTranslator
 from scripts.libs import fileutils, daemon, shell
-from scripts.libs.prettytable import PrettyTable
 from scripts.mt import ParallelCorpus
 from scripts.mt.contextanalysis import ContextAnalyzer
 from scripts.mt.lm import LanguageModel
@@ -414,58 +413,6 @@ class _TuningProcessLogger:
         sys.stdout.flush()
 
 
-class _EvaluatingProcessLogger:
-    def __init__(self, count, line_len=70):
-        self.line_len = line_len
-        self.count = count
-        self._current_step = 0
-        self._step = None
-        self._api_port = None
-
-    def start(self, server, corpora):
-        engine = server.engine
-        self._api_port = server.api_port
-
-        print '\n=========== EVALUATE STARTED ===========\n'
-        print 'ENGINE:  %s' % engine.name
-        print 'CORPORA: %s (%d documents)' % (corpora[0].root, len(corpora))
-        print 'LANGS:   %s > %s' % (engine.source_lang, engine.target_lang)
-        print
-        sys.stdout.flush()
-
-    def step(self, step):
-        self._step = step
-        self._current_step += 1
-        return self
-
-    def completed(self, results):
-        print '\n=========== EVALUATE SUCCESS ===========\n'
-        print
-        print 'Results: '
-
-        table = PrettyTable(['Translator', 'BLEU'])
-        for translator, scores in results.iteritems():
-            bleu = '%.2f' % (scores['BLEU'] * 100)
-            table.add_row([translator, bleu])
-        print table
-        print
-
-        sys.stdout.flush()
-
-    def __enter__(self):
-        message = 'INFO: (%d of %d) %s... ' % (self._current_step, self.count, self._step)
-        print message.ljust(self.line_len),
-        sys.stdout.flush()
-
-        self._start_time = time.time()
-        return self
-
-    def __exit__(self, *_):
-        self._end_time = time.time()
-        print 'DONE (in %ds)' % int(self._end_time - self._start_time)
-        sys.stdout.flush()
-
-
 class MMTServerApi:
     def __init__(self, port):
         self.port = port
@@ -688,10 +635,7 @@ class MMTServer(_MMTDistributedComponent):
             if not debug:
                 self._clear_tempdir()
 
-    def evaluate(self, corpora=None, google_key=None):
-        if corpora is None:
-            corpora = ParallelCorpus.list(os.path.join(self.engine.data_path, Preprocessor.TEST_FOLDER_NAME))
-
+    def evaluate(self, corpora, google_key=None):
         if len(corpora) == 0:
             raise Exception('empty corpora')
 
@@ -701,68 +645,83 @@ class MMTServer(_MMTDistributedComponent):
         target_lang = self.engine.target_lang
         source_lang = self.engine.source_lang
 
-        translators = [GoogleTranslate(source_lang, target_lang), MMTTranslator(self)]
-
-        cmdlogger = _EvaluatingProcessLogger(1 + len(translators))
-        cmdlogger.start(self, corpora)
+        translators = [
+            GoogleTranslate(source_lang, target_lang, key=google_key),
+            BingTranslator(source_lang, target_lang),
+            MMTTranslator(self)
+        ]
 
         working_dir = self._get_tempdir('evaluate')
 
-        try:
-            translations = []
+        translations = []
 
-            # Translate
-            for translator in translators:
-                with cmdlogger.step('Translation with ' + translator.name()) as _:
-                    tid = translator.name().replace(' ', '_')
+        # Tokenize test set
+        references_path = os.path.join(working_dir, 'references')
+        tokenized_corpora = self.engine.tokenizer.batch_tokenize(corpora, references_path)
 
-                    translations_path = os.path.join(working_dir, 'translations', tid)
-                    tokenized_path = os.path.join(working_dir, 'tokenized', tid)
+        tokenized_references = ParallelCorpus.filter(tokenized_corpora, target_lang)
+        original_references = ParallelCorpus.filter(corpora, target_lang)
 
-                    fileutils.makedirs(translations_path, exist_ok=True)
-                    fileutils.makedirs(tokenized_path, exist_ok=True)
+        # Compute wordcount
+        wordcount = 0
+        for corpus in tokenized_corpora:
+            wordcount += fileutils.wordcount(corpus.get_file(source_lang))
 
-                    for corpus in corpora:
-                        output_document = os.path.join(translations_path, corpus.name + '.' + target_lang)
-                        translator.translate(corpus.get_file(source_lang), output_document)
+        # Translate
+        for translator in translators:
+            tid = translator.name().replace(' ', '_')
 
-                    translated = ParallelCorpus.list(translations_path)
-                    tokenized = self.engine.tokenizer.batch_tokenize(translated, tokenized_path)
+            translations_path = os.path.join(working_dir, 'translations', tid)
+            tokenized_path = os.path.join(working_dir, 'tokenized', tid)
 
-                    translations.append((translator, translated, tokenized))
+            fileutils.makedirs(translations_path, exist_ok=True)
+            fileutils.makedirs(tokenized_path, exist_ok=True)
 
-            # Tokenize test set
-            references = None
+            try:
+                speed = 0
 
-            with cmdlogger.step('Tokenize reference') as _:
-                references_path = os.path.join(working_dir, 'references')
-                filtered_corpus = ParallelCorpus.filter(corpora, target_lang)
-                references = self.engine.tokenizer.batch_tokenize(filtered_corpus, references_path)
+                for corpus in corpora:
+                    output_document = os.path.join(translations_path, corpus.name + '.' + target_lang)
+                    now = time.time()
+                    translator.translate(corpus.get_file(source_lang), output_document)
+                    speed = wordcount / (time.time() - now)
 
-            # Scoring
-            scores = {}
+                translated = ParallelCorpus.list(translations_path)
+                tokenized = self.engine.tokenizer.batch_tokenize(translated, tokenized_path)
 
-            with cmdlogger.step('Calculating score') as _:
-                # Merging references
-                reference_file = os.path.join(working_dir, 'reference.' + target_lang)
-                fileutils.merge([corpus.get_file(target_lang) for corpus in references], reference_file)
+                translations.append((translator, translated, tokenized, speed))
+            except TranslateError as e:
+                translations.append((translator, e))
 
-                for (translator, translated, tokenized) in translations:
-                    name = translator.name().replace(' ', '_')
+        # Merging references
+        tokenized_reference_file = os.path.join(working_dir, 'reference.tok.' + target_lang)
+        original_reference_file = os.path.join(working_dir, 'reference.' + target_lang)
+        fileutils.merge([corpus.get_file(target_lang) for corpus in tokenized_references], tokenized_reference_file)
+        fileutils.merge([corpus.get_file(target_lang) for corpus in original_references], original_reference_file)
 
-                    translated_merged = os.path.join(working_dir, name + '.' + target_lang)
-                    tokenized_merged = os.path.join(working_dir, name + '.tok.' + target_lang)
-                    fileutils.merge([corpus.get_file(target_lang) for corpus in translated], translated_merged)
-                    fileutils.merge([corpus.get_file(target_lang) for corpus in tokenized], tokenized_merged)
+        # Scoring
+        scores = {}
 
-                    scores[translator.name()] = {
-                        'BLEU': BLEUScore().calculate(tokenized_merged, reference_file)
-                    }
+        for translation in translations:
+            if len(translation) > 2:
+                translator, translated, tokenized, speed = translation
+                tid = translator.name().replace(' ', '_')
 
-            cmdlogger.completed(scores)
-        except Exception as e:
-            logger.exception(e)
-            raise
+                translated_merged = os.path.join(working_dir, tid + '.' + target_lang)
+                tokenized_merged = os.path.join(working_dir, tid + '.tok.' + target_lang)
+                fileutils.merge([corpus.get_file(target_lang) for corpus in translated], translated_merged)
+                fileutils.merge([corpus.get_file(target_lang) for corpus in tokenized], tokenized_merged)
+
+                scores[translator.name()] = {
+                    'bleu': BLEUScore().calculate(tokenized_merged, tokenized_reference_file),
+                    'matecat': MatecatScore().calculate(translated_merged, original_reference_file),
+                    '_speed': speed
+                }
+            else:
+                translator, e = translation
+                scores[translator.name()] = e.message
+
+        return scores
 
 
 class MMTWorker(_MMTDistributedComponent):

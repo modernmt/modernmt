@@ -5,6 +5,8 @@ import os
 import socket
 import sys
 
+import operator
+
 from scripts import dependency
 from scripts.engine import DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORTS
 from scripts.engine import MMTEngine, MMTServer, MMTWorker
@@ -15,7 +17,7 @@ from scripts.mt.contextanalysis import ContextAnalyzer
 from scripts.mt.lm import LanguageModel
 from scripts.mt.moses import Moses
 from scripts.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
-from scripts.mt.processing import Tokenizer, CorpusCleaner, Detokenizer
+from scripts.mt.processing import Tokenizer, CorpusCleaner, Detokenizer, Preprocessor
 
 __author__ = 'Davide Caroselli'
 __description = '''\
@@ -143,9 +145,73 @@ def main_evaluate(argv):
     injector.read_config(engine.config)
     engine = injector.inject(engine)
     server = MMTServer(engine, args.api_port)
-    corpora = ParallelCorpus.list(args.corpora_path) if args.corpora_path is not None else None
+    corpora = ParallelCorpus.list(args.corpora_path) if args.corpora_path is not None \
+        else ParallelCorpus.list(os.path.join(engine.data_path, Preprocessor.TEST_FOLDER_NAME))
 
-    server.evaluate(corpora=corpora)
+    lines = 0
+    for corpus in corpora:
+        lines += corpus.count_lines()
+
+    print '\nTesting on {lines} sentences...\n'.format(lines=lines)
+    sys.stdout.flush()
+
+    scores = server.evaluate(corpora=corpora)
+
+    matecat = sorted([(translator,
+                       -1 if isinstance(score, basestring) else score['matecat'],
+                       score if isinstance(score, basestring) else None)
+                      for translator, score in scores.iteritems()
+                      ], key=operator.itemgetter(1), reverse=True)
+    bleu = sorted([(translator,
+                    -1 if isinstance(score, basestring) else score['bleu'],
+                    score if isinstance(score, basestring) else None)
+                   for translator, score in scores.iteritems()
+                   ], key=operator.itemgetter(1), reverse=True)
+    speed = sorted([(translator,
+                    -1 if isinstance(score, basestring) else score['_speed'],
+                    score if isinstance(score, basestring) else None)
+                   for translator, score in scores.iteritems()
+                   ], key=operator.itemgetter(1), reverse=True)
+
+    print 'Matecat Post-Editing Effort:'
+    for i in range(0, len(matecat)):
+        translator, score, error = matecat[i]
+
+        if error is None:
+            text = '%.2f' % (score * 100)
+            if i == 0:
+                text += ' (Winner)'
+        else:
+            text = error
+
+        print '  %s: %s' % (translator.ljust(20), text)
+    print
+
+    print 'BLEU:'
+    for i in range(0, len(bleu)):
+        translator, score, error = bleu[i]
+
+        if error is None:
+            text = '%.2f' % (score * 100)
+            if i == 0:
+                text += ' (Winner)'
+        else:
+            text = error
+
+        print '  %s: %s' % (translator.ljust(20), text)
+    print
+
+    print 'Translation Speed:'
+    for i in range(0, len(speed)):
+        translator, score, error = speed[i]
+
+        if error is None:
+            text = '%d words/s' % score
+        else:
+            text = error
+
+        print '  %s: %s' % (translator.ljust(20), text)
+    print
 
 
 def main_start(argv):
