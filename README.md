@@ -68,7 +68,7 @@ You will get:
 }
 ```
 
-### Evaluating the Quality
+### Evaluating Quality (available from release 0.12)
 
 How is your engine performing vs the commercial state-of-the-art technologies?
 
