@@ -90,12 +90,12 @@ Testing on 980 sentences...
 Matecat Post-Editing Effort:
   MMT              : 75.10 (Winner)
   Google Translate : 73.40 | API Limit Exeeded | Connection Error
-  Bing Translator  : Coming in MMT 0.13
+  Bing Translator  : Coming in next MMT release
 
 BLEU:
   MMT - BLEU       : 37.50 (Winner)
   Google Translate : 36.10 | API Limit Exeeded | Connection Error
-  Bing Translator  : Coming in MMT 0.13
+  Bing Translator  : Coming in next MMT release
 ```
 
 If you want to test on a different Test Set just type:
