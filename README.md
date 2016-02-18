@@ -76,8 +76,8 @@ Should I use Google Translate, Bing or MMT given this data?
 
 Evaluate helps you answer these question.
 
-Before training MMT has removed up to 1000 test sentences from the training set.
-During evaluate this sentences are used to compute the BLUE Score and Matecat Post-Edit Effort againg the MMT and Google Translate.
+Before training MMT has removed up to 1200 test sentences from the training set.
+During evaluate this sentences are used to compute the BLUE Score and Matecat Post-Editing Effort against the MMT and Google Translate.
 
 Just type:
 ```
@@ -87,7 +87,7 @@ The typical output will be
 ```
 Testing on 980 sentences...
 
-Matecat Post Editing Effort:
+Matecat Post-Editing Effort:
   MMT              : 75.10 (Winner)
   Google Translate : 73.40 | API Limit Exeeded | Connection Error
   Bing Translator  : Coming in MMT 0.13
@@ -96,15 +96,11 @@ BLEU:
   MMT - BLEU       : 37.50 (Winner)
   Google Translate : 36.10 | API Limit Exeeded | Connection Error
   Bing Translator  : Coming in MMT 0.13
-
-Single-Thread Speed:
- MMT              :   12 words/s (see API reference on how to improve speed)
- Google Translate :  100 words/s
 ```
 
-If you want to test on a different Test Set with a different API parameters just type:
+If you want to test on a different Test Set just type:
 ```
-./mmt evaluate your-folder/your-test-set poplimit=1000
+./mmt evaluate --path your-folder/your-test-set
 ```
 
 Notes:
@@ -112,9 +108,9 @@ To run Evaluate you need internet connection for Google Translate API and the Ma
 MMT comes with a limited Google Translate API key. 
 Matecat kindly provide unlimited fair usage access to their API to MMT users.
 
-You can add your Google Translate editing this file:
+You can select your Google Translate API Key by typing:
 ```
-mmt.conf.json
+./mmt evaluate --gt-key YOUR_GOOGLE_TRANSLATE_API_KEY
 ```
 
 
