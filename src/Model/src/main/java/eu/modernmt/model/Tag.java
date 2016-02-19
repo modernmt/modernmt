@@ -3,14 +3,14 @@ package eu.modernmt.model;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Tag extends Token implements Comparable<Tag> {
+public class Tag extends Token implements Comparable<Tag>, Cloneable {
 
     public static final Pattern TagRegex = Pattern.compile(
             "(<((\\p{Alpha}|_|:)(\\p{Alpha}|\\p{Digit}|\\.|-|_|:|)*)[^>]*/?>)|" +
                     "(</((\\p{Alpha}|_|:)(\\p{Alpha}|\\p{Digit}|\\.|-|_|:|)*)[^>]*>)");
     public static final Pattern TagNameRegex = Pattern.compile("(\\p{Alpha}|_|:)(\\p{Alpha}|\\p{Digit}|\\.|-|_|:|)*");
 
-    protected enum Type {
+    public enum Type {
         OPENING_TAG,
         CLOSING_TAG,
         EMPTY_TAG,
@@ -87,9 +87,14 @@ public class Tag extends Token implements Comparable<Tag> {
         this.leftSpace = leftSpace;
     }
 
+    @Override
     public int compareTo(Tag other) {
         return Integer.compare(this.position, other.getPosition());
     }
 
+    @Override
+    public Tag clone() {
+        return new Tag(name, text, leftSpace, rightSpace, position, type);
+    }
 }
 
