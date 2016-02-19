@@ -203,10 +203,9 @@ cd ../../
 
 ## Install Moses
 
-Clone MMT Moses submodule, clone Moses repository and move to mmt-dev branch:
+Clone Moses repository and move to mmt-dev branch:
 
 ```
-git clone http://github.com/modernmt/moses-submodule mmt-submodule
 git clone https://github.com/ModernMT/mosesdecoder.git mosesdecoder
 cd mosesdecoder
 git checkout mmt-dev
@@ -216,7 +215,6 @@ Finally compile Moses:
 
 ```
 /usr/bin/bjam -j$(nproc) -q --with-mm          \
-         --mmt=$(pwd)/../mmt-submodule         \
          --with-irstlm=$(pwd)/../irstlm/build  \
          --with-cmph=/usr/local                \
          --with-xmlrpc-c=/usr/local            \
