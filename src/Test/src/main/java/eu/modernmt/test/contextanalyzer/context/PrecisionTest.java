@@ -1,4 +1,4 @@
-package eu.modernmt.contextanalyzer.test.context;
+package eu.modernmt.test.contextanalyzer.context;
 
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
