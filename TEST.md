@@ -60,7 +60,7 @@ The structure of the json is the following:
 ```
 
 An example of the output of a test is the one generate from the PrecisionTest of the context analyzer:
-
+```json
 {  
    "name":"Context Analyzer Precision Test",
    "description":"It creates an instance of the context analyzer and queries it to compute some metrics to evaluate the efficiency of the IR system.",
@@ -73,3 +73,4 @@ An example of the output of a test is the one generate from the PrecisionTest of
       "numberOfMatches":1.0
    }
 }
+```
