@@ -64,6 +64,7 @@ public class _Sentence {
         int tagIndex = 0;
         _Tag tag = tags[tagIndex];
 
+
         for (int i = 0; i < tokens.length; i++) {
             while (tag != null && i == tag.getPosition()) {
                 sentence[sIndex++] = tag;
@@ -83,6 +84,7 @@ public class _Sentence {
 
         for (int i = 0; i < sentence.length; i++) {
             _Token token = sentence[i];
+
             builder.append(token.getText());
 
             _Tag next = null;
@@ -101,44 +103,45 @@ public class _Sentence {
     }
 
     public static void main(String[] args) throws Throwable {
-        _Sentence sentence1 = new _Sentence(new _Token[] {
+        _Sentence sentence1 = new _Sentence(new _Token[]{
                 new _Token("Ciao", true),
                 new _Token("Davide", false),
-        }, new _Tag[] {
+        }, new _Tag[]{
                 new _Tag("<b>", true, false, 1),
                 new _Tag("</b>", false, false, 2),
         });
 
-        _Sentence sentence2 = new _Sentence(new _Token[] {
+        _Sentence sentence2 = new _Sentence(new _Token[]{
                 new _Token("Ciao", true),
                 new _Token("Davide", false),
-        }, new _Tag[] {
+        }, new _Tag[]{
                 new _Tag("<b>", false, false, 0),
                 new _Tag("</b>", false, false, 2),
         });
 
-        _Sentence sentence3 = new _Sentence(new _Token[] {
+        _Sentence sentence3 = new _Sentence(new _Token[]{
                 new _Token("Ciao", true),
                 new _Token("Davide", false),
-        }, new _Tag[] {
+        }, new _Tag[]{
                 new _Tag("<b>", true, false, 1),
                 new _Tag("</b>", false, false, 1),
         });
 
-        _Sentence sentence4 = new _Sentence(new _Token[] {
+        _Sentence sentence4 = new _Sentence(new _Token[]{
                 new _Token("Ciao", true),
                 new _Token("Davide", false),
-        }, new _Tag[] {
+        }, new _Tag[]{
                 new _Tag("<b>", true, false, 2),
                 new _Tag("</b>", false, false, 2),
         });
 
-        _Sentence sentence5 = new _Sentence(new _Token[] {
+        _Sentence sentence5 = new _Sentence(new _Token[]{
                 new _Token("Ciao", true),
                 new _Token("Davide", false),
-        }, new _Tag[] {
-                new _Tag("<b>", true, false, 2),
-                new _Tag("</b>", false, false, 2),
+                new _Token("!", false),
+        }, new _Tag[]{
+                new _Tag("<b>", true, false, 1),
+                new _Tag("</b>", false, false, 3),
         });
 
         System.out.println(sentence5);
