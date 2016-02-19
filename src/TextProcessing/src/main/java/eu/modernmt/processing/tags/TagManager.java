@@ -7,8 +7,6 @@ import java.util.regex.Pattern;
 
 import static java.util.regex.Pattern.*;
 
-
-import java.util.Arrays;
 import java.util.ArrayList;
 
 /**
@@ -29,20 +27,19 @@ public class TagManager {
 //        String selfContainedTagPattern = "/>";
         Pattern selfContainedTagPattern = compile("/>");
 
-        String[] name = new String[tags.length];
         boolean[] closingTagFlag = new boolean[tags.length];
         boolean[] selfContainedTagFlag = new boolean[tags.length];
 
-        String _name = "";
+        String _name;
         for (int i = 0; i < tags.length; i++) {
             Matcher matcher = tagNamePattern.matcher(tags[i].text);
             _name = (matcher.find()) ? matcher.group(0) : "";
             tags[i].setName(_name);
             matcher = selfContainedTagPattern.matcher(tags[i].text);
-            selfContainedTagFlag[i] = (matcher.find()) ? true : false;
+            selfContainedTagFlag[i] = matcher.find();
 
             matcher = closingTagPattern.matcher(tags[i].text);
-            closingTagFlag[i] = (matcher.find()) ? true : false;
+            closingTagFlag[i] = matcher.find();
         }
 
         //identify tag type according to tag text
@@ -60,7 +57,7 @@ public class TagManager {
                 } else {
                     int j = i + 1;
                     while (j < tags.length) {
-                        if (tags[j].getName().equals(tags[i].getName()) && closingTagFlag[j] == true && closingTagFlag[i] == false) {
+                        if (tags[j].getName().equals(tags[i].getName()) && closingTagFlag[j] && !closingTagFlag[i]) {
 
                             // check whether the current tag is either OPENED/CLOSED_EMPTY/NONEMPT_TEXT or CONTAINS_NONEMPTY_TEXT
                             if (tags[j].getPosition() == tags[i].getPosition()) {
@@ -84,7 +81,7 @@ public class TagManager {
                     }
                     if (j == tags.length) {
                         // check whether the current tag is either OPENED_BUT_UNCLOSED or CLOSED_BUT_UNOPENED
-                        if (closingTagFlag[i] == false) {
+                        if (!closingTagFlag[i]) {
                             tags[i].setType(_mappingTag.Type.OPENED_BUT_UNCLOSED);
                             tags[i].setParent(i);
                             // artificially covering all words until the end of source
@@ -126,7 +123,7 @@ public class TagManager {
     protected void setTranslationTags(_mappingTag[] sourceMappingTags, _Sentence source, _Translation translation) {
 
         //create a map from source positions to target position
-        ArrayList<ArrayList<Integer>> alignmentSourceToTarget = new ArrayList<ArrayList<Integer>>(source.getTokens().length);
+        ArrayList<ArrayList<Integer>> alignmentSourceToTarget = new ArrayList<>(source.getTokens().length);
         setAlignmentMap(alignmentSourceToTarget, source.getTokens().length, translation.getAlignment());
 
         System.out.println("Alignment (SourceToTarget):" + alignmentSourceToTarget.toString());
@@ -139,8 +136,8 @@ public class TagManager {
             /**check whether the source position associated to this tag is associated with any word (i.e.position != -1);
              * if not just add the tag with the same info in the target
              */
-            _mappingTag newTargetMappingTag = new _mappingTag(currentSourceMappingTag.getText(), currentSourceMappingTag.hasLeftSpace(), currentSourceMappingTag.hasRightSpace(), -1, currentSourceTagType, currentSourceMappingTag.getLink());
-            ArrayList<Integer> targetPositions = new ArrayList<Integer>();
+            _mappingTag newTargetMappingTag = new _mappingTag(currentSourceMappingTag.getText(), currentSourceMappingTag.hasLeftSpace(), currentSourceMappingTag.hasRightSpace(), -1, currentSourceTagType, currentSourceMappingTag.getName(), currentSourceMappingTag.getLink());
+            ArrayList<Integer> targetPositions = new ArrayList<>();
             if (currentSourceTagType == _mappingTag.Type.SELF_CONTAINED) {
                 /** check the type pof source tag and act consequently
                  * if SELF_CONTAINED put it as it is in the aligned position (note that link should be 0)
@@ -194,42 +191,87 @@ public class TagManager {
 //do nothing
             } else if (targetPositions.size() == 1) {
 
-                int targetPosition = targetPositions.get(0);
+                int firstTargetPosition = targetPositions.get(0);
+                int targetPosition = firstTargetPosition;
 
                 if (currentTargetTagType == _mappingTag.Type.CLOSED_NONEMPTY_TEXT || currentTargetTagType == _mappingTag.Type.CLOSED_BUT_UNOPENED) {
-                    _Tag targetTag = new _Tag(currentTargetMappingTag.getText(), currentTargetMappingTag.hasLeftSpace(), currentTargetMappingTag.hasRightSpace(), targetPosition + 1);
-                    targetTagList.add(targetTag);
-                    //System.out.println("targetTag text:" + targetTag.getText() + " position:" + (targetPosition+1));
-                }else{
-                    _Tag targetTag = new _Tag(currentTargetMappingTag.getText(), currentTargetMappingTag.hasLeftSpace(), currentTargetMappingTag.hasRightSpace(), targetPosition);
-                    targetTagList.add(targetTag);
-
-                    //System.out.println("targetTag text:" + targetTag.getText() + " position:" + targetPosition);
+                    targetPosition = firstTargetPosition + 1;
+                } else {
+                    //do nothing; i.e. i.e. keep firstTargetPosition
                 }
+                //_Tag targetTag = new _Tag(currentTargetMappingTag.getText(), currentTargetMappingTag.hasLeftSpace(), currentTargetMappingTag.hasRightSpace(), targetPosition);
+
+                _Tag targetTag = _Tag.fromTag(currentTargetMappingTag);
+
+                targetTag.setPosition(targetPosition);
+
+                targetTagList.add(targetTag);
+                //System.out.println("targetTag text:" + targetTag.getText() + " position:" + targetPosition);
             } else {
+                int firstTargetPosition = targetPositions.get(0);
+                int lastTargetPosition = targetPositions.get(targetPositions.size() - 1);
+                int targetPosition = firstTargetPosition;
                 if (currentTargetTagType == _mappingTag.Type.SELF_CONTAINED) {
-                    int lastTargetPosition = targetPositions.get(targetPositions.size() - 1);
-                    _Tag targetTag = new _Tag(currentTargetMappingTag.getText(), currentTargetMappingTag.hasLeftSpace(), currentTargetMappingTag.hasRightSpace(), lastTargetPosition);
+                    targetPosition = lastTargetPosition;
+                    //_Tag targetTag = new _Tag(currentTargetMappingTag.getText(), currentTargetMappingTag.hasLeftSpace(), currentTargetMappingTag.hasRightSpace(), lastTargetPosition);
+                    _Tag targetTag = _Tag.fromTag(currentTargetMappingTag);
+                    targetTag.setPosition(targetPosition);
                     targetTagList.add(targetTag);
 
                     System.out.println("targetTag text:" + targetTag.getText() + " position:" + targetTag.getPosition());
                 } else if (currentTargetTagType == _mappingTag.Type.OPENED_BUT_UNCLOSED) {
-                    int firstTargetPosition = targetPositions.get(0);
-                    _Tag targetTag = new _Tag(currentTargetMappingTag.getText(), currentTargetMappingTag.hasLeftSpace(), currentTargetMappingTag.hasRightSpace(), firstTargetPosition);
+                    //do nothing; i.e. i.e. keep firstTargetPosition
+                    //_Tag targetTag = new _Tag(currentTargetMappingTag.getText(), currentTargetMappingTag.hasLeftSpace(), currentTargetMappingTag.hasRightSpace(), firstTargetPosition);
+                    _Tag targetTag = _Tag.fromTag(currentTargetMappingTag);
+                    targetTag.setPosition(targetPosition);
                     targetTagList.add(targetTag);
                 } else if (currentTargetTagType == _mappingTag.Type.CLOSED_BUT_UNOPENED) {
-                    int lastTargetPosition = targetPositions.get(targetPositions.size() - 1);
-                    _Tag targetTag = new _Tag(currentTargetMappingTag.getText(), currentTargetMappingTag.hasLeftSpace(), currentTargetMappingTag.hasRightSpace(), lastTargetPosition+1);
+                    targetPosition = lastTargetPosition + 1;
+                    //_Tag targetTag = new _Tag(currentTargetMappingTag.getText(), currentTargetMappingTag.hasLeftSpace(), currentTargetMappingTag.hasRightSpace(), lastTargetPosition + 1);
+                    _Tag targetTag = _Tag.fromTag(currentTargetMappingTag);
+                    targetTag.setPosition(targetPosition);
                     targetTagList.add(targetTag);
                 } else if (currentTargetTagType == _mappingTag.Type.OPENED_EMPTY_TEXT || currentTargetMappingTag.getType() == _mappingTag.Type.CLOSED_EMPTY_TEXT) {
-                    int lastTargetPosition = targetPositions.get(targetPositions.size() - 1);
-                    _Tag targetTag = new _Tag(currentTargetMappingTag.getText(), currentTargetMappingTag.hasLeftSpace(), currentTargetMappingTag.hasRightSpace(), lastTargetPosition);
+                    targetPosition = lastTargetPosition;
+                    //_Tag targetTag = new _Tag(currentTargetMappingTag.getText(), currentTargetMappingTag.hasLeftSpace(), currentTargetMappingTag.hasRightSpace(), lastTargetPosition);
+                    _Tag targetTag = _Tag.fromTag(currentTargetMappingTag);
+                    targetTag.setPosition(targetPosition);
                     targetTagList.add(targetTag);
-                } else {
+                } else if (currentTargetTagType == _mappingTag.Type.OPENED_NONEMPTY_TEXT) {
                     int firstIndex = 0;
                     int nextIndex = firstIndex + 1;
                     int targetPositionsSize = targetPositions.size();
                     int startPosition = targetPositions.get(firstIndex);
+                    int lastPosition;
+                    while (nextIndex < targetPositionsSize) {
+                        startPosition = targetPositions.get(firstIndex);
+                        lastPosition = targetPositions.get(nextIndex);
+                        if (lastPosition - startPosition == nextIndex - firstIndex) { //if positions are contiguous
+                            nextIndex++;
+                        } else {
+                            //_Tag targetTag = new _Tag(currentTargetMappingTag.getText(), currentTargetMappingTag.hasLeftSpace(), currentTargetMappingTag.hasRightSpace(), startPosition);
+                            _Tag targetTag = _Tag.fromTag(currentTargetMappingTag);
+                            targetTag.setPosition(startPosition);
+                            targetTagList.add(targetTag);
+                            //System.out.println("targetTag text:" + targetTag.getText() + " position:" + targetTag.getPosition());
+
+                            firstIndex = nextIndex;
+                            nextIndex = firstIndex + 1;
+                        }
+
+                    }
+                    //_Tag targetTag = new _Tag(currentTargetMappingTag.getText(), currentTargetMappingTag.hasLeftSpace(), currentTargetMappingTag.hasRightSpace(), startPosition);
+                    _Tag targetTag = _Tag.fromTag(currentTargetMappingTag);
+                    targetTag.setPosition(startPosition);
+                    targetTagList.add(targetTag);
+                    //Syastem.out.println("targetTag text:" + targetTag.getText() + " position:" + targetTag.getPosition());
+
+
+                } else if (currentTargetTagType == _mappingTag.Type.CLOSED_NONEMPTY_TEXT) {
+                    int firstIndex = 0;
+                    int nextIndex = firstIndex + 1;
+                    int targetPositionsSize = targetPositions.size();
+                    int startPosition;
                     int lastPosition = targetPositions.get(nextIndex);
                     while (nextIndex < targetPositionsSize) {
                         startPosition = targetPositions.get(firstIndex);
@@ -237,31 +279,26 @@ public class TagManager {
                         if (lastPosition - startPosition == nextIndex - firstIndex) { //if positions are contiguous
                             nextIndex++;
                         } else {
-                            if (currentTargetTagType == _mappingTag.Type.OPENED_NONEMPTY_TEXT) {
-                                _Tag targetTag = new _Tag(currentTargetMappingTag.getText(), currentTargetMappingTag.hasLeftSpace(), currentTargetMappingTag.hasRightSpace(), startPosition);
-                                targetTagList.add(targetTag);
-                                //System.out.println("targetTag text:" + targetTag.getText() + " position:" + targetTag.getPosition());
-                            }else if (currentTargetTagType == _mappingTag.Type.CLOSED_NONEMPTY_TEXT) {
-                                _Tag targetTag = new _Tag(currentTargetMappingTag.getText(), currentTargetMappingTag.hasLeftSpace(), currentTargetMappingTag.hasRightSpace(), lastPosition + 1);
-                                targetTagList.add(targetTag);
+                            //_Tag targetTag = new _Tag(currentTargetMappingTag.getText(), currentTargetMappingTag.hasLeftSpace(), currentTargetMappingTag.hasRightSpace(), startPosition);
+                            _Tag targetTag = _Tag.fromTag(currentTargetMappingTag);
+                            targetTag.setPosition(lastPosition + 1);
+                            targetTagList.add(targetTag);
+                            //System.out.println("targetTag text:" + targetTag.getText() + " position:" + targetTag.getPosition());
 
-                                //System.out.println("targetTag text:" + targetTag.getText() + " position:" + targetTag.getPosition());
-                            }
                             firstIndex = nextIndex;
                             nextIndex = firstIndex + 1;
                         }
-                    }
-                    if (currentTargetTagType == _mappingTag.Type.OPENED_NONEMPTY_TEXT) {
-                        _Tag targetTag = new _Tag(currentTargetMappingTag.getText(), currentTargetMappingTag.hasLeftSpace(), currentTargetMappingTag.hasRightSpace(), startPosition);
-                        targetTagList.add(targetTag);
-                        //Syastem.out.println("targetTag text:" + targetTag.getText() + " position:" + targetTag.getPosition());
-                    }
-                    if (currentTargetTagType == _mappingTag.Type.CLOSED_NONEMPTY_TEXT) {
-                        _Tag targetTag = new _Tag(currentTargetMappingTag.getText(), currentTargetMappingTag.hasLeftSpace(), currentTargetMappingTag.hasRightSpace(), lastPosition + 1);
-                        targetTagList.add(targetTag);
 
-                        //System.out.println("targetTag text:" + targetTag.getText() + " position:" + targetTag.getPosition());
                     }
+                    //_Tag targetTag = new _Tag(currentTargetMappingTag.getText(), currentTargetMappingTag.hasLeftSpace(), currentTargetMappingTag.hasRightSpace(), startPosition);
+                    _Tag targetTag = _Tag.fromTag(currentTargetMappingTag);
+                    targetTag.setPosition(lastPosition + 1);
+                    targetTagList.add(targetTag);
+                    //Syastem.out.println("targetTag text:" + targetTag.getText() + " position:" + targetTag.getPosition());
+
+                } else {
+                    //should never enter here, becase it means that  currentTargetTagType == _mappingTag.Type.UNDEF
+                    //do nothing
                 }
             }
         }
@@ -285,10 +322,9 @@ public class TagManager {
 
     protected void setAlignmentMap(ArrayList<ArrayList<Integer>> alignmentMap, int sourceLength, int[][] alignments) {
 
-        //add an empty list for each source word, so that there i s a correspondence between source word position and index in the alignementMap
+        //add an empty list for each source word, so that there is a correspondence between source word position and index in the alignmentMap
         for (int i = 0; i < sourceLength; i++) {
-            ArrayList<Integer> currentList = new ArrayList<>();
-            alignmentMap.add(currentList);
+            alignmentMap.add(new ArrayList<>());
         }
         for (int i = 0; i < alignments.length; i++) {
             ArrayList<Integer> currentList = alignmentMap.get(alignments[i][0]);
