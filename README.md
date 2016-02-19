@@ -111,7 +111,8 @@ If you want to test on a different Test Set just type:
 Notes:
 To run Evaluate you need internet connection for Google Translate API and the Matecat post-editing Effort API.
 MMT comes with a limited Google Translate API key. 
-Matecat kindly provide unlimited fair usage access to their API to MMT users.
+
+Matecat kindly provides unlimited-fair-usage, access to their API to MMT users.
 
 You can select your Google Translate API Key by typing:
 ```
