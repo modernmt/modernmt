@@ -1,0 +1,7 @@
+[
+  {
+    "script": "context/PrecisionTest.java",
+    "name": "ContextTest",
+    "description": "It creates an instance of the context analyzer and queries it to compute some metrics to evaluate the efficiency of the IR system."
+  }
+]
