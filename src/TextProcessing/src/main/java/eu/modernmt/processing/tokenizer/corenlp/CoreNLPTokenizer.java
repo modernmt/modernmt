@@ -6,9 +6,11 @@ import edu.stanford.nlp.international.spanish.process.SpanishTokenizer;
 import edu.stanford.nlp.ling.HasWord;
 import edu.stanford.nlp.process.PTBTokenizer;
 import edu.stanford.nlp.process.TokenizerFactory;
+import eu.modernmt.processing.AnnotatedString;
 import eu.modernmt.processing.Languages;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.tokenizer.Tokenizer;
+import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 
 import java.io.Reader;
 import java.io.StringReader;
@@ -49,7 +51,7 @@ public class CoreNLPTokenizer implements Tokenizer {
     }
 
     @Override
-    public String[] call(String text) throws ProcessingException {
+    public AnnotatedString call(String text) throws ProcessingException {
         Reader reader = new StringReader(text);
         edu.stanford.nlp.process.Tokenizer<?> tokenizer;
         synchronized (this) {
@@ -69,7 +71,7 @@ public class CoreNLPTokenizer implements Tokenizer {
             result.add(word);
         }
 
-        return result.toArray(new String[result.size()]);
+        return new AnnotatedString(text, TokenizerOutputTransformer.transform(text, result));
     }
 
     @Override

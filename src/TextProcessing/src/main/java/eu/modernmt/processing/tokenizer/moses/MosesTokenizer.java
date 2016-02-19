@@ -1,10 +1,12 @@
 package eu.modernmt.processing.tokenizer.moses;
 
+import eu.modernmt.processing.AnnotatedString;
 import eu.modernmt.processing.Languages;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.UnixLineReader;
 import eu.modernmt.processing.tokenizer.MultiInstanceTokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizer;
+import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 import eu.modernmt.processing.tokenizer.util.Environment;
 import org.apache.commons.io.IOUtils;
 
@@ -112,7 +114,7 @@ public class MosesTokenizer extends MultiInstanceTokenizer {
         }
 
         @Override
-        public String[] call(String text) throws ProcessingException {
+        public AnnotatedString call(String text) throws ProcessingException {
             String tokenized;
 
             try {
@@ -125,7 +127,7 @@ public class MosesTokenizer extends MultiInstanceTokenizer {
                 throw new ProcessingException("Error while running perl script", e);
             }
 
-            return tokenized.split("\\s+");
+            return new AnnotatedString(text, TokenizerOutputTransformer.transform(text, tokenized.split("\\s+")));
         }
 
         @Override

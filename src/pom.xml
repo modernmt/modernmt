@@ -13,6 +13,7 @@
         <module>TextProcessing</module>
         <module>RESTInterface</module>
         <module>Executables</module>
+        <module>Model</module>
     </modules>
 
     <packaging>pom</packaging>

@@ -1,5 +1,6 @@
 package eu.modernmt.processing.tokenizer;
 
+import eu.modernmt.processing.AnnotatedString;
 import eu.modernmt.processing.framework.ProcessingException;
 import org.apache.commons.io.IOUtils;
 
@@ -47,7 +48,7 @@ public class MultiInstanceTokenizer implements Tokenizer {
     }
 
     @Override
-    public String[] call(String param) throws ProcessingException {
+    public AnnotatedString call(String param) throws ProcessingException {
         Tokenizer instance = getInstance();
 
         try {
@@ -63,8 +64,7 @@ public class MultiInstanceTokenizer implements Tokenizer {
             closed = true;
         }
 
-        for (Tokenizer tokenizer : buffer)
-            IOUtils.closeQuietly(tokenizer);
+        buffer.forEach(IOUtils::closeQuietly);
     }
 
 }

@@ -1,9 +1,11 @@
 package eu.modernmt.processing.tokenizer.languagetool;
 
+import eu.modernmt.processing.AnnotatedString;
 import eu.modernmt.processing.Languages;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.tokenizer.MultiInstanceTokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizer;
+import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 import org.languagetool.language.tokenizers.TagalogWordTokenizer;
 import org.languagetool.tokenizers.br.BretonWordTokenizer;
 import org.languagetool.tokenizers.ca.CatalanWordTokenizer;
@@ -95,13 +97,13 @@ public class LanguageToolTokenizer extends MultiInstanceTokenizer {
         }
 
         @Override
-        public String[] call(String text) throws ProcessingException {
+        public AnnotatedString call(String text) throws ProcessingException {
             List<String> tokens = tokenizer.tokenize(text);
             ArrayList<String> result = new ArrayList<>(tokens.size());
 
             result.addAll(tokens.stream().filter(token -> !token.trim().isEmpty()).collect(Collectors.toList()));
 
-            return result.toArray(new String[result.size()]);
+            return new AnnotatedString(text, TokenizerOutputTransformer.transform(text, result));
         }
 
         @Override

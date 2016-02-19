@@ -3,6 +3,7 @@ package eu.modernmt.processing.tokenizer.jflex;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.tokenizer.MultiInstanceTokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizer;
+import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 import eu.modernmt.processing.tokenizer.jflex.annotators.*;
 
 import java.io.IOException;
@@ -68,7 +69,7 @@ public class JFlexTokenizer extends MultiInstanceTokenizer {
         }
 
         @Override
-        public String[] call(String string) throws ProcessingException {
+        public eu.modernmt.processing.AnnotatedString call(String string) throws ProcessingException {
             AnnotatedString text = new AnnotatedString(string);
 
             annotator.yyreset(text.getReader());
@@ -78,7 +79,7 @@ public class JFlexTokenizer extends MultiInstanceTokenizer {
                 annotator.annotate(text, type);
             }
 
-            return text.toTokenArray();
+            return new eu.modernmt.processing.AnnotatedString(string, TokenizerOutputTransformer.transform(string, text.toTokenArray()));
         }
 
         private static int next(JFlexAnnotator annotator) throws ProcessingException {
