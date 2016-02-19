@@ -87,12 +87,23 @@ public class _Tag extends _Token implements Comparable<_Tag> {
     public void setLeftSpace(boolean leftSpace) {
         this.leftSpace = leftSpace;
     }
+    protected boolean isSelfContained() {
+        return this.type == Type.SELF_CONTAINED;
+    }
+    protected boolean isOpening() {
+        return this.type == Type.OPENED;
+    }
+    protected boolean isClosing() {
+        return this.type == Type.CLOSED;
+    }
 
     public int compareTo(@NotNull _Tag compareTag) {
         return Integer.compare(this.position, compareTag.getPosition());
     }
 
     protected enum Type {
+        OPENED,        // ex: <a>
+        CLOSED,        // ex: </a>
         CONTAINS_NONEMPTY_TEXT,     // ex: <a>data</a>
         CONTAINS_EMPTY_TEXT,        // ex: <a></a>
         OPENED_NONEMPTY_TEXT,     // ex: <a>data</a>
