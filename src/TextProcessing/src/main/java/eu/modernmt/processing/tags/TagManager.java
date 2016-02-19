@@ -130,13 +130,18 @@ public class TagManager {
         System.out.println();
 
         ArrayList<_mappingTag> targetMappingTags = new ArrayList<>(sourceMappingTags.length);
-        for (int i = 0; i < sourceMappingTags.length; i++) {
-            _mappingTag currentSourceMappingTag = sourceMappingTags[i];
+//        for (int i = 0; i < sourceMappingTags.length; i++) {
+//            _mappingTag currentSourceMappingTag = sourceMappingTags[i];
+        for (_mappingTag currentSourceMappingTag : sourceMappingTags) {
             _mappingTag.Type currentSourceTagType = currentSourceMappingTag.getType();
             /**check whether the source position associated to this tag is associated with any word (i.e.position != -1);
              * if not just add the tag with the same info in the target
              */
-            _mappingTag newTargetMappingTag = new _mappingTag(currentSourceMappingTag.getText(), currentSourceMappingTag.hasLeftSpace(), currentSourceMappingTag.hasRightSpace(), -1, currentSourceTagType, currentSourceMappingTag.getName(), currentSourceMappingTag.getLink());
+            //_mappingTag newTargetMappingTag = new _mappingTag(currentSourceMappingTag.getText(), currentSourceMappingTag.hasLeftSpace(), currentSourceMappingTag.hasRightSpace(), -1, currentSourceTagType, currentSourceMappingTag.getName(), currentSourceMappingTag.getLink());
+
+            _mappingTag newTargetMappingTag = _mappingTag.fromTag(currentSourceMappingTag);
+            newTargetMappingTag.setPosition(-1);
+
             ArrayList<Integer> targetPositions = new ArrayList<>();
             if (currentSourceTagType == _mappingTag.Type.SELF_CONTAINED) {
                 /** check the type pof source tag and act consequently
@@ -146,8 +151,9 @@ public class TagManager {
                  * */
                 ArrayList<Integer> sourcePositions = currentSourceMappingTag.getCoveredPositions();
                 HashSet<Integer> targetPositionsSet = new HashSet<>();
-                for (int j = 0; j < sourcePositions.size(); j++) {
-                    targetPositionsSet.addAll(alignmentSourceToTarget.get(sourcePositions.get(j)));
+
+                for (int sourceposition : sourcePositions) {
+                    targetPositionsSet.addAll(alignmentSourceToTarget.get(sourceposition));
                 }
 
                 targetPositions.addAll(targetPositionsSet);
@@ -157,8 +163,9 @@ public class TagManager {
             } else {
                 ArrayList<Integer> sourcePositions = currentSourceMappingTag.getCoveredPositions();
                 HashSet<Integer> targetPositionsSet = new HashSet<>();
-                for (int j = 0; j < sourcePositions.size(); j++) {
-                    targetPositionsSet.addAll(alignmentSourceToTarget.get(sourcePositions.get(j)));
+
+                for (int sourceposition : sourcePositions) {
+                    targetPositionsSet.addAll(alignmentSourceToTarget.get(sourceposition));
                 }
 
                 targetPositions.addAll(targetPositionsSet);
@@ -181,8 +188,9 @@ public class TagManager {
         }
 */
         ArrayList<_Tag> targetTagList = new ArrayList<>();
-        for (int i = 0; i < targetMappingTags.size(); i++) {
-            _mappingTag currentTargetMappingTag = targetMappingTags.get(i);
+//        for (int i = 0; i < targetMappingTags.size(); i++) {
+//            _mappingTag currentTargetMappingTag = targetMappingTags.get(i);
+        for (_mappingTag currentTargetMappingTag : targetMappingTags) {
             _mappingTag.Type currentTargetTagType = currentTargetMappingTag.getType();
             ArrayList<Integer> targetPositions = currentTargetMappingTag.getCoveredPositions();
 
@@ -326,9 +334,15 @@ public class TagManager {
         for (int i = 0; i < sourceLength; i++) {
             alignmentMap.add(new ArrayList<>());
         }
+        /*
         for (int i = 0; i < alignments.length; i++) {
             ArrayList<Integer> currentList = alignmentMap.get(alignments[i][0]);
             currentList.add(alignments[i][1]);
+        }
+        */
+        for (int[] positionPair : alignments) {
+            ArrayList<Integer> currentList = alignmentMap.get(positionPair[0]);
+            currentList.add(positionPair[1]);
         }
 
 

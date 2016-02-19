@@ -26,9 +26,20 @@ public class _mappingTag extends _Tag{
         this.coveredPositions = new ArrayList<>();
     }
 
+    public _mappingTag(String text, boolean leftSpace, boolean rightSpace, int position, Type type, String name, int link, int parent) {
+        super(text, rightSpace, leftSpace, position, type, name);
+        this.link = link;
+        this.parent = parent;
+        this.coveredPositions = new ArrayList<>();
+    }
+
 
     public static _mappingTag fromTag(_Tag fromTag) {
         return new _mappingTag(fromTag.getText(), fromTag.hasLeftSpace(), fromTag.hasRightSpace(), fromTag.getPosition(), fromTag.getType(), fromTag.getName());
+    }
+
+    public static _mappingTag fromTag(_mappingTag fromTag) {
+        return new _mappingTag(fromTag.getText(), fromTag.hasLeftSpace(), fromTag.hasRightSpace(), fromTag.getPosition(), fromTag.getType(), fromTag.getName(), fromTag.getLink(), fromTag.getParent());
     }
 
     public int getLink() { return link; }
