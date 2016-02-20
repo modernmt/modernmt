@@ -45,7 +45,7 @@ java -cp mmt-test-0.11.1.jar eu.modernmt.test.contextanalyzer.context.PrecisionT
 
 ## Output
 
-Each test print on the standard ouput a json containg both a fixed structure and a maps depending on the nature of the test.
+Each test prints on the standard ouput a json containg both a fixed structure and a map depending on the nature of the test.
 
 The structure of the json is the following:
 ```
