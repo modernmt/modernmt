@@ -37,7 +37,10 @@ Goal: with 2 billion words perform better than commercially available technology
 * 0.14 - Adding more languages and quality to tokenization, now 45.
 * 0.14 - More accurate context score and suffix sampling.  
 
+* 0.15 - Better coverage with a new suffix sampling. 
 * 0.15 - Adding Optional Human Evaluation and Tuning (BLEU or PEE are very imprecise metrics, few man hours of evaluation can deliver better results). 10 Euro for evaluation via A/B test vs Google Translate, 100 Euro for human tuning via nbest selection.
+
+* 0.20 - Adding Data for the background models. 5 Languages, 10 billion words parallel, 50 billion words monolingual.
 
 ## Speed
 
@@ -52,10 +55,10 @@ Goal: Initial training to stay below 8 hours for each 1B word (36 cores). Make i
 
 Goal: with 2 billion words stay below 400ms for the average sentence length (15 words).
 
-- Pruning of models. 
-- Better caching.
-- Fine tuning the max number LM requests per translation and other parameters.
-- With 2B word model, translation time is not below 400ms yet: distribute LM across multiple servers.
+* Faster sampling on Suffix, especially for frequent terms.
+* Pruning of models. 
+* Better caching.
+* Fine tuning the max number LM requests per translation and other parameters.
 
 ## Product Market Fit
 
