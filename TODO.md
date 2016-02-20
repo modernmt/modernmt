@@ -30,14 +30,14 @@ Items should be in order of priority.
 
 Goal: with 2 billion words perform better than commercially available technology.
 
-- 0.12 - Quality measure against Google Translate and Microsoft integrated in the training process. Measure first!
-- 0.12 - Allowing monolingual LM data input
-- 0.12 - Porting Matecat/Moses tag management to MMT.
+0.12 - Quality measure against Google Translate and Microsoft integrated in the training process. Measure first!
+0.12 - Allowing monolingual LM data input
+0.12 - Porting Matecat/Moses tag management to MMT.
 
-- 0.14 - Adding more languages and quality to tokenization, now 45.
-- 0.14 - More accurate context score and suffix sampling.  
+0.14 - Adding more languages and quality to tokenization, now 45.
+0.14 - More accurate context score and suffix sampling.  
 
-- 0.15 - Adding Optional Human Evaluation and Tuning (BLEU or PEE are very imprecise metrics, few man hours of evaluation can deliver better results). 10 Euro for evaluation via A/B test vs Google Translate, 100 Euro for human tuning via nbest selection.
+0.15 - Adding Optional Human Evaluation and Tuning (BLEU or PEE are very imprecise metrics, few man hours of evaluation can deliver better results). 10 Euro for evaluation via A/B test vs Google Translate, 100 Euro for human tuning via nbest selection.
 
 ## Speed
 
