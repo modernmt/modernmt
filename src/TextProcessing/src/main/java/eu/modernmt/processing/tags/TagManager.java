@@ -91,7 +91,7 @@ public class TagManager {
     private void setTranslationTags(MappingTag[] sourceMappingTags, Sentence source, Translation translation) {
         //create a map from source positions to target position
         ArrayList<ArrayList<Integer>> alignmentSourceToTarget = new ArrayList<>(source.getTokens().length);
-        setAlignmentMap(alignmentSourceToTarget, source.getTokens().length, translation.getAlignment());
+        setAlignmentMap(alignmentSourceToTarget, source.getTokens().length, translation.getTokens().length, translation.getAlignment());
 
         ArrayList<MappingTag> targetMappingTags = new ArrayList<>(sourceMappingTags.length);
         for (MappingTag currentSourceMappingTag : sourceMappingTags) {
@@ -100,9 +100,12 @@ public class TagManager {
              */
             ArrayList<Integer> targetPositions = new ArrayList<>();
             HashSet<Integer> targetPositionsSet = new HashSet<>();
+
             for (int sourceposition : currentSourceMappingTag.getCoveredPositions()) {
+                //System.out.println("sourceposition:" + sourceposition);
                 targetPositionsSet.addAll(alignmentSourceToTarget.get(sourceposition));
             }
+
 
             targetPositions.addAll(targetPositionsSet);
             Collections.sort(targetPositions);
@@ -167,7 +170,7 @@ public class TagManager {
         //duplicate MappingTags having gaps in the covered positions
         Collections.sort(targetMappingTags);
 
-        /*
+/**
         for (MappingTag currentTargetMappingTag : targetMappingTags) {
             System.out.println("currentTargetMappingTag:" + currentTargetMappingTag);
         }
@@ -222,16 +225,24 @@ public class TagManager {
 
     }
 
-    protected void setAlignmentMap(ArrayList<ArrayList<Integer>> alignmentMap, int sourceLength, int[][] alignments) {
+    protected void setAlignmentMap(ArrayList<ArrayList<Integer>> alignmentMap, int sourceLength, int targetLength, int[][] alignments) {
 
-        //add an empty list for each source word, so that there is a correspondence between source word position and index in the alignmentMap
-        for (int i = 0; i < sourceLength; i++) {
+        /** add an empty list for each source word,
+         * so that there is a correspondence between source word position and index in the alignmentMap
+         * a space is reserved for a virtual last word at the end of the source sentence to handle tags positioned at the end of the sentence
+         */
+        for (int i = 0; i <= sourceLength; i++) {
             alignmentMap.add(new ArrayList<>());
         }
         for (int[] positionPair : alignments) {
             ArrayList<Integer> currentList = alignmentMap.get(positionPair[0]);
             currentList.add(positionPair[1]);
         }
+        /** addition of a link between the virtual last words of source and target sentences,
+         * this link is added to handle tags positioned at the end of the sentences
+         * */
+        ArrayList<Integer> currentList = alignmentMap.get(sourceLength);
+        currentList.add(targetLength);
 
         System.out.println("ALIGNMENT (Src2Trg):     " + alignmentMap.toString());
         System.out.println();
@@ -265,6 +276,25 @@ public class TagManager {
                 {1, 1},
                 {2, 4},
         });
+/**
+        Sentence source = new Sentence(new Token[]{
+                new Token("hello", true),
+                new Token("world", true),
+        }, new Tag[]{
+                new Tag("f", "<f>", true, true, 1, Tag.Type.EMPTY_TAG),
+                new Tag("b", "<b>", true, false, 1, Tag.Type.OPENING_TAG),
+                new Tag("b", "</b>", false, true, 2, Tag.Type.CLOSING_TAG),
+                new Tag("world", "<world />", true, false, 2, Tag.Type.EMPTY_TAG),
+        });
+
+        Translation translation = new Translation(new Token[]{
+                new Token("ciao", true),
+                new Token("mondo", true),
+        }, source, new int[][]{
+                {0, 0},
+                {1, 1},
+        });
+*/
 
         System.out.println("SRC:                     " + source);
         System.out.println("SRC (stripped):          " + source.getStrippedString());
