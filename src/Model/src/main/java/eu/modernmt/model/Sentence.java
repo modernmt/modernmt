@@ -58,6 +58,32 @@ public class Sentence implements Serializable {
         return builder.toString();
     }
 
+    /**
+     * Create a representation of the sentence including tags, this table
+     * shows the behaviour of the algorithm respect to spaces information:
+     * <p>
+     * TTRX = Token has right space
+     * TALX = Tag has left space
+     * TARX = Tag has right space
+     * TATY = Tag type (O = opening, E = empty, C = closing)
+     * <p>
+     * TTRX TALX TARX TATY     Result              Example
+     * 0    x    x    x        Word<tag>Word       That<b>'s
+     * 1    0    1    x        Word<tag> Word      Hello<b> World
+     * 1    1    0    x        Word <tag>Word      Hello <b>World
+     * 1    0    0    O        Word <b>Word        Hello <b>World
+     * 1    0    0    E        Word <b/>Word       Hello <b/>World
+     * 1    0    0    C        Word</b> Word       Hello</b> World
+     * 1    1    1    O        Word <b>Word        Hello <b>World
+     * 1    1    1    E        Word <b/>Word       Hello <b/>World
+     * 1    1    1    C        Word</b> Word       Hello</b> World
+     *
+     * If more there are more consecutive tags, this algorithm ensures that
+     * only one space it will be printed. The position of the single space is
+     * then decided by the first word and the consecutive tags.
+     *
+     * @return string representation including tags
+     */
     @Override
     public String toString() {
         if (tags == null || tags.length == 0)
@@ -93,13 +119,46 @@ public class Sentence implements Serializable {
 
             builder.append(token);
 
-            Tag next = null;
+            Tag nextTag = null;
             if (i < sentence.length - 1 && (sentence[i + 1] instanceof Tag))
-                next = (Tag) sentence[i + 1];
+                nextTag = (Tag) sentence[i + 1];
 
-            if (next != null) {
-                if (next.hasLeftSpace())
+            if (nextTag != null) {
+                boolean mustPrintSpace;
+
+                if (!token.hasRightSpace()) {
+                    mustPrintSpace = false;
+                } else if (nextTag.hasLeftSpace() == nextTag.hasRightSpace()) {
+                    if (Tag.Type.CLOSING_TAG == nextTag.getType()) {
+                        mustPrintSpace = true;
+                    } else {
+                        builder.append(' ');
+                        mustPrintSpace = false;
+                    }
+                } else if (nextTag.hasLeftSpace()) {
                     builder.append(' ');
+                    mustPrintSpace = false;
+                } else {
+                    mustPrintSpace = true;
+                }
+
+                while (nextTag != null) {
+                    builder.append(nextTag);
+                    i++;
+
+                    if (i < sentence.length - 1 && (sentence[i + 1] instanceof Tag)) {
+                        nextTag = (Tag) sentence[i + 1];
+
+                        if (mustPrintSpace && !(Tag.Type.CLOSING_TAG == nextTag.getType())) {
+                            builder.append(' ');
+                            mustPrintSpace = false;
+                        }
+                    } else {
+                        nextTag = null;
+                        if (mustPrintSpace)
+                            builder.append(' ');
+                    }
+                }
             } else if (token.hasRightSpace() && i < sentence.length - 1) {
                 builder.append(' ');
             }
@@ -108,4 +167,15 @@ public class Sentence implements Serializable {
         return builder.toString();
     }
 
+    public static void main(String[] args) {
+        Sentence sentence = new Sentence(new Token[]{
+                new Token("Hello", true),
+                new Token("World", false),
+        }, new Tag[]{
+                new Tag("a", "<a>", false, false, 1, Tag.Type.CLOSING_TAG),
+                new Tag("a", "</b>", true, true, 1, Tag.Type.CLOSING_TAG),
+        });
+
+        System.out.println(sentence);
+    }
 }
