@@ -34,7 +34,7 @@ int main(int argc, const char *argv[]) {
   std::cout << "\n";
 
   // Translation
-  std::string text = "just a simple text message";
+  std::string text = "system information support";
   translation_t translation;
 
   std::map<std::string, float> ibm;;
