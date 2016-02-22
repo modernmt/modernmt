@@ -78,11 +78,11 @@ public class TagManager {
                 }
 
                 if (j == tags.length) { //there is no corresponding closing tag
-                    // artificially covering all words until the end of source
-                    if (tags[i].getPosition() < sourceLength) {
+                    // artificially covering all words until the end of source (including the virtual last word
+                    if (tags[i].getPosition() <= sourceLength) {
                         tags[i].setContent(true);
 
-                        for (int h = tags[i].getPosition(); h < sourceLength; h++) {
+                        for (int h = tags[i].getPosition(); h <= sourceLength; h++) {
                             tags[i].getCoveredPositions().add(h);
                         }
                     }
@@ -103,11 +103,11 @@ public class TagManager {
                 }
             }
         }
-/*
-        for (MappingTag sourceMappingTag : tags) {
-            System.out.println("sourceMappingTag: " + sourceMappingTag);
-        }
-*/
+
+//        for (MappingTag sourceMappingTag : tags) {
+//            System.out.println("sourceMappingTag: " + sourceMappingTag);
+//        }
+
     }
 
     public static void remap(Sentence source, Translation translation) {
@@ -271,6 +271,7 @@ public class TagManager {
             ArrayList<Integer> currentList = alignmentMap.get(positionPair[0]);
             currentList.add(positionPair[1]);
         }
+
         /** addition of a link between the virtual last words of source and target sentences,
          * this link is added to handle tags positioned at the end of the sentences
          * */
@@ -283,6 +284,7 @@ public class TagManager {
 
     public static void main(String[] args) throws Throwable {
         // hello <f/> <b>world</b> <world />
+
 
         Sentence source = new Sentence(new Token[]{
                 new Token("Ciao", true),
@@ -298,7 +300,6 @@ public class TagManager {
                 new Tag("e", "<e>", false, false, 3, Tag.Type.OPENING_TAG),
                 new Tag("g", "</g>", false, false, 3, Tag.Type.CLOSING_TAG),
         });
-
         Translation translation = new Translation(new Token[]{
                 new Token("Davide", true),
                 new Token("Caroselli", false),
@@ -312,23 +313,77 @@ public class TagManager {
                 {2, 4},
         });
 
-//        Sentence source = new Sentence(new Token[]{
-//                new Token("hello", true),
-//                new Token("world", true),
-//        }, new Tag[]{
-//                new Tag("f", "<f>", true, true, 1, Tag.Type.EMPTY_TAG),
-//                new Tag("b", "<b>", true, false, 1, Tag.Type.OPENING_TAG),
-//                new Tag("b", "</b>", false, true, 2, Tag.Type.CLOSING_TAG),
-//                new Tag("world", "<world />", true, false, 2, Tag.Type.EMPTY_TAG),
-//        });
-//
-//        Translation translation = new Translation(new Token[]{
-//                new Token("ciao", true),
-//                new Token("mondo", true),
-//        }, source, new int[][]{
-//                {0, 0},
-//                {1, 1},
-//        });
+
+        /*
+        Sentence source = new Sentence(new Token[]{
+                new Token("hello", true),
+                new Token("world", true),
+        }, new Tag[]{
+                new Tag("f", "<f>", true, true, 1, Tag.Type.EMPTY_TAG),
+                new Tag("b", "<b>", true, false, 1, Tag.Type.OPENING_TAG),
+                new Tag("b", "</b>", false, true, 2, Tag.Type.CLOSING_TAG),
+                new Tag("world", "<world />", true, false, 2, Tag.Type.EMPTY_TAG),
+        });
+        Translation translation = new Translation(new Token[]{
+                new Token("ciao", true),
+                new Token("mondo", true),
+        }, source, new int[][]{
+                {0, 1},
+                {1, 0},
+        });
+        */
+
+        /*
+        Sentence source = new Sentence(new Token[]{
+                new Token("hello", true),
+                new Token("world", true),
+        }, new Tag[]{
+                new Tag("e", "</e>", false, true, 0, Tag.Type.CLOSING_TAG),
+                new Tag("b", "<b>", true, false, 2, Tag.Type.OPENING_TAG),
+        });
+        Translation translation = new Translation(new Token[]{
+                new Token("ciao", true),
+                new Token("mondo", true),
+        }, source, new int[][]{
+                {0, 0},
+                {1, 1},
+        });
+        */
+
+        /*
+        Sentence source = new Sentence(new Token[]{
+        }, new Tag[]{
+        });
+        Translation translation = new Translation(new Token[]{
+        }, source, new int[][]{
+        });
+        */
+
+        /*
+        Sentence source = new Sentence(new Token[]{
+        }, new Tag[]{
+        });
+        Translation translation = new Translation(new Token[]{
+                new Token("ciao", true),
+                new Token("mondo", true),
+        }, source, new int[][]{
+        });
+        */
+
+        /*
+        Sentence source = new Sentence(new Token[]{
+                new Token("hello", true),
+                new Token("world", true),
+        }, new Tag[]{
+                new Tag("e", "</e>", false, true, 0, Tag.Type.CLOSING_TAG),
+                new Tag("b", "<b>", true, false, 2, Tag.Type.OPENING_TAG),
+        });
+        Translation translation = new Translation(new Token[]{
+                new Token("ciao", true),
+                new Token("mondo", true),
+        }, source, new int[][]{
+        });
+        */
 
         System.out.println("SRC:                     " + source);
         System.out.println("SRC (stripped):          " + source.getStrippedString());
