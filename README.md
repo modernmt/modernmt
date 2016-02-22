@@ -34,6 +34,12 @@ We included a very small dataset, just to verify that training works.
 ./mmt create en it examples/data/train
 ```
 
+To test domain-specific differences on the sentence `system information support`, create an engine with small sample size:
+
+```bash
+./mmt create --suffixarrays.sample 10 en it examples/data/train
+```
+
 ### Start an existing engine
 
 ```bash
