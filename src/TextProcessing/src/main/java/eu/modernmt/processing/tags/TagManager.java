@@ -12,6 +12,39 @@ import java.util.HashSet;
 /**
  * Created by davide on 17/02/16.
  */
+
+
+/** Policy for tag management
+ * From class Tag a tag is classified into EMPTY_TAG, OPENING_TAG, CLOSING_TAG, and has  aposition associated corresponding to the word immediately following the tag itself. If the tag closes the sentence its position is set to a virtual last word (i.e. position=sentence.length)
+ *
+ * MappingTag add additional information:
+ * - a "link" to the closing or opening corresponding tag;
+ * - a list of "coveredPositions"; for a source MappingTags this list contains only contiguous positions, or it is empty; for target tags this list can contain also non contiguous positions, or it is empty
+ * - a boolean "content" flag which is set to true if at least one source word is contained between the opening and closing tags; this flag is set by looking at the source sentence, and reported to the mapped target MappingTag
+ *
+ * For an opening source tag without the corresponding closing tag, the set of covered positions goes from the its actual position to the end of the sentence
+ * For a closing source tag without the corresponding opening tag, the set of covered positions goes from the beginning of the sentence to its actual position
+ *
+ * A MappingTag can be:
+ * - with context (content=true): at least one word is contained between the opening and closing tag
+ * - without context (content=false): no words are contained between the opening and closing tag:
+ *
+ * In the case of a MappingTag without content the list of "coveredPositions" represents only the word before which the tags whould be positioned
+ *
+ * The mapping from a source MappingTag into a target MappingTag is done as follows:
+ * - all additional info are copied, but the list of "coveredPositions"
+ * - the list of source "coveredPositions" is scanned; considering the provided source-to-target word-alignment, for each source position the corresponding target positions (if any) are orderly and uniquely inserted in the target list of "coveredPositions"
+ * - a target MappingTag which has a list of "coveredPositions" with internal gaps is split into similar copies containing contiguous "coveredPositions"
+ * - the "position" of the target MappingTag is re-set according to the rules/heuristic described below, which determines where the tag is actually re-inserted
+ *
+ * Rules of insertions:
+ * - rules for tags without content
+ * -- the tag is inserted before the first element of the (target) "coveredPositions"; if the list is empty the tag is inserted at the end of the sentence; this holds for both EMPTY_TAG, OPENING_TAG and CLOSING_TAG;
+ * - rules for tags with content
+ * -- if the tag is an OPENING_TAG, the tag is inserted before the first element of the (target) "coveredPositions"
+ * -- if the tag is a CLOSING_TAG, the tag is inserted before the last element of the (target) "coveredPositions"
+ * -- in both cases, if the list is empty the tag is inserted at the beginning of the sentence;
+ */
 public class TagManager {
 
     private void setAdditionalInfoInMappinTags(MappingTag[] tags, int sourceLength) {
@@ -110,7 +143,7 @@ public class TagManager {
             targetPositions.addAll(targetPositionsSet);
             Collections.sort(targetPositions);
 
-//            System.out.println("sourcePositions:" + currentSourceMappingTag.getCoveredPositions() + " --> targetPositions:" + targetPositions);
+           System.out.println("sourcePositions:" + currentSourceMappingTag.getCoveredPositions() + " --> targetPositions:" + targetPositions);
 
             MappingTag newTargetMappingTag = currentSourceMappingTag.clone();
             // set the position of the target tag
@@ -119,6 +152,7 @@ public class TagManager {
             if (targetPositions.size() > 0) {
                 newTargetMappingTag.setPosition(targetPositions.get(0));
             } else {
+                newTargetMappingTag.setContent(false);
                 newTargetMappingTag.setPosition(0);
             }
 
@@ -163,19 +197,19 @@ public class TagManager {
                     //replacing the covered position of the current MappingTag
                     newTargetMappingTag.setCoveredPositions(newPositions);
                 }
-                /* else { //do nothing; there is no gaps } */
+                /* else { //do nothing; there are no gaps } */
             }
         }
 
         //duplicate MappingTags having gaps in the covered positions
         Collections.sort(targetMappingTags);
 
-/**
+
         for (MappingTag currentTargetMappingTag : targetMappingTags) {
-            System.out.println("currentTargetMappingTag:" + currentTargetMappingTag);
+            System.out.println("currentTargetMappingTag:" + currentTargetMappingTag + " content " + currentTargetMappingTag.getContent() + " positions:" + currentTargetMappingTag.getCoveredPositions());
         }
         System.out.println();
-*/
+
 
         // transform all target MaappingTags into Tags
         ArrayList<Tag> targetTagList = new ArrayList<>();
@@ -198,11 +232,12 @@ public class TagManager {
                 if (targetPositions.size() > 0 ) {
                     targetPosition = targetPositions.get(0);
                 }else { //where to put it?
-                    if (currentTargetMappingTag.isClosingTag()) {
-                        targetPosition = translation.getTokens().length;
-                    } else {
-                        targetPosition = 0;
-                    }
+                    // heuristic: if tag has no content and no covered positions, put at the end of the sentence
+                    targetPosition = 0;
+                    /** other possible heuristic:
+                     *  if tag has no content and no covered positions, put at the end of the sentence
+                     *  targetPosition = translation.getTokens().length;
+                     */
                 }
             }
             Tag targetTag = currentTargetMappingTag.clone();
@@ -272,8 +307,6 @@ public class TagManager {
                 new Token("!", true),
         }, source, new int[][]{
                 {0, 3},
-                {1, 0},
-                {1, 1},
                 {2, 4},
         });
 /**
@@ -299,7 +332,6 @@ public class TagManager {
         System.out.println("SRC:                     " + source);
         System.out.println("SRC (stripped):          " + source.getStrippedString());
         System.out.println();
-
 
         new TagManager().remap(source, translation);
 

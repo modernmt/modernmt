@@ -23,14 +23,6 @@ public class MappingTag extends Tag {
         this.content = false;
         this.coveredPositions = new ArrayList<>();
     }
-/*
-    public MappingTag(String name, String text, boolean leftSpace, boolean rightSpace, int position, Type type, MappingTag link) {
-        super(name, text, leftSpace, rightSpace, position, type);
-        this.link = link;
-        this.content = false;
-        this.coveredPositions = new ArrayList<>();
-    }
-*/
 
     public MappingTag(String name, String text, boolean leftSpace, boolean rightSpace, int position, Type type, MappingTag link, boolean content) {
         super(name, text, leftSpace, rightSpace, position, type);
