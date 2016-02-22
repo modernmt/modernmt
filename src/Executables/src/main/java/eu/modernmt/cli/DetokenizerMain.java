@@ -14,25 +14,27 @@ import java.util.Locale;
 public class DetokenizerMain {
 
     public static void main(String[] args) throws InterruptedException, ProcessingException {
-        Locale language = Languages.getSupportedLanguage(args[0]);
-
-        if (language == null)
-            throw new IllegalArgumentException("Unsupported language: " + args[0]);
-
-        String languageTag = language.toLanguageTag().substring(0, 2);
-
-        ProcessingPipeline<String, String> pipeline = new ProcessingPipeline.Builder<String, String>()
-                .add(new Splitter())
-                .add(new MosesDetokenizer(languageTag))
-                .create();
-
-        try {
-            ProcessingJob<String, String> job = pipeline.createJob(PipelineInputStream.fromInputStream(System.in), PipelineOutputStream.fromOutputStream(System.out));
-            job.start();
-            job.join();
-        } finally {
-            IOUtils.closeQuietly(pipeline);
-        }
+        throw new UnsupportedOperationException("Need to be implemented");
+//        Locale language = Languages.getSupportedLanguage(args[0]);
+//
+//        if (language == null)
+//            throw new IllegalArgumentException("Unsupported language: " + args[0]);
+//
+//        String languageTag = language.toLanguageTag().substring(0, 2);
+//
+//
+//        ProcessingPipeline<String, String> pipeline = new ProcessingPipeline.Builder<String, String>()
+//                .add(new Splitter())
+//                .add(new MosesDetokenizer(languageTag))
+//                .create();
+//
+//        try {
+//            ProcessingJob<String, String> job = pipeline.createJob(PipelineInputStream.fromInputStream(System.in), PipelineOutputStream.fromOutputStream(System.out));
+//            job.start();
+//            job.join();
+//        } finally {
+//            IOUtils.closeQuietly(pipeline);
+//        }
     }
 
 }

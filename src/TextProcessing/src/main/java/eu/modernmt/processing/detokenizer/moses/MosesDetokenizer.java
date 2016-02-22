@@ -1,5 +1,7 @@
 package eu.modernmt.processing.detokenizer.moses;
 
+import eu.modernmt.model.Token;
+import eu.modernmt.model.Translation;
 import eu.modernmt.processing.detokenizer.Detokenizer;
 import eu.modernmt.processing.detokenizer.MultiInstanceDetokenizer;
 import eu.modernmt.processing.framework.ProcessingException;
@@ -61,15 +63,27 @@ public class MosesDetokenizer extends MultiInstanceDetokenizer {
         }
 
         @Override
-        public String call(String[] tokens) throws ProcessingException {
+        public Translation call(Translation translation) throws ProcessingException {
+            String detokenized = detokenize(translation.getStrippedString());
+            int length = detokenized.length();
+
+            int stringIndex = 0;
+            for (Token token : translation.getTokens()) {
+                String tokenText = token.getText();
+
+                int position = detokenized.indexOf(tokenText, stringIndex);
+                stringIndex = position + tokenText.length();
+
+                token.setRightSpace(stringIndex < length && detokenized.charAt(stringIndex) == ' ');
+            }
+
+            return translation;
+        }
+
+        private String detokenize(String text) throws ProcessingException {
             try {
-                for (int i = 0; i < tokens.length; i++) {
-                    this.detokenizerStdin.write(tokens[i].getBytes("utf-8"));
-                    if (i < tokens.length - 1)
-                        this.detokenizerStdin.write(' ');
-                    else
-                        this.detokenizerStdin.write('\n');
-                }
+                this.detokenizerStdin.write(text.getBytes("utf-8"));
+                this.detokenizerStdin.write('\n');
                 this.detokenizerStdin.flush();
 
                 return this.detokenizerStdout.readLine();

@@ -1,7 +1,6 @@
 package eu.modernmt.processing.framework;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.LinkedList;
 import java.util.concurrent.*;
 
@@ -35,11 +34,11 @@ public class ProcessingPipeline<P, R> implements Closeable {
 
     }
 
-    private int threads;
-    private ExecutorService executor;
-    private LinkedList<TextProcessor<Object, Object>> processors = new LinkedList<>();
+    protected int threads;
+    protected ExecutorService executor;
+    protected LinkedList<TextProcessor<Object, Object>> processors = new LinkedList<>();
 
-    private ProcessingPipeline(int threads) {
+    protected ProcessingPipeline(int threads) {
         this.threads = threads;
         this.executor = Executors.newFixedThreadPool(threads);
     }

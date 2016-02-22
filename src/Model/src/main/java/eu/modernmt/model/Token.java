@@ -1,9 +1,11 @@
 package eu.modernmt.model;
 
+import java.io.Serializable;
+
 /**
  * Created by davide on 17/02/16.
  */
-public class Token {
+public class Token implements Serializable {
 
     protected final String text;
     protected boolean rightSpace;

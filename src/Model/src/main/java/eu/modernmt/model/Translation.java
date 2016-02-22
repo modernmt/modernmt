@@ -28,4 +28,8 @@ public class Translation extends Sentence {
         return alignment;
     }
 
+    public boolean hasAlignment() {
+        return alignment != null && alignment.length > 0;
+    }
+
 }

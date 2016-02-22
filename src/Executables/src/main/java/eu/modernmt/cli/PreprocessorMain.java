@@ -1,23 +1,16 @@
 package eu.modernmt.cli;
 
 import eu.modernmt.engine.training.preprocessing.FilesCorporaPartition;
-import eu.modernmt.engine.training.preprocessing.Preprocessor;
+import eu.modernmt.engine.training.preprocessing.TrainingPreprocessor;
 import eu.modernmt.model.ParallelCorpus;
 import eu.modernmt.model.ParallelFilesCorpus;
-import eu.modernmt.processing.Languages;
-import eu.modernmt.processing.detokenizer.moses.MosesDetokenizer;
 import eu.modernmt.processing.framework.*;
-import eu.modernmt.processing.tokenizer.Tokenizers;
-import eu.modernmt.processing.util.Splitter;
-import eu.modernmt.processing.util.StringJoiner;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Created by davide on 17/12/15.
@@ -64,7 +57,7 @@ public class PreprocessorMain {
 
 
         FilesCorporaPartition partition = new FilesCorporaPartition(outputPath);
-        Preprocessor preprocessor = new Preprocessor(partition, corpora);
+        TrainingPreprocessor preprocessor = new TrainingPreprocessor(partition, corpora);
 
         FileUtils.deleteDirectory(outputPath);
 

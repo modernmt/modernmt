@@ -14,7 +14,7 @@ import java.util.HashSet;
  */
 public class TagManager {
 
-    private void setAdditionalInfoInMappinTags(MappingTag[] tags, int sourceLength) {
+    private static void setAdditionalInfoInMappinTags(MappingTag[] tags, int sourceLength) {
         //identify tag type according to tag text
         for (int i = 0; i < tags.length; i++) {
             if (tags[i].isEmptyTag()) {
@@ -65,7 +65,7 @@ public class TagManager {
 */
     }
 
-    public void remap(Sentence source, Translation translation) {
+    public static void remap(Sentence source, Translation translation) {
         MappingTag[] sourceMappingTags = new MappingTag[source.getTags().length];
         Tag[] sourceTags = source.getTags();
         for (int i = 0; i < sourceMappingTags.length; i++) {
@@ -77,7 +77,7 @@ public class TagManager {
         setTranslationTags(sourceMappingTags, source, translation);
     }
 
-    private void setTranslationTags(MappingTag[] sourceMappingTags, Sentence source, Translation translation) {
+    private static void setTranslationTags(MappingTag[] sourceMappingTags, Sentence source, Translation translation) {
         //create a map from source positions to target position
         ArrayList<ArrayList<Integer>> alignmentSourceToTarget = new ArrayList<>(source.getTokens().length);
         setAlignmentMap(alignmentSourceToTarget, source.getTokens().length, translation.getAlignment());
@@ -300,7 +300,7 @@ public class TagManager {
 
     }
 
-    protected void setAlignmentMap(ArrayList<ArrayList<Integer>> alignmentMap, int sourceLength, int[][] alignments) {
+    protected static void setAlignmentMap(ArrayList<ArrayList<Integer>> alignmentMap, int sourceLength, int[][] alignments) {
 
         //add an empty list for each source word, so that there is a correspondence between source word position and index in the alignmentMap
         for (int i = 0; i < sourceLength; i++) {
@@ -332,26 +332,24 @@ public class TagManager {
     }
 
     public static void main(String[] args) throws Throwable {
+        // hello <f/> <b>world</b> <world />
+
         Sentence source = new Sentence(new Token[]{
-                new Token("Ciao", true),
-                new Token("Davide", true),
-                new Token("Carosellu", false),
+                new Token("hello", true),
+                new Token("world", true),
         }, new Tag[]{
-                new Tag("c", "<c>", true, false, 0, Tag.Type.OPENING_TAG),
+                new Tag("f", "<f>", true, true, 1, Tag.Type.EMPTY_TAG),
                 new Tag("b", "<b>", true, false, 1, Tag.Type.OPENING_TAG),
-                new Tag("d", "<d/>", true, false, 1, Tag.Type.EMPTY_TAG),
-                new Tag("e", "</e>", false, false, 1, Tag.Type.CLOSING_TAG),
-                new Tag("b", "</b>", true, false, 2, Tag.Type.CLOSING_TAG),
+                new Tag("b", "</b>", false, true, 2, Tag.Type.CLOSING_TAG),
+                new Tag("world", "<world />", true, false, 2, Tag.Type.EMPTY_TAG),
         });
 
         Translation translation = new Translation(new Token[]{
-                new Token("Caroselli", true),
-                new Token("Davide", true),
-                new Token("Hello", false),
+                new Token("ciao", true),
+                new Token("mondo", true),
         }, source, new int[][]{
-                {0, 2},
+                {0, 0},
                 {1, 1},
-                {2, 0},
         });
 
 
@@ -360,7 +358,7 @@ public class TagManager {
         System.out.println();
 
 
-        new TagManager().remap(source, translation);
+        TagManager.remap(source, translation);
         System.out.println(translation);
         System.out.println(translation.getStrippedString());
     }

@@ -20,4 +20,12 @@ public class AnnotatedString {
         this.bits = bits;
     }
 
+    public int length() {
+        return string.length();
+    }
+
+    @Override
+    public String toString() {
+        return string;
+    }
 }

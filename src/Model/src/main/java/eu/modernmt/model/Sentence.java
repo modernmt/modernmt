@@ -1,9 +1,11 @@
 package eu.modernmt.model;
 
+import java.io.Serializable;
+
 /**
  * Created by davide on 17/02/16.
  */
-public class Sentence {
+public class Sentence implements Serializable {
 
     protected Token[] tokens;
     protected Tag[] tags;
@@ -23,6 +25,10 @@ public class Sentence {
 
     public Tag[] getTags() {
         return tags;
+    }
+
+    public boolean hasTags() {
+        return tags != null && tags.length > 0;
     }
 
     public void setTokens(Token[] tokens) {

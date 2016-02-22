@@ -1,17 +1,14 @@
 package eu.modernmt.engine.training.preprocessing;
 
 import eu.modernmt.model.ParallelCorpus;
-import eu.modernmt.model.ParallelFilesCorpus;
-import eu.modernmt.processing.detokenizer.Detokenizers;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.ProcessingPipeline;
+import eu.modernmt.processing.tags.TagHighlighter;
 import eu.modernmt.processing.tokenizer.Tokenizers;
-import eu.modernmt.processing.util.Splitter;
-import eu.modernmt.processing.util.StringJoiner;
-import org.apache.commons.io.FileUtils;
+import eu.modernmt.processing.util.SentenceOutputter;
+import eu.modernmt.processing.util.StringNormalizer;
 import org.apache.commons.io.IOUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,7 +19,7 @@ import java.util.concurrent.*;
 /**
  * Created by davide on 28/01/16.
  */
-public class Preprocessor {
+public class TrainingPreprocessor {
 
     private static final int MAX_IO_THREADS = 10;
     private static final double MAX_CORPUS_PARTITION_RATIO = 0.01;
@@ -33,11 +30,11 @@ public class Preprocessor {
     private Locale sourceLanguage = null;
     private Locale targetLanguage = null;
 
-    public Preprocessor(CorporaPartition mainPartition) {
+    public TrainingPreprocessor(CorporaPartition mainPartition) {
         this.mainPartition = mainPartition;
     }
 
-    public Preprocessor(CorporaPartition mainPartition, List<? extends ParallelCorpus> corpora) {
+    public TrainingPreprocessor(CorporaPartition mainPartition, List<? extends ParallelCorpus> corpora) {
         this.mainPartition = mainPartition;
         this.corpora.addAll(corpora);
     }
@@ -96,18 +93,18 @@ public class Preprocessor {
 
         ProcessingPipeline<String, String> sourcePipeline = new ProcessingPipeline.Builder<String, String>()
                 .setThreads(threadsPerPipeline)
-                .add(new Splitter())
-                .add(Detokenizers.forLanguage(sourceLanguage))
+                .add(new StringNormalizer())
                 .add(Tokenizers.forLanguage(sourceLanguage))
-                .add(new StringJoiner())
+                .add(new TagHighlighter())
+                .add(new SentenceOutputter(false))
                 .create();
 
         ProcessingPipeline<String, String> targetPipeline = new ProcessingPipeline.Builder<String, String>()
                 .setThreads(threadsPerPipeline)
-                .add(new Splitter())
-                .add(Detokenizers.forLanguage(targetLanguage))
+                .add(new StringNormalizer())
                 .add(Tokenizers.forLanguage(targetLanguage))
-                .add(new StringJoiner())
+                .add(new TagHighlighter())
+                .add(new SentenceOutputter(false))
                 .create();
 
         // Run processing

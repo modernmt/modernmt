@@ -5,8 +5,8 @@ import eu.modernmt.decoder.moses.MosesDecoder;
 import eu.modernmt.decoder.moses.MosesINI;
 import eu.modernmt.network.cluster.Worker;
 import eu.modernmt.network.messaging.zeromq.ZMQMessagingClient;
-import eu.modernmt.processing.ProcessingController;
-import eu.modernmt.processing.framework.ProcessingPipeline;
+import eu.modernmt.processing.Postprocessor;
+import eu.modernmt.processing.Preprocessor;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -43,8 +43,8 @@ public class SlaveNode extends Worker {
     private Decoder decoder;
     private File runtimePath;
     private MasterHost master;
-    private ProcessingPipeline<String, String[]> tokenizer = null;
-    private ProcessingPipeline<String[], String> detokenizer = null;
+    private Preprocessor preprocessor = null;
+    private Postprocessor postprocessor = null;
 
     public SlaveNode(TranslationEngine engine, MasterHost master, int[] ports) throws IOException {
         super(new ZMQMessagingClient(master == null ? "localhost" : master.host, ports[0], ports[1]), DEFAULT_DECODER_THREADS);
@@ -88,28 +88,28 @@ public class SlaveNode extends Worker {
         }
     }
 
-    public ProcessingPipeline<String, String[]> getTokenizer() {
-        if (tokenizer == null) {
+    public Preprocessor getPreprocessor() {
+        if (preprocessor == null) {
             synchronized (this) {
-                if (tokenizer == null) {
-                    tokenizer = ProcessingController.getTokenizePipeline(engine.getSourceLanguage());
+                if (preprocessor == null) {
+                    preprocessor = new Preprocessor(engine.getSourceLanguage());
                 }
             }
         }
 
-        return tokenizer;
+        return preprocessor;
     }
 
-    public ProcessingPipeline<String[], String> getDetokenizer() {
-        if (detokenizer == null) {
+    public Postprocessor getPostprocessor() {
+        if (postprocessor == null) {
             synchronized (this) {
-                if (detokenizer == null) {
-                    detokenizer = ProcessingController.getDetokenizePipeline(engine.getTargetLanguage());
+                if (postprocessor == null) {
+                    postprocessor = new Postprocessor(engine.getTargetLanguage());
                 }
             }
         }
 
-        return detokenizer;
+        return postprocessor;
     }
 
     @Override

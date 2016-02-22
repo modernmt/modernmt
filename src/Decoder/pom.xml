@@ -145,5 +145,10 @@
             <artifactId>mmt-context-analyzer</artifactId>
             <version>${mmt.version}</version>
         </dependency>
+        <dependency>
+            <groupId>eu.modernmt</groupId>
+            <artifactId>mmt-model</artifactId>
+            <version>${mmt.version}</version>
+        </dependency>
     </dependencies>
 </project>

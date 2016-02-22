@@ -1,5 +1,6 @@
 package eu.modernmt.processing.detokenizer;
 
+import eu.modernmt.model.Translation;
 import eu.modernmt.processing.framework.ProcessingException;
 import org.apache.commons.io.IOUtils;
 
@@ -47,7 +48,7 @@ public class MultiInstanceDetokenizer implements Detokenizer {
     }
 
     @Override
-    public String call(String[] param) throws ProcessingException {
+    public Translation call(Translation param) throws ProcessingException {
         Detokenizer instance = getInstance();
 
         try {
@@ -63,8 +64,7 @@ public class MultiInstanceDetokenizer implements Detokenizer {
             closed = true;
         }
 
-        for (Detokenizer detokenizer : buffer)
-            IOUtils.closeQuietly(detokenizer);
+        buffer.forEach(IOUtils::closeQuietly);
     }
 
 }
