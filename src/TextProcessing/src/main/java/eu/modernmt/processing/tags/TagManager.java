@@ -143,7 +143,7 @@ public class TagManager {
             targetPositions.addAll(targetPositionsSet);
             Collections.sort(targetPositions);
 
-           System.out.println("sourcePositions:" + currentSourceMappingTag.getCoveredPositions() + " --> targetPositions:" + targetPositions);
+           //System.out.println("sourcePositions:" + currentSourceMappingTag.getCoveredPositions() + " --> targetPositions:" + targetPositions);
 
             MappingTag newTargetMappingTag = currentSourceMappingTag.clone();
             // set the position of the target tag
@@ -204,11 +204,12 @@ public class TagManager {
         //duplicate MappingTags having gaps in the covered positions
         Collections.sort(targetMappingTags);
 
-
+/**
         for (MappingTag currentTargetMappingTag : targetMappingTags) {
             System.out.println("currentTargetMappingTag:" + currentTargetMappingTag + " content " + currentTargetMappingTag.getContent() + " positions:" + currentTargetMappingTag.getCoveredPositions());
         }
         System.out.println();
+        */
 
 
         // transform all target MaappingTags into Tags
@@ -307,6 +308,8 @@ public class TagManager {
                 new Token("!", true),
         }, source, new int[][]{
                 {0, 3},
+                {1, 1},
+                {2, 2},
                 {2, 4},
         });
 /**
