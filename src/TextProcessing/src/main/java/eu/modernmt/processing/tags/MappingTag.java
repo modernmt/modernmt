@@ -9,61 +9,59 @@ import java.util.ArrayList;
  */
 public class MappingTag extends Tag {
 
-    protected Tag link; //pointer to the closing (or opening) tag; null if undefined (SELF_CONTAINED, OPENED_BUT_UNCLOSED, CLOSED_BUT_UNOPENED)
-    protected int parent;
-    protected ArrayList<Integer> coveredPositions; //list of the word positions covered by the tag
 
-    public MappingTag(String text, boolean leftSpace, boolean rightSpace, int position, Type type, String name) {
+    /* pointer to the corresponding closing (or opening) tag; null if not present or the tag an EMPTY_TAG */
+    protected MappingTag link;
+    /* list of the word positions covered by the tag */
+    protected ArrayList<Integer> coveredPositions;
+    /* true if the tag covers at least one position */
+    protected boolean content;
+
+    public MappingTag(String name, String text, boolean leftSpace, boolean rightSpace, int position, Type type) {
         super(name, text, leftSpace, rightSpace, position, type);
         this.link = null;
-        this.parent = -1;
+        this.content = false;
         this.coveredPositions = new ArrayList<>();
     }
 
-    public MappingTag(String text, boolean leftSpace, boolean rightSpace, int position, Type type, String name, Tag link) {
+    public MappingTag(String name, String text, boolean leftSpace, boolean rightSpace, int position, Type type, MappingTag link, boolean content) {
         super(name, text, leftSpace, rightSpace, position, type);
         this.link = link;
-        this.parent = -1;
+        this.content = content;
         this.coveredPositions = new ArrayList<>();
     }
-
-    public MappingTag(String text, boolean leftSpace, boolean rightSpace, int position, Type type, String name, Tag link, int parent) {
-        super(name, text, leftSpace, rightSpace, position, type);
-        this.link = link;
-        this.parent = parent;
-        this.coveredPositions = new ArrayList<>();
-    }
-
 
     public static MappingTag fromTag(Tag fromTag) {
-        return new MappingTag(fromTag.getText(), fromTag.hasLeftSpace(), fromTag.hasRightSpace(), fromTag.getPosition(), fromTag.getType(), fromTag.getName());
+        return new MappingTag(fromTag.getName(), fromTag.getText(), fromTag.hasLeftSpace(), fromTag.hasRightSpace(), fromTag.getPosition(), fromTag.getType());
     }
 
-    public static MappingTag fromTag(MappingTag fromTag) {
-        return new MappingTag(fromTag.getText(), fromTag.hasLeftSpace(), fromTag.hasRightSpace(), fromTag.getPosition(), fromTag.getType(), fromTag.getName(), fromTag.getLink(), fromTag.getParent());
+    @Override
+    public MappingTag clone() {
+        return new MappingTag(name, text, leftSpace, rightSpace, position, type, link, content);
     }
 
-    public Tag getLink() {
+    public MappingTag getLink() {
         return link;
     }
 
-    public int getParent() {
-        return parent;
+    public boolean getContent() {
+        return content;
     }
 
     public ArrayList<Integer> getCoveredPositions() {
         return coveredPositions;
     }
 
-    public void setLink(Tag link) {
+    public void setLink(MappingTag link) {
         this.link = link;
     }
 
-    public void setParent(int parent) {
-        this.parent = parent;
+    public void setContent(boolean content) {
+        this.content = content;
     }
 
     public void setCoveredPositions(ArrayList<Integer> coveredPositions) {
+        this.coveredPositions.clear();
         this.coveredPositions.addAll(coveredPositions);
     }
 
@@ -79,32 +77,38 @@ public class MappingTag extends Tag {
         return this.isClosingTag() && !this.hasLink();
     }
 
+    /* true if is an OPENING_TAG and there is not any word between the opening and closing tags */
     protected boolean isOpenedEmpty() {
         return this.isOpeningTag() && this.hasLink() && (Math.abs(this.position - this.link.getPosition())) == 0;
     }
 
+    /* true if is an OPENING_TAG and there is at least one word between the opening and closing tags */
     protected boolean isOpenedNonEmpty() {
         return this.isOpeningTag() && this.hasLink() && (Math.abs(this.position - this.link.getPosition())) > 0;
     }
 
+    /* true if is an CLOSING_TAG and there is not any word between the opening and closing tags */
     protected boolean isClosedEmpty() {
         return this.isClosingTag() && this.hasLink() && (Math.abs(this.position - this.link.getPosition())) == 0;
     }
 
+    /* true if is an CLOSING_TAG and there is at least one word between the opening and closing tags */
     protected boolean isClosedNonEmpty() {
         return this.isClosingTag() && this.hasLink() && (Math.abs(this.position - this.link.getPosition())) > 0;
     }
 
-    protected boolean isEmptyTag() {
-        return this.type == Type.EMPTY_TAG;
-    }
+//    @Override
+    public String toString2() {
+        StringBuilder string = new StringBuilder();
 
-    protected boolean isOpeningTag() {
-        return this.type == Type.OPENING_TAG;
-    }
+        string.append("name:" + name
+                + " text:" + text
+                + " type:" + type
+                + " position:" + position
+                + " content:" + content
+                + " positions:" + this.getCoveredPositions());
 
-    protected boolean isClosingTag() {
-        return this.type == Type.CLOSING_TAG;
+        return string.toString();
     }
 
 }

@@ -1,5 +1,7 @@
 package eu.modernmt.model;
 
+import com.sun.istack.internal.NotNull;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,12 +45,13 @@ public class Tag extends Token implements Comparable<Tag>, Cloneable {
         return new Tag(name, text, type);
     }
 
-    protected final Type type;
-    protected final String name; // tag name
-    protected boolean leftSpace;
-    //position of the word after which the tag is placed; indexes of words start from 0
-    // e.g. a tag at the beginning of the sentence has position=0
-    // e.g. a tag at the end of the sentence (of Length words) has position=Length
+    protected final Type type; /* tag type */
+    protected final String name; /* tag name */
+    protected boolean leftSpace; /* true if there is at least one space on the left of the tag*/
+    /* position of the word after which the tag is placed; indexes of words start from 0
+    e.g. a tag at the beginning of the sentence has position=0
+    e.g. a tag at the end of the sentence (of Length words) has position=Length
+    */
     protected int position;
 
     public Tag(String name, String text, Type type) {
@@ -87,8 +90,20 @@ public class Tag extends Token implements Comparable<Tag>, Cloneable {
         this.leftSpace = leftSpace;
     }
 
+    public boolean isEmptyTag() {
+        return this.type == Type.EMPTY_TAG;
+    }
+
+    public boolean isOpeningTag() {
+        return this.type == Type.OPENING_TAG;
+    }
+
+    public boolean isClosingTag() {
+        return this.type == Type.CLOSING_TAG;
+    }
+
     @Override
-    public int compareTo(Tag other) {
+    public int compareTo(@NotNull Tag other) {
         return Integer.compare(this.position, other.getPosition());
     }
 
