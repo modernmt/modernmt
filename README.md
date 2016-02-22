@@ -164,7 +164,7 @@ http://opus.lingfil.uu.se
 MMT quality can be increased by tuning the parameters providing unseen translation examples. 
 
 ```
-./mmt tune examples/data/dev
+./mmt tune --path examples/data/dev
 ```
 
 This dev data used to tune the small engine created with the example data will take around 10 minutes. 
