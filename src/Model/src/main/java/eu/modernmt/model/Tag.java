@@ -1,7 +1,5 @@
 package eu.modernmt.model;
 
-import com.sun.istack.internal.NotNull;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -103,7 +101,7 @@ public class Tag extends Token implements Comparable<Tag>, Cloneable {
     }
 
     @Override
-    public int compareTo(@NotNull Tag other) {
+    public int compareTo(Tag other) {
         return Integer.compare(this.position, other.getPosition());
     }
 
