@@ -270,7 +270,7 @@ public class TagMapper implements TextProcessor<Translation, Void> {
         /* transform the target Tag list into an array */
         Tag[] targetTags = new Tag[targetTagList.size()];
         for (int i = 0; i < targetTagList.size(); i++) {
-            targetTags[i] = targetTagList.get(i).clone();
+            targetTags[i] = Tag.fromTag(targetTagList.get(i));
         }
 
         translation.setTags(targetTags);
@@ -296,62 +296,62 @@ public class TagMapper implements TextProcessor<Translation, Void> {
         ArrayList<Integer> currentList = alignmentMap.get(sourceLength);
         currentList.add(targetLength);
 
-        System.out.println("ALIGNMENT (Src2Trg):     " + alignmentMap.toString());
-        System.out.println();
+//        System.out.println("ALIGNMENT (Src2Trg):     " + alignmentMap.toString());
+//        System.out.println();
     }
 
     public static void main(String[] args) throws Throwable {
         // hello <f/> <b>world</b> <world />
+//
+//
+//        Sentence source = new Sentence(new Token[]{
+//                new Token("Ciao", true),
+//                new Token("Davide", true),
+//                new Token("!", false),
+//        }, new Tag[]{
+//                new Tag("c", "<c>", true, false, 0, Tag.Type.OPENING_TAG),
+//                new Tag("b", "<b id=\"ciao\">", true, false, 1, Tag.Type.OPENING_TAG),
+//                new Tag("d", "<d/>", true, false, 1, Tag.Type.EMPTY_TAG),
+//                new Tag("b", "</b>", true, false, 2, Tag.Type.CLOSING_TAG),
+//                new Tag("f", "<f>", false, false, 2, Tag.Type.OPENING_TAG),
+//                new Tag("f", "</f>", false, false, 2, Tag.Type.CLOSING_TAG),
+//                new Tag("e", "<e>", false, false, 3, Tag.Type.OPENING_TAG),
+//                new Tag("g", "</g>", false, false, 3, Tag.Type.CLOSING_TAG),
+//        });
+//        Translation translation = new Translation(new Token[]{
+//                new Token("Davide", true),
+//                new Token("Caroselli", false),
+//                new Token(",", true),
+//                new Token("Ciao", false),
+//                new Token("!", true),
+//        }, source, new int[][]{
+//                {0, 3},
+//                {1, 1},
+//                {2, 2},
+//                {2, 4},
+//        });
 
 
-        Sentence source = new Sentence(new Token[]{
-                new Token("Ciao", true),
-                new Token("Davide", true),
-                new Token("!", false),
-        }, new Tag[]{
-                new Tag("c", "<c>", true, false, 0, Tag.Type.OPENING_TAG),
-                new Tag("b", "<b id=\"ciao\">", true, false, 1, Tag.Type.OPENING_TAG),
-                new Tag("d", "<d/>", true, false, 1, Tag.Type.EMPTY_TAG),
-                new Tag("b", "</b>", true, false, 2, Tag.Type.CLOSING_TAG),
-                new Tag("f", "<f>", false, false, 2, Tag.Type.OPENING_TAG),
-                new Tag("f", "</f>", false, false, 2, Tag.Type.CLOSING_TAG),
-                new Tag("e", "<e>", false, false, 3, Tag.Type.OPENING_TAG),
-                new Tag("g", "</g>", false, false, 3, Tag.Type.CLOSING_TAG),
-        });
-        Translation translation = new Translation(new Token[]{
-                new Token("Davide", true),
-                new Token("Caroselli", false),
-                new Token(",", true),
-                new Token("Ciao", false),
-                new Token("!", true),
-        }, source, new int[][]{
-                {0, 3},
-                {1, 1},
-                {2, 2},
-                {2, 4},
-        });
+
+//        Sentence source = new Sentence(new Token[]{
+//                new Token("hello", true),
+//                new Token("world", true),
+//        }, new Tag[]{
+//                new Tag("f", "<f>", true, true, 1, Tag.Type.EMPTY_TAG),
+//                new Tag("b", "<b>", true, false, 1, Tag.Type.OPENING_TAG),
+//                new Tag("b", "</b>", false, true, 2, Tag.Type.CLOSING_TAG),
+//                new Tag("world", "<world />", true, false, 2, Tag.Type.EMPTY_TAG),
+//        });
+//        Translation translation = new Translation(new Token[]{
+//                new Token("ciao", true),
+//                new Token("mondo", true),
+//        }, source, new int[][]{
+//                {0, 1},
+//                {1, 0},
+//        });
 
 
-        /*
-        Sentence source = new Sentence(new Token[]{
-                new Token("hello", true),
-                new Token("world", true),
-        }, new Tag[]{
-                new Tag("f", "<f>", true, true, 1, Tag.Type.EMPTY_TAG),
-                new Tag("b", "<b>", true, false, 1, Tag.Type.OPENING_TAG),
-                new Tag("b", "</b>", false, true, 2, Tag.Type.CLOSING_TAG),
-                new Tag("world", "<world />", true, false, 2, Tag.Type.EMPTY_TAG),
-        });
-        Translation translation = new Translation(new Token[]{
-                new Token("ciao", true),
-                new Token("mondo", true),
-        }, source, new int[][]{
-                {0, 1},
-                {1, 0},
-        });
-        */
 
-        /*
         Sentence source = new Sentence(new Token[]{
                 new Token("hello", true),
                 new Token("world", true),
@@ -366,7 +366,7 @@ public class TagMapper implements TextProcessor<Translation, Void> {
                 {0, 0},
                 {1, 1},
         });
-        */
+
 
         /*
         Sentence source = new Sentence(new Token[]{

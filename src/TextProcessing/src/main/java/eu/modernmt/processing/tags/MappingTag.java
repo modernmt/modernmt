@@ -7,7 +7,7 @@ import java.util.ArrayList;
 /**
  * Created by nicolabertoldi on 18/02/16.
  */
-public class MappingTag extends Tag {
+public class MappingTag extends Tag implements Cloneable {
 
 
     /* pointer to the corresponding closing (or opening) tag; null if not present or the tag an EMPTY_TAG */
@@ -69,46 +69,14 @@ public class MappingTag extends Tag {
         return this.link != null;
     }
 
-    protected boolean isOpenedButUncloed() {
-        return this.isOpeningTag() && !this.hasLink();
-    }
-
-    protected boolean isClosedButUnopend() {
-        return this.isClosingTag() && !this.hasLink();
-    }
-
-    /* true if is an OPENING_TAG and there is not any word between the opening and closing tags */
-    protected boolean isOpenedEmpty() {
-        return this.isOpeningTag() && this.hasLink() && (Math.abs(this.position - this.link.getPosition())) == 0;
-    }
-
-    /* true if is an OPENING_TAG and there is at least one word between the opening and closing tags */
-    protected boolean isOpenedNonEmpty() {
-        return this.isOpeningTag() && this.hasLink() && (Math.abs(this.position - this.link.getPosition())) > 0;
-    }
-
-    /* true if is an CLOSING_TAG and there is not any word between the opening and closing tags */
-    protected boolean isClosedEmpty() {
-        return this.isClosingTag() && this.hasLink() && (Math.abs(this.position - this.link.getPosition())) == 0;
-    }
-
-    /* true if is an CLOSING_TAG and there is at least one word between the opening and closing tags */
-    protected boolean isClosedNonEmpty() {
-        return this.isClosingTag() && this.hasLink() && (Math.abs(this.position - this.link.getPosition())) > 0;
-    }
-
-//    @Override
-    public String toString2() {
-        StringBuilder string = new StringBuilder();
-
-        string.append("name:" + name
+    @Override
+    public String toString() {
+        return "name:" + name
                 + " text:" + text
                 + " type:" + type
                 + " position:" + position
                 + " content:" + content
-                + " positions:" + this.getCoveredPositions());
-
-        return string.toString();
+                + " positions:" + this.getCoveredPositions();
     }
 
 }

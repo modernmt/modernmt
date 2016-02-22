@@ -3,7 +3,7 @@ package eu.modernmt.model;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Tag extends Token implements Comparable<Tag>, Cloneable {
+public class Tag extends Token implements Comparable<Tag> {
 
     public static final Pattern TagRegex = Pattern.compile(
             "(<((\\p{Alpha}|_|:)(\\p{Alpha}|\\p{Digit}|\\.|-|_|:|)*)[^>]*/?>)|" +
@@ -41,6 +41,10 @@ public class Tag extends Token implements Comparable<Tag>, Cloneable {
         name = matcher.group();
 
         return new Tag(name, text, type);
+    }
+
+    public static Tag fromTag(Tag other) {
+        return new Tag(other.name, other.text, other.leftSpace, other.rightSpace, other.position, other.type);
     }
 
     protected final Type type; /* tag type */
@@ -106,8 +110,29 @@ public class Tag extends Token implements Comparable<Tag>, Cloneable {
     }
 
     @Override
-    public Tag clone() {
-        return new Tag(name, text, leftSpace, rightSpace, position, type);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        Tag tag = (Tag) o;
+
+        if (leftSpace != tag.leftSpace) return false;
+        if (position != tag.position) return false;
+        if (type != tag.type) return false;
+        return name.equals(tag.name);
+
     }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + type.hashCode();
+        result = 31 * result + name.hashCode();
+        result = 31 * result + (leftSpace ? 1 : 0);
+        result = 31 * result + position;
+        return result;
+    }
+
 }
 

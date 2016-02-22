@@ -35,4 +35,23 @@ public class Token implements Serializable {
     public String toString() {
         return text;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Token token = (Token) o;
+
+        if (rightSpace != token.rightSpace) return false;
+        return text.equals(token.text);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = text.hashCode();
+        result = 31 * result + (rightSpace ? 1 : 0);
+        return result;
+    }
 }
