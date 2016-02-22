@@ -1,13 +1,15 @@
 package eu.modernmt.cli;
 
-import eu.modernmt.processing.Languages;
-import eu.modernmt.processing.detokenizer.moses.MosesDetokenizer;
+import eu.modernmt.model.Sentence;
+import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.framework.*;
-import eu.modernmt.processing.tokenizer.Tokenizers;
-import eu.modernmt.processing.util.Splitter;
-import eu.modernmt.processing.util.SentenceOutputter;
+import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.util.Locale;
 
 /**
@@ -15,29 +17,81 @@ import java.util.Locale;
  */
 public class TokenizerMain {
 
-    public static void main(String[] args) throws InterruptedException, ProcessingException {
-        throw new UnsupportedOperationException("Need to be implemented");
-//        Locale language = Languages.getSupportedLanguage(args[0]);
-//
-//        if (language == null)
-//            throw new IllegalArgumentException("Unsupported language: " + args[0]);
-//
-//        String languageTag = language.toLanguageTag().substring(0, 2);
-//
-//        ProcessingPipeline<String, String> pipeline = new ProcessingPipeline.Builder<String, String>()
-//                .add(new Splitter())
-//                .add(new MosesDetokenizer(languageTag))
-//                .add(Tokenizers.forLanguage(language))
-//                .add(new SentenceOutputter())
-//                .create();
-//
-//        try {
-//            ProcessingJob<String, String> job = pipeline.createJob(PipelineInputStream.fromInputStream(System.in), PipelineOutputStream.fromOutputStream(System.out));
-//            job.start();
-//            job.join();
-//        } finally {
-//            IOUtils.closeQuietly(pipeline);
-//        }
+    private static class Args {
+
+        private static final Options cliOptions;
+
+        static {
+            Option lang = Option.builder().longOpt("lang").hasArg().required().build();
+            Option skipTags = Option.builder().longOpt("no-tags").hasArg(false).required(false).build();
+
+            cliOptions = new Options();
+            cliOptions.addOption(lang);
+            cliOptions.addOption(skipTags);
+        }
+
+        public final Locale language;
+        public final boolean printTags;
+
+        public Args(String[] args) throws ParseException {
+            CommandLineParser parser = new DefaultParser();
+            CommandLine cli = parser.parse(cliOptions, args);
+
+            language = Locale.forLanguageTag(cli.getOptionValue("lang"));
+            printTags = !cli.hasOption("no-tags");
+        }
+
+    }
+
+    public static void main(String[] _args) throws InterruptedException, ProcessingException, ParseException {
+        Args args = new Args(_args);
+
+        Preprocessor preprocessor = null;
+
+        try {
+            preprocessor = new Preprocessor(args.language);
+            ProcessingPipeline<String, Sentence> pipeline = preprocessor.getInternalPipeline(true);
+
+            ProcessingJob<String, Sentence> job = pipeline.createJob(
+                    PipelineInputStream.fromInputStream(System.in),
+                    new SentenceOutputter(System.out, args.printTags)
+            );
+            job.start();
+            job.join();
+
+        } finally {
+            IOUtils.closeQuietly(preprocessor);
+        }
+    }
+
+    private static class SentenceOutputter implements PipelineOutputStream<Sentence> {
+
+        private PrintStream wrap(OutputStream s) {
+            try {
+                return s instanceof PrintStream ? (PrintStream) s : new PrintStream(s, true, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                throw new Error("Unsupported UTF-8", e);
+            }
+        }
+
+        private final PrintStream stream;
+        private boolean printTags;
+
+        public SentenceOutputter(OutputStream stream, boolean printTags) {
+            this.stream = wrap(stream);
+            this.printTags = printTags;
+        }
+
+        @Override
+        public void close() throws IOException {
+            stream.close();
+        }
+
+        @Override
+        public void write(Sentence value) throws IOException {
+            stream.print(printTags ? value.toString() : value.getStrippedString());
+            stream.print('\n');
+        }
     }
 
 }

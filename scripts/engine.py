@@ -19,7 +19,7 @@ from scripts.mt.contextanalysis import ContextAnalyzer
 from scripts.mt.lm import LanguageModel
 from scripts.mt.moses import Moses, MosesFeature, LexicalReordering
 from scripts.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
-from scripts.mt.processing import Tokenizer, Detokenizer, CorpusCleaner, Preprocessor
+from scripts.mt.processing import Tokenizer, CorpusCleaner, Preprocessor
 
 __author__ = 'Davide Caroselli'
 
@@ -326,7 +326,6 @@ class MMTEngine:
             raise Exception('Engine target language or source language must be specified')
 
         self.tokenizer = injector.inject(Tokenizer())
-        self.detokenizer = injector.inject(Detokenizer())
         self.cleaner = injector.inject(CorpusCleaner())
         self.preprocessor = injector.inject(Preprocessor())
 
@@ -568,7 +567,8 @@ class MMTServer(_MMTDistributedComponent):
                 fileutils.makedirs(tokenizer_output, exist_ok=True)
 
                 with cmdlogger.step('Corpus tokenization') as _:
-                    tokenized_corpora = self.engine.tokenizer.batch_tokenize(corpora, tokenizer_output)
+                    tokenized_corpora = self.engine.tokenizer.batch_tokenize(corpora, tokenizer_output,
+                                                                             print_tags=False)
 
             # Create merged corpus
             with cmdlogger.step('Merging corpus') as _:
@@ -657,7 +657,7 @@ class MMTServer(_MMTDistributedComponent):
 
         # Tokenize test set
         references_path = os.path.join(working_dir, 'references')
-        tokenized_corpora = self.engine.tokenizer.batch_tokenize(corpora, references_path)
+        tokenized_corpora = self.engine.tokenizer.batch_tokenize(corpora, references_path, print_tags=True)
 
         tokenized_references = ParallelCorpus.filter(tokenized_corpora, target_lang)
         original_references = ParallelCorpus.filter(corpora, target_lang)
@@ -689,7 +689,7 @@ class MMTServer(_MMTDistributedComponent):
                 speed = wordcount / elapsed_time
 
                 translated = ParallelCorpus.list(translations_path)
-                tokenized = self.engine.tokenizer.batch_tokenize(translated, tokenized_path)
+                tokenized = self.engine.tokenizer.batch_tokenize(translated, tokenized_path, print_tags=True)
 
                 translations.append((translator, translated, tokenized, speed))
             except TranslateError as e:
@@ -763,7 +763,7 @@ class MMTWorker(_MMTDistributedComponent):
         }
 
         command = ['java', '-cp', ':'.join(classpath)]
-        # command.append('-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005')
+        command.append('-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005')
 
         for key, value in sysprop.iteritems():
             command.append('-D' + key + '=' + value)

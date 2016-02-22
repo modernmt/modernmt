@@ -82,65 +82,39 @@ class Preprocessor:
         return ParallelCorpus.list(output_path)
 
 
-class Detokenizer:
-    def __init__(self):
-        self._detokenizer_jar = scripts.MMT_JAR
-        self._java_mainclass = 'eu.modernmt.cli.DetokenizerMain'
-
-    def _get_detokenizer_command(self, lang):
-        return ['java', '-cp', self._detokenizer_jar, '-Dmmt.home=' + scripts.MMT_ROOT, self._java_mainclass, lang]
-
-    def batch_detokenize(self, corpora, dest_folder):
-        _pool_exec(self.detokenize_file,
-                   [(corpus.get_file(lang), ParallelCorpus(corpus.name, dest_folder, [lang]).get_file(lang), lang) for
-                    corpus in corpora for lang in corpus.langs])
-        return ParallelCorpus.list(dest_folder)
-
-    def detokenize(self, sentence, lang):
-        command = self._get_detokenizer_command(lang)
-        out, _ = shell.execute(command, sentence)
-
-        return out.strip()
-
-    def detokenize_file(self, source, dest, lang):
-        command = self._get_detokenizer_command(lang)
-
-        parent_dir = os.path.abspath(os.path.join(dest, os.pardir))
-        if not os.path.isdir(parent_dir):
-            fileutils.makedirs(parent_dir, exist_ok=True)
-
-        with open(source) as input_stream:
-            with open(dest, 'w') as output_stream:
-                shell.execute(command, stdin=input_stream, stdout=output_stream, stderr=shell.DEVNULL)
-
-
 class Tokenizer:
     def __init__(self):
         self._tokenizer_jar = scripts.MMT_JAR
         self._java_mainclass = 'eu.modernmt.cli.TokenizerMain'
 
-    def _get_tokenizer_command(self, lang):
-        return ['java', '-cp', self._tokenizer_jar, '-Dmmt.home=' + scripts.MMT_ROOT, self._java_mainclass, lang]
+    def _get_tokenizer_command(self, lang, print_tags):
+        command = ['java', '-cp', self._tokenizer_jar, '-Dmmt.home=' + scripts.MMT_ROOT, self._java_mainclass,
+                   '--lang', lang]
 
-    def tokenize(self, sentence, lang):
-        command = self._get_tokenizer_command(lang)
+        if not print_tags:
+            command.append('--no-tags')
+
+        return command
+
+    def tokenize(self, sentence, lang, print_tags=True):
+        command = self._get_tokenizer_command(lang, print_tags)
         out, _ = shell.execute(command, sentence)
 
         return out.strip()
 
-    def batch_tokenize(self, corpora, dest_folder):
+    def batch_tokenize(self, corpora, dest_folder, print_tags=True):
         for corpus in corpora:
             for lang in corpus.langs:
                 source = corpus.get_file(lang)
                 dest = ParallelCorpus(corpus.name, dest_folder, [lang]).get_file(lang)
 
-                self.tokenize_file(source, dest, lang)
+                self.tokenize_file(source, dest, lang, print_tags)
 
         return ParallelCorpus.list(dest_folder)
 
     # noinspection PyTypeChecker
-    def tokenize_file(self, source, dest, lang):
-        command = self._get_tokenizer_command(lang)
+    def tokenize_file(self, source, dest, lang, print_tags=True):
+        command = self._get_tokenizer_command(lang, print_tags)
 
         parent_dir = os.path.abspath(os.path.join(dest, os.pardir))
         if not os.path.isdir(parent_dir):

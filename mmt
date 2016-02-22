@@ -17,7 +17,7 @@ from scripts.mt.contextanalysis import ContextAnalyzer
 from scripts.mt.lm import LanguageModel
 from scripts.mt.moses import Moses
 from scripts.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
-from scripts.mt.processing import Tokenizer, CorpusCleaner, Detokenizer, Preprocessor
+from scripts.mt.processing import Tokenizer, CorpusCleaner, Preprocessor
 
 __author__ = 'Davide Caroselli'
 __description = '''\
@@ -34,7 +34,7 @@ __description = '''\
   You can find more information on: http://www.modernmt.eu/
 '''
 
-_injectable_components = [Tokenizer, Detokenizer, CorpusCleaner, ContextAnalyzer, SuffixArraysPhraseTable, WordAligner,
+_injectable_components = [Tokenizer, CorpusCleaner, ContextAnalyzer, SuffixArraysPhraseTable, WordAligner,
                           LanguageModel, Moses, MMTEngine]
 
 
@@ -168,10 +168,10 @@ def main_evaluate(argv):
                    for translator, score in scores.iteritems()
                    ], key=operator.itemgetter(1), reverse=True)
     speed = sorted([(translator,
-                    -1 if isinstance(score, basestring) else score['_speed'],
-                    score if isinstance(score, basestring) else None)
-                   for translator, score in scores.iteritems()
-                   ], key=operator.itemgetter(1), reverse=True)
+                     -1 if isinstance(score, basestring) else score['_speed'],
+                     score if isinstance(score, basestring) else None)
+                    for translator, score in scores.iteritems()
+                    ], key=operator.itemgetter(1), reverse=True)
 
     print 'Matecat Post-Editing Effort:'
     for i in range(0, len(matecat)):

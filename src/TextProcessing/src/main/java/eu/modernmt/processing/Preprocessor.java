@@ -35,6 +35,10 @@ public class Preprocessor implements Closeable {
                 .create();
     }
 
+    public ProcessingPipeline<String, Sentence> getInternalPipeline(boolean tokenize) {
+        return tokenize ? pipelineWithTokenization : pipelineWithoutTokenization;
+    }
+
     public Sentence[] process(List<String> text, boolean tokenize) throws ProcessingException {
         return process(text.toArray(new String[text.size()]), tokenize);
     }
