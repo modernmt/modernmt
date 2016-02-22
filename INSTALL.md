@@ -195,7 +195,7 @@ Finally compile IRSTLM:
 ```
 mkdir build
 cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=$(pwd) -DCXX0:BOOL=OFF
+cmake .. -DCMAKE_INSTALL_PREFIX=$(pwd) -DCXX0:BOOL=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_STATIC_LIBS=OFF
 make
 make install
 cd ../../
