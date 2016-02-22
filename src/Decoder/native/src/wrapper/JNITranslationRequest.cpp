@@ -51,7 +51,7 @@ Run()
     m_scope->SetContextWeights(M);
   }
 
-  if(StaticData::Instance().IsSyntax())
+  if(Moses::is_syntax(m_options->search.algo))
     run_chart_decoder();
   else
     run_phrase_decoder();
@@ -95,13 +95,14 @@ outputNBest(const Manager& manager, std::vector<ResponseHypothesis>& nBest)
 
   nBest.clear();
 
-  Moses::NBestOptions const& nbo = m_options.nbest;
+  Moses::NBestOptions const& nbo = m_options->nbest;
   manager.CalcNBest(nbo.nbest_size, nBestList, nbo.only_distinct);
   StaticData const& SD = StaticData::Instance();
-  manager.OutputNBest(cout, nBestList,
-                      SD.GetOutputFactorOrder(),
-                      m_source->GetTranslationId(),
-                      m_options.output.ReportSegmentation);
+  manager.OutputNBest(cout, nBestList);
+
+  //                    m_options->output.factor_order,
+  //                    m_source->GetTranslationId(),
+  //                    m_options->output.ReportSegmentation);
 
   BOOST_FOREACH(Moses::TrellisPath const* path, nBestList) {
     vector<const Hypothesis *> const& E = path->GetEdges();
@@ -131,7 +132,7 @@ outputLocalWordAlignment(std::vector<std::pair<size_t, size_t> > &dest, const Mo
   Range const& src = hypo->GetCurrSourceWordsRange();
   Range const& trg = hypo->GetCurrTargetWordsRange();
 
-  Moses::WordAlignmentSort waso = m_options.output.WA_SortOrder;
+  Moses::WordAlignmentSort waso = m_options->output.WA_SortOrder;
   vector<pair<size_t,size_t> const* > a
                                       = hypo->GetCurrTargetPhrase().GetAlignTerm().GetSortedAlignments(waso);
   typedef pair<size_t,size_t> item;
@@ -165,7 +166,7 @@ parse_request()
   }
 
   boost::shared_ptr<Moses::AllOptions> opts(new Moses::AllOptions());
-  *opts = StaticData::Instance().options();
+  *opts = *StaticData::Instance().options();
 
   if (m_paramList.nBestListSize > 0) {
     opts->nbest.only_distinct = true;
@@ -174,11 +175,11 @@ parse_request()
     opts->nbest.enabled = true;
   }
 
-  m_options = *opts;
+  m_options = opts;
 
   XVERBOSE(1,"Input: " << m_paramList.sourceSent << endl);
 
-  m_source.reset(new Sentence(0, m_paramList.sourceSent, m_options));
+  m_source.reset(new Sentence(m_options, 0, m_paramList.sourceSent));
 } // end of Translationtask::parse_request()
 
 
@@ -190,9 +191,9 @@ run_chart_decoder()
   // in the mosesserver interface.
   // This path does not currently provide word alignments. We use phrase-based cube pruning (search algorithm 1) which runs at run_phrase_decoder() instead.
 
-  Moses::TreeInput tinput;
+  Moses::TreeInput tinput(m_options);
   istringstream buf(m_paramList.sourceSent + "\n");
-  tinput.Read(buf, m_options.input.factor_order, m_options);
+  tinput.Read(buf);
   
   Moses::ChartManager manager(this->self());
   manager.Decode();
@@ -246,7 +247,7 @@ run_phrase_decoder()
   manager.Decode();
   pack_hypothesis(manager, manager.GetBestHypothesis(), m_retData.text, &m_retData.alignment);
 
-  if (m_options.nbest.nbest_size) outputNBest(manager, m_retData.hypotheses);
+  if (m_options->nbest.nbest_size) outputNBest(manager, m_retData.hypotheses);
 
 }
 }
