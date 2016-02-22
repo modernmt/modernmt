@@ -217,7 +217,7 @@ pack_hypothesis(const Moses::Manager& manager,
   XVERBOSE(1, "BEST TRANSLATION: " << *(manager.GetBestHypothesis()) 
 	   << std::endl);
 
-  m_retData.text = target.str();
+  dest = target.str();
 
   // word alignment info
   if(alignment != NULL) {
