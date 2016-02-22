@@ -51,7 +51,7 @@ public class Tokenizers {
     private static final TokenizerLoader Kuromoji = new TokenizerLoader("eu.modernmt.processing.tokenizer.kuromoji.KuromojiTokenizer");
     private static final TokenizerLoader LanguageTool = new TokenizerLoader("eu.modernmt.processing.tokenizer.languagetool.LanguageToolTokenizer");
     private static final TokenizerLoader Lucene = new TokenizerLoader("eu.modernmt.processing.tokenizer.lucene.LuceneTokenizer");
-    private static final TokenizerLoader Moses = new TokenizerLoader("eu.modernmt.processing.tokenizer.moses.MosesTokenizer");
+    private static final TokenizerLoader JFlex = new TokenizerLoader("eu.modernmt.processing.tokenizer.jflex.JFlexTokenizer");
     private static final TokenizerLoader OpenNLP = new TokenizerLoader("eu.modernmt.processing.tokenizer.opennlp.OpenNLPTokenizer");
     private static final TokenizerLoader Paoding = new TokenizerLoader("eu.modernmt.processing.tokenizer.paoding.PaodingTokenizer");
 
@@ -67,28 +67,28 @@ public class Tokenizers {
     static {
         tokenizers = new HashMap<>();
 
-        // Moses
-        setTokenizer(Languages.CATALAN, Moses);
-        setTokenizer(Languages.CZECH, Moses);
-        setTokenizer(Languages.GERMAN, Moses);
-        setTokenizer(Languages.GREEK, Moses);
-        setTokenizer(Languages.ENGLISH, Moses);
-        setTokenizer(Languages.SPANISH, Moses);
-        setTokenizer(Languages.FINNISH, Moses);
-        setTokenizer(Languages.FRENCH, Moses);
-        setTokenizer(Languages.HUNGARIAN, Moses);
-        setTokenizer(Languages.ICELANDIC, Moses);
-        setTokenizer(Languages.ITALIAN, Moses);
-        setTokenizer(Languages.LATVIAN, Moses);
-        setTokenizer(Languages.DUTCH, Moses);
-        setTokenizer(Languages.POLISH, Moses);
-        setTokenizer(Languages.PORTUGUESE, Moses);
-        setTokenizer(Languages.ROMANIAN, Moses);
-        setTokenizer(Languages.RUSSIAN, Moses);
-        setTokenizer(Languages.SLOVAK, Moses);
-        setTokenizer(Languages.SLOVENE, Moses);
-        setTokenizer(Languages.SWEDISH, Moses);
-        setTokenizer(Languages.TAMIL, Moses);
+        // JFlex
+        setTokenizer(Languages.CATALAN, JFlex);
+        setTokenizer(Languages.CZECH, JFlex);
+        setTokenizer(Languages.GERMAN, JFlex);
+        setTokenizer(Languages.GREEK, JFlex);
+        setTokenizer(Languages.ENGLISH, JFlex);
+        setTokenizer(Languages.SPANISH, JFlex);
+        setTokenizer(Languages.FINNISH, JFlex);
+        setTokenizer(Languages.FRENCH, JFlex);
+        setTokenizer(Languages.HUNGARIAN, JFlex);
+        setTokenizer(Languages.ICELANDIC, JFlex);
+        setTokenizer(Languages.ITALIAN, JFlex);
+        setTokenizer(Languages.LATVIAN, JFlex);
+        setTokenizer(Languages.DUTCH, JFlex);
+        setTokenizer(Languages.POLISH, JFlex);
+        setTokenizer(Languages.PORTUGUESE, JFlex);
+        setTokenizer(Languages.ROMANIAN, JFlex);
+        setTokenizer(Languages.RUSSIAN, JFlex);
+        setTokenizer(Languages.SLOVAK, JFlex);
+        setTokenizer(Languages.SLOVENE, JFlex);
+        setTokenizer(Languages.SWEDISH, JFlex);
+        setTokenizer(Languages.TAMIL, JFlex);
 
         // CoreNLP
         setTokenizer(Languages.ARABIC, CoreNLP);
