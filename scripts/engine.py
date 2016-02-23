@@ -33,6 +33,16 @@ logger = logging.getLogger()
 # Base classes
 # ==============================
 
+class IllegalStateException(Exception):
+    def __init__(self, error):
+        self.message = error
+
+
+class IllegalArgumentException(Exception):
+    def __init__(self, error):
+        self.message = error
+
+
 class _MMTRuntimeComponent:
     def __init__(self, engine_name, component_name):
         self.__engine = engine_name
@@ -102,7 +112,7 @@ class _ProcessMonitor:
 
     def start(self, daemonize=True):
         if self.is_running():
-            raise Exception('process is already running')
+            raise IllegalStateException('process is already running')
 
         i_am_a_daemon = daemon.daemonize() if daemonize else True
 
@@ -147,7 +157,7 @@ class _ProcessMonitor:
         pid = self._get_pid()
 
         if not self.is_running():
-            raise Exception('process is not running')
+            raise IllegalStateException('process is not running')
 
         os.kill(pid, signal.SIGTERM)
         daemon.wait(pid)
@@ -205,14 +215,14 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
 
     def build(self, corpora, debug=False, steps=None):
         if len(corpora) == 0:
-            raise Exception('Empty corpora')
+            raise IllegalArgumentException('Empty corpora')
 
         if steps is None:
             steps = self._engine.training_steps
         else:
             unknown_steps = [step for step in steps if step not in self._engine.training_steps]
             if len(unknown_steps) > 0:
-                raise Exception('Unknown training steps: ' + str(unknown_steps))
+                raise IllegalArgumentException('Unknown training steps: ' + str(unknown_steps))
 
         cmdlogger = _MMTEngineBuilderLogger(len(steps) + 1)
         cmdlogger.start(self._engine, corpora)
@@ -323,7 +333,7 @@ class MMTEngine:
                 self.source_lang = config.get(self.injector_section, 'source_lang')
 
         if self.target_lang is None or self.source_lang is None:
-            raise Exception('Engine target language or source language must be specified')
+            raise IllegalStateException('Engine target language or source language must be specified')
 
         self.tokenizer = injector.inject(Tokenizer())
         self.cleaner = injector.inject(CorpusCleaner())
@@ -542,10 +552,10 @@ class MMTServer(_MMTDistributedComponent):
             corpora = ParallelCorpus.list(os.path.join(self.engine.data_path, Preprocessor.DEV_FOLDER_NAME))
 
         if len(corpora) == 0:
-            raise Exception('empty corpora')
+            raise IllegalArgumentException('empty corpora')
 
         if not self.is_running():
-            raise Exception('no MMT Server running')
+            raise IllegalStateException('No MMT Server running, start the engine first')
 
         target_lang = self.engine.target_lang
         source_lang = self.engine.source_lang
@@ -637,10 +647,10 @@ class MMTServer(_MMTDistributedComponent):
 
     def evaluate(self, corpora, google_key=None):
         if len(corpora) == 0:
-            raise Exception('empty corpora')
+            raise IllegalArgumentException('empty corpora')
 
         if not self.is_running():
-            raise Exception('no MMT Server running')
+            raise IllegalStateException('No MMT Server running, start the engine first')
 
         target_lang = self.engine.target_lang
         source_lang = self.engine.source_lang

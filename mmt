@@ -1,14 +1,14 @@
 #!/usr/bin/python
 import argparse
 import logging
+import operator
 import os
 import socket
 import sys
 
-import operator
-
 from scripts import dependency
-from scripts.engine import DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORTS
+from scripts.engine import DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORTS, IllegalStateException, \
+    IllegalArgumentException
 from scripts.engine import MMTEngine, MMTServer, MMTWorker
 from scripts.libs import shell, ssh
 from scripts.libs.ssh import SSHException
@@ -70,11 +70,6 @@ def __is_freeport(port):
 class CLIArgsException(Exception):
     def __init__(self, parser, error):
         self.parser = parser
-        self.message = error
-
-
-class IllegalStateException(Exception):
-    def __init__(self, error):
         self.message = error
 
 
@@ -497,6 +492,9 @@ def main():
         message = '{prog}: error: {message}\n'.format(prog=e.parser.prog, message=e.message)
         e.parser.print_usage(file=sys.stderr)
         sys.stderr.write(message)
+        exit(1)
+    except IllegalArgumentException as e:
+        sys.stderr.write('ERROR Illegal Argument: {message}\n'.format(message=e.message))
         exit(1)
     except IllegalStateException as e:
         sys.stderr.write('ERROR Illegal State: {message}\n'.format(message=e.message))
