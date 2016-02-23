@@ -153,7 +153,6 @@ public class TagMapper implements TextProcessor<Translation, Void> {
             HashSet<Integer> targetPositionsSet = new HashSet<>();
 
             for (int sourceposition : currentSourceMappingTag.getCoveredPositions()) {
-                //System.out.println("sourceposition:" + sourceposition);
                 targetPositionsSet.addAll(alignmentSourceToTarget.get(sourceposition));
             }
 
@@ -225,15 +224,12 @@ public class TagMapper implements TextProcessor<Translation, Void> {
 //        for (MappingTag currentTargetMappingTag : targetMappingTags) {
 //            System.out.println("currentTargetMappingTag:" + currentTargetMappingTag + " content " + currentTargetMappingTag.getContent() + " positions:" + currentTargetMappingTag.getCoveredPositions());
 //        }
-//        System.out.println();
 
 
         // transform all target MaappingTags into Tags
         ArrayList<Tag> targetTagList = new ArrayList<>();
         for (MappingTag currentTargetMappingTag : targetMappingTags) {
             ArrayList<Integer> targetPositions = currentTargetMappingTag.getCoveredPositions();
-
-            //System.out.println("\ncurrentTargetMappingTag:" + currentTargetMappingTag);
 
             int targetPosition = 0;
             if (currentTargetMappingTag.getContent()) { //for tags with content
@@ -260,7 +256,6 @@ public class TagMapper implements TextProcessor<Translation, Void> {
             Tag targetTag = currentTargetMappingTag.clone();
             targetTag.setPosition(targetPosition);
 
-            //System.out.println("modified targetTag:" + targetTag + "\n");
             targetTagList.add(targetTag);
         }
 
@@ -296,112 +291,30 @@ public class TagMapper implements TextProcessor<Translation, Void> {
         ArrayList<Integer> currentList = alignmentMap.get(sourceLength);
         currentList.add(targetLength);
 
-//        System.out.println("ALIGNMENT (Src2Trg):     " + alignmentMap.toString());
-//        System.out.println();
+//        System.out.println("ALIGNMENT (Src2Trg):     " + alignmentMap);
     }
 
     public static void main(String[] args) throws Throwable {
-        // hello <f/> <b>world</b> <world />
-//
-//
-//        Sentence source = new Sentence(new Token[]{
-//                new Token("Ciao", true),
-//                new Token("Davide", true),
-//                new Token("!", false),
-//        }, new Tag[]{
-//                new Tag("c", "<c>", true, false, 0, Tag.Type.OPENING_TAG),
-//                new Tag("b", "<b id=\"ciao\">", true, false, 1, Tag.Type.OPENING_TAG),
-//                new Tag("d", "<d/>", true, false, 1, Tag.Type.EMPTY_TAG),
-//                new Tag("b", "</b>", true, false, 2, Tag.Type.CLOSING_TAG),
-//                new Tag("f", "<f>", false, false, 2, Tag.Type.OPENING_TAG),
-//                new Tag("f", "</f>", false, false, 2, Tag.Type.CLOSING_TAG),
-//                new Tag("e", "<e>", false, false, 3, Tag.Type.OPENING_TAG),
-//                new Tag("g", "</g>", false, false, 3, Tag.Type.CLOSING_TAG),
-//        });
-//        Translation translation = new Translation(new Token[]{
-//                new Token("Davide", true),
-//                new Token("Caroselli", false),
-//                new Token(",", true),
-//                new Token("Ciao", false),
-//                new Token("!", true),
-//        }, source, new int[][]{
-//                {0, 3},
-//                {1, 1},
-//                {2, 2},
-//                {2, 4},
-//        });
-
-
-
-//        Sentence source = new Sentence(new Token[]{
-//                new Token("hello", true),
-//                new Token("world", true),
-//        }, new Tag[]{
-//                new Tag("f", "<f>", true, true, 1, Tag.Type.EMPTY_TAG),
-//                new Tag("b", "<b>", true, false, 1, Tag.Type.OPENING_TAG),
-//                new Tag("b", "</b>", false, true, 2, Tag.Type.CLOSING_TAG),
-//                new Tag("world", "<world />", true, false, 2, Tag.Type.EMPTY_TAG),
-//        });
-//        Translation translation = new Translation(new Token[]{
-//                new Token("ciao", true),
-//                new Token("mondo", true),
-//        }, source, new int[][]{
-//                {0, 1},
-//                {1, 0},
-//        });
-
-
-
+        // SRC: hello <b>world</b><f />!
         Sentence source = new Sentence(new Token[]{
                 new Token("hello", true),
-                new Token("world", true),
+                new Token("world", false),
+                new Token("!", false),
         }, new Tag[]{
-                new Tag("e", "</e>", false, true, 0, Tag.Type.CLOSING_TAG),
-                new Tag("b", "<b>", true, false, 2, Tag.Type.OPENING_TAG),
+                new Tag("b", "<b>", true, false, 1, Tag.Type.OPENING_TAG),
+                new Tag("b", "</b>", false, true, 2, Tag.Type.CLOSING_TAG),
+                new Tag("f", "<f />", false, false, 2, Tag.Type.EMPTY_TAG),
         });
         Translation translation = new Translation(new Token[]{
-                new Token("ciao", true),
                 new Token("mondo", true),
+                new Token("ciao", false),
+                new Token("!", false),
         }, source, new int[][]{
-                {0, 0},
-                {1, 1},
+                {0, 1},
+                {1, 0},
+                {2, 2},
         });
 
-
-        /*
-        Sentence source = new Sentence(new Token[]{
-        }, new Tag[]{
-        });
-        Translation translation = new Translation(new Token[]{
-        }, source, new int[][]{
-        });
-        */
-
-        /*
-        Sentence source = new Sentence(new Token[]{
-        }, new Tag[]{
-        });
-        Translation translation = new Translation(new Token[]{
-                new Token("ciao", true),
-                new Token("mondo", true),
-        }, source, new int[][]{
-        });
-        */
-
-        /*
-        Sentence source = new Sentence(new Token[]{
-                new Token("hello", true),
-                new Token("world", true),
-        }, new Tag[]{
-                new Tag("e", "</e>", false, true, 0, Tag.Type.CLOSING_TAG),
-                new Tag("b", "<b>", true, false, 2, Tag.Type.OPENING_TAG),
-        });
-        Translation translation = new Translation(new Token[]{
-                new Token("ciao", true),
-                new Token("mondo", true),
-        }, source, new int[][]{
-        });
-        */
 
         System.out.println("SRC:                     " + source);
         System.out.println("SRC (stripped):          " + source.getStrippedString());
