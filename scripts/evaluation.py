@@ -141,7 +141,7 @@ class GoogleTranslate(Translator):
 
 
 class BLEUScore(Score):
-    def __init__(self, lowercase=False):
+    def __init__(self):
         Score.__init__(self)
 
     def name(self):
