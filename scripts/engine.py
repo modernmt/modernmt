@@ -480,6 +480,9 @@ class MMTServerApi:
     def get_context_f(self, document):
         return self._get('context', params={'local_file': document})
 
+    def get_context_s(self, text):
+        return self._get('context', params={'text': text})
+
     def create_session(self, context):
         return self._post('sessions', json=context)
 
