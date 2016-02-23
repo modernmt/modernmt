@@ -48,7 +48,8 @@ public class StringNormalizer implements TextProcessor<String, String> {
                         index++;
                     }
 
-                    chars[index] = c;
+                    char nc = normalized(c);
+                    chars[index] = nc == '\0' ? c : nc;
 
                     index++;
                     break;
@@ -56,6 +57,32 @@ public class StringNormalizer implements TextProcessor<String, String> {
         }
 
         return new String(chars, 0, index);
+    }
+
+    private static char normalized(char c) {
+        char nc = '\0';
+
+        switch (c) {
+            case '`':
+            case '‘':
+            case '’':
+                nc = '\'';
+                break;
+            case '«':
+            case '»':
+            case '“':
+            case '”':
+                nc = '"';
+                break;
+            case '–':
+            case '—':
+                nc = '-';
+                break;
+            default:
+                break;
+        }
+
+        return nc;
     }
 
     @Override
