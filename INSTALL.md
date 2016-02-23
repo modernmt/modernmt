@@ -178,19 +178,8 @@ cd irstlm
 git checkout cd-correction-model
 ```
 
-Change file `src/CMakeLists.txt` by replacing line:
 
-```
-ADD_LIBRARY(irstlm STATIC ${LIB_IRSTLM_SRC})
-```
-
-with:
-
-```
-ADD_LIBRARY(irstlm SHARED ${LIB_IRSTLM_SRC})
-```
-
-Finally compile IRSTLM:
+Compile IRSTLM:
 
 ```
 mkdir build
