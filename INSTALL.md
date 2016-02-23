@@ -97,7 +97,7 @@ sudo add-apt-repository ppa:openjdk-r/ppa
 sudo apt-get update
 
 sudo apt-get install libboost1.55-all-dev
-sudo apt-get install libtcmalloc-minimal4
+sudo apt-get install libgoogle-perftools-dev
 sudo apt-get install cmake
 sudo apt-get install openjdk-8-jdk
 sudo apt-get install git
@@ -178,24 +178,13 @@ cd irstlm
 git checkout cd-correction-model
 ```
 
-Change file `src/CMakeLists.txt` by replacing line:
 
-```
-ADD_LIBRARY(irstlm STATIC ${LIB_IRSTLM_SRC})
-```
-
-with:
-
-```
-ADD_LIBRARY(irstlm SHARED ${LIB_IRSTLM_SRC})
-```
-
-Finally compile IRSTLM:
+Compile IRSTLM:
 
 ```
 mkdir build
 cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=$(pwd) -DCXX0:BOOL=OFF
+cmake .. -DCMAKE_INSTALL_PREFIX=$(pwd) -DCXX0:BOOL=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_STATIC_LIBS=OFF
 make
 make install
 cd ../../
@@ -203,10 +192,9 @@ cd ../../
 
 ## Install Moses
 
-Clone MMT Moses submodule, clone Moses repository and move to mmt-dev branch:
+Clone Moses repository and move to mmt-dev branch:
 
 ```
-git clone http://github.com/modernmt/moses-submodule mmt-submodule
 git clone https://github.com/ModernMT/mosesdecoder.git mosesdecoder
 cd mosesdecoder
 git checkout mmt-dev
@@ -216,7 +204,6 @@ Finally compile Moses:
 
 ```
 /usr/bin/bjam -j$(nproc) -q --with-mm          \
-         --mmt=$(pwd)/../mmt-submodule         \
          --with-irstlm=$(pwd)/../irstlm/build  \
          --with-cmph=/usr/local                \
          --with-xmlrpc-c=/usr/local            \
