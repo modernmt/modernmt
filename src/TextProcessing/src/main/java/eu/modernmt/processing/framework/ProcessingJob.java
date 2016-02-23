@@ -1,7 +1,10 @@
 package eu.modernmt.processing.framework;
 
 import java.io.IOException;
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 /**
  * Created by davide on 26/01/16.
@@ -41,6 +44,7 @@ public class ProcessingJob<P, R> {
 
     public void stop() {
         inputQueue.clear();
+        outputQueue.clear();
 
         try {
             // The POISON_PILL could be added twice, but this is not a problem.
@@ -145,28 +149,26 @@ public class ProcessingJob<P, R> {
     private class Outputter extends Thread {
 
         @SuppressWarnings("unchecked")
-        private R next() throws InterruptedException {
-            try {
-                Object result = outputQueue.take();
-                if (result == POISON_PILL)
-                    throw new InterruptedException();
+        private Future<R> next() throws InterruptedException {
+            Object result = outputQueue.take();
+            if (result == POISON_PILL)
+                return null;
 
-                return ((Future<R>) result).get();
-            } catch (ExecutionException e) {
-                signalException(e);
-                throw new InterruptedException();
-            }
+            return ((Future<R>) result);
         }
 
         @Override
         public void run() {
-            R result;
+            Future<R> result;
 
             try {
                 while ((result = next()) != null) {
-                    output.write(result);
+                    output.write(result.get());
                 }
             } catch (InterruptedException e) {
+                // break
+            } catch (ExecutionException e) {
+                signalException(e);
                 // break
             } catch (IOException e) {
                 signalException(new ProcessingException("Unable to write to PipelineOutputStream", e));
