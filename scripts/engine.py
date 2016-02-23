@@ -247,12 +247,15 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
                     )
 
             # Cleaning
-            cleaned_corpora = preprocessed_corpora
+            bilingual_corpora = preprocessed_corpora.getOnlyBilingual(preprocessed_corpora, engine.source_lang, engine.target_lang)
+	    sys.stdout.write("preprocessed_corpora size" + len(preprocessed_corpora))
+	    sys.stdout.write("ibilingual_corpora size" + len(bilingual_corpora))
+            cleaned_corpora = bilingual_corpora
 
             if 'clean' in steps:
                 with cmdlogger.step('Corpora cleaning') as _:
                     cleaner_output = self._get_tempdir('cleaner')
-                    cleaned_corpora = self._engine.cleaner.batch_clean(preprocessed_corpora, cleaner_output)
+                    cleaned_corpora = self._engine.cleaner.batch_clean(blingual_corpora, cleaner_output)
 
             # Training Context Analyzer
             if 'context_analyzer' in steps:
@@ -260,12 +263,19 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
                     log_file = self._get_logfile('context')
                     self._engine.analyzer.create_index(original_corpora[0].root, log_file)
 
-            # Training Language Model
-            if 'lm' in steps:
-                with cmdlogger.step('Language Model training') as _:
+            # Training Adaptive Language Model (on the target side of all bilingual corpora)
+            if 'adaptive_lm' in steps:
+                with cmdlogger.step('Adaptive Language Model training') as _:
                     working_dir = self._get_tempdir('lm')
-                    log_file = self._get_logfile('lm')
-                    self._engine.lm.train(preprocessed_corpora, self._engine.target_lang, working_dir, log_file)
+                    log_file = self._get_logfile('adaptive_lm')
+                    self._engine.adaptive_lm.train(bilingual_corpora, self._engine.target_lang, working_dir, log_file)
+
+            # Training Background Static Language Model (on all available monolingual corpora)
+            if 'background_lm' in steps:
+                with cmdlogger.step('Background Language Model training') as _:
+                    working_dir = self._get_tempdir('lm')
+                    log_file = self._get_logfile('background_lm')
+                    self._engine.background_lm.train(preprocessed_corpora, self._engine.target_lang, working_dir, log_file)
 
             # Training Translation Model
             if 'tm' in steps:
@@ -291,19 +301,20 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
 class MMTEngine:
     injector_section = 'engine'
     injectable_fields = {
-        'lm_type': ('LM implementation', (basestring, LanguageModel.available_types), LanguageModel.available_types[0]),
-        'aligner_type': (
-            'Aligner implementation', (basestring, WordAligner.available_types), WordAligner.available_types[0]),
+        'adaptive_lm_type': ('LM implementation', (basestring, LanguageModel.available_types), LanguageModel.available_types[0]),
+        'background_lm_type': ('LM implementation', (basestring, LanguageModel.available_types), LanguageModel.available_types[0]),
+        'aligner_type': ('Aligner implementation', (basestring, WordAligner.available_types), WordAligner.available_types[0]),
     }
 
-    training_steps = ['preprocess', 'clean', 'context_analyzer', 'lm', 'tm']
+    training_steps = ['preprocess', 'clean', 'context_analyzer', 'adaptive_lm', 'background_lm', 'tm']
 
     def __init__(self, langs=None, name=None):
         self.name = name if name is not None else 'default'
         self.source_lang = langs[0] if langs is not None else None
         self.target_lang = langs[1] if langs is not None else None
 
-        self._lm_type = None  # Injected
+        self._adaptive_lm_type = None  # Injected
+        self._background_lm_type = None  # Injected
         self._aligner_type = None  # Injected
 
         self._config = None
@@ -315,7 +326,8 @@ class MMTEngine:
 
         self._config_file = os.path.join(self.path, 'engine.ini')
         self._pt_model = os.path.join(self.models_path, 'phrase_tables')
-        self._lm_model = os.path.join(self.models_path, 'lm', 'target.lm')
+        self._adaptive_lm_model = os.path.join(self.models_path, 'adaptive_lm', 'target.lm')
+        self._background_lm_model = os.path.join(self.models_path, 'background_lm', 'background.lm')
         self._context_index = os.path.join(self.models_path, 'context', 'index')
         self._moses_ini_file = os.path.join(self.models_path, 'moses.ini')
 
@@ -343,7 +355,8 @@ class MMTEngine:
 
         self.pt = injector.inject(SuffixArraysPhraseTable(self._pt_model, (self.source_lang, self.target_lang)))
         self.aligner = injector.inject(WordAligner.instantiate(self._aligner_type))
-        self.lm = injector.inject(LanguageModel.instantiate(self._lm_type, self._lm_model))
+        self.adaptive_lm = injector.inject(LanguageModel.instantiate(self._adaptive_lm_type, self._adaptive_lm_model))
+        self.background_lm = injector.inject(LanguageModel.instantiate(self._background_lm_type, self._background_lm_model))
 
         self.moses = injector.inject(Moses(self._moses_ini_file))
         self.moses.add_feature(MosesFeature('UnknownWordPenalty'))
@@ -352,7 +365,8 @@ class MMTEngine:
         self.moses.add_feature(MosesFeature('PhrasePenalty'))
         self.moses.add_feature(self.pt)
         self.moses.add_feature(LexicalReordering())
-        self.moses.add_feature(self.lm)
+        self.moses.add_feature(self.adaptive_lm)
+        self.moses.add_feature(self.background_lm)
 
         if self._config is None:
             self._config = injector.to_config()
