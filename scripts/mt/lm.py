@@ -9,7 +9,7 @@ __author__ = 'Davide Caroselli'
 
 
 class LanguageModel(MosesFeature):
-    available_types = ['AdaptiveIRSTLM', 'KenLM']
+    available_types = ['AdaptiveIRSTLM', 'StaticIRSTLM', 'KenLM']
 
     injector_section = 'lm'
     injectable_fields = {
@@ -22,6 +22,8 @@ class LanguageModel(MosesFeature):
             return KenLM(model)
         elif type_name == 'AdaptiveIRSTLM':
             return AdaptiveIRSTLM(model)
+        elif type_name == 'StaticIRSTLM':
+            return StaticIRSTLM(model)
         else:
             raise NameError('Invalid Language Model type: ' + type_name)
 
@@ -106,36 +108,27 @@ class StaticIRSTLM(LanguageModel):
             # Collapse all corpora into a single text file
             merged_corpus = os.path.join(working_dir, 'merge')
             fileutils.merge([corpus.get_file(lang) for corpus in corpora], merged_corpus)
+            input_se = os.path.join(working_dir, 'static_input.se')
+            temp = os.path.join(working_dir, 'temp')
+            arpa_file = os.path.join(working_dir, 'static_lm.arpa')
 
-            # Create language model in IRSTLM binary format
-            arpa_file = os.path.join(working_dir, 'lm.arpa')
-            arpa_command = [self._lmplz_bin, '-o', str(self._order)]
+            # Add start and end symbols
             with open(merged_corpus) as stdin:
-                with open(arpa_file, 'w') as stdout:
-                    shell.execute(arpa_command, stdin=stdin, stdout=stdout, stderr=log)
+                with open(input_se, 'w') as stdout:
+                    shell.execute([self._addbound_bin], stdin=stdin, stdout=stdout, stderr=log)
+
+            # Creating lm in ARPA format
+            command = [self._buildlm_bin, '-i', input_se, '-k', str(cpu_count()), '-o', arpa_file, '-n', str(self._order),
+                   '-s', 'witten-bell', '-t', temp, '-l', '/dev/stdout', '-irstlm', self._irstlm_dir]
+            shell.execute(command, stderr=log)
+
+            # Create binary lm
+            command = [self._compilelm_bin, arpa_file + '.gz', self._model]
+            shell.execute(command, stderr=log)
 
         finally:
             if log_file is not None:
                 log.close()
-
-    def _train_lm(self, source, dest, working_dir, log):
-        input_se = os.path.join(working_dir, 'input.se')
-        temp = os.path.join(working_dir, 'temp')
-        arpa_file = os.path.join(working_dir, 'arpa')
-
-        # Add start and end symbols
-        with open(source) as stdin:
-            with open(input_se, 'w') as stdout:
-                shell.execute([self._addbound_bin], stdin=stdin, stdout=stdout, stderr=log)
-
-        # Creating lm in ARPA format
-        command = [self._buildlm_bin, '-i', input_se, '-k', str(cpu_count()), '-o', arpa_file, '-n', str(self._order),
-                   '-s', 'witten-bell', '-t', temp, '-l', '/dev/stdout', '-irstlm', self._irstlm_dir]
-        shell.execute(command, stderr=log)
-
-        # Create binary lm
-        command = [self._compilelm_bin, arpa_file + '.gz', dest]
-        shell.execute(command, stderr=log)
 
     def get_iniline(self):
         return self.name + ' name=BG_LM factor=0 path={model} dub=10000000'.format(

@@ -27,7 +27,7 @@ class ParallelCorpus:
         return sorted([ParallelCorpus(*corpus) for _, corpus in name2corpus.iteritems()], key=attrgetter('name'))
 
     @staticmethod
-    def getOnlyBilingual(corpora, lang1, lang):
+    def getOnlyBilingual(corpora, lang1, lang2):
         result = []
 
         for corpus in corpora:
@@ -70,6 +70,9 @@ class ParallelCorpus:
                         self._lines_count = count
 
         return self._lines_count
+
+    def isBilingual(self, lang1, lang2):
+        return lang1 in self.langs and lang2 in self.langs
 
     def __str__(self):
         return self.name + '(' + ','.join(self.langs) + ')'

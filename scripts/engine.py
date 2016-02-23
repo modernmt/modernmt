@@ -246,16 +246,21 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
                         corpora[0].root, tokenizer_output, self._engine.data_path
                     )
 
+            # Selecting bilingual corpora
+            bilingual_corpora = []
+            for corpus in preprocessed_corpora:
+                if corpus.isBilingual(self._engine.source_lang, self._engine.target_lang):
+                    bilingual_corpora.append(corpus)
+	    sys.stdout.write("preprocessed_corpora size" + str(len(preprocessed_corpora)))
+	    sys.stdout.write("bilingual_corpora size" + str(len(bilingual_corpora)))
+
             # Cleaning
-            bilingual_corpora = preprocessed_corpora.getOnlyBilingual(preprocessed_corpora, engine.source_lang, engine.target_lang)
-	    sys.stdout.write("preprocessed_corpora size" + len(preprocessed_corpora))
-	    sys.stdout.write("ibilingual_corpora size" + len(bilingual_corpora))
             cleaned_corpora = bilingual_corpora
 
             if 'clean' in steps:
                 with cmdlogger.step('Corpora cleaning') as _:
                     cleaner_output = self._get_tempdir('cleaner')
-                    cleaned_corpora = self._engine.cleaner.batch_clean(blingual_corpora, cleaner_output)
+                    cleaned_corpora = self._engine.cleaner.batch_clean(bilingual_corpora, cleaner_output)
 
             # Training Context Analyzer
             if 'context_analyzer' in steps:
@@ -302,7 +307,7 @@ class MMTEngine:
     injector_section = 'engine'
     injectable_fields = {
         'adaptive_lm_type': ('LM implementation', (basestring, LanguageModel.available_types), LanguageModel.available_types[0]),
-        'background_lm_type': ('LM implementation', (basestring, LanguageModel.available_types), LanguageModel.available_types[0]),
+        'background_lm_type': ('LM implementation', (basestring, LanguageModel.available_types), LanguageModel.available_types[1]),
         'aligner_type': ('Aligner implementation', (basestring, WordAligner.available_types), WordAligner.available_types[0]),
     }
 
@@ -326,8 +331,8 @@ class MMTEngine:
 
         self._config_file = os.path.join(self.path, 'engine.ini')
         self._pt_model = os.path.join(self.models_path, 'phrase_tables')
-        self._adaptive_lm_model = os.path.join(self.models_path, 'adaptive_lm', 'target.lm')
-        self._background_lm_model = os.path.join(self.models_path, 'background_lm', 'background.lm')
+        self._adaptive_lm_model = os.path.join(self.models_path, 'lm', 'adaptive.lm')
+        self._background_lm_model = os.path.join(self.models_path, 'lm', 'background.lm')
         self._context_index = os.path.join(self.models_path, 'context', 'index')
         self._moses_ini_file = os.path.join(self.models_path, 'moses.ini')
 
