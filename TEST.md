@@ -43,6 +43,14 @@ cd ModernMT/src/Test/target/
 java -cp mmt-test-0.11.1.jar eu.modernmt.test.contextanalyzer.context.PrecisionTest -lang en -lines 30 -train <path_to_training_directory> -test <path_to_test_directory>
 ```
 
+Another example is the launch of the tagevaluator test:
+
+```bash
+cd ModernMT/src/Test/target/
+java -Dmmt.home=/path/to/MMT/home -cp mmt-test-0.11.1.jar eu.modernmt.test.tagevaluator.TagEvaluator -t separate -r reference_file -y hypothesis_file
+```
+
+
 ## Output
 
 Each test prints on the standard ouput a json containg both a fixed structure and a map depending on the nature of the test.
@@ -72,5 +80,17 @@ An example of the output of a test is the one generate from the PrecisionTest of
       "avgPosition":1.0,
       "numberOfMatches":1.0
    }
+}
+```
+
+Another example is the output of the tagevaluator test on the provided toy files:
+```json
+{
+    "description": "It evaluates the quality of the tag management by calculating the tag-error-rate of an hypothesis file with respect to a reference file.",
+    "name": "Tag Evaluator",
+    "passed": true,
+    "results": {
+        "tagErrorRate": 0.15152
+    }
 }
 ```

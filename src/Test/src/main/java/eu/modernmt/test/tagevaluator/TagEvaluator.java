@@ -29,8 +29,7 @@ import java.util.Locale;
 public class TagEvaluator {
 
     public static final String NAME = "Tag Evaluator";
-    public static final String DESCRIPTION = "It evaluates the quality and the precision of the tag management system.";
-    public static final double MIN_PRECISION = 0.7;
+    public static final String DESCRIPTION = "It evaluates the quality of the tag management by calculating the tag-error-rate of an hypothesis file with respect to a reference file.";
     private static final Options cliOptions;
     private static boolean DebugFlag = false;
     private static final String EVALUATOR_CMD = System.getProperty("mmt.home") + "/src/Test/opt/tagevaluator/go-ter.sh";
