@@ -11,8 +11,15 @@ import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.ProcessBuilder;
+import java.lang.ProcessBuilder.Redirect;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -25,28 +32,41 @@ public class TagEvaluator {
     public static final String DESCRIPTION = "It evaluates the quality and the precision of the tag management system.";
     public static final double MIN_PRECISION = 0.7;
     private static final Options cliOptions;
-
-    static {
-        Option source = Option.builder("source").hasArg().required(true).build();
-        Option reference = Option.builder("reference").hasArg().required(true).build();
-        Option mt = Option.builder("mt").hasArg().required(true).build();
-        cliOptions = new Options();
-        cliOptions.addOption(source);
-        cliOptions.addOption(reference);
-        cliOptions.addOption(mt);
-    }
-
-    public static void main(String[] args) throws ParseException {
-        CommandLine cmd = new DefaultParser().parse(cliOptions, args);
-        String sourcePath = cmd.getOptionValue("source");
-        String referencePath = cmd.getOptionValue("reference");
-        String mtOutPath = cmd.getOptionValue("mt");
-        TagEvaluator precisionTest = new TagEvaluator();
-        precisionTest.execute(sourcePath, referencePath, mtOutPath);
-    }
+    private static boolean DebugFlag = false;
+    private static final String EVALUATOR_CMD = System.getProperty("mmt.home") + "/src/Test/opt/tagevaluator/go-ter.sh";
+    private static final String OUT_FILE = System.getProperty("mmt.home") + "/src/Test/opt/tagevaluator/scores/trial";
+    private static final String LOG_FILE = System.getProperty("mmt.home") + "/src/Test/runtime/tagevaluator.log";
 
     private Logger logger;
     private JSONObject jsonResult;
+
+    static {
+        cliOptions = new Options();
+	cliOptions.addOption("h", "help", false, "display usage information");
+	cliOptions.addOption("d", "debug", false, "save debug info in file " + LOG_FILE);
+        cliOptions.addOption("t", "option_on_tag", true, "the way tag are processed: must be one of [none|separate|countSpaces]");
+	cliOptions.addOption("r", "ref_file", true, "the reference file");
+	cliOptions.addOption("y", "hyp_file", true, "the hypothesis file");
+	cliOptions.addOption("v", "verbosity_level", true, "the verbosity level: should be 0=default,1,2");
+    }
+
+    public static void main(String[] args) throws ParseException, IOException {
+        CommandLine cmd = new DefaultParser().parse(cliOptions, args);
+	if(cmd.hasOption("h")) {printUsageAndExit(cliOptions);}
+	if(! cmd.hasOption("t") || ! cmd.hasOption("r") || ! cmd.hasOption("y")) {
+	    printUsageAndExit(cliOptions);
+	}
+	if(cmd.hasOption("d")) {DebugFlag = true;}
+	String optionOnTag = cmd.getOptionValue("t");
+        String refFile = cmd.getOptionValue("r");
+        String hypFile = cmd.getOptionValue("y");
+	String verbosityLevel = "0";
+	if(cmd.hasOption("v")) {verbosityLevel = cmd.getOptionValue("v");}
+
+	String [] evalCmdList = {EVALUATOR_CMD, optionOnTag, refFile, hypFile, OUT_FILE, verbosityLevel};
+        TagEvaluator tagErrorRate = new TagEvaluator();
+        tagErrorRate.execute(evalCmdList);
+    }
 
     public TagEvaluator() {
         this.logger = LoggerFactory.getLogger(getClass());
@@ -57,23 +77,43 @@ public class TagEvaluator {
         this.jsonResult.put("results", null);
     }
 
-    public void execute(String sourcePath, String referencePath, String mtOutPath) {
+    public void execute(String[] evalCmdList) throws IOException {
+	JSONObject jResultDetails = new JSONObject();
+	jResultDetails.put("tagErrorRate", null);
+	ProcessBuilder pb = new ProcessBuilder(evalCmdList);
+	Process p = pb.start();
+	BufferedReader In = new BufferedReader(new InputStreamReader(p.getInputStream()));
+	String resultBuf = In.readLine();
         try {
-            File sourceFile = new File(sourcePath);
-            File referenceFile = new File(referencePath);
-            File mtOutFile = new File(mtOutPath);
-
-
-            boolean passed = true;
-            this.jsonResult.put("passed", passed);
-            //this.jsonResult.put("results", stats.getJson());
-        } catch (Exception e) {
-            e.printStackTrace();
-            this.jsonResult.put("error", e.getMessage());
-        } finally {
-            this.close();
-            System.out.println(this.jsonResult.toJSONString());
+	    float tagErrorRate = Float.parseFloat (resultBuf);
+	    jResultDetails.put("tagErrorRate", tagErrorRate);
+            this.jsonResult.put("passed", true);
+	} catch (Exception e) {
+	    String line;
+	    resultBuf += '\n';
+	    while ((line = In.readLine()) != null) {
+		resultBuf += line;
+	    }
+            boolean passed = false;
+            this.jsonResult.put("passed", false);
+            this.jsonResult.put("error", resultBuf);
         }
+
+	if (DebugFlag) {
+	    BufferedReader Err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+	    PrintWriter out = new PrintWriter(new FileWriter(LOG_FILE));
+	    String line;
+	    while ((line = Err.readLine()) != null) {
+		out.println(line);
+	    }
+	    out.close();
+	    jResultDetails.put("logFile", LOG_FILE);
+	}
+
+	this.jsonResult.put("results", jResultDetails);
+	
+	this.close();
+	System.out.println(this.jsonResult.toJSONString());
     }
 
     public boolean check(Stats stats) {
@@ -83,4 +123,31 @@ public class TagEvaluator {
     public void close() {
         logger.info("Resource closed");
     }
+
+    private static void printUsageAndExit(Options options) {
+        int WIDTH = 80;
+	
+	StringWriter stringWriter = new StringWriter();
+	PrintWriter writer = new PrintWriter(stringWriter);
+	final HelpFormatter formatter = new HelpFormatter();
+
+	// 1) formatter.printOptions(writer, WIDTH, options, 2, 2);
+        // 2) formatter.printUsage(writer, WIDTH, "eu.modernmt.test.tagevaluator.TagEvaluator", options);
+	formatter.printHelp(writer, WIDTH, "eu.modernmt.test.tagevaluator.TagEvaluator", "", options, 2, 2, "");
+	String formattedString = stringWriter.toString();
+	
+        // System.err.println(formattedString);
+	// System.err.flush();
+	
+        JSONObject jsonResult = new JSONObject();
+        jsonResult.put("name", NAME);
+        jsonResult.put("description", DESCRIPTION);
+        jsonResult.put("passed", false);
+        jsonResult.put("error", formattedString);
+        jsonResult.put("results", null);
+
+	System.out.println(jsonResult.toJSONString());
+	System.exit(0);
+    }
+
 }
