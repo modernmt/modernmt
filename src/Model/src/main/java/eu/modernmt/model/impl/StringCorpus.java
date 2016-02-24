@@ -1,22 +1,25 @@
-package eu.modernmt.model;
+package eu.modernmt.model.impl;
+
+import eu.modernmt.model.Corpus;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.io.Writer;
 import java.util.Locale;
 
 /**
- * Created by davide on 18/09/15.
+ * Created by davide on 24/02/16.
  */
 public class StringCorpus implements Corpus {
 
-    private String name;
-    private Locale language;
-    private String content;
+    private final String name;
+    private final Locale language;
+    private final String content;
 
-    public StringCorpus(String name, String language, String content) {
+    public StringCorpus(String name, Locale language, String content) {
         this.name = name;
-        this.language = Locale.forLanguageTag(language);
+        this.language = language;
         this.content = content;
     }
 
@@ -34,4 +37,10 @@ public class StringCorpus implements Corpus {
     public Reader getContentReader() throws IOException {
         return new StringReader(content);
     }
+
+    @Override
+    public Writer getContentWriter(boolean append) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
 }

@@ -1,6 +1,6 @@
-package eu.modernmt.engine.training.preprocessing;
+package eu.modernmt.engine.training.partitioning;
 
-import eu.modernmt.model.ParallelCorpus;
+import eu.modernmt.model.BilingualCorpus;
 
 import java.io.IOException;
 
@@ -23,6 +23,6 @@ public abstract class CorporaPartition {
         return size;
     }
 
-    public abstract ParallelCorpus getDestinationParallelCorpus(ParallelCorpus sourceCorpus) throws IOException;
+    public abstract BilingualCorpus getDestinationParallelCorpus(BilingualCorpus sourceCorpus) throws IOException;
 
 }

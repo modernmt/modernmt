@@ -19,6 +19,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>eu.modernmt</groupId>
+            <artifactId>mmt-model</artifactId>
+            <version>${mmt.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
             <version>${lucene.version}</version>

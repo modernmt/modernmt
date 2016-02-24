@@ -1,6 +1,7 @@
-package eu.modernmt.engine.training.preprocessing;
+package eu.modernmt.engine.training.partitioning;
 
-import eu.modernmt.model.ParallelCorpus;
+import eu.modernmt.model.BilingualCorpus;
+import eu.modernmt.model.Corpus;
 import eu.modernmt.processing.framework.*;
 import org.apache.commons.io.IOUtils;
 
@@ -13,15 +14,15 @@ import java.util.concurrent.Callable;
 /**
  * Created by davide on 11/02/16.
  */
-class PreprocessorTask implements Callable<Void> {
+public class PreprocessorTask implements Callable<Void> {
 
     private ProcessingPipeline<String, String> sourcePipeline;
     private ProcessingPipeline<String, String> targetPipeline;
-    private ParallelCorpus corpus;
+    private BilingualCorpus corpus;
     private CorporaPartition mainPartition;
     private List<PartitionWriter> extraPartitions = new ArrayList<>();
 
-    public PreprocessorTask(ParallelCorpus corpus, CorporaPartition mainPartition, ProcessingPipeline<String, String> sourcePipeline, ProcessingPipeline<String, String> targetPipeline) {
+    public PreprocessorTask(BilingualCorpus corpus, CorporaPartition mainPartition, ProcessingPipeline<String, String> sourcePipeline, ProcessingPipeline<String, String> targetPipeline) {
         this.corpus = corpus;
         this.mainPartition = mainPartition;
         this.targetPipeline = targetPipeline;
@@ -40,14 +41,19 @@ class PreprocessorTask implements Callable<Void> {
         PipelineOutputStream<String> targetOutput = null;
 
         try {
-            ParallelCorpus outCorpus = mainPartition.getDestinationParallelCorpus(corpus);
+            BilingualCorpus outBilingualCorpus = mainPartition.getDestinationParallelCorpus(corpus);
+            Corpus outSourceCorpus = outBilingualCorpus.getSourceCorpus();
+            Corpus outTargetCorpus = outBilingualCorpus.getTargetCorpus();
+
             Locale sourceLanguage = corpus.getSourceLanguage();
             Locale targetLanguage = corpus.getTargetLanguage();
 
-            sourceInput = new PartitionedInputStream(corpus, sourceLanguage, extraPartitions);
-            targetInput = new PartitionedInputStream(corpus, targetLanguage, extraPartitions);
-            sourceOutput = PipelineOutputStream.fromWriter(outCorpus.getContentWriter(sourceLanguage, false));
-            targetOutput = PipelineOutputStream.fromWriter(outCorpus.getContentWriter(targetLanguage, false));
+            int lines = corpus.getLineCount();
+
+            sourceInput = new PartitionedInputStream(outSourceCorpus, lines, sourceLanguage, extraPartitions);
+            targetInput = new PartitionedInputStream(outTargetCorpus, lines, targetLanguage, extraPartitions);
+            sourceOutput = PipelineOutputStream.fromWriter(outSourceCorpus.getContentWriter(false));
+            targetOutput = PipelineOutputStream.fromWriter(outTargetCorpus.getContentWriter(false));
 
             ProcessingJob<String, String> sourceJob = sourcePipeline.createJob(sourceInput, sourceOutput);
             ProcessingJob<String, String> targetJob = targetPipeline.createJob(targetInput, targetOutput);

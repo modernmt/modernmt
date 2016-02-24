@@ -1,6 +1,6 @@
-package eu.modernmt.engine.training.preprocessing;
+package eu.modernmt.engine.training.partitioning;
 
-import eu.modernmt.model.ParallelCorpus;
+import eu.modernmt.model.BilingualCorpus;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
@@ -11,10 +11,10 @@ import java.util.Locale;
 /**
  * Created by davide on 12/02/16.
  */
-class PartitionWriter implements Closeable {
+public class PartitionWriter implements Closeable {
 
     private final int size;
-    private final ParallelCorpus inputCorpus;
+    private final BilingualCorpus inputCorpus;
     private final CorporaPartition partition;
 
     private int sourceStored;
@@ -24,7 +24,7 @@ class PartitionWriter implements Closeable {
     private Writer sourceWriter;
     private Writer targetWriter;
 
-    public PartitionWriter(CorporaPartition partition, ParallelCorpus inputCorpus, int size) {
+    public PartitionWriter(CorporaPartition partition, BilingualCorpus inputCorpus, int size) {
         this.partition = partition;
         this.inputCorpus = inputCorpus;
         this.size = size;
@@ -53,8 +53,8 @@ class PartitionWriter implements Closeable {
         if (sourceWriter == null) {
             synchronized (this) {
                 if (sourceWriter == null) {
-                    ParallelCorpus outCorpus = partition.getDestinationParallelCorpus(inputCorpus);
-                    sourceWriter = outCorpus.getContentWriter(outCorpus.getSourceLanguage(), false);
+                    BilingualCorpus outCorpus = partition.getDestinationParallelCorpus(inputCorpus);
+                    sourceWriter = outCorpus.getSourceCorpus().getContentWriter(false);
                 }
             }
         }
@@ -73,8 +73,8 @@ class PartitionWriter implements Closeable {
         if (targetWriter == null) {
             synchronized (this) {
                 if (targetWriter == null) {
-                    ParallelCorpus outCorpus = partition.getDestinationParallelCorpus(inputCorpus);
-                    targetWriter = outCorpus.getContentWriter(outCorpus.getTargetLanguage(), false);
+                    BilingualCorpus outCorpus = partition.getDestinationParallelCorpus(inputCorpus);
+                    targetWriter = outCorpus.getTargetCorpus().getContentWriter(false);
                 }
             }
         }

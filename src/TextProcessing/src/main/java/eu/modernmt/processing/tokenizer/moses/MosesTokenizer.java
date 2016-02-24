@@ -1,9 +1,9 @@
 package eu.modernmt.processing.tokenizer.moses;
 
+import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.processing.AnnotatedString;
 import eu.modernmt.processing.Languages;
 import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.framework.UnixLineReader;
 import eu.modernmt.processing.tokenizer.MultiInstanceTokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;

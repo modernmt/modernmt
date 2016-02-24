@@ -1,8 +1,8 @@
-package eu.modernmt.engine.training.preprocessing;
+package eu.modernmt.engine.training.partitioning;
 
-import eu.modernmt.model.ParallelCorpus;
+import eu.modernmt.io.UnixLineReader;
+import eu.modernmt.model.Corpus;
 import eu.modernmt.processing.framework.PipelineInputStream;
-import eu.modernmt.processing.framework.UnixLineReader;
 
 import java.io.IOException;
 import java.util.List;
@@ -11,7 +11,7 @@ import java.util.Locale;
 /**
  * Created by davide on 12/02/16.
  */
-class PartitionedInputStream implements PipelineInputStream<String> {
+public class PartitionedInputStream implements PipelineInputStream<String> {
 
     private List<PartitionWriter> partitions;
     private UnixLineReader reader;
@@ -21,12 +21,10 @@ class PartitionedInputStream implements PipelineInputStream<String> {
     private int lineIndex;
     private int partitionIndex;
 
-    public PartitionedInputStream(ParallelCorpus corpus, Locale language, List<PartitionWriter> partitions) throws IOException {
-        this.reader = new UnixLineReader(corpus.getContentReader(language));
+    public PartitionedInputStream(Corpus corpus, int lines, Locale language, List<PartitionWriter> partitions) throws IOException {
+        this.reader = new UnixLineReader(corpus.getContentReader());
         this.partitions = partitions;
         this.language = language;
-
-        int lines = corpus.getLineCount();
 
         int extraLines = 0;
         for (PartitionWriter partition : partitions)

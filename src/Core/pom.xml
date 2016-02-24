@@ -33,6 +33,11 @@
             <artifactId>mmt-decoder</artifactId>
             <version>${mmt.version}</version>
         </dependency>
+        <dependency>
+            <groupId>eu.modernmt</groupId>
+            <artifactId>mmt-model</artifactId>
+            <version>${mmt.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.zeromq</groupId>

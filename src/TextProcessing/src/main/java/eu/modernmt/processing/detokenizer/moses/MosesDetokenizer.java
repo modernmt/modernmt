@@ -1,11 +1,11 @@
 package eu.modernmt.processing.detokenizer.moses;
 
+import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.detokenizer.Detokenizer;
 import eu.modernmt.processing.detokenizer.MultiInstanceDetokenizer;
 import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.framework.UnixLineReader;
 import eu.modernmt.processing.tokenizer.util.Environment;
 import org.apache.commons.io.IOUtils;
 

@@ -1,53 +1,40 @@
-package eu.modernmt.model;
+package eu.modernmt.model.impl;
 
-import eu.modernmt.processing.framework.UnixLineReader;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
+import eu.modernmt.io.UnixLineReader;
+import eu.modernmt.model.BilingualCorpus;
+import eu.modernmt.model.Corpus;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.Locale;
 
 /**
- * Created by davide on 28/01/16.
+ * Created by davide on 24/02/16.
  */
-public class ParallelFilesCorpus implements ParallelCorpus {
+public class BilingualFileCorpus implements BilingualCorpus {
 
     private static final int DEFAULT_BUFFER_SIZE = 4096;
 
-    private File source;
-    private File target;
-    private String name;
-    private Locale sourceLanguage;
-    private Locale targetLanguage;
+    private final File source;
+    private final File target;
+    private final String name;
+    private final Locale sourceLanguage;
+    private final Locale targetLanguage;
     private int lineCount = -1;
 
-    public static List<ParallelFilesCorpus> list(File directory, String sourceLangCode, String targetLangCode) {
-        Collection<File> sourceFiles = FileUtils.listFiles(directory, new String[]{sourceLangCode}, false);
-        ArrayList<ParallelFilesCorpus> corpora = new ArrayList<>(sourceFiles.size());
+    private final FileCorpus sourceCorpus;
+    private final FileCorpus targetCorpus;
 
-        for (File sourceFile : sourceFiles) {
-            String name = FilenameUtils.removeExtension(sourceFile.getName());
-            corpora.add(new ParallelFilesCorpus(directory, name, sourceLangCode, targetLangCode));
-        }
-
-        return corpora;
-    }
-
-    public ParallelFilesCorpus(File directory, String name, String sourceLangCode, String targetLangCode) {
-        this(directory, name, Locale.forLanguageTag(sourceLangCode), Locale.forLanguageTag(targetLangCode));
-    }
-
-    public ParallelFilesCorpus(File directory, String name, Locale sourceLanguage, Locale targetLanguage) {
+    public BilingualFileCorpus(File directory, String name, Locale sourceLanguage, Locale targetLanguage) {
         this.name = name;
         this.sourceLanguage = sourceLanguage;
         this.targetLanguage = targetLanguage;
 
         this.source = new File(directory, name + "." + sourceLanguage.toLanguageTag());
         this.target = new File(directory, name + "." + targetLanguage.toLanguageTag());
+
+        this.sourceCorpus = new FileCorpus(this.source, this.name, this.sourceLanguage);
+        this.targetCorpus = new FileCorpus(this.target, this.name, this.targetLanguage);
     }
 
     @Override
@@ -98,11 +85,31 @@ public class ParallelFilesCorpus implements ParallelCorpus {
     }
 
     @Override
+    public BilingualStringReader getContentReader() throws IOException {
+        return new BilingualFilesStringReader(source, target);
+    }
+
+    @Override
+    public BilingualStringWriter getContentWriter(boolean append) throws IOException {
+        return new BilingualFilesStringWriter(append, source, target);
+    }
+
+    @Override
+    public Corpus getSourceCorpus() {
+        return sourceCorpus;
+    }
+
+    @Override
+    public Corpus getTargetCorpus() {
+        return targetCorpus;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        ParallelFilesCorpus that = (ParallelFilesCorpus) o;
+        BilingualFileCorpus that = (BilingualFileCorpus) o;
 
         if (!source.equals(that.source)) return false;
         return target.equals(that.target);
@@ -116,50 +123,12 @@ public class ParallelFilesCorpus implements ParallelCorpus {
         return result;
     }
 
-    @Override
-    public ParallelLineReader getContentReader() throws FileNotFoundException {
-        return new ParallelFilesLineReader(source, target);
-    }
-
-    @Override
-    public Reader getContentReader(Locale language) throws IOException {
-        File file;
-
-        if (language.equals(sourceLanguage))
-            file = source;
-        else if (language.equals(targetLanguage))
-            file = target;
-        else
-            throw new IllegalArgumentException("Language " + language.toLanguageTag() + " not found");
-
-        return new InputStreamReader(new FileInputStream(file), "UTF-8");
-    }
-
-    @Override
-    public ParallelLineWriter getContentWriter(boolean append) throws IOException {
-        return new ParallelFilesWriter(append, source, target);
-    }
-
-    @Override
-    public Writer getContentWriter(Locale language, boolean append) throws IOException {
-        File file;
-
-        if (language.equals(sourceLanguage))
-            file = source;
-        else if (language.equals(targetLanguage))
-            file = target;
-        else
-            throw new IllegalArgumentException("Language " + language.toLanguageTag() + " not found");
-
-        return new FileWriter(file, append);
-    }
-
-    private static class ParallelFilesLineReader implements ParallelLineReader {
+    private static class BilingualFilesStringReader implements BilingualStringReader {
 
         private UnixLineReader sourceReader;
         private UnixLineReader targetReader;
 
-        public ParallelFilesLineReader(File source, File target) throws FileNotFoundException {
+        public BilingualFilesStringReader(File source, File target) throws FileNotFoundException {
             boolean success = false;
 
             try {
@@ -176,17 +145,14 @@ public class ParallelFilesCorpus implements ParallelCorpus {
         }
 
         @Override
-        public String[] read() throws IOException {
+        public StringPair read() throws IOException {
             String source = sourceReader.readLine();
             String target = targetReader.readLine();
 
             if (source == null || target == null)
                 return null;
 
-            String[] result = new String[2];
-            result[SOURCE_LINE_INDEX] = source;
-            result[TARGET_LINE_INDEX] = target;
-            return result;
+            return new StringPair(source, target);
         }
 
         @Override
@@ -196,12 +162,12 @@ public class ParallelFilesCorpus implements ParallelCorpus {
         }
     }
 
-    private static class ParallelFilesWriter implements ParallelLineWriter {
+    private static class BilingualFilesStringWriter implements BilingualStringWriter {
 
         private FileWriter sourceWriter;
         private FileWriter targetWriter;
 
-        public ParallelFilesWriter(boolean append, File source, File target) throws IOException {
+        public BilingualFilesStringWriter(boolean append, File source, File target) throws IOException {
             boolean success = false;
 
             try {
@@ -231,5 +197,4 @@ public class ParallelFilesCorpus implements ParallelCorpus {
         }
 
     }
-
 }

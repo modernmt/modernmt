@@ -1,10 +1,10 @@
-package eu.modernmt.processing.framework;
+package eu.modernmt.io;
 
 import java.io.IOException;
 import java.io.Reader;
 
 /**
- * Created by davide on 26/01/16.
+ * Created by davide on 24/02/16.
  */
 public class UnixLineReader extends Reader {
 

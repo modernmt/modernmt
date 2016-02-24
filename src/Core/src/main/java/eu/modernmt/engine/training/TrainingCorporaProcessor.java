@@ -1,6 +1,8 @@
-package eu.modernmt.engine.training.preprocessing;
+package eu.modernmt.engine.training;
 
-import eu.modernmt.model.ParallelCorpus;
+import eu.modernmt.engine.training.partitioning.CorporaPartition;
+import eu.modernmt.engine.training.partitioning.PreprocessorTask;
+import eu.modernmt.model.BilingualCorpus;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.ProcessingPipeline;
 import eu.modernmt.processing.tags.TagHighlighter;
@@ -19,31 +21,31 @@ import java.util.concurrent.*;
 /**
  * Created by davide on 28/01/16.
  */
-public class TrainingPreprocessor {
+public class TrainingCorporaProcessor {
 
     private static final int MAX_IO_THREADS = 10;
     private static final double MAX_CORPUS_PARTITION_RATIO = 0.01;
 
-    private List<ParallelCorpus> corpora = new ArrayList<>();
+    private List<BilingualCorpus> corpora = new ArrayList<>();
     private List<CorporaPartition> extraPartitions = new ArrayList<>();
     private CorporaPartition mainPartition;
     private Locale sourceLanguage = null;
     private Locale targetLanguage = null;
 
-    public TrainingPreprocessor(CorporaPartition mainPartition) {
+    public TrainingCorporaProcessor(CorporaPartition mainPartition) {
         this.mainPartition = mainPartition;
     }
 
-    public TrainingPreprocessor(CorporaPartition mainPartition, List<? extends ParallelCorpus> corpora) {
+    public TrainingCorporaProcessor(CorporaPartition mainPartition, List<? extends BilingualCorpus> corpora) {
         this.mainPartition = mainPartition;
         this.corpora.addAll(corpora);
     }
 
-    public void add(ParallelCorpus corpus) {
+    public void add(BilingualCorpus corpus) {
         this.corpora.add(corpus);
     }
 
-    public void addAll(Collection<ParallelCorpus> corpora) {
+    public void addAll(Collection<BilingualCorpus> corpora) {
         this.corpora.addAll(corpora);
     }
 
@@ -109,7 +111,7 @@ public class TrainingPreprocessor {
 
         // Run processing
         ArrayList<Future<Void>> tasks = new ArrayList<>(corpora.size());
-        for (ParallelCorpus corpus : corpora) {
+        for (BilingualCorpus corpus : corpora) {
             double weight = getAdjustedWeight(corpus, extraPartitionsLines, corporaLines);
 
             PreprocessorTask task = new PreprocessorTask(corpus, mainPartition, sourcePipeline, targetPipeline);
@@ -146,7 +148,7 @@ public class TrainingPreprocessor {
         }
     }
 
-    private double getAdjustedWeight(ParallelCorpus corpus, long extraPartitionsLines, long corporaLines) {
+    private double getAdjustedWeight(BilingualCorpus corpus, long extraPartitionsLines, long corporaLines) {
         int corpusLines;
         try {
             corpusLines = corpus.getLineCount();
@@ -176,7 +178,7 @@ public class TrainingPreprocessor {
 
     private long getCorporaLineCount(ExecutorService executor) throws ProcessingException {
         ArrayList<Future<Long>> counts = new ArrayList<>(corpora.size());
-        for (ParallelCorpus corpus : corpora) {
+        for (BilingualCorpus corpus : corpora) {
             counts.add(executor.submit(() -> (long) corpus.getLineCount()));
         }
 

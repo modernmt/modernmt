@@ -1,5 +1,7 @@
 package eu.modernmt.processing.framework;
 
+import eu.modernmt.io.UnixLineReader;
+
 import java.io.*;
 
 /**
