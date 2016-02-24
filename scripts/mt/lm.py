@@ -131,7 +131,7 @@ class StaticIRSTLM(LanguageModel):
                 log.close()
 
     def get_iniline(self):
-        return self.name + ' name=BG_LM factor=0 path={model} dub=10000000'.format(
+        return self.name + ' name=STA_LM factor=0 path={model} dub=10000000'.format(
             model=self.get_relpath(self._model))
 
 class AdaptiveIRSTLM(LanguageModel):
@@ -195,6 +195,6 @@ class AdaptiveIRSTLM(LanguageModel):
         shell.execute(command, stderr=log)
 
     def get_iniline(self):
-        return self.name + ' name=AD_LM factor=0 path={model} dub=10000000 weight_normalization=yes'.format(
+        return self.name + ' name=ADA_LM factor=0 path={model} dub=10000000 weight_normalization=yes'.format(
             model=self.get_relpath(self._model))
                                                                                                                                

@@ -27,16 +27,6 @@ class ParallelCorpus:
         return sorted([ParallelCorpus(*corpus) for _, corpus in name2corpus.iteritems()], key=attrgetter('name'))
 
     @staticmethod
-    def getOnlyBilingual(corpora, lang1, lang2):
-        result = []
-
-        for corpus in corpora:
-            if lang1 in corpus.langs and lang2 in corpus.langs :
-                result.append(ParallelCorpus(corpus.name, corpus.root, [lang1, lang2]))
-
-        return result
-
-    @staticmethod
     def filter(corpora, lang):
         result = []
 
