@@ -25,10 +25,10 @@ public class TrainingPipeline {
     private static final double MAX_CORPUS_PARTITION_RATIO = 0.01;
 
     private CorporaPartition mainPartition;
-    private List<CorporaPartition> extraPartitions;
+    private ArrayList<CorporaPartition> extraPartitions = new ArrayList<>();
 
-    private List<BilingualCorpus> bilingualCorpora;
-    private List<Corpus> monolingualCorpora;
+    private ArrayList<BilingualCorpus> bilingualCorpora = new ArrayList<>();
+    private ArrayList<Corpus> monolingualCorpora = new ArrayList<>();
 
     private final Locale sourceLanguage;
     private final Locale targetLanguage;

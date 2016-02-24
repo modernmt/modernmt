@@ -26,7 +26,7 @@ public class PreprocessorMain {
         static {
             Option sourceLanguage = Option.builder("s").hasArg().required().build();
             Option targetLanguage = Option.builder("t").hasArg().required().build();
-            Option inputPath = Option.builder().longOpt("input").hasArg().required().build();
+            Option inputPath = Option.builder().longOpt("input").hasArgs().required().build();
             Option outputPath = Option.builder().longOpt("output").hasArg().required().build();
             Option devPath = Option.builder().longOpt("dev").hasArg().required(false).build();
             Option testPath = Option.builder().longOpt("test").hasArg().required(false).build();
@@ -73,15 +73,17 @@ public class PreprocessorMain {
         ArrayList<Corpus> monolingualCorpora = new ArrayList<>();
         ArrayList<BilingualCorpus> bilingualCorpora = new ArrayList<>();
 
-        CorpusUtils.list(monolingualCorpora, args.targetLanguage,
-                bilingualCorpora, args.sourceLanguage, args.targetLanguage,
-                args.inputRoots);
+        CorpusUtils.list(monolingualCorpora, true, bilingualCorpora, args.sourceLanguage, args.targetLanguage, args.inputRoots);
 
         if (bilingualCorpora.isEmpty())
             throw new ParseException("Input path does not contains valid bilingual data");
 
         FilesCorporaPartition mainPartition = new FilesCorporaPartition(args.outputRoot);
         TrainingPipeline trainingPipeline = new TrainingPipeline(mainPartition, args.sourceLanguage, args.targetLanguage);
+
+        trainingPipeline.addBilingualCorpora(bilingualCorpora);
+        if (!monolingualCorpora.isEmpty())
+            trainingPipeline.addMonolingualCorpora(monolingualCorpora);
 
         FileUtils.deleteDirectory(args.outputRoot);
 
