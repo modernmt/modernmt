@@ -92,7 +92,7 @@ public class TrainingPipeline {
         this.processingThreads = processingThreads;
     }
 
-    public void start() throws InterruptedException, ProcessingException {
+    public void process() throws InterruptedException, ProcessingException {
         int totalCorporaCount = this.bilingualCorpora.size() * 2 + this.monolingualCorpora.size();
         int ioThreads = Math.min(Math.min(this.ioThreads, MAX_IO_THREADS), totalCorporaCount);
         int processingThreads = Math.max(1, this.processingThreads / 2);

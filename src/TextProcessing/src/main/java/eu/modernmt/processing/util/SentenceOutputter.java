@@ -1,9 +1,12 @@
 package eu.modernmt.processing.util;
 
+import eu.modernmt.config.Config;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.framework.PipelineOutputStream;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 
 /**
@@ -13,6 +16,10 @@ public class SentenceOutputter implements PipelineOutputStream<Sentence> {
 
     private final Writer writer;
     private boolean printTags;
+
+    public SentenceOutputter(OutputStream stream, boolean printTags) {
+        this(new OutputStreamWriter(stream, Config.charset.get()), printTags);
+    }
 
     public SentenceOutputter(Writer writer, boolean printTags) {
         this.writer = writer;

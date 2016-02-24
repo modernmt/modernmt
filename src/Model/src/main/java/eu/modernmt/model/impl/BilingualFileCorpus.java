@@ -124,6 +124,11 @@ public class BilingualFileCorpus implements BilingualCorpus {
         return result;
     }
 
+    @Override
+    public String toString() {
+        return name + '.' + sourceLanguage.toLanguageTag() + '|' + targetLanguage.toLanguageTag();
+    }
+
     private static class BilingualFilesStringReader implements BilingualStringReader {
 
         private UnixLineReader sourceReader;
@@ -137,6 +142,7 @@ public class BilingualFileCorpus implements BilingualCorpus {
                 this.targetReader = new UnixLineReader(new InputStreamReader(new FileInputStream(target), Config.charset.get()));
 
                 success = true;
+
             } finally {
                 if (!success)
                     this.close();
