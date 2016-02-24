@@ -202,7 +202,7 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
         Collections.reverse(result);
 
         if (result.size() > limit)
-            result = result.subList(0, limit);
+            result = new ArrayList<>(result.subList(0, limit));
 
         return result;
     }
