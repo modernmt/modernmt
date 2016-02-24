@@ -1,5 +1,7 @@
 package eu.modernmt.engine;
 
+import eu.modernmt.config.Config;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -38,7 +40,7 @@ public class TranslationEngine {
 
     public TranslationEngine(String id) throws IOException {
         this.id = id;
-        this.root = new File(FS.ENGINES_PATH, id);
+        this.root = new File(Config.fs.engines, id);
         this.decoderIniTemplate = new File(this.root, MOSES_INI_PATH);
         this.caIndexPath = new File(this.root, CONTEXT_ANALYZER_INDEX_PATH);
         this.configFile = new File(this.root, ENGINE_CONFIG_PATH);

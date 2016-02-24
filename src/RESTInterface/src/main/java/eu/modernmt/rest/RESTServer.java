@@ -1,5 +1,6 @@
 package eu.modernmt.rest;
 
+import eu.modernmt.config.Config;
 import eu.modernmt.decoder.TranslationHypothesis;
 import eu.modernmt.engine.MasterNode;
 import eu.modernmt.rest.framework.JSONSerializer;
@@ -89,7 +90,7 @@ public class RESTServer {
                 ArrayList<Class<?>> classes = new ArrayList<>();
 
                 stream = getClass().getClassLoader().getResourceAsStream("rest-actions.list");
-                LineIterator lines = IOUtils.lineIterator(stream, "UTF-8");
+                LineIterator lines = IOUtils.lineIterator(stream, Config.charset.get());
 
                 while (lines.hasNext()) {
                     String line = lines.nextLine();

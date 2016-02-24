@@ -1,6 +1,7 @@
 package eu.modernmt.processing;
 
 import eu.modernmt.model.Translation;
+import eu.modernmt.processing.detokenizer.Detokenizer;
 import eu.modernmt.processing.detokenizer.Detokenizers;
 import eu.modernmt.processing.framework.*;
 import eu.modernmt.processing.tags.TagMapper;
@@ -19,15 +20,23 @@ public class Postprocessor implements Closeable {
     private final ProcessingPipeline<Translation, Void> pipelineWithDetokenization;
     private final ProcessingPipeline<Translation, Void> pipelineWithoutDetokenization;
 
-    public Postprocessor(Locale language) {
-        pipelineWithDetokenization = new ProcessingPipeline.Builder<Translation, Translation>()
-                .add(Detokenizers.forLanguage(language))
-                .add(new TagMapper())
-                .create();
+    public static ProcessingPipeline<Translation, Void> getPipeline(Locale language, boolean detokenize, int threads) {
+        Detokenizer detokenizer = detokenize ? Detokenizers.forLanguage(language) : null;
 
-        pipelineWithoutDetokenization = new ProcessingPipeline.Builder<Translation, Translation>()
+        return new ProcessingPipeline.Builder<Translation, Translation>()
+                .setThreads(threads)
+                .add(detokenizer)
                 .add(new TagMapper())
                 .create();
+    }
+
+    public Postprocessor(Locale language) {
+        this(language, Runtime.getRuntime().availableProcessors());
+    }
+
+    public Postprocessor(Locale language, int threads) {
+        pipelineWithDetokenization = getPipeline(language, true, threads);
+        pipelineWithoutDetokenization = getPipeline(language, false, threads);
     }
 
     public void process(List<? extends Translation> translations, boolean detokenize) throws ProcessingException {

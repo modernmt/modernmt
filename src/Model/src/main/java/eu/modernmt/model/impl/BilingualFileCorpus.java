@@ -1,5 +1,6 @@
 package eu.modernmt.model.impl;
 
+import eu.modernmt.config.Config;
 import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.model.BilingualCorpus;
 import eu.modernmt.model.Corpus;
@@ -132,12 +133,10 @@ public class BilingualFileCorpus implements BilingualCorpus {
             boolean success = false;
 
             try {
-                this.sourceReader = new UnixLineReader(new InputStreamReader(new FileInputStream(source), "UTF-8"));
-                this.targetReader = new UnixLineReader(new InputStreamReader(new FileInputStream(target), "UTF-8"));
+                this.sourceReader = new UnixLineReader(new InputStreamReader(new FileInputStream(source), Config.charset.get()));
+                this.targetReader = new UnixLineReader(new InputStreamReader(new FileInputStream(target), Config.charset.get()));
 
                 success = true;
-            } catch (UnsupportedEncodingException e) {
-                throw new Error("Unsupported UTF-8", e);
             } finally {
                 if (!success)
                     this.close();

@@ -6,7 +6,6 @@ import eu.modernmt.processing.framework.PipelineInputStream;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Created by davide on 12/02/16.
@@ -15,16 +14,14 @@ public class PartitionedInputStream implements PipelineInputStream<String> {
 
     private List<PartitionWriter> partitions;
     private UnixLineReader reader;
-    private Locale language;
 
     private int windowSize;
     private int lineIndex;
     private int partitionIndex;
 
-    public PartitionedInputStream(Corpus corpus, int lines, Locale language, List<PartitionWriter> partitions) throws IOException {
+    public PartitionedInputStream(Corpus corpus, int lines, List<PartitionWriter> partitions) throws IOException {
         this.reader = new UnixLineReader(corpus.getContentReader());
         this.partitions = partitions;
-        this.language = language;
 
         int extraLines = 0;
         for (PartitionWriter partition : partitions)
@@ -45,7 +42,7 @@ public class PartitionedInputStream implements PipelineInputStream<String> {
             partitionIndex = (partitionIndex + 1) % partitions.size();
 
             PartitionWriter partition = partitions.get(partitionIndex);
-            if (partition.write(line, language))
+            if (partition.write(line))
                 break;
         }
     }

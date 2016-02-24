@@ -4,6 +4,7 @@ import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.framework.*;
 import eu.modernmt.processing.tags.TagHighlighter;
 import eu.modernmt.processing.tokenizer.SimpleTokenizer;
+import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizers;
 import eu.modernmt.processing.util.StringNormalizer;
 import org.apache.commons.io.IOUtils;
@@ -21,22 +22,24 @@ public class Preprocessor implements Closeable {
     private final ProcessingPipeline<String, Sentence> pipelineWithTokenization;
     private final ProcessingPipeline<String, Sentence> pipelineWithoutTokenization;
 
-    public Preprocessor(Locale language) {
-        pipelineWithTokenization = new ProcessingPipeline.Builder<String, String>()
-                .add(new StringNormalizer())
-                .add(Tokenizers.forLanguage(language))
-                .add(new TagHighlighter())
-                .create();
+    public static ProcessingPipeline<String, Sentence> getPipeline(Locale language, boolean tokenize, int threads) {
+        Tokenizer tokenizer = tokenize ? Tokenizers.forLanguage(language) : new SimpleTokenizer();
 
-        pipelineWithoutTokenization = new ProcessingPipeline.Builder<String, String>()
+        return new ProcessingPipeline.Builder<String, String>()
+                .setThreads(threads)
                 .add(new StringNormalizer())
-                .add(new SimpleTokenizer())
+                .add(tokenizer)
                 .add(new TagHighlighter())
                 .create();
     }
 
-    public ProcessingPipeline<String, Sentence> getInternalPipeline(boolean tokenize) {
-        return tokenize ? pipelineWithTokenization : pipelineWithoutTokenization;
+    public Preprocessor(Locale language) {
+        this(language, Runtime.getRuntime().availableProcessors());
+    }
+
+    public Preprocessor(Locale language, int threads) {
+        pipelineWithTokenization = getPipeline(language, true, threads);
+        pipelineWithoutTokenization = getPipeline(language, false, threads);
     }
 
     public Sentence[] process(List<String> text, boolean tokenize) throws ProcessingException {
@@ -107,5 +110,5 @@ public class Preprocessor implements Closeable {
         }
 
     }
-    
+
 }

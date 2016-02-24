@@ -1,11 +1,12 @@
 package eu.modernmt.engine.training.partitioning;
 
-import eu.modernmt.model.BilingualCorpus;
-import eu.modernmt.model.impl.BilingualFileCorpus;
+import eu.modernmt.model.Corpus;
+import eu.modernmt.model.impl.FileCorpus;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Locale;
 
 /**
  * Created by davide on 11/02/16.
@@ -25,7 +26,7 @@ public class FilesCorporaPartition extends CorporaPartition {
     }
 
     @Override
-    public BilingualCorpus getDestinationParallelCorpus(BilingualCorpus input) throws IOException {
+    public Corpus getDestinationCorpus(Corpus sourceCorpus) throws IOException {
         if (!rootDirectory.isDirectory()) {
             synchronized (this) {
                 if (!rootDirectory.isDirectory())
@@ -33,6 +34,10 @@ public class FilesCorporaPartition extends CorporaPartition {
             }
         }
 
-        return new BilingualFileCorpus(rootDirectory, input.getName(), input.getSourceLanguage(), input.getTargetLanguage());
+        Locale language = sourceCorpus.getLanguage();
+        String name = sourceCorpus.getName();
+        String filename = name + "." + language.toLanguageTag();
+
+        return new FileCorpus(new File(rootDirectory, filename), name, language);
     }
 }

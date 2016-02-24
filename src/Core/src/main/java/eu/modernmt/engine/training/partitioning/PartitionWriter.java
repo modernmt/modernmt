@@ -1,12 +1,11 @@
 package eu.modernmt.engine.training.partitioning;
 
-import eu.modernmt.model.BilingualCorpus;
+import eu.modernmt.model.Corpus;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.Locale;
 
 /**
  * Created by davide on 12/02/16.
@@ -14,74 +13,34 @@ import java.util.Locale;
 public class PartitionWriter implements Closeable {
 
     private final int size;
-    private final BilingualCorpus inputCorpus;
+    private final Corpus inputCorpus;
     private final CorporaPartition partition;
 
-    private int sourceStored;
-    private int targetStored;
-    private Locale sourceLanguage;
-    private Locale targetLanguage;
-    private Writer sourceWriter;
-    private Writer targetWriter;
+    private int stored = 0;
+    private Writer writer = null;
 
-    public PartitionWriter(CorporaPartition partition, BilingualCorpus inputCorpus, int size) {
+    public PartitionWriter(CorporaPartition partition, Corpus inputCorpus, int size) {
         this.partition = partition;
         this.inputCorpus = inputCorpus;
         this.size = size;
-        this.sourceLanguage = inputCorpus.getSourceLanguage();
-        this.targetLanguage = inputCorpus.getTargetLanguage();
-
-        this.sourceStored = 0;
-        this.targetStored = 0;
-        this.sourceWriter = null;
-        this.targetWriter = null;
     }
 
-    public boolean write(String line, Locale language) throws IOException {
-        if (sourceLanguage.equals(language))
-            return writeSource(line);
-        else if (targetLanguage.equals(language))
-            return writeTarget(line);
-        else
-            throw new IllegalArgumentException("Unknown language " + language.toLanguageTag());
-    }
-
-    private boolean writeSource(String line) throws IOException {
-        if (sourceStored >= size)
+    public boolean write(String line) throws IOException {
+        if (stored >= size)
             return false;
 
-        if (sourceWriter == null) {
+        if (writer == null) {
             synchronized (this) {
-                if (sourceWriter == null) {
-                    BilingualCorpus outCorpus = partition.getDestinationParallelCorpus(inputCorpus);
-                    sourceWriter = outCorpus.getSourceCorpus().getContentWriter(false);
+                if (writer == null) {
+                    Corpus outCorpus = partition.getDestinationCorpus(inputCorpus);
+                    writer = outCorpus.getContentWriter(false);
                 }
             }
         }
 
-        sourceWriter.write(line);
-        sourceWriter.write('\n');
-        sourceStored++;
-
-        return true;
-    }
-
-    private boolean writeTarget(String line) throws IOException {
-        if (targetStored >= size)
-            return false;
-
-        if (targetWriter == null) {
-            synchronized (this) {
-                if (targetWriter == null) {
-                    BilingualCorpus outCorpus = partition.getDestinationParallelCorpus(inputCorpus);
-                    targetWriter = outCorpus.getTargetCorpus().getContentWriter(false);
-                }
-            }
-        }
-
-        targetWriter.write(line);
-        targetWriter.write('\n');
-        targetStored++;
+        writer.write(line);
+        writer.write('\n');
+        stored++;
 
         return true;
     }
@@ -92,8 +51,7 @@ public class PartitionWriter implements Closeable {
 
     @Override
     public void close() {
-        IOUtils.closeQuietly(sourceWriter);
-        IOUtils.closeQuietly(targetWriter);
+        IOUtils.closeQuietly(writer);
     }
 
 }

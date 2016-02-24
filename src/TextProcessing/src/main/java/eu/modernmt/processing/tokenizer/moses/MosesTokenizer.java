@@ -1,5 +1,6 @@
 package eu.modernmt.processing.tokenizer.moses;
 
+import eu.modernmt.config.Config;
 import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.processing.AnnotatedString;
 import eu.modernmt.processing.Languages;
@@ -7,7 +8,6 @@ import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.tokenizer.MultiInstanceTokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
-import eu.modernmt.processing.tokenizer.util.Environment;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
@@ -96,7 +96,7 @@ public class MosesTokenizer extends MultiInstanceTokenizer {
         private UnixLineReader tokenizerStdout;
 
         public MosesTokenizerImplementation(String languageCode) {
-            File moses = new File(Environment.MODELS_PATH, "moses");
+            File moses = new File(Config.fs.tokenizerModels, "moses");
             File scripts = new File(moses, "scripts");
             File tokenizerScript = new File(scripts, "tokenizer.perl");
             String tokenizerCommand = "perl " + tokenizerScript.getAbsolutePath() + " -b -X -l " + languageCode + " -no-escape";

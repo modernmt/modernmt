@@ -1,5 +1,6 @@
 package eu.modernmt.engine;
 
+import eu.modernmt.config.Config;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.moses.MosesDecoder;
 import eu.modernmt.decoder.moses.MosesINI;
@@ -52,7 +53,7 @@ public class SlaveNode extends Worker {
         this.engine = engine;
         this.master = master;
         this.initializer = new Initializer();
-        this.runtimePath = FS.getRuntime(engine, "slave");
+        this.runtimePath = Config.fs.getRuntime(engine.getId(), "slave");
     }
 
     public TranslationEngine getEngine() {
@@ -194,7 +195,7 @@ public class SlaveNode extends Worker {
                 }
 
                 if (response != null) {
-                    String remotePath = new String(response, 1, response.length - 1, "UTF-8");
+                    String remotePath = new String(response, 1, response.length - 1, Config.charset.get());
                     onSyncPathReceived(remotePath);
                 }
             } catch (Throwable e) {

@@ -21,7 +21,8 @@ public class ProcessingPipeline<P, R> implements Closeable {
 
         @SuppressWarnings("unchecked")
         public <Q> Builder<P, Q> add(TextProcessor<R, Q> processor) {
-            processors.add(processor);
+            if (processor != null)
+                processors.add(processor);
             return (Builder<P, Q>) this;
         }
 

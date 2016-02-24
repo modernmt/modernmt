@@ -1,5 +1,6 @@
 package eu.modernmt.engine;
 
+import eu.modernmt.config.Config;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextDocument;
@@ -13,7 +14,10 @@ import eu.modernmt.network.cluster.DistributedCallable;
 import eu.modernmt.network.messaging.zeromq.ZMQMessagingServer;
 import eu.modernmt.processing.framework.ProcessingException;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,9 +65,7 @@ public class MasterNode extends ClusterManager {
 
                 String enginePath = engine.getPath().getAbsolutePath();
                 try {
-                    stream.write(enginePath.getBytes("UTF-8"));
-                } catch (UnsupportedEncodingException e) {
-                    throw new Error("UTF-8 not supported", e);
+                    stream.write(enginePath.getBytes(Config.charset.get()));
                 } catch (IOException e) {
                     throw new Error("This could not happen", e);
                 }

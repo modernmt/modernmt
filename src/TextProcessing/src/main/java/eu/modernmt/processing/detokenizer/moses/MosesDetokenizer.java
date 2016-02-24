@@ -1,12 +1,12 @@
 package eu.modernmt.processing.detokenizer.moses;
 
+import eu.modernmt.config.Config;
 import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.detokenizer.Detokenizer;
 import eu.modernmt.processing.detokenizer.MultiInstanceDetokenizer;
 import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.tokenizer.util.Environment;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
@@ -44,7 +44,7 @@ public class MosesDetokenizer extends MultiInstanceDetokenizer {
         private UnixLineReader detokenizerStdout = null;
 
         public MosesDetokenizerImplementation(String languageCode) {
-            File moses = new File(Environment.MODELS_PATH, "moses");
+            File moses = new File(Config.fs.tokenizerModels, "moses");
             File scripts = new File(moses, "scripts");
             File detokenizerScript = new File(scripts, "detokenizer.perl");
 

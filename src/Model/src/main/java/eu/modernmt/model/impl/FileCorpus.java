@@ -1,5 +1,6 @@
 package eu.modernmt.model.impl;
 
+import eu.modernmt.config.Config;
 import eu.modernmt.model.Corpus;
 
 import java.io.*;
@@ -52,16 +53,12 @@ public class FileCorpus implements Corpus {
 
     @Override
     public Reader getContentReader() throws FileNotFoundException {
-        try {
-            return new InputStreamReader(new FileInputStream(file), "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new Error("UTF-8 not supported");
-        }
+        return new InputStreamReader(new FileInputStream(file), Config.charset.get());
     }
 
     @Override
     public Writer getContentWriter(boolean append) throws IOException {
-        return new FileWriter(file, append);
+        return new OutputStreamWriter(new FileOutputStream(file, append), Config.charset.get());
     }
 
     @Override
