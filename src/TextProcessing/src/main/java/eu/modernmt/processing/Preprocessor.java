@@ -22,6 +22,10 @@ public class Preprocessor implements Closeable {
     private final ProcessingPipeline<String, Sentence> pipelineWithTokenization;
     private final ProcessingPipeline<String, Sentence> pipelineWithoutTokenization;
 
+    public static ProcessingPipeline<String, Sentence> getPipeline(Locale language, boolean tokenize) {
+        return getPipeline(language, tokenize, Runtime.getRuntime().availableProcessors());
+    }
+
     public static ProcessingPipeline<String, Sentence> getPipeline(Locale language, boolean tokenize, int threads) {
         Tokenizer tokenizer = tokenize ? Tokenizers.forLanguage(language) : new SimpleTokenizer();
 
