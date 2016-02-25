@@ -46,7 +46,7 @@ def __check_java():
         for line in stderr.split('\n'):
             tokens = line.split()
             if 'version' in tokens:
-                if '"1.8' in tokens[tokens.index('version')+1]:
+                if '"1.8' in tokens[tokens.index('version') + 1]:
                     ok = True
                     break
 
@@ -435,6 +435,9 @@ def main_create(argv):
     parser.add_argument('-d', '--debug', action='store_true', dest='debug',
                         help='if debug is set, it enables verbose logging and prevents temporary files to be removed '
                              'after execution')
+    parser.add_argument('--no-split', action='store_false', dest='split_corpora', default=True,
+                        help='if no-split is set, MMT will not extract dev and test sets out of the provided '
+                             'training corpora')
     parser.add_argument('-s', '--steps', metavar='STEPS', dest='training_steps', choices=MMTEngine.training_steps,
                         nargs='+', help='run only specified training steps {%(choices)s}')
 
@@ -459,7 +462,8 @@ def main_create(argv):
         if slave.is_running():
             slave.stop()
 
-        engine.builder.build(args.corpora_paths, debug=args.debug, steps=args.training_steps)
+        engine.builder.build(args.corpora_paths,
+                             debug=args.debug, steps=args.training_steps, split_trainingset=args.split_corpora)
     else:
         parser.print_help()
 
