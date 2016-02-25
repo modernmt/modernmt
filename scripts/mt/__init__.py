@@ -27,6 +27,50 @@ class ParallelCorpus:
         return sorted([ParallelCorpus(*corpus) for _, corpus in name2corpus.iteritems()], key=attrgetter('name'))
 
     @staticmethod
+    def splitlist(source_lang, target_lang, monolingual_is_target=True, roots=None):
+        if roots is None:
+            roots = ['.']
+        elif not type(roots) is list:
+            roots = [roots]
+
+        monolingual_corpora = []
+        bilingual_corpora = []
+
+        monolingual_lang = target_lang if monolingual_is_target else source_lang
+
+        for directory in roots:
+            name2file = {}
+
+            for filename in os.listdir(directory):
+                if not (filename.endswith('.' + source_lang) or filename.endswith('.' + target_lang)):
+                    continue
+
+                filepath = os.path.join(directory, filename)
+                dotpos = filename.rfind('.')
+                # extension = filename[(dotpos + 1):]
+                filename = filename[:dotpos]
+
+                if len(filename) == 0:
+                    continue
+
+                if filename in name2file:
+                    del name2file[filename]
+                    bilingual_corpora.append(ParallelCorpus(filename, directory, [source_lang, target_lang]))
+                else:
+                    name2file[filename] = filepath
+
+            for _, path in name2file.iteritems():
+                filename = os.path.basename(path)
+                dotpos = filename.rfind('.')
+                extension = filename[(dotpos + 1):]
+                filename = filename[:dotpos]
+
+                if extension == monolingual_lang:
+                    monolingual_corpora.append(ParallelCorpus(filename, directory, [monolingual_lang]))
+
+        return bilingual_corpora, monolingual_corpora
+
+    @staticmethod
     def filter(corpora, lang):
         result = []
 
@@ -60,9 +104,6 @@ class ParallelCorpus:
                         self._lines_count = count
 
         return self._lines_count
-
-    def isBilingual(self, lang1, lang2):
-        return lang1 in self.langs and lang2 in self.langs
 
     def __str__(self):
         return self.name + '(' + ','.join(self.langs) + ')'

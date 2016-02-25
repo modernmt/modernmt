@@ -104,7 +104,6 @@ class StaticIRSTLM(LanguageModel):
             if log_file is not None:
                 log = open(log_file, 'w')
 
-
             # Collapse all corpora into a single text file
             merged_corpus = os.path.join(working_dir, 'merge')
             fileutils.merge([corpus.get_file(lang) for corpus in corpora], merged_corpus)
@@ -118,8 +117,9 @@ class StaticIRSTLM(LanguageModel):
                     shell.execute([self._addbound_bin], stdin=stdin, stdout=stdout, stderr=log)
 
             # Creating lm in ARPA format
-            command = [self._buildlm_bin, '-i', input_se, '-k', str(cpu_count()), '-o', arpa_file, '-n', str(self._order),
-                   '-s', 'witten-bell', '-t', temp, '-l', '/dev/stdout', '-irstlm', self._irstlm_dir]
+            command = [self._buildlm_bin, '-i', input_se, '-k', str(cpu_count()), '-o', arpa_file, '-n',
+                       str(self._order), '-s', 'witten-bell', '-t', temp, '-l', '/dev/stdout', '-irstlm',
+                       self._irstlm_dir]
             shell.execute(command, stderr=log)
 
             # Create binary lm
@@ -131,8 +131,9 @@ class StaticIRSTLM(LanguageModel):
                 log.close()
 
     def get_iniline(self):
-        return self.name + ' name=STA_LM factor=0 path={model} dub=10000000'.format(
+        return self.name + ' name=StaticLM factor=0 path={model} dub=10000000'.format(
             model=self.get_relpath(self._model))
+
 
 class AdaptiveIRSTLM(LanguageModel):
     def __init__(self, model):
@@ -195,6 +196,5 @@ class AdaptiveIRSTLM(LanguageModel):
         shell.execute(command, stderr=log)
 
     def get_iniline(self):
-        return self.name + ' name=ADA_LM factor=0 path={model} dub=10000000 weight_normalization=yes'.format(
+        return self.name + ' name=AdaptiveLM factor=0 path={model} dub=10000000 weight_normalization=yes'.format(
             model=self.get_relpath(self._model))
-                                                                                                                               

@@ -2,6 +2,7 @@ import multiprocessing
 import os
 
 import scripts
+from scripts import mmt_javamain
 from scripts.libs import multithread, fileutils, shell
 from scripts.mt import ParallelCorpus
 
@@ -62,39 +63,36 @@ class Preprocessor:
     TEST_FOLDER_NAME = 'test'
 
     def __init__(self):
-        self._jar = scripts.MMT_JAR
         self._java_mainclass = 'eu.modernmt.cli.PreprocessorMain'
 
-    def process(self, source, target, input_path, output_path, data_path=None):
-        command = ['java', '-cp', self._jar, '-Dmmt.home=' + scripts.MMT_ROOT, self._java_mainclass,
-                   '-s', source, '-t', target,
-                   '--input', input_path,
-                   '--output', output_path]
+    def process(self, source, target, input_paths, output_path, data_path=None):
+        args = ['-s', source, '-t', target, '--output', output_path, '--input']
+
+        for root in input_paths:
+            args.append(root)
 
         if data_path is not None:
-            command.append('--dev')
-            command.append(os.path.join(data_path, Preprocessor.DEV_FOLDER_NAME))
-            command.append('--test')
-            command.append(os.path.join(data_path, Preprocessor.TEST_FOLDER_NAME))
+            args.append('--dev')
+            args.append(os.path.join(data_path, Preprocessor.DEV_FOLDER_NAME))
+            args.append('--test')
+            args.append(os.path.join(data_path, Preprocessor.TEST_FOLDER_NAME))
 
+        command = mmt_javamain(self._java_mainclass, args)
         shell.execute(command, stdin=shell.DEVNULL, stdout=shell.DEVNULL, stderr=shell.DEVNULL)
 
-        return ParallelCorpus.list(output_path)
+        return ParallelCorpus.splitlist(source, target, roots=output_path)
 
 
 class Tokenizer:
     def __init__(self):
-        self._tokenizer_jar = scripts.MMT_JAR
         self._java_mainclass = 'eu.modernmt.cli.TokenizerMain'
 
     def _get_tokenizer_command(self, lang, print_tags):
-        command = ['java', '-cp', self._tokenizer_jar, '-Dmmt.home=' + scripts.MMT_ROOT, self._java_mainclass,
-                   '--lang', lang]
-
+        args = ['--lang', lang]
         if not print_tags:
-            command.append('--no-tags')
+            args.append('--no-tags')
 
-        return command
+        return mmt_javamain(self._java_mainclass, args)
 
     def tokenize(self, sentence, lang, print_tags=True):
         command = self._get_tokenizer_command(lang, print_tags)

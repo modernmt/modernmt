@@ -425,7 +425,9 @@ def main_create(argv):
     parser.prog = 'mmt create'
     parser.add_argument('source_lang', metavar='SOURCE_LANGUAGE', help='the source language (ISO 639-1)')
     parser.add_argument('target_lang', metavar='TARGET_LANGUAGE', help='the target language (ISO 639-1)')
-    parser.add_argument('corpora_path', metavar='CORPORA', help='the path to the training corpora')
+    parser.add_argument('corpora_paths', metavar='CORPORA', nargs='+',
+                        help='the paths to the training corpora. You can specify more than one path, '
+                             'in every folder you can put mixed monolingual and bilingual corpora')
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default=None)
     parser.add_argument('-d', '--debug', action='store_true', dest='debug',
@@ -444,8 +446,6 @@ def main_create(argv):
         injector = dependency.Injector(*_injectable_components)
         injector.read_args(args)
 
-        corpora = ParallelCorpus.list(args.corpora_path)
-
         engine = MMTEngine((args.source_lang, args.target_lang), args.engine)
         engine = injector.inject(engine)
 
@@ -457,7 +457,7 @@ def main_create(argv):
         if slave.is_running():
             slave.stop()
 
-        engine.builder.build(corpora, debug=args.debug, steps=args.training_steps)
+        engine.builder.build(args.corpora_paths, debug=args.debug, steps=args.training_steps)
     else:
         parser.print_help()
 

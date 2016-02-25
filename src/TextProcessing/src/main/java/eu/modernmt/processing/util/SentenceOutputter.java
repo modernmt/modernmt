@@ -35,6 +35,7 @@ public class SentenceOutputter implements PipelineOutputStream<Sentence> {
     public void write(Sentence value) throws IOException {
         writer.write(printTags ? value.toString() : value.getStrippedString());
         writer.write('\n');
+        writer.flush();
     }
 
 }

@@ -32,9 +32,13 @@ public class DocumentBuilder {
 
     public static Document createDocument(Corpus document) throws ContextAnalyzerException {
         String fieldName = getContentField(document);
+        String name = document.getName();
+
+        if (name == null)
+            name = "UNKNOWN";
 
         Document doc = new Document();
-        doc.add(new StringField(DOCUMENT_NAME_FIELD, document.getName(), Field.Store.YES));
+        doc.add(new StringField(DOCUMENT_NAME_FIELD, name, Field.Store.YES));
 
         try {
             doc.add(new CorpusContentField(fieldName, document.getContentReader(), Field.Store.NO));

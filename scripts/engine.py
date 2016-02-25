@@ -12,6 +12,7 @@ from ConfigParser import ConfigParser
 import requests
 
 import scripts
+from scripts import mmt_javamain
 from scripts.evaluation import MMTTranslator, GoogleTranslate, BLEUScore, MatecatScore, TranslateError, BingTranslator
 from scripts.libs import fileutils, daemon, shell
 from scripts.mt import ParallelCorpus
@@ -174,10 +175,11 @@ class _MMTEngineBuilderLogger:
         self._current_step = 0
         self._step = None
 
-    def start(self, engine, corpora):
+    def start(self, engine, bilingual_corpora, monolingual_corpora):
         print '\n=========== TRAINING STARTED ===========\n'
         print 'ENGINE:  %s' % engine.name
-        print 'CORPORA: %s (%d documents)' % (corpora[0].root, len(corpora))
+        print 'BILINGUAL CORPORA: %d documents' % len(bilingual_corpora)
+        print 'MONOLINGUAL CORPORA: %d documents' % len(monolingual_corpora)
         print 'LANGS:   %s > %s' % (engine.source_lang, engine.target_lang)
         print
         sys.stdout.flush()
@@ -213,9 +215,14 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
         _MMTRuntimeComponent.__init__(self, engine.name, 'training')
         self._engine = engine
 
-    def build(self, corpora, debug=False, steps=None):
-        if len(corpora) == 0:
-            raise IllegalArgumentException('Empty corpora')
+    def build(self, roots, debug=False, steps=None, split_trainingset=True):
+        source_lang = self._engine.source_lang
+        target_lang = self._engine.target_lang
+
+        bilingual_corpora, monolingual_corpora = ParallelCorpus.splitlist(source_lang, target_lang, roots=roots)
+
+        if len(bilingual_corpora) == 0:
+            raise IllegalArgumentException('empty corpora provided')
 
         if steps is None:
             steps = self._engine.training_steps
@@ -225,69 +232,62 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
                 raise IllegalArgumentException('Unknown training steps: ' + str(unknown_steps))
 
         cmdlogger = _MMTEngineBuilderLogger(len(steps) + 1)
-        cmdlogger.start(self._engine, corpora)
+        cmdlogger.start(self._engine, bilingual_corpora, monolingual_corpora)
 
         shutil.rmtree(self._engine.path, ignore_errors=True)
         os.makedirs(self._engine.path)
 
         try:
-            original_corpora = corpora
+            unprocessed_bicorpora = bilingual_corpora
+            unprocessed_mocorpora = monolingual_corpora
 
             # Preprocessing
-            #### preprocessed_corpora = original_corpora
-            preprocessed_corpora = []
+            processed_bicorpora = unprocessed_bicorpora
+            processed_mocorpora = unprocessed_mocorpora
 
             if 'preprocess' in steps:
                 with cmdlogger.step('Corpora preprocessing') as _:
-                    tokenizer_output = self._get_tempdir('preprocessed')
-
-                    # (source, target, input_path, output_path, data_path=None)
-                    preprocessed_corpora = self._engine.preprocessor.process(
-                        self._engine.source_lang, self._engine.target_lang,
-                        original_corpora, tokenizer_output, self._engine.data_path)
-
-            # Selecting bilingual corpora
-            bilingual_corpora = []
-            for corpus in preprocessed_corpora:
-                if corpus.isBilingual(self._engine.source_lang, self._engine.target_lang):
-                    bilingual_corpora.append(corpus)
-            sys.stdout.write("preprocessed_corpora size" + str(len(preprocessed_corpora)))
-            sys.stdout.write("bilingual_corpora size" + str(len(bilingual_corpora)))
+                    preprocessor_output = self._get_tempdir('preprocessed')
+                    processed_bicorpora, processed_mocorpora = self._engine.preprocessor.process(
+                        source_lang, target_lang, roots, preprocessor_output,
+                        (self._engine.data_path if split_trainingset else None)
+                    )
 
             # Cleaning
-            cleaned_corpora = bilingual_corpora
+            cleaned_bicorpora = processed_bicorpora
 
             if 'clean' in steps:
                 with cmdlogger.step('Corpora cleaning') as _:
                     cleaner_output = self._get_tempdir('cleaner')
-                    cleaned_corpora = self._engine.cleaner.batch_clean(bilingual_corpora, cleaner_output)
+                    cleaned_bicorpora = self._engine.cleaner.batch_clean(processed_bicorpora, cleaner_output)
 
             # Training Context Analyzer
             if 'context_analyzer' in steps:
                 with cmdlogger.step('Context Analyzer training') as _:
                     log_file = self._get_logfile('context')
-                    self._engine.analyzer.create_index(original_corpora[0].root, log_file)
+                    self._engine.analyzer.create_index(unprocessed_bicorpora, source_lang, log_file=log_file)
 
             # Training Adaptive Language Model (on the target side of all bilingual corpora)
             if 'adaptive_lm' in steps:
                 with cmdlogger.step('Adaptive Language Model training') as _:
-                    working_dir = self._get_tempdir('lm')
-                    log_file = self._get_logfile('adaptive_lm')
-                    self._engine.adaptive_lm.train(bilingual_corpora, self._engine.target_lang, working_dir, log_file)
+                    working_dir = self._get_tempdir('adaptive_lm')
+                    log_file = self._get_logfile('lm')
+                    self._engine.adaptive_lm.train(processed_bicorpora, target_lang, working_dir, log_file)
 
             # Training Background Static Language Model (on all available monolingual corpora)
             if 'static_lm' in steps:
                 with cmdlogger.step('Background Language Model training') as _:
-                    working_dir = self._get_tempdir('lm')
-                    log_file = self._get_logfile('static_lm')
-                    self._engine.static_lm.train(preprocessed_corpora, self._engine.target_lang, working_dir, log_file)
+                    working_dir = self._get_tempdir('static_lm')
+                    log_file = self._get_logfile('lm')
+                    self._engine.static_lm.train(processed_bicorpora + processed_mocorpora,
+                                                 target_lang, working_dir, log_file)
 
             # Training Translation Model
             if 'tm' in steps:
                 with cmdlogger.step('Translation Model training') as _:
                     working_dir = self._get_tempdir('tm')
                     log_file = self._get_logfile('tm')
-                    self._engine.pt.train(cleaned_corpora, self._engine.aligner, working_dir, log_file)
+                    self._engine.pt.train(cleaned_bicorpora, self._engine.aligner, working_dir, log_file)
 
             # Writing config file
             with cmdlogger.step('Writing config files') as _:
@@ -306,9 +306,12 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
 class MMTEngine:
     injector_section = 'engine'
     injectable_fields = {
-        'adaptive_lm_type': ('LM implementation', (basestring, LanguageModel.available_types), LanguageModel.available_types[0]),
-        'static_lm_type': ('LM implementation', (basestring, LanguageModel.available_types), LanguageModel.available_types[1]),
-        'aligner_type': ('Aligner implementation', (basestring, WordAligner.available_types), WordAligner.available_types[0]),
+        'adaptive_lm_type': ('Adaptive LM implementation',
+                             (basestring, LanguageModel.available_types), 'AdaptiveIRSTLM'),
+        'static_lm_type': ('Background LM implementation',
+                           (basestring, LanguageModel.available_types), 'StaticIRSTLM'),
+        'aligner_type': ('Aligner implementation',
+                         (basestring, WordAligner.available_types), WordAligner.available_types[0]),
     }
 
     training_steps = ['preprocess', 'clean', 'context_analyzer', 'adaptive_lm', 'static_lm', 'tm']
@@ -331,8 +334,8 @@ class MMTEngine:
 
         self._config_file = os.path.join(self.path, 'engine.ini')
         self._pt_model = os.path.join(self.models_path, 'phrase_tables')
-        self._adaptive_lm_model = os.path.join(self.models_path, 'lm', 'adaptive.lm')
-        self._static_lm_model = os.path.join(self.models_path, 'lm', 'background.lm')
+        self._adaptive_lm_model = os.path.join(self.models_path, 'lm_adaptive', 'adaptive.lm')
+        self._static_lm_model = os.path.join(self.models_path, 'lm_static', 'background.lm')
         self._context_index = os.path.join(self.models_path, 'context', 'index')
         self._moses_ini_file = os.path.join(self.models_path, 'moses.ini')
 
@@ -536,24 +539,13 @@ class MMTServer(_MMTDistributedComponent):
         self.log_file = self._get_logfile('process', ensure=False)
 
     def _start_process(self):
-        classpath = [scripts.MMT_JAR]
+        args = ['-e', self.engine.name, '-a', str(self.api_port), '-p', str(self.cluster_ports[0]),
+                str(self.cluster_ports[1])]
+        # args.append('-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005')
 
         env = os.environ.copy()
         env['LD_LIBRARY_PATH'] = scripts.LIB_DIR
-
-        sysprop = {
-            'mmt.home': scripts.MMT_ROOT,
-            'java.library.path': scripts.MMT_LIBS,
-        }
-
-        command = ['java', '-cp', ':'.join(classpath)]
-        # command.append('-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005')
-
-        for key, value in sysprop.iteritems():
-            command.append('-D' + key + '=' + value)
-
-        command += ['eu.modernmt.cli.MasterNodeMain', '-e', self.engine.name, '-a', str(self.api_port), '-p',
-                    str(self.cluster_ports[0]), str(self.cluster_ports[1])]
+        command = mmt_javamain('eu.modernmt.cli.MasterNodeMain', args)
 
         self._get_logfile(self.log_file, ensure=True)
         log = open(self.log_file, 'wa')
@@ -781,30 +773,19 @@ class MMTWorker(_MMTDistributedComponent):
         return status == 'ready'
 
     def _start_process(self):
-        classpath = [scripts.MMT_JAR]
-
-        env = os.environ.copy()
-        env['LD_LIBRARY_PATH'] = scripts.LIB_DIR
-
-        sysprop = {
-            'mmt.home': scripts.MMT_ROOT,
-            'java.library.path': scripts.MMT_LIBS,
-        }
-
-        command = ['java', '-cp', ':'.join(classpath)]
-        # command.append('-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005')
-
-        for key, value in sysprop.iteritems():
-            command.append('-D' + key + '=' + value)
-
-        command += ['eu.modernmt.cli.SlaveNodeMain', '-e', self.engine.name, '-p', str(self.cluster_ports[0]),
-                    str(self.cluster_ports[1]), '--status-file', self._status_file]
+        args = ['-e', self.engine.name, '-p', str(self.cluster_ports[0]), str(self.cluster_ports[1]), '--status-file',
+                self._status_file]
+        # args.append('-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005')
 
         if self._master is not None:
             for key, value in self._master.iteritems():
                 if value is not None:
-                    command.append('--master-' + key)
-                    command.append(str(value))
+                    args.append('--master-' + key)
+                    args.append(str(value))
+
+        env = os.environ.copy()
+        env['LD_LIBRARY_PATH'] = scripts.LIB_DIR
+        command = mmt_javamain('eu.modernmt.cli.SlaveNodeMain', args)
 
         self._get_logfile(self.log_file, ensure=True)
         log = open(self.log_file, 'wa')
