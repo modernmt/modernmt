@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 import argparse
 import logging
 import operator
@@ -43,10 +43,12 @@ def __check_java():
         _, stderr = shell.execute(['java', '-version'])
 
         ok = False
-        for token in stderr.split('\n')[0].split():
-            if '"1.8' in token:
-                ok = True
-                break
+        for line in stderr.split('\n'):
+            tokens = line.split()
+            if 'version' in tokens:
+                if '"1.8' in tokens[tokens.index('version')+1]:
+                    ok = True
+                    break
 
         if not ok:
             print 'ERROR: Wrong version of Java, required Java 8'
