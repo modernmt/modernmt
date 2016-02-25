@@ -1,3 +1,4 @@
+import HTMLParser
 import multiprocessing
 import os
 import json as js
@@ -131,10 +132,12 @@ class GoogleTranslate(Translator):
                     result = pool.apply_async(self._get_translation, (line, None))
                     jobs.append(result)
 
+            html = HTMLParser.HTMLParser()
+
             with open(output_path, 'wb') as output:
                 for job in jobs:
                     translation = job.get()
-                    output.write(translation.encode('utf-8'))
+                    output.write(html.unescape(translation).encode('utf-8'))
                     output.write('\n')
         finally:
             pool.terminate()
