@@ -34,7 +34,6 @@ public class TagEvaluator {
     private static boolean DebugFlag = false;
     private static final String EVALUATOR_CMD = System.getProperty("mmt.home") + "/src/Test/opt/tagevaluator/go-ter.sh";
     private static final String OUT_FILE = System.getProperty("mmt.home") + "/src/Test/opt/tagevaluator/scores/trial";
-    private static final String LOG_FILE = System.getProperty("mmt.home") + "/src/Test/runtime/tagevaluator.log";
 
     private Logger logger;
     private JSONObject jsonResult;
@@ -42,7 +41,7 @@ public class TagEvaluator {
     static {
         cliOptions = new Options();
 	cliOptions.addOption("h", "help", false, "display usage information");
-	cliOptions.addOption("d", "debug", false, "save debug info in file " + LOG_FILE);
+	cliOptions.addOption("l", "log_file", true, "the file to save the log info");
         cliOptions.addOption("t", "option_on_tag", true, "the way tag are processed: must be one of [none|separate|countSpaces]");
 	cliOptions.addOption("r", "ref_file", true, "the reference file");
 	cliOptions.addOption("y", "hyp_file", true, "the hypothesis file");
@@ -55,16 +54,18 @@ public class TagEvaluator {
 	if(! cmd.hasOption("t") || ! cmd.hasOption("r") || ! cmd.hasOption("y")) {
 	    printUsageAndExit(cliOptions);
 	}
-	if(cmd.hasOption("d")) {DebugFlag = true;}
 	String optionOnTag = cmd.getOptionValue("t");
         String refFile = cmd.getOptionValue("r");
         String hypFile = cmd.getOptionValue("y");
+
+        String logFile = null;
+	if(cmd.hasOption("l")) {logFile = cmd.getOptionValue("l");}
 	String verbosityLevel = "0";
 	if(cmd.hasOption("v")) {verbosityLevel = cmd.getOptionValue("v");}
 
 	String [] evalCmdList = {EVALUATOR_CMD, optionOnTag, refFile, hypFile, OUT_FILE, verbosityLevel};
         TagEvaluator tagErrorRate = new TagEvaluator();
-        tagErrorRate.execute(evalCmdList);
+        tagErrorRate.execute(evalCmdList, logFile);
     }
 
     public TagEvaluator() {
@@ -76,7 +77,7 @@ public class TagEvaluator {
         this.jsonResult.put("results", null);
     }
 
-    public void execute(String[] evalCmdList) throws IOException {
+    public void execute(String[] evalCmdList, String logFile) throws IOException {
 	JSONObject jResultDetails = new JSONObject();
 	jResultDetails.put("tagErrorRate", null);
 	ProcessBuilder pb = new ProcessBuilder(evalCmdList);
@@ -98,15 +99,15 @@ public class TagEvaluator {
             this.jsonResult.put("error", resultBuf);
         }
 
-	if (DebugFlag) {
+	if (logFile != null) {
 	    BufferedReader Err = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-	    PrintWriter out = new PrintWriter(new FileWriter(LOG_FILE));
+	    PrintWriter out = new PrintWriter(new FileWriter(logFile));
 	    String line;
 	    while ((line = Err.readLine()) != null) {
 		out.println(line);
 	    }
 	    out.close();
-	    jResultDetails.put("logFile", LOG_FILE);
+	    jResultDetails.put("logFile", logFile);
 	}
 
 	this.jsonResult.put("results", jResultDetails);
