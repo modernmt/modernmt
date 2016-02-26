@@ -40,6 +40,8 @@ Goal: with 2 billion words perform better than commercially available technology
 * 0.15 - Better coverage with a new suffix sampling. 
 * 0.15 - Adding Optional Human Evaluation and Tuning (BLEU or PEE are very imprecise metrics, few man hours of evaluation can deliver better results). 10 Euro for evaluation via A/B test vs Google Translate, 100 Euro for human tuning via nbest selection.
 
+* 0.15 - Extended Log. See https://github.com/ModernMT/MMT/issues/87
+
 * 0.20 - Adding Data for the background models. EN-IT 2 billion words parallel, 5 billion words monolingual.
 * 0.30 - Adding Data for the background models. Adding Top 10 languages.
 
