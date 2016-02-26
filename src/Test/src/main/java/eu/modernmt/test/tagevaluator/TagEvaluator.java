@@ -1,30 +1,11 @@
 package eu.modernmt.test.tagevaluator;
 
-import eu.modernmt.context.ContextAnalyzer;
-import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.context.ContextDocument;
-import eu.modernmt.model.FileCorpus;
-import eu.modernmt.test.contextanalyzer.context.ContextReader;
-import eu.modernmt.test.contextanalyzer.context.Stats;
 import org.apache.commons.cli.*;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.InputStreamReader;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.ProcessBuilder;
-import java.lang.ProcessBuilder.Redirect;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
+import java.io.*;
 
 public class TagEvaluator {
 
@@ -114,10 +95,6 @@ public class TagEvaluator {
 	
 	this.close();
 	System.out.println(this.jsonResult.toJSONString());
-    }
-
-    public boolean check(Stats stats) {
-        return true;
     }
 
     public void close() {
