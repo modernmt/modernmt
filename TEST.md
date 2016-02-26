@@ -1,25 +1,24 @@
 # Test infrastructure
 
 ## Contribute with a new test
-All the tests are contained in the module 'Test' under the directory 'ModernMT/src'.
+All the tests are contained under the directory 'ModernMT/test'.
 
-In order to easily maintain all the tests, the package structure of each test is built as follow:
-
+The easiest way to create a new test is to launch the script 'create_new_test.py':
+```bash
+cd test
+python create_new_test.py My_new_test
 ```
-eu.modernmt.test.{name_of_module_to_test}.{package_of_the_class_to_test}
-```
 
-A json file named 'test.json' contains useful information about all the available tests and it is located under the package 'eu.modernmt.test'.
+A json file named 'test.json' contains useful information about all the available tests and it is located inside the root folder of each test.
 
 Inside 'test.json' exists a json map for each runnable tests containing the name, the description and the path of the test it-self:
 ```json
-[
   {
-    "script": "contextanalyzer/context/PrecisionTest.java",
-    "name": "ContextTest",
-    "description": "It creates an instance of the context analyzer and queries it to compute some metrics to evaluate the efficiency of the IR system."
-  }
-]
+  "enabled": true,
+  "name": "ContextTest",
+  "description": "It creates an instance of the context analyzer and queries it to compute some metrics to evaluate the efficiency of the IR system."
+  "full_description": "..."
+}
 ```
 
 ## Launch a test
