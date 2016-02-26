@@ -87,32 +87,33 @@ class _DocumentTranslator:
 
         self._features = _sorted_features_list()
 
-        with open(self.nbest_file, 'ab') as nbest_out:
-            with open(self.corpus) as source:
-                for line in source:
-                    tokenized, original = line.strip().split(':')
+        try:
+            with open(self.nbest_file, 'ab') as nbest_out:
+                with open(self.corpus) as source:
+                    for line in source:
+                        tokenized, original = line.strip().split(':')
 
-                    session = None
+                        session = None
 
-                    if not self.skip_context:
-                        context = Api.get_context_f(original)
-                        session = Api.create_session(context)['id']
+                        if not self.skip_context:
+                            context = Api.get_context_f(original)
+                            session = Api.create_session(context)['id']
 
-                    with open(tokenized) as doc:
-                        jobs = []
-                        for docline in doc:
-                            result = self._pool.apply_async(self._get_translation, (docline, self.nbest, session))
-                            jobs.append(result)
+                        with open(tokenized) as doc:
+                            jobs = []
+                            for docline in doc:
+                                result = self._pool.apply_async(self._get_translation, (docline, self.nbest, session))
+                                jobs.append(result)
 
-                        for job in jobs:
-                            translation = job.get()
-                            self._print(translation, nbest_out)
-                            self._line_id += 1
+                            for job in jobs:
+                                translation = job.get()
+                                self._print(translation, nbest_out)
+                                self._line_id += 1
 
-                    if session is not None:
-                        Api.close_session(session)
-
-        self._pool.terminate()
+                        if session is not None:
+                            Api.close_session(session)
+        finally:
+            self._pool.terminate()
 
 
 def show_weighs():
