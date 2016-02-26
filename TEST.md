@@ -24,10 +24,17 @@ Inside 'test.json' exists a json map for each runnable tests containing the name
 
 ## Launch a test
 
-To launch a test go under the directory 'ModernMT/src/Test/target/' with
+First of all compile the source code with:
 
 ```bash
-cd ModernMT/src/Test/target/
+cd ModernMT/src
+mvn clean install
+```
+
+Now to launch a test go under the directory 'ModernMT/src/Test/target/' with
+
+```bash
+cd Test/target/
 ```
 
 and launch the class with the test to run with
@@ -39,14 +46,12 @@ java -cp mmt-test-0.11.1.jar {package_of_the_class_to_run}.{class_to_run}
 For example to launch the precision test for the context analyzer run the following commands specifying the paths of the training and test directory:
 
 ```bash
-cd ModernMT/src/Test/target/
 java -cp mmt-test-0.11.1.jar eu.modernmt.test.contextanalyzer.context.PrecisionTest -lang en -lines 30 -train <path_to_training_directory> -test <path_to_test_directory>
 ```
 
 Another example is the launch of the tagevaluator test:
 
 ```bash
-cd ModernMT/src/Test/target/
 java -Dmmt.home=/path/to/MMT/home -cp mmt-test-0.11.1.jar eu.modernmt.test.tagevaluator.TagEvaluator -t separate -r reference_file -y hypothesis_file
 ```
 
