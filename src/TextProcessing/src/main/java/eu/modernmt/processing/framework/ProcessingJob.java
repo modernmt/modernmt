@@ -43,16 +43,18 @@ public class ProcessingJob<P, R> {
     }
 
     public void stop() {
-        inputQueue.clear();
-        outputQueue.clear();
+        collector.terminate();
 
         try {
             // The POISON_PILL could be added twice, but this is not a problem.
             // On the contrary the clear() call could have removed the POISON_PILL
             // added by the Collector thread.
+            inputQueue.clear();
             inputQueue.put(POISON_PILL);
         } catch (InterruptedException e) {
             // Ignore
+        } finally {
+            outputQueue.clear();
         }
     }
 
@@ -67,6 +69,9 @@ public class ProcessingJob<P, R> {
         this.outputter.join();
 
         if (error != null) {
+            if (error instanceof ExecutionException)
+                error = error.getCause();
+
             if (error instanceof InterruptedException)
                 throw (InterruptedException) error;
             else if (error instanceof ProcessingException)
@@ -79,6 +84,12 @@ public class ProcessingJob<P, R> {
     }
 
     private class Collector extends Thread {
+
+        private boolean terminated = false;
+
+        public void terminate() {
+            terminated = true;
+        }
 
         private P next() {
             try {
@@ -93,7 +104,7 @@ public class ProcessingJob<P, R> {
         public void run() {
             P param;
 
-            while ((param = next()) != null) {
+            while (!terminated && (param = next()) != null) {
                 try {
                     inputQueue.put(param);
                 } catch (InterruptedException e) {
@@ -163,7 +174,8 @@ public class ProcessingJob<P, R> {
 
             try {
                 while ((result = next()) != null) {
-                    output.write(result.get());
+                    R value = result.get();
+                    output.write(value);
                 }
             } catch (InterruptedException e) {
                 // break

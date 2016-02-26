@@ -81,12 +81,30 @@ public class AnnotatedString {
 
     public void protect(int start, int end) {
         for (int i = start; i < end; i++) {
+            if (i >= this.flags.length) {
+                /*
+                 * I found this can happen with some peculiar strings.
+                 * Unfortunately the bug is not perfectly reproducible: I tried
+                 * to launch the Tokenizer with the same input sentence (single-thread) and
+                 * this bug does not appear every single time.
+                 *
+                 * Also it seems related both to string length and string composition:
+                 * if I split the string in two it works, if I change the string with
+                 * another one of the same length it works.
+                 *
+                 * You can find the string for testing in file "exploit_line.txt".
+                 * Good luck!
+                 */
+
+                break;
+            }
+
             this.flags[i] |= PROTECTED_FLAG;
         }
     }
 
     public void protect(int index) {
-        this.flags[index] |= PROTECTED_FLAG;
+        this.protect(index, index + 1);
     }
 
     public Reader getReader() {

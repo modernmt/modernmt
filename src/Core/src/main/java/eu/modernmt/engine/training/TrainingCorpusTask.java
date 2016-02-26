@@ -54,6 +54,7 @@ class TrainingCorpusTask implements Callable<Void> {
             output = new SentenceOutputter(outCorpus.getContentWriter(false), false);
 
             ProcessingJob<String, Sentence> job = pipeline.createJob(input, output);
+
             job.start();
             job.join();
         } catch (IOException e) {
