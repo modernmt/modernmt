@@ -64,7 +64,7 @@ public class Stats {
                 "\tRecall: " + this.sumRecall/(double)this.numberOfQuery +
                 "\tAvgPosition: " + this.sumPosition/(double)this.sumRecall +
                 "\tAvgScoreGap: " + this.sumScoreGap/(double)this.sumRecall +
-                "\tAvgQuertTime " + this.totalTime/(double)this.numberOfQuery;
+                "\tAvgQueryTime " + this.totalTime/(double)this.numberOfQuery;
     }
 
     public JSONObject getJson(){
@@ -73,7 +73,7 @@ public class Stats {
         jsonStats.put("Recall", this.sumRecall/(double)this.numberOfQuery);
         jsonStats.put("avgPosition", this.sumPosition/(double)this.sumRecall);
         jsonStats.put("avgScoreGap", this.sumScoreGap/(double)this.sumRecall);
-        jsonStats.put("AvgQuertTime", this.totalTime/(double)this.numberOfQuery);
+        jsonStats.put("AvgQueryTime", this.totalTime/(double)this.numberOfQuery);
         return jsonStats;
     }
 }
