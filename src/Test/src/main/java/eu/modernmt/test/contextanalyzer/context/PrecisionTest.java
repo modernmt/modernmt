@@ -130,7 +130,7 @@ public class PrecisionTest {
         for (FileCorpus fileCorpus : domains) {
             numberOfAnalyzedDomains++;
             String domainId = fileCorpus.getName();
-            logger.debug(numberOfAnalyzedDomains + "/" + domains.size() + "] Testing context analyzer with " + domainId);
+            logger.info(numberOfAnalyzedDomains + "/" + domains.size() + "] Testing context analyzer with " + domainId);
             //System.out.println(numberOfAnalyzedDomains + "/" + domains.size() + "] Testing context analyzer with " + domainId);
             ContextReader contextReader = new ContextReader(fileCorpus, contextLinesCount);
 
