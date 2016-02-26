@@ -4,6 +4,8 @@ import logging
 import os
 import sys
 
+import requests
+
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
 
 from scripts.engine import MMTServerApi, DEFAULT_MMT_API_PORT
@@ -34,8 +36,6 @@ class Executor:
             context = api.get_context_f(args.context_file)
         elif args.context_weights is not None:
             context = self.__parse_context_map(args.context_weights)
-
-        logging.info('Context: ' + self.__context_tostring(context))
 
         if context is not None:
             self.session = api.create_session(context)['id']
@@ -136,14 +136,19 @@ class InteractiveExecutor(Executor):
         Executor.__init__(self, api, args)
 
     def execute(self, line):
-        translation = self._translate(line)
+        try:
+            translation = self._translate(line)
 
-        if self.nbest is not None:
-            for nbest in translation['nbest']:
-                self.nbest_out.write((u' ||| '.join(self._encode_nbest(nbest))).encode('utf-8'))
-                self.nbest_out.write('\n')
+            if self.nbest is not None:
+                for nbest in translation['nbest']:
+                    self.nbest_out.write((u' ||| '.join(self._encode_nbest(nbest))).encode('utf-8'))
+                    self.nbest_out.write('\n')
 
-        print self._encode_translation(translation)
+            print self._encode_translation(translation)
+        except requests.exceptions.ConnectionError:
+            print 'CONNECTION ERROR: unable to connect MMT server, try starting it with "./mmt start"'
+        except requests.exceptions.HTTPError as e:
+            print 'HTTP ERROR: ' + e.message
 
 
 def main():
