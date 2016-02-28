@@ -44,6 +44,7 @@ Goal: with 2 billion words perform better than commercially available technology
 
 * 0.20 - Adding Data for the background models. EN-IT 2 billion words parallel, 5 billion words monolingual.
 * 0.30 - Adding Data for the background models. Adding Top 10 languages.
+* 0.40 - Adding multi-sentence-level Context as a feature. 
 
 ## Speed
 
