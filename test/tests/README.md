@@ -1,1 +1,1 @@
-Please read [TEST.md](../TEST.md) to know how to add a new test or how to launch an existing one.
+Please read [TEST.md](../../TEST.md) to know how to add a new test or how to launch an existing one.
