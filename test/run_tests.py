@@ -1,28 +1,38 @@
 #!/usr/bin/env python
-import os, json
+import os, sys, json
 class Tester:
 
     TESTS_DIRECTORY_NAME = "tests"
     JSON_DESCRIPTION_FILE_NAME = "info.json"
+    ERR_LOG_FILE_NAME = "err.log"
     ROOT_DIR = os.path.dirname(os.path.realpath(__file__))
     TESTS_PATH = os.path.join( ROOT_DIR, TESTS_DIRECTORY_NAME)
 
-    def run_test(self, test_name):
+    def run_test(self, test_name, verbose = True):
         import subprocess
         test_path = os.path.join(Tester.TESTS_PATH,test_name)
         os.chdir(test_path)
-        process = subprocess.Popen(['./launch.sh'], stdout=subprocess.PIPE)
+        process = subprocess.Popen(['./launch.sh'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = process.communicate()
         os.chdir(Tester.ROOT_DIR)
 
         try:
             json_information = json.loads(out)
-            print json.dumps(json_information, indent=4, separators=(',', ': '))
-        except ValueError:
-            print out
+            if 'passed' not in json_information:
+                raise ValueError("The key \'passed' is missing")
+            if verbose:
+                print json.dumps(json_information, indent=4, separators=(',', ': '))
+            return json_information
+        except Exception, e:
+            json_error = {'passed': False, 'error': str(e)}
+            if verbose:
+                sys.stderr.write(out + "\n") #not working
+                print json.dumps(json_error, indent=4, separators=(',', ': '))
+            return json_error
 
 
     def run_all(self):
+        failed_tests = []
         available_tests = sorted(self.get_available_tests())
         for (test_name, test_dir) in available_tests:
             json_file_path = os.path.join(test_dir,Tester.JSON_DESCRIPTION_FILE_NAME)
@@ -33,8 +43,17 @@ class Tester:
                 if enabled:
                     print "~~~~ " + test_name + " ~~~~"
                     print "Test description: " + json_information['description'] + "\n"
-                    self.run_test(test_name)
+                    json_info = self.run_test(test_name, False)
+                    if not json_info['passed']:
+                        failed_tests.append(test_name)
+                    print json.dumps(json_info, indent=4, separators=(',', ': '))
                     print "\n"
+        if len(failed_tests) == 0:
+            print "All tests have been passed."
+        else:
+            print "The folliwing tests failed:"
+            print ",\n".join(failed_tests)
+
 
     def list_all_tests(self):
         available_tests = sorted(self.get_available_tests())
