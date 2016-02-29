@@ -2,12 +2,13 @@ import HTMLParser
 import multiprocessing
 import os
 import json as js
+import random
+
 import requests
 
 from scripts.libs import multithread, shell
 
-
-DEFAULT_GOOGLE_KEY = 'AIzaSyCJGuxxF9fn2ntT5KNNLAamc9GyQ3m2Sfk'
+DEFAULT_GOOGLE_KEY = 'AIzaSyBl9WAoivTkEfRdBBSCs4CruwnGL_aV74c'
 
 
 class TranslateError(Exception):
@@ -121,7 +122,8 @@ class GoogleTranslate(Translator):
             'source': self.source_lang,
             'target': self.target_lang,
             'q': line,
-            'key': self._key
+            'key': self._key,
+            'userip': '.'.join(map(str, (random.randint(0, 200) for _ in range(4))))
         }
 
         headers = {
@@ -138,7 +140,7 @@ class GoogleTranslate(Translator):
         return json['data']['translations'][0]['translatedText']
 
     def translate(self, document_path, output_path):
-        pool = multithread.Pool(5)
+        pool = multithread.Pool(10)
 
         try:
             jobs = []
