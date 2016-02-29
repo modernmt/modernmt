@@ -94,10 +94,17 @@ class Tester:
 
 if __name__ == "__main__":
     import sys
+    help_string = "Use -list to list all the available test\n"\
+        "Use -name TEST_NAME to run a specific test\n"\
+        "Don't specify any arguments to run all the available tests\n"
     tester = Tester()
     if len(sys.argv) < 2:
+        print help_string
+    elif sys.argv[1] == '-all':
         tester.run_all()
     elif sys.argv[1] == '-name':
         tester.run_test(sys.argv[2])
-    else:
+    elif sys.argv[1] == '-list':
         tester.list_all_tests()
+    else:
+        print help_string
