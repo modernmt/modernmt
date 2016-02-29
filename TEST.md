@@ -32,7 +32,7 @@ Edit 'launch.sh' and fill it with your piece of software that performs the test.
 
 Note: use the string "$@" (double quotes included) to forward the arguments of the bash script to your software test.
 
-The following commands show how to launch your test and forward arguments to it, in case of bash, python and java programming languages respectively:
+The following commands show how to launch your test and forward arguments to it, in case of python bash and java programming languages respectively:
 ```bash
 python MyNewTest.py "$@"
 ```
@@ -45,7 +45,7 @@ java eu.modermt.MyNewTest "$@"
 
 #### info.json
 
-The json file named 'info.json' contains useful information about the test it-self and it is located inside the root folder of each test.
+The json file named 'info.json' contains meta information about the test and it is located inside the root folder of each test.
 
 'info.json' must contain at least the following keys:
 ```
