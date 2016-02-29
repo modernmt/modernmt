@@ -82,7 +82,7 @@ Should I use Google Translate, Bing or MMT given this data?
 
 Evaluate helps you answer these questions.
 
-Before training, MMT has removed up to 1200 test sentences from the training set.
+Before training, MMT has removed sentences corresponding to 1% of the training set and up to 1200.
 During evaluate this sentences are used to compute the BLUE Score and Matecat Post-Editing Effort against the MMT and Google Translate.
 
 With your engine running, just type:
@@ -124,6 +124,9 @@ You can select your Google Translate API Key by typing:
 ```
 ./mmt evaluate --gt-key YOUR_GOOGLE_TRANSLATE_API_KEY
 ```
+
+If you don't want to use Google Translate just type a random key.
+
 
 
 ## Increasing the quality
