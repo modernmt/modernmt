@@ -8,6 +8,12 @@ The easiest way to create a new test is to launch the script 'create_new_test.py
 In order to do that, from the root directory of the ModernMT project launch the following commands:
 ```bash
 cd test
+python create_new_test.py <TEST_NAME>
+```
+
+For example to create "My_new_test" run:
+```bash
+cd test
 python create_new_test.py My_new_test
 ```
 
@@ -41,7 +47,6 @@ The json file named 'test.json' contains useful information about the test it-se
 ```
   {
   "enabled": true|false,
-  "name": "<TEST_NAME>",
   "description": "A description of the test",
   "full_description": "A complete and exhaustive description of the test"
 }
