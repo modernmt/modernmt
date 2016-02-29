@@ -22,7 +22,7 @@ The 'create_new_test.py' script will generate a directory under the direcotry 'M
 Under this new directory it also creates two files:
 
   * launch.sh
-  * test.json
+  * info.json
 
 #### launch.sh
 
@@ -39,11 +39,11 @@ python MyNewTest.py "$@"
 ./MyNewTest.sh "$@"
 ```
 
-#### test.json
+#### info.json
 
-The json file named 'test.json' contains useful information about the test it-self and it is located inside the root folder of each test.
+The json file named 'info.json' contains useful information about the test it-self and it is located inside the root folder of each test.
 
-'test.json' must contain at least the following keys:
+'info.json' must contain at least the following keys:
 ```
   {
   "enabled": true|false,
@@ -100,13 +100,13 @@ It outputs useful information about which tests are enabled, which are not and w
 ```
 ## Enabled tests ## 
 #Test_name Enabled Description
-My_New_Test_1 true  "It tests the precision of ..."
-My_New_Test_4 true  "It tests the throughput of ..."
+My_New_Test_1 True  "It tests the precision of ..."
+My_New_Test_4 True  "It tests the throughput of ..."
 
 ## Disabled tests ## 
 #Test_name Enabled Description
-My_New_Test_3 false  "It tests the recall of ..."
-My_New_Test_5 false  "It tests the alignment of ..."
+My_New_Test_3 False  "It tests the recall of ..."
+My_New_Test_5 False  "It tests the alignment of ..."
 
 ## Malformed tests ## 
 #Test_name Enabled Description
