@@ -13,7 +13,8 @@ import requests
 
 import scripts
 from scripts import mmt_javamain
-from scripts.evaluation import MMTTranslator, GoogleTranslate, BLEUScore, MatecatScore, TranslateError, BingTranslator
+from scripts.evaluation import MMTTranslator, GoogleTranslate, BLEUScore, MatecatScore, TranslateError, BingTranslator, \
+    HumanEvaluationFileOutputter
 from scripts.libs import fileutils, daemon, shell
 from scripts.mt import ParallelCorpus
 from scripts.mt.contextanalysis import ContextAnalyzer
@@ -659,12 +660,17 @@ class MMTServer(_MMTDistributedComponent):
             if not debug:
                 self._clear_tempdir()
 
-    def evaluate(self, corpora, google_key=None):
+    def evaluate(self, corpora, google_key=None, heval_output=None):
         if len(corpora) == 0:
             raise IllegalArgumentException('empty corpora')
 
         if not self.is_running():
             raise IllegalStateException('No MMT Server running, start the engine first')
+
+        he_outputter = None
+        if heval_output is not None:
+            fileutils.makedirs(heval_output, exist_ok=True)
+            he_outputter = HumanEvaluationFileOutputter()
 
         target_lang = self.engine.target_lang
         source_lang = self.engine.source_lang
@@ -722,8 +728,16 @@ class MMTServer(_MMTDistributedComponent):
         # Merging references
         tokenized_reference_file = os.path.join(working_dir, 'reference.tok.' + target_lang)
         original_reference_file = os.path.join(working_dir, 'reference.' + target_lang)
+        original_source_file = os.path.join(working_dir, 'source.' + source_lang)
         fileutils.merge([corpus.get_file(target_lang) for corpus in tokenized_references], tokenized_reference_file)
         fileutils.merge([corpus.get_file(target_lang) for corpus in original_references], original_reference_file)
+        fileutils.merge([corpus.get_file(source_lang) for corpus in original_references], original_source_file)
+
+        if he_outputter is not None:
+            he_output = os.path.join(heval_output, 'reference.' + target_lang)
+            he_outputter.write(original_reference_file, he_output, target_lang)
+            he_output = os.path.join(heval_output, 'source.' + source_lang)
+            he_outputter.write(original_source_file, he_output, source_lang)
 
         # Scoring
         scores = {}
@@ -737,6 +751,10 @@ class MMTServer(_MMTDistributedComponent):
                 tokenized_merged = os.path.join(working_dir, tid + '.tok.' + target_lang)
                 fileutils.merge([corpus.get_file(target_lang) for corpus in translated], translated_merged)
                 fileutils.merge([corpus.get_file(target_lang) for corpus in tokenized], tokenized_merged)
+
+                if he_outputter is not None:
+                    he_output = os.path.join(heval_output, tid + '.' + target_lang)
+                    he_outputter.write(translated_merged, he_output, target_lang)
 
                 scores[translator.name()] = {
                     'bleu': BLEUScore().calculate(tokenized_merged, tokenized_reference_file),

@@ -27,6 +27,22 @@ class Translator:
         pass
 
 
+class HumanEvaluationFileOutputter:
+    def __init__(self, separator='\t'):
+        self.separator = separator
+
+    def write(self, input_file, output_file, lang):
+        line_id = 0
+
+        with open(output_file, 'wb') as out:
+            with open(input_file) as inp:
+                for line in inp:
+                    line = line.lstrip(self.separator)
+                    lid = str(line_id)
+                    line_id += 1
+                    out.write(self.separator.join([lid, lang, line]))
+
+
 class Score:
     def __init__(self):
         pass

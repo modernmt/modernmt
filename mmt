@@ -127,6 +127,8 @@ def main_evaluate(argv):
                         default=None, type=int)
     parser.add_argument('--gt-key', dest='gt_key', metavar='GT_API_KEY', default=None,
                         help='A custom Google Translate API Key to use during evaluation')
+    parser.add_argument('--human-eval', dest='heval_output', metavar='OUTPUT', default=None,
+                        help='the output folder for the tab-spaced files needed to setup a Human Evaluation benchmark')
     parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='if debug is set, it enables verbose '
                                                                                  'logging and prevents temporary files '
                                                                                  'to be removed after execution')
@@ -154,7 +156,7 @@ def main_evaluate(argv):
     print '\nTesting on {lines} sentences...\n'.format(lines=lines)
     sys.stdout.flush()
 
-    scores = server.evaluate(corpora=corpora, google_key=args.gt_key)
+    scores = server.evaluate(corpora=corpora, google_key=args.gt_key, heval_output=args.heval_output)
 
     matecat = sorted([(translator,
                        -1 if isinstance(score, basestring) else score['matecat'],
@@ -211,6 +213,10 @@ def main_evaluate(argv):
 
         print '  %s: %s' % (translator.ljust(20), text)
     print
+
+    if args.heval_output is not None:
+        print 'Files for Human Evaluation are available here:', os.path.abspath(args.heval_output)
+        print
 
 
 def main_start(argv):
