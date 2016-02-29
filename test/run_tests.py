@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import os, sys, json
+
+
 class Tester:
 
     TESTS_DIRECTORY_NAME = "tests"
@@ -30,7 +32,6 @@ class Tester:
                 print json.dumps(json_error, indent=4, separators=(',', ': '))
             return json_error
 
-
     def run_all(self):
         failed_tests = []
         available_tests = sorted(self.get_available_tests())
@@ -53,7 +54,6 @@ class Tester:
         else:
             print "The folliwing tests failed:"
             print ",\n".join(failed_tests)
-
 
     def list_all_tests(self):
         available_tests = sorted(self.get_available_tests())
@@ -92,7 +92,6 @@ class Tester:
         for test in malformed_tests:
             print "%s\tmalformed\t\"%s\"" % test
         print "\n"
-
 
     def get_available_tests(self):
         return [(test, os.path.join(Tester.TESTS_PATH,test)) for test in os.listdir(Tester.TESTS_PATH) if os.path.isdir(os.path.join(Tester.TESTS_PATH,test))]
