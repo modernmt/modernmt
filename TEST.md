@@ -26,22 +26,27 @@ Under this new directory it also creates two files:
 
 #### launch.sh
 
-'launch.sh' is the script that will be launch automatically from 'ModernMT/test/run_all_tests.py' script.
+'launch.sh' is the script that will be launched automatically by the 'ModernMT/test/run_all_tests.py' script.
 
-Edit 'launch.sh' in order to launch your test. 
+Edit 'launch.sh' and fill it with your piece of software that performs the test. You can use any programming language, although interpreted languages (e.g. python, sh, perl) are recommended; compiled languages (e.g. java) are not so encouraged because of their complexity and time requirements.
 
-Note: use the string "$@" (double quotes included) to forward the arguments of the bash script to your test.
+Note: use the string "$@" (double quotes included) to forward the arguments of the bash script to your software test.
 
-The following commands show how to launch your test and redirect the arguemnts to it:
+The following commands show how to launch your test and forward arguments to it, in case of Python, bash and PHP programming languages respectively:
 ```bash
-java eu.modermt.MyNewTest "$@"
+#Python:
 python MyNewTest.py "$@"
+#Bash:
 ./MyNewTest.sh "$@"
+#PHP:
+php MyNewTest.php "$@"
 ```
+
+It is strongly recommended to use an interpreted programming language to write your test.
 
 #### info.json
 
-The json file named 'info.json' contains useful information about the test it-self and it is located inside the root folder of each test.
+The json file named 'info.json' contains meta information about the test and it is located inside the root folder of each test.
 
 'info.json' must contain at least the following keys:
 ```
