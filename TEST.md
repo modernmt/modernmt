@@ -121,8 +121,8 @@ To execute a specific test execute run_tests.py and pass the name of the test as
 python run_tests.py -name My_New_Test_1
 ```
 
-Or to execute all the enabled tests run run_tests.py without any arguments:
+To execute all the enabled tests run run_tests.py with the "-all" argument:
 
 ```bash
-python run_tests.py
+python run_tests.py -all
 ```
