@@ -32,16 +32,17 @@ Edit 'launch.sh' and fill it with your piece of software that performs the test.
 
 Note: use the string "$@" (double quotes included) to forward the arguments of the bash script to your software test.
 
-The following commands show how to launch your test and forward arguments to it, in case of python bash and java programming languages respectively:
+The following commands show how to launch your test and forward arguments to it, in case of Python, bash and PHP programming languages respectively:
 ```bash
+#Python:
 python MyNewTest.py "$@"
-```
-```bash
+#Bash:
 ./MyNewTest.sh "$@"
+#PHP:
+php MyNewTest.php "$@"
 ```
-```bash
-java eu.modermt.MyNewTest "$@"
-```
+
+It is strongly recommended to use an interpreted programming language to write your test.
 
 #### info.json
 
