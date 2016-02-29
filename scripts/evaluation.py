@@ -1,8 +1,9 @@
 import HTMLParser
+import json as js
 import multiprocessing
 import os
-import json as js
 import random
+import time
 
 import requests
 
@@ -17,15 +18,59 @@ class TranslateError(Exception):
 
 
 class Translator:
-    def __init__(self, source_lang, target_lang):
+    def __init__(self, source_lang, target_lang, threads=1):
         self.source_lang = source_lang
         self.target_lang = target_lang
+        self.threads = threads
 
     def name(self):
         return None
 
-    def translate(self, document_path, output_path):
+    def __get_timed_translation(self, line, _=None):
+        begin = time.time()
+        text = self._get_translation(line)
+        elapsed = time.time() - begin
+
+        return text, elapsed
+
+    def _before_translate(self, document_path, output_path):
         pass
+
+    def _get_translation(self, line):
+        pass
+
+    def _after_translate(self, document_path, output_path):
+        pass
+
+    def translate(self, document_path, output_path):
+        pool = multithread.Pool(self.threads)
+
+        try:
+            jobs = []
+            elapsed_total = 0
+            translation_count = 0
+
+            self._before_translate(document_path, output_path)
+
+            with open(document_path) as source:
+                for line in source:
+                    result = pool.apply_async(self.__get_timed_translation, (line, None))
+                    jobs.append(result)
+
+            with open(output_path, 'wb') as output:
+                for job in jobs:
+                    translation, elpased = job.get()
+
+                    output.write(translation.encode('utf-8'))
+                    output.write('\n')
+
+                    elapsed_total += elpased
+                    translation_count += 1
+
+            return elapsed_total, translation_count
+        finally:
+            pool.terminate()
+            self._after_translate(document_path, output_path)
 
 
 class HumanEvaluationFileOutputter:
@@ -68,54 +113,40 @@ class BingTranslator(Translator):
 
 class MMTTranslator(Translator):
     def __init__(self, server):
-        Translator.__init__(self, server.engine.source_lang, server.engine.target_lang)
+        Translator.__init__(self, server.engine.source_lang, server.engine.target_lang,
+                            threads=(multiprocessing.cpu_count() * 2))
         self._server = server
+        self._session = None
 
     def name(self):
         return 'MMT'
 
-    def _get_translation(self, line, session):
+    def _before_translate(self, document_path, output_path):
+        context = self._server.api.get_context_f(document_path)
+        self._session = self._server.api.create_session(context)['id']
+
+    def _get_translation(self, line):
         try:
-            translation = self._server.api.translate(line, session=session, processing=True)
+            translation = self._server.api.translate(line, session=self._session, processing=True)
         except Exception as e:
             raise TranslateError(e.message)
 
         return translation['translation']
 
-    def translate(self, document_path, output_path):
-        context = self._server.api.get_context_f(document_path)
-        session = self._server.api.create_session(context)['id']
-
-        pool = multithread.Pool(multiprocessing.cpu_count() * 2)
-
-        try:
-            jobs = []
-
-            with open(document_path) as source:
-                for line in source:
-                    result = pool.apply_async(self._get_translation, (line, session))
-                    jobs.append(result)
-
-            with open(output_path, 'wb') as output:
-                for job in jobs:
-                    translation = job.get()
-                    output.write(translation.encode('utf-8'))
-                    output.write('\n')
-
-            self._server.api.close_session(session)
-        finally:
-            pool.terminate()
+    def _after_translate(self, document_path, output_path):
+        self._server.api.close_session(self._session)
 
 
 class GoogleTranslate(Translator):
     def __init__(self, source_lang, target_lang, key=None):
-        Translator.__init__(self, source_lang, target_lang)
+        Translator.__init__(self, source_lang, target_lang, threads=10)
         self._key = key if key is not None else DEFAULT_GOOGLE_KEY
+        self._html = HTMLParser.HTMLParser()
 
     def name(self):
         return 'Google Translate'
 
-    def _get_translation(self, line, _):
+    def _get_translation(self, line):
         url = 'https://www.googleapis.com/language/translate/v2'
 
         data = {
@@ -137,28 +168,7 @@ class GoogleTranslate(Translator):
             message = json['error']['message']
             raise TranslateError('Google Translate query failed with code ' + str(r.status_code) + ': ' + message)
 
-        return json['data']['translations'][0]['translatedText']
-
-    def translate(self, document_path, output_path):
-        pool = multithread.Pool(10)
-
-        try:
-            jobs = []
-
-            with open(document_path) as source:
-                for line in source:
-                    result = pool.apply_async(self._get_translation, (line, None))
-                    jobs.append(result)
-
-            html = HTMLParser.HTMLParser()
-
-            with open(output_path, 'wb') as output:
-                for job in jobs:
-                    translation = job.get()
-                    output.write(html.unescape(translation).encode('utf-8'))
-                    output.write('\n')
-        finally:
-            pool.terminate()
+        return self._html.unescape(json['data']['translations'][0]['translatedText'])
 
 
 class BLEUScore(Score):

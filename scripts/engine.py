@@ -677,7 +677,7 @@ class MMTServer(_MMTDistributedComponent):
 
         translators = [
             GoogleTranslate(source_lang, target_lang, key=google_key),
-            BingTranslator(source_lang, target_lang),
+            # BingTranslator(source_lang, target_lang),
             MMTTranslator(self)
         ]
 
@@ -708,20 +708,22 @@ class MMTServer(_MMTDistributedComponent):
             fileutils.makedirs(tokenized_path, exist_ok=True)
 
             try:
-                elapsed_time = 0
+                total_elapsed = 0
+                total_count = 0
 
                 for corpus in corpora:
                     output_document = os.path.join(translations_path, corpus.name + '.' + target_lang)
-                    now = time.time()
-                    translator.translate(corpus.get_file(source_lang), output_document)
-                    elapsed_time += (time.time() - now)
+                    elapsed, count = translator.translate(corpus.get_file(source_lang), output_document)
 
-                speed = wordcount / elapsed_time
+                    total_elapsed += elapsed
+                    total_count += count
+
+                mtt = total_elapsed / total_count
 
                 translated = ParallelCorpus.list(translations_path)
                 tokenized = self.engine.tokenizer.batch_tokenize(translated, tokenized_path, print_tags=True)
 
-                translations.append((translator, translated, tokenized, speed))
+                translations.append((translator, translated, tokenized, mtt))
             except TranslateError as e:
                 translations.append((translator, e))
 
@@ -744,7 +746,7 @@ class MMTServer(_MMTDistributedComponent):
 
         for translation in translations:
             if len(translation) > 2:
-                translator, translated, tokenized, speed = translation
+                translator, translated, tokenized, mtt = translation
                 tid = translator.name().replace(' ', '_')
 
                 translated_merged = os.path.join(working_dir, tid + '.' + target_lang)
@@ -759,7 +761,7 @@ class MMTServer(_MMTDistributedComponent):
                 scores[translator.name()] = {
                     'bleu': BLEUScore().calculate(tokenized_merged, tokenized_reference_file),
                     'matecat': MatecatScore().calculate(translated_merged, original_reference_file),
-                    '_speed': speed
+                    '_mtt': mtt
                 }
             else:
                 translator, e = translation

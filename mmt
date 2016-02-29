@@ -168,13 +168,13 @@ def main_evaluate(argv):
                     score if isinstance(score, basestring) else None)
                    for translator, score in scores.iteritems()
                    ], key=operator.itemgetter(1), reverse=True)
-    speed = sorted([(translator,
-                     -1 if isinstance(score, basestring) else score['_speed'],
-                     score if isinstance(score, basestring) else None)
-                    for translator, score in scores.iteritems()
-                    ], key=operator.itemgetter(1), reverse=True)
+    mtt = sorted([(translator,
+                   -1 if isinstance(score, basestring) else score['_mtt'],
+                   score if isinstance(score, basestring) else None)
+                  for translator, score in scores.iteritems()
+                  ], key=operator.itemgetter(1), reverse=True)
 
-    print 'Matecat Post-Editing Effort:'
+    print 'Matecat Post-Editing Score:'
     for i in range(0, len(matecat)):
         translator, score, error = matecat[i]
 
@@ -203,11 +203,11 @@ def main_evaluate(argv):
     print
 
     print 'Translation Speed:'
-    for i in range(0, len(speed)):
-        translator, score, error = speed[i]
+    for i in range(0, len(mtt)):
+        translator, score, error = mtt[i]
 
         if error is None:
-            text = '%d words/s' % score
+            text = '%.2fs per sentence' % score
         else:
             text = error
 
