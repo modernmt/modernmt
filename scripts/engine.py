@@ -292,8 +292,8 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
 
             # Writing config file
             with cmdlogger.step('Writing config files') as _:
-                self._engine.write_config()
                 self._engine.moses.create_ini()
+                self._engine.write_config()
 
             cmdlogger.completed()
         except Exception as e:
@@ -342,6 +342,8 @@ class MMTEngine:
 
         self.builder = _MMTEngineBuilder(self)
 
+        self._optimal_weights = None
+
     def exists(self):
         return os.path.isfile(self._config_file)
 
@@ -372,10 +374,20 @@ class MMTEngine:
         self.moses.add_feature(MosesFeature('WordPenalty'))
         self.moses.add_feature(MosesFeature('Distortion'))
         self.moses.add_feature(MosesFeature('PhrasePenalty'))
-        self.moses.add_feature(self.pt)
-        self.moses.add_feature(LexicalReordering())
-        self.moses.add_feature(self.adaptive_lm)
-        self.moses.add_feature(self.static_lm)
+        self.moses.add_feature(self.pt, 'PT0')
+        self.moses.add_feature(LexicalReordering(), 'DM0')
+        self.moses.add_feature(self.adaptive_lm, 'AdaptiveLM')
+        self.moses.add_feature(self.static_lm, 'StaticLM')
+
+        self._optimal_weights = {
+            'WordPenalty0': [-0.00297235],
+            'Distortion0': [0.0051272],
+            'PhrasePenalty0': [-0.0108119],
+            'PT0': [0.00846737, -0.00101854, 0.00287605, 0.0563174, 0.0229374],
+            'DM0': [0.0395221, 0.00171276, 0.0292284, -0.00294413, 0.00208974, 0.042915, 0.7289, 0.0204133],
+            'AdaptiveLM': [0.0206129],
+            'StaticLM': [0.00113331],
+        }
 
         if self._config is None:
             self._config = injector.to_config()
@@ -392,6 +404,15 @@ class MMTEngine:
     def write_config(self):
         with open(self._config_file, 'wb') as out:
             self._config.write(out)
+
+            if self._optimal_weights is not None and len(self._optimal_weights) > 0:
+                out.write('[weights]\n')
+
+                for name, weights in self._optimal_weights.iteritems():
+                    out.write(name)
+                    out.write(' = ')
+                    out.write(' '.join([str(w) for w in weights]))
+                    out.write('\n')
 
 
 # ==============================

@@ -53,13 +53,13 @@ class SuffixArraysPhraseTable(MosesFeature):
         return os.path.join(self._model, 'model')
 
     def get_iniline(self):
-        template = ' name=PT0 path={model}. L1={source_lang} L2={target_lang} output-factor=0' \
-                   ' sample={sample} method=ranked workers={workers} pfwd=g pbwd=g logcnt=0 coh=0 prov=0 rare=0' \
-                   ' unal=0 smooth=.01 lexalpha=0 lr-func=DM0 bias-loglevel=1'
+        template = 'path={model}. L1={source_lang} L2={target_lang} output-factor=0 sample={sample} method=ranked ' \
+                   'workers={workers} pfwd=g pbwd=g logcnt=0 coh=0 prov=0 rare=0 unal=0 smooth=.01 lexalpha=0 ' \
+                   'lr-func=DM0 bias-loglevel=1'
 
-        return self.name + template.format(model=self.get_relpath(self._get_model_basename()),
-                                           source_lang=self._source_lang, target_lang=self._target_lang,
-                                           sample=self._sample, workers='${SA_WORKERS}')
+        return template.format(model=self.get_relpath(self._get_model_basename()),
+                               source_lang=self._source_lang, target_lang=self._target_lang,
+                               sample=self._sample, workers='${SA_WORKERS}')
 
     def train(self, corpora, aligner, working_dir='.', log_file=None):
         if os.path.isdir(self._model) and len(os.listdir(self._model)) > 0:
@@ -297,12 +297,12 @@ class MGizaPP(WordAligner):
             # Forward alignments
             with open(fwdc_file, 'w') as config:
                 config.write(self.__mgiza_config_template.format(
-                        coocurrencefile=cooc12_file,
-                        corpusfile=snt12_file,
-                        outputfileprefix=fwddict_file,
-                        sourcevocabularyfile=vcb1_file,
-                        targetvocabularyfile=vcb2_file,
-                        ncpus=ncpus
+                    coocurrencefile=cooc12_file,
+                    corpusfile=snt12_file,
+                    outputfileprefix=fwddict_file,
+                    sourcevocabularyfile=vcb1_file,
+                    targetvocabularyfile=vcb2_file,
+                    ncpus=ncpus
                 ))
             command = [self._mgiza_bin, fwdc_file]
             shell.execute(command, stdout=log, stderr=log)
@@ -315,12 +315,12 @@ class MGizaPP(WordAligner):
             # Backward alignments
             with open(bwdc_file, 'w') as config:
                 config.write(self.__mgiza_config_template.format(
-                        coocurrencefile=cooc21_file,
-                        corpusfile=snt21_file,
-                        outputfileprefix=bwddict_file,
-                        sourcevocabularyfile=vcb2_file,
-                        targetvocabularyfile=vcb1_file,
-                        ncpus=ncpus
+                    coocurrencefile=cooc21_file,
+                    corpusfile=snt21_file,
+                    outputfileprefix=bwddict_file,
+                    sourcevocabularyfile=vcb2_file,
+                    targetvocabularyfile=vcb1_file,
+                    ncpus=ncpus
                 ))
             command = [self._mgiza_bin, bwdc_file]
             shell.execute(command, stdout=log, stderr=log)

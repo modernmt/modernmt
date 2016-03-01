@@ -27,8 +27,8 @@ class LanguageModel(MosesFeature):
         else:
             raise NameError('Invalid Language Model type: ' + type_name)
 
-    def __init__(self, model, feature_name='ABSTRACT_LM'):
-        MosesFeature.__init__(self, feature_name)
+    def __init__(self, model, classname):
+        MosesFeature.__init__(self, classname)
 
         self._order = None  # Injected
         self._model = model
@@ -80,8 +80,7 @@ class KenLM(LanguageModel):
                 log.close()
 
     def get_iniline(self):
-        return self.name + ' name=LM0 factor=0 order={order} path={model}'.format(order=self._order,
-                                                                                  model=self.get_relpath(self._model))
+        return 'factor=0 order={order} path={model}'.format(order=self._order, model=self.get_relpath(self._model))
 
 
 class StaticIRSTLM(LanguageModel):
@@ -131,8 +130,7 @@ class StaticIRSTLM(LanguageModel):
                 log.close()
 
     def get_iniline(self):
-        return self.name + ' name=StaticLM factor=0 path={model} dub=10000000'.format(
-            model=self.get_relpath(self._model))
+        return 'factor=0 path={model} dub=10000000'.format(model=self.get_relpath(self._model))
 
 
 class AdaptiveIRSTLM(LanguageModel):
@@ -196,5 +194,4 @@ class AdaptiveIRSTLM(LanguageModel):
         shell.execute(command, stderr=log)
 
     def get_iniline(self):
-        return self.name + ' name=AdaptiveLM factor=0 path={model} dub=10000000 weight_normalization=yes'.format(
-            model=self.get_relpath(self._model))
+        return 'factor=0 path={model} dub=10000000 weight_normalization=yes'.format(model=self.get_relpath(self._model))
