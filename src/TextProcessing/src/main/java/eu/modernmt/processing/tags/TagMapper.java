@@ -88,7 +88,7 @@ public class TagMapper implements TextProcessor<Translation, Void> {
             } else if (tags[i].isOpeningTag()) {//look for corresponding ending tag
                 int j = i + 1;
                 while (j < tags.length) {
-                    if (tags[j].getName().equals(tags[i].getName()) && tags[j].isClosingTag() && tags[i].isOpeningTag()) {
+                    if (tags[j].closes(tags[i])) {
                         tags[i].setLink(tags[j]);
                         tags[j].setLink(tags[i]);
                         if (tags[i].getPosition() == tags[j].getPosition()) {
@@ -301,9 +301,9 @@ public class TagMapper implements TextProcessor<Translation, Void> {
                 new Token("world", false),
                 new Token("!", false),
         }, new Tag[]{
-                new Tag("b", "<b>", true, false, 1, Tag.Type.OPENING_TAG),
-                new Tag("b", "</b>", false, true, 2, Tag.Type.CLOSING_TAG),
-                new Tag("f", "<f />", false, false, 2, Tag.Type.EMPTY_TAG),
+                Tag.fromText("<b>", true, false, 1),
+                Tag.fromText("</b>", false, true, 2),
+                Tag.fromText("<f/>", false, false, 2),
         });
         Translation translation = new Translation(new Token[]{
                 new Token("mondo", true),

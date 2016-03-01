@@ -9,7 +9,6 @@ import java.util.ArrayList;
  */
 public class MappingTag extends Tag implements Cloneable {
 
-
     /* pointer to the corresponding closing (or opening) tag; null if not present or the tag an EMPTY_TAG */
     protected MappingTag link;
     /* list of the word positions covered by the tag */
@@ -17,27 +16,27 @@ public class MappingTag extends Tag implements Cloneable {
     /* true if the tag covers at least one position */
     protected boolean content;
 
-    public MappingTag(String name, String text, boolean leftSpace, boolean rightSpace, int position, Type type) {
-        super(name, text, leftSpace, rightSpace, position, type);
+    protected MappingTag(String name, String text, boolean leftSpace, boolean rightSpace, int position, Type type, boolean dtd) {
+        super(name, text, leftSpace, rightSpace, position, type, dtd);
         this.link = null;
         this.content = false;
         this.coveredPositions = new ArrayList<>();
     }
 
-    public MappingTag(String name, String text, boolean leftSpace, boolean rightSpace, int position, Type type, MappingTag link, boolean content) {
-        super(name, text, leftSpace, rightSpace, position, type);
+    protected MappingTag(String name, String text, boolean leftSpace, boolean rightSpace, int position, Type type, boolean dtd, MappingTag link, boolean content) {
+        super(name, text, leftSpace, rightSpace, position, type, dtd);
         this.link = link;
         this.content = content;
         this.coveredPositions = new ArrayList<>();
     }
 
-    public static MappingTag fromTag(Tag fromTag) {
-        return new MappingTag(fromTag.getName(), fromTag.getText(), fromTag.hasLeftSpace(), fromTag.hasRightSpace(), fromTag.getPosition(), fromTag.getType());
+    public static MappingTag fromTag(Tag other) {
+        return new MappingTag(other.getName(), other.getText(), other.hasLeftSpace(), other.hasRightSpace(), other.getPosition(), other.getType(), other.isDTD());
     }
 
     @Override
     public MappingTag clone() {
-        return new MappingTag(name, text, leftSpace, rightSpace, position, type, link, content);
+        return new MappingTag(name, text, leftSpace, rightSpace, position, type, dtd, link, content);
     }
 
     public MappingTag getLink() {

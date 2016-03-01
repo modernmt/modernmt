@@ -9,11 +9,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by davide on 22/02/16.
- */
 public class TagMapperTest {
-
 
     @Test
     public void testOpeningNotEmptyMonotone() {
@@ -22,8 +18,8 @@ public class TagMapperTest {
                 new Token("world", false),
                 new Token("!", false),
         }, new Tag[]{
-                new Tag("b", "<b>", true, false, 1, Tag.Type.OPENING_TAG),
-                new Tag("b", "</b>", false, false, 2, Tag.Type.CLOSING_TAG),
+                Tag.fromText("<b>", true, false, 1),
+                Tag.fromText("</b>", false, false, 2),
         });
 
         Translation translation = new Translation(new Token[]{
@@ -41,8 +37,8 @@ public class TagMapperTest {
         assertEquals("ciao <b>mondo</b>!", translation.toString());
         assertEquals("ciao mondo!", translation.getStrippedString());
         assertArrayEquals(new Tag[]{
-                new Tag("b", "<b>", true, false, 1, Tag.Type.OPENING_TAG),
-                new Tag("b", "</b>", false, false, 2, Tag.Type.CLOSING_TAG),
+                Tag.fromText("<b>", true, false, 1),
+                Tag.fromText("</b>", false, false, 2),
         }, translation.getTags());
     }
 
@@ -53,8 +49,8 @@ public class TagMapperTest {
                 new Token("world", false),
                 new Token("!", false),
         }, new Tag[]{
-                new Tag("b", "<b>", true, false, 1, Tag.Type.OPENING_TAG),
-                new Tag("b", "</b>", false, false, 2, Tag.Type.CLOSING_TAG),
+                Tag.fromText("<b>", true, false, 1),
+                Tag.fromText("</b>", false, false, 2),
         });
 
         Translation translation = new Translation(new Token[]{
@@ -72,8 +68,8 @@ public class TagMapperTest {
         assertEquals("<b>mondo</b> ciao!", translation.toString());
         assertEquals("mondo ciao!", translation.getStrippedString());
         assertArrayEquals(new Tag[]{
-                new Tag("b", "<b>", true, false, 0, Tag.Type.OPENING_TAG),
-                new Tag("b", "</b>", false, false, 1, Tag.Type.CLOSING_TAG),
+                Tag.fromText("<b>", true, false, 0),
+                Tag.fromText("</b>", false, false, 1),
         }, translation.getTags());
     }
 
@@ -86,7 +82,7 @@ public class TagMapperTest {
                 new Token("empty", true),
                 new Token("tag", true),
         }, new Tag[]{
-                new Tag("empty", "<empty />", true, false, 3, Tag.Type.EMPTY_TAG),
+                Tag.fromText("<empty/>", true, false, 3),
         });
         Translation translation = new Translation(new Token[]{
                 new Token("Esempio", true),
@@ -104,9 +100,9 @@ public class TagMapperTest {
 
         TagMapper.remap(source, translation);
 
-        assertEquals("Esempio con un tag <empty />empty", translation.toString());
+        assertEquals("Esempio con un tag <empty/>empty", translation.toString());
         assertArrayEquals(new Tag[]{
-                new Tag("empty", "<empty />", true, false, 4, Tag.Type.EMPTY_TAG),
+                Tag.fromText("<empty/>", true, false, 4),
         }, translation.getTags());
         assertEquals("Esempio con un tag empty", translation.getStrippedString());
     }
@@ -118,8 +114,8 @@ public class TagMapperTest {
                 new Token("world", false),
                 new Token("!", false),
         }, new Tag[]{
-                new Tag("g", "<g>", true, false, 1, Tag.Type.OPENING_TAG),
-                new Tag("g", "</g>", false, false, 1, Tag.Type.CLOSING_TAG),
+                Tag.fromText("<g>", true, false, 1),
+                Tag.fromText("</g>", false, false, 1),
         });
 
         Translation translation = new Translation(new Token[]{
@@ -137,8 +133,8 @@ public class TagMapperTest {
         assertEquals("ciao <g></g>mondo!", translation.toString());
         assertEquals("ciao mondo!", translation.getStrippedString());
         assertArrayEquals(new Tag[]{
-                new Tag("g", "<g>", true, false, 1, Tag.Type.OPENING_TAG),
-                new Tag("g", "</g>", false, false, 1, Tag.Type.CLOSING_TAG),
+                Tag.fromText("<g>", true, false, 1),
+                Tag.fromText("</g>", false, false, 1),
         }, translation.getTags());
     }
 
@@ -149,8 +145,8 @@ public class TagMapperTest {
                 new Token("world", false),
                 new Token("!", false),
         }, new Tag[]{
-                new Tag("g", "<g>", true, false, 1, Tag.Type.OPENING_TAG),
-                new Tag("g", "</g>", false, false, 1, Tag.Type.CLOSING_TAG),
+                Tag.fromText("<g>", true, false, 1),
+                Tag.fromText("</g>", false, false, 1),
         });
 
         Translation translation = new Translation(new Token[]{
@@ -168,8 +164,8 @@ public class TagMapperTest {
         assertEquals("<g></g>mondo ciao!", translation.toString());
         assertEquals("mondo ciao!", translation.getStrippedString());
         assertArrayEquals(new Tag[]{
-                new Tag("g", "<g>", true, false, 0, Tag.Type.OPENING_TAG),
-                new Tag("g", "</g>", false, false, 0, Tag.Type.CLOSING_TAG),
+                Tag.fromText("<g>", true, false, 0),
+                Tag.fromText("</g>", false, false, 0),
         }, translation.getTags());
     }
 
@@ -182,7 +178,7 @@ public class TagMapperTest {
                 new Token("malformed", true),
                 new Token("tag", true),
         }, new Tag[]{
-                new Tag("open", "<open>", true, false, 2, Tag.Type.OPENING_TAG),
+                Tag.fromText("<open>", true, false, 2),
         });
         Translation translation = new Translation(new Token[]{
                 new Token("Esempio", true),
@@ -203,7 +199,7 @@ public class TagMapperTest {
         assertEquals("Esempio con <open>un tag malformato", translation.toString());
         assertEquals("Esempio con un tag malformato", translation.getStrippedString());
         assertArrayEquals(new Tag[]{
-                new Tag("open", "<open>", true, false, 2, Tag.Type.OPENING_TAG),
+                Tag.fromText("<open>", true, false, 2),
         }, translation.getTags());
     }
 
@@ -216,7 +212,7 @@ public class TagMapperTest {
                 new Token("malformed", true),
                 new Token("tag", true),
         }, new Tag[]{
-                new Tag("close", "</close>", false, true, 2, Tag.Type.CLOSING_TAG),
+                Tag.fromText("</close>", false, true, 2),
         });
         Translation translation = new Translation(new Token[]{
                 new Token("Esempio", true),
@@ -237,10 +233,9 @@ public class TagMapperTest {
         assertEquals("Esempio con</close> un tag malformato", translation.toString());
         assertEquals("Esempio con un tag malformato", translation.getStrippedString());
         assertArrayEquals(new Tag[]{
-                new Tag("close", "</close>", false, true, 2, Tag.Type.CLOSING_TAG),
+                Tag.fromText("</close>", false, true, 2),
         }, translation.getTags());
     }
-
 
     @Test
     public void testEmbeddedTags() {
@@ -250,10 +245,10 @@ public class TagMapperTest {
                 new Token("nested", true),
                 new Token("tag", false),
         }, new Tag[]{
-                new Tag("a", "<a>", true, false, 1, Tag.Type.OPENING_TAG),
-                new Tag("b", "<b>", true, false, 3, Tag.Type.OPENING_TAG),
-                new Tag("b", "</b>", false, true, 4, Tag.Type.CLOSING_TAG),
-                new Tag("a", "</a>", false, false, 4, Tag.Type.CLOSING_TAG),
+                Tag.fromText("<a>", true, false, 1),
+                Tag.fromText("<b>", true, false, 3),
+                Tag.fromText("</b>", false, true, 4),
+                Tag.fromText("</a>", false, true, 4),
         });
         Translation translation = new Translation(new Token[]{
                 new Token("Esempio", true),
@@ -272,10 +267,67 @@ public class TagMapperTest {
         assertEquals("Esempio <a>con <b>tag</b> innestati</a>", translation.toString());
         assertEquals("Esempio con tag innestati", translation.getStrippedString());
         assertArrayEquals(new Tag[]{
-                new Tag("a", "<a>", true, false, 1, Tag.Type.OPENING_TAG),
-                new Tag("b", "<b>", true, false, 2, Tag.Type.OPENING_TAG),
-                new Tag("b", "</b>", false, true, 3, Tag.Type.CLOSING_TAG),
-                new Tag("a", "</a>", false, false, 4, Tag.Type.CLOSING_TAG),
+                Tag.fromText("<a>", true, false, 1),
+                Tag.fromText("<b>", true, false, 2),
+                Tag.fromText("</b>", false, true, 3),
+                Tag.fromText("</a>", false, true, 4),
+        }, translation.getTags());
+    }
+
+    @Test
+    public void testXMLCommentTags() {
+        Sentence source = new Sentence(new Token[]{
+                new Token("Example", true),
+                new Token("with", true),
+                new Token("XML", true),
+                new Token("comment", false),
+        }, new Tag[]{
+                Tag.fromText("<!--", true, true, 2),
+                Tag.fromText("-->", true, false, 4),
+        });
+
+        Translation translation = new Translation(new Token[]{
+                new Token("Esempio", true),
+                new Token("con", true),
+                new Token("commenti", true),
+                new Token("XML", true),
+        }, source, new int[][]{
+                {0, 0},
+                {1, 1},
+                {2, 3},
+                {3, 2},
+        });
+
+        TagMapper.remap(source, translation);
+
+        assertEquals("Esempio con <!-- commenti XML -->", translation.toString());
+        assertEquals("Esempio con commenti XML", translation.getStrippedString());
+        assertArrayEquals(new Tag[]{
+                Tag.fromText("<!--", true, true, 2),
+                Tag.fromText("-->", true, false, 4),
+        }, translation.getTags());
+    }
+
+    @Test
+    public void testDTDTags() {
+        Sentence source = new Sentence(new Token[]{
+                new Token("Test", false),
+        }, new Tag[]{
+                Tag.fromText("<!ENTITY key=\"value\">", false, true, 0),
+        });
+
+        Translation translation = new Translation(new Token[]{
+                new Token("Prova", false),
+        }, source, new int[][] {
+                {0, 0}
+        });
+
+        TagMapper.remap(source, translation);
+
+        assertEquals("<!ENTITY key=\"value\"> Prova", translation.toString());
+        assertEquals("Prova", translation.getStrippedString());
+        assertArrayEquals(new Tag[]{
+                Tag.fromText("<!ENTITY key=\"value\">", false, true, 0),
         }, translation.getTags());
     }
 

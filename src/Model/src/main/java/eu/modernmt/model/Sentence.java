@@ -15,7 +15,7 @@ public class Sentence implements Serializable {
     }
 
     public Sentence(Token[] tokens, Tag[] tags) {
-        this.tokens = tokens;
+        this.tokens = tokens == null ? new Token[0] : tokens;
         this.tags = tags;
     }
 
@@ -77,7 +77,7 @@ public class Sentence implements Serializable {
      * 1    1    1    O        Word <b>Word        Hello <b>World
      * 1    1    1    E        Word <b/>Word       Hello <b/>World
      * 1    1    1    C        Word</b> Word       Hello</b> World
-     *
+     * <p>
      * If more there are more consecutive tags, this algorithm ensures that
      * only one space it will be printed. The position of the single space is
      * then decided by the first word and the consecutive tags.
@@ -124,12 +124,16 @@ public class Sentence implements Serializable {
                 nextTag = (Tag) sentence[i + 1];
 
             if (nextTag != null) {
+                boolean isSpacedClosingComment = (nextTag.isComment() && nextTag.isClosingTag() && nextTag.hasLeftSpace());
                 boolean mustPrintSpace;
 
-                if (!token.hasRightSpace()) {
+                if (isSpacedClosingComment) {
+                    builder.append(' ');
+                    mustPrintSpace = false;
+                } else if (!token.hasRightSpace()) {
                     mustPrintSpace = false;
                 } else if (nextTag.hasLeftSpace() == nextTag.hasRightSpace()) {
-                    if (Tag.Type.CLOSING_TAG == nextTag.getType()) {
+                    if (nextTag.isClosingTag()) {
                         mustPrintSpace = true;
                     } else {
                         builder.append(' ');
@@ -146,10 +150,19 @@ public class Sentence implements Serializable {
                     builder.append(nextTag);
                     i++;
 
+                    boolean isSpacedOpeningComment = (nextTag.isComment() && nextTag.isOpeningTag() && nextTag.hasRightSpace());
+
+                    if (isSpacedOpeningComment) {
+                        builder.append(' ');
+                        mustPrintSpace = false;
+                    }
+
                     if (i < sentence.length - 1 && (sentence[i + 1] instanceof Tag)) {
                         nextTag = (Tag) sentence[i + 1];
 
-                        if (mustPrintSpace && !(Tag.Type.CLOSING_TAG == nextTag.getType())) {
+                        isSpacedClosingComment = (nextTag.isComment() && nextTag.isClosingTag() && nextTag.hasLeftSpace());
+
+                        if (isSpacedClosingComment || (mustPrintSpace && !nextTag.isClosingTag())) {
                             builder.append(' ');
                             mustPrintSpace = false;
                         }
@@ -164,18 +177,7 @@ public class Sentence implements Serializable {
             }
         }
 
-        return builder.toString();
+        return builder.toString().trim();
     }
 
-    public static void main(String[] args) {
-        Sentence sentence = new Sentence(new Token[]{
-                new Token("Hello", true),
-                new Token("World", false),
-        }, new Tag[]{
-                new Tag("a", "<a>", false, false, 1, Tag.Type.CLOSING_TAG),
-                new Tag("a", "</b>", true, true, 1, Tag.Type.CLOSING_TAG),
-        });
-
-        System.out.println(sentence);
-    }
 }
