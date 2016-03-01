@@ -275,7 +275,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testXMLCommentTags() {
+    public void testSpacedXMLCommentTags() {
         Sentence source = new Sentence(new Token[]{
                 new Token("Example", true),
                 new Token("with", true),
@@ -305,6 +305,74 @@ public class TagMapperTest {
         assertArrayEquals(new Tag[]{
                 Tag.fromText("<!--", true, true, 2),
                 Tag.fromText("-->", true, false, 4),
+        }, translation.getTags());
+    }
+
+    @Test
+    public void testNotSpacedXMLCommentTags() {
+        Sentence source = new Sentence(new Token[]{
+                new Token("Example", true),
+                new Token("with", true),
+                new Token("XML", true),
+                new Token("comment", false),
+        }, new Tag[]{
+                Tag.fromText("<!--", true, false, 2),
+                Tag.fromText("-->", false, false, 4),
+        });
+
+        Translation translation = new Translation(new Token[]{
+                new Token("Esempio", true),
+                new Token("con", true),
+                new Token("commenti", true),
+                new Token("XML", true),
+        }, source, new int[][]{
+                {0, 0},
+                {1, 1},
+                {2, 3},
+                {3, 2},
+        });
+
+        TagMapper.remap(source, translation);
+
+        assertEquals("Esempio con <!--commenti XML-->", translation.toString());
+        assertEquals("Esempio con commenti XML", translation.getStrippedString());
+        assertArrayEquals(new Tag[]{
+                Tag.fromText("<!--", true, false, 2),
+                Tag.fromText("-->", false, false, 4),
+        }, translation.getTags());
+    }
+
+    @Test
+    public void testSingleXMLComment() {
+        Sentence source = new Sentence(new Token[]{
+                new Token("This", true),
+                new Token("is", true),
+                new Token("a", true),
+                new Token("test", false),
+        }, new Tag[]{
+                Tag.fromText("<!--", false, false, 0),
+                Tag.fromText("-->", false, false, 4),
+        });
+
+        Translation translation = new Translation(new Token[]{
+                new Token("Questo", true),
+                new Token("è", true),
+                new Token("un", true),
+                new Token("esempio", false),
+        }, source, new int[][]{
+                {0, 0},
+                {1, 1},
+                {2, 2},
+                {3, 3},
+        });
+
+        TagMapper.remap(source, translation);
+
+        assertEquals("<!--Questo è un esempio-->", translation.toString());
+        assertEquals("Questo è un esempio", translation.getStrippedString());
+        assertArrayEquals(new Tag[]{
+                Tag.fromText("<!--", false, false, 0),
+                Tag.fromText("-->", false, false, 4),
         }, translation.getTags());
     }
 

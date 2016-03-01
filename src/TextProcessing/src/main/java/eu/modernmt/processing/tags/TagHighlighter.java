@@ -50,10 +50,10 @@ public class TagHighlighter implements TextProcessor<AnnotatedString, Sentence> 
     }
 
     private static void extractTokens(char[] chars, BitSet bits, int start, int end, ArrayList<Token> output) {
-        int length = chars.length;
+        end = Math.min(chars.length, end);
 
         for (int i = start; i < end + 1; i++) {
-            if (i == length || bits.get(i)) {
+            if (i == end || bits.get(i)) {
                 String text = new String(chars, start, i - start).trim();
 
                 if (!text.isEmpty()) {
