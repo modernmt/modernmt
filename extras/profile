@@ -10,7 +10,7 @@ try:
     import psutil
 except ImportError:
     sys.stderr.write(
-        'ERROR: unable to find \'psutil\' python module, please install it with "sudo pip install psutil".')
+        'ERROR: unable to find \'psutil\' python module, please install it with "sudo pip install psutil".\n')
     exit(1)
 
 
@@ -26,7 +26,7 @@ class MonitorThread(threading.Thread):
 
     def run(self):
         with open(self._output, 'wb') as out:
-            out.write('TIMESTAMP\tCPU\tMEMORY\n')
+            out.write('TIMESTAMP\tCPU (%)\tMEMORY (%)\n')
 
             while not self._interruped:
                 time.sleep(self._delay)
