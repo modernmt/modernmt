@@ -4,15 +4,15 @@ import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Tag;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
+import eu.modernmt.processing.framework.ProcessingException;
 import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class TagMapperTest {
 
     @Test
-    public void testOpeningNotEmptyMonotone() {
+    public void testOpeningNotEmptyMonotone() throws ProcessingException {
         Sentence source = new Sentence(new Token[]{
                 new Token("hello", true),
                 new Token("world", false),
@@ -32,7 +32,7 @@ public class TagMapperTest {
                 {2, 2},
         });
 
-        TagMapper.remap(source, translation);
+        new TagMapper().call(translation);
 
         assertEquals("ciao <b>mondo</b>!", translation.toString());
         assertEquals("ciao mondo!", translation.getStrippedString());
@@ -43,7 +43,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testOpeningNotEmptyNonMonotone() {
+    public void testOpeningNotEmptyNonMonotone() throws ProcessingException {
         Sentence source = new Sentence(new Token[]{
                 new Token("hello", true),
                 new Token("world", false),
@@ -63,7 +63,7 @@ public class TagMapperTest {
                 {2, 2},
         });
 
-        TagMapper.remap(source, translation);
+        new TagMapper().call(translation);
 
         assertEquals("<b>mondo</b> ciao!", translation.toString());
         assertEquals("mondo ciao!", translation.getStrippedString());
@@ -74,7 +74,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testEmptyTag() {
+    public void testEmptyTag() throws ProcessingException {
         Sentence source = new Sentence(new Token[]{
                 new Token("Example", true),
                 new Token("with", true),
@@ -98,7 +98,7 @@ public class TagMapperTest {
                 {4, 3},
         });
 
-        TagMapper.remap(source, translation);
+        new TagMapper().call(translation);
 
         assertEquals("Esempio con un tag <empty/>empty", translation.toString());
         assertArrayEquals(new Tag[]{
@@ -108,7 +108,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testOpeningEmptyMonotone() {
+    public void testOpeningEmptyMonotone() throws ProcessingException {
         Sentence source = new Sentence(new Token[]{
                 new Token("hello", true),
                 new Token("world", false),
@@ -128,7 +128,7 @@ public class TagMapperTest {
                 {2, 2},
         });
 
-        TagMapper.remap(source, translation);
+        new TagMapper().call(translation);
 
         assertEquals("ciao <g></g>mondo!", translation.toString());
         assertEquals("ciao mondo!", translation.getStrippedString());
@@ -139,7 +139,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testOpeningEmptyNonMonotone() {
+    public void testOpeningEmptyNonMonotone() throws ProcessingException {
         Sentence source = new Sentence(new Token[]{
                 new Token("hello", true),
                 new Token("world", false),
@@ -159,7 +159,7 @@ public class TagMapperTest {
                 {2, 2},
         });
 
-        TagMapper.remap(source, translation);
+        new TagMapper().call(translation);
 
         assertEquals("<g></g>mondo ciao!", translation.toString());
         assertEquals("mondo ciao!", translation.getStrippedString());
@@ -170,7 +170,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testOpeningNonClosing() {
+    public void testOpeningNonClosing() throws ProcessingException {
         Sentence source = new Sentence(new Token[]{
                 new Token("Example", true),
                 new Token("with", true),
@@ -194,7 +194,7 @@ public class TagMapperTest {
                 {4, 3},
         });
 
-        TagMapper.remap(source, translation);
+        new TagMapper().call(translation);
 
         assertEquals("Esempio con <open>un tag malformato", translation.toString());
         assertEquals("Esempio con un tag malformato", translation.getStrippedString());
@@ -204,7 +204,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testClosingNonOpening() {
+    public void testClosingNonOpening() throws ProcessingException {
         Sentence source = new Sentence(new Token[]{
                 new Token("Example", true),
                 new Token("with", true),
@@ -228,7 +228,7 @@ public class TagMapperTest {
                 {4, 3},
         });
 
-        TagMapper.remap(source, translation);
+        new TagMapper().call(translation);
 
         assertEquals("Esempio con</close> un tag malformato", translation.toString());
         assertEquals("Esempio con un tag malformato", translation.getStrippedString());
@@ -238,7 +238,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testEmbeddedTags() {
+    public void testEmbeddedTags() throws ProcessingException {
         Sentence source = new Sentence(new Token[]{
                 new Token("Example", true),
                 new Token("with", true),
@@ -262,7 +262,7 @@ public class TagMapperTest {
                 {3, 2},
         });
 
-        TagMapper.remap(source, translation);
+        new TagMapper().call(translation);
 
         assertEquals("Esempio <a>con <b>tag</b> innestati</a>", translation.toString());
         assertEquals("Esempio con tag innestati", translation.getStrippedString());
@@ -275,7 +275,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testSpacedXMLCommentTags() {
+    public void testSpacedXMLCommentTags() throws ProcessingException {
         Sentence source = new Sentence(new Token[]{
                 new Token("Example", true),
                 new Token("with", true),
@@ -298,7 +298,7 @@ public class TagMapperTest {
                 {3, 2},
         });
 
-        TagMapper.remap(source, translation);
+        new TagMapper().call(translation);
 
         assertEquals("Esempio con <!-- commenti XML -->", translation.toString());
         assertEquals("Esempio con commenti XML", translation.getStrippedString());
@@ -309,7 +309,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testNotSpacedXMLCommentTags() {
+    public void testNotSpacedXMLCommentTags() throws ProcessingException {
         Sentence source = new Sentence(new Token[]{
                 new Token("Example", true),
                 new Token("with", true),
@@ -332,7 +332,7 @@ public class TagMapperTest {
                 {3, 2},
         });
 
-        TagMapper.remap(source, translation);
+        new TagMapper().call(translation);
 
         assertEquals("Esempio con <!--commenti XML-->", translation.toString());
         assertEquals("Esempio con commenti XML", translation.getStrippedString());
@@ -343,7 +343,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testSingleXMLComment() {
+    public void testSingleXMLComment() throws ProcessingException {
         Sentence source = new Sentence(new Token[]{
                 new Token("This", true),
                 new Token("is", true),
@@ -366,7 +366,7 @@ public class TagMapperTest {
                 {3, 3},
         });
 
-        TagMapper.remap(source, translation);
+        new TagMapper().call(translation);
 
         assertEquals("<!--Questo è un esempio-->", translation.toString());
         assertEquals("Questo è un esempio", translation.getStrippedString());
@@ -377,7 +377,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testDTDTags() {
+    public void testDTDTags() throws ProcessingException {
         Sentence source = new Sentence(new Token[]{
                 new Token("Test", false),
         }, new Tag[]{
@@ -390,12 +390,31 @@ public class TagMapperTest {
                 {0, 0}
         });
 
-        TagMapper.remap(source, translation);
+        new TagMapper().call(translation);
 
         assertEquals("<!ENTITY key=\"value\"> Prova", translation.toString());
         assertEquals("Prova", translation.getStrippedString());
         assertArrayEquals(new Tag[]{
                 Tag.fromText("<!ENTITY key=\"value\">", false, true, 0),
+        }, translation.getTags());
+    }
+
+    @Test
+    public void testOnlyTags() throws ProcessingException {
+        Sentence source = new Sentence(null, new Tag[]{
+                Tag.fromText("<a>", false, false, 0),
+                Tag.fromText("</a>", false, false, 0),
+        });
+
+        Translation translation = new Translation(null, source, null);
+
+        new TagMapper().call(translation);
+
+        assertEquals("<a></a>", translation.toString());
+        assertTrue(translation.getStrippedString().isEmpty());
+        assertArrayEquals(new Tag[]{
+                Tag.fromText("<a>", false, false, 0),
+                Tag.fromText("</a>", false, false, 0),
         }, translation.getTags());
     }
 

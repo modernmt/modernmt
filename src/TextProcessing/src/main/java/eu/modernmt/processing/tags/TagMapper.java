@@ -55,8 +55,20 @@ public class TagMapper implements TextProcessor<Translation, Void> {
     public Void call(Translation translation) throws ProcessingException {
         Sentence source = translation.getSource();
 
-        if (source.hasTags() && translation.hasAlignment())
-            remap(translation.getSource(), translation);
+        if (source.hasTags()) {
+            if (source.hasTokens()) {
+                if (translation.hasAlignment())
+                    remap(translation.getSource(), translation);
+            } else {
+                Tag[] tags = source.getTags();
+                Tag[] copy = new Tag[tags.length];
+
+                for (int i = 0; i < tags.length; i++)
+                    copy[i] = Tag.fromTag(tags[i]);
+
+                translation.setTags(copy);
+            }
+        }
 
         return null;
     }
@@ -66,7 +78,7 @@ public class TagMapper implements TextProcessor<Translation, Void> {
         // Nothing to do
     }
 
-    public static void remap(Sentence source, Translation translation) {
+    private static void remap(Sentence source, Translation translation) {
         Tag[] sourceTags = source.getTags();
         MappingTag[] sourceMappingTags = new MappingTag[sourceTags.length];
         for (int i = 0; i < sourceMappingTags.length; i++) {

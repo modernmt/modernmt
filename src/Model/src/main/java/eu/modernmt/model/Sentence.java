@@ -31,6 +31,10 @@ public class Sentence implements Serializable {
         return tags != null && tags.length > 0;
     }
 
+    public boolean hasTokens() {
+        return tokens.length > 0;
+    }
+
     public void setTokens(Token[] tokens) {
         this.tokens = tokens;
     }
