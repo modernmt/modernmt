@@ -65,7 +65,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
             super(req);
 
             textProcessing = getBoolean("processing", true);
-            query = getString("q", false);
+            query = getString("q", true);
             sessionId = getLong("session", 0L);
             contextLimit = getInt("context_limit", 10);
             nbest = getInt("nbest", 0);
