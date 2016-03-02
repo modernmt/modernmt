@@ -1,0 +1,6 @@
+{
+	"enabled": true,
+	"description": "Given a source file, translate it and computes the translated-tag-score",
+	"full_description": "The translated-tag-score is calculated by comparing the tags in the source files and those in the translation exploiting. Thre types of tags are taken into account: self-closing tags, comments, and standard ttag (with opening and closing markups). The translated-tag-score is a score measure to be maximized: 0.0 means 100% of errors, 1.0 means that all tags have been perfectly translated",
+	"author": "Roldano Cattoni from FBK"
+}
