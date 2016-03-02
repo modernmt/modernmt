@@ -35,14 +35,13 @@ public class Log4jConfiguration {
         appenderBuilder.add(builder.newFilter("MarkerFilter", Filter.Result.DENY, Filter.Result.NEUTRAL).
                 addAttribute("marker", "FLOW"));
 
-        builder.setStatusLevel(Level.ERROR).add(
-                builder.newFilter("ThresholdFilter", Filter.Result.ACCEPT, Filter.Result.NEUTRAL)
-                        .addAttribute("level", level)
-        ).add(appenderBuilder);
-
-        builder.add(builder.newLogger("org.apache.logging.log4j", Level.ERROR)
-                .add(builder.newAppenderRef("StdErr")).addAttribute("additivity", false));
-        builder.add(builder.newRootLogger(Level.ERROR).add(builder.newAppenderRef("StdErr")));
+        builder.setStatusLevel(level)
+                .add(builder.newFilter("ThresholdFilter", Filter.Result.ACCEPT, Filter.Result.NEUTRAL)
+                        .addAttribute("level", level))
+                .add(appenderBuilder)
+                .add(builder.newLogger("org.apache.logging.log4j", Level.ERROR)
+                        .add(builder.newAppenderRef("StdErr")).addAttribute("additivity", false))
+                .add(builder.newRootLogger(Level.ERROR).add(builder.newAppenderRef("StdErr")));
         Configurator.initialize(builder.build());
     }
 
