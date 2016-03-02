@@ -21,7 +21,7 @@ class Tester:
         try:
             json_information = json.loads(out)
             if 'passed' not in json_information:
-                raise ValueError("The key \'passed' is missing")
+                raise ValueError("The key 'passed' is missing")
             if verbose:
                 print json.dumps(json_information, indent=4, separators=(',', ': '))
             return json_information
