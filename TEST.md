@@ -53,7 +53,8 @@ The json file named 'info.json' contains meta information about the test and it 
   {
   "enabled": true|false,
   "description": "A description of the test",
-  "full_description": "A complete and exhaustive description of the test"
+  "full_description": "A complete and exhaustive description of the test",
+  "author": "Your name" 
 }
 ```
 
