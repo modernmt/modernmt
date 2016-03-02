@@ -4,8 +4,8 @@ import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.RESTRequest;
 import eu.modernmt.rest.framework.RESTResponse;
 import eu.modernmt.rest.framework.actions.Action;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -19,7 +19,7 @@ public abstract class RouterServlet extends HttpServlet {
 
     private static final String DEFAULT_ENCODING = "UTF-8";
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final Logger logger = LogManager.getLogger(getClass());
     private RouteTree routes;
 
     @Override

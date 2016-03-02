@@ -13,7 +13,7 @@ import requests
 
 import scripts
 from scripts import mmt_javamain
-from scripts.evaluation import MMTTranslator, GoogleTranslate, BLEUScore, MatecatScore, TranslateError, BingTranslator, \
+from scripts.evaluation import MMTTranslator, GoogleTranslate, BLEUScore, MatecatScore, TranslateError, \
     HumanEvaluationFileOutputter
 from scripts.libs import fileutils, daemon, shell
 from scripts.mt import ParallelCorpus
@@ -574,7 +574,7 @@ class MMTServer(_MMTDistributedComponent):
 
         self._get_logfile(self.log_file, ensure=True)
         log = open(self.log_file, 'wa')
-        return subprocess.Popen(command, stdout=log, stderr=log, shell=False, env=env)
+        return subprocess.Popen(command, stderr=log, shell=False, env=env)
 
     def _check_process_status(self):
         try:
@@ -837,4 +837,4 @@ class MMTWorker(_MMTDistributedComponent):
         if os.path.isfile(self._status_file):
             os.remove(self._status_file)
 
-        return subprocess.Popen(command, stdout=log, stderr=log, shell=False, env=env)
+        return subprocess.Popen(command, stderr=log, shell=False, env=env)

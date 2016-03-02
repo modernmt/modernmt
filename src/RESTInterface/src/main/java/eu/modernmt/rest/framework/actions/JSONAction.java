@@ -4,14 +4,12 @@ import com.google.gson.JsonElement;
 import eu.modernmt.engine.SystemShutdownException;
 import eu.modernmt.rest.framework.*;
 import eu.modernmt.rest.framework.routing.TemplateException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public abstract class JSONAction implements Action {
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final Logger logger = LogManager.getLogger(getClass());
 
     @Override
     public final void execute(RESTRequest req, RESTResponse resp) {

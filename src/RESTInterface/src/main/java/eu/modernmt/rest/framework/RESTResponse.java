@@ -2,8 +2,8 @@ package eu.modernmt.rest.framework;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -13,7 +13,7 @@ import java.io.IOException;
  */
 public class RESTResponse {
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final Logger logger = LogManager.getLogger(getClass());
     private HttpServletResponse response;
 
     public RESTResponse(HttpServletResponse response) {

@@ -5,8 +5,8 @@ import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.model.Sentence;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,7 +19,7 @@ import java.util.Map;
  */
 public class MosesDecoder implements Decoder {
 
-    private static final Logger logger = LoggerFactory.getLogger(MosesDecoder.class);
+    private static final Logger logger = LogManager.getLogger(MosesDecoder.class);
 
     static {
         try {

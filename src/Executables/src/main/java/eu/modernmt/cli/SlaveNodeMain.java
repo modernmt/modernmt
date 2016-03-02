@@ -1,9 +1,12 @@
 package eu.modernmt.cli;
 
+import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.engine.SlaveNode;
 import eu.modernmt.engine.TranslationEngine;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +38,8 @@ public class SlaveNodeMain {
     }
 
     public static void main(String[] args) throws Throwable {
+        Log4jConfiguration.setup(2);
+
         CommandLineParser parser = new DefaultParser();
         CommandLine cli = parser.parse(cliOptions, args);
 
@@ -56,9 +61,7 @@ public class SlaveNodeMain {
             String[] sPorts = cli.getOptionValues("cluster-ports");
             int[] ports = new int[]{Integer.parseInt(sPorts[0]), Integer.parseInt(sPorts[1])};
             SlaveNode worker = new SlaveNode(engine, master, ports);
-
             Runtime.getRuntime().addShutdownHook(new ShutdownHook(worker));
-
             worker.start();
             worker.awaitInitialization();
 

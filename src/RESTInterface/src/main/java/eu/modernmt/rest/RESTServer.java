@@ -10,10 +10,10 @@ import eu.modernmt.rest.serializers.TranslationHypothesisSerializer;
 import eu.modernmt.rest.serializers.TranslationResponseSerializer;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import java.io.File;
@@ -33,7 +33,7 @@ public class RESTServer {
     }
 
     private static RESTServer instance = null;
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final Logger logger = LogManager.getLogger(getClass());
 
     public static void setup(int restPort, MasterNode masterNode) {
         if (instance != null)

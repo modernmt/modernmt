@@ -5,8 +5,8 @@ import eu.modernmt.model.BilingualCorpus;
 import eu.modernmt.model.Corpus;
 import eu.modernmt.model.impl.FileCorpus;
 import eu.modernmt.model.impl.StringCorpus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +20,7 @@ import java.util.Locale;
  */
 public class ContextAnalyzer {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LogManager.getLogger(ContextAnalyzer.class);
     protected ContextAnalyzerIndex index;
 
     public ContextAnalyzer(File indexPath) throws IOException {
