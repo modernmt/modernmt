@@ -3,4 +3,4 @@
 
 wdir=$(cd $(dirname $0) ; pwd)
 
-python ${wdir}/tagevaluator.py "$@"
+cd $wdir ; python ${wdir}/tagevaluator.py "$@"
