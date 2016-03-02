@@ -37,18 +37,10 @@ def verify_tags(src_line, tra_line):
     #
     tco_dict_src = src_stats['TCO']
     tco_dict_tra = tra_stats['TCO']
-    # check if tags in tra_line are in src_line
-    for tag_span, tra_occ in tco_dict_tra.items():
-        if tag_span in tco_dict_src:
-            src_occ = tco_dict_src[tag_span]
-            tco_total_occ += max(src_occ, tra_occ)
-            tco_total_match += min(src_occ, tra_occ)
-        else:
-            tco_total_occ += tra_occ
-    # check tags in src_line that are not in tra_line
-    for tag_span, src_occ in tco_dict_src.items():
-        if not tag_span in tco_dict_tra:
-            tco_total_occ += src_occ
+    src_occ = tco_dict_src['_ALL_']
+    tra_occ = tco_dict_tra['_ALL_']
+    tco_total_occ += max(src_occ, tra_occ)
+    tco_total_match += min(src_occ, tra_occ)
 
     # manage standard tags counts
     #
@@ -87,15 +79,13 @@ def extract_tag_stats(text):
             tsc_dict[tag_span] = 1
     text = tsc_regex.sub('', text)
 
-    # comments: store and delete them
+    # comments: store just counts (not the span, because it will be translated) and delete them
     #
     tco_dict = {}
+    tag_span= "_ALL_"
+    tco_dict[tag_span] = 0
     for match in tco_regex.finditer(text):
-        tag_span= match.group(1)
-        if tag_span in tco_dict:
-            tco_dict[tag_span] += 1
-        else:
-            tco_dict[tag_span] = 1
+        tco_dict[tag_span] += 1
     text = tco_regex.sub('', text)
 
     # standard: delete closing tags, then store the open tags
@@ -185,6 +175,10 @@ with open(src_file) as in_src:
             verify_tags(line_src, line_tra)
 time_sec_score_computation = "%.1f s" % (time.time() - start_time_sec)
 
+# manage log_file
+#
+if log_file != "":
+    os.system("cat %s > %s" % (translation_file, log_file))
 
 # remove tmp file
 #
