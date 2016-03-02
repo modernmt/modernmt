@@ -114,7 +114,7 @@ if __name__ == "__main__":
     import sys
     help_string = "Use -list to list all the available test\n"\
         "Use -name TEST_NAME to run a specific test\n"\
-        "Don't specify any arguments to run all the available tests\n"
+        "Use -all to run all the enabled tests\n"
     tester = Tester()
     if len(sys.argv) < 2:
         print help_string
