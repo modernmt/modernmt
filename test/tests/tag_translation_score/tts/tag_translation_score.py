@@ -203,6 +203,9 @@ results_dict = { "translated_tag_score" : tra_tag_score,
                  "time_for_score_computation" : time_sec_score_computation,
                  "time_for_translation" : time_sec_translation,
                  "details" : detail_dict }
+if log_file != "":
+    results_dict["log_file"] = log_file
+
 
 final_dict = { "passed" : passed_flag, "results" : results_dict }
 final_jstring = json.dumps(final_dict)

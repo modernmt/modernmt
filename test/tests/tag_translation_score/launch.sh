@@ -5,8 +5,7 @@ wdir=$(cd $(dirname $0) ; pwd)
 
 if [ $# -eq 0 ]
 then
-    help=$(python ${wdir}/tts/tag_translation_score.py -h)
-    echo '{"passed": true, "results": {"help": "'$help'"}}'
+    python ${wdir}/tts/tag_translation_score.py -l ${wdir}/LOG ${wdir}/tts/trial.src
 else
     python ${wdir}/tts/tag_translation_score.py "$@"
 fi
