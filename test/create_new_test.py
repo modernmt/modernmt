@@ -31,7 +31,8 @@ else:
     content = "{\n" \
         "\t\"enabled\": true,\n" \
         "\t\"description\": \"This is a short description of " + test_name + "\",\n" \
-        "\t\"full_description\": \"This is a complete and exhaustive description of " + test_name + "\"\n" \
+        "\t\"full_description\": \"This is a complete and exhaustive description of " + test_name + "\",\n" \
+        "\t\"author\": \"Your name\"\n" \
         "}"
     with open(json_path,'w') as f:
         f.write(content)
