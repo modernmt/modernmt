@@ -1,5 +1,6 @@
 {
 	"enabled": true,
 	"description": "It computes the tag-error-rate of an hypothesis file with respect to a reference file.",
-	"full_description": "The tag-error-rate is calculated exploiting the TER alignments from which only the information related to the tags is taken into account. The tag-error-rate is an error measure: 0 means no errors, 1.0 means 100% of errors. Author is Mauro Cettolo from FBK"
+	"full_description": "The tag-error-rate is calculated exploiting the TER alignments from which only the information related to the tags is taken into account. The tag-error-rate is an error measure: 0 means no errors, 1.0 means 100% of errors",
+	"author": "Roldano Cattoni from FBK"
 }
