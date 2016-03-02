@@ -100,7 +100,7 @@ class Tester:
         try:
             with open(json_file_path) as data_file:
                 json_information = json.load(data_file)
-            mandatory_keys = ["enabled", "description", "full_description"]
+            mandatory_keys = ["enabled", "description", "full_description", "author"]
             for key in mandatory_keys:
                 if key not in json_information:
                     raise ValueError('The key \'' + key + '\' is missing')
