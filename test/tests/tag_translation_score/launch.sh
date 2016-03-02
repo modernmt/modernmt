@@ -3,8 +3,6 @@
 
 wdir=$(cd $(dirname $0) ; pwd)
 
-cd $wdir
-
 if [ $# -eq 0 ]
 then
     help=$(python ${wdir}/tts/tag_translation_score.py -h)
