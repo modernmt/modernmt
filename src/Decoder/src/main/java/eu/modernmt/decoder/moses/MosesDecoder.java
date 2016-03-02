@@ -73,32 +73,32 @@ public class MosesDecoder implements Decoder {
 
     @Override
     public DecoderTranslation translate(Sentence text) {
-        return translate(text.getStrippedString(), null, 0L, 0).getTranslation(text);
+        return translate(text.getStrippedString(true), null, 0L, 0).getTranslation(text);
     }
 
     @Override
     public DecoderTranslation translate(Sentence text, List<ContextDocument> translationContext) {
-        return translate(text.getStrippedString(), parse(translationContext), 0L, 0).getTranslation(text);
+        return translate(text.getStrippedString(true), parse(translationContext), 0L, 0).getTranslation(text);
     }
 
     @Override
     public DecoderTranslation translate(Sentence text, TranslationSession session) {
-        return translate(text.getStrippedString(), null, ((MosesSession) session).getInternalId(), 0).getTranslation(text);
+        return translate(text.getStrippedString(true), null, ((MosesSession) session).getInternalId(), 0).getTranslation(text);
     }
 
     @Override
     public DecoderTranslation translate(Sentence text, int nbestListSize) {
-        return translate(text.getStrippedString(), null, 0L, nbestListSize).getTranslation(text);
+        return translate(text.getStrippedString(true), null, 0L, nbestListSize).getTranslation(text);
     }
 
     @Override
     public DecoderTranslation translate(Sentence text, List<ContextDocument> translationContext, int nbestListSize) {
-        return translate(text.getStrippedString(), parse(translationContext), 0L, nbestListSize).getTranslation(text);
+        return translate(text.getStrippedString(true), parse(translationContext), 0L, nbestListSize).getTranslation(text);
     }
 
     @Override
     public DecoderTranslation translate(Sentence text, TranslationSession session, int nbestListSize) {
-        return translate(text.getStrippedString(), null, ((MosesSession) session).getInternalId(), nbestListSize).getTranslation(text);
+        return translate(text.getStrippedString(true), null, ((MosesSession) session).getInternalId(), nbestListSize).getTranslation(text);
     }
 
     private native TranslationXObject translate(String text, Map<String, Float> translationContext, long session, int nbest);

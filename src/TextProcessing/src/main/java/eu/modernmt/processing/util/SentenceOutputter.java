@@ -16,14 +16,16 @@ public class SentenceOutputter implements PipelineOutputStream<Sentence> {
 
     private final Writer writer;
     private boolean printTags;
+    private boolean printPlaceholders;
 
-    public SentenceOutputter(OutputStream stream, boolean printTags) {
-        this(new OutputStreamWriter(stream, Config.charset.get()), printTags);
+    public SentenceOutputter(OutputStream stream, boolean printTags, boolean printPlaceholders) {
+        this(new OutputStreamWriter(stream, Config.charset.get()), printTags, printPlaceholders);
     }
 
-    public SentenceOutputter(Writer writer, boolean printTags) {
+    public SentenceOutputter(Writer writer, boolean printTags, boolean printPlaceholders) {
         this.writer = writer;
         this.printTags = printTags;
+        this.printPlaceholders = printPlaceholders;
     }
 
     @Override
@@ -33,7 +35,7 @@ public class SentenceOutputter implements PipelineOutputStream<Sentence> {
 
     @Override
     public void write(Sentence value) throws IOException {
-        writer.write(printTags ? value.toString() : value.getStrippedString());
+        writer.write(printTags ? value.toString(printPlaceholders) : value.getStrippedString(printPlaceholders));
         writer.write('\n');
         writer.flush();
     }

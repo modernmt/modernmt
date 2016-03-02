@@ -24,14 +24,17 @@ public class TokenizerMain {
         static {
             Option lang = Option.builder().longOpt("lang").hasArg().required().build();
             Option skipTags = Option.builder().longOpt("no-tags").hasArg(false).required(false).build();
+            Option skipPlaceholders = Option.builder().longOpt("print-placeholders").hasArg(false).required(false).build();
 
             cliOptions = new Options();
             cliOptions.addOption(lang);
             cliOptions.addOption(skipTags);
+            cliOptions.addOption(skipPlaceholders);
         }
 
         public final Locale language;
         public final boolean printTags;
+        public final boolean printPlaceholders;
 
         public Args(String[] args) throws ParseException {
             CommandLineParser parser = new DefaultParser();
@@ -39,6 +42,7 @@ public class TokenizerMain {
 
             language = Locale.forLanguageTag(cli.getOptionValue("lang"));
             printTags = !cli.hasOption("no-tags");
+            printPlaceholders = cli.hasOption("print-placeholders");
         }
 
     }
@@ -53,7 +57,7 @@ public class TokenizerMain {
 
             ProcessingJob<String, Sentence> job = pipeline.createJob(
                     PipelineInputStream.fromInputStream(System.in),
-                    new SentenceOutputter(System.out, args.printTags)
+                    new SentenceOutputter(System.out, args.printTags, args.printPlaceholders)
             );
 
             job.start();

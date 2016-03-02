@@ -64,7 +64,7 @@ public class MosesDetokenizer extends MultiInstanceDetokenizer {
 
         @Override
         public Translation call(Translation translation) throws ProcessingException {
-            String detokenized = detokenize(translation.getStrippedString());
+            String detokenized = detokenize(translation.getStrippedString(false));
             int length = detokenized.length();
 
             int stringIndex = 0;

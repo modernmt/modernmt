@@ -11,7 +11,7 @@ public class SentenceTest {
     public void testEmptySentence() {
         Sentence sentence = new Sentence(null, null);
 
-        assertEquals("", sentence.getStrippedString());
+        assertEquals("", sentence.getStrippedString(false));
         assertEquals("", sentence.toString());
     }
 
@@ -23,7 +23,7 @@ public class SentenceTest {
                 new Token("!", false),
         });
 
-        assertEquals("Hello world!", sentence.getStrippedString());
+        assertEquals("Hello world!", sentence.getStrippedString(false));
         assertEquals("Hello world!", sentence.toString());
     }
 
@@ -34,7 +34,7 @@ public class SentenceTest {
                 Tag.fromText("</a>", false, false, 0),
         });
 
-        assertEquals("", sentence.getStrippedString());
+        assertEquals("", sentence.getStrippedString(false));
         assertEquals("<a></a>", sentence.toString());
     }
 
@@ -49,7 +49,7 @@ public class SentenceTest {
                 Tag.fromText("</a>", false, false, 2),
         });
 
-        assertEquals("Hello world!", sentence.getStrippedString());
+        assertEquals("Hello world!", sentence.getStrippedString(false));
         assertEquals("Hello <a>world</a>!", sentence.toString());
     }
 
@@ -64,7 +64,7 @@ public class SentenceTest {
                 Tag.fromText("</a>", false, true, 2),
         });
 
-        assertEquals("Hello world!", sentence.getStrippedString());
+        assertEquals("Hello world!", sentence.getStrippedString(false));
         assertEquals("Hello <a>world</a>!", sentence.toString());
     }
 
@@ -79,7 +79,7 @@ public class SentenceTest {
                 Tag.fromText("</a>", false, false, 2),
         });
 
-        assertEquals("Hello world !", sentence.getStrippedString());
+        assertEquals("Hello world !", sentence.getStrippedString(false));
         assertEquals("Hello <a>world</a> !", sentence.toString());
     }
 
@@ -96,7 +96,7 @@ public class SentenceTest {
                 Tag.fromText("</b>", true, true, 1),
         });
 
-        assertEquals("Hello world!", sentence.getStrippedString());
+        assertEquals("Hello world!", sentence.getStrippedString(false));
         assertEquals("Hello <a><b></a></b>world!", sentence.toString());
     }
 
@@ -112,7 +112,7 @@ public class SentenceTest {
                 Tag.fromText("</b>", true, true, 1),
         });
 
-        assertEquals("Hello world!", sentence.getStrippedString());
+        assertEquals("Hello world!", sentence.getStrippedString(false));
         assertEquals("Hello</a> <b></b>world!", sentence.toString());
     }
 
@@ -128,7 +128,7 @@ public class SentenceTest {
                 Tag.fromText("</b>", true, true, 2),
         });
 
-        assertEquals("That's it!", sentence.getStrippedString());
+        assertEquals("That's it!", sentence.getStrippedString(false));
         assertEquals("That<b>'s</b> it!", sentence.toString());
     }
 
@@ -144,7 +144,7 @@ public class SentenceTest {
                 Tag.fromText("-->", true, false, 4),
         });
 
-        assertEquals("This is XML comment", sentence.getStrippedString());
+        assertEquals("This is XML comment", sentence.getStrippedString(false));
         assertEquals("This is <!-- XML comment -->", sentence.toString());
     }
 
@@ -160,7 +160,7 @@ public class SentenceTest {
                 Tag.fromText("-->", true, false, 4),
         });
 
-        assertEquals("This is XML comment", sentence.getStrippedString());
+        assertEquals("This is XML comment", sentence.getStrippedString(false));
         assertEquals("This is<!-- XML comment -->", sentence.toString());
     }
 
@@ -176,7 +176,7 @@ public class SentenceTest {
                 Tag.fromText("-->", true, true, 4),
         });
 
-        assertEquals("This is XML comment", sentence.getStrippedString());
+        assertEquals("This is XML comment", sentence.getStrippedString(false));
         assertEquals("This is<!-- XML comment -->", sentence.toString());
     }
 

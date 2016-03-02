@@ -35,7 +35,7 @@ public class TagMapperTest {
         new TagMapper().call(translation);
 
         assertEquals("ciao <b>mondo</b>!", translation.toString());
-        assertEquals("ciao mondo!", translation.getStrippedString());
+        assertEquals("ciao mondo!", translation.getStrippedString(false));
         assertArrayEquals(new Tag[]{
                 Tag.fromText("<b>", true, false, 1),
                 Tag.fromText("</b>", false, false, 2),
@@ -66,7 +66,7 @@ public class TagMapperTest {
         new TagMapper().call(translation);
 
         assertEquals("<b>mondo</b> ciao!", translation.toString());
-        assertEquals("mondo ciao!", translation.getStrippedString());
+        assertEquals("mondo ciao!", translation.getStrippedString(false));
         assertArrayEquals(new Tag[]{
                 Tag.fromText("<b>", true, false, 0),
                 Tag.fromText("</b>", false, false, 1),
@@ -104,7 +104,7 @@ public class TagMapperTest {
         assertArrayEquals(new Tag[]{
                 Tag.fromText("<empty/>", true, false, 4),
         }, translation.getTags());
-        assertEquals("Esempio con un tag empty", translation.getStrippedString());
+        assertEquals("Esempio con un tag empty", translation.getStrippedString(false));
     }
 
     @Test
@@ -131,7 +131,7 @@ public class TagMapperTest {
         new TagMapper().call(translation);
 
         assertEquals("ciao <g></g>mondo!", translation.toString());
-        assertEquals("ciao mondo!", translation.getStrippedString());
+        assertEquals("ciao mondo!", translation.getStrippedString(false));
         assertArrayEquals(new Tag[]{
                 Tag.fromText("<g>", true, false, 1),
                 Tag.fromText("</g>", false, false, 1),
@@ -162,7 +162,7 @@ public class TagMapperTest {
         new TagMapper().call(translation);
 
         assertEquals("<g></g>mondo ciao!", translation.toString());
-        assertEquals("mondo ciao!", translation.getStrippedString());
+        assertEquals("mondo ciao!", translation.getStrippedString(false));
         assertArrayEquals(new Tag[]{
                 Tag.fromText("<g>", true, false, 0),
                 Tag.fromText("</g>", false, false, 0),
@@ -197,7 +197,7 @@ public class TagMapperTest {
         new TagMapper().call(translation);
 
         assertEquals("Esempio con <open>un tag malformato", translation.toString());
-        assertEquals("Esempio con un tag malformato", translation.getStrippedString());
+        assertEquals("Esempio con un tag malformato", translation.getStrippedString(false));
         assertArrayEquals(new Tag[]{
                 Tag.fromText("<open>", true, false, 2),
         }, translation.getTags());
@@ -231,7 +231,7 @@ public class TagMapperTest {
         new TagMapper().call(translation);
 
         assertEquals("Esempio con</close> un tag malformato", translation.toString());
-        assertEquals("Esempio con un tag malformato", translation.getStrippedString());
+        assertEquals("Esempio con un tag malformato", translation.getStrippedString(false));
         assertArrayEquals(new Tag[]{
                 Tag.fromText("</close>", false, true, 2),
         }, translation.getTags());
@@ -265,7 +265,7 @@ public class TagMapperTest {
         new TagMapper().call(translation);
 
         assertEquals("Esempio <a>con <b>tag</b> innestati</a>", translation.toString());
-        assertEquals("Esempio con tag innestati", translation.getStrippedString());
+        assertEquals("Esempio con tag innestati", translation.getStrippedString(false));
         assertArrayEquals(new Tag[]{
                 Tag.fromText("<a>", true, false, 1),
                 Tag.fromText("<b>", true, false, 2),
@@ -301,7 +301,7 @@ public class TagMapperTest {
         new TagMapper().call(translation);
 
         assertEquals("Esempio con <!-- commenti XML -->", translation.toString());
-        assertEquals("Esempio con commenti XML", translation.getStrippedString());
+        assertEquals("Esempio con commenti XML", translation.getStrippedString(false));
         assertArrayEquals(new Tag[]{
                 Tag.fromText("<!--", true, true, 2),
                 Tag.fromText("-->", true, false, 4),
@@ -335,7 +335,7 @@ public class TagMapperTest {
         new TagMapper().call(translation);
 
         assertEquals("Esempio con <!--commenti XML-->", translation.toString());
-        assertEquals("Esempio con commenti XML", translation.getStrippedString());
+        assertEquals("Esempio con commenti XML", translation.getStrippedString(false));
         assertArrayEquals(new Tag[]{
                 Tag.fromText("<!--", true, false, 2),
                 Tag.fromText("-->", false, false, 4),
@@ -369,7 +369,7 @@ public class TagMapperTest {
         new TagMapper().call(translation);
 
         assertEquals("<!--Questo è un esempio-->", translation.toString());
-        assertEquals("Questo è un esempio", translation.getStrippedString());
+        assertEquals("Questo è un esempio", translation.getStrippedString(false));
         assertArrayEquals(new Tag[]{
                 Tag.fromText("<!--", false, false, 0),
                 Tag.fromText("-->", false, false, 4),
@@ -393,7 +393,7 @@ public class TagMapperTest {
         new TagMapper().call(translation);
 
         assertEquals("<!ENTITY key=\"value\"> Prova", translation.toString());
-        assertEquals("Prova", translation.getStrippedString());
+        assertEquals("Prova", translation.getStrippedString(false));
         assertArrayEquals(new Tag[]{
                 Tag.fromText("<!ENTITY key=\"value\">", false, true, 0),
         }, translation.getTags());
@@ -411,7 +411,7 @@ public class TagMapperTest {
         new TagMapper().call(translation);
 
         assertEquals("<a></a>", translation.toString());
-        assertTrue(translation.getStrippedString().isEmpty());
+        assertTrue(translation.getStrippedString(false).isEmpty());
         assertArrayEquals(new Tag[]{
                 Tag.fromText("<a>", false, false, 0),
                 Tag.fromText("</a>", false, false, 0),

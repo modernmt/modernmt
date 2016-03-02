@@ -329,12 +329,12 @@ public class TagMapper implements TextProcessor<Translation, Void> {
 
 
         System.out.println("SRC:                     " + source);
-        System.out.println("SRC (stripped):          " + source.getStrippedString());
+        System.out.println("SRC (stripped):          " + source.getStrippedString(false));
         System.out.println();
 
         TagMapper.remap(source, translation);
 
         System.out.println("TRANSLATION:             " + translation);
-        System.out.println("TRANSLATION (stripped):  " + translation.getStrippedString());
+        System.out.println("TRANSLATION (stripped):  " + translation.getStrippedString(false));
     }
 }

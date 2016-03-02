@@ -48,13 +48,13 @@ public class Sentence implements Serializable {
         this.tags = tags;
     }
 
-    public String getStrippedString() {
+    public String getStrippedString(boolean withPlaceholders) {
         StringBuilder builder = new StringBuilder();
 
         for (int i = 0; i < tokens.length; i++) {
             Token token = tokens[i];
 
-            builder.append(token.getText());
+            builder.append(toString(token, withPlaceholders));
             if (i < tokens.length - 1 && token.hasRightSpace())
                 builder.append(' ');
         }
@@ -88,10 +88,9 @@ public class Sentence implements Serializable {
      *
      * @return string representation including tags
      */
-    @Override
-    public String toString() {
+    public String toString(boolean withPlaceholders) {
         if (tags == null || tags.length == 0)
-            return getStrippedString();
+            return getStrippedString(withPlaceholders);
 
         // Merging tags and tokens arrays into a single array: sentence
         Token[] sentence = new Token[tokens.length + tags.length];
@@ -121,7 +120,7 @@ public class Sentence implements Serializable {
         for (int i = 0; i < sentence.length; i++) {
             Token token = sentence[i];
 
-            builder.append(token);
+            builder.append(toString(token, withPlaceholders));
 
             Tag nextTag = null;
             if (i < sentence.length - 1 && (sentence[i + 1] instanceof Tag))
@@ -182,6 +181,18 @@ public class Sentence implements Serializable {
         }
 
         return builder.toString().trim();
+    }
+
+    @Override
+    public String toString() {
+        return toString(false);
+    }
+
+    private static String toString(Token token, boolean withPlaceholders) {
+        if (withPlaceholders && (token instanceof PlaceholderToken))
+            return ((PlaceholderToken) token).getPlaceholder();
+        else
+            return token.getText();
     }
 
 }

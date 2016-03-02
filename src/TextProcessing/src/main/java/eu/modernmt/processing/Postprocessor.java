@@ -4,6 +4,7 @@ import eu.modernmt.model.Translation;
 import eu.modernmt.processing.detokenizer.Detokenizer;
 import eu.modernmt.processing.detokenizer.Detokenizers;
 import eu.modernmt.processing.framework.*;
+import eu.modernmt.processing.numbers.NumericTokenExtractor;
 import eu.modernmt.processing.tags.TagMapper;
 import org.apache.commons.io.IOUtils;
 
@@ -26,6 +27,8 @@ public class Postprocessor implements Closeable {
         return new ProcessingPipeline.Builder<Translation, Translation>()
                 .setThreads(threads)
                 .add(detokenizer)
+                .add(new NumericTokenExtractor<>())
+                .add(new PlaceholderTransformer())
                 .add(new TagMapper())
                 .create();
     }

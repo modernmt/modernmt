@@ -2,6 +2,7 @@ package eu.modernmt.processing;
 
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.framework.*;
+import eu.modernmt.processing.numbers.NumericTokenExtractor;
 import eu.modernmt.processing.tags.TagHighlighter;
 import eu.modernmt.processing.tokenizer.SimpleTokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizer;
@@ -34,6 +35,7 @@ public class Preprocessor implements Closeable {
                 .add(new StringNormalizer())
                 .add(tokenizer)
                 .add(new TagHighlighter())
+                .add(new NumericTokenExtractor<>())
                 .create();
     }
 

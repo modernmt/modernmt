@@ -7,7 +7,7 @@ import java.io.Serializable;
  */
 public class Token implements Serializable {
 
-    protected final String text;
+    protected String text;
     protected boolean rightSpace;
 
     public Token(String text) {
