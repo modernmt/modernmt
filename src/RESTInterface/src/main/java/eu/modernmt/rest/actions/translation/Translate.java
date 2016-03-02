@@ -30,6 +30,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
         MasterNode masterNode = server.getMasterNode();
 
         TranslationResponse result = new TranslationResponse();
+        result.processing = params.textProcessing;
 
         if (params.sessionId > 0) {
             result.session = params.sessionId;

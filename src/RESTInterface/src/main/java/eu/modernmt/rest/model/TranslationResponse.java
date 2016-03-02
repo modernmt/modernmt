@@ -13,4 +13,6 @@ public class TranslationResponse {
     public DecoderTranslation translation = null;
     public List<ContextDocument> context = null;
     public long session = 0;
+    public boolean processing = true;
+
 }
