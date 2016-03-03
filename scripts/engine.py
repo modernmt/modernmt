@@ -729,19 +729,7 @@ class MMTServer(_MMTDistributedComponent):
             fileutils.makedirs(tokenized_path, exist_ok=True)
 
             try:
-                total_elapsed = 0
-                total_count = 0
-
-                for corpus in corpora:
-                    output_document = os.path.join(translations_path, corpus.name + '.' + target_lang)
-                    elapsed, count = translator.translate(corpus.get_file(source_lang), output_document)
-
-                    total_elapsed += elapsed
-                    total_count += count
-
-                mtt = total_elapsed / total_count
-
-                translated = ParallelCorpus.list(translations_path)
+                translated, mtt = translator.translate(corpora, translations_path)
                 tokenized = self.engine.tokenizer.batch_tokenize(translated, tokenized_path, print_tags=True)
 
                 translations.append((translator, translated, tokenized, mtt))

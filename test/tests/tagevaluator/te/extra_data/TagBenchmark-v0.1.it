@@ -1,0 +1,297 @@
+<g id="9">Versione 1.4 | </g><g id="10" xid="ced9f1e3-15c5-458a-b081-7b50b4864732">www.matecat.com</g><g id="11"> <g id="12">|</g> info@matecat.com<g id="13"> </g></g> <g id="14"> Pagina <x id="15"/></g>
+MateCat conteggia parole utilizzando un <g id="54">combinazione </g>di<g id="55">tecnologie TM avanzate</g> (MyMemory) e l'applicazione di una riduzione di ponderazioni<g id="56">per i suggerimenti della traduzione automatica</g>.
+Questo permette a MateCat di dare <g id="57">più corrispondenze</g> rispetto a qualsiasi altro strumento di traduzione.
+Ecco un esempio per calcolare parole ponderate<x id="58"/>:
+Per la Traduzione Automatica, MateCat decide quale riduzione di peso applicare sulla base della misura in cui il <g id="102">MT</g> è stato utile per l'ultimo milione di parole per ogni combinazione linguistica.
+Abbiamo deciso di <g id="103">dividere i vantaggi di questa tecnologia</g> tra il fornitore dei servizi linguistici e il traduttore.
+Il modo in cui MateCat conta <g id="104">le parole esigibili</g> in un progetto è indicato nella <g id="105">relazione</g> sull'analisi di volume generata durante <g id="106">la creazione del progetto</g> stesso.
+La pagina di analisi del volume che si apre durante la creazione di un progetto in MateCat mostra una <g id="118">relazione</g> globale <g id="119">del volume</g> da tradurre:
+<g id="120">Parole normate ponderate</g>:
+Il volume come calcolato dagli <g id="121">strumenti CAT di norma dell'industria</g>.
+<g id="122">Parole ponderate di MateCat</g>:
+Il <g id="123">numero di parole in MateCat</g> che non solo tiene conto delle ripetizioni e delle ripetizioni del TM, ma genera anche riduzioni nella ponderazione delle corrispondenze interne e dei suggerimenti del MT.
+<g id="124">Parole grezze</g>:
+In caso di <g id="128">più coppie di lingue</g>, questo rapporto globale mostra il volume totale del progetto.
+<g id="142">Google Chrome </g><g id="143">30, o superiore (su Windows, Linux e Mac OS X)</g>
+<g id="144">Safari </g><g id="145">5.1.7 o superiore (su Mac OS X)</g>
+MateCat supporta <g id="146">79 lingue,</g> lavora con molte combinazioni linguistiche, e supporta <g id="147">56 formati di documento</g>.
+<g id="160">Creazione di un progetto</g><g id="161">: dalla pagina iniziale di MateCat (</g><g id="162" xid="9ecd0e60-9190-4b5a-8d86-f70af07517fe">http://www.matecat.com</g><g id="163">) è possibile selezionare la<g id="164">lingua (o le lingue) di origine e di destinazione</g> e </g><g id="165">aggiungere il documento (o i documenti) da </g><g id="166">tradurre</g><g id="167">.</g>
+<g id="168">utilizzare un </g><g id="169">server di traduzione automatica</g><g id="170"> di vostra scelta.</g>
+Questa opzione consente di ricevere <g id="171">suggerimenti di traduzione automatica</g>per ogni segmento presente nel server scelto.
+È possibile disattivare questa opzione selezionando <g id="172">NONE</g> dal menu a discesa.
+<g id="173">associare un TM privato nuovo o esistente </g><g id="174"/><g id="175">.</g>
+<g id="175">Associando un TM privato, sarà possibile memorizzare tutti i segmenti tradotti in questa memoria di traduzione privata e </g><g id="176">aggiungere nuovi elementi di glossario,</g><g id="177"> se necessario.</g>
+lavorare<g id="179">senza alcun TM privato</g>.
+<g id="178">In questo modo, sarà possibile ricevere suggerimenti e memorizzare la traduzione in un </g><g id="180">TM pubblico esclusivamente per gli utenti MateCat</g><g id="181">.</g>
+<g id="182">Traduzione</g><g id="183">: la </g><g id="184">finestra dell' Editore di Traduzione</g><g id="185"> mostra l'interfaccia di traduzione.</g>
+Quando si apre un segmento durante la traduzione, MateCat cerca <g id="186">da memorie di traduzione<x id="187"/> e dalle traduzioni automatiche</g>, se abilitate.
+<g id="185">Durante la traduzione, MateCat esegue anche automaticamente alcuni </g><g id="188">controlli di qualità</g><g id="189"> sulla discordanza dei Tag, dell'ordine dei Tag, degli spazi vuoti e sui conflitti di traduzione.</g>
+<g id="195">Finalizzazione di un progetto</g><g id="196">:</g>
+<g id="196">Una </g><g id="197">barra di avanzamento</g><g id="198"> nella parte inferiore della finestra dell'Editore della Traduzione mostra il progresso della traduzione.</g>
+La traduzione è terminata quando la barra di avanzamento è <g id="199">completa al 100%</g>,<g id="200"> </g>quando non ci sono parole <g id="201">da tradurre</g> e quando <g id="202">nessun errore viene riportato nel modulo del controllo di qualità</g> <x id="203"/>.
+Quando la traduzione è completa e tutti i problemi sono stati risolti, è possibile fare clic sul pulsante<g id="204">Download Translation </g> per scaricare il file tradotto nel formato originale.
+<g id="224" xid="b569bb41-d53a-4def-9d4e-5570ebb9dbbc">http: //demo.matecat.</g><g id="225" xid="d6cba820-c7f9-4596-9189-d68471cb256e">com</g><g id="226"> - Versione open source per tradurre i file XLIFF.</g>
+<g id="226">Per ulteriori istruzioni e informazioni, fare riferimento alla </g><g id="227" xid="7ef0e4bc-e030-4267-a4d7-6299f38c66e3">guida all'installazione</g><g id="228">.</g>
+<g id="229" xid="186b5a14-a21f-496a-bdd2-46fdb39917d6">http://www.matecat.com</g><g id="230"> - Versione brevettata, che include filtri per </g><g id="231">56 formati di file</g><g id="232">.</g>
+Per memorizzare e recuperare i progetti in MateCat, si dovrebbe <g id="234">entrare</g> cliccando sul pulsante <g id="235">login</g> nella parte inferiore della pagina iniziale di MateCat.
+Sarà richiesto di registrarsi usando il proprio <g id="236">account google</g>
+In MateCat, i lavori di traduzione vengono organizzati in <g id="247">progetti</g>.
+Un progetto è costituito da uno o più <g id="248">lavori</g> di traduzione e ognuno è associato ad un unico <g id="249">URL di lavoro</g><g id="250">.</g>
+Ogni progetto può essere creato con una lingua di origine e <g id="251">una o più lingue di destinazione</g>.
+Per creare un nuovo progetto in MateCat, si vada su <g id="252" xid="452e985a-ccd6-475b-87b1-9b9ccaf27b2c">http://www.matecat.com</g>
+Cliccando su <g id="253">Options</g>, è possibile aggiungere opzioni o modificare quelle preferenziali.
+Se si ha bisogno di memorizzare il progetto e recuperarlo in un secondo momento, si dovrebbe in primo luogo <g id="254">entrare</g><g id="255"> </g>utilizzando il pulsante <g id="256">Login</g> in fondo alla pagina.
+Questo consente di aggiungere tutti i progetti sul proprio <g id="257">pannello di gestione</g>, di recuperare tutte le informazioni sui progetti, come le <g id="258">analisi del volume</g> o il sito internet del lavoro, e verificare lo stato di avanzamento delle traduzioni.
+Ricordare sempre di scegliere la <g id="270">combinazione linguistica (o le combinazioni linguistiche)</g> del progetto prima di caricare il/i file da tradurre, altrimenti sarà richiesto di ricaricarli nuovamente e sarà visualizzato il seguente messaggio:
+<g id="274">Se è necessario selezionare <g id="275">più di una lingua di destinazione</g>, si prega di utilizzare il </g><g id="276">Multiple languages?</g>
+<g id="286">Verrà visualizzata una casella con la lista di tutte le </g><g id="287">lingue supportate</g><g id="288"> .</g>
+semplicemente <g id="295">trascinarlo e rilasciarlo</g>  oppure
+<g id="296">cercarlo</g><g id="297"> cliccando sul pulsante <g id="298">+ Add files...</g> .</g>
+ <g id="302">MateCat <g id="303">controlla automaticamente la lingua di partenza</g> dei documenti per assicurarsi che corrisponda a quella selezionata.</g>
+<g id="311">Esso verifica inoltre che la </g><g id="312">chiave privata della TM</g><g id="313"> associata al progetto sia davvero <g id="314">valida</g>.</g>
+È possibile utilizzare l'icona <g id="316">dustbin</g> per eliminare un file dalla lista dei file da tradurre o cliccare sul pulsante <g id="317">Clear all</g> per cancellare tutti i documenti caricati dalla lista.
+Cliccando sul pulsante <g id="329">Options</g> nella home page di MateCat, si apre una finestra, come nella seguente schermata:
+Qui è possibile aggiungere e/o selezionare <g id="331">additional options</g> da aggiungere al progetto che si sta creando.
+Ad esempio, scegliere di ottenere o meno suggerimenti dal server di MT <g id="332">MyMemory</g>Oppure <g id="333">add or create a private TM</g> per il vostro progetto.
+<g id="336">Per ulteriori informazioni, fare riferimento alla sezione </g><g id="337">Translation Toolbox.</g><g id="338"/>
+In MateCat, l'opzione migliore è quella di selezionare <g id="349">MyMemory</g> che utilizza una combinazione di Google Translate e Microsoft Translator per fornire suggerimenti di traduzione automatica.
+Inoltre, è possibile disattivare la traduzione automatica, selezionando <g id="350">NONE</g> dal menu a discesa.
+Durante la creazione del progetto, quando tutti i file sono stati caricati e tutte le informazioni sono state impostate correttamente nella home page MateCat, sarà visualizzato il pulsante<g id="362">Analyze.</g>
+Si faccia clic sul pulsante<g id="363"> Analyze</g> per avviare l'analisi.
+Una volta completata l'analisi, la pagina di volume analysis presenta il <g id="364">Rapporto di analisi</g><g id="365">.</g>
+Esso contiene informazioni sul numero di parole (<g id="366">Pagabili, Totali, Nuove, Ripetute</g>) per l'intero progetto e per ogni file/lavoro.
+Le<g id="367">parole pagabili</g> sono contrassegnate in verde e calcolate moltiplicando le parole per ogni tipo di corrispondenza da parte del <g id="368">percentuale pagabile</g>:
+Il conteggio delle parole è la somma del <g id="372">conteggio parole pesato</g> per ogni tipo di corrispondenza moltiplicato per la sua <g id="373">percentuale pagabile</g>.
+Il <g id="377">conteggio delle parole totali</g> senza lo sfruttamento di alcun contenuto proveniente da corrispondenze della memoria di traduzione, ripetizioni o traduzione automatica.
+<g id="381">non hanno corrispondenza</g><g id="382"> né approssimata né completa nella Chiave personale della TM e/o nella TM pubblica;</g>
+ <g id="384">non sono ripetute</g> nel progetto;
+<g id="385">non hanno alcun suggerimento</g><g id="386"> dalla traduzione automatica.</g>
+Il numero delle parole di segmenti <g id="390">identici</g> che si ripetono più di una volta nel corso del progetto.
+I segmenti 1 e 2 sono <g id="394">segmenti identici,</g> perciò sono contati come 4 ripetizioni.
+Il segmento 3 è contato come <g id="395">corrispondenza interna</g>.
+Le corrispondenze interne sono <g id="400">segmenti simili</g> trovati nel documento che si sta traducendo.
+La memoria di traduzione è <g id="405">aggiornata</g> con questa traduzione
+Si esegue una ricerca nella TM per il segmento 2 e si trova una <g id="408">corrispondenza approssimata del 75% partita sfocata</g> .
+MateCat, quindi, conta quattro nuove parole per il segmento 1, ma, poiché è stata trovata corrispondenza approssimata del 75% nella TM, le quattro parole del segmento 2 sono conteggiate come <g id="409">Corrispondenze Interne</g> (In termini di parole ponderate, queste vengono contate come 2,4, o il 60% di 4).
+In questo caso, sono calcolate le somiglianze tra il documento da tradurre e qualsiasi <g id="413">corrispondenza presente nella memoria di traduzione</g> (corrispondenze approssimate).
+Per il segmento 1 ("My house is blue"), ci sarà una <g id="428">corrispondenza del 100%</g> nella memoria di traduzione.
+Per segmento 2 ("My house is red"), ci sarà una <g id="429">corrispondenza approssimata del 75%</g> (Il segmento 2 e il segmento trovato nella memoria di traduzione differiscono solo in termini del colore della casa: blue/red -bleue / Rouge, quindi di 1 parola su 4).
+Questa è una corrispondenza del 100% tra un segmento nella lingua d'origine trovato nel documento da tradurre e una <g id="433">frase identica</g> incontrata nella lingua d'origine nella memoria di traduzione.
+Questa è una <g id="438">corrispondenza di più del 100%</g>.
+Se si dispone di una corrispondenza contestuale del 100% (l'etichetta corrispondente è "<g id="440">100% CM</g>"); ciò significa che esistono entrambe le seguenti <g id="441">2 condizioni</g> esistono:
+il segmento nel documento ha una corrispondenza <g id="443">Del 100%</g> nella memoria di traduzione
+il segmento nel documento e il segmento nella memoria di traduzione devono essere entrambi <g id="445">preceduti dallo stesso segmento</g>
+e si ha una corrispondenza <g id="448">Del 100% </g>nella memoria di traduzione per il segmento 2, si riceverà un <g id="449">100% CM</g> se il segmento 2 è preceduto dal segmento 1 nella memoria di traduzione.
+Questo significa che si può essere certi che la corrispondenza del 100% sia corretta in base al <g id="450">contesto </g>del documento che si sta traducendo.
+Significa che <g id="451">l'informazione di contesto viene memorizzata nella memoria di traduzione come metadata</g>, Quindi ogni segmento memorizzato nella memoria di traduzione contiene le seguenti informazioni (non visibili dagli utenti nei contenuti della memoria di traduzione ):
+Cliccate sul pulsante <g id="455">Tradurre</g> per ogni coppia di lingue per aprire la <g id="456">Finestra dell'Editore di Traduzione</g> e iniziare a tradurre.
+Se c'è bisogno di esternalizzarla a qualcun altro per la traduzione, si deve solo inviare l' <g id="457">URL lavoro </g>alla risorsa esterna.
+Quando si traduce, le traduzioni vengono salvate come frasi bilingue in una cosiddetta <g id="471">memoria di traduzione (TM), </g>una sorta di database contenente segmenti bilingue (sentenze, insiemi di parole o singole parole già tradotte in una o più coppie di lingue) che possono essere utilizzati durante la traduzione dello stesso progetto o progetti futuri.
+in una <g id="473">memoria di traduzione pubblica o generica </g>a cui a cui tutti gli utenti MateCat possono accedere tramite API.
+in una nuova o già esistente <g id="475">TM privata assegnata a uno o più progetti</g> o per uno specifico client che permette di salvare la vostra traduzione in una memoria di traduzione privata <g id="476">non può essere accessibile da utenti esterni.</g>
+Su MateCat, ciascuna TM privata è identificata da un valore alfanumerico unico chiamato <g id="477">chiave della memoria di traduzione privata.</g>
+Se si salvano le traduzioni nella TM privata, verranno memorizzate solo nella memoria di traduzione privata e solo voi potrete farne un uso  <g id="478">esclusivo</g> e avrete accesso ai vostri contributi a tale TM privata.
+Esso rappresenterebbe un <g id="479">contributo umano a una TM pubblica</g> e aiuterebbe <g id="480">altri utenti MateCat</g> durante il loro lavoro di traduzione su MateCat.
+Aggiungere una chiave TM privata al progetto significa che la TM viene <g id="494">aggiornata automaticamente durante la traduzione</g>, Se precedentemente impostata.
+MateCat memorizza la vostra (o le vostre)TM cosicché non sia necessario <g id="495">caricare e scaricare</g> i segmenti tradotti ogni volta che si traduce.
+In questo modo, si ha un <g id="496">backup costante</g> della memoria di traduzione e la si può utilizzare di nuovo in futuro semplicemente memorizzando la chiave TM privata e associandola con un <g id="497">nuovo progetto</g>, Digitandola nuovamente, se necessario.
+Un glossario è un database bilingue o multilingue contenente la traduzione di <g id="515">termini<x id="516"/></g> in uno speciale argomento, campo o area di utilizzo.
+Di solito è in formato Excel o CSV e può aiutare i traduttori con le traduzioni di <g id="517">termini specifici</g> che possono essere tradotti in diversi modi a seconda dell'argomento.
+Per tradurre il file che contiene questa frase, abbiamo creato un progetto per la traduzione dall'inglese al francese, associato a una <g id="524">chiave privata TM</g> e un <g id="525">glossario EN&gt;FR</g>.
+In MateCat,<g id="538">il glossario è incluso nella</g><g id="539">chiave privata TM</g>associata al progetto.
+<g id="542">Nota: si prega di consultare la sezione </g><g id="543">Come utilizzare i termini del glossario nel segmento tradotto</g><g id="544"> per sapere come aggiungere una voce al glossario durante la traduzione.</g>
+<g id="546">CSV </g>è l'unico formato supportato per il glossario.
+Nella memoria di traduzione, questa funzione viene eseguita con <g id="557">livello di segmento</g>, Mentre nel glossario che viene eseguito su<g id="558"> livello termine</g>.
+I documenti sono tradotti nella finestra<g id="567">editore di traduzione</g>.
+<g id="568">Cliccando sul bottone <g id="569">Tradurre</g> sulla </g><g id="570">Pagina Analisi</g>
+direttamente dal <g id="572">URL di lavoro</g>corrispondente, generato/assegnato precedentemente
+L'URL di  lavoro contiene informazioni sul<g id="573"> lavoro</g> che si sta traducendo.
+www.matecat.com - <g id="576">URL di base</g> per la versione proprietaria di MateCat.
+/translate - Questo indica che si è nella <g id="578">pagina dell'editore di traduzone</g>.
+/test - Il <g id="580">nome </g>del progetto che si sta traducendo.
+/en-US-it-IT - le<g id="582">coppie di lingue</g>della vostra traduzione.
+/43505-0d5d8d53c774 – L'<g id="584">ID di lavoro</g> (43505) seguita da un'unica <g id="585">“password” di lavoro </g>(in questo caso, 0d5d8d53c774).
+# 21694626 - L'<g id="587">identificatore univoco del segmento</g> che si sta traducendo.
+L' <g id="588">Interfaccia utente dell'editore di traduzione</g> contiene un solo ambiente con tutte le informazioni necessarie al traduttore per il lavoro.
+Cliccate sul logo per accedere alla <g id="604">homepage</g> del MateCat tool e creare un nuovo progetto.
+Il <g id="612">nome</g> del lavoro e<g id="613">la combinazione di lingue</g>.
+Fare clic sulla freccia per vedere l'elenco dei file e <g id="614">navigare attraverso di loro</g>.
+Cliccate su<g id="622">scaricare il file (i file) originale</g>.
+Cliccate su<g id="630">scaricare un'anteprima del file (dei file) tradotto</g>.
+Il<g id="638">pulsante anteprima </g>viene sostituito dal <g id="639">pulsante scarica traduzione</g> una volta la traduzione è <g id="640">completa </g>(<g id="641">100% sulla barra di avanzamento</g>).
+<g id="650">il modulo</g><g id="649">controllo di qualità</g> - Non segnala nessun errore.
+ <g id="659">il modulo</g><g id="658">controllo di qualità</g> - Segnala <g id="660">un messaggio di errore </g>.
+<g id="668">Strumento di ricerca</g> - Eseguire una ricerca nel <g id="669">nel testo d'origine o di destinazione</g>.
+Cliccate su<g id="682">chiudere il segmento</g> in stato di bozza, senza salvarlo nella vostra TM
+</g>Pulsante<g id="690">di copiatura della fonte nella casella di destinazione .
+</g>Premere il pulsante<g id="698">"tradotto" e passare al pezzo successivo, non tradotto.
+Fate clic o usate la scorciatoia CTRL+MAIUSC+Invio per <g id="699">confermare la traduzione del segmento corrente e per passare al segmento successivo non tradotto</g>.
+ </g>Pulsante<g id="707">tradotto.
+Fate clic o usate la scorciatoia CTRL+Invio per <g id="708">confermare la traduzione e salvarla nella memoria di traduzione</g>
+</g>scheda<g id="716">corrispondenze di traduzione .
+Questa scheda mostra all'utente le<g id="717">corrispondenze della TM e / o suggerimenti della MT</g> per il segmento corrente.
+</g>scheda di<g id="725">Concordanza.
+Aprite questa scheda o usate la scorciatoia ALT+c per <g id="726">la ricerca nella memoria di traduzione, </g>sia pubblici che privati, se presenti, per una particolare parola, sequenza di parole o frasi
+</g>scheda <g id="734">Glossario .
+Aprite questa scheda per <g id="735">controllare suggerimenti provenienti da un glossario precedente</g> incluso nella chiave della TM privata che è associato al progetto o <g id="736">aggiungere nuovi termini al glossario</g>.
+Cliccate per <g id="744">aggiungere la vostra TM personale</g> alla traduzione in corso.
+La <g id="761">barra di avanzamento</g>indica<g id="762">in tempo reale lo stato</g>della vostra traduzione.
+Numero di <g id="770">pagabili (ponderata) parole</g> per l'intero processo.
+Cliccando su <g id="771">Parole a pagamento</g> il pulsante vi porterà a <g id="772">Volume pagina Analisi</g> del progetto.
+<g id="780">Numero di parole a sinistra</g> da tradurre per l'intero lavoro.
+La <g id="788">velocità stimata della vostra traduzione</g>.
+Sulla base del tempo medio speso per gli ultimi 10 segmenti tradotti, MateCat calcola <g id="789">l'inversione di tendenza oraria</g> per il lavoro, se si sta lavorando sulla traduzione.
+Il <g id="797">tempo stimato rimanente per completare</g> la traduzione.
+Sulla base del tempo speso per gli ultimi 10 segmenti tradotti, MateCat calcola <g id="798">quanto tempo è necessario per completare la definizione</g> se si sta lavorando sulla traduzione.
+Link per accedere al proprio <g id="806">Gestione Panel</g>
+Link per accedere all' <g id="814">Editing Log</g><g id="815"> pagina</g>, una <g id="816">pagina statistica</g> sul progetto in corso.
+Informazioni <g id="831">account con cui avete effettuato l'accesso</g>.
+Vengono visualizzati sia il testo d'origine sia il testo di arrivo <g id="833">fianco a fianco</g>.
+In MateCat la traduzione viene <g id="838">salvata automaticamente</g> nel documento quando si modifica il segmento, e nella memoria di traduzione, nel caso in cui clicchiate sui pulsanti <g id="839">Tradotto</g> o <g id="840">T   &gt;&gt;</g> .
+<g id="837">Se avete bisogno di smettere di tradurre e spegnere il computer, tutto quello che dovete fare è <g id="841">aprire la </g></g><g id="842">URL lavoro</g><g id="843"> di nuovo</g><g id="844"> nel vostro browser.</g>
+<g id="844">Se avete creato il progetto da soli, registrandovi con il vostro <g id="845">Account Google,</g> è possibile recuperare l'URL di lavoro dal proprio </g><g id="846">Pannello di gestione</g><g id="847">.</g>
+Dopo aver creato la vostra TM privata seguendo le indicazioni sopra indicate, potete importare la vostra TMX<x id="870"/> i file contenuti possono essere riutilizzati per la vostra traduzione precedente.
+Accedete al <g id="900" xid="7df758bc-8334-4cdc-baea-2dcefc007524">Gestisci gruppo</g>, e cliccate su Esporta SDLXLIFF, aprite il file con uno strumento CAT che supporta questo formato (SDL Trados, MemoQ, OmegaT e molti altri).
+Si riceveranno <g id="912">suggerimenti della TM</g> se si aggiunge una <g id="913">chiave privata TM</g> al progetto o, nel caso di corrispondenze approssimative trovate nella <g id="914">memoria di traduzione pubblica</g>.
+Saranno visualizzati come primi suggerimenti appena sotto il segmento, sotto la <g id="915">Corrispondenze di traduzione</g> tab.
+Se si dispone di una memoria di traduzione personale, è possibile <g id="919">aggiungerla al progetto</g>.
+<g id="918">Si prega di fare riferimento alla </g><g id="920">Gestisci le tue risorse linguistiche</g><g id="921"> </g><g id="922">sezione</g><g id="923">.</g>
+A destra, lo strumento fornisce informazioni sulla <g id="925">fonte della corrispondenza</g>, La <g id="926">data di creazione</g> e la <g id="927">percentuale di corrispondenza</g>, come mostrato nello screenshot qui sotto:
+<g id="929">una <g id="930">corrispondenza del 100%</g> nella </g><g id="931">chiave privata TM</g><g id="932"> che abbiamo aggiunto al progetto (la chiave privata TM è indicata come <g id="933">fonte</g> del suggerimento) per il primo suggerimento; il segmento è quindi popolato automaticamente con questo suggerimento.</g>
+Quando si aggiunge una TM privata al progetto, MateCat associa automaticamente un <g id="937">nome</g> con la chiave privata TM per riconoscere la fonte del suggerimento durante la traduzione.
+Questa ha il formato MyMemory_XXXX, dove XXXX è un <g id="938">valore alfanumerico univoco</g> per ogni chiave privata TM.
+una <g id="941">corrispondenza dell'86%</g> dal TM pubblica (in questo caso la <g id="942">fonte</g> è "anonima") per il secondo suggerimento
+il <g id="944">suggerimento della traduzione automatica</g> (L'etichetta della sorgente del suggerimento è <g id="945">MT</g>) Per il terzo suggerimento.
+Se si dispone di una <g id="952">corrispondenza del 100%</g> dalla TM.
+Se è un suggerimento della <g id="960">MT</g> .
+La percentuale di abbinamenti corrispondenti in caso di <g id="968">corrispondenze approssimative</g> dalla TM.
+Se si partecipa ad un <g id="970">progetto di collaborazione</g>, è inoltre possibile ricevere <g id="971">suggerimenti in tempo reale</g> dagli altri traduttori che lavorano allo stesso progetto.
+Ciò significa che se più di un traduttore sta lavorando allo stesso progetto perché è stato diviso per <g id="972">diversi traduttori</g>, questi traduttori condividono una chiave di una TM privata e ognuno di loro riceve suggerimenti per i segmenti già tradotti all'interno dello stesso progetto.
+In questo caso, l'origine del suggerimento avrà il nome della <g id="973">chiave TM privata<g id="974"> condivisa &lt;mark class="inGlossary"&gt;TM&lt;/mark&gt; key</g></g>.
+I suggerimenti della MT corrispondono ad una <g id="975">corrispondenza dell'85% di default</g>.
+Per <g id="976">selezionare e immettere uno dei suggerimenti</g> nel campo di traduzione è possibile:
+Utilizzare la <g id="978">scorciatoia </g>ALT+CTRL+[n] per Windows oppure ALT+CMD+[n] per Mac OS X, dove [n] potrebbe essere 1, 2 o 3, a seconda se si vuole aggiungere rispettivamente il primo, secondo o terzo suggerimento.
+<g id="979">doppio click sulla corrispondenza</g><g id="980"> che si desidera selezionare</g>
+Se si passa su una corrispondenza dalla TM, un <g id="981">Icona cestino</g> <x id="982"/> compare sulla destra.
+Clicca su di esso per <g id="983">rimuovere la corrispondenza della TM dalla memoria di traduzione</g>.
+Nota: fare clic sull'icona cestino solo se si desidera <g id="987">eliminare la corrispondenza dalla memoria di traduzione</g> poiché il testo di arrivo non è la corretta traduzione del testo di partenza.
+<g id="988">Non eliminare se si pensa che non è il suggerimento corretto per il segmento che si sta traducendo</g><g id="989">.</g>
+Se volete <g id="992">copiare il segmento d'origine nell'area di immissione della traduzione</g>, fate clic sulla freccia tra il segmento d'origine e di destinazione oppure premete ALT+CTRL*I
+Il tag <g id="1004">Glossario</g> fornisce <g id="1005">suggerimenti dal glossario</g> precedentemente inclusi nel <g id="1006">chiave TM privata</g> che è associata con il progetto.
+Ogni volta che si ritrova questo termine nel testo, viene visualizzato il glossario e il <g id="1007">termine nei segmenti sottolineato</g>, come mostrato nello screenshot qui sotto:
+Le traduzioni di questi termini sono elencati nel <g id="1009">tab Glossario</g> che indica tra parentesi il numero di termini nel segmento trovati nel glossario.
+Ogni suggerimento del glossario fornisce anche informazioni sulla <g id="1010">fonte della traduzione</g> e la <g id="1011">data di creazione</g>.
+Se si passa su un termine suggerito, un <g id="1012">Icona cestino</g> <x id="1013"/> compare sulla destra.
+Clicca su di esso per <g id="1014">rimuovere il termine dal glossario</g>.
+È anche possibile <g id="1015">aggiungere nuovi termini</g> al glossario:
+Aggiungete commenti, se necessario, cliccando sul pulsante <g id="1018">(+) Comment</g>
+Clicca sul<x id="1020"/>pulsante per aggiungere il termine al glossario
+<g id="1023">Se nessun glossario viene aggiunto al progetto, si <g id="1024">crea un nuovo glossario proprio</g> nel momento in cui viene creato un nuovo termine, e, se nessuna </g><g id="1025">chiave TM privata</g><g id="1026"> è stata precedentemente associata al progetto, una <g id="1027">nuova chiave TM privata viene generata automaticamente </g>e aggiunta al progetto.</g>
+MateCat utilizza una semplice funzionalità per <g id="1047">modificare la</g> <g id="1048">insieme di parole</g> nell'area di correzione.
+Basta selezionare una o più parole e <g id="1049">tre pulsanti</g> appariranno per permettere di selezionare la formattazione desiderata e cambiarla (<g id="1050">maiuscolo</g>, <g id="1051">minuscolo</g> e <g id="1052">maiuscolo prima lettera</g>).
+Se avete bisogno di aggiungere <g id="1058">delle interruzioni di riga</g> nel segmento di destinazione:
+clicca <g id="1061">Shift+Invio</g> e il segmento si dividerà in due linee separate.
+MateCat usa <g id="1062">simboli per caratteri nascosti</g> come <g id="1063">tab</g>, <g id="1064">spazi non divisibili</g> e <g id="1065">interruzioni di riga</g>, che sono, rispettivamente, <x id="1066"/>,<x id="1067"/> e<x id="1068"/>.
+Se uno di loro è presente nel testo di partenza, è necessario riprodurre nel segmento target utilizzando il tasto corrispondente o una <g id="1069">scorciatoia</g> (Il tasto Tab sulla tastiera per aggiungere un tab, Shift+Invio per aggiungere un'interruzione di riga e Ctrl+Shift+spazio per aggiungere uno spazio non divisibile).
+Una volta che la traduzione è stata inserita o nel segmento pre-tradotto, cliccate sul pulsante <g id="1084">Translated</g> per <g id="1085">confermare la traduzione e passare al segmento successivo</g>.
+In alternativa, è possibile utilizzare la <g id="1086">scorciatoia della tastiera</g> <g id="1087">Ctrl +Invio</g>.
+Se si desidera <g id="1088">confermare la traduzione del segmento corrente e passare al segmento successivo non tradotto</g>, fare clic sul pulsante <g id="1089">T   &gt;&gt;</g> o usare la scorciatoia della tastiera <g id="1090">CTRL+ SHIFT+Invio</g>.
+In questo modo si <g id="1091">salva il segmento e si aggiorna la memoria di traduzione</g>.
+Se non si fa clic sul pulsante <g id="1092">Translated</g> e non si passa manualmente al segmento successivo (o premere CTRL+Down) o a quello precedente (o premere CTRL+Up) , la traduzione verrà salvata nel file, ma <g id="1093">la memoria di traduzione non sarà aggiornata</g>.
+La barra alla destra di ogni segmento indica il suo <g id="1094">stato</g> utilizzando colori.
+Clicca su di essa per visualizzare le seguenti opzioni e per impostare / modificare lo <g id="1095">stato di un segmento</g>:
+Quando si approva un segmento durante la traduzione, MateCat <g id="1107">popola automaticamente</g> la tua traduzione con <g id="1108">tutti i segmenti aventi la stessa fonte</g> all'interno dello stesso progetto.
+Saranno etichettati <g id="1109">AUTOPROPAGATED</g> come mostrato nello screenshot qui sotto
+La vostra traduzione <g id="1111">apparirà in tutti i segmenti con la stessa fonte</g> ma lo stato dei segmenti rimarrà "<g id="1112">untranslated</g>".
+È necessario approvare manualmente cliccando sul tasto <g id="1113">Translated</g> (oppure utilizzare la scorciatoia CTRL+Invio ).
+La ricerca troverà e mostrerà tutti i segmenti già tradotti nella <g id="1123">chiave TM privata</g> associata al progetto e nella TM pubblica contenente quella parola, quelle parole o quella frase.
+È possibile effettuare una ricerca inserendo o incollando il testo da verificare nella scheda Concordanza sulla pagina <g id="1124">Translation Editor</g> .
+In alternativa, è possibile selezionare le parole che si desidera controllare, e utilizzare le seguenti <g id="1125">scorciatoie</g> che apriranno automaticamente la scheda Concordance:
+Se hai caricato <g id="1137">più di un file</g> da tradurre <g id="1138">nello stesso progetto</g>, puoi <g id="1139">fare clic sul nome del lavoro nella parte superiore della pagina per visualizzare un elenco dei file</g>.
+Cliccare su <g id="1140">Go to current segment</g> per visualizzare il segmento su cui si sta lavorando.
+Il tag &lt;g id = "19"&gt; nel segmento d'origine, indicato dalla freccia rossa, <g id="1164">non è stato aggiunto al segmento di destinazione</g>.
+Selezionare quello che vi interessa e cliccare su <g id="1168">Enter</g> per aggiungerlo alla vostra traduzione.
+<g id="1169">Nota importante</g>:
+MateCat avverte l'utente quando <g id="1173">due o più diverse traduzioni sono inserite per lo stesso segmento sorgente nello stesso progetto</g>.
+MateCat usa <g id="1174">track changes</g> per evidenziare le differenze.
+Per correggere l'errore, scegliere uno dei suggerimento o cliccare sul pulsante <g id="1175">View</g> per controllare e correggere le traduzioni.
+MateCat mostra anche un <g id="1179">avviso </g>quando i tag non sono nella<g id="1180">stessa posizione</g> come nel segmento originale.
+Selezionare quello che vi interessa e cliccare su <g id="1183">Inserire</g> per aggiungerlo alla vostra traduzione.
+<g id="1185">NOTA IMPORTANTE</g>:
+MateCat avverte l'utente quando<g id="1191"> più o meno spazi</g> si trovano nel segmento di destinazione accanto al tag.
+Per attivare il<g id="1203">correttore ortografico di Google Chrome</g> per la lingua di arrivo, attenersi alla seguente procedura:
+Cliccate su Add e aggiungete la<g id="1207">lingua di arrivo</g>;
+Selezionare <g id="1209">Abilita controllo ortografico</g> nella finestra di dialogo visualizzata.
+Per abilitare <g id="1212">il correttore ortografico di Safari </g>per la lingua di arrivo, attenersi alla seguente procedura:
+È possibile accedere al registro Modifiche dal pulsante corrispondente nella parte inferiore della pagina dell' <g id="1228">Editore di Traduzione</g> .
+Il Registro delle correzioni contiene <g id="1229">informazioni statistiche sulle traduzioni</g>
+Numero di <g id="1239">parole tradotte</g>
+<g id="1247">Numero medio di secondi</g> di cui si ha avuto bisogno per tradurre ogni parola
+Percentuale di <g id="1255">suggerimenti della Traduzione Automatica</g>
+Percentuale di <g id="1263">suggerimenti del MT</g>
+<g id="1271">Tempo totale</g> necessario per completare la traduzione
+<g id="1279">Sforzo medio di lavoro</g> in percentuale.
+Percentuale di parole su cui si è speso <g id="1287">troppo tempo</g> di lavoro
+Percentuale di parole su cui si è speso <g id="1295">troppo poco tempo</g> di lavoro
+<g id="1304">Secondi spesi per parola</g> in quel segmento
+<g id="1312"> ID di lavoro in MateCat</g>
+<g id="1320">ID del segmento</g>.
+<g id="1328">Numero di parole</g> nel segmento
+<g id="1336">Fonte</g> del primo suggerimento
+<g id="1344">Percentuale di corrispondenza</g> del primo suggerimento.
+<g id="1352">Tempo impiegato</g>per modificare il segmento
+<g id="1360">Sforzo successivo al lavoro </g>per modificare il segmento
+Originale <g id="1368">fonte </g>segmento
+Primo <g id="1376">suggerimento </g> di MateCat
+<g id="1384">Traduzione finale</g> approvata dal traduttore
+<g id="1392">Differenze </g>tra il primo suggerimento e la traduzione finale approvata, evidenziate con cambiamenti di pista
+Una volta che la traduzione è completa (100% sulla barra di avanzamento), il pulsante di<g id="1407">Anteprima</g> nella parte superiore della pagina è sostituito dal pulsante <g id="1408">Scarica traduzione</g>.
+Cliccando sul pulsante<g id="1409">Scarica Traduzione</g> , è possibile scaricare il testo tradotto nello stesso formato del documento originale.
+Il testo può essere scaricato in qualsiasi momento durante la traduzione cliccando sul pulsante <g id="1410">Anteprima</g> Pulsante.
+Quando si crea un progetto, si ha la possibilità di aggiungere il progetto al proprio<g id="1428">Pannello di Gestione </g>da <g id="1429">login</g> con il proprio<g id="1430">profilo Google</g> prima di crearlo.
+Questo pannello mostra la lista di <g id="1431">tutti i progetti creati utilizzando il proprio account Google</g> e permette di verificare lo stato di avanzamento dei propri progetti o recuperarli, se necessario.
+Per accedere con il proprio account Google, si fa clic su <g id="1432">Login</g> pulsante nella parte inferiore della home page di MateCat e si fa accesso con il proprio account Google.
+<g id="1435">Nota</g><g id="1436">: Ricordarsi di <g id="1437">loggarsi sempre prima </g></g><g id="1438">della creazione di un progetto</g><g id="1439"> se si desidera aggiungerlo al proprio <g id="1440">Pannello di gestione</g>.</g>
+Se si crea un progetto <g id="1441">senza effettuare il login</g> con il proprio account Google, la <g id="1442">URL lavoro</g> del progetto non verrà salvata automaticamente quindi ricordatevi di salvarlo manualmente in un luogo sicuro in modo da essere in grado di recuperarlo facilmente, se necessario.
+Per accedere al <g id="1444">Pannello di Gestione </g>si può:
+<g id="1445">Andare su </g><g id="1446" xid="39195b15-2725-44b4-b3c2-3fc46a5ff22b">http://www.matecat.com/manage/1</g><g id="1447">Oppure</g>
+<g id="1454">Numero totale di parole del progetto e link al </g><g id="1455">Pagina del volume di analisi</g><g id="1456"> (2549 parole pagabili)</g>
+<g id="1457">Server di traduzione automatica</g><g id="1458"> (MyMemory (tutte le coppie))</g>
+<g id="1460">Link alle traduzione divise per combinazione linguistica e l'identificatore di lavoro di MateCat (sotto la colonna "Job") - è possibile accedere </g><g id="1461">all'editore di traduzione</g><g id="1462"> Finestra di ogni lavoro, cliccando sul corrispondente </g><g id="1463">URL lavoro</g>
+<g id="1464">P</g><g id="1465">chiave di memoria di traduzione privata</g><g id="1466"> (Se disponibile; colonna vuota se non presente)</g>
+<g id="1467">Parole pagabili</g><g id="1468"> a lavoro (sotto la colonna parole pagabili)</g>
+<g id="1477">Cambiare la password di lavoro</g><g id="1478"> - Questo modifica la password del lavoro.</g>
+<g id="1486">Cancel job / progetto</g><g id="1487"> - Questo elimina il lavoro / progetto e disabilita l'URL.</g>
+<g id="1495">Archive Job / progetto</g><g id="1496"> - Questo impedisce che venga applicata qualsiasi modifica al lavoro / progetto.</g>
+Tuttavia, l'URL continuerà a funzionare ed sarà accessibile in  modalità solo</g>.
+<g id="1505">Curriculum Vitae</g><g id="1506"> progetto</g>
+<g id="1514">Recupera</g><g id="1515"> un progetto</g>
+Come impostazione predefinita, il pannello di gestione mostrerà i vostri <g id="1517">progetti attivi</g> solo, in <g id="1518">ordine cronologico</g>.
+È possibile filtrare e visualizzare i progetti cancellati e archiviati facendo clic sul pulsante <g id="1520">Filtro </g>o su "Visualizzazione progetti attivi" nella parte superiore della pagina.
+La seguente <g id="1521">Finestra di ricerca</g> verrà visualizzata:
+Cliccate sul pulsante <g id="1526">FILTRO</g> per applicare i criteri di ricerca.
+Per motivi di privacy, <g id="1530">i vostri progetti vengono archiviati automaticamente dopo 30 giorni di inattività</g>.
+MateCat fornisce una funzionalità di facile uso frazionato <g id="1540">dividere lavori di grandi dimensioni in parti più piccole e assegnarli a più traduttori</g>.
+Ciò è utile per grandi <g id="1541">progetti in collaborazione</g>.
+È possibile dividere un lavoro dalla <g id="1542">Pagina di analisi del volume</g>.
+Dopo il completamento delle analisi del volume, è possibile selezionare <g id="1543">quanti posti di lavoro</g> si desidera creare e fare clic sul pulsante  <g id="1544">Diviso </g>.
+Quando si fa clic sul pulsante <g id="1548">Check</g><g id="1549"> </g>MateCat controlla ogni parte e divide i segmenti in un numero indicativo di parole, evitando qualsiasi sovrapposizione tra i segmenti.
+Quando si fa clic su <g id="1552">Confermare</g>, Vi si presenterà con <g id="1553">un'analisi dettagliata dei lavori di divisione</g> e il pulsante tradurre  <g id="1554"/> per ciascuna parte.
+Nel caso in cui si commetta un errore e si desidera annullare la divisione, basta cliccare sul pulsante <g id="1557">Unisci tutto</g><g id="1558"> </g>e le varie parti verranno unite di nuovo nel lavoro originale.
+C'è solo bisogno di inviare ad ogni traduttore l' <g id="1559">URL Job</g> per la parte a cui lavoreranno
+Vedranno il resto del documento in corso di traduzione<g id="1561">in tempo reale</g> e potranno confrontare il loro lavoro con le altre parti.
+<g id="1564">Potranno anche <g id="1565">condividere una </g></g><g id="1566">chiave personale della TM</g><g id="1567">, se associata in precedenza, in cui verranno archiviate tutte le traduzioni, così <g id="1568">ogni traduttore riceverà anche suggerimenti per i segmenti già tradotti da altri traduttori</g> all'interno dello stesso progetto.</g>
+Ogni traduzione è completa quando <g id="1570">tutti i segmenti</g> di quel lavoro sono stati tradotti e contrassegnati come tradotti.
+<g id="1571">La </g><g id="1572">barra di avanzamento</g><g id="1573">, il </g><g id="1574">conteggio parole da tradurre</g><g id="1575"> e il conteggio delle </g><g id="1576">parole pagabili</g><g id="1577"> sono riferiti solo al lavoro corrente</g>.
+È possibile controllare lo stato e il progresso di ogni lavoro dal proprio <g id="1578">Pannello di gestione</g>.
+Una volta che tutti i lavori sono completati al 100%, è possibile fare clic su uno dei link e cliccare sul pulsante <g id="1579">Download translation</g> .
+In questo modo si scarica l' <g id="1580">intero file tradotto</g>.
+MateCat può aiutare i fornitori di servizi di traduzione per gestire i progetti in modo semplice ed eseguire i dovuti controlli, non solo dopo la consegna da parte del traduttore, ma anche <g id="1589">durante il lavoro di traduzione </g>stesso.
+Gli strumenti principali e le funzioni disponibili per i Project Manager sono il <g id="1590">Pannello di gestione</g>, il <g id="1591">Log Editing</g> e i <g id="1592">Messaggi del controllo di qualità</g> nella <g id="1593">finestra dell'Editor di Traduzione</g>.
+Attraverso il pannello di gestione, il Project Manager può facilmente verificare <g id="1594">lo stato</g> di tutti i lavori di traduzione in <g id="1595">tempo reale</g>.
+Cliccando sull'URL di lavoro di un progetto specifico, è possibile <g id="1597">controllare gli errori durante la traduzione</g> e prontamente avvisare il traduttore che vi lavora.
+Attraverso il modulo del controllo di qualità, è possibile controllare se ci sono <g id="1598">errori nei tag o conflitti di traduzione</g> durante la traduzione, senza attendere la consegna da parte del traduttore e quindi risparmiare tempo.
+Dalla finestra Editor di traduzione, è possibile accedere alla pagina di modifica registro cliccando sul pulsante <g id="1599">Editing Log</g>  in fondo alla pagina.
+Nell' Editing Log, il Project Manager può controllare il <g id="1600">tempo</g> speso dal traduttore per la modifica di ogni segmento, il tempo totale speso dal traduttore per tradurre l'intero documento e controllare le <g id="1601">modifiche</g> apportate ai suggerimenti.
+MateCat si basa fortemente sulle <g id="1620">scorciatoie da tastiera</g> per le funzionalità standard e quelle avanzate.
+È disponibile su <g id="1861" xid="45a765fe-afdb-4744-9ced-d48312a0b401">www.matecat.com/installation-guide</g>.

@@ -1,0 +1,22 @@
+<cf font="Arial"> B10 
+Also <b id="4"> nested <i> tags </i> </b> work <dot> . </dot>
+Also <b id="4"> nested <i> tags </b> </i> work <dot> . </dot>
+Also <b id="4"> nested <i> tags </i> work <dot> . </dot>
+Also <b id="4"> nested <i> tags </b> work <dot> . </dot>
+Keep escaped markup <b> &lt; </b>
+<BIG> <BIG> double cased markup </BIG> </BIG>
+<BIG> <BIG> double cased markup </BIG>
+Quotes <tag id='double"quote"' id2="single'quote"> work. </tag>
+1_CORRECT a <x> b <y> c </y> d </x> e
+2_SHIFT a <x> b <y> c </y> d e </x> 
+3_DEL+SHIFT a <x> b <y> c d e </x> 
+4_SHIFT <x> a b <y> c </y> d </x> e
+8_SUB <x>
+9_SPACESBEFORE <x>
+10_SPACESAFTER <x>
+11_CORRECT a b <x> d e </x>
+12_SHIFT a b <x> </x> d e
+13 Una ricerca viene effettuata nella TM per il segmento 2 e <g id = "408"> 75% corrispondenza fuzzy </g> viene trovato.
+14 Una ricerca viene effettuata nella TM per il segmento 2 e <g id = "408"> 75% corrispondenza fuzzy </g> viene trovato .
+15 Una ricerca viene effettuata nella TM per il segmento 2 e <g id = "408"> 75% corrispondenza fuzzy </g> si trova .
+
