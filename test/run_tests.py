@@ -26,9 +26,8 @@ class Tester:
                 print json.dumps(json_information, indent=4, separators=(',', ': '))
             return json_information
         except Exception, e:
-            json_error = {'passed': False, 'error': str(e)}
+            json_error = {'passed': False, 'error': str(e), 'test_output': out}
             if verbose:
-                sys.stderr.write(out + "\n") #not working
                 print json.dumps(json_error, indent=4, separators=(',', ': '))
             return json_error
 
