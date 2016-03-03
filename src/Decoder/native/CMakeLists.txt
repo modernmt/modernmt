@@ -7,19 +7,13 @@ file(GLOB JNI_SRC src/jni/*.h src/jni/*.cpp)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 add_library(${PROJECT_NAME} SHARED ${WRAPPER_SRC} ${JNI_SRC})
 
+add_executable(jnitest src/main.cpp)
+target_link_libraries(jnitest ${PROJECT_NAME})
+
 include_directories(src)
 include_directories(jheaders)
 
 # External Libraries
-
-## XMLRPC
-find_package(XMLRPC REQUIRED c++2 abyss-server)
-if (XMLRPC_FOUND)
-    include_directories(${XMLRPC_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} ${XMLRPC_LIBRARIES})
-else (XMLRPC_FOUND)
-    message(FATAL_ERROR "Could not locate xmlrpc-c.")
-endif (XMLRPC_FOUND)
 
 ## Boost
 set(Boost_USE_STATIC_LIBS OFF)
@@ -59,7 +53,8 @@ endif()
 find_library(MOSES moses ${Moses_LIBRARIES})
 add_definitions(-DMAX_NUM_FACTORS=4)
 add_definitions(-DWITH_THREADS=1)
-add_definitions(-DHAVE_XMLRPC_C=1)
+add_definitions(-DHAVE_XMLRPC_C=0)
+#add_definitions(-DTRACE_ENABLE)  # add this to enable verbose moses output in general (otherwise, not even --verbose level will help)
 include_directories(${Moses_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} ${MOSES})
 

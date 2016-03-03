@@ -2,10 +2,12 @@ package eu.modernmt.context.lucene;
 
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextDocument;
-import eu.modernmt.context.IndexSourceDocument;
 import eu.modernmt.context.lucene.analysis.CorpusAnalyzer;
+import eu.modernmt.model.Corpus;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
@@ -18,8 +20,6 @@ import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.File;
@@ -37,7 +37,7 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
 
     private static final int MIN_RESULT_BATCH = 20;
 
-    private final Logger logger = LoggerFactory.getLogger(ContextAnalyzerIndex.class);
+    private final Logger logger = LogManager.getLogger(ContextAnalyzerIndex.class);
 
     private Directory indexDirectory;
     private Analyzer analyzer;
@@ -99,18 +99,18 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
         return this.indexReader;
     }
 
-    public void add(IndexSourceDocument document) throws ContextAnalyzerException {
-        this.add(Collections.singleton(document));
+    public void add(Corpus corpus) throws ContextAnalyzerException {
+        this.add(Collections.singleton(corpus));
     }
 
-    public void add(Collection<? extends IndexSourceDocument> documents) throws ContextAnalyzerException {
-        for (IndexSourceDocument document : documents) {
-            logger.info("Adding to index document " + document);
+    public void add(Collection<? extends Corpus> corpora) throws ContextAnalyzerException {
+        for (Corpus corpus : corpora) {
+            logger.info("Adding to index document " + corpus);
 
             try {
-                this.indexWriter.addDocument(DocumentBuilder.createDocument(document));
+                this.indexWriter.addDocument(DocumentBuilder.createDocument(corpus));
             } catch (IOException e) {
-                throw new ContextAnalyzerException("Failed to add document " + document.getName() + " to index", e);
+                throw new ContextAnalyzerException("Failed to add document " + corpus.getName() + " to index", e);
             }
         }
 
@@ -130,7 +130,7 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
         }
     }
 
-    public List<ContextDocument> getSimilarDocuments(IndexSourceDocument queryDocument, int limit) throws ContextAnalyzerException {
+    public List<ContextDocument> getSimilarDocuments(Corpus queryDocument, int limit) throws ContextAnalyzerException {
         IndexReader reader = this.getIndexReader();
         IndexSearcher searcher = new IndexSearcher(reader);
 
@@ -202,7 +202,7 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
         Collections.reverse(result);
 
         if (result.size() > limit)
-            result = result.subList(0, limit);
+            result = new ArrayList<>(result.subList(0, limit));
 
         return result;
     }

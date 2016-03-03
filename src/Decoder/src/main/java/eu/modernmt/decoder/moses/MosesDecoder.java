@@ -2,11 +2,11 @@ package eu.modernmt.decoder.moses;
 
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.Decoder;
-import eu.modernmt.decoder.Sentence;
-import eu.modernmt.decoder.Translation;
+import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import eu.modernmt.model.Sentence;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,7 +19,7 @@ import java.util.Map;
  */
 public class MosesDecoder implements Decoder {
 
-    private static final Logger logger = LoggerFactory.getLogger(MosesDecoder.class);
+    private static final Logger logger = LogManager.getLogger(MosesDecoder.class);
 
     static {
         try {
@@ -72,33 +72,33 @@ public class MosesDecoder implements Decoder {
     }
 
     @Override
-    public Translation translate(Sentence text) {
-        return translate(text.toString(), null, 0L, 0).getTranslation(text);
+    public DecoderTranslation translate(Sentence text) {
+        return translate(text.getStrippedString(), null, 0L, 0).getTranslation(text);
     }
 
     @Override
-    public Translation translate(Sentence text, List<ContextDocument> translationContext) {
-        return translate(text.toString(), parse(translationContext), 0L, 0).getTranslation(text);
+    public DecoderTranslation translate(Sentence text, List<ContextDocument> translationContext) {
+        return translate(text.getStrippedString(), parse(translationContext), 0L, 0).getTranslation(text);
     }
 
     @Override
-    public Translation translate(Sentence text, TranslationSession session) {
-        return translate(text.toString(), null, ((MosesSession) session).getInternalId(), 0).getTranslation(text);
+    public DecoderTranslation translate(Sentence text, TranslationSession session) {
+        return translate(text.getStrippedString(), null, ((MosesSession) session).getInternalId(), 0).getTranslation(text);
     }
 
     @Override
-    public Translation translate(Sentence text, int nbestListSize) {
-        return translate(text.toString(), null, 0L, nbestListSize).getTranslation(text);
+    public DecoderTranslation translate(Sentence text, int nbestListSize) {
+        return translate(text.getStrippedString(), null, 0L, nbestListSize).getTranslation(text);
     }
 
     @Override
-    public Translation translate(Sentence text, List<ContextDocument> translationContext, int nbestListSize) {
-        return translate(text.toString(), parse(translationContext), 0L, nbestListSize).getTranslation(text);
+    public DecoderTranslation translate(Sentence text, List<ContextDocument> translationContext, int nbestListSize) {
+        return translate(text.getStrippedString(), parse(translationContext), 0L, nbestListSize).getTranslation(text);
     }
 
     @Override
-    public Translation translate(Sentence text, TranslationSession session, int nbestListSize) {
-        return translate(text.toString(), null, ((MosesSession) session).getInternalId(), nbestListSize).getTranslation(text);
+    public DecoderTranslation translate(Sentence text, TranslationSession session, int nbestListSize) {
+        return translate(text.getStrippedString(), null, ((MosesSession) session).getInternalId(), nbestListSize).getTranslation(text);
     }
 
     private native TranslationXObject translate(String text, Map<String, Float> translationContext, long session, int nbest);

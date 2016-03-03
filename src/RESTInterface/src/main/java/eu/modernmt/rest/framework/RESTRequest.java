@@ -159,13 +159,16 @@ public class RESTRequest {
 
                 for (String param : params) {
                     String[] tokens = param.split("=");
-                    if (tokens.length == 2)
+                    if (tokens.length == 2) {
                         try {
                             this.parameters.put(tokens[0], URLDecoder
                                     .decode(tokens[1], encoding).trim());
                         } catch (UnsupportedEncodingException e) {
                             // This should never happen
                         }
+                    } else {
+                        this.parameters.put(tokens[0], "");
+                    }
                 }
             }
         }

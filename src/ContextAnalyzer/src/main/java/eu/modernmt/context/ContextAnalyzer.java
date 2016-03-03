@@ -1,11 +1,16 @@
 package eu.modernmt.context;
 
 import eu.modernmt.context.lucene.ContextAnalyzerIndex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import eu.modernmt.model.BilingualCorpus;
+import eu.modernmt.model.Corpus;
+import eu.modernmt.model.impl.FileCorpus;
+import eu.modernmt.model.impl.StringCorpus;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -15,14 +20,22 @@ import java.util.Locale;
  */
 public class ContextAnalyzer {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LogManager.getLogger(ContextAnalyzer.class);
     protected ContextAnalyzerIndex index;
 
     public ContextAnalyzer(File indexPath) throws IOException {
         this.index = new ContextAnalyzerIndex(indexPath);
     }
 
-    public void rebuild(Collection<? extends IndexSourceDocument> documents) throws ContextAnalyzerException {
+    public void rebuild(Collection<? extends BilingualCorpus> documents, boolean useSourceLanguage) throws ContextAnalyzerException {
+        ArrayList<Corpus> corpora = new ArrayList<>(documents.size());
+        for (BilingualCorpus corpus : documents)
+            corpora.add(useSourceLanguage ? corpus.getSourceCorpus() : corpus.getTargetCorpus());
+
+        rebuild(corpora);
+    }
+
+    public void rebuild(Collection<? extends Corpus> documents) throws ContextAnalyzerException {
         logger.info("Rebuild ContextAnalyzer index...");
 
         long now = System.currentTimeMillis();
@@ -34,14 +47,14 @@ public class ContextAnalyzer {
     }
 
     public List<ContextDocument> getContext(String query, Locale lang, int limit) throws ContextAnalyzerException {
-        return getContext(IndexSourceDocument.fromString(query, lang), limit);
+        return getContext(new StringCorpus(null, lang, query), limit);
     }
 
     public List<ContextDocument> getContext(File source, Locale lang, int limit) throws ContextAnalyzerException {
-        return getContext(IndexSourceDocument.fromFile(source, lang), limit);
+        return getContext(new FileCorpus(source, null, lang), limit);
     }
 
-    public List<ContextDocument> getContext(IndexSourceDocument query, int limit) throws ContextAnalyzerException {
+    public List<ContextDocument> getContext(Corpus query, int limit) throws ContextAnalyzerException {
         return this.index.getSimilarDocuments(query, limit);
     }
 

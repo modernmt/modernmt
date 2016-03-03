@@ -1,6 +1,7 @@
 package eu.modernmt.decoder;
 
 import eu.modernmt.context.ContextDocument;
+import eu.modernmt.model.Sentence;
 
 import java.io.Closeable;
 import java.util.List;
@@ -18,16 +19,16 @@ public interface Decoder extends Closeable {
 
     // Translate
 
-    Translation translate(Sentence text);
+    DecoderTranslation translate(Sentence text);
 
-    Translation translate(Sentence text, List<ContextDocument> translationContext);
+    DecoderTranslation translate(Sentence text, List<ContextDocument> translationContext);
 
-    Translation translate(Sentence text, TranslationSession session);
+    DecoderTranslation translate(Sentence text, TranslationSession session);
 
-    Translation translate(Sentence text, int nbestListSize);
+    DecoderTranslation translate(Sentence text, int nbestListSize);
 
-    Translation translate(Sentence text, List<ContextDocument> translationContext, int nbestListSize);
+    DecoderTranslation translate(Sentence text, List<ContextDocument> translationContext, int nbestListSize);
 
-    Translation translate(Sentence text, TranslationSession session, int nbestListSize);
+    DecoderTranslation translate(Sentence text, TranslationSession session, int nbestListSize);
 
 }

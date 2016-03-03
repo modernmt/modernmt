@@ -5,6 +5,7 @@ import com.google.gson.JsonParseException;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.engine.MasterNode;
+import eu.modernmt.engine.TranslationException;
 import eu.modernmt.rest.RESTServer;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
@@ -24,7 +25,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
     private RESTServer server = RESTServer.getInstance();
 
     @Override
-    protected TranslationResponse execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException {
+    protected TranslationResponse execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, TranslationException {
         Params params = (Params) _params;
         MasterNode masterNode = server.getMasterNode();
 
@@ -64,7 +65,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
             super(req);
 
             textProcessing = getBoolean("processing", true);
-            query = getString("q", false);
+            query = getString("q", true);
             sessionId = getLong("session", 0L);
             contextLimit = getInt("context_limit", 10);
             nbest = getInt("nbest", 0);

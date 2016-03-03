@@ -1,12 +1,13 @@
 package eu.modernmt.engine;
 
+import eu.modernmt.config.Config;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.moses.MosesDecoder;
 import eu.modernmt.decoder.moses.MosesINI;
 import eu.modernmt.network.cluster.Worker;
 import eu.modernmt.network.messaging.zeromq.ZMQMessagingClient;
-import eu.modernmt.tokenizer.DetokenizerPool;
-import eu.modernmt.tokenizer.TokenizerPool;
+import eu.modernmt.processing.Postprocessor;
+import eu.modernmt.processing.Preprocessor;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -43,6 +44,8 @@ public class SlaveNode extends Worker {
     private Decoder decoder;
     private File runtimePath;
     private MasterHost master;
+    private Preprocessor preprocessor = null;
+    private Postprocessor postprocessor = null;
 
     public SlaveNode(TranslationEngine engine, MasterHost master, int[] ports) throws IOException {
         super(new ZMQMessagingClient(master == null ? "localhost" : master.host, ports[0], ports[1]), DEFAULT_DECODER_THREADS);
@@ -50,7 +53,7 @@ public class SlaveNode extends Worker {
         this.engine = engine;
         this.master = master;
         this.initializer = new Initializer();
-        this.runtimePath = FS.getRuntime(engine, "slave");
+        this.runtimePath = Config.fs.getRuntime(engine.getId(), "slave");
     }
 
     public TranslationEngine getEngine() {
@@ -86,12 +89,28 @@ public class SlaveNode extends Worker {
         }
     }
 
-    public TokenizerPool getTokenizer() {
-        return TokenizerPool.getCachedInstance(engine.getSourceLanguage());
+    public Preprocessor getPreprocessor() {
+        if (preprocessor == null) {
+            synchronized (this) {
+                if (preprocessor == null) {
+                    preprocessor = new Preprocessor(engine.getSourceLanguage());
+                }
+            }
+        }
+
+        return preprocessor;
     }
 
-    public DetokenizerPool getDetokenizer() {
-        return DetokenizerPool.getCachedInstance(engine.getTargetLanguage());
+    public Postprocessor getPostprocessor() {
+        if (postprocessor == null) {
+            synchronized (this) {
+                if (postprocessor == null) {
+                    postprocessor = new Postprocessor(engine.getTargetLanguage());
+                }
+            }
+        }
+
+        return postprocessor;
     }
 
     @Override
@@ -176,7 +195,7 @@ public class SlaveNode extends Worker {
                 }
 
                 if (response != null) {
-                    String remotePath = new String(response, 1, response.length - 1, "UTF-8");
+                    String remotePath = new String(response, 1, response.length - 1, Config.charset.get());
                     onSyncPathReceived(remotePath);
                 }
             } catch (Throwable e) {

@@ -10,9 +10,9 @@ import eu.modernmt.rest.framework.actions.CollectionAction;
 import eu.modernmt.rest.framework.routing.Route;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.Collection;
@@ -50,7 +50,7 @@ public class GetContext extends CollectionAction<ContextDocument> {
 
         // TODO: File from body should be made more secure (check real stream size and ignore too large files)
 
-        private final Logger logger = LoggerFactory.getLogger(getClass());
+        private final Logger logger = LogManager.getLogger(getClass());
 
         public static final int DEFAULT_LIMIT = 10;
         public static final int MAX_CONTEXT_IN_RAM = 2 * 1024;

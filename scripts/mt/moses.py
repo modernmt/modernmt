@@ -6,8 +6,8 @@ __author__ = 'Davide Caroselli'
 
 
 class MosesFeature:
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, classname):
+        self.classname = classname
 
     def get_relpath(self, path):
         path = os.path.abspath(path)
@@ -19,7 +19,7 @@ class MosesFeature:
         return '${ENGINE_PATH}' + path
 
     def get_iniline(self):
-        return self.name
+        return None
 
 
 class LexicalReordering(MosesFeature):
@@ -27,7 +27,7 @@ class LexicalReordering(MosesFeature):
         MosesFeature.__init__(self, 'LexicalReordering')
 
     def get_iniline(self):
-        return self.name + ' name=DM0 input-factor=0 output-factor=0 type=hier-mslr-bidirectional-fe-allff'
+        return 'input-factor=0 output-factor=0 type=hier-mslr-bidirectional-fe-allff'
 
 
 class Moses:
@@ -55,28 +55,29 @@ class Moses:
 
         self._features = []
 
-    def add_feature(self, feature):
-        self._features.append(feature)
+    def add_feature(self, feature, name=None):
+        self._features.append((feature, name))
 
-    def get_features(self):
-        return self._features[:]
+    def __get_iniline(self, feature, name):
+        custom = feature.get_iniline()
+        line = feature.classname
 
-    def create_ini(self, weights=None):
+        if name is not None:
+            line += ' name=' + name
+
+        if custom is not None:
+            line += ' ' + custom
+
+        return line
+
+    def create_ini(self):
         lines = ['[input-factors]', '0', '', '[search-algorithm]', '1', '', '[stack]', str(self._stack_size), '',
                  '[cube-pruning-pop-limit]', str(self._cube_pruning_pop_limit), '', '[mapping]', '0 T 0', '',
                  '[distortion-limit]', str(self._distortion_limit), '', '[threads]', '${DECODER_THREADS}', '',
                  '[verbose]', '0', '', '[feature]']
 
         for feature in self._features:
-            lines.append(feature.get_iniline())
-        lines.append('')
-
-        if weights is not None:
-            lines.append('[weight]')
-
-            for feature, w in weights.iteritems():
-                lines.append(' '.join([feature + '='] + [str(el) for el in w]))
-
+            lines.append(self.__get_iniline(*feature))
         lines.append('')
 
         with open(self._ini_file, 'wb') as out:

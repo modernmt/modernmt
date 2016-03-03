@@ -2,8 +2,8 @@ package eu.modernmt.network.messaging.zeromq;
 
 import eu.modernmt.network.uuid.UUIDSequence;
 import eu.modernmt.network.uuid.UUIDUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.zeromq.ZMQ;
 import zmq.ZError;
 
@@ -16,7 +16,7 @@ import java.util.UUID;
  */
 public abstract class ZMQAbstractLoop extends Thread implements Closeable, AutoCloseable {
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final Logger logger = LogManager.getLogger(getClass());
 
     private static int threadId = 0;
 

@@ -30,12 +30,21 @@ Items should be in order of priority.
 
 Goal: with 2 billion words perform better than commercially available technology.
 
-- Quality measure against Google Translate and Microsoft integrated in the training process. Measure first!
-- Allowing monolingual LM data input
-- More accurate context score and suffix sampling. 
-- Tuning by domain, global weights do not work.
-- Porting Matecat/Moses tag management to MMT.
-- Adding more languages and quality to tokenization
+* 0.12 - Quality measure against Google Translate and Microsoft integrated in the training process. Measure first!
+* 0.12 - Allowing monolingual LM data input
+* 0.12 - Porting Matecat/Moses tag management to MMT.
+
+* 0.14 - Adding more languages and quality to tokenization, now 45.
+* 0.14 - More accurate context score and suffix sampling.  
+
+* 0.15 - Better coverage with a new suffix sampling. 
+* 0.15 - Adding Optional Human Evaluation and Tuning (BLEU or PEE are very imprecise metrics, few man hours of evaluation can deliver better results). 10 Euro for evaluation via A/B test vs Google Translate, 100 Euro for human tuning via nbest selection.
+
+* 0.15 - Extended Log. See https://github.com/ModernMT/MMT/issues/87
+
+* 0.20 - Adding Data for the background models. EN-IT 2 billion words parallel, 5 billion words monolingual.
+* 0.30 - Adding Data for the background models. Adding Top 10 languages.
+* 0.40 - Adding multi-sentence-level Context as a feature. 
 
 ## Speed
 
@@ -50,10 +59,10 @@ Goal: Initial training to stay below 8 hours for each 1B word (36 cores). Make i
 
 Goal: with 2 billion words stay below 400ms for the average sentence length (15 words).
 
-- Pruning of models. 
-- Better caching.
-- Fine tuning the max number LM requests per translation and other parameters.
-- With 2B word model, translation time is not below 400ms yet: distribute LM across multiple servers.
+* Faster sampling on Suffix, especially for frequent terms.
+* Pruning of models. 
+* Better caching.
+* Fine tuning the max number LM requests per translation and other parameters.
 
 ## Product Market Fit
 

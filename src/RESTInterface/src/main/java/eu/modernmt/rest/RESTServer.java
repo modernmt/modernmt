@@ -1,5 +1,6 @@
 package eu.modernmt.rest;
 
+import eu.modernmt.config.Config;
 import eu.modernmt.decoder.TranslationHypothesis;
 import eu.modernmt.engine.MasterNode;
 import eu.modernmt.rest.framework.JSONSerializer;
@@ -11,8 +12,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import java.io.File;
@@ -32,7 +31,6 @@ public class RESTServer {
     }
 
     private static RESTServer instance = null;
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     public static void setup(int restPort, MasterNode masterNode) {
         if (instance != null)
@@ -89,7 +87,7 @@ public class RESTServer {
                 ArrayList<Class<?>> classes = new ArrayList<>();
 
                 stream = getClass().getClassLoader().getResourceAsStream("rest-actions.list");
-                LineIterator lines = IOUtils.lineIterator(stream, "UTF-8");
+                LineIterator lines = IOUtils.lineIterator(stream, Config.charset.get());
 
                 while (lines.hasNext()) {
                     String line = lines.nextLine();

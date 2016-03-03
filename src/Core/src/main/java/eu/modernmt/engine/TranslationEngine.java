@@ -1,5 +1,7 @@
 package eu.modernmt.engine;
 
+import eu.modernmt.config.Config;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -11,8 +13,9 @@ import java.util.Map;
  */
 public class TranslationEngine {
 
-    private static final String CONTEXT_ANALYZER_INDEX_PATH = path("data", "context", "index");
-    private static final String MOSES_INI_PATH = path("data", "moses.ini");
+
+    private static final String CONTEXT_ANALYZER_INDEX_PATH = path("models", "context", "index");
+    private static final String MOSES_INI_PATH = path("models", "moses.ini");
     private static final String ENGINE_CONFIG_PATH = "engine.ini";
 
     private static String path(String... path) {
@@ -37,7 +40,7 @@ public class TranslationEngine {
 
     public TranslationEngine(String id) throws IOException {
         this.id = id;
-        this.root = new File(FS.ENGINES_PATH, id);
+        this.root = new File(Config.fs.engines, id);
         this.decoderIniTemplate = new File(this.root, MOSES_INI_PATH);
         this.caIndexPath = new File(this.root, CONTEXT_ANALYZER_INDEX_PATH);
         this.configFile = new File(this.root, ENGINE_CONFIG_PATH);

@@ -1,69 +1,66 @@
 package eu.modernmt.cli;
 
-import eu.modernmt.tokenizer.Languages;
-import eu.modernmt.tokenizer.TokenizerPool;
-import eu.modernmt.tokenizer.moses.MosesTokenizer;
-import eu.modernmt.tokenizer.utils.UnixLineReader;
-import org.apache.commons.configuration.SystemConfiguration;
-import org.apache.commons.io.FileUtils;
+import eu.modernmt.model.Sentence;
+import eu.modernmt.processing.Preprocessor;
+import eu.modernmt.processing.framework.PipelineInputStream;
+import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.framework.ProcessingJob;
+import eu.modernmt.processing.framework.ProcessingPipeline;
+import eu.modernmt.processing.util.SentenceOutputter;
+import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.LineIterator;
 
-import java.io.*;
-import java.util.*;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
+import java.util.Locale;
 
 /**
  * Created by davide on 17/12/15.
  */
 public class TokenizerMain {
 
-    private static final int BATCH_SIZE = 300;
+    private static class Args {
 
-    public static void main(String[] args) throws IOException {
-        tokenize(args[0], System.in, System.out);
+        private static final Options cliOptions;
+
+        static {
+            Option lang = Option.builder().longOpt("lang").hasArg().required().build();
+            Option skipTags = Option.builder().longOpt("no-tags").hasArg(false).required(false).build();
+
+            cliOptions = new Options();
+            cliOptions.addOption(lang);
+            cliOptions.addOption(skipTags);
+        }
+
+        public final Locale language;
+        public final boolean printTags;
+
+        public Args(String[] args) throws ParseException {
+            CommandLineParser parser = new DefaultParser();
+            CommandLine cli = parser.parse(cliOptions, args);
+
+            language = Locale.forLanguageTag(cli.getOptionValue("lang"));
+            printTags = !cli.hasOption("no-tags");
+        }
+
     }
 
-    private static void tokenize(String lang, InputStream input, OutputStream output) throws IOException {
-        Locale language = Languages.getSupportedLanguage(lang);
+    public static void main(String[] _args) throws InterruptedException, ProcessingException, ParseException {
+        Args args = new Args(_args);
 
-        if (language == null)
-            throw new IllegalArgumentException("Unsupported language: " + lang);
-
-        TokenizerPool tokenizer = TokenizerPool.getCachedInstance(language);
-        ArrayList<String> batch = new ArrayList<>(BATCH_SIZE);
+        ProcessingPipeline<String, Sentence> pipeline = null;
 
         try {
-            UnixLineReader reader = new UnixLineReader(new InputStreamReader(input, "UTF-8"));
-            String line;
+            pipeline = Preprocessor.getPipeline(args.language, true);
 
-            while ((line = reader.readLine()) != null) {
-                batch.add(line);
+            ProcessingJob<String, Sentence> job = pipeline.createJob(
+                    PipelineInputStream.fromInputStream(System.in),
+                    new SentenceOutputter(System.out, args.printTags)
+            );
 
-                if (batch.size() >= BATCH_SIZE) {
-                    process(tokenizer, batch, output);
-                    batch.clear();
-                }
-            }
+            job.start();
+            job.join();
 
-            if (batch.size() > 0)
-                process(tokenizer, batch, output);
         } finally {
-            tokenizer.terminate();
-        }
-    }
-
-    private static void process(TokenizerPool tokenizer, ArrayList<String> batch, OutputStream output) throws IOException {
-        List<String[]> tokens = tokenizer.tokenize(batch);
-
-        for (String[] line : tokens) {
-            for (String token : line) {
-                output.write(token.getBytes("UTF-8"));
-                output.write(' ');
-            }
-
-            output.write('\n');
+            IOUtils.closeQuietly(pipeline);
         }
     }
 

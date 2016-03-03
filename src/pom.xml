@@ -13,6 +13,7 @@
         <module>TextProcessing</module>
         <module>RESTInterface</module>
         <module>Executables</module>
+        <module>Model</module>
     </modules>
 
     <packaging>pom</packaging>
@@ -28,11 +29,26 @@
         <mmt.version>0.11.1</mmt.version>
     </properties>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.13</version>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>2.5</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>

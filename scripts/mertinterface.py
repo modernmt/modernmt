@@ -87,7 +87,11 @@ class _DocumentTranslator:
 
         self._features = _sorted_features_list()
 
-        with open(self.nbest_file, 'ab') as nbest_out:
+        try:
+            translations = []
+            sessions = []
+
+            # Enqueue translations requests
             with open(self.corpus) as source:
                 for line in source:
                     tokenized, original = line.strip().split(':')
@@ -97,22 +101,25 @@ class _DocumentTranslator:
                     if not self.skip_context:
                         context = Api.get_context_f(original)
                         session = Api.create_session(context)['id']
+                        sessions.append(session)
 
                     with open(tokenized) as doc:
-                        jobs = []
                         for docline in doc:
-                            result = self._pool.apply_async(self._get_translation, (docline, self.nbest, session))
-                            jobs.append(result)
+                            translation = self._pool.apply_async(self._get_translation, (docline, self.nbest, session))
+                            translations.append(translation)
 
-                        for job in jobs:
-                            translation = job.get()
-                            self._print(translation, nbest_out)
-                            self._line_id += 1
+            # Collection and outputting results
+            with open(self.nbest_file, 'ab') as nbest_out:
+                for translation_job in translations:
+                    translation = translation_job.get()
+                    self._print(translation, nbest_out)
+                    self._line_id += 1
 
-                    if session is not None:
-                        Api.close_session(session)
-
-        self._pool.terminate()
+            # Closing sessions
+            for session in sessions:
+                Api.close_session(session)
+        finally:
+            self._pool.terminate()
 
 
 def show_weighs():

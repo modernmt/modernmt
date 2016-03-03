@@ -34,6 +34,12 @@ We included a very small dataset, just to verify that training works.
 ./mmt create en it examples/data/train
 ```
 
+To test domain-specific differences on the sentence `system information support`, create an engine with small sample size:
+
+```bash
+./mmt create --suffixarrays.sample 10 en it examples/data/train
+```
+
 ### Start an existing engine
 
 ```bash
@@ -67,6 +73,61 @@ You will get:
     "translation": "mondo"
 }
 ```
+
+### Evaluating Quality (available from release 0.12)
+
+How is your engine performing vs the commercial state-of-the-art technologies?
+
+Should I use Google Translate, Bing or MMT given this data? 
+
+Evaluate helps you answer these questions.
+
+Before training, MMT has removed sentences corresponding to 1% of the training set and up to 1200.
+During evaluate this sentences are used to compute the BLUE Score and Matecat Post-Editing Effort against the MMT and Google Translate.
+
+With your engine running, just type:
+```
+./mmt evaluate
+```
+The typical output will be
+```
+Testing on 980 sentences...
+
+Matecat Post-Editing Effort:
+  MMT              : 75.10 (Winner)
+  Google Translate : 73.40 | API Limit Exeeded | Connection Error
+  Bing Translator  : Coming in next MMT release
+
+BLEU:
+  MMT              : 37.50 (Winner)
+  Google Translate : 36.10 | API Limit Exeeded | Connection Error
+  Bing Translator  : Coming in next MMT release
+
+Translation Speed:
+  MMT              :  12 words/s
+  Google Translate :  100 words/s
+  
+```
+
+If you want to test on a different Test Set just type:
+```
+./mmt evaluate --path your-folder/your-test-set
+```
+
+Notes:
+To run Evaluate you need internet connection for Google Translate API and the Matecat post-editing Effort API.
+MMT comes with a limited Google Translate API key. 
+
+Matecat kindly provides unlimited-fair-usage, access to their API to MMT users.
+
+You can select your Google Translate API Key by typing:
+```
+./mmt evaluate --gt-key YOUR_GOOGLE_TRANSLATE_API_KEY
+```
+
+If you don't want to use Google Translate just type a random key.
+
+
 
 ## Increasing the quality
 
@@ -112,7 +173,7 @@ http://opus.lingfil.uu.se
 MMT quality can be increased by tuning the parameters providing unseen translation examples. 
 
 ```
-./mmt tune examples/data/dev
+./mmt tune --path examples/data/dev
 ```
 
 This dev data used to tune the small engine created with the example data will take around 10 minutes. 

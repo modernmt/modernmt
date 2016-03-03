@@ -1,30 +1,28 @@
 package eu.modernmt.decoder;
 
-import java.util.List;
+import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Tag;
+import eu.modernmt.model.Token;
+import eu.modernmt.model.Translation;
+
 import java.util.Map;
 
 /**
  * Created by davide on 30/11/15.
  */
-public class TranslationHypothesis extends Sentence implements Comparable<TranslationHypothesis> {
+public class TranslationHypothesis extends Translation implements Comparable<TranslationHypothesis> {
 
     private float totalScore;
     private Map<String, float[]> scores;
 
-    public TranslationHypothesis(String rawText, float totalScore, Map<String, float[]> scores) {
-        super(rawText);
+    public TranslationHypothesis(Token[] tokens, Sentence source, int[][] alignment, float totalScore, Map<String, float[]> scores) {
+        super(tokens, source, alignment);
         this.totalScore = totalScore;
         this.scores = scores;
     }
 
-    public TranslationHypothesis(List<String> tokens, float totalScore, Map<String, float[]> scores) {
-        super(tokens);
-        this.totalScore = totalScore;
-        this.scores = scores;
-    }
-
-    public TranslationHypothesis(String[] tokens, float totalScore, Map<String, float[]> scores) {
-        super(tokens);
+    public TranslationHypothesis(Token[] tokens, Tag[] tags, Sentence source, int[][] alignment, float totalScore, Map<String, float[]> scores) {
+        super(tokens, tags, source, alignment);
         this.totalScore = totalScore;
         this.scores = scores;
     }

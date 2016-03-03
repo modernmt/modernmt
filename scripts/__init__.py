@@ -17,3 +17,12 @@ BIN_DIR = os.path.join(OPT_DIR, 'bin')
 
 MMT_JAR = os.path.join(BUILD_DIR, 'mmt-' + MMT_VERSION + ".jar")
 MMT_LIBS = BUILD_DIR
+
+
+def mmt_javamain(main_class, args=None):
+    command = ['java', '-cp', MMT_JAR, '-Dmmt.home=' + MMT_ROOT, '-Djava.library.path=' + MMT_LIBS, main_class]
+
+    if args is not None:
+        command += args
+
+    return command

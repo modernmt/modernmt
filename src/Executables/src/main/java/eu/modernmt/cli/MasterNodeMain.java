@@ -1,11 +1,12 @@
 package eu.modernmt.cli;
 
+import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.engine.MasterNode;
 import eu.modernmt.engine.TranslationEngine;
 import eu.modernmt.rest.RESTServer;
 import org.apache.commons.cli.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Created by davide on 17/12/15.
@@ -26,6 +27,8 @@ public class MasterNodeMain {
     }
 
     public static void main(String[] args) throws Throwable {
+        Log4jConfiguration.setup(2);
+
         CommandLineParser parser = new DefaultParser();
         CommandLine cli = parser.parse(cliOptions, args);
 
@@ -46,7 +49,7 @@ public class MasterNodeMain {
 
     public static class ShutdownHook extends Thread {
 
-        protected final Logger logger = LoggerFactory.getLogger(getClass());
+        protected final Logger logger = LogManager.getLogger(getClass());
 
         @Override
         public void run() {

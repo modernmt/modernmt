@@ -1,10 +1,10 @@
 package eu.modernmt.engine;
 
+import eu.modernmt.config.Config;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextDocument;
-import eu.modernmt.decoder.Sentence;
-import eu.modernmt.decoder.Translation;
+import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.decoder.moses.MosesFeature;
 import eu.modernmt.engine.tasks.GetFeatureWeightsTask;
@@ -12,8 +12,12 @@ import eu.modernmt.engine.tasks.TranslationTask;
 import eu.modernmt.network.cluster.ClusterManager;
 import eu.modernmt.network.cluster.DistributedCallable;
 import eu.modernmt.network.messaging.zeromq.ZMQMessagingServer;
+import eu.modernmt.processing.framework.ProcessingException;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,9 +65,7 @@ public class MasterNode extends ClusterManager {
 
                 String enginePath = engine.getPath().getAbsolutePath();
                 try {
-                    stream.write(enginePath.getBytes("UTF-8"));
-                } catch (UnsupportedEncodingException e) {
-                    throw new Error("UTF-8 not supported", e);
+                    stream.write(enginePath.getBytes(Config.charset.get()));
                 } catch (IOException e) {
                     throw new Error("This could not happen", e);
                 }
@@ -145,50 +147,51 @@ public class MasterNode extends ClusterManager {
     //  Translate
     // =============================
 
-    public Translation translate(String sentence, boolean textProcessing) {
+    public DecoderTranslation translate(String sentence, boolean textProcessing) throws TranslationException {
         return translate(sentence, null, 0L, textProcessing, 0);
     }
 
-    public Translation translate(String sentence, long sessionId, boolean textProcessing) {
+    public DecoderTranslation translate(String sentence, long sessionId, boolean textProcessing) throws TranslationException {
         return translate(sentence, null, sessionId, textProcessing, 0);
     }
 
-    public Translation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing) {
+    public DecoderTranslation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing) throws TranslationException {
         return translate(sentence, translationContext, 0L, textProcessing, 0);
     }
 
-    public Translation translate(String sentence, boolean textProcessing, int nbest) {
+    public DecoderTranslation translate(String sentence, boolean textProcessing, int nbest) throws TranslationException {
         return translate(sentence, null, 0L, textProcessing, nbest);
     }
 
-    public Translation translate(String sentence, long sessionId, boolean textProcessing, int nbest) {
+    public DecoderTranslation translate(String sentence, long sessionId, boolean textProcessing, int nbest) throws TranslationException {
         return translate(sentence, null, sessionId, textProcessing, nbest);
     }
 
-    public Translation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing, int nbest) {
+    public DecoderTranslation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing, int nbest) throws TranslationException {
         return translate(sentence, translationContext, 0L, textProcessing, nbest);
     }
 
-    private Translation translate(String text, List<ContextDocument> translationContext, long sessionId, boolean textProcessing, int nbest) {
-        Sentence sentence = new Sentence(text);
+    private DecoderTranslation translate(String text, List<ContextDocument> translationContext, long sessionId, boolean textProcessing, int nbest) throws TranslationException {
         TranslationTask task;
 
         if (translationContext != null) {
-            task = new TranslationTask(sentence, translationContext, textProcessing, nbest);
+            task = new TranslationTask(text, translationContext, textProcessing, nbest);
         } else if (sessionId > 0) {
             TranslationSession session = sessions.get(sessionId);
             if (session == null)
                 throw new IllegalArgumentException("Invalid session id " + sessionId);
 
-            task = new TranslationTask(sentence, session, textProcessing, nbest);
+            task = new TranslationTask(text, session, textProcessing, nbest);
         } else {
-            task = new TranslationTask(sentence, textProcessing, nbest);
+            task = new TranslationTask(text, textProcessing, nbest);
         }
 
         try {
             return this.execute(task);
         } catch (Throwable e) {
-            if (e instanceof RuntimeException)
+            if (e instanceof ProcessingException)
+                throw new TranslationException("Problem while processing translation", e);
+            else if (e instanceof RuntimeException)
                 throw (RuntimeException) e;
             else
                 throw new Error("Unexpected exception: " + e.getMessage(), e);

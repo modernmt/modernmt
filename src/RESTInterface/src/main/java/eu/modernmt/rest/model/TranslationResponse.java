@@ -1,7 +1,7 @@
 package eu.modernmt.rest.model;
 
 import eu.modernmt.context.ContextDocument;
-import eu.modernmt.decoder.Translation;
+import eu.modernmt.decoder.DecoderTranslation;
 
 import java.util.List;
 
@@ -10,7 +10,7 @@ import java.util.List;
  */
 public class TranslationResponse {
 
-    public Translation translation = null;
+    public DecoderTranslation translation = null;
     public List<ContextDocument> context = null;
     public long session = 0;
 }

@@ -1,5 +1,6 @@
 package eu.modernmt.decoder.moses;
 
+import eu.modernmt.config.Config;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -12,7 +13,7 @@ import java.util.Map;
 public class MosesINI {
 
     public static MosesINI load(File templateFile, File enginePath) throws IOException {
-        String template = FileUtils.readFileToString(templateFile, "UTF-8");
+        String template = FileUtils.readFileToString(templateFile, Config.charset.get());
         String engine = enginePath.getAbsolutePath();
         if (!engine.endsWith(File.separator))
             engine = engine + File.separator;

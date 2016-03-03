@@ -1,8 +1,8 @@
 package eu.modernmt.engine;
 
 import org.apache.commons.io.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +14,7 @@ import java.util.Arrays;
  */
 public class EngineSynchronizer {
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final Logger logger = LogManager.getLogger(getClass());
 
     private SlaveNode.MasterHost master;
     private String remotePath;

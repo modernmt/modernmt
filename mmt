@@ -1,12 +1,14 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 import argparse
 import logging
+import operator
 import os
 import socket
 import sys
 
 from scripts import dependency
-from scripts.engine import DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORTS
+from scripts.engine import DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORTS, IllegalStateException, \
+    IllegalArgumentException
 from scripts.engine import MMTEngine, MMTServer, MMTWorker
 from scripts.libs import shell, ssh
 from scripts.libs.ssh import SSHException
@@ -15,7 +17,7 @@ from scripts.mt.contextanalysis import ContextAnalyzer
 from scripts.mt.lm import LanguageModel
 from scripts.mt.moses import Moses
 from scripts.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
-from scripts.mt.processing import Tokenizer, CorpusCleaner, Detokenizer
+from scripts.mt.processing import Tokenizer, CorpusCleaner, Preprocessor
 
 __author__ = 'Davide Caroselli'
 __description = '''\
@@ -32,7 +34,7 @@ __description = '''\
   You can find more information on: http://www.modernmt.eu/
 '''
 
-_injectable_components = [Tokenizer, Detokenizer, CorpusCleaner, ContextAnalyzer, SuffixArraysPhraseTable, WordAligner,
+_injectable_components = [Tokenizer, CorpusCleaner, ContextAnalyzer, SuffixArraysPhraseTable, WordAligner,
                           LanguageModel, Moses, MMTEngine]
 
 
@@ -41,10 +43,12 @@ def __check_java():
         _, stderr = shell.execute(['java', '-version'])
 
         ok = False
-        for token in stderr.split('\n')[0].split():
-            if '"1.8' in token:
-                ok = True
-                break
+        for line in stderr.split('\n'):
+            tokens = line.split()
+            if 'version' in tokens:
+                if '"1.8' in tokens[tokens.index('version') + 1]:
+                    ok = True
+                    break
 
         if not ok:
             print 'ERROR: Wrong version of Java, required Java 8'
@@ -71,11 +75,6 @@ class CLIArgsException(Exception):
         self.message = error
 
 
-class IllegalStateException(Exception):
-    def __init__(self, error):
-        self.message = error
-
-
 def _logconfig(debug=True):
     level = logging.DEBUG if debug else logging.INFO
     _format = '%(asctime)-15s [%(levelname)s] - %(message)s'
@@ -85,7 +84,8 @@ def _logconfig(debug=True):
 def main_tune(argv):
     parser = argparse.ArgumentParser(description='Tune MMT engine')
     parser.prog = 'mmt tune'
-    parser.add_argument('corpora_path', metavar='CORPORA', help='the path to the training corpora')
+    parser.add_argument('--path', dest='corpora_path', metavar='CORPORA', default=None,
+                        help='the path to the training corpora (default is preprocessed sample)')
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
     parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
@@ -110,9 +110,113 @@ def main_tune(argv):
     injector.read_config(engine.config)
     engine = injector.inject(engine)
     server = MMTServer(engine, args.api_port)
-    corpora = ParallelCorpus.list(args.corpora_path)
+    corpora = ParallelCorpus.list(args.corpora_path) if args.corpora_path is not None else None
 
-    server.tune(corpora, debug=args.debug, context_enabled=args.context_enabled)
+    server.tune(corpora=corpora, debug=args.debug, context_enabled=args.context_enabled)
+
+
+def main_evaluate(argv):
+    parser = argparse.ArgumentParser(description='Evaluate MMT engine')
+    parser.prog = 'mmt evaluate'
+    parser.add_argument('--path', dest='corpora_path', metavar='CORPORA', default=None,
+                        help='the path to the training corpora (default is preprocessed sample)')
+    parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
+                        default='default')
+    parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
+                        help='the MMT API port. (default is {port})'.format(port=DEFAULT_MMT_API_PORT),
+                        default=None, type=int)
+    parser.add_argument('--gt-key', dest='gt_key', metavar='GT_API_KEY', default=None,
+                        help='A custom Google Translate API Key to use during evaluation')
+    parser.add_argument('--human-eval', dest='heval_output', metavar='OUTPUT', default=None,
+                        help='the output folder for the tab-spaced files needed to setup a Human Evaluation benchmark')
+    parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='if debug is set, it enables verbose '
+                                                                                 'logging and prevents temporary files '
+                                                                                 'to be removed after execution')
+
+    args = parser.parse_args(argv)
+    args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
+
+    _logconfig(args.debug)
+
+    engine = MMTEngine(name=args.engine)
+    if not engine.exists():
+        raise IllegalStateException('engine not found: ' + args.engine)
+
+    injector = dependency.Injector(*_injectable_components)
+    injector.read_config(engine.config)
+    engine = injector.inject(engine)
+    server = MMTServer(engine, args.api_port)
+    corpora = ParallelCorpus.list(args.corpora_path) if args.corpora_path is not None \
+        else ParallelCorpus.list(os.path.join(engine.data_path, Preprocessor.TEST_FOLDER_NAME))
+
+    lines = 0
+    for corpus in corpora:
+        lines += corpus.count_lines()
+
+    print '\nTesting on {lines} sentences...\n'.format(lines=lines)
+    sys.stdout.flush()
+
+    scores = server.evaluate(corpora=corpora, google_key=args.gt_key, heval_output=args.heval_output)
+
+    matecat = sorted([(translator,
+                       -1 if isinstance(score, basestring) else score['matecat'],
+                       score if isinstance(score, basestring) else None)
+                      for translator, score in scores.iteritems()
+                      ], key=operator.itemgetter(1), reverse=True)
+    bleu = sorted([(translator,
+                    -1 if isinstance(score, basestring) else score['bleu'],
+                    score if isinstance(score, basestring) else None)
+                   for translator, score in scores.iteritems()
+                   ], key=operator.itemgetter(1), reverse=True)
+    mtt = sorted([(translator,
+                   -1 if isinstance(score, basestring) else score['_mtt'],
+                   score if isinstance(score, basestring) else None)
+                  for translator, score in scores.iteritems()
+                  ], key=operator.itemgetter(1), reverse=True)
+
+    print 'Matecat Post-Editing Score:'
+    for i in range(0, len(matecat)):
+        translator, score, error = matecat[i]
+
+        if error is None:
+            text = '%.2f' % (score * 100)
+            if i == 0:
+                text += ' (Winner)'
+        else:
+            text = error
+
+        print '  %s: %s' % (translator.ljust(20), text)
+    print
+
+    print 'BLEU:'
+    for i in range(0, len(bleu)):
+        translator, score, error = bleu[i]
+
+        if error is None:
+            text = '%.2f' % (score * 100)
+            if i == 0:
+                text += ' (Winner)'
+        else:
+            text = error
+
+        print '  %s: %s' % (translator.ljust(20), text)
+    print
+
+    print 'Translation Speed:'
+    for i in range(0, len(mtt)):
+        translator, score, error = mtt[i]
+
+        if error is None:
+            text = '%.2fs per sentence' % score
+        else:
+            text = error
+
+        print '  %s: %s' % (translator.ljust(20), text)
+    print
+
+    if args.heval_output is not None:
+        print 'Files for Human Evaluation are available here:', os.path.abspath(args.heval_output)
+        print
 
 
 def main_start(argv):
@@ -184,15 +288,15 @@ def main_start(argv):
     # Check ports
     if args.has_master and not __is_freeport(args.api_port):
         raise IllegalStateException(
-                'port %d is already in use, please specify another port with option -p/--api-port' % args.api_port)
+            'port %d is already in use, please specify another port with option -p/--api-port' % args.api_port)
     if args.has_slave and not __is_freeport(args.cluster_ports[0]):
         raise IllegalStateException(
-                'port %d is already in use, please specify another port pair with option --cluster-ports' %
-                args.cluster_ports[0])
+            'port %d is already in use, please specify another port pair with option --cluster-ports' %
+            args.cluster_ports[0])
     if args.has_slave and not __is_freeport(args.cluster_ports[1]):
         raise IllegalStateException(
-                'port %d is already in use, please specify another port pair with option --cluster-ports' %
-                args.cluster_ports[1])
+            'port %d is already in use, please specify another port pair with option --cluster-ports' %
+            args.cluster_ports[1])
 
     # Exec command
     engine = MMTEngine(name=args.engine)
@@ -315,10 +419,10 @@ def main_status(argv):
     slave = MMTWorker(engine, None)
 
     sys.stderr.write('Master instance: {status}\n'.format(
-            status=('running' if master.is_running() else 'stopped')
+        status=('running' if master.is_running() else 'stopped')
     ))
     sys.stderr.write('Slave instance: {status}\n'.format(
-            status=('running' if slave.is_running() else 'stopped')
+        status=('running' if slave.is_running() else 'stopped')
     ))
 
     print ('running' if master.is_running() or slave.is_running() else 'stopped')
@@ -329,12 +433,17 @@ def main_create(argv):
     parser.prog = 'mmt create'
     parser.add_argument('source_lang', metavar='SOURCE_LANGUAGE', help='the source language (ISO 639-1)')
     parser.add_argument('target_lang', metavar='TARGET_LANGUAGE', help='the target language (ISO 639-1)')
-    parser.add_argument('corpora_path', metavar='CORPORA', help='the path to the training corpora')
+    parser.add_argument('corpora_paths', metavar='CORPORA', nargs='+',
+                        help='the paths to the training corpora. You can specify more than one path, '
+                             'in every folder you can put mixed monolingual and bilingual corpora')
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default=None)
     parser.add_argument('-d', '--debug', action='store_true', dest='debug',
                         help='if debug is set, it enables verbose logging and prevents temporary files to be removed '
                              'after execution')
+    parser.add_argument('--no-split', action='store_false', dest='split_corpora', default=True,
+                        help='if no-split is set, MMT will not extract dev and test sets out of the provided '
+                             'training corpora')
     parser.add_argument('-s', '--steps', metavar='STEPS', dest='training_steps', choices=MMTEngine.training_steps,
                         nargs='+', help='run only specified training steps {%(choices)s}')
 
@@ -348,8 +457,6 @@ def main_create(argv):
         injector = dependency.Injector(*_injectable_components)
         injector.read_args(args)
 
-        corpora = ParallelCorpus.list(args.corpora_path)
-
         engine = MMTEngine((args.source_lang, args.target_lang), args.engine)
         engine = injector.inject(engine)
 
@@ -361,7 +468,8 @@ def main_create(argv):
         if slave.is_running():
             slave.stop()
 
-        engine.builder.build(corpora, debug=args.debug, steps=args.training_steps)
+        engine.builder.build(args.corpora_paths,
+                             debug=args.debug, steps=args.training_steps, split_trainingset=args.split_corpora)
     else:
         parser.print_help()
 
@@ -387,6 +495,8 @@ def main():
             main_status(argv[1:])
         elif ['tune'] == argv[:1]:
             main_tune(argv[1:])
+        elif ['evaluate'] == argv[:1]:
+            main_evaluate(argv[1:])
         else:
             parser.print_help()
             exit(1)
@@ -394,6 +504,9 @@ def main():
         message = '{prog}: error: {message}\n'.format(prog=e.parser.prog, message=e.message)
         e.parser.print_usage(file=sys.stderr)
         sys.stderr.write(message)
+        exit(1)
+    except IllegalArgumentException as e:
+        sys.stderr.write('ERROR Illegal Argument: {message}\n'.format(message=e.message))
         exit(1)
     except IllegalStateException as e:
         sys.stderr.write('ERROR Illegal State: {message}\n'.format(message=e.message))

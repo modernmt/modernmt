@@ -153,8 +153,11 @@ JNIEXPORT jobject JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_translate(
     }
 
     JTranslation *jTranslation = JTranslation::instance(jvm);
-    jobject jtranslation = jTranslation->create(jvm, translation.text, hypothesesArray);
 
+    jobjectArray jAlignment = jTranslation->getAlignment(jvm, translation.alignment);
+    jobject jtranslation = jTranslation->create(jvm, translation.text, hypothesesArray, jAlignment);
+
+    jvm->DeleteLocalRef(jAlignment);
     if (hypothesesArray)
         jvm->DeleteLocalRef(hypothesesArray);
 
