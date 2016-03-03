@@ -117,7 +117,11 @@ class _DocumentTranslator:
 
             # Closing sessions
             for session in sessions:
-                Api.close_session(session)
+                try:
+                    Api.close_session(session)
+                except:
+                    # ignore it
+                    pass
         finally:
             self._pool.terminate()
 

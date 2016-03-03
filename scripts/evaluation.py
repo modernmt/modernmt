@@ -1,6 +1,5 @@
 import HTMLParser
 import json as js
-import multiprocessing
 import os
 import random
 import time
@@ -8,6 +7,7 @@ import time
 import requests
 
 from scripts.libs import multithread, shell
+from scripts.mt import ParallelCorpus
 
 DEFAULT_GOOGLE_KEY = 'AIzaSyBl9WAoivTkEfRdBBSCs4CruwnGL_aV74c'
 
@@ -21,56 +21,73 @@ class Translator:
     def __init__(self, source_lang, target_lang, threads=1):
         self.source_lang = source_lang
         self.target_lang = target_lang
-        self.threads = threads
+        self._threads = threads
 
     def name(self):
         return None
 
-    def __get_timed_translation(self, line, _=None):
+    def __get_timed_translation(self, line, corpus):
         begin = time.time()
-        text = self._get_translation(line)
+        text = self._get_translation(line, corpus)
         elapsed = time.time() - begin
 
         return text, elapsed
 
-    def _before_translate(self, document_path, output_path):
+    def _before_translate(self, corpus):
         pass
 
-    def _get_translation(self, line):
+    def _get_translation(self, line, corpus):
         pass
 
-    def _after_translate(self, document_path, output_path):
+    def _after_translate(self, corpus):
         pass
 
-    def translate(self, document_path, output_path):
-        pool = multithread.Pool(self.threads)
+    def translate(self, corpora, output):
+        pool = multithread.Pool(self._threads)
 
         try:
-            jobs = []
-            elapsed_total = 0
+            translations = []
+
+            for corpus in corpora:
+                self._before_translate(corpus)
+
+                with open(corpus.get_file(self.source_lang)) as source:
+                    output_path = os.path.join(output, corpus.name + '.' + self.target_lang)
+
+                    for line in source:
+                        translation = pool.apply_async(self.__get_timed_translation, (line, corpus))
+                        translations.append((translation, output_path))
+
+                self._after_translate(corpus)
+
+            elapsed_time = 0
             translation_count = 0
 
-            self._before_translate(document_path, output_path)
+            path = None
+            stream = None
 
-            with open(document_path) as source:
-                for line in source:
-                    result = pool.apply_async(self.__get_timed_translation, (line, None))
-                    jobs.append(result)
+            for translation_job, output_path in translations:
+                translation, elapsed = translation_job.get()
 
-            with open(output_path, 'wb') as output:
-                for job in jobs:
-                    translation, elpased = job.get()
+                if output_path != path:
+                    if stream is not None:
+                        stream.close()
 
-                    output.write(translation.encode('utf-8'))
-                    output.write('\n')
+                    stream = open(output_path, 'wb')
+                    path = output_path
 
-                    elapsed_total += elpased
-                    translation_count += 1
+                stream.write(translation.encode('utf-8'))
+                stream.write('\n')
 
-            return elapsed_total, translation_count
+                elapsed_time += elapsed
+                translation_count += 1
+
+            if stream is not None:
+                stream.close()
+
+            return ParallelCorpus.list(output), (elapsed_time / translation_count)
         finally:
             pool.terminate()
-            self._after_translate(document_path, output_path)
 
 
 class HumanEvaluationFileOutputter:
@@ -113,28 +130,35 @@ class BingTranslator(Translator):
 
 class MMTTranslator(Translator):
     def __init__(self, server):
-        Translator.__init__(self, server.engine.source_lang, server.engine.target_lang,
-                            threads=(multiprocessing.cpu_count() * 2))
+        Translator.__init__(self, server.engine.source_lang, server.engine.target_lang, threads=100)
         self._server = server
-        self._session = None
+        self._sessions = {}
 
     def name(self):
         return 'MMT'
 
-    def _before_translate(self, document_path, output_path):
-        context = self._server.api.get_context_f(document_path)
-        self._session = self._server.api.create_session(context)['id']
+    def translate(self, corpora, output):
+        result = Translator.translate(self, corpora, output)
 
-    def _get_translation(self, line):
+        for _, session in self._sessions.iteritems():
+            self._server.api.close_session(session)
+
+        return result
+
+    def _before_translate(self, corpus):
+        corpus_file = corpus.get_file(self.source_lang)
+        context = self._server.api.get_context_f(corpus_file)
+        self._sessions[corpus_file] = self._server.api.create_session(context)['id']
+
+    def _get_translation(self, line, corpus):
+        corpus_file = corpus.get_file(self.source_lang)
+
         try:
-            translation = self._server.api.translate(line, session=self._session, processing=True)
+            translation = self._server.api.translate(line, session=self._sessions[corpus_file], processing=True)
         except Exception as e:
             raise TranslateError(e.message)
 
         return translation['translation']
-
-    def _after_translate(self, document_path, output_path):
-        self._server.api.close_session(self._session)
 
 
 class GoogleTranslate(Translator):
@@ -146,7 +170,7 @@ class GoogleTranslate(Translator):
     def name(self):
         return 'Google Translate'
 
-    def _get_translation(self, line):
+    def _get_translation(self, line, corpus):
         url = 'https://www.googleapis.com/language/translate/v2'
 
         data = {
