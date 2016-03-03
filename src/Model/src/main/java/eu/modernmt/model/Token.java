@@ -23,6 +23,10 @@ public class Token implements Serializable {
         return text;
     }
 
+    public void setText(String text) {
+        this.text = text;
+    }
+
     public boolean hasRightSpace() {
         return rightSpace;
     }
