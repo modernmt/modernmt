@@ -6,6 +6,17 @@ import sys, os, requests, json, string, pprint, codecs, re, time
 import argparse
 
 
+# check if an engine is providing translation service on host:port
+#
+def check_connection_with_engine(host, port):
+    try:
+        requests.get("http://%s:%s/translate?q=hello" % (host, str(port)))
+    except Exception, e:
+        return False
+    return True
+
+
+
 # verify that tags in the "tra_line" are the same of those in "src_line";
 #  equality is based on number, name and type (content-full or self-closing).
 #  Moreover tags in "tra_line" must be space-separated from words.
@@ -37,18 +48,10 @@ def verify_tags(src_line, tra_line):
     #
     tco_dict_src = src_stats['TCO']
     tco_dict_tra = tra_stats['TCO']
-    # check if tags in tra_line are in src_line
-    for tag_span, tra_occ in tco_dict_tra.items():
-        if tag_span in tco_dict_src:
-            src_occ = tco_dict_src[tag_span]
-            tco_total_occ += max(src_occ, tra_occ)
-            tco_total_match += min(src_occ, tra_occ)
-        else:
-            tco_total_occ += tra_occ
-    # check tags in src_line that are not in tra_line
-    for tag_span, src_occ in tco_dict_src.items():
-        if not tag_span in tco_dict_tra:
-            tco_total_occ += src_occ
+    src_occ = tco_dict_src['_ALL_']
+    tra_occ = tco_dict_tra['_ALL_']
+    tco_total_occ += max(src_occ, tra_occ)
+    tco_total_match += min(src_occ, tra_occ)
 
     # manage standard tags counts
     #
@@ -87,15 +90,13 @@ def extract_tag_stats(text):
             tsc_dict[tag_span] = 1
     text = tsc_regex.sub('', text)
 
-    # comments: store and delete them
+    # comments: store just counts (not the span, because it will be translated) and delete them
     #
     tco_dict = {}
+    tag_span= "_ALL_"
+    tco_dict[tag_span] = 0
     for match in tco_regex.finditer(text):
-        tag_span= match.group(1)
-        if tag_span in tco_dict:
-            tco_dict[tag_span] += 1
-        else:
-            tco_dict[tag_span] = 1
+        tco_dict[tag_span] += 1
     text = tco_regex.sub('', text)
 
     # standard: delete closing tags, then store the open tags
@@ -140,7 +141,7 @@ tst_total_match = 0
 
 score_threshold = 0.7
 translation_file = "/tmp/test_tags.tf." + str(os.getpid())
-
+api_host = "localhost"
 
 # process parameters
 #
@@ -159,6 +160,16 @@ src_file = args.src_file[0]
 api_port = args.api_port
 log_file = args.log_file
 
+
+# check engine
+#
+if not check_connection_with_engine(api_host, api_port):
+    results_dict = { "error" : "cannot connect to engine at %s:%s" % (api_host, api_port) }
+    final_dict = { "passed" : False, "results" : results_dict }
+    final_jstring = json.dumps(final_dict)
+    print final_jstring
+    exit(1)
+    
 
 # translate sentences of src_file and save them in translation_file
 #
@@ -185,6 +196,10 @@ with open(src_file) as in_src:
             verify_tags(line_src, line_tra)
 time_sec_score_computation = "%.1f s" % (time.time() - start_time_sec)
 
+# manage log_file
+#
+if log_file != "":
+    os.system("cat %s > %s" % (translation_file, log_file))
 
 # remove tmp file
 #
@@ -209,6 +224,9 @@ results_dict = { "translated_tag_score" : tra_tag_score,
                  "time_for_score_computation" : time_sec_score_computation,
                  "time_for_translation" : time_sec_translation,
                  "details" : detail_dict }
+if log_file != "":
+    results_dict["log_file"] = log_file
+
 
 final_dict = { "passed" : passed_flag, "results" : results_dict }
 final_jstring = json.dumps(final_dict)

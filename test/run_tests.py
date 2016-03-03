@@ -21,14 +21,13 @@ class Tester:
         try:
             json_information = json.loads(out)
             if 'passed' not in json_information:
-                raise ValueError("The key \'passed' is missing")
+                raise ValueError("The key 'passed' is missing")
             if verbose:
                 print json.dumps(json_information, indent=4, separators=(',', ': '))
             return json_information
         except Exception, e:
-            json_error = {'passed': False, 'error': str(e)}
+            json_error = {'passed': False, 'error': str(e), 'test_output': out}
             if verbose:
-                sys.stderr.write(out + "\n") #not working
                 print json.dumps(json_error, indent=4, separators=(',', ': '))
             return json_error
 
@@ -100,7 +99,7 @@ class Tester:
         try:
             with open(json_file_path) as data_file:
                 json_information = json.load(data_file)
-            mandatory_keys = ["enabled", "description", "full_description"]
+            mandatory_keys = ["enabled", "description", "full_description", "author"]
             for key in mandatory_keys:
                 if key not in json_information:
                     raise ValueError('The key \'' + key + '\' is missing')

@@ -58,6 +58,12 @@ The json file named 'info.json' contains meta information about the test and it 
 }
 ```
 
+## Input
+
+Every test can be launched with no arguments specified and it runs with some default parameters.
+
+Every test has to output useful information about its usage if launched with the "-h" or "--help" arguments.
+
 ## Output
 
 Each test prints on the standard ouput a json containg both a fixed structure and a map depending on the nature of the test.
@@ -116,9 +122,15 @@ My_New_Test_5 False  "It tests the alignment of ..."
 
 ## Malformed tests ## 
 #Test_name Enabled Description
-My_New_Test_2
-My_New_Test_6
+My_New_Test_2 malformed	"Expecting property name: line 5 column 2 (char 171)"
+My_New_Test_6 malformed	"The key 'enabled' is missing"
 
+```
+
+To execute all the enabled tests run run_tests.py with the "-all" argument:
+
+```bash
+python run_tests.py -all
 ```
 
 To execute a specific test execute run_tests.py and pass the name of the test as argument:
@@ -127,8 +139,12 @@ To execute a specific test execute run_tests.py and pass the name of the test as
 python run_tests.py -name My_New_Test_1
 ```
 
-To execute all the enabled tests run run_tests.py with the "-all" argument:
-
+If you want to run a test with a custom input, you can move under its folder with:
 ```bash
-python run_tests.py -all
+cd tests/<TEST_NAME>/
+```
+
+And launch the following command to read about its usage:
+```bash
+./launch.sh -h
 ```

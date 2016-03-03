@@ -1,0 +1,8 @@
+{
+	"enabled": true,
+	"description": "It trains a context analyzer and tests it sending multiple queries in order to compute the precision and the recall of the system",
+
+	"full_description": "It creates an engine named 'context_analyzer_test_engine' with the training data and binds it on a free random port.\nThe only steps done during the creation of the engine are 'preprocess' and 'context_analyzer'. \nWhen the context analyzer is ready, it reads portion of text from the testset and queries the context analyzer in order to compute the precision and the recall of the system.\nWhen the test ends, it stops the engine and outputs the results. \n\nIt computes: \n- Precision: number of times that the right domain is in first position divided by the total number of queries. \n- Recall: number of times that the right domain appears in the results divided by the total number of queries. \n- Average position: the sum of the positions in which the right domain appears (first position is 1) divided by the number of queries in which it appears in the results.\n- Average score gap: the sum of the gap between the score of the right domain and the domain next in the results divided by the number of queries in which it appears in the results.\n- Average query time [s]: the average query time in seconds.",
+
+	"author": "Luca Mastrostefano from Translated"
+}
