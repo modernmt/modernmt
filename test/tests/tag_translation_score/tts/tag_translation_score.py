@@ -6,6 +6,17 @@ import sys, os, requests, json, string, pprint, codecs, re, time
 import argparse
 
 
+# check if an engine is providing translation service on host:port
+#
+def check_connection_with_engine(host, port):
+    try:
+        requests.get("http://%s:%s/translate?q=hello" % (host, str(port)))
+    except Exception, e:
+        return False
+    return True
+
+
+
 # verify that tags in the "tra_line" are the same of those in "src_line";
 #  equality is based on number, name and type (content-full or self-closing).
 #  Moreover tags in "tra_line" must be space-separated from words.
@@ -130,7 +141,7 @@ tst_total_match = 0
 
 score_threshold = 0.7
 translation_file = "/tmp/test_tags.tf." + str(os.getpid())
-
+api_host = "localhost"
 
 # process parameters
 #
@@ -149,6 +160,16 @@ src_file = args.src_file[0]
 api_port = args.api_port
 log_file = args.log_file
 
+
+# check engine
+#
+if not check_connection_with_engine(api_host, api_port):
+    results_dict = { "error" : "cannot connect to engine at %s:%s" % (api_host, api_port) }
+    final_dict = { "passed" : False, "results" : results_dict }
+    final_jstring = json.dumps(final_dict)
+    print final_jstring
+    exit(1)
+    
 
 # translate sentences of src_file and save them in translation_file
 #
