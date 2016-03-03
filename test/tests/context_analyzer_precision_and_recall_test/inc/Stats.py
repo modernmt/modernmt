@@ -44,10 +44,10 @@ class Stats:
         float_number_of_found = float(self.__number_of_found)
         stats = {
             'Precision': float('nan') if float_number_of_queries == 0 else self.__number_of_matches / float_number_of_queries,
-            'Recal':  float('nan') if float_number_of_queries == 0 else self.__number_of_found / float_number_of_queries,
+            'Recall':  float('nan') if float_number_of_queries == 0 else self.__number_of_found / float_number_of_queries,
             'Average position':  float('nan') if float_number_of_found == 0 else self.__sum_position / float_number_of_found,
             'Average score gap':  float('nan') if float_number_of_found == 0 else self.__sum_score_gap / float_number_of_found,
-            'Average query time in millis':  float('nan') if float_number_of_queries == 0 else self.__total_time / float_number_of_queries
+            'Average query time [s]':  float('nan') if float_number_of_queries == 0 else self.__total_time / float_number_of_queries
         }
         return  stats
 
