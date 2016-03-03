@@ -116,8 +116,8 @@ My_New_Test_5 False  "It tests the alignment of ..."
 
 ## Malformed tests ## 
 #Test_name Enabled Description
-My_New_Test_2
-My_New_Test_6
+My_New_Test_2 malformed	"Expecting property name: line 5 column 2 (char 171)"
+My_New_Test_6 malformed	"The key 'enabled' is missing"
 
 ```
 
