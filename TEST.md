@@ -61,6 +61,7 @@ The json file named 'info.json' contains meta information about the test and it 
 ## Input
 
 Every test can be launched with no arguments specified and it runs with some default parameters.
+
 Every test has to output useful information about its usage if launched with the "-h" or "--help" arguments.
 
 ## Output
