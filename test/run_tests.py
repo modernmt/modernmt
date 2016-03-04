@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os, sys, json
+from argparse import ArgumentParser
 
 
 class Tester:
@@ -78,20 +79,45 @@ class Tester:
                 malformed_tests.append((test_name, is_json_valid))
 
         #Print information
-        print "\n## Enabled tests ##"
+        print "\n## ENABLED TEST ##"
         print "#%s\t%s\t%s" % ("Test_name", "Enabled", "Description")
         for test in enabled_tests:
-            print "%s\t%s\t\"%s\"" % test
-        print "\n## Disabled tests ##"
+            print "%s\t%s\t\"%s\"\n" % test
+        print "\n## DISABLED TEST ##"
         print "#%s\t%s\t%s" % ("Test_name", "Enabled", "Description")
         for test in disabled_tests:
-            print "%s\t%s\t\"%s\"" % test
-        print "\n## Malformed tests ##"
+            print "%s\t%s\t\"%s\"\n" % test
+        print "\n## MALFORMED TEST ##"
         print "#%s\t%s\t%s" % ("Test_name", "Status", "Error Description")
         for test in malformed_tests:
-            print "%s\tmalformed\t\"%s\"" % test
+            print "%s\tmalformed\t\"%s\"\n" % test
         print "\n"
 
+    def change_status_test(self, test_name, status):
+        test_dir = os.path.join(Tester.TESTS_PATH,test_name)
+        json_file_path = os.path.join(test_dir,Tester.JSON_DESCRIPTION_FILE_NAME)
+        is_json_valid = self.check_well_formed_info_json(json_file_path)
+        if is_json_valid == True:
+            with open(json_file_path) as data_file:
+                json_information = json.load(data_file)
+            json_information['enabled'] = status
+            new_json_string = json.dumps(json_information, indent=4, separators=(',', ': '))
+            with open(json_file_path, 'w') as json_file:
+                json_file.write(new_json_string)
+            print "SUCCESS"
+        else:
+            print is_json_valid
+
+    def print_info(self, test_name):
+        test_dir = os.path.join(Tester.TESTS_PATH,test_name)
+        json_file_path = os.path.join(test_dir,Tester.JSON_DESCRIPTION_FILE_NAME)
+        is_json_valid = self.check_well_formed_info_json(json_file_path)
+        if is_json_valid == True:
+            with open(json_file_path) as data_file:
+                json_information = json.load(data_file)
+            print json.dumps(json_information, indent=4, separators=(',', ': '))
+        else:
+            print is_json_valid
     def get_available_tests(self):
         return [(test, os.path.join(Tester.TESTS_PATH,test)) for test in os.listdir(Tester.TESTS_PATH) if os.path.isdir(os.path.join(Tester.TESTS_PATH,test))]
 
@@ -109,19 +135,37 @@ class Tester:
         except ValueError, e:
                return str(e)
 
+
 if __name__ == "__main__":
-    import sys
-    help_string = "Use -list to list all the available test\n"\
-        "Use -name TEST_NAME to run a specific test\n"\
-        "Use -all to run all the enabled tests\n"
+    parser = ArgumentParser()
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-a', "-all", dest="all", action='store_true',
+                      help="Run all the enabled tests")
+    group.add_argument('-n', "--name", dest="single", metavar='TEST_NAME',
+                      help="Run the specified test")
+    group.add_argument('-l', "--list", dest="list", action='store_true',
+                      help="List all the available tests")
+    group.add_argument('-e', "--enable", dest="enable", metavar='TEST_NAME',
+                      help="Enable the specified test")
+    group.add_argument('-d', "--disable", dest="disable", metavar='TEST_NAME',
+                      help="Disable the specified test")
+    group.add_argument('-i', "--info", dest="info", metavar='TEST_NAME',
+                      help="Print information about the specified test")
+    args = parser.parse_args()
+
     tester = Tester()
-    if len(sys.argv) < 2:
-        print help_string
-    elif sys.argv[1] == '-all':
+    if args.all:
         tester.run_all()
-    elif sys.argv[1] == '-name':
-        tester.run_test(sys.argv[2])
-    elif sys.argv[1] == '-list':
+    elif args.list:
         tester.list_all_tests()
+    elif args.single is not None:
+        tester.run_test(args.single)
+    elif args.enable is not None:
+        tester.change_status_test(args.enable, True)
+    elif args.disable is not None:
+        tester.change_status_test(args.disable, False)
+    elif args.info is not None:
+        tester.print_info(args.info)
     else:
-        print help_string
+        parser.print_help()
