@@ -118,7 +118,7 @@ class StaticIRSTLM(LanguageModel):
             # Creating lm in ARPA format
             command = [self._buildlm_bin, '-i', input_se, '-k', str(cpu_count()), '-o', arpa_file, '-n',
                        str(self._order), '-s', 'witten-bell', '-t', temp, '-l', '/dev/stdout', '-irstlm',
-                       self._irstlm_dir]
+                       self._irstlm_dir, '--PruneSingletons']
             shell.execute(command, stderr=log)
 
             # Create binary lm
