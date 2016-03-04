@@ -521,11 +521,17 @@ class MMTServerApi:
     def get_features(self):
         return self._get('decoder/features')
 
-    def get_context_f(self, document):
-        return self._get('context', params={'local_file': document})
+    def get_context_f(self, document, limit=None):
+        params={'local_file': document}
+        if limit is not None:
+            params['limit'] = limit
+        return self._get('context', params=params)
 
     def get_context_s(self, text):
-        return self._get('context', params={'text': text})
+        params={'text': text}
+        if limit is not None:
+            params['limit'] = limit
+        return self._get('context', params=params)
 
     def create_session(self, context):
         return self._post('sessions', json=context)

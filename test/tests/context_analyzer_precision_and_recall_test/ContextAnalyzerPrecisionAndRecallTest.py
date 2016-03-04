@@ -32,7 +32,7 @@ class ContextAnalyzerPrecisionAndRecallTest:
         except Exception as e:
             json_response = {"passed": False, "error": str(e)}
         finally:
-            self.stop_engine()
+            self.stop_and_delete_engine()
         print json.dumps(json_response)
 
     def start_engine(self, port):
@@ -72,7 +72,7 @@ class ContextAnalyzerPrecisionAndRecallTest:
                 stats.add_sample(results, domain_id, query_time)
         return stats
 
-    def stop_engine(self):
+    def stop_and_delete_engine(self):
         self.log("Moving into: " + ContextAnalyzerPrecisionAndRecallTest.MMT_ROOT_DIR)
         os.chdir(ContextAnalyzerPrecisionAndRecallTest.MMT_ROOT_DIR)
 
@@ -82,6 +82,17 @@ class ContextAnalyzerPrecisionAndRecallTest:
         out, err = process.communicate()
         self.log(out)
         self.log(err)
+
+        self.log("Deleting engine...")
+        engine_path = os.path.join(
+            os.path.join(ContextAnalyzerPrecisionAndRecallTest.MMT_ROOT_DIR, "engines"),
+            ContextAnalyzerPrecisionAndRecallTest.ENGINE_NAME)
+        process = subprocess.Popen(['rm', '-rf', engine_path],
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = process.communicate()
+        self.log(out)
+        self.log(err)
+
         self.log("Moving into: " + ContextAnalyzerPrecisionAndRecallTest.SCRIPT_DIR)
         os.chdir(ContextAnalyzerPrecisionAndRecallTest.SCRIPT_DIR)
 

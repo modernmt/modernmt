@@ -104,7 +104,7 @@ cd test
 Now you an list all the available test with:
 
 ```bash
-python run_tests.py -list
+python run_tests.py --list
 ```
 
 It outputs useful information about which tests are enabled, which are not and which have a malformed test.json:
@@ -130,13 +130,13 @@ My_New_Test_6 malformed	"The key 'enabled' is missing"
 To execute all the enabled tests run run_tests.py with the "-all" argument:
 
 ```bash
-python run_tests.py -all
+python run_tests.py --all
 ```
 
 To execute a specific test execute run_tests.py and pass the name of the test as argument:
 
 ```bash
-python run_tests.py -name My_New_Test_1
+python run_tests.py --name My_New_Test_1
 ```
 
 If you want to run a test with a custom input, you can move under its folder with:
@@ -144,7 +144,22 @@ If you want to run a test with a custom input, you can move under its folder wit
 cd tests/<TEST_NAME>/
 ```
 
-And launch the following command to read about its usage:
+And execute 'launch.sh' with '-h' argument to read about its usage:
 ```bash
 ./launch.sh -h
+usage: run_tests.py [-h]
+                    [-a | -n TEST_NAME | -l | -e TEST_NAME | -d TEST_NAME | -i TEST_NAME]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -a, -all              Run all the enabled tests
+  -n TEST_NAME, --name TEST_NAME
+                        Run the specified test
+  -l, --list            List all the available tests
+  -e TEST_NAME, --enable TEST_NAME
+                        Enable the specified test
+  -d TEST_NAME, --disable TEST_NAME
+                        Disable the specified test
+  -i TEST_NAME, --info TEST_NAME
+                        Print information about the specified test
 ```

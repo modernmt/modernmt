@@ -478,7 +478,7 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=__description,
                                      usage='%(prog)s [-h] ACTION [args]', add_help=False, prog='mmt')
     parser.add_argument('action', metavar='ACTION',
-                        choices=['create', 'start', 'stop', 'status', 'tune'],
+                        choices=['create', 'evaluate', 'start', 'stop', 'status', 'tune'],
                         help='{%(choices)s}', nargs='?')
     parser.add_argument('-h', '--help', dest='help', action='store_true', help='show this help message and exit')
 
