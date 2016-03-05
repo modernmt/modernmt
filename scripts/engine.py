@@ -620,7 +620,7 @@ class MMTServer(_MMTDistributedComponent):
 
                 with cmdlogger.step('Corpus tokenization') as _:
                     tokenized_corpora = self.engine.tokenizer.batch_tokenize(corpora, tokenizer_output,
-                                                                             print_tags=False)
+                                                                             print_tags=False, print_placeholders=True)
 
             # Create merged corpus
             with cmdlogger.step('Merging corpus') as _:
@@ -714,7 +714,8 @@ class MMTServer(_MMTDistributedComponent):
 
         # Tokenize test set
         references_path = os.path.join(working_dir, 'references')
-        tokenized_corpora = self.engine.tokenizer.batch_tokenize(corpora, references_path, print_tags=True)
+        tokenized_corpora = self.engine.tokenizer.batch_tokenize(corpora, references_path,
+                                                                 print_tags=True, print_placeholders=False)
 
         tokenized_references = ParallelCorpus.filter(tokenized_corpora, target_lang)
         original_references = ParallelCorpus.filter(corpora, target_lang)
@@ -736,7 +737,8 @@ class MMTServer(_MMTDistributedComponent):
 
             try:
                 translated, mtt = translator.translate(corpora, translations_path)
-                tokenized = self.engine.tokenizer.batch_tokenize(translated, tokenized_path, print_tags=True)
+                tokenized = self.engine.tokenizer.batch_tokenize(translated, tokenized_path,
+                                                                 print_tags=True, print_placeholders=False)
 
                 translations.append((translator, translated, tokenized, mtt))
             except TranslateError as e:
