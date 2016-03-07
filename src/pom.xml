@@ -4,7 +4,7 @@
 
     <groupId>eu.modernmt</groupId>
     <artifactId>mmt-root</artifactId>
-    <version>0.11.1</version>
+    <version>0.12</version>
 
     <modules>
         <module>Core</module>
@@ -26,7 +26,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lucene.version>4.10.4</lucene.version>
 
-        <mmt.version>0.11.1</mmt.version>
+        <mmt.version>0.12</mmt.version>
     </properties>
 
     <build>
