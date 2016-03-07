@@ -18,11 +18,11 @@ This MMT release will allow you to create an MT engine, available via a REST API
 
 Intro video: http://87k.eu/lk9l
 
-## Installation
+## Your first translation with MMT
+
+### Installation
 
 Read [INSTALL.md](INSTALL.md)
-
-## Your first translation with MMT
 
 ### Create an Engine
 
