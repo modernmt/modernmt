@@ -333,7 +333,7 @@ def main_start(argv):
         sys.stdout.flush()
 
         if slave is not None:
-            print 'Synchronizing models...',
+            print 'Loading models...',
             sys.stdout.flush()
             if not slave.wait_modelsync():
                 raise Exception('failed to start slave instance, check log file for more details: ' + slave.log_file)
