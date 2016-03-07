@@ -128,7 +128,8 @@ class SuffixArraysPhraseTable(MosesFeature):
 
     def _get_mttbuild_command(self, mct_base, lang):
         output = mct_base + '.' + lang
-        return [self._mttbuild_bin, '-i', '-o', output]
+        dmp_file = mct_base + '.dmp'
+        return [self._mttbuild_bin, '-i', '-o', output, '-m', dmp_file, '-g']
 
 
 class FastAlign(WordAligner):
