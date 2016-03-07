@@ -72,6 +72,27 @@ You will get:
 }
 ```
 
+#### Input format
+
+MMT support XML input type for translations. XML tags are extracted from the source text, and re-inserted in the translation in the right position, based on the translation alignments.
+
+During the pre-processing:
+
+* XML Tags are identified and extracted from the text.
+* Pure text is then de-escaped: XML entities are replaced with the actual literal (e.g. **&amp;lt;** is replaced with char **&lt;**).
+
+The text is then translated by the decoder. During the post-processing step:
+
+* Text is then escaped following the XML conventions. Characters **&quot;**, **&apos;**, **&lt;**, **&gt;** and **&amp;** are escaped in **&amp;quot;**, **&amp;apos;**, **&amp;lt;**, **&amp;gt;** and **&amp;amp;**.
+* XML Tags are positioned in the translation based on the alignments. Tag's content is kept untouched.
+
+See the following example:
+
+* **Input**:         ```You&apos;ll see the <div id="example-div">example</div>!```
+* **Preprocessed**:  ```You 'll see the example !```
+* **Translation**:   ```Vedrai l' esempio !```
+* **Postprocessed**: ```Vedrai l&apos;<div id="example-div">esempio</div>!"```
+
 ### Evaluating Quality
 
 How is your engine performing vs the commercial state-of-the-art technologies?
