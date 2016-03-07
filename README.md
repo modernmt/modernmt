@@ -207,7 +207,7 @@ If you need more data there is a good collection here:
 http://opus.lingfil.uu.se
 
 
-### MMT Tuning - (Optional)
+### MMT Tuning (Optional)
 
 MMT quality can be increased by tuning the parameters providing unseen translation examples. 
 
@@ -224,6 +224,8 @@ Tuning speed depends on many factors:
  - Luck. How close the random initial parameters are to the convergence.
 
 Expect a few days for a 1B words model with 1000 sentences used for tuning.
+
+Tuning and evaluate runs also on a distributed MMT.  
 
 ## MMT distributed (Optional)
 
