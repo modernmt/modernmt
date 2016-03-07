@@ -12,7 +12,6 @@ class Stats:
         self.__total_time = 0
 
     def add_sample(self, results, domain_id, query_time):
-        self.__number_of_queries += 1
         match = False
         position = -1
         gap = -1
@@ -31,11 +30,12 @@ class Stats:
         self.add(match, position, gap, found, query_time)
 
     def add(self, match, position, gap, found, query_time):
+        self.__number_of_queries += 1
         if match:
             self.__number_of_matches += 1
         if found:
             self.__number_of_found += 1
-            self.__sum_position += 1
+            self.__sum_position += position
             self.__sum_score_gap += gap
         self.__total_time += query_time
 
