@@ -83,7 +83,7 @@ Done! go to [README.md](README.md)
 
 
 
-# Installing from source (only for contributors or expert users)
+# Installing from source (for contributors)
 
 Build MMT from source allows you to contribute to this repository. Please note that currently this procedure has been tested only on Ubuntu 14.04, it is highly recommended to use this OS as your development environment.
 
