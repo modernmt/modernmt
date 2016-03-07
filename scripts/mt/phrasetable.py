@@ -33,12 +33,14 @@ class SuffixArraysPhraseTable(MosesFeature):
     injector_section = 'suffixarrays'
     injectable_fields = {
         'sample': ('number of samples for phrase table', int, 1000),
+        'method': ('sampling method for suffix array phrase table', str, 'ranked'),
     }
 
     def __init__(self, model, langs):
         MosesFeature.__init__(self, 'Mmsapt')
 
         self._sample = None  # Injected
+        self._method = None  # Injected
 
         self._model = model
         self._source_lang = langs[0]
@@ -53,13 +55,13 @@ class SuffixArraysPhraseTable(MosesFeature):
         return os.path.join(self._model, 'model')
 
     def get_iniline(self):
-        template = 'path={model}. L1={source_lang} L2={target_lang} output-factor=0 sample={sample} method=ranked ' \
+        template = 'path={model}. L1={source_lang} L2={target_lang} output-factor=0 sample={sample} method={method} ' \
                    'workers={workers} pfwd=g pbwd=g logcnt=0 coh=0 prov=0 rare=0 unal=0 smooth=.01 lexalpha=0 ' \
                    'lr-func=DM0 bias-loglevel=1'
 
         return template.format(model=self.get_relpath(self._get_model_basename()),
                                source_lang=self._source_lang, target_lang=self._target_lang,
-                               sample=self._sample, workers='${SA_WORKERS}')
+                               sample=self._sample, workers='${SA_WORKERS}', method=self._method)
 
     def train(self, corpora, aligner, working_dir='.', log_file=None):
         if os.path.isdir(self._model) and len(os.listdir(self._model)) > 0:
