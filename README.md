@@ -226,6 +226,9 @@ Tuning and evaluate runs also on a distributed MMT.
 
 ## MMT distributed (Optional)
 
+Translation, Tuning and Evaluate can run on a MMT cluster to drastically reduce the time they take.
+Training cannot run on an MMT cluster.
+
 Let's distribute MMT to a second machine. 
 Make sure port 8045 is open on the master and 5016 and 5017 on both the master and the slave.
 
