@@ -14,8 +14,6 @@ You can find more information on: http://www.modermmt.eu
 
 ## About this Release
 
-This application is the binary version of MMT (open source distribution expected by the end 2016). 
-
 This MMT release will allow you to create an MT engine, available via a REST API, given your training data (folder with line aligned text files)
 
 Intro video: http://87k.eu/lk9l
