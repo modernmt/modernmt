@@ -151,6 +151,12 @@ domain-id.(2 letters iso lang code|5 letters RFC3066)
 
 Note: domain-id must be [a-zA-Z0-9] only, without spaces.
 
+#### Get more parallel data
+
+If you need more data there is a good collection here:
+
+http://opus.lingfil.uu.se
+
 #### Add monolingual data
 
 The MMT language model is created with the target of the parallel data and extra monolingual data provided by the user.
@@ -197,13 +203,6 @@ Total time     :  29,159s
   - Model (Suffix) :  13,878s
 
 ```
-
-#### More parallel data
-
-If you need more data there is a good collection here:
-
-http://opus.lingfil.uu.se
-
 
 ### MMT Tuning (Optional)
 
