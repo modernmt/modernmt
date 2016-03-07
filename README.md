@@ -1,4 +1,4 @@
-# MMT 0.11.1 - Release for Ubuntu 14.04 
+# MMT 0.12 - Release for Ubuntu 14.04 
 
 ## About MMT
 MMT is a context-aware, incremental and distributed general purpose Machine Translation technology.
@@ -37,7 +37,7 @@ We included a very small dataset, just to verify that training works.
 To test domain-specific differences on the sentence `system information support`, create an engine with small sample size:
 
 ```bash
-./mmt create --suffixarrays.sample 10 en it examples/data/train
+./mmt create en it examples/data/train
 ```
 
 ### Start an existing engine
@@ -74,7 +74,7 @@ You will get:
 }
 ```
 
-### Evaluating Quality (available from release 0.12)
+### Evaluating Quality
 
 How is your engine performing vs the commercial state-of-the-art technologies?
 
@@ -128,8 +128,47 @@ You can select your Google Translate API Key by typing:
 If you don't want to use Google Translate just type a random key.
 
 
-
 ## Increasing the quality
+
+## How to prepare your data
+
+The easy way to increase the quality is to add more in-domain data.
+
+MMT uses standard sentence aligned corpora, optionally divided into files by domain. 
+
+Example:
+```
+data/microsoft.en
+data/microsoft.fr
+data/europarl.en
+data/europarl.fr
+data/wmt10.en
+data/wmt10.fr
+```
+
+In general:
+```
+domain-id.(2 letters iso lang code|5 letters RFC3066)
+```
+
+Note: domain-id must be [a-zA-Z0-9] only, without spaces.
+
+#### Add monolingual data
+
+The MMT language model is created with the target of the parallel data and extra monolingual data provided by the user.
+
+To add monolingual data just add a LM-NAME.target_lang to the train folder.
+
+Example:
+```
+data/my_monolingual_data.fr
+data/microsoft.en
+data/microsoft.fr
+data/europarl.en
+data/europarl.fr
+data/wmt10.en
+data/wmt10.fr
+```
 
 ### Creating a large translation model
 
@@ -168,7 +207,7 @@ If you need more data there is a good collection here:
 http://opus.lingfil.uu.se
 
 
-### MMT Tuning (Expert)
+### MMT Tuning - (Optional)
 
 MMT quality can be increased by tuning the parameters providing unseen translation examples. 
 
@@ -186,7 +225,7 @@ Tuning speed depends on many factors:
 
 Expect a few days for a 1B words model with 1000 sentences used for tuning.
 
-## MMT distributed (Expert)
+## MMT distributed (Optional)
 
 Let's distribute MMT to a second machine. 
 Make sure port 8045 is open on the master and 5016 and 5017 on both the master and the slave.
@@ -219,24 +258,3 @@ The engine files will be synced from the master and translation requests will be
 Only the master will respond to the Translation API and distribute load.
 
 If you updated the model on the master, just stop and start the slave and the model data will be rsynced again.
-
-## How to prepare your data
-
-MMT uses standard sentence aligned corpora, optionally divided into files by domain. 
-
-Example:
-```
-data/microsoft.en
-data/microsoft.fr
-data/europarl.en
-data/europarl.fr
-data/wmt10.en
-data/wmt10.fr
-```
-
-In general:
-```
-domain-id.(2 letters iso lang code|5 letters RFC3066)
-```
-
-Note: domain-id must be [a-zA-Z0-9] only, without spaces.
