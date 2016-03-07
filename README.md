@@ -128,7 +128,7 @@ If you don't want to use Google Translate just type a random key.
 
 ## Increasing the quality
 
-## How to prepare your data
+### How to prepare your data
 
 The easy way to increase the quality is to add more in-domain data.
 
