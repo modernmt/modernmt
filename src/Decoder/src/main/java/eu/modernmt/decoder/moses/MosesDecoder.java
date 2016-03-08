@@ -49,7 +49,7 @@ public class MosesDecoder implements Decoder {
 
     @Override
     public TranslationSession openSession(long id, List<ContextDocument> translationContext) {
-        long internalId = createSession(parse(translationContext));
+        long internalId = createSession(parseContext(translationContext));
         MosesSession session = new MosesSession(id, translationContext, this, internalId);
         this.sessions.put(id, session);
 
@@ -73,32 +73,51 @@ public class MosesDecoder implements Decoder {
 
     @Override
     public DecoderTranslation translate(Sentence text) {
-        return translate(text.getStrippedString(true), null, 0L, 0).getTranslation(text);
+        return translate(text, null, null, 0);
     }
 
     @Override
     public DecoderTranslation translate(Sentence text, List<ContextDocument> translationContext) {
-        return translate(text.getStrippedString(true), parse(translationContext), 0L, 0).getTranslation(text);
+        return translate(text, translationContext, null, 0);
     }
 
     @Override
     public DecoderTranslation translate(Sentence text, TranslationSession session) {
-        return translate(text.getStrippedString(true), null, ((MosesSession) session).getInternalId(), 0).getTranslation(text);
+        return translate(text, null, session, 0);
     }
 
     @Override
     public DecoderTranslation translate(Sentence text, int nbestListSize) {
-        return translate(text.getStrippedString(true), null, 0L, nbestListSize).getTranslation(text);
+        return translate(text, null, null, nbestListSize);
     }
 
     @Override
     public DecoderTranslation translate(Sentence text, List<ContextDocument> translationContext, int nbestListSize) {
-        return translate(text.getStrippedString(true), parse(translationContext), 0L, nbestListSize).getTranslation(text);
+        return translate(text, translationContext, null, nbestListSize);
     }
 
     @Override
     public DecoderTranslation translate(Sentence text, TranslationSession session, int nbestListSize) {
-        return translate(text.getStrippedString(true), null, ((MosesSession) session).getInternalId(), nbestListSize).getTranslation(text);
+        return translate(text, null, session, nbestListSize);
+    }
+
+    private DecoderTranslation translate(Sentence sentence, List<ContextDocument> translationContext, TranslationSession session, int nbest) {
+        String text = sentence.getStrippedString(true);
+        long sessionId = session == null ? 0L : ((MosesSession) session).getInternalId();
+        Map<String, Float> context = parseContext(translationContext);
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Translating \"" + sentence + "\"");
+        }
+
+        long start = System.currentTimeMillis();
+        DecoderTranslation translation = this.translate(text, context, sessionId, nbest).getTranslation(sentence);
+        long elapsed = System.currentTimeMillis() - start;
+        translation.setElapsedTime(elapsed);
+
+        logger.info("Translation of " + sentence.length() + " words took " + (((double) elapsed) / 1000.) + "s");
+
+        return translation;
     }
 
     private native TranslationXObject translate(String text, Map<String, Float> translationContext, long session, int nbest);
@@ -117,13 +136,13 @@ public class MosesDecoder implements Decoder {
 
     protected native void dispose();
 
-    private static Map<String, Float> parse(List<ContextDocument> translationContext) {
-        if (translationContext == null)
-            return null;
+    private static Map<String, Float> parseContext(List<ContextDocument> context) {
+        Map<String, Float> map = null;
 
-        HashMap<String, Float> map = new HashMap<>();
-        for (ContextDocument document : translationContext) {
-            map.put(document.getId(), document.getScore());
+        if (context != null) {
+            map = new HashMap<>();
+            for (ContextDocument document : context)
+                map.put(document.getId(), document.getScore());
         }
 
         return map;

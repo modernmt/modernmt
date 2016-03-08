@@ -26,13 +26,6 @@ class Translator:
     def name(self):
         return None
 
-    def __get_timed_translation(self, line, corpus):
-        begin = time.time()
-        text = self._get_translation(line, corpus)
-        elapsed = time.time() - begin
-
-        return text, elapsed
-
     def _before_translate(self, corpus):
         pass
 
@@ -55,7 +48,7 @@ class Translator:
                     output_path = os.path.join(output, corpus.name + '.' + self.target_lang)
 
                     for line in source:
-                        translation = pool.apply_async(self.__get_timed_translation, (line, corpus))
+                        translation = pool.apply_async(self._get_translation, (line, corpus))
                         translations.append((translation, output_path))
 
                 self._after_translate(corpus)
@@ -158,7 +151,10 @@ class MMTTranslator(Translator):
         except Exception as e:
             raise TranslateError(e.message)
 
-        return translation['translation']
+        text = translation['translation']
+        took = float(translation['took']) / 1000.
+
+        return text, took
 
 
 class GoogleTranslate(Translator):
@@ -185,14 +181,19 @@ class GoogleTranslate(Translator):
             'X-HTTP-Method-Override': 'GET'
         }
 
+        begin = time.time()
         r = requests.post(url, data=data, headers=headers)
+        elapsed = time.time() - begin
+
         json = r.json()
 
         if r.status_code != requests.codes.ok:
             message = json['error']['message']
             raise TranslateError('Google Translate query failed with code ' + str(r.status_code) + ': ' + message)
 
-        return self._html.unescape(json['data']['translations'][0]['translatedText'])
+        text = self._html.unescape(json['data']['translations'][0]['translatedText'])
+
+        return text, elapsed
 
 
 class BLEUScore(Score):
@@ -237,7 +238,7 @@ class MatecatScore(Score):
         return body
 
     @staticmethod
-    def _read_lines(document, reference, limit=11):
+    def _read_lines(document, reference, limit=30):
         reference_lines = []
         document_lines = []
 

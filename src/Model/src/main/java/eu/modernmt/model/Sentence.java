@@ -24,6 +24,10 @@ public class Sentence implements Serializable, Iterable<Token> {
         return words;
     }
 
+    public int length() {
+        return words.length + tags.length;
+    }
+
     public Tag[] getTags() {
         return tags;
     }
