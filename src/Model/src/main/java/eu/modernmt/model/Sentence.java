@@ -1,26 +1,27 @@
 package eu.modernmt.model;
 
 import java.io.Serializable;
+import java.util.Iterator;
 
 /**
  * Created by davide on 17/02/16.
  */
-public class Sentence implements Serializable {
+public class Sentence implements Serializable, Iterable<Token> {
 
-    protected Token[] tokens;
+    protected Token[] words;
     protected Tag[] tags;
 
-    public Sentence(Token[] tokens) {
-        this(tokens, null);
+    public Sentence(Token[] words) {
+        this(words, null);
     }
 
-    public Sentence(Token[] tokens, Tag[] tags) {
-        this.tokens = tokens == null ? new Token[0] : tokens;
-        this.tags = tags;
+    public Sentence(Token[] words, Tag[] tags) {
+        this.words = words == null ? new Token[0] : words;
+        this.tags = tags == null ? new Tag[0] : tags;
     }
 
-    public Token[] getTokens() {
-        return tokens;
+    public Token[] getWords() {
+        return words;
     }
 
     public Tag[] getTags() {
@@ -28,15 +29,15 @@ public class Sentence implements Serializable {
     }
 
     public boolean hasTags() {
-        return tags != null && tags.length > 0;
+        return tags.length > 0;
     }
 
-    public boolean hasTokens() {
-        return tokens.length > 0;
+    public boolean hasWords() {
+        return words.length > 0;
     }
 
-    public void setTokens(Token[] tokens) {
-        this.tokens = tokens;
+    public void setWords(Token[] words) {
+        this.words = words;
     }
 
     /**
@@ -48,14 +49,19 @@ public class Sentence implements Serializable {
         this.tags = tags;
     }
 
+    /**
+     * @deprecated you should access directly the tokens array and print them
+     * in your custom way.
+     */
+    @Deprecated
     public String getStrippedString(boolean withPlaceholders) {
         StringBuilder builder = new StringBuilder();
 
-        for (int i = 0; i < tokens.length; i++) {
-            Token token = tokens[i];
+        for (int i = 0; i < words.length; i++) {
+            Token token = words[i];
 
             builder.append(toString(token, withPlaceholders));
-            if (i < tokens.length - 1 && token.hasRightSpace())
+            if (i < words.length - 1 && token.hasRightSpace())
                 builder.append(' ');
         }
 
@@ -87,27 +93,30 @@ public class Sentence implements Serializable {
      * then decided by the first word and the consecutive tags.
      *
      * @return string representation including tags
+     * @deprecated this logic should be embedded in a postprocess task while this
+     * function should only iterate over tokens and print ' ' if hasRightSpace is true.
      */
+    @Deprecated
     public String toString(boolean withPlaceholders) {
-        if (tags == null || tags.length == 0)
+        if (tags.length == 0)
             return getStrippedString(withPlaceholders);
 
         // Merging tags and tokens arrays into a single array: sentence
-        Token[] sentence = new Token[tokens.length + tags.length];
+        Token[] sentence = new Token[words.length + tags.length];
         int sIndex = 0;
 
         int tagIndex = 0;
         Tag tag = tags[tagIndex];
 
 
-        for (int i = 0; i < tokens.length; i++) {
+        for (int i = 0; i < words.length; i++) {
             while (tag != null && i == tag.getPosition()) {
                 sentence[sIndex++] = tag;
                 tagIndex++;
                 tag = tagIndex < tags.length ? tags[tagIndex] : null;
             }
 
-            sentence[sIndex++] = tokens[i];
+            sentence[sIndex++] = words[i];
         }
 
         for (int i = tagIndex; i < tags.length; i++) {
@@ -195,4 +204,34 @@ public class Sentence implements Serializable {
             return token.getText();
     }
 
+    @Override
+    public Iterator<Token> iterator() {
+        return new Iterator<Token>() {
+
+            private final Token[] tokens = Sentence.this.words;
+            private final Tag[] tags = Sentence.this.tags;
+
+            private int tokenIndex = 0;
+            private int tagIndex = 0;
+
+            @Override
+            public boolean hasNext() {
+                return tokenIndex < tokens.length || tagIndex < tags.length;
+            }
+
+            @Override
+            public Token next() {
+                Token nextToken = tokenIndex < tokens.length ? tokens[tokenIndex] : null;
+                Tag nextTag = tagIndex < tags.length ? tags[tagIndex] : null;
+
+                if (nextTag != null && (nextToken == null || tokenIndex == nextTag.getPosition())) {
+                    tagIndex++;
+                    return nextTag;
+                } else {
+                    tokenIndex++;
+                    return nextToken;
+                }
+            }
+        };
+    }
 }

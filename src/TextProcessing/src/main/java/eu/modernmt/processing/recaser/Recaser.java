@@ -14,8 +14,8 @@ public class Recaser implements TextProcessor<Translation, Translation> {
 
     @Override
     public Translation call(Translation translation) throws ProcessingException {
-        Token[] source = translation.getSource().getTokens();
-        Token[] target = translation.getTokens();
+        Token[] source = translation.getSource().getWords();
+        Token[] target = translation.getWords();
 
         if (source.length > 0 && target.length > 0) {
             String sourceText = source[0].getText();

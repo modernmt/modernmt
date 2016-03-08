@@ -1,7 +1,7 @@
 package eu.modernmt.processing.tokenizer.opennlp;
 
 import eu.modernmt.config.Config;
-import eu.modernmt.processing.AnnotatedString;
+import eu.modernmt.processing.tokenizer.TokenizedString;
 import eu.modernmt.processing.Languages;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.tokenizer.MultiInstanceTokenizer;
@@ -91,8 +91,9 @@ public class OpenNLPTokenizer extends MultiInstanceTokenizer {
         }
 
         @Override
-        public AnnotatedString call(String text) throws ProcessingException {
-            return new AnnotatedString(text, TokenizerOutputTransformer.transform(text, this.tokenizer.tokenize(text)));
+        public TokenizedString call(TokenizedString text) throws ProcessingException {
+            TokenizerOutputTransformer.transform(text, this.tokenizer.tokenize(text.string));
+            return text;
         }
 
         @Override

@@ -16,8 +16,8 @@ public class PlaceholderTransformer implements TextProcessor<Translation, Transl
 
     @Override
     public Translation call(Translation translation) throws ProcessingException {
-        Token[] source = translation.getSource().getTokens();
-        Token[] target = translation.getTokens();
+        Token[] source = translation.getSource().getWords();
+        Token[] target = translation.getWords();
 
         if (translation.hasAlignment()) {
             int[] alignments = new int[source.length];

@@ -3,10 +3,11 @@ package eu.modernmt.processing;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.framework.*;
 import eu.modernmt.processing.numbers.NumericTokenExtractor;
-import eu.modernmt.processing.tags.TagHighlighter;
 import eu.modernmt.processing.tokenizer.SimpleTokenizer;
+import eu.modernmt.processing.tokenizer.TokenizedString;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizers;
+import eu.modernmt.processing.tokenizer.xml.XMLTagTokenizer;
 import eu.modernmt.processing.util.StringNormalizer;
 import org.apache.commons.io.IOUtils;
 
@@ -20,6 +21,30 @@ import java.util.Locale;
  */
 public class Preprocessor implements Closeable {
 
+    private static final TextProcessor<String, TokenizedString> TokenizedStringConstructor = new TextProcessor<String, TokenizedString>() {
+        @Override
+        public TokenizedString call(String string) throws ProcessingException {
+            return new TokenizedString(string);
+        }
+
+        @Override
+        public void close() throws IOException {
+            // Nothing to do
+        }
+    };
+
+    private static final TextProcessor<TokenizedString, Sentence> SentenceConstructor = new TextProcessor<TokenizedString, Sentence>() {
+        @Override
+        public Sentence call(TokenizedString string) throws ProcessingException {
+            return string.toSentence();
+        }
+
+        @Override
+        public void close() throws IOException {
+            // Nothing to do
+        }
+    };
+
     private final ProcessingPipeline<String, Sentence> pipelineWithTokenization;
     private final ProcessingPipeline<String, Sentence> pipelineWithoutTokenization;
 
@@ -28,13 +53,16 @@ public class Preprocessor implements Closeable {
     }
 
     public static ProcessingPipeline<String, Sentence> getPipeline(Locale language, boolean tokenize, int threads) {
-        Tokenizer tokenizer = tokenize ? Tokenizers.forLanguage(language) : new SimpleTokenizer();
+        Tokenizer languageTokenizer = tokenize ? Tokenizers.forLanguage(language) : new SimpleTokenizer();
+        Tokenizer xmlTagTokenizer = tokenize ? new XMLTagTokenizer() : null;
 
         return new ProcessingPipeline.Builder<String, String>()
                 .setThreads(threads)
                 .add(new StringNormalizer())
-                .add(tokenizer)
-                .add(new TagHighlighter())
+                .add(TokenizedStringConstructor)
+                .add(languageTokenizer)
+                .add(xmlTagTokenizer)
+                .add(SentenceConstructor)
                 .add(new NumericTokenExtractor<>())
                 .create();
     }

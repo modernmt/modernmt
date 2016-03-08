@@ -25,7 +25,7 @@ public class NumericTokenExtractor<T extends Sentence> implements TextProcessor<
     public T call(T sentence) {
         HashMap<String, Counter> pattern2Count = new HashMap<>();
 
-        Token[] tokens = sentence.getTokens();
+        Token[] tokens = sentence.getWords();
 
         for (int i = 0; i < tokens.length; i++) {
             Token token = tokens[i];

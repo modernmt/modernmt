@@ -6,7 +6,7 @@ import eu.modernmt.processing.framework.PipelineInputStream;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.ProcessingJob;
 import eu.modernmt.processing.framework.ProcessingPipeline;
-import eu.modernmt.processing.util.SentenceOutputter;
+import eu.modernmt.processing.util.TokensOutputter;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 
@@ -57,7 +57,7 @@ public class TokenizerMain {
 
             ProcessingJob<String, Sentence> job = pipeline.createJob(
                     PipelineInputStream.fromInputStream(System.in),
-                    new SentenceOutputter(System.out, args.printTags, args.printPlaceholders)
+                    new TokensOutputter(System.out, args.printTags, args.printPlaceholders)
             );
 
             job.start();

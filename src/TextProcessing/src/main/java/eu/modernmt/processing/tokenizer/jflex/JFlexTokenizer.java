@@ -1,6 +1,7 @@
 package eu.modernmt.processing.tokenizer.jflex;
 
 import eu.modernmt.processing.Languages;
+import eu.modernmt.processing.tokenizer.TokenizedString;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.tokenizer.MultiInstanceTokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizer;
@@ -99,17 +100,18 @@ public class JFlexTokenizer extends MultiInstanceTokenizer {
         }
 
         @Override
-        public eu.modernmt.processing.AnnotatedString call(String string) throws ProcessingException {
-            AnnotatedString text = new AnnotatedString(string);
+        public TokenizedString call(TokenizedString text) throws ProcessingException {
+            AnnotatedString astring = new AnnotatedString(text.string);
 
-            annotator.yyreset(text.getReader());
+            annotator.yyreset(astring.getReader());
 
             int type;
             while ((type = next(annotator)) != JFlexAnnotator.YYEOF) {
-                annotator.annotate(text, type);
+                annotator.annotate(astring, type);
             }
 
-            return new eu.modernmt.processing.AnnotatedString(string, TokenizerOutputTransformer.transform(string, text.toTokenArray()));
+            TokenizerOutputTransformer.transform(text, astring.toTokenArray());
+            return text;
         }
 
         private static int next(JFlexAnnotator annotator) throws ProcessingException {

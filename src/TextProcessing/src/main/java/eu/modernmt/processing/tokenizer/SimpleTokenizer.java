@@ -1,6 +1,5 @@
 package eu.modernmt.processing.tokenizer;
 
-import eu.modernmt.processing.AnnotatedString;
 import eu.modernmt.processing.framework.ProcessingException;
 
 import java.io.IOException;
@@ -11,8 +10,9 @@ import java.io.IOException;
 public class SimpleTokenizer implements Tokenizer {
 
     @Override
-    public AnnotatedString call(String param) throws ProcessingException {
-        return new AnnotatedString(param, TokenizerOutputTransformer.transform(param, param.split(" ")));
+    public TokenizedString call(TokenizedString param) throws ProcessingException {
+        TokenizerOutputTransformer.transform(param, param.string.split(" "));
+        return param;
     }
 
     @Override
