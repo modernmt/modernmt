@@ -19,6 +19,10 @@ public class Sentence implements Serializable {
         this.tags = tags;
     }
 
+    public int length() {
+        return tokens.length + (tags == null ? 0 : tags.length);
+    }
+
     public Token[] getTokens() {
         return tokens;
     }
