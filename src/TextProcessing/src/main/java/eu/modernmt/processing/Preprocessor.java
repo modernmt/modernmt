@@ -7,8 +7,8 @@ import eu.modernmt.processing.tokenizer.SimpleTokenizer;
 import eu.modernmt.processing.tokenizer.TokenizedString;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizers;
-import eu.modernmt.processing.tokenizer.xml.XMLTagTokenizer;
 import eu.modernmt.processing.util.StringNormalizer;
+import eu.modernmt.processing.xml.XMLStringParser;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
@@ -21,17 +21,9 @@ import java.util.Locale;
  */
 public class Preprocessor implements Closeable {
 
-    private static final TextProcessor<String, TokenizedString> TokenizedStringConstructor = new TextProcessor<String, TokenizedString>() {
-        @Override
-        public TokenizedString call(String string) throws ProcessingException {
-            return new TokenizedString(string);
-        }
-
-        @Override
-        public void close() throws IOException {
-            // Nothing to do
-        }
-    };
+    private static final StringNormalizer normalizer = new StringNormalizer();
+    private static final XMLStringParser parser = new XMLStringParser();
+    private static final NumericTokenExtractor<Sentence> numberExtractor = new NumericTokenExtractor<>();
 
     private static final TextProcessor<TokenizedString, Sentence> SentenceConstructor = new TextProcessor<TokenizedString, Sentence>() {
         @Override
@@ -54,16 +46,14 @@ public class Preprocessor implements Closeable {
 
     public static ProcessingPipeline<String, Sentence> getPipeline(Locale language, boolean tokenize, int threads) {
         Tokenizer languageTokenizer = tokenize ? Tokenizers.forLanguage(language) : new SimpleTokenizer();
-        Tokenizer xmlTagTokenizer = tokenize ? new XMLTagTokenizer() : null;
 
         return new ProcessingPipeline.Builder<String, String>()
                 .setThreads(threads)
-                .add(new StringNormalizer())
-                .add(TokenizedStringConstructor)
+                .add(normalizer)
+                .add(parser)
                 .add(languageTokenizer)
-                .add(xmlTagTokenizer)
                 .add(SentenceConstructor)
-                .add(new NumericTokenExtractor<>())
+                .add(numberExtractor)
                 .create();
     }
 
