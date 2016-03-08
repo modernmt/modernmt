@@ -91,7 +91,7 @@ See the following example:
 * **Input**:         ```You&apos;ll see the <div id="example-div">example</div>!```
 * **Preprocessed**:  ```You 'll see the example !```
 * **Translation**:   ```Vedrai l' esempio !```
-* **Postprocessed**: ```Vedrai l&apos;<div id="example-div">esempio</div>!"```
+* **Postprocessed**: ```Vedrai l&apos;<div id="example-div">esempio</div>!```
 
 ### Evaluating Quality
 
