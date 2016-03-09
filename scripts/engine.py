@@ -539,12 +539,14 @@ class MMTServerApi:
     def close_session(self, session):
         return self._delete('sessions/' + str(session))
 
-    def translate(self, source, session=None, processing=True, nbest=None):
+    def translate(self, source, session=None, context=None, processing=True, nbest=None):
         p = {'q': source, 'processing': (1 if processing else 0)}
         if session is not None:
             p['session'] = session
         if nbest is not None:
             p['nbest'] = nbest
+        if context is not None:
+            p['context_array'] = js.dumps(context)
 
         return self._get('translate', params=p)
 
