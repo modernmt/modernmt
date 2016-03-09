@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 import argparse
 import logging
 import operator
@@ -85,7 +85,7 @@ def main_tune(argv):
     parser = argparse.ArgumentParser(description='Tune MMT engine')
     parser.prog = 'mmt tune'
     parser.add_argument('--path', dest='corpora_path', metavar='CORPORA', default=None,
-                        help='the path to the training corpora (default is preprocessed sample)')
+                        help='the path to the training corpora (default is the automatically splitted sample)')
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
     parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
@@ -119,7 +119,7 @@ def main_evaluate(argv):
     parser = argparse.ArgumentParser(description='Evaluate MMT engine')
     parser.prog = 'mmt evaluate'
     parser.add_argument('--path', dest='corpora_path', metavar='CORPORA', default=None,
-                        help='the path to the training corpora (default is preprocessed sample)')
+                        help='the path to the test corpora (default is the automatically splitted sample)')
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
     parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
