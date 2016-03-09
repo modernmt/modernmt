@@ -8,6 +8,7 @@ import eu.modernmt.processing.tokenizer.TokenizedString;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizers;
 import eu.modernmt.processing.util.StringNormalizer;
+import eu.modernmt.processing.xml.XMLSentenceBuilder;
 import eu.modernmt.processing.xml.XMLStringParser;
 import org.apache.commons.io.IOUtils;
 
@@ -23,19 +24,8 @@ public class Preprocessor implements Closeable {
 
     private static final StringNormalizer normalizer = new StringNormalizer();
     private static final XMLStringParser parser = new XMLStringParser();
+    private static final XMLSentenceBuilder sentenceBuilder = new XMLSentenceBuilder();
     private static final NumericTokenExtractor<Sentence> numberExtractor = new NumericTokenExtractor<>();
-
-    private static final TextProcessor<TokenizedString, Sentence> SentenceConstructor = new TextProcessor<TokenizedString, Sentence>() {
-        @Override
-        public Sentence call(TokenizedString string) throws ProcessingException {
-            return string.toSentence();
-        }
-
-        @Override
-        public void close() throws IOException {
-            // Nothing to do
-        }
-    };
 
     private final ProcessingPipeline<String, Sentence> pipelineWithTokenization;
     private final ProcessingPipeline<String, Sentence> pipelineWithoutTokenization;
@@ -52,7 +42,7 @@ public class Preprocessor implements Closeable {
                 .add(normalizer)
                 .add(parser)
                 .add(languageTokenizer)
-                .add(SentenceConstructor)
+                .add(sentenceBuilder)
                 .add(numberExtractor)
                 .create();
     }

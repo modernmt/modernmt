@@ -18,22 +18,10 @@ public class XMLStringParser implements TextProcessor<String, TokenizedString> {
 
     private static final Pattern EntityPattern = Pattern.compile("&((#[0-9]{1,4})|(#x[0-9a-fA-F]{1,4})|([a-zA-Z]+));");
 
-    public static final class XMLTagHook {
-
-        public final Tag tag;
-        public final int position;
-
-        public XMLTagHook(Tag tag, int position) {
-            this.tag = tag;
-            this.position = position;
-        }
-
-    }
-
     @Override
     public TokenizedString call(String string) throws ProcessingException {
         StringBuilder sequence = new StringBuilder();
-        ArrayList<XMLTagHook> tags = new ArrayList<>();
+        ArrayList<TokenizedString.XMLTagHook> tags = new ArrayList<>();
 
         Matcher m = Tag.TagRegex.matcher(string);
 
@@ -52,7 +40,7 @@ public class XMLStringParser implements TextProcessor<String, TokenizedString> {
             Tag tag = Tag.fromText(m.group());
             tag.setLeftSpace(start > 0 && chars[start - 1] == ' ');
             tag.setRightSpace(end < chars.length && chars[end] == ' ');
-            tags.add(new XMLTagHook(tag, sequence.length()));
+            tags.add(new TokenizedString.XMLTagHook(tag, sequence.length()));
 
             sequence.append(' ');
         }
@@ -60,18 +48,10 @@ public class XMLStringParser implements TextProcessor<String, TokenizedString> {
         if (stringIndex < chars.length)
             normalize(sequence, chars, stringIndex, chars.length);
 
-        System.out.println(sequence);
-        for (XMLTagHook hook : tags) {
-            System.out.println(hook.tag + " #" + hook.position);
-        }
-
-        return null;
+        return new TokenizedString(sequence.toString(), tags.toArray(new TokenizedString.XMLTagHook[tags.size()]));
     }
 
     private static void normalize(StringBuilder output, char[] chars, int start, int end) {
-        if (chars[end - 1] == ' ')
-            end--;
-
         CharSequence sequence = CharBuffer.wrap(chars, start, end - start);
         Matcher m = EntityPattern.matcher(sequence);
 
@@ -102,11 +82,6 @@ public class XMLStringParser implements TextProcessor<String, TokenizedString> {
     @Override
     public void close() throws IOException {
         // Nothing to do
-    }
-
-    public static void main(String[] args) throws ProcessingException {
-        String s = "<a>ciao &apos;</a>. &#182; &#xBC;<button> &lt;button&gt;";
-        new XMLStringParser().call(s);
     }
 
 }

@@ -4,7 +4,9 @@ import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
+import eu.modernmt.model.PlaceholderToken;
 import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Token;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -102,12 +104,12 @@ public class MosesDecoder implements Decoder {
     }
 
     private DecoderTranslation translate(Sentence sentence, List<ContextDocument> translationContext, TranslationSession session, int nbest) {
-        String text = sentence.getStrippedString(true);
+        String text = serialize(sentence.getWords());
         long sessionId = session == null ? 0L : ((MosesSession) session).getInternalId();
         Map<String, Float> context = parseContext(translationContext);
 
         if (logger.isDebugEnabled()) {
-            logger.debug("Translating \"" + sentence + "\"");
+            logger.debug("Translating: \"" + text + "\"");
         }
 
         long start = System.currentTimeMillis();
@@ -146,6 +148,24 @@ public class MosesDecoder implements Decoder {
         }
 
         return map;
+    }
+
+    private static String serialize(Token[] words) {
+        StringBuilder text = new StringBuilder();
+
+        for (int i = 0; i < words.length; i++) {
+            Token word = words[i];
+
+            if (word instanceof PlaceholderToken)
+                text.append(((PlaceholderToken) word).getPlaceholder());
+            else
+                text.append(word.getText());
+
+            if (i < words.length - 1)
+                text.append(' ');
+        }
+
+        return text.toString();
     }
 
 }
