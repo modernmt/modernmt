@@ -7,6 +7,7 @@ import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.decoder.moses.MosesFeature;
+import eu.modernmt.engine.tasks.AlignTagsTask;
 import eu.modernmt.engine.tasks.GetFeatureWeightsTask;
 import eu.modernmt.engine.tasks.TranslationTask;
 import eu.modernmt.network.cluster.ClusterManager;
@@ -74,6 +75,25 @@ public class MasterNode extends ClusterManager {
             default:
                 logger.warn("Unknown request received: " + Integer.toHexString(signal));
                 return new byte[0];
+        }
+    }
+
+    // =============================
+    //  Tag aligner
+    // =============================
+
+    public String alignTags(String sentence) throws TranslationException {
+        AlignTagsTask task;
+        try {
+            task = new AlignTagsTask(sentence);
+            return this.execute(task);
+        } catch (Throwable e) {
+            if (e instanceof ProcessingException)
+                throw new TranslationException("Problem while processing translation", e);
+            else if (e instanceof RuntimeException)
+                throw (RuntimeException) e;
+            else
+                throw new Error("Unexpected exception: " + e.getMessage(), e);
         }
     }
 
