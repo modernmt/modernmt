@@ -126,7 +126,7 @@ class MMTTranslator(Translator):
         Translator.__init__(self, server.engine.source_lang, server.engine.target_lang, threads=100)
         self._server = server
         self._sessions = {}
-        self._context = None  # redundant with the session, stored just for the case of _use_sessions=False
+        self._contexts = {}  # redundant with the sessions, stored just for the case of _use_sessions=False
         self._use_sessions = use_sessions
 
     def name(self):
@@ -142,9 +142,10 @@ class MMTTranslator(Translator):
 
     def _before_translate(self, corpus):
         corpus_file = corpus.get_file(self.source_lang)
-        self._context = self._server.api.get_context_f(corpus_file)
+        context = self._server.api.get_context_f(corpus_file)
+        self._contexts[corpus_file] = context
         if self._use_sessions:
-            self._sessions[corpus_file] = self._server.api.create_session(self._context)['id']
+            self._sessions[corpus_file] = self._server.api.create_session(context)['id']
 
     def _get_translation(self, line, corpus):
         corpus_file = corpus.get_file(self.source_lang)
@@ -153,7 +154,7 @@ class MMTTranslator(Translator):
             # use per-session context (not passed) if _use_sessions
             # pass context here (and do not pass session) otherwise
             sess = self._sessions[corpus_file] if self._use_sessions else None
-            ctxt = None if self._use_sessions else self._context
+            ctxt = None if self._use_sessions else self._contexts[corpus_file]
 
             translation = self._server.api.translate(line, session=sess, context=ctxt, processing=True)
         except Exception as e:
