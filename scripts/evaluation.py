@@ -93,7 +93,7 @@ class HumanEvaluationFileOutputter:
         with open(output_file, 'wb') as out:
             with open(input_file) as inp:
                 for line in inp:
-                    line = line.lstrip(self.separator)
+                    line = line.replace(self.separator, ' ')
                     lid = str(line_id)
                     line_id += 1
                     out.write(self.separator.join([lid, lang, line]))
