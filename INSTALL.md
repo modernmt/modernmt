@@ -96,6 +96,7 @@ sudo add-apt-repository ppa:george-edison55/cmake-3.x
 sudo add-apt-repository ppa:openjdk-r/ppa
 sudo apt-get update
 
+sudo apt-get install libbz2-dev
 sudo apt-get install libboost1.55-all-dev
 sudo apt-get install libgoogle-perftools-dev
 sudo apt-get install cmake
