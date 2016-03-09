@@ -14,6 +14,7 @@
         <module>RESTInterface</module>
         <module>Executables</module>
         <module>Model</module>
+	<module>Aligner</module>
     </modules>
 
     <packaging>pom</packaging>
