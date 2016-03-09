@@ -1,5 +1,6 @@
 import multiprocessing
 import os
+import subprocess
 
 import scripts
 from moses import MosesFeature, Moses
@@ -24,7 +25,7 @@ class WordAligner:
         else:
             raise NameError('Invalid Word Aligner type: ' + str(type_name))
 
-    def align(self, corpus, langs, working_dir='.', log_file=None):
+    def align(self, corpus, langs, model_dir, working_dir='.', log_file=None):
         if not os.path.isdir(working_dir):
             fileutils.makedirs(working_dir, exist_ok=True)
 
@@ -97,7 +98,7 @@ class SuffixArraysPhraseTable(MosesFeature):
                     dmp.write(str(corpus.name) + ' ' + str(corpus.count_lines()) + '\n')
 
             # Create alignments in 'bal' file and symmetrize
-            bal_file = aligner.align(merged_corpus, langs, working_dir, log_file)
+            bal_file = aligner.align(merged_corpus, langs, self._model, working_dir, log_file)
 
             symal_file = os.path.join(working_dir, 'alignments.' + langs_suffix + '.symal')
             symal_command = [self._symal_bin, '-a=g', '-d=yes', '-f=yes', '-b=yes']
@@ -135,9 +136,9 @@ class FastAlign(WordAligner):
     def __init__(self):
         WordAligner.__init__(self)
 
-        self._align_bin = os.path.join(scripts.BIN_DIR, 'fastalign-ulibuild', 'fast_align')
+        self._align_bin = os.path.join(scripts.BIN_DIR, 'fastalign-maurobuild', 'fast_align')
 
-    def align(self, corpus, langs, working_dir='.', log_file=None):
+    def align(self, corpus, langs, model_dir, working_dir='.', log_file=None):
         WordAligner.align(self, corpus, langs, working_dir, log_file)
 
         l1 = langs[0]
@@ -148,6 +149,7 @@ class FastAlign(WordAligner):
         fwd_file = os.path.join(working_dir, corpus_name + '.' + langs_suffix + '.fwd')
         bwd_file = os.path.join(working_dir, corpus_name + '.' + langs_suffix + '.bwd')
         bal_file = os.path.join(working_dir, corpus_name + '.' + langs_suffix + '.bal')
+        aligned_file_path = os.path.join(working_dir, corpus_name + '.' + langs_suffix + '.aligned')
 
         corpus_l1 = corpus.get_file(l1)
         corpus_l2 = corpus.get_file(l2)
@@ -158,15 +160,23 @@ class FastAlign(WordAligner):
             if log_file is not None:
                 log = open(log_file, 'a')
 
+            with open(corpus_l1) as source_corpus, open(corpus_l2) as target_corpus, open(aligned_file_path, 'w') as aligned_file:
+                for x, y in zip(source_corpus, target_corpus):
+                    aligned_file.write(x.strip() + " ||| " + y.strip() + "\n")
+
             # Forward alignments
-            command = [self._align_bin, '-d', '-v', '-o', corpus_l1, corpus_l2]
+            fwd_model = os.path.join(model_dir,  "model." + langs_suffix + '.fwd')
+            command = [self._align_bin, '-d', '-v', '-o', '-p', fwd_model, '-i', aligned_file_path]
             with open(fwd_file, 'w') as stdout:
                 shell.execute(command, stdout=stdout, stderr=log)
 
-            # Backward alignments
-            command = [self._align_bin, '-d', '-v', '-o', '-r', corpus_l1, corpus_l2]
+            # Forward alignments
+            bwd_model = os.path.join(model_dir,  "model." + langs_suffix + '.bwd')
+            command = [self._align_bin, '-d', '-v', '-o', '-p', bwd_model, '-r', '-i', aligned_file_path]
             with open(bwd_file, 'w') as stdout:
                 shell.execute(command, stdout=stdout, stderr=log)
+
+
         finally:
             if log_file is not None:
                 log.close()
@@ -249,7 +259,7 @@ class MGizaPP(WordAligner):
         self._giza2bal_bin = os.path.join(scripts.BIN_DIR, 'mgizapp-master_a036__1e18', 'giza2bal.pl')
         self._merge_bin = os.path.join(scripts.BIN_DIR, 'mgizapp-master_a036__1e18', 'merge_alignment.py')
 
-    def align(self, corpus, langs, working_dir='.', log_file=None):
+    def align(self, corpus, langs, model_dir, working_dir='.', log_file=None):
         WordAligner.align(self, corpus, langs, working_dir, log_file)
 
         l1 = langs[0]
