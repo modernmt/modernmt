@@ -539,12 +539,14 @@ class MMTServerApi:
     def close_session(self, session):
         return self._delete('sessions/' + str(session))
 
-    def translate(self, source, session=None, processing=True, nbest=None):
+    def translate(self, source, session=None, context=None, processing=True, nbest=None):
         p = {'q': source, 'processing': (1 if processing else 0)}
         if session is not None:
             p['session'] = session
         if nbest is not None:
             p['nbest'] = nbest
+        if context is not None:
+            p['context_array'] = js.dumps(context)
 
         return self._get('translate', params=p)
 
@@ -687,7 +689,7 @@ class MMTServer(_MMTDistributedComponent):
             if not debug:
                 self._clear_tempdir()
 
-    def evaluate(self, corpora, google_key=None, heval_output=None):
+    def evaluate(self, corpora, google_key=None, heval_output=None, use_sessions=True):
         if len(corpora) == 0:
             raise IllegalArgumentException('empty corpora')
 
@@ -705,7 +707,7 @@ class MMTServer(_MMTDistributedComponent):
         translators = [
             GoogleTranslate(source_lang, target_lang, key=google_key),
             # BingTranslator(source_lang, target_lang),
-            MMTTranslator(self)
+            MMTTranslator(self, use_sessions)
         ]
 
         working_dir = self._get_tempdir('evaluate')
