@@ -33,7 +33,7 @@ class SuffixArraysPhraseTable(MosesFeature):
     injector_section = 'suffixarrays'
     injectable_fields = {
         'sample': ('number of samples for phrase table', int, 1000),
-        'method': ('sampling method for suffix array phrase table', str, 'ranked'),
+        'method': ('sampling method for suffix array phrase table', str, 'ranked3'),
     }
 
     def __init__(self, model, langs):
@@ -108,11 +108,11 @@ class SuffixArraysPhraseTable(MosesFeature):
                     shell.execute(symal_command, stdin=stdin, stdout=stdout, stderr=log)
 
             # Execute mtt-build
-            mttbuild_command = self._get_mttbuild_command(mct_base, l1)
+            mttbuild_command = self._get_mttbuild_command(mct_base, dmp_file, l1)
             with open(merged_corpus.get_file(l1)) as stdin:
                 shell.execute(mttbuild_command, stdin=stdin, stdout=log, stderr=log)
 
-            mttbuild_command = self._get_mttbuild_command(mct_base, l2)
+            mttbuild_command = self._get_mttbuild_command(mct_base, dmp_file, l2)
             with open(merged_corpus.get_file(l2)) as stdin:
                 shell.execute(mttbuild_command, stdin=stdin, stdout=log, stderr=log)
 
@@ -128,9 +128,8 @@ class SuffixArraysPhraseTable(MosesFeature):
             if log_file is not None:
                 log.close()
 
-    def _get_mttbuild_command(self, mct_base, lang):
+    def _get_mttbuild_command(self, mct_base, dmp_file, lang):
         output = mct_base + '.' + lang
-        dmp_file = mct_base + '.dmp'
         return [self._mttbuild_bin, '-i', '-o', output, '-m', dmp_file, '-g']
 
 

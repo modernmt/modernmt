@@ -129,8 +129,8 @@ def main_evaluate(argv):
                         help='A custom Google Translate API Key to use during evaluation')
     parser.add_argument('--human-eval', dest='heval_output', metavar='OUTPUT', default=None,
                         help='the output folder for the tab-spaced files needed to setup a Human Evaluation benchmark')
-    parser.add_argument('-i', '--interactive', action='store_true', dest='interactive', help='Test without sessions, as if '
-                                                                                             'translating sentence by sentence')
+    parser.add_argument('-i', '--interactive', action='store_true', dest='interactive',
+                        help='Test without sessions, as if translating sentence by sentence')
     parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='if debug is set, it enables verbose '
                                                                                  'logging and prevents temporary files '
                                                                                  'to be removed after execution')
@@ -158,7 +158,8 @@ def main_evaluate(argv):
     print '\nTesting on {lines} sentences...\n'.format(lines=lines)
     sys.stdout.flush()
 
-    scores = server.evaluate(corpora=corpora, google_key=args.gt_key, heval_output=args.heval_output, use_sessions=not args.interactive)
+    scores = server.evaluate(corpora=corpora, google_key=args.gt_key, heval_output=args.heval_output,
+                             use_sessions=not args.interactive)
 
     matecat = sorted([(translator,
                        -1 if isinstance(score, basestring) else score['matecat'],
