@@ -122,10 +122,11 @@ class BingTranslator(Translator):
 
 
 class MMTTranslator(Translator):
-    def __init__(self, server):
+    def __init__(self, server, use_sessions=True):
         Translator.__init__(self, server.engine.source_lang, server.engine.target_lang, threads=100)
         self._server = server
         self._sessions = {}
+        self._use_sessions = use_sessions
 
     def name(self):
         return 'MMT'
@@ -141,13 +142,15 @@ class MMTTranslator(Translator):
     def _before_translate(self, corpus):
         corpus_file = corpus.get_file(self.source_lang)
         context = self._server.api.get_context_f(corpus_file)
-        self._sessions[corpus_file] = self._server.api.create_session(context)['id']
+        if self._use_sessions:
+            self._sessions[corpus_file] = self._server.api.create_session(context)['id']
 
     def _get_translation(self, line, corpus):
         corpus_file = corpus.get_file(self.source_lang)
 
         try:
-            translation = self._server.api.translate(line, session=self._sessions[corpus_file], processing=True)
+            sess = self._sessions[corpus_file] if self._use_sessions else None
+            translation = self._server.api.translate(line, session=sess, processing=True)
         except Exception as e:
             raise TranslateError(e.message)
 

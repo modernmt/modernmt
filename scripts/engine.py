@@ -687,7 +687,7 @@ class MMTServer(_MMTDistributedComponent):
             if not debug:
                 self._clear_tempdir()
 
-    def evaluate(self, corpora, google_key=None, heval_output=None):
+    def evaluate(self, corpora, google_key=None, heval_output=None, use_sessions=True):
         if len(corpora) == 0:
             raise IllegalArgumentException('empty corpora')
 
@@ -705,7 +705,7 @@ class MMTServer(_MMTDistributedComponent):
         translators = [
             GoogleTranslate(source_lang, target_lang, key=google_key),
             # BingTranslator(source_lang, target_lang),
-            MMTTranslator(self)
+            MMTTranslator(self, use_sessions)
         ]
 
         working_dir = self._get_tempdir('evaluate')
