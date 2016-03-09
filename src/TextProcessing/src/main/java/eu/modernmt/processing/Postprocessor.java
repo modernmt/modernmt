@@ -27,9 +27,9 @@ public class Postprocessor implements Closeable {
 
         return new ProcessingPipeline.Builder<Translation, Translation>()
                 .setThreads(threads)
-                .add(detokenizer)
                 .add(new NumericTokenExtractor<>())
                 .add(new PlaceholderTransformer())
+                .add(detokenizer)
                 .add(new Recaser())
                 .add(new TagMapper())
                 .create();

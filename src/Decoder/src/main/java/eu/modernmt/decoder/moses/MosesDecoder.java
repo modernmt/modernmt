@@ -117,6 +117,10 @@ public class MosesDecoder implements Decoder {
         long elapsed = System.currentTimeMillis() - start;
         translation.setElapsedTime(elapsed);
 
+        if (logger.isDebugEnabled()) {
+            logger.debug("Best translation: \"" + serialize(translation.getWords()) + "\"");
+        }
+
         logger.info("Translation of " + sentence.length() + " words took " + (((double) elapsed) / 1000.) + "s");
 
         return translation;

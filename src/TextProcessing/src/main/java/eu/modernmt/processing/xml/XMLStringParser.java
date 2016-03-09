@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
  */
 public class XMLStringParser implements TextProcessor<String, TokenizedString> {
 
-    private static final Pattern EntityPattern = Pattern.compile("&((#[0-9]{1,4})|(#x[0-9a-fA-F]{1,4})|([a-zA-Z]+));");
+    public static final Pattern EntityPattern = Pattern.compile("&((#[0-9]{1,4})|(#x[0-9a-fA-F]{1,4})|([a-zA-Z]+));");
 
     @Override
     public TokenizedString call(String string) throws ProcessingException {
