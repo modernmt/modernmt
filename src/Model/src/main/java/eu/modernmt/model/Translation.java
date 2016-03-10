@@ -66,7 +66,9 @@ public class Translation extends Sentence {
      *
      * @return string representation including tags
      */
+    @Override
     public String toString(boolean withPlaceholders) {
+        // TODO: this behaviour should be embedded into a post-processor module that, after TagMapper, applies space transformations.
         if (tags.length == 0)
             return getStrippedString(withPlaceholders);
 
