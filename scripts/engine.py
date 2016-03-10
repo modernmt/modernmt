@@ -467,6 +467,8 @@ class _TuningProcessLogger:
 
 
 class MMTServerApi:
+    DEFAULT_TIMEOUT = 60 * 60  # sec
+
     def __init__(self, port):
         self.port = port
         self._url_template = 'http://localhost:{port}/{endpoint}'
@@ -482,12 +484,12 @@ class MMTServerApi:
 
     def _get(self, endpoint, params=None):
         url = self._url_template.format(port=self.port, endpoint=endpoint)
-        r = requests.get(url, params=params)
+        r = requests.get(url, params=params, timeout=MMTServerApi.DEFAULT_TIMEOUT)
         return self._unpack(r)
 
     def _delete(self, endpoint):
         url = self._url_template.format(port=self.port, endpoint=endpoint)
-        r = requests.delete(url)
+        r = requests.delete(url, timeout=MMTServerApi.DEFAULT_TIMEOUT)
         return self._unpack(r)
 
     def _put(self, endpoint, json=None):
@@ -498,7 +500,7 @@ class MMTServerApi:
             data = js.dumps(json)
             headers = {'Content-type': 'application/json'}
 
-        r = requests.put(url, data=data, headers=headers)
+        r = requests.put(url, data=data, headers=headers, timeout=MMTServerApi.DEFAULT_TIMEOUT)
         return self._unpack(r)
 
     def _post(self, endpoint, json=None):
@@ -509,7 +511,7 @@ class MMTServerApi:
             data = js.dumps(json)
             headers = {'Content-type': 'application/json'}
 
-        r = requests.post(url, data=data, headers=headers)
+        r = requests.post(url, data=data, headers=headers, timeout=MMTServerApi.DEFAULT_TIMEOUT)
         return self._unpack(r)
 
     def stats(self):
@@ -749,6 +751,8 @@ class MMTServer(_MMTDistributedComponent):
                 translations.append((translator, translated, tokenized, mtt))
             except TranslateError as e:
                 translations.append((translator, e))
+            except Exception as e:
+                translations.append((translator, TranslateError('Unexcepted ERROR: ' + str(e.message))))
 
         if he_outputter is not None:
             he_output = os.path.join(heval_output, 'reference.' + target_lang)
@@ -780,7 +784,7 @@ class MMTServer(_MMTDistributedComponent):
                 }
             else:
                 translator, e = translation
-                scores[translator.name()] = e.message
+                scores[translator.name()] = str(e.message)
 
         return scores
 
