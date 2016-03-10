@@ -17,7 +17,7 @@ from scripts.mt.contextanalysis import ContextAnalyzer
 from scripts.mt.lm import LanguageModel
 from scripts.mt.moses import Moses
 from scripts.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
-from scripts.mt.processing import Tokenizer, CorpusCleaner, Preprocessor
+from scripts.mt.processing import CorpusCleaner, TrainingPreprocessor
 
 __author__ = 'Davide Caroselli'
 __description = '''\
@@ -34,8 +34,8 @@ __description = '''\
   You can find more information on: http://www.modernmt.eu/
 '''
 
-_injectable_components = [Tokenizer, CorpusCleaner, ContextAnalyzer, SuffixArraysPhraseTable, WordAligner,
-                          LanguageModel, Moses, MMTEngine]
+_injectable_components = [CorpusCleaner, ContextAnalyzer, SuffixArraysPhraseTable, WordAligner, LanguageModel, Moses,
+                          MMTEngine]
 
 
 def __check_java():
@@ -149,7 +149,7 @@ def main_evaluate(argv):
     engine = injector.inject(engine)
     server = MMTServer(engine, args.api_port)
     corpora = ParallelCorpus.list(args.corpora_path) if args.corpora_path is not None \
-        else ParallelCorpus.list(os.path.join(engine.data_path, Preprocessor.TEST_FOLDER_NAME))
+        else ParallelCorpus.list(os.path.join(engine.data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
 
     lines = 0
     for corpus in corpora:

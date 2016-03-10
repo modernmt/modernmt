@@ -21,6 +21,26 @@ public class TokensOutputter implements PipelineOutputStream<Sentence> {
     private boolean printTags;
     private boolean printPlaceholders;
 
+    public static String toString(Sentence sentence, boolean printTags, boolean printPlaceholders) {
+        StringBuilder builder = new StringBuilder();
+
+        Iterator<Token> iterator = printTags ? sentence.iterator() : new ArrayIterator<>(sentence.getWords());
+
+        while (iterator.hasNext()) {
+            Token token = iterator.next();
+
+            if (printPlaceholders && (token instanceof PlaceholderToken))
+                builder.append(((PlaceholderToken) token).getPlaceholder());
+            else
+                builder.append(token.getText());
+
+            if (iterator.hasNext())
+                builder.append(' ');
+        }
+
+        return builder.toString();
+    }
+
     public TokensOutputter(OutputStream stream, boolean printTags, boolean printPlaceholders) {
         this(new OutputStreamWriter(stream, Config.charset.get()), printTags, printPlaceholders);
     }
@@ -38,25 +58,9 @@ public class TokensOutputter implements PipelineOutputStream<Sentence> {
 
     @Override
     public void write(Sentence sentence) throws IOException {
-        Iterator<Token> iterator = printTags ? sentence.iterator() : new ArrayIterator<>(sentence.getWords());
-
-        while (iterator.hasNext()) {
-            Token token = iterator.next();
-            writer.write(toString(token));
-
-            if (iterator.hasNext())
-                writer.write(' ');
-        }
-
+        writer.write(toString(sentence, printTags, printPlaceholders));
         writer.write('\n');
         writer.flush();
-    }
-
-    private String toString(Token token) {
-        if (printPlaceholders && (token instanceof PlaceholderToken))
-            return ((PlaceholderToken) token).getPlaceholder();
-        else
-            return token.getText();
     }
 
     protected static final class ArrayIterator<V> implements Iterator<V> {

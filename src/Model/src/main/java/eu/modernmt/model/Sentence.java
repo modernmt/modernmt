@@ -52,12 +52,7 @@ public class Sentence implements Serializable, Iterable<Token> {
     public void setTags(Tag[] tags) {
         this.tags = tags;
     }
-
-    /**
-     * @deprecated you should access directly the tokens array and print them
-     * in your custom way.
-     */
-    @Deprecated
+    
     public String getStrippedString(boolean withPlaceholders) {
         StringBuilder builder = new StringBuilder();
 
@@ -97,10 +92,7 @@ public class Sentence implements Serializable, Iterable<Token> {
      * then decided by the first word and the consecutive tags.
      *
      * @return string representation including tags
-     * @deprecated this logic should be embedded in a postprocess task while this
-     * function should only iterate over tokens and print ' ' if hasRightSpace is true.
      */
-    @Deprecated
     public String toString(boolean withPlaceholders) {
         if (tags.length == 0)
             return getStrippedString(withPlaceholders);

@@ -1,15 +1,13 @@
 package eu.modernmt.cli;
 
-import eu.modernmt.engine.training.TrainingPipeline;
-import eu.modernmt.engine.training.partitioning.FilesCorporaPartition;
-import eu.modernmt.model.BilingualCorpus;
-import eu.modernmt.model.Corpus;
-import eu.modernmt.model.util.CorpusUtils;
+import eu.modernmt.model.Sentence;
+import eu.modernmt.processing.Preprocessor;
+import eu.modernmt.processing.framework.*;
+import eu.modernmt.processing.util.SentenceOutputter;
+import eu.modernmt.processing.util.TokensOutputter;
 import org.apache.commons.cli.*;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
-import java.io.File;
-import java.util.ArrayList;
 import java.util.Locale;
 
 /**
@@ -17,87 +15,65 @@ import java.util.Locale;
  */
 public class PreprocessorMain {
 
-    public static final int DEFAULT_PARTITION_SIZE = 1200;
-
     private static class Args {
 
         private static final Options cliOptions;
 
         static {
-            Option sourceLanguage = Option.builder("s").hasArg().required().build();
-            Option targetLanguage = Option.builder("t").hasArg().required().build();
-            Option inputPath = Option.builder().longOpt("input").hasArgs().required().build();
-            Option outputPath = Option.builder().longOpt("output").hasArg().required().build();
-            Option devPath = Option.builder().longOpt("dev").hasArg().required(false).build();
-            Option testPath = Option.builder().longOpt("test").hasArg().required(false).build();
+            Option lang = Option.builder().longOpt("lang").hasArg().required().build();
+            Option skipTags = Option.builder().longOpt("no-tags").hasArg(false).required(false).build();
+            Option skipPlaceholders = Option.builder().longOpt("print-placeholders").hasArg(false).required(false).build();
+            Option keepSpaces = Option.builder().longOpt("original-spacing").hasArg(false).required(false).build();
 
             cliOptions = new Options();
-            cliOptions.addOption(sourceLanguage);
-            cliOptions.addOption(targetLanguage);
-            cliOptions.addOption(inputPath);
-            cliOptions.addOption(outputPath);
-            cliOptions.addOption(devPath);
-            cliOptions.addOption(testPath);
+            cliOptions.addOption(lang);
+            cliOptions.addOption(skipTags);
+            cliOptions.addOption(skipPlaceholders);
+            cliOptions.addOption(keepSpaces);
         }
 
-        public final Locale sourceLanguage;
-        public final Locale targetLanguage;
-        public final File[] inputRoots;
-        public final File outputRoot;
-        public final File devRoot;
-        public final File testRoot;
+        public final Locale language;
+        public final boolean printTags;
+        public final boolean printPlaceholders;
+        public final boolean keepSpaces;
 
         public Args(String[] args) throws ParseException {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
-            sourceLanguage = Locale.forLanguageTag(cli.getOptionValue('s'));
-            targetLanguage = Locale.forLanguageTag(cli.getOptionValue('t'));
-
-            String[] roots = cli.getOptionValues("input");
-            inputRoots = new File[roots.length];
-            for (int i = 0; i < roots.length; i++)
-                inputRoots[i] = new File(roots[i]);
-
-            outputRoot = new File(cli.getOptionValue("output"));
-
-            devRoot = cli.hasOption("dev") ? new File(cli.getOptionValue("dev")) : null;
-            testRoot = cli.hasOption("test") ? new File(cli.getOptionValue("test")) : null;
+            language = Locale.forLanguageTag(cli.getOptionValue("lang"));
+            printTags = !cli.hasOption("no-tags");
+            printPlaceholders = cli.hasOption("print-placeholders");
+            keepSpaces = cli.hasOption("original-spacing");
         }
 
     }
 
-    public static void main(String[] _args) throws Throwable {
+    public static void main(String[] _args) throws InterruptedException, ProcessingException, ParseException {
         Args args = new Args(_args);
 
-        ArrayList<Corpus> monolingualCorpora = new ArrayList<>();
-        ArrayList<BilingualCorpus> bilingualCorpora = new ArrayList<>();
+        ProcessingPipeline<String, Sentence> pipeline = null;
+        PipelineInputStream<String> input = null;
+        PipelineOutputStream<Sentence> output = null;
 
-        CorpusUtils.list(monolingualCorpora, true, bilingualCorpora, args.sourceLanguage, args.targetLanguage, args.inputRoots);
+        try {
+            pipeline = Preprocessor.getPipeline(args.language, true);
 
-        if (bilingualCorpora.isEmpty())
-            throw new ParseException("Input path does not contains valid bilingual data");
+            input = PipelineInputStream.fromInputStream(System.in);
+            if (args.keepSpaces)
+                output = new SentenceOutputter(System.out, args.printTags, args.printPlaceholders);
+            else
+                output = new TokensOutputter(System.out, args.printTags, args.printPlaceholders);
 
-        FilesCorporaPartition mainPartition = new FilesCorporaPartition(args.outputRoot);
-        TrainingPipeline trainingPipeline = new TrainingPipeline(mainPartition, args.sourceLanguage, args.targetLanguage);
+            ProcessingJob<String, Sentence> job = pipeline.createJob(input, output);
 
-        trainingPipeline.addBilingualCorpora(bilingualCorpora);
-        if (!monolingualCorpora.isEmpty())
-            trainingPipeline.addMonolingualCorpora(monolingualCorpora);
-
-        FileUtils.deleteDirectory(args.outputRoot);
-
-        if (args.devRoot != null) {
-            FileUtils.deleteDirectory(args.devRoot);
-            trainingPipeline.addExtraPartition(new FilesCorporaPartition(args.devRoot, DEFAULT_PARTITION_SIZE));
+            job.start();
+            job.join();
+        } finally {
+            IOUtils.closeQuietly(pipeline);
+            IOUtils.closeQuietly(input);
+            IOUtils.closeQuietly(output);
         }
-
-        if (args.testRoot != null) {
-            FileUtils.deleteDirectory(args.testRoot);
-            trainingPipeline.addExtraPartition(new FilesCorporaPartition(args.testRoot, DEFAULT_PARTITION_SIZE));
-        }
-
-        trainingPipeline.process();
     }
 
 }

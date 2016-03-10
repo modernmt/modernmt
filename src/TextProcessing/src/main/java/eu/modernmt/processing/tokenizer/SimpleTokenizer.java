@@ -11,7 +11,7 @@ public class SimpleTokenizer implements Tokenizer {
 
     @Override
     public TokenizedString call(TokenizedString param) throws ProcessingException {
-        TokenizerOutputTransformer.transform(param, param.string.split(" "));
+        TokenizerOutputTransformer.transform(param, param.string.split(" +"));
         return param;
     }
 

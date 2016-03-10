@@ -21,7 +21,7 @@ from scripts.mt.contextanalysis import ContextAnalyzer
 from scripts.mt.lm import LanguageModel
 from scripts.mt.moses import Moses, MosesFeature, LexicalReordering
 from scripts.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
-from scripts.mt.processing import Tokenizer, CorpusCleaner, Preprocessor
+from scripts.mt.processing import Preprocessor, CorpusCleaner, TrainingPreprocessor
 
 __author__ = 'Davide Caroselli'
 
@@ -249,7 +249,7 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
             if 'preprocess' in steps:
                 with cmdlogger.step('Corpora preprocessing') as _:
                     preprocessor_output = self._get_tempdir('preprocessed')
-                    processed_bicorpora, processed_mocorpora = self._engine.preprocessor.process(
+                    processed_bicorpora, processed_mocorpora = self._engine.training_preprocessor.process(
                         source_lang, target_lang, roots, preprocessor_output,
                         (self._engine.data_path if split_trainingset else None)
                     )
@@ -358,9 +358,9 @@ class MMTEngine:
         if self.target_lang is None or self.source_lang is None:
             raise IllegalStateException('Engine target language or source language must be specified')
 
-        self.tokenizer = injector.inject(Tokenizer())
+        self.training_preprocessor = TrainingPreprocessor()
+        self.preprocessor = Preprocessor()
         self.cleaner = injector.inject(CorpusCleaner())
-        self.preprocessor = injector.inject(Preprocessor())
 
         self.analyzer = injector.inject(ContextAnalyzer(self._context_index))
 
@@ -522,13 +522,13 @@ class MMTServerApi:
         return self._get('decoder/features')
 
     def get_context_f(self, document, limit=None):
-        params={'local_file': document}
+        params = {'local_file': document}
         if limit is not None:
             params['limit'] = limit
         return self._get('context', params=params)
 
     def get_context_s(self, text):
-        params={'text': text}
+        params = {'text': text}
         if limit is not None:
             params['limit'] = limit
         return self._get('context', params=params)
@@ -593,7 +593,7 @@ class MMTServer(_MMTDistributedComponent):
 
     def tune(self, corpora=None, tokenize=True, debug=False, context_enabled=True):
         if corpora is None:
-            corpora = ParallelCorpus.list(os.path.join(self.engine.data_path, Preprocessor.DEV_FOLDER_NAME))
+            corpora = ParallelCorpus.list(os.path.join(self.engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME))
 
         if len(corpora) == 0:
             raise IllegalArgumentException('empty corpora')
@@ -621,8 +621,9 @@ class MMTServer(_MMTDistributedComponent):
                 fileutils.makedirs(tokenizer_output, exist_ok=True)
 
                 with cmdlogger.step('Corpus tokenization') as _:
-                    tokenized_corpora = self.engine.tokenizer.batch_tokenize(corpora, tokenizer_output,
-                                                                             print_tags=False, print_placeholders=True)
+                    tokenized_corpora = self.engine.preprocessor.process(corpora, tokenizer_output, print_tags=False,
+                                                                         print_placeholders=True,
+                                                                         original_spacing=False)
 
             # Create merged corpus
             with cmdlogger.step('Merging corpus') as _:
@@ -716,8 +717,8 @@ class MMTServer(_MMTDistributedComponent):
 
         # Tokenize test set
         references_path = os.path.join(working_dir, 'references')
-        tokenized_corpora = self.engine.tokenizer.batch_tokenize(corpora, references_path,
-                                                                 print_tags=True, print_placeholders=False)
+        tokenized_corpora = self.engine.preprocessor.process(corpora, references_path, print_tags=True,
+                                                             print_placeholders=False, original_spacing=False)
 
         tokenized_references = ParallelCorpus.filter(tokenized_corpora, target_lang)
         original_references = ParallelCorpus.filter(corpora, target_lang)
@@ -739,8 +740,8 @@ class MMTServer(_MMTDistributedComponent):
 
             try:
                 translated, mtt = translator.translate(corpora, translations_path)
-                tokenized = self.engine.tokenizer.batch_tokenize(translated, tokenized_path,
-                                                                 print_tags=True, print_placeholders=False)
+                tokenized = self.engine.preprocessor.process(translated, tokenized_path, print_tags=True,
+                                                             print_placeholders=False, original_spacing=False)
 
                 translations.append((translator, translated, tokenized, mtt))
             except TranslateError as e:
