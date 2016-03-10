@@ -529,7 +529,7 @@ class MMTServerApi:
             params['limit'] = limit
         return self._get('context', params=params)
 
-    def get_context_s(self, text):
+    def get_context_s(self, text, limit=None):
         params = {'text': text}
         if limit is not None:
             params['limit'] = limit
