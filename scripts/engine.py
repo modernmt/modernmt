@@ -745,6 +745,8 @@ class MMTServer(_MMTDistributedComponent):
                 translations.append((translator, translated, tokenized, mtt))
             except TranslateError as e:
                 translations.append((translator, e))
+            except Exception as e:
+                translations.append((translator, TranslateError('Unexcepted ERROR: ' + e.message)))
 
         # Merging references
         tokenized_reference_file = os.path.join(working_dir, 'reference.tok.' + target_lang)
