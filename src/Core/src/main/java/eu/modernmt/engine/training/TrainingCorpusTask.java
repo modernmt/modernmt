@@ -51,7 +51,7 @@ class TrainingCorpusTask implements Callable<Void> {
             else
                 input = PipelineInputStream.fromReader(corpus.getContentReader());
             
-            output = new TokensOutputter(outCorpus.getContentWriter(false), false, true);
+            output = new TokensOutputter(outCorpus.getContentWriter(false), false, true, false);
 
             ProcessingJob<String, Sentence> job = pipeline.createJob(input, output);
 

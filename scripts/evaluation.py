@@ -170,7 +170,6 @@ class GoogleTranslate(Translator):
     def __init__(self, source_lang, target_lang, key=None):
         Translator.__init__(self, source_lang, target_lang, threads=10)
         self._key = key if key is not None else DEFAULT_GOOGLE_KEY
-        self._html = HTMLParser.HTMLParser()
 
     def name(self):
         return 'Google Translate'
@@ -200,8 +199,7 @@ class GoogleTranslate(Translator):
             message = json['error']['message']
             raise TranslateError('Google Translate query failed with code ' + str(r.status_code) + ': ' + message)
 
-        text = self._html.unescape(json['data']['translations'][0]['translatedText'])
-
+        text = json['data']['translations'][0]['translatedText']
         return text, elapsed
 
 

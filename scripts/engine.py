@@ -715,25 +715,28 @@ class MMTServer(_MMTDistributedComponent):
 
         translations = []
 
-        # Tokenize test set
-        references_path = os.path.join(working_dir, 'references')
-        tokenized_corpora = self.engine.preprocessor.process(corpora, references_path, print_tags=True,
-                                                             print_placeholders=False, original_spacing=False)
+        # Process references
+        corpora_path = os.path.join(working_dir, 'corpora')
+        tok_corpora_path = os.path.join(working_dir, 'corpora.tok')
 
-        tokenized_references = ParallelCorpus.filter(tokenized_corpora, target_lang)
-        original_references = ParallelCorpus.filter(corpora, target_lang)
+        corpora = self.engine.preprocessor.process(corpora, corpora_path, print_tags=True, print_placeholders=False,
+                                                   original_spacing=True)
+        tok_corpora = self.engine.preprocessor.process(corpora, tok_corpora_path, print_tags=True,
+                                                       print_placeholders=False, original_spacing=False)
 
-        # Compute wordcount
-        wordcount = 0
-        for corpus in tokenized_corpora:
-            wordcount += fileutils.wordcount(corpus.get_file(source_lang))
+        tok_reference = os.path.join(working_dir, 'reference.tok.' + target_lang)
+        fileutils.merge([corpus.get_file(target_lang) for corpus in tok_corpora], tok_reference)
+        reference = os.path.join(working_dir, 'reference.' + target_lang)
+        fileutils.merge([corpus.get_file(target_lang) for corpus in corpora], reference)
+        source = os.path.join(working_dir, 'source.' + source_lang)
+        fileutils.merge([corpus.get_file(source_lang) for corpus in corpora], source)
 
         # Translate
         for translator in translators:
             tid = translator.name().replace(' ', '_')
 
             translations_path = os.path.join(working_dir, 'translations', tid)
-            tokenized_path = os.path.join(working_dir, 'tokenized', tid)
+            tokenized_path = os.path.join(working_dir, 'translations.tok', tid)
 
             fileutils.makedirs(translations_path, exist_ok=True)
             fileutils.makedirs(tokenized_path, exist_ok=True)
@@ -747,19 +750,11 @@ class MMTServer(_MMTDistributedComponent):
             except TranslateError as e:
                 translations.append((translator, e))
 
-        # Merging references
-        tokenized_reference_file = os.path.join(working_dir, 'reference.tok.' + target_lang)
-        original_reference_file = os.path.join(working_dir, 'reference.' + target_lang)
-        original_source_file = os.path.join(working_dir, 'source.' + source_lang)
-        fileutils.merge([corpus.get_file(target_lang) for corpus in tokenized_references], tokenized_reference_file)
-        fileutils.merge([corpus.get_file(target_lang) for corpus in original_references], original_reference_file)
-        fileutils.merge([corpus.get_file(source_lang) for corpus in original_references], original_source_file)
-
         if he_outputter is not None:
             he_output = os.path.join(heval_output, 'reference.' + target_lang)
-            he_outputter.write(original_reference_file, he_output, target_lang)
+            he_outputter.write(reference, he_output, target_lang)
             he_output = os.path.join(heval_output, 'source.' + source_lang)
-            he_outputter.write(original_source_file, he_output, source_lang)
+            he_outputter.write(source, he_output, source_lang)
 
         # Scoring
         scores = {}
@@ -779,8 +774,8 @@ class MMTServer(_MMTDistributedComponent):
                     he_outputter.write(translated_merged, he_output, target_lang)
 
                 scores[translator.name()] = {
-                    'bleu': BLEUScore().calculate(tokenized_merged, tokenized_reference_file),
-                    'matecat': MatecatScore().calculate(translated_merged, original_reference_file),
+                    'bleu': BLEUScore().calculate(tokenized_merged, tok_reference),
+                    'matecat': MatecatScore().calculate(translated_merged, reference),
                     '_mtt': mtt
                 }
             else:

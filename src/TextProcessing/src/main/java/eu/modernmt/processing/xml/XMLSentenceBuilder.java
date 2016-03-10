@@ -20,14 +20,18 @@ public class XMLSentenceBuilder implements TextProcessor<TokenizedString, Senten
     public Sentence call(TokenizedString param) throws ProcessingException {
         TokenizedString.XMLTagHook[] hooks = param.hooks;
         BitSet bits = param.bits;
+        BitSet tagsBits = new BitSet(bits.length());
+        char[] chars = param.string.toCharArray();
 
-        // Ensure space char added as XML tag placeholder is tokenized
+        // Ensure space char added as XML tag placeholder is tokenized.
+        // Remove fake space in order to keep right information about right-space.
         for (TokenizedString.XMLTagHook hook : hooks) {
+            chars[hook.position] = 'X';
             bits.set(hook.position);
             bits.set(hook.position + 1);
+            tagsBits.set(hook.position + 1);
         }
 
-        char[] chars = param.string.toCharArray();
         ArrayList<Token> tokens = new ArrayList<>();
         ArrayList<Tag> tags = new ArrayList<>();
 
@@ -37,13 +41,14 @@ public class XMLSentenceBuilder implements TextProcessor<TokenizedString, Senten
 
         for (int i = 0; i < chars.length + 1; i++) {
             if (i == chars.length || bits.get(i)) {
-                String text = builder.toString().trim();
-                builder.setLength(0);
+                if (!tagsBits.get(i)) {
+                    String text = builder.toString().trim();
 
-                if (!text.isEmpty()) {
-                    boolean rightSpace = i < chars.length && chars[i] == ' ';
-                    Token token = new Token(text, rightSpace);
-                    tokens.add(token);
+                    if (!text.isEmpty()) {
+                        boolean rightSpace = i < chars.length && chars[i] == ' ';
+                        Token token = new Token(text, rightSpace);
+                        tokens.add(token);
+                    }
                 }
 
                 while (hookIndex < hooks.length && hooks[hookIndex].position == i) {
@@ -51,6 +56,8 @@ public class XMLSentenceBuilder implements TextProcessor<TokenizedString, Senten
                     tag.setPosition(tokens.size());
                     tags.add(tag);
                 }
+
+                builder.setLength(0);
             }
 
             if (i < chars.length) {
