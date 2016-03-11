@@ -25,45 +25,34 @@ public class XMLDetokenizerWrapper implements Detokenizer {
         Token[] words = translation.getWords();
         String[] texts = new String[words.length];
 
-        StringBuilder text = new StringBuilder();
+        StringBuffer text = new StringBuffer();
 
         for (int i = 0; i < words.length; i++) {
             Token word = words[i];
 
+            Matcher m = XMLStringParser.EntityPattern.matcher(word.getText());
             text.setLength(0);
-            text.append(word.getText());
-
-            boolean changed = false;
-
-            Matcher m = XMLStringParser.EntityPattern.matcher(text);
 
             while (m.find()) {
-                int start = m.start();
-                int end = m.end();
+                String group = m.group();
 
-                Character c = XMLCharacterEntity.unescape(m.group());
+                Character c = XMLCharacterEntity.unescape(group);
+                String replacement = c == null ? group : Character.toString(c);
 
-                if (c != null) {
-                    text.replace(start, end, Character.toString(c));
-                    changed = true;
-                }
+                m.appendReplacement(text, replacement);
             }
+            m.appendTail(text);
 
-            if (changed) {
-                texts[i] = word.getText();
-                word.setText(text.toString());
-            }
+            texts[i] = word.getText();
+            word.setText(text.toString());
         }
 
         // Call detokenizer
         detokenizer.call(translation);
 
         // Restore escaped text
-        for (int i = 0; i < words.length; i++) {
-            String original = texts[i];
-            if (original != null)
-                words[i].setText(original);
-        }
+        for (int i = 0; i < words.length; i++)
+            words[i].setText(texts[i]);
 
         return translation;
     }
