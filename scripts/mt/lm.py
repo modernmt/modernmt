@@ -2,8 +2,8 @@ import os
 from multiprocessing import cpu_count
 
 import scripts
-from scripts.libs import fileutils, shell
 from moses import MosesFeature
+from scripts.libs import fileutils, shell
 
 __author__ = 'Davide Caroselli'
 
@@ -134,6 +134,8 @@ class StaticIRSTLM(LanguageModel):
 
 
 class AdaptiveIRSTLM(LanguageModel):
+    LM_ORDER = 2
+
     def __init__(self, model):
         LanguageModel.__init__(self, model, 'IRSTLM')
 
@@ -143,6 +145,9 @@ class AdaptiveIRSTLM(LanguageModel):
         self._addbound_bin = os.path.join(self._irstlm_dir, 'scripts', 'add-start-end.sh')
         self._buildlm_bin = os.path.join(self._irstlm_dir, 'scripts', 'build-lm.sh')
         self._compilelm_bin = os.path.join(self._irstlm_dir, 'bin', 'compile-lm')
+
+    def _on_fields_injected(self, _):
+        self._order = AdaptiveIRSTLM.LM_ORDER  # Order for AdaptiveLM is not the same of static LM
 
     def train(self, corpora, lang, working_dir='.', log_file=None):
         LanguageModel.train(self, corpora, lang, working_dir, log_file)
