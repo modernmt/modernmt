@@ -23,13 +23,11 @@ public class MosesINI {
 
     private String template;
     private int threads;
-    private int workers;
     private Map<String, float[]> weights;
 
     private MosesINI(String template) {
         this.template = template;
         this.threads = 1;
-        this.workers = 1;
         this.weights = null;
     }
 
@@ -41,19 +39,13 @@ public class MosesINI {
         return this.threads;
     }
 
-    public void setWorkers(int workers) {
-        this.workers = workers;
-    }
-
     public void setWeights(Map<String, float[]> weights) {
         this.weights = weights;
     }
 
     @Override
     public String toString() {
-        String ini = template
-                .replace("${DECODER_THREADS}", Integer.toString(threads))
-                .replace("${SA_WORKERS}", Integer.toString(workers));
+        String ini = template.replace("${DECODER_THREADS}", Integer.toString(threads));
 
         if (weights != null) {
             StringBuilder weightsSection = new StringBuilder();

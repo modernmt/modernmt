@@ -30,12 +30,10 @@ public class SlaveNode extends Worker {
     }
 
     private static final int DEFAULT_DECODER_THREADS;
-    private static final int DEFAULT_SA_WORKERS;
 
     static {
         int cores = Runtime.getRuntime().availableProcessors();
         DEFAULT_DECODER_THREADS = cores;
-        DEFAULT_SA_WORKERS = cores > 3 ? 2 : 1;
     }
 
     private TranslationEngine engine;
@@ -78,8 +76,6 @@ public class SlaveNode extends Worker {
                         mosesINI.setWeights(weights);
 
                     mosesINI.setThreads(DEFAULT_DECODER_THREADS);
-                    mosesINI.setWorkers(DEFAULT_SA_WORKERS);
-
 
                     File inifile = new File(runtimePath, "moses.ini");
                     FileUtils.write(inifile, mosesINI.toString(), false);
