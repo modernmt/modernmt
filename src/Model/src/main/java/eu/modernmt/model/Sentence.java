@@ -56,12 +56,20 @@ public class Sentence implements Serializable, Iterable<Token> {
     public String getStrippedString(boolean withPlaceholders) {
         StringBuilder builder = new StringBuilder();
 
-        for (int i = 0; i < words.length; i++) {
-            Token token = words[i];
+        boolean foundFirstWord = false;
+        boolean printSpace = false;
+        for (Token token : this) {
+            if (token instanceof Tag) {
+                printSpace |= (foundFirstWord && token.hasRightSpace());
+            } else {
+                foundFirstWord = true;
 
-            builder.append(toString(token, withPlaceholders));
-            if (i < words.length - 1 && token.hasRightSpace())
-                builder.append(' ');
+                if (printSpace)
+                    builder.append(' ');
+
+                builder.append(toString(token, withPlaceholders));
+                printSpace = token.hasRightSpace();
+            }
         }
 
         return builder.toString();

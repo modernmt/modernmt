@@ -16,38 +16,38 @@ public class TranslationTest {
 
     @Test
     public void testEmptyTranslation() {
-        Translation Translation = translation(null);
+        Translation translation = translation(null);
 
-        assertEquals("", Translation.getStrippedString(false));
-        assertEquals("", Translation.toString());
+        assertEquals("", translation.getStrippedString(false));
+        assertEquals("", translation.toString());
     }
 
     @Test
     public void testTranslationNoTags() {
-        Translation Translation = translation(new Token[]{
+        Translation translation = translation(new Token[]{
                 new Token("Hello", true),
                 new Token("world", false),
                 new Token("!", false),
         });
 
-        assertEquals("Hello world!", Translation.getStrippedString(false));
-        assertEquals("Hello world!", Translation.toString());
+        assertEquals("Hello world!", translation.getStrippedString(false));
+        assertEquals("Hello world!", translation.toString());
     }
 
     @Test
     public void testTranslationOnlyTags() {
-        Translation Translation = translation(null, new Tag[]{
+        Translation translation = translation(null, new Tag[]{
                 Tag.fromText("<a>", false, false, 0),
                 Tag.fromText("</a>", false, false, 0),
         });
 
-        assertEquals("", Translation.getStrippedString(false));
-        assertEquals("<a></a>", Translation.toString());
+        assertEquals("", translation.getStrippedString(false));
+        assertEquals("<a></a>", translation.toString());
     }
 
     @Test
     public void testTranslationWithTags() {
-        Translation Translation = translation(new Token[]{
+        Translation translation = translation(new Token[]{
                 new Token("Hello", true),
                 new Token("world", false),
                 new Token("!", false),
@@ -56,13 +56,13 @@ public class TranslationTest {
                 Tag.fromText("</a>", false, false, 2),
         });
 
-        assertEquals("Hello world!", Translation.getStrippedString(false));
-        assertEquals("Hello <a>world</a>!", Translation.toString());
+        assertEquals("Hello world!", translation.getStrippedString(false));
+        assertEquals("Hello <a>world</a>!", translation.toString());
     }
 
     @Test
     public void testTranslationWithDiscordantTagSpacing_FalseTrue() {
-        Translation Translation = translation(new Token[]{
+        Translation translation = translation(new Token[]{
                 new Token("Hello", true),
                 new Token("world", false),
                 new Token("!", false),
@@ -71,13 +71,13 @@ public class TranslationTest {
                 Tag.fromText("</a>", false, true, 2),
         });
 
-        assertEquals("Hello world!", Translation.getStrippedString(false));
-        assertEquals("Hello <a>world</a>!", Translation.toString());
+        assertEquals("Hello world !", translation.getStrippedString(false));
+        assertEquals("Hello <a>world</a>!", translation.toString());
     }
 
     @Test
     public void testTranslationWithDiscordantTagSpacing_TrueFalse() {
-        Translation Translation = translation(new Token[]{
+        Translation translation = translation(new Token[]{
                 new Token("Hello", true),
                 new Token("world", true),
                 new Token("!", false),
@@ -86,13 +86,13 @@ public class TranslationTest {
                 Tag.fromText("</a>", false, false, 2),
         });
 
-        assertEquals("Hello world !", Translation.getStrippedString(false));
-        assertEquals("Hello <a>world</a> !", Translation.toString());
+        assertEquals("Hello world !", translation.getStrippedString(false));
+        assertEquals("Hello <a>world</a> !", translation.toString());
     }
 
     @Test
     public void testTranslationWithSpacedTagList() {
-        Translation Translation = translation(new Token[]{
+        Translation translation = translation(new Token[]{
                 new Token("Hello", true),
                 new Token("world", false),
                 new Token("!", false),
@@ -103,13 +103,13 @@ public class TranslationTest {
                 Tag.fromText("</b>", true, true, 1),
         });
 
-        assertEquals("Hello world!", Translation.getStrippedString(false));
-        assertEquals("Hello <a><b></a></b>world!", Translation.toString());
+        assertEquals("Hello world!", translation.getStrippedString(false));
+        assertEquals("Hello <a><b></a></b>world!", translation.toString());
     }
 
     @Test
     public void testTranslationWithTagListSpaceInMiddle() {
-        Translation Translation = translation(new Token[]{
+        Translation translation = translation(new Token[]{
                 new Token("Hello", true),
                 new Token("world", false),
                 new Token("!", false),
@@ -119,13 +119,13 @@ public class TranslationTest {
                 Tag.fromText("</b>", true, true, 1),
         });
 
-        assertEquals("Hello world!", Translation.getStrippedString(false));
-        assertEquals("Hello</a> <b></b>world!", Translation.toString());
+        assertEquals("Hello world!", translation.getStrippedString(false));
+        assertEquals("Hello</a> <b></b>world!", translation.toString());
     }
 
     @Test
     public void testTranslationWithTagInUnbreakableTokenList() {
-        Translation Translation = translation(new Token[]{
+        Translation translation = translation(new Token[]{
                 new Token("That", false),
                 new Token("'s", true),
                 new Token("it", false),
@@ -135,13 +135,13 @@ public class TranslationTest {
                 Tag.fromText("</b>", true, true, 2),
         });
 
-        assertEquals("That's it!", Translation.getStrippedString(false));
-        assertEquals("That<b>'s</b> it!", Translation.toString());
+        assertEquals("That 's it!", translation.getStrippedString(false));
+        assertEquals("That<b>'s</b> it!", translation.toString());
     }
 
     @Test
     public void testTranslationWithSpacedCommentTag() {
-        Translation Translation = translation(new Token[]{
+        Translation translation = translation(new Token[]{
                 new Token("This", true),
                 new Token("is", true),
                 new Token("XML", true),
@@ -151,13 +151,13 @@ public class TranslationTest {
                 Tag.fromText("-->", true, false, 4),
         });
 
-        assertEquals("This is XML comment", Translation.getStrippedString(false));
-        assertEquals("This is <!-- XML comment -->", Translation.toString());
+        assertEquals("This is XML comment", translation.getStrippedString(false));
+        assertEquals("This is <!-- XML comment -->", translation.toString());
     }
 
     @Test
     public void testTranslationWithSpacedCommentTag_NoLeadingSpace() {
-        Translation Translation = translation(new Token[]{
+        Translation translation = translation(new Token[]{
                 new Token("This", true),
                 new Token("is", true),
                 new Token("XML", true),
@@ -167,13 +167,13 @@ public class TranslationTest {
                 Tag.fromText("-->", true, false, 4),
         });
 
-        assertEquals("This is XML comment", Translation.getStrippedString(false));
-        assertEquals("This is<!-- XML comment -->", Translation.toString());
+        assertEquals("This is XML comment", translation.getStrippedString(false));
+        assertEquals("This is<!-- XML comment -->", translation.toString());
     }
 
     @Test
     public void testTranslationWithSpacedCommentTag_TrailingSpace() {
-        Translation Translation = translation(new Token[]{
+        Translation translation = translation(new Token[]{
                 new Token("This", true),
                 new Token("is", true),
                 new Token("XML", true),
@@ -183,8 +183,8 @@ public class TranslationTest {
                 Tag.fromText("-->", true, true, 4),
         });
 
-        assertEquals("This is XML comment", Translation.getStrippedString(false));
-        assertEquals("This is<!-- XML comment -->", Translation.toString());
+        assertEquals("This is XML comment", translation.getStrippedString(false));
+        assertEquals("This is<!-- XML comment -->", translation.toString());
     }
 
 }
