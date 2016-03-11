@@ -67,7 +67,7 @@ class KenLM(LanguageModel):
 
             # Create language model in ARPA format
             arpa_file = os.path.join(working_dir, 'lm.arpa')
-            arpa_command = [self._lmplz_bin, '--discount_fallback', '-o', str(self._order)]
+            arpa_command = [self._lmplz_bin, '--discount_fallback', '--prune', '0', '0', '1', '-o', str(self._order)]
             with open(merged_corpus) as stdin:
                 with open(arpa_file, 'w') as stdout:
                     shell.execute(arpa_command, stdin=stdin, stdout=stdout, stderr=log)
