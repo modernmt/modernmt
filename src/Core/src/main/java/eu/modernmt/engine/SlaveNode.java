@@ -33,6 +33,12 @@ public class SlaveNode extends Worker {
 
     static {
         int cores = Runtime.getRuntime().availableProcessors();
+
+        // Accordingly to "Fast, Scalable Phrase-Based SMT Decoding" [ACL 2016 Submission]
+        // current version of Moses Decoder seems to not scale well if number of threads is
+        // more than 16.
+        cores = Math.min(16, cores);
+
         DEFAULT_DECODER_THREADS = cores;
     }
 
