@@ -56,12 +56,11 @@ class SuffixArraysPhraseTable(MosesFeature):
 
     def get_iniline(self):
         template = 'path={model}. L1={source_lang} L2={target_lang} output-factor=0 sample={sample} method={method} ' \
-                   'workers={workers} pfwd=g pbwd=g logcnt=0 coh=0 prov=0 rare=0 unal=0 smooth=.01 lexalpha=0 ' \
-                   'lr-func=DM0 bias-loglevel=1'
+                   'pfwd=g pbwd=g logcnt=0 coh=0 prov=0 rare=0 unal=0 smooth=.01 lexalpha=0 lr-func=DM0 bias-loglevel=1'
 
         return template.format(model=self.get_relpath(self._get_model_basename()),
                                source_lang=self._source_lang, target_lang=self._target_lang,
-                               sample=self._sample, workers='${SA_WORKERS}', method=self._method)
+                               sample=self._sample, method=self._method)
 
     def train(self, corpora, aligner, working_dir='.', log_file=None):
         if os.path.isdir(self._model) and len(os.listdir(self._model)) > 0:
