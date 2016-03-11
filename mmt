@@ -14,7 +14,7 @@ from scripts.libs import shell, ssh
 from scripts.libs.ssh import SSHException
 from scripts.mt import ParallelCorpus
 from scripts.mt.contextanalysis import ContextAnalyzer
-from scripts.mt.lm import LanguageModel
+from scripts.mt.lm import LanguageModel, AdaptiveIRSTLM
 from scripts.mt.moses import Moses
 from scripts.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
 from scripts.mt.processing import Tokenizer, CorpusCleaner, Preprocessor
@@ -35,7 +35,7 @@ __description = '''\
 '''
 
 _injectable_components = [Tokenizer, CorpusCleaner, ContextAnalyzer, SuffixArraysPhraseTable, WordAligner,
-                          LanguageModel, Moses, MMTEngine]
+                          LanguageModel, AdaptiveIRSTLM, Moses, MMTEngine]
 
 
 def __check_java():

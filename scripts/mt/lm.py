@@ -134,10 +134,16 @@ class StaticIRSTLM(LanguageModel):
 
 
 class AdaptiveIRSTLM(LanguageModel):
-    LM_ORDER = 2
+    injector_section = 'adaptivelm'
+    injectable_fields = {
+        'order': ('LM order (N-grams length)', int, 2),
+        'limit': ('Limit the LMs to be queried at runtime', int, 1),
+    }
 
     def __init__(self, model):
         LanguageModel.__init__(self, model, 'IRSTLM')
+
+        self._limit = None  # Injected
 
         self._model_dir = os.path.abspath(os.path.join(model, os.pardir))
 
@@ -145,9 +151,6 @@ class AdaptiveIRSTLM(LanguageModel):
         self._addbound_bin = os.path.join(self._irstlm_dir, 'scripts', 'add-start-end.sh')
         self._buildlm_bin = os.path.join(self._irstlm_dir, 'scripts', 'build-lm.sh')
         self._compilelm_bin = os.path.join(self._irstlm_dir, 'bin', 'compile-lm')
-
-    def _on_fields_injected(self, _):
-        self._order = AdaptiveIRSTLM.LM_ORDER  # Order for AdaptiveLM is not the same of static LM
 
     def train(self, corpora, lang, working_dir='.', log_file=None):
         LanguageModel.train(self, corpora, lang, working_dir, log_file)
@@ -199,4 +202,5 @@ class AdaptiveIRSTLM(LanguageModel):
         shell.execute(command, stderr=log)
 
     def get_iniline(self):
-        return 'factor=0 path={model} dub=10000000 weight_normalization=yes'.format(model=self.get_relpath(self._model))
+        return 'factor=0 path={model} dub=10000000 weight_normalization=yes weight_limit={limit}'.format(
+            model=self.get_relpath(self._model), limit=self._limit)
