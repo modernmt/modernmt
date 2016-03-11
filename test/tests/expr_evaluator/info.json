@@ -1,0 +1,6 @@
+{
+	"enabled": true,
+	"description": "This is a short description of expr_evaluator",
+	"full_description": "This is a complete and exhaustive description of expr_evaluator",
+	"author": "Mauro Cettolo and Roldano Cattoni from FBK"
+}
