@@ -310,7 +310,7 @@ class MMTEngine:
         'adaptive_lm_type': ('Adaptive LM implementation',
                              (basestring, LanguageModel.available_types), 'AdaptiveIRSTLM'),
         'static_lm_type': ('Background LM implementation',
-                           (basestring, LanguageModel.available_types), 'StaticIRSTLM'),
+                           (basestring, LanguageModel.available_types), 'KenLM'),
         'aligner_type': ('Aligner implementation',
                          (basestring, WordAligner.available_types), WordAligner.available_types[0]),
     }

@@ -30,12 +30,16 @@ public class SlaveNode extends Worker {
     }
 
     private static final int DEFAULT_DECODER_THREADS;
-    private static final int DEFAULT_SA_WORKERS;
 
     static {
         int cores = Runtime.getRuntime().availableProcessors();
+
+        // Accordingly to "Fast, Scalable Phrase-Based SMT Decoding" [ACL 2016 Submission]
+        // current version of Moses Decoder seems to not scale well if number of threads is
+        // more than 16.
+        cores = Math.min(16, cores);
+
         DEFAULT_DECODER_THREADS = cores;
-        DEFAULT_SA_WORKERS = cores > 3 ? 2 : 1;
     }
 
     private TranslationEngine engine;
@@ -78,8 +82,6 @@ public class SlaveNode extends Worker {
                         mosesINI.setWeights(weights);
 
                     mosesINI.setThreads(DEFAULT_DECODER_THREADS);
-                    mosesINI.setWorkers(DEFAULT_SA_WORKERS);
-
 
                     File inifile = new File(runtimePath, "moses.ini");
                     FileUtils.write(inifile, mosesINI.toString(), false);
