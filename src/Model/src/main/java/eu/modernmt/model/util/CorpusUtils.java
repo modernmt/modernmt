@@ -4,6 +4,7 @@ import eu.modernmt.model.BilingualCorpus;
 import eu.modernmt.model.Corpus;
 import eu.modernmt.model.impl.BilingualFileCorpus;
 import eu.modernmt.model.impl.FileCorpus;
+import eu.modernmt.model.impl.tmx.TMXFile;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -58,8 +59,7 @@ public class CorpusUtils {
                     continue;
 
                 if (TMX_EXTENSION.equalsIgnoreCase(extension)) {
-                    // Ignore for now
-                    continue;
+                    bilingualOutput.add(new TMXFile(filename, file, sourceLanguage, targetLanguage));
                 } else {
                     File twin = name2File.get(filename);
 
