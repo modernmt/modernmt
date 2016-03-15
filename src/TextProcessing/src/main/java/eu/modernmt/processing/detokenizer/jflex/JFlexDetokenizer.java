@@ -1,5 +1,6 @@
 package eu.modernmt.processing.detokenizer.jflex;
 
+import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.detokenizer.Detokenizer;
 import eu.modernmt.processing.detokenizer.MultiInstanceDetokenizer;
@@ -57,6 +58,22 @@ public class JFlexDetokenizer extends MultiInstanceDetokenizer {
         public void close() {
             // Nothing to do
         }
+    }
+
+    public static void main(String[] args) throws Throwable {
+        System.setProperty("mmt.home", "/Users/davide/workspaces/mmt/ModernMT/");
+        JFlexDetokenizer detokenizer = new JFlexDetokenizer();
+
+        Translation translation = new Translation(new Token[] {
+                new Token("Un", true),
+                new Token("bell'", true),
+                new Token("esempio", true),
+                new Token("!", true),
+        }, null, null);
+
+        System.out.println(translation);
+        detokenizer.call(translation);
+        System.out.println(translation);
     }
 
 }

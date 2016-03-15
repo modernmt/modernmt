@@ -9,36 +9,28 @@ import java.io.Reader;
 public abstract class JFlexAnnotator {
 
     public static final int YYEOF = -1;
-    public static final int PROTECT = 0;
-    public static final int PROTECT_ALL = 1;
-    public static final int PROTECT_RIGHT = 2;
+    public static final int REMOVE = 0;
 
     protected int zzStartReadOffset = 0;
 
     public final void annotate(AnnotatedString text, int tokenType) {
-//        int zzMarkedPos = getMarkedPosition();
-//
-//        int zzStartRead = getStartRead() + zzStartReadOffset;
-//        zzStartReadOffset = 0;
-//
-//        int yychar = yychar();
-//        int offset = 0;
-//
-//        if (yychar > zzStartRead) {
-//            offset = yychar + zzStartRead;
-//        }
-//
-//        switch (tokenType) {
-//            case PROTECT:
-//                text.protect(offset + zzStartRead + 1, offset + zzMarkedPos);
-//                break;
-//            case PROTECT_ALL:
-//                text.protect(offset + zzStartRead, offset + zzMarkedPos);
-//                break;
-//            case PROTECT_RIGHT:
-//                text.protect(offset + zzMarkedPos);
-//                break;
-//        }
+        int zzMarkedPos = getMarkedPosition();
+
+        int zzStartRead = getStartRead() + zzStartReadOffset;
+        zzStartReadOffset = 0;
+
+        int yychar = yychar();
+        int offset = 0;
+
+        if (yychar > zzStartRead) {
+            offset = yychar + zzStartRead;
+        }
+
+        switch (tokenType) {
+            case REMOVE:
+                text.removeSpace(offset + zzStartRead);
+                break;
+        }
     }
 
     public abstract void yyreset(Reader reader);
