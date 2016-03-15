@@ -1,0 +1,8 @@
+location: ext
+sources:
+- repo: https://github.com/irstlm-team/irstlm
+  dir: irstlm
+  rev: cd-correction-model
+- repo: https://github.com/ModernMT/mosesdecoder
+  dir: moses
+  rev: mmt-dev
