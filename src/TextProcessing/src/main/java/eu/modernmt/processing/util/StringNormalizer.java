@@ -1,6 +1,5 @@
 package eu.modernmt.processing.util;
 
-import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.TextProcessor;
 
 /**
@@ -12,7 +11,7 @@ public class StringNormalizer implements TextProcessor<String, String> {
     private static final int CONTROL = 2;
 
     @Override
-    public String call(String param) throws ProcessingException {
+    public String call(String param) {
         char source[] = param.toCharArray();
         char chars[] = new char[source.length];
 

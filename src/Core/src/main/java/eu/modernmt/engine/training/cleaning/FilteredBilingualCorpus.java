@@ -68,10 +68,7 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
                     boolean accept = true;
 
                     for (BilingualCorpusFilter filter : filters) {
-                        if (!filter.accept(next)) {
-                            accept = false;
-                            break;
-                        }
+                        accept &= filter.accept(next);
                     }
 
                     if (accept)

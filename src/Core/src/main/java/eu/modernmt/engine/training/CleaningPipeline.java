@@ -63,12 +63,10 @@ public class CleaningPipeline {
     }
 
     public void process() throws InterruptedException, IOException {
-        int totalCorporaCount = this.bilingualCorpora.size() * 2;
+        int totalCorporaCount = this.bilingualCorpora.size();
         int ioThreads = Math.min(Math.min(this.ioThreads, MAX_IO_THREADS), totalCorporaCount);
 
-        int poolSize = Math.max(1, ioThreads / 2);
-
-        ExecutorService executor = Executors.newFixedThreadPool(poolSize);
+        ExecutorService executor = Executors.newFixedThreadPool(ioThreads);
         ExecutorCompletionService<Void> ecs = new ExecutorCompletionService<>(executor);
 
         int pendingTasks = 0;

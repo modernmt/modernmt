@@ -19,6 +19,8 @@ import java.util.Locale;
  */
 public class TMXBilingualStringReader implements BilingualCorpus.BilingualStringReader {
 
+    private final TMXPairReader tmxPairReader = new TMXPairReader();
+
     private File tmx;
     private final FileInputStream stream;
     private final XMLStreamReader reader;
@@ -52,7 +54,7 @@ public class TMXBilingualStringReader implements BilingualCorpus.BilingualString
     @Override
     public BilingualCorpus.StringPair read() throws IOException {
         try {
-            return TMXPairReader.read(reader, sourceLanguage, targetLanguage);
+            return tmxPairReader.read(reader, sourceLanguage, targetLanguage);
         } catch (XMLStreamException e) {
             Location location = reader.getLocation();
             throw new IOException("Invalid TMX " + tmx + ": line " + location.getLineNumber() + ", column " + location.getColumnNumber(), e);

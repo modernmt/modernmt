@@ -83,4 +83,9 @@ public class TMXFile implements BilingualCorpus {
         return targetCorpus;
     }
 
+    @Override
+    public String toString() {
+        return name + ".tmx{" + sourceLanguage.toLanguageTag() + '|' + targetLanguage.toLanguageTag() + '}';
+    }
+
 }

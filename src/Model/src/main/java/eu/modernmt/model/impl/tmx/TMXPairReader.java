@@ -14,23 +14,23 @@ import java.util.Date;
  */
 class TMXPairReader {
 
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("YYYYMMDD'T'hhmmss");
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("YYYYMMdd'T'HHmmss'Z'");
 
-    private static BilingualCorpus.StringPair wrap(XMLStreamReader reader, String source, String target, Date timestamp) throws XMLStreamException {
-        if (source == null) {
+    private BilingualCorpus.StringPair wrap(XMLStreamReader reader, String source, String target, Date timestamp) throws XMLStreamException {
+        if (source == null || (source = source.trim()).isEmpty()) {
             Location location = reader.getLocation();
             throw new XMLStreamException("Missing source sentence near line " + location.getLineNumber());
         }
 
-        if (target == null) {
+        if (target == null || (target = target.trim()).isEmpty()) {
             Location location = reader.getLocation();
             throw new XMLStreamException("Missing target sentence near line " + location.getLineNumber());
         }
 
-        return new BilingualCorpus.StringPair(source, target, timestamp);
+        return new BilingualCorpus.StringPair(source.replace('\n', ' '), target.replace('\n', ' '), timestamp);
     }
 
-    public static BilingualCorpus.StringPair read(XMLStreamReader reader, String sourceLanguage, String targetLanguage) throws XMLStreamException {
+    public BilingualCorpus.StringPair read(XMLStreamReader reader, String sourceLanguage, String targetLanguage) throws XMLStreamException {
         while (reader.hasNext()) {
             int type = reader.next();
 
@@ -45,7 +45,7 @@ class TMXPairReader {
         return null;
     }
 
-    private static BilingualCorpus.StringPair readTu(XMLStreamReader reader, String sourceLanguage, String targetLanguage) throws XMLStreamException {
+    private BilingualCorpus.StringPair readTu(XMLStreamReader reader, String sourceLanguage, String targetLanguage) throws XMLStreamException {
         Date timestamp = null;
 
         String date = reader.getAttributeValue(null, "changedate");
@@ -54,9 +54,9 @@ class TMXPairReader {
 
         if (date != null) {
             try {
-                timestamp = DATE_FORMAT.parse(date);
-            } catch (ParseException e) {
-                throw new XMLStreamException("Invalid date '" + date + "' at line " + reader.getLocation().getLineNumber());
+                timestamp = dateFormat.parse(date);
+            } catch (ParseException | NumberFormatException e) {
+                throw new XMLStreamException("Invalid date '" + date + "' at line " + reader.getLocation().getLineNumber(), e);
             }
         }
 
@@ -94,7 +94,7 @@ class TMXPairReader {
         throw new XMLStreamException("Missing closing tag for 'tuv' element at line " + reader.getLocation().getLineNumber());
     }
 
-    private static String readTuv(XMLStreamReader reader) throws XMLStreamException {
+    private String readTuv(XMLStreamReader reader) throws XMLStreamException {
         while (reader.hasNext()) {
             int type = reader.next();
 
@@ -110,7 +110,7 @@ class TMXPairReader {
         throw new XMLStreamException("Missing 'seg' inside 'tuv' element at line " + reader.getLocation().getLineNumber());
     }
 
-    private static String readCharacters(XMLStreamReader reader) throws XMLStreamException {
+    private String readCharacters(XMLStreamReader reader) throws XMLStreamException {
         StringBuilder result = new StringBuilder();
 
         while (reader.hasNext()) {
