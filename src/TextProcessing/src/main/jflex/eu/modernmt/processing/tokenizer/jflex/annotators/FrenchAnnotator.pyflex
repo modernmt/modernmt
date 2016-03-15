@@ -12,6 +12,6 @@ FrenchContractions = [:letter:]\'[:letter:]
 
 %%
 
-//pyflex include ../common.lex
+//pyflex include ../common.pylex
 
 {FrenchContractions}                                               { yypushback(1); return PROTECT; }

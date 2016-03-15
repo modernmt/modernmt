@@ -13,7 +13,7 @@ PossessiveCase = \'s{_}
 
 %%
 
-//pyflex include ../common.lex
+//pyflex include ../common.pylex
 
 {EnglishContractions}                                               { yypushback(1); return PROTECT_RIGHT; }
 {PossessiveCase}                                                    { yypushback(1); return PROTECT; }

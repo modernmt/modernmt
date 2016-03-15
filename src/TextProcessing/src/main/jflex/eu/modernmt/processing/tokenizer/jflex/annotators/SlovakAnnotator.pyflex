@@ -10,4 +10,4 @@
 
 %%
 
-//pyflex include ../common.lex
+//pyflex include ../common.pylex

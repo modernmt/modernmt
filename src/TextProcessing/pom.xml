@@ -61,6 +61,7 @@
 
                         <configuration>
                             <lexDefinitions>
+                                <lexDefinition>${project.basedir}/src/main/jflex</lexDefinition>
                                 <lexDefinition>${project.build.generatedSources}</lexDefinition>
                             </lexDefinitions>
                         </configuration>
