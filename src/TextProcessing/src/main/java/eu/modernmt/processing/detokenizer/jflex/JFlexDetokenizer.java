@@ -7,8 +7,12 @@ import eu.modernmt.processing.detokenizer.MultiInstanceDetokenizer;
 import eu.modernmt.processing.detokenizer.jflex.annotators.ItalianAnnotator;
 import eu.modernmt.processing.framework.ProcessingException;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by davide on 29/01/16.
@@ -64,6 +68,22 @@ public class JFlexDetokenizer extends MultiInstanceDetokenizer {
         System.setProperty("mmt.home", "/Users/davide/workspaces/mmt/ModernMT/");
         JFlexDetokenizer detokenizer = new JFlexDetokenizer();
 
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        String line;
+        while ((line=br.readLine()) != null) {
+	    String[] splitStr = line.split("\\s+");
+	    List<Token> tokenList = new ArrayList<Token>();
+	    for (String str : splitStr) {
+		tokenList.add(new Token(str, true));
+	    }
+	    Token[] tokens = new Token[ tokenList.size() ];
+	    tokenList.toArray(tokens);
+	    Translation translation = new Translation(tokens, null, null);
+	    detokenizer.call(translation);
+	    System.out.println(translation);
+	}
+
+	/*
         Translation translation = new Translation(new Token[] {
                 new Token("Un", true),
                 new Token("bell'", true),
@@ -74,6 +94,7 @@ public class JFlexDetokenizer extends MultiInstanceDetokenizer {
         System.out.println(translation);
         detokenizer.call(translation);
         System.out.println(translation);
+	*/
     }
 
 }
