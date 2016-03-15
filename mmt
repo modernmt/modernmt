@@ -17,7 +17,7 @@ from scripts.mt.contextanalysis import ContextAnalyzer
 from scripts.mt.lm import LanguageModel, AdaptiveIRSTLM
 from scripts.mt.moses import Moses
 from scripts.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
-from scripts.mt.processing import CorpusCleaner, TrainingPreprocessor
+from scripts.mt.processing import TrainingPreprocessor
 
 __author__ = 'Davide Caroselli'
 __description = '''\
@@ -34,8 +34,8 @@ __description = '''\
   You can find more information on: http://www.modernmt.eu/
 '''
 
-_injectable_components = [CorpusCleaner, ContextAnalyzer, SuffixArraysPhraseTable, WordAligner, LanguageModel,
-                          AdaptiveIRSTLM, Moses, MMTEngine]
+_injectable_components = [ContextAnalyzer, SuffixArraysPhraseTable, WordAligner, LanguageModel, AdaptiveIRSTLM, Moses,
+                          MMTEngine]
 
 
 def __check_java():

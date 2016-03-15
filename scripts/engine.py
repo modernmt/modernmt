@@ -21,7 +21,7 @@ from scripts.mt.contextanalysis import ContextAnalyzer
 from scripts.mt.lm import LanguageModel
 from scripts.mt.moses import Moses, MosesFeature, LexicalReordering
 from scripts.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
-from scripts.mt.processing import Preprocessor, CorpusCleaner, TrainingPreprocessor
+from scripts.mt.processing import Preprocessor, TrainingPreprocessor
 
 __author__ = 'Davide Caroselli'
 
@@ -242,6 +242,11 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
             unprocessed_bicorpora = bilingual_corpora
             unprocessed_mocorpora = monolingual_corpora
 
+            # TM cleanup
+            if 'tm_cleanup' in steps:
+                with cmdlogger.step('TMs clean-up') as _:
+                    pass
+
             # Preprocessing
             processed_bicorpora = unprocessed_bicorpora
             processed_mocorpora = unprocessed_mocorpora
@@ -253,14 +258,6 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
                         source_lang, target_lang, roots, preprocessor_output,
                         (self._engine.data_path if split_trainingset else None)
                     )
-
-            # Cleaning
-            cleaned_bicorpora = processed_bicorpora
-
-            if 'clean' in steps:
-                with cmdlogger.step('Corpora cleaning') as _:
-                    cleaner_output = self._get_tempdir('cleaner')
-                    cleaned_bicorpora = self._engine.cleaner.batch_clean(processed_bicorpora, cleaner_output)
 
             # Training Context Analyzer
             if 'context_analyzer' in steps:
@@ -288,7 +285,7 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
                 with cmdlogger.step('Translation Model training') as _:
                     working_dir = self._get_tempdir('tm')
                     log_file = self._get_logfile('tm')
-                    self._engine.pt.train(cleaned_bicorpora, self._engine.aligner, working_dir, log_file)
+                    self._engine.pt.train(processed_bicorpora, self._engine.aligner, working_dir, log_file)
 
             # Writing config file
             with cmdlogger.step('Writing config files') as _:
@@ -315,7 +312,7 @@ class MMTEngine:
                          (basestring, WordAligner.available_types), WordAligner.available_types[0]),
     }
 
-    training_steps = ['preprocess', 'clean', 'context_analyzer', 'adaptive_lm', 'static_lm', 'tm']
+    training_steps = ['tm_cleanup', 'preprocess', 'context_analyzer', 'adaptive_lm', 'static_lm', 'tm']
 
     def __init__(self, langs=None, name=None):
         self.name = name if name is not None else 'default'
@@ -360,7 +357,6 @@ class MMTEngine:
 
         self.training_preprocessor = TrainingPreprocessor()
         self.preprocessor = Preprocessor()
-        self.cleaner = injector.inject(CorpusCleaner())
 
         self.analyzer = injector.inject(ContextAnalyzer(self._context_index))
 
