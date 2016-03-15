@@ -22,6 +22,22 @@ def _pool_exec(function, jobs):
         pool.terminate()
 
 
+class TMCleaner:
+    def __init__(self):
+        self._java_mainclass = 'eu.modernmt.cli.CleaningPipelineMain'
+
+    def clean(self, source, target, input_paths, output_path):
+        args = ['-s', source, '-t', target, '--output', output_path, '--input']
+
+        for root in input_paths:
+            args.append(root)
+
+        command = mmt_javamain(self._java_mainclass, args)
+        shell.execute(command, stdin=shell.DEVNULL, stdout=shell.DEVNULL, stderr=shell.DEVNULL)
+
+        return ParallelCorpus.splitlist(source, target, roots=output_path)[0]
+
+
 class TrainingPreprocessor:
     DEV_FOLDER_NAME = 'dev'
     TEST_FOLDER_NAME = 'test'

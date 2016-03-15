@@ -146,7 +146,7 @@ class SuffixArraysPhraseTable(MosesFeature):
 
             # Create merged corpus and domains list file (dmp)
             merged_corpus = ParallelCorpus(os.path.basename(mct_base), working_dir, langs)
-            
+
             fileutils.merge([corpus.get_file(l1) for corpus in corpora], merged_corpus.get_file(l1))
             fileutils.merge([corpus.get_file(l2) for corpus in corpora], merged_corpus.get_file(l2))
             with open(dmp_file, 'w') as dmp:
