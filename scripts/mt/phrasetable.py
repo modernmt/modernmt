@@ -165,14 +165,14 @@ class FastAlign(WordAligner):
                     aligned_file.write(x.strip() + " ||| " + y.strip() + "\n")
 
             # Forward alignments
-            fwd_model = os.path.join(model_dir,  "model." + langs_suffix + '.fwd')
-            command = [self._align_bin, '-d', '-v', '-o', '-p', fwd_model, '-i', aligned_file_path]
+            fwd_model = os.path.join(model_dir,  'model.align.fwd')
+            command = [self._align_bin, '-d', '-v', '-o', '-B', '-p', fwd_model, '-i', aligned_file_path]
             with open(fwd_file, 'w') as stdout:
                 shell.execute(command, stdout=stdout, stderr=log)
 
             # Forward alignments
-            bwd_model = os.path.join(model_dir,  "model." + langs_suffix + '.bwd')
-            command = [self._align_bin, '-d', '-v', '-o', '-p', bwd_model, '-r', '-i', aligned_file_path]
+            bwd_model = os.path.join(model_dir,  'model.align.bwd')
+            command = [self._align_bin, '-d', '-v', '-o', '-B','-p', bwd_model, '-r', '-i', aligned_file_path]
             with open(bwd_file, 'w') as stdout:
                 shell.execute(command, stdout=stdout, stderr=log)
 
