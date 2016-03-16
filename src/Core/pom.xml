@@ -50,5 +50,10 @@
             <artifactId>commons-configuration</artifactId>
             <version>1.10</version>
         </dependency>
+        <dependency>
+            <groupId>eu.modernmt</groupId>
+            <artifactId>aligner</artifactId>
+            <version>0.11.1</version>
+        </dependency>
     </dependencies>
 </project>
