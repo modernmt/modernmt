@@ -3,8 +3,8 @@
 #
 # This builds every C++ dependency of MMT.
 #
-# To get sources for the referenced parts,
-# see INSTALL.md
+# The sources in vendor/ come from git submodules.
+# See INSTALL.md for details.
 #
 # Author: David Madl <git@abanbytes.eu>
 
@@ -42,6 +42,7 @@ set(BUILD_STATIC_LIBS OFF CACHE BOOL "Build irstlm static library")
 set(BUILD_SHARED_LIBS ON CACHE BOOL "Build irstlm shared library")
 
 
-add_subdirectory(ext/irstlm)
-add_subdirectory(ext/moses)
+add_subdirectory(vendor/irstlm)
+add_subdirectory(vendor/moses)
+
 add_subdirectory(src/Decoder/native)

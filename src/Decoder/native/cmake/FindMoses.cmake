@@ -14,7 +14,7 @@
 #   for the Decoder project.
 #
 find_path(Moses_INCLUDE_DIRS moses/FF/StatefulFeatureFunction.h
-          HINTS "${PROJECT_SOURCE_DIR}/../../../ext/moses/")
+          HINTS "${PROJECT_SOURCE_DIR}/../../../vendor/moses/")
 
 find_library(Moses_LIBRARIES NAMES moses libmoses
              HINTS "${PROJECT_SOURCE_DIR}/../../../lib/")

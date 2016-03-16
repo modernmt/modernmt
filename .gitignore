@@ -5,8 +5,8 @@
 /bin/
 /lib64
 
-# external dependency repositories
-/ext/
+# external vendor dependency repositories
+/vendor/
 
 /opt/
 build/
