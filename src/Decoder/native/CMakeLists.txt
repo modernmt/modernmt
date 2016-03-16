@@ -11,12 +11,6 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}" CACHE PATH "MMT install prefix" FORCE)
 endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
-# Set output paths to <MMT>/bin/ and <MMT>/lib/
-# ---------------------------------------------
-set(EXECUTABLE_OUTPUT_PATH ${CMAKE_INSTALL_PREFIX}/bin)
-set(LIBRARY_OUTPUT_PATH ${CMAKE_INSTALL_PREFIX}/lib)
-
-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 add_library(${PROJECT_NAME} SHARED ${WRAPPER_SRC} ${JNI_SRC})
 
@@ -65,3 +59,7 @@ add_definitions(-DWITH_THREADS=1)
 #add_definitions(-DTRACE_ENABLE)  # add this to enable verbose moses output in general (otherwise, not even --verbose level will help)
 include_directories(${Moses_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} ${Moses_LIBRARIES})
+
+install(TARGETS ${PROJECT_NAME} DESTINATION lib)
+#install(TARGETS jnitest DESTINATION bin)  # we do not install that. no need for it in production.
+
