@@ -23,23 +23,27 @@ public class TokensOutputter implements PipelineOutputStream<Sentence> {
     private boolean originalSpacing;
 
     public static String toString(Sentence sentence, boolean printTags, boolean printPlaceholders, boolean originalSpacing) {
-        StringBuilder builder = new StringBuilder();
+        if (originalSpacing) {
+            return printTags ? sentence.toString(printPlaceholders) : sentence.getStrippedString(printPlaceholders);
+        } else {
+            StringBuilder builder = new StringBuilder();
 
-        Iterator<Token> iterator = printTags ? sentence.iterator() : new ArrayIterator<>(sentence.getWords());
+            Iterator<Token> iterator = printTags ? sentence.iterator() : new ArrayIterator<>(sentence.getWords());
 
-        while (iterator.hasNext()) {
-            Token token = iterator.next();
+            while (iterator.hasNext()) {
+                Token token = iterator.next();
 
-            if (printPlaceholders && (token instanceof PlaceholderToken))
-                builder.append(((PlaceholderToken) token).getPlaceholder());
-            else
-                builder.append(token.getText());
+                if (printPlaceholders && (token instanceof PlaceholderToken))
+                    builder.append(((PlaceholderToken) token).getPlaceholder());
+                else
+                    builder.append(token.getText());
 
-            if (iterator.hasNext() && (!originalSpacing || token.hasRightSpace()))
-                builder.append(' ');
+                if (iterator.hasNext())
+                    builder.append(' ');
+            }
+
+            return builder.toString();
         }
-
-        return builder.toString();
     }
 
     public TokensOutputter(OutputStream stream, boolean printTags, boolean printPlaceholders, boolean originalSpacing) {
