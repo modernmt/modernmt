@@ -1,5 +1,7 @@
 package eu.modernmt.engine;
 
+import eu.modernmt.Aligner;
+import eu.modernmt.FastAlign;
 import eu.modernmt.config.Config;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.moses.MosesDecoder;
@@ -12,6 +14,7 @@ import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -42,6 +45,7 @@ public class SlaveNode extends Worker {
     private Initializer initializer;
     private Throwable initializationError;
     private Decoder decoder;
+    private Aligner aligner;
     private File runtimePath;
     private MasterHost master;
     private Preprocessor preprocessor = null;
@@ -60,11 +64,29 @@ public class SlaveNode extends Worker {
         return engine;
     }
 
+    public Aligner getAligner() {
+        if (aligner == null)
+            throw new IllegalStateException("Aligner has not been initialized yet");
+
+        return aligner;
+    }
+
     public Decoder getDecoder() {
         if (decoder == null)
             throw new IllegalStateException("Decoder has not been initialized yet");
 
         return decoder;
+    }
+
+    private void loadAligner() throws IOException, ParseException {
+        if (aligner == null) {
+            synchronized (this) {
+                if (aligner == null) {
+                    aligner = new FastAlign(this.engine.getPath().getAbsolutePath());
+                    aligner.init();
+                }
+            }
+        }
     }
 
     private void loadDecoder() throws IOException {
@@ -153,6 +175,11 @@ public class SlaveNode extends Worker {
         synchronizer.sync();
 
         this.loadDecoder();
+        try {
+            this.loadAligner();
+        }catch(Exception e){
+            throw new IOException(e);
+        }
         this.setActive(true);
 
         logger.info("Synchronization complete");

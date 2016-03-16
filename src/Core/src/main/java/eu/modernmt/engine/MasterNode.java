@@ -7,7 +7,7 @@ import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.decoder.moses.MosesFeature;
-import eu.modernmt.engine.tasks.AlignTagsTask;
+import eu.modernmt.engine.tasks.InsertTagsTask;
 import eu.modernmt.engine.tasks.GetFeatureWeightsTask;
 import eu.modernmt.engine.tasks.TranslationTask;
 import eu.modernmt.network.cluster.ClusterManager;
@@ -82,10 +82,10 @@ public class MasterNode extends ClusterManager {
     //  Tag aligner
     // =============================
 
-    public String alignTags(String sentence) throws TranslationException {
-        AlignTagsTask task;
+    public String alignTags(String sentence, String translation) throws TranslationException {
+        InsertTagsTask task;
         try {
-            task = new AlignTagsTask(sentence);
+            task = new InsertTagsTask(sentence, translation);
             return this.execute(task);
         } catch (Throwable e) {
             if (e instanceof ProcessingException)
