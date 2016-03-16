@@ -3,11 +3,13 @@ package eu.modernmt.processing;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.framework.*;
 import eu.modernmt.processing.numbers.NumericTokenExtractor;
-import eu.modernmt.processing.tags.TagHighlighter;
 import eu.modernmt.processing.tokenizer.SimpleTokenizer;
+import eu.modernmt.processing.tokenizer.TokenizedString;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizers;
 import eu.modernmt.processing.util.StringNormalizer;
+import eu.modernmt.processing.xml.XMLSentenceBuilder;
+import eu.modernmt.processing.xml.XMLStringParser;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
@@ -20,6 +22,11 @@ import java.util.Locale;
  */
 public class Preprocessor implements Closeable {
 
+    private static final StringNormalizer normalizer = new StringNormalizer();
+    private static final XMLStringParser parser = new XMLStringParser();
+    private static final XMLSentenceBuilder sentenceBuilder = new XMLSentenceBuilder();
+    private static final NumericTokenExtractor<Sentence> numberExtractor = new NumericTokenExtractor<>();
+
     private final ProcessingPipeline<String, Sentence> pipelineWithTokenization;
     private final ProcessingPipeline<String, Sentence> pipelineWithoutTokenization;
 
@@ -28,14 +35,15 @@ public class Preprocessor implements Closeable {
     }
 
     public static ProcessingPipeline<String, Sentence> getPipeline(Locale language, boolean tokenize, int threads) {
-        Tokenizer tokenizer = tokenize ? Tokenizers.forLanguage(language) : new SimpleTokenizer();
+        Tokenizer languageTokenizer = tokenize ? Tokenizers.forLanguage(language) : new SimpleTokenizer();
 
         return new ProcessingPipeline.Builder<String, String>()
                 .setThreads(threads)
-                .add(new StringNormalizer())
-                .add(tokenizer)
-                .add(new TagHighlighter())
-                .add(new NumericTokenExtractor<>())
+                .add(normalizer)
+                .add(parser)
+                .add(languageTokenizer)
+                .add(sentenceBuilder)
+                .add(numberExtractor)
                 .create();
     }
 

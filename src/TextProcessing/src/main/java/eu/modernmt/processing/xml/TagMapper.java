@@ -1,4 +1,4 @@
-package eu.modernmt.processing.tags;
+package eu.modernmt.processing.xml;
 
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Tag;
@@ -56,7 +56,7 @@ public class TagMapper implements TextProcessor<Translation, Void> {
         Sentence source = translation.getSource();
 
         if (source.hasTags()) {
-            if (source.hasTokens()) {
+            if (source.hasWords()) {
                 if (translation.hasAlignment())
                     remap(translation.getSource(), translation);
             } else {
@@ -85,7 +85,7 @@ public class TagMapper implements TextProcessor<Translation, Void> {
             sourceMappingTags[i] = MappingTag.fromTag(sourceTags[i]);
         }
 
-        setAdditionalInfoInMappinTags(sourceMappingTags, source.getTokens().length);
+        setAdditionalInfoInMappinTags(sourceMappingTags, source.getWords().length);
 
         setTranslationTags(sourceMappingTags, source, translation);
     }
@@ -154,8 +154,8 @@ public class TagMapper implements TextProcessor<Translation, Void> {
 
     private static void setTranslationTags(MappingTag[] sourceMappingTags, Sentence source, Translation translation) {
         //create a map from source positions to target position
-        ArrayList<ArrayList<Integer>> alignmentSourceToTarget = new ArrayList<>(source.getTokens().length);
-        setAlignmentMap(alignmentSourceToTarget, source.getTokens().length, translation.getTokens().length, translation.getAlignment());
+        ArrayList<ArrayList<Integer>> alignmentSourceToTarget = new ArrayList<>(source.getWords().length);
+        setAlignmentMap(alignmentSourceToTarget, source.getWords().length, translation.getWords().length, translation.getAlignment());
 
         ArrayList<MappingTag> targetMappingTags = new ArrayList<>(sourceMappingTags.length);
         for (MappingTag currentSourceMappingTag : sourceMappingTags) {
@@ -261,7 +261,7 @@ public class TagMapper implements TextProcessor<Translation, Void> {
                     targetPosition = 0;
                     /*  other possible heuristic:
                      *  if tag has no content and no covered positions, put at the end of the sentence
-                     *  targetPosition = translation.getTokens().length;
+                     *  targetPosition = translation.getWords().length;
                      */
                 }
             }

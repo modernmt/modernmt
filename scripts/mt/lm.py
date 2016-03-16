@@ -2,8 +2,8 @@ import os
 from multiprocessing import cpu_count
 
 import scripts
-from scripts.libs import fileutils, shell
 from moses import MosesFeature
+from scripts.libs import fileutils, shell
 
 __author__ = 'Davide Caroselli'
 
@@ -67,7 +67,7 @@ class KenLM(LanguageModel):
 
             # Create language model in ARPA format
             arpa_file = os.path.join(working_dir, 'lm.arpa')
-            arpa_command = [self._lmplz_bin, '-o', str(self._order)]
+            arpa_command = [self._lmplz_bin, '--discount_fallback', '--prune', '0', '0', '1', '-o', str(self._order)]
             with open(merged_corpus) as stdin:
                 with open(arpa_file, 'w') as stdout:
                     shell.execute(arpa_command, stdin=stdin, stdout=stdout, stderr=log)
@@ -134,8 +134,16 @@ class StaticIRSTLM(LanguageModel):
 
 
 class AdaptiveIRSTLM(LanguageModel):
+    injector_section = 'adaptivelm'
+    injectable_fields = {
+        'order': ('LM order (N-grams length)', int, 2),
+        'limit': ('Limit the LMs to be queried at runtime', int, 1),
+    }
+
     def __init__(self, model):
         LanguageModel.__init__(self, model, 'IRSTLM')
+
+        self._limit = None  # Injected
 
         self._model_dir = os.path.abspath(os.path.join(model, os.pardir))
 
@@ -194,4 +202,5 @@ class AdaptiveIRSTLM(LanguageModel):
         shell.execute(command, stderr=log)
 
     def get_iniline(self):
-        return 'factor=0 path={model} dub=10000000 weight_normalization=yes'.format(model=self.get_relpath(self._model))
+        return 'factor=0 path={model} dub=10000000 weight_normalization=yes weight_limit={limit}'.format(
+            model=self.get_relpath(self._model), limit=self._limit)

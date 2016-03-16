@@ -88,12 +88,14 @@ public abstract class Worker {
 
             if (signal == ClusterManager.SIGNAL_EXEC) {
                 if (!active) {
-                    logger.debug("Worker not active, ignoring SIGNAL_EXEC.");
+                    if (logger.isDebugEnabled())
+                        logger.trace("Worker not active, ignoring SIGNAL_EXEC.");
                     return;
                 }
 
                 if (executor.getAvailability() == 0) {
-                    logger.debug("Worker busy, ignoring SIGNAL_EXEC.");
+                    if (logger.isTraceEnabled())
+                        logger.trace("Worker busy, ignoring SIGNAL_EXEC.");
                     return;
                 }
 

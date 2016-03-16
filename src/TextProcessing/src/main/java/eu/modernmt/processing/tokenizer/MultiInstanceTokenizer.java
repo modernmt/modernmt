@@ -1,6 +1,5 @@
 package eu.modernmt.processing.tokenizer;
 
-import eu.modernmt.processing.AnnotatedString;
 import eu.modernmt.processing.framework.ProcessingException;
 import org.apache.commons.io.IOUtils;
 
@@ -48,7 +47,7 @@ public class MultiInstanceTokenizer implements Tokenizer {
     }
 
     @Override
-    public AnnotatedString call(String param) throws ProcessingException {
+    public TokenizedString call(TokenizedString param) throws ProcessingException {
         Tokenizer instance = getInstance();
 
         try {

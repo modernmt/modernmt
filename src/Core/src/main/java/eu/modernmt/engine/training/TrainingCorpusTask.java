@@ -6,7 +6,7 @@ import eu.modernmt.engine.training.partitioning.PartitionedInputStream;
 import eu.modernmt.model.Corpus;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.framework.*;
-import eu.modernmt.processing.util.SentenceOutputter;
+import eu.modernmt.processing.util.TokensOutputter;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -51,7 +51,7 @@ class TrainingCorpusTask implements Callable<Void> {
             else
                 input = PipelineInputStream.fromReader(corpus.getContentReader());
             
-            output = new SentenceOutputter(outCorpus.getContentWriter(false), false, true);
+            output = new TokensOutputter(outCorpus.getContentWriter(false), false, true, false);
 
             ProcessingJob<String, Sentence> job = pipeline.createJob(input, output);
 

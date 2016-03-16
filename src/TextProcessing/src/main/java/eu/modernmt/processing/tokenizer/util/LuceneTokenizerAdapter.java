@@ -1,6 +1,6 @@
 package eu.modernmt.processing.tokenizer.util;
 
-import eu.modernmt.processing.AnnotatedString;
+import eu.modernmt.processing.tokenizer.TokenizedString;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.tokenizer.MultiInstanceTokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizer;
@@ -53,13 +53,13 @@ public class LuceneTokenizerAdapter extends MultiInstanceTokenizer {
         }
 
         @Override
-        public AnnotatedString call(String text) throws ProcessingException {
-            char[] chars = text.toCharArray();
+        public TokenizedString call(TokenizedString text) throws ProcessingException {
+            char[] chars = text.string.toCharArray();
 
             TokenStream stream = null;
 
             try {
-                stream = analyzer.tokenStream("none", text);
+                stream = analyzer.tokenStream("none", text.string);
                 stream.reset();
 
                 OffsetAttribute offsetAttribute = stream.getAttribute(OffsetAttribute.class);
@@ -110,7 +110,8 @@ public class LuceneTokenizerAdapter extends MultiInstanceTokenizer {
                     }
                 }
 
-                return new AnnotatedString(text, TokenizerOutputTransformer.transform(text, tokens));
+                TokenizerOutputTransformer.transform(text, tokens);
+                return text;
             } catch (IOException e) {
                 throw new ProcessingException(e.getMessage(), e);
             } finally {

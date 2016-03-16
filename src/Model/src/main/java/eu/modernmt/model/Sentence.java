@@ -1,26 +1,31 @@
 package eu.modernmt.model;
 
 import java.io.Serializable;
+import java.util.Iterator;
 
 /**
  * Created by davide on 17/02/16.
  */
-public class Sentence implements Serializable {
+public class Sentence implements Serializable, Iterable<Token> {
 
-    protected Token[] tokens;
+    protected Token[] words;
     protected Tag[] tags;
 
-    public Sentence(Token[] tokens) {
-        this(tokens, null);
+    public Sentence(Token[] words) {
+        this(words, null);
     }
 
-    public Sentence(Token[] tokens, Tag[] tags) {
-        this.tokens = tokens == null ? new Token[0] : tokens;
-        this.tags = tags;
+    public Sentence(Token[] words, Tag[] tags) {
+        this.words = words == null ? new Token[0] : words;
+        this.tags = tags == null ? new Tag[0] : tags;
     }
 
-    public Token[] getTokens() {
-        return tokens;
+    public Token[] getWords() {
+        return words;
+    }
+
+    public int length() {
+        return words.length + tags.length;
     }
 
     public Tag[] getTags() {
@@ -28,15 +33,15 @@ public class Sentence implements Serializable {
     }
 
     public boolean hasTags() {
-        return tags != null && tags.length > 0;
+        return tags.length > 0;
     }
 
-    public boolean hasTokens() {
-        return tokens.length > 0;
+    public boolean hasWords() {
+        return words.length > 0;
     }
 
-    public void setTokens(Token[] tokens) {
-        this.tokens = tokens;
+    public void setWords(Token[] words) {
+        this.words = words;
     }
 
     /**
@@ -51,136 +56,42 @@ public class Sentence implements Serializable {
     public String getStrippedString(boolean withPlaceholders) {
         StringBuilder builder = new StringBuilder();
 
-        for (int i = 0; i < tokens.length; i++) {
-            Token token = tokens[i];
+        boolean foundFirstWord = false;
+        boolean printSpace = false;
+        for (Token token : this) {
+            if (token instanceof Tag) {
+                printSpace |= (foundFirstWord && token.hasRightSpace());
+            } else {
+                foundFirstWord = true;
 
-            builder.append(toString(token, withPlaceholders));
-            if (i < tokens.length - 1 && token.hasRightSpace())
-                builder.append(' ');
+                if (printSpace)
+                    builder.append(' ');
+
+                builder.append(toString(token, withPlaceholders));
+                printSpace = token.hasRightSpace();
+            }
         }
 
         return builder.toString();
     }
 
-    /**
-     * Create a representation of the sentence including tags, this table
-     * shows the behaviour of the algorithm respect to spaces information:
-     * <p>
-     * TTRX = Token has right space
-     * TALX = Tag has left space
-     * TARX = Tag has right space
-     * TATY = Tag type (O = opening, E = empty, C = closing)
-     * <p>
-     * TTRX TALX TARX TATY     Result              Example
-     * 0    x    x    x        Word<tag>Word       That<b>'s
-     * 1    0    1    x        Word<tag> Word      Hello<b> World
-     * 1    1    0    x        Word <tag>Word      Hello <b>World
-     * 1    0    0    O        Word <b>Word        Hello <b>World
-     * 1    0    0    E        Word <b/>Word       Hello <b/>World
-     * 1    0    0    C        Word</b> Word       Hello</b> World
-     * 1    1    1    O        Word <b>Word        Hello <b>World
-     * 1    1    1    E        Word <b/>Word       Hello <b/>World
-     * 1    1    1    C        Word</b> Word       Hello</b> World
-     * <p>
-     * If more there are more consecutive tags, this algorithm ensures that
-     * only one space it will be printed. The position of the single space is
-     * then decided by the first word and the consecutive tags.
-     *
-     * @return string representation including tags
-     */
     public String toString(boolean withPlaceholders) {
-        if (tags == null || tags.length == 0)
+        if (tags.length == 0)
             return getStrippedString(withPlaceholders);
 
-        // Merging tags and tokens arrays into a single array: sentence
-        Token[] sentence = new Token[tokens.length + tags.length];
-        int sIndex = 0;
-
-        int tagIndex = 0;
-        Tag tag = tags[tagIndex];
-
-
-        for (int i = 0; i < tokens.length; i++) {
-            while (tag != null && i == tag.getPosition()) {
-                sentence[sIndex++] = tag;
-                tagIndex++;
-                tag = tagIndex < tags.length ? tags[tagIndex] : null;
-            }
-
-            sentence[sIndex++] = tokens[i];
-        }
-
-        for (int i = tagIndex; i < tags.length; i++) {
-            sentence[sIndex++] = tags[i];
-        }
-
-        // Outputting
         StringBuilder builder = new StringBuilder();
 
-        for (int i = 0; i < sentence.length; i++) {
-            Token token = sentence[i];
+        Iterator<Token> iterator = this.iterator();
 
+        while (iterator.hasNext()) {
+            Token token = iterator.next();
             builder.append(toString(token, withPlaceholders));
 
-            Tag nextTag = null;
-            if (i < sentence.length - 1 && (sentence[i + 1] instanceof Tag))
-                nextTag = (Tag) sentence[i + 1];
-
-            if (nextTag != null) {
-                boolean isSpacedClosingComment = (nextTag.isComment() && nextTag.isClosingTag() && nextTag.hasLeftSpace());
-                boolean mustPrintSpace;
-
-                if (isSpacedClosingComment) {
-                    builder.append(' ');
-                    mustPrintSpace = false;
-                } else if (!token.hasRightSpace()) {
-                    mustPrintSpace = false;
-                } else if (nextTag.hasLeftSpace() == nextTag.hasRightSpace()) {
-                    if (nextTag.isClosingTag()) {
-                        mustPrintSpace = true;
-                    } else {
-                        builder.append(' ');
-                        mustPrintSpace = false;
-                    }
-                } else if (nextTag.hasLeftSpace()) {
-                    builder.append(' ');
-                    mustPrintSpace = false;
-                } else {
-                    mustPrintSpace = true;
-                }
-
-                while (nextTag != null) {
-                    builder.append(nextTag);
-                    i++;
-
-                    boolean isSpacedOpeningComment = (nextTag.isComment() && nextTag.isOpeningTag() && nextTag.hasRightSpace());
-
-                    if (isSpacedOpeningComment) {
-                        builder.append(' ');
-                        mustPrintSpace = false;
-                    }
-
-                    if (i < sentence.length - 1 && (sentence[i + 1] instanceof Tag)) {
-                        nextTag = (Tag) sentence[i + 1];
-
-                        isSpacedClosingComment = (nextTag.isComment() && nextTag.isClosingTag() && nextTag.hasLeftSpace());
-
-                        if (isSpacedClosingComment || (mustPrintSpace && !nextTag.isClosingTag())) {
-                            builder.append(' ');
-                            mustPrintSpace = false;
-                        }
-                    } else {
-                        nextTag = null;
-                        if (mustPrintSpace)
-                            builder.append(' ');
-                    }
-                }
-            } else if (token.hasRightSpace() && i < sentence.length - 1) {
+            if (iterator.hasNext() && token.hasRightSpace())
                 builder.append(' ');
-            }
         }
 
-        return builder.toString().trim();
+        return builder.toString();
     }
 
     @Override
@@ -188,11 +99,41 @@ public class Sentence implements Serializable {
         return toString(false);
     }
 
-    private static String toString(Token token, boolean withPlaceholders) {
+    protected static String toString(Token token, boolean withPlaceholders) {
         if (withPlaceholders && (token instanceof PlaceholderToken))
             return ((PlaceholderToken) token).getPlaceholder();
         else
             return token.getText();
     }
 
+    @Override
+    public Iterator<Token> iterator() {
+        return new Iterator<Token>() {
+
+            private final Token[] tokens = Sentence.this.words;
+            private final Tag[] tags = Sentence.this.tags;
+
+            private int tokenIndex = 0;
+            private int tagIndex = 0;
+
+            @Override
+            public boolean hasNext() {
+                return tokenIndex < tokens.length || tagIndex < tags.length;
+            }
+
+            @Override
+            public Token next() {
+                Token nextToken = tokenIndex < tokens.length ? tokens[tokenIndex] : null;
+                Tag nextTag = tagIndex < tags.length ? tags[tagIndex] : null;
+
+                if (nextTag != null && (nextToken == null || tokenIndex == nextTag.getPosition())) {
+                    tagIndex++;
+                    return nextTag;
+                } else {
+                    tokenIndex++;
+                    return nextToken;
+                }
+            }
+        };
+    }
 }

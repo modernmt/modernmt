@@ -3,6 +3,7 @@ package eu.modernmt.rest.serializers;
 import com.google.gson.*;
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.TranslationHypothesis;
+import eu.modernmt.processing.util.TokensOutputter;
 import eu.modernmt.rest.model.TranslationResponse;
 
 import java.lang.reflect.Type;
@@ -16,7 +17,8 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
     @Override
     public JsonElement serialize(TranslationResponse src, Type typeOfSrc, JsonSerializationContext context) {
         JsonObject json = new JsonObject();
-        json.addProperty("translation", src.processing ? src.translation.toString() : src.translation.getStrippedString(true));
+        json.addProperty("translation", src.processing ? src.translation.toString() : TokensOutputter.toString(src.translation, false, true, false));
+        json.addProperty("took", src.translation.getElapsedTime());
 
         if (src.session > 0L)
             json.addProperty("session", src.session);

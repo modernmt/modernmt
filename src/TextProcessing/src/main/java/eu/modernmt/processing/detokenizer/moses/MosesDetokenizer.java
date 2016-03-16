@@ -68,7 +68,7 @@ public class MosesDetokenizer extends MultiInstanceDetokenizer {
             int length = detokenized.length();
 
             int stringIndex = 0;
-            for (Token token : translation.getTokens()) {
+            for (Token token : translation.getWords()) {
                 String tokenText = token.getText();
 
                 int position = detokenized.indexOf(tokenText, stringIndex);

@@ -96,6 +96,7 @@ sudo add-apt-repository ppa:george-edison55/cmake-3.x
 sudo add-apt-repository ppa:openjdk-r/ppa
 sudo apt-get update
 
+sudo apt-get install libbz2-dev
 sudo apt-get install libboost1.55-all-dev
 sudo apt-get install libgoogle-perftools-dev
 sudo apt-get install cmake
@@ -238,9 +239,9 @@ cd ModernMT
 Download `opt` resources for Ubuntu 14.04:
 
 ```
-wget "http://labs.mmt.rocks/builds/mmt-opt-0.11-ubuntu14_04.tar.gz"
-tar xvf mmt-opt-0.11-ubuntu14_04.tar.gz
-rm mmt-opt-0.11-ubuntu14_04.tar.gz
+wget "http://labs.mmt.rocks/builds/mmt-opt-0.12-ubuntu14_04.tar.gz"
+tar xvf mmt-opt-0.12-ubuntu14_04.tar.gz
+rm mmt-opt-0.12-ubuntu14_04.tar.gz
 ```
 
 Install custom maven dependencies:
