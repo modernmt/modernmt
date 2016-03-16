@@ -43,4 +43,5 @@ set(BUILD_SHARED_LIBS ON CACHE BOOL "Build irstlm shared library")
 
 
 add_subdirectory(ext/irstlm)
-#add_subdirectory(ext/moses)
+add_subdirectory(ext/moses)
+add_subdirectory(src/Decoder/native)
