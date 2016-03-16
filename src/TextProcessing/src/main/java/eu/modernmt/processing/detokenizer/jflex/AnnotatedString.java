@@ -18,15 +18,11 @@ public class AnnotatedString {
 
     public static AnnotatedString fromTranslation(Translation translation) {
         StringBuilder builder = new StringBuilder();
+        builder.append(' ');
 
-        Token[] words = translation.getWords();
-
-        for (int i = 0; i < words.length; i++) {
-            Token word = words[i];
+        for (Token word : translation.getWords()) {
             builder.append(word.getText());
-
-            if (i < words.length - 1)
-                builder.append(' ');
+            builder.append(' ');
         }
 
         return new AnnotatedString(builder.toString());
@@ -38,14 +34,24 @@ public class AnnotatedString {
         this.bits = new BitSet(this.length);
     }
 
-    public void removeSpace(int position) {
-        if (0 < position && position < length)
-            bits.set(position);
+    public void removeSpaceRight(int position) {
+        while (0 < position && position < length) {
+            if (text.charAt(position) == ' ') {
+                bits.set(position);
+                break;
+            }
+            position++;
+        }
     }
 
-    public void keepSpace(int position) {
-        if (0 < position && position < length)
-            bits.clear(position);
+    public void removeSpaceLeft(int position) {
+        while (0 < position && position < length) {
+            if (text.charAt(position) == ' ') {
+                bits.set(position);
+                break;
+            }
+            position--;
+        }
     }
 
     public Reader getReader() {
@@ -53,7 +59,7 @@ public class AnnotatedString {
     }
 
     public void apply(Translation translation) {
-        int index = 0;
+        int index = 1; // Skip first whitespace
 
         for (Token word : translation.getWords()) {
             String text = word.getText();

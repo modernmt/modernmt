@@ -9,7 +9,8 @@ import java.io.Reader;
 public abstract class JFlexAnnotator {
 
     public static final int YYEOF = -1;
-    public static final int REMOVE = 0;
+    public static final int REMOVE_FIRST = 0;
+    public static final int REMOVE_LAST = 1;
 
     protected int zzStartReadOffset = 0;
 
@@ -27,15 +28,31 @@ public abstract class JFlexAnnotator {
         }
 
         switch (tokenType) {
-            case REMOVE:
-                text.removeSpace(offset + zzStartRead);
+            case REMOVE_FIRST:
+                text.removeSpaceRight(offset + zzStartRead);
+                break;
+            case REMOVE_LAST:
+                text.removeSpaceLeft(offset + zzMarkedPos - 1);
                 break;
         }
+
+        yypushback(1);
     }
 
-    public abstract void yyreset(Reader reader);
+    public final void reset(Reader reader) {
+        onReset();
+        this.yyreset(reader);
+    }
+
+    protected void onReset() {
+
+    }
 
     public abstract int next() throws IOException;
+
+    protected abstract void yyreset(Reader reader);
+
+    protected abstract void yypushback(int number);
 
     protected abstract int getStartRead();
 

@@ -17,22 +17,48 @@ import eu.modernmt.processing.detokenizer.jflex.JFlexAnnotator;
 	protected int yychar() { return yychar; }
 %}
 
+%{
+    protected int quoteCount;
+    protected int aposCount;
+
+    protected void onReset() {
+        this.quoteCount = 0;
+        this.aposCount = 0;
+    }
+%}
+
 CJ         = [\u3100-\u312f\u3040-\u309F\u30A0-\u30FF\u31F0-\u31FF\u3300-\u337f\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff65-\uff9f]
 _          = " "
 LETTER     = !(![:letter:]|{CJ})
+CURRENCY   = [\$€¢¥]
+APOS       = "&apos;"
+QUOT       = "&quot;"
 
-DotInTheMiddle = \.{_}[:lowercase:]
-UrlPart = [[:letter:][:digit:]\-\_]+
-Url = ((https?|HTTPS?)\:\/\/)?({UrlPart}\.)+{UrlPart}\/?({UrlPart}\/?)*(\.[:letter:]+)?(\?({UrlPart}(\={UrlPart})?\&?)*)?
-Acronym = {LETTER}\.({LETTER}\.)+
-Number = ((\-|\+)?[0-9]+)?([\.,][0-9]+)*\%?
-MultipleDots = \.\.+
-FileExtension = \.{LETTER}+
-Email = ([a-z0-9_\.-]+)@([\da-z\.-]+)\.([a-z\.]{2,6})
+%{
+    private int englishPossessiveCase() {
+        if (this.aposCount % 2 == 0)
+            this.aposCount++;
+
+        return REMOVE_FIRST;
+    }
+%}
 
 %%
 
 /* Default Ignore */
 .                                                                   { /* ignore */ }
 
-{_}\!                                                               { return REMOVE; }
+{_}[\(\[\{\¿\¡]+{_}                                                 { return REMOVE_LAST; }
+{_}[\,\.\?\!\:\;\\\%\}\]\)]+{_}                                     { return REMOVE_FIRST; }
+{_}™{_}                                                             { return REMOVE_FIRST; }
+
+{_}{QUOT}{_}                                                        { return this.quoteCount++ % 2 == 0 ? REMOVE_LAST : REMOVE_FIRST; }
+{_}{APOS}{_}                                                        { return this.aposCount++ % 2 == 0 ? REMOVE_LAST : REMOVE_FIRST; }
+
+{CJ}{_}{CJ}                                                         { return REMOVE_FIRST; }
+
+/* Language Specific - English */
+
+{_}{APOS}{LETTER}.                                                  { return REMOVE_FIRST; }
+s{_}{APOS}{_}                                                       { return englishPossessiveCase(); }
+{_}{CURRENCY}{_}                                                    { return REMOVE_LAST; }

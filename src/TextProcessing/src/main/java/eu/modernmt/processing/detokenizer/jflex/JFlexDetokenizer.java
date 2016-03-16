@@ -6,13 +6,9 @@ import eu.modernmt.processing.detokenizer.Detokenizer;
 import eu.modernmt.processing.detokenizer.MultiInstanceDetokenizer;
 import eu.modernmt.processing.detokenizer.jflex.annotators.ItalianAnnotator;
 import eu.modernmt.processing.framework.ProcessingException;
+import org.apache.commons.io.IOUtils;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.IOException;
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.*;
 
 /**
  * Created by davide on 29/01/16.
@@ -39,7 +35,7 @@ public class JFlexDetokenizer extends MultiInstanceDetokenizer {
         public Translation call(Translation translation) throws ProcessingException {
             AnnotatedString text = AnnotatedString.fromTranslation(translation);
 
-            annotator.yyreset(text.getReader());
+            annotator.reset(text.getReader());
 
             int type;
             while ((type = next(annotator)) != JFlexAnnotator.YYEOF) {
@@ -64,37 +60,53 @@ public class JFlexDetokenizer extends MultiInstanceDetokenizer {
         }
     }
 
-    public static void main(String[] args) throws Throwable {
-        System.setProperty("mmt.home", "/Users/davide/workspaces/mmt/ModernMT/");
+    private static String process(JFlexDetokenizer detokenizer, String line) throws ProcessingException {
+        String[] tokens = line.split("\\s+");
+        Token[] words = new Token[tokens.length];
+
+        for (int i = 0; i < tokens.length; i++)
+            words[i] = new Token(tokens[i], true);
+
+        Translation translation = new Translation(words, null, null);
+        detokenizer.call(translation);
+
+        return translation.toString();
+    }
+
+
+    private static void process(InputStream input, OutputStream output) throws IOException, ProcessingException {
         JFlexDetokenizer detokenizer = new JFlexDetokenizer();
 
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
+
         String line;
-        while ((line=br.readLine()) != null) {
-	    String[] splitStr = line.split("\\s+");
-	    List<Token> tokenList = new ArrayList<Token>();
-	    for (String str : splitStr) {
-		tokenList.add(new Token(str, true));
-	    }
-	    Token[] tokens = new Token[ tokenList.size() ];
-	    tokenList.toArray(tokens);
-	    Translation translation = new Translation(tokens, null, null);
-	    detokenizer.call(translation);
-	    System.out.println(translation);
-	}
+        while ((line = reader.readLine()) != null) {
+            String string = process(detokenizer, line);
 
-	/*
-        Translation translation = new Translation(new Token[] {
-                new Token("Un", true),
-                new Token("bell'", true),
-                new Token("esempio", true),
-                new Token("!", true),
-        }, null, null);
+            output.write(string.getBytes("UTF-8"));
+            output.write('\n');
+        }
+    }
 
-        System.out.println(translation);
-        detokenizer.call(translation);
-        System.out.println(translation);
-	*/
+    public static void main(String[] args) throws Throwable {
+        System.setProperty("mmt.home", "/Users/davide/workspaces/mmt/ModernMT/");
+
+        FileInputStream input = null;
+        FileOutputStream output = null;
+
+        try {
+            input = new FileInputStream("/Users/davide/Desktop/tokenizer/text.tok.en");
+            output = new FileOutputStream("/Users/davide/Desktop/tokenizer/text.jflex.en");
+
+            process(input, output);
+        } finally {
+            IOUtils.closeQuietly(input);
+            IOUtils.closeQuietly(output);
+        }
+
+//        String text = "To add the candidate ( s ) to the pool , click on &apos; Add Candidates &apos; or &apos; Add Candidates &amp; Manage Pool &apos;";
+//        String text = "If you choose &apos; Yes &apos; , the original files will be overwritten .";
+//        System.out.println(process(new JFlexDetokenizer(), text));
     }
 
 }
