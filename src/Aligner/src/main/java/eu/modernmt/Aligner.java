@@ -1,13 +1,18 @@
 package eu.modernmt;
 
+import eu.modernmt.model.Sentence;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.text.ParseException;
+
 /**
- * Hello world!
- *
+ * Created by lucamastrostefano on 14/03/16.
  */
-public class Aligner
-{
-    public static void main( String[] args )
-    {
-        System.out.println( "Hello World!" );
-    }
+public interface Aligner extends Closeable {
+
+    void init() throws IOException, ParseException;
+
+    int[][] getAlignments(Sentence sentence, Sentence translation) throws IOException;
+
 }
