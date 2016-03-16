@@ -72,6 +72,7 @@ public class StringNormalizer implements TextProcessor<String, String> {
             case '»':
             case '“':
             case '”':
+            case '„':
                 nc = '"';
                 break;
             case '–':
