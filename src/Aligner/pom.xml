@@ -29,5 +29,10 @@
             <artifactId>mmt-model</artifactId>
             <version>0.12</version>
         </dependency>
+        <dependency>
+            <groupId>eu.modernmt</groupId>
+            <artifactId>mmt-textprocessing</artifactId>
+            <version>0.12</version>
+        </dependency>
     </dependencies>
 </project>
