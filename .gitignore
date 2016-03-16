@@ -6,7 +6,7 @@
 /lib64
 
 # external vendor dependency repositories
-/vendor/
+#/vendor/  # DO NOT IGNORE. git submodules live here.
 
 /opt/
 build/

@@ -1,0 +1,8 @@
+[submodule "vendor/irstlm"]
+	path = vendor/irstlm
+	url = https://github.com/irstlm-team/irstlm
+	branch = cd-correction-model
+[submodule "vendor/moses"]
+	path = vendor/moses
+	url = https://github.com/ModernMT/mosesdecoder
+	branch = features/build-system
