@@ -58,4 +58,5 @@ public class SentenceTest {
         assertEquals("Hello<a> <b>world", sentence.toString(false));
         assertEquals("Hello world", sentence.getStrippedString(false));
     }
+
 }

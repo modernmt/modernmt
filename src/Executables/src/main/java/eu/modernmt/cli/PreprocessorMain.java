@@ -3,6 +3,7 @@ package eu.modernmt.cli;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.framework.*;
+import eu.modernmt.processing.util.SentenceOutputter;
 import eu.modernmt.processing.util.TokensOutputter;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
@@ -59,7 +60,10 @@ public class PreprocessorMain {
             pipeline = Preprocessor.getPipeline(args.language, true);
 
             input = PipelineInputStream.fromInputStream(System.in);
-            output = new TokensOutputter(System.out, args.printTags, args.printPlaceholders, args.keepSpaces);
+            if (args.keepSpaces)
+                output = new SentenceOutputter(System.out, args.printTags, args.printPlaceholders);
+            else
+                output = new TokensOutputter(System.out, args.printTags, args.printPlaceholders);
 
             ProcessingJob<String, Sentence> job = pipeline.createJob(input, output);
 
