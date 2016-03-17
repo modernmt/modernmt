@@ -50,8 +50,8 @@ class TrainingCorpusTask implements Callable<Void> {
                 input = new PartitionedInputStream(corpus, corpusLines, extraPartitions);
             else
                 input = PipelineInputStream.fromReader(corpus.getContentReader());
-            
-            output = new TokensOutputter(outCorpus.getContentWriter(false), false, true, false);
+
+            output = new TokensOutputter(outCorpus.getContentWriter(false), false, true);
 
             ProcessingJob<String, Sentence> job = pipeline.createJob(input, output);
 
