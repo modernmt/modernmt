@@ -38,7 +38,7 @@ public class InsertTagsTask extends DistributedCallable<String> {
 
             int[][] alignments = aligner.getAlignments(preprocessedSentence, preprocessedTranslation);
 
-            Translation translation = new Translation(preprocessedTranslation.getTokens(),
+            Translation translation = new Translation(preprocessedTranslation.getWords(),
                     preprocessedSentence, alignments);
 
             Postprocessor postprocessor = worker.getPostprocessor();

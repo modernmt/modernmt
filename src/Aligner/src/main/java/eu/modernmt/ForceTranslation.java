@@ -64,7 +64,7 @@ public class ForceTranslation {
     }
 
     public static void forceTranslation(String originalTranslation, Translation postProcessedTranslation){
-        Token[] postProcessedTokens = postProcessedTranslation.getTokens();
+        Token[] postProcessedTokens = postProcessedTranslation.getWords();
         String postProcessTranslation_str = extractTextFromToken(postProcessedTokens);
         logger.debug("ORIGINAL: " + originalTranslation + " ||| POST: " + postProcessTranslation_str);
         if(originalTranslation.equals(postProcessTranslation_str)){
