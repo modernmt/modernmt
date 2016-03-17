@@ -20,41 +20,35 @@ public class TokensOutputter implements PipelineOutputStream<Sentence> {
     private final Writer writer;
     private boolean printTags;
     private boolean printPlaceholders;
-    private boolean originalSpacing;
 
-    public static String toString(Sentence sentence, boolean printTags, boolean printPlaceholders, boolean originalSpacing) {
-        if (originalSpacing) {
-            return printTags ? sentence.toString(printPlaceholders) : sentence.getStrippedString(printPlaceholders);
-        } else {
-            StringBuilder builder = new StringBuilder();
+    public static String toString(Sentence sentence, boolean printTags, boolean printPlaceholders) {
+        StringBuilder builder = new StringBuilder();
 
-            Iterator<Token> iterator = printTags ? sentence.iterator() : new ArrayIterator<>(sentence.getWords());
+        Iterator<Token> iterator = printTags ? sentence.iterator() : new ArrayIterator<>(sentence.getWords());
 
-            while (iterator.hasNext()) {
-                Token token = iterator.next();
+        while (iterator.hasNext()) {
+            Token token = iterator.next();
 
-                if (printPlaceholders && (token instanceof PlaceholderToken))
-                    builder.append(((PlaceholderToken) token).getPlaceholder());
-                else
-                    builder.append(token.getText());
+            if (printPlaceholders && (token instanceof PlaceholderToken))
+                builder.append(((PlaceholderToken) token).getPlaceholder());
+            else
+                builder.append(token.getText());
 
-                if (iterator.hasNext())
-                    builder.append(' ');
-            }
-
-            return builder.toString();
+            if (iterator.hasNext())
+                builder.append(' ');
         }
+
+        return builder.toString();
     }
 
-    public TokensOutputter(OutputStream stream, boolean printTags, boolean printPlaceholders, boolean originalSpacing) {
-        this(new OutputStreamWriter(stream, Config.charset.get()), printTags, printPlaceholders, originalSpacing);
+    public TokensOutputter(OutputStream stream, boolean printTags, boolean printPlaceholders) {
+        this(new OutputStreamWriter(stream, Config.charset.get()), printTags, printPlaceholders);
     }
 
-    public TokensOutputter(Writer writer, boolean printTags, boolean printPlaceholders, boolean originalSpacing) {
+    public TokensOutputter(Writer writer, boolean printTags, boolean printPlaceholders) {
         this.writer = writer;
         this.printTags = printTags;
         this.printPlaceholders = printPlaceholders;
-        this.originalSpacing = originalSpacing;
     }
 
     @Override
@@ -64,7 +58,7 @@ public class TokensOutputter implements PipelineOutputStream<Sentence> {
 
     @Override
     public void write(Sentence sentence) throws IOException {
-        writer.write(toString(sentence, printTags, printPlaceholders, originalSpacing));
+        writer.write(toString(sentence, printTags, printPlaceholders));
         writer.write('\n');
         writer.flush();
     }
