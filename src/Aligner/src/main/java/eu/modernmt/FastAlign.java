@@ -2,6 +2,7 @@ package eu.modernmt;
 
 import eu.modernmt.config.Config;
 import eu.modernmt.model.Sentence;
+import eu.modernmt.processing.util.TokensOutputter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,8 +43,8 @@ public class FastAlign implements Aligner{
 
     @Override
     public synchronized int[][] getAlignments(Sentence  sentence, Sentence translation) throws IOException {
-        logger.warn("CREATE STRING FROM TOKENS! DO NOT USE toString()");
-        String query = sentence.toString() + SENTENCE_SEPARATOR + translation.toString() + "\n";
+        String query = TokensOutputter.toString(sentence, false, false) + SENTENCE_SEPARATOR +
+                TokensOutputter.toString(translation, false, false) + "\n";
         logger.debug("Sending query to Fast Align's models: " + query);
         this.forwardAlignerProcess.standardInput.write(query.getBytes(Config.charset.get()));
         this.forwardAlignerProcess.standardInput.flush();

@@ -5,7 +5,10 @@ import eu.modernmt.model.Translation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.TreeSet;
 
 /**
  * Created by lucamastrostefano on 16/03/16.
@@ -65,7 +68,7 @@ public class ForceTranslation {
 
     public static void forceTranslation(String originalTranslation, Translation postProcessedTranslation){
         Token[] postProcessedTokens = postProcessedTranslation.getWords();
-        String postProcessTranslation_str = extractTextFromToken(postProcessedTokens);
+        String postProcessTranslation_str = postProcessedTranslation.getStrippedString(false);
         logger.debug("ORIGINAL: " + originalTranslation + " ||| POST: " + postProcessTranslation_str);
         if(originalTranslation.equals(postProcessTranslation_str)){
             return;
@@ -174,17 +177,6 @@ public class ForceTranslation {
 
         cache[stringLength][otherLength] = result;
         return result;
-    }
-
-    private static String extractTextFromToken(Token[] tokens){
-        StringBuilder text = new StringBuilder();
-        for(Token token : tokens){
-            text.append(token.getText());
-            if(token.hasRightSpace()){
-                text.append(" ");
-            }
-        }
-        return text.toString();
     }
 
 }
