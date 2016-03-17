@@ -9,6 +9,7 @@ import eu.modernmt.processing.framework.ProcessingException;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
+import java.util.regex.Pattern;
 
 /**
  * Created by davide on 29/01/16.
@@ -104,9 +105,12 @@ public class JFlexDetokenizer extends MultiInstanceDetokenizer {
             IOUtils.closeQuietly(output);
         }
 
-//        String text = "To add the candidate ( s ) to the pool , click on &apos; Add Candidates &apos; or &apos; Add Candidates &amp; Manage Pool &apos;";
-//        String text = "If you choose &apos; Yes &apos; , the original files will be overwritten .";
+//        String text1 = "in the cantons of Olette and Arles-sur-Tech in the department of Pyrénées-Orientales;";
+//        String text = "&apos; Submit （ 送信 ） &apos; をクリックし 、 リクエストを完了してください 。 あるいは 、 &apos; Cancel ( 取消 ） &apos; をクリックして再度リクエストをプロセスしてください 。";
+//        String gold = "&apos;Submit （ 送信 ）&apos; をクリックし、リクエストを完了してください。あるいは、 &apos;Cancel (取消 ）&apos; をクリックして再度リクエストをプロセスしてください。";
+//        System.out.println(process(new JFlexDetokenizer(), text1));
 //        System.out.println(process(new JFlexDetokenizer(), text));
+//        System.out.println(gold);
     }
 
 }

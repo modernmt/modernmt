@@ -27,16 +27,15 @@ import eu.modernmt.processing.detokenizer.jflex.JFlexAnnotator;
     }
 %}
 
-CJ         = [\u3100-\u312f\u3040-\u309F\u30A0-\u30FF\u31F0-\u31FF\u3300-\u337f\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff65-\uff9f]
+CJK        = [\u1100-\u11FF\u2E80-\uA4CF\uA840-\uA87F\uAC00-\uD7AF\uF900-\uFAFF\uFE30-\uFE4F\uFF65-\uFFDC]
 _          = " "
-LETTER     = !(![:letter:]|{CJ})
-CURRENCY   = [\$€¢¥]
+CURRENCY   = [\$€¢¥£]
 APOS       = "&apos;"
 QUOT       = "&quot;"
 
 %{
     private int englishPossessiveCase() {
-        if (this.aposCount % 2 == 0)
+        if (this.aposCount % 2 == 1)
             this.aposCount++;
 
         return REMOVE_FIRST;
@@ -50,15 +49,14 @@ QUOT       = "&quot;"
 
 {_}[\(\[\{\¿\¡]+{_}                                                 { return REMOVE_LAST; }
 {_}[\,\.\?\!\:\;\\\%\}\]\)]+{_}                                     { return REMOVE_FIRST; }
-{_}™{_}                                                             { return REMOVE_FIRST; }
 
 {_}{QUOT}{_}                                                        { return this.quoteCount++ % 2 == 0 ? REMOVE_LAST : REMOVE_FIRST; }
 {_}{APOS}{_}                                                        { return this.aposCount++ % 2 == 0 ? REMOVE_LAST : REMOVE_FIRST; }
 
-{CJ}{_}{CJ}                                                         { return REMOVE_FIRST; }
+{CJK}{_}{CJK}                                                       { return REMOVE_FIRST; }
 
 /* Language Specific - English */
 
-{_}{APOS}{LETTER}.                                                  { return REMOVE_FIRST; }
+[[:letter:][:digit:]]{_}{APOS}[:letter:].                           { return REMOVE_FIRST; }
 s{_}{APOS}{_}                                                       { return englishPossessiveCase(); }
 {_}{CURRENCY}{_}                                                    { return REMOVE_LAST; }
