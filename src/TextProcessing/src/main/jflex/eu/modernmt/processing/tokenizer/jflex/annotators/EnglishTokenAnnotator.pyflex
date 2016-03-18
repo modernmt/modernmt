@@ -1,10 +1,12 @@
-//pyflex init
+package eu.modernmt.processing.tokenizer.jflex.annotators;
+
+import eu.modernmt.processing.tokenizer.jflex.JFlexTokenAnnotator;
 
 %%
 
-//pyflex declarations
+//pyflex class JFlexTokenAnnotator
 
-//pyflex include ../common.macro
+//pyflex include ../macros.pyx
 
 //pyflex prefixes ../prefixes/en.txt caseless
 
@@ -13,7 +15,7 @@ PossessiveCase = \'s{_}
 
 %%
 
-//pyflex include ../common.lex
+//pyflex include ../stdtok-rules.pyx
 
 {EnglishContractions}                                               { yypushback(1); return PROTECT_RIGHT; }
 {PossessiveCase}                                                    { yypushback(1); return PROTECT; }

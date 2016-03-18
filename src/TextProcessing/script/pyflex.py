@@ -14,26 +14,25 @@ def _abspath(root, path):
     return path
 
 
-def _init(package):
-    return 'package ' + package + ';\nimport eu.modernmt.processing.tokenizer.jflex.JFlexAnnotator;'
+def _class(classname, super_class=None):
+    lines = ['%public',
+             '%class ' + classname]
 
+    if super_class is not None:
+        lines.append('%extends ' + super_class)
 
-def _declarations(classname):
-    return '\n'.join([
-        '%public',
-        '%class ' + classname,
-        '%extends JFlexAnnotator',
-        '%unicode',
-        '%integer',
-        '%function next',
-        '%pack',
-        '%char',
-        '%{',
-        '\tprotected int getStartRead() { return zzStartRead; }',
-        '\tprotected int getMarkedPosition() { return zzMarkedPos; }',
-        '\tprotected int yychar() { return yychar; }',
-        '%}'
-    ])
+    lines += ['%unicode',
+              '%integer',
+              '%function next',
+              '%pack',
+              '%char',
+              '%{',
+              '\tprotected int getStartRead() { return zzStartRead; }',
+              '\tprotected int getMarkedPosition() { return zzMarkedPos; }',
+              '\tprotected int yychar() { return yychar; }',
+              '%}']
+
+    return '\n'.join(lines)
 
 
 def _include(path):
@@ -134,10 +133,8 @@ def generate_jflex(parent_dir, template_file, target_dir):
             args = l[1:]
             command = l[0]
 
-            if command == 'init':
-                content[i] = _init(package)
-            elif command == 'declarations':
-                content[i] = _declarations(classname)
+            if command == 'class':
+                content[i] = _class(classname, super_class=(args[0] if len(args) > 0 else None))
             elif command == 'include':
                 content[i] = _include(_abspath(include_root, args[0]))
             elif command == 'prefixes':

@@ -1,4 +1,4 @@
-package eu.modernmt.processing.tokenizer.jflex;
+package eu.modernmt.processing.detokenizer.jflex;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -6,16 +6,15 @@ import java.io.Reader;
 /**
  * Created by davide on 29/01/16.
  */
-public abstract class JFlexAnnotator {
+public abstract class JFlexSpaceAnnotator {
 
     public static final int YYEOF = -1;
-    public static final int PROTECT = 0;
-    public static final int PROTECT_ALL = 1;
-    public static final int PROTECT_RIGHT = 2;
+    public static final int REMOVE_FIRST = 0;
+    public static final int REMOVE_LAST = 1;
 
     protected int zzStartReadOffset = 0;
 
-    public final void annotate(AnnotatedString text, int tokenType) {
+    public final void annotate(SpacesAnnotatedString text, int tokenType) {
         int zzMarkedPos = getMarkedPosition();
 
         int zzStartRead = getStartRead() + zzStartReadOffset;
@@ -29,21 +28,31 @@ public abstract class JFlexAnnotator {
         }
 
         switch (tokenType) {
-            case PROTECT:
-                text.protect(offset + zzStartRead + 1, offset + zzMarkedPos);
+            case REMOVE_FIRST:
+                text.removeSpaceRight(offset + zzStartRead);
                 break;
-            case PROTECT_ALL:
-                text.protect(offset + zzStartRead, offset + zzMarkedPos);
-                break;
-            case PROTECT_RIGHT:
-                text.protect(offset + zzMarkedPos);
+            case REMOVE_LAST:
+                text.removeSpaceLeft(offset + zzMarkedPos - 1);
                 break;
         }
+
+        yypushback(1);
     }
 
-    public abstract void yyreset(Reader reader);
+    public final void reset(Reader reader) {
+        onReset();
+        this.yyreset(reader);
+    }
+
+    protected void onReset() {
+
+    }
 
     public abstract int next() throws IOException;
+
+    protected abstract void yyreset(Reader reader);
+
+    protected abstract void yypushback(int number);
 
     protected abstract int getStartRead();
 

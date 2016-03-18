@@ -1,0 +1,29 @@
+package eu.modernmt.processing.detokenizer.jflex.annotators;
+
+import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
+
+%%
+
+//pyflex class JFlexSpaceAnnotator
+//pyflex include ../stddetok-defs.pyx
+
+%{
+    private int englishPossessiveCase() {
+        if (this.aposCount % 2 == 1)
+            this.aposCount++;
+
+        return REMOVE_FIRST;
+    }
+%}
+
+//pyflex include ../macros.pyx
+
+%%
+
+//pyflex include ../stddetok-rules.pyx
+
+/* Language Specific - English */
+
+[[:letter:][:digit:]]{_}{apos}[:letter:].                           { return REMOVE_FIRST; }
+s{_}{apos}{_}                                                       { return englishPossessiveCase(); }
+{_}{Currency}{_}                                                    { return REMOVE_LAST; }
