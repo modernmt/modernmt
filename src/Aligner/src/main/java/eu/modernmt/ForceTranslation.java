@@ -69,12 +69,11 @@ public class ForceTranslation {
     public static void forceTranslation(String originalTranslation, Translation postProcessedTranslation){
         Token[] postProcessedTokens = postProcessedTranslation.getWords();
         String postProcessTranslation_str = postProcessedTranslation.getStrippedString(false);
-        logger.debug("ORIGINAL: " + originalTranslation + " ||| POST: " + postProcessTranslation_str);
         if(originalTranslation.equals(postProcessTranslation_str)){
             return;
         }
         List<Operation> operations = getMinSetOfOperations(originalTranslation, postProcessTranslation_str);
-        logger.debug("Operations: " + operations);
+        logger.debug("Forcing translation to be equal to the original one");
         Token lastToken = null;
         int originalCharIndex = 0;
         StringBuilder newToken = new StringBuilder();
