@@ -3,6 +3,7 @@ package eu.modernmt;
 import eu.modernmt.config.Config;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.util.TokensOutputter;
+import eu.modernmt.symal.Symmetrisation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -55,8 +56,11 @@ public class FastAlign implements Aligner{
         logger.debug("Forward alignments: " + forwardModelResponse);
         String backwardModelResponse = this.backwardAlignerProcess.standardOutput.readLine();
         logger.debug("Backward alignments: " + backwardModelResponse);
-
-        String[] links_str = forwardModelResponse.split(" ");
+        logger.debug("Symmetrising");
+        String symmetrisedAlignments = Symmetrisation.symmetriseMosesFormatAlignment(forwardModelResponse,
+                backwardModelResponse, Symmetrisation.Type.GrowDiagFinalAnd);
+        logger.debug("Symmetrised alignments: " + symmetrisedAlignments);
+        String[] links_str = symmetrisedAlignments.split(" ");
         int[][] alignments = new int[links_str.length][];
         for(int i = 0; i < links_str.length; i++){
             String[] alignment = links_str[i].split("-");
