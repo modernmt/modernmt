@@ -196,6 +196,11 @@ public class BilingualFileCorpus implements BilingualCorpus {
         }
 
         @Override
+        public void write(StringPair pair) throws IOException {
+            write(pair.source, pair.target);
+        }
+
+        @Override
         public void close() throws IOException {
             IOUtils.closeQuietly(this.sourceWriter);
             IOUtils.closeQuietly(this.targetWriter);
