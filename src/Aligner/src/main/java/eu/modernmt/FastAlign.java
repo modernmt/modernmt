@@ -44,12 +44,14 @@ public class FastAlign implements Aligner{
 
     @Override
     public synchronized int[][] getAlignments(Sentence  sentence, Sentence translation) throws IOException {
-        String query = TokensOutputter.toString(sentence, false, false) + SENTENCE_SEPARATOR +
-                TokensOutputter.toString(translation, false, false) + "\n";
-        logger.debug("Sending query to Fast Align's models: " + query);
-        this.forwardAlignerProcess.standardInput.write(query.getBytes(Config.charset.get()));
+        String sentence_str = TokensOutputter.toString(sentence, false, false);
+        String translation_str = TokensOutputter.toString(translation, false, false);
+        String forwardQuery = sentence_str + SENTENCE_SEPARATOR + translation_str + "\n";
+        logger.debug("Sending query to Fast Align's models: " + forwardQuery);
+        this.forwardAlignerProcess.standardInput.write(forwardQuery.getBytes(Config.charset.get()));
         this.forwardAlignerProcess.standardInput.flush();
-        this.backwardAlignerProcess.standardInput.write(query.getBytes(Config.charset.get()));
+        String backwardQuery = translation_str + SENTENCE_SEPARATOR + sentence_str + "\n";
+        this.backwardAlignerProcess.standardInput.write(backwardQuery.getBytes(Config.charset.get()));
         this.backwardAlignerProcess.standardInput.flush();
         logger.debug("Waiting for alignments");
         String forwardModelResponse = this.forwardAlignerProcess.standardOutput.readLine();
