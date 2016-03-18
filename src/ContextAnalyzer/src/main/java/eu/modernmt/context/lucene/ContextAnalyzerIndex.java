@@ -49,8 +49,6 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
             FileUtils.forceMkdir(indexPath);
 
         this.indexDirectory = FSDirectory.open(indexPath);
-        logger.warn("Unlocking the index directory");
-        this.indexDirectory.clearLock(IndexWriter.WRITE_LOCK_NAME);
         this.analyzer = new CorpusAnalyzer();
 
         // Index writer setup
