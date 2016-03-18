@@ -115,18 +115,18 @@
             <artifactId>stanford-corenlp</artifactId>
             <version>3.5.2</version>
         </dependency>
-        <dependency>
-            <groupId>edu.stanford.nlp</groupId>
-            <artifactId>stanford-corenlp</artifactId>
-            <version>3.5.2</version>
-            <classifier>models</classifier>
-        </dependency>
-        <dependency>
-            <groupId>edu.stanford.nlp</groupId>
-            <artifactId>stanford-corenlp</artifactId>
-            <version>3.5.2</version>
-            <classifier>models-spanish</classifier>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>edu.stanford.nlp</groupId>-->
+            <!--<artifactId>stanford-corenlp</artifactId>-->
+            <!--<version>3.5.2</version>-->
+            <!--<classifier>models</classifier>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+            <!--<groupId>edu.stanford.nlp</groupId>-->
+            <!--<artifactId>stanford-corenlp</artifactId>-->
+            <!--<version>3.5.2</version>-->
+            <!--<classifier>models-spanish</classifier>-->
+        <!--</dependency>-->
 
         <!-- HebMorph -->
         <!-- http://code972.com/hebmorph -->
@@ -148,9 +148,44 @@
         <!-- https://github.com/languagetool-org/languagetool -->
         <dependency>
             <groupId>org.languagetool</groupId>
-            <artifactId>language-all</artifactId>
+            <artifactId>language-br</artifactId>
             <version>3.1</version>
         </dependency>
+        <dependency>
+            <groupId>org.languagetool</groupId>
+            <artifactId>language-eo</artifactId>
+            <version>3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.languagetool</groupId>
+            <artifactId>language-km</artifactId>
+            <version>3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.languagetool</groupId>
+            <artifactId>language-ml</artifactId>
+            <version>3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.languagetool</groupId>
+            <artifactId>language-uk</artifactId>
+            <version>3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.languagetool</groupId>
+            <artifactId>language-gl</artifactId>
+            <version>3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.languagetool</groupId>
+            <artifactId>language-tl</artifactId>
+            <version>3.1</version>
+        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.languagetool</groupId>-->
+            <!--<artifactId>language-all</artifactId>-->
+            <!--<version>3.1</version>-->
+        <!--</dependency>-->
 
         <!-- OpenNLP -->
         <!-- http://opennlp.apache.org/ -->
