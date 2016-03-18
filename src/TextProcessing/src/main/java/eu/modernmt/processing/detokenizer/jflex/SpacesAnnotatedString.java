@@ -3,8 +3,8 @@ package eu.modernmt.processing.detokenizer.jflex;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
 
+import java.io.CharArrayReader;
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.BitSet;
 
 /**
@@ -12,9 +12,8 @@ import java.util.BitSet;
  */
 public class SpacesAnnotatedString {
 
-    private String text;
+    private char[] text;
     private BitSet bits;
-    private int length;
 
     public static SpacesAnnotatedString fromTranslation(Translation translation) {
         StringBuilder builder = new StringBuilder();
@@ -25,18 +24,20 @@ public class SpacesAnnotatedString {
             builder.append(' ');
         }
 
-        return new SpacesAnnotatedString(builder.toString());
+        char[] buffer = new char[builder.length()];
+        builder.getChars(0, builder.length(), buffer, 0);
+
+        return new SpacesAnnotatedString(buffer);
     }
 
-    private SpacesAnnotatedString(String string) {
-        this.length = string.length();
-        this.text = string;
-        this.bits = new BitSet(this.length);
+    private SpacesAnnotatedString(char[] text) {
+        this.text = text;
+        this.bits = new BitSet(text.length);
     }
 
     public void removeSpaceRight(int position) {
-        while (0 < position && position < length) {
-            if (text.charAt(position) == ' ') {
+        while (0 < position && position < text.length) {
+            if (text[position] == ' ') {
                 bits.set(position);
                 break;
             }
@@ -45,8 +46,8 @@ public class SpacesAnnotatedString {
     }
 
     public void removeSpaceLeft(int position) {
-        while (0 < position && position < length) {
-            if (text.charAt(position) == ' ') {
+        while (0 < position && position < text.length) {
+            if (text[position] == ' ') {
                 bits.set(position);
                 break;
             }
@@ -54,8 +55,18 @@ public class SpacesAnnotatedString {
         }
     }
 
+    public void removeAllSpaces(int start, int end) {
+        start = start < 0 ? 0 : start;
+        end = end > text.length ? text.length : end;
+
+        for (int i = start; i < end; i++) {
+            if (text[i] == ' ')
+                bits.set(i);
+        }
+    }
+
     public Reader getReader() {
-        return new StringReader(text);
+        return new CharArrayReader(text);
     }
 
     public void apply(Translation translation) {
@@ -72,7 +83,7 @@ public class SpacesAnnotatedString {
 
     @Override
     public String toString() {
-        return text;
+        return new String(text);
     }
 
 }
