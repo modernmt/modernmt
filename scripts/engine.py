@@ -9,6 +9,7 @@ import tempfile
 import time
 from ConfigParser import ConfigParser
 
+import multiprocessing
 import requests
 
 import scripts
@@ -654,10 +655,11 @@ class MMTServer(_MMTDistributedComponent):
 
                 with tempfile.NamedTemporaryFile() as runtime_moses_ini:
                     command = [self._mert_script, source_merged_corpus, target_merged_corpus,
-                               self._mert_i_script, runtime_moses_ini.name, '--mertdir',
-                               os.path.join(Moses.bin_path, 'bin'), '--mertargs', '\'--binary --sctype BLEU\'',
-                               '--working-dir', mert_wd, '--nbest', '100', '--decoder-flags',
-                               '"' + ' '.join(decoder_flags) + '"', '--nonorm', '--closest', '--no-filter-phrase-table']
+                               self._mert_i_script, runtime_moses_ini.name, '--threads',
+                               str(multiprocessing.cpu_count()), '--mertdir', os.path.join(Moses.bin_path, 'bin'),
+                               '--mertargs', '\'--binary --sctype BLEU\'', '--working-dir', mert_wd, '--nbest', '100',
+                               '--decoder-flags', '"' + ' '.join(decoder_flags) + '"', '--nonorm', '--closest',
+                               '--no-filter-phrase-table']
 
                     with open(self._get_logfile('mert'), 'wb') as log:
                         shell.execute(' '.join(command), stdout=log, stderr=log)
