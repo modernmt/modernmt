@@ -6,7 +6,7 @@
 
 #include "JNITranslator.h"
 #include "JNITranslationRequest.h"
-#include "moses/server/Server.h"
+//#include "moses/server/Server.h"
 #include "moses/ThreadPool.h"
 
 namespace MosesServer

@@ -16,7 +16,7 @@ BUILD_DIR = os.path.join(MMT_ROOT, 'build')
 BIN_DIR = os.path.join(OPT_DIR, 'bin')
 
 MMT_JAR = os.path.join(BUILD_DIR, 'mmt-' + MMT_VERSION + ".jar")
-MMT_LIBS = BUILD_DIR
+MMT_LIBS = LIB_DIR
 
 
 def mmt_javamain(main_class, args=None):

@@ -19,6 +19,7 @@
         <project.nativedir>${project.basedir}/native</project.nativedir>
         <project.nativedir.headers>${project.nativedir}/jheaders</project.nativedir.headers>
         <mmt.builddir>${project.parent.basedir}/../build</mmt.builddir>
+        <mmt.libdir>${project.parent.basedir}/../lib</mmt.libdir>
     </properties>
 
     <build>
@@ -105,6 +106,9 @@
                         <configuration>
                             <executable>make</executable>
                             <workingDirectory>${project.build.directory}</workingDirectory>
+                            <arguments>
+                                <argument>-j4</argument>
+                            </arguments>
                         </configuration>
                     </execution>
                 </executions>
@@ -123,7 +127,7 @@
                         </goals>
 
                         <configuration>
-                            <outputDirectory>${mmt.builddir}</outputDirectory>
+                            <outputDirectory>${mmt.libdir}</outputDirectory>
                             <resources>
                                 <resource>
                                     <directory>${project.build.directory}</directory>
