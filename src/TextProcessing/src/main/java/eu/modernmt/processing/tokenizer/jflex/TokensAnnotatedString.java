@@ -7,7 +7,7 @@ import java.util.ArrayList;
 /**
  * Created by davide on 01/02/16.
  */
-public class AnnotatedString {
+public class TokensAnnotatedString {
 
     public static final byte SPLIT_FLAG = (byte) (1);
     public static final byte PROTECTED_FLAG = (byte) (1 << 1);
@@ -20,11 +20,11 @@ public class AnnotatedString {
     private byte[] flags;
     private int length;
 
-    public AnnotatedString(String string) {
+    public TokensAnnotatedString(String string) {
         this(string.toCharArray());
     }
 
-    public AnnotatedString(char[] source) {
+    public TokensAnnotatedString(char[] source) {
         this.chars = new char[source.length + 2];
         this.flags = new byte[source.length + 3];
 
@@ -121,8 +121,8 @@ public class AnnotatedString {
         for (int i = 0; i < length + 1; i++) {
             byte flag = this.flags[i];
 
-            boolean protect = (flag & AnnotatedString.PROTECTED_FLAG) > 0;
-            boolean split = (flag & AnnotatedString.SPLIT_FLAG) > 0;
+            boolean protect = (flag & TokensAnnotatedString.PROTECTED_FLAG) > 0;
+            boolean split = (flag & TokensAnnotatedString.SPLIT_FLAG) > 0;
 
             if (!protect && split) {
                 int tokenLength = 1 + tokenEnd - tokenStart;

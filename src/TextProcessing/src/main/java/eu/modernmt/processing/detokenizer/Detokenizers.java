@@ -1,7 +1,6 @@
 package eu.modernmt.processing.detokenizer;
 
-import eu.modernmt.processing.detokenizer.moses.MosesDetokenizer;
-import eu.modernmt.processing.xml.XMLDetokenizerWrapper;
+import eu.modernmt.processing.detokenizer.jflex.JFlexDetokenizer;
 
 import java.util.Locale;
 
@@ -11,8 +10,8 @@ import java.util.Locale;
 public class Detokenizers {
 
     public static Detokenizer forLanguage(Locale language) {
-        String languageTag = language.toLanguageTag().substring(0, 2);
-        return new XMLDetokenizerWrapper(new MosesDetokenizer(languageTag));
+        Detokenizer detokenizer = JFlexDetokenizer.ALL.get(language);
+        return detokenizer == null ? JFlexDetokenizer.DEFAULT : detokenizer;
     }
 
 }

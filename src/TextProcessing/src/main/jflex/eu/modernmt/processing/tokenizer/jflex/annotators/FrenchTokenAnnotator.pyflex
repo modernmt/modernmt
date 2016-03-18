@@ -1,0 +1,19 @@
+package eu.modernmt.processing.tokenizer.jflex.annotators;
+
+import eu.modernmt.processing.tokenizer.jflex.JFlexTokenAnnotator;
+
+%%
+
+//pyflex class JFlexTokenAnnotator
+
+//pyflex include ../macros.pyx
+
+//pyflex prefixes ../prefixes/fr.txt caseless
+
+FrenchContractions = [:letter:]\'[:letter:]
+
+%%
+
+//pyflex include ../stdtok-rules.pyx
+
+{FrenchContractions}                                               { yypushback(1); return PROTECT; }

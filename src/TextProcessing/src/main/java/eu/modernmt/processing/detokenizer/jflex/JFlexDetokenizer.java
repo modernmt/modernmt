@@ -2,44 +2,79 @@ package eu.modernmt.processing.detokenizer.jflex;
 
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
+import eu.modernmt.processing.Languages;
 import eu.modernmt.processing.detokenizer.Detokenizer;
 import eu.modernmt.processing.detokenizer.MultiInstanceDetokenizer;
-import eu.modernmt.processing.detokenizer.jflex.annotators.ItalianAnnotator;
+import eu.modernmt.processing.detokenizer.jflex.annotators.EnglishSpaceAnnotator;
+import eu.modernmt.processing.detokenizer.jflex.annotators.FrenchSpaceAnnotator;
+import eu.modernmt.processing.detokenizer.jflex.annotators.ItalianSpaceAnnotator;
+import eu.modernmt.processing.detokenizer.jflex.annotators.StandardSpaceAnnotator;
 import eu.modernmt.processing.framework.ProcessingException;
-import org.apache.commons.io.IOUtils;
 
 import java.io.*;
-import java.util.regex.Pattern;
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Created by davide on 29/01/16.
  */
 public class JFlexDetokenizer extends MultiInstanceDetokenizer {
 
+    public static final JFlexDetokenizer DEFAULT = new JFlexDetokenizer(StandardSpaceAnnotator.class);
+    public static final JFlexDetokenizer ENGLISH = new JFlexDetokenizer(EnglishSpaceAnnotator.class);
+    public static final JFlexDetokenizer ITALIAN = new JFlexDetokenizer(ItalianSpaceAnnotator.class);
+    public static final JFlexDetokenizer FRENCH = new JFlexDetokenizer(FrenchSpaceAnnotator.class);
+
+    public static final Map<Locale, JFlexDetokenizer> ALL = new HashMap<>();
+
+    static {
+        ALL.put(Languages.ENGLISH, ENGLISH);
+        ALL.put(Languages.ITALIAN, ITALIAN);
+        ALL.put(Languages.FRENCH, FRENCH);
+    }
+
     private static class JFlexDetokenizerFactory implements DetokenizerFactory {
+
+        private Class<? extends JFlexSpaceAnnotator> annotatorClass;
+
+        public JFlexDetokenizerFactory(Class<? extends JFlexSpaceAnnotator> annotatorClass) {
+            this.annotatorClass = annotatorClass;
+        }
 
         @Override
         public Detokenizer newInstance() {
-            return new JFlexDetokenizerImpl();
+            try {
+                JFlexSpaceAnnotator annotator = this.annotatorClass.getConstructor(Reader.class).newInstance((Reader) null);
+                return new JFlexDetokenizerImpl(annotator);
+            } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException | InstantiationException e) {
+                throw new Error("Error during class instantiation: " + this.annotatorClass.getName(), e);
+            }
         }
+
     }
 
-    public JFlexDetokenizer() {
-        super(new JFlexDetokenizerFactory());
+    public JFlexDetokenizer(Class<? extends JFlexSpaceAnnotator> annotatorClass) {
+        super(new JFlexDetokenizerFactory(annotatorClass));
     }
 
     private static class JFlexDetokenizerImpl implements Detokenizer {
 
-        private JFlexAnnotator annotator = new ItalianAnnotator((Reader) null);
+        private final JFlexSpaceAnnotator annotator;
+
+        public JFlexDetokenizerImpl(JFlexSpaceAnnotator annotator) {
+            this.annotator = annotator;
+        }
 
         @Override
         public Translation call(Translation translation) throws ProcessingException {
-            AnnotatedString text = AnnotatedString.fromTranslation(translation);
+            SpacesAnnotatedString text = SpacesAnnotatedString.fromTranslation(translation);
 
             annotator.reset(text.getReader());
 
             int type;
-            while ((type = next(annotator)) != JFlexAnnotator.YYEOF) {
+            while ((type = next(annotator)) != JFlexSpaceAnnotator.YYEOF) {
                 annotator.annotate(text, type);
             }
 
@@ -47,7 +82,7 @@ public class JFlexDetokenizer extends MultiInstanceDetokenizer {
             return translation;
         }
 
-        private static int next(JFlexAnnotator annotator) throws ProcessingException {
+        private static int next(JFlexSpaceAnnotator annotator) throws ProcessingException {
             try {
                 return annotator.next();
             } catch (IOException e) {
@@ -75,8 +110,8 @@ public class JFlexDetokenizer extends MultiInstanceDetokenizer {
     }
 
 
-    private static void process(InputStream input, OutputStream output) throws IOException, ProcessingException {
-        JFlexDetokenizer detokenizer = new JFlexDetokenizer();
+    private static void process(InputStream input, OutputStream output, Locale language) throws IOException, ProcessingException {
+        JFlexDetokenizer detokenizer = JFlexDetokenizer.ALL.get(language);
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
 
@@ -90,27 +125,35 @@ public class JFlexDetokenizer extends MultiInstanceDetokenizer {
     }
 
     public static void main(String[] args) throws Throwable {
-        System.setProperty("mmt.home", "/Users/davide/workspaces/mmt/ModernMT/");
+//        System.setProperty("mmt.home", "/Users/davide/workspaces/mmt/ModernMT/");
+//
+//        FileInputStream input = null;
+//        FileOutputStream output = null;
+//
+//        try {
+//            input = new FileInputStream("text.tok.en");
+//            output = new FileOutputStream("text.jflex.en");
+//
+//            process(input, output, Locale.ENGLISH);
+//        } finally {
+//            IOUtils.closeQuietly(input);
+//            IOUtils.closeQuietly(output);
+//        }
 
-        FileInputStream input = null;
-        FileOutputStream output = null;
-
-        try {
-            input = new FileInputStream("/Users/davide/Desktop/tokenizer/text.tok.en");
-            output = new FileOutputStream("/Users/davide/Desktop/tokenizer/text.jflex.en");
-
-            process(input, output);
-        } finally {
-            IOUtils.closeQuietly(input);
-            IOUtils.closeQuietly(output);
-        }
-
-//        String text1 = "in the cantons of Olette and Arles-sur-Tech in the department of Pyrénées-Orientales;";
-//        String text = "&apos; Submit （ 送信 ） &apos; をクリックし 、 リクエストを完了してください 。 あるいは 、 &apos; Cancel ( 取消 ） &apos; をクリックして再度リクエストをプロセスしてください 。";
-//        String gold = "&apos;Submit （ 送信 ）&apos; をクリックし、リクエストを完了してください。あるいは、 &apos;Cancel (取消 ）&apos; をクリックして再度リクエストをプロセスしてください。";
-//        System.out.println(process(new JFlexDetokenizer(), text1));
-//        System.out.println(process(new JFlexDetokenizer(), text));
-//        System.out.println(gold);
+//        String entext = "That &apos;s it !";
+//        String ittext = "Un bell&apos; esempio !";
+//        System.out.println(process(ENGLISH, entext));
+//        System.out.println(process(ENGLISH, ittext));
+//
+//        System.out.println();
+//
+//        System.out.println(process(ITALIAN, entext));
+//        System.out.println(process(ITALIAN, ittext));
+//
+//        System.out.println();
+//
+//        System.out.println(process(FRENCH, entext));
+//        System.out.println(process(FRENCH, ittext));
     }
 
 }

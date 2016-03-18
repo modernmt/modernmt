@@ -10,13 +10,13 @@ import java.util.BitSet;
 /**
  * Created by davide on 01/02/16.
  */
-public class AnnotatedString {
+public class SpacesAnnotatedString {
 
     private String text;
     private BitSet bits;
     private int length;
 
-    public static AnnotatedString fromTranslation(Translation translation) {
+    public static SpacesAnnotatedString fromTranslation(Translation translation) {
         StringBuilder builder = new StringBuilder();
         builder.append(' ');
 
@@ -25,10 +25,10 @@ public class AnnotatedString {
             builder.append(' ');
         }
 
-        return new AnnotatedString(builder.toString());
+        return new SpacesAnnotatedString(builder.toString());
     }
 
-    private AnnotatedString(String string) {
+    private SpacesAnnotatedString(String string) {
         this.length = string.length();
         this.text = string;
         this.bits = new BitSet(this.length);

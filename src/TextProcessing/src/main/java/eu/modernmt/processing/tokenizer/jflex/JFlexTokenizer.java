@@ -20,27 +20,27 @@ import java.util.Map;
  */
 public class JFlexTokenizer extends MultiInstanceTokenizer {
 
-    public static final JFlexTokenizer CATALAN = new JFlexTokenizer(CatalanAnnotator.class);
-    public static final JFlexTokenizer CZECH = new JFlexTokenizer(CzechAnnotator.class);
-    public static final JFlexTokenizer GERMAN = new JFlexTokenizer(GermanAnnotator.class);
-    public static final JFlexTokenizer GREEK = new JFlexTokenizer(GreekAnnotator.class);
-    public static final JFlexTokenizer ENGLISH = new JFlexTokenizer(EnglishAnnotator.class);
-    public static final JFlexTokenizer SPANISH = new JFlexTokenizer(SpanishAnnotator.class);
-    public static final JFlexTokenizer FINNISH = new JFlexTokenizer(FinnishAnnotator.class);
-    public static final JFlexTokenizer FRENCH = new JFlexTokenizer(FrenchAnnotator.class);
-    public static final JFlexTokenizer HUNGARIAN = new JFlexTokenizer(HungarianAnnotator.class);
-    public static final JFlexTokenizer ICELANDIC = new JFlexTokenizer(IcelandicAnnotator.class);
-    public static final JFlexTokenizer ITALIAN = new JFlexTokenizer(ItalianAnnotator.class);
-    public static final JFlexTokenizer LATVIAN = new JFlexTokenizer(LatvianAnnotator.class);
-    public static final JFlexTokenizer DUTCH = new JFlexTokenizer(DutchAnnotator.class);
-    public static final JFlexTokenizer POLISH = new JFlexTokenizer(PolishAnnotator.class);
-    public static final JFlexTokenizer PORTUGUESE = new JFlexTokenizer(PortugueseAnnotator.class);
-    public static final JFlexTokenizer ROMANIAN = new JFlexTokenizer(RomanianAnnotator.class);
-    public static final JFlexTokenizer RUSSIAN = new JFlexTokenizer(RussianAnnotator.class);
-    public static final JFlexTokenizer SLOVAK = new JFlexTokenizer(SlovakAnnotator.class);
-    public static final JFlexTokenizer SLOVENE = new JFlexTokenizer(SloveneAnnotator.class);
-    public static final JFlexTokenizer SWEDISH = new JFlexTokenizer(SwedishAnnotator.class);
-    public static final JFlexTokenizer TAMIL = new JFlexTokenizer(TamilAnnotator.class);
+    public static final JFlexTokenizer CATALAN = new JFlexTokenizer(CatalanTokenAnnotator.class);
+    public static final JFlexTokenizer CZECH = new JFlexTokenizer(CzechTokenAnnotator.class);
+    public static final JFlexTokenizer GERMAN = new JFlexTokenizer(GermanTokenAnnotator.class);
+    public static final JFlexTokenizer GREEK = new JFlexTokenizer(GreekTokenAnnotator.class);
+    public static final JFlexTokenizer ENGLISH = new JFlexTokenizer(EnglishTokenAnnotator.class);
+    public static final JFlexTokenizer SPANISH = new JFlexTokenizer(SpanishTokenAnnotator.class);
+    public static final JFlexTokenizer FINNISH = new JFlexTokenizer(FinnishTokenAnnotator.class);
+    public static final JFlexTokenizer FRENCH = new JFlexTokenizer(FrenchTokenAnnotator.class);
+    public static final JFlexTokenizer HUNGARIAN = new JFlexTokenizer(HungarianTokenAnnotator.class);
+    public static final JFlexTokenizer ICELANDIC = new JFlexTokenizer(IcelandicTokenAnnotator.class);
+    public static final JFlexTokenizer ITALIAN = new JFlexTokenizer(ItalianTokenAnnotator.class);
+    public static final JFlexTokenizer LATVIAN = new JFlexTokenizer(LatvianTokenAnnotator.class);
+    public static final JFlexTokenizer DUTCH = new JFlexTokenizer(DutchTokenAnnotator.class);
+    public static final JFlexTokenizer POLISH = new JFlexTokenizer(PolishTokenAnnotator.class);
+    public static final JFlexTokenizer PORTUGUESE = new JFlexTokenizer(PortugueseTokenAnnotator.class);
+    public static final JFlexTokenizer ROMANIAN = new JFlexTokenizer(RomanianTokenAnnotator.class);
+    public static final JFlexTokenizer RUSSIAN = new JFlexTokenizer(RussianTokenAnnotator.class);
+    public static final JFlexTokenizer SLOVAK = new JFlexTokenizer(SlovakTokenAnnotator.class);
+    public static final JFlexTokenizer SLOVENE = new JFlexTokenizer(SloveneTokenAnnotator.class);
+    public static final JFlexTokenizer SWEDISH = new JFlexTokenizer(SwedishTokenAnnotator.class);
+    public static final JFlexTokenizer TAMIL = new JFlexTokenizer(TamilTokenAnnotator.class);
 
     public static final Map<Locale, Tokenizer> ALL = new HashMap<>();
 
@@ -70,16 +70,16 @@ public class JFlexTokenizer extends MultiInstanceTokenizer {
 
     private static class JFlexTokenizerFactory implements TokenizerFactory {
 
-        private Class<? extends JFlexAnnotator> annotatorClass;
+        private Class<? extends JFlexTokenAnnotator> annotatorClass;
 
-        public JFlexTokenizerFactory(Class<? extends JFlexAnnotator> annotatorClass) {
+        public JFlexTokenizerFactory(Class<? extends JFlexTokenAnnotator> annotatorClass) {
             this.annotatorClass = annotatorClass;
         }
 
         @Override
         public Tokenizer newInstance() {
             try {
-                JFlexAnnotator annotator = this.annotatorClass.getConstructor(Reader.class).newInstance((Reader) null);
+                JFlexTokenAnnotator annotator = this.annotatorClass.getConstructor(Reader.class).newInstance((Reader) null);
                 return new JFlexTokenizerImpl(annotator);
             } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException | InstantiationException e) {
                 throw new Error("Error during class instantiation: " + this.annotatorClass.getName(), e);
@@ -87,26 +87,26 @@ public class JFlexTokenizer extends MultiInstanceTokenizer {
         }
     }
 
-    protected JFlexTokenizer(Class<? extends JFlexAnnotator> annotatorClass) {
+    protected JFlexTokenizer(Class<? extends JFlexTokenAnnotator> annotatorClass) {
         super(new JFlexTokenizerFactory(annotatorClass));
     }
 
     private static class JFlexTokenizerImpl implements Tokenizer {
 
-        private JFlexAnnotator annotator;
+        private JFlexTokenAnnotator annotator;
 
-        public JFlexTokenizerImpl(JFlexAnnotator annotator) {
+        public JFlexTokenizerImpl(JFlexTokenAnnotator annotator) {
             this.annotator = annotator;
         }
 
         @Override
         public TokenizedString call(TokenizedString text) throws ProcessingException {
-            AnnotatedString astring = new AnnotatedString(text.string);
+            TokensAnnotatedString astring = new TokensAnnotatedString(text.string);
 
             annotator.yyreset(astring.getReader());
 
             int type;
-            while ((type = next(annotator)) != JFlexAnnotator.YYEOF) {
+            while ((type = next(annotator)) != JFlexTokenAnnotator.YYEOF) {
                 annotator.annotate(astring, type);
             }
 
@@ -114,7 +114,7 @@ public class JFlexTokenizer extends MultiInstanceTokenizer {
             return text;
         }
 
-        private static int next(JFlexAnnotator annotator) throws ProcessingException {
+        private static int next(JFlexTokenAnnotator annotator) throws ProcessingException {
             try {
                 return annotator.next();
             } catch (IOException e) {
