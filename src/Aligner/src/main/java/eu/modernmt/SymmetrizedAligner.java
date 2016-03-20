@@ -13,15 +13,15 @@ import java.text.ParseException;
 /**
  * Created by lucamastrostefano on 14/03/16.
  */
-public class FastAlign implements Aligner{
+public class SymmetrizedAligner implements Aligner{
 
     private static final String SENTENCE_SEPARATOR = " ||| ";
-    private static final Logger logger = LogManager.getLogger(FastAlign.class);
+    private static final Logger logger = LogManager.getLogger(SymmetrizedAligner.class);
 
     private final AlignerProcess forwardAlignerProcess;
     private final AlignerProcess backwardAlignerProcess;
 
-    public FastAlign(String enginePath){
+    public SymmetrizedAligner(String enginePath){
         forwardAlignerProcess = new AlignerProcess(false, enginePath);
         backwardAlignerProcess = new AlignerProcess(true, enginePath);
     }
