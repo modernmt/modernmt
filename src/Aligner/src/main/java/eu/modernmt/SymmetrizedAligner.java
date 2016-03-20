@@ -49,11 +49,11 @@ public class SymmetrizedAligner implements Aligner{
 
     @Override
     public synchronized int[][] getAlignments(Sentence  sentence, Sentence translation) throws IOException {
-        String forwardAlignemnts = this.forwardAlignerProcess.getStringAlignments(sentence, translation);
-        String backwardAlignemnts = this.backwardAlignerProcess.getStringAlignments(sentence, translation);
+        String forwardAlignments = this.forwardAlignerProcess.getStringAlignments(sentence, translation);
+        String backwardAlignments = this.backwardAlignerProcess.getStringAlignments(sentence, translation);
         logger.debug("Symmetrising");
-        String symmetrisedAlignments = Symmetrisation.symmetriseMosesFormatAlignment(forwardAlignemnts,
-                backwardAlignemnts, Symmetrisation.Type.GrowDiagFinalAnd);
+        String symmetrisedAlignments = Symmetrisation.symmetriseMosesFormatAlignment(forwardAlignments,
+                backwardAlignments, Symmetrisation.Type.GrowDiagFinalAnd);
         logger.debug("Symmetrised alignments: " + symmetrisedAlignments);
         return Aligner.parseAlignments(symmetrisedAlignments);
     }
