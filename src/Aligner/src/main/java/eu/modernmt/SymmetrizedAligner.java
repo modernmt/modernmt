@@ -1,12 +1,11 @@
 package eu.modernmt;
 
-import eu.modernmt.config.Config;
 import eu.modernmt.model.Sentence;
-import eu.modernmt.processing.util.TokensOutputter;
 import eu.modernmt.symal.Symmetrisation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
 
@@ -15,15 +14,21 @@ import java.text.ParseException;
  */
 public class SymmetrizedAligner implements Aligner{
 
-    private static final String SENTENCE_SEPARATOR = " ||| ";
+    private static final String forwardModelFileName = "model.align.fwd";
+    private static final String backwardModelFileName = "model.align.bwd";
     private static final Logger logger = LogManager.getLogger(SymmetrizedAligner.class);
 
-    private final AlignerProcess forwardAlignerProcess;
-    private final AlignerProcess backwardAlignerProcess;
+    private final FastAlign forwardAlignerProcess;
+    private final FastAlign backwardAlignerProcess;
 
     public SymmetrizedAligner(String enginePath){
-        forwardAlignerProcess = new AlignerProcess(false, enginePath);
-        backwardAlignerProcess = new AlignerProcess(true, enginePath);
+        File modelsFile = new File(enginePath,
+                "models" + File.separatorChar + "phrase_tables");
+        String forwardModelFilePath = new File(modelsFile.getAbsolutePath(), forwardModelFileName).getAbsolutePath();
+        String backwardModelFilePath = new File(modelsFile.getAbsolutePath(), backwardModelFileName).getAbsolutePath();
+
+        forwardAlignerProcess = new FastAlign(false, forwardModelFilePath);
+        backwardAlignerProcess = new FastAlign(true, backwardModelFilePath);
     }
 
     @Override
@@ -32,9 +37,9 @@ public class SymmetrizedAligner implements Aligner{
 
         try {
             logger.info("Loading forward model");
-            this.forwardAlignerProcess.run();
+            this.forwardAlignerProcess.init();
             logger.info("Loading backward model");
-            this.backwardAlignerProcess.run();
+            this.backwardAlignerProcess.init();
         }catch(Exception e){
             this.close();
             throw e;
@@ -44,31 +49,13 @@ public class SymmetrizedAligner implements Aligner{
 
     @Override
     public synchronized int[][] getAlignments(Sentence  sentence, Sentence translation) throws IOException {
-        String sentence_str = TokensOutputter.toString(sentence, false, false);
-        String translation_str = TokensOutputter.toString(translation, false, false);
-        String forwardQuery = sentence_str + SENTENCE_SEPARATOR + translation_str + "\n";
-        logger.debug("Sending query to Fast Align's models: " + forwardQuery);
-        this.forwardAlignerProcess.standardInput.write(forwardQuery.getBytes(Config.charset.get()));
-        this.forwardAlignerProcess.standardInput.flush();
-        String backwardQuery = translation_str + SENTENCE_SEPARATOR + sentence_str + "\n";
-        this.backwardAlignerProcess.standardInput.write(backwardQuery.getBytes(Config.charset.get()));
-        this.backwardAlignerProcess.standardInput.flush();
-        logger.debug("Waiting for alignments");
-        String forwardModelResponse = this.forwardAlignerProcess.standardOutput.readLine();
-        logger.debug("Forward alignments: " + forwardModelResponse);
-        String backwardModelResponse = this.backwardAlignerProcess.standardOutput.readLine();
-        logger.debug("Backward alignments: " + backwardModelResponse);
+        String forwardAlignemnts = this.forwardAlignerProcess.getStringAlignments(sentence, translation);
+        String backwardAlignemnts = this.backwardAlignerProcess.getStringAlignments(sentence, translation);
         logger.debug("Symmetrising");
-        String symmetrisedAlignments = Symmetrisation.symmetriseMosesFormatAlignment(forwardModelResponse,
-                backwardModelResponse, Symmetrisation.Type.GrowDiagFinalAnd);
+        String symmetrisedAlignments = Symmetrisation.symmetriseMosesFormatAlignment(forwardAlignemnts,
+                backwardAlignemnts, Symmetrisation.Type.GrowDiagFinalAnd);
         logger.debug("Symmetrised alignments: " + symmetrisedAlignments);
-        String[] links_str = symmetrisedAlignments.split(" ");
-        int[][] alignments = new int[links_str.length][];
-        for(int i = 0; i < links_str.length; i++){
-            String[] alignment = links_str[i].split("-");
-            alignments[i] = new int[]{Integer.parseInt(alignment[0]), Integer.parseInt(alignment[1])};
-        }
-        return alignments;
+        return Aligner.parseAlignments(symmetrisedAlignments);
     }
 
     @Override

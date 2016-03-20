@@ -1,6 +1,8 @@
 package eu.modernmt;
 
 import eu.modernmt.config.Config;
+import eu.modernmt.model.Sentence;
+import eu.modernmt.processing.util.TokensOutputter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -12,11 +14,10 @@ import java.util.List;
 /**
  * Created by lucamastrostefano on 15/03/16.
  */
-class AlignerProcess implements Closeable{
+class FastAlign implements Aligner, Closeable{
 
-    private static final String forwardModelFileName = "model.align.fwd";
-    private static final String backwardModelFileName = "model.align.bwd";
-    private static final Logger logger = LogManager.getLogger(AlignerProcess.class);
+    private static final Logger logger = LogManager.getLogger(FastAlign.class);
+    private static final String SENTENCE_SEPARATOR = " ||| ";
     private static final String LAST_LINE = "Loading ttable finished.";
     private static final List<String> EXPECTED_OUTPUT;
 
@@ -28,31 +29,20 @@ class AlignerProcess implements Closeable{
         EXPECTED_OUTPUT.add(LAST_LINE);
     }
 
+    private final boolean reverse;
+    private final String[] command;
+    private boolean init = false;
+    private OutputStream standardInput;
+    private BufferedReader standardOutput;
+    private BufferedReader standardError;
+    private Process process;
 
-    final boolean reverse;
-    final String[] command;
-    boolean init = false;
-    OutputStream standardInput;
-    BufferedReader standardOutput;
-    BufferedReader standardError;
-    Process process;
-
-    AlignerProcess(boolean reverse, String enginePath){
+    FastAlign(boolean reverse, String modelFilePath){
         this.reverse = reverse;
 
         String fastAlignPath = new File(Config.fs.home, "opt" + File.separatorChar +
                 "bin" + File.separatorChar + "fastalign-maurobuild" + File.separatorChar + "fast_align")
                 .getAbsolutePath();
-        File modelsFile = new File(enginePath,
-                "models" + File.separatorChar + "phrase_tables");
-        String modelFileName;
-        if(reverse) {
-            modelFileName = backwardModelFileName;
-        }else{
-            modelFileName = forwardModelFileName;
-        }
-        String modelFilePath = new File(modelsFile.getAbsolutePath(), modelFileName).getAbsolutePath();
-
         if(reverse) {
             this.command = new String[]{fastAlignPath, "-d", "-v", "-o", "-B", "-f", modelFilePath,
                     "-n", "1", "-b", "0", "-r"};
@@ -62,7 +52,8 @@ class AlignerProcess implements Closeable{
         }
     }
 
-    void run() throws IOException, ParseException {
+    @Override
+    public void init() throws IOException, ParseException {
         if(this.init){
             throw new IllegalStateException("Fast Align is already initialized");
         }
@@ -86,16 +77,16 @@ class AlignerProcess implements Closeable{
 
     private void checkRun(BufferedReader standardError) throws IOException, ParseException {
         //Consume and check the standard error of the process
-        int expectedOuputIndex = 0;
+        int expectedOutputIndex = 0;
         int lineNumber = 0;
         String line;
         try {
             while ((line = standardError.readLine()) != null) {
                 lineNumber++;
-                String expectedOutput = EXPECTED_OUTPUT.get(expectedOuputIndex);
+                String expectedOutput = EXPECTED_OUTPUT.get(expectedOutputIndex);
                 if (!line.matches(expectedOutput)) {
-                    expectedOuputIndex++;
-                    expectedOutput = EXPECTED_OUTPUT.get(expectedOuputIndex);
+                    expectedOutputIndex++;
+                    expectedOutput = EXPECTED_OUTPUT.get(expectedOutputIndex);
                     if (!line.matches(expectedOutput)) {
                         logger.error("FOUND: \"" + line + "\" REGEX_EXPECTED: " + expectedOutput);
                         throw new ParseException("Cannot parse the standard error of Fast Align", lineNumber);
@@ -110,8 +101,27 @@ class AlignerProcess implements Closeable{
         }
     }
 
-    boolean isReverse(){
-        return reverse;
+    protected String getStringAlignments(Sentence sentence, Sentence translation) throws IOException {
+        if(this.reverse){
+            Sentence temp = sentence;
+            sentence = translation;
+            translation = temp;
+        }
+        String sentence_str = TokensOutputter.toString(sentence, false, false);
+        String translation_str = TokensOutputter.toString(translation, false, false);
+        String query = sentence_str + SENTENCE_SEPARATOR + translation_str + "\n";
+        logger.debug("Sending query to Fast Align's models: " + query);
+        this.standardInput.write(query.getBytes(Config.charset.get()));
+        this.standardInput.flush();
+        logger.debug("Waiting for alignments");
+        String modelResponse = this.standardOutput.readLine();
+        logger.debug("Alignments: " + modelResponse);
+        return modelResponse;
+    }
+
+    @Override
+    public int[][] getAlignments(Sentence sentence, Sentence translation) throws IOException {
+        return Aligner.parseAlignments(this.getStringAlignments(sentence, translation));
     }
 
     @Override
@@ -131,4 +141,5 @@ class AlignerProcess implements Closeable{
         }
         process.destroy();
     }
+
 }
