@@ -10,6 +10,7 @@ import eu.modernmt.processing.detokenizer.jflex.annotators.FrenchSpaceAnnotator;
 import eu.modernmt.processing.detokenizer.jflex.annotators.ItalianSpaceAnnotator;
 import eu.modernmt.processing.detokenizer.jflex.annotators.StandardSpaceAnnotator;
 import eu.modernmt.processing.framework.ProcessingException;
+import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
@@ -125,20 +126,25 @@ public class JFlexDetokenizer extends MultiInstanceDetokenizer {
     }
 
     public static void main(String[] args) throws Throwable {
-//        System.setProperty("mmt.home", "/Users/davide/workspaces/mmt/ModernMT/");
-//
-//        FileInputStream input = null;
-//        FileOutputStream output = null;
-//
-//        try {
-//            input = new FileInputStream("text.tok.en");
-//            output = new FileOutputStream("text.jflex.en");
-//
-//            process(input, output, Locale.ENGLISH);
-//        } finally {
-//            IOUtils.closeQuietly(input);
-//            IOUtils.closeQuietly(output);
-//        }
+        System.setProperty("mmt.home", "/Users/davide/workspaces/mmt/ModernMT/");
+
+        FileInputStream input = null;
+        FileOutputStream output = null;
+
+//        String inputf = "/Users/davide/Desktop/tokenizer/new_rules/text.tok";
+//        String outputf = "/Users/davide/Desktop/tokenizer/new_rules/text.detok";
+        String inputf = "/Users/davide/Desktop/ExprBenchmark-v0.1.en.tokenized";
+        String outputf = "/Users/davide/Desktop/ExprBenchmark-v0.1.en.detokenized";
+
+        try {
+            input = new FileInputStream(inputf);
+            output = new FileOutputStream(outputf);
+
+            process(input, output, Locale.ENGLISH);
+        } finally {
+            IOUtils.closeQuietly(input);
+            IOUtils.closeQuietly(output);
+        }
 
 //        String entext = "That &apos;s it !";
 //        String ittext = "Un bell&apos; esempio !";
