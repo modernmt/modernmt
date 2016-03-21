@@ -1,6 +1,5 @@
 import multiprocessing
 import os
-import subprocess
 
 import scripts
 from moses import MosesFeature, Moses
@@ -161,23 +160,27 @@ class FastAlign(WordAligner):
             if log_file is not None:
                 log = open(log_file, 'a')
 
-            with open(corpus_l1) as source_corpus, open(corpus_l2) as target_corpus, open(aligned_file_path, 'w') as aligned_file:
+            with open(corpus_l1) as source_corpus, \
+                    open(corpus_l2) as target_corpus, \
+                    open(aligned_file_path, 'w') as aligned_file:
                 for x, y in zip(source_corpus, target_corpus):
-                    aligned_file.write(x.strip() + " ||| " + y.strip() + "\n")
+                    aligned_file.write(x.strip() + ' ||| ' + y.strip() + '\n')
+
+            cpus = multiprocessing.cpu_count()
 
             # Forward alignments
-            fwd_model = os.path.join(model_dir,  'model.align.fwd')
-            command = [self._align_bin, '-d', '-v', '-o', '-B', '-p', fwd_model, '-i', aligned_file_path]
+            fwd_model = os.path.join(model_dir, 'model.align.fwd')
+            command = [self._align_bin, '-d', '-v', '-o', '-n', str(cpus), '-B', '-p', fwd_model, '-i',
+                       aligned_file_path]
             with open(fwd_file, 'w') as stdout:
                 shell.execute(command, stdout=stdout, stderr=log)
 
             # Forward alignments
-            bwd_model = os.path.join(model_dir,  'model.align.bwd')
-            command = [self._align_bin, '-d', '-v', '-o', '-B','-p', bwd_model, '-r', '-i', aligned_file_path]
+            bwd_model = os.path.join(model_dir, 'model.align.bwd')
+            command = [self._align_bin, '-d', '-v', '-o', '-n', str(cpus), '-B', '-p', bwd_model, '-r', '-i',
+                       aligned_file_path]
             with open(bwd_file, 'w') as stdout:
                 shell.execute(command, stdout=stdout, stderr=log)
-
-
         finally:
             if log_file is not None:
                 log.close()
