@@ -102,11 +102,6 @@ class FastAlign implements Aligner, Closeable{
     }
 
     protected String getStringAlignments(Sentence sentence, Sentence translation) throws IOException {
-        if(this.reverse){
-            Sentence temp = sentence;
-            sentence = translation;
-            translation = temp;
-        }
         String sentence_str = TokensOutputter.toString(sentence, false, false);
         String translation_str = TokensOutputter.toString(translation, false, false);
         String query = sentence_str + SENTENCE_SEPARATOR + translation_str + "\n";

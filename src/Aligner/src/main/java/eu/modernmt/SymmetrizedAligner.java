@@ -70,11 +70,22 @@ public class SymmetrizedAligner implements Aligner{
     public synchronized int[][] getAlignments(Sentence  sentence, Sentence translation) throws IOException {
         String forwardAlignments = this.forwardAlignerProcess.getStringAlignments(sentence, translation);
         String backwardAlignments = this.backwardAlignerProcess.getStringAlignments(sentence, translation);
+        String invertedBackwardAlignments = SymmetrizedAligner.invertAlignments(backwardAlignments);
         logger.debug("Symmetrising");
         String symmetrisedAlignments = Symmetrisation.symmetriseMosesFormatAlignment(forwardAlignments,
-                backwardAlignments, Symmetrisation.Type.GrowDiagFinalAnd);
+                invertedBackwardAlignments, Symmetrisation.Type.GrowDiagFinalAnd);
         logger.debug("Symmetrised alignments: " + symmetrisedAlignments);
         return Aligner.parseAlignments(symmetrisedAlignments);
+    }
+
+    private static String invertAlignments(String stringAlignments){
+        String[] links_str = stringAlignments.split(" ");
+        StringBuilder invertedAlignments = new StringBuilder();
+        for(int i = 0; i < links_str.length; i++){
+            String[] alignment = links_str[i].split("-");
+            invertedAlignments.append(alignment[1] + "-" + alignment[0] + " ");
+        }
+        return invertedAlignments.deleteCharAt(invertedAlignments.length() -1).toString();
     }
 
     @Override
