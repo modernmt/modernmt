@@ -1,5 +1,6 @@
 import json as js
 import logging
+import multiprocessing
 import os
 import shutil
 import signal
@@ -9,7 +10,6 @@ import tempfile
 import time
 from ConfigParser import ConfigParser
 
-import multiprocessing
 import requests
 
 import scripts
@@ -233,6 +233,11 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
             if len(unknown_steps) > 0:
                 raise IllegalArgumentException('Unknown training steps: ' + str(unknown_steps))
 
+        # Current implementation of AdaptiveLM is not useful during translation.
+        # We chose to skip thi component for the moment.
+        steps = steps[:]
+        steps.remove('adaptive_lm')
+
         cmdlogger = _MMTEngineBuilderLogger(len(steps) + 1)
         cmdlogger.start(self._engine, bilingual_corpora, monolingual_corpora)
 
@@ -386,17 +391,16 @@ class MMTEngine:
         self.moses.add_feature(MosesFeature('PhrasePenalty'))
         self.moses.add_feature(self.pt, 'PT0')
         self.moses.add_feature(LexicalReordering(), 'DM0')
-        self.moses.add_feature(self.adaptive_lm, 'AdaptiveLM')
         self.moses.add_feature(self.static_lm, 'StaticLM')
+        # self.moses.add_feature(self.adaptive_lm, 'AdaptiveLM')
 
         self._optimal_weights = {
-            'StaticLM': [0.0303133],
-            'DM0': [0.0159664, 0.014172, 0.0979249, 0.0295381, 0.0620983, 0.0784149, 0.261824, 0.0576893],
-            'Distortion0': [0.0105873],
-            'AdaptiveLM': [0.0223959],
-            'WordPenalty0': [-0.0664576],
-            'PhrasePenalty0': [0.0799923],
-            'PT0': [-2.4132E-4, 0.00452929, 0.102045, 0.0216438, 0.0441666],
+            'StaticLM': [0.0310696],
+            'DM0': [0.0281009, 0.0254415, 0.0229716, 0.0334702, 0.0440066, 0.0106037, 0.163133, 0.179085],
+            'Distortion0': [0.00517499],
+            'WordPenalty0': [-0.124562],
+            'PhrasePenalty0': [-0.165601],
+            'PT0': [8.95681E-4, 0.0163699, 0.102362, 0.0310822, 0.0160701],
         }
 
         if self._config is None:
