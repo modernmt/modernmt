@@ -11,6 +11,7 @@ import eu.modernmt.network.messaging.zeromq.ZMQMessagingClient;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -160,6 +161,7 @@ public class SlaveNode extends Worker {
     @Override
     public void shutdown() {
         this.initializer.interrupt();
+        IOUtils.closeQuietly(this.aligner);
         super.shutdown();
 
         logger.info("Slave node shutdown");
