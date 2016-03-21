@@ -1,7 +1,7 @@
 package eu.modernmt.engine;
 
-import eu.modernmt.Aligner;
-import eu.modernmt.SymmetrizedAligner;
+import eu.modernmt.aligner.Aligner;
+import eu.modernmt.aligner.fastalign.SymmetrizedAligner;
 import eu.modernmt.config.Config;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.moses.MosesDecoder;
@@ -83,12 +83,16 @@ public class SlaveNode extends Worker {
         return decoder;
     }
 
-    private void loadAligner() throws IOException, ParseException {
+    private void loadAligner() throws IOException {
         if (aligner == null) {
             synchronized (this) {
                 if (aligner == null) {
                     aligner = new SymmetrizedAligner(this.engine.getPath().getAbsolutePath());
-                    aligner.init();
+                    try {
+                        aligner.init();
+                    } catch (ParseException e) {
+                        throw new IOException(e);
+                    }
                 }
             }
         }
@@ -179,11 +183,7 @@ public class SlaveNode extends Worker {
         synchronizer.sync();
 
         this.loadDecoder();
-        try {
-            this.loadAligner();
-        }catch(Exception e){
-            throw new IOException(e);
-        }
+        this.loadAligner();
         this.setActive(true);
 
         logger.info("Synchronization complete");

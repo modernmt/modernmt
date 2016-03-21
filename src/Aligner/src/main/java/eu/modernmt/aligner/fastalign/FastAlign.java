@@ -1,8 +1,10 @@
-package eu.modernmt;
+package eu.modernmt.aligner.fastalign;
 
+import eu.modernmt.aligner.Aligner;
 import eu.modernmt.config.Config;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.util.TokensOutputter;
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -14,14 +16,14 @@ import java.util.List;
 /**
  * Created by lucamastrostefano on 15/03/16.
  */
-class FastAlign implements Aligner, Closeable{
+class FastAlign implements Aligner, Closeable {
 
     private static final Logger logger = LogManager.getLogger(FastAlign.class);
     private static final String SENTENCE_SEPARATOR = " ||| ";
     private static final String LAST_LINE = "Loading ttable finished.";
     private static final List<String> EXPECTED_OUTPUT;
 
-    static{
+    static {
         EXPECTED_OUTPUT = new ArrayList<>();
         EXPECTED_OUTPUT.add("ARG=[a-zA-Z]");
         EXPECTED_OUTPUT.add("\\s+DICT SIZE:\\s+[0-9]{1,11}");
@@ -37,29 +39,41 @@ class FastAlign implements Aligner, Closeable{
     private BufferedReader standardError;
     private Process process;
 
-    FastAlign(boolean reverse, String modelFilePath){
+    FastAlign(boolean reverse, String modelFilePath) {
         this.reverse = reverse;
 
         String fastAlignPath = new File(Config.fs.home, "opt" + File.separatorChar +
                 "bin" + File.separatorChar + "fastalign-maurobuild" + File.separatorChar + "fast_align")
                 .getAbsolutePath();
-        if(reverse) {
+        if (reverse) {
             this.command = new String[]{fastAlignPath, "-d", "-v", "-o", "-B", "-f", modelFilePath,
                     "-n", "1", "-b", "0", "-r"};
-        }else {
+        } else {
             this.command = new String[]{fastAlignPath, "-d", "-v", "-o", "-B", "-f", modelFilePath,
                     "-n", "1", "-b", "0"};
         }
     }
 
+    public static int[][] parseAlignments(String stringAlignments) {
+        String[] links_str = stringAlignments.split(" ");
+        int[][] alignments = new int[links_str.length][];
+        for (int i = 0; i < links_str.length; i++) {
+            String[] alignment = links_str[i].split("-");
+            alignments[i] = new int[]{Integer.parseInt(alignment[0]), Integer.parseInt(alignment[1])};
+        }
+        return alignments;
+    }
+
     @Override
     public void init() throws IOException, ParseException {
-        if(this.init){
+        if (this.init) {
             throw new IllegalStateException("Fast Align is already initialized");
         }
 
         Runtime rt = Runtime.getRuntime();
-        this.process = rt.exec(this.command);
+        this.process = rt.exec(this.command, new String[]{
+                "LD_LIBRARY_PATH=" + Config.fs.lib
+        });
         standardOutput = new BufferedReader(new
                 InputStreamReader(process.getInputStream()));
         standardInput = process.getOutputStream();
@@ -68,7 +82,7 @@ class FastAlign implements Aligner, Closeable{
 
         try {
             this.checkRun(standardError);
-        }catch(ParseException e){
+        } catch (ParseException e) {
             throw e;
         }
 
@@ -96,7 +110,7 @@ class FastAlign implements Aligner, Closeable{
                     break;
                 }
             }
-        }catch(IndexOutOfBoundsException e){
+        } catch (IndexOutOfBoundsException e) {
             throw new ParseException("Fast Align has produced more lines then expected on the standard error", lineNumber);
         }
     }
@@ -116,7 +130,7 @@ class FastAlign implements Aligner, Closeable{
 
     @Override
     public int[][] getAlignments(Sentence sentence, Sentence translation) throws IOException {
-        return Aligner.parseAlignments(this.getStringAlignments(sentence, translation));
+        return parseAlignments(this.getStringAlignments(sentence, translation));
     }
 
     @Override
@@ -127,12 +141,7 @@ class FastAlign implements Aligner, Closeable{
                 this.standardError
         };
         for (Closeable resource : resources) {
-            try {
-                if (resource != null) {
-                    resource.close();
-                }
-            } catch (Exception e) {
-            }
+            IOUtils.closeQuietly(resource);
         }
         process.destroy();
     }

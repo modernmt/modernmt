@@ -1,7 +1,7 @@
 package eu.modernmt.engine.tasks;
 
-import eu.modernmt.Aligner;
-import eu.modernmt.ForceTranslation;
+import eu.modernmt.aligner.Aligner;
+import eu.modernmt.aligner.fastalign.ForceTranslation;
 import eu.modernmt.engine.SlaveNode;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;

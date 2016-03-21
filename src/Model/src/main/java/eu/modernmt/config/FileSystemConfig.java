@@ -14,6 +14,7 @@ public class FileSystemConfig {
     public final File engines;
     public final File runtime;
     public final File tokenizerModels;
+    public final File lib;
 
     private static final String SYSPROP_MMT_HOME = "mmt.home";
 
@@ -29,6 +30,10 @@ public class FileSystemConfig {
         this.engines = new File(this.home, "engines");
         if (!this.engines.isDirectory())
             throw new IllegalStateException("Invalid path for property '" + SYSPROP_MMT_HOME + "': " + this.engines + " must be a valid directory.");
+
+        this.lib = new File(this.home, "lib");
+        if (!this.lib.isDirectory())
+            throw new IllegalStateException("Invalid path for property '" + SYSPROP_MMT_HOME + "': " + this.lib + " must be a valid directory.");
 
         this.runtime = new File(this.home, "runtime");
         if (!this.runtime.isDirectory())

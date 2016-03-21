@@ -1,4 +1,4 @@
-package eu.modernmt;
+package eu.modernmt.aligner.fastalign;
 
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
@@ -17,7 +17,7 @@ public class ForceTranslation {
 
     private static final Logger logger = LogManager.getLogger(ForceTranslation.class);
 
-    private static enum Operation{
+    private enum Operation {
         NULL(0),
         DELETE(1),
         INSERT(1),
@@ -30,7 +30,7 @@ public class ForceTranslation {
         }
     }
 
-    private static class Solution implements Comparable<Solution>{
+    private static class Solution implements Comparable<Solution> {
         final int cost;
         final List<Operation> operations;
 
@@ -45,7 +45,7 @@ public class ForceTranslation {
         public Solution(int cost, Operation operation, int repetition) {
             this.cost = cost;
             this.operations = new ArrayList<>();
-            while(--repetition >= 0) {
+            while (--repetition >= 0) {
                 this.operations.add(operation);
             }
         }
@@ -62,14 +62,14 @@ public class ForceTranslation {
 
         @Override
         public boolean equals(Object obj) {
-            return this.cost == ((Solution)obj).cost;
+            return this.cost == ((Solution) obj).cost;
         }
     }
 
-    public static void forceTranslation(String originalTranslation, Translation postProcessedTranslation){
+    public static void forceTranslation(String originalTranslation, Translation postProcessedTranslation) {
         Token[] postProcessedTokens = postProcessedTranslation.getWords();
         String postProcessTranslation_str = postProcessedTranslation.getStrippedString(false);
-        if(originalTranslation.equals(postProcessTranslation_str)){
+        if (originalTranslation.equals(postProcessTranslation_str)) {
             return;
         }
         List<Operation> operations = getMinSetOfOperations(originalTranslation, postProcessTranslation_str);
@@ -77,16 +77,16 @@ public class ForceTranslation {
         Token lastToken = null;
         int originalCharIndex = 0;
         StringBuilder newToken = new StringBuilder();
-        for(int tokenIndex = 0; tokenIndex < postProcessedTokens.length; tokenIndex++){
+        for (int tokenIndex = 0; tokenIndex < postProcessedTokens.length; tokenIndex++) {
             newToken.setLength(0);
             Token token = postProcessedTokens[tokenIndex];
-            if(token.hasRightSpace()){
+            if (token.hasRightSpace()) {
                 token.setText(token.getText() + " ");
                 token.setRightSpace(false);
             }
-            for(int charTokenIndex = 0; charTokenIndex < token.getText().length();){
+            for (int charTokenIndex = 0; charTokenIndex < token.getText().length(); ) {
                 char currentChar = token.getText().charAt(charTokenIndex);
-                switch (operations.get(originalCharIndex)){
+                switch (operations.get(originalCharIndex)) {
                     case NULL:
                         newToken.append(currentChar);
                         originalCharIndex++;
@@ -110,12 +110,12 @@ public class ForceTranslation {
             lastToken = token;
         }
         //itererate over the remaining character of the original translation
-        if(originalCharIndex < originalTranslation.length()){
+        if (originalCharIndex < originalTranslation.length()) {
             lastToken.setText(lastToken.getText() + originalTranslation.substring(originalCharIndex, originalTranslation.length()));
         }
     }
 
-    private static List<Operation> getMinSetOfOperations(String string, String other){
+    private static List<Operation> getMinSetOfOperations(String string, String other) {
         final Solution[][] cache = new Solution[string.length() + 1][other.length() + 1];
         Solution solution = getMinSetOfOperations(string, other, cache);
         return solution.operations;
@@ -124,26 +124,26 @@ public class ForceTranslation {
     private static Solution getMinSetOfOperations(String string, String other, Solution[][] cache) {
         int stringLength = string.length();
         int otherLength = other.length();
-        if(cache[stringLength][otherLength] != null){
+        if (cache[stringLength][otherLength] != null) {
             return cache[stringLength][otherLength];
         }
 
         Solution result;
-        if (stringLength == 0 || otherLength == 0){
-            if (stringLength == otherLength){
+        if (stringLength == 0 || otherLength == 0) {
+            if (stringLength == otherLength) {
                 result = new Solution(0);
-            }else{
+            } else {
                 int cost = Math.max(stringLength, otherLength);
                 result = new Solution(cost, Operation.DELETE, cost);
             }
-        }else if (string.charAt(0) == other.charAt(0)){
+        } else if (string.charAt(0) == other.charAt(0)) {
             //DO_NOTHING
             Solution bestNextSolution = getMinSetOfOperations(string.substring(1, stringLength),
                     other.substring(1, otherLength), cache);
             LinkedList<Operation> operations = new LinkedList<>(bestNextSolution.operations);
             operations.addFirst(Operation.NULL);
             result = new Solution(bestNextSolution.cost + Operation.NULL.cost, operations);
-        }else{
+        } else {
             TreeSet<Solution> possibleSolutions = new TreeSet<>();
             LinkedList<Operation> operations;
 

@@ -1,7 +1,8 @@
-package eu.modernmt;
+package eu.modernmt.aligner.fastalign;
 
+import eu.modernmt.aligner.Aligner;
 import eu.modernmt.model.Sentence;
-import eu.modernmt.symal.Symmetrisation;
+import eu.modernmt.aligner.symal.Symmetrisation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -11,7 +12,7 @@ import java.io.IOException;
 /**
  * Created by lucamastrostefano on 14/03/16.
  */
-public class SymmetrizedAligner implements Aligner{
+public class SymmetrizedAligner implements Aligner {
 
     private static final String forwardModelFileName = "model.align.fwd";
     private static final String backwardModelFileName = "model.align.bwd";
@@ -75,7 +76,7 @@ public class SymmetrizedAligner implements Aligner{
         String symmetrisedAlignments = Symmetrisation.symmetriseMosesFormatAlignment(forwardAlignments,
                 invertedBackwardAlignments, Symmetrisation.Type.GrowDiagFinalAnd);
         logger.debug("Symmetrised alignments: " + symmetrisedAlignments);
-        return Aligner.parseAlignments(symmetrisedAlignments);
+        return FastAlign.parseAlignments(symmetrisedAlignments);
     }
 
     private static String invertAlignments(String stringAlignments){

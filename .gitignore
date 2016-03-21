@@ -10,7 +10,6 @@
 
 /opt/
 build/
-lib/
 
 # OSX
 .DS_Store
