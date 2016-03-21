@@ -1,7 +1,7 @@
 package eu.modernmt.engine;
 
 import eu.modernmt.Aligner;
-import eu.modernmt.FastAlign;
+import eu.modernmt.SymmetrizedAligner;
 import eu.modernmt.config.Config;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.moses.MosesDecoder;
@@ -86,7 +86,7 @@ public class SlaveNode extends Worker {
         if (aligner == null) {
             synchronized (this) {
                 if (aligner == null) {
-                    aligner = new FastAlign(this.engine.getPath().getAbsolutePath());
+                    aligner = new SymmetrizedAligner(this.engine.getPath().getAbsolutePath());
                     aligner.init();
                 }
             }
