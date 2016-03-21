@@ -2,7 +2,6 @@ import logging
 import os
 import subprocess
 
-
 __author__ = 'Davide Caroselli'
 
 DEVNULL = open(os.devnull, 'wb')
@@ -25,7 +24,7 @@ class ShellError(Exception):
         return self.__str__()
 
 
-def execute(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, background=False):
+def execute(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, background=False, env=None):
     str_cmd = cmd if isinstance(cmd, basestring) else ' '.join(cmd)
     logger.debug('Shell exec: %s', str_cmd)
 
@@ -39,7 +38,8 @@ def execute(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bac
         message = stdin
         stdin = subprocess.PIPE
 
-    process = subprocess.Popen(cmd, stdin=stdin, stdout=stdout, stderr=stderr, shell=(True if isinstance(cmd, basestring) else False))
+    process = subprocess.Popen(cmd, stdin=stdin, stdout=stdout, stderr=stderr,
+                               shell=(True if isinstance(cmd, basestring) else False), env=env)
 
     stdout_dump = None
     stderr_dump = None

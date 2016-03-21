@@ -223,20 +223,22 @@ class FastAlign(WordAligner):
                     aligned_file.write(x.strip() + ' ||| ' + y.strip() + '\n')
 
             cpus = multiprocessing.cpu_count()
+            env = os.environ.copy()
+            env['LD_LIBRARY_PATH'] = scripts.LIB_DIR
 
             # Forward alignments
             fwd_model = os.path.join(model_dir, 'model.align.fwd')
             command = [self._align_bin, '-d', '-v', '-o', '-n', str(cpus), '-B', '-p', fwd_model, '-i',
                        aligned_file_path]
             with open(fwd_file, 'w') as stdout:
-                shell.execute(command, stdout=stdout, stderr=log)
+                shell.execute(command, stdout=stdout, stderr=log, env=env)
 
             # Forward alignments
             bwd_model = os.path.join(model_dir, 'model.align.bwd')
             command = [self._align_bin, '-d', '-v', '-o', '-n', str(cpus), '-B', '-p', bwd_model, '-r', '-i',
                        aligned_file_path]
             with open(bwd_file, 'w') as stdout:
-                shell.execute(command, stdout=stdout, stderr=log)
+                shell.execute(command, stdout=stdout, stderr=log, env=env)
         finally:
             if log_file is not None:
                 log.close()
