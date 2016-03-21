@@ -7,7 +7,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.ParseException;
 
 /**
  * Created by lucamastrostefano on 14/03/16.
@@ -17,6 +16,24 @@ public class SymmetrizedAligner implements Aligner{
     private static final String forwardModelFileName = "model.align.fwd";
     private static final String backwardModelFileName = "model.align.bwd";
     private static final Logger logger = LogManager.getLogger(SymmetrizedAligner.class);
+
+    private static class AlignerInitializer implements Runnable{
+
+        private Aligner aligner;
+
+        public AlignerInitializer(Aligner aligner) {
+            this.aligner = aligner;
+        }
+
+        @Override
+        public void run() {
+            try {
+                this.aligner.init();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
     private final FastAlign forwardAlignerProcess;
     private final FastAlign backwardAlignerProcess;
@@ -32,19 +49,21 @@ public class SymmetrizedAligner implements Aligner{
     }
 
     @Override
-    public void init() throws IOException, ParseException {
-        logger.info("Initializing Fast Align");
-
+    public void init() {
         try {
+            logger.info("Initializing Fast Align");
+            Thread forwardModelInitializer = new Thread(new AlignerInitializer(this.forwardAlignerProcess));
+            Thread backwardModelInitializer = new Thread(new AlignerInitializer(this.backwardAlignerProcess));
             logger.info("Loading forward model");
-            this.forwardAlignerProcess.init();
+            forwardModelInitializer.start();
             logger.info("Loading backward model");
-            this.backwardAlignerProcess.init();
+            backwardModelInitializer.start();
+            forwardModelInitializer.join();
+            backwardModelInitializer.join();
+            logger.info("Fast Align initialized");
         }catch(Exception e){
-            this.close();
-            throw e;
+            throw new RuntimeException(e);
         }
-        logger.info("Fast Align initialized");
     }
 
     @Override
