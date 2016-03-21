@@ -66,16 +66,33 @@ public class ForceTranslation {
         }
     }
 
+    public static String fromTokenToString(Token[] tokens){
+        StringBuilder s = new StringBuilder();
+        for(Token t: tokens){
+            s.append(t.getText());
+            if(t.hasRightSpace()){
+                s.append(" ");
+            }
+        }
+        return s.toString();
+    }
+
     public static void forceTranslation(String originalTranslation, Translation postProcessedTranslation){
         Token[] postProcessedTokens = postProcessedTranslation.getWords();
-        String postProcessTranslation_str = postProcessedTranslation.getStrippedString(false);
+        //String postProcessTranslation_str = postProcessedTranslation.getStrippedString(false);
+        String postProcessTranslation_str = fromTokenToString(postProcessedTokens);
+        logger.debug("Forcing from: \"" + postProcessTranslation_str + "\" to \"" + originalTranslation + "\"");
         if(originalTranslation.equals(postProcessTranslation_str)){
             return;
         }
         List<Operation> operations = getMinSetOfOperations(originalTranslation, postProcessTranslation_str);
         logger.debug("Forcing translation to be equal to the original one");
+        logger.debug("Operation: " + operations);
+
+        //postProcessedTranslation.getTags(); prependere lo spazio di un tag al token successivo
         Token lastToken = null;
         int originalCharIndex = 0;
+        int operationIndex = 0;
         StringBuilder newToken = new StringBuilder();
         for(int tokenIndex = 0; tokenIndex < postProcessedTokens.length; tokenIndex++){
             newToken.setLength(0);
@@ -84,9 +101,10 @@ public class ForceTranslation {
                 token.setText(token.getText() + " ");
                 token.setRightSpace(false);
             }
+
             for(int charTokenIndex = 0; charTokenIndex < token.getText().length();){
                 char currentChar = token.getText().charAt(charTokenIndex);
-                switch (operations.get(originalCharIndex)){
+                switch (operations.get(operationIndex)){
                     case NULL:
                         newToken.append(currentChar);
                         originalCharIndex++;
@@ -105,14 +123,18 @@ public class ForceTranslation {
                         charTokenIndex++;
                         break;
                 }
+                operationIndex++;
             }
+            logger.debug("Token prima: " + token);
             token.setText(newToken.toString());
+            logger.debug("Token dopo: " + newToken.toString());
             lastToken = token;
         }
         //itererate over the remaining character of the original translation
-        if(originalCharIndex < originalTranslation.length()){
+        if(operationIndex < operations.size()){
             lastToken.setText(lastToken.getText() + originalTranslation.substring(originalCharIndex, originalTranslation.length()));
         }
+        logger.debug("Last token dopo: " + lastToken);
     }
 
     private static List<Operation> getMinSetOfOperations(String string, String other){
@@ -163,7 +185,7 @@ public class ForceTranslation {
             Solution deleteResult = new Solution(deleteSolution.cost + Operation.DELETE.cost, operations);
             possibleSolutions.add(deleteResult);
 
-            //DELETE
+            //REPLACE
             Solution replaceSolution = getMinSetOfOperations(string.substring(1, stringLength), other.substring(1, otherLength),
                     cache);
             operations = new LinkedList<>(replaceSolution.operations);
