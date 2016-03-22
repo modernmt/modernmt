@@ -734,15 +734,8 @@ class MMTServer(_MMTDistributedComponent):
 
         # Process references
         corpora_path = os.path.join(working_dir, 'corpora')
-        tok_corpora_path = os.path.join(working_dir, 'corpora.tok')
-
         corpora = self.engine.preprocessor.process(corpora, corpora_path, print_tags=True, print_placeholders=False,
                                                    original_spacing=True)
-        tok_corpora = self.engine.preprocessor.process(corpora, tok_corpora_path, print_tags=True,
-                                                       print_placeholders=False, original_spacing=False)
-
-        tok_reference = os.path.join(working_dir, 'reference.tok.' + target_lang)
-        fileutils.merge([corpus.get_file(target_lang) for corpus in tok_corpora], tok_reference)
         reference = os.path.join(working_dir, 'reference.' + target_lang)
         fileutils.merge([corpus.get_file(target_lang) for corpus in corpora], reference)
         source = os.path.join(working_dir, 'source.' + source_lang)
@@ -753,17 +746,11 @@ class MMTServer(_MMTDistributedComponent):
             tid = translator.name().replace(' ', '_')
 
             translations_path = os.path.join(working_dir, 'translations', tid)
-            tokenized_path = os.path.join(working_dir, 'translations.tok', tid)
-
             fileutils.makedirs(translations_path, exist_ok=True)
-            fileutils.makedirs(tokenized_path, exist_ok=True)
 
             try:
                 translated, mtt = translator.translate(corpora, translations_path)
-                tokenized = self.engine.preprocessor.process(translated, tokenized_path, print_tags=True,
-                                                             print_placeholders=False, original_spacing=False)
-
-                translations.append((translator, translated, tokenized, mtt))
+                translations.append((translator, translated, mtt))
             except TranslateError as e:
                 translations.append((translator, e))
             except Exception as e:
@@ -780,20 +767,18 @@ class MMTServer(_MMTDistributedComponent):
 
         for translation in translations:
             if len(translation) > 2:
-                translator, translated, tokenized, mtt = translation
+                translator, translated, mtt = translation
                 tid = translator.name().replace(' ', '_')
 
                 translated_merged = os.path.join(working_dir, tid + '.' + target_lang)
-                tokenized_merged = os.path.join(working_dir, tid + '.tok.' + target_lang)
                 fileutils.merge([corpus.get_file(target_lang) for corpus in translated], translated_merged)
-                fileutils.merge([corpus.get_file(target_lang) for corpus in tokenized], tokenized_merged)
 
                 if he_outputter is not None:
                     he_output = os.path.join(heval_output, tid + '.' + target_lang)
                     he_outputter.write(translated_merged, he_output, target_lang)
 
                 scores[translator.name()] = {
-                    'bleu': BLEUScore().calculate(tokenized_merged, tok_reference),
+                    'bleu': BLEUScore().calculate(translated_merged, reference),
                     'matecat': MatecatScore().calculate(translated_merged, reference),
                     '_mtt': mtt
                 }
