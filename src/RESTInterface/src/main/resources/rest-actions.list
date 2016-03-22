@@ -1,7 +1,8 @@
-eu/modernmt/rest/actions/ServerStats.java
 eu/modernmt/rest/actions/admin/SetFeatures.java
 eu/modernmt/rest/actions/admin/GetFeatures.java
-eu/modernmt/rest/actions/translation/Translate.java
 eu/modernmt/rest/actions/translation/GetContext.java
-eu/modernmt/rest/actions/translation/CreateTranslationSession.java
+eu/modernmt/rest/actions/translation/Translate.java
 eu/modernmt/rest/actions/translation/CloseTranslationSession.java
+eu/modernmt/rest/actions/translation/CreateTranslationSession.java
+eu/modernmt/rest/actions/translation/TagsProjection.java
+eu/modernmt/rest/actions/ServerStats.java

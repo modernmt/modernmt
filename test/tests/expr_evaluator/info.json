@@ -1,0 +1,6 @@
+{
+	"enabled": true,
+	"description": "It computes the expression-error-rate of an hypothesis file with respect to a reference file.",
+	"full_description": "The expression-error-rate is an error measure to be minimized: 0.0 means no errors, 100.0 means 100% of errors.",
+	"author": "Mauro Cettolo and Roldano Cattoni from FBK"
+}

@@ -1,0 +1,15 @@
+package eu.modernmt.processing.tokenizer.jflex.annotators;
+
+import eu.modernmt.processing.tokenizer.jflex.JFlexTokenAnnotator;
+
+%%
+
+//pyflex class JFlexTokenAnnotator
+
+//pyflex include ../macros.pyx
+
+//pyflex prefixes ../prefixes/ru.txt
+
+%%
+
+//pyflex include ../stdtok-rules.pyx

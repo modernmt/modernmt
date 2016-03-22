@@ -1,0 +1,127 @@
+#!/usr/bin/python
+import argparse
+import os
+
+import sys
+
+
+class Translation:
+    def __init__(self, id):
+        self.id = id
+        self.source = None
+        self.reference = None
+        self.mts = {}
+
+
+class Translations:
+    @staticmethod
+    def __load(filename, output, key):
+        with open(filename) as stream:
+            for line in stream:
+                id, lang, line = line.split('\t', 2)
+                line = line.strip()
+
+                if id in output:
+                    translation = output[id]
+                else:
+                    output[id] = translation = Translation(id)
+
+                if key == '#ref':
+                    translation.reference = line
+                elif key == '#src':
+                    translation.source = line
+                else:
+                    translation.mts[key] = line
+
+    def __init__(self, path):
+        source = None
+        reference = None
+        mts = []
+
+        for f in os.listdir(path):
+            filename = f[:f.rfind('.')]
+            filepath = os.path.join(path, f)
+
+            if 'source' == filename:
+                source = filepath
+            elif 'reference' == filename:
+                reference = filepath
+            elif len(filename) > 0:
+                mts.append(filepath)
+
+        if reference is None:
+            raise Exception('Missing reference file')
+        if source is None:
+            raise Exception('Missing source file')
+        if len(mts) == 0:
+            raise Exception('Missing machine translated files')
+
+        self._translations = {}
+        self.__load(reference, self._translations, '#ref')
+        self.__load(source, self._translations, '#src')
+
+        for mt in mts:
+            name = os.path.basename(mt)
+            name = name[:name.rfind('.')]
+            self.__load(mt, self._translations, name)
+
+    def __iter__(self):
+        for translation in self._translations.values():
+            yield translation
+
+    def strip(self):
+        to_remove = []
+
+        for id, translation in self._translations.iteritems():
+            keep = False
+            ref = None
+
+            for line in translation.mts.values():
+                if ref is None:
+                    ref = line
+                elif ref != line:
+                    keep = True
+                    break
+
+            if not keep:
+                to_remove.append(id)
+
+        for id in to_remove:
+            del self._translations[id]
+
+
+def print_translation(translation):
+    maxlen = 9
+    for key in translation.mts:
+        maxlen = max(maxlen, len(key))
+
+    print 'SOURCE'.rjust(maxlen), translation.source
+    print 'REFERENCE'.rjust(maxlen), translation.reference
+    for mt, line in translation.mts.iteritems():
+        print mt.rjust(maxlen), line
+    print
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Simple script to compare translations genrated by Evaluate command.')
+
+    parser.add_argument('path', metavar='PATH', help='the path to the Human Evaluation folder '
+                                                     'created by Evaluate command.')
+
+    args = parser.parse_args()
+
+    try:
+        translations = Translations(args.path)
+        translations.strip()
+
+        for translation in translations:
+            print_translation(translation)
+    except Exception as e:
+        sys.stderr.write('ERROR: ' + str(e.message) + '\n')
+        return 1
+
+    return 0
+
+
+if __name__ == '__main__':
+    exit(main())

@@ -1,7 +1,6 @@
 import multiprocessing
 import os
 
-import scripts
 from scripts import mmt_javamain
 from scripts.libs import multithread, fileutils, shell
 from scripts.mt import ParallelCorpus
@@ -23,39 +22,20 @@ def _pool_exec(function, jobs):
         pool.terminate()
 
 
-class CorpusCleaner:
-    injector_section = 'cleaner'
-    injectable_fields = {
-        'ratio': ('parallel sentence length ratio', float, 3),
-        'min': ('min acceptable number of words per sentence', int, 1),
-        'max': ('max acceptable number of words per sentence', int, 80),
-    }
-
+class TMCleaner:
     def __init__(self):
-        self._ratio = None  # Injected
-        self._min = None  # Injected
-        self._max = None  # Injected
+        self._java_mainclass = 'eu.modernmt.cli.CleaningPipelineMain'
 
-        self._cleaner_script = os.path.join(scripts.BIN_DIR, 'cleaner-mosesofficial', 'clean-corpus-n-ratio.perl')
+    def clean(self, source, target, input_paths, output_path):
+        args = ['-s', source, '-t', target, '--output', output_path, '--input']
 
-    def batch_clean(self, corpora, dest_folder, langs=None):
-        if langs is None and len(corpora) > 0:
-            langs = (corpora[0].langs[0], corpora[0].langs[1])
+        for root in input_paths:
+            args.append(root)
 
-        _pool_exec(self.clean_corpus,
-                   [(corpus, ParallelCorpus(corpus.name, dest_folder, corpus.langs), langs) for corpus in corpora])
-        return ParallelCorpus.list(dest_folder)
+        command = mmt_javamain(self._java_mainclass, args)
+        shell.execute(command, stdin=shell.DEVNULL, stdout=shell.DEVNULL, stderr=shell.DEVNULL)
 
-    def clean_corpus(self, source, dest, langs):
-        if not os.path.isdir(dest.root):
-            fileutils.makedirs(dest.root, exist_ok=True)
-
-        source = os.path.splitext(source.get_file(langs[0]))[0]
-        output = os.path.splitext(dest.get_file(langs[0]))[0]
-
-        command = ['perl', self._cleaner_script, '-ratio', str(self._ratio), source, langs[0], langs[1], output,
-                   str(self._min), str(self._max)]
-        shell.execute(command, stdout=shell.DEVNULL, stderr=shell.DEVNULL)
+        return ParallelCorpus.splitlist(source, target, roots=output_path)[0]
 
 
 class TrainingPreprocessor:

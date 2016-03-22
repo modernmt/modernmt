@@ -3,10 +3,59 @@ import os
 
 import scripts
 from moses import MosesFeature, Moses
-from scripts.libs import fileutils, shell
+from scripts.libs import fileutils, shell, multithread
 from scripts.mt import ParallelCorpus
 
 __author__ = 'Davide Caroselli'
+
+
+class _CorpusCleaner:
+    injector_section = 'cleaner'
+    injectable_fields = {
+        'ratio': ('parallel sentence length ratio', float, 3),
+        'min': ('min acceptable number of words per sentence', int, 1),
+        'max': ('max acceptable number of words per sentence', int, 80),
+    }
+
+    def __init__(self):
+        self._ratio = 3
+        self._min = 1
+        self._max = 80
+
+        self._cleaner_script = os.path.join(Moses.bin_path, 'scripts', 'clean-corpus-n-ratio.perl')
+
+    @staticmethod
+    def _pool_exec(function, jobs):
+        if len(jobs) < 1:
+            return
+
+        workers = min(multiprocessing.cpu_count(), len(jobs))
+        pool = multithread.Pool(workers)
+
+        try:
+            aync_jobs = [pool.apply_async(function, job) for job in jobs]
+            return [job.get() for job in aync_jobs]
+        finally:
+            pool.terminate()
+
+    def clean(self, corpora, dest_folder, langs=None):
+        if langs is None and len(corpora) > 0:
+            langs = (corpora[0].langs[0], corpora[0].langs[1])
+
+        self._pool_exec(self._clean_file,
+                        [(corpus, ParallelCorpus(corpus.name, dest_folder, corpus.langs), langs) for corpus in corpora])
+        return ParallelCorpus.list(dest_folder)
+
+    def _clean_file(self, source, dest, langs):
+        if not os.path.isdir(dest.root):
+            fileutils.makedirs(dest.root, exist_ok=True)
+
+        source = os.path.splitext(source.get_file(langs[0]))[0]
+        output = os.path.splitext(dest.get_file(langs[0]))[0]
+
+        command = ['perl', self._cleaner_script, '-ratio', str(self._ratio), source, langs[0], langs[1], output,
+                   str(self._min), str(self._max)]
+        shell.execute(command, stdout=shell.DEVNULL, stderr=shell.DEVNULL)
 
 
 class WordAligner:
@@ -45,6 +94,8 @@ class SuffixArraysPhraseTable(MosesFeature):
         self._model = model
         self._source_lang = langs[0]
         self._target_lang = langs[1]
+
+        self._cleaner = _CorpusCleaner()
 
         self._symal_bin = os.path.join(Moses.bin_path, 'bin', 'symal')
         self._symal2mam_bin = os.path.join(Moses.bin_path, 'bin', 'symal2mam')
@@ -88,9 +139,14 @@ class SuffixArraysPhraseTable(MosesFeature):
             if log_file is not None:
                 log = open(log_file, 'a')
 
-            merged_corpus = ParallelCorpus(os.path.basename(mct_base), working_dir, langs)
+            # Clean corpus for training
+            clean_output = os.path.join(working_dir, 'clean_corpora')
+            fileutils.makedirs(clean_output, exist_ok=True)
+            corpora = self._cleaner.clean(corpora, clean_output, (self._source_lang, self._target_lang))
 
             # Create merged corpus and domains list file (dmp)
+            merged_corpus = ParallelCorpus(os.path.basename(mct_base), working_dir, langs)
+
             fileutils.merge([corpus.get_file(l1) for corpus in corpora], merged_corpus.get_file(l1))
             fileutils.merge([corpus.get_file(l2) for corpus in corpora], merged_corpus.get_file(l2))
             with open(dmp_file, 'w') as dmp:
@@ -167,20 +223,22 @@ class FastAlign(WordAligner):
                     aligned_file.write(x.strip() + ' ||| ' + y.strip() + '\n')
 
             cpus = multiprocessing.cpu_count()
+            env = os.environ.copy()
+            env['LD_LIBRARY_PATH'] = scripts.LIB_DIR
 
             # Forward alignments
             fwd_model = os.path.join(model_dir, 'model.align.fwd')
             command = [self._align_bin, '-d', '-v', '-o', '-n', str(cpus), '-B', '-p', fwd_model, '-i',
                        aligned_file_path]
             with open(fwd_file, 'w') as stdout:
-                shell.execute(command, stdout=stdout, stderr=log)
+                shell.execute(command, stdout=stdout, stderr=log, env=env)
 
             # Forward alignments
             bwd_model = os.path.join(model_dir, 'model.align.bwd')
             command = [self._align_bin, '-d', '-v', '-o', '-n', str(cpus), '-B', '-p', bwd_model, '-r', '-i',
                        aligned_file_path]
             with open(bwd_file, 'w') as stdout:
-                shell.execute(command, stdout=stdout, stderr=log)
+                shell.execute(command, stdout=stdout, stderr=log, env=env)
         finally:
             if log_file is not None:
                 log.close()

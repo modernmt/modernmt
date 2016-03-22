@@ -1,6 +1,15 @@
+# CMake: make install
+/include/
+
+# CMake: make
+/bin/
+/lib64
+
+# external vendor dependency repositories
+#/vendor/  # DO NOT IGNORE. git submodules live here.
+
 /opt/
 build/
-lib/
 
 # OSX
 .DS_Store

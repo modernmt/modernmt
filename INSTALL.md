@@ -105,135 +105,17 @@ sudo apt-get install git
 sudo apt-get install maven
 ```
 
-Next, you need to compile few libraries from source.
-
-### CMPH 2.0
-
-Get the release 2.0 of CMPH from [sourceforge.net](http://sourceforge.net/projects/cmph/) or you can directly execute:
-
-```
-wget "http://skylineservers.dl.sourceforge.net/project/cmph/cmph/cmph-2.0.tar.gz"
-```
-
-Extract downloaded archive:
-
-```
-tar xvf cmph-2.0.tar.gz
-cd cmph-2.0
-```
-
-Then compile and install it:
-
-```
-./configure
-make
-sudo make install
-```
-
-You can safely remove downloaded files now:
-
-```
-cd ..
-rm cmph-2.0.tar.gz
-rm -rf cmph-2.0
-```
-
-### XMLRPC-C
-
-Get the release 1.39.07 of XMLRPC-C from [sourceforge.net](http://sourceforge.net/projects/xmlrpc-c/files/Xmlrpc-c%20Super%20Stable/1.39.07/) or you can directly execute:
-
-```
-wget "http://skylineservers.dl.sourceforge.net/project/xmlrpc-c/Xmlrpc-c%20Super%20Stable/1.39.07/xmlrpc-c-1.39.07.tgz"
-```
-
-Extract downloaded archive:
-
-```
-tar xvf xmlrpc-c-1.39.07.tgz
-cd xmlrpc-c-1.39.07
-```
-
-Then compile and install it:
-
-```
-./configure
-make
-sudo make install
-```
-
-You can safely remove downloaded files now:
-
-```
-cd ..
-rm xmlrpc-c-1.39.07.tgz
-rm -rf xmlrpc-c-1.39.07
-```
-
-## Install IRSTLM
-
-Clone IRSTLM repository and move to cd-correction-model branch:
-
-```
-git clone https://github.com/irstlm-team/irstlm.git irstlm
-cd irstlm
-git checkout cd-correction-model
-```
-
-
-Compile IRSTLM:
-
-```
-mkdir build
-cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=$(pwd) -DCXX0:BOOL=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_STATIC_LIBS=OFF
-make
-make install
-cd ../../
-```
-
-## Install Moses
-
-Clone Moses repository and move to mmt-dev branch:
-
-```
-git clone https://github.com/ModernMT/mosesdecoder.git mosesdecoder
-cd mosesdecoder
-git checkout mmt-dev
-```
-
-Finally compile Moses:
-
-```
-/usr/bin/bjam -j$(nproc) -q --with-mm          \
-         --with-irstlm=$(pwd)/../irstlm/build  \
-         --with-cmph=/usr/local                \
-         --with-xmlrpc-c=/usr/local            \
-         link=shared                           \
-         --prefix=$(pwd)/build
-cd ..
-```
-
 ## Install MMT
 
-Move to the same folder where `irstlm`, `moses` and `mmt-submodule` are, then export these Env Variables:
-
-```
-export MOSESDECODER_HOME=$(pwd)/mosesdecoder
-export IRSTLM_HOME=$(pwd)/irstlm
-```
-
-add these definitions also in your `.profile` bash file:
-
-```
-echo "export MOSESDECODER_HOME=$(pwd)/mosesdecoder" >> ~/.profile
-echo "export IRSTLM_HOME=$(pwd)/irstlm" >> ~/.profile
-```
-
-Now clone ModernMT repository:
+First, clone ModernMT repository and initialize its submodules:
 
 ```
 git clone https://github.com/ModernMT/MMT.git ModernMT
+
 cd ModernMT
+
+git submodule init
+git submodule update
 ```
 
 Download `opt` resources for Ubuntu 14.04:
@@ -248,6 +130,14 @@ Install custom maven dependencies:
 
 ```
 mvn install:install-file -Dfile=opt/maven/paoding-analysis.jar -DpomFile=opt/maven/paoding-analysis.pom
+```
+
+Compile MMT submodules:
+
+```
+cd vendor
+./compile.sh
+cd ..
 ```
 
 Finally compile your MMT distribution:

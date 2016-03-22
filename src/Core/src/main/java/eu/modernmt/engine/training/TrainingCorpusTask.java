@@ -39,7 +39,7 @@ class TrainingCorpusTask implements Callable<Void> {
     }
 
     @Override
-    public Void call() throws Exception {
+    public Void call() throws ProcessingException, InterruptedException {
         PipelineInputStream<String> input = null;
         PipelineOutputStream<Sentence> output = null;
 

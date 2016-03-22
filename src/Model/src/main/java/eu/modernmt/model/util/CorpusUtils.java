@@ -4,6 +4,7 @@ import eu.modernmt.model.BilingualCorpus;
 import eu.modernmt.model.Corpus;
 import eu.modernmt.model.impl.BilingualFileCorpus;
 import eu.modernmt.model.impl.FileCorpus;
+import eu.modernmt.model.impl.tmx.TMXFile;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -58,8 +59,8 @@ public class CorpusUtils {
                     continue;
 
                 if (TMX_EXTENSION.equalsIgnoreCase(extension)) {
-                    // Ignore for now
-                    continue;
+                    if (bilingualOutput != null)
+                        bilingualOutput.add(new TMXFile(filename, file, sourceLanguage, targetLanguage));
                 } else {
                     File twin = name2File.get(filename);
 
@@ -67,21 +68,24 @@ public class CorpusUtils {
                         name2File.put(filename, file);
                     } else {
                         name2File.remove(filename);
-                        bilingualOutput.add(new BilingualFileCorpus(directory, filename, sourceLanguage, targetLanguage));
+                        if (bilingualOutput != null)
+                            bilingualOutput.add(new BilingualFileCorpus(directory, filename, sourceLanguage, targetLanguage));
                     }
                 }
             }
 
-            for (File file : name2File.values()) {
-                String filename = file.getName();
+            if (monolingualOutput != null) {
+                for (File file : name2File.values()) {
+                    String filename = file.getName();
 
-                int lastDot = filename.lastIndexOf('.');
+                    int lastDot = filename.lastIndexOf('.');
 
-                String extension = filename.substring(lastDot + 1);
-                filename = filename.substring(0, lastDot);
+                    String extension = filename.substring(lastDot + 1);
+                    filename = filename.substring(0, lastDot);
 
-                if (monolingualLangTag.equalsIgnoreCase(extension))
-                    monolingualOutput.add(new FileCorpus(file, filename, monolingualIsTarget ? targetLanguage : sourceLanguage));
+                    if (monolingualLangTag.equalsIgnoreCase(extension))
+                        monolingualOutput.add(new FileCorpus(file, filename, monolingualIsTarget ? targetLanguage : sourceLanguage));
+                }
             }
         }
 

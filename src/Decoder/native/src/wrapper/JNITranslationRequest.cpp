@@ -1,5 +1,5 @@
 #include "JNITranslationRequest.h"
-#include "moses/server/PackScores.h"
+//#include "moses/server/PackScores.h"
 #include "moses/ContextScope.h"
 #include <boost/foreach.hpp>
 #include "moses/Util.h"
