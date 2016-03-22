@@ -1,4 +1,3 @@
-import HTMLParser
 import json as js
 import os
 import random
@@ -211,7 +210,7 @@ class BLEUScore(Score):
         return 'BLEU'
 
     def calculate(self, document, reference):
-        script = os.path.abspath(os.path.join(__file__, os.pardir, 'opt', 'multi-bleu.perl'))
+        script = os.path.abspath(os.path.join(__file__, os.pardir, 'opt', 'mmt-bleu.perl'))
         command = ['perl', script, reference]
 
         with open(document) as input_stream:

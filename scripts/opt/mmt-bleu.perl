@@ -1,11 +1,10 @@
-#!/usr/bin/env perl
-#
-# This file is part of moses.  Its use is licensed under the GNU Lesser General
-# Public License version 2.1 or, at your option, any later version.
-
 # $Id$
 use warnings;
 use strict;
+
+binmode STDIN, ":utf8";
+binmode STDOUT, ":utf8";
+binmode STDERR, ":utf8";
 
 my $lowercase = 0;
 if ($ARGV[0] eq "-lc") {
@@ -37,7 +36,46 @@ foreach my $stem (@ARGV) {
     &add_to_ref($stem,\@REF) if -e $stem;
 }
 
+sub tokenization_international {
+  my ($norm_text) = @_;
+  
+  my $TAG_NAME_RX = '(\p{Alpha}|_|:)(\p{Alpha}|\p{Digit}|\.|-|_|:|)*';
+  my @tags = ();
 
+  my $i = 0;
+  while ($norm_text =~ /(<($TAG_NAME_RX)[^>]*\/?>)|(<!($TAG_NAME_RX)[^>]*[^\/]>)|(<\/($TAG_NAME_RX)[^>]*>)|(<!--)|(-->)/g) {
+    push @tags, $&;
+    $norm_text =~ s/$&/" MTEVALXMLTAG".$i." "/e;
+    $i++;
+        
+    }
+
+  $norm_text =~ s/\p{Hyphen}\p{Zl}//g; # strip end-of-line hyphenation and join lines
+  $norm_text =~ s/\p{Zl}/ /g; # join lines
+
+  # replace entities
+  $norm_text =~ s/&quot;/\"/g;  # quote to "
+  $norm_text =~ s/&amp;/&/g;   # ampersand to &
+  $norm_text =~ s/&lt;/</g;    # less-than to <
+  $norm_text =~ s/&gt;/>/g;    # greater-than to >
+  $norm_text =~ s/&apos;/\'/g; # apostrophe to '
+
+  # punctuation: tokenize any punctuation unless followed AND preceded by a digit
+  $norm_text =~ s/(\P{N})(\p{P})/$1 $2 /g;
+  $norm_text =~ s/(\p{P})(\P{N})/ $1 $2/g;
+
+  $norm_text =~ s/(\p{S})/ $1 /g; # tokenize symbols
+
+  for ($i = $#tags; $i >= 0; $i--) {
+    $norm_text =~ s/MTEVALXMLTAG$i/$tags[$i]/e;
+  }
+
+  $norm_text =~ s/\p{Z}+/ /g; # one space only between words
+  $norm_text =~ s/^\p{Z}+//; # no leading space
+  $norm_text =~ s/\p{Z}+$//; # no trailing space
+
+  return $norm_text;
+}
 
 sub add_to_ref {
     my ($file,$REF) = @_;
@@ -47,9 +85,10 @@ sub add_to_ref {
     } else {
 	open(REF,$file) or die "Can't read $file";
     }
+    binmode REF, ":utf8";
     while(<REF>) {
 	chop;
-	push @{$$REF[$s++]}, $_;
+	push @{$$REF[$s++]}, &tokenization_international($_);
     }
     close(REF);
 }
@@ -59,6 +98,7 @@ my $s=0;
 while(<STDIN>) {
     chop;
     $_ = lc if $lowercase;
+    $_ = &tokenization_international($_);
     my @WORD = split;
     my %REF_NGRAM = ();
     my $length_translation_this_sentence = scalar(@WORD);
