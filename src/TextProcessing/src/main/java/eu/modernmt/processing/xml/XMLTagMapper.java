@@ -49,7 +49,7 @@ import java.util.HashSet;
  * -- if the tag is a CLOSING_TAG, the tag is inserted before the last element of the (target) "coveredPositions"
  * -- in both cases, if the list is empty the tag is inserted at the beginning of the sentence;
  */
-public class TagMapper implements TextProcessor<Translation, Void> {
+public class XMLTagMapper implements TextProcessor<Translation, Void> {
 
     @Override
     public Void call(Translation translation) throws ProcessingException {
@@ -57,8 +57,10 @@ public class TagMapper implements TextProcessor<Translation, Void> {
 
         if (source.hasTags()) {
             if (source.hasWords()) {
-                if (translation.hasAlignment())
-                    remap(translation.getSource(), translation);
+                if (translation.hasAlignment()) {
+                    remap(translation);
+                    restoreTagSpacing(translation);
+                }
             } else {
                 Tag[] tags = source.getTags();
                 Tag[] copy = new Tag[tags.length];
@@ -78,7 +80,8 @@ public class TagMapper implements TextProcessor<Translation, Void> {
         // Nothing to do
     }
 
-    private static void remap(Sentence source, Translation translation) {
+    public static void remap(Translation translation) {
+        Sentence source = translation.getSource();
         Tag[] sourceTags = source.getTags();
         MappingTag[] sourceMappingTags = new MappingTag[sourceTags.length];
         for (int i = 0; i < sourceMappingTags.length; i++) {
@@ -86,8 +89,131 @@ public class TagMapper implements TextProcessor<Translation, Void> {
         }
 
         setAdditionalInfoInMappinTags(sourceMappingTags, source.getWords().length);
-
         setTranslationTags(sourceMappingTags, source, translation);
+    }
+
+    /**
+     * Recreate the spacing informations of the translation including tags, this table
+     * shows the behaviour of the algorithm:
+     * <p>
+     * TTRX = Token has right space
+     * TALX = Tag has left space
+     * TARX = Tag has right space
+     * TATY = Tag type (O = opening, E = empty, C = closing)
+     * <p>
+     * TTRX TALX TARX TATY     Result              Example
+     * 0    x    x    x        Word<tag>Word       That<b>'s
+     * 1    0    1    x        Word<tag> Word      Hello<b> World
+     * 1    1    0    x        Word <tag>Word      Hello <b>World
+     * 1    0    0    O        Word <b>Word        Hello <b>World
+     * 1    0    0    E        Word <b/>Word       Hello <b/>World
+     * 1    0    0    C        Word</b> Word       Hello</b> World
+     * 1    1    1    O        Word <b>Word        Hello <b>World
+     * 1    1    1    E        Word <b/>Word       Hello <b/>World
+     * 1    1    1    C        Word</b> Word       Hello</b> World
+     * <p>
+     * If more there are more consecutive tags, this algorithm ensures that
+     * only one space it will be printed. The position of the single space is
+     * then decided by the first word and the consecutive tags.
+     */
+    public static void restoreTagSpacing(Translation translation) {
+        int j = 0;
+
+        Token[] sentence = new Token[translation.length()];
+        for (Token token : translation)
+            sentence[j++] = token;
+
+        // Set right-space info
+
+        for (int i = 0; i < sentence.length; i++) {
+            Token token = sentence[i];
+
+            Tag nextTag = null;
+            if (i < sentence.length - 1 && (sentence[i + 1] instanceof Tag))
+                nextTag = (Tag) sentence[i + 1];
+
+            if (nextTag != null) {
+                boolean isSpacedClosingComment = (nextTag.isComment() && nextTag.isClosingTag() && nextTag.hasLeftSpace());
+                boolean mustPrintSpace;
+
+                if (isSpacedClosingComment) {
+                    token.setRightSpace(true);
+                    mustPrintSpace = false;
+                } else if (!token.hasRightSpace()) {
+                    mustPrintSpace = false;
+                } else if (nextTag.hasLeftSpace() == nextTag.hasRightSpace()) {
+                    if (nextTag.isClosingTag()) {
+                        token.setRightSpace(false);
+                        mustPrintSpace = true;
+                    } else {
+                        token.setRightSpace(true);
+                        mustPrintSpace = false;
+                    }
+                } else if (nextTag.hasLeftSpace()) {
+                    token.setRightSpace(true);
+                    mustPrintSpace = false;
+                } else {
+                    token.setRightSpace(false);
+                    mustPrintSpace = true;
+                }
+
+                while (nextTag != null) {
+                    i++;
+
+                    boolean isSpacedOpeningComment = (nextTag.isComment() && nextTag.isOpeningTag() && nextTag.hasRightSpace());
+
+                    if (isSpacedOpeningComment) {
+                        nextTag.setRightSpace(true);
+                        mustPrintSpace = false;
+                    } else {
+                        nextTag.setRightSpace(false);
+                    }
+
+                    if (i < sentence.length - 1 && (sentence[i + 1] instanceof Tag)) {
+                        Tag previousTag = nextTag;
+                        nextTag = (Tag) sentence[i + 1];
+
+                        isSpacedClosingComment = (nextTag.isComment() && nextTag.isClosingTag() && nextTag.hasLeftSpace());
+
+                        if (isSpacedClosingComment || (mustPrintSpace && !nextTag.isClosingTag())) {
+                            previousTag.setRightSpace(true);
+                            mustPrintSpace = false;
+                        } else {
+                            previousTag.setRightSpace(false);
+                        }
+                    } else {
+                        if (!isSpacedOpeningComment)
+                            nextTag.setRightSpace(mustPrintSpace);
+                        nextTag = null;
+                    }
+                }
+            } else {
+                token.setRightSpace(token.hasRightSpace() && i < sentence.length - 1);
+            }
+        }
+
+        // Copy right-space info to left-space
+
+        for (int i = 0; i < sentence.length; i++) {
+            Token token = sentence[i];
+            if (!(token instanceof Tag))
+                continue;
+
+            Tag tag = (Tag) token;
+
+            if (i == 0) {
+                tag.setLeftSpace(false);
+            } else {
+                Token previous = sentence[i - 1];
+                tag.setLeftSpace(previous.hasRightSpace());
+            }
+        }
+
+        // Enforce spacing rules on first and last token
+        if (sentence[0] instanceof Tag)
+            ((Tag) sentence[0]).setLeftSpace(false);
+
+        sentence[sentence.length - 1].setRightSpace(false);
     }
 
     private static void setAdditionalInfoInMappinTags(MappingTag[] tags, int sourceLength) {
@@ -332,7 +458,7 @@ public class TagMapper implements TextProcessor<Translation, Void> {
         System.out.println("SRC (stripped):          " + source.getStrippedString(false));
         System.out.println();
 
-        TagMapper.remap(source, translation);
+        XMLTagMapper.remap(translation);
 
         System.out.println("TRANSLATION:             " + translation);
         System.out.println("TRANSLATION (stripped):  " + translation.getStrippedString(false));
