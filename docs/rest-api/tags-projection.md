@@ -15,7 +15,7 @@ Translation:
 
 **Output:**
 
-Translation with tags:  ```<br>ciao, <b id=\"1\">&apos;primo&apos;<b id=\"2\"> test<br>.```
+Translation with tags:  ```<br>ciao, <b id="1">&apos;primo&apos;<b id="2"> test<br>.```
 
 ## Input / Output definition
 
