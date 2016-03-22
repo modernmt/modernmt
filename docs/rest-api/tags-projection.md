@@ -1,7 +1,7 @@
 # Tags projection API
 
 ## Description
-The ```Tags projection``` API takes as input a source sentence and its translation and give as output the translation with the tags projected from the source sentence.
+The ```Tags projection``` API takes as input a source sentence and its translation and gives as output the translation with the tags projected from the source sentence.
 
 ### Example
 
