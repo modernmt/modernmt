@@ -6,10 +6,15 @@ The ```Tags projection``` API takes as input a source sentence and its translati
 ### Example
 
 Input:
-Source sentence:        ```<br>hello, <b id="1">&apos;first&apos;<b id="2"> test<br>.```
-Translation:            ```ciao, &apos;primo&apos; test.```
+
+Source sentence:
+```<br>hello, <b id="1">&apos;first&apos;<b id="2"> test<br>.```
+
+Translation:
+```ciao, &apos;primo&apos; test.```
 
 Output:
+
 Translation with tags:  ```<br>ciao, <b id=\"1\">&apos;primo&apos;<b id=\"2\"> test<br>.```
 
 ## Input / Output definition
@@ -17,10 +22,13 @@ Translation with tags:  ```<br>ciao, <b id=\"1\">&apos;primo&apos;<b id=\"2\"> t
 HTTP method: ```GET```
 
 Input:
+
 ```s```: the XML encoded source sentence.
+
 ```t```: the XML encoded translation.
 
 Output:
+
 A JSON object with a key ```translation``` whose value is a XML encoded String representing the translation with the tags projected from the source sentence.
 
 ### Example
