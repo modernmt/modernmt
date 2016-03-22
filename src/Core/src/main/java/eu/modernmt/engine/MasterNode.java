@@ -7,8 +7,8 @@ import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.decoder.moses.MosesFeature;
-import eu.modernmt.engine.tasks.InsertTagsTask;
 import eu.modernmt.engine.tasks.GetFeatureWeightsTask;
+import eu.modernmt.engine.tasks.InsertTagsTask;
 import eu.modernmt.engine.tasks.TranslationTask;
 import eu.modernmt.network.cluster.ClusterManager;
 import eu.modernmt.network.cluster.DistributedCallable;
@@ -75,6 +75,30 @@ public class MasterNode extends ClusterManager {
             default:
                 logger.warn("Unknown request received: " + Integer.toHexString(signal));
                 return new byte[0];
+        }
+    }
+
+    // =============================
+    //  Tag aligner
+    // =============================
+
+    @Deprecated
+    public void spendTime(final long millis) {
+        try {
+            this.execute(new DistributedCallable<Serializable>() {
+                @Override
+                public Serializable call() {
+                    try {
+                        Thread.sleep(millis);
+                    } catch (InterruptedException e) {
+                        // Nothing to do
+                    }
+
+                    return null;
+                }
+            });
+        } catch (Throwable throwable) {
+            throw new RuntimeException(throwable);
         }
     }
 
