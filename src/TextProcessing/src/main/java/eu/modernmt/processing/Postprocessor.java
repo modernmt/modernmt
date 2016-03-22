@@ -6,7 +6,7 @@ import eu.modernmt.processing.detokenizer.Detokenizers;
 import eu.modernmt.processing.framework.*;
 import eu.modernmt.processing.numbers.NumericTokenExtractor;
 import eu.modernmt.processing.recaser.Recaser;
-import eu.modernmt.processing.xml.TagMapper;
+import eu.modernmt.processing.xml.XMLTagMapper;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
@@ -31,7 +31,7 @@ public class Postprocessor implements Closeable {
                 .add(new PlaceholderTransformer())
                 .add(detokenizer)
                 .add(new Recaser())
-                .add(new TagMapper())
+                .add(new XMLTagMapper())
                 .create();
     }
 
