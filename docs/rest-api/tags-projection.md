@@ -21,7 +21,7 @@ Translation with tags:  ```<br>ciao, <b id=\"1\">&apos;primo&apos;<b id=\"2\"> t
 
 **HTTP method:**
 
-```GET```
+``` GET ```
 
 **Input:**
 
