@@ -60,12 +60,12 @@ public class Sentence implements Serializable, Iterable<Token> {
         boolean printSpace = false;
         for (Token token : this) {
             if (token instanceof Tag) {
-                printSpace |= (foundFirstWord && token.hasRightSpace());
+                printSpace = true;
             } else {
-                foundFirstWord = true;
-
-                if (printSpace)
+                if (printSpace && foundFirstWord)
                     builder.append(' ');
+
+                foundFirstWord = true;
 
                 builder.append(toString(token, withPlaceholders));
                 printSpace = token.hasRightSpace();
