@@ -44,20 +44,21 @@ public class InsertTagsTask extends DistributedCallable<String> {
             startTime = System.currentTimeMillis();
             int[][] alignments = aligner.getAlignments(preprocessedSentence, preprocessedTranslation);
             endTime = System.currentTimeMillis();
-            logger.debug("Time for getting the alignments: " + (endTime - startTime) + " [ms]");
+
             Translation translation = new Translation(preprocessedTranslation.getWords(),
                     preprocessedSentence, alignments);
 
+
             Postprocessor postprocessor = worker.getPostprocessor();
             postprocessor.process(translation, this.processingEnabled);
-
+            
             startTime = System.currentTimeMillis();
-            ForceTranslation.forceTranslation(translation_str, translation);
+            String taggedTranslation = ForceTranslation.forceTranslationAndPreserveTags(translation, this.translation_str);
             endTime = System.currentTimeMillis();
             logger.debug("Time for forcing the translation: " + (endTime - startTime) + " [ms]");
             logger.debug("Total time for tags projection: " + (endTime - beginTime) + " [ms]");
 
-            return  translation.toString();
+            return  taggedTranslation;
         }catch(Exception e){
             throw new ProcessingException(e);
         }

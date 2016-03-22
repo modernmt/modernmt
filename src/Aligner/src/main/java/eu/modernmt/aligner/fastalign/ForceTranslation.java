@@ -1,14 +1,15 @@
 package eu.modernmt.aligner.fastalign;
 
+import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Tag;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
+import eu.modernmt.processing.Preprocessor;
+import eu.modernmt.processing.framework.ProcessingException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  * Created by lucamastrostefano on 16/03/16.
@@ -19,6 +20,7 @@ public class ForceTranslation {
 
     private enum Operation {
         NULL(0),
+        PROTECTED_INSERT(0),
         DELETE(1),
         INSERT(1),
         REPLACE(1);
@@ -66,80 +68,100 @@ public class ForceTranslation {
         }
     }
 
-    public static void forceTranslation(String originalTranslation, Translation postProcessedTranslation) {
-        Token[] postProcessedTokens = postProcessedTranslation.getWords();
-        String postProcessTranslation_str = postProcessedTranslation.getStrippedString(false);
-        if (originalTranslation.equals(postProcessTranslation_str)) {
-            return;
-        }
-        List<Operation> operations = getMinSetOfOperations(originalTranslation, postProcessTranslation_str);
-        logger.debug("Forcing translation to be equal to the original one");
-        Token lastToken = null;
-        int originalCharIndex = 0;
-        StringBuilder newToken = new StringBuilder();
-        for (int tokenIndex = 0; tokenIndex < postProcessedTokens.length; tokenIndex++) {
-            newToken.setLength(0);
-            Token token = postProcessedTokens[tokenIndex];
-            if (token.hasRightSpace()) {
-                token.setText(token.getText() + " ");
-                token.setRightSpace(false);
-            }
-            for (int charTokenIndex = 0; charTokenIndex < token.getText().length(); ) {
-                char currentChar = token.getText().charAt(charTokenIndex);
-                switch (operations.get(originalCharIndex)) {
-                    case NULL:
-                        newToken.append(currentChar);
-                        originalCharIndex++;
-                        charTokenIndex++;
-                        break;
-                    case INSERT:
-                        newToken.append(originalTranslation.charAt(originalCharIndex));
-                        originalCharIndex++;
-                        break;
-                    case DELETE:
-                        charTokenIndex++;
-                        break;
-                    case REPLACE:
-                        newToken.append(originalTranslation.charAt(originalCharIndex));
-                        originalCharIndex++;
-                        charTokenIndex++;
-                        break;
+    private static boolean[] getProtectedChars(Sentence translation){
+        boolean[] protectedChars = new boolean[translation.toString().length()*10];
+        int charIndex = 0;
+        for(Token token : translation){
+            if(token instanceof Tag){
+                for(int i = 0; i < token.getText().length(); i++) {
+                    protectedChars[charIndex++] = true;
+                }
+            }else{
+                for(int i = 0; i < token.getText().length(); i++) {
+                    protectedChars[charIndex++] = false;
                 }
             }
-            token.setText(newToken.toString());
-            lastToken = token;
+            if(token.hasRightSpace()){
+                protectedChars[charIndex++] = false;
+            }
         }
-        //itererate over the remaining character of the original translation
-        if (originalCharIndex < originalTranslation.length()) {
-            lastToken.setText(lastToken.getText() + originalTranslation.substring(originalCharIndex, originalTranslation.length()));
-        }
+        return protectedChars;
     }
 
-    private static List<Operation> getMinSetOfOperations(String string, String other) {
-        final Solution[][] cache = new Solution[string.length() + 1][other.length() + 1];
-        Solution solution = getMinSetOfOperations(string, other, cache);
+    public static String forceTranslationAndPreserveTags(Translation fromTranslation, String target){
+        Sentence s = new Sentence(fromTranslation.getWords(), fromTranslation.getTags());
+        String from = s.toString();
+        boolean[] protectedChars = getProtectedChars(s);
+
+        logger.debug("Computing mapping from: \"" + from + "\" to \"" + target + "\"");
+        if(from.equals(target)){
+            return target;
+        }
+        List<Operation> operations = getMinSetOfOperations(from, target, protectedChars);
+        logger.debug("Operation: " + operations);
+        logger.debug("Forcing translation to be equal to the original one");
+
+        int fromCharIndex = 0;
+        int targetCharIndex = 0;
+        StringBuilder targetWithTags = new StringBuilder();
+        for (Operation operation : operations) {
+            switch (operation){
+                case NULL:
+                    targetWithTags.append(target.charAt(targetCharIndex));
+                    fromCharIndex++;
+                    targetCharIndex++;
+                    break;
+                case PROTECTED_INSERT:
+                    targetWithTags.append(from.charAt(fromCharIndex));
+                    fromCharIndex++;
+                    break;
+                case INSERT:
+                    targetWithTags.append(target.charAt(targetCharIndex));
+                    targetCharIndex++;
+                    break;
+                case DELETE:
+                    fromCharIndex++;
+                    break;
+                case REPLACE:
+                    targetWithTags.append(target.charAt(targetCharIndex));
+                    fromCharIndex++;
+                    targetCharIndex++;
+                    break;
+            }
+        }
+        return targetWithTags.toString();
+    }
+
+    private static List<Operation> getMinSetOfOperations(String from, String target, boolean[] protectedChars) {
+        final Solution[][] cache = new Solution[from.length() + 1][target.length() + 1];
+        Solution solution = getMinSetOfOperations(from, target, 0, protectedChars, cache);
         return solution.operations;
     }
 
-    private static Solution getMinSetOfOperations(String string, String other, Solution[][] cache) {
-        int stringLength = string.length();
-        int otherLength = other.length();
-        if (cache[stringLength][otherLength] != null) {
-            return cache[stringLength][otherLength];
+    private static Solution getMinSetOfOperations(String from, String target, int fromCharIndex, boolean[] protectedChars, Solution[][] cache) {
+        int fromLength = from.length();
+        int targetLength = target.length();
+        if (cache[fromLength][targetLength] != null) {
+            return cache[fromLength][targetLength];
         }
 
         Solution result;
-        if (stringLength == 0 || otherLength == 0) {
-            if (stringLength == otherLength) {
-                result = new Solution(0);
-            } else {
-                int cost = Math.max(stringLength, otherLength);
-                result = new Solution(cost, Operation.DELETE, cost);
-            }
-        } else if (string.charAt(0) == other.charAt(0)) {
+        if (fromLength == 0 && targetLength == 0) {
+            result = new Solution(0);
+        } else if (fromLength == 0 && targetLength > 0){
+            int cost = Math.max(fromLength, targetLength);
+            result = new Solution(cost, Operation.INSERT, cost);
+        } else if(protectedChars[fromCharIndex]){
+            //PROTECTED_INSERT
+            Solution bestNextSolution = getMinSetOfOperations(from.substring(1, fromLength),
+                    target, fromCharIndex + 1, protectedChars, cache);
+            LinkedList<Operation> operations = new LinkedList<>(bestNextSolution.operations);
+            operations.addFirst(Operation.PROTECTED_INSERT);
+            result = new Solution(bestNextSolution.cost + Operation.PROTECTED_INSERT.cost, operations);
+        } else if (targetLength > 0 && from.charAt(0) == target.charAt(0)) {
             //DO_NOTHING
-            Solution bestNextSolution = getMinSetOfOperations(string.substring(1, stringLength),
-                    other.substring(1, otherLength), cache);
+            Solution bestNextSolution = getMinSetOfOperations(from.substring(1, fromLength),
+                    target.substring(1, targetLength), fromCharIndex + 1, protectedChars, cache);
             LinkedList<Operation> operations = new LinkedList<>(bestNextSolution.operations);
             operations.addFirst(Operation.NULL);
             result = new Solution(bestNextSolution.cost + Operation.NULL.cost, operations);
@@ -147,35 +169,51 @@ public class ForceTranslation {
             TreeSet<Solution> possibleSolutions = new TreeSet<>();
             LinkedList<Operation> operations;
 
-            //INSERT
-            Solution insertSolution = getMinSetOfOperations(string.substring(1, stringLength),
-                    other, cache);
-            operations = new LinkedList<>(insertSolution.operations);
-            operations.addFirst(Operation.INSERT);
-            Solution insertResult = new Solution(insertSolution.cost + Operation.INSERT.cost, operations);
-            possibleSolutions.add(insertResult);
-
             //DELETE
-            Solution deleteSolution = getMinSetOfOperations(string, other.substring(1, otherLength),
-                    cache);
-            operations = new LinkedList<>(deleteSolution.operations);
+            Solution insertSolution = getMinSetOfOperations(from.substring(1, fromLength),
+                    target, fromCharIndex + 1, protectedChars, cache);
+            operations = new LinkedList<>(insertSolution.operations);
             operations.addFirst(Operation.DELETE);
-            Solution deleteResult = new Solution(deleteSolution.cost + Operation.DELETE.cost, operations);
+            Solution deleteResult = new Solution(insertSolution.cost + Operation.DELETE.cost, operations);
             possibleSolutions.add(deleteResult);
 
-            //DELETE
-            Solution replaceSolution = getMinSetOfOperations(string.substring(1, stringLength), other.substring(1, otherLength),
-                    cache);
-            operations = new LinkedList<>(replaceSolution.operations);
-            operations.addFirst(Operation.REPLACE);
-            Solution replaceResult = new Solution(replaceSolution.cost + Operation.REPLACE.cost, operations);
-            possibleSolutions.add(replaceResult);
+            if (targetLength > 0) {
+                //INSERT
+                Solution deleteSolution = getMinSetOfOperations(from, target.substring(1, targetLength),
+                        fromCharIndex, protectedChars, cache);
+                operations = new LinkedList<>(deleteSolution.operations);
+                operations.addFirst(Operation.INSERT);
+                Solution insertResult = new Solution(deleteSolution.cost + Operation.INSERT.cost, operations);
+                possibleSolutions.add(insertResult);
+
+                //REPLACE
+                Solution replaceSolution = getMinSetOfOperations(from.substring(1, fromLength),
+                        target.substring(1, targetLength), fromCharIndex + 1, protectedChars, cache);
+                operations = new LinkedList<>(replaceSolution.operations);
+                operations.addFirst(Operation.REPLACE);
+                Solution replaceResult = new Solution(replaceSolution.cost + Operation.REPLACE.cost, operations);
+                possibleSolutions.add(replaceResult);
+            }
 
             result = possibleSolutions.first();
         }
-
-        cache[stringLength][otherLength] = result;
+        cache[fromLength][targetLength] = result;
         return result;
+    }
+
+
+    public static void main(String[] args) throws ProcessingException {
+        String from = "<br>ciao, <b id=\"due\">&apos;primo&apos;<b id=\"due\"> test<br>a";
+        String target = "ciao, `primo` test";
+
+        Sentence preprocessedTranslation = Preprocessor.getPipeline(Locale.forLanguageTag("it"), true).process(from);
+        System.out.println(preprocessedTranslation);
+        System.out.println(target);
+        Translation translation = new Translation(preprocessedTranslation.getWords(), preprocessedTranslation.getTags(),
+                null, null);
+
+        System.out.println(ForceTranslation.forceTranslationAndPreserveTags(translation, target));
+        System.exit(0);
     }
 
 }
