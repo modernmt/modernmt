@@ -281,3 +281,7 @@ The engine files will be synced from the master and translation requests will be
 Only the master will respond to the Translation API and distribute load.
 
 If you updated the model on the master, just stop and start the slave and the model data will be rsynced again.
+
+### API documentation
+
+You can find an exhaustive description of all the available APIs in the document [docs/README.md](docs/README.md).
