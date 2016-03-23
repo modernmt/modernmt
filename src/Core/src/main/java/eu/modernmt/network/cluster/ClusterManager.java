@@ -86,6 +86,7 @@ public abstract class ClusterManager {
     protected <V extends Serializable> Future<V> submit(DistributedCallable<V> callable) {
         DistributedTask<V> task = new DistributedTask<>(this.executionQueue, callable);
         this.executionQueue.add(task);
+        this.execDispatcher.notifyPendingTask();
         return task;
     }
 
@@ -93,25 +94,37 @@ public abstract class ClusterManager {
 
     private class ExecDispatcher extends Thread {
 
+        private final Object EXEC_SIGNAL = new Object();
         private final byte[] EXEC_PAYLOAD = {SIGNAL_EXEC};
 
         private boolean terminated;
+        private boolean queueWasEmpty;
         private long interval;
+        private SynchronousQueue<Object> signalingQueue;
 
         public ExecDispatcher(long interval) {
             this.interval = interval;
             this.terminated = false;
+            this.queueWasEmpty = true;
+            this.signalingQueue = new SynchronousQueue<>();
         }
 
         public void terminate() {
+            this.signalingQueue.offer(EXEC_SIGNAL);
             this.terminated = true;
             this.interrupt();
+        }
+
+        public void notifyPendingTask() {
+            this.signalingQueue.offer(EXEC_SIGNAL);
         }
 
         @Override
         public void run() {
             while (!this.isInterrupted() && !terminated) {
-                if (executionQueue.size() > 0) {
+                int queueSize = executionQueue.size();
+
+                if (queueSize > 0) {
                     try {
                         internalSendBroadcastSignal(EXEC_PAYLOAD);
                     } catch (IOException e) {
@@ -119,11 +132,23 @@ public abstract class ClusterManager {
                     }
                 }
 
+                this.queueWasEmpty = queueSize == 0;
+
                 try {
-                    Thread.sleep(interval);
+                    long now = System.currentTimeMillis();
+                    Object signal = this.signalingQueue.poll(interval, TimeUnit.MILLISECONDS);
+                    long elapsedTime = System.currentTimeMillis() - now;
+
+                    long remainingTime = this.interval - elapsedTime;
+
+                    if (signal != null && !this.queueWasEmpty && remainingTime > 0) {
+                        Thread.sleep(remainingTime);
+                    }
                 } catch (InterruptedException e) {
                     // Nothing to do
                 }
+
+
             }
         }
     }
