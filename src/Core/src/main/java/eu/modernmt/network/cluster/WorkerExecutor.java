@@ -9,8 +9,8 @@ import java.util.concurrent.TimeUnit;
  */
 class WorkerExecutor {
 
-    private Worker worker;
-    private int capacity;
+    private final Worker worker;
+    private final int capacity;
     private int availability;
 
     private ExecutorService executorService;

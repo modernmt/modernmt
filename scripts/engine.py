@@ -236,7 +236,8 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
         # Current implementation of AdaptiveLM is not useful during translation.
         # We chose to skip thi component for the moment.
         steps = steps[:]
-        steps.remove('adaptive_lm')
+        if 'adaptive_lm' in steps:
+            steps.remove('adaptive_lm')
 
         cmdlogger = _MMTEngineBuilderLogger(len(steps) + 1)
         cmdlogger.start(self._engine, bilingual_corpora, monolingual_corpora)

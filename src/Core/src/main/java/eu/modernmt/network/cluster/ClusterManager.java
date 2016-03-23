@@ -211,8 +211,7 @@ public abstract class ClusterManager {
 
     private class ClusterPacketListener implements MessagingServer.Listener {
 
-        private byte[] onExecRequest(byte[] payload) {
-            int availability = payload.length > 1 ? (payload[1] & 0xFF) : 1;
+        private byte[] encodeCallableRequests(int availability) {
             int size = 0;
 
             DistributedTask<?>[] tasks = new DistributedTask[availability];
@@ -236,12 +235,17 @@ public abstract class ClusterManager {
             }
         }
 
+        private byte[] onExecRequest(byte[] payload) {
+            int availability = payload.length > 1 ? (payload[1] & 0xFF) : 1;
+            return encodeCallableRequests(availability);
+        }
+
         private byte[] onCallbackRequest(byte[] payload) {
             ByteArrayInputStream content = new ByteArrayInputStream(payload, 1, payload.length - 1);
             CallableResponse response = SerializationUtils.deserialize(content);
             callbDispatcher.schedule(response);
 
-            return new byte[]{0x01};
+            return encodeCallableRequests(1);
         }
 
         @Override

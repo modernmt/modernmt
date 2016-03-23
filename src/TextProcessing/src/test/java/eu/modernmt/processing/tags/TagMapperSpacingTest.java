@@ -27,7 +27,7 @@ public class TagMapperSpacingTest {
         });
         XMLTagMapper.restoreTagSpacing(translation);
 
-        assertEquals("Hello world!", translation.getStrippedString(false));
+        assertEquals("Hello world !", translation.getStrippedString(false));
         assertEquals("Hello <a>world</a>!", translation.toString());
         assertCoherentSpacing(translation);
     }
@@ -44,7 +44,7 @@ public class TagMapperSpacingTest {
         });
         XMLTagMapper.restoreTagSpacing(translation);
 
-        assertEquals("Hello world!", translation.getStrippedString(false));
+        assertEquals("Hello world !", translation.getStrippedString(false));
         assertEquals("Hello <a>world</a>!", translation.toString());
         assertCoherentSpacing(translation);
     }
@@ -116,7 +116,7 @@ public class TagMapperSpacingTest {
         });
         XMLTagMapper.restoreTagSpacing(translation);
 
-        assertEquals("That's it!", translation.getStrippedString(false));
+        assertEquals("That 's it!", translation.getStrippedString(false));
         assertEquals("That<b>'s</b> it!", translation.toString());
         assertCoherentSpacing(translation);
     }

@@ -36,7 +36,7 @@ public class TagMapperTest {
         new XMLTagMapper().call(translation);
 
         assertEquals("ciao <b>mondo</b>!", translation.toString());
-        assertEquals("ciao mondo!", translation.getStrippedString(false));
+        assertEquals("ciao mondo !", translation.getStrippedString(false));
         assertArrayEquals(new Tag[]{
                 Tag.fromText("<b>", true, false, 1),
                 Tag.fromText("</b>", false, false, 2),
