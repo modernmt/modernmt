@@ -68,33 +68,32 @@ public class ForceTranslation {
         }
     }
 
-    private static boolean[] getProtectedChars(Sentence translation){
-        boolean[] protectedChars = new boolean[translation.toString().length()*10];
+    private static boolean[] getProtectedChars(Sentence translation) {
+        boolean[] protectedChars = new boolean[translation.toString().length() * 10];
         int charIndex = 0;
-        for(Token token : translation){
-            if(token instanceof Tag){
-                for(int i = 0; i < token.getText().length(); i++) {
+        for (Token token : translation) {
+            if (token instanceof Tag) {
+                for (int i = 0; i < token.getText().length(); i++) {
                     protectedChars[charIndex++] = true;
                 }
-            }else{
-                for(int i = 0; i < token.getText().length(); i++) {
+            } else {
+                for (int i = 0; i < token.getText().length(); i++) {
                     protectedChars[charIndex++] = false;
                 }
             }
-            if(token.hasRightSpace()){
+            if (token.hasRightSpace()) {
                 protectedChars[charIndex++] = false;
             }
         }
         return protectedChars;
     }
 
-    public static String forceTranslationAndPreserveTags(Translation fromTranslation, String target){
-        Sentence s = new Sentence(fromTranslation.getWords(), fromTranslation.getTags());
-        String from = s.toString();
-        boolean[] protectedChars = getProtectedChars(s);
+    public static String forceTranslationAndPreserveTags(Translation fromTranslation, String target) {
+        String from = fromTranslation.toString();
+        boolean[] protectedChars = getProtectedChars(fromTranslation);
 
         logger.debug("Computing mapping from: \"" + from + "\" to \"" + target + "\"");
-        if(from.equals(target)){
+        if (from.equals(target)) {
             return target;
         }
         List<Operation> operations = getMinSetOfOperations(from, target, protectedChars);
@@ -105,7 +104,7 @@ public class ForceTranslation {
         int targetCharIndex = 0;
         StringBuilder targetWithTags = new StringBuilder();
         for (Operation operation : operations) {
-            switch (operation){
+            switch (operation) {
                 case NULL:
                     targetWithTags.append(target.charAt(targetCharIndex));
                     fromCharIndex++;
@@ -148,10 +147,10 @@ public class ForceTranslation {
         Solution result;
         if (fromLength == 0 && targetLength == 0) {
             result = new Solution(0);
-        } else if (fromLength == 0 && targetLength > 0){
+        } else if (fromLength == 0 && targetLength > 0) {
             int cost = Math.max(fromLength, targetLength);
             result = new Solution(cost, Operation.INSERT, cost);
-        } else if(protectedChars[fromCharIndex]){
+        } else if (protectedChars[fromCharIndex]) {
             //PROTECTED_INSERT
             Solution bestNextSolution = getMinSetOfOperations(from.substring(1, fromLength),
                     target, fromCharIndex + 1, protectedChars, cache);
@@ -204,11 +203,11 @@ public class ForceTranslation {
 
     public static void main(String[] args) throws ProcessingException {
         String from = "<br>ciao, <b id=\"due\">&apos;primo&apos;<b id=\"due\"> test<br>a";
-        String target = "ciao, `primo` test";
+        String target = "ciao,\t`primo` test";
 
         Sentence preprocessedTranslation = Preprocessor.getPipeline(Locale.forLanguageTag("it"), true).process(from);
-        System.out.println(preprocessedTranslation);
         System.out.println(target);
+        System.out.println(preprocessedTranslation);
         Translation translation = new Translation(preprocessedTranslation.getWords(), preprocessedTranslation.getTags(),
                 null, null);
 
