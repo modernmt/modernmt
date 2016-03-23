@@ -69,10 +69,17 @@ public abstract class Worker {
         stream.write(ClusterManager.REQUEST_CALLB);
         SerializationUtils.serialize(response, stream);
 
+        byte[] jobs = null;
+
         try {
-            internalSendRequest(stream.toByteArray(), TimeUnit.MINUTES, 1);
+            jobs = internalSendRequest(stream.toByteArray(), TimeUnit.MINUTES, 1);
         } catch (IOException | InterruptedException e) {
             logger.debug("Worker could not send response back.", e);
+        }
+
+        if (jobs != null && jobs.length > 0) {
+            CallableRequest[] requests = SerializationUtils.deserialize(jobs);
+            executor.submit(requests);
         }
     }
 
@@ -99,15 +106,15 @@ public abstract class Worker {
                     return;
                 }
 
-                byte[] job = null;
+                byte[] jobs = null;
                 try {
-                    job = internalSendRequest(new byte[]{ClusterManager.REQUEST_EXEC}, TimeUnit.MINUTES, 1);
+                    jobs = internalSendRequest(new byte[]{ClusterManager.REQUEST_EXEC}, TimeUnit.MINUTES, 1);
                 } catch (IOException | InterruptedException e) {
                     // Nothing to do
                 }
 
-                if (job != null && job.length > 0) {
-                    CallableRequest[] requests = SerializationUtils.deserialize(job);
+                if (jobs != null && jobs.length > 0) {
+                    CallableRequest[] requests = SerializationUtils.deserialize(jobs);
                     executor.submit(requests);
                 }
             } else {
