@@ -14,7 +14,7 @@ from scripts.libs import shell, ssh
 from scripts.libs.ssh import SSHException
 from scripts.mt import ParallelCorpus
 from scripts.mt.contextanalysis import ContextAnalyzer
-from scripts.mt.lm import LanguageModel, AdaptiveIRSTLM
+from scripts.mt.lm import LanguageModel, AdaptiveIRSTLM, MultiplexedIRSTLM
 from scripts.mt.moses import Moses
 from scripts.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
 from scripts.mt.processing import TrainingPreprocessor
@@ -34,7 +34,7 @@ __description = '''\
   You can find more information on: http://www.modernmt.eu/
 '''
 
-_injectable_components = [ContextAnalyzer, SuffixArraysPhraseTable, WordAligner, LanguageModel, AdaptiveIRSTLM, Moses,
+_injectable_components = [ContextAnalyzer, SuffixArraysPhraseTable, WordAligner, LanguageModel, AdaptiveIRSTLM, MultiplexedIRSTLM, Moses,
                           MMTEngine]
 
 

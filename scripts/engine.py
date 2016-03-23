@@ -235,9 +235,9 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
 
         # Current implementation of AdaptiveLM is not useful during translation.
         # We chose to skip thi component for the moment.
-        steps = steps[:]
-        if 'adaptive_lm' in steps:
-            steps.remove('adaptive_lm')
+        #steps = steps[:]
+        #if 'adaptive_lm' in steps:
+        #    steps.remove('adaptive_lm')
 
         cmdlogger = _MMTEngineBuilderLogger(len(steps) + 1)
         cmdlogger.start(self._engine, bilingual_corpora, monolingual_corpora)
@@ -324,7 +324,7 @@ class MMTEngine:
     injector_section = 'engine'
     injectable_fields = {
         'adaptive_lm_type': ('Adaptive LM implementation',
-                             (basestring, LanguageModel.available_types), 'AdaptiveIRSTLM'),
+                             (basestring, LanguageModel.available_types), 'MultiplexedIRSTLM'),
         'static_lm_type': ('Background LM implementation',
                            (basestring, LanguageModel.available_types), 'KenLM'),
         'aligner_type': ('Aligner implementation',
@@ -382,8 +382,8 @@ class MMTEngine:
 
         self.pt = injector.inject(SuffixArraysPhraseTable(self._pt_model, (self.source_lang, self.target_lang)))
         self.aligner = injector.inject(WordAligner.instantiate(self._aligner_type))
-        self.adaptive_lm = injector.inject(LanguageModel.instantiate(self._adaptive_lm_type, self._adaptive_lm_model))
         self.static_lm = injector.inject(LanguageModel.instantiate(self._static_lm_type, self._static_lm_model))
+        self.adaptive_lm = injector.inject(LanguageModel.instantiate(self._adaptive_lm_type, self._adaptive_lm_model, self.static_lm))
 
         self.moses = injector.inject(Moses(self._moses_ini_file))
         self.moses.add_feature(MosesFeature('UnknownWordPenalty'))
@@ -392,11 +392,12 @@ class MMTEngine:
         self.moses.add_feature(MosesFeature('PhrasePenalty'))
         self.moses.add_feature(self.pt, 'PT0')
         self.moses.add_feature(LexicalReordering(), 'DM0')
-        self.moses.add_feature(self.static_lm, 'StaticLM')
-        # self.moses.add_feature(self.adaptive_lm, 'AdaptiveLM')
+        #self.moses.add_feature(self.static_lm, 'StaticLM')
+        self.moses.add_feature(self.adaptive_lm, 'muxlm')
 
         self._optimal_weights = {
-            'StaticLM': [0.0310696],
+            #'StaticLM': [0.0310696],
+            'muxlm': [0.03],
             'DM0': [0.0281009, 0.0254415, 0.0229716, 0.0334702, 0.0440066, 0.0106037, 0.163133, 0.179085],
             'Distortion0': [0.00517499],
             'WordPenalty0': [-0.124562],

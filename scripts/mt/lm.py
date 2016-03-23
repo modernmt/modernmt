@@ -9,7 +9,7 @@ __author__ = 'Davide Caroselli'
 
 
 class LanguageModel(MosesFeature):
-    available_types = ['AdaptiveIRSTLM', 'StaticIRSTLM', 'KenLM']
+    available_types = ['AdaptiveIRSTLM', 'MultiplexedIRSTLM', 'StaticIRSTLM', 'KenLM']
 
     injector_section = 'lm'
     injectable_fields = {
@@ -17,13 +17,15 @@ class LanguageModel(MosesFeature):
     }
 
     @staticmethod
-    def instantiate(type_name, model):
+    def instantiate(type_name, *model):
         if type_name == 'KenLM':
-            return KenLM(model)
+            return KenLM(*model)
         elif type_name == 'AdaptiveIRSTLM':
-            return AdaptiveIRSTLM(model)
+            return AdaptiveIRSTLM(*model)
+        elif type_name == 'MultiplexedIRSTLM':
+            return MultiplexedIRSTLM(*model)
         elif type_name == 'StaticIRSTLM':
-            return StaticIRSTLM(model)
+            return StaticIRSTLM(*model)
         else:
             raise NameError('Invalid Language Model type: ' + type_name)
 
@@ -204,3 +206,69 @@ class AdaptiveIRSTLM(LanguageModel):
     def get_iniline(self):
         return 'factor=0 path={model} dub=10000000 weight_normalization=yes weight_limit={limit}'.format(
             model=self.get_relpath(self._model), limit=self._limit)
+
+
+class MultiplexedIRSTLM(AdaptiveIRSTLM):
+    injector_section = 'muxlm'
+    injectable_fields = {
+        'order': ('LM order (N-grams length)', int, 5),
+        #'limit': ('Limit the LMs to be queried at runtime', int, 1),
+        'alpha': ('Adaptive LM weight fraction from [0,1), the rest is assigned to background LM', float, 0.5),
+        'function': ('interpolation function', str, 'interpolate-linear'),
+    }
+
+    def __init__(self, model, static_lm):
+        AdaptiveIRSTLM.__init__(self, model)
+        LanguageModel.__init__(self, model, 'MUXLM')  # or simply: self.classname = 'MUXLM'
+
+        # Injected
+        self._function = None
+        self._alpha = None
+        #self._limit = None
+
+        self._static_lm = static_lm
+
+    def train(self, corpora, lang, working_dir='.', log_file=None):
+        # note: this is very similar to AdaptiveIRSTLM train(), can we unite some stuff?
+
+        LanguageModel.train(self, corpora, lang, working_dir, log_file)
+
+        log = shell.DEVNULL
+
+        try:
+            if log_file is not None:
+                log = open(log_file, 'w')
+
+            lmconfig_content = ['[muxlm]']
+            w = 1. / len(corpora)
+
+            models_folder = os.path.dirname(self._model)
+
+            # also need background LM here.
+            # TODO: rename member _model -> model? (we are accessing private-marked members here)
+            bglm_model = self._static_lm._model
+            bglm_order = self._static_lm._order
+            lmconfig_content.append('KENLM name=BackgroundLM factor=0 order={order} path={path}'.format(order=bglm_order, path=bglm_model))
+
+            for corpus in corpora:
+                cfile = corpus.get_file(lang)
+                lm = corpus.name + '.alm'
+                dest = os.path.join(models_folder, lm)
+
+                lmconfig_content.append('IRSTLM name={name} factor=0 order={order} path={dest}'.format(name=corpus.name, order=self._order, dest=dest))
+
+                self._train_lm(cfile, dest, working_dir, log)
+
+            with open(self._model, 'w') as model:
+                for line in lmconfig_content:
+                    model.write(line)
+                    model.write('\n')
+        finally:
+            if log_file is not None:
+                log.close()
+
+    # def _train_lm() inherited
+
+    def get_iniline(self):
+        return 'factor=0 path={model} background-lm=BackgroundLM alpha={alpha} function={function}'.format(
+            model=self.get_relpath(self._model), alpha=self._alpha, function=self._function)
