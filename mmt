@@ -131,6 +131,8 @@ def main_evaluate(argv):
                         help='the output folder for the tab-spaced files needed to setup a Human Evaluation benchmark')
     parser.add_argument('-i', '--interactive', action='store_true', dest='interactive',
                         help='Test without sessions, as if translating sentence by sentence')
+    parser.add_argument('--tsv', action='store_true', dest='tsv',
+                        help='Output machine-readable tab-separated scores per translator')
     parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='if debug is set, it enables verbose '
                                                                                  'logging and prevents temporary files '
                                                                                  'to be removed after execution')
@@ -139,6 +141,11 @@ def main_evaluate(argv):
     args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
 
     _logconfig(args.debug)
+
+    def print_human(s=''):
+        # print unless --tsv was given
+        if not args.tsv:
+            print s
 
     engine = MMTEngine(name=args.engine)
     if not engine.exists():
@@ -155,7 +162,7 @@ def main_evaluate(argv):
     for corpus in corpora:
         lines += corpus.count_lines()
 
-    print '\nTesting on {lines} sentences...\n'.format(lines=lines)
+    print_human('\nTesting on {lines} sentences...\n'.format(lines=lines))
     sys.stdout.flush()
 
     scores = server.evaluate(corpora=corpora, google_key=args.gt_key, heval_output=args.heval_output,
@@ -177,7 +184,7 @@ def main_evaluate(argv):
                   for translator, score in scores.iteritems()
                   ], key=operator.itemgetter(1), reverse=True)
 
-    print 'Matecat Post-Editing Score:'
+    print_human('Matecat Post-Editing Score:')
     for i in range(0, len(matecat)):
         translator, score, error = matecat[i]
 
@@ -188,10 +195,10 @@ def main_evaluate(argv):
         else:
             text = error
 
-        print '  %s: %s' % (translator.ljust(20), text)
-    print
+        print_human('  %s: %s' % (translator.ljust(20), text))
+    print_human()
 
-    print 'BLEU:'
+    print_human('BLEU:')
     for i in range(0, len(bleu)):
         translator, score, error = bleu[i]
 
@@ -202,13 +209,13 @@ def main_evaluate(argv):
         else:
             text = error
 
-        print '  %s: %s' % (translator.ljust(20), text)
-    print
+        print_human('  %s: %s' % (translator.ljust(20), text))
+    print_human()
 
     if args.interactive:
-        print 'Interactive Translation Speed:'
+        print_human('Interactive Translation Speed:')
     else:
-        print 'Translation Speed:'
+        print_human('Translation Speed:')
     for i in range(0, len(mtt)):
         translator, score, error = mtt[i]
 
@@ -217,12 +224,28 @@ def main_evaluate(argv):
         else:
             text = error
 
-        print '  %s: %s' % (translator.ljust(20), text)
-    print
+        print_human('  %s: %s' % (translator.ljust(20), text))
+    print_human()
+
+    # machine-readable output in TSV format
+    if args.tsv:
+        translators = [(None, t, None) for t, s, e in bleu]  # so we can consistently use the second tuple field for all columns we output
+        columns = [(translators, "translator"), (matecat, "MPES"), (bleu, "BLEU"), (mtt, "speed")]
+
+        # column titles go to stderr so people can see it / copy from terminal
+        for _, title in columns:
+            sys.stderr.write('%s\t' % title)
+        sys.stderr.write('\n')
+
+        # data goes to stdout
+        for i in range(0, len(bleu)):
+            for arr, _ in columns:
+                sys.stdout.write('%s\t' % str(arr[i][1]))
+            sys.stdout.write('\n')
 
     if args.heval_output is not None:
-        print 'Files for Human Evaluation are available here:', os.path.abspath(args.heval_output)
-        print
+        print_human('Files for Human Evaluation are available here:', os.path.abspath(args.heval_output))
+        print_human()
 
 
 def main_start(argv):
