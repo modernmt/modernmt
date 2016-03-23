@@ -3,6 +3,9 @@
 #
 # This builds every C++ dependency of MMT.
 #
+# TODO: IRSTLM needs to be built separately first (because moses looks for it at config time).
+# TODO: to support clean build from scratch, this needs to be written using ExternalProject_Add()
+#
 # The sources in vendor/ come from git submodules.
 # See INSTALL.md for details.
 #
@@ -42,7 +45,7 @@ set(BUILD_STATIC_LIBS OFF CACHE BOOL "Build irstlm static library")
 set(BUILD_SHARED_LIBS ON CACHE BOOL "Build irstlm shared library")
 
 
-add_subdirectory(vendor/irstlm)
-add_subdirectory(vendor/moses)
+add_subdirectory(irstlm)
+add_subdirectory(moses)
 
-add_subdirectory(src/Decoder/native)
+add_subdirectory(Decoder/native)
