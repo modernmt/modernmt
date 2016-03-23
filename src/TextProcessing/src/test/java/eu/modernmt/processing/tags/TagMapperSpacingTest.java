@@ -1,48 +1,18 @@
-package eu.modernmt.model;
+package eu.modernmt.processing.tags;
 
+import eu.modernmt.model.Tag;
+import eu.modernmt.model.Token;
+import eu.modernmt.model.Translation;
+import eu.modernmt.processing.xml.XMLTagMapper;
 import org.junit.Test;
 
+import static eu.modernmt.processing.Assertions.assertCoherentSpacing;
 import static org.junit.Assert.assertEquals;
 
-public class TranslationTest {
-
-    private static Translation translation(Token[] tokens) {
-        return new Translation(tokens, null, null);
-    }
+public class TagMapperSpacingTest {
 
     private static Translation translation(Token[] tokens, Tag[] tags) {
         return new Translation(tokens, tags, null, null);
-    }
-
-    @Test
-    public void testEmptyTranslation() {
-        Translation translation = translation(null);
-
-        assertEquals("", translation.getStrippedString(false));
-        assertEquals("", translation.toString());
-    }
-
-    @Test
-    public void testTranslationNoTags() {
-        Translation translation = translation(new Token[]{
-                new Token("Hello", true),
-                new Token("world", false),
-                new Token("!", false),
-        });
-
-        assertEquals("Hello world!", translation.getStrippedString(false));
-        assertEquals("Hello world!", translation.toString());
-    }
-
-    @Test
-    public void testTranslationOnlyTags() {
-        Translation translation = translation(null, new Tag[]{
-                Tag.fromText("<a>", false, false, 0),
-                Tag.fromText("</a>", false, false, 0),
-        });
-
-        assertEquals("", translation.getStrippedString(false));
-        assertEquals("<a></a>", translation.toString());
     }
 
     @Test
@@ -55,9 +25,11 @@ public class TranslationTest {
                 Tag.fromText("<a>", true, false, 1),
                 Tag.fromText("</a>", false, false, 2),
         });
+        XMLTagMapper.restoreTagSpacing(translation);
 
-        assertEquals("Hello world!", translation.getStrippedString(false));
+        assertEquals("Hello world !", translation.getStrippedString(false));
         assertEquals("Hello <a>world</a>!", translation.toString());
+        assertCoherentSpacing(translation);
     }
 
     @Test
@@ -70,9 +42,11 @@ public class TranslationTest {
                 Tag.fromText("<a>", true, false, 1),
                 Tag.fromText("</a>", false, true, 2),
         });
+        XMLTagMapper.restoreTagSpacing(translation);
 
         assertEquals("Hello world !", translation.getStrippedString(false));
         assertEquals("Hello <a>world</a>!", translation.toString());
+        assertCoherentSpacing(translation);
     }
 
     @Test
@@ -85,9 +59,11 @@ public class TranslationTest {
                 Tag.fromText("<a>", true, false, 1),
                 Tag.fromText("</a>", false, false, 2),
         });
+        XMLTagMapper.restoreTagSpacing(translation);
 
         assertEquals("Hello world !", translation.getStrippedString(false));
         assertEquals("Hello <a>world</a> !", translation.toString());
+        assertCoherentSpacing(translation);
     }
 
     @Test
@@ -102,9 +78,11 @@ public class TranslationTest {
                 Tag.fromText("</a>", true, true, 1),
                 Tag.fromText("</b>", true, true, 1),
         });
+        XMLTagMapper.restoreTagSpacing(translation);
 
         assertEquals("Hello world!", translation.getStrippedString(false));
         assertEquals("Hello <a><b></a></b>world!", translation.toString());
+        assertCoherentSpacing(translation);
     }
 
     @Test
@@ -118,9 +96,11 @@ public class TranslationTest {
                 Tag.fromText("<b>", true, true, 1),
                 Tag.fromText("</b>", true, true, 1),
         });
+        XMLTagMapper.restoreTagSpacing(translation);
 
         assertEquals("Hello world!", translation.getStrippedString(false));
         assertEquals("Hello</a> <b></b>world!", translation.toString());
+        assertCoherentSpacing(translation);
     }
 
     @Test
@@ -134,9 +114,11 @@ public class TranslationTest {
                 Tag.fromText("<b>", true, true, 1),
                 Tag.fromText("</b>", true, true, 2),
         });
+        XMLTagMapper.restoreTagSpacing(translation);
 
         assertEquals("That 's it!", translation.getStrippedString(false));
         assertEquals("That<b>'s</b> it!", translation.toString());
+        assertCoherentSpacing(translation);
     }
 
     @Test
@@ -150,9 +132,11 @@ public class TranslationTest {
                 Tag.fromText("<!--", true, true, 2),
                 Tag.fromText("-->", true, false, 4),
         });
+        XMLTagMapper.restoreTagSpacing(translation);
 
         assertEquals("This is XML comment", translation.getStrippedString(false));
         assertEquals("This is <!-- XML comment -->", translation.toString());
+        assertCoherentSpacing(translation);
     }
 
     @Test
@@ -166,9 +150,11 @@ public class TranslationTest {
                 Tag.fromText("<!--", false, true, 2),
                 Tag.fromText("-->", true, false, 4),
         });
+        XMLTagMapper.restoreTagSpacing(translation);
 
         assertEquals("This is XML comment", translation.getStrippedString(false));
         assertEquals("This is<!-- XML comment -->", translation.toString());
+        assertCoherentSpacing(translation);
     }
 
     @Test
@@ -182,9 +168,11 @@ public class TranslationTest {
                 Tag.fromText("<!--", false, true, 2),
                 Tag.fromText("-->", true, true, 4),
         });
+        XMLTagMapper.restoreTagSpacing(translation);
 
         assertEquals("This is XML comment", translation.getStrippedString(false));
         assertEquals("This is<!-- XML comment -->", translation.toString());
+        assertCoherentSpacing(translation);
     }
 
 }

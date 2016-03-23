@@ -50,7 +50,7 @@ The json file named 'info.json' contains meta information about the test and it 
 
 'info.json' must contain at least the following keys:
 ```
-  {
+{
   "enabled": true|false,
   "description": "A description of the test",
   "full_description": "A complete and exhaustive description of the test",

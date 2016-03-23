@@ -59,4 +59,18 @@ public class SentenceTest {
         assertEquals("Hello world", sentence.getStrippedString(false));
     }
 
+    @Test
+    public void testStrippedSentenceWithoutSpacesBetweenTags() {
+        Sentence sentence = new Sentence(new Token[]{
+                new Token("Hello", false),
+                new Token("world", false),
+        }, new Tag[] {
+                Tag.fromText("<a>", false, false, 1),
+                Tag.fromText("<b>", false, false, 1)
+        });
+
+        assertEquals("Hello<a><b>world", sentence.toString(false));
+        assertEquals("Hello world", sentence.getStrippedString(false));
+    }
+
 }
