@@ -79,10 +79,11 @@ public class MasterNode extends ClusterManager {
     }
 
     // =============================
-    //  Tag aligner
+    //  Debug
     // =============================
 
     @Deprecated
+    //TODO: remove
     public void spendTime(final long millis) {
         try {
             this.execute(new DistributedCallable<Serializable>() {
