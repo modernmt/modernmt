@@ -79,31 +79,6 @@ public class MasterNode extends ClusterManager {
     }
 
     // =============================
-    //  Debug
-    // =============================
-
-    @Deprecated
-    //TODO: remove
-    public void spendTime(final long millis) {
-        try {
-            this.execute(new DistributedCallable<Serializable>() {
-                @Override
-                public Serializable call() {
-                    try {
-                        Thread.sleep(millis);
-                    } catch (InterruptedException e) {
-                        // Nothing to do
-                    }
-
-                    return null;
-                }
-            });
-        } catch (Throwable throwable) {
-            throw new RuntimeException(throwable);
-        }
-    }
-
-    // =============================
     //  Tag aligner
     // =============================
 
