@@ -82,10 +82,10 @@ public class MasterNode extends ClusterManager {
     //  Tag aligner
     // =============================
 
-    public String alignTags(String sentence, String translation) throws TranslationException {
+    public String alignTags(String sentence, String translation, boolean forceTranslation) throws TranslationException {
         InsertTagsTask task;
         try {
-            task = new InsertTagsTask(sentence, translation);
+            task = new InsertTagsTask(sentence, translation, forceTranslation);
             return this.execute(task);
         } catch (Throwable e) {
             if (e instanceof ProcessingException)

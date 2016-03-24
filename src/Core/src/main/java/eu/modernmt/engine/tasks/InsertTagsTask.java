@@ -1,6 +1,7 @@
 package eu.modernmt.engine.tasks;
 
 import eu.modernmt.aligner.Aligner;
+import eu.modernmt.aligner.fastalign.ForceTranslation;
 import eu.modernmt.engine.SlaveNode;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -19,10 +20,12 @@ public class InsertTagsTask extends DistributedCallable<String> {
     private static final boolean processingEnabled = true;
     private final String sentence_str;
     private final String translation_str;
+    private final boolean forceTranslation;
 
-    public InsertTagsTask(String sentence, String translation) {
+    public InsertTagsTask(String sentence, String translation, boolean forceTranslation) {
         this.sentence_str = sentence;
         this.translation_str = translation;
+        this.forceTranslation = forceTranslation;
     }
 
     @Override
@@ -52,8 +55,12 @@ public class InsertTagsTask extends DistributedCallable<String> {
             postprocessor.process(translation, this.processingEnabled);
             
             startTime = System.currentTimeMillis();
-            String taggedTranslation = translation.toString();
-            //String taggedTranslation = ForceTranslation.forceTranslationAndPreserveTags(translation, this.translation_str);
+            String taggedTranslation;
+            if(forceTranslation) {
+                taggedTranslation = ForceTranslation.forceTranslationAndPreserveTags(translation, this.translation_str);
+            }else{
+                taggedTranslation = translation.toString();
+            }
             endTime = System.currentTimeMillis();
             logger.debug("Time for forcing the translation: " + (endTime - startTime) + " [ms]");
             logger.debug("Total time for tags projection: " + (endTime - beginTime) + " [ms]");
