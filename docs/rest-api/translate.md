@@ -15,7 +15,7 @@ Because each MMT Engine supports only one language pair in one direction, you do
 * ```q```: the text to translate in XML format (XML tags accepted, text must be XML-encoded)
 * ```context```: the context text to be used to translate the sentence (if *null*, no context will be used)
 * ```context_array```: a JSON Array containing the exact context to be used (format is the same of the output of the ```Context API```)
-* ```nbest```: if specified, the API will output the top best translations (default is 0)
+* ```nbest```: the number of top best translations (default is 0)
 
 **Output:**
 
