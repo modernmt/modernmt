@@ -1,9 +1,12 @@
 #!/usr/bin/env python
-import json, requests, time
+import json, re, requests, time
 from itertools import izip
 from optparse import OptionParser
 
 class TagProjectionPricisionTest:
+
+    MIN_PEE = 0.05
+    TAG_RE = re.compile(r'<[^>]+>')
 
     def __init__(self, api_port, source_file, translation_file, reference_file, verbosity_level):
         self.__api_port = api_port
@@ -17,11 +20,27 @@ class TagProjectionPricisionTest:
             print message
 
     def start_test(self):
+        try:
+            results = self.launch()
+            passed = self.check_results(results)
+            json_response = {"passed": passed, "results": results}
+        except Exception as e:
+            json_response = {"passed": False, "error": str(e)}
+        print json.dumps(json_response)
+
+    def launch(self):
         self.log("Starting test")
         num_lines = sum(1 for line in open(self.__source_file))
         n = 0
         precision = 0
         err = 0
+        different_number_of_tags = 0
+        total_number_of_tags = 0
+        number_of_lost_tags = 0
+        different_number_of_chars = 0
+        tot_query_time = 0
+        translations = []
+        references = []
         for source, translation, reference in izip(open(self.__source_file), open(self.__translation_file),
                                                    open(self.__reference_file)):
             source = source.strip()
@@ -29,28 +48,84 @@ class TagProjectionPricisionTest:
             reference = reference.strip()
             start_time = time.time()
             n += 1
+
             try:
-                print str(int(100*n/num_lines)) + "%\tid:" +str(n) + "\t" + str(len(source))
+                self.log(str(int(100*n/num_lines)) + "%\t#line:" +str(n) + "\tsource length:" + str(len(source)))
                 results = self.query_engine(source, translation)
                 tagged_translation = results['translation']
                 if tagged_translation == reference:
                     precision += 1
-                query_time = time.time() - start_time
+                else:
+                    self.log(tagged_translation + "|||" + reference)
+                    tagged_number_of_tags = self.count_tags(tagged_translation)
+                    reference_number_of_tags = self.count_tags(reference)
+                    total_number_of_tags += reference_number_of_tags
+                    if tagged_number_of_tags != reference_number_of_tags:
+                        different_number_of_tags += 1
+                        number_of_lost_tags += abs(reference_number_of_tags - tagged_number_of_tags)
+                    else:
+                        different_number_of_chars += 1
+                tot_query_time += time.time() - start_time
 
-                #self.log(str(int(100*n/num_lines)) + "%")
+                translations.append(translation)
+                references.append(reference)
+
+                self.log("precision: " + str(precision) + "\t#errors:" + str(err) + "\tdiff_tags"\
+                      + str(different_number_of_tags) + "\ttot_num_of_tags" + str(total_number_of_tags) \
+                      + "\tmissed_tags" + str(number_of_lost_tags)\
+                      + "\tdiff_spaces" + str(different_number_of_chars))
+
+                self.log("precision: " + str(round(100*precision/(num_lines - err)))\
+                      + "%\t#errors:" + str(round(100*err/num_lines))\
+                      + "%\tdiff_tags:" + str(round(100*different_number_of_tags/(num_lines - err)))\
+                      + "%\tmissed_tags:" +str(round(100*number_of_lost_tags/total_number_of_tags))\
+                      + "%\tdiff_chars:" + str(round(100*different_number_of_chars/(num_lines - err)))\
+                      + "%\tavg_query_time [s]" + str(round(10000*tot_query_time/num_lines)))
+
             except Exception as e:
                 err += 1
-                print "Error"
-        print str(int(100*precision/num_lines)) + "\t #precision:" + str(precision)
-        print str(int(100*err/num_lines)) + "\t #err:" + str(err)
+                self.log(str(e))
+
+        avg_pee = self.get_avg_post_editing_effort(translations, references)
+
+        return {'average PEE' : round(100*avg_pee)/100,
+                'precision' : round(100*precision/(num_lines - err)),
+                'encoding_errors' : round(100*err/num_lines),
+                'diff_tags': round(100*different_number_of_tags/(num_lines - err)),
+                'missed_tags': round(100*number_of_lost_tags/total_number_of_tags),
+                'diff_chars': round(100*different_number_of_chars/(num_lines - err)),
+                'avg_query_time [s]': round(10000*tot_query_time/num_lines)
+                }
+
 
     def query_engine(self, source, translation):
         headers = {'content-type': 'application/json'}
-        payload = {'s': source, 't': translation}
+        payload = {'s': source, 't': translation, 'f': 0}
         json_results = requests.get("http://localhost:"+str(self.__api_port)+"/tags-projection",
                                     params = payload, headers=headers)
         return json.loads(json_results.text)
 
+    def count_tags(self, text):
+        return len(TagProjectionPricisionTest.TAG_RE.findall(text))
+
+    def check_results(self, results):
+        return results['average PEE'] <= TagProjectionPricisionTest.MIN_PEE
+
+    def get_avg_post_editing_effort(self, translations, references):
+        url = 'http://api.mymemory.translated.net/computeMatch.php'
+
+        data = {
+            'sentences': translations,
+            'reference_sentences': references
+        }
+
+        r = requests.post(url, data=json.dumps(data), headers={'Content-type': 'application/json'})
+        body = r.json()
+
+        if r.status_code != requests.codes.ok:
+            raise Exception('Matecat Score service not available (' + str(r.status_code) + '): ' + body['error'])
+
+        return 1 - sum(body)/len(body)
 
 if __name__ == "__main__":
     parser = OptionParser()
