@@ -186,16 +186,17 @@ public class ConsineSimilarityCalculator {
                             indexConfig.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
                             writer = new IndexWriter(directory, indexConfig);
                             writer.addDocument(document);
-                        } finally {
                             IOUtils.closeQuietly(writer);
-                        }
-
-                        try {
                             reader = DirectoryReader.open(directory);
                             terms = getTermFrequencies(reader, 0);
-                        } finally {
+                        } catch (Exception e){
+                            e.printStackTrace();
+                        }finally {
+                            IOUtils.closeQuietly(writer);
                             IOUtils.closeQuietly(reader);
+                            IOUtils.closeQuietly(directory);
                         }
+
                     }
                 }
             }

@@ -162,6 +162,12 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
             searcher.search(query, collector);
         } catch (IOException e) {
             throw new ContextAnalyzerException("Failed to execute MoreLikeThis query", e);
+        }finally {
+            try {
+                queryDocumentReader.close();
+            }catch (Exception e){
+
+            }
         }
 
         ScoreDoc[] topDocs = collector.topDocs().scoreDocs;
