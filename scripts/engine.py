@@ -156,14 +156,22 @@ class _ProcessMonitor:
 
         exit(0)
 
+    # after this amount of seconds, there is no excuse for a process to still be there.
+    SIGTERM_TIMEOUT = 60 * 5
+
     def stop(self):
         pid = self._get_pid()
 
         if not self.is_running():
             raise IllegalStateException('process is not running')
 
-        os.kill(pid, signal.SIGTERM)
-        daemon.wait(pid)
+        try:
+            os.kill(pid, signal.SIGTERM)
+            daemon.wait(pid, _ProcessMonitor.SIGTERM_TIMEOUT)
+        except daemon.TimeoutExpired:
+            # firin mah lazer!!1
+            os.kill(pid, signal.SIGKILL)
+            daemon.wait(pid)
 
 
 # ==============================
