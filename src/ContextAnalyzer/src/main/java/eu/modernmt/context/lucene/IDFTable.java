@@ -2,8 +2,6 @@ package eu.modernmt.context.lucene;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
-import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
