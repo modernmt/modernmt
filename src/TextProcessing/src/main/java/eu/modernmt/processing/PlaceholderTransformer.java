@@ -20,20 +20,11 @@ public class PlaceholderTransformer implements TextProcessor<Translation, Transl
         Token[] target = translation.getWords();
 
         if (translation.hasAlignment()) {
-            int[] alignments = new int[source.length];
-            Arrays.fill(alignments, -1);
-            for (int[] a : translation.getAlignment())
-                alignments[a[0]] = a[1];
+            for (int[] pair : translation.getAlignment()) {
+                Token sourceToken = source[pair[0]];
+                Token targetToken = target[pair[1]];
 
-            for (int i = 0; i < source.length; i++) {
-                Token sourceToken = source[i];
-
-                if (!(sourceToken instanceof PlaceholderToken))
-                    continue;
-
-                Token targetToken = alignments[i] < 0 ? null : target[alignments[i]];
-
-                if (targetToken == null || !(targetToken instanceof PlaceholderToken))
+                if (!(sourceToken instanceof PlaceholderToken) || !(targetToken instanceof PlaceholderToken))
                     continue;
 
                 ((PlaceholderToken) targetToken).applyTransformation((PlaceholderToken) sourceToken);

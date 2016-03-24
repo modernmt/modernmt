@@ -591,7 +591,6 @@ class MMTServer(_MMTDistributedComponent):
     def _start_process(self):
         args = ['-e', self.engine.name, '-a', str(self.api_port), '-p', str(self.cluster_ports[0]),
                 str(self.cluster_ports[1])]
-        # args.append('-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005')
 
         env = os.environ.copy()
         env['LD_LIBRARY_PATH'] = scripts.LIB_DIR
@@ -818,7 +817,6 @@ class MMTWorker(_MMTDistributedComponent):
     def _start_process(self):
         args = ['-e', self.engine.name, '-p', str(self.cluster_ports[0]), str(self.cluster_ports[1]), '--status-file',
                 self._status_file]
-        # args.append('-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005')
 
         if self._master is not None:
             for key, value in self._master.iteritems():
