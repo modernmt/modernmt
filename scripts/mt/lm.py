@@ -172,7 +172,7 @@ class MultiplexedLM(LanguageModel):
                 log = open(log_file, 'w')
 
             model_folder = os.path.dirname(self._model)
-            config_content = ['[muxlm]']
+            config_content = ['[verbose]', '0', '[muxlm]']
 
             # Train static LM
             static_lm_model = os.path.join(model_folder, 'background.slm')
