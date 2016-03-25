@@ -243,8 +243,8 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
 
         # Current implementation of AdaptiveLM is not useful during translation.
         # We chose to skip thi component for the moment.
-        #steps = steps[:]
-        #if 'adaptive_lm' in steps:
+        # steps = steps[:]
+        # if 'adaptive_lm' in steps:
         #    steps.remove('adaptive_lm')
 
         cmdlogger = _MMTEngineBuilderLogger(len(steps) + 1)
@@ -391,7 +391,8 @@ class MMTEngine:
         self.pt = injector.inject(SuffixArraysPhraseTable(self._pt_model, (self.source_lang, self.target_lang)))
         self.aligner = injector.inject(WordAligner.instantiate(self._aligner_type))
         self.static_lm = injector.inject(LanguageModel.instantiate(self._static_lm_type, self._static_lm_model))
-        self.adaptive_lm = injector.inject(LanguageModel.instantiate(self._adaptive_lm_type, self._adaptive_lm_model, self.static_lm))
+        self.adaptive_lm = injector.inject(
+            LanguageModel.instantiate(self._adaptive_lm_type, self._adaptive_lm_model, self.static_lm))
 
         self.moses = injector.inject(Moses(self._moses_ini_file))
         self.moses.add_feature(MosesFeature('UnknownWordPenalty'))
@@ -400,11 +401,9 @@ class MMTEngine:
         self.moses.add_feature(MosesFeature('PhrasePenalty'))
         self.moses.add_feature(self.pt, 'PT0')
         self.moses.add_feature(LexicalReordering(), 'DM0')
-        #self.moses.add_feature(self.static_lm, 'StaticLM')
         self.moses.add_feature(self.adaptive_lm, 'muxlm')
 
         self._optimal_weights = {
-            #'StaticLM': [0.0310696],
             'muxlm': [0.03],
             'DM0': [0.0281009, 0.0254415, 0.0229716, 0.0334702, 0.0440066, 0.0106037, 0.163133, 0.179085],
             'Distortion0': [0.00517499],
@@ -600,7 +599,6 @@ class MMTServer(_MMTDistributedComponent):
     def _start_process(self):
         args = ['-e', self.engine.name, '-a', str(self.api_port), '-p', str(self.cluster_ports[0]),
                 str(self.cluster_ports[1])]
-        # args.append('-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005')
 
         env = os.environ.copy()
         env['LD_LIBRARY_PATH'] = scripts.LIB_DIR
@@ -827,7 +825,6 @@ class MMTWorker(_MMTDistributedComponent):
     def _start_process(self):
         args = ['-e', self.engine.name, '-p', str(self.cluster_ports[0]), str(self.cluster_ports[1]), '--status-file',
                 self._status_file]
-        # args.append('-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005')
 
         if self._master is not None:
             for key, value in self._master.iteritems():

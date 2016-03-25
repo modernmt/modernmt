@@ -63,8 +63,10 @@ public class ConsineSimilarityCalculator {
             synchronized (this) {
                 table = IDFTables.get(fieldName);
 
-                if (table == null)
-                    table = IDFTables.putIfAbsent(fieldName, new IDFTable(indexReader, fieldName));
+                if (table == null) {
+                    table = new IDFTable(indexReader, fieldName);
+                    IDFTables.putIfAbsent(fieldName, table);
+                }
             }
         }
 
@@ -139,7 +141,6 @@ public class ConsineSimilarityCalculator {
         HashMap<String, Float> frequencies = new HashMap<>();
 
         IDFTable idfTable = boost ? getIDFTable(fieldName) : null;
-
         BytesRef text;
         while ((text = termsEnum.next()) != null) {
             String term = text.utf8ToString();
@@ -186,16 +187,17 @@ public class ConsineSimilarityCalculator {
                             indexConfig.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
                             writer = new IndexWriter(directory, indexConfig);
                             writer.addDocument(document);
-                        } finally {
                             IOUtils.closeQuietly(writer);
-                        }
-
-                        try {
                             reader = DirectoryReader.open(directory);
                             terms = getTermFrequencies(reader, 0);
-                        } finally {
+                        } catch (Exception e){
+                            e.printStackTrace();
+                        }finally {
+                            IOUtils.closeQuietly(writer);
                             IOUtils.closeQuietly(reader);
+                            IOUtils.closeQuietly(directory);
                         }
+
                     }
                 }
             }

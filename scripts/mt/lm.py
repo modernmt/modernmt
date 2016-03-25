@@ -208,30 +208,25 @@ class AdaptiveIRSTLM(LanguageModel):
             model=self.get_relpath(self._model), limit=self._limit)
 
 
-class MultiplexedIRSTLM(AdaptiveIRSTLM):
+class MultiplexedIRSTLM(LanguageModel):
     injector_section = 'muxlm'
     injectable_fields = {
         'order': ('LM order (N-grams length)', int, 5),
-        #'limit': ('Limit the LMs to be queried at runtime', int, 1),
         'alpha': ('Adaptive LM weight fraction from [0,1), the rest is assigned to background LM', float, 0.5),
         'function': ('interpolation function', str, 'interpolate-linear'),
     }
 
-    def __init__(self, model, static_lm):
-        AdaptiveIRSTLM.__init__(self, model)
-        LanguageModel.__init__(self, model, 'MUXLM')  # or simply: self.classname = 'MUXLM'
+    def __init__(self, model):
+        LanguageModel.__init__(self, model, 'MUXLM')
 
         # Injected
         self._function = None
         self._alpha = None
-        #self._limit = None
-
-        self._static_lm = static_lm
 
     def train(self, corpora, lang, working_dir='.', log_file=None):
-        # note: this is very similar to AdaptiveIRSTLM train(), can we unite some stuff?
-
         LanguageModel.train(self, corpora, lang, working_dir, log_file)
+
+
 
         log = shell.DEVNULL
 
