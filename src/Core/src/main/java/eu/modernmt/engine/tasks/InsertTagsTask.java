@@ -2,6 +2,7 @@ package eu.modernmt.engine.tasks;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.fastalign.ForceTranslation;
+import eu.modernmt.aligner.symal.Symmetrisation;
 import eu.modernmt.engine.SlaveNode;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -21,11 +22,18 @@ public class InsertTagsTask extends DistributedCallable<String> {
     private final String sentence_str;
     private final String translation_str;
     private final boolean forceTranslation;
+    private final Symmetrisation.Type symmetrizationStrategy;
 
     public InsertTagsTask(String sentence, String translation, boolean forceTranslation) {
+        this(sentence, translation, forceTranslation, null);
+    }
+
+    public InsertTagsTask(String sentence, String translation, boolean forceTranslation,
+                          Symmetrisation.Type symmetrizationStrategy) {
         this.sentence_str = sentence;
         this.translation_str = translation;
         this.forceTranslation = forceTranslation;
+        this.symmetrizationStrategy = symmetrizationStrategy;
     }
 
     @Override
@@ -42,6 +50,10 @@ public class InsertTagsTask extends DistributedCallable<String> {
         try {
             Sentence preprocessedSentence = worker.getPreprocessor().process(this.sentence_str, this.processingEnabled);
             Sentence preprocessedTranslation = worker.getPreprocessor().process(this.translation_str, this.processingEnabled);
+
+            if(this.symmetrizationStrategy != null) {
+                aligner.setSymmetrizationStrategy(this.symmetrizationStrategy);
+            }
 
             startTime = System.currentTimeMillis();
             int[][] alignments = aligner.getAlignments(preprocessedSentence, preprocessedTranslation);

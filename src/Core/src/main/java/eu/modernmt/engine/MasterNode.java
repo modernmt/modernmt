@@ -1,5 +1,6 @@
 package eu.modernmt.engine;
 
+import eu.modernmt.aligner.symal.Symmetrisation;
 import eu.modernmt.config.Config;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
@@ -86,6 +87,22 @@ public class MasterNode extends ClusterManager {
         InsertTagsTask task;
         try {
             task = new InsertTagsTask(sentence, translation, forceTranslation);
+            return this.execute(task);
+        } catch (Throwable e) {
+            if (e instanceof ProcessingException)
+                throw new TranslationException("Problem while processing translation", e);
+            else if (e instanceof RuntimeException)
+                throw (RuntimeException) e;
+            else
+                throw new Error("Unexpected exception: " + e.getMessage(), e);
+        }
+    }
+
+    public String alignTags(String sentence, String translation, boolean forceTranslation,
+                            Symmetrisation.Type symmetrizationStrategy) throws TranslationException {
+        InsertTagsTask task;
+        try {
+            task = new InsertTagsTask(sentence, translation, forceTranslation, symmetrizationStrategy);
             return this.execute(task);
         } catch (Throwable e) {
             if (e instanceof ProcessingException)
