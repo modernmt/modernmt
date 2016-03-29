@@ -1,7 +1,6 @@
 package eu.modernmt.processing.framework.string;
 
 import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Token;
 
 import java.util.Collection;
 import java.util.Deque;
@@ -14,6 +13,26 @@ import java.util.TreeSet;
 public class ProcessedString {
 
     protected static class Operation {
+
+        protected int startIndex;
+        protected int length;
+        protected int lengthNewString;
+        protected String newString;
+        private String originalString;
+
+        @Override
+        public String toString() {
+            return "Operation{" +
+                    "startIndex=" + startIndex +
+                    ", length=" + length +
+                    ", lengthNewString=" + lengthNewString +
+                    ", newString='" + newString + '\'' +
+                    ", originalString='" + originalString + '\'' +
+                    '}';
+        }
+    }
+
+    protected static class Token {
 
         protected int startIndex;
         protected int length;
@@ -79,5 +98,8 @@ public class ProcessedString {
         return this.changeLog;
     }
 
-    ;
+    @Override
+    public String toString() {
+        return this.currentString.toString();
+    }
 }
