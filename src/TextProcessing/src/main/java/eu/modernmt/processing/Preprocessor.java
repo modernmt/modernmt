@@ -3,15 +3,13 @@ package eu.modernmt.processing;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.framework.*;
 import eu.modernmt.processing.framework.string.ProcessedString;
-import eu.modernmt.processing.framework.string.StringEditor;
-import eu.modernmt.processing.numbers.NumericTokenExtractor;
 import eu.modernmt.processing.tokenizer.SimpleTokenizer;
-import eu.modernmt.processing.tokenizer.TokenizedString;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizers;
 import eu.modernmt.processing.util.StringNormalizer;
-import eu.modernmt.processing.xml.XMLSentenceBuilder;
-import eu.modernmt.processing.xml.XMLStringParser;
+import eu.modernmt.processing.xml.HTMLEntityUnescaper;
+import eu.modernmt.processing.xml.XMLEntityEscaper;
+import eu.modernmt.processing.xml.XMLTagExtractor;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
@@ -24,11 +22,6 @@ import java.util.Locale;
  */
 public class Preprocessor implements Closeable {
 
-    private static final StringNormalizer normalizer = new StringNormalizer();
-    private static final XMLStringParser parser = new XMLStringParser();
-    private static final XMLSentenceBuilder sentenceBuilder = new XMLSentenceBuilder();
-    private static final NumericTokenExtractor<Sentence> numberExtractor = new NumericTokenExtractor<>();
-
     private final ProcessingPipeline<String, Sentence> pipelineWithTokenization;
     private final ProcessingPipeline<String, Sentence> pipelineWithoutTokenization;
 
@@ -39,14 +32,15 @@ public class Preprocessor implements Closeable {
     public static ProcessingPipeline<String, Sentence> getPipeline(Locale language, boolean tokenize, int threads) {
         Tokenizer languageTokenizer = tokenize ? Tokenizers.forLanguage(language) : new SimpleTokenizer();
 
-        return new ProcessingPipeline.Builder<String, String>()
-                .setThreads(threads)
-                .add(normalizer)
-                .add(parser)
-                .add(languageTokenizer)
-                .add(sentenceBuilder)
-                .add(numberExtractor)
-                .create();
+        return null;
+//        return new ProcessingPipeline.Builder<String, String>()
+//                .setThreads(threads)
+//                .add(normalizer)
+//                .add(parser)
+//                .add(languageTokenizer)
+//                .add(sentenceBuilder)
+//                .add(numberExtractor)
+//                .create();
     }
 
     public Preprocessor(Locale language) {
@@ -128,15 +122,16 @@ public class Preprocessor implements Closeable {
     }
 
     public static void main(String[] args) throws Throwable {
-        ProcessedString string = new ProcessedString("That`s\tit!");
+        ProcessedString string = new ProcessedString("&apos;<b>That</b>`s\t\t \tit! &apos;&#40;\t\t");
+//        ProcessedString string = new ProcessedString("``");
 
-        System.out.println(string);
-        StringEditor editor = string.getEditor();
-        editor.replace(4, 1, "'");
-        editor.replace(6, 1, "_");
-        editor.submitChanges();
-        System.out.println(string);
-
-
+        new StringNormalizer().call(string);
+        System.out.println("\"" + string + "\"");
+        new XMLTagExtractor().call(string);
+        System.out.println("\"" + string + "\"");
+        new HTMLEntityUnescaper().call(string);
+        System.out.println("\"" + string + "\"");
+        new XMLEntityEscaper().call(string);
+        System.out.println("\"" + string + "\"");
     }
 }

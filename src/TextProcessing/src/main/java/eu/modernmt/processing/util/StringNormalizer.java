@@ -1,61 +1,64 @@
 package eu.modernmt.processing.util;
 
 import eu.modernmt.processing.framework.TextProcessor;
+import eu.modernmt.processing.framework.string.ProcessedString;
+import eu.modernmt.processing.framework.string.StringEditor;
 
 /**
  * Created by davide on 19/02/16.
  */
-public class StringNormalizer implements TextProcessor<String, String> {
+public class StringNormalizer implements TextProcessor<ProcessedString, ProcessedString> {
 
+    private static final int REGULAR = 0;
     private static final int WHITESPACE = 1;
-    private static final int CONTROL = 2;
 
     @Override
-    public String call(String param) {
-        char source[] = param.toCharArray();
-        char chars[] = new char[source.length];
+    public ProcessedString call(ProcessedString string) {
+        char source[] = string.toCharArray();
+        StringEditor editor = string.getEditor();
 
-        boolean start = true;
-        boolean whitespace = false;
+        boolean sentenceBegin = true;
+        int whitespaceStart = -1;
 
-        int index = 0;
-
-        for (char c : source) {
-            int type = 0;
-
-            if ((0x0009 <= c && c <= 0x000D) || c == 0x0020 || c == 0x00A0 || c == 0x1680 ||
-                    (0x2000 <= c && c <= 0x200A) || c == 0x202F || c == 0x205F || c == 0x3000) {
-                type = WHITESPACE;
-            } else if (c <= 0x001F) {
-                type = CONTROL;
-            }
+        int i;
+        for (i = 0; i < source.length; i++) {
+            char c = source[i];
+            int type = typeOf(c);
 
             switch (type) {
                 case WHITESPACE:
-                    whitespace = true;
-                    break;
-                case CONTROL:
-                    // Ignore it
+                    if (whitespaceStart == -1)
+                        whitespaceStart = i;
                     break;
                 default:
-                    if (start) {
-                        start = false;
-                        whitespace = false;
-                    } else if (whitespace) {
-                        chars[index] = ' ';
-                        whitespace = false;
-                        index++;
+                    if (whitespaceStart >= 0) {
+                        editor.replace(whitespaceStart, i - whitespaceStart, sentenceBegin ? "" : " ");
+                        whitespaceStart = -1;
                     }
 
-                    char nc = normalized(c);
-                    chars[index] = nc == '\0' ? c : nc;
+                    sentenceBegin = false;
 
-                    index++;
+                    char nc = normalized(c);
+                    if (nc != '\0')
+                        editor.replace(i, 1, Character.toString(nc));
+
                     break;
             }
         }
 
-        return new String(chars, 0, index);
+        if (whitespaceStart >= 0)
+            editor.replace(whitespaceStart, i - whitespaceStart, "");
+
+        return editor.commitChanges();
+    }
+
+    private static int typeOf(char c) {
+        if ((0x0009 <= c && c <= 0x000D) || c == 0x0020 || c == 0x00A0 || c == 0x1680 ||
+                (0x2000 <= c && c <= 0x200A) || c == 0x202F || c == 0x205F || c == 0x3000) {
+            return WHITESPACE;
+        } else {
+            return REGULAR;
+        }
     }
 
     private static char normalized(char c) {

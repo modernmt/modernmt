@@ -79,6 +79,14 @@ public class ProcessedString {
         return this.changeLog;
     }
 
+    public char[] toCharArray() {
+        int l = currentString.length();
+        char[] buffer = new char[l];
+        currentString.getChars(0, l, buffer, 0);
+
+        return buffer;
+    }
+
     @Override
     public String toString() {
         return currentString.toString();
