@@ -67,20 +67,18 @@ public class StringEditor {
 
     public void submitChanges() {
         this.processedString.applyOperations(this.changeLog);
-        this.processedString = null;
         this.changeLog = null;
         this.tokens = null;
         this.inUse = false;
     }
 
     public void discardChanges() {
-        this.processedString = null;
         this.changeLog = null;
         this.tokens = null;
         this.inUse = false;
     }
 
-    public boolean isInUse() {
+    protected boolean isInUse() {
         return inUse;
     }
 }
