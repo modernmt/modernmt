@@ -79,5 +79,8 @@ public class ProcessedString {
         return this.changeLog;
     }
 
-    ;
+    @Override
+    public String toString() {
+        return currentString.toString();
+    }
 }

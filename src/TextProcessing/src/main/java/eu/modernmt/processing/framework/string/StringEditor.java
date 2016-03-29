@@ -23,15 +23,11 @@ public class StringEditor {
     }
 
     protected void init() {
-        this.changeLog = new LinkedList<ProcessedString.Operation>();
-        this.tokens = new TreeSet<Token>(this.processedString.getTokens());
+        this.changeLog = new LinkedList<>();
+        this.tokens = new TreeSet<>();
         this.lastEditedIndex = 0;
         this.deltaIndexes = 0;
         this.inUse = true;
-    }
-
-    public String getOriginalString() {
-        return processedString.getCurrentString();
     }
 
     public void replace(int startIndex, int length, String string) {
@@ -67,14 +63,12 @@ public class StringEditor {
 
     public void submitChanges() {
         this.processedString.applyOperations(this.changeLog);
-        this.processedString = null;
         this.changeLog = null;
         this.tokens = null;
         this.inUse = false;
     }
 
     public void discardChanges() {
-        this.processedString = null;
         this.changeLog = null;
         this.tokens = null;
         this.inUse = false;

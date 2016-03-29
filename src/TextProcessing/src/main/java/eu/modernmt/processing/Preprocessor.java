@@ -2,6 +2,8 @@ package eu.modernmt.processing;
 
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.framework.*;
+import eu.modernmt.processing.framework.string.ProcessedString;
+import eu.modernmt.processing.framework.string.StringEditor;
 import eu.modernmt.processing.numbers.NumericTokenExtractor;
 import eu.modernmt.processing.tokenizer.SimpleTokenizer;
 import eu.modernmt.processing.tokenizer.TokenizedString;
@@ -125,4 +127,16 @@ public class Preprocessor implements Closeable {
 
     }
 
+    public static void main(String[] args) throws Throwable {
+        ProcessedString string = new ProcessedString("That`s\tit!");
+
+        System.out.println(string);
+        StringEditor editor = string.getEditor();
+        editor.replace(4, 1, "'");
+        editor.replace(6, 1, "_");
+        editor.submitChanges();
+        System.out.println(string);
+
+
+    }
 }
