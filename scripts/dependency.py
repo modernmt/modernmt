@@ -92,7 +92,8 @@ class Injector:
             definition = self._definitions[section][param_name]
             return definition[2] if len(definition) > 2 else None
         else:
-            raise Exception('Unknown param "' + param_name + '" of section "' + section + '"')
+            raise Exception('Unknown param "' + param_name + '" of section "' + section +
+                            '" (have you forgotten to add your model class to mmt _injectable_components?)')
 
     def inject(self, instance):
         section, fields = self._get_definitions(instance)
