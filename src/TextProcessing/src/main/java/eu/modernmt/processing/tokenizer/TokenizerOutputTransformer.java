@@ -1,6 +1,8 @@
 package eu.modernmt.processing.tokenizer;
 
-import java.util.BitSet;
+import eu.modernmt.processing.framework.string.ProcessedString;
+import eu.modernmt.processing.framework.string.StringEditor;
+
 import java.util.List;
 
 /**
@@ -10,38 +12,33 @@ import java.util.List;
 public class TokenizerOutputTransformer {
 
     @Deprecated
-    public static void transform(TokenizedString text, String[] tokens) {
-        int length = text.string.length();
+    public static ProcessedString transform(ProcessedString text, String[] tokens) {
+        StringEditor editor = text.getEditor();
+
+        String string = text.toString();
+        int length = string.length();
 
         int stringIndex = 0;
         int lastPosition = 0;
 
         for (String token : tokens) {
-            int tokenPos = text.string.indexOf(token, stringIndex);
+            int tokenPos = string.indexOf(token, stringIndex);
             stringIndex = tokenPos + token.length();
 
             if (tokenPos != lastPosition)
-                text.setToken(lastPosition, tokenPos);
+                editor.setWord(lastPosition, tokenPos - lastPosition);
 
             lastPosition = tokenPos + token.length();
             if (lastPosition < length)
-                text.setToken(tokenPos, lastPosition);
+                editor.setWord(tokenPos, lastPosition - tokenPos);
         }
+
+        return editor.commitChanges();
     }
 
     @Deprecated
-    public static void transform(TokenizedString string, List<String> tokens) {
-        transform(string, tokens.toArray(new String[tokens.size()]));
-    }
-
-    private static void printDebug(String string, BitSet bitSet) {
-        for (int i = 0; i < string.length(); i++) {
-            if (bitSet.get(i))
-                System.out.print('|');
-            System.out.print(string.charAt(i));
-        }
-
-        System.out.println();
+    public static ProcessedString transform(ProcessedString string, List<String> tokens) {
+        return transform(string, tokens.toArray(new String[tokens.size()]));
     }
 
 }

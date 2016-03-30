@@ -20,7 +20,7 @@ public class StringEditor {
 
     protected void init() {
         this.changeLog = new LinkedList<>();
-        this.lastEditedIndex = 0;
+        this.lastEditedIndex = -1;
         this.deltaIndexes = 0;
         this.inUse = true;
     }
@@ -37,7 +37,7 @@ public class StringEditor {
             operation.newString = string;
             operation.tagType = tagOperation;
             this.changeLog.add(operation);
-            this.lastEditedIndex = startIndex + length;
+            this.lastEditedIndex = startIndex + length - 1;
             this.deltaIndexes += (operation.lengthNewString - operation.length);
         } else {
             throw new InvalidOperationException(startIndex, this.lastEditedIndex);
@@ -68,15 +68,19 @@ public class StringEditor {
         replace(startIndex, length, " ", ProcessedString.TokenType.XML);
     }
 
-    public void submitChanges() {
+    public ProcessedString commitChanges() {
         this.processedString.applyOperations(this.changeLog);
         this.changeLog = null;
         this.inUse = false;
+
+        return this.processedString;
     }
 
-    public void discardChanges() {
+    public ProcessedString discardChanges() {
         this.changeLog = null;
         this.inUse = false;
+
+        return this.processedString;
     }
 
     protected boolean isInUse() {
