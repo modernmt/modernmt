@@ -1,10 +1,7 @@
 package eu.modernmt.processing.framework.string;
 
-import eu.modernmt.model.Token;
-
 import java.util.LinkedList;
 import java.util.List;
-import java.util.TreeSet;
 
 /**
  * Created by lucamastrostefano on 25/03/16.
@@ -12,7 +9,6 @@ import java.util.TreeSet;
 public class StringEditor {
 
     private List<ProcessedString.Operation> changeLog;
-    private TreeSet<Token> tokens;
     private ProcessedString processedString;
     private int lastEditedIndex;
     private int deltaIndexes;
@@ -24,25 +20,32 @@ public class StringEditor {
 
     protected void init() {
         this.changeLog = new LinkedList<>();
-        this.tokens = new TreeSet<>();
         this.lastEditedIndex = -1;
         this.deltaIndexes = 0;
         this.inUse = true;
     }
 
-    public void replace(int startIndex, int length, String string) {
+    public void replace(int startIndex, int length, String string, ProcessedString.TokenType tagOperation) {
+        if (!this.inUse) {
+            throw new RuntimeException("Closed editor");
+        }
         if (startIndex > this.lastEditedIndex) {
             ProcessedString.Operation operation = new ProcessedString.Operation();
             operation.startIndex = startIndex + this.deltaIndexes;
             operation.length = length;
             operation.lengthNewString = string.length();
             operation.newString = string;
+            operation.tagType = tagOperation;
             this.changeLog.add(operation);
             this.lastEditedIndex = startIndex + length - 1;
             this.deltaIndexes += (operation.lengthNewString - operation.length);
         } else {
-            throw new RuntimeException("Overlapping operation");
+            throw new InvalidOperationException(startIndex, this.lastEditedIndex);
         }
+    }
+
+    public void replace(int startIndex, int length, String string) {
+        this.replace(startIndex, length, string, null);
     }
 
     public void delete(int startIndex, int length) {
@@ -53,18 +56,21 @@ public class StringEditor {
         this.replace(startIndex, 0, string);
     }
 
+    public void setWord(int startIndex, int length, String replace) {
+        replace(startIndex, length, replace, ProcessedString.TokenType.Word);
+    }
+
     public void setWord(int startIndex, int length) {
-        //Replace and create token
+        replace(startIndex, length, "", ProcessedString.TokenType.Word);
     }
 
     public void setXMLTag(int startIndex, int length) {
-        //Replace with "" and create tag
+        replace(startIndex, length, " ", ProcessedString.TokenType.XML);
     }
 
     public ProcessedString commitChanges() {
         this.processedString.applyOperations(this.changeLog);
         this.changeLog = null;
-        this.tokens = null;
         this.inUse = false;
 
         return this.processedString;
@@ -72,13 +78,12 @@ public class StringEditor {
 
     public ProcessedString discardChanges() {
         this.changeLog = null;
-        this.tokens = null;
         this.inUse = false;
 
         return this.processedString;
     }
 
-    public boolean isInUse() {
+    protected boolean isInUse() {
         return inUse;
     }
 }
