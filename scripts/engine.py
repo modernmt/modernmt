@@ -156,14 +156,22 @@ class _ProcessMonitor:
 
         exit(0)
 
+    # after this amount of seconds, there is no excuse for a process to still be there.
+    SIGTERM_TIMEOUT = 60 * 5
+
     def stop(self):
         pid = self._get_pid()
 
         if not self.is_running():
             raise IllegalStateException('process is not running')
 
-        os.kill(pid, signal.SIGTERM)
-        daemon.wait(pid)
+        try:
+            os.kill(pid, signal.SIGTERM)
+            daemon.wait(pid, _ProcessMonitor.SIGTERM_TIMEOUT)
+        except daemon.TimeoutExpired:
+            # firin mah lazer!!1
+            os.kill(pid, signal.SIGKILL)
+            daemon.wait(pid)
 
 
 # ==============================
@@ -233,12 +241,6 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
             if len(unknown_steps) > 0:
                 raise IllegalArgumentException('Unknown training steps: ' + str(unknown_steps))
 
-        # Current implementation of AdaptiveLM is not useful during translation.
-        # We chose to skip thi component for the moment.
-        steps = steps[:]
-        if 'adaptive_lm' in steps:
-            steps.remove('adaptive_lm')
-
         cmdlogger = _MMTEngineBuilderLogger(len(steps) + 1)
         cmdlogger.start(self._engine, bilingual_corpora, monolingual_corpora)
 
@@ -285,19 +287,11 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
                     self._engine.analyzer.create_index(unprocessed_bicorpora, source_lang, log_file=log_file)
 
             # Training Adaptive Language Model (on the target side of all bilingual corpora)
-            if 'adaptive_lm' in steps:
-                with cmdlogger.step('Adaptive Language Model training') as _:
-                    working_dir = self._get_tempdir('adaptive_lm')
+            if 'lm' in steps:
+                with cmdlogger.step('Language Model training') as _:
+                    working_dir = self._get_tempdir('lm')
                     log_file = self._get_logfile('lm')
-                    self._engine.adaptive_lm.train(processed_bicorpora, target_lang, working_dir, log_file)
-
-            # Training Background Static Language Model (on all available monolingual corpora)
-            if 'static_lm' in steps:
-                with cmdlogger.step('Background Language Model training') as _:
-                    working_dir = self._get_tempdir('static_lm')
-                    log_file = self._get_logfile('lm')
-                    self._engine.static_lm.train(processed_bicorpora + processed_mocorpora,
-                                                 target_lang, working_dir, log_file)
+                    self._engine.lm.train(processed_bicorpora + processed_mocorpora, target_lang, working_dir, log_file)
 
             # Training Translation Model
             if 'tm' in steps:
@@ -323,23 +317,19 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
 class MMTEngine:
     injector_section = 'engine'
     injectable_fields = {
-        'adaptive_lm_type': ('Adaptive LM implementation',
-                             (basestring, LanguageModel.available_types), 'AdaptiveIRSTLM'),
-        'static_lm_type': ('Background LM implementation',
-                           (basestring, LanguageModel.available_types), 'KenLM'),
+        'lm_type': ('LM implementation', (basestring, LanguageModel.available_types), 'MultiplexedLM'),
         'aligner_type': ('Aligner implementation',
                          (basestring, WordAligner.available_types), WordAligner.available_types[0]),
     }
 
-    training_steps = ['tm_cleanup', 'preprocess', 'context_analyzer', 'adaptive_lm', 'static_lm', 'tm']
+    training_steps = ['tm_cleanup', 'preprocess', 'context_analyzer', 'lm', 'tm']
 
     def __init__(self, langs=None, name=None):
         self.name = name if name is not None else 'default'
         self.source_lang = langs[0] if langs is not None else None
         self.target_lang = langs[1] if langs is not None else None
 
-        self._adaptive_lm_type = None  # Injected
-        self._static_lm_type = None  # Injected
+        self._lm_type = None  # Injected
         self._aligner_type = None  # Injected
 
         self._config = None
@@ -351,8 +341,7 @@ class MMTEngine:
 
         self._config_file = os.path.join(self.path, 'engine.ini')
         self._pt_model = os.path.join(self.models_path, 'phrase_tables')
-        self._adaptive_lm_model = os.path.join(self.models_path, 'lm_adaptive', 'adaptive.lm')
-        self._static_lm_model = os.path.join(self.models_path, 'lm_static', 'background.lm')
+        self._lm_model = os.path.join(self.models_path, 'lm', 'target.lm')
         self._context_index = os.path.join(self.models_path, 'context', 'index')
         self._moses_ini_file = os.path.join(self.models_path, 'moses.ini')
 
@@ -382,8 +371,7 @@ class MMTEngine:
 
         self.pt = injector.inject(SuffixArraysPhraseTable(self._pt_model, (self.source_lang, self.target_lang)))
         self.aligner = injector.inject(WordAligner.instantiate(self._aligner_type))
-        self.adaptive_lm = injector.inject(LanguageModel.instantiate(self._adaptive_lm_type, self._adaptive_lm_model))
-        self.static_lm = injector.inject(LanguageModel.instantiate(self._static_lm_type, self._static_lm_model))
+        self.lm = injector.inject(LanguageModel.instantiate(self._lm_type, self._lm_model))
 
         self.moses = injector.inject(Moses(self._moses_ini_file))
         self.moses.add_feature(MosesFeature('UnknownWordPenalty'))
@@ -392,16 +380,15 @@ class MMTEngine:
         self.moses.add_feature(MosesFeature('PhrasePenalty'))
         self.moses.add_feature(self.pt, 'PT0')
         self.moses.add_feature(LexicalReordering(), 'DM0')
-        self.moses.add_feature(self.static_lm, 'StaticLM')
-        # self.moses.add_feature(self.adaptive_lm, 'AdaptiveLM')
+        self.moses.add_feature(self.lm, 'MuxLM')
 
         self._optimal_weights = {
-            'StaticLM': [0.0479499],
-            'DM0': [0.0190023, 0.0340374, 0.0498094, 0.0268307, 0.162592, 0.0265619, 0.202375, 3.65487E-4],
-            'Distortion0': [0.0327652],
-            'WordPenalty0': [-0.093101],
-            'PhrasePenalty0': [-0.207421],
-            'PT0': [-0.00105085, 0.00839102, 0.00796365, 0.0356109, 0.0441722],
+            'MuxLM': [0.03],
+            'DM0': [0.0281009, 0.0254415, 0.0229716, 0.0334702, 0.0440066, 0.0106037, 0.163133, 0.179085],
+            'Distortion0': [0.00517499],
+            'WordPenalty0': [-0.124562],
+            'PhrasePenalty0': [-0.165601],
+            'PT0': [8.95681E-4, 0.0163699, 0.102362, 0.0310822, 0.0160701],
         }
 
         if self._config is None:
