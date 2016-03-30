@@ -29,7 +29,7 @@ public class TokenizerOutputTransformer {
                 editor.setWord(lastPosition, tokenPos - lastPosition);
 
             lastPosition = tokenPos + token.length();
-            if (lastPosition < length)
+            if (lastPosition <= length)
                 editor.setWord(tokenPos, lastPosition - tokenPos);
         }
 

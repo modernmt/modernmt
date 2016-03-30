@@ -19,12 +19,16 @@ public class ProcessedString {
 
         protected int startIndex;
         protected int length;
-        protected TokenType tagType;
+        protected TokenType tokenType;
 
-        public TokenHook(int startIndex, int length, TokenType tagType) {
+        public TokenHook(int startIndex, int length, TokenType tokenType) {
             this.startIndex = startIndex;
             this.length = length;
-            this.tagType = tagType;
+            this.tokenType = tokenType;
+        }
+
+        public boolean isAtomic() {
+            return this.length < 0;
         }
 
         @Override
@@ -32,7 +36,7 @@ public class ProcessedString {
             return "TokenHook{" +
                     "startIndex=" + startIndex +
                     ", length=" + length +
-                    ", tagType=" + tagType +
+                    ", tokenType=" + tokenType +
                     '}';
         }
     }
@@ -43,7 +47,7 @@ public class ProcessedString {
         protected int length;
         protected int lengthNewString;
         protected String newString;
-        protected TokenType tagType;
+        protected TokenType tokenType;
         private String originalString;
 
         @Override
@@ -53,9 +57,19 @@ public class ProcessedString {
                     ", length=" + length +
                     ", lengthNewString=" + lengthNewString +
                     ", newString='" + newString + '\'' +
-                    ", tagType=" + tagType +
+                    ", tokenType=" + tokenType +
                     ", originalString='" + originalString + '\'' +
                     '}';
+        }
+
+        protected Operation getInverse() {
+            Operation inverse = new Operation();
+            inverse.startIndex = startIndex;
+            inverse.length = lengthNewString;
+            inverse.newString = originalString;
+            inverse.lengthNewString = length;
+            inverse.tokenType = tokenType;
+            return inverse;
         }
     }
 
@@ -90,24 +104,30 @@ public class ProcessedString {
         for (Operation operation : operations) {
             int operationEndIndex = operation.startIndex + operation.length;
             operation.originalString = this.currentString.substring(operation.startIndex, operationEndIndex);
-            this.currentString.replace(operation.startIndex, operationEndIndex, operation.newString);
+            if (TokenType.Word.equals(operation.tokenType)) {
+                operation.newString = this.currentString.substring(operation.startIndex, operationEndIndex);
+                operation.lengthNewString = operation.newString.length();
+            }
             int delta = operation.lengthNewString - operation.length;
+            int operationLastEditedIndex = operationEndIndex - 1;
             if (delta != 0) {
                 for (TokenHook hook : this.tokens) {
-                    int hookEndIndex = hook.startIndex + hook.length;
+                    int hookLastEditedIndex = hook.startIndex + hook.length - 1;
                     if (hook.startIndex >= operationEndIndex) {
                         hook.startIndex += delta;
                     } else if (hook.startIndex > operation.startIndex) {
                         throw new InvalidOperationException(operation, hook);
-                    } else if (hook.startIndex == operation.startIndex && hook.length != operation.length) {
+                    } else if (hook.startIndex == operation.startIndex && operation.length > hook.length) {
                         throw new InvalidOperationException(operation, hook);
+                    } else if (hook.startIndex == operation.startIndex && operation.length < hook.length) {
+                        hook.length += delta;
                     } else if (hook.startIndex == operation.startIndex) {
                         hook.length = operation.lengthNewString;
-                    } else if (hookEndIndex >= operationEndIndex) {
+                    } else if (hookLastEditedIndex >= operationEndIndex) {
                         hook.length += delta;
-                    } else if (hookEndIndex >= operation.startIndex) {
+                    } else if (hookLastEditedIndex >= operation.startIndex) {
                         throw new InvalidOperationException(operation, hook);
-                    } else if (hookEndIndex < operation.startIndex) {
+                    } else if (hookLastEditedIndex < operation.startIndex) {
                         //Do nothing
                     } else {
                         throw new InvalidOperationException(operation, hook, "Unexpected situation");
@@ -115,17 +135,41 @@ public class ProcessedString {
                 }
             }
 
-            if (operation.tagType != null) {
+            if (!TokenType.Word.equals(operation.tokenType)) {
+                this.currentString.replace(operation.startIndex, operationEndIndex, operation.newString);
+            }
+
+            if (operation.tokenType != null) {
                 TokenHook hook = new TokenHook(operation.startIndex, operation.lengthNewString,
-                        operation.tagType);
+                        operation.tokenType);
                 this.tokens.add(hook);
             }
 
-            this.changeLog.addLast(operation);
+            this.changeLog.push(operation);
+        }
+    }
+
+    private void reverseChangeLog() {
+        Deque<Operation> operations = new LinkedList<>(this.changeLog);
+        while (!operations.isEmpty()) {
+            Operation operation = operations.pop();
+            if (!TokenType.Word.equals(operation.tokenType)) {
+                Operation inverse = operation.getInverse();
+                inverse.tokenType = null;
+                Collection<Operation> c = new LinkedList<>();
+                c.add(inverse);
+                this.applyOperations(c);
+                System.out.println(inverse);
+                System.out.println(this.toString());
+                for (TokenHook t : this.getTokens()) {
+                    System.out.println(t + "|||" + this.currentString.substring(t.startIndex, t.startIndex + Math.max(0,t.length)));
+                }
+            }
         }
     }
 
     public Sentence getSentence() {
+        this.reverseChangeLog();
         return new Sentence(new Token[]{new Token(this.currentString.toString())});
     }
 

@@ -25,7 +25,7 @@ public class StringEditor {
         this.inUse = true;
     }
 
-    public void replace(int startIndex, int length, String string, ProcessedString.TokenType tagOperation) {
+    public void replace(int startIndex, int length, String replace, ProcessedString.TokenType tokenType) {
         if (!this.inUse) {
             throw new RuntimeException("Closed editor");
         }
@@ -33,9 +33,13 @@ public class StringEditor {
             ProcessedString.Operation operation = new ProcessedString.Operation();
             operation.startIndex = startIndex + this.deltaIndexes;
             operation.length = length;
-            operation.lengthNewString = string.length();
-            operation.newString = string;
-            operation.tagType = tagOperation;
+            if (replace == null) {
+                operation.lengthNewString = length;
+            } else {
+                operation.newString = replace;
+                operation.lengthNewString = replace.length();
+            }
+            operation.tokenType = tokenType;
             this.changeLog.add(operation);
             this.lastEditedIndex = startIndex + length - 1;
             this.deltaIndexes += (operation.lengthNewString - operation.length);
@@ -61,7 +65,7 @@ public class StringEditor {
     }
 
     public void setWord(int startIndex, int length) {
-        replace(startIndex, length, "", ProcessedString.TokenType.Word);
+        replace(startIndex, length, null, ProcessedString.TokenType.Word);
     }
 
     public void setXMLTag(int startIndex, int length) {
