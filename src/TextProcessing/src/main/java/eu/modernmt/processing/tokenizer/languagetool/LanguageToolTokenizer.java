@@ -2,8 +2,8 @@ package eu.modernmt.processing.tokenizer.languagetool;
 
 import eu.modernmt.processing.Languages;
 import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.framework.string.ProcessedString;
 import eu.modernmt.processing.tokenizer.MultiInstanceTokenizer;
-import eu.modernmt.processing.tokenizer.TokenizedString;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 import org.languagetool.language.tokenizers.TagalogWordTokenizer;
@@ -93,14 +93,13 @@ public class LanguageToolTokenizer extends MultiInstanceTokenizer {
         }
 
         @Override
-        public TokenizedString call(TokenizedString text) throws ProcessingException {
-            List<String> tokens = tokenizer.tokenize(text.string);
+        public ProcessedString call(ProcessedString text) throws ProcessingException {
+            List<String> tokens = tokenizer.tokenize(text.toString());
             ArrayList<String> result = new ArrayList<>(tokens.size());
 
             result.addAll(tokens.stream().filter(token -> !token.trim().isEmpty()).collect(Collectors.toList()));
 
-            TokenizerOutputTransformer.transform(text, result);
-            return text;
+            return TokenizerOutputTransformer.transform(text, result);
         }
 
         @Override

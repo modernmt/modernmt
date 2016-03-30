@@ -53,7 +53,7 @@ public class StringEditor {
         this.replace(startIndex, 0, string);
     }
 
-    public void setWord(int startIndex, int length, String string) {
+    public void setWord(int startIndex, int length) {
         //Replace and create token
     }
 

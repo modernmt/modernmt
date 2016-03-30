@@ -1,12 +1,14 @@
 package eu.modernmt.processing;
 
 import eu.modernmt.model.Sentence;
+import eu.modernmt.processing.detokenizer.SpaceNormalizer;
 import eu.modernmt.processing.framework.*;
 import eu.modernmt.processing.framework.string.ProcessedString;
 import eu.modernmt.processing.tokenizer.SimpleTokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizers;
 import eu.modernmt.processing.util.StringNormalizer;
+import eu.modernmt.processing.util.TokensOutputter;
 import eu.modernmt.processing.xml.HTMLEntityUnescaper;
 import eu.modernmt.processing.xml.XMLEntityEscaper;
 import eu.modernmt.processing.xml.XMLTagExtractor;
@@ -122,16 +124,26 @@ public class Preprocessor implements Closeable {
     }
 
     public static void main(String[] args) throws Throwable {
-        ProcessedString string = new ProcessedString("&apos;<b>That</b>`s\t\t \tit! &apos;&#40;\t\t");
-//        ProcessedString string = new ProcessedString("``");
+//        ProcessedString string = new ProcessedString("&apos;<b>That</b> `s\t\t \tit! &apos;&#40;\t\t");
+        ProcessedString string = new ProcessedString("That `s\t\t \tit!");
+
+        Locale language = Locale.ENGLISH;
 
         new StringNormalizer().call(string);
-        System.out.println("\"" + string + "\"");
+        System.out.println("StringNormalizer:    \"" + string + "\"");
         new XMLTagExtractor().call(string);
-        System.out.println("\"" + string + "\"");
+        System.out.println("XMLTagExtractor:     \"" + string + "\"");
         new HTMLEntityUnescaper().call(string);
-        System.out.println("\"" + string + "\"");
+        System.out.println("HTMLEntityUnescaper: \"" + string + "\"");
+        SpaceNormalizer.forLanguage(language).call(string);
+        System.out.println("SpaceNormalizer:     \"" + string + "\"");
+        Tokenizers.forLanguage(language).call(string);
+        System.out.println("Tokenizer:           \"" + string + "\"");
         new XMLEntityEscaper().call(string);
-        System.out.println("\"" + string + "\"");
+        System.out.println("XMLEntityEscaper:    \"" + string + "\"");
+
+        Sentence sentence = string.getSentence();
+        System.out.println(sentence);
+        System.out.println(TokensOutputter.toString(sentence, true, true));
     }
 }

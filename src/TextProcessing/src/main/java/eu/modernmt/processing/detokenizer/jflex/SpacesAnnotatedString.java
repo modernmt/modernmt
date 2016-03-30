@@ -2,6 +2,8 @@ package eu.modernmt.processing.detokenizer.jflex;
 
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
+import eu.modernmt.processing.framework.string.ProcessedString;
+import eu.modernmt.processing.framework.string.StringEditor;
 
 import java.io.CharArrayReader;
 import java.io.Reader;
@@ -28,6 +30,11 @@ public class SpacesAnnotatedString {
         builder.getChars(0, builder.length(), buffer, 0);
 
         return new SpacesAnnotatedString(buffer);
+    }
+
+    public static SpacesAnnotatedString fromString(String string) {
+        string = ' ' + string + ' ';
+        return new SpacesAnnotatedString(string.toCharArray());
     }
 
     private SpacesAnnotatedString(char[] text) {
@@ -69,7 +76,7 @@ public class SpacesAnnotatedString {
         return new CharArrayReader(text);
     }
 
-    public void apply(Translation translation) {
+    public Translation apply(Translation translation) {
         int index = 1; // Skip first whitespace
 
         for (Token word : translation.getWords()) {
@@ -79,6 +86,19 @@ public class SpacesAnnotatedString {
             word.setRightSpace(!bits.get(index));
             index++;
         }
+
+        return translation;
+    }
+
+    public ProcessedString apply(ProcessedString string) {
+        StringEditor editor = string.getEditor();
+
+        for (int i = 1; i < text.length - 1; i++) {
+            if (bits.get(i))
+                editor.delete(i - 1, 1);
+        }
+
+        return editor.commitChanges();
     }
 
     @Override

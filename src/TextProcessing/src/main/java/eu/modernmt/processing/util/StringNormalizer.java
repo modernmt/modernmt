@@ -32,7 +32,10 @@ public class StringNormalizer implements TextProcessor<ProcessedString, Processe
                     break;
                 default:
                     if (whitespaceStart >= 0) {
-                        editor.replace(whitespaceStart, i - whitespaceStart, sentenceBegin ? "" : " ");
+                        if (sentenceBegin)
+                            editor.delete(whitespaceStart, i - whitespaceStart);
+                        else
+                            editor.replace(whitespaceStart, i - whitespaceStart, " ");
                         whitespaceStart = -1;
                     }
 
@@ -47,7 +50,7 @@ public class StringNormalizer implements TextProcessor<ProcessedString, Processe
         }
 
         if (whitespaceStart >= 0)
-            editor.replace(whitespaceStart, i - whitespaceStart, "");
+            editor.delete(whitespaceStart, i - whitespaceStart);
 
         return editor.commitChanges();
     }

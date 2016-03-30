@@ -2,9 +2,9 @@ package eu.modernmt.processing.tokenizer.moses;
 
 import eu.modernmt.config.Config;
 import eu.modernmt.io.UnixLineReader;
-import eu.modernmt.processing.tokenizer.TokenizedString;
 import eu.modernmt.processing.Languages;
 import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.framework.string.ProcessedString;
 import eu.modernmt.processing.tokenizer.MultiInstanceTokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
@@ -114,11 +114,11 @@ public class MosesTokenizer extends MultiInstanceTokenizer {
         }
 
         @Override
-        public TokenizedString call(TokenizedString text) throws ProcessingException {
+        public ProcessedString call(ProcessedString text) throws ProcessingException {
             String tokenized;
 
             try {
-                this.tokenizerStdin.write(text.string.getBytes("utf-8"));
+                this.tokenizerStdin.write(text.toString().getBytes("utf-8"));
                 this.tokenizerStdin.write('\n');
                 this.tokenizerStdin.flush();
 
@@ -127,8 +127,7 @@ public class MosesTokenizer extends MultiInstanceTokenizer {
                 throw new ProcessingException("Error while running perl script", e);
             }
 
-            TokenizerOutputTransformer.transform(text, tokenized.split("\\s+"));
-            return text;
+            return TokenizerOutputTransformer.transform(text, tokenized.split("\\s+"));
         }
 
         @Override
