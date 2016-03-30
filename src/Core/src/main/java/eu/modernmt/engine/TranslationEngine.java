@@ -97,6 +97,10 @@ public class TranslationEngine {
         return getConfig().getDecoderWeights();
     }
 
+    public boolean isEnableFastalign() {
+        return getConfig().isEnableFastalign();
+    }
+
     public void setDecoderWeights(Map<String, float[]> weights) {
         TranslationEngineConfig config = getConfig();
         config.setDecoderWeights(weights);
