@@ -25,7 +25,7 @@ public class TokenizerOutputTransformer {
             int tokenPos = string.indexOf(token, stringIndex);
             stringIndex = tokenPos + token.length();
 
-            if (tokenPos != lastPosition)
+            if (tokenPos != lastPosition && !isEmpty(string, lastPosition, tokenPos))
                 editor.setWord(lastPosition, tokenPos - lastPosition);
 
             lastPosition = tokenPos + token.length();
@@ -34,6 +34,18 @@ public class TokenizerOutputTransformer {
         }
 
         return editor.commitChanges();
+    }
+
+    private static boolean isEmpty(String string, int begin, int end) {
+        char[] chars = new char[end - begin];
+        string.getChars(begin, end, chars, 0);
+
+        for (char c : chars) {
+            if (c != ' ')
+                return false;
+        }
+
+        return true;
     }
 
     @Deprecated
