@@ -8,14 +8,14 @@ The ```Tags projection``` API takes as input a source sentence and its translati
 **Input:**
 
 Source sentence:
-```<br>hello, <b id="1">&apos;first&apos;<b id="2"> test<br>.```
+```<br>hello, <b id="1">first<b id="2"> test<br>.```
 
 Translation:
-```ciao, &apos;primo&apos; test.```
+```ciao, primo test.```
 
 **Output:**
 
-Translation with tags:  ```<br>ciao, <b id="1">&apos;primo&apos;<b id="2"> test<br>.```
+Translation with tags:  ```<br>ciao, <b id="1">primo<b id="2"> test<br>.```
 
 ## Input / Output definition
 
@@ -35,10 +35,11 @@ A JSON object with a key ```translation``` whose value is a XML encoded String r
 
 ### Example
 
-```GET tags-projection?s=<br>hello%2C%20<b%20id%3D"1">%60first%60<b%20id%3D"2">%20test<br>.&t=ciao%2C%20%26apos%3Bprimo%26apos%3B%20test.```
+```GET tags-projection?s=<br>hello%2C%20this%20is%20the%20%3Cb%3Efirst%3C%2Fb%3E%20test%26t%3Dciao%2C%20primo%20test.```
+
 
 ```json
     {
-        "translation": "<br>ciao, <b id=\"1\">&apos;primo&apos; <b id=\"2\">test<br>."
+        "translation": "<br>ciao, <b id=\"1\">primo<b id=\"2\"> test<br>."
     }
 ```
