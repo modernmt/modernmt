@@ -9,8 +9,7 @@ import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizers;
 import eu.modernmt.processing.util.RareCharsNormalizer;
 import eu.modernmt.processing.util.WhitespacesNormalizer;
-import eu.modernmt.processing.xml.HTMLEntityUnescaper;
-import eu.modernmt.processing.xml.XMLTagExtractor;
+import eu.modernmt.processing.xml.XMLStringBuilder;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
@@ -125,27 +124,26 @@ public class Preprocessor implements Closeable {
     public static void main(String[] args) throws Throwable {
 //        XMLEditableString XMLEditableString = new XMLEditableString("&apos;<b><t>That</b> `s\t\t \tit! &apos;&#40;\t\t");
 //        XMLEditableString XMLEditableString = new XMLEditableString("That `s\t\t \tit!");
-        XMLEditableString XMLEditableString = new XMLEditableString("&apos;<b><t>That</b> `s\t\t \tit! &apos;<b>\t <a> <c>&#40;\t\t");
+        String string = "&apos;<b><t>That</b> `s\t\t \tit! &apos;<b>\t <a> <c>&#40;\t\t";
 
         Locale language = Locale.ENGLISH;
 
-        XMLEditableString = process(new XMLTagExtractor(), XMLEditableString);
-        XMLEditableString = process(new HTMLEntityUnescaper(), XMLEditableString);
-        XMLEditableString = process(new RareCharsNormalizer(), XMLEditableString);
-        XMLEditableString = process(new WhitespacesNormalizer(), XMLEditableString);
-        XMLEditableString = process(SpaceNormalizer.forLanguage(language), XMLEditableString);
-        XMLEditableString = process(Tokenizers.forLanguage(language), XMLEditableString);
+        XMLEditableString xmlEditableString = new XMLStringBuilder().call(string);
+        xmlEditableString = process(new RareCharsNormalizer(), xmlEditableString);
+        xmlEditableString = process(new WhitespacesNormalizer(), xmlEditableString);
+        xmlEditableString = process(SpaceNormalizer.forLanguage(language), xmlEditableString);
+        xmlEditableString = process(Tokenizers.forLanguage(language), xmlEditableString);
 
         System.out.println("END OF PREPROCESSING");
 
-        XMLEditableString.getSentence();
+        xmlEditableString.getSentence();
 
-        System.out.println(XMLEditableString);
-        for (Object operation : XMLEditableString.getChangeLog())
+        System.out.println(xmlEditableString);
+        for (Object operation : xmlEditableString.getChangeLog())
             System.out.println("\t" + operation);
-        for (Object token : XMLEditableString.getTokens())
+        for (Object token : xmlEditableString.getTokens())
             System.out.println("\t" + token);
-        for (Object token : XMLEditableString.getXMLTags())
+        for (Object token : xmlEditableString.getXMLTags())
             System.out.println("\t" + token);
     }
 
