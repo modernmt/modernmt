@@ -124,19 +124,10 @@ public class Preprocessor implements Closeable {
 
     public static void main(String[] args) throws Throwable {
         ProcessedString processedString = new ProcessedString("&apos;<b><t>That</b> `s\t\t \tit! &apos;&#40;\t\t");
+        //ProcessedString processedString = new ProcessedString("&apos;<b>That</b> `s\t\t \tit! &apos;&#40;\t\t");
         //ProcessedString processedString = new ProcessedString("That `s\t\t \tit!");
-
+        System.out.println("ORIGINAL:\n" + processedString);
         Locale language = Locale.ENGLISH;
-
-        System.out.println("\nRunning StringNormalizer");
-        new StringNormalizer().call(processedString);
-        for (Object o : processedString.getChangeLog()) {
-            System.out.println(o);
-        }
-        for (Object t : processedString.getTokens()) {
-            System.out.println(t);
-        }
-        System.out.println("StringNormalizer:    \"" + processedString + "\"");
 
         System.out.println("\nRunning XMLTagExtractor");
         new XMLTagExtractor().call(processedString);
@@ -147,6 +138,16 @@ public class Preprocessor implements Closeable {
             System.out.println(t);
         }
         System.out.println("XMLTagExtractor:     \"" + processedString + "\"");
+
+        System.out.println("\nRunning StringNormalizer");
+        new StringNormalizer().call(processedString);
+        for (Object o : processedString.getChangeLog()) {
+            System.out.println(o);
+        }
+        for (Object t : processedString.getTokens()) {
+            System.out.println(t);
+        }
+        System.out.println("StringNormalizer:    \"" + processedString + "\"");
 
         System.out.println("\nRunning HTMLEntityUnescaper");
         new HTMLEntityUnescaper().call(processedString);
