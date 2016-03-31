@@ -25,10 +25,6 @@ public class XMLEditableString {
             this.tokenType = tokenType;
         }
 
-        public boolean isAtomic() {
-            return this.length < 0;
-        }
-
         @Override
         public String toString() {
             return "TokenHook{" +
@@ -37,6 +33,22 @@ public class XMLEditableString {
                     ", tokenType=" + tokenType +
                     ", processedString=" + processedString +
                     '}';
+        }
+
+        public int getStartIndex() {
+            return startIndex;
+        }
+
+        public int getLength() {
+            return length;
+        }
+
+        public TokenType getTokenType() {
+            return tokenType;
+        }
+
+        public String getProcessedString() {
+            return processedString;
         }
     }
 
@@ -214,7 +226,7 @@ public class XMLEditableString {
         }
         this.reverseChangeLog();
         this.compiled = true;
-        TreeSet<TokenHook> tokenHooks = new TreeSet<>(new Comparator<TokenHook>() {
+        SortedSet<TokenHook> tokenHooks = new TreeSet<>(new Comparator<TokenHook>() {
             @Override
             public int compare(TokenHook t1, TokenHook t2) {
                 return t1.startIndex - t2.startIndex;
