@@ -14,6 +14,7 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
@@ -136,15 +137,12 @@ public class Preprocessor implements Closeable {
 
         System.out.println("END OF PREPROCESSING");
 
-        xmlEditableString.getSentence();
+        Collection<XMLEditableString.TokenHook> hooks = xmlEditableString.compile();
 
         System.out.println(xmlEditableString);
-        for (Object operation : xmlEditableString.getChangeLog())
-            System.out.println("\t" + operation);
-        for (Object token : xmlEditableString.getTokens())
-            System.out.println("\t" + token);
-        for (Object token : xmlEditableString.getXMLTags())
-            System.out.println("\t" + token);
+        for (Object o : hooks) {
+            System.out.println(o);
+        }
     }
 
     private static XMLEditableString process(TextProcessor<XMLEditableString, XMLEditableString> processor, XMLEditableString string) throws ProcessingException {
@@ -152,13 +150,6 @@ public class Preprocessor implements Closeable {
 
         System.out.println("Running " + processorName);
         XMLEditableString result = processor.call(string);
-
-        for (Object operation : result.getChangeLog())
-            System.out.println("\t" + operation);
-        for (Object token : result.getTokens())
-            System.out.println("\t" + token);
-        for (Object token : result.getXMLTags())
-            System.out.println("\t" + token);
 
         System.out.println(processorName + ":    \"" + result.toString() + "\"");
         System.out.println();

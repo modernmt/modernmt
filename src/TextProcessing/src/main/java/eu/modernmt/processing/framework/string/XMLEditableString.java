@@ -1,8 +1,5 @@
 package eu.modernmt.processing.framework.string;
 
-import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Token;
-
 import java.util.*;
 
 /**
@@ -15,11 +12,12 @@ public class XMLEditableString {
         XML
     }
 
-    protected static class TokenHook {
+    public static class TokenHook {
 
         protected int startIndex;
         protected int length;
         protected TokenType tokenType;
+        protected String processedString;
 
         public TokenHook(int startIndex, int length, TokenType tokenType) {
             this.startIndex = startIndex;
@@ -37,6 +35,7 @@ public class XMLEditableString {
                     "startIndex=" + startIndex +
                     ", length=" + length +
                     ", tokenType=" + tokenType +
+                    ", processedString=" + processedString +
                     '}';
         }
     }
@@ -73,25 +72,29 @@ public class XMLEditableString {
         }
     }
 
-    private String orginalString;
+    private String originalString;
     private StringBuilder currentString;
     private Deque<Operation> changeLog;
     private List<TokenHook> tokens;
     private List<TokenHook> xml;
     private StringEditor stringEditor;
+    private boolean compiled;
 
     protected XMLEditableString(String originalString) {
-        this.orginalString = orginalString;
+        this.originalString = originalString;
         this.currentString = new StringBuilder(originalString);
         this.changeLog = new LinkedList<>();
         this.tokens = new ArrayList<>();
         this.xml = new ArrayList<>();
         this.stringEditor = new StringEditor(this);
+        this.compiled = false;
     }
 
     public StringEditor getEditor() {
         if (this.stringEditor.isInUse()) {
             throw new IllegalStateException("An instance of StringEditor is still in use.");
+        } else if (this.compiled) {
+            throw new IllegalStateException("XMLEditableString already compiled");
         } else {
             this.stringEditor.init();
             return this.stringEditor;
@@ -107,6 +110,9 @@ public class XMLEditableString {
     }
 
     protected void applyOperations(Collection<Operation> operations, boolean save) {
+        if (this.compiled) {
+            throw new IllegalStateException("XMLEditableString already compiled");
+        }
         for (Operation operation : operations) {
             int operationEndIndex = operation.startIndex + operation.length;
             operation.originalString = this.currentString.substring(operation.startIndex, operationEndIndex);
@@ -178,6 +184,7 @@ public class XMLEditableString {
                         //hook.length = operation.length;
                         this.xml.add(hook);
                     } else {
+                        hook.processedString = operation.newString;
                         this.tokens.add(hook);
                     }
                 }
@@ -201,25 +208,25 @@ public class XMLEditableString {
         }
     }
 
-    public Sentence getSentence() {
+    public SortedSet<TokenHook> compile() {
+        if (this.compiled) {
+            throw new IllegalStateException("XMLEditableString already compiled");
+        }
         this.reverseChangeLog();
-        return new Sentence(new Token[]{new Token(this.currentString.toString())});
+        this.compiled = true;
+        TreeSet<TokenHook> tokenHooks = new TreeSet<>(new Comparator<TokenHook>() {
+            @Override
+            public int compare(TokenHook t1, TokenHook t2) {
+                return t1.startIndex - t2.startIndex;
+            }
+        });
+        tokenHooks.addAll(this.tokens);
+        tokenHooks.addAll(this.xml);
+        return tokenHooks;
     }
 
-    public Collection<Operation> getChangeLog() {
-        return this.changeLog;
-    }
-
-    public Collection<TokenHook> getXMLTags() {
-        return this.xml;
-    }
-
-    public Collection<TokenHook> getTokens() {
-        return this.tokens;
-    }
-
-    public String getOrginalString() {
-        return this.orginalString;
+    public String getOriginalString() {
+        return this.originalString;
     }
 
     public char[] toCharArray() {
