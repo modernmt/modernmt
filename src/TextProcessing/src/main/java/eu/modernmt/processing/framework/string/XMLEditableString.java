@@ -18,6 +18,7 @@ public class XMLEditableString {
         protected int length;
         protected TokenType tokenType;
         protected String processedString;
+        protected boolean hasRightSpace;
 
         public TokenHook(int startIndex, int length, TokenType tokenType) {
             this.startIndex = startIndex;
@@ -50,6 +51,10 @@ public class XMLEditableString {
         public String getProcessedString() {
             return processedString;
         }
+
+        public boolean isHasRightSpace() {
+            return hasRightSpace;
+        }
     }
 
     protected static class Operation {
@@ -59,6 +64,7 @@ public class XMLEditableString {
         protected int lengthNewString;
         protected String newString;
         protected TokenType tokenType;
+        protected boolean hasRightSpace;
         private String originalString;
 
         @Override
@@ -197,6 +203,7 @@ public class XMLEditableString {
                         this.xml.add(hook);
                     } else {
                         hook.processedString = operation.newString;
+                        hook.hasRightSpace = operation.hasRightSpace;
                         this.tokens.add(hook);
                     }
                 }

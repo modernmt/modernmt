@@ -25,7 +25,8 @@ public class StringEditor {
         this.inUse = true;
     }
 
-    public void replace(int startIndex, int length, String replace, XMLEditableString.TokenType tokenType) {
+    public void replace(int startIndex, int length, String replace,
+                        XMLEditableString.TokenType tokenType, boolean hasRightSpace) {
         if (!this.inUse) {
             throw new RuntimeException("Closed editor");
         }
@@ -40,6 +41,7 @@ public class StringEditor {
                 operation.lengthNewString = replace.length();
             }
             operation.tokenType = tokenType;
+            operation.hasRightSpace = hasRightSpace;
             this.changeLog.add(operation);
             this.lastEditedIndex = startIndex + length - 1;
             this.deltaIndexes += (operation.lengthNewString - operation.length);
@@ -48,24 +50,28 @@ public class StringEditor {
         }
     }
 
+    public void replace(int startIndex, int length, String replace, XMLEditableString.TokenType tokenType) {
+        this.replace(startIndex, length, replace, tokenType, false);
+    }
+
     public void replace(int startIndex, int length, String string) {
-        this.replace(startIndex, length, string, null);
+        this.replace(startIndex, length, string, null, false);
     }
 
     public void delete(int startIndex, int length) {
-        this.replace(startIndex, length, "");
+        this.replace(startIndex, length, "", null, false);
     }
 
     public void insert(int startIndex, String string) {
-        this.replace(startIndex, 0, string);
+        this.replace(startIndex, 0, string, null, false);
     }
 
-    public void setWord(int startIndex, int length) {
-        replace(startIndex, length, null, XMLEditableString.TokenType.Word);
+    public void setWord(int startIndex, int length, boolean hasRightSpace) {
+        replace(startIndex, length, null, XMLEditableString.TokenType.Word, hasRightSpace);
     }
 
     public void setXMLTag(int startIndex, int length) {
-        replace(startIndex, length, " ", XMLEditableString.TokenType.XML);
+        replace(startIndex, length, " ", XMLEditableString.TokenType.XML, false);
     }
 
     public XMLEditableString commitChanges() {
