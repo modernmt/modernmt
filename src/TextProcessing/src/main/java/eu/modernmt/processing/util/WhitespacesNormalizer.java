@@ -43,7 +43,7 @@ public class WhitespacesNormalizer implements TextProcessor<XMLEditableString, X
         return editor.commitChanges();
     }
 
-    private static boolean isWhitespace(char c) {
+    public static boolean isWhitespace(char c) {
         return ((0x0009 <= c && c <= 0x000D) || c == 0x0020 || c == 0x00A0 || c == 0x1680 ||
                 (0x2000 <= c && c <= 0x200A) || c == 0x202F || c == 0x205F || c == 0x3000);
     }

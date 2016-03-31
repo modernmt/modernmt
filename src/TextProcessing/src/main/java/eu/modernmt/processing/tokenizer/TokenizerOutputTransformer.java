@@ -1,7 +1,7 @@
 package eu.modernmt.processing.tokenizer;
 
-import eu.modernmt.processing.framework.string.XMLEditableString;
 import eu.modernmt.processing.framework.string.StringEditor;
+import eu.modernmt.processing.framework.string.XMLEditableString;
 
 import java.util.List;
 
@@ -26,14 +26,21 @@ public class TokenizerOutputTransformer {
             stringIndex = tokenPos + token.length();
 
             if (tokenPos != lastPosition && !isEmpty(string, lastPosition, tokenPos))
-                editor.setWord(lastPosition, tokenPos - lastPosition);
+                setWord(string, editor, lastPosition, tokenPos - lastPosition);
 
             lastPosition = tokenPos + token.length();
             if (lastPosition <= length)
-                editor.setWord(tokenPos, lastPosition - tokenPos);
+                setWord(string, editor, tokenPos, lastPosition - tokenPos);
         }
 
         return editor.commitChanges();
+    }
+
+    private static void setWord(String string, StringEditor editor, int startIndex, int length) {
+        int end = startIndex + length;
+        boolean hasRightSpace = end < string.length() && string.charAt(end) == ' ';
+
+        editor.setWord(startIndex, length, hasRightSpace);
     }
 
     private static boolean isEmpty(String string, int begin, int end) {

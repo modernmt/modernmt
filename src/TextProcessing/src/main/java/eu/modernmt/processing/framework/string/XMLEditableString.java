@@ -7,7 +7,7 @@ import java.util.*;
  */
 public class XMLEditableString {
 
-    protected enum TokenType {
+    public enum TokenType {
         Word,
         XML
     }
@@ -52,7 +52,7 @@ public class XMLEditableString {
             return processedString;
         }
 
-        public boolean isHasRightSpace() {
+        public boolean hasRightSpace() {
             return hasRightSpace;
         }
     }
@@ -227,21 +227,20 @@ public class XMLEditableString {
         }
     }
 
-    public SortedSet<TokenHook> compile() {
+    public List<TokenHook> compile() {
         if (this.compiled) {
             throw new IllegalStateException("XMLEditableString already compiled");
         }
         this.reverseChangeLog();
         this.compiled = true;
-        SortedSet<TokenHook> tokenHooks = new TreeSet<>(new Comparator<TokenHook>() {
-            @Override
-            public int compare(TokenHook t1, TokenHook t2) {
-                return t1.startIndex - t2.startIndex;
-            }
-        });
-        tokenHooks.addAll(this.tokens);
-        tokenHooks.addAll(this.xml);
-        return tokenHooks;
+
+        ArrayList<TokenHook> hooks = new ArrayList<>(this.tokens.size() + this.xml.size());
+        hooks.addAll(this.tokens);
+        hooks.addAll(this.xml);
+
+        Collections.sort(hooks, (t1, t2) -> t1.startIndex - t2.startIndex);
+
+        return hooks;
     }
 
     public String getOriginalString() {

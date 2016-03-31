@@ -1,6 +1,8 @@
 package eu.modernmt.processing;
 
 import eu.modernmt.model.Sentence;
+import eu.modernmt.model._Sentence;
+import eu.modernmt.model._Token;
 import eu.modernmt.processing.detokenizer.SpaceNormalizer;
 import eu.modernmt.processing.framework.*;
 import eu.modernmt.processing.framework.string.XMLEditableString;
@@ -134,25 +136,23 @@ public class Preprocessor implements Closeable {
         xmlEditableString = process(new WhitespacesNormalizer(), xmlEditableString);
         xmlEditableString = process(SpaceNormalizer.forLanguage(language), xmlEditableString);
         xmlEditableString = process(Tokenizers.forLanguage(language), xmlEditableString);
+        _Sentence sentence = new SentenceBuilder().call(xmlEditableString);
 
-        System.out.println("END OF PREPROCESSING");
+        System.out.println(string);
+        System.out.println(sentence.toString(false));
 
-        Collection<XMLEditableString.TokenHook> hooks = xmlEditableString.compile();
-
-        System.out.println(xmlEditableString);
-        for (Object o : hooks) {
-            System.out.println(o);
-        }
+        for (_Token token : sentence)
+            System.out.println(token);
     }
 
     private static XMLEditableString process(TextProcessor<XMLEditableString, XMLEditableString> processor, XMLEditableString string) throws ProcessingException {
         String processorName = processor.getClass().getSimpleName();
 
-        System.out.println("Running " + processorName);
+//        System.out.println("Running " + processorName);
         XMLEditableString result = processor.call(string);
 
-        System.out.println(processorName + ":    \"" + result.toString() + "\"");
-        System.out.println();
+//        System.out.println(processorName + ":    \"" + result.toString() + "\"");
+//        System.out.println();
 
         return result;
     }
