@@ -197,19 +197,7 @@ public class XMLEditableString {
                 Collection<Operation> c = new LinkedList<>();
                 c.add(inverse);
                 this.applyOperations(c, false);
-                System.out.println(inverse);
-                System.out.println(this.toString());
-                for (TokenHook t : this.xml) {
-                    System.out.println(t.startIndex + " " + t.length);
-                    //System.out.println(t + "|||" + this.currentString.substring(Math.max(0,t.startIndex), Math.min(this.currentString.length(), Math.max(0,t.startIndex + Math.max(0, t.length)))));
-                }
-                for (TokenHook t : this.getTokens()) {
-                    //System.out.println(t + "|||" + this.currentString.substring(Math.max(0,t.startIndex), Math.min(this.currentString.length(), Math.max(0,t.startIndex + Math.max(0, t.length)))));
-                }
             }
-        }
-        for (Object o : this.getChangeLog()) {
-            System.out.println(o);
         }
     }
 
