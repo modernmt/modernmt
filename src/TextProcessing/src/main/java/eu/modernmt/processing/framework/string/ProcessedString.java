@@ -77,6 +77,7 @@ public class ProcessedString {
     private StringBuilder currentString;
     private Deque<Operation> changeLog;
     private List<TokenHook> tokens;
+    private List<TokenHook> xml;
     private StringEditor stringEditor;
 
     public ProcessedString(String originalString) {
@@ -84,6 +85,7 @@ public class ProcessedString {
         this.currentString = new StringBuilder(originalString);
         this.changeLog = new LinkedList<>();
         this.tokens = new ArrayList<>();
+        this.xml = new ArrayList<>();
         this.stringEditor = new StringEditor(this);
     }
 
@@ -101,6 +103,10 @@ public class ProcessedString {
     }
 
     protected void applyOperations(Collection<Operation> operations) {
+        applyOperations(operations, true);
+    }
+
+    protected void applyOperations(Collection<Operation> operations, boolean save) {
         for (Operation operation : operations) {
             int operationEndIndex = operation.startIndex + operation.length;
             operation.originalString = this.currentString.substring(operation.startIndex, operationEndIndex);
@@ -135,17 +141,49 @@ public class ProcessedString {
                 }
             }
 
+            if (TokenType.XML.equals(operation.tokenType)) {
+                for (TokenHook hook : this.xml) {
+                    int hookLastEditedIndex = hook.startIndex + hook.length - 1;
+                    if (hook.startIndex >= operationEndIndex) {
+                        hook.startIndex += delta;
+                    } else if (hook.startIndex > operation.startIndex) {
+                        throw new InvalidOperationException(operation, hook);
+                    } else if (hook.startIndex == operation.startIndex && operation.length > hook.length) {
+                        throw new InvalidOperationException(operation, hook);
+                    } else if (hook.startIndex == operation.startIndex && operation.length < hook.length) {
+                        hook.length += delta;
+                    } else if (hook.startIndex == operation.startIndex) {
+                        hook.length = operation.lengthNewString;
+                    } else if (hookLastEditedIndex >= operationEndIndex) {
+                        hook.length += delta;
+                    } else if (hookLastEditedIndex >= operation.startIndex) {
+                        throw new InvalidOperationException(operation, hook);
+                    } else if (hookLastEditedIndex < operation.startIndex) {
+                        //Do nothing
+                    } else {
+                        throw new InvalidOperationException(operation, hook, "Unexpected situation");
+                    }
+                }
+            }
+
             if (!TokenType.Word.equals(operation.tokenType)) {
                 this.currentString.replace(operation.startIndex, operationEndIndex, operation.newString);
             }
 
-            if (operation.tokenType != null) {
-                TokenHook hook = new TokenHook(operation.startIndex, operation.lengthNewString,
-                        operation.tokenType);
-                this.tokens.add(hook);
-            }
+            if (save) {
+                if (operation.tokenType != null) {
+                    TokenHook hook = new TokenHook(operation.startIndex, operation.lengthNewString,
+                            operation.tokenType);
+                    if (TokenType.XML.equals(operation.tokenType)) {
+                        //hook.length = operation.length;
+                        this.xml.add(hook);
+                    } else {
+                        this.tokens.add(hook);
+                    }
+                }
 
-            this.changeLog.push(operation);
+                this.changeLog.push(operation);
+            }
         }
     }
 
@@ -155,16 +193,22 @@ public class ProcessedString {
             Operation operation = operations.pop();
             if (!TokenType.Word.equals(operation.tokenType)) {
                 Operation inverse = operation.getInverse();
-                inverse.tokenType = null;
+                //inverse.tokenType = null;
                 Collection<Operation> c = new LinkedList<>();
                 c.add(inverse);
-                this.applyOperations(c);
+                this.applyOperations(c, false);
                 System.out.println(inverse);
                 System.out.println(this.toString());
+                for (TokenHook t : this.xml) {
+                    System.out.println(t + "|||" + this.currentString.substring(t.startIndex, Math.min(this.currentString.length(), t.startIndex + Math.max(0, t.length))));
+                }
                 for (TokenHook t : this.getTokens()) {
-                    System.out.println(t + "|||" + this.currentString.substring(t.startIndex, t.startIndex + Math.max(0,t.length)));
+                    System.out.println(t + "|||" + this.currentString.substring(t.startIndex, Math.min(this.currentString.length(), t.startIndex + Math.max(0, t.length))));
                 }
             }
+        }
+        for (Object o : this.getChangeLog()) {
+            System.out.println(o);
         }
     }
 
