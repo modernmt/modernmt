@@ -13,6 +13,10 @@ public class XMLEditableStringBuilder {
 
     }
 
+    public void append(char[] str, int offset, int len) {
+
+    }
+
     public void append(String s) {
 
     }

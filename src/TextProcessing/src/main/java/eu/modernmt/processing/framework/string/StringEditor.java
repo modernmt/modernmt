@@ -9,13 +9,13 @@ import java.util.List;
 public class StringEditor {
 
     private List<XMLEditableString.Operation> changeLog;
-    private XMLEditableString XMLEditableString;
+    private XMLEditableString xmlEditableString;
     private int lastEditedIndex;
     private int deltaIndexes;
     private boolean inUse;
 
-    protected StringEditor(XMLEditableString XMLEditableString) {
-        this.XMLEditableString = XMLEditableString;
+    protected StringEditor(XMLEditableString xmlEditableString) {
+        this.xmlEditableString = xmlEditableString;
     }
 
     protected void init() {
@@ -69,18 +69,18 @@ public class StringEditor {
     }
 
     public XMLEditableString commitChanges() {
-        this.XMLEditableString.applyOperations(this.changeLog);
+        this.xmlEditableString.applyOperations(this.changeLog);
         this.changeLog = null;
         this.inUse = false;
 
-        return this.XMLEditableString;
+        return this.xmlEditableString;
     }
 
     public XMLEditableString discardChanges() {
         this.changeLog = null;
         this.inUse = false;
 
-        return this.XMLEditableString;
+        return this.xmlEditableString;
     }
 
     protected boolean isInUse() {
