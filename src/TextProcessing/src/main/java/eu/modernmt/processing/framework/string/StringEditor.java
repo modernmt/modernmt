@@ -8,14 +8,14 @@ import java.util.List;
  */
 public class StringEditor {
 
-    private List<ProcessedString.Operation> changeLog;
-    private ProcessedString processedString;
+    private List<XMLEditableString.Operation> changeLog;
+    private XMLEditableString XMLEditableString;
     private int lastEditedIndex;
     private int deltaIndexes;
     private boolean inUse;
 
-    protected StringEditor(ProcessedString processedString) {
-        this.processedString = processedString;
+    protected StringEditor(XMLEditableString XMLEditableString) {
+        this.XMLEditableString = XMLEditableString;
     }
 
     protected void init() {
@@ -25,12 +25,12 @@ public class StringEditor {
         this.inUse = true;
     }
 
-    public void replace(int startIndex, int length, String replace, ProcessedString.TokenType tokenType) {
+    public void replace(int startIndex, int length, String replace, XMLEditableString.TokenType tokenType) {
         if (!this.inUse) {
             throw new RuntimeException("Closed editor");
         }
         if (startIndex > this.lastEditedIndex) {
-            ProcessedString.Operation operation = new ProcessedString.Operation();
+            XMLEditableString.Operation operation = new XMLEditableString.Operation();
             operation.startIndex = startIndex + this.deltaIndexes;
             operation.length = length;
             if (replace == null) {
@@ -61,26 +61,26 @@ public class StringEditor {
     }
 
     public void setWord(int startIndex, int length) {
-        replace(startIndex, length, null, ProcessedString.TokenType.Word);
+        replace(startIndex, length, null, XMLEditableString.TokenType.Word);
     }
 
     public void setXMLTag(int startIndex, int length) {
-        replace(startIndex, length, " ", ProcessedString.TokenType.XML);
+        replace(startIndex, length, " ", XMLEditableString.TokenType.XML);
     }
 
-    public ProcessedString commitChanges() {
-        this.processedString.applyOperations(this.changeLog);
+    public XMLEditableString commitChanges() {
+        this.XMLEditableString.applyOperations(this.changeLog);
         this.changeLog = null;
         this.inUse = false;
 
-        return this.processedString;
+        return this.XMLEditableString;
     }
 
-    public ProcessedString discardChanges() {
+    public XMLEditableString discardChanges() {
         this.changeLog = null;
         this.inUse = false;
 
-        return this.processedString;
+        return this.XMLEditableString;
     }
 
     protected boolean isInUse() {

@@ -2,7 +2,7 @@ package eu.modernmt.processing.xml;
 
 import eu.modernmt.model.Tag;
 import eu.modernmt.processing.framework.TextProcessor;
-import eu.modernmt.processing.framework.string.ProcessedString;
+import eu.modernmt.processing.framework.string.XMLEditableString;
 import eu.modernmt.processing.framework.string.StringEditor;
 
 import java.util.regex.Matcher;
@@ -10,10 +10,10 @@ import java.util.regex.Matcher;
 /**
  * Created by davide on 08/03/16.
  */
-public class XMLTagExtractor implements TextProcessor<ProcessedString, ProcessedString> {
+public class XMLTagExtractor implements TextProcessor<XMLEditableString, XMLEditableString> {
 
     @Override
-    public ProcessedString call(ProcessedString string) {
+    public XMLEditableString call(XMLEditableString string) {
         StringEditor editor = string.getEditor();
         Matcher m = Tag.TagRegex.matcher(string.toString());
 

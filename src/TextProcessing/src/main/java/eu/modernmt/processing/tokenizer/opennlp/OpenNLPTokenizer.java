@@ -3,7 +3,7 @@ package eu.modernmt.processing.tokenizer.opennlp;
 import eu.modernmt.config.Config;
 import eu.modernmt.processing.Languages;
 import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.framework.string.ProcessedString;
+import eu.modernmt.processing.framework.string.XMLEditableString;
 import eu.modernmt.processing.tokenizer.MultiInstanceTokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
@@ -91,7 +91,7 @@ public class OpenNLPTokenizer extends MultiInstanceTokenizer {
         }
 
         @Override
-        public ProcessedString call(ProcessedString text) throws ProcessingException {
+        public XMLEditableString call(XMLEditableString text) throws ProcessingException {
             return TokenizerOutputTransformer.transform(text, this.tokenizer.tokenize(text.toString()));
         }
 

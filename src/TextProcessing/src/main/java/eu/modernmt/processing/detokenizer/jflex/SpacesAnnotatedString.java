@@ -2,7 +2,7 @@ package eu.modernmt.processing.detokenizer.jflex;
 
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
-import eu.modernmt.processing.framework.string.ProcessedString;
+import eu.modernmt.processing.framework.string.XMLEditableString;
 import eu.modernmt.processing.framework.string.StringEditor;
 
 import java.io.CharArrayReader;
@@ -90,7 +90,7 @@ public class SpacesAnnotatedString {
         return translation;
     }
 
-    public ProcessedString apply(ProcessedString string) {
+    public XMLEditableString apply(XMLEditableString string) {
         StringEditor editor = string.getEditor();
 
         for (int i = 1; i < text.length - 1; i++) {

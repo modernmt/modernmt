@@ -9,7 +9,7 @@ import eu.modernmt.processing.detokenizer.jflex.annotators.ItalianSpaceAnnotator
 import eu.modernmt.processing.detokenizer.jflex.annotators.StandardSpaceAnnotator;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.TextProcessor;
-import eu.modernmt.processing.framework.string.ProcessedString;
+import eu.modernmt.processing.framework.string.XMLEditableString;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * Created by davide on 30/03/16.
  */
-public class SpaceNormalizer implements TextProcessor<ProcessedString, ProcessedString> {
+public class SpaceNormalizer implements TextProcessor<XMLEditableString, XMLEditableString> {
 
     public static final SpaceNormalizer DEFAULT = new SpaceNormalizer(StandardSpaceAnnotator.class);
     public static final SpaceNormalizer ENGLISH = new SpaceNormalizer(EnglishSpaceAnnotator.class);
@@ -73,7 +73,7 @@ public class SpaceNormalizer implements TextProcessor<ProcessedString, Processed
     }
 
     @Override
-    public ProcessedString call(ProcessedString string) throws ProcessingException {
+    public XMLEditableString call(XMLEditableString string) throws ProcessingException {
         JFlexSpaceAnnotator annotator = getInstance();
 
         try {

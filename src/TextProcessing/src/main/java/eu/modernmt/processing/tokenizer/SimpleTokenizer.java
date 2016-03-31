@@ -1,6 +1,6 @@
 package eu.modernmt.processing.tokenizer;
 
-import eu.modernmt.processing.framework.string.ProcessedString;
+import eu.modernmt.processing.framework.string.XMLEditableString;
 
 /**
  * Created by davide on 19/02/16.
@@ -8,7 +8,7 @@ import eu.modernmt.processing.framework.string.ProcessedString;
 public class SimpleTokenizer implements Tokenizer {
 
     @Override
-    public ProcessedString call(ProcessedString param) {
+    public XMLEditableString call(XMLEditableString param) {
         String[] tokens = param.toString().split(" +");
         return TokenizerOutputTransformer.transform(param, tokens);
     }

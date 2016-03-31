@@ -2,7 +2,7 @@ package eu.modernmt.processing.tokenizer.languagetool;
 
 import eu.modernmt.processing.Languages;
 import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.framework.string.ProcessedString;
+import eu.modernmt.processing.framework.string.XMLEditableString;
 import eu.modernmt.processing.tokenizer.MultiInstanceTokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
@@ -93,7 +93,7 @@ public class LanguageToolTokenizer extends MultiInstanceTokenizer {
         }
 
         @Override
-        public ProcessedString call(ProcessedString text) throws ProcessingException {
+        public XMLEditableString call(XMLEditableString text) throws ProcessingException {
             List<String> tokens = tokenizer.tokenize(text.toString());
             ArrayList<String> result = new ArrayList<>(tokens.size());
 

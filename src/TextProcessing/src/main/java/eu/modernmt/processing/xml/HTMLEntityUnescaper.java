@@ -1,7 +1,7 @@
 package eu.modernmt.processing.xml;
 
 import eu.modernmt.processing.framework.TextProcessor;
-import eu.modernmt.processing.framework.string.ProcessedString;
+import eu.modernmt.processing.framework.string.XMLEditableString;
 import eu.modernmt.processing.framework.string.StringEditor;
 
 import java.util.regex.Matcher;
@@ -10,12 +10,12 @@ import java.util.regex.Pattern;
 /**
  * Created by davide on 29/03/16.
  */
-public class HTMLEntityUnescaper implements TextProcessor<ProcessedString, ProcessedString> {
+public class HTMLEntityUnescaper implements TextProcessor<XMLEditableString, XMLEditableString> {
 
     private static final Pattern EntityPattern = Pattern.compile("&((#[0-9]{1,4})|(#x[0-9a-fA-F]{1,4})|([a-zA-Z]+));");
 
     @Override
-    public ProcessedString call(ProcessedString string) {
+    public XMLEditableString call(XMLEditableString string) {
         StringEditor editor = string.getEditor();
         Matcher m = EntityPattern.matcher(string.toString());
 

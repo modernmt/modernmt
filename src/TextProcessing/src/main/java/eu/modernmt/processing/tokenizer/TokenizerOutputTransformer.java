@@ -1,6 +1,6 @@
 package eu.modernmt.processing.tokenizer;
 
-import eu.modernmt.processing.framework.string.ProcessedString;
+import eu.modernmt.processing.framework.string.XMLEditableString;
 import eu.modernmt.processing.framework.string.StringEditor;
 
 import java.util.List;
@@ -12,7 +12,7 @@ import java.util.List;
 public class TokenizerOutputTransformer {
 
     @Deprecated
-    public static ProcessedString transform(ProcessedString text, String[] tokens) {
+    public static XMLEditableString transform(XMLEditableString text, String[] tokens) {
         StringEditor editor = text.getEditor();
 
         String string = text.toString();
@@ -49,7 +49,7 @@ public class TokenizerOutputTransformer {
     }
 
     @Deprecated
-    public static ProcessedString transform(ProcessedString string, List<String> tokens) {
+    public static XMLEditableString transform(XMLEditableString string, List<String> tokens) {
         return transform(string, tokens.toArray(new String[tokens.size()]));
     }
 

@@ -3,13 +3,13 @@ package eu.modernmt.processing;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.detokenizer.SpaceNormalizer;
 import eu.modernmt.processing.framework.*;
-import eu.modernmt.processing.framework.string.ProcessedString;
+import eu.modernmt.processing.framework.string.XMLEditableString;
 import eu.modernmt.processing.tokenizer.SimpleTokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizers;
-import eu.modernmt.processing.util.StringNormalizer;
+import eu.modernmt.processing.util.RareCharsNormalizer;
+import eu.modernmt.processing.util.WhitespacesNormalizer;
 import eu.modernmt.processing.xml.HTMLEntityUnescaper;
-import eu.modernmt.processing.xml.XMLEntityEscaper;
 import eu.modernmt.processing.xml.XMLTagExtractor;
 import org.apache.commons.io.IOUtils;
 
@@ -123,74 +123,48 @@ public class Preprocessor implements Closeable {
     }
 
     public static void main(String[] args) throws Throwable {
-        ProcessedString processedString = new ProcessedString("&apos;<b><t>That</b> `s\t\t \tit! &apos;&#40;\t\t");
-        //ProcessedString processedString = new ProcessedString("&apos;<b>That</b> `s\t\t \tit! &apos;&#40;\t\t");
-        //ProcessedString processedString = new ProcessedString("That `s\t\t \tit!");
-        System.out.println("ORIGINAL:\n" + processedString);
+//        XMLEditableString XMLEditableString = new XMLEditableString("&apos;<b><t>That</b> `s\t\t \tit! &apos;&#40;\t\t");
+//        XMLEditableString XMLEditableString = new XMLEditableString("That `s\t\t \tit!");
+        XMLEditableString XMLEditableString = new XMLEditableString("&apos;<b><t>That</b> `s\t\t \tit! &apos;<b>\t <a> <c>&#40;\t\t");
+
         Locale language = Locale.ENGLISH;
 
-        System.out.println("\nRunning XMLTagExtractor");
-        new XMLTagExtractor().call(processedString);
-        for (Object o : processedString.getChangeLog()) {
-            System.out.println(o);
-        }
-        for (Object t : processedString.getTokens()) {
-            System.out.println(t);
-        }
-        System.out.println("XMLTagExtractor:     \"" + processedString + "\"");
+        XMLEditableString = process(new XMLTagExtractor(), XMLEditableString);
+        XMLEditableString = process(new HTMLEntityUnescaper(), XMLEditableString);
+        XMLEditableString = process(new RareCharsNormalizer(), XMLEditableString);
+        XMLEditableString = process(new WhitespacesNormalizer(), XMLEditableString);
+        XMLEditableString = process(SpaceNormalizer.forLanguage(language), XMLEditableString);
+        XMLEditableString = process(Tokenizers.forLanguage(language), XMLEditableString);
 
-        System.out.println("\nRunning StringNormalizer");
-        new StringNormalizer().call(processedString);
-        for (Object o : processedString.getChangeLog()) {
-            System.out.println(o);
-        }
-        for (Object t : processedString.getTokens()) {
-            System.out.println(t);
-        }
-        System.out.println("StringNormalizer:    \"" + processedString + "\"");
+        System.out.println("END OF PREPROCESSING");
 
-        System.out.println("\nRunning HTMLEntityUnescaper");
-        new HTMLEntityUnescaper().call(processedString);
-        for (Object o : processedString.getChangeLog()) {
-            System.out.println(o);
-        }
-        for (Object t : processedString.getTokens()) {
-            System.out.println(t);
-        }
-        System.out.println("HTMLEntityUnescaper: \"" + processedString + "\"");
+        XMLEditableString.getSentence();
 
-        System.out.println("\nRunning SpaceNormalizer");
-        SpaceNormalizer.forLanguage(language).call(processedString);
-        for (Object o : processedString.getChangeLog()) {
-            System.out.println(o);
-        }
-        for (Object t : processedString.getTokens()) {
-            System.out.println(t);
-        }
-        System.out.println("SpaceNormalizer:     \"" + processedString + "\"");
+        System.out.println(XMLEditableString);
+        for (Object operation : XMLEditableString.getChangeLog())
+            System.out.println("\t" + operation);
+        for (Object token : XMLEditableString.getTokens())
+            System.out.println("\t" + token);
+        for (Object token : XMLEditableString.getXMLTags())
+            System.out.println("\t" + token);
+    }
 
-        System.out.println("\nRunning Tokenizers");
-        Tokenizers.forLanguage(language).call(processedString);
-        for (Object o : processedString.getChangeLog()) {
-            System.out.println(o);
-        }
-        for (Object t : processedString.getTokens()) {
-            System.out.println(t);
-        }
-        System.out.println("Tokenizer:           \"" + processedString + "\"");
+    private static XMLEditableString process(TextProcessor<XMLEditableString, XMLEditableString> processor, XMLEditableString string) throws ProcessingException {
+        String processorName = processor.getClass().getSimpleName();
 
-        System.out.println("\nRunning XMLEntityEscaper");
-        new XMLEntityEscaper().call(processedString);
-        for (Object o : processedString.getChangeLog()) {
-            System.out.println(o);
-        }
-        for (Object t : processedString.getTokens()) {
-            System.out.println(t);
-        }
-        System.out.println("XMLEntityEscaper:    \"" + processedString + "\"");
+        System.out.println("Running " + processorName);
+        XMLEditableString result = processor.call(string);
 
-        System.out.println("\nEND OF PREPROCESSING");
+        for (Object operation : result.getChangeLog())
+            System.out.println("\t" + operation);
+        for (Object token : result.getTokens())
+            System.out.println("\t" + token);
+        for (Object token : result.getXMLTags())
+            System.out.println("\t" + token);
 
-        processedString.getSentence();
+        System.out.println(processorName + ":    \"" + result.toString() + "\"");
+        System.out.println();
+
+        return result;
     }
 }

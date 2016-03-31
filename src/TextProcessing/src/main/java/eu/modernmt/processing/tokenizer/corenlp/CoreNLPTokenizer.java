@@ -8,7 +8,7 @@ import edu.stanford.nlp.process.PTBTokenizer;
 import edu.stanford.nlp.process.TokenizerFactory;
 import eu.modernmt.processing.Languages;
 import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.framework.string.ProcessedString;
+import eu.modernmt.processing.framework.string.XMLEditableString;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 
@@ -51,7 +51,7 @@ public class CoreNLPTokenizer implements Tokenizer {
     }
 
     @Override
-    public ProcessedString call(ProcessedString text) throws ProcessingException {
+    public XMLEditableString call(XMLEditableString text) throws ProcessingException {
         Reader reader = new StringReader(text.toString());
         edu.stanford.nlp.process.Tokenizer<?> tokenizer;
         synchronized (this) {
