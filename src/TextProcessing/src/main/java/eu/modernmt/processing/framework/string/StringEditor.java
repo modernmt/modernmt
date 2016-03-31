@@ -60,10 +60,6 @@ public class StringEditor {
         this.replace(startIndex, 0, string);
     }
 
-    public void setWord(int startIndex, int length, String replace) {
-        replace(startIndex, length, replace, ProcessedString.TokenType.Word);
-    }
-
     public void setWord(int startIndex, int length) {
         replace(startIndex, length, null, ProcessedString.TokenType.Word);
     }
