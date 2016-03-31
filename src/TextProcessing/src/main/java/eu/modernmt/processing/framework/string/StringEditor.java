@@ -13,7 +13,7 @@ public class StringEditor {
     private int lastEditedIndex;
     private int deltaIndexes;
     private boolean inUse;
-    
+
     protected StringEditor(XMLEditableString xmlEditableString) {
         this.xmlEditableString = xmlEditableString;
     }
