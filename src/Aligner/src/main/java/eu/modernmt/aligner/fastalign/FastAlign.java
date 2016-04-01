@@ -126,7 +126,7 @@ class FastAlign implements Aligner, Closeable {
         this.standardInput.flush();
         logger.debug("Waiting for alignments");
         String modelResponse = this.standardOutput.readLine();
-        logger.debug("Alignments: " + modelResponse);
+        logger.debug((this.reverse ? "Backward" : "Forward") + " alignments: " + modelResponse);
         return modelResponse;
     }
 
@@ -136,7 +136,7 @@ class FastAlign implements Aligner, Closeable {
     }
 
     @Override
-    public void setSymmetrizationStrategy(Symmetrisation.Type strategy) throws OperationNotSupportedException{
+    public void setSymmetrizationStrategy(Symmetrisation.Type strategy) throws OperationNotSupportedException {
         throw new OperationNotSupportedException("Symmetrization not supported");
     }
 
