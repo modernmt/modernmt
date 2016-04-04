@@ -5,6 +5,7 @@ import eu.modernmt.model._Tag;
 import eu.modernmt.model._Token;
 import eu.modernmt.model._Word;
 import eu.modernmt.processing.framework.TextProcessor;
+import eu.modernmt.processing.framework.string.TokenHook;
 import eu.modernmt.processing.framework.string.XMLEditableString;
 import eu.modernmt.processing.util.WhitespacesNormalizer;
 
@@ -20,25 +21,25 @@ class SentenceBuilder implements TextProcessor<XMLEditableString, _Sentence> {
     public _Sentence call(XMLEditableString string) {
         char[] reference = string.getOriginalString().toCharArray();
 
-        List<XMLEditableString.TokenHook> hooks = string.compile();
+        List<TokenHook> hooks = string.compile();
         int size = hooks.size();
 
         ArrayList<_Word> words = new ArrayList<>(size);
         ArrayList<_Tag> tags = new ArrayList<>(size);
 
         for (int i = 0; i < size; i++) {
-            XMLEditableString.TokenHook hook = hooks.get(i);
+            TokenHook hook = hooks.get(i);
 
             int start = hook.getStartIndex();
             int length = hook.getLength();
-            XMLEditableString.TokenHook.TokenType type = hook.getTokenType();
+            TokenHook.TokenType type = hook.getTokenType();
 
             String placeholder = hook.getProcessedString();
             String text = new String(reference, start, length);
             String space = getRightSpace(reference, start + length);
             boolean rightSpaceRequired = hook.hasRightSpace();
 
-            if (type == XMLEditableString.TokenHook.TokenType.Word) {
+            if (type == TokenHook.TokenType.Word) {
                 _Word word = new _Word(text, placeholder, space, rightSpaceRequired);
                 words.add(word);
             } else {
