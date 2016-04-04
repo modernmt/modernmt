@@ -81,7 +81,7 @@ class TranslationXObject {
         Word[] words = new Word[pieces.length];
 
         for (int i = 0; i < pieces.length; i++) {
-            words[i] = new Word(pieces[i], " ");
+            words[i] = new Word(pieces[i], i < pieces.length - 1 ? " " : null);
         }
 
         DecoderTranslation translation = new DecoderTranslation(words, source, alignment);

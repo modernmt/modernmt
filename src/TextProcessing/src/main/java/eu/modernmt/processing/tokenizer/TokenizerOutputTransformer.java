@@ -14,6 +14,7 @@ public class TokenizerOutputTransformer {
     public static XMLEditableString transform(XMLEditableString text, String[] tokens) {
         XMLEditableString.Editor editor = text.getEditor();
 
+
         String string = text.toString();
         int length = string.length();
 
@@ -23,9 +24,6 @@ public class TokenizerOutputTransformer {
         for (String token : tokens) {
             int tokenPos = string.indexOf(token, stringIndex);
             stringIndex = tokenPos + token.length();
-
-            if (tokenPos != lastPosition && !isEmpty(string, lastPosition, tokenPos))
-                setWord(string, editor, lastPosition, tokenPos - lastPosition);
 
             lastPosition = tokenPos + token.length();
             if (lastPosition <= length)
@@ -40,18 +38,6 @@ public class TokenizerOutputTransformer {
         boolean hasRightSpace = end < string.length() && string.charAt(end) == ' ';
 
         editor.setWord(startIndex, length, hasRightSpace);
-    }
-
-    private static boolean isEmpty(String string, int begin, int end) {
-        char[] chars = new char[end - begin];
-        string.getChars(begin, end, chars, 0);
-
-        for (char c : chars) {
-            if (c != ' ')
-                return false;
-        }
-
-        return true;
     }
 
     @Deprecated

@@ -7,7 +7,6 @@ import eu.modernmt.model.Word;
 import eu.modernmt.processing.framework.TextProcessor;
 import eu.modernmt.processing.framework.string.TokenHook;
 import eu.modernmt.processing.framework.string.XMLEditableString;
-import eu.modernmt.processing.util.WhitespacesNormalizer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,6 +77,7 @@ public class SentenceBuilder implements TextProcessor<XMLEditableString, Sentenc
 
         for (int i = 0; i < size; i++) {
             TokenHook hook = hooks.get(i);
+            TokenHook nextHook = i < size - 1 ? hooks.get(i + 1) : null;
 
             int start = hook.getStartIndex();
             int length = hook.getLength();
@@ -85,7 +85,7 @@ public class SentenceBuilder implements TextProcessor<XMLEditableString, Sentenc
 
             String placeholder = hook.getProcessedString();
             String text = new String(reference, start, length);
-            String space = getRightSpace(reference, start + length);
+            String space = getRightSpace(reference, start + length, nextHook);
             boolean rightSpaceRequired = hook.hasRightSpace();
 
             if (type == TokenHook.TokenType.Word) {
@@ -110,12 +110,10 @@ public class SentenceBuilder implements TextProcessor<XMLEditableString, Sentenc
         return sentence;
     }
 
-    private static String getRightSpace(char[] reference, int start) {
-        int end;
-        for (end = start; end < reference.length; end++) {
-            if (!WhitespacesNormalizer.isWhitespace(reference[end]))
-                break;
-        }
+    private static String getRightSpace(char[] reference, int start, TokenHook nextHook) {
+        int end = nextHook == null ? reference.length - 1 : nextHook.getStartIndex();
+        if (end > reference.length)
+            end = reference.length;
 
         return end > start ? new String(reference, start, end - start) : null;
     }

@@ -1,8 +1,8 @@
 package eu.modernmt.processing.numbers;
 
 import eu.modernmt.model.Word;
-import eu.modernmt.processing.WordTransformationFactory;
 import eu.modernmt.processing.SentenceBuilder;
+import eu.modernmt.processing.WordTransformationFactory;
 
 import java.util.HashMap;
 import java.util.regex.Pattern;
@@ -29,7 +29,7 @@ public class NumericWordFactory implements SentenceBuilder.WordFactory, WordTran
 
     @Override
     public boolean match(Word word) {
-        return PATTERN.matcher(word.getText()).find();
+        return PATTERN.matcher(word.getPlaceholder()).find();
     }
 
     @Override
@@ -82,9 +82,20 @@ public class NumericWordFactory implements SentenceBuilder.WordFactory, WordTran
 
         @Override
         public void apply(Word source, Word target) {
+            if (source == null) {
+                // Default transformation does nothing.
+                return;
+            }
+
+            int sourceDigits = countDigits(source.getPlaceholder().toCharArray());
+            if (sourceDigits == 0) {
+                // If the source is not a Numeric token, skip transformation.
+                return;
+            }
+
             char[] output = target.getPlaceholder().toCharArray();
 
-            if (countDigits(output) == countDigits(source.getPlaceholder().toCharArray())) {
+            if (countDigits(output) == sourceDigits) {
                 char[] sourceText = source.getText().toCharArray();
 
                 int sourceIndex = 0;
