@@ -31,14 +31,14 @@ class SentenceBuilder implements TextProcessor<XMLEditableString, _Sentence> {
 
             int start = hook.getStartIndex();
             int length = hook.getLength();
-            XMLEditableString.TokenType type = hook.getTokenType();
+            XMLEditableString.TokenHook.TokenType type = hook.getTokenType();
 
             String placeholder = hook.getProcessedString();
             String text = new String(reference, start, length);
             String space = getRightSpace(reference, start + length);
             boolean rightSpaceRequired = hook.hasRightSpace();
 
-            if (type == XMLEditableString.TokenType.Word) {
+            if (type == XMLEditableString.TokenHook.TokenType.Word) {
                 _Word word = new _Word(text, placeholder, space, rightSpaceRequired);
                 words.add(word);
             } else {

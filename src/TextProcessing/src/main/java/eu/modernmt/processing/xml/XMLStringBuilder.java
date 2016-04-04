@@ -3,7 +3,6 @@ package eu.modernmt.processing.xml;
 import eu.modernmt.model.Tag;
 import eu.modernmt.processing.framework.TextProcessor;
 import eu.modernmt.processing.framework.string.XMLEditableString;
-import eu.modernmt.processing.framework.string.XMLEditableStringBuilder;
 
 import java.nio.CharBuffer;
 import java.util.regex.Matcher;
@@ -18,7 +17,7 @@ public class XMLStringBuilder implements TextProcessor<String, XMLEditableString
 
     @Override
     public XMLEditableString call(String source) {
-        XMLEditableStringBuilder builder = new XMLEditableStringBuilder();
+        XMLEditableString.Builder builder = new XMLEditableString.Builder();
         Matcher m = Tag.TagRegex.matcher(source);
 
         int stringIndex = 0;
@@ -42,7 +41,7 @@ public class XMLStringBuilder implements TextProcessor<String, XMLEditableString
         return builder.create();
     }
 
-    private static void escapeAndAppend(XMLEditableStringBuilder builder, char[] chars, int start, int end) {
+    private static void escapeAndAppend(XMLEditableString.Builder builder, char[] chars, int start, int end) {
         CharSequence sequence = CharBuffer.wrap(chars, start, end - start);
         Matcher m = EntityPattern.matcher(sequence);
 

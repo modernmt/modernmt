@@ -1,6 +1,5 @@
 package eu.modernmt.processing.tokenizer;
 
-import eu.modernmt.processing.framework.string.StringEditor;
 import eu.modernmt.processing.framework.string.XMLEditableString;
 
 import java.util.List;
@@ -13,7 +12,7 @@ public class TokenizerOutputTransformer {
 
     @Deprecated
     public static XMLEditableString transform(XMLEditableString text, String[] tokens) {
-        StringEditor editor = text.getEditor();
+        XMLEditableString.Editor editor = text.getEditor();
 
         String string = text.toString();
         int length = string.length();
@@ -36,7 +35,7 @@ public class TokenizerOutputTransformer {
         return editor.commitChanges();
     }
 
-    private static void setWord(String string, StringEditor editor, int startIndex, int length) {
+    private static void setWord(String string, XMLEditableString.Editor editor, int startIndex, int length) {
         int end = startIndex + length;
         boolean hasRightSpace = end < string.length() && string.charAt(end) == ' ';
 

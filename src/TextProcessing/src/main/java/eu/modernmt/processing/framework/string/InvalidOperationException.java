@@ -5,7 +5,7 @@ package eu.modernmt.processing.framework.string;
  */
 public class InvalidOperationException extends RuntimeException {
 
-    public InvalidOperationException(XMLEditableString.Operation operation, XMLEditableString.TokenHook tokenHook,
+    public InvalidOperationException(XMLEditableString.Operation operation, TokenHook tokenHook,
                                      String message) {
         super(message + " " + operation.toString() + " " + tokenHook.toString());
     }
@@ -15,7 +15,7 @@ public class InvalidOperationException extends RuntimeException {
                 " edited index (startIndex: " + startIndex + ", last edited index: " + lastEditedIndex);
     }
 
-    public InvalidOperationException(XMLEditableString.Operation operation, XMLEditableString.TokenHook tokenHook) {
+    public InvalidOperationException(XMLEditableString.Operation operation, TokenHook tokenHook) {
         this(operation, tokenHook, "Overlapping operations:");
     }
 }

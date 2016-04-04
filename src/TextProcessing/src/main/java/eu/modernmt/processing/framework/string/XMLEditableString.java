@@ -7,63 +7,13 @@ import java.util.*;
  */
 public class XMLEditableString {
 
-    public enum TokenType {
-        Word,
-        XML
-    }
-
-    public static class TokenHook {
-
-        protected int startIndex;
-        protected int length;
-        protected TokenType tokenType;
-        protected String processedString;
-        protected boolean hasRightSpace;
-
-        public TokenHook(int startIndex, int length, TokenType tokenType) {
-            this.startIndex = startIndex;
-            this.length = length;
-            this.tokenType = tokenType;
-        }
-
-        @Override
-        public String toString() {
-            return "TokenHook{" +
-                    "startIndex=" + startIndex +
-                    ", length=" + length +
-                    ", tokenType=" + tokenType +
-                    ", processedString=" + processedString +
-                    '}';
-        }
-
-        public int getStartIndex() {
-            return startIndex;
-        }
-
-        public int getLength() {
-            return length;
-        }
-
-        public TokenType getTokenType() {
-            return tokenType;
-        }
-
-        public String getProcessedString() {
-            return processedString;
-        }
-
-        public boolean hasRightSpace() {
-            return hasRightSpace;
-        }
-    }
-
     protected static class Operation {
 
         protected int startIndex;
         protected int length;
         protected int lengthNewString;
         protected String newString;
-        protected TokenType tokenType;
+        protected TokenHook.TokenType tokenType;
         protected boolean hasRightSpace;
         private String originalString;
 
@@ -95,7 +45,7 @@ public class XMLEditableString {
     private Deque<Operation> changeLog;
     private List<TokenHook> tokens;
     private List<TokenHook> xml;
-    private StringEditor stringEditor;
+    private Editor editor;
     private boolean compiled;
 
     protected XMLEditableString(String originalString) {
@@ -104,18 +54,18 @@ public class XMLEditableString {
         this.changeLog = new LinkedList<>();
         this.tokens = new ArrayList<>();
         this.xml = new ArrayList<>();
-        this.stringEditor = new StringEditor(this);
+        this.editor = new Editor(this);
         this.compiled = false;
     }
 
-    public StringEditor getEditor() {
-        if (this.stringEditor.isInUse()) {
-            throw new IllegalStateException("An instance of StringEditor is still in use.");
+    public Editor getEditor() {
+        if (this.editor.isInUse()) {
+            throw new IllegalStateException("An instance of Editor is still in use.");
         } else if (this.compiled) {
             throw new IllegalStateException("XMLEditableString already compiled");
         } else {
-            this.stringEditor.init();
-            return this.stringEditor;
+            this.editor.init();
+            return this.editor;
         }
     }
 
@@ -134,12 +84,13 @@ public class XMLEditableString {
         for (Operation operation : operations) {
             int operationEndIndex = operation.startIndex + operation.length;
             operation.originalString = this.currentString.substring(operation.startIndex, operationEndIndex);
-            if (TokenType.Word.equals(operation.tokenType)) {
+
+            if (TokenHook.TokenType.Word.equals(operation.tokenType)) {
                 operation.newString = this.currentString.substring(operation.startIndex, operationEndIndex);
                 operation.lengthNewString = operation.newString.length();
             }
+
             int delta = operation.lengthNewString - operation.length;
-            int operationLastEditedIndex = operationEndIndex - 1;
             if (delta != 0) {
                 for (TokenHook hook : this.tokens) {
                     int hookLastEditedIndex = hook.startIndex + hook.length - 1;
@@ -165,7 +116,7 @@ public class XMLEditableString {
                 }
             }
 
-            if (TokenType.XML.equals(operation.tokenType)) {
+            if (TokenHook.TokenType.XML.equals(operation.tokenType)) {
                 for (TokenHook hook : this.xml) {
                     int hookLastEditedIndex = hook.startIndex + hook.length - 1;
                     if (hook.startIndex >= operationEndIndex) {
@@ -190,7 +141,7 @@ public class XMLEditableString {
                 }
             }
 
-            if (!TokenType.Word.equals(operation.tokenType)) {
+            if (!TokenHook.TokenType.Word.equals(operation.tokenType)) {
                 this.currentString.replace(operation.startIndex, operationEndIndex, operation.newString);
             }
 
@@ -198,7 +149,7 @@ public class XMLEditableString {
                 if (operation.tokenType != null) {
                     TokenHook hook = new TokenHook(operation.startIndex, operation.lengthNewString,
                             operation.tokenType);
-                    if (TokenType.XML.equals(operation.tokenType)) {
+                    if (TokenHook.TokenType.XML.equals(operation.tokenType)) {
                         //hook.length = operation.length;
                         this.xml.add(hook);
                     } else {
@@ -217,9 +168,8 @@ public class XMLEditableString {
         Deque<Operation> operations = new LinkedList<>(this.changeLog);
         while (!operations.isEmpty()) {
             Operation operation = operations.pop();
-            if (!TokenType.Word.equals(operation.tokenType)) {
+            if (!TokenHook.TokenType.Word.equals(operation.tokenType)) {
                 Operation inverse = operation.getInverse();
-                //inverse.tokenType = null;
                 Collection<Operation> c = new LinkedList<>();
                 c.add(inverse);
                 this.applyOperations(c, false);
@@ -258,5 +208,132 @@ public class XMLEditableString {
     @Override
     public String toString() {
         return this.currentString.toString();
+    }
+
+    public static class Editor {
+
+        private List<Operation> changeLog;
+        private XMLEditableString xmlEditableString;
+        private int lastEditedIndex;
+        private int deltaIndexes;
+        private boolean inUse;
+
+        protected Editor(XMLEditableString xmlEditableString) {
+            this.xmlEditableString = xmlEditableString;
+        }
+
+        protected void init() {
+            this.changeLog = new LinkedList<>();
+            this.lastEditedIndex = -1;
+            this.deltaIndexes = 0;
+            this.inUse = true;
+        }
+
+        public void replace(int startIndex, int length, String replace,
+                            TokenHook.TokenType tokenType, boolean hasRightSpace) {
+            if (!this.inUse) {
+                throw new RuntimeException("Closed editor");
+            }
+            if (startIndex > this.lastEditedIndex) {
+                Operation operation = new Operation();
+                operation.startIndex = startIndex + this.deltaIndexes;
+                operation.length = length;
+                if (replace == null) {
+                    operation.lengthNewString = length;
+                } else {
+                    operation.newString = replace;
+                    operation.lengthNewString = replace.length();
+                }
+                operation.tokenType = tokenType;
+                operation.hasRightSpace = hasRightSpace;
+                this.changeLog.add(operation);
+                this.lastEditedIndex = startIndex + length - 1;
+                this.deltaIndexes += (operation.lengthNewString - operation.length);
+            } else {
+                throw new InvalidOperationException(startIndex, this.lastEditedIndex);
+            }
+        }
+
+        public void replace(int startIndex, int length, String replace, TokenHook.TokenType tokenType) {
+            this.replace(startIndex, length, replace, tokenType, false);
+        }
+
+        public void replace(int startIndex, int length, String string) {
+            this.replace(startIndex, length, string, null, false);
+        }
+
+        public void delete(int startIndex, int length) {
+            this.replace(startIndex, length, "", null, false);
+        }
+
+        public void insert(int startIndex, String string) {
+            this.replace(startIndex, 0, string, null, false);
+        }
+
+        public void setWord(int startIndex, int length, boolean hasRightSpace) {
+            replace(startIndex, length, null, TokenHook.TokenType.Word, hasRightSpace);
+        }
+
+        public void setXMLTag(int startIndex, int length) {
+            replace(startIndex, length, " ", TokenHook.TokenType.XML, false);
+        }
+
+        public XMLEditableString commitChanges() {
+            this.xmlEditableString.applyOperations(this.changeLog);
+            this.changeLog = null;
+            this.inUse = false;
+
+            return this.xmlEditableString;
+        }
+
+        public XMLEditableString discardChanges() {
+            this.changeLog = null;
+            this.inUse = false;
+
+            return this.xmlEditableString;
+        }
+
+        protected boolean isInUse() {
+            return inUse;
+        }
+    }
+
+    public static class Builder {
+
+        private StringBuilder string;
+        private List<int[]> tags;
+
+        public Builder() {
+            this.string = new StringBuilder();
+            this.tags = new LinkedList<>();
+        }
+
+        public void append(char c) {
+            this.string.append(c);
+        }
+
+        public void append(String s) {
+            this.string.append(s);
+        }
+
+        public void append(char[] chars, int offset, int length) {
+            this.string.append(chars, offset, length);
+        }
+
+        public void appendXMLTag(String tag) {
+            this.tags.add(new int[]{this.string.length(), tag.length()});
+            this.string.append(tag);
+        }
+
+        public XMLEditableString create() {
+            XMLEditableString editableString = new XMLEditableString(this.string.toString());
+            Editor editor = editableString.getEditor();
+            for (int[] tag : tags) {
+                editor.setXMLTag(tag[0], tag[1]);
+            }
+            editor.commitChanges();
+            return editableString;
+        }
+
     }
 }

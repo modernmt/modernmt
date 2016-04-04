@@ -2,7 +2,6 @@ package eu.modernmt.processing.util;
 
 import eu.modernmt.processing.framework.TextProcessor;
 import eu.modernmt.processing.framework.string.XMLEditableString;
-import eu.modernmt.processing.framework.string.StringEditor;
 
 /**
  * Created by davide on 19/02/16.
@@ -12,7 +11,7 @@ public class RareCharsNormalizer implements TextProcessor<XMLEditableString, XML
     @Override
     public XMLEditableString call(XMLEditableString string) {
         char source[] = string.toCharArray();
-        StringEditor editor = string.getEditor();
+        XMLEditableString.Editor editor = string.getEditor();
 
         for (int i = 0; i < source.length; i++) {
             char c = source[i];
