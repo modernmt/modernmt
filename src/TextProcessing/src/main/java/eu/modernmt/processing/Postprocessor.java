@@ -4,7 +4,7 @@ import eu.modernmt.model.Translation;
 import eu.modernmt.processing.detokenizer.Detokenizer;
 import eu.modernmt.processing.detokenizer.Detokenizers;
 import eu.modernmt.processing.framework.*;
-import eu.modernmt.processing.numbers.NumericTokenExtractor;
+import eu.modernmt.processing.numbers.NumericWordFactory;
 import eu.modernmt.processing.recaser.Recaser;
 import eu.modernmt.processing.xml.XMLTagMapper;
 import org.apache.commons.io.IOUtils;
@@ -19,6 +19,20 @@ import java.util.Locale;
  */
 public class Postprocessor implements Closeable {
 
+    private static final WordTransformationFactory WordTransformationFactory;
+    private static final WordTransformer WordTransformer;
+    private static final Recaser Recaser;
+    private static final XMLTagMapper XMLTagMapper;
+
+    static {
+        WordTransformationFactory = new WordTransformationFactory();
+        WordTransformationFactory.addWordTransformer(NumericWordFactory.class);
+
+        WordTransformer = new WordTransformer();
+        Recaser = new Recaser();
+        XMLTagMapper = new XMLTagMapper();
+    }
+
     private final ProcessingPipeline<Translation, Void> pipelineWithDetokenization;
     private final ProcessingPipeline<Translation, Void> pipelineWithoutDetokenization;
 
@@ -27,11 +41,11 @@ public class Postprocessor implements Closeable {
 
         return new ProcessingPipeline.Builder<Translation, Translation>()
                 .setThreads(threads)
-                .add(new NumericTokenExtractor<>())
-                .add(new PlaceholderTransformer())
+                .add(WordTransformationFactory)
+                .add(WordTransformer)
                 .add(detokenizer)
-                .add(new Recaser())
-                .add(new XMLTagMapper())
+                .add(Recaser)
+                .add(XMLTagMapper)
                 .create();
     }
 

@@ -8,19 +8,19 @@ import java.util.Iterator;
  */
 public class Sentence implements Serializable, Iterable<Token> {
 
-    protected Token[] words;
+    protected Word[] words;
     protected Tag[] tags;
 
-    public Sentence(Token[] words) {
+    public Sentence(Word[] words) {
         this(words, null);
     }
 
-    public Sentence(Token[] words, Tag[] tags) {
-        this.words = words == null ? new Token[0] : words;
+    public Sentence(Word[] words, Tag[] tags) {
+        this.words = words == null ? new Word[0] : words;
         this.tags = tags == null ? new Tag[0] : tags;
     }
 
-    public Token[] getWords() {
+    public Word[] getWords() {
         return words;
     }
 
@@ -40,7 +40,7 @@ public class Sentence implements Serializable, Iterable<Token> {
         return words.length > 0;
     }
 
-    public void setWords(Token[] words) {
+    public void setWords(Word[] words) {
         this.words = words;
     }
 
@@ -67,7 +67,8 @@ public class Sentence implements Serializable, Iterable<Token> {
 
                 foundFirstWord = true;
 
-                builder.append(toString(token, withPlaceholders));
+                String text = withPlaceholders || !token.hasText() ? token.getPlaceholder() : token.getText();
+                builder.append(text);
                 printSpace = token.hasRightSpace();
             }
         }
@@ -76,34 +77,55 @@ public class Sentence implements Serializable, Iterable<Token> {
     }
 
     public String toString(boolean withPlaceholders) {
-        if (tags.length == 0)
-            return getStrippedString(withPlaceholders);
-
         StringBuilder builder = new StringBuilder();
-
         Iterator<Token> iterator = this.iterator();
 
         while (iterator.hasNext()) {
             Token token = iterator.next();
-            builder.append(toString(token, withPlaceholders));
+            append(builder, token, withPlaceholders);
 
-            if (iterator.hasNext() && token.hasRightSpace())
-                builder.append(' ');
+            if (token.hasRightSpace())
+                builder.append(token.getRightSpace());
         }
 
         return builder.toString();
     }
 
+    private static void append(StringBuilder builder, Token token, boolean withPlaceholders) {
+        if (token instanceof Tag) {
+            builder.append(token.getText());
+        } else {
+            String text = withPlaceholders || !token.hasText() ? token.getPlaceholder() : token.getText();
+            char[] chars = text.toCharArray();
+
+            for (char c : chars) {
+                switch (c) {
+                    case '"':
+                        builder.append("&quot;");
+                        break;
+                    case '&':
+                        builder.append("&amp;");
+                        break;
+                    case '\'':
+                        builder.append("&apos;");
+                        break;
+                    case '<':
+                        builder.append("&lt;");
+                        break;
+                    case '>':
+                        builder.append("&gt;");
+                        break;
+                    default:
+                        builder.append(c);
+                        break;
+                }
+            }
+        }
+    }
+
     @Override
     public String toString() {
         return toString(false);
-    }
-
-    protected static String toString(Token token, boolean withPlaceholders) {
-        if (withPlaceholders && (token instanceof PlaceholderToken))
-            return ((PlaceholderToken) token).getPlaceholder();
-        else
-            return token.getText();
     }
 
     @Override

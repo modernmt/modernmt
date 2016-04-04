@@ -1,6 +1,7 @@
 package eu.modernmt.processing.numbers;
 
-import eu.modernmt.model._Word;
+import eu.modernmt.model.Word;
+import eu.modernmt.processing.WordTransformationFactory;
 import eu.modernmt.processing.SentenceBuilder;
 
 import java.util.HashMap;
@@ -9,7 +10,7 @@ import java.util.regex.Pattern;
 /**
  * Created by davide on 04/04/16.
  */
-public class NumericWordFactory implements SentenceBuilder.WordFactory {
+public class NumericWordFactory implements SentenceBuilder.WordFactory, WordTransformationFactory.WordTransformer {
 
     private static final Pattern PATTERN = Pattern.compile(".*[0-9].*");
     private static final NumericWordTransformation TRANSFORMATION = new NumericWordTransformation();
@@ -24,13 +25,28 @@ public class NumericWordFactory implements SentenceBuilder.WordFactory {
 
     private HashMap<String, Counter> pattern2Count = new HashMap<>();
 
+    // WordTransformationFactory.WordTransformer
+
+    @Override
+    public boolean match(Word word) {
+        return PATTERN.matcher(word.getText()).find();
+    }
+
+    @Override
+    public Word setupTransformation(Word word) {
+        word.setTransformation(TRANSFORMATION);
+        return word;
+    }
+
+    // SentenceBuilder.WordFactory
+
     @Override
     public boolean match(String text, String placeholder) {
         return PATTERN.matcher(text).find();
     }
 
     @Override
-    public _Word build(String text, String placeholder, String rightSpace, boolean rightSpaceRequired) {
+    public Word build(String text, String placeholder, String rightSpace, boolean rightSpaceRequired) {
         char[] chars = text.toCharArray();
 
         replaceDigits(chars, 0);
@@ -46,7 +62,7 @@ public class NumericWordFactory implements SentenceBuilder.WordFactory {
             count.value++;
         }
 
-        _Word word = new _Word(text, placeholder, rightSpace, rightSpaceRequired);
+        Word word = new Word(text, placeholder, rightSpace, rightSpaceRequired);
         word.setTransformation(TRANSFORMATION);
 
         return word;
@@ -62,10 +78,10 @@ public class NumericWordFactory implements SentenceBuilder.WordFactory {
         }
     }
 
-    private static class NumericWordTransformation implements _Word.Transformation {
+    private static class NumericWordTransformation implements Word.Transformation {
 
         @Override
-        public void apply(_Word source, _Word target) {
+        public void apply(Word source, Word target) {
             char[] output = target.getPlaceholder().toCharArray();
 
             if (countDigits(output) == countDigits(source.getPlaceholder().toCharArray())) {

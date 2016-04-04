@@ -1,13 +1,8 @@
 package eu.modernmt.processing.xml;
 
-import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Tag;
-import eu.modernmt.model.Token;
-import eu.modernmt.model.Translation;
-import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.model.*;
 import eu.modernmt.processing.framework.TextProcessor;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -52,7 +47,7 @@ import java.util.HashSet;
 public class XMLTagMapper implements TextProcessor<Translation, Void> {
 
     @Override
-    public Void call(Translation translation) throws ProcessingException {
+    public Void call(Translation translation) {
         Sentence source = translation.getSource();
 
         if (source.hasTags()) {
@@ -76,7 +71,7 @@ public class XMLTagMapper implements TextProcessor<Translation, Void> {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         // Nothing to do
     }
 
@@ -137,23 +132,23 @@ public class XMLTagMapper implements TextProcessor<Translation, Void> {
                 boolean mustPrintSpace;
 
                 if (isSpacedClosingComment) {
-                    token.setRightSpace(true);
+                    token.setRightSpace(" ");
                     mustPrintSpace = false;
                 } else if (!token.hasRightSpace()) {
                     mustPrintSpace = false;
                 } else if (nextTag.hasLeftSpace() == nextTag.hasRightSpace()) {
                     if (nextTag.isClosingTag()) {
-                        token.setRightSpace(false);
+                        token.setRightSpace(null);
                         mustPrintSpace = true;
                     } else {
-                        token.setRightSpace(true);
+                        token.setRightSpace(" ");
                         mustPrintSpace = false;
                     }
                 } else if (nextTag.hasLeftSpace()) {
-                    token.setRightSpace(true);
+                    token.setRightSpace(" ");
                     mustPrintSpace = false;
                 } else {
-                    token.setRightSpace(false);
+                    token.setRightSpace(null);
                     mustPrintSpace = true;
                 }
 
@@ -163,10 +158,10 @@ public class XMLTagMapper implements TextProcessor<Translation, Void> {
                     boolean isSpacedOpeningComment = (nextTag.isComment() && nextTag.isOpeningTag() && nextTag.hasRightSpace());
 
                     if (isSpacedOpeningComment) {
-                        nextTag.setRightSpace(true);
+                        nextTag.setRightSpace(" ");
                         mustPrintSpace = false;
                     } else {
-                        nextTag.setRightSpace(false);
+                        nextTag.setRightSpace(null);
                     }
 
                     if (i < sentence.length - 1 && (sentence[i + 1] instanceof Tag)) {
@@ -176,19 +171,19 @@ public class XMLTagMapper implements TextProcessor<Translation, Void> {
                         isSpacedClosingComment = (nextTag.isComment() && nextTag.isClosingTag() && nextTag.hasLeftSpace());
 
                         if (isSpacedClosingComment || (mustPrintSpace && !nextTag.isClosingTag())) {
-                            previousTag.setRightSpace(true);
+                            previousTag.setRightSpace(" ");
                             mustPrintSpace = false;
                         } else {
-                            previousTag.setRightSpace(false);
+                            previousTag.setRightSpace(null);
                         }
                     } else {
                         if (!isSpacedOpeningComment)
-                            nextTag.setRightSpace(mustPrintSpace);
+                            nextTag.setRightSpace(mustPrintSpace ? " " : null);
                         nextTag = null;
                     }
                 }
             } else {
-                token.setRightSpace(token.hasRightSpace() && i < sentence.length - 1);
+                token.setRightSpace(token.hasRightSpace() && i < sentence.length - 1 ? " " : null);
             }
         }
 
@@ -213,7 +208,7 @@ public class XMLTagMapper implements TextProcessor<Translation, Void> {
         if (sentence[0] instanceof Tag)
             ((Tag) sentence[0]).setLeftSpace(false);
 
-        sentence[sentence.length - 1].setRightSpace(false);
+        sentence[sentence.length - 1].setRightSpace(null);
     }
 
     private static void setAdditionalInfoInMappinTags(MappingTag[] tags, int sourceLength) {
@@ -434,19 +429,19 @@ public class XMLTagMapper implements TextProcessor<Translation, Void> {
 
     public static void main(String[] args) throws Throwable {
         // SRC: hello <b>world</b><f />!
-        Sentence source = new Sentence(new Token[]{
-                new Token("hello", true),
-                new Token("world", false),
-                new Token("!", false),
+        Sentence source = new Sentence(new Word[]{
+                new Word("hello", " "),
+                new Word("world", null),
+                new Word("!", null),
         }, new Tag[]{
-                Tag.fromText("<b>", true, false, 1),
-                Tag.fromText("</b>", false, true, 2),
-                Tag.fromText("<f/>", false, false, 2),
+                Tag.fromText("<b>", true, null, 1),
+                Tag.fromText("</b>", false, " ", 2),
+                Tag.fromText("<f/>", false, null, 2),
         });
-        Translation translation = new Translation(new Token[]{
-                new Token("mondo", true),
-                new Token("ciao", false),
-                new Token("!", false),
+        Translation translation = new Translation(new Word[]{
+                new Word("mondo", " "),
+                new Word("ciao", null),
+                new Word("!", null),
         }, source, new int[][]{
                 {0, 1},
                 {1, 0},

@@ -5,36 +5,36 @@ import java.io.Serializable;
 /**
  * Created by davide on 17/02/16.
  */
-public class _Word extends _Token {
+public class Word extends Token {
 
     public interface Transformation extends Serializable {
 
-        void apply(_Word source, _Word target);
+        void apply(Word source, Word target);
 
     }
 
     protected boolean rightSpaceRequired;
     protected Transformation transformation;
 
-    public _Word(String placeholder) {
+    public Word(String placeholder) {
         super(placeholder);
         this.rightSpaceRequired = super.rightSpace != null;
         this.transformation = null;
     }
 
-    public _Word(String placeholder, String rightSpace) {
+    public Word(String placeholder, String rightSpace) {
         super(placeholder, rightSpace);
         this.rightSpaceRequired = super.rightSpace != null;
         this.transformation = null;
     }
 
-    public _Word(String text, String placeholder, String rightSpace) {
+    public Word(String text, String placeholder, String rightSpace) {
         super(text, placeholder, rightSpace);
         this.rightSpaceRequired = super.rightSpace != null;
         this.transformation = null;
     }
 
-    public _Word(String text, String placeholder, String rightSpace, boolean rightSpaceRequired) {
+    public Word(String text, String placeholder, String rightSpace, boolean rightSpaceRequired) {
         super(text, placeholder, rightSpace);
         this.rightSpaceRequired = rightSpaceRequired;
         this.transformation = null;
@@ -56,7 +56,7 @@ public class _Word extends _Token {
         this.transformation = transformation;
     }
 
-    public final void applyTransformation(_Word source) {
+    public final void applyTransformation(Word source) {
         if (this.transformation == null) {
             if (source == null || !source.placeholder.equals(this.placeholder))
                 this.text = this.placeholder;

@@ -9,12 +9,12 @@ public class Translation extends Sentence {
     private final int[][] alignment;
     private long elapsedTime;
 
-    public Translation(Token[] tokens, Sentence source, int[][] alignment) {
-        this(tokens, null, source, alignment);
+    public Translation(Word[] words, Sentence source, int[][] alignment) {
+        this(words, null, source, alignment);
     }
 
-    public Translation(Token[] tokens, Tag[] tags, Sentence source, int[][] alignment) {
-        super(tokens, tags);
+    public Translation(Word[] words, Tag[] tags, Sentence source, int[][] alignment) {
+        super(words, tags);
         this.source = source;
         this.alignment = alignment;
         this.elapsedTime = 0;

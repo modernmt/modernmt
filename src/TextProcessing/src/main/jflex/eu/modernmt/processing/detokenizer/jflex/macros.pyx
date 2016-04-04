@@ -3,8 +3,8 @@ _          = " "
 Letter     = !(![:letter:]|{CJK})
 Currency   = [\$€¢¥£]
 
-quot       = ("&quot;"|\")
-amp        = ("&amp;"|\&)
-apos       = ("&apos;"|\')
-lt         = ("&lt;"|<)
-gt         = ("&gt;"|>)
+quot       = \"
+amp        = \&
+apos       = \'
+lt         = <
+gt         = >

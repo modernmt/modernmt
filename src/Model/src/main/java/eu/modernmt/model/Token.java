@@ -8,14 +8,20 @@ import java.io.Serializable;
 public class Token implements Serializable {
 
     protected String text;
-    protected boolean rightSpace;
+    protected String placeholder;
+    protected String rightSpace;
 
-    public Token(String text) {
-        this(text, true);
+    public Token(String placeholder) {
+        this(null, placeholder, null);
     }
 
-    public Token(String text, boolean rightSpace) {
+    public Token(String placeholder, String rightSpace) {
+        this(null, placeholder, rightSpace);
+    }
+
+    public Token(String text, String placeholder, String rightSpace) {
         this.text = text;
+        this.placeholder = placeholder;
         this.rightSpace = rightSpace;
     }
 
@@ -23,21 +29,40 @@ public class Token implements Serializable {
         return text;
     }
 
+    public boolean hasText() {
+        return text != null;
+    }
+
     public void setText(String text) {
         this.text = text;
     }
 
-    public boolean hasRightSpace() {
+    public String getPlaceholder() {
+        return placeholder;
+    }
+
+    public void setPlaceholder(String placeholder) {
+        this.placeholder = placeholder;
+    }
+
+    public String getRightSpace() {
         return rightSpace;
     }
 
-    public void setRightSpace(boolean rightSpace) {
+    public boolean hasRightSpace() {
+        return rightSpace != null;
+    }
+
+    public void setRightSpace(String rightSpace) {
+        if (rightSpace != null && rightSpace.isEmpty())
+            rightSpace = null;
+
         this.rightSpace = rightSpace;
     }
 
     @Override
     public String toString() {
-        return text;
+        return text == null ? placeholder : text;
     }
 
     @Override
@@ -47,15 +72,17 @@ public class Token implements Serializable {
 
         Token token = (Token) o;
 
-        if (rightSpace != token.rightSpace) return false;
-        return text.equals(token.text);
+        if (text != null ? !text.equals(token.text) : token.text != null) return false;
+        if (!placeholder.equals(token.placeholder)) return false;
+        return rightSpace != null ? rightSpace.equals(token.rightSpace) : token.rightSpace == null;
 
     }
 
     @Override
     public int hashCode() {
-        int result = text.hashCode();
-        result = 31 * result + (rightSpace ? 1 : 0);
+        int result = text != null ? text.hashCode() : 0;
+        result = 31 * result + placeholder.hashCode();
+        result = 31 * result + (rightSpace != null ? rightSpace.hashCode() : 0);
         return result;
     }
 }

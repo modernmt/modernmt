@@ -21,10 +21,10 @@ public class Tag extends Token implements Comparable<Tag> {
     }
 
     public static Tag fromText(String text) {
-        return fromText(text, true, true, -1);
+        return fromText(text, false, null, -1);
     }
 
-    public static Tag fromText(String text, boolean leftSpace, boolean rightSpace, int position) {
+    public static Tag fromText(String text, boolean leftSpace, String rightSpace, int position) {
         if ("<!--".equals(text)) {
             return new Tag("--", text, leftSpace, rightSpace, position, Type.OPENING_TAG, false);
         } else if ("-->".equals(text)) {
@@ -76,8 +76,8 @@ public class Tag extends Token implements Comparable<Tag> {
     protected int position;
     protected boolean dtd;
 
-    protected Tag(String name, String text, boolean leftSpace, boolean rightSpace, int position, Type type, boolean dtd) {
-        super(text, rightSpace);
+    protected Tag(String name, String text, boolean leftSpace, String rightSpace, int position, Type type, boolean dtd) {
+        super(text, text, rightSpace);
         this.leftSpace = leftSpace;
         this.position = position;
         this.type = type;

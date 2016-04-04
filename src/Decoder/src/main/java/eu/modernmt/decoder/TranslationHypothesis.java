@@ -2,8 +2,8 @@ package eu.modernmt.decoder;
 
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Tag;
-import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
+import eu.modernmt.model.Word;
 
 import java.util.Map;
 
@@ -15,14 +15,14 @@ public class TranslationHypothesis extends Translation implements Comparable<Tra
     private float totalScore;
     private Map<String, float[]> scores;
 
-    public TranslationHypothesis(Token[] tokens, Sentence source, int[][] alignment, float totalScore, Map<String, float[]> scores) {
-        super(tokens, source, alignment);
+    public TranslationHypothesis(Word[] words, Sentence source, int[][] alignment, float totalScore, Map<String, float[]> scores) {
+        super(words, source, alignment);
         this.totalScore = totalScore;
         this.scores = scores;
     }
 
-    public TranslationHypothesis(Token[] tokens, Tag[] tags, Sentence source, int[][] alignment, float totalScore, Map<String, float[]> scores) {
-        super(tokens, tags, source, alignment);
+    public TranslationHypothesis(Word[] words, Tag[] tags, Sentence source, int[][] alignment, float totalScore, Map<String, float[]> scores) {
+        super(words, tags, source, alignment);
         this.totalScore = totalScore;
         this.scores = scores;
     }

@@ -1,7 +1,7 @@
 package eu.modernmt.processing.detokenizer.jflex;
 
-import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
+import eu.modernmt.model.Word;
 import eu.modernmt.processing.framework.string.XMLEditableString;
 
 import java.io.CharArrayReader;
@@ -20,7 +20,7 @@ public class SpacesAnnotatedString {
         StringBuilder builder = new StringBuilder();
         builder.append(' ');
 
-        for (Token word : translation.getWords()) {
+        for (Word word : translation.getWords()) {
             builder.append(word.getText());
             builder.append(' ');
         }
@@ -78,11 +78,11 @@ public class SpacesAnnotatedString {
     public Translation apply(Translation translation) {
         int index = 1; // Skip first whitespace
 
-        for (Token word : translation.getWords()) {
+        for (Word word : translation.getWords()) {
             String text = word.getText();
             index += text.length();
 
-            word.setRightSpace(!bits.get(index));
+            word.setRightSpace(bits.get(index) ? null : " ");
             index++;
         }
 

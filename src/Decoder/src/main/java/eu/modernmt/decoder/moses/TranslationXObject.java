@@ -3,7 +3,7 @@ package eu.modernmt.decoder.moses;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationHypothesis;
 import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Token;
+import eu.modernmt.model.Word;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,15 +54,15 @@ class TranslationXObject {
             return new TranslationHypothesis(explode(this.text), source, null, this.totalScore, scores);
         }
 
-        private static Token[] explode(String text) {
+        private static Word[] explode(String text) {
             String[] pieces = text.split(" +");
-            Token[] tokens = new Token[pieces.length];
+            Word[] words = new Word[pieces.length];
 
             for (int i = 0; i < pieces.length; i++) {
-                tokens[i] = new Token(pieces[i], true);
+                words[i] = new Word(pieces[i], " ");
             }
 
-            return tokens;
+            return words;
         }
     }
 
@@ -78,13 +78,13 @@ class TranslationXObject {
 
     public DecoderTranslation getTranslation(Sentence source) {
         String[] pieces = text.split(" +");
-        Token[] tokens = new Token[pieces.length];
+        Word[] words = new Word[pieces.length];
 
         for (int i = 0; i < pieces.length; i++) {
-            tokens[i] = new Token(pieces[i], true);
+            words[i] = new Word(pieces[i], " ");
         }
 
-        DecoderTranslation translation = new DecoderTranslation(tokens, source, alignment);
+        DecoderTranslation translation = new DecoderTranslation(words, source, alignment);
 
         if (nbestList != null && nbestList.length > 0) {
             List<TranslationHypothesis> nbest = new ArrayList<>(nbestList.length);

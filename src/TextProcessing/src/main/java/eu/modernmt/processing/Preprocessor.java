@@ -1,8 +1,7 @@
 package eu.modernmt.processing;
 
 import eu.modernmt.model.Sentence;
-import eu.modernmt.model._Sentence;
-import eu.modernmt.model._Token;
+import eu.modernmt.model.Token;
 import eu.modernmt.processing.detokenizer.SpaceNormalizer;
 import eu.modernmt.processing.framework.*;
 import eu.modernmt.processing.framework.string.XMLEditableString;
@@ -17,7 +16,6 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
@@ -25,6 +23,20 @@ import java.util.Locale;
  * Created by davide on 19/02/16.
  */
 public class Preprocessor implements Closeable {
+
+    private static final XMLStringBuilder XMLStringBuilder;
+    private static final RareCharsNormalizer RareCharsNormalizer;
+    private static final WhitespacesNormalizer WhitespacesNormalizer;
+    private static final SentenceBuilder SentenceBuilder;
+
+    static {
+        XMLStringBuilder = new XMLStringBuilder();
+        RareCharsNormalizer = new RareCharsNormalizer();
+        WhitespacesNormalizer = new WhitespacesNormalizer();
+
+        SentenceBuilder = new SentenceBuilder();
+        SentenceBuilder.addWordFactory(NumericWordFactory.class);
+    }
 
     private final ProcessingPipeline<String, Sentence> pipelineWithTokenization;
     private final ProcessingPipeline<String, Sentence> pipelineWithoutTokenization;
@@ -35,16 +47,17 @@ public class Preprocessor implements Closeable {
 
     public static ProcessingPipeline<String, Sentence> getPipeline(Locale language, boolean tokenize, int threads) {
         Tokenizer languageTokenizer = tokenize ? Tokenizers.forLanguage(language) : new SimpleTokenizer();
+        SpaceNormalizer spaceNormalizer = tokenize ? SpaceNormalizer.forLanguage(language) : null;
 
-        return null;
-//        return new ProcessingPipeline.Builder<String, String>()
-//                .setThreads(threads)
-//                .add(normalizer)
-//                .add(parser)
-//                .add(languageTokenizer)
-//                .add(sentenceBuilder)
-//                .add(numberExtractor)
-//                .create();
+        return new ProcessingPipeline.Builder<String, String>()
+                .setThreads(threads)
+                .add(XMLStringBuilder)
+                .add(RareCharsNormalizer)
+                .add(WhitespacesNormalizer)
+                .add(spaceNormalizer)
+                .add(languageTokenizer)
+                .add(SentenceBuilder)
+                .create();
     }
 
     public Preprocessor(Locale language) {
@@ -139,15 +152,15 @@ public class Preprocessor implements Closeable {
         xmlEditableString = process(new WhitespacesNormalizer(), xmlEditableString);
         xmlEditableString = process(SpaceNormalizer.forLanguage(language), xmlEditableString);
         xmlEditableString = process(Tokenizers.forLanguage(language), xmlEditableString);
-        _Sentence sentence = sentenceBuilder.call(xmlEditableString);
+        Sentence sentence = sentenceBuilder.call(xmlEditableString);
 
         System.out.println(string);
         System.out.println(sentence.toString(false));
 
-        for (_Token token : sentence)
+        for (Token token : sentence)
             System.out.print(token.getText() + ' ');
         System.out.println();
-        for (_Token token : sentence)
+        for (Token token : sentence)
             System.out.print(token.getPlaceholder() + ' ');
         System.out.println();
     }
