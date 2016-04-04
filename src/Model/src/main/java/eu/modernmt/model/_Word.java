@@ -9,7 +9,7 @@ public class _Word extends _Token {
 
     public interface Transformation extends Serializable {
 
-        void apply(_Token source, _Token target);
+        void apply(_Word source, _Word target);
 
     }
 
@@ -56,7 +56,7 @@ public class _Word extends _Token {
         this.transformation = transformation;
     }
 
-    public final void applyTransformation(_Token source) {
+    public final void applyTransformation(_Word source) {
         if (this.transformation == null) {
             if (source == null || !source.placeholder.equals(this.placeholder))
                 this.text = this.placeholder;

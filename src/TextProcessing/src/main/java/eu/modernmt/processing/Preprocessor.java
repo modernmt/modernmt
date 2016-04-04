@@ -6,6 +6,7 @@ import eu.modernmt.model._Token;
 import eu.modernmt.processing.detokenizer.SpaceNormalizer;
 import eu.modernmt.processing.framework.*;
 import eu.modernmt.processing.framework.string.XMLEditableString;
+import eu.modernmt.processing.numbers.NumericWordFactory;
 import eu.modernmt.processing.tokenizer.SimpleTokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizers;
@@ -127,22 +128,28 @@ public class Preprocessor implements Closeable {
     public static void main(String[] args) throws Throwable {
 //        XMLEditableString XMLEditableString = new XMLEditableString("&apos;<b><t>That</b> `s\t\t \tit! &apos;&#40;\t\t");
 //        XMLEditableString XMLEditableString = new XMLEditableString("That `s\t\t \tit!");
-        String string = "&apos;<b><t>That</b> `s\t\t \tit! &apos;<b>\t <a> <c>&#40;\t\t";
+        String string = "&apos;<b><t>That</b> `s\t\t \tit 127 128! &apos;<b>\t <a> <c>&#40;\t\t";
 
         Locale language = Locale.ENGLISH;
+        SentenceBuilder sentenceBuilder = new SentenceBuilder();
+        sentenceBuilder.addWordFactory(NumericWordFactory.class);
 
         XMLEditableString xmlEditableString = new XMLStringBuilder().call(string);
         xmlEditableString = process(new RareCharsNormalizer(), xmlEditableString);
         xmlEditableString = process(new WhitespacesNormalizer(), xmlEditableString);
         xmlEditableString = process(SpaceNormalizer.forLanguage(language), xmlEditableString);
         xmlEditableString = process(Tokenizers.forLanguage(language), xmlEditableString);
-        _Sentence sentence = new SentenceBuilder().call(xmlEditableString);
+        _Sentence sentence = sentenceBuilder.call(xmlEditableString);
 
         System.out.println(string);
         System.out.println(sentence.toString(false));
 
         for (_Token token : sentence)
-            System.out.println(token);
+            System.out.print(token.getText() + ' ');
+        System.out.println();
+        for (_Token token : sentence)
+            System.out.print(token.getPlaceholder() + ' ');
+        System.out.println();
     }
 
     private static XMLEditableString process(TextProcessor<XMLEditableString, XMLEditableString> processor, XMLEditableString string) throws ProcessingException {
