@@ -1,22 +1,22 @@
 #! /usr/bin/perl
 
-exit print "usage: \n\n evalExpr.pl hyp ref [verbosity (0=default,1,2)]\n\n" if $#ARGV != 1 && $#ARGV != 2;
+exit print "usage: \n\n evalExpr.pl hyp ref [-n (normalization)] [-v (verbosity)]\n\n" if $#ARGV != 1 && $#ARGV != 2 && $#ARGV != 3;
 
+# Read optional arguments
+$norm=0; $verbose=0;
+foreach my $a (2..$#ARGV) {
 
-if ($#ARGV == 2) {
-# 0 -> only final result
-# 1 -> show errors
-# 2 -> full verbosity
-
-    $verbose=$ARGV[2];
-    if ($verbose!=0 && $verbose!=1 && $verbose!=2) {
-        printf "Wrong verbosity level (%s)\n", $verbose;
-	print "usage: \n\n evalExpr.pl hyp ref [verbosity (0=default,1,2)]\n\n";
+    if ($ARGV[$a] eq "-n") {
+        $norm=1;
+    } elsif ($ARGV[$a] eq "-v") {
+        $verbose=1;
+    } else {
+        printf "Wrong parameter (%s)\n", $ARGV[$a];
+	print "usage: \n\n evalExpr.pl hyp ref [-n (normalization)] [-v (verbosity)]\n\n";
         exit(0);
     }
-} else {
-    $verbose=0;
 }
+print "n=$norm v=$verbose\n";
 
 $err_msg = "\tError in opening file\n";
 $|=1;
@@ -39,12 +39,22 @@ $totCorrN=0; $totSubN=0; $totDelN=0; $totInsN=0;
 for ($i=0; $i<=$#ref; $i++) {
     printf "REF: %s\nHYP: %s\n", $ref[$i], $hyp[$i] if ($verbose>0);
     $tmp=" ".$ref[$i]." ";  $tmp=~s/[ \t]/  /g;
+    if ($norm==1) {
+	$tmp=~s/</&lt;/g; $tmp=~s/>/&gt;/g;
+     	$tmp=~s/\"/&quot;/g; $tmp=~s/\'/&apos;/g;
+     	$tmp=~s/\&/&amp;/g;
+    }
     @refExpr = $tmp=~/[ ]([^ ]*[0-9][^ ]*)[ ]/g;
     $tmp=" ".$hyp[$i]." ";   $tmp=~s/[ \t]/  /g;
+    if ($norm==1) {
+    	$tmp=~s/</&lt;/g; $tmp=~s/>/&gt;/g;
+    	$tmp=~s/\"/&quot;/g; $tmp=~s/\'/&apos;/g;
+    	$tmp=~s/\&/&amp;/g;
+    }
     @hypExpr = $tmp=~/[ ]([^ ]*[0-9][^ ]*)[ ]/g;
     ($corrN,$subN,$delN,$insN) = &computeMatches();
     $totCorrN+=$corrN; $totSubN+=$subN; $totDelN+=$delN; $totInsN+=$insN;
-    printf " C=%d S=%d D=%d I=%d\n\n", $corrN, $subN, $delN, $insN if ($verbose>1);
+    printf " C=%d S=%d D=%d I=%d\n\n", $corrN, $subN, $delN, $insN if ($verbose>0);
 }
 
 printf "\n\tExprErrorRate = %.2f (C=%d S=%d D=%d I=%d)\n\n", 
@@ -71,17 +81,17 @@ sub computeMatches () {
 	if (defined $hypExpr{"$refExpr"}) { # this expr occurrs both in ref and in hyp => MATCH
 	    if ($refExpr{"$refExpr"}<$hypExpr{"$refExpr"}) {
 		$mN+=$refExpr{"$refExpr"};
-		printf "\tMATCH (%d times) %s\n", $refExpr{"$refExpr"},$refExpr if ($verbose>1);
+		printf "\tMATCH (%d times) %s\n", $refExpr{"$refExpr"},$refExpr if ($verbose>0);
 		printf "\tINS   (%d times) %s\n", $hypExpr{"$refExpr"}-$refExpr{"$refExpr"}, $refExpr if ($verbose>0);
 		$iN+=$hypExpr{"$refExpr"}-$refExpr{"$refExpr"};
 	    } elsif ($refExpr{"$refExpr"}>$hypExpr{"$refExpr"}) {
 		$mN+=$hypExpr{"$refExpr"};
-		printf "\tMATCH (%d times) %s\n", $hypExpr{"$refExpr"}, $refExpr if ($verbose>1);
+		printf "\tMATCH (%d times) %s\n", $hypExpr{"$refExpr"}, $refExpr if ($verbose>0);
 		printf "\tDEL   (%d times) %s\n", $refExpr{"$refExpr"}-$hypExpr{"$refExpr"}, $refExpr if ($verbose>0);
 		$dN+=$refExpr{"$refExpr"}-$hypExpr{"$refExpr"};
 	    } else { # $refExpr{"$refExpr"} == $hypExpr{"$refExpr"}
 		$mN+=$hypExpr{"$refExpr"};
-		printf "\tMATCH (%d times) %s\n", $hypExpr{"$refExpr"}, $refExpr if ($verbose>1);
+		printf "\tMATCH (%d times) %s\n", $hypExpr{"$refExpr"}, $refExpr if ($verbose>0);
 	    }
 	    delete $hypExpr{"$refExpr"};
 	} else { # this expr occurrs only in ref => DELETION
@@ -92,12 +102,12 @@ sub computeMatches () {
 
     $flag4print=1;
     foreach $hypExpr (keys %hypExpr) { # this expr was not matched => INSERTION
-	printf " Checking remaining INS:\n" if ($verbose>1 && $flag4print);
+	printf " Checking remaining INS:\n" if ($verbose>0 && $flag4print);
 	$flag4print=0;
 	printf "\tINS   (%d times) %s\n", $hypExpr{"$hypExpr"}, $hypExpr if ($verbose>0);
 	$iN+=$hypExpr{"$hypExpr"};
     }
-    printf "\n" if ($verbose==1);
+    printf "\n" if ($verbose>0);
     $sN=($dN>$iN)?$iN:$dN;
     $dN-=$sN;
     $iN-=$sN;
