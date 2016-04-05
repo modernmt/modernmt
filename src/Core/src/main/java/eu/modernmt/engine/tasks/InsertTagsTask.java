@@ -4,8 +4,8 @@ import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.fastalign.ForceTranslation;
 import eu.modernmt.aligner.symal.Symmetrisation;
 import eu.modernmt.engine.SlaveNode;
+import eu.modernmt.model.AutomaticTaggedTranslation;
 import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Translation;
 import eu.modernmt.network.cluster.DistributedCallable;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.framework.ProcessingException;
@@ -15,7 +15,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Created by luca mastrostefano on 09/12/15.
  */
-public class InsertTagsTask extends DistributedCallable<String> {
+public class InsertTagsTask extends DistributedCallable<AutomaticTaggedTranslation> {
 
     private static final Logger logger = LogManager.getLogger(InsertTagsTask.class);
     private static final boolean PROCESSING_ENABLED = true;
@@ -43,7 +43,7 @@ public class InsertTagsTask extends DistributedCallable<String> {
     }
 
     @Override
-    public String call() throws ProcessingException {
+    public AutomaticTaggedTranslation call() throws ProcessingException {
         long beginTime = System.currentTimeMillis();
         long startTime, endTime;
         SlaveNode worker = getWorker();
@@ -58,25 +58,26 @@ public class InsertTagsTask extends DistributedCallable<String> {
 
             int[][] alignments = aligner.getAlignments(preprocessedSentence, preprocessedTranslation);
 
-            Translation translation = new Translation(preprocessedTranslation.getWords(),
-                    preprocessedSentence, alignments);
+            AutomaticTaggedTranslation automaticTaggedTranslation = new AutomaticTaggedTranslation(
+                    preprocessedTranslation.getWords(), preprocessedSentence, alignments);
 
 
             Postprocessor postprocessor = worker.getPostprocessor();
-            postprocessor.process(translation, PROCESSING_ENABLED);
+            postprocessor.process(automaticTaggedTranslation, PROCESSING_ENABLED);
 
             startTime = System.currentTimeMillis();
             String taggedTranslation;
             if (forceTranslation) {
-                taggedTranslation = ForceTranslation.forceTranslationAndPreserveTags(translation, this.translation_str);
+                taggedTranslation = ForceTranslation.forceTranslationAndPreserveTags(automaticTaggedTranslation, this.translation_str);
             } else {
-                taggedTranslation = translation.toString();
+                taggedTranslation = automaticTaggedTranslation.toString();
             }
+            automaticTaggedTranslation.setAutomaticTaggedTranslation(taggedTranslation);
             endTime = System.currentTimeMillis();
             logger.debug("Time for forcing the translation: " + (endTime - startTime) + " [ms]");
             logger.debug("Total time for tags projection: " + (endTime - beginTime) + " [ms]");
 
-            return taggedTranslation;
+            return automaticTaggedTranslation;
         } catch (Exception e) {
             throw new ProcessingException(e);
         }

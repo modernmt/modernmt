@@ -11,6 +11,7 @@ import eu.modernmt.decoder.moses.MosesFeature;
 import eu.modernmt.engine.tasks.GetFeatureWeightsTask;
 import eu.modernmt.engine.tasks.InsertTagsTask;
 import eu.modernmt.engine.tasks.TranslationTask;
+import eu.modernmt.model.AutomaticTaggedTranslation;
 import eu.modernmt.network.cluster.ClusterManager;
 import eu.modernmt.network.cluster.DistributedCallable;
 import eu.modernmt.network.messaging.zeromq.ZMQMessagingServer;
@@ -83,7 +84,7 @@ public class MasterNode extends ClusterManager {
     //  Tag aligner
     // =============================
 
-    public String alignTags(String sentence, String translation, boolean forceTranslation) throws TranslationException {
+    public AutomaticTaggedTranslation alignTags(String sentence, String translation, boolean forceTranslation) throws TranslationException {
         InsertTagsTask task;
         try {
             task = new InsertTagsTask(sentence, translation, forceTranslation);
@@ -98,8 +99,8 @@ public class MasterNode extends ClusterManager {
         }
     }
 
-    public String alignTags(String sentence, String translation, boolean forceTranslation,
-                            Symmetrisation.Type symmetrizationStrategy) throws TranslationException {
+    public AutomaticTaggedTranslation alignTags(String sentence, String translation, boolean forceTranslation,
+                                                Symmetrisation.Type symmetrizationStrategy) throws TranslationException {
         InsertTagsTask task;
         try {
             task = new InsertTagsTask(sentence, translation, forceTranslation, symmetrizationStrategy);
