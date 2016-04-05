@@ -1,9 +1,11 @@
 package eu.modernmt.processing.framework.string;
 
+import eu.modernmt.processing.framework.ProcessingException;
+
 /**
  * Created by lucamastrostefano on 30/03/16.
  */
-public class InvalidOperationException extends RuntimeException {
+public class InvalidOperationException extends ProcessingException {
 
     public InvalidOperationException(XMLEditableString.Operation operation, TokenHook tokenHook,
                                      String message) {
@@ -18,4 +20,5 @@ public class InvalidOperationException extends RuntimeException {
     public InvalidOperationException(XMLEditableString.Operation operation, TokenHook tokenHook) {
         this(operation, tokenHook, "Overlapping operations:");
     }
+    
 }

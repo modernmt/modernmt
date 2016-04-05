@@ -1,5 +1,6 @@
 package eu.modernmt.processing.util;
 
+import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.TextProcessor;
 import eu.modernmt.processing.framework.string.XMLEditableString;
 
@@ -9,7 +10,7 @@ import eu.modernmt.processing.framework.string.XMLEditableString;
 public class WhitespacesNormalizer implements TextProcessor<XMLEditableString, XMLEditableString> {
 
     @Override
-    public XMLEditableString call(XMLEditableString string) {
+    public XMLEditableString call(XMLEditableString string) throws ProcessingException {
         char source[] = string.toCharArray();
         XMLEditableString.Editor editor = string.getEditor();
 

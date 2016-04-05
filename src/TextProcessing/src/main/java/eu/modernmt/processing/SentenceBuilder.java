@@ -4,6 +4,7 @@ import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Tag;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Word;
+import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.TextProcessor;
 import eu.modernmt.processing.framework.string.TokenHook;
 import eu.modernmt.processing.framework.string.XMLEditableString;
@@ -64,7 +65,7 @@ public class SentenceBuilder implements TextProcessor<XMLEditableString, Sentenc
     }
 
     @Override
-    public Sentence call(XMLEditableString string) {
+    public Sentence call(XMLEditableString string) throws ProcessingException {
         WordFactory[] wordFactories = instantiate(this.factoryList);
 
         char[] reference = string.getOriginalString().toCharArray();

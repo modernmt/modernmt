@@ -2,6 +2,7 @@ package eu.modernmt.processing.detokenizer.jflex;
 
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
+import eu.modernmt.processing.framework.string.InvalidOperationException;
 import eu.modernmt.processing.framework.string.XMLEditableString;
 
 import java.io.CharArrayReader;
@@ -89,7 +90,7 @@ public class SpacesAnnotatedString {
         return translation;
     }
 
-    public XMLEditableString apply(XMLEditableString string) {
+    public XMLEditableString apply(XMLEditableString string) throws InvalidOperationException {
         XMLEditableString.Editor editor = string.getEditor();
 
         for (int i = 1; i < text.length - 1; i++) {

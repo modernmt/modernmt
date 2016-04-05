@@ -1,5 +1,6 @@
 package eu.modernmt.processing.tokenizer;
 
+import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.string.XMLEditableString;
 
 /**
@@ -8,7 +9,7 @@ import eu.modernmt.processing.framework.string.XMLEditableString;
 public class SimpleTokenizer implements Tokenizer {
 
     @Override
-    public XMLEditableString call(XMLEditableString param) {
+    public XMLEditableString call(XMLEditableString param) throws ProcessingException {
         String[] tokens = param.toString().split(" +");
         return TokenizerOutputTransformer.transform(param, tokens);
     }

@@ -73,11 +73,11 @@ public class XMLEditableString {
         return this.currentString.toString();
     }
 
-    protected void applyOperations(Collection<Operation> operations) {
+    protected void applyOperations(Collection<Operation> operations) throws InvalidOperationException {
         applyOperations(operations, true);
     }
 
-    protected void applyOperations(Collection<Operation> operations, boolean save) {
+    protected void applyOperations(Collection<Operation> operations, boolean save) throws InvalidOperationException {
         if (this.compiled) {
             throw new IllegalStateException("XMLEditableString already compiled");
         }
@@ -164,7 +164,7 @@ public class XMLEditableString {
         }
     }
 
-    private void reverseChangeLog() {
+    private void reverseChangeLog() throws InvalidOperationException {
         Deque<Operation> operations = new LinkedList<>(this.changeLog);
         while (!operations.isEmpty()) {
             Operation operation = operations.pop();
@@ -177,7 +177,7 @@ public class XMLEditableString {
         }
     }
 
-    public List<TokenHook> compile() {
+    public List<TokenHook> compile() throws InvalidOperationException {
         if (this.compiled) {
             throw new IllegalStateException("XMLEditableString already compiled");
         }
@@ -230,7 +230,7 @@ public class XMLEditableString {
         }
 
         public void replace(int startIndex, int length, String replace,
-                            TokenHook.TokenType tokenType, boolean hasRightSpace) {
+                            TokenHook.TokenType tokenType, boolean hasRightSpace) throws InvalidOperationException {
             if (!this.inUse) {
                 throw new RuntimeException("Closed editor");
             }
@@ -254,31 +254,31 @@ public class XMLEditableString {
             }
         }
 
-        public void replace(int startIndex, int length, String replace, TokenHook.TokenType tokenType) {
+        public void replace(int startIndex, int length, String replace, TokenHook.TokenType tokenType) throws InvalidOperationException {
             this.replace(startIndex, length, replace, tokenType, false);
         }
 
-        public void replace(int startIndex, int length, String string) {
+        public void replace(int startIndex, int length, String string) throws InvalidOperationException {
             this.replace(startIndex, length, string, null, false);
         }
 
-        public void delete(int startIndex, int length) {
+        public void delete(int startIndex, int length) throws InvalidOperationException {
             this.replace(startIndex, length, "", null, false);
         }
 
-        public void insert(int startIndex, String string) {
+        public void insert(int startIndex, String string) throws InvalidOperationException {
             this.replace(startIndex, 0, string, null, false);
         }
 
-        public void setWord(int startIndex, int length, boolean hasRightSpace) {
+        public void setWord(int startIndex, int length, boolean hasRightSpace) throws InvalidOperationException {
             replace(startIndex, length, null, TokenHook.TokenType.Word, hasRightSpace);
         }
 
-        public void setXMLTag(int startIndex, int length) {
+        public void setXMLTag(int startIndex, int length) throws InvalidOperationException {
             replace(startIndex, length, " ", TokenHook.TokenType.XML, false);
         }
 
-        public XMLEditableString commitChanges() {
+        public XMLEditableString commitChanges() throws InvalidOperationException {
             this.xmlEditableString.applyOperations(this.changeLog);
             this.changeLog = null;
             this.inUse = false;
@@ -308,24 +308,28 @@ public class XMLEditableString {
             this.tags = new LinkedList<>();
         }
 
-        public void append(char c) {
+        public Builder append(char c) {
             this.string.append(c);
+            return this;
         }
 
-        public void append(String s) {
+        public Builder append(String s) {
             this.string.append(s);
+            return this;
         }
 
-        public void append(char[] chars, int offset, int length) {
+        public Builder append(char[] chars, int offset, int length) {
             this.string.append(chars, offset, length);
+            return this;
         }
 
-        public void appendXMLTag(String tag) {
+        public Builder appendXMLTag(String tag) {
             this.tags.add(new int[]{this.string.length(), tag.length()});
             this.string.append(tag);
+            return this;
         }
 
-        public XMLEditableString create() {
+        public XMLEditableString create() throws InvalidOperationException {
             XMLEditableString editableString = new XMLEditableString(this.string.toString());
             Editor editor = editableString.getEditor();
             for (int[] tag : tags) {

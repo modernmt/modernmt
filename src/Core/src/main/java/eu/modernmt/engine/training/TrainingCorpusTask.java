@@ -57,8 +57,8 @@ class TrainingCorpusTask implements Callable<Void> {
 
             job.start();
             job.join();
-        } catch (IOException e) {
-            throw new ProcessingException(e);
+        } catch (IOException | ProcessingException e) {
+            throw new ProcessingException("Failed to process corpus '" + corpus.getName() + "'", e);
         } finally {
             IOUtils.closeQuietly(input);
             IOUtils.closeQuietly(output);
