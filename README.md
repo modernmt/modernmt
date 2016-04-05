@@ -26,13 +26,7 @@ Read [INSTALL.md](INSTALL.md)
 
 ### Create an Engine
 
-We included a very small dataset, just to verify that training works.
-
-```bash
-./mmt create en it examples/data/train
-```
-
-To test domain-specific differences on the sentence `system information support`, create an engine with small sample size:
+We included a very small dataset that permits to create an engine to test with:
 
 ```bash
 ./mmt create en it examples/data/train
