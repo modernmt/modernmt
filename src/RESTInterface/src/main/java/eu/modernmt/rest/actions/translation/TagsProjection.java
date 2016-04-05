@@ -4,6 +4,8 @@ import eu.modernmt.aligner.symal.Symmetrisation;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.engine.MasterNode;
 import eu.modernmt.engine.TranslationException;
+import eu.modernmt.model.AutomaticTaggedTranslation;
+import eu.modernmt.model.Token;
 import eu.modernmt.rest.RESTServer;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
@@ -17,12 +19,27 @@ import eu.modernmt.rest.framework.routing.Route;
 @Route(aliases = "tags-projection", method = HttpMethod.GET)
 public class TagsProjection extends ObjectAction<Object> {
 
-    private static class ProjectedTranslation{
+    private static class ProjectedTranslation {
 
-        String translation;
+        final String translation;
 
         public ProjectedTranslation(String translation) {
             this.translation = translation;
+        }
+    }
+
+    private static class ExhaustiveProjectedTranslation extends ProjectedTranslation {
+
+        final String[] sourceToken;
+        final String[] targetToken;
+        final int[][] alignments;
+
+        public ExhaustiveProjectedTranslation(String translation, String[] sourceToken, String[] targetToken,
+                                              int[][] alignments) {
+            super(translation);
+            this.sourceToken = sourceToken;
+            this.targetToken = targetToken;
+            this.alignments = alignments;
         }
     }
 
@@ -32,14 +49,32 @@ public class TagsProjection extends ObjectAction<Object> {
     protected Object execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, TranslationException {
         Params params = (Params) _params;
         MasterNode masterNode = server.getMasterNode();
-        String processedTranslation;
-        if(params.symmetrizationStrategy != null) {
-            processedTranslation = masterNode.alignTags(params.sentence, params.translation, params.forceTranslation,
+        AutomaticTaggedTranslation taggedTranslation;
+        if (params.symmetrizationStrategy != null) {
+            taggedTranslation = masterNode.alignTags(params.sentence, params.translation, params.forceTranslation,
                     params.symmetrizationStrategy);
-        }else {
-            processedTranslation = masterNode.alignTags(params.sentence, params.translation, params.forceTranslation);
+        } else {
+            taggedTranslation = masterNode.alignTags(params.sentence, params.translation, params.forceTranslation);
         }
-        return new ProjectedTranslation(processedTranslation);
+        ProjectedTranslation result;
+        if (params.showDetails) {
+            String[] sourceToken = stringifyTokens(taggedTranslation.getSource().getWords());
+            String[] targetToken = stringifyTokens(taggedTranslation.getWords());
+            int[][] alignments = taggedTranslation.getAlignment();
+            result = new ExhaustiveProjectedTranslation(taggedTranslation.getAutomaticTaggedTranslation(), sourceToken, targetToken,
+                    alignments);
+        } else {
+            result = new ProjectedTranslation(taggedTranslation.getAutomaticTaggedTranslation());
+        }
+        return result;
+    }
+
+    private static String[] stringifyTokens(Token[] tokens) {
+        String[] strings = new String[tokens.length];
+        for (int i = 0; i < strings.length; i++) {
+            strings[i] = tokens[i].getText();
+        }
+        return strings;
     }
 
     @Override
@@ -53,20 +88,22 @@ public class TagsProjection extends ObjectAction<Object> {
         public final String translation;
         public final boolean forceTranslation;
         public final Symmetrisation.Type symmetrizationStrategy;
+        public final boolean showDetails;
 
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
-            sentence = getString("s", false);
-            translation = getString("t", false);
-            forceTranslation = getBoolean("f", false);
+            this.sentence = getString("s", false);
+            this.translation = getString("t", false);
+            this.forceTranslation = getBoolean("f", false);
+            this.showDetails = getBoolean("d", false);
             int symmetrizationStrategy = getInt("symmetrization", -1);
-            if(symmetrizationStrategy >= 0) {
+            if (symmetrizationStrategy >= 0) {
                 try {
                     this.symmetrizationStrategy = Symmetrisation.Type.values()[symmetrizationStrategy];
-                }catch(Exception e){
+                } catch (Exception e) {
                     throw new ParameterParsingException("symmetrization", Integer.toString(symmetrizationStrategy));
                 }
-            }else{
+            } else {
                 this.symmetrizationStrategy = null;
             }
         }

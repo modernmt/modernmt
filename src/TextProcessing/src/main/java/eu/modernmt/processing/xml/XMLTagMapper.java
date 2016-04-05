@@ -20,27 +20,27 @@ import java.util.HashSet;
 /**
  * Policy for tag management
  * From class Tag a tag is classified into EMPTY_TAG, OPENING_TAG, CLOSING_TAG, and has  aposition associated corresponding to the word immediately following the tag itself. If the tag closes the sentence its position is set to a virtual last word (i.e. position=sentence.length)
- * <p>
+ * <p/>
  * MappingTag add additional information:
  * - a "link" to the closing or opening corresponding tag;
  * - a list of "coveredPositions"; for a source MappingTags this list contains only contiguous positions, or it is empty; for target tags this list can contain also non contiguous positions, or it is empty
  * - a boolean "content" flag which is set to true if at least one source word is contained between the opening and closing tags; this flag is set by looking at the source sentence, and reported to the mapped target MappingTag
- * <p>
+ * <p/>
  * For an opening source tag without the corresponding closing tag, the set of covered positions goes from the its actual position to the end of the sentence
  * For a closing source tag without the corresponding opening tag, the set of covered positions goes from the beginning of the sentence to its actual position
- * <p>
+ * <p/>
  * A MappingTag can be:
  * - with context (content=true): at least one word is contained between the opening and closing tag
  * - without context (content=false): no words are contained between the opening and closing tag:
- * <p>
+ * <p/>
  * In the case of a MappingTag without content the list of "coveredPositions" represents only the word before which the tags whould be positioned
- * <p>
+ * <p/>
  * The mapping from a source MappingTag into a target MappingTag is done as follows:
  * - all additional info are copied, but the list of "coveredPositions"
  * - the list of source "coveredPositions" is scanned; considering the provided source-to-target word-alignment, for each source position the corresponding target positions (if any) are orderly and uniquely inserted in the target list of "coveredPositions"
  * - a target MappingTag which has a list of "coveredPositions" with internal gaps is split into similar copies containing contiguous "coveredPositions"
  * - the "position" of the target MappingTag is re-set according to the rules/heuristic described below, which determines where the tag is actually re-inserted
- * <p>
+ * <p/>
  * Rules of insertions:
  * - rules for tags without content
  * -- the tag is inserted before the first element of the (target) "coveredPositions"; if the list is empty the tag is inserted at the end of the sentence; this holds for both EMPTY_TAG, OPENING_TAG and CLOSING_TAG;
@@ -95,12 +95,12 @@ public class XMLTagMapper implements TextProcessor<Translation, Void> {
     /**
      * Recreate the spacing informations of the translation including tags, this table
      * shows the behaviour of the algorithm:
-     * <p>
+     * <p/>
      * TTRX = Token has right space
      * TALX = Tag has left space
      * TARX = Tag has right space
      * TATY = Tag type (O = opening, E = empty, C = closing)
-     * <p>
+     * <p/>
      * TTRX TALX TARX TATY     Result              Example
      * 0    x    x    x        Word<tag>Word       That<b>'s
      * 1    0    1    x        Word<tag> Word      Hello<b> World
@@ -111,7 +111,7 @@ public class XMLTagMapper implements TextProcessor<Translation, Void> {
      * 1    1    1    O        Word <b>Word        Hello <b>World
      * 1    1    1    E        Word <b/>Word       Hello <b/>World
      * 1    1    1    C        Word</b> Word       Hello</b> World
-     * <p>
+     * <p/>
      * If more there are more consecutive tags, this algorithm ensures that
      * only one space it will be printed. The position of the single space is
      * then decided by the first word and the consecutive tags.
@@ -435,22 +435,68 @@ public class XMLTagMapper implements TextProcessor<Translation, Void> {
     public static void main(String[] args) throws Throwable {
         // SRC: hello <b>world</b><f />!
         Sentence source = new Sentence(new Token[]{
-                new Token("hello", true),
-                new Token("world", false),
-                new Token("!", false),
+                new Token("7", false),
+                new Token(")", true),
+                new Token("When", true),
+                new Token("I", true),
+                new Token("try", true),
+                new Token("to", true),
+                new Token("access", true),
+                new Token("the", true),
+                new Token("page", true),
+                new Token("http://www.fiatauto.com/migrazione", true),
+                new Token("I", true),
+                new Token("cannot", true),
+                new Token("connect", true),
+                new Token("or", true),
+                new Token("I", true),
+                new Token("get", true),
+                new Token("an", true),
+                new Token("error", true),
+                new Token(".", false)
         }, new Tag[]{
-                Tag.fromText("<b>", true, false, 1),
-                Tag.fromText("</b>", false, true, 2),
-                Tag.fromText("<f/>", false, false, 2),
+                Tag.fromText("<a>", false, true, 0),
+                Tag.fromText("<a>", true, false, 0),
+                Tag.fromText("<a/>", false, false, 0),
         });
         Translation translation = new Translation(new Token[]{
-                new Token("mondo", true),
-                new Token("ciao", false),
-                new Token("!", false),
+                new Token("7", false),
+                new Token(")", true),
+                new Token("Quando", true),
+                new Token("tento", true),
+                new Token("di", true),
+                new Token("accedere", true),
+                new Token("alla", true),
+                new Token("pagina", true),
+                new Token("http://www.fiatauto.com/migrazione", true),
+                new Token("non", true),
+                new Token("si", true),
+                new Token("connette", true),
+                new Token("o", true),
+                new Token("ricevo", true),
+                new Token("un", true),
+                new Token("errore", true),
+                new Token(".", false)
         }, source, new int[][]{
-                {0, 1},
-                {1, 0},
+                {0, 0},
+                {1, 1},
                 {2, 2},
+                {3, 3},
+                {4, 3},
+                {5, 6},
+                {6, 5},
+                {7, 6},
+                {8, 7},
+                {9, 8},
+                {10, 8},
+                {11, 8},
+                {12, 11},
+                {13, 12},
+                {14, 13},
+                {15, 13},
+                {16, 14},
+                {17, 15},
+                {18, 16}
         });
 
 
