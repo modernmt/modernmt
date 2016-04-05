@@ -29,20 +29,20 @@ Read [INSTALL.md](INSTALL.md)
 We included a very small dataset that permits to create an engine to test with:
 
 ```bash
-./mmt create en it examples/data/train
+> create en it examples/data/train
 ```
 
 ### Start an existing engine
 
 ```bash
-./mmt start
+> start
 ```
 use **stop** for stopping it.
 
 ### Translate via API
 
 ```
-curl "http://localhost:8045/translate?q=world&context=computer" | python -mjson.tool
+> curl "http://localhost:8045/translate?q=world&context=computer" | python -mjson.tool
 ```
 
 You will get:
