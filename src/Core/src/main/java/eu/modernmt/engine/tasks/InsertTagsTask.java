@@ -74,8 +74,11 @@ public class InsertTagsTask extends DistributedCallable<AutomaticTaggedTranslati
             }
             automaticTaggedTranslation.setAutomaticTaggedTranslation(taggedTranslation);
             endTime = System.currentTimeMillis();
-            logger.debug("Time for forcing the translation: " + (endTime - startTime) + " [ms]");
-            logger.debug("Total time for tags projection: " + (endTime - beginTime) + " [ms]");
+
+            if (logger.isDebugEnabled()) {
+                logger.debug("Time for forcing the translation: " + (endTime - startTime) + " [ms]");
+                logger.debug("Total time for tags projection: " + (endTime - beginTime) + " [ms]");
+            }
 
             return automaticTaggedTranslation;
         } catch (Exception e) {
