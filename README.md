@@ -29,13 +29,13 @@ Read [INSTALL.md](INSTALL.md)
 We included a very small dataset that permits to create an engine to test with:
 
 ```bash
-> create en it examples/data/train
+> ./mmt create en it examples/data/train
 ```
 
 ### Start an existing engine
 
 ```bash
-> start
+> ./mmt start
 ```
 use **stop** for stopping it.
 
