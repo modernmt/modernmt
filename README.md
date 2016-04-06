@@ -16,7 +16,8 @@ You can find more information on: http://www.modermmt.eu
 
 ## About this Release
 
-This release allows you to create an MT engine, from a collection of line aligned parallel data, that can be queried via a REST API.
+This release allows you to create an MT engine, from a collection of line aligned parallel data, 
+that can be queried via a REST API.
 
 Intro video: http://87k.eu/lk9l
 
@@ -26,7 +27,8 @@ Intro video: http://87k.eu/lk9l
 
 Read [INSTALL.md](INSTALL.md)
 
-The distribution includes a small dataset (folder ./examples) to train and test translations from English to Italian in two domains. 
+The distribution includes a small dataset (folder ./examples) to train and test translations from 
+English to Italian in two domains. 
 
 ### Create an engine
 
