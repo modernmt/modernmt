@@ -9,11 +9,13 @@ import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
 
 //pyflex include ../macros.pyx
 
+//pyflex contractions ../contractions/italian.txt
+
 %%
 
 //pyflex include ../stddetok-rules.pyx
 
 /* Language Specific - Italian */
 
-[:letter:]{apos}{_}[:letter:]                                       { return REMOVE_FIRST; }
+{_}{Contractions}{_}?[[:letter:]|[:digit:]]                         { return REMOVE_INNER; }
 {_}{Currency}{_}                                                    { return REMOVE_LAST; }

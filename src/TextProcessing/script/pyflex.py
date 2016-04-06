@@ -94,6 +94,26 @@ def _prefixes(path, caseless=None):
     return regular_patterns, numeric_only_patterns
 
 
+def _contractions(path):
+    result = []
+
+    with codecs.open(path, encoding='utf-8') as source:
+        for line in source:
+            line = line.strip()
+
+            if len(line) == 0 or line.startswith('#'):
+                continue
+
+            for token in (line.lower(), line.upper(), line[:1].upper() + line[1:].lower()):
+                pattern = token.replace('\'', '{_}?{apos}{_}?')
+                if pattern.endswith('{_}?'):
+                    pattern = pattern[:-4]
+
+                result.append(pattern)
+
+    return result
+
+
 def _encode_prefixes(regular_patterns, numeric_only_patterns):
     lines = []
 
@@ -143,6 +163,9 @@ def generate_jflex(parent_dir, template_file, target_dir):
                 has_numeric_only_patterns = len(numeric_only_patterns) > 0
 
                 content[i] = _encode_prefixes(regular_patterns, numeric_only_patterns)
+            elif command == 'contractions':
+                contractions = _contractions(_abspath(include_root, args[0]))
+                content[i] = 'Contractions = (%s)' % ('|'.join(contractions))
             else:
                 raise Exception("Unknown command " + command)
 

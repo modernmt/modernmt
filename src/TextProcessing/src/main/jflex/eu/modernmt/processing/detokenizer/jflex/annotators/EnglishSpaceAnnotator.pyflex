@@ -18,12 +18,15 @@ import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
 
 //pyflex include ../macros.pyx
 
+//pyflex contractions ../contractions/english.txt
+
 %%
 
 //pyflex include ../stddetok-rules.pyx
 
 /* Language Specific - English */
 
-[[:letter:][:digit:]]{_}{apos}[:letter:].                           { return REMOVE_FIRST; }
 s{_}{apos}{_}                                                       { return englishPossessiveCase(); }
 {_}{Currency}{_}                                                    { return REMOVE_LAST; }
+
+{_}{Contractions}{_}                                                { return REMOVE_INNER; }

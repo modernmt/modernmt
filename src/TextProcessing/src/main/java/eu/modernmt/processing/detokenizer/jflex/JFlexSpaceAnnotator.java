@@ -12,6 +12,7 @@ public abstract class JFlexSpaceAnnotator {
     public static final int REMOVE_FIRST = 0;
     public static final int REMOVE_LAST = 1;
     public static final int REMOVE_ALL = 2;
+    public static final int REMOVE_INNER = 3;
 
     protected int zzStartReadOffset = 0;
 
@@ -31,6 +32,9 @@ public abstract class JFlexSpaceAnnotator {
                 break;
             case REMOVE_ALL:
                 text.removeAllSpaces(begin, end);
+                break;
+            case REMOVE_INNER:
+                text.removeAllSpaces(begin + 1, end - 1);
                 break;
         }
 
