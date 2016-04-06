@@ -28,7 +28,8 @@ Read [INSTALL.md](INSTALL.md)
 
 ### Create an engine
 
-We included a very small dataset to create a translation engine from English to Italian. 
+We included a very small dataset (in folder ./examples) to test translations from English to Italian in different domains. 
+You create an engine with the command: 
 
 ```bash
 > ./mmt create en it examples/data/train
@@ -36,10 +37,11 @@ We included a very small dataset to create a translation engine from English to 
 
 ### Start the engine
 
+You start the engine with the command:
 ```bash
 > ./mmt start
 ```
-when you are done, use the command **stop**.
+when you are done, you can stop it with the command **stop**.
 
 ### Start translating via API
 
