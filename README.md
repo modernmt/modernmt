@@ -3,11 +3,13 @@
 ## About MMT
 MMT is a context-aware, incremental and distributed general purpose Machine Translation technology.
 
-MMT is easy to use, fast to train, and simple to scale with respect to domains, data, and users.
+MMT is simple to use, fast to train, and easy to scale with respect to domains, data, and users.
 
-With MMT you don't need anymore to train multiple custom engines for each of your domains/projects/customers, you can push all your data to a single engine that will automatically and in real-time adapt to the context you provide.
+MMT is trained by pooling all available domains/projects/customers data and translation memories in one folder.
 
-MMT aims to deliver the quality of a custom engine and the low sparsity of your all data combined.
+MMT is queried by providing the sentence to be transalted and some context text.
+
+MMT delivers the quality of multiple custom engines by creating just one engine, that adapts on the fly on the provided context.
 
 You can find more information on: http://www.modermmt.eu
 
