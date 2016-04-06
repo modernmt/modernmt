@@ -7,9 +7,9 @@ MMT is simple to use, fast to train, and easy to scale with respect to domains, 
 
 MMT is trained by pooling all available domains/projects/customers data and translation memories in one folder.
 
-MMT is queried by providing the sentence to be translated and some optional context text.
+MMT is queried by providing the sentence to be translated and some context text.
 
-MMT delivers the quality of multiple custom engines by creating just one engine, that adapts on the fly on the provided context.
+MMT's goal is to deliver the quality of multiple custom engines by creating just one engine, that adapts on the fly to the provided context.
 
 You can find more information on: http://www.modermmt.eu
 
