@@ -16,7 +16,7 @@ You can find more information on: http://www.modermmt.eu
 
 ## About this Release
 
-This MMT release will allow you to create an MT engine, available via a REST API, given your training data (folder with line aligned text files)
+This release allows you to create an MT engine, from a collection of line aligned parallel data, that can be queried via a REST API.
 
 Intro video: http://87k.eu/lk9l
 
@@ -26,7 +26,7 @@ Intro video: http://87k.eu/lk9l
 
 Read [INSTALL.md](INSTALL.md)
 
-The distribution includes a small dataset (folder ./examples) to test translations from English to Italian in different domains. 
+The distribution includes a small dataset (folder ./examples) to train and test translations from English to Italian in two domains. 
 
 ### Create an engine
 
@@ -48,7 +48,7 @@ Let us query MMT with the word *world* in the context *computer*:
 > curl "http://localhost:8045/translate?q=world&context=computer" | python -mjson.tool
 ```
 
-You will get:
+We will get the json structure:
 
 ```
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
