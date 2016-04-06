@@ -3,7 +3,7 @@
 ## About MMT
 MMT is a context-aware, incremental and distributed general purpose Machine Translation technology.
 
-MMT goal is to make MT easy to adopt and scale.
+MMT is easy to use, fast to train, and simple to scale with respect to domains, data, and users.
 
 With MMT you don't need anymore to train multiple custom engines for each of your domains/projects/customers, you can push all your data to a single engine that will automatically and in real-time adapt to the context you provide.
 
