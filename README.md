@@ -24,22 +24,22 @@ Intro video: http://87k.eu/lk9l
 
 Read [INSTALL.md](INSTALL.md)
 
-### Create an Engine
+### Create an engine
 
-We included a very small dataset that permits to create an engine to test with:
+We included a very small dataset to create a translation engine from English to Italian. 
 
 ```bash
 > ./mmt create en it examples/data/train
 ```
 
-### Start an existing engine
+### Start the engine
 
 ```bash
 > ./mmt start
 ```
-use **stop** for stopping it.
+when you are done, use the command **stop**.
 
-### Translate via API
+### Start translating via API
 
 ```
 > curl "http://localhost:8045/translate?q=world&context=computer" | python -mjson.tool
