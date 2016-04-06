@@ -50,7 +50,7 @@ Let us query MMT with the word *world* in the context *computer*:
 > curl "http://localhost:8045/translate?q=world&context=computer" | python -mjson.tool
 ```
 
-We will get the json structure:
+MMT will return a json structure showing the translation and the context similarity scores for each domain: 
 
 ```
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
