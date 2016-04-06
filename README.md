@@ -26,10 +26,9 @@ Intro video: http://87k.eu/lk9l
 
 Read [INSTALL.md](INSTALL.md)
 
-### Create an engine
+The distribution includes a small dataset (folder ./examples) to test translations from English to Italian in different domains. 
 
-We included a very small dataset (in folder ./examples) to test translations from English to Italian in different domains. 
-You create an engine with the command: 
+### Create an engine
 
 ```bash
 > ./mmt create en it examples/data/train
@@ -45,6 +44,7 @@ when you are done, you can stop it with the command **stop**.
 
 ### Start translating via API
 
+Let us translate the word *world* in the context *computer*:
 ```
 > curl "http://localhost:8045/translate?q=world&context=computer" | python -mjson.tool
 ```
