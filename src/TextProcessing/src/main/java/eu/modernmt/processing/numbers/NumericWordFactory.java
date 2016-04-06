@@ -47,7 +47,7 @@ public class NumericWordFactory implements SentenceBuilder.WordFactory, WordTran
 
     @Override
     public Word build(String text, String placeholder, String rightSpace, boolean rightSpaceRequired) {
-        char[] chars = text.toCharArray();
+        char[] chars = placeholder.toCharArray();
 
         replaceDigits(chars, 0);
         placeholder = new String(chars);

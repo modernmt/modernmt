@@ -64,6 +64,9 @@ public class Word extends Token {
                 this.text = source.text;
         } else {
             this.transformation.apply(source, this);
+
+            if (this.text == null)
+                this.text = this.placeholder;
         }
     }
 

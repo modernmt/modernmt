@@ -22,7 +22,7 @@ public class SpacesAnnotatedString {
         builder.append(' ');
 
         for (Word word : translation.getWords()) {
-            builder.append(word.getText());
+            builder.append(word.getPlaceholder());
             builder.append(' ');
         }
 
@@ -80,8 +80,8 @@ public class SpacesAnnotatedString {
         int index = 1; // Skip first whitespace
 
         for (Word word : translation.getWords()) {
-            String text = word.getText();
-            index += text.length();
+            String placeholder = word.getPlaceholder();
+            index += placeholder.length();
 
             word.setRightSpace(bits.get(index) ? null : " ");
             index++;
