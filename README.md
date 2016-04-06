@@ -9,7 +9,7 @@ MMT is trained by pooling all available domains/projects/customers data and tran
 
 MMT is queried by providing the sentence to be translated and some context text.
 
-MMT's goal is to deliver the quality of multiple custom engines by creating just one engine, that adapts on the fly to the provided context.
+MMT's goal is to deliver the quality of multiple custom engines by adapting on the fly to the provided context.
 
 You can find more information on: http://www.modermmt.eu
 
