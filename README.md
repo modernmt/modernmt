@@ -36,15 +36,14 @@ The distribution includes a small dataset (folder ./examples) to test translatio
 
 ### Start the engine
 
-You start the engine with the command:
 ```bash
 > ./mmt start
 ```
-when you are done, you can stop it with the command **stop**.
+You can stop it with the command **stop**.
 
 ### Start translating via API
 
-Let us translate the word *world* in the context *computer*:
+Let us query MMT with the word *world* in the context *computer*:
 ```
 > curl "http://localhost:8045/translate?q=world&context=computer" | python -mjson.tool
 ```
