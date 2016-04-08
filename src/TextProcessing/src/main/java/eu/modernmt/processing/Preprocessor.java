@@ -1,7 +1,6 @@
 package eu.modernmt.processing;
 
 import eu.modernmt.model.Sentence;
-import eu.modernmt.processing.detokenizer.SpaceNormalizer;
 import eu.modernmt.processing.framework.*;
 import eu.modernmt.processing.numbers.NumericWordFactory;
 import eu.modernmt.processing.tokenizer.SimpleTokenizer;
@@ -45,14 +44,12 @@ public class Preprocessor implements Closeable {
 
     public static ProcessingPipeline<String, Sentence> getPipeline(Locale language, boolean tokenize, int threads) {
         Tokenizer languageTokenizer = tokenize ? Tokenizers.forLanguage(language) : new SimpleTokenizer();
-        SpaceNormalizer spaceNormalizer = tokenize ? SpaceNormalizer.forLanguage(language) : null;
 
         return new ProcessingPipeline.Builder<String, String>()
                 .setThreads(threads)
                 .add(XMLStringBuilder)
                 .add(RareCharsNormalizer)
                 .add(WhitespacesNormalizer)
-                .add(spaceNormalizer)
                 .add(languageTokenizer)
                 .add(SentenceBuilder)
                 .create();
