@@ -11,12 +11,12 @@ public class XFormatWord extends Word {
     private final XFormat format;
 
     public XFormatWord(XFormat format) {
-        super(format.getPlaceholder());
+        super(format.getPlaceholder(), format.getPlaceholder());
         this.format = format;
     }
 
     public XFormatWord(XFormat format, String rightSpace) {
-        super(format.getPlaceholder(), rightSpace);
+        super(format.getPlaceholder(), format.getPlaceholder(), rightSpace);
         this.format = format;
     }
 

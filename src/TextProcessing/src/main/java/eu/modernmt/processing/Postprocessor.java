@@ -36,6 +36,10 @@ public class Postprocessor implements Closeable {
     private final ProcessingPipeline<Translation, Void> pipelineWithDetokenization;
     private final ProcessingPipeline<Translation, Void> pipelineWithoutDetokenization;
 
+    public static ProcessingPipeline<Translation, Void> getPipeline(Locale language, boolean detokenize) {
+        return getPipeline(language, detokenize, Runtime.getRuntime().availableProcessors());
+    }
+
     public static ProcessingPipeline<Translation, Void> getPipeline(Locale language, boolean detokenize, int threads) {
         Detokenizer detokenizer = detokenize ? Detokenizers.forLanguage(language) : null;
 
