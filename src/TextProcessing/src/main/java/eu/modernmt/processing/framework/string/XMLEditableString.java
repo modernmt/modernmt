@@ -86,11 +86,6 @@ public class XMLEditableString {
             int operationEndIndex = operation.startIndex + operation.length;
             operation.originalString = this.currentString.substring(operation.startIndex, operationEndIndex);
 
-//            if (TokenHook.TokenType.Word.equals(operation.tokenType)) {
-//                operation.newString = this.currentString.substring(operation.startIndex, operationEndIndex);
-//                operation.lengthNewString = operation.newString.length();
-//            }
-
             int delta = operation.lengthNewString - operation.length;
             if (delta != 0) {
                 for (TokenHook hook : this.tokens) {
@@ -151,7 +146,6 @@ public class XMLEditableString {
                     if (TokenHook.TokenType.XML.equals(operation.tokenType)) {
                         TokenHook hook = new TokenHook(operation.startIndex, operation.lengthNewString,
                                 operation.tokenType);
-                        //hook.length = operation.length;
                         this.xml.add(hook);
                     } else {
                         if (this.tokenMask == null) {
@@ -348,50 +342,4 @@ public class XMLEditableString {
 
     }
 
-
-    public static void main(String[] args) throws Throwable {
-        XMLEditableString test = new XMLEditableString.Builder().append("This is {0}\t").create();
-        XMLEditableString.Editor editor = test.getEditor();
-
-        editor.setWord(0, 4);
-        editor.setWord(5, 2);
-        editor.setWord(8, 1);
-        editor.setWord(9, 1);
-        editor.setWord(10, 1);
-
-        editor.commitChanges();
-
-        editor = test.getEditor();
-        editor.setWord(8, 3);
-        editor.commitChanges();
-
-        editor = test.getEditor();
-        editor.setWord(8, 1);
-        editor.commitChanges();
-
-        System.out.println(test);
-        System.out.println(editor);
-
-        for (TokenHook hook : test.compile())
-            System.out.println("'" + test.toString().substring(hook.startIndex, hook.length + hook.startIndex) + "'");
-        System.out.println();
-
-//        editor.setToken(8, 3);
-//
-//        System.out.println(test);
-//        System.out.println(editor);
-//
-//        for (int[] token : editor)
-//            System.out.println("'" + test.substring(token[0], token[0] + token[1]) + "'");
-//        System.out.println();
-//
-//        editor.setToken(8, 1);
-//
-//        System.out.println(test);
-//        System.out.println(editor);
-//
-//        for (int[] token : editor)
-//            System.out.println("'" + test.substring(token[0], token[0] + token[1]) + "'");
-//        System.out.println();
-    }
 }
