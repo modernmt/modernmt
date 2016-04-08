@@ -18,7 +18,8 @@ import org.apache.logging.log4j.Logger;
 public class InsertTagsTask extends DistributedCallable<AutomaticTaggedTranslation> {
 
     private static final Logger logger = LogManager.getLogger(InsertTagsTask.class);
-    private static final boolean processingEnabled = true;
+    private static final boolean PROCESSING_ENABLED = true;
+
     private final String sentence_str;
     private final String translation_str;
     private final boolean forceTranslation;
@@ -48,23 +49,21 @@ public class InsertTagsTask extends DistributedCallable<AutomaticTaggedTranslati
         SlaveNode worker = getWorker();
         Aligner aligner = worker.getAligner();
         try {
-            Sentence preprocessedSentence = worker.getPreprocessor().process(this.sentence_str, this.processingEnabled);
-            Sentence preprocessedTranslation = worker.getPreprocessor().process(this.translation_str, this.processingEnabled);
+            Sentence preprocessedSentence = worker.getPreprocessor().process(this.sentence_str, PROCESSING_ENABLED);
+            Sentence preprocessedTranslation = worker.getPreprocessor().process(this.translation_str, PROCESSING_ENABLED);
 
             if (this.symmetrizationStrategy != null) {
                 aligner.setSymmetrizationStrategy(this.symmetrizationStrategy);
             }
 
-            startTime = System.currentTimeMillis();
             int[][] alignments = aligner.getAlignments(preprocessedSentence, preprocessedTranslation);
-            endTime = System.currentTimeMillis();
 
             AutomaticTaggedTranslation automaticTaggedTranslation = new AutomaticTaggedTranslation(
                     preprocessedTranslation.getWords(), preprocessedSentence, alignments);
 
 
             Postprocessor postprocessor = worker.getPostprocessor();
-            postprocessor.process(automaticTaggedTranslation, this.processingEnabled);
+            postprocessor.process(automaticTaggedTranslation, PROCESSING_ENABLED);
 
             startTime = System.currentTimeMillis();
             String taggedTranslation;
@@ -75,8 +74,11 @@ public class InsertTagsTask extends DistributedCallable<AutomaticTaggedTranslati
             }
             automaticTaggedTranslation.setAutomaticTaggedTranslation(taggedTranslation);
             endTime = System.currentTimeMillis();
-            logger.debug("Time for forcing the translation: " + (endTime - startTime) + " [ms]");
-            logger.debug("Total time for tags projection: " + (endTime - beginTime) + " [ms]");
+
+            if (logger.isDebugEnabled()) {
+                logger.debug("Time for forcing the translation: " + (endTime - startTime) + " [ms]");
+                logger.debug("Total time for tags projection: " + (endTime - beginTime) + " [ms]");
+            }
 
             return automaticTaggedTranslation;
         } catch (Exception e) {

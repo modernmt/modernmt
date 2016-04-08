@@ -2,8 +2,8 @@ package eu.modernmt.processing.detokenizer.moses;
 
 import eu.modernmt.config.Config;
 import eu.modernmt.io.UnixLineReader;
-import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
+import eu.modernmt.model.Word;
 import eu.modernmt.processing.detokenizer.Detokenizer;
 import eu.modernmt.processing.detokenizer.MultiInstanceDetokenizer;
 import eu.modernmt.processing.framework.ProcessingException;
@@ -68,13 +68,13 @@ public class MosesDetokenizer extends MultiInstanceDetokenizer {
             int length = detokenized.length();
 
             int stringIndex = 0;
-            for (Token token : translation.getWords()) {
-                String tokenText = token.getText();
+            for (Word word : translation.getWords()) {
+                String tokenText = word.getText();
 
                 int position = detokenized.indexOf(tokenText, stringIndex);
                 stringIndex = position + tokenText.length();
 
-                token.setRightSpace(stringIndex < length && detokenized.charAt(stringIndex) == ' ');
+                word.setRightSpace(stringIndex < length && detokenized.charAt(stringIndex) == ' ' ? " " : null);
             }
 
             return translation;

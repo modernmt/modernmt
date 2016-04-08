@@ -26,11 +26,12 @@
 /* Pseudo HTML Entities */
 \&#?[[:letter:][:digit:]\-\_]+;                                                                                          { return PROTECT; }
 
-/* Multiple dots */
-\.\.+                                                                                                                    { return PROTECT; }
-
 /* File extension */
 \.{Letter}+                                                                                                              { return PROTECT; }
 
 /* Period in middle of a sentence */
 \.{_}[:lowercase:]                                                                                                       { yypushback(2); return PROTECT_ALL; }
+
+/* Placeholders */
+\_\_+                                                                                                                    { return PROTECT; }
+\.\.+                                                                                                                    { return PROTECT; }

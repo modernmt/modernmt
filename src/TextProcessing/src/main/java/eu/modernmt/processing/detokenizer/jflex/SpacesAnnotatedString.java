@@ -1,7 +1,9 @@
 package eu.modernmt.processing.detokenizer.jflex;
 
-import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
+import eu.modernmt.model.Word;
+import eu.modernmt.processing.framework.string.InvalidOperationException;
+import eu.modernmt.processing.framework.string.XMLEditableString;
 
 import java.io.CharArrayReader;
 import java.io.Reader;
@@ -19,8 +21,8 @@ public class SpacesAnnotatedString {
         StringBuilder builder = new StringBuilder();
         builder.append(' ');
 
-        for (Token word : translation.getWords()) {
-            builder.append(word.getText());
+        for (Word word : translation.getWords()) {
+            builder.append(word.getPlaceholder());
             builder.append(' ');
         }
 
@@ -28,6 +30,11 @@ public class SpacesAnnotatedString {
         builder.getChars(0, builder.length(), buffer, 0);
 
         return new SpacesAnnotatedString(buffer);
+    }
+
+    public static SpacesAnnotatedString fromString(String string) {
+        string = ' ' + string + ' ';
+        return new SpacesAnnotatedString(string.toCharArray());
     }
 
     private SpacesAnnotatedString(char[] text) {
@@ -69,16 +76,29 @@ public class SpacesAnnotatedString {
         return new CharArrayReader(text);
     }
 
-    public void apply(Translation translation) {
+    public Translation apply(Translation translation) {
         int index = 1; // Skip first whitespace
 
-        for (Token word : translation.getWords()) {
-            String text = word.getText();
-            index += text.length();
+        for (Word word : translation.getWords()) {
+            String placeholder = word.getPlaceholder();
+            index += placeholder.length();
 
-            word.setRightSpace(!bits.get(index));
+            word.setRightSpace(bits.get(index) ? null : " ");
             index++;
         }
+
+        return translation;
+    }
+
+    public XMLEditableString apply(XMLEditableString string) throws InvalidOperationException {
+        XMLEditableString.Editor editor = string.getEditor();
+
+        for (int i = 1; i < text.length - 1; i++) {
+            if (bits.get(i))
+                editor.delete(i - 1, 1);
+        }
+
+        return editor.commitChanges();
     }
 
     @Override

@@ -6,9 +6,9 @@ import edu.stanford.nlp.international.spanish.process.SpanishTokenizer;
 import edu.stanford.nlp.ling.HasWord;
 import edu.stanford.nlp.process.PTBTokenizer;
 import edu.stanford.nlp.process.TokenizerFactory;
-import eu.modernmt.processing.tokenizer.TokenizedString;
 import eu.modernmt.processing.Languages;
 import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.framework.string.XMLEditableString;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 
@@ -51,8 +51,8 @@ public class CoreNLPTokenizer implements Tokenizer {
     }
 
     @Override
-    public TokenizedString call(TokenizedString text) throws ProcessingException {
-        Reader reader = new StringReader(text.string);
+    public XMLEditableString call(XMLEditableString text) throws ProcessingException {
+        Reader reader = new StringReader(text.toString());
         edu.stanford.nlp.process.Tokenizer<?> tokenizer;
         synchronized (this) {
             tokenizer = this.factory.getTokenizer(reader);
@@ -71,8 +71,7 @@ public class CoreNLPTokenizer implements Tokenizer {
             result.add(word);
         }
 
-        TokenizerOutputTransformer.transform(text, result);
-        return text;
+        return TokenizerOutputTransformer.transform(text, result);
     }
 
     @Override

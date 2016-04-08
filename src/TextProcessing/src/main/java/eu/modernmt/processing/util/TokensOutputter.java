@@ -1,7 +1,6 @@
 package eu.modernmt.processing.util;
 
 import eu.modernmt.config.Config;
-import eu.modernmt.model.PlaceholderToken;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Token;
 import eu.modernmt.processing.framework.PipelineOutputStream;
@@ -29,10 +28,10 @@ public class TokensOutputter implements PipelineOutputStream<Sentence> {
         while (iterator.hasNext()) {
             Token token = iterator.next();
 
-            if (printPlaceholders && (token instanceof PlaceholderToken))
-                builder.append(((PlaceholderToken) token).getPlaceholder());
+            if (printPlaceholders)
+                builder.append(token.getPlaceholder());
             else
-                builder.append(token.getText());
+                builder.append(token);
 
             if (iterator.hasNext())
                 builder.append(' ');

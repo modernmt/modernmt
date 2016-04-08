@@ -1,6 +1,5 @@
 package eu.modernmt.processing.detokenizer.jflex;
 
-import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.Languages;
 import eu.modernmt.processing.detokenizer.Detokenizer;
@@ -10,9 +9,9 @@ import eu.modernmt.processing.detokenizer.jflex.annotators.FrenchSpaceAnnotator;
 import eu.modernmt.processing.detokenizer.jflex.annotators.ItalianSpaceAnnotator;
 import eu.modernmt.processing.detokenizer.jflex.annotators.StandardSpaceAnnotator;
 import eu.modernmt.processing.framework.ProcessingException;
-import org.apache.commons.io.IOUtils;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Locale;
@@ -95,71 +94,6 @@ public class JFlexDetokenizer extends MultiInstanceDetokenizer {
         public void close() {
             // Nothing to do
         }
-    }
-
-    private static String process(JFlexDetokenizer detokenizer, String line) throws ProcessingException {
-        String[] tokens = line.split("\\s+");
-        Token[] words = new Token[tokens.length];
-
-        for (int i = 0; i < tokens.length; i++)
-            words[i] = new Token(tokens[i], true);
-
-        Translation translation = new Translation(words, null, null);
-        detokenizer.call(translation);
-
-        return translation.toString();
-    }
-
-
-    private static void process(InputStream input, OutputStream output, Locale language) throws IOException, ProcessingException {
-        JFlexDetokenizer detokenizer = JFlexDetokenizer.ALL.get(language);
-
-        BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
-
-        String line;
-        while ((line = reader.readLine()) != null) {
-            String string = process(detokenizer, line);
-
-            output.write(string.getBytes("UTF-8"));
-            output.write('\n');
-        }
-    }
-
-    public static void main(String[] args) throws Throwable {
-        System.setProperty("mmt.home", "/Users/davide/workspaces/mmt/ModernMT/");
-
-        FileInputStream input = null;
-        FileOutputStream output = null;
-
-//        String inputf = "/Users/davide/Desktop/tokenizer/new_rules/text.tok";
-//        String outputf = "/Users/davide/Desktop/tokenizer/new_rules/text.detok";
-        String inputf = "/Users/davide/Desktop/ExprBenchmark-v0.1.en.tokenized";
-        String outputf = "/Users/davide/Desktop/ExprBenchmark-v0.1.en.detokenized";
-
-        try {
-            input = new FileInputStream(inputf);
-            output = new FileOutputStream(outputf);
-
-            process(input, output, Locale.ENGLISH);
-        } finally {
-            IOUtils.closeQuietly(input);
-            IOUtils.closeQuietly(output);
-        }
-
-//        String entext = "That &apos;s it !";
-//        String ittext = "Un bell&apos; esempio !";
-//        System.out.println(process(ENGLISH, entext));
-//        System.out.println(process(ENGLISH, ittext));
-//
-//        System.out.println();
-//
-//        System.out.println(process(ITALIAN, entext));
-//        System.out.println(process(ITALIAN, ittext));
-//
-//        System.out.println();
-//
-//        System.out.println(process(FRENCH, entext));
-//        System.out.println(process(FRENCH, ittext));
     }
 
 }

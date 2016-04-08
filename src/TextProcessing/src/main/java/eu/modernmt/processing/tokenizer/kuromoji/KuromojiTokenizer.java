@@ -1,8 +1,9 @@
 package eu.modernmt.processing.tokenizer.kuromoji;
 
 import com.atilika.kuromoji.ipadic.Token;
-import eu.modernmt.processing.tokenizer.TokenizedString;
 import eu.modernmt.processing.Languages;
+import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.framework.string.XMLEditableString;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 
@@ -27,15 +28,14 @@ public class KuromojiTokenizer implements Tokenizer {
     private com.atilika.kuromoji.ipadic.Tokenizer tokenizer = new com.atilika.kuromoji.ipadic.Tokenizer();
 
     @Override
-    public TokenizedString call(TokenizedString text) {
-        List<Token> tokens = tokenizer.tokenize(text.string);
+    public XMLEditableString call(XMLEditableString text) throws ProcessingException {
+        List<Token> tokens = tokenizer.tokenize(text.toString());
         String[] array = new String[tokens.size()];
 
         for (int i = 0; i < array.length; i++)
             array[i] = tokens.get(i).getSurface();
 
-        TokenizerOutputTransformer.transform(text, array);
-        return text;
+        return TokenizerOutputTransformer.transform(text, array);
     }
 
     @Override

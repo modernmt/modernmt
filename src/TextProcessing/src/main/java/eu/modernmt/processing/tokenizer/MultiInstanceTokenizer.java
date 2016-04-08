@@ -1,6 +1,7 @@
 package eu.modernmt.processing.tokenizer;
 
 import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.framework.string.XMLEditableString;
 import org.apache.commons.io.IOUtils;
 
 import java.util.Queue;
@@ -47,7 +48,7 @@ public class MultiInstanceTokenizer implements Tokenizer {
     }
 
     @Override
-    public TokenizedString call(TokenizedString param) throws ProcessingException {
+    public XMLEditableString call(XMLEditableString param) throws ProcessingException {
         Tokenizer instance = getInstance();
 
         try {

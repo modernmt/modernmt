@@ -12,31 +12,29 @@ public abstract class JFlexSpaceAnnotator {
     public static final int REMOVE_FIRST = 0;
     public static final int REMOVE_LAST = 1;
     public static final int REMOVE_ALL = 2;
+    public static final int REMOVE_INNER = 3;
 
     protected int zzStartReadOffset = 0;
 
     public final void annotate(SpacesAnnotatedString text, int tokenType) {
-        int zzMarkedPos = getMarkedPosition();
-
-        int zzStartRead = getStartRead() + zzStartReadOffset;
-        zzStartReadOffset = 0;
-
         int yychar = yychar();
-        int offset = 0;
 
-        if (yychar > zzStartRead) {
-            offset = yychar + zzStartRead;
-        }
+        int begin = yychar + zzStartReadOffset;
+        int end = yychar + getMarkedPosition() - getStartRead();
+        zzStartReadOffset = 0;
 
         switch (tokenType) {
             case REMOVE_FIRST:
-                text.removeSpaceRight(offset + zzStartRead);
+                text.removeSpaceRight(begin);
                 break;
             case REMOVE_LAST:
-                text.removeSpaceLeft(offset + zzMarkedPos - 1);
+                text.removeSpaceLeft(end - 1);
                 break;
             case REMOVE_ALL:
-                text.removeAllSpaces(offset + zzStartRead, offset + zzMarkedPos);
+                text.removeAllSpaces(begin, end);
+                break;
+            case REMOVE_INNER:
+                text.removeAllSpaces(begin + 1, end - 1);
                 break;
         }
 

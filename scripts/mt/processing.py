@@ -1,5 +1,7 @@
 import multiprocessing
 import os
+import re
+from HTMLParser import HTMLParser
 
 from scripts import mmt_javamain
 from scripts.libs import multithread, fileutils, shell
@@ -99,3 +101,62 @@ class Preprocessor:
         with open(source) as input_stream:
             with open(dest, 'w') as output_stream:
                 shell.execute(command, stdin=input_stream, stdout=output_stream, stderr=shell.DEVNULL)
+
+
+class XMLEncoder:
+    __TAG_NAME = '([a-zA-Z]|_|:)([a-zA-Z]|[0-9]|\\.|-|_|:|)*'
+    __TAG_REGEX = re.compile('(<(' + __TAG_NAME + ')[^>]*/?>)|(<!(' + __TAG_NAME + ')[^>]*[^/]>)|(</(' +
+                             __TAG_NAME + ')[^>]*>)|(<!--)|(-->)')
+    __HTML = HTMLParser()
+
+    def __init__(self):
+        pass
+
+    def encode(self, corpora, dest_folder):
+        if not os.path.isdir(dest_folder):
+            fileutils.makedirs(dest_folder, exist_ok=True)
+
+        for corpus in corpora:
+            for lang in corpus.langs:
+                source = corpus.get_file(lang)
+                dest = ParallelCorpus(corpus.name, dest_folder, [lang]).get_file(lang)
+
+                self.encode_file(source, dest)
+
+        return ParallelCorpus.list(dest_folder)
+
+    def encode_file(self, source, dest):
+        with open(dest, 'wb') as outstream:
+            with open(source) as instream:
+                for line in instream:
+                    line = line.rstrip('\r\n') + '\n'
+                    encoded = self.encode_string(line.decode('utf-8'))
+                    outstream.write(encoded.encode('utf-8'))
+
+    def __escape(self, string):
+        escaped = XMLEncoder.__HTML.unescape(string)
+        return escaped \
+            .replace('&', '&amp;') \
+            .replace('"', '&quot;') \
+            .replace('\'', '&apos;') \
+            .replace('<', '&lt;') \
+            .replace('>', '&gt;')
+
+    def encode_string(self, string):
+        result = []
+        index = 0
+
+        for match in XMLEncoder.__TAG_REGEX.finditer(string):
+            start = match.start()
+            end = match.end()
+
+            result.append(self.__escape(string[index:start]))
+            result.append(match.group())
+
+            index = end
+
+        if index < len(string):
+            result.append(self.__escape(string[index:]))
+
+        return ''.join(result)
+

@@ -1,8 +1,8 @@
 package eu.modernmt.processing.tags;
 
 import eu.modernmt.model.Tag;
-import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
+import eu.modernmt.model.Word;
 import eu.modernmt.processing.xml.XMLTagMapper;
 import org.junit.Test;
 
@@ -11,19 +11,19 @@ import static org.junit.Assert.assertEquals;
 
 public class TagMapperSpacingTest {
 
-    private static Translation translation(Token[] tokens, Tag[] tags) {
+    private static Translation translation(Word[] tokens, Tag[] tags) {
         return new Translation(tokens, tags, null, null);
     }
 
     @Test
     public void testTranslationWithTags() {
-        Translation translation = translation(new Token[]{
-                new Token("Hello", true),
-                new Token("world", false),
-                new Token("!", false),
+        Translation translation = translation(new Word[]{
+                new Word("Hello", " "),
+                new Word("world", null),
+                new Word("!", null),
         }, new Tag[]{
-                Tag.fromText("<a>", true, false, 1),
-                Tag.fromText("</a>", false, false, 2),
+                Tag.fromText("<a>", true, null, 1),
+                Tag.fromText("</a>", false, null, 2),
         });
         XMLTagMapper.restoreTagSpacing(translation);
 
@@ -34,13 +34,13 @@ public class TagMapperSpacingTest {
 
     @Test
     public void testTranslationWithDiscordantTagSpacing_FalseTrue() {
-        Translation translation = translation(new Token[]{
-                new Token("Hello", true),
-                new Token("world", false),
-                new Token("!", false),
+        Translation translation = translation(new Word[]{
+                new Word("Hello", " "),
+                new Word("world", null),
+                new Word("!", null),
         }, new Tag[]{
-                Tag.fromText("<a>", true, false, 1),
-                Tag.fromText("</a>", false, true, 2),
+                Tag.fromText("<a>", true, null, 1),
+                Tag.fromText("</a>", false, " ", 2),
         });
         XMLTagMapper.restoreTagSpacing(translation);
 
@@ -51,13 +51,13 @@ public class TagMapperSpacingTest {
 
     @Test
     public void testTranslationWithDiscordantTagSpacing_TrueFalse() {
-        Translation translation = translation(new Token[]{
-                new Token("Hello", true),
-                new Token("world", true),
-                new Token("!", false),
+        Translation translation = translation(new Word[]{
+                new Word("Hello", " "),
+                new Word("world", " "),
+                new Word("!", null),
         }, new Tag[]{
-                Tag.fromText("<a>", true, false, 1),
-                Tag.fromText("</a>", false, false, 2),
+                Tag.fromText("<a>", true, null, 1),
+                Tag.fromText("</a>", false, null, 2),
         });
         XMLTagMapper.restoreTagSpacing(translation);
 
@@ -68,15 +68,15 @@ public class TagMapperSpacingTest {
 
     @Test
     public void testTranslationWithSpacedTagList() {
-        Translation translation = translation(new Token[]{
-                new Token("Hello", true),
-                new Token("world", false),
-                new Token("!", false),
+        Translation translation = translation(new Word[]{
+                new Word("Hello", " "),
+                new Word("world", null),
+                new Word("!", null),
         }, new Tag[]{
-                Tag.fromText("<a>", true, true, 1),
-                Tag.fromText("<b>", true, true, 1),
-                Tag.fromText("</a>", true, true, 1),
-                Tag.fromText("</b>", true, true, 1),
+                Tag.fromText("<a>", true, " ", 1),
+                Tag.fromText("<b>", true, " ", 1),
+                Tag.fromText("</a>", true, " ", 1),
+                Tag.fromText("</b>", true, " ", 1),
         });
         XMLTagMapper.restoreTagSpacing(translation);
 
@@ -87,14 +87,14 @@ public class TagMapperSpacingTest {
 
     @Test
     public void testTranslationWithTagListSpaceInMiddle() {
-        Translation translation = translation(new Token[]{
-                new Token("Hello", true),
-                new Token("world", false),
-                new Token("!", false),
+        Translation translation = translation(new Word[]{
+                new Word("Hello", " "),
+                new Word("world", null),
+                new Word("!", null),
         }, new Tag[]{
-                Tag.fromText("</a>", true, true, 1),
-                Tag.fromText("<b>", true, true, 1),
-                Tag.fromText("</b>", true, true, 1),
+                Tag.fromText("</a>", true, " ", 1),
+                Tag.fromText("<b>", true, " ", 1),
+                Tag.fromText("</b>", true, " ", 1),
         });
         XMLTagMapper.restoreTagSpacing(translation);
 
@@ -105,32 +105,32 @@ public class TagMapperSpacingTest {
 
     @Test
     public void testTranslationWithTagInUnbreakableTokenList() {
-        Translation translation = translation(new Token[]{
-                new Token("That", false),
-                new Token("'s", true),
-                new Token("it", false),
-                new Token("!", false),
+        Translation translation = translation(new Word[]{
+                new Word("That", null),
+                new Word("'s", " "),
+                new Word("it", null),
+                new Word("!", null),
         }, new Tag[]{
-                Tag.fromText("<b>", true, true, 1),
-                Tag.fromText("</b>", true, true, 2),
+                Tag.fromText("<b>", true, " ", 1),
+                Tag.fromText("</b>", true, " ", 2),
         });
         XMLTagMapper.restoreTagSpacing(translation);
 
         assertEquals("That 's it!", translation.getStrippedString(false));
-        assertEquals("That<b>'s</b> it!", translation.toString());
+        assertEquals("That<b>&apos;s</b> it!", translation.toString());
         assertCoherentSpacing(translation);
     }
 
     @Test
     public void testTranslationWithSpacedCommentTag() {
-        Translation translation = translation(new Token[]{
-                new Token("This", true),
-                new Token("is", true),
-                new Token("XML", true),
-                new Token("comment", false),
+        Translation translation = translation(new Word[]{
+                new Word("This", " "),
+                new Word("is", " "),
+                new Word("XML", " "),
+                new Word("comment", null),
         }, new Tag[]{
-                Tag.fromText("<!--", true, true, 2),
-                Tag.fromText("-->", true, false, 4),
+                Tag.fromText("<!--", true, " ", 2),
+                Tag.fromText("-->", true, null, 4),
         });
         XMLTagMapper.restoreTagSpacing(translation);
 
@@ -141,14 +141,14 @@ public class TagMapperSpacingTest {
 
     @Test
     public void testTranslationWithSpacedCommentTag_NoLeadingSpace() {
-        Translation translation = translation(new Token[]{
-                new Token("This", true),
-                new Token("is", true),
-                new Token("XML", true),
-                new Token("comment", false),
+        Translation translation = translation(new Word[]{
+                new Word("This", " "),
+                new Word("is", " "),
+                new Word("XML", " "),
+                new Word("comment", null),
         }, new Tag[]{
-                Tag.fromText("<!--", false, true, 2),
-                Tag.fromText("-->", true, false, 4),
+                Tag.fromText("<!--", false, " ", 2),
+                Tag.fromText("-->", true, null, 4),
         });
         XMLTagMapper.restoreTagSpacing(translation);
 
@@ -159,14 +159,14 @@ public class TagMapperSpacingTest {
 
     @Test
     public void testTranslationWithSpacedCommentTag_TrailingSpace() {
-        Translation translation = translation(new Token[]{
-                new Token("This", true),
-                new Token("is", true),
-                new Token("XML", true),
-                new Token("comment", false),
+        Translation translation = translation(new Word[]{
+                new Word("This", " "),
+                new Word("is", " "),
+                new Word("XML", " "),
+                new Word("comment", null),
         }, new Tag[]{
-                Tag.fromText("<!--", false, true, 2),
-                Tag.fromText("-->", true, true, 4),
+                Tag.fromText("<!--", false, " ", 2),
+                Tag.fromText("-->", true, " ", 4),
         });
         XMLTagMapper.restoreTagSpacing(translation);
 

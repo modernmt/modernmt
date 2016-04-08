@@ -1,15 +1,20 @@
 package eu.modernmt.processing.numbers;
 
+import eu.modernmt.model.Word;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
-public class NumericTokenTest {
+public class NumericWordTest {
+
+    private static Word createTarget(String placeholder) {
+        return new NumericWordFactory().setupTransformation(new Word(placeholder));
+    }
 
     @Test
     public void testCurrency_Matching() {
-        NumericToken source = new NumericToken("1,76$", "0,00$");
-        NumericToken target = new NumericToken("$0.00");
+        Word source = new Word("1,76$", "0,00$", null);
+        Word target = createTarget("$0.00");
 
         target.applyTransformation(source);
         assertEquals("$1.76", target.getText());
@@ -18,8 +23,8 @@ public class NumericTokenTest {
 
     @Test
     public void testCurrency_NotMatching() {
-        NumericToken source = new NumericToken("1,76$", "0,00$");
-        NumericToken target = new NumericToken("$0.000");
+        Word source = new Word("1,76$", "0,00$", null);
+        Word target = createTarget("$0.000");
 
         target.applyTransformation(source);
         assertEquals("1,76$", target.getText());
@@ -28,8 +33,8 @@ public class NumericTokenTest {
 
     @Test
     public void testBigNumber_Matching() {
-        NumericToken source = new NumericToken("147.530,50", "111.111,11");
-        NumericToken target = new NumericToken("000000.00");
+        Word source = new Word("147.530,50", "111.111,11", null);
+        Word target = createTarget("000000.00");
 
         target.applyTransformation(source);
         assertEquals("147530.50", target.getText());
@@ -38,8 +43,8 @@ public class NumericTokenTest {
 
     @Test
     public void testBigNumber_NotMatching() {
-        NumericToken source = new NumericToken("147.530,50", "111.111,11");
-        NumericToken target = new NumericToken("00/00/00");
+        Word source = new Word("147.530,50", "111.111,11", null);
+        Word target = createTarget("00/00/00");
 
         target.applyTransformation(source);
         assertEquals("147.530,50", target.getText());

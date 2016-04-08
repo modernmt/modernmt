@@ -2,14 +2,13 @@ package eu.modernmt.processing;
 
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.framework.*;
-import eu.modernmt.processing.numbers.NumericTokenExtractor;
+import eu.modernmt.processing.numbers.NumericWordFactory;
 import eu.modernmt.processing.tokenizer.SimpleTokenizer;
-import eu.modernmt.processing.tokenizer.TokenizedString;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizers;
-import eu.modernmt.processing.util.StringNormalizer;
-import eu.modernmt.processing.xml.XMLSentenceBuilder;
-import eu.modernmt.processing.xml.XMLStringParser;
+import eu.modernmt.processing.util.RareCharsNormalizer;
+import eu.modernmt.processing.util.WhitespacesNormalizer;
+import eu.modernmt.processing.xml.XMLStringBuilder;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
@@ -22,10 +21,19 @@ import java.util.Locale;
  */
 public class Preprocessor implements Closeable {
 
-    private static final StringNormalizer normalizer = new StringNormalizer();
-    private static final XMLStringParser parser = new XMLStringParser();
-    private static final XMLSentenceBuilder sentenceBuilder = new XMLSentenceBuilder();
-    private static final NumericTokenExtractor<Sentence> numberExtractor = new NumericTokenExtractor<>();
+    private static final XMLStringBuilder XMLStringBuilder;
+    private static final RareCharsNormalizer RareCharsNormalizer;
+    private static final WhitespacesNormalizer WhitespacesNormalizer;
+    private static final SentenceBuilder SentenceBuilder;
+
+    static {
+        XMLStringBuilder = new XMLStringBuilder();
+        RareCharsNormalizer = new RareCharsNormalizer();
+        WhitespacesNormalizer = new WhitespacesNormalizer();
+
+        SentenceBuilder = new SentenceBuilder();
+        SentenceBuilder.addWordFactory(NumericWordFactory.class);
+    }
 
     private final ProcessingPipeline<String, Sentence> pipelineWithTokenization;
     private final ProcessingPipeline<String, Sentence> pipelineWithoutTokenization;
@@ -39,11 +47,11 @@ public class Preprocessor implements Closeable {
 
         return new ProcessingPipeline.Builder<String, String>()
                 .setThreads(threads)
-                .add(normalizer)
-                .add(parser)
+                .add(XMLStringBuilder)
+                .add(RareCharsNormalizer)
+                .add(WhitespacesNormalizer)
                 .add(languageTokenizer)
-                .add(sentenceBuilder)
-                .add(numberExtractor)
+                .add(SentenceBuilder)
                 .create();
     }
 

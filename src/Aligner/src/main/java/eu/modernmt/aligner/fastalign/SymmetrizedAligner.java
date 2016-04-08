@@ -19,7 +19,7 @@ public class SymmetrizedAligner implements Aligner {
     private static final Logger logger = LogManager.getLogger(eu.modernmt.aligner.fastalign.SymmetrizedAligner.class);
     public static final Symmetrisation.Strategy DEFAULT_SYMMETRIZATION_STRATEGY = Symmetrisation.Strategy.GrowDiagFinalAnd;
 
-    private static class AlignerInitializer implements Runnable{
+    private static class AlignerInitializer implements Runnable {
 
         private Aligner aligner;
 
@@ -41,7 +41,7 @@ public class SymmetrizedAligner implements Aligner {
     private final FastAlign backwardAlignerProcess;
     private Symmetrisation.Strategy simmetrizationStrategy;
 
-    public SymmetrizedAligner(String enginePath){
+    public SymmetrizedAligner(String enginePath) {
         File modelsFile = new File(enginePath,
                 "models" + File.separatorChar + "phrase_tables");
         String forwardModelFilePath = new File(modelsFile.getAbsolutePath(), forwardModelFileName).getAbsolutePath();
@@ -65,18 +65,18 @@ public class SymmetrizedAligner implements Aligner {
             forwardModelInitializer.join();
             backwardModelInitializer.join();
             logger.info("Fast Align initialized");
-        }catch(Exception e){
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public void setSymmetrizationStrategy(Symmetrisation.Strategy strategy){
+    public void setSymmetrizationStrategy(Symmetrisation.Strategy strategy) {
         this.simmetrizationStrategy = strategy;
     }
 
     @Override
-    public synchronized int[][] getAlignments(Sentence  sentence, Sentence translation) throws IOException {
+    public synchronized int[][] getAlignments(Sentence sentence, Sentence translation) throws IOException {
         String forwardAlignments = this.forwardAlignerProcess.getStringAlignments(sentence, translation);
         String backwardAlignments = this.backwardAlignerProcess.getStringAlignments(sentence, translation);
         String invertedBackwardAlignments = eu.modernmt.aligner.fastalign.SymmetrizedAligner.invertAlignments(backwardAlignments);
@@ -87,14 +87,14 @@ public class SymmetrizedAligner implements Aligner {
         return FastAlign.parseAlignments(symmetrisedAlignments);
     }
 
-    private static String invertAlignments(String stringAlignments){
+    private static String invertAlignments(String stringAlignments) {
         String[] links_str = stringAlignments.split(" ");
         StringBuilder invertedAlignments = new StringBuilder();
-        for(int i = 0; i < links_str.length; i++){
+        for (int i = 0; i < links_str.length; i++) {
             String[] alignment = links_str[i].split("-");
             invertedAlignments.append(alignment[1] + "-" + alignment[0] + " ");
         }
-        return invertedAlignments.deleteCharAt(invertedAlignments.length() -1).toString();
+        return invertedAlignments.deleteCharAt(invertedAlignments.length() - 1).toString();
     }
 
     @Override

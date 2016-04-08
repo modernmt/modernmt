@@ -2,7 +2,7 @@ package eu.modernmt.processing;
 
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Tag;
-import eu.modernmt.model.Token;
+import eu.modernmt.model.Word;
 import eu.modernmt.processing.framework.ProcessingException;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
@@ -32,10 +32,10 @@ public class PreprocessorTest {
         assertEquals("Hello world!", sentence.getStrippedString(false));
         assertFalse(sentence.hasTags());
 
-        assertArrayEquals(new Token[]{
-                new Token("Hello", true),
-                new Token("world", false),
-                new Token("!", false),
+        assertArrayEquals(new Word[]{
+                new Word("Hello", "Hello", " "),
+                new Word("world", "world", null),
+                new Word("!", "!", null),
         }, sentence.getWords());
     }
 
@@ -48,13 +48,13 @@ public class PreprocessorTest {
         assertEquals("Hello world!", sentence.getStrippedString(false));
         assertTrue(sentence.hasTags());
 
-        assertArrayEquals(new Token[]{
-                new Token("Hello", true),
-                new Token("world", false),
-                new Token("!", false),
+        assertArrayEquals(new Word[]{
+                new Word("Hello", "Hello", " "),
+                new Word("world", "world", null),
+                new Word("!", "!", null),
         }, sentence.getWords());
         assertArrayEquals(new Tag[]{
-                Tag.fromText("<a>", false, true, 0)
+                Tag.fromText("<a>", false, " ", 0)
         }, sentence.getTags());
     }
 
@@ -67,13 +67,13 @@ public class PreprocessorTest {
         assertEquals("Hello world!", sentence.getStrippedString(false));
         assertTrue(sentence.hasTags());
 
-        assertArrayEquals(new Token[]{
-                new Token("Hello", false),
-                new Token("world", false),
-                new Token("!", false),
+        assertArrayEquals(new Word[]{
+                new Word("Hello", "Hello", null),
+                new Word("world", "world", null),
+                new Word("!", "!", null),
         }, sentence.getWords());
         assertArrayEquals(new Tag[]{
-                Tag.fromText("<a>", false, true, 1)
+                Tag.fromText("<a>", false, " ", 1)
         }, sentence.getTags());
     }
 
@@ -86,14 +86,14 @@ public class PreprocessorTest {
         assertEquals("Hello world!", sentence.getStrippedString(false));
         assertTrue(sentence.hasTags());
 
-        assertArrayEquals(new Token[]{
-                new Token("Hello", false),
-                new Token("world", false),
-                new Token("!", false),
+        assertArrayEquals(new Word[]{
+                new Word("Hello", "Hello", null),
+                new Word("world", "world", null),
+                new Word("!", "!", null),
         }, sentence.getWords());
         assertArrayEquals(new Tag[]{
-                Tag.fromText("<a>", false, true, 1),
-                Tag.fromText("<b>", true, false, 1)
+                Tag.fromText("<a>", false, " ", 1),
+                Tag.fromText("<b>", true, null, 1)
         }, sentence.getTags());
     }
 

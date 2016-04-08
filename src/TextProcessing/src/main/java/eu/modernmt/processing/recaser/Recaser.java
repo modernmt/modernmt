@@ -1,11 +1,8 @@
 package eu.modernmt.processing.recaser;
 
-import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
-import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.model.Word;
 import eu.modernmt.processing.framework.TextProcessor;
-
-import java.io.IOException;
 
 /**
  * Created by davide on 03/03/16.
@@ -13,9 +10,9 @@ import java.io.IOException;
 public class Recaser implements TextProcessor<Translation, Translation> {
 
     @Override
-    public Translation call(Translation translation) throws ProcessingException {
-        Token[] source = translation.getSource().getWords();
-        Token[] target = translation.getWords();
+    public Translation call(Translation translation) {
+        Word[] source = translation.getSource().getWords();
+        Word[] target = translation.getWords();
 
         if (source.length > 0 && target.length > 0) {
             String sourceText = source[0].getText();
@@ -34,7 +31,7 @@ public class Recaser implements TextProcessor<Translation, Translation> {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
 
     }
 

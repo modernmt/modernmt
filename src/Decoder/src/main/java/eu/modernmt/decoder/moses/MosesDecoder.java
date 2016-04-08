@@ -4,9 +4,8 @@ import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
-import eu.modernmt.model.PlaceholderToken;
 import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Token;
+import eu.modernmt.model.Word;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -154,16 +153,11 @@ public class MosesDecoder implements Decoder {
         return map;
     }
 
-    private static String serialize(Token[] words) {
+    private static String serialize(Word[] words) {
         StringBuilder text = new StringBuilder();
 
         for (int i = 0; i < words.length; i++) {
-            Token word = words[i];
-
-            if (word instanceof PlaceholderToken)
-                text.append(((PlaceholderToken) word).getPlaceholder());
-            else
-                text.append(word.getText());
+            text.append(words[i].getPlaceholder());
 
             if (i < words.length - 1)
                 text.append(' ');

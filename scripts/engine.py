@@ -22,7 +22,7 @@ from scripts.mt.contextanalysis import ContextAnalyzer
 from scripts.mt.lm import LanguageModel
 from scripts.mt.moses import Moses, MosesFeature, LexicalReordering
 from scripts.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
-from scripts.mt.processing import Preprocessor, TrainingPreprocessor, TMCleaner
+from scripts.mt.processing import Preprocessor, TrainingPreprocessor, TMCleaner, XMLEncoder
 
 __author__ = 'Davide Caroselli'
 
@@ -320,6 +320,7 @@ class MMTEngine:
         'lm_type': ('LM implementation', (basestring, LanguageModel.available_types), 'MultiplexedLM'),
         'aligner_type': ('Aligner implementation',
                          (basestring, WordAligner.available_types), WordAligner.available_types[0]),
+        'enable_fastalign': ('Enable fast_align loading at startup (provides word alignment API)', bool, True)
     }
 
     training_steps = ['tm_cleanup', 'preprocess', 'context_analyzer', 'lm', 'tm']
@@ -331,6 +332,7 @@ class MMTEngine:
 
         self._lm_type = None  # Injected
         self._aligner_type = None  # Injected
+        self._enable_fastalign = None  # Injected
 
         self._config = None
 
@@ -395,6 +397,8 @@ class MMTEngine:
             self._config = injector.to_config()
             self._config.set(self.injector_section, 'source_lang', self.source_lang)
             self._config.set(self.injector_section, 'target_lang', self.target_lang)
+
+            self._config.set(self.injector_section, 'enable_fastalign', str(self._enable_fastalign).lower())
 
     @property
     def config(self):
@@ -708,6 +712,7 @@ class MMTServer(_MMTDistributedComponent):
 
         target_lang = self.engine.target_lang
         source_lang = self.engine.source_lang
+        xmlencoder = XMLEncoder()
 
         translators = [
             GoogleTranslate(source_lang, target_lang, key=google_key),
@@ -721,8 +726,8 @@ class MMTServer(_MMTDistributedComponent):
 
         # Process references
         corpora_path = os.path.join(working_dir, 'corpora')
-        corpora = self.engine.preprocessor.process(corpora, corpora_path, print_tags=True, print_placeholders=False,
-                                                   original_spacing=True)
+        corpora = xmlencoder.encode(corpora, corpora_path)
+
         reference = os.path.join(working_dir, 'reference.' + target_lang)
         fileutils.merge([corpus.get_file(target_lang) for corpus in corpora], reference)
         source = os.path.join(working_dir, 'source.' + source_lang)
@@ -732,11 +737,13 @@ class MMTServer(_MMTDistributedComponent):
         for translator in translators:
             tid = translator.name().replace(' ', '_')
 
-            translations_path = os.path.join(working_dir, 'translations', tid)
+            translations_path = os.path.join(working_dir, 'translations', tid + '.raw')
+            xmltranslations_path = os.path.join(working_dir, 'translations', tid)
             fileutils.makedirs(translations_path, exist_ok=True)
 
             try:
                 translated, mtt = translator.translate(corpora, translations_path)
+                translated = xmlencoder.encode(translated, xmltranslations_path)
                 translations.append((translator, translated, mtt))
             except TranslateError as e:
                 translations.append((translator, e))

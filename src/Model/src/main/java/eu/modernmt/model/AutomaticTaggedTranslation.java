@@ -7,12 +7,12 @@ public class AutomaticTaggedTranslation extends Translation {
 
     private String automaticTaggedTranslation;
 
-    public AutomaticTaggedTranslation(Token[] tokens, Sentence source, int[][] alignment) {
-        super(tokens, source, alignment);
+    public AutomaticTaggedTranslation(Word[] words, Sentence source, int[][] alignment) {
+        super(words, source, alignment);
     }
 
-    public AutomaticTaggedTranslation(Token[] tokens, Tag[] tags, Sentence source, int[][] alignment) {
-        super(tokens, tags, source, alignment);
+    public AutomaticTaggedTranslation(Word[] words, Tag[] tags, Sentence source, int[][] alignment) {
+        super(words, tags, source, alignment);
     }
 
     public String getAutomaticTaggedTranslation() {

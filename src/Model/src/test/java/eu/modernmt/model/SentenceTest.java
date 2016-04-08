@@ -8,10 +8,10 @@ public class SentenceTest {
 
     @Test
     public void testCommonSentence() {
-        Sentence sentence = new Sentence(new Token[]{
-                new Token("Hello", true),
-                new Token("world", false),
-                new Token("!", false),
+        Sentence sentence = new Sentence(new Word[]{
+                new Word("Hello", " "),
+                new Word("world", null),
+                new Word("!", null),
         });
 
         assertEquals("Hello world!", sentence.toString(false));
@@ -20,12 +20,12 @@ public class SentenceTest {
 
     @Test
     public void testInitialTagWithSpace() {
-        Sentence sentence = new Sentence(new Token[]{
-                new Token("Hello", true),
-                new Token("world", false),
-                new Token("!", false),
-        }, new Tag[] {
-                Tag.fromText("<a>", false, true, 0)
+        Sentence sentence = new Sentence(new Word[]{
+                new Word("Hello", " "),
+                new Word("world", null),
+                new Word("!", null),
+        }, new Tag[]{
+                Tag.fromText("<a>", false, " ", 0)
         });
 
         assertEquals("<a> Hello world!", sentence.toString(false));
@@ -34,11 +34,11 @@ public class SentenceTest {
 
     @Test
     public void testStrippedSentenceWithSpaceAfterTag() {
-        Sentence sentence = new Sentence(new Token[]{
-                new Token("Hello", false),
-                new Token("world", false),
-        }, new Tag[] {
-                Tag.fromText("<a>", false, true, 1)
+        Sentence sentence = new Sentence(new Word[]{
+                new Word("Hello", null),
+                new Word("world", null),
+        }, new Tag[]{
+                Tag.fromText("<a>", false, " ", 1)
         });
 
         assertEquals("Hello<a> world", sentence.toString(false));
@@ -47,12 +47,12 @@ public class SentenceTest {
 
     @Test
     public void testStrippedSentenceWithSpacesBetweenTags() {
-        Sentence sentence = new Sentence(new Token[]{
-                new Token("Hello", false),
-                new Token("world", false),
-        }, new Tag[] {
-                Tag.fromText("<a>", false, true, 1),
-                Tag.fromText("<b>", true, false, 1)
+        Sentence sentence = new Sentence(new Word[]{
+                new Word("Hello", null),
+                new Word("world", null),
+        }, new Tag[]{
+                Tag.fromText("<a>", false, " ", 1),
+                Tag.fromText("<b>", true, null, 1)
         });
 
         assertEquals("Hello<a> <b>world", sentence.toString(false));
@@ -61,12 +61,12 @@ public class SentenceTest {
 
     @Test
     public void testStrippedSentenceWithoutSpacesBetweenTags() {
-        Sentence sentence = new Sentence(new Token[]{
-                new Token("Hello", false),
-                new Token("world", false),
-        }, new Tag[] {
-                Tag.fromText("<a>", false, false, 1),
-                Tag.fromText("<b>", false, false, 1)
+        Sentence sentence = new Sentence(new Word[]{
+                new Word("Hello", null),
+                new Word("world", null),
+        }, new Tag[]{
+                Tag.fromText("<a>", false, null, 1),
+                Tag.fromText("<b>", false, null, 1)
         });
 
         assertEquals("Hello<a><b>world", sentence.toString(false));

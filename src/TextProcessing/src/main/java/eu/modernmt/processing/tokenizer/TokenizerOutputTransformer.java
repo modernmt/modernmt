@@ -1,6 +1,9 @@
 package eu.modernmt.processing.tokenizer;
 
-import java.util.BitSet;
+import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.framework.string.InvalidOperationException;
+import eu.modernmt.processing.framework.string.XMLEditableString;
+
 import java.util.List;
 
 /**
@@ -10,38 +13,40 @@ import java.util.List;
 public class TokenizerOutputTransformer {
 
     @Deprecated
-    public static void transform(TokenizedString text, String[] tokens) {
-        int length = text.string.length();
+    public static XMLEditableString transform(XMLEditableString text, String[] tokens) throws ProcessingException {
+        XMLEditableString.Editor editor = text.getEditor();
+
+        String string = text.toString();
+        int length = string.length();
 
         int stringIndex = 0;
-        int lastPosition = 0;
 
         for (String token : tokens) {
-            int tokenPos = text.string.indexOf(token, stringIndex);
-            stringIndex = tokenPos + token.length();
+            int tokenPos = string.indexOf(token, stringIndex);
 
-            if (tokenPos != lastPosition)
-                text.setToken(lastPosition, tokenPos);
+            if (tokenPos < 0)
+                throw new ProcessingException("Unable to find token '" + token + "' starting from index " + stringIndex + " in sentence \"" + text + "\"");
 
-            lastPosition = tokenPos + token.length();
-            if (lastPosition < length)
-                text.setToken(tokenPos, lastPosition);
+            int tokenLength = token.length();
+
+            stringIndex = tokenPos + tokenLength;
+            if (stringIndex <= length)
+                setWord(string, editor, tokenPos, tokenLength);
         }
+
+        return editor.commitChanges();
+    }
+
+    private static void setWord(String string, XMLEditableString.Editor editor, int startIndex, int length) throws InvalidOperationException {
+        int end = startIndex + length;
+        boolean hasRightSpace = end < string.length() && string.charAt(end) == ' ';
+
+        editor.setWord(startIndex, length, hasRightSpace);
     }
 
     @Deprecated
-    public static void transform(TokenizedString string, List<String> tokens) {
-        transform(string, tokens.toArray(new String[tokens.size()]));
-    }
-
-    private static void printDebug(String string, BitSet bitSet) {
-        for (int i = 0; i < string.length(); i++) {
-            if (bitSet.get(i))
-                System.out.print('|');
-            System.out.print(string.charAt(i));
-        }
-
-        System.out.println();
+    public static XMLEditableString transform(XMLEditableString string, List<String> tokens) throws ProcessingException {
+        return transform(string, tokens.toArray(new String[tokens.size()]));
     }
 
 }

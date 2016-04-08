@@ -16,27 +16,21 @@ public abstract class JFlexTokenAnnotator {
     protected int zzStartReadOffset = 0;
 
     public final void annotate(TokensAnnotatedString text, int tokenType) {
-        int zzMarkedPos = getMarkedPosition();
-
-        int zzStartRead = getStartRead() + zzStartReadOffset;
-        zzStartReadOffset = 0;
-
         int yychar = yychar();
-        int offset = 0;
 
-        if (yychar > zzStartRead) {
-            offset = yychar + zzStartRead;
-        }
+        int begin = yychar + zzStartReadOffset;
+        int end = yychar + getMarkedPosition() - getStartRead();
+        zzStartReadOffset = 0;
 
         switch (tokenType) {
             case PROTECT:
-                text.protect(offset + zzStartRead + 1, offset + zzMarkedPos);
+                text.protect(begin + 1, end);
                 break;
             case PROTECT_ALL:
-                text.protect(offset + zzStartRead, offset + zzMarkedPos);
+                text.protect(begin, end);
                 break;
             case PROTECT_RIGHT:
-                text.protect(offset + zzMarkedPos);
+                text.protect(end);
                 break;
         }
     }

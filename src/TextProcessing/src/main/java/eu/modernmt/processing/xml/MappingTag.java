@@ -16,14 +16,14 @@ public class MappingTag extends Tag implements Cloneable {
     /* true if the tag covers at least one position */
     protected boolean content;
 
-    protected MappingTag(String name, String text, boolean leftSpace, boolean rightSpace, int position, Type type, boolean dtd) {
+    protected MappingTag(String name, String text, boolean leftSpace, String rightSpace, int position, Type type, boolean dtd) {
         super(name, text, leftSpace, rightSpace, position, type, dtd);
         this.link = null;
         this.content = false;
         this.coveredPositions = new ArrayList<>();
     }
 
-    protected MappingTag(String name, String text, boolean leftSpace, boolean rightSpace, int position, Type type, boolean dtd, MappingTag link, boolean content) {
+    protected MappingTag(String name, String text, boolean leftSpace, String rightSpace, int position, Type type, boolean dtd, MappingTag link, boolean content) {
         super(name, text, leftSpace, rightSpace, position, type, dtd);
         this.link = link;
         this.content = content;
@@ -31,7 +31,7 @@ public class MappingTag extends Tag implements Cloneable {
     }
 
     public static MappingTag fromTag(Tag other) {
-        return new MappingTag(other.getName(), other.getText(), other.hasLeftSpace(), other.hasRightSpace(), other.getPosition(), other.getType(), other.isDTD());
+        return new MappingTag(other.getName(), other.getText(), other.hasLeftSpace(), other.getRightSpace(), other.getPosition(), other.getType(), other.isDTD());
     }
 
     @Override
