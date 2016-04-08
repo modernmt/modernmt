@@ -8,6 +8,7 @@ import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizers;
 import eu.modernmt.processing.util.RareCharsNormalizer;
 import eu.modernmt.processing.util.WhitespacesNormalizer;
+import eu.modernmt.processing.xmessage.XMessageParser;
 import eu.modernmt.processing.xml.XMLStringBuilder;
 import org.apache.commons.io.IOUtils;
 
@@ -21,12 +22,14 @@ import java.util.Locale;
  */
 public class Preprocessor implements Closeable {
 
+    private static final XMessageParser XMessageParser;
     private static final XMLStringBuilder XMLStringBuilder;
     private static final RareCharsNormalizer RareCharsNormalizer;
     private static final WhitespacesNormalizer WhitespacesNormalizer;
     private static final SentenceBuilder SentenceBuilder;
 
     static {
+        XMessageParser = new XMessageParser();
         XMLStringBuilder = new XMLStringBuilder();
         RareCharsNormalizer = new RareCharsNormalizer();
         WhitespacesNormalizer = new WhitespacesNormalizer();
@@ -47,6 +50,7 @@ public class Preprocessor implements Closeable {
 
         return new ProcessingPipeline.Builder<String, String>()
                 .setThreads(threads)
+                .add(XMessageParser)
                 .add(XMLStringBuilder)
                 .add(RareCharsNormalizer)
                 .add(WhitespacesNormalizer)
