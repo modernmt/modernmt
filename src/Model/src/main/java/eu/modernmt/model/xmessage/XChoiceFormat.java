@@ -50,7 +50,7 @@ public class XChoiceFormat extends XFormat {
             } else {
                 if (c == '|') {
                     String pattern = new String(chars, valueStart, i - valueStart);
-                    choices.add(new Choice(key, divider, XMessage.parse(pattern)));
+                    choices.add(new Choice(key, divider, pattern));
 
                     state = KEY_STATE;
                     keyStart = i + 1;
@@ -62,7 +62,7 @@ public class XChoiceFormat extends XFormat {
             throw new XMessageFormatException("Invalid modifier for type '" + type + "': " + modifier);
 
         String pattern = new String(chars, valueStart, chars.length - valueStart);
-        choices.add(new Choice(key, divider, XMessage.parse(pattern)));
+        choices.add(new Choice(key, divider, pattern));
 
         return new XChoiceFormat(id, index, type, choices.toArray(new Choice[choices.size()]));
     }
@@ -80,15 +80,19 @@ public class XChoiceFormat extends XFormat {
         result.append(',');
         result.append(type);
 
-        for (int i = 0; i < choices.length; i++) {
-            Choice choice = choices[i];
+        if (choices.length > 0) {
+            result.append(',');
 
-            result.append(choice.key);
-            result.append('#');
-            result.append(choice.value);
+            for (int i = 0; i < choices.length; i++) {
+                Choice choice = choices[i];
 
-            if (i < choices.length - 1)
-                result.append('|');
+                result.append(choice.key);
+                result.append('#');
+                result.append(choice.value);
+
+                if (i < choices.length - 1)
+                    result.append('|');
+            }
         }
 
         if (modifier != null) {
@@ -104,9 +108,9 @@ public class XChoiceFormat extends XFormat {
 
         public final String key;
         public final char divider;
-        public final XMessage value;
+        public final String value;
 
-        public Choice(String key, char divider, XMessage value) {
+        public Choice(String key, char divider, String value) {
             this.key = key;
             this.divider = divider;
             this.value = value;

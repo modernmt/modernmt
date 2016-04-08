@@ -23,6 +23,7 @@ public class __XMessageTest {
             preprocessing = Preprocessor.getPipeline(Locale.ENGLISH, true);
             Sentence sentence = preprocessing.process(string);
 
+            System.out.println("SOURCE:");
             for (Word word : sentence.getWords()) {
                 System.out.print(word.getPlaceholder());
                 if (word instanceof XFormatWord)
@@ -32,6 +33,7 @@ public class __XMessageTest {
             System.out.println();
 
 
+            System.out.println("TRANSLATION:");
             postprocessing = Postprocessor.getPipeline(Locale.ITALIAN, true);
             Translation translation = new Translation(new Word[]{
                     new Word("Cancella", " "),
@@ -43,6 +45,14 @@ public class __XMessageTest {
                     {2, 2},
             });
             postprocessing.process(translation);
+
+            for (Word word : translation.getWords()) {
+                System.out.print(word.getPlaceholder());
+                if (word instanceof XFormatWord)
+                    System.out.print(" -> " + ((XFormatWord) word).getFormat().toString());
+                System.out.println();
+            }
+            System.out.println();
 
             System.out.println(translation);
         } finally {
