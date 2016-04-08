@@ -35,7 +35,7 @@ A JSON object with a key ```translation``` whose value is a XML encoded String r
 
 ### API call example
 
-```GET tags-projection?s=<br>hello%2C%20this%20is%20the%20%3Cb%3Efirst%3C%2Fb%3E%20test%26t%3Dciao%2C%20primo%20test.```
+```GET http://localhost:8045/tags-projection?s=<br>hello%2C%20this%20is%20the%20%3Cb%3Efirst%3C%2Fb%3E%20test%26t%3Dciao%2C%20primo%20test.```
 
 
 ```json
