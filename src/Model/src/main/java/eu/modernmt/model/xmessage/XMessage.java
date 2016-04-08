@@ -57,8 +57,10 @@ public class XMessage {
             char ch = pattern[i];
             if (part == SEG_RAW) {
                 if (ch == '\'') {
+                    segments[SEG_RAW].append('\'');
+
                     if (i + 1 < pattern.length && pattern[i + 1] == '\'') {
-                        segments[part].append(ch);  // handle doubles
+                        segments[SEG_RAW].append('\'');
                         ++i;
                     } else {
                         inQuote = !inQuote;

@@ -6,6 +6,7 @@ import eu.modernmt.processing.numbers.NumericWordFactory;
 import eu.modernmt.processing.tokenizer.SimpleTokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizers;
+import eu.modernmt.processing.tokenizer.XMessageTokenizer;
 import eu.modernmt.processing.util.RareCharsNormalizer;
 import eu.modernmt.processing.util.WhitespacesNormalizer;
 import eu.modernmt.processing.xmessage.XMessageParser;
@@ -26,6 +27,7 @@ public class Preprocessor implements Closeable {
     private static final XMLStringBuilder XMLStringBuilder;
     private static final RareCharsNormalizer RareCharsNormalizer;
     private static final WhitespacesNormalizer WhitespacesNormalizer;
+    private static final XMessageTokenizer XMessageTokenizer;
     private static final SentenceBuilder SentenceBuilder;
 
     static {
@@ -33,6 +35,7 @@ public class Preprocessor implements Closeable {
         XMLStringBuilder = new XMLStringBuilder();
         RareCharsNormalizer = new RareCharsNormalizer();
         WhitespacesNormalizer = new WhitespacesNormalizer();
+        XMessageTokenizer = new XMessageTokenizer();
 
         SentenceBuilder = new SentenceBuilder();
         SentenceBuilder.addWordFactory(NumericWordFactory.class);
@@ -50,11 +53,19 @@ public class Preprocessor implements Closeable {
 
         return new ProcessingPipeline.Builder<String, String>()
                 .setThreads(threads)
+                // Pre EditableString
                 .add(XMessageParser)
                 .add(XMLStringBuilder)
+
+                // String normalization
                 .add(RareCharsNormalizer)
                 .add(WhitespacesNormalizer)
+
+                // Tokenization
                 .add(languageTokenizer)
+                .add(XMessageTokenizer)
+
+                // Sentence building
                 .add(SentenceBuilder)
                 .create();
     }

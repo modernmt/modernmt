@@ -1,9 +1,13 @@
 package eu.modernmt.model.xmessage;
 
+import java.util.regex.Pattern;
+
 /**
  * Created by davide on 07/04/16.
  */
 public class XFormat {
+
+    public static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{[0-9]+(,[a-z]+)?\\}");
 
     public final int id;
     public final String index;
