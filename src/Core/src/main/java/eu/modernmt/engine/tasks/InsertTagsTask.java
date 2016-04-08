@@ -22,14 +22,14 @@ public class InsertTagsTask extends DistributedCallable<AutomaticTaggedTranslati
     private final String sentence_str;
     private final String translation_str;
     private final boolean forceTranslation;
-    private final Symmetrisation.Type symmetrizationStrategy;
+    private final Symmetrisation.Strategy symmetrizationStrategy;
 
     public InsertTagsTask(String sentence, String translation, boolean forceTranslation) {
         this(sentence, translation, forceTranslation, null);
     }
 
     public InsertTagsTask(String sentence, String translation, boolean forceTranslation,
-                          Symmetrisation.Type symmetrizationStrategy) {
+                          Symmetrisation.Strategy symmetrizationStrategy) {
         this.sentence_str = sentence;
         this.translation_str = translation;
         this.forceTranslation = forceTranslation;

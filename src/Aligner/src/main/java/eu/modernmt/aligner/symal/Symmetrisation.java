@@ -30,7 +30,7 @@ import java.util.*;
  */
 public class Symmetrisation {
 
-    public enum Type {
+    public enum Strategy {
         Intersection,
         Union,
         GrowDiagFinalAnd
@@ -309,7 +309,7 @@ public class Symmetrisation {
     }
 
 
-    static public String symmetriseMosesFormatAlignment(String sl_line, String tl_line, Type type) {
+    static public String symmetriseMosesFormatAlignment(String sl_line, String tl_line, Strategy strategy) {
 
         Set<Integer>[] s2talignment = null;
         Set<Integer>[] t2salignment = null;
@@ -332,7 +332,7 @@ public class Symmetrisation {
         boolean[][] al = null;
 
         //Producing the symmetrised alignment
-        switch (type) {
+        switch (strategy) {
             case Union:
                 al = Symmetrisation.UnionSymal(s2talignment, t2salignment);
                 break;
