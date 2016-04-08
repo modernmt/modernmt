@@ -46,7 +46,7 @@ public class NumericWordFactory implements SentenceBuilder.WordFactory, WordTran
     }
 
     @Override
-    public Word build(String text, String placeholder, String rightSpace, boolean rightSpaceRequired) {
+    public Word build(String text, String placeholder, String rightSpace) {
         char[] chars = placeholder.toCharArray();
 
         replaceDigits(chars, 0);
@@ -62,7 +62,7 @@ public class NumericWordFactory implements SentenceBuilder.WordFactory, WordTran
             count.value++;
         }
 
-        Word word = new Word(text, placeholder, rightSpace, rightSpaceRequired);
+        Word word = new Word(text, placeholder, rightSpace);
         word.setTransformation(TRANSFORMATION);
 
         return word;

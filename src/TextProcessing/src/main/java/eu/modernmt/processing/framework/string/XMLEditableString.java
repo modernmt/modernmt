@@ -86,10 +86,10 @@ public class XMLEditableString {
             int operationEndIndex = operation.startIndex + operation.length;
             operation.originalString = this.currentString.substring(operation.startIndex, operationEndIndex);
 
-            //if (TokenHook.TokenType.Word.equals(operation.tokenType)) {
-            //    operation.newString = this.currentString.substring(operation.startIndex, operationEndIndex);
-            //    operation.lengthNewString = operation.newString.length();
-            //}
+//            if (TokenHook.TokenType.Word.equals(operation.tokenType)) {
+//                operation.newString = this.currentString.substring(operation.startIndex, operationEndIndex);
+//                operation.lengthNewString = operation.newString.length();
+//            }
 
             int delta = operation.lengthNewString - operation.length;
             if (delta != 0) {
@@ -157,6 +157,7 @@ public class XMLEditableString {
                         if (this.tokenMask == null) {
                             this.tokenMask = new TokenMask(this.currentString.length());
                         }
+
                         this.tokenMask.setToken(operation.startIndex, operation.lengthNewString);
                     }
                 }
@@ -184,14 +185,11 @@ public class XMLEditableString {
             throw new IllegalStateException("XMLEditableString already compiled");
         }
 
-        Iterator<int[]> hookPositions = this.tokenMask.iterator();
-        while (hookPositions.hasNext()) {
-            int[] positions = hookPositions.next();
+        for (int[] positions : this.tokenMask) {
             int startPosition = positions[0];
             int length = positions[1];
-            TokenHook hook = new TokenHook(startPosition, length,
-                    TokenHook.TokenType.Word);
-            hook.processedString = this.currentString.substring(startPosition, length);
+            TokenHook hook = new TokenHook(startPosition, length, TokenHook.TokenType.Word);
+            hook.processedString = this.currentString.substring(startPosition, startPosition + length);
             this.tokens.add(hook);
         }
 
@@ -283,7 +281,7 @@ public class XMLEditableString {
             replace(startIndex, length, null, TokenHook.TokenType.Word);
         }
 
-        public void setXMLTag(int startIndex, int length) throws InvalidOperationException {
+        protected void setXMLTag(int startIndex, int length) throws InvalidOperationException {
             replace(startIndex, length, " ", TokenHook.TokenType.XML);
         }
 
@@ -348,5 +346,52 @@ public class XMLEditableString {
             return editableString;
         }
 
+    }
+
+
+    public static void main(String[] args) throws Throwable {
+        XMLEditableString test = new XMLEditableString.Builder().append("This is {0}\t").create();
+        XMLEditableString.Editor editor = test.getEditor();
+
+        editor.setWord(0, 4);
+        editor.setWord(5, 2);
+        editor.setWord(8, 1);
+        editor.setWord(9, 1);
+        editor.setWord(10, 1);
+
+        editor.commitChanges();
+
+        editor = test.getEditor();
+        editor.setWord(8, 3);
+        editor.commitChanges();
+
+        editor = test.getEditor();
+        editor.setWord(8, 1);
+        editor.commitChanges();
+
+        System.out.println(test);
+        System.out.println(editor);
+
+        for (TokenHook hook : test.compile())
+            System.out.println("'" + test.toString().substring(hook.startIndex, hook.length + hook.startIndex) + "'");
+        System.out.println();
+
+//        editor.setToken(8, 3);
+//
+//        System.out.println(test);
+//        System.out.println(editor);
+//
+//        for (int[] token : editor)
+//            System.out.println("'" + test.substring(token[0], token[0] + token[1]) + "'");
+//        System.out.println();
+//
+//        editor.setToken(8, 1);
+//
+//        System.out.println(test);
+//        System.out.println(editor);
+//
+//        for (int[] token : editor)
+//            System.out.println("'" + test.substring(token[0], token[0] + token[1]) + "'");
+//        System.out.println();
     }
 }

@@ -95,40 +95,4 @@ class TokenMask implements Iterable<int[]> {
         return string.toString();
     }
 
-    public static void main(String[] args) {
-        String test = "This is {0}\t";
-        TokenMask mask = new TokenMask(test.length());
-
-        mask.setToken(0, 4);
-        mask.setToken(5, 2);
-        mask.setToken(8, 1);
-        mask.setToken(9, 1);
-        mask.setToken(10, 1);
-
-        System.out.println(test);
-        System.out.println(mask);
-
-        for (int[] token : mask)
-            System.out.println("'" + test.substring(token[0], token[0] + token[1]) + "'");
-        System.out.println();
-
-        mask.setToken(8, 3);
-
-        System.out.println(test);
-        System.out.println(mask);
-
-        for (int[] token : mask)
-            System.out.println("'" + test.substring(token[0], token[0] + token[1]) + "'");
-        System.out.println();
-
-        mask.setToken(8, 1);
-
-        System.out.println(test);
-        System.out.println(mask);
-
-        for (int[] token : mask)
-            System.out.println("'" + test.substring(token[0], token[0] + token[1]) + "'");
-        System.out.println();
-    }
-
 }
