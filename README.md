@@ -3,18 +3,21 @@
 ## About MMT
 MMT is a context-aware, incremental and distributed general purpose Machine Translation technology.
 
-MMT goal is to make MT easy to adopt and scale.
+MMT is simple to use, fast to train, and easy to scale with respect to domains, data, and users.
 
-With MMT you don't need anymore to train multiple custom engines for each of your domains/projects/customers, you can push all your data to a single engine that will automatically and in real-time adapt to the context you provide.
+MMT is trained by pooling all available domains/projects/customers data and translation memories in one folder.
 
-MMT aims to deliver the quality of a custom engine and the low sparsity of your all data combined.
+MMT is queried by providing the sentence to be translated and some context text.
+
+MMT's goal is to deliver the quality of multiple custom engines by adapting on the fly to the provided context.
 
 You can find more information on: http://www.modermmt.eu
 
 
 ## About this Release
 
-This MMT release will allow you to create an MT engine, available via a REST API, given your training data (folder with line aligned text files)
+This release allows you to create an MT engine, from a collection of line aligned parallel data, 
+that can be queried via a REST API.
 
 Intro video: http://87k.eu/lk9l
 
@@ -24,34 +27,30 @@ Intro video: http://87k.eu/lk9l
 
 Read [INSTALL.md](INSTALL.md)
 
-### Create an Engine
+The distribution includes a small dataset (folder ./examples) to train and test translations from 
+English to Italian in two domains. 
 
-We included a very small dataset, just to verify that training works.
-
-```bash
-./mmt create en it examples/data/train
-```
-
-To test domain-specific differences on the sentence `system information support`, create an engine with small sample size:
+### Create an engine
 
 ```bash
-./mmt create en it examples/data/train
+> ./mmt create en it examples/data/train
 ```
 
-### Start an existing engine
+### Start the engine
 
 ```bash
-./mmt start
+> ./mmt start
 ```
-use **stop** for stopping it.
+You can stop it with the command **stop**.
 
-### Translate via API
+### Start translating via API
 
+Let us query MMT with the word *world* in the context *computer*:
 ```
-curl "http://localhost:8045/translate?q=world&context=computer" | python -mjson.tool
+> curl "http://localhost:8045/translate?q=world&context=computer" | python -mjson.tool
 ```
 
-You will get:
+MMT will return a json structure showing the translation and the context similarity scores for each domain: 
 
 ```
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current

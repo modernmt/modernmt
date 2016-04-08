@@ -86,7 +86,7 @@ public class SlaveNode extends Worker {
     private void loadAligner() throws IOException {
         if (aligner == null) {
             synchronized (this) {
-                if (aligner == null) {
+                if (aligner == null && engine.isEnableFastalign()) {
                     aligner = new SymmetrizedAligner(this.engine.getPath().getAbsolutePath());
                     try {
                         aligner.init();

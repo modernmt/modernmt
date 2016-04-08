@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 /**
  * Created by davide on 21/12/15.
@@ -39,6 +40,16 @@ public class TranslationEngineConfig {
 
     private TranslationEngineConfig(HierarchicalINIConfiguration config) {
         this.config = config;
+    }
+
+    public boolean isEnableFastalign() {
+        SubnodeConfiguration section = config.configurationAt("engine");
+        try {
+            return section.getBoolean("enable_fastalign");
+        } catch (NoSuchElementException e) {
+            // for legacy configurations which lack this entry in [engine]
+            return true;
+        }
     }
 
     public Locale getSourceLanguage() {
