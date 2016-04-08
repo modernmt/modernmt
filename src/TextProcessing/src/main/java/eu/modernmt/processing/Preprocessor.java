@@ -6,10 +6,11 @@ import eu.modernmt.processing.numbers.NumericWordFactory;
 import eu.modernmt.processing.tokenizer.SimpleTokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizers;
-import eu.modernmt.processing.tokenizer.XMessageTokenizer;
 import eu.modernmt.processing.util.RareCharsNormalizer;
 import eu.modernmt.processing.util.WhitespacesNormalizer;
 import eu.modernmt.processing.xmessage.XMessageParser;
+import eu.modernmt.processing.xmessage.XMessageTokenizer;
+import eu.modernmt.processing.xmessage.XMessageWordFactory;
 import eu.modernmt.processing.xml.XMLStringBuilder;
 import org.apache.commons.io.IOUtils;
 
@@ -39,6 +40,7 @@ public class Preprocessor implements Closeable {
 
         SentenceBuilder = new SentenceBuilder();
         SentenceBuilder.addWordFactory(NumericWordFactory.class);
+        SentenceBuilder.addWordFactory(XMessageWordFactory.class);
     }
 
     private final ProcessingPipeline<String, Sentence> pipelineWithTokenization;

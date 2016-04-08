@@ -11,6 +11,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * Created by davide on 26/01/16.
@@ -53,7 +54,7 @@ public class LuceneTokenizerAdapter extends MultiInstanceTokenizer {
         }
 
         @Override
-        public XMLEditableString call(XMLEditableString text) throws ProcessingException {
+        public XMLEditableString call(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
             char[] chars = text.toCharArray();
 
             TokenStream stream = null;

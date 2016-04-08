@@ -51,7 +51,7 @@ public class CoreNLPTokenizer implements Tokenizer {
     }
 
     @Override
-    public XMLEditableString call(XMLEditableString text) throws ProcessingException {
+    public XMLEditableString call(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
         Reader reader = new StringReader(text.toString());
         edu.stanford.nlp.process.Tokenizer<?> tokenizer;
         synchronized (this) {

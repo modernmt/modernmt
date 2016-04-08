@@ -6,6 +6,7 @@ import eu.modernmt.processing.framework.TextProcessor;
 import eu.modernmt.processing.framework.string.XMLEditableString;
 
 import java.nio.CharBuffer;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,7 +18,7 @@ public class XMLStringBuilder implements TextProcessor<String, XMLEditableString
     private static final Pattern EntityPattern = Pattern.compile("&((#[0-9]{1,4})|(#x[0-9a-fA-F]{1,4})|([a-zA-Z]+));");
 
     @Override
-    public XMLEditableString call(String source) throws ProcessingException {
+    public XMLEditableString call(String source, Map<String, Object> metadata) throws ProcessingException {
         XMLEditableString.Builder builder = new XMLEditableString.Builder();
         Matcher m = Tag.TagRegex.matcher(source);
 

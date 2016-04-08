@@ -1,5 +1,6 @@
 package eu.modernmt.model.xmessage;
 
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -7,7 +8,12 @@ import java.util.regex.Pattern;
  */
 public class XFormat {
 
-    public static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{[0-9]+(,[a-z]+)?\\}");
+    public static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{([0-9]+)(,[a-z]+)?\\}");
+
+    public static int extractId(String placeholder) {
+        Matcher m = PLACEHOLDER_PATTERN.matcher(placeholder);
+        return m.find() ? Integer.parseInt(m.group(1)) : -1;
+    }
 
     public final int id;
     public final String index;

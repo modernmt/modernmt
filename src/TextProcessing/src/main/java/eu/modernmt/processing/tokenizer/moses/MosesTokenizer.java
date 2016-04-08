@@ -89,7 +89,7 @@ public class MosesTokenizer extends MultiInstanceTokenizer {
         super(new MosesTokenizerFactory(languageCode));
     }
 
-    private static class MosesTokenizerImplementation implements Tokenizer, AutoCloseable {
+    private static class MosesTokenizerImplementation implements AutoCloseable, Tokenizer {
 
         private Process tokenizer = null;
         private OutputStream tokenizerStdin;
@@ -114,7 +114,7 @@ public class MosesTokenizer extends MultiInstanceTokenizer {
         }
 
         @Override
-        public XMLEditableString call(XMLEditableString text) throws ProcessingException {
+        public XMLEditableString call(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
             String tokenized;
 
             try {

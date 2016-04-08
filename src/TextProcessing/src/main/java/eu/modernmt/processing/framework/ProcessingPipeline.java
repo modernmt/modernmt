@@ -1,7 +1,9 @@
 package eu.modernmt.processing.framework;
 
 import java.io.Closeable;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.concurrent.*;
 
 /**
@@ -99,10 +101,11 @@ public class ProcessingPipeline<P, R> implements Closeable {
         @Override
         @SuppressWarnings("unchecked")
         public R call() throws ProcessingException {
+            Map<String, Object> metadata = new HashMap<>();
             Object result = param;
 
             for (TextProcessor<Object, Object> processor : processors) {
-                result = processor.call(result);
+                result = processor.call(result, metadata);
             }
 
             return (R) result;

@@ -4,13 +4,15 @@ import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.TextProcessor;
 import eu.modernmt.processing.framework.string.XMLEditableString;
 
+import java.util.Map;
+
 /**
  * Created by davide on 19/02/16.
  */
 public class RareCharsNormalizer implements TextProcessor<XMLEditableString, XMLEditableString> {
 
     @Override
-    public XMLEditableString call(XMLEditableString string) throws ProcessingException {
+    public XMLEditableString call(XMLEditableString string, Map<String, Object> metadata) throws ProcessingException {
         char source[] = string.toCharArray();
         XMLEditableString.Editor editor = string.getEditor();
 

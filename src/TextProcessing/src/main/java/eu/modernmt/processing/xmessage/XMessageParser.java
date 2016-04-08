@@ -4,15 +4,20 @@ import eu.modernmt.model.xmessage.XMessage;
 import eu.modernmt.model.xmessage.XMessageFormatException;
 import eu.modernmt.processing.framework.TextProcessor;
 
+import java.util.Map;
+
 /**
  * Created by davide on 08/04/16.
  */
 public class XMessageParser implements TextProcessor<String, String> {
 
+    public static final String FORMATS_KEY = "XMessageParser.formats";
+
     @Override
-    public String call(String string) {
+    public String call(String string, Map<String, Object> metadata) {
         try {
             XMessage xmessage = XMessage.parse(string);
+            metadata.put(FORMATS_KEY, xmessage.getFormats());
             return xmessage.toString();
         } catch (XMessageFormatException e) {
             // If not a valid XMessage it just keeps string as it is.

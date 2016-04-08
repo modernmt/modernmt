@@ -100,7 +100,7 @@ public class JFlexTokenizer extends MultiInstanceTokenizer {
         }
 
         @Override
-        public XMLEditableString call(XMLEditableString text) throws ProcessingException {
+        public XMLEditableString call(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
             TokensAnnotatedString astring = new TokensAnnotatedString(text.toString());
 
             annotator.yyreset(astring.getReader());

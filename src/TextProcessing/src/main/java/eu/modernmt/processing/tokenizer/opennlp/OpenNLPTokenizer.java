@@ -91,7 +91,7 @@ public class OpenNLPTokenizer extends MultiInstanceTokenizer {
         }
 
         @Override
-        public XMLEditableString call(XMLEditableString text) throws ProcessingException {
+        public XMLEditableString call(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
             return TokenizerOutputTransformer.transform(text, this.tokenizer.tokenize(text.toString()));
         }
 

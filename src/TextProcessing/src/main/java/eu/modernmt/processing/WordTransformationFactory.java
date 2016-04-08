@@ -5,6 +5,7 @@ import eu.modernmt.model.Word;
 import eu.modernmt.processing.framework.TextProcessor;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 /**
  * Created by davide on 04/04/16.
@@ -52,7 +53,7 @@ public class WordTransformationFactory implements TextProcessor<Translation, Tra
     }
 
     @Override
-    public Translation call(Translation translation) {
+    public Translation call(Translation translation, Map<String, Object> metadata) {
         WordTransformer[] transformers = instantiate(transformerList);
 
         Word[] words = translation.getWords();

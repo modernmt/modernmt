@@ -93,7 +93,7 @@ public class LanguageToolTokenizer extends MultiInstanceTokenizer {
         }
 
         @Override
-        public XMLEditableString call(XMLEditableString text) throws ProcessingException {
+        public XMLEditableString call(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
             List<String> tokens = tokenizer.tokenize(text.toString());
             ArrayList<String> result = new ArrayList<>(tokens.size());
 

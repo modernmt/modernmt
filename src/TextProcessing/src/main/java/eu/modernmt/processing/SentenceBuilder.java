@@ -11,6 +11,7 @@ import eu.modernmt.processing.framework.string.XMLEditableString;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by davide on 31/03/16.
@@ -23,6 +24,8 @@ public class SentenceBuilder implements TextProcessor<XMLEditableString, Sentenc
 
         Word build(String text, String placeholder, String rightSpace);
 
+        void setMetadata(Map<String, Object> metadata);
+
     }
 
     private ArrayList<Class<? extends WordFactory>> factoryList = new ArrayList<>();
@@ -31,13 +34,15 @@ public class SentenceBuilder implements TextProcessor<XMLEditableString, Sentenc
         factoryList.add(factoryClass);
     }
 
-    private static WordFactory[] instantiate(ArrayList<Class<? extends WordFactory>> factoryList) {
+    private static WordFactory[] instantiate(ArrayList<Class<? extends WordFactory>> factoryList, Map<String, Object> metadata) {
         WordFactory[] instances = new WordFactory[factoryList.size()];
 
         int i = 0;
         for (Class<? extends WordFactory> cls : factoryList) {
             try {
-                instances[i++] = cls.newInstance();
+                WordFactory factory = cls.newInstance();
+                factory.setMetadata(metadata);
+                instances[i++] = factory;
             } catch (InstantiationException | IllegalAccessException e) {
                 throw new Error("Error while creating WordFactory instance: " + cls.getName(), e);
             }
@@ -64,9 +69,10 @@ public class SentenceBuilder implements TextProcessor<XMLEditableString, Sentenc
         return word;
     }
 
+
     @Override
-    public Sentence call(XMLEditableString string) throws ProcessingException {
-        WordFactory[] wordFactories = instantiate(this.factoryList);
+    public Sentence call(XMLEditableString string, Map<String, Object> metadata) throws ProcessingException {
+        WordFactory[] wordFactories = instantiate(this.factoryList, metadata);
 
         char[] reference = string.getOriginalString().toCharArray();
 
