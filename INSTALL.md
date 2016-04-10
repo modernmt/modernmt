@@ -19,7 +19,7 @@ For customizations and enterprise support: davide.caroselli@translated.net
 
 # Setup up the server
 
-**MMT 0.11.x only works on Ubuntu 14.04**
+**MMT currently only works on Ubuntu 14.04**
 
 This release was tested on a clean Ubuntu 14.04 server from Amazon AWS.
 AMI: Ubuntu Server 14.04 LTS (HVM), SSD Volume Type -  ami-accff2b1
