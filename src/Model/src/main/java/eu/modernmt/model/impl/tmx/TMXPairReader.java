@@ -5,6 +5,13 @@ import eu.modernmt.model.BilingualCorpus;
 import javax.xml.stream.Location;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stax.StAXSource;
+import javax.xml.transform.stream.StreamResult;
+import java.io.StringWriter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -14,15 +21,25 @@ import java.util.Date;
  */
 class TMXPairReader {
 
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("YYYYMMdd'T'HHmmss'Z'");
+    private final SimpleDateFormat dateFormat;
+    private final Transformer transformer;
+
+    public TMXPairReader() {
+        dateFormat = new SimpleDateFormat("YYYYMMdd'T'HHmmss'Z'");
+        try {
+            transformer = TransformerFactory.newInstance().newTransformer();
+        } catch (TransformerConfigurationException e) {
+            throw new Error("Unable to initialize Transformer", e);
+        }
+    }
 
     private BilingualCorpus.StringPair wrap(XMLStreamReader reader, String source, String target, Date timestamp) throws XMLStreamException {
-        if (source == null || (source = source.trim()).isEmpty()) {
+        if (source == null) {
             Location location = reader.getLocation();
             throw new XMLStreamException("Missing source sentence near line " + location.getLineNumber());
         }
 
-        if (target == null || (target = target.trim()).isEmpty()) {
+        if (target == null) {
             Location location = reader.getLocation();
             throw new XMLStreamException("Missing target sentence near line " + location.getLineNumber());
         }
@@ -101,7 +118,7 @@ class TMXPairReader {
             switch (type) {
                 case XMLStreamReader.START_ELEMENT:
                     if ("seg".equals(reader.getLocalName())) {
-                        return readCharacters(reader);
+                        return readSegment(reader);
                     }
                     break;
             }
@@ -110,23 +127,24 @@ class TMXPairReader {
         throw new XMLStreamException("Missing 'seg' inside 'tuv' element at line " + reader.getLocation().getLineNumber());
     }
 
-    private String readCharacters(XMLStreamReader reader) throws XMLStreamException {
-        StringBuilder result = new StringBuilder();
+    private String readSegment(XMLStreamReader reader) throws XMLStreamException {
+        StringWriter writer = new StringWriter();
 
-        while (reader.hasNext()) {
-            int type = reader.next();
-
-            switch (type) {
-                case XMLStreamReader.CHARACTERS:
-                case XMLStreamReader.CDATA:
-                    result.append(reader.getText());
-                    break;
-                case XMLStreamReader.END_ELEMENT:
-                    return result.toString();
-            }
+        try {
+            transformer.transform(new StAXSource(reader), new StreamResult(writer));
+        } catch (TransformerException e) {
+            throw new XMLStreamException("Unable to read segment at line " + reader.getLocation().getLineNumber());
         }
 
-        throw new XMLStreamException("Premature end of file");
+        String text = writer.toString();
+        int start = text.indexOf("<seg>");
+        int end = text.lastIndexOf("</seg>");
+        int empty = text.indexOf("<seg/>");
+
+        if ((start < 0 || end < 0) && empty < 0)
+            throw new XMLStreamException("Invalid segment at line " + reader.getLocation().getLineNumber());
+
+        return empty < 0 ? text.substring(start + 5, end) : "";
     }
 
 
