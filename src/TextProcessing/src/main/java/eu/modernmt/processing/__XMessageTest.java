@@ -1,8 +1,6 @@
 package eu.modernmt.processing;
 
-import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Translation;
-import eu.modernmt.model.Word;
+import eu.modernmt.model.*;
 import eu.modernmt.processing.framework.ProcessingPipeline;
 import eu.modernmt.processing.xmessage.XFormatWord;
 import org.apache.commons.io.IOUtils;
@@ -44,7 +42,31 @@ public class __XMessageTest {
                     {1, 1},
                     {2, 2},
             });
+
+            System.out.println(translation.getWords()[2].hasRightSpace());
             postprocessing.process(translation);
+            System.out.println(translation.getWords()[2].hasRightSpace());
+
+
+            for (Token token : translation) {
+                if (token instanceof MultiOptionsToken) {
+                    MultiOptionsToken mop = (MultiOptionsToken) token;
+
+                    if (!mop.hasTranslatedOptions()) {
+                        String[] options = mop.getSourceOptions();
+                        Translation[] translations = new Translation[options.length];
+
+                        for (int i = 0; i < translations.length; i++) {
+                            translations[i] = new Translation(new Word[]{
+                                    new Word("__t__" + options[i] + "___", null)
+                            }, null, null);
+                        }
+
+                        mop.setTranslatedOptions(translations);
+                    }
+                }
+            }
+
 
             for (Word word : translation.getWords()) {
                 System.out.print(word.getPlaceholder());

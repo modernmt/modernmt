@@ -1,5 +1,6 @@
 package eu.modernmt.model.xmessage;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
 /**
@@ -67,7 +68,7 @@ public class XChoiceFormat extends XFormat {
         return new XChoiceFormat(id, index, type, choices.toArray(new Choice[choices.size()]));
     }
 
-    private XChoiceFormat(int id, String index, String type, Choice[] choices) {
+    public XChoiceFormat(int id, String index, String type, Choice[] choices) {
         super(id, index, type, null);
         this.choices = choices;
     }
@@ -104,7 +105,7 @@ public class XChoiceFormat extends XFormat {
         return result.toString();
     }
 
-    public static class Choice {
+    public static class Choice implements Serializable {
 
         public final String key;
         public final char divider;

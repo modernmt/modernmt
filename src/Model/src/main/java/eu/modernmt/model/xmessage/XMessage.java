@@ -1,12 +1,13 @@
 package eu.modernmt.model.xmessage;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Locale;
 
 /**
  * Created by davide on 07/04/16.
  */
-public class XMessage {
+public class XMessage implements Serializable {
 
     private static final int SEG_RAW = 0;
     private static final int SEG_INDEX = 1;

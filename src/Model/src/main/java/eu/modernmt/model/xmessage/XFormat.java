@@ -1,12 +1,13 @@
 package eu.modernmt.model.xmessage;
 
+import java.io.Serializable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Created by davide on 07/04/16.
  */
-public class XFormat {
+public class XFormat implements Serializable {
 
     public static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{([0-9]+)(,[a-z]+)?\\}");
 

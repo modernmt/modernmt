@@ -1,12 +1,15 @@
 package eu.modernmt.processing.xmessage;
 
+import eu.modernmt.model.MultiOptionsToken;
+import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
+import eu.modernmt.model.xmessage.XChoiceFormat;
 import eu.modernmt.model.xmessage.XFormat;
 
 /**
  * Created by davide on 08/04/16.
  */
-public class XFormatWord extends Word {
+public class XFormatWord extends Word implements MultiOptionsToken {
 
     private static final Transformation TRANSFORMATION = (Transformation) (source, target) -> {
         if (source != null && source instanceof XFormatWord && target instanceof XFormatWord) {
@@ -16,6 +19,7 @@ public class XFormatWord extends Word {
     };
 
     private XFormat format;
+    private boolean choicesTranslated = false;
 
     public XFormatWord(XFormat format) {
         super(format.getPlaceholder(), format.getPlaceholder());
@@ -68,4 +72,39 @@ public class XFormatWord extends Word {
         return format == null ? super.toString() : format.toString();
     }
 
+    // MultiOptionsToken
+
+    @Override
+    public String[] getSourceOptions() {
+        XChoiceFormat choice = (XChoiceFormat) format;
+        XChoiceFormat.Choice[] choices = choice.choices;
+        String[] options = new String[choices.length];
+
+        for (int i = 0; i < options.length; i++)
+            options[i] = choices[i].value;
+
+        return options;
+    }
+
+    @Override
+    public void setTranslatedOptions(Translation[] translations) {
+        XChoiceFormat choiceFormat = (XChoiceFormat) format;
+        XChoiceFormat.Choice[] choices = choiceFormat.choices;
+
+        XChoiceFormat.Choice[] translatedChoices = new XChoiceFormat.Choice[choices.length];
+        for (int i = 0; i < translatedChoices.length; i++) {
+            Translation translation = translations[i];
+            XChoiceFormat.Choice choice = choices[i];
+
+            translatedChoices[i] = new XChoiceFormat.Choice(choice.key, choice.divider, translation.toString());
+        }
+
+        format = new XChoiceFormat(choiceFormat.id, choiceFormat.index, choiceFormat.type, translatedChoices);
+        choicesTranslated = true;
+    }
+
+    @Override
+    public boolean hasTranslatedOptions() {
+        return format == null || !(format instanceof XChoiceFormat) || choicesTranslated;
+    }
 }
