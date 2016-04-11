@@ -150,4 +150,14 @@ public class Preprocessor implements Closeable {
 
     }
 
+    public static void main(String[] args) throws Throwable {
+        ProcessingPipeline<String, Sentence> pipeline = null;
+
+        try {
+            pipeline = Preprocessor.getPipeline(Locale.ENGLISH, true);
+            System.out.println(pipeline.process("Hello <b>world</b>"));
+        } finally {
+            IOUtils.closeQuietly(pipeline);
+        }
+    }
 }

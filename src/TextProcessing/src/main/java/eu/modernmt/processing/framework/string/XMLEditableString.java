@@ -179,12 +179,14 @@ public class XMLEditableString {
             throw new IllegalStateException("XMLEditableString already compiled");
         }
 
-        for (int[] positions : this.tokenMask) {
-            int startPosition = positions[0];
-            int length = positions[1];
-            TokenHook hook = new TokenHook(startPosition, length, TokenHook.TokenType.Word);
-            hook.processedString = this.currentString.substring(startPosition, startPosition + length);
-            this.tokens.add(hook);
+        if (tokenMask != null) {
+            for (int[] positions : this.tokenMask) {
+                int startPosition = positions[0];
+                int length = positions[1];
+                TokenHook hook = new TokenHook(startPosition, length, TokenHook.TokenType.Word);
+                hook.processedString = this.currentString.substring(startPosition, startPosition + length);
+                this.tokens.add(hook);
+            }
         }
 
         this.reverseChangeLog();
