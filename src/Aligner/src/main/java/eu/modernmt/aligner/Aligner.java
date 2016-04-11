@@ -17,6 +17,6 @@ public interface Aligner extends Closeable {
 
     int[][] getAlignments(Sentence sentence, Sentence translation) throws IOException;
 
-    void setSymmetrizationStrategy(Symmetrisation.Type strategy) throws OperationNotSupportedException;
+    void setSymmetrizationStrategy(Symmetrisation.Strategy strategy) throws OperationNotSupportedException;
 
 }

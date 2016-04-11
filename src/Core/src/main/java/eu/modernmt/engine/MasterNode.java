@@ -100,7 +100,7 @@ public class MasterNode extends ClusterManager {
     }
 
     public AutomaticTaggedTranslation alignTags(String sentence, String translation, boolean forceTranslation,
-                                                Symmetrisation.Type symmetrizationStrategy) throws TranslationException {
+                                                Symmetrisation.Strategy symmetrizationStrategy) throws TranslationException {
         InsertTagsTask task;
         try {
             task = new InsertTagsTask(sentence, translation, forceTranslation, symmetrizationStrategy);

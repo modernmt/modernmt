@@ -4,6 +4,16 @@
 The ```Context``` API returns an array of the top domains matching the provided content.
 For each domain you obtain the consine similarity between the given context, and that domain.
 
+### Example
+
+**Input:**
+
+Text:
+```Mr President```
+
+Top domains and scores:
+```europarl (0.13375875), ibm (0.008800022)```
+
 ## Input / Output definition
 
 **HTTP method:**
@@ -24,7 +34,7 @@ A JSON array of objects with ```id``` and ```score````:
 
 ```score``` is the cosine similarity between the domain and the given text
 
-### Example
+### API call example
 
 ```GET context?text=Mr+President```
 

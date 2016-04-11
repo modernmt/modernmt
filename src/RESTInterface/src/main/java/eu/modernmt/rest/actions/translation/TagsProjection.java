@@ -87,7 +87,7 @@ public class TagsProjection extends ObjectAction<Object> {
         public final String sentence;
         public final String translation;
         public final boolean forceTranslation;
-        public final Symmetrisation.Type symmetrizationStrategy;
+        public final Symmetrisation.Strategy symmetrizationStrategy;
         public final boolean showDetails;
 
         public Params(RESTRequest req) throws ParameterParsingException {
@@ -99,7 +99,7 @@ public class TagsProjection extends ObjectAction<Object> {
             int symmetrizationStrategy = getInt("symmetrization", -1);
             if (symmetrizationStrategy >= 0) {
                 try {
-                    this.symmetrizationStrategy = Symmetrisation.Type.values()[symmetrizationStrategy];
+                    this.symmetrizationStrategy = Symmetrisation.Strategy.values()[symmetrizationStrategy];
                 } catch (Exception e) {
                     throw new ParameterParsingException("symmetrization", Integer.toString(symmetrizationStrategy));
                 }
