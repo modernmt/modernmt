@@ -4,6 +4,19 @@
 The ```Translate``` API returns the translation of the provided text. The text is XML encoded and **can contain XML Tags**.
 Because each MMT Engine supports only one language pair in one direction, you don't need to specify the source and target languages.
 
+### Example
+
+**Input:**
+
+Source sentence:
+```"This is an <b>example</b>"```
+
+Context:
+```Mr President```
+
+Translation:
+```"Questo è un <b>esempio</b>"```
+
 ## Input / Output definition
 
 **HTTP method:**
@@ -29,7 +42,7 @@ A JSON object containing the following fields:
 
 ```nbest``` the list of the top N best translations with their scores
 
-### Example
+### API call example
 
 ```GET translate?q=%26quot%3BThis%20is%20an%20%3Cb%3Eexample%3C%2Fb%3E%26quot%3B&context=Mr+President```
 
