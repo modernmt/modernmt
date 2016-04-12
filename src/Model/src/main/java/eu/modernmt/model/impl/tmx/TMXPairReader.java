@@ -2,15 +2,16 @@ package eu.modernmt.model.impl.tmx;
 
 import eu.modernmt.model.BilingualCorpus;
 
+import javax.xml.XMLConstants;
+import javax.xml.namespace.QName;
 import javax.xml.stream.Location;
+import javax.xml.stream.XMLEventReader;
+import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stax.StAXSource;
-import javax.xml.transform.stream.StreamResult;
+import javax.xml.stream.events.Attribute;
+import javax.xml.stream.events.EndElement;
+import javax.xml.stream.events.StartElement;
+import javax.xml.stream.events.XMLEvent;
 import java.io.StringWriter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -21,40 +22,28 @@ import java.util.Date;
  */
 class TMXPairReader {
 
-    private final SimpleDateFormat dateFormat;
-    private final Transformer transformer;
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("YYYYMMdd'T'HHmmss'Z'");
+    private static final String XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace";
 
-    public TMXPairReader() {
-        dateFormat = new SimpleDateFormat("YYYYMMdd'T'HHmmss'Z'");
-        try {
-            transformer = TransformerFactory.newInstance().newTransformer();
-        } catch (TransformerConfigurationException e) {
-            throw new Error("Unable to initialize Transformer", e);
-        }
-    }
+    private BilingualCorpus.StringPair wrap(XMLEvent event, String source, String target, Date timestamp) throws XMLStreamException {
+        if (source == null)
+            throw new XMLStreamException(format("Missing source sentence", event));
 
-    private BilingualCorpus.StringPair wrap(XMLStreamReader reader, String source, String target, Date timestamp) throws XMLStreamException {
-        if (source == null) {
-            Location location = reader.getLocation();
-            throw new XMLStreamException("Missing source sentence near line " + location.getLineNumber());
-        }
-
-        if (target == null) {
-            Location location = reader.getLocation();
-            throw new XMLStreamException("Missing target sentence near line " + location.getLineNumber());
-        }
+        if (target == null)
+            throw new XMLStreamException(format("Missing target sentence", event));
 
         return new BilingualCorpus.StringPair(source.replace('\n', ' '), target.replace('\n', ' '), timestamp);
     }
 
-    public BilingualCorpus.StringPair read(XMLStreamReader reader, String sourceLanguage, String targetLanguage) throws XMLStreamException {
+    public BilingualCorpus.StringPair read(XMLEventReader reader, String sourceLanguage, String targetLanguage) throws XMLStreamException {
         while (reader.hasNext()) {
-            int type = reader.next();
+            XMLEvent event = reader.nextEvent();
 
-            switch (type) {
-                case XMLStreamReader.START_ELEMENT:
-                    if ("tu".equals(reader.getLocalName()))
-                        return readTu(reader, sourceLanguage, targetLanguage);
+            switch (event.getEventType()) {
+                case XMLStreamConstants.START_ELEMENT:
+                    StartElement element = event.asStartElement();
+                    if ("tu".equals(getLocalName(element)))
+                        return readTu(reader, element, sourceLanguage, targetLanguage);
                     break;
             }
         }
@@ -62,18 +51,18 @@ class TMXPairReader {
         return null;
     }
 
-    private BilingualCorpus.StringPair readTu(XMLStreamReader reader, String sourceLanguage, String targetLanguage) throws XMLStreamException {
+    private BilingualCorpus.StringPair readTu(XMLEventReader reader, StartElement tu, String sourceLanguage, String targetLanguage) throws XMLStreamException {
         Date timestamp = null;
 
-        String date = reader.getAttributeValue(null, "changedate");
+        String date = getAttributeValue(tu, null, "changedate");
         if (date == null)
-            date = reader.getAttributeValue(null, "creationdate");
+            date = getAttributeValue(tu, null, "creationdate");
 
         if (date != null) {
             try {
                 timestamp = dateFormat.parse(date);
             } catch (ParseException | NumberFormatException e) {
-                throw new XMLStreamException("Invalid date '" + date + "' at line " + reader.getLocation().getLineNumber(), e);
+                throw new XMLStreamException(format("Invalid date '" + date + "'", tu), e);
             }
         }
 
@@ -81,16 +70,21 @@ class TMXPairReader {
         String target = null;
 
         while (reader.hasNext()) {
-            int type = reader.next();
+            XMLEvent event = reader.nextEvent();
 
-            switch (type) {
-                case XMLStreamReader.START_ELEMENT:
-                    if ("tuv".equals(reader.getLocalName())) {
-                        String lang = reader.getAttributeValue(null, "lang");
-                        String text = readTuv(reader);
+            switch (event.getEventType()) {
+                case XMLStreamConstants.START_ELEMENT:
+                    StartElement element = event.asStartElement();
+
+                    if ("tuv".equals(getLocalName(element))) {
+                        String lang = getAttributeValue(element, XML_NAMESPACE, "lang");
+                        if (lang == null)
+                            lang = getAttributeValue(element, null, "lang");
+
+                        String text = readTuv(reader, element);
 
                         if (lang == null) {
-                            throw new XMLStreamException("Missing language for 'tuv' at line " + reader.getLocation().getLineNumber());
+                            throw new XMLStreamException(format("Missing language for 'tuv'", event));
                         } else if (lang.startsWith(sourceLanguage)) {
                             source = text;
                         } else if (lang.startsWith(targetLanguage)) {
@@ -100,52 +94,91 @@ class TMXPairReader {
                         }
                     }
                     break;
-                case XMLStreamReader.END_ELEMENT:
-                    if ("tu".equals(reader.getLocalName())) {
-                        return wrap(reader, source, target, timestamp);
+                case XMLStreamConstants.END_ELEMENT:
+                    if ("tu".equals(getLocalName(event.asEndElement()))) {
+                        return wrap(event, source, target, timestamp);
                     }
                     break;
             }
         }
 
-        throw new XMLStreamException("Missing closing tag for 'tuv' element at line " + reader.getLocation().getLineNumber());
+        throw new XMLStreamException(format("Missing closing tag for 'tuv' element", tu));
     }
 
-    private String readTuv(XMLStreamReader reader) throws XMLStreamException {
+    private String readTuv(XMLEventReader reader, StartElement tuv) throws XMLStreamException {
         while (reader.hasNext()) {
-            int type = reader.next();
+            XMLEvent event = reader.nextEvent();
 
-            switch (type) {
-                case XMLStreamReader.START_ELEMENT:
-                    if ("seg".equals(reader.getLocalName())) {
-                        return readSegment(reader);
+            switch (event.getEventType()) {
+                case XMLStreamConstants.START_ELEMENT:
+                    StartElement element = event.asStartElement();
+
+                    if ("seg".equals(getLocalName(element))) {
+                        return readSegment(reader, element);
                     }
                     break;
             }
         }
 
-        throw new XMLStreamException("Missing 'seg' inside 'tuv' element at line " + reader.getLocation().getLineNumber());
+        throw new XMLStreamException(format("Missing 'seg' inside 'tuv' element", tuv));
     }
 
-    private String readSegment(XMLStreamReader reader) throws XMLStreamException {
-        StringWriter writer = new StringWriter();
+    private String readSegment(XMLEventReader reader, StartElement seg) throws XMLStreamException {
+        StringWriter buffer = new StringWriter(1024);
 
-        try {
-            transformer.transform(new StAXSource(reader), new StreamResult(writer));
-        } catch (TransformerException e) {
-            throw new XMLStreamException("Unable to read segment at line " + reader.getLocation().getLineNumber(), e);
+        StringWriter lastXMLTagWriter = new StringWriter(128);
+        String pendingElementName = null;
+
+        while (reader.hasNext()) {
+            XMLEvent event = reader.nextEvent();
+
+            if (event.isEndElement() && "seg".equals(getLocalName(event.asEndElement()))) {
+                return buffer.toString();
+            }
+
+            if (pendingElementName != null) {
+                String tag = lastXMLTagWriter.toString();
+                lastXMLTagWriter.getBuffer().setLength(0);
+
+                if (event.isEndElement() && pendingElementName.equals(getLocalName(event.asEndElement()))) {
+                    tag = tag.substring(0, tag.length() - 1) + "/>";
+                    buffer.append(tag);
+                    continue;
+                } else {
+                    buffer.append(tag);
+                }
+            }
+
+            if (event.isStartElement()) {
+                event.writeAsEncodedUnicode(lastXMLTagWriter);
+                pendingElementName = getLocalName(event.asStartElement());
+            } else {
+                event.writeAsEncodedUnicode(buffer);
+            }
         }
 
-        String text = writer.toString();
-        int start = text.indexOf("<seg>");
-        int end = text.lastIndexOf("</seg>");
-        int empty = text.indexOf("<seg/>");
-
-        if ((start < 0 || end < 0) && empty < 0)
-            throw new XMLStreamException("Invalid segment at line " + reader.getLocation().getLineNumber());
-
-        return empty < 0 ? text.substring(start + 5, end) : "";
+        throw new XMLStreamException(format("Missing closing tag for 'seg' element", seg));
     }
 
+    // Utils
+
+    private static final String format(String message, XMLEvent event) {
+        Location location = event == null ? null : event.getLocation();
+        return location == null ? message : (message + " at line " + location.getLineNumber());
+    }
+
+    private static final String getLocalName(StartElement element) {
+        return element.getName().getLocalPart();
+    }
+
+    private static final String getLocalName(EndElement element) {
+        return element.getName().getLocalPart();
+    }
+
+    private static final String getAttributeValue(StartElement element, String namespaceURI, String localPart) {
+        QName name = new QName(namespaceURI == null ? XMLConstants.NULL_NS_URI : namespaceURI, localPart);
+        Attribute attribute = element.getAttributeByName(name);
+        return attribute == null ? null : attribute.getValue();
+    }
 
 }
