@@ -136,7 +136,7 @@ class FastAlign implements Aligner, Closeable {
     }
 
     @Override
-    public void setSymmetrizationStrategy(Symmetrisation.Type strategy) throws OperationNotSupportedException {
+    public void setSymmetrizationStrategy(Symmetrisation.Strategy strategy) throws OperationNotSupportedException {
         throw new OperationNotSupportedException("Symmetrization not supported");
     }
 

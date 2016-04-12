@@ -55,11 +55,12 @@ class TagProjectionPricisionTest:
             try:
                 self.log(str(int(100 * n / num_lines)) + "%\t#line:" + str(n) + "\tsource length:" + str(len(source)))
                 results = self.query_engine(source, translation)
-                tagged_translation = results['translation']
+                alignments = results['alignments']
+		tagged_translation = results['translation']
                 if tagged_translation == reference:
                     precision += 1
                 else:
-                    self.log(source + "|||" + tagged_translation + "|||" + reference)
+                    self.log(source + "|||" + tagged_translation + "|||" + reference + "\n" + str(alignments))
                     tagged_number_of_tags = self.count_tags(tagged_translation)
                     reference_number_of_tags = self.count_tags(reference)
                     total_number_of_tags += reference_number_of_tags
@@ -116,7 +117,7 @@ class TagProjectionPricisionTest:
 
     def query_engine(self, source, translation):
         headers = {'content-type': 'application/json'}
-        payload = {'s': source, 't': translation, 'f': 0}
+        payload = {'s': source, 't': translation, 'd': 1}
         json_results = requests.get("http://localhost:" + str(self.__api_port) + "/tags-projection",
                                     params=payload, headers=headers)
         return json.loads(json_results.text)

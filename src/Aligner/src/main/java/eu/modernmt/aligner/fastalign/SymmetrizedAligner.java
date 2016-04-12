@@ -17,7 +17,7 @@ public class SymmetrizedAligner implements Aligner {
     private static final String forwardModelFileName = "model.align.fwd";
     private static final String backwardModelFileName = "model.align.bwd";
     private static final Logger logger = LogManager.getLogger(eu.modernmt.aligner.fastalign.SymmetrizedAligner.class);
-    public static final Symmetrisation.Type DEFAULT_SYMMETRIZATION_STRATEGY = Symmetrisation.Type.GrowDiagFinalAnd;
+    public static final Symmetrisation.Strategy DEFAULT_SYMMETRIZATION_STRATEGY = Symmetrisation.Strategy.GrowDiagFinalAnd;
 
     private static class AlignerInitializer implements Runnable {
 
@@ -39,7 +39,7 @@ public class SymmetrizedAligner implements Aligner {
 
     private final FastAlign forwardAlignerProcess;
     private final FastAlign backwardAlignerProcess;
-    private Symmetrisation.Type simmetrizationStrategy;
+    private Symmetrisation.Strategy simmetrizationStrategy;
 
     public SymmetrizedAligner(String enginePath) {
         File modelsFile = new File(enginePath,
@@ -71,7 +71,7 @@ public class SymmetrizedAligner implements Aligner {
     }
 
     @Override
-    public void setSymmetrizationStrategy(Symmetrisation.Type strategy) {
+    public void setSymmetrizationStrategy(Symmetrisation.Strategy strategy) {
         this.simmetrizationStrategy = strategy;
     }
 
