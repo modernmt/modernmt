@@ -133,7 +133,7 @@ class TMXPairReader {
         try {
             transformer.transform(new StAXSource(reader), new StreamResult(writer));
         } catch (TransformerException e) {
-            throw new XMLStreamException("Unable to read segment at line " + reader.getLocation().getLineNumber());
+            throw new XMLStreamException("Unable to read segment at line " + reader.getLocation().getLineNumber(), e);
         }
 
         String text = writer.toString();
