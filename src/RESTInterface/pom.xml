@@ -17,11 +17,17 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>yyyyMMddHHmm</maven.build.timestamp.format>
 
+        <resourcesOutput>${project.build.directory}/generated-resources</resourcesOutput>
         <version>${project.parent.version}</version>
         <build>${maven.build.timestamp}</build>
     </properties>
 
     <build>
+        <resources>
+            <resource>
+                <directory>${resourcesOutput}</directory>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -38,7 +44,7 @@
 
                         <configuration>
                             <executable>find</executable>
-                            <outputFile>${project.build.resources[0].directory}/rest-actions.list</outputFile>
+                            <outputFile>${resourcesOutput}/rest-actions.list</outputFile>
                             <workingDirectory>${project.build.sourceDirectory}</workingDirectory>
                             <arguments>
                                 <argument>eu/modernmt/rest/actions</argument>
@@ -61,7 +67,7 @@
                             <goal>write-project-properties</goal>
                         </goals>
                         <configuration>
-                            <outputFile>${project.build.resources[0].directory}/pom-root.properties</outputFile>
+                            <outputFile>${resourcesOutput}/pom-root.properties</outputFile>
                         </configuration>
                     </execution>
                 </executions>
