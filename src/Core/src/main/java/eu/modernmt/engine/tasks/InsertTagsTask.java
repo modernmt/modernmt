@@ -67,7 +67,7 @@ public class InsertTagsTask extends DistributedCallable<AutomaticTaggedTranslati
             AutomaticTaggedTranslation automaticTaggedTranslation = new AutomaticTaggedTranslation(
                     preprocessedTranslation.getWords(), preprocessedSentence, alignments);
 
-            tagMapper.call(automaticTaggedTranslation);
+            tagMapper.call(automaticTaggedTranslation, null);
 
             startTime = System.currentTimeMillis();
             String taggedTranslation;
