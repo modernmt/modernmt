@@ -3,6 +3,7 @@ import argparse
 import os
 
 import sys
+from random import shuffle
 
 
 class Translation:
@@ -56,6 +57,7 @@ class Translations:
         if len(mts) == 0:
             raise Exception('Missing machine translated files')
 
+        self.mts = []
         self._translations = {}
         self.__load(reference, self._translations, '#ref')
         self.__load(source, self._translations, '#src')
@@ -64,6 +66,7 @@ class Translations:
             name = os.path.basename(mt)
             name = name[:name.rfind('.')]
             self.__load(mt, self._translations, name)
+            self.mts.append(name)
 
     def __iter__(self):
         for translation in self._translations.values():
@@ -90,15 +93,85 @@ class Translations:
             del self._translations[id]
 
 
-def print_translation(translation):
+class ScoreBoard:
+    def __init__(self, mts):
+        self.mts = mts
+        self.count = 0
+        self.scores = {}
+        self.draws = 0
+        self.defeats = 0
+
+        for mt in mts:
+            self.scores[mt] = 0
+
+    def draw(self):
+        self.draws += 1
+        self.count += 1
+
+    def defeat(self):
+        self.defeats += 1
+        self.count += 1
+
+    def victory(self, winner):
+        self.scores[winner] += 1
+        self.count += 1
+
+    def __str__(self):
+        string = []
+
+        maxlen = 9
+        for key in self.mts:
+            maxlen = max(maxlen, len(key))
+
+        for mt, victories in self.scores.iteritems():
+            string.append(
+                mt.rjust(maxlen) + (' %d/%d (%.1f%%)' % (victories, self.count, victories * 100 / self.count)))
+
+        string.append(
+            'DRAWS'.rjust(maxlen) + (' %d/%d (%.1f%%)' % (self.draws, self.count, self.draws * 100. / self.count)))
+        string.append(
+            'DEFEATS'.rjust(maxlen) +
+            (' %d/%d (%.1f%%)' % (self.defeats, self.count, self.defeats * 100. / self.count)))
+
+        return '\n'.join(string)
+
+    def __repr__(self):
+        return self.__str__()
+
+
+def evaluate(index, translation, scoreboard):
     maxlen = 9
     for key in translation.mts:
         maxlen = max(maxlen, len(key))
 
+    mts = scoreboard.mts[:]
+    shuffle(mts)
+
+    print '#'.rjust(maxlen), index
     print 'SOURCE'.rjust(maxlen), translation.source
     print 'REFERENCE'.rjust(maxlen), translation.reference
-    for mt, line in translation.mts.iteritems():
-        print mt.rjust(maxlen), line
+    for i in range(0, len(mts)):
+        mt = mts[i]
+        line = translation.mts[mt]
+        print str(i).rjust(maxlen), line
+    print
+
+    while True:
+        print '(0..9, [B]oth or [N]one) > ',
+        uinput = sys.stdin.readline().strip().lower()
+
+        try:
+            i = int(uinput)
+            if 0 <= i < len(mts):
+                scoreboard.victory(mts[i])
+                break
+        except ValueError:
+            if uinput == 'b':
+                scoreboard.draw()
+                break
+            elif uinput == 'n':
+                scoreboard.defeat()
+                break
     print
 
 
@@ -112,10 +185,17 @@ def main():
 
     try:
         translations = Translations(args.path)
-        translations.strip()
+        scores = ScoreBoard(translations.mts)
+
+        index = 1
 
         for translation in translations:
-            print_translation(translation)
+            evaluate(index, translation, scores)
+            index += 1
+
+        print
+        print 'Results:'
+        print scores
     except Exception as e:
         sys.stderr.write('ERROR: ' + str(e.message) + '\n')
         return 1
