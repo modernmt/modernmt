@@ -56,7 +56,7 @@ class TagProjectionPricisionTest:
                 self.log(str(int(100 * n / num_lines)) + "%\t#line:" + str(n) + "\tsource length:" + str(len(source)))
                 results = self.query_engine(source, translation)
                 alignments = results['alignments']
-		tagged_translation = results['translation']
+                tagged_translation = results['translation']
                 if tagged_translation == reference:
                     precision += 1
                 else:
@@ -117,7 +117,7 @@ class TagProjectionPricisionTest:
 
     def query_engine(self, source, translation):
         headers = {'content-type': 'application/json'}
-        payload = {'s': source, 't': translation, 'd': 1}
+        payload = {'s': source, 't': translation, 'f': 0, 'd': 1}
         json_results = requests.get("http://localhost:" + str(self.__api_port) + "/tags-projection",
                                     params=payload, headers=headers)
         return json.loads(json_results.text)

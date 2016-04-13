@@ -4,9 +4,9 @@ import re
 from itertools import izip
 from optparse import OptionParser
 
-TAG_RE = re.compile(r'<[^>]+> ?')
+TAG_RE = re.compile(r'( *<[^>]+> *)+')
 def remove_tags(text):
-    return TAG_RE.sub('', text)
+    return TAG_RE.sub(' ', text)
 
 if __name__ == "__main__":
     parser = OptionParser()

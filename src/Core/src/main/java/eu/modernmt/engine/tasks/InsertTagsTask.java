@@ -7,8 +7,9 @@ import eu.modernmt.engine.SlaveNode;
 import eu.modernmt.model.AutomaticTaggedTranslation;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.network.cluster.DistributedCallable;
-import eu.modernmt.processing.Postprocessor;
+import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.xml.XMLTagMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -19,6 +20,8 @@ public class InsertTagsTask extends DistributedCallable<AutomaticTaggedTranslati
 
     private static final Logger logger = LogManager.getLogger(InsertTagsTask.class);
     private static final boolean PROCESSING_ENABLED = true;
+    private static final XMLTagMapper tagMapper = new XMLTagMapper();
+    static private Preprocessor targetPreprocessor = null;
 
     private final String sentence_str;
     private final String translation_str;
@@ -49,8 +52,11 @@ public class InsertTagsTask extends DistributedCallable<AutomaticTaggedTranslati
         SlaveNode worker = getWorker();
         Aligner aligner = worker.getAligner();
         try {
+            if (targetPreprocessor == null) {
+                targetPreprocessor = new Preprocessor(getWorker().getEngine().getTargetLanguage());
+            }
             Sentence preprocessedSentence = worker.getPreprocessor().process(this.sentence_str, PROCESSING_ENABLED);
-            Sentence preprocessedTranslation = worker.getPreprocessor().process(this.translation_str, PROCESSING_ENABLED);
+            Sentence preprocessedTranslation = targetPreprocessor.process(this.translation_str, PROCESSING_ENABLED);
 
             if (this.symmetrizationStrategy != null) {
                 aligner.setSymmetrizationStrategy(this.symmetrizationStrategy);
@@ -61,9 +67,7 @@ public class InsertTagsTask extends DistributedCallable<AutomaticTaggedTranslati
             AutomaticTaggedTranslation automaticTaggedTranslation = new AutomaticTaggedTranslation(
                     preprocessedTranslation.getWords(), preprocessedSentence, alignments);
 
-
-            Postprocessor postprocessor = worker.getPostprocessor();
-            postprocessor.process(automaticTaggedTranslation, PROCESSING_ENABLED);
+            tagMapper.call(automaticTaggedTranslation);
 
             startTime = System.currentTimeMillis();
             String taggedTranslation;
