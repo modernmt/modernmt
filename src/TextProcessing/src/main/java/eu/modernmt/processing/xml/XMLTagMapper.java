@@ -6,6 +6,7 @@ import eu.modernmt.processing.framework.TextProcessor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 
 /**
  * Created by davide on 17/02/16.
@@ -47,7 +48,7 @@ import java.util.HashSet;
 public class XMLTagMapper implements TextProcessor<Translation, Void> {
 
     @Override
-    public Void call(Translation translation) {
+    public Void call(Translation translation, Map<String, Object> metadata) {
         Sentence source = translation.getSource();
 
         if (source.hasTags()) {

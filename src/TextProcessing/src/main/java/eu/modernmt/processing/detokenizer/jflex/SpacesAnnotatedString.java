@@ -2,8 +2,6 @@ package eu.modernmt.processing.detokenizer.jflex;
 
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
-import eu.modernmt.processing.framework.string.InvalidOperationException;
-import eu.modernmt.processing.framework.string.XMLEditableString;
 
 import java.io.CharArrayReader;
 import java.io.Reader;
@@ -30,11 +28,6 @@ public class SpacesAnnotatedString {
         builder.getChars(0, builder.length(), buffer, 0);
 
         return new SpacesAnnotatedString(buffer);
-    }
-
-    public static SpacesAnnotatedString fromString(String string) {
-        string = ' ' + string + ' ';
-        return new SpacesAnnotatedString(string.toCharArray());
     }
 
     private SpacesAnnotatedString(char[] text) {
@@ -79,26 +72,18 @@ public class SpacesAnnotatedString {
     public Translation apply(Translation translation) {
         int index = 1; // Skip first whitespace
 
-        for (Word word : translation.getWords()) {
+        Word[] words = translation.getWords();
+
+        for (int i = 0; i < words.length; i++) {
+            Word word = words[i];
             String placeholder = word.getPlaceholder();
             index += placeholder.length();
 
-            word.setRightSpace(bits.get(index) ? null : " ");
+            word.setRightSpace(i == words.length - 1 || bits.get(index) ? null : " ");
             index++;
         }
 
         return translation;
-    }
-
-    public XMLEditableString apply(XMLEditableString string) throws InvalidOperationException {
-        XMLEditableString.Editor editor = string.getEditor();
-
-        for (int i = 1; i < text.length - 1; i++) {
-            if (bits.get(i))
-                editor.delete(i - 1, 1);
-        }
-
-        return editor.commitChanges();
     }
 
     @Override

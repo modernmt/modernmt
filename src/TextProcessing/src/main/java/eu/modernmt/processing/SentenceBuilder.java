@@ -11,6 +11,7 @@ import eu.modernmt.processing.framework.string.XMLEditableString;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by davide on 31/03/16.
@@ -21,7 +22,9 @@ public class SentenceBuilder implements TextProcessor<XMLEditableString, Sentenc
 
         boolean match(String text, String placeholder);
 
-        Word build(String text, String placeholder, String rightSpace, boolean rightSpaceRequired);
+        Word build(String text, String placeholder, String rightSpace);
+
+        void setMetadata(Map<String, Object> metadata);
 
     }
 
@@ -31,13 +34,15 @@ public class SentenceBuilder implements TextProcessor<XMLEditableString, Sentenc
         factoryList.add(factoryClass);
     }
 
-    private static WordFactory[] instantiate(ArrayList<Class<? extends WordFactory>> factoryList) {
+    private static WordFactory[] instantiate(ArrayList<Class<? extends WordFactory>> factoryList, Map<String, Object> metadata) {
         WordFactory[] instances = new WordFactory[factoryList.size()];
 
         int i = 0;
         for (Class<? extends WordFactory> cls : factoryList) {
             try {
-                instances[i++] = cls.newInstance();
+                WordFactory factory = cls.newInstance();
+                factory.setMetadata(metadata);
+                instances[i++] = factory;
             } catch (InstantiationException | IllegalAccessException e) {
                 throw new Error("Error while creating WordFactory instance: " + cls.getName(), e);
             }
@@ -46,27 +51,28 @@ public class SentenceBuilder implements TextProcessor<XMLEditableString, Sentenc
         return instances;
     }
 
-    private static Word createWord(WordFactory[] wordFactories, String text, String placeholder, String rightSpace, boolean rightSpaceRequired) {
+    private static Word createWord(WordFactory[] wordFactories, String text, String placeholder, String rightSpace) {
         Word word = null;
 
         for (int i = wordFactories.length - 1; i >= 0; i--) {
             WordFactory factory = wordFactories[i];
 
             if (factory.match(text, placeholder)) {
-                word = factory.build(text, placeholder, rightSpace, rightSpaceRequired);
+                word = factory.build(text, placeholder, rightSpace);
                 break;
             }
         }
 
         if (word == null)
-            word = new Word(text, placeholder, rightSpace, rightSpaceRequired);
+            word = new Word(text, placeholder, rightSpace);
 
         return word;
     }
 
+
     @Override
-    public Sentence call(XMLEditableString string) throws ProcessingException {
-        WordFactory[] wordFactories = instantiate(this.factoryList);
+    public Sentence call(XMLEditableString string, Map<String, Object> metadata) throws ProcessingException {
+        WordFactory[] wordFactories = instantiate(this.factoryList, metadata);
 
         char[] reference = string.getOriginalString().toCharArray();
 
@@ -87,10 +93,9 @@ public class SentenceBuilder implements TextProcessor<XMLEditableString, Sentenc
             String placeholder = hook.getProcessedString();
             String text = new String(reference, start, length);
             String space = getRightSpace(reference, start + length, nextHook);
-            boolean rightSpaceRequired = hook.hasRightSpace();
 
             if (type == TokenHook.TokenType.Word) {
-                Word word = createWord(wordFactories, text, placeholder, space, rightSpaceRequired);
+                Word word = createWord(wordFactories, text, placeholder, space);
                 words.add(word);
             } else {
                 Tag tag = Tag.fromText(text, false, space, words.size());

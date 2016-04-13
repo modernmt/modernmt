@@ -6,6 +6,7 @@ import eu.modernmt.processing.detokenizer.Detokenizers;
 import eu.modernmt.processing.framework.*;
 import eu.modernmt.processing.numbers.NumericWordFactory;
 import eu.modernmt.processing.recaser.Recaser;
+import eu.modernmt.processing.xmessage.XMessageWordTransformer;
 import eu.modernmt.processing.xml.XMLTagMapper;
 import org.apache.commons.io.IOUtils;
 
@@ -27,6 +28,7 @@ public class Postprocessor implements Closeable {
     static {
         WordTransformationFactory = new WordTransformationFactory();
         WordTransformationFactory.addWordTransformer(NumericWordFactory.class);
+        WordTransformationFactory.addWordTransformer(XMessageWordTransformer.class);
 
         WordTransformer = new WordTransformer();
         Recaser = new Recaser();
@@ -35,6 +37,10 @@ public class Postprocessor implements Closeable {
 
     private final ProcessingPipeline<Translation, Void> pipelineWithDetokenization;
     private final ProcessingPipeline<Translation, Void> pipelineWithoutDetokenization;
+
+    public static ProcessingPipeline<Translation, Void> getPipeline(Locale language, boolean detokenize) {
+        return getPipeline(language, detokenize, Runtime.getRuntime().availableProcessors());
+    }
 
     public static ProcessingPipeline<Translation, Void> getPipeline(Locale language, boolean detokenize, int threads) {
         Detokenizer detokenizer = detokenize ? Detokenizers.forLanguage(language) : null;

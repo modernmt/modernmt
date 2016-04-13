@@ -68,7 +68,7 @@ public class JFlexDetokenizer extends MultiInstanceDetokenizer {
         }
 
         @Override
-        public Translation call(Translation translation) throws ProcessingException {
+        public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
             SpacesAnnotatedString text = SpacesAnnotatedString.fromTranslation(translation);
 
             annotator.reset(text.getReader());

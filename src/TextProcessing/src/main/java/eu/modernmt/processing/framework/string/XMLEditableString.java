@@ -14,7 +14,6 @@ public class XMLEditableString {
         protected int lengthNewString;
         protected String newString;
         protected TokenHook.TokenType tokenType;
-        protected boolean hasRightSpace;
         private String originalString;
 
         @Override
@@ -46,6 +45,7 @@ public class XMLEditableString {
     private List<TokenHook> tokens;
     private List<TokenHook> xml;
     private Editor editor;
+    private TokenMask tokenMask;
     private boolean compiled;
 
     protected XMLEditableString(String originalString) {
@@ -55,6 +55,7 @@ public class XMLEditableString {
         this.tokens = new ArrayList<>();
         this.xml = new ArrayList<>();
         this.editor = new Editor(this);
+        this.tokenMask = null;
         this.compiled = false;
     }
 
@@ -84,11 +85,6 @@ public class XMLEditableString {
         for (Operation operation : operations) {
             int operationEndIndex = operation.startIndex + operation.length;
             operation.originalString = this.currentString.substring(operation.startIndex, operationEndIndex);
-
-            if (TokenHook.TokenType.Word.equals(operation.tokenType)) {
-                operation.newString = this.currentString.substring(operation.startIndex, operationEndIndex);
-                operation.lengthNewString = operation.newString.length();
-            }
 
             int delta = operation.lengthNewString - operation.length;
             if (delta != 0) {
@@ -147,15 +143,16 @@ public class XMLEditableString {
 
             if (save) {
                 if (operation.tokenType != null) {
-                    TokenHook hook = new TokenHook(operation.startIndex, operation.lengthNewString,
-                            operation.tokenType);
                     if (TokenHook.TokenType.XML.equals(operation.tokenType)) {
-                        //hook.length = operation.length;
+                        TokenHook hook = new TokenHook(operation.startIndex, operation.lengthNewString,
+                                operation.tokenType);
                         this.xml.add(hook);
                     } else {
-                        hook.processedString = operation.newString;
-                        hook.hasRightSpace = operation.hasRightSpace;
-                        this.tokens.add(hook);
+                        if (this.tokenMask == null) {
+                            this.tokenMask = new TokenMask(this.currentString.length());
+                        }
+
+                        this.tokenMask.setToken(operation.startIndex, operation.lengthNewString);
                     }
                 }
 
@@ -181,6 +178,17 @@ public class XMLEditableString {
         if (this.compiled) {
             throw new IllegalStateException("XMLEditableString already compiled");
         }
+
+        if (tokenMask != null) {
+            for (int[] positions : this.tokenMask) {
+                int startPosition = positions[0];
+                int length = positions[1];
+                TokenHook hook = new TokenHook(startPosition, length, TokenHook.TokenType.Word);
+                hook.processedString = this.currentString.substring(startPosition, startPosition + length);
+                this.tokens.add(hook);
+            }
+        }
+
         this.reverseChangeLog();
         this.compiled = true;
 
@@ -230,7 +238,7 @@ public class XMLEditableString {
         }
 
         public void replace(int startIndex, int length, String replace,
-                            TokenHook.TokenType tokenType, boolean hasRightSpace) throws InvalidOperationException {
+                            TokenHook.TokenType tokenType) throws InvalidOperationException {
             if (!this.inUse) {
                 throw new RuntimeException("Closed editor");
             }
@@ -245,7 +253,6 @@ public class XMLEditableString {
                     operation.lengthNewString = replace.length();
                 }
                 operation.tokenType = tokenType;
-                operation.hasRightSpace = hasRightSpace;
                 this.changeLog.add(operation);
                 this.lastEditedIndex = startIndex + length - 1;
                 this.deltaIndexes += (operation.lengthNewString - operation.length);
@@ -254,28 +261,24 @@ public class XMLEditableString {
             }
         }
 
-        public void replace(int startIndex, int length, String replace, TokenHook.TokenType tokenType) throws InvalidOperationException {
-            this.replace(startIndex, length, replace, tokenType, false);
-        }
-
         public void replace(int startIndex, int length, String string) throws InvalidOperationException {
-            this.replace(startIndex, length, string, null, false);
+            this.replace(startIndex, length, string, null);
         }
 
         public void delete(int startIndex, int length) throws InvalidOperationException {
-            this.replace(startIndex, length, "", null, false);
+            this.replace(startIndex, length, "", null);
         }
 
         public void insert(int startIndex, String string) throws InvalidOperationException {
-            this.replace(startIndex, 0, string, null, false);
+            this.replace(startIndex, 0, string, null);
         }
 
-        public void setWord(int startIndex, int length, boolean hasRightSpace) throws InvalidOperationException {
-            replace(startIndex, length, null, TokenHook.TokenType.Word, hasRightSpace);
+        public void setWord(int startIndex, int length) throws InvalidOperationException {
+            replace(startIndex, length, null, TokenHook.TokenType.Word);
         }
 
-        public void setXMLTag(int startIndex, int length) throws InvalidOperationException {
-            replace(startIndex, length, " ", TokenHook.TokenType.XML, false);
+        protected void setXMLTag(int startIndex, int length) throws InvalidOperationException {
+            replace(startIndex, length, " ", TokenHook.TokenType.XML);
         }
 
         public XMLEditableString commitChanges() throws InvalidOperationException {
@@ -340,4 +343,5 @@ public class XMLEditableString {
         }
 
     }
+
 }

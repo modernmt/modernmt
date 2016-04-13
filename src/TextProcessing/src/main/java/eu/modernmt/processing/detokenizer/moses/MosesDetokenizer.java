@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.Map;
 
 /**
  * Created by davide on 27/01/16.
@@ -37,7 +38,7 @@ public class MosesDetokenizer extends MultiInstanceDetokenizer {
         super(new MosesDetokenizerFactory(languageCode));
     }
 
-    private static class MosesDetokenizerImplementation implements Detokenizer, AutoCloseable {
+    private static class MosesDetokenizerImplementation implements AutoCloseable, Detokenizer {
 
         private Process detokenizer = null;
         private OutputStream detokenizerStdin;
@@ -63,7 +64,7 @@ public class MosesDetokenizer extends MultiInstanceDetokenizer {
         }
 
         @Override
-        public Translation call(Translation translation) throws ProcessingException {
+        public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
             String detokenized = detokenize(translation.getStrippedString(false));
             int length = detokenized.length();
 

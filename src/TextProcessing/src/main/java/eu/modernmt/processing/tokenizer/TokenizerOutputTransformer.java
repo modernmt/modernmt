@@ -1,7 +1,6 @@
 package eu.modernmt.processing.tokenizer;
 
 import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.framework.string.InvalidOperationException;
 import eu.modernmt.processing.framework.string.XMLEditableString;
 
 import java.util.List;
@@ -31,17 +30,10 @@ public class TokenizerOutputTransformer {
 
             stringIndex = tokenPos + tokenLength;
             if (stringIndex <= length)
-                setWord(string, editor, tokenPos, tokenLength);
+                editor.setWord(tokenPos, tokenLength);
         }
 
         return editor.commitChanges();
-    }
-
-    private static void setWord(String string, XMLEditableString.Editor editor, int startIndex, int length) throws InvalidOperationException {
-        int end = startIndex + length;
-        boolean hasRightSpace = end < string.length() && string.charAt(end) == ' ';
-
-        editor.setWord(startIndex, length, hasRightSpace);
     }
 
     @Deprecated

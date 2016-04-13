@@ -12,6 +12,9 @@ import eu.modernmt.engine.tasks.GetFeatureWeightsTask;
 import eu.modernmt.engine.tasks.InsertTagsTask;
 import eu.modernmt.engine.tasks.TranslationTask;
 import eu.modernmt.model.AutomaticTaggedTranslation;
+import eu.modernmt.model.MultiOptionsToken;
+import eu.modernmt.model.Token;
+import eu.modernmt.model.Translation;
 import eu.modernmt.network.cluster.ClusterManager;
 import eu.modernmt.network.cluster.DistributedCallable;
 import eu.modernmt.network.messaging.zeromq.ZMQMessagingServer;
@@ -224,8 +227,10 @@ public class MasterNode extends ClusterManager {
             task = new TranslationTask(text, textProcessing, nbest);
         }
 
+        DecoderTranslation rootTranslation;
+
         try {
-            return this.execute(task);
+            rootTranslation = this.execute(task);
         } catch (Throwable e) {
             if (e instanceof ProcessingException)
                 throw new TranslationException("Problem while processing translation", e);
@@ -234,6 +239,25 @@ public class MasterNode extends ClusterManager {
             else
                 throw new Error("Unexpected exception: " + e.getMessage(), e);
         }
+
+        for (Token token : rootTranslation) {
+            if (token instanceof MultiOptionsToken) {
+                MultiOptionsToken mop = (MultiOptionsToken) token;
+
+                if (!mop.hasTranslatedOptions()) {
+                    String[] options = mop.getSourceOptions();
+                    Translation[] translations = new Translation[options.length];
+
+                    for (int i = 0; i < translations.length; i++) {
+                        translations[i] = translate(options[i], translationContext, sessionId, textProcessing, 0);
+                    }
+
+                    mop.setTranslatedOptions(translations);
+                }
+            }
+        }
+
+        return rootTranslation;
     }
 
     private <R extends Serializable> R execute(DistributedCallable<R> task) throws Throwable {

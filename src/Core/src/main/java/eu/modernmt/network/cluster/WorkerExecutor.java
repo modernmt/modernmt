@@ -1,5 +1,8 @@
 package eu.modernmt.network.cluster;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -8,6 +11,8 @@ import java.util.concurrent.TimeUnit;
  * Created by davide on 11/12/15.
  */
 class WorkerExecutor {
+
+    private static final Logger logger = LogManager.getLogger(WorkerExecutor.class);
 
     private final Worker worker;
     private final int capacity;
@@ -76,6 +81,9 @@ class WorkerExecutor {
 
                 request.callable.setWorker(null);
                 worker.sendResponse(response);
+            } catch (RuntimeException e) {
+                logger.error("Unexpected exception while executing request " + request.getClass().getName(), e);
+                worker.sendResponse(new CallableResponse(e, request.id));
             } finally {
                 availability++;
             }

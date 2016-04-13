@@ -28,7 +28,7 @@ public class KuromojiTokenizer implements Tokenizer {
     private com.atilika.kuromoji.ipadic.Tokenizer tokenizer = new com.atilika.kuromoji.ipadic.Tokenizer();
 
     @Override
-    public XMLEditableString call(XMLEditableString text) throws ProcessingException {
+    public XMLEditableString call(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
         List<Token> tokens = tokenizer.tokenize(text.toString());
         String[] array = new String[tokens.size()];
 

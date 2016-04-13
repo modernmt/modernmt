@@ -4,10 +4,9 @@ import eu.modernmt.config.Config;
 import eu.modernmt.model.BilingualCorpus;
 import org.apache.commons.io.IOUtils;
 
-import javax.xml.stream.Location;
+import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -23,7 +22,7 @@ public class TMXBilingualStringReader implements BilingualCorpus.BilingualString
 
     private File tmx;
     private final FileInputStream stream;
-    private final XMLStreamReader reader;
+    private final XMLEventReader reader;
     private final String sourceLanguage;
     private final String targetLanguage;
 
@@ -35,11 +34,11 @@ public class TMXBilingualStringReader implements BilingualCorpus.BilingualString
         XMLInputFactory factory = XMLInputFactory.newInstance();
 
         FileInputStream stream = null;
-        XMLStreamReader reader = null;
+        XMLEventReader reader = null;
 
         try {
             stream = new FileInputStream(tmx);
-            reader = factory.createXMLStreamReader(new InputStreamReader(stream, Config.charset.get()));
+            reader = factory.createXMLEventReader(new InputStreamReader(stream, Config.charset.get()));
         } catch (XMLStreamException e) {
             throw new IOException("Error while creating XMLStreamReader for TMX " + tmx, e);
         } finally {
@@ -56,8 +55,7 @@ public class TMXBilingualStringReader implements BilingualCorpus.BilingualString
         try {
             return tmxPairReader.read(reader, sourceLanguage, targetLanguage);
         } catch (XMLStreamException e) {
-            Location location = reader.getLocation();
-            throw new IOException("Invalid TMX " + tmx + ": line " + location.getLineNumber() + ", column " + location.getColumnNumber(), e);
+            throw new IOException("Invalid TMX " + tmx, e);
         }
     }
 

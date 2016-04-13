@@ -4,6 +4,7 @@ import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.string.XMLEditableString;
 import org.apache.commons.io.IOUtils;
 
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -48,11 +49,11 @@ public class MultiInstanceTokenizer implements Tokenizer {
     }
 
     @Override
-    public XMLEditableString call(XMLEditableString param) throws ProcessingException {
+    public XMLEditableString call(XMLEditableString param, Map<String, Object> metadata) throws ProcessingException {
         Tokenizer instance = getInstance();
 
         try {
-            return instance.call(param);
+            return instance.call(param, metadata);
         } finally {
             releaseInstance(instance);
         }

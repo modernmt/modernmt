@@ -14,7 +14,6 @@ public class TokenHook {
     protected int length;
     protected TokenType tokenType;
     protected String processedString;
-    protected boolean hasRightSpace;
 
     public TokenHook(int startIndex, int length, TokenType tokenType) {
         this.startIndex = startIndex;
@@ -36,10 +35,6 @@ public class TokenHook {
 
     public String getProcessedString() {
         return processedString;
-    }
-
-    public boolean hasRightSpace() {
-        return hasRightSpace;
     }
 
     @Override

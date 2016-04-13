@@ -4,6 +4,7 @@ import eu.modernmt.model.Translation;
 import eu.modernmt.processing.framework.ProcessingException;
 import org.apache.commons.io.IOUtils;
 
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -48,11 +49,11 @@ public class MultiInstanceDetokenizer implements Detokenizer {
     }
 
     @Override
-    public Translation call(Translation param) throws ProcessingException {
+    public Translation call(Translation param, Map<String, Object> metadata) throws ProcessingException {
         Detokenizer instance = getInstance();
 
         try {
-            return instance.call(param);
+            return instance.call(param, metadata);
         } finally {
             releaseInstance(instance);
         }
