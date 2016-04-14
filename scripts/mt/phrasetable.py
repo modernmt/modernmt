@@ -261,7 +261,10 @@ class FastAlign(WordAligner):
                 for sentence, translation, alignments_str in zip(source_file, target_file, alignments_file):
                     number_of_sentence_tokens = sentence.count(' ') + 1
                     number_of_translation_tokens = translation.count(' ') + 1
-                    alignments = [map(lambda a: int(a) ,x.split('-')) for x in alignments_str.split(' ')]
+                    if not alignments_str.strip():
+                        alignments = []
+                    else:
+                        alignments = [map(lambda a: int(a), x.split('-')) for x in alignments_str.split(' ')]
 
                     interpolated_alignments = []
                     #print alignments_str, number_of_translation_tokens
