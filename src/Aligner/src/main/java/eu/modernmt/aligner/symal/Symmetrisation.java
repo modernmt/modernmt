@@ -228,15 +228,13 @@ public class Symmetrisation {
      * @param symalignment
      * @return
      */
-    static public Set<Integer>[] ReadGizaSymmetricAlignment(String symalignment, int highest_index) {
-        String[] align_info = symalignment.split(" ");
+    static public Set<Integer>[] ReadGizaSymmetricAlignment(int[][] symalignment, int highest_index) {
         Set[] alignment = new Set[highest_index];
         Arrays.fill(alignment, null);
 
-        for (String alg : align_info) {
-            String[] words = alg.split("-");
-            int w1 = Integer.parseInt(words[0]);
-            int w2 = Integer.parseInt(words[1]);
+        for (int[] alg : symalignment) {
+            int w1 = alg[0];
+            int w2 = alg[1];
             if (alignment[w1] == null)
                 alignment[w1] = new HashSet();
             alignment[w1].add(w2);
@@ -309,25 +307,23 @@ public class Symmetrisation {
     }
 
 
-    static public String symmetriseMosesFormatAlignment(String sl_line, String tl_line, Strategy strategy) {
+    static public String symmetriseMosesFormatAlignment(int[][] sl, int[][] tl, Strategy strategy) {
 
         Set<Integer>[] s2talignment = null;
         Set<Integer>[] t2salignment = null;
 
         SortedSet<Integer> sl_index_set = new TreeSet<Integer>();
         SortedSet<Integer> tl_index_set = new TreeSet<Integer>();
-        for (String alignment : sl_line.split(" ")) {
-            String[] indices = alignment.split("-");
-            sl_index_set.add(Integer.parseInt(indices[0]));
-            tl_index_set.add(Integer.parseInt(indices[1]));
+        for (int[] alignment : sl) {
+            sl_index_set.add(alignment[0]);
+            tl_index_set.add(alignment[1]);
         }
-        for (String alignment : tl_line.split(" ")) {
-            String[] indices = alignment.split("-");
-            sl_index_set.add(Integer.parseInt(indices[1]));
-            tl_index_set.add(Integer.parseInt(indices[0]));
+        for (int[] alignment : tl) {
+            sl_index_set.add(alignment[1]);
+            tl_index_set.add(alignment[0]);
         }
-        s2talignment = ReadGizaSymmetricAlignment(sl_line, sl_index_set.last() + 1);
-        t2salignment = ReadGizaSymmetricAlignment(tl_line, tl_index_set.last() + 1);
+        s2talignment = ReadGizaSymmetricAlignment(sl, sl_index_set.last() + 1);
+        t2salignment = ReadGizaSymmetricAlignment(tl, tl_index_set.last() + 1);
 
         boolean[][] al = null;
 
@@ -366,174 +362,5 @@ public class Symmetrisation {
 
         return out.toString();
     }
-    
-    
-  /*  public static void main(String[] args) {
-        CmdLineParser parser = new CmdLineParser();
-        CmdLineParser.Option os2tfile = parser.addStringOption("s2t");
-        CmdLineParser.Option ot2sfile = parser.addStringOption("t2s");
-        CmdLineParser.Option oformat = parser.addStringOption("format");
-        CmdLineParser.Option osym = parser.addStringOption('s',"symmetrisation");
-        CmdLineParser.Option ooutput = parser.addStringOption('o',"output");
-        CmdLineParser.Option ohelp = parser.addBooleanOption('h',"help");
-        
-        try{
-            parser.parse(args);
-        }
-        catch(CmdLineParser.IllegalOptionValueException e){
-            System.err.println(e);
-            System.exit(-1);
-        }
-        catch(CmdLineParser.UnknownOptionException e){
-            System.err.println(e);
-            System.exit(-1);
-        }
 
-        String s2tfile=(String)parser.getOptionValue(os2tfile,null);
-        String t2sfile=(String)parser.getOptionValue(ot2sfile,null);
-        String sym=(String)parser.getOptionValue(osym,"gdfa");
-        String output=(String)parser.getOptionValue(ooutput,null);
-        String format=(String)parser.getOptionValue(oformat,null);
-        boolean help=(Boolean)parser.getOptionValue(ohelp,false);
-
-        if(help){
-            System.err.println("This class must be called:\n");
-            System.err.println("java -cp es.ua.dlsi.alignment.Symmetrisation"+
-                    "--s2t <giza++_alignments_from_sl_to_tl> --t2s <giza++_alignments_from_sl_to_tl>"+
-                    "[-o <output_path>] [-s <symmetrisation_method>]\n" );
-            System.err.println("\t*giza++_alignments_from_sl_to_tl and giza++_alignments_from_tl_to_sl:"+
-                    " path to the files containing the assymetric alignments"
-                    + "produced by GIZA++. These files are usually named sl-tl.A3.final "
-                    + "or similar (depending on the model used to obtain the alignments).");
-            System.err.println("\t*output_path: path to the file containing the output. The output will"+
-                    " be produced in the same format than GIZA++ symmetrised alignments.");
-            System.err.println("\t*symmetrisation_method: the heuristic for symmetrising the alignments."+
-                    " One of the following values must be chosen: 'union', 'intersection', or 'gdfa'"+
-                    " (grow-diag-final-and, which is the default value");
-            System.exit(0);
-        }
-
-        
-        //Opening assymetric alignment files
-        BufferedReader sent_reader_s2t=null, sent_reader_t2s=null;
-        try {
-            sent_reader_s2t=new BufferedReader(new FileReader(s2tfile));
-        } catch (FileNotFoundException ex) {
-            System.err.println("Error while trying to open file "+s2tfile);
-            System.exit(-1);
-        }
-        try {
-            sent_reader_t2s=new BufferedReader(new FileReader(t2sfile));
-        } catch (FileNotFoundException ex) {
-            System.err.println("Error while trying to open file "+t2sfile);
-            System.exit(-1);
-        }
-        
-        //Choosing the symmetrisation method
-        int symindex=0;
-        
-        if(sym.equals("union")){
-            symindex=1;
-        }else if(sym.equals("intersection")){
-            symindex=2;
-        }else if(sym.equals("gdfa")){
-            symindex=3;
-        }
-        else{
-            System.err.println("Wrong alignment method "+sym);
-            System.exit(-1);
-        }
-
-        //Opening the output file (if provided)
-        PrintWriter pw;
-        try{
-            pw=new PrintWriter(output);
-        }catch (NullPointerException ex){
-            System.err.println("No output file defined (option -o). Output redirected to standard output");
-            pw=new PrintWriter(System.out);
-        }catch (IOException ex){
-            System.err.println("Error while trying to open output file '"+output+"'. Output redirected to standard output");
-            pw=new PrintWriter(System.out);
-        }
-        
-        int formatcode=0;
-        if(format==null)
-            System.err.println("Warning: no input format defined, default input format (assymetric) is asumed.");
-        else if(format.equals("symmetric"))
-            formatcode=1;
-
-        //Reading assymetric alignment files
-        try{
-            //Every alignment is corresponds to a trio of lines in each file: 
-            //one with alignment info (is discarded), one with the source language sentence
-            //and one with the alignment information
-            
-            String sl_line, tl_line;
-            //First line of every trio is discarded
-            while((sl_line=sent_reader_s2t.readLine())!=null &&
-                    (tl_line=sent_reader_t2s.readLine())!=null){
-                
-                
-                //Extracting a representation of the alignments
-                Set<Integer>[] s2talignment=null;
-                Set<Integer>[] t2salignment=null;
-                switch(formatcode){
-                    case 0:
-                        //Reading the two useful lines from s2t
-                        String sl_sent_s2t=sent_reader_s2t.readLine();
-                        String alg_info_s2t=sent_reader_s2t.readLine();
-
-
-                        //Reading the two useful lines from t2s
-                        String sl_sent_t2s=sent_reader_t2s.readLine();
-                        String alg_info_t2s=sent_reader_t2s.readLine();
-                        
-                        s2talignment=ReadGizaAsymmetricAlignment(sl_sent_s2t, alg_info_s2t);
-                        t2salignment=ReadGizaAsymmetricAlignment(sl_sent_t2s, alg_info_t2s);
-                        break;
-                    case 1:
-                        SortedSet<Integer> sl_index_set=new TreeSet<Integer>();
-                        SortedSet<Integer> tl_index_set=new TreeSet<Integer>();
-                        for(String alignment: sl_line.split(" ")){
-                            String[] indices=alignment.split("-");
-                            sl_index_set.add(Integer.parseInt(indices[0]));
-                            tl_index_set.add(Integer.parseInt(indices[1]));
-                        }
-                        for(String alignment: tl_line.split(" ")){
-                            String[] indices=alignment.split("-");
-                            sl_index_set.add(Integer.parseInt(indices[1]));
-                            tl_index_set.add(Integer.parseInt(indices[0]));
-                        }
-                        s2talignment=ReadGizaSymmetricAlignment(sl_line, sl_index_set.last()+1);
-                        t2salignment=ReadGizaSymmetricAlignment(tl_line, tl_index_set.last()+1);
-                        break;
-                }
-                
-                boolean[][] al=null;
-
-                //Producing the symmetrised alignment
-                switch(symindex){
-                    case 1: al=Symmetrisation.UnionSymal(s2talignment,t2salignment); break;
-                    case 2: al=Symmetrisation.IntersectionSymal(s2talignment,t2salignment); break;
-                    case 3: al=Symmetrisation.GrowDiagFinalAnd(s2talignment,t2salignment); break;
-                }
-                //Printing in the Moses symmetrised alignment format
-                for(int row=0;row<al.length;row++){
-                    for(int col=0;col<al[row].length;col++){
-                        if(al[row][col]){
-                            pw.print(row);
-                            pw.print("-");
-                            pw.print(col);
-                            pw.print(" ");
-                        }
-                    }
-                }
-                pw.println();
-            }
-        }catch (IOException ex) {
-            System.err.println("Error while reading file "+t2sfile+" or "+s2tfile);
-        }
-        pw.close();
-    } 
-    */
 }
