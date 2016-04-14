@@ -13,12 +13,13 @@ import javax.naming.OperationNotSupportedException;
 import java.io.*;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 
 /**
  * Created by lucamastrostefano on 15/03/16.
  */
-class FastAlign implements Aligner, Closeable {
+public class FastAlign implements Aligner, Closeable {
 
     private static final Logger logger = LogManager.getLogger(FastAlign.class);
     private static final String SENTENCE_SEPARATOR = " ||| ";
@@ -64,6 +65,14 @@ class FastAlign implements Aligner, Closeable {
             alignments[i] = new int[]{Integer.parseInt(alignment[0]), Integer.parseInt(alignment[1])};
         }
         return alignments;
+    }
+
+    public static String printAlignments(int[][] alignments) {
+        StringBuilder result = new StringBuilder();
+        for (int[] alignment : alignments) {
+            result.append(alignment[0] + "-" + alignment[1] + " ");
+        }
+        return result.deleteCharAt(result.length() - 1).toString();
     }
 
     @Override
@@ -128,6 +137,58 @@ class FastAlign implements Aligner, Closeable {
         String modelResponse = this.standardOutput.readLine();
         logger.debug((this.reverse ? "Backward" : "Forward") + " alignments: " + modelResponse);
         return modelResponse;
+    }
+
+    public static int[][] interpolateAlignments(int[][] alignments, int numberOfSourceTokens, int numberOfTargetTokens) {
+        ArrayList<int[]> interpolatedAlignments = new ArrayList<>(alignments.length);
+        BitSet targetCoveredTokens = new BitSet(numberOfTargetTokens);
+        for (int[] alignment : alignments) {
+            targetCoveredTokens.set(alignment[1]);
+        }
+        int prevSourceIndex = 0;
+        int prevTargetIndex = 0;
+        for (int alignmentIndex = 0; alignmentIndex < alignments.length; alignmentIndex++) {
+            int[] alignment = alignments[alignmentIndex];
+            int sourceIndex = alignment[0];
+            int targetIndex = alignment[1];
+            int sourceDiff = sourceIndex - prevSourceIndex;
+            int targetDiff = targetIndex - prevTargetIndex;
+            if (sourceDiff > 1 || Math.abs(targetDiff) > 1) {
+                boolean monotoneBlock = true;
+                for (int t = prevTargetIndex + 1; t < targetIndex; t++) {
+                    if (targetCoveredTokens.get(t)) {
+                        monotoneBlock = false;
+                        break;
+                    }
+                }
+                if (monotoneBlock) {
+                    int minTarget = Math.min(prevTargetIndex, targetIndex);
+                    int maxTarget = Math.max(prevTargetIndex, targetIndex);
+                    if (sourceDiff == 0) {
+                        for (int t = minTarget; t < maxTarget; t++) {
+                            interpolatedAlignments.add(new int[]{sourceIndex, t});
+                        }
+                    } else if (targetDiff == 0) {
+                        for (int s = prevSourceIndex; s <= sourceIndex; s++) {
+                            interpolatedAlignments.add(new int[]{s, targetIndex});
+                        }
+                    } else {
+                        for (int s = prevSourceIndex + 1; s < sourceIndex; s++) {
+                            for (int t = minTarget + 1; t < maxTarget; t++) {
+                                interpolatedAlignments.add(new int[]{s, t});
+                            }
+                        }
+                    }
+                }
+            }
+            if (sourceIndex < numberOfSourceTokens && targetIndex < numberOfTargetTokens) {
+                interpolatedAlignments.add(alignment);
+            }
+            prevSourceIndex = sourceIndex;
+            prevTargetIndex = targetIndex;
+        }
+        int[][] result = new int[interpolatedAlignments.size()][];
+        return interpolatedAlignments.toArray(result);
     }
 
     @Override
