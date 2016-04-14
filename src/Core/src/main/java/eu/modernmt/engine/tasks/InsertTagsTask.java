@@ -9,7 +9,7 @@ import eu.modernmt.model.Sentence;
 import eu.modernmt.network.cluster.DistributedCallable;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.xml.XMLTagMapper;
+import eu.modernmt.processing.xml.New_XMLTagMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -20,7 +20,7 @@ public class InsertTagsTask extends DistributedCallable<AutomaticTaggedTranslati
 
     private static final Logger logger = LogManager.getLogger(InsertTagsTask.class);
     private static final boolean PROCESSING_ENABLED = true;
-    private static final XMLTagMapper tagMapper = new XMLTagMapper();
+    private static final New_XMLTagMapper tagMapper = new New_XMLTagMapper();
     static private Preprocessor targetPreprocessor = null;
 
     private final String sentence_str;
