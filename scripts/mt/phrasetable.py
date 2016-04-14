@@ -230,15 +230,22 @@ class FastAlign(WordAligner):
             fwd_model = os.path.join(model_dir, 'model.align.fwd')
             command = [self._align_bin, '-d', '-v', '-o', '-n', str(cpus), '-B', '-p', fwd_model, '-i',
                        aligned_file_path]
-            with open(fwd_file, 'w') as stdout:
+            fwd_file_tmp = fwd_file + "_original"
+            with open(fwd_file_tmp, 'w') as stdout:
                 shell.execute(command, stdout=stdout, stderr=log, env=env)
 
-            # Forward alignments
+            self.interpolate_alignments(corpus_l1, corpus_l2, fwd_file_tmp, fwd_file)
+
+            # Backward alignments
             bwd_model = os.path.join(model_dir, 'model.align.bwd')
             command = [self._align_bin, '-d', '-v', '-o', '-n', str(cpus), '-B', '-p', bwd_model, '-r', '-i',
                        aligned_file_path]
-            with open(bwd_file, 'w') as stdout:
+            bwd_file_tmp = bwd_file + "_original"
+            with open(bwd_file_tmp, 'w') as stdout:
                 shell.execute(command, stdout=stdout, stderr=log, env=env)
+
+            self.interpolate_alignments(corpus_l1, corpus_l2, bwd_file_tmp, bwd_file)
+
         finally:
             if log_file is not None:
                 log.close()
@@ -247,6 +254,72 @@ class FastAlign(WordAligner):
         encoder.encode(bal_file)
 
         return bal_file
+
+    def interpolate_alignments(self, source_path, target_path, alignments_path, interpolated_alignments_path):
+        with open(source_path) as source_file, open(target_path) as target_file, open(alignments_path)\
+                as alignments_file, open(interpolated_alignments_path, 'w') as interpolated_alignments_file:
+                for sentence, translation, alignments_str in zip(source_file, target_file, alignments_file):
+                    number_of_sentence_tokens = sentence.count(' ') + 1
+                    number_of_translation_tokens = translation.count(' ') + 1
+                    alignments = [map(lambda a: int(a) ,x.split('-')) for x in alignments_str.split(' ')]
+
+                    interpolated_alignments = []
+                    #print alignments_str, number_of_translation_tokens
+                    target_covered_tokens = [False] * number_of_translation_tokens
+                    for i, alignment in enumerate(alignments):
+                        #print i, alignment[1]
+                        target_covered_tokens[alignment[1]] = True
+
+                    alignments.append([number_of_sentence_tokens, number_of_translation_tokens])
+
+                    prev_source_index = 0
+                    prev_target_index = 0
+                    for alignment_index, alignment in enumerate(alignments):
+                        source_index = alignment[0]
+                        target_index = alignment[1]
+                        source_diff = source_index - prev_source_index
+                        target_diff = target_index - prev_target_index
+                        if source_diff > 1 or abs(target_diff) > 1:
+                            monotone_block = True
+                            min_target_index = min(prev_target_index, target_index)
+                            max_target_index = max(prev_target_index, target_index)
+                            for t in range(min_target_index + 1, max_target_index):
+                                if target_covered_tokens[t]:
+                                    monotone_block = False
+                                    break
+
+                            if monotone_block:
+                                if source_diff == 0:
+                                    for t in range(min_target_index + 1, max_target_index):
+                                        interpolated_alignments.append((source_index, t))
+                                elif target_diff == 0:
+                                    for s in range(prev_source_index + 1, source_index):
+                                        interpolated_alignments.append((source_index, t))
+                                else:
+                                    for s in range(prev_source_index + 1, source_index):
+                                        for t in range(min_target_index + 1, max_target_index):
+                                            interpolated_alignments.append((s, t))
+
+                        if source_index < number_of_sentence_tokens and target_index < number_of_translation_tokens:
+                            interpolated_alignments.append((alignment[0], alignment[1]))
+
+                        prev_source_index = source_index
+                        prev_target_index = target_index
+
+                    interpolated_alignments_file.write(' '.join(map((lambda a: str(a[0]) + '-' + str(a[1])),
+                                                                    interpolated_alignments)) + '\n')
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class _FastAlignBALEncoder:
