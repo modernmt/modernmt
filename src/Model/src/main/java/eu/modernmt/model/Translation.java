@@ -6,7 +6,7 @@ package eu.modernmt.model;
 public class Translation extends Sentence {
 
     protected final Sentence source;
-    private final int[][] alignment;
+    private int[][] alignment;
     private long elapsedTime;
 
     public Translation(Word[] words, Sentence source, int[][] alignment) {
@@ -30,6 +30,10 @@ public class Translation extends Sentence {
 
     public Sentence getSource() {
         return source;
+    }
+
+    public void setAlignment(int[][] alignment) {
+        this.alignment = alignment;
     }
 
     public int[][] getAlignment() {

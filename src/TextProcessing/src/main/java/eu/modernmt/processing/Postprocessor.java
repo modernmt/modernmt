@@ -20,12 +20,14 @@ import java.util.Locale;
  */
 public class Postprocessor implements Closeable {
 
+    private static final AlignmentsInterpolator AlignmentsInterpolator;
     private static final WordTransformationFactory WordTransformationFactory;
     private static final WordTransformer WordTransformer;
     private static final Recaser Recaser;
     private static final XMLTagMapper XMLTagMapper;
 
     static {
+        AlignmentsInterpolator = new AlignmentsInterpolator();
         WordTransformationFactory = new WordTransformationFactory();
         WordTransformationFactory.addWordTransformer(NumericWordFactory.class);
         WordTransformationFactory.addWordTransformer(XMessageWordTransformer.class);
@@ -47,6 +49,7 @@ public class Postprocessor implements Closeable {
 
         return new ProcessingPipeline.Builder<Translation, Translation>()
                 .setThreads(threads)
+                .add(AlignmentsInterpolator)
                 .add(detokenizer)
                 .add(WordTransformationFactory)
                 .add(WordTransformer)
