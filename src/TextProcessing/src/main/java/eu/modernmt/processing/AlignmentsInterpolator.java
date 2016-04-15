@@ -14,11 +14,13 @@ public class AlignmentsInterpolator implements TextProcessor<Translation, Transl
 
     @Override
     public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
-        int numberOfSourceTokens = translation.getSource().getWords().length;
-        int numberOfTranslationTokens = translation.getWords().length;
-        int[][] interpolatedAlignments = interpolateAlignments(translation.getAlignment(), numberOfSourceTokens,
-                numberOfTranslationTokens);
-        translation.setAlignment(interpolatedAlignments);
+        if (translation.hasAlignment()) {
+            int numberOfSourceTokens = translation.getSource().getWords().length;
+            int numberOfTranslationTokens = translation.getWords().length;
+            int[][] interpolatedAlignments = interpolateAlignments(translation.getAlignment(), numberOfSourceTokens,
+                    numberOfTranslationTokens);
+            translation.setAlignment(interpolatedAlignments);
+        }
         return translation;
     }
 
