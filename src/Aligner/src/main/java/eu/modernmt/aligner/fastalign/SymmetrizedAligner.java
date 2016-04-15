@@ -83,19 +83,14 @@ public class SymmetrizedAligner implements Aligner {
         int numberOfSentenceWords = sentence.getWords().length;
         int numberOfTranslationWords = translation.getWords().length;
         int[][] forwardAlignments = this.forwardAlignerProcess.getAlignments(sentence, translation);
-        //forwardAlignments = AlignmentsInterpolator.interpolateAlignments(forwardAlignments, numberOfSentenceWords,
-        //        numberOfTranslationWords);
         int[][] backwardAlignments = this.backwardAlignerProcess.getAlignments(sentence, translation);
-        //backwardAlignments = AlignmentsInterpolator.interpolateAlignments(backwardAlignments, numberOfSentenceWords,
-        //        numberOfTranslationWords);
-
         int[][] invertedBackwardAlignments = eu.modernmt.aligner.fastalign.SymmetrizedAligner.invertAlignments(backwardAlignments);
         logger.debug("Symmetrising");
-        String symmetrisedAlignments = Symmetrisation.symmetriseMosesFormatAlignment(forwardAlignments,
+        int[][] symmetrisedAlignments = Symmetrisation.symmetriseMosesFormatAlignment(forwardAlignments,
                 invertedBackwardAlignments, this.simmetrizationStrategy);
         logger.debug("Symmetrised alignments: " + symmetrisedAlignments);
-        int[][] result = FastAlign.parseAlignments(symmetrisedAlignments);
-        return AlignmentsInterpolator.interpolateAlignments(result, numberOfSentenceWords,
+        //return symmetrisedAlignments;
+        return AlignmentsInterpolator.interpolateAlignments(symmetrisedAlignments, numberOfSentenceWords,
                 numberOfTranslationWords);
     }
 
