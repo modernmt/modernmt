@@ -3,6 +3,7 @@ package eu.modernmt.aligner.fastalign;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.symal.Symmetrisation;
 import eu.modernmt.model.Sentence;
+import eu.modernmt.processing.AlignmentsInterpolator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -82,18 +83,20 @@ public class SymmetrizedAligner implements Aligner {
         int numberOfSentenceWords = sentence.getWords().length;
         int numberOfTranslationWords = translation.getWords().length;
         int[][] forwardAlignments = this.forwardAlignerProcess.getAlignments(sentence, translation);
-        forwardAlignments = FastAlign.interpolateAlignments(forwardAlignments, numberOfSentenceWords,
-                numberOfTranslationWords);
+        //forwardAlignments = AlignmentsInterpolator.interpolateAlignments(forwardAlignments, numberOfSentenceWords,
+        //        numberOfTranslationWords);
         int[][] backwardAlignments = this.backwardAlignerProcess.getAlignments(sentence, translation);
-        backwardAlignments = FastAlign.interpolateAlignments(backwardAlignments, numberOfSentenceWords,
-                numberOfTranslationWords);
+        //backwardAlignments = AlignmentsInterpolator.interpolateAlignments(backwardAlignments, numberOfSentenceWords,
+        //        numberOfTranslationWords);
 
         int[][] invertedBackwardAlignments = eu.modernmt.aligner.fastalign.SymmetrizedAligner.invertAlignments(backwardAlignments);
         logger.debug("Symmetrising");
         String symmetrisedAlignments = Symmetrisation.symmetriseMosesFormatAlignment(forwardAlignments,
                 invertedBackwardAlignments, this.simmetrizationStrategy);
         logger.debug("Symmetrised alignments: " + symmetrisedAlignments);
-        return FastAlign.parseAlignments(symmetrisedAlignments);
+        int[][] result = FastAlign.parseAlignments(symmetrisedAlignments);
+        return AlignmentsInterpolator.interpolateAlignments(result, numberOfSentenceWords,
+                numberOfTranslationWords);
     }
 
     private static int[][] invertAlignments(int[][] alignments) {
