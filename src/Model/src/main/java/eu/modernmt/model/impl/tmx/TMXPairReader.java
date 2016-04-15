@@ -24,6 +24,7 @@ class TMXPairReader {
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("YYYYMMdd'T'HHmmss'Z'");
     private static final String XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace";
+    private boolean decodeSegments = true;
 
     private BilingualCorpus.StringPair wrap(XMLEvent event, String source, String target, Date timestamp) throws XMLStreamException {
         if (source == null)
@@ -42,13 +43,26 @@ class TMXPairReader {
             switch (event.getEventType()) {
                 case XMLStreamConstants.START_ELEMENT:
                     StartElement element = event.asStartElement();
-                    if ("tu".equals(getLocalName(element)))
+                    String name = getLocalName(element);
+                    if ("header".equals(name)) {
+                        readHeader(reader, element);
+                    } else if ("tu".equals(name)) {
                         return readTu(reader, element, sourceLanguage, targetLanguage);
+                    }
+
                     break;
             }
         }
 
         return null;
+    }
+
+    private void readHeader(XMLEventReader reader, StartElement header) throws XMLStreamException {
+        String datatype = getAttributeValue(header, null, "datatype");
+        datatype = datatype == null ? "unknown" : datatype.toLowerCase();
+
+        if ("xml".equals(datatype))
+            decodeSegments = false;
     }
 
     private BilingualCorpus.StringPair readTu(XMLEventReader reader, StartElement tu, String sourceLanguage, String targetLanguage) throws XMLStreamException {
@@ -153,7 +167,11 @@ class TMXPairReader {
                 event.writeAsEncodedUnicode(lastXMLTagWriter);
                 pendingElementName = getLocalName(event.asStartElement());
             } else {
-                event.writeAsEncodedUnicode(buffer);
+                if (decodeSegments && event.isCharacters()) {
+                    buffer.append(event.asCharacters().getData());
+                } else {
+                    event.writeAsEncodedUnicode(buffer);
+                }
             }
         }
 
