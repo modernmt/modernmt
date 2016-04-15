@@ -18,6 +18,38 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
         }
     }
 
+    private static class ExtendedTag implements Comparable<ExtendedTag> {
+
+        private Tag tag;
+        private int id;
+
+        public ExtendedTag(Tag tag, int id) {
+            this.tag = tag;
+            this.id = id;
+        }
+
+        @Override
+        public int compareTo(ExtendedTag extendedTag) {
+            int c = this.tag.compareTo(extendedTag.tag);
+            if (c == 0) {
+                c = this.id - extendedTag.id;
+            }
+            return c;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return this.id == ((ExtendedTag) o).id;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = tag != null ? tag.hashCode() : 0;
+            result = 31 * result + id;
+            return result;
+        }
+    }
+
     @Override
     public Void call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
         Sentence source = translation.getSource();
@@ -39,9 +71,11 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
     }
 
     public static Tag[] mapTags(Tag[] sourceTags, Token[] sourceWord, Token[] targetToken, int[][] alignmetns) {
-        ArrayList<Tag> translationTags = new ArrayList<>(sourceTags.length);
+        //ArrayList<Tag> translationTags = new ArrayList<>(sourceTags.length);
 
-        Map<Tag, Integer> tag2order = new HashMap<Tag, Integer>();
+        ArrayList<ExtendedTag> translationTags = new ArrayList<>(sourceTags.length);
+
+        //Map<Tag, Integer> tag2order = new HashMap<Tag, Integer>();
 
         Set<Integer> sourceLeftToken = new HashSet<>();
         Set<Integer> sourceRightToken = new HashSet<>();
@@ -51,10 +85,11 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
         Set<Integer> rightTokenIntersection = new HashSet<>();
 
         Set<Integer> alignedTags = new HashSet<Integer>();
-        //USE THE ID or pos OF THE TAG INSTEAD OF THE TAG IT-SELF FOR CHECK IF IT HAS BEEN ADDED
+
         for (int tagIndex = 0; tagIndex < sourceTags.length; tagIndex++) {
             Tag sourceTag = sourceTags[tagIndex];
-            //System.out.println(alignedTags);
+            //System.out.println("translated tags: " + translationTags);
+            //System.out.println("aligned id: " + alignedTags);
             if (alignedTags.contains(tagIndex)) {
                 continue;
             }
@@ -80,13 +115,13 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
                     //System.out.println(sourceTag + " " + closingTag + " " + minPos + " " + maxPos);
                     Tag targetTag = Tag.fromTag(sourceTag);
                     targetTag.setPosition(minPos);
-                    tag2order.put(targetTag, tagIndex);
-                    translationTags.add(targetTag);
+                    //tag2order.put(targetTag, tagIndex);
+                    translationTags.add(new ExtendedTag(targetTag, tagIndex));
 
                     Tag closingTargetTag = Tag.fromTag(closingTag);
                     closingTargetTag.setPosition(maxPos);
-                    tag2order.put(closingTargetTag, closingTagIndex);
-                    translationTags.add(closingTargetTag);
+                    //tag2order.put(closingTargetTag, closingTagIndex);
+                    translationTags.add(new ExtendedTag(closingTargetTag, closingTagIndex));
 
                     alignedTags.add(tagIndex);
                     alignedTags.add(closingTagIndex);
@@ -166,24 +201,18 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
                 //System.out.println("Best pos:" + bestPosition + "\n\n");
                 Tag targetTag = Tag.fromTag(sourceTag);
                 targetTag.setPosition(bestPosition);
-                tag2order.put(targetTag, tagIndex);
-                translationTags.add(targetTag);
+                //tag2order.put(targetTag, tagIndex);
+                translationTags.add(new ExtendedTag(targetTag, tagIndex));
                 alignedTags.add(tagIndex);
             }
         }
-        Collections.sort(translationTags, new Comparator<Tag>() {
-            @Override
-            public int compare(Tag tag1, Tag tag2) {
-                int c = tag1.compareTo(tag2);
-                if (c == 0) {
-                    c = tag2order.get(tag1) - tag2order.get(tag2);
-                }
-                return c;
-            }
-        });
+        Collections.sort(translationTags);
         //System.out.println(translationTags);
         Tag[] result = new Tag[translationTags.size()];
-        return translationTags.toArray(result);
+        for (int i = 0; i < translationTags.size(); i++) {
+            result[i] = translationTags.get(i).tag;
+        }
+        return result;
     }
 
     private static int getPositionOpeningTag(Tag closingTag, Tag[] tags) {
@@ -200,11 +229,14 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
     }
 
     private static int getClosingTagIndex(Tag openingTag, int tagIndex, Tag[] tags) {
-        int minIndex = tagIndex;
+        int minIndex = tagIndex + 1;
         int open = 1;
-        for (int index = 0; index < tags.length; index++) {
+        //System.out.println(Arrays.toString(tags));
+        //System.out.println("opening tag " + openingTag + " index: " + tagIndex);
+        for (int index = minIndex; index < tags.length; index++) {
             Tag tag = tags[index];
-            if (index < minIndex || openingTag == tag) {
+            //System.out.println("analyzing " + tag);
+            if (openingTag == tag) {
                 continue;
             }
             if (openingTag.getName().equals(tag.getName()) && tag.isOpeningTag()) {
