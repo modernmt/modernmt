@@ -282,7 +282,7 @@ public class Symmetrisation {
     }
 
 
-    static public String symmetriseGizaFormatAlignment(String sl_sent_s2t, String alg_info_s2t, String sl_sent_t2s, String alg_info_t2s, int symindex) {
+    static public int[][] symmetriseGizaFormatAlignment(String sl_sent_s2t, String alg_info_s2t, String sl_sent_t2s, String alg_info_t2s, int symindex) {
 
         Set<Integer>[] s2talignment = ReadGizaAsymmetricAlignment(sl_sent_s2t, alg_info_s2t);
         Set<Integer>[] t2salignment = ReadGizaAsymmetricAlignment(sl_sent_t2s, alg_info_t2s);
@@ -307,7 +307,7 @@ public class Symmetrisation {
     }
 
 
-    static public String symmetriseMosesFormatAlignment(int[][] sl, int[][] tl, Strategy strategy) {
+    static public int[][] symmetriseMosesFormatAlignment(int[][] sl, int[][] tl, Strategy strategy) {
 
         Set<Integer>[] s2talignment = null;
         Set<Integer>[] t2salignment = null;
@@ -344,23 +344,19 @@ public class Symmetrisation {
     }
 
 
-    static private String returnAlignment(boolean[][] al) {
+    static private int[][] returnAlignment(boolean[][] al) {
+        ArrayList<int[]> alignments = new ArrayList<>(al.length);
 
-        StringBuilder out = new StringBuilder();
-
-        //Printing in the Moses symmetrised alignment format
         for (int row = 0; row < al.length; row++) {
             for (int col = 0; col < al[row].length; col++) {
                 if (al[row][col]) {
-                    out.append(row);
-                    out.append("-");
-                    out.append(col);
-                    out.append(" ");
+                    alignments.add(new int[]{row, col});
                 }
             }
         }
-
-        return out.toString();
+        int[][] result = new int[alignments.size()][2];
+        alignments.toArray(result);
+        return result;
     }
 
 }
