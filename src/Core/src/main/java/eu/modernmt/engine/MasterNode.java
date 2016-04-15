@@ -11,7 +11,6 @@ import eu.modernmt.decoder.moses.MosesFeature;
 import eu.modernmt.engine.tasks.GetFeatureWeightsTask;
 import eu.modernmt.engine.tasks.InsertTagsTask;
 import eu.modernmt.engine.tasks.TranslationTask;
-import eu.modernmt.model.AutomaticTaggedTranslation;
 import eu.modernmt.model.MultiOptionsToken;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
@@ -87,26 +86,19 @@ public class MasterNode extends ClusterManager {
     //  Tag aligner
     // =============================
 
-    public AutomaticTaggedTranslation alignTags(String sentence, String translation, boolean forceTranslation) throws TranslationException {
-        InsertTagsTask task;
-        try {
-            task = new InsertTagsTask(sentence, translation, forceTranslation);
-            return this.execute(task);
-        } catch (Throwable e) {
-            if (e instanceof ProcessingException)
-                throw new TranslationException("Problem while processing translation", e);
-            else if (e instanceof RuntimeException)
-                throw (RuntimeException) e;
-            else
-                throw new Error("Unexpected exception: " + e.getMessage(), e);
-        }
+    public Translation alignTags(String sentence, String translation) throws TranslationException {
+        return this.alignTags(sentence, translation, null);
     }
 
-    public AutomaticTaggedTranslation alignTags(String sentence, String translation, boolean forceTranslation,
-                                                Symmetrisation.Strategy symmetrizationStrategy) throws TranslationException {
+    public Translation alignTags(String sentence, String translation,
+                                 Symmetrisation.Strategy symmetrizationStrategy) throws TranslationException {
         InsertTagsTask task;
         try {
-            task = new InsertTagsTask(sentence, translation, forceTranslation, symmetrizationStrategy);
+            if (symmetrizationStrategy == null) {
+                task = new InsertTagsTask(sentence, translation);
+            } else {
+                task = new InsertTagsTask(sentence, translation, symmetrizationStrategy);
+            }
             return this.execute(task);
         } catch (Throwable e) {
             if (e instanceof ProcessingException)

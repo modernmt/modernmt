@@ -1,11 +1,10 @@
 package eu.modernmt.engine.tasks;
 
 import eu.modernmt.aligner.Aligner;
-import eu.modernmt.aligner.fastalign.ForceTranslation;
 import eu.modernmt.aligner.symal.Symmetrisation;
 import eu.modernmt.engine.SlaveNode;
-import eu.modernmt.model.AutomaticTaggedTranslation;
 import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Translation;
 import eu.modernmt.network.cluster.DistributedCallable;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.framework.ProcessingException;
@@ -16,7 +15,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Created by luca mastrostefano on 09/12/15.
  */
-public class InsertTagsTask extends DistributedCallable<AutomaticTaggedTranslation> {
+public class InsertTagsTask extends DistributedCallable<Translation> {
 
     private static final Logger logger = LogManager.getLogger(InsertTagsTask.class);
     private static final boolean PROCESSING_ENABLED = true;
@@ -25,18 +24,16 @@ public class InsertTagsTask extends DistributedCallable<AutomaticTaggedTranslati
 
     private final String sentence_str;
     private final String translation_str;
-    private final boolean forceTranslation;
     private final Symmetrisation.Strategy symmetrizationStrategy;
 
-    public InsertTagsTask(String sentence, String translation, boolean forceTranslation) {
-        this(sentence, translation, forceTranslation, null);
+    public InsertTagsTask(String sentence, String translation) {
+        this(sentence, translation, null);
     }
 
-    public InsertTagsTask(String sentence, String translation, boolean forceTranslation,
+    public InsertTagsTask(String sentence, String translation,
                           Symmetrisation.Strategy symmetrizationStrategy) {
         this.sentence_str = sentence;
         this.translation_str = translation;
-        this.forceTranslation = forceTranslation;
         this.symmetrizationStrategy = symmetrizationStrategy;
     }
 
@@ -46,7 +43,7 @@ public class InsertTagsTask extends DistributedCallable<AutomaticTaggedTranslati
     }
 
     @Override
-    public AutomaticTaggedTranslation call() throws ProcessingException {
+    public Translation call() throws ProcessingException {
         long beginTime = System.currentTimeMillis();
         long startTime, endTime;
         SlaveNode worker = getWorker();
@@ -64,27 +61,17 @@ public class InsertTagsTask extends DistributedCallable<AutomaticTaggedTranslati
 
             int[][] alignments = aligner.getAlignments(preprocessedSentence, preprocessedTranslation);
 
-            AutomaticTaggedTranslation automaticTaggedTranslation = new AutomaticTaggedTranslation(
+            Translation taggedTranslation = new Translation(
                     preprocessedTranslation.getWords(), preprocessedSentence, alignments);
 
-            tagMapper.call(automaticTaggedTranslation, null);
+            tagMapper.call(taggedTranslation, null);
 
-            startTime = System.currentTimeMillis();
-            String taggedTranslation;
-            if (forceTranslation) {
-                taggedTranslation = ForceTranslation.forceTranslationAndPreserveTags(automaticTaggedTranslation, this.translation_str);
-            } else {
-                taggedTranslation = automaticTaggedTranslation.toString();
-            }
-            automaticTaggedTranslation.setAutomaticTaggedTranslation(taggedTranslation);
             endTime = System.currentTimeMillis();
-
             if (logger.isDebugEnabled()) {
-                logger.debug("Time for forcing the translation: " + (endTime - startTime) + " [ms]");
                 logger.debug("Total time for tags projection: " + (endTime - beginTime) + " [ms]");
             }
 
-            return automaticTaggedTranslation;
+            return taggedTranslation;
         } catch (Exception e) {
             throw new ProcessingException(e);
         }
