@@ -4,9 +4,13 @@ import re
 from itertools import izip
 from optparse import OptionParser
 
-TAG_RE = re.compile(r'( *<[^>]+> *)+')
+TAG_NORMALIZE_RE = re.compile(r'(< */? *(?:[a-zA-Z]|_|:)(?:[a-zA-Z]|[0-9]|\\.|-|_|:|)*)[^>]*?(/? *>)')
+def normalize_tag(text):
+    return TAG_NORMALIZE_RE.sub(r"\1\2", text)
+
+TAGS_RE = re.compile(r'( *<[^>]+> *)+')
 def remove_tags(text):
-    return TAG_RE.sub(' ', text)
+    return TAGS_RE.sub(' ', text)
 
 if __name__ == "__main__":
     parser = OptionParser()
@@ -33,8 +37,8 @@ if __name__ == "__main__":
             t_no_tag = remove_tags(translation)
             if s_no_tag != source and t_no_tag != translation:
                 i += 1
-                new_source.write(source)
+                new_source.write(normalize_tag(source))
                 test.write(t_no_tag)
-                new_translation.write(translation)
+                new_translation.write(normalize_tag(translation))
                 print i
     print "DONE"
