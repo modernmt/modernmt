@@ -21,33 +21,39 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
     private static class ExtendedTag implements Comparable<ExtendedTag> {
 
         private Tag tag;
-        private int id;
+        private int sourcePosition;
+        private int sourceTagIndex;
+        private int targetTagIndex;
+        private int targetPosition;
 
-        public ExtendedTag(Tag tag, int id) {
+        public ExtendedTag(Tag tag, int sourcePosition, int sourceTagIndex, int targetPosition) {
             this.tag = tag;
-            this.id = id;
+            this.sourcePosition = sourcePosition;
+            this.sourceTagIndex = sourceTagIndex;
+            this.targetPosition = targetPosition;
         }
 
         @Override
         public int compareTo(ExtendedTag extendedTag) {
             int c = this.tag.compareTo(extendedTag.tag);
             if (c == 0) {
-                c = this.id - extendedTag.id;
+                c = this.sourceTagIndex - extendedTag.sourceTagIndex;
             }
             return c;
         }
 
         @Override
         public boolean equals(Object o) {
-            return this.id == ((ExtendedTag) o).id;
+            return this.sourceTagIndex == ((ExtendedTag) o).sourceTagIndex;
         }
 
         @Override
         public int hashCode() {
             int result = tag != null ? tag.hashCode() : 0;
-            result = 31 * result + id;
+            result = 31 * result + sourceTagIndex;
             return result;
         }
+
     }
 
     @Override
@@ -56,9 +62,7 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
         if (source.hasTags()) {
             if (source.hasWords()) {
                 if (translation.hasAlignment()) {
-                    Tag[] translationTags = mapTags(source.getTags(), source.getWords(),
-                            translation.getWords(), translation.getAlignment());
-                    translation.setTags(translationTags);
+                    List<ExtendedTag> mappedTags = mapTags(translation);
                 }
             } else {
                 Tag[] tags = source.getTags();
@@ -66,16 +70,15 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
                 translation.setTags(copy);
             }
         }
-
         return null;
     }
 
-    public static Tag[] mapTags(Tag[] sourceTags, Token[] sourceWord, Token[] targetToken, int[][] alignmetns) {
-        //ArrayList<Tag> translationTags = new ArrayList<>(sourceTags.length);
-
-        ArrayList<ExtendedTag> translationTags = new ArrayList<>(sourceTags.length);
-
-        //Map<Tag, Integer> tag2order = new HashMap<Tag, Integer>();
+    public static List<ExtendedTag> mapTags(Translation translation) {
+        Tag[] sourceTags = translation.getSource().getTags();
+        Token[] sourceWord = translation.getSource().getWords();
+        Token[] targetTokens = translation.getWords();
+        int[][] alignments = translation.getAlignment();
+        List<ExtendedTag> translationTags = new ArrayList<>(sourceTags.length);
 
         Set<Integer> sourceLeftToken = new HashSet<>();
         Set<Integer> sourceRightToken = new HashSet<>();
@@ -88,131 +91,136 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
 
         for (int tagIndex = 0; tagIndex < sourceTags.length; tagIndex++) {
             Tag sourceTag = sourceTags[tagIndex];
-            //System.out.println("translated tags: " + translationTags);
-            //System.out.println("aligned id: " + alignedTags);
+            //If the tag has been already mapped (such as well formed closing tags), then continue
             if (alignedTags.contains(tagIndex)) {
                 continue;
             }
-            //System.out.println("TAG: " + sourceTag);
+
             int sourcePosition = sourceTag.getPosition();
             int closingTagIndex = getClosingTagIndex(sourceTag, tagIndex, sourceTags);
             boolean singleTag = false;
+
+            //If the current tag has a closing tag
             if (closingTagIndex != -1) {
                 Tag closingTag = sourceTags[closingTagIndex];
                 int closePosition = closingTag.getPosition();
                 int minPos = Integer.MAX_VALUE;
                 int maxPos = -1;
-                for (int[] align : alignmetns) {
+
+                //Check if they contain some aligned words
+                for (int[] align : alignments) {
                     if (align[0] >= sourcePosition && align[0] < closePosition) {
                         minPos = Math.min(minPos, align[1]);
                         maxPos = Math.max(maxPos, align[1]);
                     }
                 }
+
+                //If they contain no aligned words, treat the current tag as a self-closing tag
                 if (minPos == Integer.MAX_VALUE || maxPos == -1) {
                     singleTag = true;
                 } else {
+                    //Else map both the tags in order to enclose the words aligned
+                    // to those contained in the source sentence
                     maxPos += 1;
-                    //System.out.println(sourceTag + " " + closingTag + " " + minPos + " " + maxPos);
                     Tag targetTag = Tag.fromTag(sourceTag);
                     targetTag.setPosition(minPos);
-                    //tag2order.put(targetTag, tagIndex);
-                    translationTags.add(new ExtendedTag(targetTag, tagIndex));
+                    translationTags.add(new ExtendedTag(targetTag, sourceTag.getPosition(), tagIndex, minPos));
 
                     Tag closingTargetTag = Tag.fromTag(closingTag);
                     closingTargetTag.setPosition(maxPos);
-                    //tag2order.put(closingTargetTag, closingTagIndex);
-                    translationTags.add(new ExtendedTag(closingTargetTag, closingTagIndex));
+                    translationTags.add(new ExtendedTag(closingTargetTag, closingTag.getPosition(), closingTagIndex, maxPos));
 
                     alignedTags.add(tagIndex);
                     alignedTags.add(closingTagIndex);
                 }
             } else {
+                //If not closing tag has been found, treat this tag as a self-closing tag
                 singleTag = true;
             }
 
+            //If it is a self-closing tag
             if (singleTag) {
                 sourceLeftToken.clear();
                 sourceRightToken.clear();
-                //Compute token alignments
-                for (int[] align : alignmetns) {
-                    //System.out.print(Arrays.toString(align));
+                //Words that are at the left of the tag in the source sentence, should be at left of the mapped tag
+                //in the translation. Some reasoning for those that are at the right.
+                for (int[] align : alignments) {
+                    //If the word is at the left of the current tag
                     if (align[0] < sourcePosition) {
                         if (!sourceRightToken.contains(align[1])) {
+                            //Remember that it should be at the left also in the translation
                             sourceLeftToken.add(align[1]);
                         }
                     } else {
+                        //It the word is at the right of the current tag
                         if (!sourceLeftToken.contains(align[1])) {
+                            //Remember that it should be at the right also in the translation
                             sourceRightToken.add(align[1]);
                         }
                     }
                 }
-                //System.out.println();
-                //System.out.println("LEFT SOURCE TOKENS: " + sourceLeftToken);
-                //System.out.println("INNER SOURCE TOKENS: " + sourceInnerToken);
-                //System.out.println("RIGHT SOURCE TOKENS: " + sourceRightToken);
 
-                //Find best configuration
+                //Find the mapped position that respects most of the left-right word-tag relationship as possible.
                 targetLeftToken.clear();
                 targetRightToken.clear();
                 leftTokenIntersection.clear();
                 rightTokenIntersection.clear();
-                for (int i = 0; i < targetToken.length; i++) {
+
+                for (int i = 0; i < targetTokens.length; i++) {
                     targetRightToken.add(i);
                 }
                 rightTokenIntersection.addAll(sourceRightToken);
                 rightTokenIntersection.retainAll(targetRightToken);
-                //double maxScore = rightTokenIntersection.size()/ Math.max(1, targetRightToken.size());
                 int maxScore = rightTokenIntersection.size();
                 int bestPosition = 0;
-                //System.out.println("LEFT: " + targetLeftToken + " ||| " + leftTokenIntersection);
-                //System.out.println("INNER: " + targetInnerToken + " ||| " + innerTokenIntersection);
-                //System.out.println("RIGHT: " + targetRightToken + " ||| " + rightTokenIntersection);
-                //System.out.println(bestPosition + " " + maxScore);
-                //System.out.println("-----------");
+
                 int actualPosition = 0;
-                Tag[] tagsArray = new Tag[translationTags.size()];
-                for (int i = 0; i < targetToken.length; i++) {
+                for (int i = 0; i < targetTokens.length; i++) {
                     actualPosition++;
-                    //System.out.println(targetOpeningPosition);
+
                     targetLeftToken.add(i);
                     targetRightToken.remove(i);
                     leftTokenIntersection.clear();
                     rightTokenIntersection.clear();
+
                     leftTokenIntersection.addAll(sourceLeftToken);
                     leftTokenIntersection.retainAll(targetLeftToken);
                     rightTokenIntersection.addAll(sourceRightToken);
                     rightTokenIntersection.retainAll(targetRightToken);
-                    //double score = leftTokenIntersection.size() / Math.max(1, targetLeftToken.size()) + innerTokenIntersection.size() * 2 / Math.max(1, targetInnerToken.size()) + rightTokenIntersection.size() / Math.max(1, targetRightToken.size());
                     int score = leftTokenIntersection.size() + rightTokenIntersection.size();
-                    //score *= 2;
-                    //score -= (targetLeftToken.size() - leftTokenIntersection.size()) + (targetInnerToken.size() - innerTokenIntersection.size()) * 2 + (targetRightToken.size() - rightTokenIntersection.size());
-                    //System.out.println("LEFT: " + targetLeftToken + " ||| " + leftTokenIntersection);
-                    //System.out.println("INNER: " + targetInnerToken + " ||| " + innerTokenIntersection);
-                    //System.out.println("RIGHT: " + targetRightToken + " ||| " + rightTokenIntersection);
-                    //System.out.println(actualPosition + " " + score);
-                    //System.out.println("-----------");
+
+                    //Remember the best position and score
                     if (score > maxScore) {
                         maxScore = score;
                         bestPosition = actualPosition;
-                    } else {
-                        //break;
+                    } else if (score < maxScore) {
+                        //The function that describes the score should be concave,
+                        // so we can break as soon it starts decreasing
+                        //break
                     }
                 }
-                //System.out.println("Best pos:" + bestPosition + "\n\n");
+
+                //Map the tag to the best position
                 Tag targetTag = Tag.fromTag(sourceTag);
                 targetTag.setPosition(bestPosition);
-                //tag2order.put(targetTag, tagIndex);
-                translationTags.add(new ExtendedTag(targetTag, tagIndex));
+                translationTags.add(new ExtendedTag(targetTag, sourceTag.getPosition(), tagIndex, bestPosition));
                 alignedTags.add(tagIndex);
             }
         }
+
+        //Sort the tag in according to their position and order in the source sentence
         Collections.sort(translationTags);
-        //System.out.println(translationTags);
+        for (int i = 0; i < translationTags.size(); i++) {
+            translationTags.get(i).targetTagIndex = i;
+        }
+
         Tag[] result = new Tag[translationTags.size()];
         for (int i = 0; i < translationTags.size(); i++) {
             result[i] = translationTags.get(i).tag;
         }
-        return result;
+        translation.setTags(result);
+
+        return translationTags;
     }
 
     private static int getPositionOpeningTag(Tag closingTag, Tag[] tags) {
@@ -231,11 +239,8 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
     private static int getClosingTagIndex(Tag openingTag, int tagIndex, Tag[] tags) {
         int minIndex = tagIndex + 1;
         int open = 1;
-        //System.out.println(Arrays.toString(tags));
-        //System.out.println("opening tag " + openingTag + " index: " + tagIndex);
         for (int index = minIndex; index < tags.length; index++) {
             Tag tag = tags[index];
-            //System.out.println("analyzing " + tag);
             if (openingTag == tag) {
                 continue;
             }
@@ -248,10 +253,8 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
                     return index;
                 }
             }
-
         }
         return -1;
-        //throw new TokenNotFoundException();
     }
 
     @Override
@@ -378,8 +381,3 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
         System.out.println("TRANSLATION (stripped):  " + translation.getStrippedString(false));
     }
 }
-
-
-/**
- * Created by davide on 17/02/16.
- */
