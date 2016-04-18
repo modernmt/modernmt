@@ -6,7 +6,7 @@ from optparse import OptionParser
 
 TAG_NORMALIZE_RE = re.compile(r'(< */? *(?:[a-zA-Z]|_|:)(?:[a-zA-Z]|[0-9]|\\.|-|_|:|)*)[^>]*?(/? *>)')
 def normalize_tag(text):
-    return TAG_NORMALIZE_RE.sub(r"\1\2", text)
+    return TAG_NORMALIZE_RE.subn(r"\1\2", text)
 
 TAGS_RE = re.compile(r'( *<[^>]+> *)+')
 def remove_tags(text):
@@ -36,9 +36,12 @@ if __name__ == "__main__":
             s_no_tag = remove_tags(source)
             t_no_tag = remove_tags(translation)
             if s_no_tag != source and t_no_tag != translation:
-                i += 1
-                new_source.write(normalize_tag(source))
-                test.write(t_no_tag)
-                new_translation.write(normalize_tag(translation))
-                print i
+                normalized_source, count_tag_source = normalize_tag(source)
+                normalized_translation, count_tag_translation = normalize_tag(translation)
+                if count_tag_source == count_tag_translation:
+                    i += 1
+                    new_source.write(normalized_source)
+                    test.write(t_no_tag)
+                    new_translation.write(normalized_translation)
+                    print i
     print "DONE"
