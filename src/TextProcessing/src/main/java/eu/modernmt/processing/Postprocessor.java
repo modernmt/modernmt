@@ -7,7 +7,7 @@ import eu.modernmt.processing.framework.*;
 import eu.modernmt.processing.numbers.NumericWordFactory;
 import eu.modernmt.processing.recaser.Recaser;
 import eu.modernmt.processing.xmessage.XMessageWordTransformer;
-import eu.modernmt.processing.xml.XMLTagMapper;
+import eu.modernmt.processing.xml.New_XMLTagMapper;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
@@ -20,19 +20,21 @@ import java.util.Locale;
  */
 public class Postprocessor implements Closeable {
 
+    private static final AlignmentsInterpolator AlignmentsInterpolator;
     private static final WordTransformationFactory WordTransformationFactory;
     private static final WordTransformer WordTransformer;
     private static final Recaser Recaser;
-    private static final XMLTagMapper XMLTagMapper;
+    private static final New_XMLTagMapper XMLTagMapper;
 
     static {
+        AlignmentsInterpolator = new AlignmentsInterpolator();
         WordTransformationFactory = new WordTransformationFactory();
         WordTransformationFactory.addWordTransformer(NumericWordFactory.class);
         WordTransformationFactory.addWordTransformer(XMessageWordTransformer.class);
 
         WordTransformer = new WordTransformer();
         Recaser = new Recaser();
-        XMLTagMapper = new XMLTagMapper();
+        XMLTagMapper = new New_XMLTagMapper();
     }
 
     private final ProcessingPipeline<Translation, Void> pipelineWithDetokenization;
@@ -47,6 +49,7 @@ public class Postprocessor implements Closeable {
 
         return new ProcessingPipeline.Builder<Translation, Translation>()
                 .setThreads(threads)
+                .add(AlignmentsInterpolator)
                 .add(detokenizer)
                 .add(WordTransformationFactory)
                 .add(WordTransformer)

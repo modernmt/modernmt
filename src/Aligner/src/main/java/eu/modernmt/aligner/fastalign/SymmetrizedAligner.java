@@ -3,6 +3,7 @@ package eu.modernmt.aligner.fastalign;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.symal.Symmetrisation;
 import eu.modernmt.model.Sentence;
+import eu.modernmt.processing.AlignmentsInterpolator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -89,7 +90,7 @@ public class SymmetrizedAligner implements Aligner {
                 invertedBackwardAlignments, this.simmetrizationStrategy);
         logger.debug("Symmetrised alignments: " + symmetrisedAlignments);
         //return symmetrisedAlignments;
-        return FastAlign.interpolateAlignments(symmetrisedAlignments, numberOfSentenceWords,
+        return AlignmentsInterpolator.interpolateAlignments(symmetrisedAlignments, numberOfSentenceWords,
                 numberOfTranslationWords);
     }
 
