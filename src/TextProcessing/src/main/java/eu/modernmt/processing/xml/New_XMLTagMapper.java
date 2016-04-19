@@ -62,7 +62,7 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
         if (source.hasTags()) {
             if (source.hasWords()) {
                 if (translation.hasAlignment()) {
-                    List<ExtendedTag> mappedTags = mapTags(translation);
+                    mapTags(translation);
                 }
             } else {
                 Tag[] tags = source.getTags();
@@ -97,9 +97,9 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
             }
 
             int sourcePosition = sourceTag.getPosition();
-            int closingTagIndex = getClosingTagIndex(sourceTag, tagIndex, sourceTags);
             boolean singleTag = false;
 
+            int closingTagIndex = getClosingTagIndex(sourceTag, tagIndex, sourceTags);
             //If the current tag has a closing tag
             if (closingTagIndex != -1) {
                 Tag closingTag = sourceTags[closingTagIndex];
@@ -159,7 +159,7 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
                         }
                     }
                 }
-
+                boolean openingTag = sourceTag.isOpeningTag();
                 //Find the mapped position that respects most of the left-right word-tag relationship as possible.
                 targetLeftToken.clear();
                 targetRightToken.clear();
@@ -189,8 +189,8 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
                     rightTokenIntersection.retainAll(targetRightToken);
                     int score = leftTokenIntersection.size() + rightTokenIntersection.size();
 
-                    //Remember the best position and score
-                    if (score > maxScore) {
+                    //Remember the best position and score (for opening tag prefer to shift them to the right)
+                    if ((openingTag && score >= maxScore) || (!openingTag && score > maxScore)) {
                         maxScore = score;
                         bestPosition = actualPosition;
                     } else if (score < maxScore) {
