@@ -63,6 +63,7 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
             if (source.hasWords()) {
                 if (translation.hasAlignment()) {
                     mapTags(translation);
+                    simpleSpaceAnalysis(translation);
                 }
             } else {
                 Tag[] tags = source.getTags();
@@ -255,6 +256,42 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
             }
         }
         return -1;
+    }
+
+    private static void simpleSpaceAnalysis(Translation translation) {
+
+        //Add whitespace between the last word and the next tag if the latter has left space
+        Tag[] tags = translation.getTags();
+        Word[] words = translation.getWords();
+        int firstTagAfterLastWord = tags.length - 1;
+        boolean found = false;
+        while (firstTagAfterLastWord >= 0 && tags[firstTagAfterLastWord].getPosition() == words.length) {
+            firstTagAfterLastWord--;
+            found = true;
+        }
+        if (found) {
+            firstTagAfterLastWord++;
+            if (tags[firstTagAfterLastWord].hasLeftSpace() && !words[words.length - 1].hasRightSpace()) {
+                words[words.length - 1].setRightSpace(" ");
+            }
+        }
+
+        //Remove whitespace between word and the next tag, if the first has no right space
+        Token previousToken = null;
+        for (Token token : translation) {
+            if (token instanceof Tag) {
+                Tag tag = (Tag) token;
+                if (previousToken != null && previousToken.hasRightSpace() && !tag.hasLeftSpace()) {
+                    if (!tag.hasRightSpace()) {
+                        tag.setRightSpace(previousToken.getRightSpace());
+                    }
+                    previousToken.setRightSpace(null);
+                }
+            }
+            previousToken = token;
+        }
+        //Remove the last whitespace
+        previousToken.setRightSpace(null);
     }
 
     @Override
