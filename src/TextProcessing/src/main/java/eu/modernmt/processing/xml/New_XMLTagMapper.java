@@ -294,6 +294,67 @@ public class New_XMLTagMapper implements TextProcessor<Translation, Void> {
         previousToken.setRightSpace(null);
     }
 
+    private static int[][] computeExtendedAlignments(List<ExtendedTag> extendedTags, Translation translation) {
+
+        //Change words indexes in the alignments including the tags positions in the source
+        int[][] wordsAlignments = translation.getAlignment();
+        int[][] newWordsAlignments = new int[wordsAlignments.length + extendedTags.size()][2];
+
+        int alignmentIndex, tokenIndex, wordIndex, tagCount, newAlignmentsIndex;
+        alignmentIndex = tokenIndex = wordIndex = tagCount = newAlignmentsIndex = 0;
+        for (Token token : translation.getSource()) {
+            if (token instanceof Tag) {
+                tagCount++;
+            } else {
+                while (alignmentIndex < wordsAlignments.length && wordsAlignments[alignmentIndex][0] == wordIndex) {
+                    newWordsAlignments[newAlignmentsIndex++] = new int[]{wordsAlignments[alignmentIndex][0] + tagCount,
+                            wordsAlignments[alignmentIndex][1]};
+                    alignmentIndex++;
+                }
+                wordIndex++;
+            }
+            tokenIndex++;
+        }
+
+        //Change words indexes in the alignments including the tags positions in the translation
+        Map<Integer, Integer> oldPosition2newPosition = new HashMap<Integer, Integer>(translation.getWords().length);
+        tokenIndex = tagCount = 0;
+        for (Token token : translation) {
+            if (token instanceof Tag) {
+                tagCount++;
+            } else {
+                oldPosition2newPosition.put(tokenIndex - tagCount, tokenIndex);
+            }
+            tokenIndex++;
+        }
+        for (int[] alignment : newWordsAlignments) {
+            Integer newPosition = oldPosition2newPosition.get(alignment[1]);
+            if (alignment != null && newPosition != null) {
+                alignment[1] = newPosition;
+            }
+        }
+
+        //Add alignments among tags
+        for (ExtendedTag tag : extendedTags) {
+            System.out.println((tag.sourcePosition + " " + tag.sourceTagIndex) + " " + tag.targetPosition + " " + tag.targetTagIndex);
+            newWordsAlignments[newAlignmentsIndex++] = new int[]{tag.sourcePosition + tag.sourceTagIndex, tag.targetPosition + tag.targetTagIndex};
+        }
+
+        //Sort the alignments
+        Arrays.sort(newWordsAlignments, new Comparator<int[]>() {
+            @Override
+            public int compare(int[] a1, int[] a2) {
+                int c = a1[0] - a2[0];
+                if (c == 0) {
+                    c = a1[1] - a2[1];
+                }
+                return c;
+            }
+        });
+
+        return newWordsAlignments;
+    }
+
     @Override
     public void close() throws IOException {
         // Nothing to do
