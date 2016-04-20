@@ -4,6 +4,7 @@ import eu.modernmt.aligner.symal.Symmetrisation;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.engine.MasterNode;
 import eu.modernmt.engine.TranslationException;
+import eu.modernmt.engine.tasks.InsertTagsTask;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
 import eu.modernmt.rest.RESTServer;
@@ -52,9 +53,9 @@ public class TagsProjection extends ObjectAction<Object> {
         Translation taggedTranslation;
         if (params.symmetrizationStrategy != null) {
             taggedTranslation = masterNode.alignTags(params.sentence, params.translation,
-                    params.symmetrizationStrategy);
+                    params.symmetrizationStrategy, params.inverted);
         } else {
-            taggedTranslation = masterNode.alignTags(params.sentence, params.translation);
+            taggedTranslation = masterNode.alignTags(params.sentence, params.translation, params.inverted);
         }
         ProjectedTranslation result;
         if (params.showDetails) {
@@ -88,6 +89,7 @@ public class TagsProjection extends ObjectAction<Object> {
         public final String translation;
         public final Symmetrisation.Strategy symmetrizationStrategy;
         public final boolean showDetails;
+        public final boolean inverted;
 
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
@@ -104,6 +106,7 @@ public class TagsProjection extends ObjectAction<Object> {
             } else {
                 this.symmetrizationStrategy = null;
             }
+            this.inverted = getBoolean("i", InsertTagsTask.DEFAULT_INVERTED);
         }
     }
 }

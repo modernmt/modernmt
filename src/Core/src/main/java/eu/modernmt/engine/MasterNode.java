@@ -87,17 +87,26 @@ public class MasterNode extends ClusterManager {
     // =============================
 
     public Translation alignTags(String sentence, String translation) throws TranslationException {
-        return this.alignTags(sentence, translation, null);
+        return this.alignTags(sentence, translation, null, InsertTagsTask.DEFAULT_INVERTED);
+    }
+
+    public Translation alignTags(String sentence, String translation, boolean inverted) throws TranslationException {
+        return this.alignTags(sentence, translation, null, inverted);
     }
 
     public Translation alignTags(String sentence, String translation,
                                  Symmetrisation.Strategy symmetrizationStrategy) throws TranslationException {
+        return this.alignTags(sentence, translation, symmetrizationStrategy, InsertTagsTask.DEFAULT_INVERTED);
+    }
+
+    public Translation alignTags(String sentence, String translation,
+                                 Symmetrisation.Strategy symmetrizationStrategy, boolean inverted) throws TranslationException {
         InsertTagsTask task;
         try {
             if (symmetrizationStrategy == null) {
-                task = new InsertTagsTask(sentence, translation);
+                task = new InsertTagsTask(sentence, translation, inverted);
             } else {
-                task = new InsertTagsTask(sentence, translation, symmetrizationStrategy);
+                task = new InsertTagsTask(sentence, translation, symmetrizationStrategy, inverted);
             }
             return this.execute(task);
         } catch (Throwable e) {
