@@ -3,11 +3,14 @@ package eu.modernmt.aligner.fastalign;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.symal.Symmetrisation;
 import eu.modernmt.model.Sentence;
+import eu.modernmt.processing.AlignmentsInterpolator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
 
 /**
  * Created by lucamastrostefano on 14/03/16.
@@ -77,24 +80,37 @@ public class SymmetrizedAligner implements Aligner {
 
     @Override
     public synchronized int[][] getAlignments(Sentence sentence, Sentence translation) throws IOException {
-        String forwardAlignments = this.forwardAlignerProcess.getStringAlignments(sentence, translation);
-        String backwardAlignments = this.backwardAlignerProcess.getStringAlignments(sentence, translation);
-        String invertedBackwardAlignments = eu.modernmt.aligner.fastalign.SymmetrizedAligner.invertAlignments(backwardAlignments);
+        int numberOfSentenceWords = sentence.getWords().length;
+        int numberOfTranslationWords = translation.getWords().length;
+        int[][] forwardAlignments = this.forwardAlignerProcess.getAlignments(sentence, translation);
+        int[][] backwardAlignments = this.backwardAlignerProcess.getAlignments(sentence, translation);
+        int[][] invertedBackwardAlignments = eu.modernmt.aligner.fastalign.SymmetrizedAligner.invertAlignments(backwardAlignments);
         logger.debug("Symmetrising");
-        String symmetrisedAlignments = Symmetrisation.symmetriseMosesFormatAlignment(forwardAlignments,
+        int[][] symmetrisedAlignments = Symmetrisation.symmetriseMosesFormatAlignment(forwardAlignments,
                 invertedBackwardAlignments, this.simmetrizationStrategy);
         logger.debug("Symmetrised alignments: " + symmetrisedAlignments);
-        return FastAlign.parseAlignments(symmetrisedAlignments);
+        //return symmetrisedAlignments;
+        return AlignmentsInterpolator.interpolateAlignments(symmetrisedAlignments, numberOfSentenceWords,
+                numberOfTranslationWords);
     }
 
-    private static String invertAlignments(String stringAlignments) {
-        String[] links_str = stringAlignments.split(" ");
-        StringBuilder invertedAlignments = new StringBuilder();
-        for (int i = 0; i < links_str.length; i++) {
-            String[] alignment = links_str[i].split("-");
-            invertedAlignments.append(alignment[1] + "-" + alignment[0] + " ");
+    private static int[][] invertAlignments(int[][] alignments) {
+        int[][] invertedAlignments = new int[alignments.length][2];
+        for (int i = 0; i < alignments.length; i++) {
+            int[] alignment = alignments[i];
+            invertedAlignments[i] = new int[]{alignment[1], alignment[0]};
         }
-        return invertedAlignments.deleteCharAt(invertedAlignments.length() - 1).toString();
+        Arrays.sort(invertedAlignments, new Comparator<int[]>() {
+            @Override
+            public int compare(int[] a1, int[] a2) {
+                int c = a1[0] - a2[0];
+                if (c == 0) {
+                    c = a1[1] - a2[1];
+                }
+                return c;
+            }
+        });
+        return invertedAlignments;
     }
 
     @Override

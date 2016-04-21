@@ -233,12 +233,13 @@ class FastAlign(WordAligner):
             with open(fwd_file, 'w') as stdout:
                 shell.execute(command, stdout=stdout, stderr=log, env=env)
 
-            # Forward alignments
+            # Backward alignments
             bwd_model = os.path.join(model_dir, 'model.align.bwd')
             command = [self._align_bin, '-d', '-v', '-o', '-n', str(cpus), '-B', '-p', bwd_model, '-r', '-i',
                        aligned_file_path]
             with open(bwd_file, 'w') as stdout:
                 shell.execute(command, stdout=stdout, stderr=log, env=env)
+
         finally:
             if log_file is not None:
                 log.close()
@@ -247,7 +248,6 @@ class FastAlign(WordAligner):
         encoder.encode(bal_file)
 
         return bal_file
-
 
 class _FastAlignBALEncoder:
     def __init__(self, corpus, langs, fwd, bwd):
