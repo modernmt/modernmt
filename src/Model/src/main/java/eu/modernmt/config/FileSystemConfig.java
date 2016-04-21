@@ -44,15 +44,19 @@ public class FileSystemConfig {
             throw new IllegalStateException("Invalid path for property '" + SYSPROP_MMT_HOME + "': " + tokenizerModels + " must be a valid directory.");
     }
 
-    public File getRuntime(String engine, String component) throws IOException {
+    public File getRuntime(String engine, String component) {
         return getRuntime(engine, component, true);
     }
 
-    public File getRuntime(String engine, String component, boolean ensure) throws IOException {
+    public File getRuntime(String engine, String component, boolean ensure) {
         File folder = new File(runtime, engine + File.separatorChar + component);
 
         if (ensure && !folder.isDirectory())
-            FileUtils.forceMkdir(folder);
+            try {
+                FileUtils.forceMkdir(folder);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
 
         return folder;
     }
