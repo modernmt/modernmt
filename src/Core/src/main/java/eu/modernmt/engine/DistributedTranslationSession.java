@@ -3,13 +3,14 @@ package eu.modernmt.engine;
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.TranslationSession;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 
 /**
  * Created by davide on 09/12/15.
  */
-public class DistributedTranslationSession extends TranslationSession {
+public class DistributedTranslationSession extends TranslationSession implements Closeable {
 
     private static long sequence = 1L;
 

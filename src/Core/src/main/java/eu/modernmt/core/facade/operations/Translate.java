@@ -2,6 +2,7 @@ package eu.modernmt.core.facade.operations;
 
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.core.Engine;
+import eu.modernmt.core.cluster.SessionManager;
 import eu.modernmt.core.cluster.executor.DistributedCallable;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderTranslation;
@@ -37,10 +38,10 @@ public class Translate extends DistributedCallable<DecoderTranslation> {
         this.nbest = nbest;
     }
 
-    public Translate(String text, TranslationSession session, boolean processing, int nbest) {
+    public Translate(String text, long session, boolean processing, int nbest) {
         this.text = text;
-        this.session = session.getId();
-        this.translationContext = session.getTranslationContext();
+        this.session = session;
+        this.translationContext = null;
         this.processing = processing;
         this.nbest = nbest;
     }
@@ -58,11 +59,15 @@ public class Translate extends DistributedCallable<DecoderTranslation> {
         if (session != null) {
             TranslationSession session = decoder.getSession(this.session);
 
-            if (session == null)
-                if (translationContext == null)
-                    throw new IllegalArgumentException("Session id is new, but no context has been provided.");
+            if (session == null) {
+                SessionManager sessionManager = getLocalMember().getSessionManager();
+                TranslationSession distributedSession = sessionManager.get(this.session);
+
+                if (distributedSession == null)
+                    throw new IllegalArgumentException("Session not found: " + this.session);
                 else
-                    session = decoder.openSession(this.session, translationContext);
+                    session = decoder.openSession(this.session, distributedSession.getTranslationContext());
+            }
 
             translation = nbest > 0 ? decoder.translate(sentence, session, nbest) : decoder.translate(sentence, session);
         } else if (translationContext != null) {

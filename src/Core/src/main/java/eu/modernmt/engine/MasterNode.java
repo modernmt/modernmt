@@ -39,7 +39,7 @@ public class MasterNode extends ClusterManager {
 
     private TranslationEngine engine;
     private ContextAnalyzer contextAnalyzer;
-    private HashMap<Long, TranslationSession> sessions;
+    private HashMap<Long, DistributedTranslationSession> sessions;
 
     public MasterNode(TranslationEngine engine, int[] ports) throws IOException {
         super(new ZMQMessagingServer(ports[0], ports[1]));
@@ -173,7 +173,7 @@ public class MasterNode extends ClusterManager {
     }
 
     public TranslationSession closeTranslationSession(long id) {
-        TranslationSession session = sessions.remove(id);
+        DistributedTranslationSession session = sessions.remove(id);
 
         if (session != null)
             try {

@@ -7,6 +7,8 @@ public class ClusterConstants {
 
     public static final int DEFAULT_TRANSLATION_EXECUTOR_SIZE;
     public static final String TRANSLATION_EXECUTOR_NAME = "TranslationsExecutor";
+    public static final String TRANSLATION_SESSION_MAP_NAME = "TranslationSessionMap";
+    public static final String TRANSLATION_SESSION_ID_GENERATOR_NAME = "TranslationSessionIdGenerator";
 
     static {
         int cores = Runtime.getRuntime().availableProcessors();

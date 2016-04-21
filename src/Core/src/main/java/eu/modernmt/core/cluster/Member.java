@@ -50,6 +50,7 @@ public class Member {
 
     private HazelcastInstance hazelcast;
     private ExecutorDaemon executorDaemon;
+    private SessionManager sessionManager;
 
     public Member(int port) {
         this(port, ClusterConstants.DEFAULT_TRANSLATION_EXECUTOR_SIZE);
@@ -114,6 +115,11 @@ public class Member {
         }
 
         executorDaemon = new ExecutorDaemon(hazelcast, this, ClusterConstants.TRANSLATION_EXECUTOR_NAME, capacity);
+        sessionManager = new SessionManager(hazelcast);
+    }
+
+    public SessionManager getSessionManager() {
+        return sessionManager;
     }
 
     public synchronized void shutdown() {
