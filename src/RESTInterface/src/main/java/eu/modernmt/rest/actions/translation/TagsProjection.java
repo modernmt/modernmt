@@ -4,8 +4,9 @@ import eu.modernmt.aligner.symal.Symmetrisation;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.engine.MasterNode;
 import eu.modernmt.engine.TranslationException;
-import eu.modernmt.model.AutomaticTaggedTranslation;
+import eu.modernmt.engine.tasks.InsertTagsTask;
 import eu.modernmt.model.Token;
+import eu.modernmt.model.Translation;
 import eu.modernmt.rest.RESTServer;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
@@ -49,22 +50,22 @@ public class TagsProjection extends ObjectAction<Object> {
     protected Object execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, TranslationException {
         Params params = (Params) _params;
         MasterNode masterNode = server.getMasterNode();
-        AutomaticTaggedTranslation taggedTranslation;
+        Translation taggedTranslation;
         if (params.symmetrizationStrategy != null) {
-            taggedTranslation = masterNode.alignTags(params.sentence, params.translation, params.forceTranslation,
-                    params.symmetrizationStrategy);
+            taggedTranslation = masterNode.alignTags(params.sentence, params.translation,
+                    params.symmetrizationStrategy, params.inverted);
         } else {
-            taggedTranslation = masterNode.alignTags(params.sentence, params.translation, params.forceTranslation);
+            taggedTranslation = masterNode.alignTags(params.sentence, params.translation, params.inverted);
         }
         ProjectedTranslation result;
         if (params.showDetails) {
             String[] sourceToken = stringifyTokens(taggedTranslation.getSource().getWords());
             String[] targetToken = stringifyTokens(taggedTranslation.getWords());
             int[][] alignments = taggedTranslation.getAlignment();
-            result = new ExhaustiveProjectedTranslation(taggedTranslation.getAutomaticTaggedTranslation(), sourceToken, targetToken,
+            result = new ExhaustiveProjectedTranslation(taggedTranslation.toString(), sourceToken, targetToken,
                     alignments);
         } else {
-            result = new ProjectedTranslation(taggedTranslation.getAutomaticTaggedTranslation());
+            result = new ProjectedTranslation(taggedTranslation.toString());
         }
         return result;
     }
@@ -86,15 +87,14 @@ public class TagsProjection extends ObjectAction<Object> {
 
         public final String sentence;
         public final String translation;
-        public final boolean forceTranslation;
         public final Symmetrisation.Strategy symmetrizationStrategy;
         public final boolean showDetails;
+        public final boolean inverted;
 
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
             this.sentence = getString("s", false);
             this.translation = getString("t", false);
-            this.forceTranslation = getBoolean("f", false);
             this.showDetails = getBoolean("d", false);
             int symmetrizationStrategy = getInt("symmetrization", -1);
             if (symmetrizationStrategy >= 0) {
@@ -106,6 +106,7 @@ public class TagsProjection extends ObjectAction<Object> {
             } else {
                 this.symmetrizationStrategy = null;
             }
+            this.inverted = getBoolean("i", InsertTagsTask.DEFAULT_INVERTED);
         }
     }
 }

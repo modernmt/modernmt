@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Created by lucamastrostefano on 15/03/16.
  */
-class FastAlign implements Aligner, Closeable {
+public class FastAlign implements Aligner, Closeable {
 
     private static final Logger logger = LogManager.getLogger(FastAlign.class);
     private static final String SENTENCE_SEPARATOR = " ||| ";
@@ -64,6 +64,14 @@ class FastAlign implements Aligner, Closeable {
             alignments[i] = new int[]{Integer.parseInt(alignment[0]), Integer.parseInt(alignment[1])};
         }
         return alignments;
+    }
+
+    public static String printAlignments(int[][] alignments) {
+        StringBuilder result = new StringBuilder();
+        for (int[] alignment : alignments) {
+            result.append(alignment[0] + "-" + alignment[1] + " ");
+        }
+        return result.deleteCharAt(result.length() - 1).toString();
     }
 
     @Override
