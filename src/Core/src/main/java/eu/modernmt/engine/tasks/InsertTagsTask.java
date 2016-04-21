@@ -1,6 +1,7 @@
 package eu.modernmt.engine.tasks;
 
 import eu.modernmt.aligner.Aligner;
+import eu.modernmt.aligner.fastalign.FastAlign;
 import eu.modernmt.aligner.symal.Symmetrisation;
 import eu.modernmt.engine.SlaveNode;
 import eu.modernmt.model.Sentence;
@@ -8,9 +9,11 @@ import eu.modernmt.model.Translation;
 import eu.modernmt.network.cluster.DistributedCallable;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.xml.New_XMLTagMapper;
+import eu.modernmt.processing.xml.XMLTagMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.Locale;
 
 /**
  * Created by luca mastrostefano on 09/12/15.
@@ -19,7 +22,7 @@ public class InsertTagsTask extends DistributedCallable<Translation> {
 
     private static final Logger logger = LogManager.getLogger(InsertTagsTask.class);
     private static final boolean PROCESSING_ENABLED = true;
-    private static final New_XMLTagMapper tagMapper = new New_XMLTagMapper();
+    private static final XMLTagMapper tagMapper = new XMLTagMapper();
     private static Preprocessor targetPreprocessor = null;
     public static final boolean DEFAULT_INVERTED = false;
 
@@ -107,5 +110,33 @@ public class InsertTagsTask extends DistributedCallable<Translation> {
                 translation.getSource().getWords(), translation.getTags(),
                 translation, translation.getAlignment());
     }
-    
+
+    public static void main(String[] args) throws ProcessingException {
+        try {
+            String sentence = "It is often <i>*99***1#</i>.";
+            String translation = "Spesso corrisponde a *99***1#.";
+            Preprocessor sourcePreprocessor = new Preprocessor(Locale.forLanguageTag("en"));
+            Preprocessor targetPreprocessor = new Preprocessor(Locale.forLanguageTag("it"));
+            Sentence preprocessedSentence = sourcePreprocessor.process(sentence, true);
+            Sentence preprocessedTranslation = targetPreprocessor.process(translation, true);
+
+            String alignments_str = "[[0, 0], [1, 1], [2, 0], [3, 3], [4, 4], [5, 5], [6, 6], [7, 7], [8, 8], [9, 9], [10, 10]]";
+            int[][] alignments = FastAlign.parseAlignments(alignments_str.substring(0, alignments_str.length() - 2).substring(2)
+                    .replaceAll("\\], \\[", " ").replaceAll(", ", "-"));
+
+            System.out.println("Source:\n" + sentence);
+            System.out.println("Translation:\n" + translation);
+            System.out.println("Alignments:\n" + alignments_str);
+
+            Translation taggedTranslation = new Translation(
+                    preprocessedTranslation.getWords(), preprocessedSentence, alignments);
+
+            tagMapper.call(taggedTranslation, null);
+
+            System.out.println("Tagged translation:\n" + taggedTranslation);
+        } catch (Exception e) {
+            throw new ProcessingException(e);
+        }
+    }
+
 }
