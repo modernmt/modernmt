@@ -69,9 +69,6 @@ public class TagMapperTest {
 
         assertEquals("<b>mondo</b> ciao!", translation.toString());
         assertEquals("mondo ciao!", translation.getStrippedString(false));
-        for (Tag tag : translation.getTags()) {
-            System.out.println(tag + "  " + tag.hasLeftSpace() + " " + tag.hasRightSpace() + " " + tag.getPosition());
-        }
         assertArrayEquals(new Tag[]{
                 Tag.fromText("<b>", false, null, 0),
                 Tag.fromText("</b>", false, " ", 1),
