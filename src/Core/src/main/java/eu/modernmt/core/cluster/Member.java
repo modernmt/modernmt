@@ -60,6 +60,12 @@ public class Member {
         this.capacity = capacity;
     }
 
+    public Engine getEngine() {
+        if (engine == null)
+            throw new IllegalStateException("Member not ready. Call bootstrap() to initialize the member.");
+        return engine;
+    }
+
     public void startCluster() {
         Config config = new XmlConfigBuilder().build();
         config.getNetworkConfig().setPort(port);
