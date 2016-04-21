@@ -294,6 +294,7 @@ public class XMLTagMapper implements TextProcessor<Translation, Void> {
                     }
                     previousToken.setRightSpace(null);
                 } else if (previousToken == null) {
+                    //Remove first whitespace
                     tag.setLeftSpace(false);
                 }
             }
@@ -301,9 +302,10 @@ public class XMLTagMapper implements TextProcessor<Translation, Void> {
 
         }
         //Remove the last whitespace
-        previousToken.setRightSpace(null);
+        if (previousToken != null) {
+            previousToken.setRightSpace(null);
+        }
 
-        //Remove first whitespace
     }
 
     private static int[][] computeExtendedAlignments(List<ExtendedTag> extendedTags, Translation translation) {
