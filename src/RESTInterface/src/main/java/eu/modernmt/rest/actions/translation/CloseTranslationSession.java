@@ -1,6 +1,6 @@
 package eu.modernmt.rest.actions.translation;
 
-import eu.modernmt.rest.RESTServer;
+import eu.modernmt.core.facade.ModernMT;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
@@ -14,12 +14,10 @@ import eu.modernmt.rest.framework.routing.TemplateException;
 @Route(aliases = "sessions/:id", method = HttpMethod.DELETE)
 public class CloseTranslationSession extends VoidAction {
 
-    private RESTServer server = RESTServer.getInstance();
-
     @Override
     protected void execute(RESTRequest req, Parameters _params) {
         Params params = (Params) _params;
-        server.getMasterNode().closeTranslationSession(params.id);
+        ModernMT.decoder.closeSession(params.id);
     }
 
     @Override

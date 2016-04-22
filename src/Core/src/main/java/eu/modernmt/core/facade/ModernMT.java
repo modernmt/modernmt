@@ -9,8 +9,8 @@ public class ModernMT {
 
     protected static Client client;
 
-    public static void setClient(Client _client) {
-        client = _client;
+    public static void setClient(Client client) {
+        ModernMT.client = client;
     }
 
     public static final DecoderFacade decoder = new DecoderFacade();

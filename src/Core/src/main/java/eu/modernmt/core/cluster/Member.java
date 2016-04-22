@@ -76,10 +76,10 @@ public class Member {
     }
 
     public void joinCluster(String address) throws FailedToJoinClusterException {
-        joinCluster(address, null, 0L);
+        joinCluster(address, 0L, null);
     }
 
-    public void joinCluster(String address, TimeUnit unit, long interval) throws FailedToJoinClusterException {
+    public void joinCluster(String address, long interval, TimeUnit unit) throws FailedToJoinClusterException {
         Config config = new XmlConfigBuilder().build();
         config.getNetworkConfig().setPort(port);
         config.setProperty("hazelcast.initial.min.cluster.size", "2");

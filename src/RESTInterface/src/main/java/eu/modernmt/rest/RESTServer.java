@@ -2,7 +2,6 @@ package eu.modernmt.rest;
 
 import eu.modernmt.config.Config;
 import eu.modernmt.decoder.TranslationHypothesis;
-import eu.modernmt.engine.MasterNode;
 import eu.modernmt.rest.framework.JSONSerializer;
 import eu.modernmt.rest.framework.routing.RouterServlet;
 import eu.modernmt.rest.model.TranslationResponse;
@@ -18,7 +17,6 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by davide on 15/12/15.
@@ -30,28 +28,10 @@ public class RESTServer {
         JSONSerializer.registerCustomSerializer(TranslationResponse.class, new TranslationResponseSerializer());
     }
 
-    private static RESTServer instance = null;
-
-    public static void setup(int restPort, MasterNode masterNode) {
-        if (instance != null)
-            throw new IllegalStateException("Setup has been called twice.");
-
-        instance = new RESTServer(restPort, masterNode);
-    }
-
-    public static RESTServer getInstance() {
-        if (instance == null)
-            throw new IllegalStateException("You must call setup first.");
-
-        return instance;
-    }
-
     private Server jettyServer;
-    private MasterNode masterNode;
 
-    private RESTServer(int restPort, MasterNode masterNode) {
-        this.masterNode = masterNode;
-        this.jettyServer = new Server(restPort);
+    public RESTServer(int port) {
+        this.jettyServer = new Server(port);
 
         ServletHandler handler = new ServletHandler();
         handler.addServletWithMapping(Router.class, "/*");
@@ -59,22 +39,15 @@ public class RESTServer {
     }
 
     public void start() throws Exception {
-        masterNode.start();
         jettyServer.start();
     }
 
     public void stop() throws Exception {
-        masterNode.shutdown();
         jettyServer.stop();
     }
 
     public void join() throws InterruptedException {
-        masterNode.awaitTermination(1, TimeUnit.DAYS);
         jettyServer.join();
-    }
-
-    public MasterNode getMasterNode() {
-        return masterNode;
     }
 
     public static class Router extends RouterServlet {

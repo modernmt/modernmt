@@ -2,7 +2,7 @@ package eu.modernmt.rest.actions.translation;
 
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextDocument;
-import eu.modernmt.rest.RESTServer;
+import eu.modernmt.core.facade.ModernMT;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
@@ -23,17 +23,15 @@ import java.util.Collection;
 @Route(aliases = "context", method = HttpMethod.GET)
 public class GetContext extends CollectionAction<ContextDocument> {
 
-    private RESTServer server = RESTServer.getInstance();
-
     @Override
     protected Collection<ContextDocument> execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException {
         Params params = (Params) _params;
 
         if (params.file == null) {
-            return server.getMasterNode().getContext(params.context, params.limit);
+            return ModernMT.context.get(params.context, params.limit);
         } else {
             try {
-                return server.getMasterNode().getContext(params.file, params.limit);
+                return ModernMT.context.get(params.file, params.limit);
             } finally {
                 if (params.deleteOnExit)
                     FileUtils.deleteQuietly(params.file);

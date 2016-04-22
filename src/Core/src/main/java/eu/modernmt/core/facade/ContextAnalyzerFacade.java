@@ -2,8 +2,8 @@ package eu.modernmt.core.facade;
 
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextDocument;
+import eu.modernmt.core.cluster.error.SystemShutdownException;
 import eu.modernmt.core.facade.operations.GetContextOperation;
-import eu.modernmt.engine.SystemShutdownException;
 
 import java.io.File;
 import java.util.List;
@@ -14,7 +14,7 @@ import java.util.concurrent.ExecutionException;
  */
 public class ContextAnalyzerFacade {
 
-    public List<ContextDocument> getContext(File context, int limit) throws ContextAnalyzerException {
+    public List<ContextDocument> get(File context, int limit) throws ContextAnalyzerException {
         GetContextOperation operation = new GetContextOperation(context, limit);
 
         try {
@@ -26,7 +26,7 @@ public class ContextAnalyzerFacade {
         }
     }
 
-    public List<ContextDocument> getContext(String context, int limit) throws ContextAnalyzerException {
+    public List<ContextDocument> get(String context, int limit) throws ContextAnalyzerException {
         GetContextOperation operation = new GetContextOperation(context, limit);
 
         try {

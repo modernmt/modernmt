@@ -2,13 +2,13 @@ package eu.modernmt.core.facade;
 
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.core.cluster.SessionManager;
+import eu.modernmt.core.cluster.error.SystemShutdownException;
+import eu.modernmt.core.facade.error.TranslationException;
 import eu.modernmt.core.facade.operations.GetFeatureWeightsOperation;
 import eu.modernmt.core.facade.operations.TranslateOperation;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.decoder.moses.MosesFeature;
-import eu.modernmt.engine.SystemShutdownException;
-import eu.modernmt.engine.TranslationException;
 import eu.modernmt.model.MultiOptionsToken;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;

@@ -1,13 +1,10 @@
 package eu.modernmt.rest.actions.translation;
 
 import eu.modernmt.aligner.symal.Symmetrisation;
-import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.engine.MasterNode;
-import eu.modernmt.engine.TranslationException;
-import eu.modernmt.engine.tasks.InsertTagsTask;
+import eu.modernmt.core.facade.ModernMT;
+import eu.modernmt.core.facade.error.TranslationException;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
-import eu.modernmt.rest.RESTServer;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
@@ -44,19 +41,17 @@ public class TagsProjection extends ObjectAction<Object> {
         }
     }
 
-    private RESTServer server = RESTServer.getInstance();
-
     @Override
-    protected Object execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, TranslationException {
+    protected Object execute(RESTRequest req, Parameters _params) throws TranslationException {
         Params params = (Params) _params;
-        MasterNode masterNode = server.getMasterNode();
+
         Translation taggedTranslation;
         if (params.symmetrizationStrategy != null) {
-            taggedTranslation = masterNode.alignTags(params.sentence, params.translation,
-                    params.symmetrizationStrategy, params.inverted);
+            taggedTranslation = ModernMT.tags.project(params.sentence, params.translation, params.symmetrizationStrategy, params.inverted);
         } else {
-            taggedTranslation = masterNode.alignTags(params.sentence, params.translation, params.inverted);
+            taggedTranslation = ModernMT.tags.project(params.sentence, params.translation, params.inverted);
         }
+
         ProjectedTranslation result;
         if (params.showDetails) {
             String[] sourceToken = stringifyTokens(taggedTranslation.getSource().getWords());
@@ -67,6 +62,7 @@ public class TagsProjection extends ObjectAction<Object> {
         } else {
             result = new ProjectedTranslation(taggedTranslation.toString());
         }
+
         return result;
     }
 
@@ -106,7 +102,7 @@ public class TagsProjection extends ObjectAction<Object> {
             } else {
                 this.symmetrizationStrategy = null;
             }
-            this.inverted = getBoolean("i", InsertTagsTask.DEFAULT_INVERTED);
+            this.inverted = getBoolean("i", false);
         }
     }
 }

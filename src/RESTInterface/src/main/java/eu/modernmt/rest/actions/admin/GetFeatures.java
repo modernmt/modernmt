@@ -2,8 +2,8 @@ package eu.modernmt.rest.actions.admin;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import eu.modernmt.core.facade.ModernMT;
 import eu.modernmt.decoder.moses.MosesFeature;
-import eu.modernmt.rest.RESTServer;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
@@ -18,13 +18,11 @@ import java.util.Map;
 @Route(aliases = "decoder/features", method = HttpMethod.GET)
 public class GetFeatures extends JSONObjectAction {
 
-    private RESTServer server = RESTServer.getInstance();
-
     @Override
     protected JsonObject execute(RESTRequest req, Parameters params) {
         JsonObject result = new JsonObject();
 
-        Map<MosesFeature, float[]> features = server.getMasterNode().getFeatureWeights();
+        Map<MosesFeature, float[]> features = ModernMT.decoder.getFeatureWeights();
         for (Map.Entry<MosesFeature, float[]> entry : features.entrySet()) {
             MosesFeature feature = entry.getKey();
             JsonArray weights = null;

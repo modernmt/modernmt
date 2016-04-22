@@ -1,7 +1,7 @@
 package eu.modernmt.rest.framework.actions;
 
 import com.google.gson.JsonElement;
-import eu.modernmt.engine.SystemShutdownException;
+import eu.modernmt.core.cluster.error.SystemShutdownException;
 import eu.modernmt.rest.framework.*;
 import eu.modernmt.rest.framework.routing.TemplateException;
 import org.apache.logging.log4j.LogManager;

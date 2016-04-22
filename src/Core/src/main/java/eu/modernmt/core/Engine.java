@@ -25,7 +25,7 @@ public class Engine {
 
     private static final String CONTEXT_ANALYZER_INDEX_PATH = path("models", "context", "index");
     private static final String MOSES_INI_PATH = path("models", "moses.ini");
-    private static final String ENGINE_CONFIG_PATH = "engine.ini";
+    public static final String ENGINE_CONFIG_PATH = "engine.ini";
 
     private static String path(String... path) {
         StringBuilder result = new StringBuilder();
@@ -37,6 +37,11 @@ public class Engine {
         }
 
         return result.toString();
+    }
+
+    public static File getConfigFile(String engine) {
+        File root = new File(Config.fs.engines, engine);
+        return new File(root, ENGINE_CONFIG_PATH);
     }
 
     private final EngineConfig config;

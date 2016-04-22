@@ -2,9 +2,9 @@ package eu.modernmt.core.facade;
 
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.aligner.symal.Symmetrisation;
+import eu.modernmt.core.cluster.error.SystemShutdownException;
+import eu.modernmt.core.facade.error.TranslationException;
 import eu.modernmt.core.facade.operations.ProjectTagsOperation;
-import eu.modernmt.engine.SystemShutdownException;
-import eu.modernmt.engine.TranslationException;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.framework.ProcessingException;
 

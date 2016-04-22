@@ -1,6 +1,6 @@
 package eu.modernmt.cli;
 
-import eu.modernmt.engine.training.CleaningPipeline;
+import eu.modernmt.core.training.CleaningPipeline;
 import eu.modernmt.model.BilingualCorpus;
 import eu.modernmt.model.impl.BilingualFileCorpus;
 import eu.modernmt.model.util.CorpusUtils;

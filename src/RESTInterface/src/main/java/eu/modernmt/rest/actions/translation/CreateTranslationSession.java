@@ -5,8 +5,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import eu.modernmt.context.ContextDocument;
+import eu.modernmt.core.facade.ModernMT;
 import eu.modernmt.decoder.TranslationSession;
-import eu.modernmt.rest.RESTServer;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
@@ -22,12 +22,10 @@ import java.util.List;
 @Route(aliases = "sessions", method = HttpMethod.POST)
 public class CreateTranslationSession extends ObjectAction<TranslationSession> {
 
-    private RESTServer server = RESTServer.getInstance();
-
     @Override
     protected TranslationSession execute(RESTRequest req, Parameters _params) {
         Params params = (Params) _params;
-        return server.getMasterNode().createTranslationSession(params.context);
+        return ModernMT.decoder.openSession(params.context);
     }
 
     @Override

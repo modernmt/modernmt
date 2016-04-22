@@ -4,9 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonParseException;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextDocument;
-import eu.modernmt.engine.MasterNode;
-import eu.modernmt.engine.TranslationException;
-import eu.modernmt.rest.RESTServer;
+import eu.modernmt.core.facade.ModernMT;
+import eu.modernmt.core.facade.error.TranslationException;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
@@ -22,26 +21,23 @@ import java.util.List;
 @Route(aliases = "translate", method = HttpMethod.GET)
 public class Translate extends ObjectAction<TranslationResponse> {
 
-    private RESTServer server = RESTServer.getInstance();
-
     @Override
     protected TranslationResponse execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, TranslationException {
         Params params = (Params) _params;
-        MasterNode masterNode = server.getMasterNode();
 
         TranslationResponse result = new TranslationResponse();
         result.processing = params.textProcessing;
 
         if (params.sessionId > 0) {
             result.session = params.sessionId;
-            result.translation = masterNode.translate(params.query, params.sessionId, params.textProcessing, params.nbest);
+            result.translation = ModernMT.decoder.translate(params.query, params.sessionId, params.textProcessing, params.nbest);
         } else if (params.context != null) {
-            result.translation = masterNode.translate(params.query, params.context, params.textProcessing, params.nbest);
+            result.translation = ModernMT.decoder.translate(params.query, params.context, params.textProcessing, params.nbest);
         } else if (params.contextString != null) {
-            result.context = masterNode.getContext(params.contextString, params.contextLimit);
-            result.translation = masterNode.translate(params.query, result.context, params.textProcessing, params.nbest);
+            result.context = ModernMT.context.get(params.contextString, params.contextLimit);
+            result.translation = ModernMT.decoder.translate(params.query, result.context, params.textProcessing, params.nbest);
         } else {
-            result.translation = masterNode.translate(params.query, params.textProcessing, params.nbest);
+            result.translation = ModernMT.decoder.translate(params.query, params.textProcessing, params.nbest);
         }
 
         return result;
