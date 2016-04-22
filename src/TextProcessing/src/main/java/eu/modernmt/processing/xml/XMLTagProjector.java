@@ -10,7 +10,7 @@ import java.util.*;
 /**
  * Created by lucamastrostefano on 4/04/16.
  */
-public class XMLTagMapper implements TextProcessor<Translation, Void> {
+public class XMLTagProjector implements TextProcessor<Translation, Void> {
 
     private static class TokenNotFoundException extends Exception {
 
@@ -403,7 +403,7 @@ public class XMLTagMapper implements TextProcessor<Translation, Void> {
         System.out.println("SRC (stripped):          " + source.getStrippedString(false));
         System.out.println();
 
-        XMLTagMapper mapper = new XMLTagMapper();
+        XMLTagProjector mapper = new XMLTagProjector();
         mapper.call(translation, null);
 
         System.out.println("TRANSLATION:             " + translation);

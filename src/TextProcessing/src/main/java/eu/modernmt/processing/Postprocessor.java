@@ -7,7 +7,7 @@ import eu.modernmt.processing.framework.*;
 import eu.modernmt.processing.numbers.NumericWordFactory;
 import eu.modernmt.processing.recaser.Recaser;
 import eu.modernmt.processing.xmessage.XMessageWordTransformer;
-import eu.modernmt.processing.xml.XMLTagMapper;
+import eu.modernmt.processing.xml.XMLTagProjector;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
@@ -24,7 +24,7 @@ public class Postprocessor implements Closeable {
     private static final WordTransformationFactory WordTransformationFactory;
     private static final WordTransformer WordTransformer;
     private static final Recaser Recaser;
-    private static final eu.modernmt.processing.xml.XMLTagMapper XMLTagMapper;
+    private static final XMLTagProjector XMLTagProjector;
 
     static {
         AlignmentsInterpolator = new AlignmentsInterpolator();
@@ -34,7 +34,7 @@ public class Postprocessor implements Closeable {
 
         WordTransformer = new WordTransformer();
         Recaser = new Recaser();
-        XMLTagMapper = new XMLTagMapper();
+        XMLTagProjector = new XMLTagProjector();
     }
 
     private final ProcessingPipeline<Translation, Void> pipelineWithDetokenization;
@@ -54,7 +54,7 @@ public class Postprocessor implements Closeable {
                 .add(WordTransformationFactory)
                 .add(WordTransformer)
                 .add(Recaser)
-                .add(XMLTagMapper)
+                .add(XMLTagProjector)
                 .create();
     }
 

@@ -3,7 +3,6 @@ package eu.modernmt.core.facade.operations;
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.core.Engine;
 import eu.modernmt.core.cluster.SessionManager;
-import eu.modernmt.core.cluster.executor.DistributedCallable;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
@@ -17,7 +16,7 @@ import java.util.List;
 /**
  * Created by davide on 21/04/16.
  */
-public class Translate extends DistributedCallable<DecoderTranslation> {
+public class TranslateOperation extends Operation<DecoderTranslation> {
 
     private String text;
     private List<ContextDocument> translationContext;
@@ -25,20 +24,20 @@ public class Translate extends DistributedCallable<DecoderTranslation> {
     private boolean processing;
     private int nbest;
 
-    public Translate(String text, boolean processing, int nbest) {
+    public TranslateOperation(String text, boolean processing, int nbest) {
         this.text = text;
         this.processing = processing;
         this.nbest = nbest;
     }
 
-    public Translate(String text, List<ContextDocument> translationContext, boolean processing, int nbest) {
+    public TranslateOperation(String text, List<ContextDocument> translationContext, boolean processing, int nbest) {
         this.text = text;
         this.translationContext = translationContext;
         this.processing = processing;
         this.nbest = nbest;
     }
 
-    public Translate(String text, long session, boolean processing, int nbest) {
+    public TranslateOperation(String text, long session, boolean processing, int nbest) {
         this.text = text;
         this.session = session;
         this.translationContext = null;
@@ -48,7 +47,7 @@ public class Translate extends DistributedCallable<DecoderTranslation> {
 
     @Override
     public DecoderTranslation call() throws ProcessingException {
-        Engine engine = getLocalMember().getEngine();
+        Engine engine = getEngine();
         Decoder decoder = engine.getDecoder();
         Preprocessor preprocessor = engine.getPreprocessor();
         Postprocessor postprocessor = engine.getPostprocessor();

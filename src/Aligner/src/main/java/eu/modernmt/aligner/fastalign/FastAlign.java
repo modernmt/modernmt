@@ -1,6 +1,7 @@
 package eu.modernmt.aligner.fastalign;
 
 import eu.modernmt.aligner.Aligner;
+import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.aligner.symal.Symmetrisation;
 import eu.modernmt.config.Config;
 import eu.modernmt.model.Sentence;
@@ -9,7 +10,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.naming.OperationNotSupportedException;
 import java.io.*;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -139,13 +139,17 @@ public class FastAlign implements Aligner, Closeable {
     }
 
     @Override
-    public int[][] getAlignments(Sentence sentence, Sentence translation) throws IOException {
-        return parseAlignments(this.getStringAlignments(sentence, translation));
+    public int[][] getAlignments(Sentence sentence, Sentence translation) throws AlignerException {
+        try {
+            return parseAlignments(this.getStringAlignments(sentence, translation));
+        } catch (IOException e) {
+            throw new AlignerException("Problem while communicating to FastAlign process.", e);
+        }
     }
 
     @Override
-    public void setSymmetrizationStrategy(Symmetrisation.Strategy strategy) throws OperationNotSupportedException {
-        throw new OperationNotSupportedException("Symmetrization not supported");
+    public void setSymmetrizationStrategy(Symmetrisation.Strategy strategy) {
+        throw new UnsupportedOperationException("Symmetrization not supported");
     }
 
     @Override

@@ -9,7 +9,7 @@ import eu.modernmt.model.Translation;
 import eu.modernmt.network.cluster.DistributedCallable;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.xml.XMLTagMapper;
+import eu.modernmt.processing.xml.XMLTagProjector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -22,7 +22,7 @@ public class InsertTagsTask extends DistributedCallable<Translation> {
 
     private static final Logger logger = LogManager.getLogger(InsertTagsTask.class);
     private static final boolean PROCESSING_ENABLED = true;
-    private static final XMLTagMapper tagMapper = new XMLTagMapper();
+    private static final XMLTagProjector tagMapper = new XMLTagProjector();
     private static Preprocessor targetPreprocessor = null;
     public static final boolean DEFAULT_INVERTED = false;
 

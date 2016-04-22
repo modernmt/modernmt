@@ -1,6 +1,7 @@
 package eu.modernmt.aligner.fastalign;
 
 import eu.modernmt.aligner.Aligner;
+import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.aligner.symal.Symmetrisation;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.AlignmentsInterpolator;
@@ -10,7 +11,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Comparator;
 
 /**
  * Created by lucamastrostefano on 14/03/16.
@@ -79,7 +79,7 @@ public class SymmetrizedAligner implements Aligner {
     }
 
     @Override
-    public synchronized int[][] getAlignments(Sentence sentence, Sentence translation) throws IOException {
+    public synchronized int[][] getAlignments(Sentence sentence, Sentence translation) throws AlignerException {
         int numberOfSentenceWords = sentence.getWords().length;
         int numberOfTranslationWords = translation.getWords().length;
         int[][] forwardAlignments = this.forwardAlignerProcess.getAlignments(sentence, translation);
@@ -100,15 +100,12 @@ public class SymmetrizedAligner implements Aligner {
             int[] alignment = alignments[i];
             invertedAlignments[i] = new int[]{alignment[1], alignment[0]};
         }
-        Arrays.sort(invertedAlignments, new Comparator<int[]>() {
-            @Override
-            public int compare(int[] a1, int[] a2) {
-                int c = a1[0] - a2[0];
-                if (c == 0) {
-                    c = a1[1] - a2[1];
-                }
-                return c;
+        Arrays.sort(invertedAlignments, (a1, a2) -> {
+            int c = a1[0] - a2[0];
+            if (c == 0) {
+                c = a1[1] - a2[1];
             }
+            return c;
         });
         return invertedAlignments;
     }

@@ -2,9 +2,11 @@ package eu.modernmt.core.facade;
 
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.core.cluster.SessionManager;
-import eu.modernmt.core.facade.operations.Translate;
+import eu.modernmt.core.facade.operations.GetFeatureWeightsOperation;
+import eu.modernmt.core.facade.operations.TranslateOperation;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
+import eu.modernmt.decoder.moses.MosesFeature;
 import eu.modernmt.engine.SystemShutdownException;
 import eu.modernmt.engine.TranslationException;
 import eu.modernmt.model.MultiOptionsToken;
@@ -12,13 +14,42 @@ import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.framework.ProcessingException;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 /**
  * Created by davide on 20/04/16.
  */
 public class DecoderFacade {
+
+    // =============================
+    //  Decoder Weights
+    // =============================
+
+    public Map<MosesFeature, float[]> getFeatureWeights() {
+        GetFeatureWeightsOperation operation = new GetFeatureWeightsOperation();
+
+        try {
+            return ModernMT.client.submit(operation).get();
+        } catch (InterruptedException e) {
+            throw new SystemShutdownException(e);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+
+            if (cause instanceof RuntimeException)
+                throw new RuntimeException("Unexpected error while getting features weights", cause);
+            else
+                throw new Error("Unexpected exception: " + cause.getMessage(), cause);
+        }
+    }
+
+    public void setFeatureWeights(Map<String, float[]> weights) throws IOException {
+        //TODO:
+//        engine.setDecoderWeights(weights);
+//        sendBroadcastSignal(SIGNAL_RESET, null);
+    }
 
     // =============================
     //  Translation session
@@ -35,7 +66,7 @@ public class DecoderFacade {
     }
 
     // =============================
-    //  Translate
+    //  TranslateOperation
     // =============================
 
     public DecoderTranslation translate(String sentence, boolean textProcessing) throws TranslationException {
@@ -63,14 +94,14 @@ public class DecoderFacade {
     }
 
     private DecoderTranslation translate(String text, List<ContextDocument> translationContext, long session, boolean textProcessing, int nbest) throws TranslationException {
-        Translate operation;
+        TranslateOperation operation;
 
         if (translationContext != null) {
-            operation = new Translate(text, translationContext, textProcessing, nbest);
+            operation = new TranslateOperation(text, translationContext, textProcessing, nbest);
         } else if (session > 0) {
-            operation = new Translate(text, session, textProcessing, nbest);
+            operation = new TranslateOperation(text, session, textProcessing, nbest);
         } else {
-            operation = new Translate(text, textProcessing, nbest);
+            operation = new TranslateOperation(text, textProcessing, nbest);
         }
 
         DecoderTranslation rootTranslation;
