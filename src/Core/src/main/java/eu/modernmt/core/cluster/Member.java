@@ -100,7 +100,7 @@ public class Member {
     }
 
     public void bootstrap(EngineConfig config) throws BootstrapException {
-        File workingDirectory = eu.modernmt.config.Config.fs.getRuntime(config.getName(), "slave");
+        File workingDirectory = eu.modernmt.config.Config.fs.getRuntime(config.getName(), "member");
         engine = new Engine(config, capacity);
         engine.setWorkingDirectory(workingDirectory);
 

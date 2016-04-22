@@ -1,4 +1,3 @@
-import json as js
 import logging
 import multiprocessing
 import os
@@ -10,24 +9,20 @@ import tempfile
 import time
 from ConfigParser import ConfigParser
 
-import requests
-
 import scripts
-from scripts import mmt_javamain
-from scripts.evaluation import MMTTranslator, GoogleTranslate, BLEUScore, MatecatScore, TranslateError, \
-    HumanEvaluationFileOutputter
+from scripts import mmt_javamain, IllegalArgumentException, IllegalStateException
 from scripts.libs import fileutils, daemon, shell
 from scripts.mt import ParallelCorpus
 from scripts.mt.contextanalysis import ContextAnalyzer
 from scripts.mt.lm import LanguageModel
 from scripts.mt.moses import Moses, MosesFeature, LexicalReordering
 from scripts.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
-from scripts.mt.processing import Preprocessor, TrainingPreprocessor, TMCleaner, XMLEncoder
+from scripts.mt.processing import Preprocessor, TrainingPreprocessor, TMCleaner
 
 __author__ = 'Davide Caroselli'
 
 DEFAULT_MMT_API_PORT = 8045
-DEFAULT_MMT_CLUSTER_PORTS = [5016, 5017]
+DEFAULT_MMT_CLUSTER_PORT = 5016
 
 logger = logging.getLogger()
 
@@ -35,15 +30,6 @@ logger = logging.getLogger()
 # ==============================
 # Base classes
 # ==============================
-
-class IllegalStateException(Exception):
-    def __init__(self, error):
-        self.message = error
-
-
-class IllegalArgumentException(Exception):
-    def __init__(self, error):
-        self.message = error
 
 
 class _MMTRuntimeComponent:
@@ -472,105 +458,18 @@ class _TuningProcessLogger:
         sys.stdout.flush()
 
 
-class MMTServerApi:
-    DEFAULT_TIMEOUT = 60 * 60  # sec
-
-    def __init__(self, port):
-        self.port = port
-        self._url_template = 'http://localhost:{port}/{endpoint}'
-
-        logging.getLogger('requests').setLevel(1000)
-        logging.getLogger('urllib3').setLevel(1000)
-
-    def _unpack(self, r):
-        if r.status_code != requests.codes.ok:
-            raise Exception('HTTP request failed with code ' + str(r.status_code) + ': ' + r.url)
-
-        return r.json()
-
-    def _get(self, endpoint, params=None):
-        url = self._url_template.format(port=self.port, endpoint=endpoint)
-        r = requests.get(url, params=params, timeout=MMTServerApi.DEFAULT_TIMEOUT)
-        return self._unpack(r)
-
-    def _delete(self, endpoint):
-        url = self._url_template.format(port=self.port, endpoint=endpoint)
-        r = requests.delete(url, timeout=MMTServerApi.DEFAULT_TIMEOUT)
-        return self._unpack(r)
-
-    def _put(self, endpoint, json=None):
-        url = self._url_template.format(port=self.port, endpoint=endpoint)
-
-        data = headers = None
-        if json is not None:
-            data = js.dumps(json)
-            headers = {'Content-type': 'application/json'}
-
-        r = requests.put(url, data=data, headers=headers, timeout=MMTServerApi.DEFAULT_TIMEOUT)
-        return self._unpack(r)
-
-    def _post(self, endpoint, json=None):
-        url = self._url_template.format(port=self.port, endpoint=endpoint)
-
-        data = headers = None
-        if json is not None:
-            data = js.dumps(json)
-            headers = {'Content-type': 'application/json'}
-
-        r = requests.post(url, data=data, headers=headers, timeout=MMTServerApi.DEFAULT_TIMEOUT)
-        return self._unpack(r)
-
-    def stats(self):
-        return self._get('_stat')
-
-    def update_features(self, features):
-        return self._put('decoder/features', json=features)
-
-    def get_features(self):
-        return self._get('decoder/features')
-
-    def get_context_f(self, document, limit=None):
-        params = {'local_file': document}
-        if limit is not None:
-            params['limit'] = limit
-        return self._get('context', params=params)
-
-    def get_context_s(self, text, limit=None):
-        params = {'text': text}
-        if limit is not None:
-            params['limit'] = limit
-        return self._get('context', params=params)
-
-    def create_session(self, context):
-        return self._post('sessions', json=context)
-
-    def close_session(self, session):
-        return self._delete('sessions/' + str(session))
-
-    def translate(self, source, session=None, context=None, processing=True, nbest=None):
-        p = {'q': source, 'processing': (1 if processing else 0)}
-        if session is not None:
-            p['session'] = session
-        if nbest is not None:
-            p['nbest'] = nbest
-        if context is not None:
-            p['context_array'] = js.dumps(context)
-
-        return self._get('translate', params=p)
-
-
 class _MMTDistributedComponent(_MMTRuntimeComponent, _ProcessMonitor):
-    def __init__(self, component, engine, cluster_ports=None):
+    def __init__(self, component, engine, cluster_port=None):
         _MMTRuntimeComponent.__init__(self, engine.name, component)
         _ProcessMonitor.__init__(self, os.path.join(self._get_runtimedir(), 'process.pid'))
 
         self.engine = engine
-        self.cluster_ports = cluster_ports if cluster_ports is not None else DEFAULT_MMT_CLUSTER_PORTS
+        self.cluster_port = cluster_port if cluster_port is not None else DEFAULT_MMT_CLUSTER_PORT
 
 
 class MMTServer(_MMTDistributedComponent):
     def __init__(self, engine, api_port=None, cluster_ports=None):
-        _MMTDistributedComponent.__init__(self, 'master', engine, cluster_ports)
+        _MMTDistributedComponent.__init__(self, 'member', engine, cluster_ports)
 
         self.api_port = api_port if api_port is not None else DEFAULT_MMT_API_PORT
         self.api = MMTServerApi(api_port)
@@ -697,135 +596,3 @@ class MMTServer(_MMTDistributedComponent):
         finally:
             if not debug:
                 self._clear_tempdir()
-
-    def evaluate(self, corpora, google_key=None, heval_output=None, use_sessions=True):
-        if len(corpora) == 0:
-            raise IllegalArgumentException('empty corpora')
-
-        if not self.is_running():
-            raise IllegalStateException('No MMT Server running, start the engine first')
-
-        he_outputter = None
-        if heval_output is not None:
-            fileutils.makedirs(heval_output, exist_ok=True)
-            he_outputter = HumanEvaluationFileOutputter()
-
-        target_lang = self.engine.target_lang
-        source_lang = self.engine.source_lang
-        xmlencoder = XMLEncoder()
-
-        translators = [
-            GoogleTranslate(source_lang, target_lang, key=google_key),
-            # BingTranslator(source_lang, target_lang),
-            MMTTranslator(self, use_sessions)
-        ]
-
-        working_dir = self._get_tempdir('evaluate')
-
-        translations = []
-
-        # Process references
-        corpora_path = os.path.join(working_dir, 'corpora')
-        corpora = xmlencoder.encode(corpora, corpora_path)
-
-        reference = os.path.join(working_dir, 'reference.' + target_lang)
-        fileutils.merge([corpus.get_file(target_lang) for corpus in corpora], reference)
-        source = os.path.join(working_dir, 'source.' + source_lang)
-        fileutils.merge([corpus.get_file(source_lang) for corpus in corpora], source)
-
-        # Translate
-        for translator in translators:
-            tid = translator.name().replace(' ', '_')
-
-            translations_path = os.path.join(working_dir, 'translations', tid + '.raw')
-            xmltranslations_path = os.path.join(working_dir, 'translations', tid)
-            fileutils.makedirs(translations_path, exist_ok=True)
-
-            try:
-                translated, mtt = translator.translate(corpora, translations_path)
-                translated = xmlencoder.encode(translated, xmltranslations_path)
-                translations.append((translator, translated, mtt))
-            except TranslateError as e:
-                translations.append((translator, e))
-            except Exception as e:
-                translations.append((translator, TranslateError('Unexcepted ERROR: ' + str(e.message))))
-
-        if he_outputter is not None:
-            he_output = os.path.join(heval_output, 'reference.' + target_lang)
-            he_outputter.write(reference, he_output, target_lang)
-            he_output = os.path.join(heval_output, 'source.' + source_lang)
-            he_outputter.write(source, he_output, source_lang)
-
-        # Scoring
-        scores = {}
-
-        for translation in translations:
-            if len(translation) > 2:
-                translator, translated, mtt = translation
-                tid = translator.name().replace(' ', '_')
-
-                translated_merged = os.path.join(working_dir, tid + '.' + target_lang)
-                fileutils.merge([corpus.get_file(target_lang) for corpus in translated], translated_merged)
-
-                if he_outputter is not None:
-                    he_output = os.path.join(heval_output, tid + '.' + target_lang)
-                    he_outputter.write(translated_merged, he_output, target_lang)
-
-                scores[translator.name()] = {
-                    'bleu': BLEUScore().calculate(translated_merged, reference),
-                    'matecat': MatecatScore().calculate(translated_merged, reference),
-                    '_mtt': mtt
-                }
-            else:
-                translator, e = translation
-                scores[translator.name()] = str(e.message)
-
-        return scores
-
-
-class MMTWorker(_MMTDistributedComponent):
-    def __init__(self, engine, cluster_ports=None, master=None):
-        _MMTDistributedComponent.__init__(self, 'slave', engine, cluster_ports)
-
-        self._master = master
-        self.log_file = self._get_logfile('process', ensure=False)
-        self._status_file = os.path.join(self._get_runtimedir(), 'process.status')
-
-    def _get_status(self):
-        if os.path.isfile(self._status_file):
-            with open(self._status_file) as content:
-                status = content.read()
-            return status.strip().lower()
-
-        return None
-
-    def wait_modelsync(self):
-        status = self._get_status()
-
-        while status is None:
-            time.sleep(1)
-            status = self._get_status()
-
-        return status == 'ready'
-
-    def _start_process(self):
-        args = ['-e', self.engine.name, '-p', str(self.cluster_ports[0]), str(self.cluster_ports[1]), '--status-file',
-                self._status_file]
-
-        if self._master is not None:
-            for key, value in self._master.iteritems():
-                if value is not None:
-                    args.append('--master-' + key)
-                    args.append(str(value))
-
-        env = os.environ.copy()
-        env['LD_LIBRARY_PATH'] = scripts.LIB_DIR
-        command = mmt_javamain('eu.modernmt.cli.SlaveNodeMain', args)
-
-        self._get_logfile(self.log_file, ensure=True)
-        log = open(self.log_file, 'wa')
-
-        if os.path.isfile(self._status_file):
-            os.remove(self._status_file)
-
-        return subprocess.Popen(command, stderr=log, shell=False, env=env)

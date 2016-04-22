@@ -29,3 +29,13 @@ def mmt_javamain(main_class, args=None, remote_debug=False):
         command += args
 
     return command
+
+
+class IllegalStateException(Exception):
+    def __init__(self, error):
+        self.message = error
+
+
+class IllegalArgumentException(Exception):
+    def __init__(self, error):
+        self.message = error

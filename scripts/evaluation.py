@@ -5,8 +5,10 @@ import time
 
 import requests
 
-from scripts.libs import multithread, shell
+from scripts import IllegalArgumentException
+from scripts.libs import multithread, shell, fileutils
 from scripts.mt import ParallelCorpus
+from scripts.mt.processing import XMLEncoder
 
 DEFAULT_GOOGLE_KEY = 'AIzaSyBl9WAoivTkEfRdBBSCs4CruwnGL_aV74c'
 
@@ -121,9 +123,9 @@ class BingTranslator(Translator):
 
 
 class MMTTranslator(Translator):
-    def __init__(self, server, use_sessions=True):
-        Translator.__init__(self, server.engine.source_lang, server.engine.target_lang, threads=100)
-        self._server = server
+    def __init__(self, member, use_sessions=True):
+        Translator.__init__(self, member.engine.source_lang, member.engine.target_lang, threads=100)
+        self._server = member
         self._sessions = {}
         self._contexts = {}  # redundant with the sessions, stored just for the case of _use_sessions=False
         self._use_sessions = use_sessions
@@ -274,3 +276,90 @@ class MatecatScore(Score):
                     scores += self._get_score(document_lines, reference_lines)
 
         return reduce(lambda x, y: x + y, scores) / len(scores)
+
+
+class Evaluator:
+    def __init__(self, engine, member):
+        self._engine = engine
+        self._member = member
+
+    def evaluate(self, corpora, google_key=None, heval_output=None, use_sessions=True):
+        if len(corpora) == 0:
+            raise IllegalArgumentException('empty corpora')
+
+        he_outputter = None
+        if heval_output is not None:
+            fileutils.makedirs(heval_output, exist_ok=True)
+            he_outputter = HumanEvaluationFileOutputter()
+
+        target_lang = self._engine.target_lang
+        source_lang = self._engine.source_lang
+        xmlencoder = XMLEncoder()
+
+        translators = [
+            GoogleTranslate(source_lang, target_lang, key=google_key),
+            # BingTranslator(source_lang, target_lang),
+            MMTTranslator(self._member, use_sessions)
+        ]
+
+        working_dir = self._member.get_tempdir('evaluation')
+
+        translations = []
+
+        # Process references
+        corpora_path = os.path.join(working_dir, 'corpora')
+        corpora = xmlencoder.encode(corpora, corpora_path)
+
+        reference = os.path.join(working_dir, 'reference.' + target_lang)
+        fileutils.merge([corpus.get_file(target_lang) for corpus in corpora], reference)
+        source = os.path.join(working_dir, 'source.' + source_lang)
+        fileutils.merge([corpus.get_file(source_lang) for corpus in corpora], source)
+
+        # Translate
+        for translator in translators:
+            tid = translator.name().replace(' ', '_')
+
+            translations_path = os.path.join(working_dir, 'translations', tid + '.raw')
+            xmltranslations_path = os.path.join(working_dir, 'translations', tid)
+            fileutils.makedirs(translations_path, exist_ok=True)
+
+            try:
+                translated, mtt = translator.translate(corpora, translations_path)
+                translated = xmlencoder.encode(translated, xmltranslations_path)
+                translations.append((translator, translated, mtt))
+            except TranslateError as e:
+                translations.append((translator, e))
+            except Exception as e:
+                translations.append((translator, TranslateError('Unexcepted ERROR: ' + str(e.message))))
+
+        if he_outputter is not None:
+            he_output = os.path.join(heval_output, 'reference.' + target_lang)
+            he_outputter.write(reference, he_output, target_lang)
+            he_output = os.path.join(heval_output, 'source.' + source_lang)
+            he_outputter.write(source, he_output, source_lang)
+
+        # Scoring
+        scores = {}
+
+        for translation in translations:
+            if len(translation) > 2:
+                translator, translated, mtt = translation
+                tid = translator.name().replace(' ', '_')
+
+                translated_merged = os.path.join(working_dir, tid + '.' + target_lang)
+                fileutils.merge([corpus.get_file(target_lang) for corpus in translated], translated_merged)
+
+                if he_outputter is not None:
+                    he_output = os.path.join(heval_output, tid + '.' + target_lang)
+                    he_outputter.write(translated_merged, he_output, target_lang)
+
+                scores[translator.name()] = {
+                    'bleu': BLEUScore().calculate(translated_merged, reference),
+                    'matecat': MatecatScore().calculate(translated_merged, reference),
+                    '_mtt': mtt
+                }
+            else:
+                translator, e = translation
+                scores[translator.name()] = str(e.message)
+
+        return scores

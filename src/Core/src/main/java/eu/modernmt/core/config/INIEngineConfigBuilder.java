@@ -21,7 +21,7 @@ public class INIEngineConfigBuilder {
         this.file = file;
     }
 
-    public EngineConfig build() throws ConfigException {
+    public EngineConfig build(String name) throws ConfigException {
         HierarchicalINIConfiguration config;
         try {
             config = new HierarchicalINIConfiguration(file);
@@ -30,6 +30,7 @@ public class INIEngineConfigBuilder {
         }
 
         EngineConfig engineConfig = new EngineConfig();
+        engineConfig.setName(name);
         readEngineConfig(engineConfig, getSection(config, "engine"));
         readAlignerConfig(engineConfig.getAlignerConfig(), getSection(config, "engine"));
         readDecoderConfig(engineConfig.getDecoderConfig(), getSection(config, "weights", null));
@@ -59,7 +60,6 @@ public class INIEngineConfigBuilder {
 
         config.setSourceLanguage(source);
         config.setTargetLanguage(target);
-        config.setName(section.getString("name"));
     }
 
     private static void readAlignerConfig(AlignerConfig alignerConfig, SubnodeConfiguration section) {
