@@ -106,17 +106,17 @@ public class Symmetrisation {
     static public boolean[][] GrowDiagFinalAnd(Set<Integer>[] s2t, Set<Integer>[] t2s) {
         List<Pair<Integer, Integer>> neighbors = new LinkedList<Pair<Integer, Integer>>(); //neighbors
 
-        //Defining neibourhood
-        neighbors.add(new Pair(0, 1));
-        neighbors.add(new Pair(-1, -0));
-        neighbors.add(new Pair(0, -1));
-        neighbors.add(new Pair(1, 0));
-
         //Diagonal (diag) neigourhood
         neighbors.add(new Pair(-1, -1));
         neighbors.add(new Pair(-1, 1));
         neighbors.add(new Pair(1, -1));
         neighbors.add(new Pair(1, 1));
+
+        //Defining neibourhood
+        neighbors.add(new Pair(0, 1));
+        neighbors.add(new Pair(-1, -0));
+        neighbors.add(new Pair(0, -1));
+        neighbors.add(new Pair(1, 0));
 
         //Intersection of the alignments (starting point)
         boolean[][] currentpoints = IntersectionSymal(s2t, t2s); //symmetric alignment
