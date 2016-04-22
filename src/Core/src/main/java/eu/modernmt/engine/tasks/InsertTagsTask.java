@@ -9,6 +9,7 @@ import eu.modernmt.model.Translation;
 import eu.modernmt.network.cluster.DistributedCallable;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.util.TokensOutputter;
 import eu.modernmt.processing.xml.XMLTagMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -113,30 +114,34 @@ public class InsertTagsTask extends DistributedCallable<Translation> {
 
     public static void main(String[] args) throws ProcessingException {
         try {
-            String sentence = "It is often <i>*99***1#</i>.";
-            String translation = "Spesso corrisponde a *99***1#.";
+            String sentence = "<b><span>To request information on migration, contact  </span></b><b><span><a><span>Migrazione.PostaFA@fiat.com </span></a></span></b>";
+            String translation = "<b><span>Per richiesta di informazioni sulla migrazione,fare<b><span><a><span> riferimento a Migrazione.PostaFA</span></b>@fiat.com </span></a></span></b>";
             Preprocessor sourcePreprocessor = new Preprocessor(Locale.forLanguageTag("en"));
             Preprocessor targetPreprocessor = new Preprocessor(Locale.forLanguageTag("it"));
             Sentence preprocessedSentence = sourcePreprocessor.process(sentence, true);
             Sentence preprocessedTranslation = targetPreprocessor.process(translation, true);
 
-            String alignments_str = "[[0, 0], [1, 1], [2, 0], [3, 3], [4, 4], [5, 5], [6, 6], [7, 7], [8, 8], [9, 9], [10, 10]]";
-            int[][] alignments = FastAlign.parseAlignments(alignments_str.substring(0, alignments_str.length() - 2).substring(2)
-                    .replaceAll("\\], \\[", " ").replaceAll(", ", "-"));
+            String alignments_str = "[[0, 0], [1, 1], [2, 3], [3, 4], [4, 5], [5, 6], [5, 7], [6, 10], [7, 8], [7, 10], [8, 9], [8, 11], [9, 12]]";
+            alignments_str = alignments_str.substring(0, alignments_str.length() - 2).substring(2)
+                    .replaceAll("\\], \\[", " ").replaceAll(", ", "-");
+            int[][] alignments = FastAlign.parseAlignments(alignments_str);
 
-            System.out.println("Source:\n" + sentence);
-            System.out.println("Translation:\n" + translation);
-            System.out.println("Alignments:\n" + alignments_str);
+            System.out.println("Original source:\n" + sentence);
+            System.out.println("Tokenized source:\n" + TokensOutputter.toString(preprocessedSentence, false, true));
+            System.out.println("\nOriginal translation:\n" + translation);
+            System.out.println("Tokenized translation:\n" + TokensOutputter.toString(preprocessedTranslation, false, true));
+            System.out.println("\nAlignments:\n" + alignments_str);
 
             Translation taggedTranslation = new Translation(
                     preprocessedTranslation.getWords(), preprocessedSentence, alignments);
 
             tagMapper.call(taggedTranslation, null);
 
-            System.out.println("Tagged translation:\n" + taggedTranslation);
+            System.out.println("\nTagged translation:\n" + taggedTranslation);
         } catch (Exception e) {
             throw new ProcessingException(e);
         }
+        System.exit(1);
     }
 
 }
