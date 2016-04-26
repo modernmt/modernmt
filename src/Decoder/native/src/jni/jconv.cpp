@@ -39,24 +39,21 @@ typedef struct {
     jmethodID getValue = NULL;
 } Map_t;
 
-static Map_t __Map;
-
 Map_t GetMap(JNIEnv *jvm) {
-    if (__Map._class == NULL) {
-        __Map._class = JNILoadClass(jvm, "Ljava/util/Map;");
-        __Map._set_class = JNILoadClass(jvm, "Ljava/util/Set;");
-        __Map._iterator_class = JNILoadClass(jvm, "Ljava/util/Iterator;");
-        __Map._entry_class = JNILoadClass(jvm, "Ljava/util/Map$Entry;");
+    Map_t map;
+    map._class = JNILoadClass(jvm, "Ljava/util/Map;");
+    map._set_class = JNILoadClass(jvm, "Ljava/util/Set;");
+    map._iterator_class = JNILoadClass(jvm, "Ljava/util/Iterator;");
+    map._entry_class = JNILoadClass(jvm, "Ljava/util/Map$Entry;");
 
-        __Map.entrySet = jvm->GetMethodID(__Map._class, "entrySet", "()Ljava/util/Set;");
-        __Map.iterator = jvm->GetMethodID(__Map._set_class, "iterator", "()Ljava/util/Iterator;");
-        __Map.hasNext = jvm->GetMethodID(__Map._iterator_class, "hasNext", "()Z");
-        __Map.next = jvm->GetMethodID(__Map._iterator_class, "next", "()Ljava/lang/Object;");
-        __Map.getKey = jvm->GetMethodID(__Map._entry_class, "getKey", "()Ljava/lang/Object;");
-        __Map.getValue = jvm->GetMethodID(__Map._entry_class, "getValue", "()Ljava/lang/Object;");
-    }
+    map.entrySet = jvm->GetMethodID(map._class, "entrySet", "()Ljava/util/Set;");
+    map.iterator = jvm->GetMethodID(map._set_class, "iterator", "()Ljava/util/Iterator;");
+    map.hasNext = jvm->GetMethodID(map._iterator_class, "hasNext", "()Z");
+    map.next = jvm->GetMethodID(map._iterator_class, "next", "()Ljava/lang/Object;");
+    map.getKey = jvm->GetMethodID(map._entry_class, "getKey", "()Ljava/lang/Object;");
+    map.getValue = jvm->GetMethodID(map._entry_class, "getValue", "()Ljava/lang/Object;");
 
-    return __Map;
+    return map;
 }
 
 jobject jni_mapiterator(JNIEnv *jvm, jobject map) {
