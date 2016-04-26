@@ -25,9 +25,17 @@ Translation with tags:  ```<br>ciao, <b id="1">primo<b id="2"> test<br>.```
 
 **Input:**
 
-```s```: the XML encoded source sentence.
+```s*```: the XML encoded source sentence.
 
-```t```: the XML encoded translation.
+```t*```: the XML encoded translation.
+
+```d```: if equals to 1 then the source and target tokens and their alignments will be added to the json response.
+
+```i```: if equals to 1 then it indicates that the source and target languages are inverted.
+
+```symmetrization```: 0 = Intersection, 1 = Union, 2 = GrowDiagFinalAnd (default option).
+
+```*```: mandatory fields
 
 **Output:**
 
