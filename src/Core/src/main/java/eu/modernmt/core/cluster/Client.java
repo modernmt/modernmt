@@ -5,10 +5,12 @@ import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.client.config.XmlClientConfigBuilder;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.ITopic;
 import eu.modernmt.core.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.core.cluster.executor.DistributedCallable;
 import eu.modernmt.core.cluster.executor.DistributedExecutor;
 
+import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -20,6 +22,7 @@ public class Client {
     private HazelcastInstance hazelcast;
     private DistributedExecutor executor;
     private SessionManager sessionManager;
+    private ITopic<Map<String, float[]>> decoderWeightsTopic;
 
     public Client() {
     }
@@ -62,10 +65,19 @@ public class Client {
 
         this.executor = new DistributedExecutor(hazelcast, ClusterConstants.TRANSLATION_EXECUTOR_NAME);
         this.sessionManager = new SessionManager(hazelcast);
+        this.decoderWeightsTopic = hazelcast.getTopic(ClusterConstants.DECODER_WEIGHTS_TOPIC_NAME);
     }
 
     public SessionManager getSessionManager() {
         return sessionManager;
+    }
+
+    public void setDecoderWeights(Map<String, float[]> weights) {
+        this.decoderWeightsTopic.publish(weights);
+    }
+
+    public <V> Future<V> submit(DistributedCallable<V> callable) {
+        return executor.submit(callable);
     }
 
     public void shutdown() {
@@ -77,7 +89,4 @@ public class Client {
         return this.executor.awaitTermination(timeout, unit);
     }
 
-    public <V> Future<V> submit(DistributedCallable<V> callable) {
-        return executor.submit(callable);
-    }
 }

@@ -3,7 +3,9 @@ package eu.modernmt.cli;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.core.Engine;
 import eu.modernmt.core.cluster.Client;
+import eu.modernmt.core.cluster.DirectorySynchronizer;
 import eu.modernmt.core.cluster.Member;
+import eu.modernmt.core.cluster.RSyncSynchronizer;
 import eu.modernmt.core.config.EngineConfig;
 import eu.modernmt.core.config.INIEngineConfigBuilder;
 import eu.modernmt.core.facade.ModernMT;
@@ -13,6 +15,7 @@ import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -121,13 +124,20 @@ public class MemberMain {
             status.onClusterJoined();
 
             if (args.memberHost != null) {
-                // TODO:
-//                InetAddress host = InetAddress.getByName(args.memberHost);
-//
-//                DirectorySynchronizer synchronizer;
-//                if (args.memberPem != null)
-//                    synchronizer = new RSyncSynchronizer(host, args.memberPem, )
+                InetAddress host = InetAddress.getByName(args.memberHost);
+                File localPath = Engine.getRootPath(args.engine);
+                String remotePath = member.getMemberModelPath(args.memberHost);
 
+                if (remotePath == null)
+                    throw new ParseException("Invalid remote host: " + args.memberHost);
+
+                DirectorySynchronizer synchronizer;
+                if (args.memberPem != null)
+                    synchronizer = new RSyncSynchronizer(host, args.memberPem, localPath, remotePath);
+                else
+                    synchronizer = new RSyncSynchronizer(host, args.memberUser, args.memberPassword, localPath, remotePath);
+
+                synchronizer.synchronize();
                 status.onModelSynchronized();
             }
 

@@ -5,14 +5,22 @@ import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.ITopic;
+import com.hazelcast.core.Message;
 import eu.modernmt.core.Engine;
 import eu.modernmt.core.LazyLoadException;
 import eu.modernmt.core.cluster.error.BootstrapException;
 import eu.modernmt.core.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.core.cluster.executor.ExecutorDaemon;
 import eu.modernmt.core.config.EngineConfig;
+import eu.modernmt.core.config.INIEngineConfigWriter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -44,6 +52,8 @@ public class Member {
         }
     };
 
+    private final Logger logger = LogManager.getLogger(Member.class);
+
     private final int port;
     private final int capacity;
     private Engine engine;
@@ -51,6 +61,8 @@ public class Member {
     private HazelcastInstance hazelcast;
     private ExecutorDaemon executorDaemon;
     private SessionManager sessionManager;
+    private ITopic<Map<String, float[]>> decoderWeightsTopic;
+    private ConcurrentMap<String, String> membersModelPath;
 
     public Member(int port) {
         this(port, ClusterConstants.DEFAULT_TRANSLATION_EXECUTOR_SIZE);
@@ -72,7 +84,9 @@ public class Member {
         config.getNetworkConfig().setPort(port);
         config.setProperty("hazelcast.initial.min.cluster.size", "1");
 
+        logger.info("Starting cluster");
         hazelcast = Hazelcast.newHazelcastInstance(config);
+        logger.info("Cluster successfully started");
     }
 
     public void joinCluster(String address) throws FailedToJoinClusterException {
@@ -93,16 +107,20 @@ public class Member {
         tcpIpConfig.setRequiredMember(address);
 
         try {
+            logger.info("Joining cluster");
+
             hazelcast = Hazelcast.newHazelcastInstance(config);
+
+            int members = hazelcast.getCluster().getMembers().size();
+            logger.info("Cluster successfully joined with " + members + "members");
         } catch (IllegalStateException e) {
             throw new FailedToJoinClusterException(address);
         }
     }
 
     public void bootstrap(EngineConfig config) throws BootstrapException {
-        File workingDirectory = eu.modernmt.config.Config.fs.getRuntime(config.getName(), "member");
+        logger.info("Starting member bootstrap");
         engine = new Engine(config, capacity);
-        engine.setWorkingDirectory(workingDirectory);
 
         try {
             engine.getAligner();
@@ -116,10 +134,53 @@ public class Member {
 
         executorDaemon = new ExecutorDaemon(hazelcast, this, ClusterConstants.TRANSLATION_EXECUTOR_NAME, capacity);
         sessionManager = new SessionManager(hazelcast);
+        decoderWeightsTopic = hazelcast.getTopic(ClusterConstants.DECODER_WEIGHTS_TOPIC_NAME);
+        decoderWeightsTopic.addMessageListener(this::onDecoderWeightsChanged);
+        membersModelPath = hazelcast.getMap(ClusterConstants.MEMBERS_MODEL_PATH_MAP_NAME);
+        membersModelPath.put(
+                hazelcast.getCluster().getLocalMember().getUuid(),
+                engine.getRootPath().getAbsolutePath()
+        );
+
+        logger.info("Member bootstrap completed, all models loaded");
+    }
+
+    private void onDecoderWeightsChanged(Message<Map<String, float[]>> message) {
+        logger.info("Received decoder weights changed notification");
+
+        Map<String, float[]> weights = message.getMessageObject();
+        EngineConfig config = engine.getConfig();
+        config.getDecoderConfig().setWeights(weights);
+
+        File file = Engine.getConfigFile(engine.getName());
+
+        try {
+            new INIEngineConfigWriter(config).write(file);
+            logger.info("Engine's config file successfully written");
+            restart();
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to write config file: " + file, e);
+        }
+    }
+
+    private void restart() {
+        logger.info("Restarting member, exit code 101.");
+        System.exit(101);
     }
 
     public SessionManager getSessionManager() {
         return sessionManager;
+    }
+
+    public String getMemberModelPath(String address) {
+        for (com.hazelcast.core.Member member : hazelcast.getCluster().getMembers()) {
+            String host = member.getAddress().getHost();
+            if (host.equals(address)) {
+                return this.membersModelPath.get(member.getUuid());
+            }
+        }
+
+        return null;
     }
 
     public synchronized void shutdown() {

@@ -14,7 +14,6 @@ import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.framework.ProcessingException;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -45,10 +44,8 @@ public class DecoderFacade {
         }
     }
 
-    public void setFeatureWeights(Map<String, float[]> weights) throws IOException {
-        //TODO:
-//        engine.setDecoderWeights(weights);
-//        sendBroadcastSignal(SIGNAL_RESET, null);
+    public void setFeatureWeights(Map<String, float[]> weights) {
+        ModernMT.client.setDecoderWeights(weights);
     }
 
     // =============================

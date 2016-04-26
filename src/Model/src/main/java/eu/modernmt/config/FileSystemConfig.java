@@ -1,9 +1,6 @@
 package eu.modernmt.config;
 
-import org.apache.commons.io.FileUtils;
-
 import java.io.File;
-import java.io.IOException;
 
 /**
  * Created by davide on 24/02/16.
@@ -44,20 +41,4 @@ public class FileSystemConfig {
             throw new IllegalStateException("Invalid path for property '" + SYSPROP_MMT_HOME + "': " + tokenizerModels + " must be a valid directory.");
     }
 
-    public File getRuntime(String engine, String component) {
-        return getRuntime(engine, component, true);
-    }
-
-    public File getRuntime(String engine, String component, boolean ensure) {
-        File folder = new File(runtime, engine + File.separatorChar + component);
-
-        if (ensure && !folder.isDirectory())
-            try {
-                FileUtils.forceMkdir(folder);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
-        return folder;
-    }
 }

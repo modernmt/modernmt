@@ -159,10 +159,9 @@ def main_evaluate(argv):
         lines += corpus.count_lines()
 
     print '\nTesting on {lines} sentences...\n'.format(lines=lines)
-    sys.stdout.flush()
 
     scores = evaluator.evaluate(corpora=corpora, google_key=args.gt_key, heval_output=args.heval_output,
-                                use_sessions=not args.interactive)
+                                use_sessions=not args.interactive, debug=args.debug)
 
     matecat = sorted([(translator,
                        -1 if isinstance(score, basestring) else score['matecat'],
@@ -442,6 +441,9 @@ def main():
     except SSHException as e:
         sys.stderr.write('ERROR SSH connection problem: {message}\n'.format(message=e.message))
         exit(1)
+    except Exception as e:
+        sys.stderr.write('ERROR Unexpected exception:\n\t{message}\n'.format(message=repr(e)))
+        raise
 
 
 if __name__ == '__main__':

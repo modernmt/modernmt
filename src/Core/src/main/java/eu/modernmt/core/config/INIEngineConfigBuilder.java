@@ -30,6 +30,8 @@ public class INIEngineConfigBuilder {
         }
 
         EngineConfig engineConfig = new EngineConfig();
+        engineConfig.rawConfig = config;
+
         engineConfig.setName(name);
         readEngineConfig(engineConfig, getSection(config, "engine"));
         readAlignerConfig(engineConfig.getAlignerConfig(), getSection(config, "engine"));

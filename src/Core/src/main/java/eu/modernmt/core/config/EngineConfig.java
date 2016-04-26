@@ -1,11 +1,15 @@
 package eu.modernmt.core.config;
 
+import org.apache.commons.configuration.HierarchicalINIConfiguration;
+
 import java.util.Locale;
 
 /**
  * Created by davide on 19/04/16.
  */
 public class EngineConfig {
+
+    HierarchicalINIConfiguration rawConfig;
 
     private String name;
     private Locale sourceLanguage;

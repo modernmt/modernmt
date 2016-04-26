@@ -283,7 +283,7 @@ class Evaluator:
         self._engine = engine
         self._member = member
 
-    def evaluate(self, corpora, google_key=None, heval_output=None, use_sessions=True):
+    def evaluate(self, corpora, google_key=None, heval_output=None, use_sessions=True, debug=False):
         if len(corpora) == 0:
             raise IllegalArgumentException('empty corpora')
 
@@ -302,64 +302,68 @@ class Evaluator:
             MMTTranslator(self._member, use_sessions)
         ]
 
-        working_dir = self._member.get_tempdir('evaluation')
+        working_dir = self._engine.get_tempdir('evaluation')
 
-        translations = []
+        try:
+            translations = []
 
-        # Process references
-        corpora_path = os.path.join(working_dir, 'corpora')
-        corpora = xmlencoder.encode(corpora, corpora_path)
+            # Process references
+            corpora_path = os.path.join(working_dir, 'corpora')
+            corpora = xmlencoder.encode(corpora, corpora_path)
 
-        reference = os.path.join(working_dir, 'reference.' + target_lang)
-        fileutils.merge([corpus.get_file(target_lang) for corpus in corpora], reference)
-        source = os.path.join(working_dir, 'source.' + source_lang)
-        fileutils.merge([corpus.get_file(source_lang) for corpus in corpora], source)
+            reference = os.path.join(working_dir, 'reference.' + target_lang)
+            fileutils.merge([corpus.get_file(target_lang) for corpus in corpora], reference)
+            source = os.path.join(working_dir, 'source.' + source_lang)
+            fileutils.merge([corpus.get_file(source_lang) for corpus in corpora], source)
 
-        # Translate
-        for translator in translators:
-            tid = translator.name().replace(' ', '_')
-
-            translations_path = os.path.join(working_dir, 'translations', tid + '.raw')
-            xmltranslations_path = os.path.join(working_dir, 'translations', tid)
-            fileutils.makedirs(translations_path, exist_ok=True)
-
-            try:
-                translated, mtt = translator.translate(corpora, translations_path)
-                translated = xmlencoder.encode(translated, xmltranslations_path)
-                translations.append((translator, translated, mtt))
-            except TranslateError as e:
-                translations.append((translator, e))
-            except Exception as e:
-                translations.append((translator, TranslateError('Unexcepted ERROR: ' + str(e.message))))
-
-        if he_outputter is not None:
-            he_output = os.path.join(heval_output, 'reference.' + target_lang)
-            he_outputter.write(reference, he_output, target_lang)
-            he_output = os.path.join(heval_output, 'source.' + source_lang)
-            he_outputter.write(source, he_output, source_lang)
-
-        # Scoring
-        scores = {}
-
-        for translation in translations:
-            if len(translation) > 2:
-                translator, translated, mtt = translation
+            # Translate
+            for translator in translators:
                 tid = translator.name().replace(' ', '_')
 
-                translated_merged = os.path.join(working_dir, tid + '.' + target_lang)
-                fileutils.merge([corpus.get_file(target_lang) for corpus in translated], translated_merged)
+                translations_path = os.path.join(working_dir, 'translations', tid + '.raw')
+                xmltranslations_path = os.path.join(working_dir, 'translations', tid)
+                fileutils.makedirs(translations_path, exist_ok=True)
 
-                if he_outputter is not None:
-                    he_output = os.path.join(heval_output, tid + '.' + target_lang)
-                    he_outputter.write(translated_merged, he_output, target_lang)
+                try:
+                    translated, mtt = translator.translate(corpora, translations_path)
+                    translated = xmlencoder.encode(translated, xmltranslations_path)
+                    translations.append((translator, translated, mtt))
+                except TranslateError as e:
+                    translations.append((translator, e))
+                except Exception as e:
+                    translations.append((translator, TranslateError('Unexcepted ERROR: ' + str(e.message))))
 
-                scores[translator.name()] = {
-                    'bleu': BLEUScore().calculate(translated_merged, reference),
-                    'matecat': MatecatScore().calculate(translated_merged, reference),
-                    '_mtt': mtt
-                }
-            else:
-                translator, e = translation
-                scores[translator.name()] = str(e.message)
+            if he_outputter is not None:
+                he_output = os.path.join(heval_output, 'reference.' + target_lang)
+                he_outputter.write(reference, he_output, target_lang)
+                he_output = os.path.join(heval_output, 'source.' + source_lang)
+                he_outputter.write(source, he_output, source_lang)
 
-        return scores
+            # Scoring
+            scores = {}
+
+            for translation in translations:
+                if len(translation) > 2:
+                    translator, translated, mtt = translation
+                    tid = translator.name().replace(' ', '_')
+
+                    translated_merged = os.path.join(working_dir, tid + '.' + target_lang)
+                    fileutils.merge([corpus.get_file(target_lang) for corpus in translated], translated_merged)
+
+                    if he_outputter is not None:
+                        he_output = os.path.join(heval_output, tid + '.' + target_lang)
+                        he_outputter.write(translated_merged, he_output, target_lang)
+
+                    scores[translator.name()] = {
+                        'bleu': BLEUScore().calculate(translated_merged, reference),
+                        'matecat': MatecatScore().calculate(translated_merged, reference),
+                        '_mtt': mtt
+                    }
+                else:
+                    translator, e = translation
+                    scores[translator.name()] = str(e.message)
+
+            return scores
+        finally:
+            if not debug:
+                self._engine.clear_tempdir('evaluation')

@@ -39,6 +39,10 @@ public class Engine {
         return result.toString();
     }
 
+    public static File getRootPath(String engine) {
+        return new File(Config.fs.engines, engine);
+    }
+
     public static File getConfigFile(String engine) {
         File root = new File(Config.fs.engines, engine);
         return new File(root, ENGINE_CONFIG_PATH);
@@ -49,9 +53,7 @@ public class Engine {
     private final File root;
     private final File decoderIniTemplatePath;
     private final File caIndexPath;
-    private final File configFile;
-
-    private File workingDirectory = new File(System.getProperty("user.dir"));
+    private final String name;
 
     private Decoder decoder = null;
     private Aligner aligner = null;
@@ -62,14 +64,18 @@ public class Engine {
     public Engine(EngineConfig config, int threads) {
         this.config = config;
         this.threads = threads;
+        this.name = config.getName();
         this.root = new File(Config.fs.engines, config.getName());
         this.decoderIniTemplatePath = new File(this.root, MOSES_INI_PATH);
         this.caIndexPath = new File(this.root, CONTEXT_ANALYZER_INDEX_PATH);
-        this.configFile = new File(this.root, ENGINE_CONFIG_PATH);
     }
 
-    public void setWorkingDirectory(File workingDirectory) {
-        this.workingDirectory = workingDirectory;
+    public EngineConfig getConfig() {
+        return config;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public Decoder getDecoder() {
@@ -85,7 +91,8 @@ public class Engine {
 
                         mosesINI.setThreads(threads);
 
-                        File inifile = new File(workingDirectory, "moses.ini");
+                        File runtimeDir = new File(Config.fs.runtime, name);
+                        File inifile = new File(runtimeDir, "moses.ini");
                         FileUtils.write(inifile, mosesINI.toString(), false);
                         decoder = new MosesDecoder(inifile);
                     } catch (IOException e) {
@@ -162,6 +169,10 @@ public class Engine {
 
     public Locale getTargetLanguage() {
         return config.getTargetLanguage();
+    }
+
+    public File getRootPath() {
+        return root;
     }
 
 }

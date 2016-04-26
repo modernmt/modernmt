@@ -31,7 +31,7 @@ public class SessionManager {
     }
 
     public TranslationSession create(List<ContextDocument> context) {
-        long id = idGenerator.newId();
+        long id = idGenerator.newId() + 1; // starts from 0
         TranslationSession session = new TranslationSession(id, context);
         sessions.put(id, session);
         return session;

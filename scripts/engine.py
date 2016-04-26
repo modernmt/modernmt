@@ -1,17 +1,12 @@
-import logging
-import multiprocessing
 import os
 import shutil
-import signal
-import subprocess
 import sys
-import tempfile
 import time
 from ConfigParser import ConfigParser
 
 import scripts
-from scripts import mmt_javamain, IllegalArgumentException, IllegalStateException
-from scripts.libs import fileutils, daemon, shell
+from scripts import IllegalArgumentException, IllegalStateException
+from scripts.libs import fileutils
 from scripts.mt import ParallelCorpus
 from scripts.mt.contextanalysis import ContextAnalyzer
 from scripts.mt.lm import LanguageModel
@@ -24,147 +19,8 @@ __author__ = 'Davide Caroselli'
 DEFAULT_MMT_API_PORT = 8045
 DEFAULT_MMT_CLUSTER_PORT = 5016
 
-logger = logging.getLogger()
 
-
-# ==============================
-# Base classes
-# ==============================
-
-
-class _MMTRuntimeComponent:
-    def __init__(self, engine_name, component_name):
-        self.__engine = engine_name
-        self.__component = component_name
-
-        self.__runtime_path = os.path.join(scripts.RUNTIME_DIR, engine_name, component_name)
-        self.__logs_path = os.path.join(self.__runtime_path, 'logs')
-        self.__temp_path = os.path.join(self.__runtime_path, 'tmp')
-
-    def _get_runtimedir(self, ensure=True):
-        if ensure and not os.path.isdir(self.__logs_path):
-            fileutils.makedirs(self.__runtime_path, exist_ok=True)
-        return self.__runtime_path
-
-    def _get_logfile(self, name, ensure=True):
-        if ensure and not os.path.isdir(self.__logs_path):
-            fileutils.makedirs(self.__logs_path, exist_ok=True)
-
-        return os.path.join(self.__logs_path, name + '.log')
-
-    def _get_tempdir(self, name, ensure=True):
-        if ensure and not os.path.isdir(self.__temp_path):
-            fileutils.makedirs(self.__temp_path, exist_ok=True)
-
-        folder = os.path.join(self.__temp_path, name)
-
-        if ensure:
-            shutil.rmtree(folder, ignore_errors=True)
-            os.makedirs(folder)
-
-        return folder
-
-    def _clear_tempdir(self):
-        shutil.rmtree(self.__temp_path, ignore_errors=True)
-
-
-class _ProcessMonitor:
-    def __init__(self, pidfile):
-        self._pidfile = pidfile
-        self._process = None
-        self._stop_requested = False
-
-    def _get_pid(self):
-        pid = 0
-
-        if os.path.isfile(self._pidfile):
-            with open(self._pidfile) as pid_file:
-                pid = int(pid_file.read())
-
-        return pid
-
-    def _set_pid(self, pid):
-        parent_dir = os.path.abspath(os.path.join(self._pidfile, os.pardir))
-        if not os.path.isdir(parent_dir):
-            fileutils.makedirs(parent_dir, exist_ok=True)
-
-        with open(self._pidfile, 'w') as pid_file:
-            pid_file.write(str(pid))
-
-    def is_running(self):
-        pid = self._get_pid()
-
-        if pid == 0:
-            return False
-
-        return daemon.is_running(pid)
-
-    def start(self, daemonize=True):
-        if self.is_running():
-            raise IllegalStateException('process is already running')
-
-        i_am_a_daemon = daemon.daemonize() if daemonize else True
-
-        if i_am_a_daemon:
-            self._set_pid(os.getpid())
-
-            signal.signal(signal.SIGINT, self._kill_handler)
-            signal.signal(signal.SIGTERM, self._kill_handler)
-
-            code = 1
-
-            while not self._stop_requested and code > 0 and code != -signal.SIGINT and code != -signal.SIGTERM:
-                self._process = self._start_process()
-                self._process.wait()
-                code = self._process.returncode
-        else:
-            success = False
-            for _ in range(0, 5):
-                time.sleep(1)
-
-                success = self._check_process_status()
-                if success:
-                    break
-
-            return success
-
-    def _start_process(self):
-        pass
-
-    def _check_process_status(self):
-        return self.is_running()
-
-    def _kill_handler(self, sign, _):
-        self._stop_requested = True
-
-        self._process.send_signal(sign)
-        self._process.wait()
-
-        exit(0)
-
-    # after this amount of seconds, there is no excuse for a process to still be there.
-    SIGTERM_TIMEOUT = 60 * 5
-
-    def stop(self):
-        pid = self._get_pid()
-
-        if not self.is_running():
-            raise IllegalStateException('process is not running')
-
-        try:
-            os.kill(pid, signal.SIGTERM)
-            daemon.wait(pid, _ProcessMonitor.SIGTERM_TIMEOUT)
-        except daemon.TimeoutExpired:
-            # firin mah lazer!!1
-            os.kill(pid, signal.SIGKILL)
-            daemon.wait(pid)
-
-
-# ==============================
-# Engine
-# ==============================
-
-class _MMTEngineBuilderLogger:
+class _builder_logger:
     def __init__(self, count, line_len=70):
         self.line_len = line_len
         self.count = count
@@ -206,12 +62,20 @@ class _MMTEngineBuilderLogger:
         sys.stdout.flush()
 
 
-class _MMTEngineBuilder(_MMTRuntimeComponent):
+class _MMTEngineBuilder:
     def __init__(self, engine):
-        _MMTRuntimeComponent.__init__(self, engine.name, 'training')
         self._engine = engine
+        self._temp_dir = None
+
+    def _get_tempdir(self, name):
+        path = os.path.join(self._temp_dir, name)
+        if not os.path.isdir(path):
+            fileutils.makedirs(path, exist_ok=True)
+        return path
 
     def build(self, roots, debug=False, steps=None, split_trainingset=True):
+        self._temp_dir = self._engine.get_tempdir('training', ensure=True)
+
         source_lang = self._engine.source_lang
         target_lang = self._engine.target_lang
 
@@ -227,7 +91,7 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
             if len(unknown_steps) > 0:
                 raise IllegalArgumentException('Unknown training steps: ' + str(unknown_steps))
 
-        cmdlogger = _MMTEngineBuilderLogger(len(steps) + 1)
+        cmdlogger = _builder_logger(len(steps) + 1)
         cmdlogger.start(self._engine, bilingual_corpora, monolingual_corpora)
 
         shutil.rmtree(self._engine.path, ignore_errors=True)
@@ -269,21 +133,21 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
             # Training Context Analyzer
             if 'context_analyzer' in steps:
                 with cmdlogger.step('Context Analyzer training') as _:
-                    log_file = self._get_logfile('context')
+                    log_file = self._engine.get_logfile('training.context')
                     self._engine.analyzer.create_index(unprocessed_bicorpora, source_lang, log_file=log_file)
 
             # Training Adaptive Language Model (on the target side of all bilingual corpora)
             if 'lm' in steps:
                 with cmdlogger.step('Language Model training') as _:
                     working_dir = self._get_tempdir('lm')
-                    log_file = self._get_logfile('lm')
+                    log_file = self._engine.get_logfile('training.lm')
                     self._engine.lm.train(processed_bicorpora + processed_mocorpora, target_lang, working_dir, log_file)
 
             # Training Translation Model
             if 'tm' in steps:
                 with cmdlogger.step('Translation Model training') as _:
                     working_dir = self._get_tempdir('tm')
-                    log_file = self._get_logfile('tm')
+                    log_file = self._engine.get_logfile('training.tm')
                     self._engine.pt.train(processed_bicorpora, self._engine.aligner, working_dir, log_file)
 
             # Writing config file
@@ -292,12 +156,9 @@ class _MMTEngineBuilder(_MMTRuntimeComponent):
                 self._engine.write_config()
 
             cmdlogger.completed()
-        except Exception as e:
-            logger.exception(e)
-            raise
         finally:
             if not debug:
-                self._clear_tempdir()
+                self._engine.clear_tempdir('training')
 
 
 class MMTEngine:
@@ -332,6 +193,10 @@ class MMTEngine:
         self._lm_model = os.path.join(self.models_path, 'lm', 'target.lm')
         self._context_index = os.path.join(self.models_path, 'context', 'index')
         self._moses_ini_file = os.path.join(self.models_path, 'moses.ini')
+
+        self._runtime_path = os.path.join(scripts.RUNTIME_DIR, self.name)
+        self._logs_path = os.path.join(self._runtime_path, 'logs')
+        self._temp_path = os.path.join(self._runtime_path, 'tmp')
 
         self.builder = _MMTEngineBuilder(self)
 
@@ -406,193 +271,32 @@ class MMTEngine:
                     out.write(' '.join([str(w) for w in weights]))
                     out.write('\n')
 
+    def get_logfile(self, name, ensure=True):
+        if ensure and not os.path.isdir(self._logs_path):
+            fileutils.makedirs(self._logs_path, exist_ok=True)
 
-# ==============================
-# MMT Components
-# ==============================
+        logfile = os.path.join(self._logs_path, name + '.log')
 
+        if ensure and os.path.isfile(logfile):
+            os.remove(logfile)
 
-class _TuningProcessLogger:
-    def __init__(self, count, line_len=70):
-        self.line_len = line_len
-        self.count = count
-        self._current_step = 0
-        self._step = None
-        self._api_port = None
+        return logfile
 
-    def start(self, server, corpora):
-        engine = server.engine
-        self._api_port = server.api_port
+    def get_runtime_path(self):
+        return self._runtime_path
 
-        print '\n============ TUNING STARTED ============\n'
-        print 'ENGINE:  %s' % engine.name
-        print 'CORPORA: %s (%d documents)' % (corpora[0].root, len(corpora))
-        print 'LANGS:   %s > %s' % (engine.source_lang, engine.target_lang)
-        print
-        sys.stdout.flush()
+    def get_tempdir(self, name, ensure=True):
+        if ensure and not os.path.isdir(self._temp_path):
+            fileutils.makedirs(self._temp_path, exist_ok=True)
 
-    def step(self, step):
-        self._step = step
-        self._current_step += 1
-        return self
+        folder = os.path.join(self._temp_path, name)
 
-    def completed(self, bleu):
-        print '\n============ TUNING SUCCESS ============\n'
-        print '\nFinal BLEU: %.2f\n' % (bleu * 100.)
-        print 'You can try the API with:'
-        print '\tcurl "http://localhost:{port}/translate?q=hello+world&context=computer"'.format(port=self._api_port)
-        print
-        sys.stdout.flush()
+        if ensure:
+            shutil.rmtree(folder, ignore_errors=True)
+            os.makedirs(folder)
 
-    def __enter__(self):
-        message = 'INFO: (%d of %d) %s... ' % (self._current_step, self.count, self._step)
-        print message.ljust(self.line_len),
-        sys.stdout.flush()
+        return folder
 
-        self._start_time = time.time()
-        return self
-
-    def __exit__(self, *_):
-        self._end_time = time.time()
-        print 'DONE (in %ds)' % int(self._end_time - self._start_time)
-        sys.stdout.flush()
-
-
-class _MMTDistributedComponent(_MMTRuntimeComponent, _ProcessMonitor):
-    def __init__(self, component, engine, cluster_port=None):
-        _MMTRuntimeComponent.__init__(self, engine.name, component)
-        _ProcessMonitor.__init__(self, os.path.join(self._get_runtimedir(), 'process.pid'))
-
-        self.engine = engine
-        self.cluster_port = cluster_port if cluster_port is not None else DEFAULT_MMT_CLUSTER_PORT
-
-
-class MMTServer(_MMTDistributedComponent):
-    def __init__(self, engine, api_port=None, cluster_ports=None):
-        _MMTDistributedComponent.__init__(self, 'member', engine, cluster_ports)
-
-        self.api_port = api_port if api_port is not None else DEFAULT_MMT_API_PORT
-        self.api = MMTServerApi(api_port)
-
-        self._mert_script = os.path.join(Moses.bin_path, 'scripts', 'mert-moses.pl')
-        self._mert_i_script = os.path.join(scripts.MMT_ROOT, 'scripts', 'mertinterface.py')
-        self.log_file = self._get_logfile('process', ensure=False)
-
-    def _start_process(self):
-        args = ['-e', self.engine.name, '-a', str(self.api_port), '-p', str(self.cluster_ports[0]),
-                str(self.cluster_ports[1])]
-
-        env = os.environ.copy()
-        env['LD_LIBRARY_PATH'] = scripts.LIB_DIR
-        command = mmt_javamain('eu.modernmt.cli.MasterNodeMain', args)
-
-        self._get_logfile(self.log_file, ensure=True)
-        log = open(self.log_file, 'wa')
-        return subprocess.Popen(command, stderr=log, shell=False, env=env)
-
-    def _check_process_status(self):
-        try:
-            self.api.stats()
-            return True
-        except:
-            return False
-
-    def tune(self, corpora=None, tokenize=True, debug=False, context_enabled=True):
-        if corpora is None:
-            corpora = ParallelCorpus.list(os.path.join(self.engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME))
-
-        if len(corpora) == 0:
-            raise IllegalArgumentException('empty corpora')
-
-        if not self.is_running():
-            raise IllegalStateException('No MMT Server running, start the engine first')
-
-        target_lang = self.engine.target_lang
-        source_lang = self.engine.source_lang
-
-        cmdlogger = _TuningProcessLogger(4 if tokenize else 3)
-        cmdlogger.start(self, corpora)
-
-        working_dir = self._get_tempdir('tuning')
-        mert_wd = os.path.join(working_dir, 'mert')
-
-        try:
-            original_corpora = corpora
-
-            # Tokenization
-            tokenized_corpora = original_corpora
-
-            if tokenize:
-                tokenizer_output = os.path.join(working_dir, 'tokenized_corpora')
-                fileutils.makedirs(tokenizer_output, exist_ok=True)
-
-                with cmdlogger.step('Corpus tokenization') as _:
-                    tokenized_corpora = self.engine.preprocessor.process(corpora, tokenizer_output, print_tags=False,
-                                                                         print_placeholders=True,
-                                                                         original_spacing=False)
-
-            # Create merged corpus
-            with cmdlogger.step('Merging corpus') as _:
-                source_merged_corpus = os.path.join(working_dir, 'corpus.' + source_lang)
-                with open(source_merged_corpus, 'wb') as out:
-                    original_root = original_corpora[0].root
-
-                    for corpus in tokenized_corpora:
-                        tokenized = corpus.get_file(source_lang)
-                        original = os.path.join(original_root, corpus.name + '.' + source_lang)
-                        out.write(tokenized + ':' + original + '\n')
-
-                target_merged_corpus = os.path.join(working_dir, 'corpus.' + target_lang)
-                fileutils.merge([corpus.get_file(target_lang) for corpus in tokenized_corpora], target_merged_corpus)
-
-            # Run MERT algorithm
-            with cmdlogger.step('Tuning') as _:
-                # Start MERT
-                decoder_flags = ['--port', str(self.api_port)]
-
-                if not context_enabled:
-                    decoder_flags.append('--skip-context-analysis')
-                    decoder_flags.append('1')
-
-                fileutils.makedirs(mert_wd, exist_ok=True)
-
-                with tempfile.NamedTemporaryFile() as runtime_moses_ini:
-                    command = [self._mert_script, source_merged_corpus, target_merged_corpus,
-                               self._mert_i_script, runtime_moses_ini.name, '--threads',
-                               str(multiprocessing.cpu_count()), '--mertdir', os.path.join(Moses.bin_path, 'bin'),
-                               '--mertargs', '\'--binary --sctype BLEU\'', '--working-dir', mert_wd, '--nbest', '100',
-                               '--decoder-flags', '"' + ' '.join(decoder_flags) + '"', '--nonorm', '--closest',
-                               '--no-filter-phrase-table']
-
-                    with open(self._get_logfile('mert'), 'wb') as log:
-                        shell.execute(' '.join(command), stdout=log, stderr=log)
-
-            # Read optimized configuration
-            with cmdlogger.step('Applying changes') as _:
-                bleu_score = 0
-                weights = {}
-                found_weights = False
-
-                with open(os.path.join(mert_wd, 'moses.ini')) as moses_ini:
-                    for line in moses_ini:
-                        line = line.strip()
-
-                        if len(line) == 0:
-                            continue
-                        elif found_weights:
-                            tokens = line.split()
-                            weights[tokens[0].rstrip('=')] = [float(val) for val in tokens[1:]]
-                        elif line.startswith('# BLEU'):
-                            bleu_score = float(line.split()[2])
-                        elif line == '[weight]':
-                            found_weights = True
-
-                _ = self.api.update_features(weights)
-
-            cmdlogger.completed(bleu_score)
-        except Exception as e:
-            logger.exception(e)
-            raise
-        finally:
-            if not debug:
-                self._clear_tempdir()
+    def clear_tempdir(self, subdir=None):
+        path = os.path.join(self._temp_path, subdir) if subdir is not None else self._temp_path
+        shutil.rmtree(path, ignore_errors=True)

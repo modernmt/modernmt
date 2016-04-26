@@ -7,6 +7,7 @@
         <password>20aef13f-6535-4f65-a281-2e3580af944b</password>
     </group>
     <network>
+        <reuse-address>true</reuse-address>
         <port auto-increment="false">0</port>
         <outbound-ports>
             <!--

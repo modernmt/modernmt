@@ -7,7 +7,7 @@ import time
 
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
 
-from scripts.engine import MMTServerApi
+from scripts.cluster import MMTApi
 from scripts.libs import multithread
 
 __author__ = 'Davide Caroselli'
@@ -78,16 +78,28 @@ class _DocumentTranslator:
             nbest_out.write(str(hyp['totalScore']))
             nbest_out.write('\n')
 
+    @staticmethod
+    def _wait_for_restart():
+        for i in range(0, 60):
+            try:
+                Api.translate('test')
+                return
+            except:
+                time.sleep(5)
+
+        raise Exception('Server unavailable - Too many failed attempts')
+
     def run(self):
         self._line_id = 0
 
-        if self.weights is not None:
-            Api.update_features(self.weights)
-        time.sleep(1)
-
-        self._features = _sorted_features_list()
-
         try:
+            if self.weights is not None:
+                Api.update_features(self.weights)
+            time.sleep(5)
+
+            self._wait_for_restart()
+            self._features = _sorted_features_list()
+
             translations = []
             sessions = []
 
@@ -162,7 +174,7 @@ if __name__ == '__main__':
         parser.print_help()
         exit(1)
 
-    Api = MMTServerApi(args.port)
+    Api = MMTApi(args.port)
 
     if args.show_weights:
         # Show weights

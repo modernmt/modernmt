@@ -9,6 +9,8 @@ public class ClusterConstants {
     public static final String TRANSLATION_EXECUTOR_NAME = "TranslationsExecutor";
     public static final String TRANSLATION_SESSION_MAP_NAME = "TranslationSessionMap";
     public static final String TRANSLATION_SESSION_ID_GENERATOR_NAME = "TranslationSessionIdGenerator";
+    public static final String DECODER_WEIGHTS_TOPIC_NAME = "DecoderWeightsTopic";
+    public static final String MEMBERS_MODEL_PATH_MAP_NAME = "MembersModelPathMap";
 
     static {
         int cores = Runtime.getRuntime().availableProcessors();
