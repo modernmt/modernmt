@@ -12,6 +12,8 @@ import eu.modernmt.core.facade.ModernMT;
 import eu.modernmt.rest.RESTServer;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -93,8 +95,14 @@ public class MemberMain {
 
     public static void main(String[] _args) throws Throwable {
         Args args = new Args(_args);
-
         Log4jConfiguration.setup(args.verbosity);
+
+        final Logger mainLogger = LogManager.getLogger(MemberMain.class);
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+            mainLogger.fatal("Unexpected exception thrown by thread [" + t.getName() + "]", e);
+            e.printStackTrace();
+        });
+
         StatusManager status = new StatusManager(args.statusFile);
 
         Client client = null;
