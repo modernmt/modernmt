@@ -3,6 +3,8 @@ package eu.modernmt.core.cluster.executor;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ITopic;
 import eu.modernmt.core.cluster.ClusterNode;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -51,6 +53,8 @@ public class ExecutorDaemon {
 
     private static class Worker extends Thread {
 
+        private final Logger logger = LogManager.getLogger(Worker.class);
+
         private final BlockingQueue<Task> taskQueue;
         private final HazelcastInstance hazelcast;
         private final ClusterNode localNode;
@@ -63,7 +67,21 @@ public class ExecutorDaemon {
 
         private Task next() {
             try {
-                return taskQueue.take();
+                long begin = 0L;
+
+                if (logger.isTraceEnabled()) {
+                    logger.trace("Waiting for task");
+                    begin = System.currentTimeMillis();
+                }
+
+                Task task = taskQueue.take();
+
+                if (logger.isTraceEnabled()) {
+                    long elapsed = System.currentTimeMillis() - begin;
+                    logger.trace(String.format("Task received, waited for %.2fs", ((double) elapsed) / 1000.));
+                }
+
+                return task;
             } catch (InterruptedException e) {
                 return null;
             }
@@ -76,6 +94,13 @@ public class ExecutorDaemon {
             while (!isInterrupted() && (task = next()) != null) {
                 TaskOutcome outcome;
 
+                long begin = 0L;
+
+                if (logger.isTraceEnabled()) {
+                    logger.trace("Executing task " + task.resultId);
+                    begin = System.currentTimeMillis();
+                }
+
                 try {
                     if (task.callable instanceof DistributedCallable)
                         ((DistributedCallable) task.callable).setLocalNode(localNode);
@@ -85,8 +110,19 @@ public class ExecutorDaemon {
                     outcome = new TaskOutcome(e, task.resultId);
                 }
 
+                if (logger.isTraceEnabled()) {
+                    long elapsed = System.currentTimeMillis() - begin;
+                    logger.trace(String.format("Task completed in %.2fs", ((double) elapsed) / 1000.));
+                    begin = System.currentTimeMillis();
+                }
+
                 ITopic<TaskOutcome> topic = hazelcast.getTopic(task.resultTopicId);
                 topic.publish(outcome);
+
+                if (logger.isTraceEnabled()) {
+                    long elapsed = System.currentTimeMillis() - begin;
+                    logger.trace(String.format("Task notified in %.2fs", ((double) elapsed) / 1000.));
+                }
             }
         }
     }

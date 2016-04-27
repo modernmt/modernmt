@@ -17,8 +17,8 @@ public class ClusterConstants {
 
         // Accordingly to "Fast, Scalable Phrase-Based SMT Decoding" [ACL 2016 Submission]
         // current version of Moses Decoder seems to not scale well if number of threads is
-        // more than 16. Further tests showed that best trade-off is 12
-        cores = Math.min(12, cores);
+        // more than 16. Further tests showed that best trade-off is 14
+        cores = Math.min(14, cores);
 
         DEFAULT_TRANSLATION_EXECUTOR_SIZE = cores;
     }
