@@ -151,6 +151,8 @@ public class ClusterNode {
         decoderWeightsTopic = hazelcast.getTopic(ClusterConstants.DECODER_WEIGHTS_TOPIC_NAME);
         decoderWeightsTopic.addMessageListener(this::onDecoderWeightsChanged);
         membersModelPath = hazelcast.getMap(ClusterConstants.MEMBERS_MODEL_PATH_MAP_NAME);
+
+        hazelcast.getCluster().getLocalMember().setStringAttribute("ModelPath", engine.getRootPath().getAbsolutePath());
         membersModelPath.put(
                 hazelcast.getCluster().getLocalMember().getUuid(),
                 engine.getRootPath().getAbsolutePath()
@@ -189,7 +191,10 @@ public class ClusterNode {
     public String getMemberModelPath(String address) {
         for (com.hazelcast.core.Member member : hazelcast.getCluster().getMembers()) {
             String host = member.getAddress().getHost();
+
+
             if (host.equals(address)) {
+                logger.info("FOUND!!!!!!!: " + member.getStringAttribute("ModelPath"));
                 return this.membersModelPath.get(member.getUuid());
             }
         }
