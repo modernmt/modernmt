@@ -22,7 +22,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -30,6 +29,8 @@ import java.util.concurrent.TimeUnit;
  * Created by davide on 18/04/16.
  */
 public class ClusterNode {
+
+    private static final String MODEL_PATH_ATTRIBUTE_NAME = "ClusterNode.ModelPath";
 
     private static final int SHUTDOWN_NOT_INVOKED = 0;
     private static final int SHUTDOWN_INVOKED = 1;
@@ -75,7 +76,6 @@ public class ClusterNode {
     private DistributedExecutor executor;
     private SessionManager sessionManager;
     private ITopic<Map<String, float[]>> decoderWeightsTopic;
-    private ConcurrentMap<String, String> membersModelPath;
 
     public ClusterNode(int port) {
         this(port, ClusterConstants.DEFAULT_TRANSLATION_EXECUTOR_SIZE);
@@ -150,11 +150,8 @@ public class ClusterNode {
         sessionManager = new SessionManager(hazelcast);
         decoderWeightsTopic = hazelcast.getTopic(ClusterConstants.DECODER_WEIGHTS_TOPIC_NAME);
         decoderWeightsTopic.addMessageListener(this::onDecoderWeightsChanged);
-        membersModelPath = hazelcast.getMap(ClusterConstants.MEMBERS_MODEL_PATH_MAP_NAME);
-
-        hazelcast.getCluster().getLocalMember().setStringAttribute("ModelPath", engine.getRootPath().getAbsolutePath());
-        membersModelPath.put(
-                hazelcast.getCluster().getLocalMember().getUuid(),
+        hazelcast.getCluster().getLocalMember().setStringAttribute(
+                MODEL_PATH_ATTRIBUTE_NAME,
                 engine.getRootPath().getAbsolutePath()
         );
 
@@ -192,11 +189,8 @@ public class ClusterNode {
         for (com.hazelcast.core.Member member : hazelcast.getCluster().getMembers()) {
             String host = member.getAddress().getHost();
 
-
-            if (host.equals(address)) {
-                logger.info("FOUND!!!!!!!: " + member.getStringAttribute("ModelPath"));
-                return this.membersModelPath.get(member.getUuid());
-            }
+            if (host.equals(address))
+                return member.getStringAttribute(MODEL_PATH_ATTRIBUTE_NAME);
         }
 
         return null;
