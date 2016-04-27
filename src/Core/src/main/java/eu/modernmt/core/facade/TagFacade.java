@@ -31,7 +31,7 @@ public class TagFacade {
         ProjectTagsOperation operation = new ProjectTagsOperation(sentence, translation, symmetrizationStrategy, invert);
 
         try {
-            return ModernMT.client.submit(operation).get();
+            return ModernMT.node.submit(operation).get();
         } catch (InterruptedException e) {
             throw new SystemShutdownException();
         } catch (ExecutionException e) {

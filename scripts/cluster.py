@@ -118,9 +118,9 @@ class _tuning_logger:
         self._step = None
         self._api_port = None
 
-    def start(self, member, corpora):
-        engine = member.engine
-        self._api_port = member.api.port
+    def start(self, node, corpora):
+        engine = node.engine
+        self._api_port = node.api.port
 
         print '\n============ TUNING STARTED ============\n'
         print 'ENGINE:  %s' % engine.name
@@ -152,9 +152,9 @@ class _tuning_logger:
         print 'DONE (in %ds)' % int(self._end_time - self._start_time)
 
 
-class MMTMember:
+class ClusterNode:
     __SIGTERM_TIMEOUT = 10  # after this amount of seconds, there is no excuse for a process to still be there.
-    __MEMBER_LOG_FILENAME = 'member'
+    __LOG_FILENAME = 'node'
 
     STATUS = {
         'NONE': 0,
@@ -168,7 +168,7 @@ class MMTMember:
         self.engine = engine
         self.api = MMTApi(api_port)
 
-        self._pidfile = os.path.join(engine.get_runtime_path(), 'member.pid')
+        self._pidfile = os.path.join(engine.get_runtime_path(), 'node.pid')
         self._process = None
         self._stop_requested = False
 
@@ -177,8 +177,8 @@ class MMTMember:
         self._start_rest_server = rest
         self._sibling = sibling
         self._verbosity = verbosity
-        self._status_file = os.path.join(engine.get_runtime_path(), 'member.status')
-        self._log_file = engine.get_logfile(MMTMember.__MEMBER_LOG_FILENAME, ensure=False)
+        self._status_file = os.path.join(engine.get_runtime_path(), 'node.status')
+        self._log_file = engine.get_logfile(ClusterNode.__LOG_FILENAME, ensure=False)
 
         self._mert_script = os.path.join(Moses.bin_path, 'scripts', 'mert-moses.pl')
         self._mert_i_script = os.path.join(scripts.MMT_ROOT, 'scripts', 'mertinterface.py')
@@ -244,12 +244,12 @@ class MMTMember:
                 time.sleep(1)
 
             if not success:
-                raise Exception('failed to start member, check log file for more details: ' + self._log_file)
+                raise Exception('failed to start node, check log file for more details: ' + self._log_file)
 
     def _start_process(self):
         if not os.path.isdir(self.engine.get_runtime_path()):
             fileutils.makedirs(self.engine.get_runtime_path(), exist_ok=True)
-        self._log_file = self.engine.get_logfile(MMTMember.__MEMBER_LOG_FILENAME, ensure=True)
+        self._log_file = self.engine.get_logfile(ClusterNode.__LOG_FILENAME, ensure=True)
 
         args = ['-e', self.engine.name, '-p', str(self._cluster_port), '--status-file', self._status_file]
 
@@ -264,12 +264,13 @@ class MMTMember:
         if self._sibling is not None:
             for key, value in self._sibling.iteritems():
                 if value is not None:
-                    args.append('--member-' + key)
+                    args.append('--node-' + key)
                     args.append(str(value))
 
         env = os.environ.copy()
         env['LD_LIBRARY_PATH'] = scripts.LIB_DIR
-        command = mmt_javamain('eu.modernmt.cli.MemberMain', args)
+        command = mmt_javamain('eu.modernmt.cli.ClusterNodeMain', args,
+                               hserr_path=os.path.abspath(os.path.join(self._log_file, os.pardir)))
 
         log = open(self._log_file, 'wa')
 
@@ -284,20 +285,20 @@ class MMTMember:
                 status = content.read()
             status = status.strip().upper()
 
-            return MMTMember.STATUS[status] if status in MMTMember.STATUS else MMTMember.STATUS['NONE']
+            return ClusterNode.STATUS[status] if status in ClusterNode.STATUS else ClusterNode.STATUS['NONE']
 
-        return MMTMember.STATUS['NONE']
+        return ClusterNode.STATUS['NONE']
 
     def wait(self, status):
-        status = MMTMember.STATUS[status]
+        status = ClusterNode.STATUS[status]
         current = self._get_status()
 
         while current < status:
             time.sleep(1)
             current = self._get_status()
 
-        if current == MMTMember.STATUS['ERROR']:
-            raise Exception('failed to start member, check log file for more details: ' + self._log_file)
+        if current == ClusterNode.STATUS['ERROR']:
+            raise Exception('failed to start node, check log file for more details: ' + self._log_file)
 
     def stop(self):
         pid = self._get_pid()
@@ -307,7 +308,7 @@ class MMTMember:
 
         try:
             os.kill(pid, signal.SIGTERM)
-            daemon.wait(pid, MMTMember.__SIGTERM_TIMEOUT)
+            daemon.wait(pid, ClusterNode.__SIGTERM_TIMEOUT)
         except daemon.TimeoutExpired:
             os.kill(pid, signal.SIGKILL)
             daemon.wait(pid)

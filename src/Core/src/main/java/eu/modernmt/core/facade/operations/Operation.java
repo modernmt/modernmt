@@ -11,7 +11,7 @@ import java.io.Serializable;
 public abstract class Operation<V extends Serializable> extends DistributedCallable<V> {
 
     protected Engine getEngine() {
-        return getLocalMember().getEngine();
+        return getLocalNode().getEngine();
     }
 
 }

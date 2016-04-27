@@ -41,10 +41,10 @@ typedef struct {
 
 Map_t GetMap(JNIEnv *jvm) {
     Map_t map;
-    map._class = JNILoadClass(jvm, "Ljava/util/Map;");
-    map._set_class = JNILoadClass(jvm, "Ljava/util/Set;");
-    map._iterator_class = JNILoadClass(jvm, "Ljava/util/Iterator;");
-    map._entry_class = JNILoadClass(jvm, "Ljava/util/Map$Entry;");
+    map._class = jvm->FindClass("Ljava/util/Map;");
+    map._set_class = jvm->FindClass("Ljava/util/Set;");
+    map._iterator_class = jvm->FindClass("Ljava/util/Iterator;");
+    map._entry_class = jvm->FindClass("Ljava/util/Map$Entry;");
 
     map.entrySet = jvm->GetMethodID(map._class, "entrySet", "()Ljava/util/Set;");
     map.iterator = jvm->GetMethodID(map._set_class, "iterator", "()Ljava/util/Iterator;");

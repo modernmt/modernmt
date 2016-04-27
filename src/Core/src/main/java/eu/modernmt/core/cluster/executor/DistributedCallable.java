@@ -1,6 +1,6 @@
 package eu.modernmt.core.cluster.executor;
 
-import eu.modernmt.core.cluster.Member;
+import eu.modernmt.core.cluster.ClusterNode;
 
 import java.io.Serializable;
 import java.util.concurrent.Callable;
@@ -10,14 +10,14 @@ import java.util.concurrent.Callable;
  */
 public abstract class DistributedCallable<V> implements Callable<V>, Serializable {
 
-    private transient Member localMember;
+    private transient ClusterNode localNode;
 
-    void setLocalMember(Member localMember) {
-        this.localMember = localMember;
+    void setLocalNode(ClusterNode localNode) {
+        this.localNode = localNode;
     }
 
-    protected Member getLocalMember() {
-        return localMember;
+    protected ClusterNode getLocalNode() {
+        return localNode;
     }
 
 }

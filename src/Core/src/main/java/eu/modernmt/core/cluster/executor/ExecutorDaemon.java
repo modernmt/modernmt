@@ -2,7 +2,7 @@ package eu.modernmt.core.cluster.executor;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ITopic;
-import eu.modernmt.core.cluster.Member;
+import eu.modernmt.core.cluster.ClusterNode;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -29,13 +29,13 @@ public class ExecutorDaemon {
         }
     };
 
-    public ExecutorDaemon(HazelcastInstance hazelcast, Member member, String executorName, int capacity) {
+    public ExecutorDaemon(HazelcastInstance hazelcast, ClusterNode node, String executorName, int capacity) {
         String taskQueueName = DistributedExecutor.TASK_QUEUE_NAME_PREFIX + executorName;
         this.taskQueue = hazelcast.getQueue(taskQueueName);
         this.workers = new Worker[capacity];
 
         for (int i = 0; i < capacity; i++) {
-            this.workers[i] = new Worker(hazelcast, member, this.taskQueue);
+            this.workers[i] = new Worker(hazelcast, node, this.taskQueue);
             this.workers[i].start();
         }
     }
@@ -53,12 +53,12 @@ public class ExecutorDaemon {
 
         private final BlockingQueue<Task> taskQueue;
         private final HazelcastInstance hazelcast;
-        private final Member localMember;
+        private final ClusterNode localNode;
 
-        public Worker(HazelcastInstance hazelcast, Member localMember, BlockingQueue<Task> taskQueue) {
+        public Worker(HazelcastInstance hazelcast, ClusterNode localNode, BlockingQueue<Task> taskQueue) {
             this.hazelcast = hazelcast;
             this.taskQueue = taskQueue;
-            this.localMember = localMember;
+            this.localNode = localNode;
         }
 
         private Task next() {
@@ -78,7 +78,7 @@ public class ExecutorDaemon {
 
                 try {
                     if (task.callable instanceof DistributedCallable)
-                        ((DistributedCallable) task.callable).setLocalMember(localMember);
+                        ((DistributedCallable) task.callable).setLocalNode(localNode);
 
                     outcome = new TaskOutcome(task.resultId, task.callable.call());
                 } catch (Throwable e) {

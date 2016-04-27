@@ -1,12 +1,15 @@
 package eu.modernmt.core.facade;
 
+import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextDocument;
+import eu.modernmt.core.Engine;
 import eu.modernmt.core.cluster.error.SystemShutdownException;
 import eu.modernmt.core.facade.operations.GetContextOperation;
 
 import java.io.File;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -15,22 +18,20 @@ import java.util.concurrent.ExecutionException;
 public class ContextAnalyzerFacade {
 
     public List<ContextDocument> get(File context, int limit) throws ContextAnalyzerException {
-        GetContextOperation operation = new GetContextOperation(context, limit);
+        // Because the file is local to the machine, this method ensures that the
+        // local context analyzer is invoked instead of a remote one
+        Engine engine = ModernMT.node.getEngine();
+        Locale lang = engine.getSourceLanguage();
+        ContextAnalyzer analyzer = engine.getContextAnalyzer();
 
-        try {
-            return ModernMT.client.submit(operation).get();
-        } catch (InterruptedException e) {
-            throw new SystemShutdownException();
-        } catch (ExecutionException e) {
-            throw unwrap(e);
-        }
+        return analyzer.getContext(context, lang, limit);
     }
 
     public List<ContextDocument> get(String context, int limit) throws ContextAnalyzerException {
         GetContextOperation operation = new GetContextOperation(context, limit);
 
         try {
-            return ModernMT.client.submit(operation).get();
+            return ModernMT.node.submit(operation).get();
         } catch (InterruptedException e) {
             throw new SystemShutdownException();
         } catch (ExecutionException e) {

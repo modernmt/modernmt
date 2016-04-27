@@ -59,7 +59,7 @@ public class TranslateOperation extends Operation<DecoderTranslation> {
             TranslationSession session = decoder.getSession(this.session);
 
             if (session == null) {
-                SessionManager sessionManager = getLocalMember().getSessionManager();
+                SessionManager sessionManager = getLocalNode().getSessionManager();
                 TranslationSession distributedSession = sessionManager.get(this.session);
 
                 if (distributedSession == null)

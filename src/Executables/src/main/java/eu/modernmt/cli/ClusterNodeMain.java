@@ -2,9 +2,8 @@ package eu.modernmt.cli;
 
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.core.Engine;
-import eu.modernmt.core.cluster.Client;
+import eu.modernmt.core.cluster.ClusterNode;
 import eu.modernmt.core.cluster.DirectorySynchronizer;
-import eu.modernmt.core.cluster.Member;
 import eu.modernmt.core.cluster.RSyncSynchronizer;
 import eu.modernmt.core.config.EngineConfig;
 import eu.modernmt.core.config.INIEngineConfigBuilder;
@@ -23,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by davide on 22/04/16.
  */
-public class MemberMain {
+public class ClusterNodeMain {
 
     private static class Args {
 
@@ -36,10 +35,10 @@ public class MemberMain {
             Option statusFile = Option.builder().longOpt("status-file").hasArg().required().build();
             Option verbosity = Option.builder("v").longOpt("verbosity").hasArg().type(Integer.class).required(false).build();
 
-            Option memberHost = Option.builder().longOpt("member-host").hasArg().required(false).build();
-            Option memberUser = Option.builder().longOpt("member-user").hasArg().required(false).build();
-            Option memberPasswd = Option.builder().longOpt("member-passwd").hasArg().required(false).build();
-            Option memberPem = Option.builder().longOpt("member-pem").hasArg().required(false).build();
+            Option memberHost = Option.builder().longOpt("node-host").hasArg().required(false).build();
+            Option memberUser = Option.builder().longOpt("node-user").hasArg().required(false).build();
+            Option memberPasswd = Option.builder().longOpt("node-passwd").hasArg().required(false).build();
+            Option memberPem = Option.builder().longOpt("node-pem").hasArg().required(false).build();
 
             cliOptions = new Options();
             cliOptions.addOption(engine);
@@ -77,13 +76,13 @@ public class MemberMain {
             String verbosity = cli.getOptionValue("verbosity");
             this.verbosity = verbosity == null ? 2 : Integer.parseInt(verbosity);
 
-            this.memberHost = cli.getOptionValue("member-host");
+            this.memberHost = cli.getOptionValue("node-host");
             if (this.memberHost != null) {
-                this.memberUser = cli.getOptionValue("member-user");
+                this.memberUser = cli.getOptionValue("node-user");
 
-                String memberPem = cli.getOptionValue("member-pem");
+                String memberPem = cli.getOptionValue("node-pem");
                 this.memberPem = memberPem == null ? null : new File(memberPem);
-                this.memberPassword = this.memberPem == null ? cli.getOptionValue("member-passwd") : null;
+                this.memberPassword = this.memberPem == null ? cli.getOptionValue("node-passwd") : null;
             } else {
                 this.memberUser = null;
                 this.memberPassword = null;
@@ -97,7 +96,7 @@ public class MemberMain {
         Args args = new Args(_args);
         Log4jConfiguration.setup(args.verbosity);
 
-        final Logger mainLogger = LogManager.getLogger(MemberMain.class);
+        final Logger mainLogger = LogManager.getLogger(ClusterNodeMain.class);
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
             mainLogger.fatal("Unexpected exception thrown by thread [" + t.getName() + "]", e);
             e.printStackTrace();
@@ -105,26 +104,21 @@ public class MemberMain {
 
         StatusManager status = new StatusManager(args.statusFile);
 
-        Client client = null;
         RESTServer restServer = null;
-        Member member = null;
+        ClusterNode node = null;
 
         boolean ready = false;
 
         try {
-            member = new Member(args.clusterPort);
+            node = new ClusterNode(args.clusterPort);
+            ModernMT.setLocalNode(node);
 
             if (args.memberHost != null)
-                member.joinCluster(args.memberHost, 30, TimeUnit.SECONDS);
+                node.joinCluster(args.memberHost, 30, TimeUnit.SECONDS);
             else
-                member.startCluster();
+                node.startCluster();
 
             if (args.apiPort > 0) {
-                client = new Client();
-                client.joinCluster("127.0.0.1:" + args.clusterPort);
-
-                ModernMT.setClient(client);
-
                 restServer = new RESTServer(args.apiPort);
                 restServer.start();
             }
@@ -134,7 +128,7 @@ public class MemberMain {
             if (args.memberHost != null) {
                 InetAddress host = InetAddress.getByName(args.memberHost);
                 File localPath = Engine.getRootPath(args.engine);
-                String remotePath = member.getMemberModelPath(args.memberHost);
+                String remotePath = node.getMemberModelPath(args.memberHost);
 
                 if (remotePath == null)
                     throw new ParseException("Invalid remote host: " + args.memberHost);
@@ -150,7 +144,7 @@ public class MemberMain {
             }
 
             EngineConfig config = new INIEngineConfigBuilder(Engine.getConfigFile(args.engine)).build(args.engine);
-            member.bootstrap(config);
+            node.bootstrap(config);
 
             status.onModelLoaded();
 
@@ -160,10 +154,9 @@ public class MemberMain {
             throw e;
         } finally {
             if (ready) {
-                Runtime.getRuntime().addShutdownHook(new ShutdownHook(client, restServer, member));
+                Runtime.getRuntime().addShutdownHook(new ShutdownHook(restServer, node));
             } else {
-                shutdown(member);
-                shutdown(client);
+                shutdown(node);
                 shutdown(restServer);
             }
         }
@@ -171,25 +164,21 @@ public class MemberMain {
 
     public static class ShutdownHook extends Thread {
 
-        private final Client client;
         private final RESTServer restServer;
-        private final Member member;
+        private final ClusterNode node;
 
-        public ShutdownHook(Client client, RESTServer restServer, Member member) {
-            this.client = client;
+        public ShutdownHook(RESTServer restServer, ClusterNode node) {
             this.restServer = restServer;
-            this.member = member;
+            this.node = node;
         }
 
         @Override
         public void run() {
-            shutdown(client);
             shutdown(restServer);
-            shutdown(member);
+            shutdown(node);
 
-            await(client);
             await(restServer);
-            await(member);
+            await(node);
         }
 
     }
@@ -227,15 +216,6 @@ public class MemberMain {
         }
     }
 
-    private static void shutdown(Client client) {
-        try {
-            if (client != null)
-                client.shutdown();
-        } catch (Throwable e) {
-            // Ignore
-        }
-    }
-
     private static void shutdown(RESTServer restServer) {
         try {
             if (restServer != null)
@@ -245,19 +225,10 @@ public class MemberMain {
         }
     }
 
-    private static void shutdown(Member member) {
+    private static void shutdown(ClusterNode node) {
         try {
-            if (member != null)
-                member.shutdown();
-        } catch (Throwable e) {
-            // Ignore
-        }
-    }
-
-    private static void await(Client client) {
-        try {
-            if (client != null)
-                client.awaitTermination(1, TimeUnit.DAYS);
+            if (node != null)
+                node.shutdown();
         } catch (Throwable e) {
             // Ignore
         }
@@ -272,10 +243,10 @@ public class MemberMain {
         }
     }
 
-    private static void await(Member member) {
+    private static void await(ClusterNode node) {
         try {
-            if (member != null)
-                member.awaitTermination(1, TimeUnit.DAYS);
+            if (node != null)
+                node.awaitTermination(1, TimeUnit.DAYS);
         } catch (Throwable e) {
             // Ignore
         }

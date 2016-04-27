@@ -11,6 +11,8 @@ import eu.modernmt.core.Engine;
 import eu.modernmt.core.LazyLoadException;
 import eu.modernmt.core.cluster.error.BootstrapException;
 import eu.modernmt.core.cluster.error.FailedToJoinClusterException;
+import eu.modernmt.core.cluster.executor.DistributedCallable;
+import eu.modernmt.core.cluster.executor.DistributedExecutor;
 import eu.modernmt.core.cluster.executor.ExecutorDaemon;
 import eu.modernmt.core.config.EngineConfig;
 import eu.modernmt.core.config.INIEngineConfigWriter;
@@ -21,12 +23,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Created by davide on 18/04/16.
  */
-public class Member {
+public class ClusterNode {
 
     private static final int SHUTDOWN_NOT_INVOKED = 0;
     private static final int SHUTDOWN_INVOKED = 1;
@@ -37,9 +40,18 @@ public class Member {
     private final Thread shutdownThread = new Thread() {
         @Override
         public void run() {
+            if (executor != null)
+                executor.shutdown();
             if (executorDaemon != null)
                 executorDaemon.shutdown();
             hazelcast.shutdown();
+
+            try {
+                if (executor != null)
+                    executor.awaitTermination(1, TimeUnit.DAYS);
+            } catch (InterruptedException e) {
+                // Ignore exception
+            }
 
             try {
                 if (executorDaemon != null)
@@ -52,7 +64,7 @@ public class Member {
         }
     };
 
-    private final Logger logger = LogManager.getLogger(Member.class);
+    private final Logger logger = LogManager.getLogger(ClusterNode.class);
 
     private final int port;
     private final int capacity;
@@ -60,22 +72,23 @@ public class Member {
 
     private HazelcastInstance hazelcast;
     private ExecutorDaemon executorDaemon;
+    private DistributedExecutor executor;
     private SessionManager sessionManager;
     private ITopic<Map<String, float[]>> decoderWeightsTopic;
     private ConcurrentMap<String, String> membersModelPath;
 
-    public Member(int port) {
+    public ClusterNode(int port) {
         this(port, ClusterConstants.DEFAULT_TRANSLATION_EXECUTOR_SIZE);
     }
 
-    public Member(int port, int capacity) {
+    public ClusterNode(int port, int capacity) {
         this.port = port;
         this.capacity = capacity;
     }
 
     public Engine getEngine() {
         if (engine == null)
-            throw new IllegalStateException("Member not ready. Call bootstrap() to initialize the member.");
+            throw new IllegalStateException("ClusterNode not ready. Call bootstrap() to initialize the member.");
         return engine;
     }
 
@@ -132,6 +145,7 @@ public class Member {
             throw new BootstrapException(e.getCause());
         }
 
+        executor = new DistributedExecutor(hazelcast, ClusterConstants.TRANSLATION_EXECUTOR_NAME);
         executorDaemon = new ExecutorDaemon(hazelcast, this, ClusterConstants.TRANSLATION_EXECUTOR_NAME, capacity);
         sessionManager = new SessionManager(hazelcast);
         decoderWeightsTopic = hazelcast.getTopic(ClusterConstants.DECODER_WEIGHTS_TOPIC_NAME);
@@ -142,7 +156,7 @@ public class Member {
                 engine.getRootPath().getAbsolutePath()
         );
 
-        logger.info("Member bootstrap completed, all models loaded");
+        logger.info("Node bootstrap completed, all models loaded");
     }
 
     private void onDecoderWeightsChanged(Message<Map<String, float[]>> message) {
@@ -181,6 +195,14 @@ public class Member {
         }
 
         return null;
+    }
+
+    public void notifyDecoderWeightsChanged(Map<String, float[]> weights) {
+        this.decoderWeightsTopic.publish(weights);
+    }
+
+    public <V> Future<V> submit(DistributedCallable<V> callable) {
+        return executor.submit(callable);
     }
 
     public synchronized void shutdown() {

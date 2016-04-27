@@ -7,11 +7,11 @@ import socket
 import sys
 
 from scripts import dependency
-from scripts.cluster import MMTMember, DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORT
+from scripts.cluster import ClusterNode, DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORT
 from scripts.engine import IllegalStateException, IllegalArgumentException
 from scripts.engine import MMTEngine
 from scripts.evaluation import Evaluator
-from scripts.libs import shell
+from scripts.libs import shell, ssh
 from scripts.libs.ssh import SSHException
 from scripts.mt import ParallelCorpus
 from scripts.mt.contextanalysis import ContextAnalyzer
@@ -112,8 +112,8 @@ def main_tune(argv):
 
     corpora = ParallelCorpus.list(args.corpora_path) if args.corpora_path is not None else None
 
-    member = MMTMember(engine, api_port=args.api_port)
-    member.tune(corpora=corpora, debug=args.debug, context_enabled=args.context_enabled)
+    node = ClusterNode(engine, api_port=args.api_port)
+    node.tune(corpora=corpora, debug=args.debug, context_enabled=args.context_enabled)
 
 
 def main_evaluate(argv):
@@ -148,8 +148,8 @@ def main_evaluate(argv):
     injector.read_config(engine.config)
     engine = injector.inject(engine)
 
-    member = MMTMember(engine, api_port=args.api_port)
-    evaluator = Evaluator(engine, member)
+    node = ClusterNode(engine, api_port=args.api_port)
+    evaluator = Evaluator(engine, node)
 
     corpora = ParallelCorpus.list(args.corpora_path) if args.corpora_path is not None \
         else ParallelCorpus.list(os.path.join(engine.data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
@@ -230,9 +230,7 @@ def main_evaluate(argv):
 def main_start(argv):
     _logconfig()
 
-    parser = argparse.ArgumentParser(description='Start a brand new MMT cluster with a single member. '
-                                                 '(To add more members to the Cluster see the help of the '
-                                                 '"join" command).')
+    parser = argparse.ArgumentParser(description='Start a MMT cluster node')
     parser.prog = 'mmt start'
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
@@ -243,60 +241,88 @@ def main_start(argv):
                         .format(port=DEFAULT_MMT_API_PORT), default=None, type=int)
     parser.add_argument('--cluster-port', dest='cluster_port', metavar='CLUSTER_PORT',
                         help='the network port used internally by the cluster for data exchange between '
-                             'Cluster members. (default is {port})'.format(port=DEFAULT_MMT_CLUSTER_PORT),
+                             'Cluster nodes. (default is {port})'.format(port=DEFAULT_MMT_CLUSTER_PORT),
                         default=None, type=int)
-    parser.add_argument('--no-rest', action='store_false', dest='rest', default=True,
-                        help='if no-rest is set, no REST Api will be available on this node.')
+    parser.add_argument('--no-rest', action='store_false', dest='has_rest', default=True,
+                        help='if no-rest is set, no REST Api will be available on this node')
+    parser.add_argument('--join', dest='sibling', metavar='NODE', default=None,
+                        help='use this option to join this node to an existent cluster. '
+                             'NODE is the remote host to connect to with the format user[:password]@host')
+    parser.add_argument('--join-pem', dest='sibling_pem', metavar='NODE_PEM', default=None,
+                        help='the PEM file needed to connect to the remote host')
 
     # Parse args
     args = parser.parse_args(argv)
-    args.member = None
-    if not args.rest and args.api_port is not None:
+
+    if not args.has_rest and args.api_port is not None:
         raise CLIArgsException(parser, 'cannot specify api-port while no-rest option is active, '
                                        'please remove option "-p/--api-port"')
 
     args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
     args.cluster_port = args.cluster_port if args.cluster_port is not None else DEFAULT_MMT_CLUSTER_PORT
 
+    if args.sibling is not None:
+        sibling = args.sibling
+        sibling_pem = args.sibling_pem
+
+        if sibling.count('@') != 1:
+            raise CLIArgsException(parser, 'remote host value must have the format "user[:password]@host"')
+        credentials, host = sibling.split('@')
+        user, passwd = credentials.split(':', 1) if ':' in credentials else [credentials, None]
+
+        if sibling_pem is not None:
+            sibling_pem = os.path.abspath(sibling_pem)
+
+            if not os.path.isfile(sibling_pem):
+                raise CLIArgsException(parser, 'pem file not found: ' + sibling_pem)
+
+            ssh.verify(host, sibling_pem)
+
+        args.sibling = {
+            'host': host,
+            'user': user,
+            'passwd': passwd,
+            'pem': sibling_pem
+        }
+
     # Check ports
-    if args.rest and not __is_freeport(args.api_port):
+    if args.has_rest and not __is_freeport(args.api_port):
         raise IllegalStateException(
             'port %d is already in use, please specify another port with option -p/--api-port' % args.api_port)
     if not __is_freeport(args.cluster_port):
         raise IllegalStateException(
-            'port %d is already in use, please specify another port pair with option --cluster-port' %
-            args.cluster_ports[0])
+            'port %d is already in use, please specify another port with option --cluster-port' % args.cluster_port)
 
     # Exec command
     engine = MMTEngine(name=args.engine)
-    if args.member is None and not engine.exists():
+    if args.sibling is None and not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
 
-    member = MMTMember(engine, rest=args.rest, api_port=args.api_port, cluster_port=args.cluster_port,
-                       sibling=args.member, verbosity=args.verbosity)
+    node = ClusterNode(engine, rest=args.has_rest, api_port=args.api_port, cluster_port=args.cluster_port,
+                       sibling=args.sibling, verbosity=args.verbosity)
 
-    member_started = False
+    started = False
     success = False
 
     try:
         print
 
         print 'Starting MMT engine \'{engine}\'...'.format(engine=engine.name),
-        member.start(daemonize=True)
-        member_started = True
-        member.wait('JOINED')
+        node.start(daemonize=True)
+        started = True
+        node.wait('JOINED')
         print 'OK'
 
-        if args.member is not None:
+        if args.sibling is not None:
             print 'Synchronizing models...',
-            member.wait('SYNCHRONIZED')
+            node.wait('SYNCHRONIZED')
             print 'OK'
 
         print 'Loading models...',
-        member.wait('READY')
+        node.wait('READY')
         print 'OK'
 
-        if args.rest is not None:
+        if args.has_rest is not None:
             print 'You can try the API with:'
             print '\tcurl "http://localhost:{port}/translate?q=world&context=computer"' \
                   ' | python -mjson.tool\n'.format(port=args.api_port)
@@ -306,9 +332,8 @@ def main_start(argv):
         print 'FAIL'
         print 'ERROR: {message}\n'.format(message=e.message)
     finally:
-        if not success:
-            if member_started and member.is_running():
-                member.stop()
+        if not success and started and node.is_running():
+            node.stop()
 
 
 def main_stop(argv):
@@ -325,12 +350,12 @@ def main_stop(argv):
     if not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
 
-    member = MMTMember(engine)
+    node = ClusterNode(engine)
 
     print
     print 'Stopping MMT engine \'{engine}\'...'.format(engine=engine.name),
-    if member.is_running():
-        member.stop()
+    if node.is_running():
+        node.stop()
     print 'OK'
     print
 
@@ -349,9 +374,9 @@ def main_status(argv):
     if not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
 
-    member = MMTMember(engine)
+    node = ClusterNode(engine)
 
-    print ('running' if member.is_running() else 'stopped')
+    print ('running' if node.is_running() else 'stopped')
 
 
 def main_create(argv):
@@ -386,10 +411,10 @@ def main_create(argv):
         engine = MMTEngine((args.source_lang, args.target_lang), args.engine)
         engine = injector.inject(engine)
 
-        member = MMTMember(engine)
+        node = ClusterNode(engine)
 
-        if member.is_running():
-            member.stop()
+        if node.is_running():
+            node.stop()
 
         engine.builder.build(args.corpora_paths,
                              debug=args.debug, steps=args.training_steps, split_trainingset=args.split_corpora)

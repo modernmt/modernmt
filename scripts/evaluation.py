@@ -123,9 +123,9 @@ class BingTranslator(Translator):
 
 
 class MMTTranslator(Translator):
-    def __init__(self, member, use_sessions=True):
-        Translator.__init__(self, member.engine.source_lang, member.engine.target_lang, threads=100)
-        self._server = member
+    def __init__(self, node, use_sessions=True):
+        Translator.__init__(self, node.engine.source_lang, node.engine.target_lang, threads=100)
+        self._api = node.api
         self._sessions = {}
         self._contexts = {}  # redundant with the sessions, stored just for the case of _use_sessions=False
         self._use_sessions = use_sessions
@@ -137,16 +137,16 @@ class MMTTranslator(Translator):
         result = Translator.translate(self, corpora, output)
 
         for _, session in self._sessions.iteritems():
-            self._server.api.close_session(session)
+            self._api.close_session(session)
 
         return result
 
     def _before_translate(self, corpus):
         corpus_file = corpus.get_file(self.source_lang)
-        context = self._server.api.get_context_f(corpus_file)
+        context = self._api.get_context_f(corpus_file)
         self._contexts[corpus_file] = context
         if self._use_sessions:
-            self._sessions[corpus_file] = self._server.api.create_session(context)['id']
+            self._sessions[corpus_file] = self._api.create_session(context)['id']
 
     def _get_translation(self, line, corpus):
         corpus_file = corpus.get_file(self.source_lang)
@@ -157,7 +157,7 @@ class MMTTranslator(Translator):
             sess = self._sessions[corpus_file] if self._use_sessions else None
             ctxt = None if self._use_sessions else self._contexts[corpus_file]
 
-            translation = self._server.api.translate(line, session=sess, context=ctxt, processing=True)
+            translation = self._api.translate(line, session=sess, context=ctxt, processing=True)
         except Exception as e:
             raise TranslateError(e.message)
 
@@ -279,9 +279,9 @@ class MatecatScore(Score):
 
 
 class Evaluator:
-    def __init__(self, engine, member):
+    def __init__(self, engine, node):
         self._engine = engine
-        self._member = member
+        self._node = node
 
     def evaluate(self, corpora, google_key=None, heval_output=None, use_sessions=True, debug=False):
         if len(corpora) == 0:
@@ -299,7 +299,7 @@ class Evaluator:
         translators = [
             GoogleTranslate(source_lang, target_lang, key=google_key),
             # BingTranslator(source_lang, target_lang),
-            MMTTranslator(self._member, use_sessions)
+            MMTTranslator(self._node, use_sessions)
         ]
 
         working_dir = self._engine.get_tempdir('evaluation')

@@ -1,16 +1,16 @@
 package eu.modernmt.core.facade;
 
-import eu.modernmt.core.cluster.Client;
+import eu.modernmt.core.cluster.ClusterNode;
 
 /**
  * Created by davide on 20/04/16.
  */
 public class ModernMT {
 
-    protected static Client client;
+    protected static ClusterNode node;
 
-    public static void setClient(Client client) {
-        ModernMT.client = client;
+    public static void setLocalNode(ClusterNode node) {
+        ModernMT.node = node;
     }
 
     public static final DecoderFacade decoder = new DecoderFacade();

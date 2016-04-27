@@ -19,11 +19,14 @@ MMT_JAR = os.path.join(BUILD_DIR, 'mmt-' + MMT_VERSION + ".jar")
 MMT_LIBS = LIB_DIR
 
 
-def mmt_javamain(main_class, args=None, remote_debug=False):
+def mmt_javamain(main_class, args=None, hserr_path=None, remote_debug=False):
     command = ['java', '-cp', MMT_JAR, '-Dmmt.home=' + MMT_ROOT, '-Djava.library.path=' + MMT_LIBS, main_class]
 
     if remote_debug:
         command.insert(1, '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005')
+
+    if hserr_path is not None:
+        command.insert(1, '-XX:ErrorFile=' + os.path.join(hserr_path, 'hs_err_pid%p.log'))
 
     if args is not None:
         command += args

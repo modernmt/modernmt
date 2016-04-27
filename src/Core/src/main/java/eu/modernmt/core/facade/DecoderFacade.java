@@ -4,16 +4,17 @@ import eu.modernmt.context.ContextDocument;
 import eu.modernmt.core.cluster.SessionManager;
 import eu.modernmt.core.cluster.error.SystemShutdownException;
 import eu.modernmt.core.facade.error.TranslationException;
-import eu.modernmt.core.facade.operations.GetFeatureWeightsOperation;
 import eu.modernmt.core.facade.operations.TranslateOperation;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
+import eu.modernmt.decoder.moses.MosesDecoder;
 import eu.modernmt.decoder.moses.MosesFeature;
 import eu.modernmt.model.MultiOptionsToken;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.framework.ProcessingException;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -28,24 +29,21 @@ public class DecoderFacade {
     // =============================
 
     public Map<MosesFeature, float[]> getFeatureWeights() {
-        GetFeatureWeightsOperation operation = new GetFeatureWeightsOperation();
+        // Invoke on local decoder instance because it's just a matter of
+        // properties reading and not a real computation
+        MosesDecoder decoder = (MosesDecoder) ModernMT.node.getEngine().getDecoder();
 
-        try {
-            return ModernMT.client.submit(operation).get();
-        } catch (InterruptedException e) {
-            throw new SystemShutdownException(e);
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-
-            if (cause instanceof RuntimeException)
-                throw new RuntimeException("Unexpected error while getting features weights", cause);
-            else
-                throw new Error("Unexpected exception: " + cause.getMessage(), cause);
+        HashMap<MosesFeature, float[]> result = new HashMap<>();
+        for (MosesFeature feature : decoder.getFeatures()) {
+            float[] weights = feature.isTunable() ? decoder.getFeatureWeights(feature) : null;
+            result.put(feature, weights);
         }
+
+        return result;
     }
 
     public void setFeatureWeights(Map<String, float[]> weights) {
-        ModernMT.client.setDecoderWeights(weights);
+        ModernMT.node.notifyDecoderWeightsChanged(weights);
     }
 
     // =============================
@@ -53,12 +51,12 @@ public class DecoderFacade {
     // =============================
 
     public TranslationSession openSession(List<ContextDocument> context) {
-        SessionManager sessionManager = ModernMT.client.getSessionManager();
+        SessionManager sessionManager = ModernMT.node.getSessionManager();
         return sessionManager.create(context);
     }
 
     public void closeSession(long id) {
-        SessionManager sessionManager = ModernMT.client.getSessionManager();
+        SessionManager sessionManager = ModernMT.node.getSessionManager();
         sessionManager.close(id);
     }
 
@@ -104,7 +102,7 @@ public class DecoderFacade {
         DecoderTranslation rootTranslation;
 
         try {
-            rootTranslation = ModernMT.client.submit(operation).get();
+            rootTranslation = ModernMT.node.submit(operation).get();
         } catch (InterruptedException e) {
             throw new SystemShutdownException(e);
         } catch (ExecutionException e) {
