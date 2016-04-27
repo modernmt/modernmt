@@ -3,22 +3,12 @@
 //
 
 #include "JTranslation.h"
-#include "jconv.h"
 
 #define JTranslationClass "eu/modernmt/decoder/moses/TranslationXObject"
 #define JHypothesisClass JTranslationClass"$Hypothesis"
 
-static JTranslation *__JTranslation_instance = NULL;
-
-JTranslation::JTranslation(JNIEnv *jvm) : _class(JNILoadClass(jvm, JTranslationClass)) {
+JTranslation::JTranslation(JNIEnv *jvm) : _class(jvm->FindClass(JTranslationClass)) {
     constructor = jvm->GetMethodID(_class, "<init>", "(Ljava/lang/String;[L" JHypothesisClass ";[[I)V");
-}
-
-JTranslation *JTranslation::instance(JNIEnv *jvm) {
-    if (__JTranslation_instance == NULL)
-        __JTranslation_instance = new JTranslation(jvm);
-
-    return __JTranslation_instance;
 }
 
 jobject JTranslation::create(JNIEnv *jvm, std::string &text, jobjectArray nbestList, jobjectArray alignment) {
@@ -47,17 +37,10 @@ jobjectArray JTranslation::getAlignment(JNIEnv *jvm, std::vector<std::pair<size_
     return result;
 }
 
-static JHypothesis *__JHypothesis_instance = NULL;
 
-JHypothesis::JHypothesis(JNIEnv *jvm) : _class(JNILoadClass(jvm, JHypothesisClass)) {
+
+JHypothesis::JHypothesis(JNIEnv *jvm) : _class(jvm->FindClass(JHypothesisClass)) {
     constructor = jvm->GetMethodID(_class, "<init>", "(Ljava/lang/String;FLjava/lang/String;)V");
-}
-
-JHypothesis *JHypothesis::instance(JNIEnv *jvm) {
-    if (__JHypothesis_instance == NULL)
-        __JHypothesis_instance = new JHypothesis(jvm);
-
-    return __JHypothesis_instance;
 }
 
 jobject JHypothesis::create(JNIEnv *jvm, std::string &text, float totalScore, std::string &fvals) {

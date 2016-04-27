@@ -3,23 +3,15 @@
 //
 
 #include "JMosesFeature.h"
-#include "jconv.h"
 
 static JMosesFeature *__JMosesFeature_instance = NULL;
 
-JMosesFeature::JMosesFeature(JNIEnv *jvm) : _class(JNILoadClass(jvm, "eu/modernmt/decoder/moses/MosesFeature")) {
+JMosesFeature::JMosesFeature(JNIEnv *jvm) : _class(jvm->FindClass("eu/modernmt/decoder/moses/MosesFeature")) {
     constructor = jvm->GetMethodID(_class, "<init>", "(Ljava/lang/String;ZZJ)V");
     ptr = jvm->GetFieldID(_class, "ptr", "J");
 
     jfieldID field = jvm->GetStaticFieldID(_class, "UNTUNEABLE_COMPONENT", "F");
     UNTUNEABLE_COMPONENT = jvm->GetStaticFloatField(_class, field);
-}
-
-JMosesFeature *JMosesFeature::instance(JNIEnv *jvm) {
-    if (__JMosesFeature_instance == NULL)
-        __JMosesFeature_instance = new JMosesFeature(jvm);
-
-    return __JMosesFeature_instance;
 }
 
 jobject JMosesFeature::create(JNIEnv *jvm, std::string &name, bool tunable, bool stateless, void *ptr) {

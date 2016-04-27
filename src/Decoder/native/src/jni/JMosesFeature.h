@@ -11,13 +11,12 @@
 class JMosesFeature {
     jmethodID constructor;
     jfieldID ptr;
-    JMosesFeature(JNIEnv *);
 
 public:
     const jclass _class;
     jfloat UNTUNEABLE_COMPONENT;
 
-    static JMosesFeature *instance(JNIEnv *);
+    JMosesFeature(JNIEnv *);
 
     jobject create(JNIEnv *jvm, std::string &name, bool tunable, bool stateless, void *ptr);
 

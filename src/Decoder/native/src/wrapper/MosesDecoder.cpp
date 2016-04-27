@@ -4,7 +4,6 @@
 
 #include "MosesDecoder.h"
 #include "JNITranslator.h"
-//#include <moses/server/Server.h>
 #include <moses/StaticData.h>
 #include <moses/FF/StatefulFeatureFunction.h>
 

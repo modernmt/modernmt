@@ -4,7 +4,9 @@
 
 #include <eu_modernmt_decoder_moses_MosesDecoder.h>
 #include <jni/handle.h>
-#include <jni/jconv.h>
+#include <jni/JFloat.h>
+#include <jni/JMap.h>
+#include <jni/jniutil.h>
 #include <wrapper/MosesDecoder.h>
 #include <stdlib.h>
 #include "JMosesFeature.h"
@@ -16,15 +18,17 @@ using namespace JNIWrapper;
  * Util function to translate a Java hash map to a std::map
  */
 std::map<std::string, float> __parse_context(JNIEnv *jvm, jobject jcontext) {
+    JMap Map(jvm);
+    JFloat Float(jvm);
     std::map<std::string, float> context;
 
-    jobject iterator = jni_mapiterator(jvm, jcontext);
+    JMapIterator iterator = Map.iterator(jvm, jcontext);
 
-    while (jni_maphasnext(jvm, iterator)) {
-        jobject entry = jni_mapnext(jvm, iterator);
+    while (Map.hasNext(jvm, iterator)) {
+        JMapEntry entry = Map.next(jvm, iterator);
 
-        std::string key = jni_jstrtostr(jvm, (jstring) jni_mapgetkey(jvm, entry));
-        float value = jni_jfloattofloat(jvm, jni_mapgetvalue(jvm, entry));
+        std::string key = jni_jstrtostr(jvm, (jstring) Map.getKey(jvm, entry));
+        float value = Float.floatValue(jvm, Map.getValue(jvm, entry));
 
         context[key] = value;
     }
@@ -52,15 +56,15 @@ JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_init(JNIEnv *
  * Signature: ()[Leu/modernmt/decoder/moses/MosesFeature;
  */
 JNIEXPORT jobjectArray JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_getFeatures(JNIEnv *jvm, jobject jself) {
-    JMosesFeature *jMosesFeature = JMosesFeature::instance(jvm);
     MosesDecoder *moses = jni_gethandle<MosesDecoder>(jvm, jself);
+    JMosesFeature MosesFeature(jvm);
 
     std::vector<feature_t> features = moses->getFeatures();
-    jobjectArray array = jvm->NewObjectArray((jsize) features.size(), jMosesFeature->_class, nullptr);
+    jobjectArray array = jvm->NewObjectArray((jsize) features.size(), MosesFeature._class, nullptr);
 
     for (size_t i = 0; i < features.size(); ++i) {
         feature_t feature = features[i];
-        jobject jfeature = jMosesFeature->create(jvm, feature.name, feature.tunable, feature.stateless, feature.ptr);
+        jobject jfeature = MosesFeature.create(jvm, feature.name, feature.tunable, feature.stateless, feature.ptr);
         jvm->SetObjectArrayElement(array, (jsize) i, jfeature);
         jvm->DeleteLocalRef(jfeature);
     }
@@ -75,16 +79,16 @@ JNIEXPORT jobjectArray JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_getFe
  */
 JNIEXPORT jfloatArray JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_getFeatureWeights(JNIEnv *jvm, jobject jself,
                                                                                             jobject jfeature) {
-    JMosesFeature *jMosesFeature = JMosesFeature::instance(jvm);
+    JMosesFeature MosesFeature(jvm);
     MosesDecoder *moses = jni_gethandle<MosesDecoder>(jvm, jself);
 
     feature_t mock;
-    mock.ptr = jMosesFeature->getPtr(jvm, jfeature);
+    mock.ptr = MosesFeature.getPtr(jvm, jfeature);
     std::vector<float> weights = moses->getFeatureWeights(mock);
 
     jfloat *buffer = (jfloat *) calloc(sizeof(jfloat), weights.size());
     for (size_t i = 0; i < weights.size(); ++i) {
-        buffer[i] = weights[i] == MosesDecoder::UNTUNEABLE_COMPONENT ? jMosesFeature->UNTUNEABLE_COMPONENT
+        buffer[i] = weights[i] == MosesDecoder::UNTUNEABLE_COMPONENT ? MosesFeature.UNTUNEABLE_COMPONENT
                                                                      : (jfloat) weights[i];
     }
 
@@ -141,21 +145,21 @@ JNIEXPORT jobject JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_translate(
     std::vector<hypothesis_t> hypotheses = translation.hypotheses;
 
     if (hypotheses.size() > 0) {
-        JHypothesis *jHypothesis = JHypothesis::instance(jvm);
-        hypothesesArray = jvm->NewObjectArray((jsize) hypotheses.size(), jHypothesis->_class, nullptr);
+        JHypothesis Hypothesis(jvm);
+        hypothesesArray = jvm->NewObjectArray((jsize) hypotheses.size(), Hypothesis._class, nullptr);
 
         for (size_t i = 0; i < hypotheses.size(); ++i) {
             hypothesis_t hypothesis = hypotheses[i];
-            jobject jhypothesis = jHypothesis->create(jvm, hypothesis.text, hypothesis.score, hypothesis.fvals);
+            jobject jhypothesis = Hypothesis.create(jvm, hypothesis.text, hypothesis.score, hypothesis.fvals);
             jvm->SetObjectArrayElement(hypothesesArray, (jsize) i, jhypothesis);
             jvm->DeleteLocalRef(jhypothesis);
         }
     }
 
-    JTranslation *jTranslation = JTranslation::instance(jvm);
+    JTranslation Translation(jvm);
 
-    jobjectArray jAlignment = jTranslation->getAlignment(jvm, translation.alignment);
-    jobject jtranslation = jTranslation->create(jvm, translation.text, hypothesesArray, jAlignment);
+    jobjectArray jAlignment = Translation.getAlignment(jvm, translation.alignment);
+    jobject jtranslation = Translation.create(jvm, translation.text, hypothesesArray, jAlignment);
 
     jvm->DeleteLocalRef(jAlignment);
     if (hypothesesArray)

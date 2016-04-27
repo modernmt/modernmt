@@ -12,12 +12,10 @@
 class JTranslation {
     jmethodID constructor;
 
-    JTranslation(JNIEnv *);
-
 public:
     const jclass _class;
 
-    static JTranslation *instance(JNIEnv *);
+    JTranslation(JNIEnv *);
 
     jobjectArray getAlignment(JNIEnv *, std::vector <std::pair<size_t, size_t>>);
 
@@ -27,12 +25,10 @@ public:
 class JHypothesis {
     jmethodID constructor;
 
-    JHypothesis(JNIEnv *);
-
 public:
     const jclass _class;
 
-    static JHypothesis *instance(JNIEnv *);
+    JHypothesis(JNIEnv *);
 
     jobject create(JNIEnv *jvm, std::string &text, float totalScore, std::string &fvals);
 };

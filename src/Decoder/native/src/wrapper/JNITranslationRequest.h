@@ -20,7 +20,6 @@
 #include "moses/TranslationTask.h"
 #include <boost/shared_ptr.hpp>
 
-//#include "moses/server/Translator.h"
 #include "moses/server/Session.h"
 #include "JNITranslator.h"
 
