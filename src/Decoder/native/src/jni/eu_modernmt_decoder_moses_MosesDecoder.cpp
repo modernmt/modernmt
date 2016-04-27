@@ -4,8 +4,6 @@
 
 #include <eu_modernmt_decoder_moses_MosesDecoder.h>
 #include <jni/handle.h>
-#include <jni/JFloat.h>
-#include <jni/JMap.h>
 #include <jni/jniutil.h>
 #include <wrapper/MosesDecoder.h>
 #include <stdlib.h>
@@ -17,21 +15,20 @@ using namespace JNIWrapper;
 /*
  * Util function to translate a Java hash map to a std::map
  */
-std::map<std::string, float> __parse_context(JNIEnv *jvm, jobject jcontext) {
-    JMap Map(jvm);
-    JFloat Float(jvm);
+std::map<std::string, float> __parse_context(JNIEnv *jvm, jobjectArray keys, jfloatArray values) {
     std::map<std::string, float> context;
 
-    JMapIterator iterator = Map.iterator(jvm, jcontext);
+    int size = jvm->GetArrayLength(values);
+    jfloat *valuesArray = jvm->GetFloatArrayElements(values, 0);
 
-    while (Map.hasNext(jvm, iterator)) {
-        JMapEntry entry = Map.next(jvm, iterator);
-
-        std::string key = jni_jstrtostr(jvm, (jstring) Map.getKey(jvm, entry));
-        float value = Float.floatValue(jvm, Map.getValue(jvm, entry));
+    for (int i = 0; i < size; i++) {
+        std::string key = jni_jstrtostr(jvm, (jstring) jvm->GetObjectArrayElement(keys, i));
+        float value = valuesArray[i];
 
         context[key] = value;
     }
+
+    jvm->ReleaseFloatArrayElements(values, valuesArray, 0);
 
     return context;
 }
@@ -103,12 +100,11 @@ JNIEXPORT jfloatArray JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_getFea
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
  * Method:    createSession
- * Signature: (Ljava/util/Map;)J
+ * Signature: ([Ljava/lang/String;[F)J
  */
-JNIEXPORT jlong JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_createSession(JNIEnv *jvm, jobject self,
-                                                                                  jobject translationContext) {
+JNIEXPORT jlong JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_createSession(JNIEnv *jvm, jobject self, jobjectArray contextKeys, jfloatArray contextValues) {
     MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, self);
-    std::map<std::string, float> context = __parse_context(jvm, translationContext);
+    std::map<std::string, float> context = __parse_context(jvm, contextKeys, contextValues);
     return (jlong) instance->openSession(context);
 }
 
@@ -125,17 +121,15 @@ JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_destroySessio
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
  * Method:    translate
- * Signature: (Ljava/lang/String;Ljava/util/Map;JI)Leu/modernmt/decoder/moses/TranslationExchangeObject;
+ * Signature: (Ljava/lang/String;[Ljava/lang/String;[FJI)Leu/modernmt/decoder/moses/TranslationXObject;
  */
-JNIEXPORT jobject JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_translate(JNIEnv *jvm, jobject self, jstring text,
-                                                                                jobject translationContext,
-                                                                                jlong session, jint nbest) {
+JNIEXPORT jobject JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_translate(JNIEnv *jvm, jobject self, jstring text, jobjectArray contextKeys, jfloatArray contextValues, jlong session, jint nbest) {
     MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, self);
     std::string sentence = jni_jstrtostr(jvm, text);
 
     translation_t translation;
-    if (translationContext != NULL) {
-        std::map<std::string, float> context = __parse_context(jvm, translationContext);
+    if (contextKeys != NULL) {
+        std::map<std::string, float> context = __parse_context(jvm, contextKeys, contextValues);
         translation = instance->translate(sentence, (uint64_t) session, &context, (size_t) nbest);
     } else {
         translation = instance->translate(sentence, (uint64_t) session, NULL, (size_t) nbest);

@@ -13,7 +13,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by davide on 26/11/15.
@@ -50,14 +49,15 @@ public class MosesDecoder implements Decoder {
 
     @Override
     public TranslationSession openSession(long id, List<ContextDocument> translationContext) {
-        long internalId = createSession(parseContext(translationContext));
+        ContextXObject context = ContextXObject.build(translationContext);
+        long internalId = createSession(context.keys, context.values);
         MosesSession session = new MosesSession(id, translationContext, this, internalId);
         this.sessions.put(id, session);
 
         return session;
     }
 
-    private native long createSession(Map<String, Float> translationContext);
+    private native long createSession(String[] contextKeys, float[] contextValues);
 
     void closeSession(MosesSession session) {
         session = this.sessions.remove(session.getId());
@@ -105,14 +105,14 @@ public class MosesDecoder implements Decoder {
     private DecoderTranslation translate(Sentence sentence, List<ContextDocument> translationContext, TranslationSession session, int nbest) {
         String text = serialize(sentence.getWords());
         long sessionId = session == null ? 0L : ((MosesSession) session).getInternalId();
-        Map<String, Float> context = parseContext(translationContext);
+        ContextXObject context = ContextXObject.build(translationContext);
 
         if (logger.isDebugEnabled()) {
             logger.debug("Translating: \"" + text + "\"");
         }
 
         long start = System.currentTimeMillis();
-        DecoderTranslation translation = this.translate(text, context, sessionId, nbest).getTranslation(sentence);
+        DecoderTranslation translation = this.translate(text, context == null ? null : context.keys, context == null ? null : context.values, sessionId, nbest).getTranslation(sentence);
         long elapsed = System.currentTimeMillis() - start;
         translation.setElapsedTime(elapsed);
 
@@ -125,7 +125,7 @@ public class MosesDecoder implements Decoder {
         return translation;
     }
 
-    private native TranslationXObject translate(String text, Map<String, Float> translationContext, long session, int nbest);
+    private native TranslationXObject translate(String text, String[] contextKeys, float[] contextValues, long session, int nbest);
 
     @Override
     protected void finalize() throws Throwable {
@@ -140,18 +140,6 @@ public class MosesDecoder implements Decoder {
     }
 
     protected native void dispose();
-
-    private static Map<String, Float> parseContext(List<ContextDocument> context) {
-        Map<String, Float> map = null;
-
-        if (context != null) {
-            map = new HashMap<>();
-            for (ContextDocument document : context)
-                map.put(document.getId(), document.getScore());
-        }
-
-        return map;
-    }
 
     private static String serialize(Word[] words) {
         StringBuilder text = new StringBuilder();
