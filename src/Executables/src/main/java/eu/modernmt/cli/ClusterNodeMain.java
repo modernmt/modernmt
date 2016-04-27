@@ -118,11 +118,6 @@ public class ClusterNodeMain {
             else
                 node.startCluster();
 
-            if (args.apiPort > 0) {
-                restServer = new RESTServer(args.apiPort);
-                restServer.start();
-            }
-
             status.onClusterJoined();
 
             if (args.memberHost != null) {
@@ -135,12 +130,17 @@ public class ClusterNodeMain {
 
                 DirectorySynchronizer synchronizer;
                 if (args.memberPem != null)
-                    synchronizer = new RSyncSynchronizer(host, args.memberPem, localPath, remotePath);
+                    synchronizer = new RSyncSynchronizer(host, args.memberUser, args.memberPem, localPath, remotePath);
                 else
                     synchronizer = new RSyncSynchronizer(host, args.memberUser, args.memberPassword, localPath, remotePath);
 
                 synchronizer.synchronize();
                 status.onModelSynchronized();
+            }
+
+            if (args.apiPort > 0) {
+                restServer = new RESTServer(args.apiPort);
+                restServer.start();
             }
 
             EngineConfig config = new INIEngineConfigBuilder(Engine.getConfigFile(args.engine)).build(args.engine);

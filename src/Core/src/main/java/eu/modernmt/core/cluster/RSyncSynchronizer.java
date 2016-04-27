@@ -35,9 +35,9 @@ public class RSyncSynchronizer implements DirectorySynchronizer {
         this.remotePath = remotePath;
     }
 
-    public RSyncSynchronizer(InetAddress host, File pem, File localPath, String remotePath) {
+    public RSyncSynchronizer(InetAddress host, String user, File pem, File localPath, String remotePath) {
         this.host = host;
-        this.user = null;
+        this.user = user;
         this.password = null;
         this.pem = pem;
         this.localPath = localPath;
@@ -93,7 +93,7 @@ public class RSyncSynchronizer implements DirectorySynchronizer {
 
         String pathPrefix = "";
         if (!localhost)
-            pathPrefix = user + '@' + host + ':';
+            pathPrefix = user + '@' + host.getHostAddress() + ':';
         command.add(pathPrefix + remotePath + File.separatorChar);
 
         command.add(localPath.getAbsolutePath());
