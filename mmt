@@ -3,6 +3,7 @@ import argparse
 import logging
 import operator
 import os
+import shutil
 import socket
 import sys
 
@@ -360,6 +361,53 @@ def main_stop(argv):
     print
 
 
+def main_delete(argv):
+    _logconfig()
+
+    parser = argparse.ArgumentParser(description='Deletes an MMT engine')
+    parser.prog = 'mmt delete'
+    parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
+                        default='default')
+    parser.add_argument('--yes', action='store_false', dest='ask_confirmation', default=True,
+                        help='if "--yes" is set, this command won\'t ask for confirmation')
+    args = parser.parse_args(argv)
+
+    # Exec command
+    engine = MMTEngine(name=args.engine)
+    if not engine.exists():
+        raise IllegalStateException('engine not found: ' + args.engine)
+
+    delete = True
+
+    if args.ask_confirmation:
+        valid = {'yes': True, 'y': True, 'ye': True, 'no': False, 'n': False}
+
+        while True:
+            print 'Are you sure you want to delete engine "%s"? [y/N] ' % args.engine,
+            choice = raw_input().lower()
+
+            if choice == '':
+                delete = False
+                break
+            elif choice in valid:
+                delete = valid[choice]
+                break
+            else:
+                print 'Please respond with "yes" or "no" (or "y" or "n").'
+
+    if delete:
+        node = ClusterNode(engine)
+        print
+        print 'Deleting engine "{engine}"...'.format(engine=engine.name),
+        if node.is_running():
+            node.stop()
+        shutil.rmtree(engine.path, ignore_errors=True)
+        print 'OK'
+        print
+    else:
+        print 'Aborted'
+
+
 def main_status(argv):
     _logconfig()
 
@@ -430,25 +478,29 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=__description,
                                      usage='%(prog)s [-h] ACTION [args]', add_help=False, prog='mmt')
     parser.add_argument('action', metavar='ACTION',
-                        choices=['create', 'evaluate', 'start', 'stop', 'status', 'tune'],
+                        choices=['create', 'start', 'stop', 'status', 'delete', 'tune', 'evaluate'],
                         help='{%(choices)s}', nargs='?')
     parser.add_argument('-h', '--help', dest='help', action='store_true', help='show this help message and exit')
 
     argv = sys.argv[1:]
+    command = argv[0]
+    args = argv[1:]
 
     try:
-        if ['create'] == argv[:1]:
-            main_create(argv[1:])
-        elif ['start'] == argv[:1]:
-            main_start(argv[1:])
-        elif ['stop'] == argv[:1]:
-            main_stop(argv[1:])
-        elif ['status'] == argv[:1]:
-            main_status(argv[1:])
-        elif ['tune'] == argv[:1]:
-            main_tune(argv[1:])
-        elif ['evaluate'] == argv[:1]:
-            main_evaluate(argv[1:])
+        if 'create' == command:
+            main_create(args)
+        elif 'start' == command:
+            main_start(args)
+        elif 'stop' == command:
+            main_stop(args)
+        elif 'status' == command:
+            main_status(args)
+        elif 'delete' == command:
+            main_delete(args)
+        elif 'tune' == command:
+            main_tune(args)
+        elif 'evaluate' == command:
+            main_evaluate(args)
         else:
             parser.print_help()
             exit(1)
