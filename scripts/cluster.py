@@ -233,6 +233,8 @@ class ClusterNode:
                 self._process = self._start_process()
                 self._process.wait()
                 code = self._process.returncode
+
+            exit(code)
         else:
             success = False
 
@@ -295,7 +297,7 @@ class ClusterNode:
 
         while current < status:
             time.sleep(1)
-            current = self._get_status()
+            current = self._get_status() if self.is_running() else ClusterNode.STATUS['ERROR']
 
         if current == ClusterNode.STATUS['ERROR']:
             raise Exception('failed to start node, check log file for more details: ' + self._log_file)
