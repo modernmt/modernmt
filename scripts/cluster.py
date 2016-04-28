@@ -274,6 +274,8 @@ class ClusterNode:
 
         env = os.environ.copy()
         env['LD_LIBRARY_PATH'] = scripts.LIB_DIR
+        env['LC_ALL'] = 'en_US.UTF-8'
+        env['LANG'] = 'en_US.UTF-8'
         command = mmt_javamain('eu.modernmt.cli.ClusterNodeMain', args,
                                hserr_path=os.path.abspath(os.path.join(self._log_file, os.pardir)))
 
