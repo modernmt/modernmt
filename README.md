@@ -249,7 +249,7 @@ Tuning and evaluate runs also on a distributed MMT.
 Translation, Tuning and Evaluate can run on a MMT cluster to drastically reduce the time they take.
 Training cannot run on an MMT cluster.
 
-Let's distribute MMT to a second machine. First, make sure port 8045 and 5016 are open on both machines
+Let's distribute MMT to a second machine. First, make sure ports 8045 and 5016 are open on both machines
 
 Login into the new machine and run
 
@@ -265,7 +265,7 @@ If you're running your experiments on *Amazon*, copy your .pem file to the secon
 ./mmt start --join ubuntu@3.14.15.92 --join-pem /path/to/master-credentials.pem
 ```
 
-Please notice that on Amazon *you must use your machine's private ip*, not the public one (nor elastic ip if present) otherwise you won't be able to connect the two instances.
+Please notice that on Amazon **you must use your machine's private ip**, not the public one (nor elastic ip if present) otherwise you won't be able to connect the two instances.
 
 
 You can query the REST API on both machines, the requests are load balanced across the whole cluster:
