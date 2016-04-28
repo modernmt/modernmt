@@ -229,7 +229,7 @@ Total time     :  29,159s
 MMT quality can be increased by tuning the parameters providing unseen translation examples. 
 
 ```
-./mmt tune --path examples/data/dev
+./mmt tune
 ```
 
 This dev data used to tune the small engine created with the example data will take around 10 minutes. 
