@@ -82,7 +82,8 @@ class _MMTEngineBuilder:
         bilingual_corpora, monolingual_corpora = ParallelCorpus.splitlist(source_lang, target_lang, roots=roots)
 
         if len(bilingual_corpora) == 0:
-            raise IllegalArgumentException('empty corpora provided')
+            raise IllegalArgumentException(
+                'you project does not include %s-%s data.' % (source_lang.upper(), target_lang.upper()))
 
         if steps is None:
             steps = self._engine.training_steps
