@@ -227,12 +227,15 @@ class ClusterNode:
             signal.signal(signal.SIGINT, self._kill_handler)
             signal.signal(signal.SIGTERM, self._kill_handler)
 
-            code = 1
+            code = 0
 
-            while not self._stop_requested and code > 0 and code != -signal.SIGINT and code != -signal.SIGTERM:
+            while True:
                 self._process = self._start_process()
                 self._process.wait()
                 code = self._process.returncode
+
+                if self._stop_requested or code != 101:
+                    break
 
             exit(code)
         else:
