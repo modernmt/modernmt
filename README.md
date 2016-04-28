@@ -229,7 +229,7 @@ Total time     :  29,159s
 MMT quality can be increased by tuning the parameters providing unseen translation examples. 
 
 ```
-./mmt tune --path examples/data/dev
+./mmt tune
 ```
 
 This dev data used to tune the small engine created with the example data will take around 10 minutes. 
@@ -249,37 +249,37 @@ Tuning and evaluate runs also on a distributed MMT.
 Translation, Tuning and Evaluate can run on a MMT cluster to drastically reduce the time they take.
 Training cannot run on an MMT cluster.
 
-Let's distribute MMT to a second machine. 
-Make sure port 8045 is open on the master and 5016 and 5017 on both the master and the slave.
+Let's distribute MMT to a second machine. First, make sure ports 8045 and 5016 are open on both machines
 
 Login into the new machine and run
 
 ```bash 
-./mmt start --master ubuntu:pass123@3.14.15.92
+./mmt start --join ubuntu:pass123@3.14.15.92
 ```
 
-Where *ubuntu* and *pass123* are your ssh credentials to the master machine (ip *3.14.15.92*).
+Where *ubuntu* and *pass123* are your ssh credentials to the first MMT machine (ip *3.14.15.92*) - the one that was already running.
 
-If you're running your experiments on Amazon, copy your .pem file to the second machine and run the command as:
+If you're running your experiments on *Amazon*, copy your .pem file to the second machine and run the command as:
 
 ```
-./mmt start --master ubuntu@3.14.15.92 --master-pem /path/to/master-credentials.pem
+./mmt start --join ubuntu@3.14.15.92 --join-pem /path/to/master-credentials.pem
 ```
 
-Query the master, the requests are load balanced across the istances:
+Please notice that on Amazon **you must use your machine's private ip**, not the public one (nor elastic ip if present) otherwise you won't be able to connect the two instances.
+
+
+You can query the REST API on both machines, the requests are load balanced across the whole cluster:
 
 ```
 curl "http://3.14.15.92:8045/translate?q=world&context=computer" | python -mjson.tool
+curl "http://localhost:8045/translate?q=world&context=computer" | python -mjson.tool
 ```
-
-**That's all folks!**
 
 ### Distributed MMT Notes
 
-The engine files will be synced from the master and translation requests will be load balanced across the 2 instances.
-Only the master will respond to the Translation API and distribute load.
+The engine files will be synced from one instance to the other and translation requests will be load balanced across the whole cluster.
 
-If you updated the model on the master, just stop and start the slave and the model data will be rsynced again.
+If you updated the model on a machine, just stop and start the the nodes specifying the up-to-date host in the *--join* option and the model data will be rsynced again.
 
 ### API documentation
 
