@@ -11,7 +11,7 @@ MMT is queried by providing the sentence to be translated and some context text.
 
 MMT's goal is to deliver the quality of multiple custom engines by adapting on the fly to the provided context.
 
-You can find more information on: http://www.modermmt.eu
+You can find more information on: http://www.modernmt.eu
 
 
 ## About this Release
