@@ -126,8 +126,8 @@ public class FastAlign implements Aligner, Closeable {
     }
 
     protected String getStringAlignments(Sentence sentence, Sentence translation) throws IOException {
-        String sentence_str = TokensOutputter.toString(sentence, false, false);
-        String translation_str = TokensOutputter.toString(translation, false, false);
+        String sentence_str = TokensOutputter.toString(sentence, false, true);
+        String translation_str = TokensOutputter.toString(translation, false, true);
         String query = sentence_str + SENTENCE_SEPARATOR + translation_str + "\n";
         logger.debug("Sending query to Fast Align's models: " + query);
         this.standardInput.write(query.getBytes(Config.charset.get()));
