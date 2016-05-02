@@ -402,4 +402,10 @@ public class Symmetrisation {
         return result;
     }
 
+    public static void main(String[] args){
+        int[][] forward = new int[][]{{0, 0},{1, 1},{2, 2},{3, 3},{4, 4},{5, 5},{6, 6},{5, 7},{9, 8},{10, 9},{5, 10},{12, 11}};
+        int[][] backward = new int[][]{{0, 0},{1, 1},{2, 2},{3, 3},{4, 4},{5, 5},{6, 6},{7, 6},{8, 0},{9, 8},{10, 9},{11, 5},{12, 11}};
+        int[][] symmetrized = symmetriseMosesFormatAlignment(forward, backward, Strategy.GrowDiagFinalAnd);
+    }
+
 }
