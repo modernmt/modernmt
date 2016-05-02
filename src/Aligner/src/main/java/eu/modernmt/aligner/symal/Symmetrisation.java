@@ -23,6 +23,8 @@ package eu.modernmt.aligner.symal;
 
 //import es.ua.dlsi.utils.CmdLineParser;
 
+import eu.modernmt.aligner.fastalign.FastAlign;
+
 import java.util.*;
 
 /**
@@ -53,9 +55,9 @@ public class Symmetrisation {
         for (int s_word = 0; s_word < s2t.length; s_word++) {
             if (s2t[s_word] != null) {
                 for (Integer t_word : s2t[s_word]) {
-                    if (t2s[t_word] != null) {
-                        //If the alignment appears in both the asymetric alignments, it is added to the symetrised alignment
-                        if (t2s[t_word].contains(s_word))
+                    if (t2s[s_word] != null) {
+                        //If the alignment appears in both the asymmetric alignments, it is added to the symmetrised alignment
+                        if (t2s[s_word].contains(t_word))
                             intersection[s_word][t_word] = true;
                     }
                 }
@@ -85,9 +87,9 @@ public class Symmetrisation {
             }
         }
         //All the alignments in T2S are added to the union
-        for (int t_word = 0; t_word < t2s.length; t_word++) {
-            if (t2s[t_word] != null) {
-                for (Integer s_word : t2s[t_word]) {
+        for (int s_word = 0; s_word < t2s.length; s_word++) {
+            if (t2s[s_word] != null) {
+                for (Integer t_word : t2s[s_word]) {
                     union[s_word][t_word] = true;
                 }
             }
@@ -182,7 +184,13 @@ public class Symmetrisation {
                     toInsert = false;
                     for (Pair<Integer, Integer> nb : neighbors) {
                         int p1_nb = p1 + nb.getFirst();
+                        if ((p1_nb < 0) || (p1_nb >= s2t.length)) { //p1_nb is out of boundary
+                            continue;
+                        }
                         int p2_nb = p2 + nb.getSecond();
+                        if ((p2_nb < 0) || (p2_nb >= t2s.length)) { //p1_nb is out of boundary
+                            continue;
+                        }
                         if (currentpoints[p1_nb][p2_nb]) {
                             toInsert = true;
                             continue; //exit the loop over the neighbors
@@ -406,6 +414,7 @@ public class Symmetrisation {
         int[][] forward = new int[][]{{0, 0},{1, 1},{2, 2},{3, 3},{4, 4},{5, 5},{6, 6},{5, 7},{9, 8},{10, 9},{5, 10},{12, 11}};
         int[][] backward = new int[][]{{0, 0},{1, 1},{2, 2},{3, 3},{4, 4},{5, 5},{6, 6},{7, 6},{8, 0},{9, 8},{10, 9},{11, 5},{12, 11}};
         int[][] symmetrized = symmetriseMosesFormatAlignment(forward, backward, Strategy.GrowDiagFinalAnd);
+        FastAlign.printAlignments(symmetrized);
     }
 
 }
