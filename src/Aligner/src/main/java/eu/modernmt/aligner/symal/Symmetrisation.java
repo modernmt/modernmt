@@ -55,9 +55,9 @@ public class Symmetrisation {
         for (int s_word = 0; s_word < s2t.length; s_word++) {
             if (s2t[s_word] != null) {
                 for (Integer t_word : s2t[s_word]) {
-                    if (t2s[s_word] != null) {
+                    if (t2s[t_word] != null) {
                         //If the alignment appears in both the asymmetric alignments, it is added to the symmetrised alignment
-                        if (t2s[s_word].contains(t_word))
+                        if (t2s[t_word].contains(s_word))
                             intersection[s_word][t_word] = true;
                     }
                 }
@@ -87,9 +87,9 @@ public class Symmetrisation {
             }
         }
         //All the alignments in T2S are added to the union
-        for (int s_word = 0; s_word < t2s.length; s_word++) {
-            if (t2s[s_word] != null) {
-                for (Integer t_word : t2s[s_word]) {
+        for (int t_word = 0; t_word < t2s.length; t_word++) {
+            if (t2s[t_word] != null) {
+                for (Integer s_word : t2s[t_word]) {
                     union[s_word][t_word] = true;
                 }
             }
@@ -101,8 +101,8 @@ public class Symmetrisation {
     /**
      * Symetrisation method which produces, as a result, the grow-diag-final-and symmetrised alignment
      *
-     * @param s2t Source to target assymetric alignment produced with GIZA++
-     * @param t2s Target to source assymetric alignment produced with GIZA++
+     * @param s2t Source to target asymmetric alignment produced with GIZA++
+     * @param t2s Target to source asymmetric alignment produced with GIZA++
      * @return
      */
     static public boolean[][] GrowDiagFinalAnd(Set<Integer>[] s2t, Set<Integer>[] t2s) {
@@ -120,9 +120,10 @@ public class Symmetrisation {
         neighbors.add(new Pair(0, -1));
         neighbors.add(new Pair(1, 0));
 
-        //Intersection of the alignments (starting point)
+        //Intersection of the alignments (starting point); matrix format, where a row corresponds to a source, and a column column to a target
         boolean[][] currentpoints = IntersectionSymal(s2t, t2s); //symmetric alignment
-        //Union of the alignments (space for growing)
+        //Union of the alignments (space for growing) matrix format, where a row corresponds to a source, and a column column to a target
+
         boolean[][] unionalignment = UnionSymal(s2t, t2s); //union alignment
 
         //points which correspond to the difference between the union points and intersection points
@@ -220,9 +221,11 @@ public class Symmetrisation {
         for (int s_word = 0; s_word < s2t.length; s_word++) {
             if (s2t[s_word] != null) {
                 for (Integer t_word : s2t[s_word]) {
-                    if (!unaligned_s.contains(s_word) && !unaligned_t.contains(t_word)) {
+                    if (unaligned_s.contains(s_word) && unaligned_t.contains(t_word)) {
                         //if both row and the column are unaligned, the point can be inserted
                         currentpoints[s_word][t_word] = true;
+                        unaligned_s.remove(s_word);
+                        unaligned_t.remove(t_word);
                     }
                 }
             }
@@ -233,9 +236,11 @@ public class Symmetrisation {
         for (int t_word = 0; t_word < t2s.length; t_word++) {
             if (t2s[t_word] != null) {
                 for (Integer s_word : t2s[t_word]) {
-                    if (!unaligned_s.contains(s_word) && !unaligned_t.contains(t_word)) {
+                    if (unaligned_s.contains(s_word) && unaligned_t.contains(t_word)) {
                         //if both row and the column are unaligned, the point can be inserted
                         currentpoints[s_word][t_word] = true;
+                        unaligned_s.remove(s_word);
+                        unaligned_t.remove(t_word);
                     }
                 }
             }
@@ -279,6 +284,7 @@ public class Symmetrisation {
      * @param symalignment
      * @return
      */
+
     static public Set<Integer>[] ReadGizaSymmetricAlignment(int[][] symalignment, int highest_index) {
         Set[] alignment = new Set[highest_index];
         Arrays.fill(alignment, null);
@@ -286,6 +292,50 @@ public class Symmetrisation {
         for (int[] alg : symalignment) {
             int w1 = alg[0];
             int w2 = alg[1];
+            if (alignment[w1] == null)
+                alignment[w1] = new HashSet();
+            alignment[w1].add(w2);
+        }
+        return alignment;
+    }
+
+
+    /**
+     * Method that extracts an alignment representation from any kind of alignemnt in the format "src-trg src-trg src-trg ..."
+     * and stores in a vector (with index src) of Sets containing all trg associated with src
+     *
+     * @param from_alignment
+     * @param highest_index
+     * @return
+     */
+    static public Set<Integer>[] ReadForwardAlignment(int[][] from_alignment, int highest_index) {
+        Set[] alignment = new Set[highest_index];
+        Arrays.fill(alignment, null);
+
+        for (int[] alg : from_alignment) {
+            int w1 = alg[0]; //index of the vector is src
+            int w2 = alg[1];
+            if (alignment[w1] == null)
+                alignment[w1] = new HashSet();
+            alignment[w1].add(w2);
+        }
+        return alignment;
+    }
+    /**
+     * Method that extracts an alignment representation from anu kind of alignemnt in the format "src-trg src-trg src-trg ..."
+     * and stores in a vector (with index trg) of Sets containing all src associated with trg
+     *
+     * @param from_alignment
+     * @param highest_index
+     * @return
+     */
+    static public Set<Integer>[] ReadBackwardAlignment(int[][] from_alignment, int highest_index) {
+        Set[] alignment = new Set[highest_index];
+        Arrays.fill(alignment, null);
+
+        for (int[] alg : from_alignment) {
+            int w1 = alg[1]; //index of the vector is trg
+            int w2 = alg[0];
             if (alignment[w1] == null)
                 alignment[w1] = new HashSet();
             alignment[w1].add(w2);
@@ -394,6 +444,42 @@ public class Symmetrisation {
         return returnAlignment(al);
     }
 
+    static public int[][] symmetriseAlignment(int[][] sl, int[][] tl, Strategy strategy) {
+
+        Set<Integer>[] s2talignment = null;
+        Set<Integer>[] t2salignment = null;
+
+        SortedSet<Integer> sl_index_set = new TreeSet<Integer>();
+        SortedSet<Integer> tl_index_set = new TreeSet<Integer>();
+        for (int[] alignment : sl) {
+            sl_index_set.add(alignment[0]);
+            tl_index_set.add(alignment[1]);
+        }
+        for (int[] alignment : tl) {
+            sl_index_set.add(alignment[0]);
+            tl_index_set.add(alignment[1]);
+        }
+        s2talignment = ReadForwardAlignment(sl, sl_index_set.last() + 1);
+        t2salignment = ReadBackwardAlignment(tl, tl_index_set.last() + 1);
+
+        boolean[][] al = null;
+
+        //Producing the symmetrised alignment
+        switch (strategy) {
+            case Union:
+                al = Symmetrisation.UnionSymal(s2talignment, t2salignment);
+                break;
+            case Intersection:
+                al = Symmetrisation.IntersectionSymal(s2talignment, t2salignment);
+                break;
+            case GrowDiagFinalAnd:
+                al = Symmetrisation.GrowDiagFinalAnd(s2talignment, t2salignment);
+                break;
+        }
+
+        return returnAlignment(al);
+    }
+
 
     static private int[][] returnAlignment(boolean[][] al) {
         ArrayList<int[]> alignments = new ArrayList<>(al.length);
@@ -411,10 +497,12 @@ public class Symmetrisation {
     }
 
     public static void main(String[] args){
-        int[][] forward = new int[][]{{0, 0},{1, 1},{2, 2},{3, 3},{4, 4},{5, 5},{6, 6},{5, 7},{9, 8},{10, 9},{5, 10},{12, 11}};
+        int[][] forward = new int[][]{{0, 0},{1, 1},{2, 2},{3, 3},{4, 4},{5, 5},{6, 6},{5, 7},{10, 9},{5, 10}};
+        System.out.print("forward: ");         for (int row = 0; row < forward.length; row++) { System.out.print(forward[row][0] + "-" + forward[row][1] + " "); }         System.out.print("\n");
         int[][] backward = new int[][]{{0, 0},{1, 1},{2, 2},{3, 3},{4, 4},{5, 5},{6, 6},{7, 6},{8, 0},{9, 8},{10, 9},{11, 5},{12, 11}};
-        int[][] symmetrized = symmetriseMosesFormatAlignment(forward, backward, Strategy.GrowDiagFinalAnd);
-        FastAlign.printAlignments(symmetrized);
+        System.out.print("backward: ");        for (int row = 0; row < backward.length; row++) { System.out.print(backward[row][0] + "-" + backward[row][1] + " "); }         System.out.print("\n");
+        int[][] symmetrized = symmetriseAlignment(forward, backward, Strategy.GrowDiagFinalAnd);
+        System.out.print("symmetrized: ");        for (int row = 0; row < symmetrized.length; row++) { System.out.print(symmetrized[row][0] + "-" + symmetrized[row][1] + " "); } System.out.print("\n");
     }
 
 }

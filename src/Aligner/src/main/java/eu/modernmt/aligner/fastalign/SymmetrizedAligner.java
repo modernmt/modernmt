@@ -1,4 +1,5 @@
 package eu.modernmt.aligner.fastalign;
+//package eu.modernmt.model;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
@@ -84,12 +85,12 @@ public class SymmetrizedAligner implements Aligner {
         int numberOfTranslationWords = translation.getWords().length;
         int[][] forwardAlignments = this.forwardAlignerProcess.getAlignments(sentence, translation);
         int[][] backwardAlignments = this.backwardAlignerProcess.getAlignments(sentence, translation);
-        int[][] invertedBackwardAlignments = eu.modernmt.aligner.fastalign.SymmetrizedAligner.invertAlignments(backwardAlignments);
+
+        //int[][] invertedBackwardAlignments = eu.modernmt.aligner.fastalign.SymmetrizedAligner.invertAlignments(backwardAlignments);
         logger.debug("Symmetrising");
-        int[][] symmetrisedAlignments = Symmetrisation.symmetriseMosesFormatAlignment(forwardAlignments,
-                invertedBackwardAlignments, this.simmetrizationStrategy);
+        //int[][] symmetrisedAlignments = Symmetrisation.symmetriseMosesFormatAlignment(forwardAlignments, invertedBackwardAlignments, this.simmetrizationStrategy);
+        int[][] symmetrisedAlignments = Symmetrisation.symmetriseAlignment(forwardAlignments, backwardAlignments, this.simmetrizationStrategy);
         logger.debug("Symmetrised alignments: " + symmetrisedAlignments);
-        //return symmetrisedAlignments;
         return AlignmentsInterpolator.interpolateAlignments(symmetrisedAlignments, numberOfSentenceWords,
                 numberOfTranslationWords);
     }
