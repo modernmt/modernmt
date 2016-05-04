@@ -27,10 +27,14 @@ import eu.modernmt.aligner.fastalign.FastAlign;
 
 import java.util.*;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 /**
  * @author miquel
  */
 public class Symmetrisation {
+    private static final Logger logger = LogManager.getLogger(eu.modernmt.aligner.fastalign.SymmetrizedAligner.class);
 
     public enum Strategy {
         Intersection,
@@ -202,7 +206,7 @@ public class Symmetrisation {
                 //add it to the currentpoints and to the list of added points
                 //set the keep_going flag to true in order to continue the do-while loop
                 if (toInsert) {
-                    currentpoints[p1][p2] = true;
+                    //currentpoints[p1][p2] = true;
                     added.add(np);
                     keep_going = true;
                 }
@@ -210,12 +214,36 @@ public class Symmetrisation {
 
             //remove all added points from newpoints List, from the unaligned_s and unaligned_t Lisy
             for (Pair<Integer, Integer> p : added) {
+                int p1 = p.getFirst();
+                int p2 = p.getSecond();
+                currentpoints[p1][p2] = true;
                 newpoints.remove(p);
-                unaligned_s.remove(p.getFirst());
-                unaligned_t.remove(p.getSecond());
+                unaligned_s.remove(p1);
+                unaligned_t.remove(p2);
             }
         }
 
+//Final-and
+        //points which are added in the current iteration
+        List<Pair<Integer, Integer>> added = new LinkedList<Pair<Integer, Integer>>();
+        for (Pair<Integer, Integer> np : newpoints) {
+            int p1 = np.getFirst();
+            int p2 = np.getSecond();
+            if (unaligned_s.contains(p1) && unaligned_t.contains(p2)) {
+                added.add(np);
+            }
+        }
+
+        //remove all added points from newpoints List, from the unaligned_s and unaligned_t Lisy
+        for (Pair<Integer, Integer> p : added) {
+            int p1 = p.getFirst();
+            int p2 = p.getSecond();
+            currentpoints[p1][p2] = true;
+            newpoints.remove(p);
+            unaligned_s.remove(p1);
+            unaligned_t.remove(p2);
+        }
+        /*
         //Final-and  for direct alignments
         //insert all points of the direct alignment which are not already contained in the currentpoints
         for (int s_word = 0; s_word < s2t.length; s_word++) {
@@ -244,7 +272,7 @@ public class Symmetrisation {
                     }
                 }
             }
-        }
+        }*/
 
         return currentpoints;
     }
@@ -476,7 +504,6 @@ public class Symmetrisation {
                 al = Symmetrisation.GrowDiagFinalAnd(s2talignment, t2salignment);
                 break;
         }
-
         return returnAlignment(al);
     }
 
@@ -497,12 +524,30 @@ public class Symmetrisation {
     }
 
     public static void main(String[] args){
+        /*
         int[][] forward = new int[][]{{0, 0},{1, 1},{2, 2},{3, 3},{4, 4},{5, 5},{6, 6},{5, 7},{10, 9},{5, 10}};
-        System.out.print("forward: ");         for (int row = 0; row < forward.length; row++) { System.out.print(forward[row][0] + "-" + forward[row][1] + " "); }         System.out.print("\n");
         int[][] backward = new int[][]{{0, 0},{1, 1},{2, 2},{3, 3},{4, 4},{5, 5},{6, 6},{7, 6},{8, 0},{9, 8},{10, 9},{11, 5},{12, 11}};
-        System.out.print("backward: ");        for (int row = 0; row < backward.length; row++) { System.out.print(backward[row][0] + "-" + backward[row][1] + " "); }         System.out.print("\n");
+        */
+        int[][] forward = new int[][]{{0, 0},{1, 1},{2, 4},{3, 2},{4, 5},{4, 6},{5, 7},{6, 8},{8, 10},{9, 11},{10,11}, {11,9}};
+        int[][] backward = new int[][]{{0, 0},{1, 1},{2, 4},{3, 2},{4, 4},{5,7},{6, 7},{7, 8},{8, 10},{9, 11},{10,11}, {11,9}};
+
+        String slAlignment= "";
+        for (int[] alg : forward) { slAlignment += " " + alg[0] + "-" + alg[1]; }
+        logger.debug("forward: " + slAlignment);
+        System.out.print("forward: " + slAlignment + "\n");
+
+        String tlAlignment= "";
+        for (int[] alg : backward) { tlAlignment += " " + alg[0] + "-" + alg[1]; }
+        logger.debug("backward: " + tlAlignment);
+        System.out.print("backward: " + tlAlignment + "\n");
+
+
         int[][] symmetrized = symmetriseAlignment(forward, backward, Strategy.GrowDiagFinalAnd);
-        System.out.print("symmetrized: ");        for (int row = 0; row < symmetrized.length; row++) { System.out.print(symmetrized[row][0] + "-" + symmetrized[row][1] + " "); } System.out.print("\n");
+
+        String symmAlignment= "";
+        for (int[] alg : symmetrized) { symmAlignment += " " + alg[0] + "-" + alg[1]; }
+        logger.debug("symmetrized: " + symmAlignment + "\n");
+        System.out.print("symmetrized: " + symmAlignment + "\n");
     }
 
 }
