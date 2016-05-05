@@ -39,7 +39,8 @@ public class Symmetrisation {
     public enum Strategy {
         Intersection,
         Union,
-        GrowDiagFinalAnd
+        GrowDiagFinalAnd,
+        GrowDiag
     }
 
     /**
@@ -71,10 +72,10 @@ public class Symmetrisation {
     }
 
     /**
-     * Symetrisation method which produces, as a result, the union of the
+     * Symmetrisation method which produces, as a result, the union of the
      *
-     * @param s2t Source to target assymetric alignment produced with GIZA++
-     * @param t2s Target to source assymetric alignment produced with GIZA++
+     * @param s2t Source to target asymmetric alignment produced with GIZA++
+     * @param t2s Target to source asymmetric alignment produced with GIZA++
      * @return
      */
     static public boolean[][] UnionSymal(Set<Integer>[] s2t, Set<Integer>[] t2s) {
@@ -103,7 +104,7 @@ public class Symmetrisation {
 
 
     /**
-     * Symetrisation method which produces, as a result, the grow-diag-final-and symmetrised alignment
+     * Symmetrisation method which produces, as a result, the grow-diag-final-and symmetrised alignment
      *
      * @param s2t Source to target asymmetric alignment produced with GIZA++
      * @param t2s Target to source asymmetric alignment produced with GIZA++
@@ -277,9 +278,134 @@ public class Symmetrisation {
         return currentpoints;
     }
 
+    /**
+     * Symmetrisation method which produces, as a result, the grow-diag symmetrised alignment
+     *
+     * @param s2t Source to target asymmetric alignment produced with GIZA++
+     * @param t2s Target to source asymmetric alignment produced with GIZA++
+     * @return
+     */
+    static public boolean[][] GrowDiag(Set<Integer>[] s2t, Set<Integer>[] t2s) {
+        List<Pair<Integer, Integer>> neighbors = new LinkedList<Pair<Integer, Integer>>(); //neighbors
+
+        //Diagonal (diag) neigourhood
+        neighbors.add(new Pair(-1, -1));
+        neighbors.add(new Pair(-1, 1));
+        neighbors.add(new Pair(1, -1));
+        neighbors.add(new Pair(1, 1));
+
+        //Defining neibourhood
+        neighbors.add(new Pair(0, 1));
+        neighbors.add(new Pair(-1, -0));
+        neighbors.add(new Pair(0, -1));
+        neighbors.add(new Pair(1, 0));
+
+        //Intersection of the alignments (starting point); matrix format, where a row corresponds to a source, and a column column to a target
+        boolean[][] currentpoints = IntersectionSymal(s2t, t2s); //symmetric alignment
+        //Union of the alignments (space for growing) matrix format, where a row corresponds to a source, and a column column to a target
+
+        boolean[][] unionalignment = UnionSymal(s2t, t2s); //union alignment
+
+        //points which correspond to the difference between the union points and intersection points
+        List<Pair<Integer, Integer>> newpoints = new LinkedList<Pair<Integer, Integer>>();
+        for (int union_row = 0; union_row < unionalignment.length; union_row++) {
+            boolean aligned = false;
+            for (int union_col = 0; union_col < unionalignment[union_row].length; union_col++) {
+                if (unionalignment[union_row][union_col] && !currentpoints[union_row][union_col]) {
+                    newpoints.add(new Pair(union_row, union_col));
+                }
+            }
+        }
+
+        //Adding currently unaligned words in SL to the list
+        Set<Integer> unaligned_s = new LinkedHashSet<Integer>();
+        for (int current_row = 0; current_row < currentpoints.length; current_row++) {
+            boolean aligned = false;
+            for (int current_col = 0; current_col < currentpoints[current_row].length; current_col++) {
+                if (currentpoints[current_row][current_col]) {
+                    aligned = true;
+                    break;
+                }
+            }
+            if (!aligned)
+                unaligned_s.add(current_row);
+        }
+        //Adding currently unaligned words in TL to the list
+        Set<Integer> unaligned_t = new LinkedHashSet<Integer>();
+        for (int current_col = 0; current_col < currentpoints[0].length; current_col++) {
+            boolean aligned = false;
+            for (boolean[] currentpoint : currentpoints) {
+                if (currentpoint[current_col]) {
+                    aligned = true;
+                    break;
+                }
+            }
+            if (!aligned)
+                unaligned_t.add(current_col);
+        }
+
+        boolean keep_going = (newpoints.size() > 0);
+        //Grow-diag
+        while (keep_going) {
+
+            //points which are added in the current iteration
+            List<Pair<Integer, Integer>> added = new LinkedList<Pair<Integer, Integer>>();
+
+            keep_going = false;
+            //loop over new points
+            for (Pair<Integer, Integer> np : newpoints) {
+                int p1 = np.getFirst();
+                int p2 = np.getSecond();
+                boolean toInsert = true;
+                //check whether the row or the column is already aligned
+                if (!unaligned_s.contains(p1) && !unaligned_t.contains(p2)) { //both row and column are already aligned; the point cannot be inserted
+                    toInsert = false;
+                } else { //either row or columns are unaligned
+                    //check whether any neighbor is unaligned; if true the point can be inserted
+                    toInsert = false;
+                    for (Pair<Integer, Integer> nb : neighbors) {
+                        int p1_nb = p1 + nb.getFirst();
+                        if ((p1_nb < 0) || (p1_nb >= s2t.length)) { //p1_nb is out of boundary
+                            continue;
+                        }
+                        int p2_nb = p2 + nb.getSecond();
+                        if ((p2_nb < 0) || (p2_nb >= t2s.length)) { //p1_nb is out of boundary
+                            continue;
+                        }
+                        if (currentpoints[p1_nb][p2_nb]) {
+                            toInsert = true;
+                            continue; //exit the loop over the neighbors
+                        }
+                    }
+                }
+                //if the new point (np) can be inserted (toInsert==true)
+                //add it to the currentpoints and to the list of added points
+                //set the keep_going flag to true in order to continue the do-while loop
+                if (toInsert) {
+                    //currentpoints[p1][p2] = true;
+                    added.add(np);
+                    keep_going = true;
+                }
+            }
+
+            //remove all added points from newpoints List, from the unaligned_s and unaligned_t Lisy
+            for (Pair<Integer, Integer> p : added) {
+                int p1 = p.getFirst();
+                int p2 = p.getSecond();
+                currentpoints[p1][p2] = true;
+                newpoints.remove(p);
+                unaligned_s.remove(p1);
+                unaligned_t.remove(p2);
+            }
+        }
+
+        return currentpoints;
+    }
+
+
 
     /**
-     * Method that extracts an alignment representation from an assymetric alignment in GIZA++ format
+     * Method that extracts an alignment representation from an asymmetric alignment in GIZA++ format
      *
      * @param ssentence
      * @param aligninfo
@@ -411,7 +537,7 @@ public class Symmetrisation {
     }
 
 
-    static public int[][] symmetriseGizaFormatAlignment(String sl_sent_s2t, String alg_info_s2t, String sl_sent_t2s, String alg_info_t2s, int symindex) {
+    static public int[][] symmetriseGizaFormatAlignment(String sl_sent_s2t, String alg_info_s2t, String sl_sent_t2s, String alg_info_t2s, Strategy strategy) {
 
         Set<Integer>[] s2talignment = ReadGizaAsymmetricAlignment(sl_sent_s2t, alg_info_s2t);
         Set<Integer>[] t2salignment = ReadGizaAsymmetricAlignment(sl_sent_t2s, alg_info_t2s);
@@ -419,20 +545,22 @@ public class Symmetrisation {
         boolean[][] al = null;
 
         //Producing the symmetrised alignment
-        switch (symindex) {
-            case 1:
+        switch (strategy) {
+            case Union:
                 al = Symmetrisation.UnionSymal(s2talignment, t2salignment);
                 break;
-            case 2:
+            case Intersection:
                 al = Symmetrisation.IntersectionSymal(s2talignment, t2salignment);
                 break;
-            case 3:
+            case GrowDiagFinalAnd:
                 al = Symmetrisation.GrowDiagFinalAnd(s2talignment, t2salignment);
+                break;
+            case GrowDiag:
+                al = Symmetrisation.GrowDiag(s2talignment, t2salignment);
                 break;
         }
 
         return returnAlignment(al);
-
     }
 
 
@@ -466,6 +594,9 @@ public class Symmetrisation {
                 break;
             case GrowDiagFinalAnd:
                 al = Symmetrisation.GrowDiagFinalAnd(s2talignment, t2salignment);
+                break;
+            case GrowDiag:
+                al = Symmetrisation.GrowDiag(s2talignment, t2salignment);
                 break;
         }
 

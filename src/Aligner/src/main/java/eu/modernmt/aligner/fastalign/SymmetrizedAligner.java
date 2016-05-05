@@ -22,6 +22,7 @@ public class SymmetrizedAligner implements Aligner {
     private static final String backwardModelFileName = "model.align.bwd";
     private static final Logger logger = LogManager.getLogger(eu.modernmt.aligner.fastalign.SymmetrizedAligner.class);
     public static final Symmetrisation.Strategy DEFAULT_SYMMETRIZATION_STRATEGY = Symmetrisation.Strategy.GrowDiagFinalAnd;
+    //public static final Symmetrisation.Strategy DEFAULT_SYMMETRIZATION_STRATEGY = Symmetrisation.Strategy.GrowDiag;
 
     private static class AlignerInitializer implements Runnable {
 
