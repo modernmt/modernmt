@@ -634,6 +634,9 @@ public class Symmetrisation {
             case GrowDiagFinalAnd:
                 al = Symmetrisation.GrowDiagFinalAnd(s2talignment, t2salignment);
                 break;
+            case GrowDiag:
+                al = Symmetrisation.GrowDiag(s2talignment, t2salignment);
+                break;
         }
         return returnAlignment(al);
     }
@@ -655,30 +658,53 @@ public class Symmetrisation {
     }
 
     public static void main(String[] args){
-        /*
+        //Strategy strategy = Strategy.GrowDiagFinalAnd;
+        Strategy strategy = Strategy.GrowDiag;
         int[][] forward = new int[][]{{0, 0},{1, 1},{2, 2},{3, 3},{4, 4},{5, 5},{6, 6},{5, 7},{10, 9},{5, 10}};
         int[][] backward = new int[][]{{0, 0},{1, 1},{2, 2},{3, 3},{4, 4},{5, 5},{6, 6},{7, 6},{8, 0},{9, 8},{10, 9},{11, 5},{12, 11}};
-        */
-        int[][] forward = new int[][]{{0, 0},{1, 1},{2, 4},{3, 2},{4, 5},{4, 6},{5, 7},{6, 8},{8, 10},{9, 11},{10,11}, {11,9}};
-        int[][] backward = new int[][]{{0, 0},{1, 1},{2, 4},{3, 2},{4, 4},{5,7},{6, 7},{7, 8},{8, 10},{9, 11},{10,11}, {11,9}};
 
-        String slAlignment= "";
+        String slAlignment, tlAlignment, symmAlignment;
+
+        slAlignment= "";
         for (int[] alg : forward) { slAlignment += " " + alg[0] + "-" + alg[1]; }
         logger.debug("forward: " + slAlignment);
         System.out.print("forward: " + slAlignment + "\n");
 
-        String tlAlignment= "";
+        tlAlignment= "";
         for (int[] alg : backward) { tlAlignment += " " + alg[0] + "-" + alg[1]; }
         logger.debug("backward: " + tlAlignment);
         System.out.print("backward: " + tlAlignment + "\n");
 
 
-        int[][] symmetrized = symmetriseAlignment(forward, backward, Strategy.GrowDiagFinalAnd);
+        int[][] symmetrized = symmetriseAlignment(forward, backward, strategy);
 
-        String symmAlignment= "";
+        symmAlignment= "";
         for (int[] alg : symmetrized) { symmAlignment += " " + alg[0] + "-" + alg[1]; }
         logger.debug("symmetrized: " + symmAlignment + "\n");
         System.out.print("symmetrized: " + symmAlignment + "\n");
+
+
+        int[][] forward2 = new int[][]{{0, 0},{1, 1},{2, 4},{3, 2},{4, 5},{4, 6},{5, 7},{6, 8},{8, 10},{9, 11},{10,11}, {11,9}};
+        int[][] backward2 = new int[][]{{0, 0},{1, 1},{2, 4},{3, 2},{4, 4},{5,7},{6, 7},{7, 8},{8, 10},{9, 11},{10,11}, {11,9}};
+
+
+        slAlignment= "";
+        for (int[] alg : forward2) { slAlignment += " " + alg[0] + "-" + alg[1]; }
+        logger.debug("forward2: " + slAlignment);
+        System.out.print("forward2: " + slAlignment + "\n");
+
+        tlAlignment= "";
+        for (int[] alg : backward2) { tlAlignment += " " + alg[0] + "-" + alg[1]; }
+        logger.debug("backward2: " + tlAlignment);
+        System.out.print("backward2: " + tlAlignment + "\n");
+
+
+        int[][] symmetrized2 = symmetriseAlignment(forward2, backward2, strategy);
+
+        symmAlignment= "";
+        for (int[] alg : symmetrized2) { symmAlignment += " " + alg[0] + "-" + alg[1]; }
+        logger.debug("symmetrized2: " + symmAlignment + "\n");
+        System.out.print("symmetrized2: " + symmAlignment + "\n");
     }
 
 }
