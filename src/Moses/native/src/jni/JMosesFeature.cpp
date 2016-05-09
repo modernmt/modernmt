@@ -8,7 +8,6 @@ static JMosesFeature *__JMosesFeature_instance = NULL;
 
 JMosesFeature::JMosesFeature(JNIEnv *jvm) : _class(jvm->FindClass("eu/modernmt/decoder/moses/MosesFeature")) {
     constructor = jvm->GetMethodID(_class, "<init>", "(Ljava/lang/String;ZZJ)V");
-    ptr = jvm->GetFieldID(_class, "ptr", "J");
 
     jfieldID field = jvm->GetStaticFieldID(_class, "UNTUNEABLE_COMPONENT", "F");
     UNTUNEABLE_COMPONENT = jvm->GetStaticFloatField(_class, field);
@@ -21,8 +20,4 @@ jobject JMosesFeature::create(JNIEnv *jvm, std::string &name, bool tunable, bool
     jvm->DeleteLocalRef(jname);
 
     return jfeature;
-}
-
-void *JMosesFeature::getPtr(JNIEnv *jvm, jobject self) {
-    return (void *) jvm->GetLongField(self, ptr);
 }

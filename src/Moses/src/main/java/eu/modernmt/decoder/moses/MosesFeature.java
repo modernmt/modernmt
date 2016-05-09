@@ -33,6 +33,10 @@ public class MosesFeature implements DecoderFeature {
         return stateless;
     }
 
+    public long getNativePointer() {
+        return ptr;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

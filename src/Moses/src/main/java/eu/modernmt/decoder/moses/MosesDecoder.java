@@ -49,10 +49,10 @@ public class MosesDecoder implements Decoder {
 
     @Override
     public float[] getFeatureWeights(DecoderFeature feature) {
-        return getFeatureWeights((MosesFeature) feature);
+        return getFeatureWeightsFromPointer(((MosesFeature) feature).getNativePointer());
     }
 
-    private native float[] getFeatureWeights(MosesFeature feature);
+    private native float[] getFeatureWeightsFromPointer(long ptr);
 
     @Override
     public TranslationSession openSession(long id, List<ContextDocument> translationContext) {

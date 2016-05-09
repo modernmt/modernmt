@@ -69,18 +69,18 @@ JNIEXPORT jobjectArray JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_getFe
     return array;
 }
 
+
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
- * Method:    getFeatureWeights
- * Signature: (Leu/modernmt/decoder/moses/MosesFeature;)[F
+ * Method:    getFeatureWeightsFromPointer
+ * Signature: (J)[F
  */
-JNIEXPORT jfloatArray JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_getFeatureWeights(JNIEnv *jvm, jobject jself,
-                                                                                            jobject jfeature) {
+JNIEXPORT jfloatArray JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_getFeatureWeightsFromPointer(JNIEnv *jvm, jobject jself, jlong jfeaturePtr) {
     JMosesFeature MosesFeature(jvm);
     MosesDecoder *moses = jni_gethandle<MosesDecoder>(jvm, jself);
 
     feature_t mock;
-    mock.ptr = MosesFeature.getPtr(jvm, jfeature);
+    mock.ptr = (void *)jfeaturePtr;
     std::vector<float> weights = moses->getFeatureWeights(mock);
 
     jfloat *buffer = (jfloat *) calloc(sizeof(jfloat), weights.size());

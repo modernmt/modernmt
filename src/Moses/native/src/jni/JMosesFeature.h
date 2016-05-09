@@ -10,7 +10,6 @@
 
 class JMosesFeature {
     jmethodID constructor;
-    jfieldID ptr;
 
 public:
     const jclass _class;
@@ -20,7 +19,6 @@ public:
 
     jobject create(JNIEnv *jvm, std::string &name, bool tunable, bool stateless, void *ptr);
 
-    void *getPtr(JNIEnv *jvm, jobject self);
 };
 
 
