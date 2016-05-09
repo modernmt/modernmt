@@ -258,9 +258,9 @@ public class Symmetrisation {
     static public void GrowDiag(boolean[][] currentpoints, Set<Integer> unaligned_s, Set<Integer> unaligned_t, Set<Integer>[] s2t, Set<Integer>[] t2s) {
 
         List<Pair<Integer, Integer>> neighbors = new LinkedList<Pair<Integer, Integer>>(); //neighbors
-/*
+
         //Defining neighborhood on the axes and on the diagonals
-        //order of visit
+        //order of visit (Nicola version)
         //            column
         //          j-1 j j+1
         // row i-1:  5  1  6
@@ -274,7 +274,8 @@ public class Symmetrisation {
         neighbors.add(new Pair(-1, 1));
         neighbors.add(new Pair(1, -1));
         neighbors.add(new Pair(1, 1));
-*/
+
+/*
         //Defining neighborhood on the axes and on the diagonals
         //order of visit (like in GrowDiagFinalAnd_ORIGINAL)
         //            column
@@ -290,6 +291,24 @@ public class Symmetrisation {
         neighbors.add(new Pair(-1, -0));
         neighbors.add(new Pair(0, -1));
         neighbors.add(new Pair(1, 0));
+*/
+/*
+        //Defining neighborhood on the axes and on the diagonals
+        //order of visit (Koehn's original)
+        //            column
+        //          j-1 j j+1
+        // row i-1:  5  1  6
+        // row i:    2  P  4
+        // row i+1:  7  3  8
+        neighbors.add(new Pair(-1, 0));
+        neighbors.add(new Pair(0, -1));
+        neighbors.add(new Pair(1, 0));
+        neighbors.add(new Pair(0, 1));
+        neighbors.add(new Pair(-1, -1));
+        neighbors.add(new Pair(-1, 1));
+        neighbors.add(new Pair(1, -1));
+        neighbors.add(new Pair(1, 1));
+*/
 
         boolean[][] unionalignment = UnionSymal(s2t, t2s); //union alignment
 
