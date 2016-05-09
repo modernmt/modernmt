@@ -40,6 +40,7 @@ public class Symmetrisation {
         Intersection,
         Union,
         GrowDiagFinalAnd,
+        GrowDiagFinalAnd_ORIGINAL,
         GrowDiag
     }
 
@@ -102,6 +103,261 @@ public class Symmetrisation {
         return union;
     }
 
+    static public boolean[][] GrowDiagFinalAnd_ORIGINAL(Set<Integer>[] s2t, Set<Integer>[] t2s) {
+        List<Pair<Integer, Integer>> neighbors = new LinkedList<Pair<Integer, Integer>>(); //neighbors
+
+        //Diagonal (diag) neigourhood
+        neighbors.add(new Pair(-1, -1));
+        neighbors.add(new Pair(-1, 1));
+        neighbors.add(new Pair(1, -1));
+        neighbors.add(new Pair(1, 1));
+
+        //Defining neibourhood
+        neighbors.add(new Pair(0, 1));
+        neighbors.add(new Pair(-1, -0));
+        neighbors.add(new Pair(0, -1));
+        neighbors.add(new Pair(1, 0));
+
+        //Intersection of the alignments (starting point)
+        boolean[][] currentpoints = IntersectionSymal(s2t, t2s); //symmetric alignment
+        //Union of the alignments (space for growing)
+        boolean[][] unionalignment = UnionSymal(s2t, t2s); //union alignment
+        //Adding currently unaligned words in SL to the list
+        Set<Integer> unaligned_s = new LinkedHashSet<Integer>();
+        for (int current_row = 0; current_row < currentpoints.length; current_row++) {
+            boolean aligned = false;
+            for (int current_col = 0; current_col < currentpoints[current_row].length; current_col++) {
+                if (currentpoints[current_row][current_col]) {
+                    aligned = true;
+                    break;
+                }
+            }
+            if (!aligned)
+                unaligned_s.add(current_row);
+        }
+        //Adding currently unaligned words in TL to the list
+        Set<Integer> unaligned_t = new LinkedHashSet<Integer>();
+        for (int current_col = 0; current_col < currentpoints[0].length; current_col++) {
+            boolean aligned = false;
+            for (boolean[] currentpoint : currentpoints) {
+                if (currentpoint[current_col]) {
+                    aligned = true;
+                    break;
+                }
+            }
+            if (!aligned)
+                unaligned_t.add(current_col);
+        }
+
+        boolean added;
+        //Grow-diag
+        do {
+            added = false;
+            //For all the current alignment
+            for (int current_row = 0; current_row < currentpoints.length; current_row++) {
+                for (int current_col = 0; current_col < currentpoints[current_row].length; current_col++) {
+                    //If the word is aligned, the neibourghs are checked
+                    if (currentpoints[current_row][current_col]) {
+                        for (Pair<Integer, Integer> n : neighbors) {
+                            int p1 = current_row + n.getFirst();
+                            int p2 = current_col + n.getSecond();
+                            if (p1 >= 0 && p1 < currentpoints.length && p2 >= 0 && p2 < currentpoints[0].length) {
+                                //Check the neighbours
+                                if ((unaligned_s.contains(p1) || unaligned_t.contains(p2)) &&
+                                        unionalignment[p1][p2]) {
+                                    currentpoints[p1][p2] = true;
+                                    unaligned_s.remove(p1);
+                                    unaligned_t.remove(p2);
+                                    added = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } while (added);
+
+        //Final-and
+        for (int sw : unaligned_s) {
+            int t_toremove = -1;
+            for (int tw : unaligned_t) {
+                if (unionalignment[sw][tw]) {
+                    t_toremove = tw;
+                    currentpoints[sw][tw] = true;
+                    break;
+                }
+            }
+            unaligned_t.remove(t_toremove);
+        }
+
+        return currentpoints;
+    }
+
+    /**
+     * Symmetrisation method which produces, as a result, the final-and symmetrised alignment using the forward alignment
+     *
+     * @param currentpoints current aligned points
+     * @param unaligned_s set of unalinged source columns
+     * @param unaligned_t set of unalinged target columns
+     * @param s2t Source to target asymmetric alignment produced with GIZA++
+     * @return
+     */
+    static public void FinalAndForward(boolean[][] currentpoints, Set<Integer> unaligned_s, Set<Integer> unaligned_t, Set<Integer>[] s2t) {
+        for (int s_word = 0; s_word < s2t.length; s_word++) {
+            if (s2t[s_word] != null) {
+                for (Integer t_word : s2t[s_word]) {
+                    if (!currentpoints[s_word][t_word]) {
+                        if (unaligned_s.contains(s_word) && unaligned_t.contains(t_word)) {
+                            currentpoints[s_word][t_word] = true;
+                            unaligned_s.remove(s_word);
+                            unaligned_t.remove(t_word);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Symmetrisation method which produces, as a result, the final-and symmetrised alignment using the backward alignment
+     *
+     * @param currentpoints current aligned points
+     * @param unaligned_s set of unalinged source columns
+     * @param unaligned_t set of unalinged target columns
+     * @param t2s Target to source asymmetric alignment produced with GIZA++
+     * @return
+     */
+    static public void FinalAndBackward(boolean[][] currentpoints, Set<Integer> unaligned_s, Set<Integer> unaligned_t, Set<Integer>[] t2s) {
+        for (int t_word = 0; t_word < t2s.length; t_word++) {
+            if (t2s[t_word] != null) {
+                for (Integer s_word : t2s[t_word]) {
+                    if (!currentpoints[s_word][t_word]) {
+                        if (unaligned_s.contains(s_word) && unaligned_t.contains(t_word)) {
+                            currentpoints[s_word][t_word] = true;
+                            unaligned_s.remove(s_word);
+                            unaligned_t.remove(t_word);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Symmetrisation method which produces, as a result, the grow-diag symmetrised alignment
+     *
+     * @param currentpoints current aligned points
+     * @param unaligned_s set of unalinged source columns
+     * @param unaligned_t set of unalinged target columns
+     * @param s2t Source to target asymmetric alignment produced with GIZA++
+     * @param t2s Target to source asymmetric alignment produced with GIZA++
+     * @return
+     */
+    static public void GrowDiag(boolean[][] currentpoints, Set<Integer> unaligned_s, Set<Integer> unaligned_t, Set<Integer>[] s2t, Set<Integer>[] t2s) {
+
+        List<Pair<Integer, Integer>> neighbors = new LinkedList<Pair<Integer, Integer>>(); //neighbors
+/*
+        //Defining neighborhood on the axes and on the diagonals
+        //order of visit
+        //            column
+        //          j-1 j j+1
+        // row i-1:  5  1  6
+        // row i:    2  P  3
+        // row i+1:  7  4  8
+        neighbors.add(new Pair(-1, 0));
+        neighbors.add(new Pair(0, -1));
+        neighbors.add(new Pair(0, 1));
+        neighbors.add(new Pair(1, 0));
+        neighbors.add(new Pair(-1, -1));
+        neighbors.add(new Pair(-1, 1));
+        neighbors.add(new Pair(1, -1));
+        neighbors.add(new Pair(1, 1));
+*/
+        //Defining neighborhood on the axes and on the diagonals
+        //order of visit (like in GrowDiagFinalAnd_ORIGINAL)
+        //            column
+        //          j-1 j j+1
+        // row i-1:  1  6  2
+        // row i:    7  P  5
+        // row i+1:  3  8  4
+        neighbors.add(new Pair(-1, -1));
+        neighbors.add(new Pair(-1, 1));
+        neighbors.add(new Pair(1, -1));
+        neighbors.add(new Pair(1, 1));
+        neighbors.add(new Pair(0, 1));
+        neighbors.add(new Pair(-1, -0));
+        neighbors.add(new Pair(0, -1));
+        neighbors.add(new Pair(1, 0));
+
+        boolean[][] unionalignment = UnionSymal(s2t, t2s); //union alignment
+
+        boolean added;
+        //Grow-diag
+        do {
+            added = false;
+            //For all the current alignment
+            for (int row = 0; row < currentpoints.length; row++) {
+                for (int col = 0; col < currentpoints[row].length; col++) {
+                    //If the word is aligned, the neibourghs are checked
+                    if (currentpoints[row][col]) {
+                        for (Pair<Integer, Integer> n : neighbors) {
+                            int p1 = row + n.getFirst();
+                            int p2 = col + n.getSecond();
+                            if (p1 >= 0 && p1 < currentpoints.length && p2 >= 0 && p2 < currentpoints[0].length) {
+                                //Check the neighbours
+                                if ((unaligned_s.contains(p1) || unaligned_t.contains(p2)) &&
+                                        unionalignment[p1][p2]) {
+                                    currentpoints[p1][p2] = true;
+                                    unaligned_s.remove(p1);
+                                    unaligned_t.remove(p2);
+                                    added = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } while (added);
+    }
+
+
+    /**
+     * Symmetrisation method which produces, as a result, the grow-diag-final-and symmetrised alignment
+     *
+     * @param currentpoints current aligned points
+     * @param unaligned_s set of unalinged source columns
+     * @param unaligned_t set of unalinged target columns
+     * @return
+     */
+    static public void SetUnaligned(boolean[][] currentpoints, Set<Integer> unaligned_s, Set<Integer> unaligned_t) {
+
+        //Adding currently unaligned words in SL to the list
+        for (int row = 0; row < currentpoints.length; row++) {
+            boolean aligned = false;
+            for (int col = 0; col < currentpoints[row].length; col++) {
+                if (currentpoints[row][col]) {
+                    aligned = true;
+                    break;
+                }
+            }
+            if (!aligned)
+                unaligned_s.add(row);
+        }
+        //Adding currently unaligned words in TL to the list
+        for (int col = 0; col < currentpoints[0].length; col++) {
+            boolean aligned = false;
+            for (boolean[] currentpoint : currentpoints) {
+                if (currentpoint[col]) {
+                    aligned = true;
+                    break;
+                }
+            }
+            if (!aligned)
+                unaligned_t.add(col);
+        }
+    }
 
     /**
      * Symmetrisation method which produces, as a result, the grow-diag-final-and symmetrised alignment
@@ -111,172 +367,21 @@ public class Symmetrisation {
      * @return
      */
     static public boolean[][] GrowDiagFinalAnd(Set<Integer>[] s2t, Set<Integer>[] t2s) {
-        List<Pair<Integer, Integer>> neighbors = new LinkedList<Pair<Integer, Integer>>(); //neighbors
-
-        //Diagonal (diag) neigourhood
-        neighbors.add(new Pair(-1, -1));
-        neighbors.add(new Pair(-1, 1));
-        neighbors.add(new Pair(1, -1));
-        neighbors.add(new Pair(1, 1));
-
-        //Defining neibourhood
-        neighbors.add(new Pair(0, 1));
-        neighbors.add(new Pair(-1, -0));
-        neighbors.add(new Pair(0, -1));
-        neighbors.add(new Pair(1, 0));
-
         //Intersection of the alignments (starting point); matrix format, where a row corresponds to a source, and a column column to a target
         boolean[][] currentpoints = IntersectionSymal(s2t, t2s); //symmetric alignment
-        //Union of the alignments (space for growing) matrix format, where a row corresponds to a source, and a column column to a target
 
-        boolean[][] unionalignment = UnionSymal(s2t, t2s); //union alignment
-
-        //points which correspond to the difference between the union points and intersection points
-        List<Pair<Integer, Integer>> newpoints = new LinkedList<Pair<Integer, Integer>>();
-        for (int union_row = 0; union_row < unionalignment.length; union_row++) {
-            boolean aligned = false;
-            for (int union_col = 0; union_col < unionalignment[union_row].length; union_col++) {
-                if (unionalignment[union_row][union_col] && !currentpoints[union_row][union_col]) {
-                    newpoints.add(new Pair(union_row, union_col));
-                }
-            }
-        }
-
-        //Adding currently unaligned words in SL to the list
+        //Adding currently unaligned words in SL and TL to the list
         Set<Integer> unaligned_s = new LinkedHashSet<Integer>();
-        for (int current_row = 0; current_row < currentpoints.length; current_row++) {
-            boolean aligned = false;
-            for (int current_col = 0; current_col < currentpoints[current_row].length; current_col++) {
-                if (currentpoints[current_row][current_col]) {
-                    aligned = true;
-                    break;
-                }
-            }
-            if (!aligned)
-                unaligned_s.add(current_row);
-        }
-        //Adding currently unaligned words in TL to the list
         Set<Integer> unaligned_t = new LinkedHashSet<Integer>();
-        for (int current_col = 0; current_col < currentpoints[0].length; current_col++) {
-            boolean aligned = false;
-            for (boolean[] currentpoint : currentpoints) {
-                if (currentpoint[current_col]) {
-                    aligned = true;
-                    break;
-                }
-            }
-            if (!aligned)
-                unaligned_t.add(current_col);
-        }
+        SetUnaligned(currentpoints, unaligned_s, unaligned_t);
 
-        boolean keep_going = (newpoints.size() > 0);
-        //Grow-diag
-        while (keep_going) {
-
-            //points which are added in the current iteration
-            List<Pair<Integer, Integer>> added = new LinkedList<Pair<Integer, Integer>>();
-
-            keep_going = false;
-            //loop over new points
-            for (Pair<Integer, Integer> np : newpoints) {
-                int p1 = np.getFirst();
-                int p2 = np.getSecond();
-                boolean toInsert = true;
-                //check whether the row or the column is already aligned
-                if (!unaligned_s.contains(p1) && !unaligned_t.contains(p2)) { //both row and column are already aligned; the point cannot be inserted
-                    toInsert = false;
-                } else { //either row or columns are unaligned
-                    //check whether any neighbor is unaligned; if true the point can be inserted
-                    toInsert = false;
-                    for (Pair<Integer, Integer> nb : neighbors) {
-                        int p1_nb = p1 + nb.getFirst();
-                        if ((p1_nb < 0) || (p1_nb >= s2t.length)) { //p1_nb is out of boundary
-                            continue;
-                        }
-                        int p2_nb = p2 + nb.getSecond();
-                        if ((p2_nb < 0) || (p2_nb >= t2s.length)) { //p1_nb is out of boundary
-                            continue;
-                        }
-                        if (currentpoints[p1_nb][p2_nb]) {
-                            toInsert = true;
-                            continue; //exit the loop over the neighbors
-                        }
-                    }
-                }
-                //if the new point (np) can be inserted (toInsert==true)
-                //add it to the currentpoints and to the list of added points
-                //set the keep_going flag to true in order to continue the do-while loop
-                if (toInsert) {
-                    //currentpoints[p1][p2] = true;
-                    added.add(np);
-                    keep_going = true;
-                }
-            }
-
-            //remove all added points from newpoints List, from the unaligned_s and unaligned_t Lisy
-            for (Pair<Integer, Integer> p : added) {
-                int p1 = p.getFirst();
-                int p2 = p.getSecond();
-                currentpoints[p1][p2] = true;
-                newpoints.remove(p);
-                unaligned_s.remove(p1);
-                unaligned_t.remove(p2);
-            }
-        }
-
-//Final-and
-        //points which are added in the current iteration
-        List<Pair<Integer, Integer>> added = new LinkedList<Pair<Integer, Integer>>();
-        for (Pair<Integer, Integer> np : newpoints) {
-            int p1 = np.getFirst();
-            int p2 = np.getSecond();
-            if (unaligned_s.contains(p1) && unaligned_t.contains(p2)) {
-                added.add(np);
-            }
-        }
-
-        //remove all added points from newpoints List, from the unaligned_s and unaligned_t Lisy
-        for (Pair<Integer, Integer> p : added) {
-            int p1 = p.getFirst();
-            int p2 = p.getSecond();
-            currentpoints[p1][p2] = true;
-            newpoints.remove(p);
-            unaligned_s.remove(p1);
-            unaligned_t.remove(p2);
-        }
-        /*
-        //Final-and  for direct alignments
-        //insert all points of the direct alignment which are not already contained in the currentpoints
-        for (int s_word = 0; s_word < s2t.length; s_word++) {
-            if (s2t[s_word] != null) {
-                for (Integer t_word : s2t[s_word]) {
-                    if (unaligned_s.contains(s_word) && unaligned_t.contains(t_word)) {
-                        //if both row and the column are unaligned, the point can be inserted
-                        currentpoints[s_word][t_word] = true;
-                        unaligned_s.remove(s_word);
-                        unaligned_t.remove(t_word);
-                    }
-                }
-            }
-        }
-
-        //Final-and  for inverse alignments
-        //insert all points of the direct alignment which are not already contained in the currentpoints
-        for (int t_word = 0; t_word < t2s.length; t_word++) {
-            if (t2s[t_word] != null) {
-                for (Integer s_word : t2s[t_word]) {
-                    if (unaligned_s.contains(s_word) && unaligned_t.contains(t_word)) {
-                        //if both row and the column are unaligned, the point can be inserted
-                        currentpoints[s_word][t_word] = true;
-                        unaligned_s.remove(s_word);
-                        unaligned_t.remove(t_word);
-                    }
-                }
-            }
-        }*/
+        GrowDiag(currentpoints, unaligned_s, unaligned_t, s2t, t2s);
+        FinalAndForward(currentpoints, unaligned_s, unaligned_t, s2t);
+        FinalAndBackward(currentpoints, unaligned_s, unaligned_t, t2s);
 
         return currentpoints;
     }
+
 
     /**
      * Symmetrisation method which produces, as a result, the grow-diag symmetrised alignment
@@ -286,118 +391,15 @@ public class Symmetrisation {
      * @return
      */
     static public boolean[][] GrowDiag(Set<Integer>[] s2t, Set<Integer>[] t2s) {
-        List<Pair<Integer, Integer>> neighbors = new LinkedList<Pair<Integer, Integer>>(); //neighbors
-
-        //Diagonal (diag) neigourhood
-        neighbors.add(new Pair(-1, -1));
-        neighbors.add(new Pair(-1, 1));
-        neighbors.add(new Pair(1, -1));
-        neighbors.add(new Pair(1, 1));
-
-        //Defining neibourhood
-        neighbors.add(new Pair(0, 1));
-        neighbors.add(new Pair(-1, -0));
-        neighbors.add(new Pair(0, -1));
-        neighbors.add(new Pair(1, 0));
-
         //Intersection of the alignments (starting point); matrix format, where a row corresponds to a source, and a column column to a target
         boolean[][] currentpoints = IntersectionSymal(s2t, t2s); //symmetric alignment
-        //Union of the alignments (space for growing) matrix format, where a row corresponds to a source, and a column column to a target
 
-        boolean[][] unionalignment = UnionSymal(s2t, t2s); //union alignment
-
-        //points which correspond to the difference between the union points and intersection points
-        List<Pair<Integer, Integer>> newpoints = new LinkedList<Pair<Integer, Integer>>();
-        for (int union_row = 0; union_row < unionalignment.length; union_row++) {
-            boolean aligned = false;
-            for (int union_col = 0; union_col < unionalignment[union_row].length; union_col++) {
-                if (unionalignment[union_row][union_col] && !currentpoints[union_row][union_col]) {
-                    newpoints.add(new Pair(union_row, union_col));
-                }
-            }
-        }
-
-        //Adding currently unaligned words in SL to the list
+        //Adding currently unaligned words in SL and TL to the list
         Set<Integer> unaligned_s = new LinkedHashSet<Integer>();
-        for (int current_row = 0; current_row < currentpoints.length; current_row++) {
-            boolean aligned = false;
-            for (int current_col = 0; current_col < currentpoints[current_row].length; current_col++) {
-                if (currentpoints[current_row][current_col]) {
-                    aligned = true;
-                    break;
-                }
-            }
-            if (!aligned)
-                unaligned_s.add(current_row);
-        }
-        //Adding currently unaligned words in TL to the list
         Set<Integer> unaligned_t = new LinkedHashSet<Integer>();
-        for (int current_col = 0; current_col < currentpoints[0].length; current_col++) {
-            boolean aligned = false;
-            for (boolean[] currentpoint : currentpoints) {
-                if (currentpoint[current_col]) {
-                    aligned = true;
-                    break;
-                }
-            }
-            if (!aligned)
-                unaligned_t.add(current_col);
-        }
+        SetUnaligned(currentpoints, unaligned_s, unaligned_t);
 
-        boolean keep_going = (newpoints.size() > 0);
-        //Grow-diag
-        while (keep_going) {
-
-            //points which are added in the current iteration
-            List<Pair<Integer, Integer>> added = new LinkedList<Pair<Integer, Integer>>();
-
-            keep_going = false;
-            //loop over new points
-            for (Pair<Integer, Integer> np : newpoints) {
-                int p1 = np.getFirst();
-                int p2 = np.getSecond();
-                boolean toInsert = true;
-                //check whether the row or the column is already aligned
-                if (!unaligned_s.contains(p1) && !unaligned_t.contains(p2)) { //both row and column are already aligned; the point cannot be inserted
-                    toInsert = false;
-                } else { //either row or columns are unaligned
-                    //check whether any neighbor is unaligned; if true the point can be inserted
-                    toInsert = false;
-                    for (Pair<Integer, Integer> nb : neighbors) {
-                        int p1_nb = p1 + nb.getFirst();
-                        if ((p1_nb < 0) || (p1_nb >= s2t.length)) { //p1_nb is out of boundary
-                            continue;
-                        }
-                        int p2_nb = p2 + nb.getSecond();
-                        if ((p2_nb < 0) || (p2_nb >= t2s.length)) { //p1_nb is out of boundary
-                            continue;
-                        }
-                        if (currentpoints[p1_nb][p2_nb]) {
-                            toInsert = true;
-                            continue; //exit the loop over the neighbors
-                        }
-                    }
-                }
-                //if the new point (np) can be inserted (toInsert==true)
-                //add it to the currentpoints and to the list of added points
-                //set the keep_going flag to true in order to continue the do-while loop
-                if (toInsert) {
-                    //currentpoints[p1][p2] = true;
-                    added.add(np);
-                    keep_going = true;
-                }
-            }
-
-            //remove all added points from newpoints List, from the unaligned_s and unaligned_t Lisy
-            for (Pair<Integer, Integer> p : added) {
-                int p1 = p.getFirst();
-                int p2 = p.getSecond();
-                currentpoints[p1][p2] = true;
-                newpoints.remove(p);
-                unaligned_s.remove(p1);
-                unaligned_t.remove(p2);
-            }
-        }
+        GrowDiag(currentpoints, unaligned_s, unaligned_t, s2t, t2s);
 
         return currentpoints;
     }
@@ -634,6 +636,9 @@ public class Symmetrisation {
             case GrowDiagFinalAnd:
                 al = Symmetrisation.GrowDiagFinalAnd(s2talignment, t2salignment);
                 break;
+            case GrowDiagFinalAnd_ORIGINAL:
+                al = Symmetrisation.GrowDiagFinalAnd_ORIGINAL(s2talignment, t2salignment);
+                break;
             case GrowDiag:
                 al = Symmetrisation.GrowDiag(s2talignment, t2salignment);
                 break;
@@ -658,8 +663,8 @@ public class Symmetrisation {
     }
 
     public static void main(String[] args){
-        //Strategy strategy = Strategy.GrowDiagFinalAnd;
-        Strategy strategy = Strategy.GrowDiag;
+        Strategy strategy = Strategy.GrowDiagFinalAnd;
+        //Strategy strategy = Strategy.GrowDiag;
         int[][] forward = new int[][]{{0, 0},{1, 1},{2, 2},{3, 3},{4, 4},{5, 5},{6, 6},{5, 7},{10, 9},{5, 10}};
         int[][] backward = new int[][]{{0, 0},{1, 1},{2, 2},{3, 3},{4, 4},{5, 5},{6, 6},{7, 6},{8, 0},{9, 8},{10, 9},{11, 5},{12, 11}};
 
@@ -684,8 +689,15 @@ public class Symmetrisation {
         System.out.print("symmetrized: " + symmAlignment + "\n");
 
 
-        int[][] forward2 = new int[][]{{0, 0},{1, 1},{2, 4},{3, 2},{4, 5},{4, 6},{5, 7},{6, 8},{8, 10},{9, 11},{10,11}, {11,9}};
-        int[][] backward2 = new int[][]{{0, 0},{1, 1},{2, 4},{3, 2},{4, 4},{5,7},{6, 7},{7, 8},{8, 10},{9, 11},{10,11}, {11,9}};
+        //int[][] forward2 = new int[][]{{0, 0},{1, 1}};
+        //int[][] backward2 = new int[][]{{0, 0},{1, 1}};
+
+
+        int[][] forward2 = new int[][]{{0, 0},{1, 1},{1,2},{2,3},{8,4},{9,5},{6,6},{3, 8},{1,9},{6,10}};
+        int[][] backward2 = new int[][]{{0, 1},{1, 1},{2, 2},{3, 8},{4, 5},{6, 10},{8, 4},{9, 5}};
+
+//        int[][] forward2 = new int[][]{{0, 0},{1, 1},{2, 4},{3, 2},{4, 5},{4, 6},{5, 7},{6, 8},{8, 10},{9, 11},{10,11}, {11,9}};
+//        int[][] backward2 = new int[][]{{0, 0},{1, 1},{2, 4},{3, 2},{4, 4},{5,7},{6, 7},{7, 8},{8, 10},{9, 11},{10,11}, {11,9}};
 
 
         slAlignment= "";
