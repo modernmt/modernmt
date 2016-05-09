@@ -14,7 +14,7 @@ import java.util.concurrent.*;
  */
 public class SymmetrizedAligner implements Aligner {
 
-    public static final Symmetrization.Strategy DEFAULT_SYMMETRIZATION_STRATEGY = Symmetrization.Strategy.GrowDiagFinalAnd_ORIGINAL;
+    public static final Symmetrization.Strategy DEFAULT_SYMMETRIZATION_STRATEGY = Symmetrization.Strategy.GrowDiagFinalAnd;
 
     private final Logger logger = LogManager.getLogger(getClass());
     private final Aligner forwardModel;
