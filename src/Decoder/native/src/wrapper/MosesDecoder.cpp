@@ -98,7 +98,7 @@ std::vector<float> MosesDecoderImpl::getFeatureWeights(feature_t &_feature) {
 }
 
 int64_t MosesDecoderImpl::openSession(const std::map<std::string, float> &translationContext) {
-    return translate("", 1, &translationContext, 0).session;
+    return m_translator.create_session(translationContext);
 }
 
 void MosesDecoderImpl::closeSession(uint64_t session) {
@@ -109,17 +109,29 @@ translation_t MosesDecoderImpl::translate(const std::string &text, uint64_t sess
                                           const std::map<std::string, float> *translationContext,
                                           size_t nbestListSize)
 {
+    // MosesServer interface request...
+
     MosesServer::TranslationRequest request;
+    MosesServer::TranslationResponse response;
+
     request.sourceSent = text;
     request.nBestListSize = nbestListSize;
     request.sessionId = session;
-    if(translationContext != nullptr)
+    if(translationContext != nullptr) {
+        assert(session == 0); // setting contextWeights only has an effect if we are not within a session
         request.contextWeights = *translationContext;
+    }
+
+    m_translator.execute(request, &response);
+
+    // MosesDecoder JNI interface response.
+
+    // (this split should have allowed us to keep the libjnimoses separate...
+    // But the libmoses interface has never really been a stable, separated API anyways
+    // [e.g. StaticData leaking into everything],
+    // and so libjnimoses always has to be compiled afresh together with moses).
 
     translation_t translation;
-
-    MosesServer::TranslationResponse response;
-    m_translator.execute(request, &response);
 
     translation.text = response.text;
     for(auto h: response.hypotheses)

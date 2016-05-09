@@ -44,7 +44,7 @@ Run()
   // cerr << "SESSION ID" << ret->m_session_id << endl;
 
 
-  // settings within the session scope
+  // settings within the *sentence* scope - SetContextWeights() can only override the empty ContextScope if we are not within a session
   if(m_paramList.contextWeights.size() > 0) {
     SPTR<std::map<std::string,float> > M(new std::map<std::string, float>(m_paramList.contextWeights));
     m_scope->SetContextWeights(M);

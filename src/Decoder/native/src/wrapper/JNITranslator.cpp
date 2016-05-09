@@ -26,18 +26,31 @@ JNITranslator::
   delete m_sessionCache;
 }
 
+uint64_t
+JNITranslator::
+create_session(const std::map<std::string, float> &contextWeights)
+{
+  // insertion of session ID 1 magically creates a new Session entry - see SessionCache::operator[]() impl
+  Session& session = (*m_sessionCache)[1];
+
+  boost::shared_ptr<std::map<std::string,float> > M(new std::map<std::string, float>(contextWeights));
+  session.scope->SetContextWeights(M);
+
+  return session.id;
+}
+
 Session const&
 JNITranslator::
-get_session(uint64_t session_id)
+get_session(uint64_t session_id) const
 {
-  return (*m_sessionCache)[session_id];
+  return m_sessionCache->at((uint32_t) session_id);
 }
 
 void
 JNITranslator::
 delete_session(uint64_t const session_id)
 {
-  return (*m_sessionCache).erase(session_id);
+  return m_sessionCache->erase((uint32_t) session_id);
 }
 
 void

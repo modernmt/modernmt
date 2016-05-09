@@ -47,6 +47,14 @@ namespace JNIWrapper {
 
         virtual void closeSession(uint64_t session) = 0;
 
+        /**
+         * Sentence translation API.
+         *
+         * @param text                source sentence with space-separated tokens
+         * @param session             either 0 to avoid use of sessions (translate individually), or session ID obtained from openSession()
+         * @param translationContext  context weights may be passed here if session == 0
+         * @param nbestListSize       if non-zero, produce an n-best list of this size in the translation_t result
+         */
         virtual translation_t translate(const std::string &text, uint64_t session,
                                         const std::map<std::string, float> *translationContext,
                                         size_t nbestListSize) = 0;
