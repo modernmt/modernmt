@@ -1,6 +1,6 @@
 package eu.modernmt.processing.tokenizer.opennlp;
 
-import eu.modernmt.config.Config;
+import eu.modernmt.constants.Const;
 import eu.modernmt.processing.Languages;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.string.XMLEditableString;
@@ -53,7 +53,7 @@ public class OpenNLPTokenizer extends MultiInstanceTokenizer {
 
         @Override
         public Tokenizer newInstance() {
-            File opennlp = new File(Config.fs.tokenizerModels, "opennlp");
+            File opennlp = new File(Const.fs.tokenizerModels, "opennlp");
 
             File modelFile = new File(opennlp, this.languageCode + "-token.bin");
 

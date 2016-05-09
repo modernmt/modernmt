@@ -1,6 +1,6 @@
 package eu.modernmt.core.config;
 
-import eu.modernmt.decoder.moses.MosesFeature;
+import eu.modernmt.decoder.DecoderFeature;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
@@ -81,7 +81,7 @@ public class INIEngineConfigBuilder {
                     try {
                         array[i] = Float.parseFloat(encoded[i]);
                     } catch (NumberFormatException e) {
-                        array[i] = MosesFeature.UNTUNEABLE_COMPONENT;
+                        array[i] = DecoderFeature.UNTUNEABLE_COMPONENT;
                     }
                 }
 

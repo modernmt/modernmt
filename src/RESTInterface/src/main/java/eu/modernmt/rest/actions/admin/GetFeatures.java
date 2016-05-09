@@ -3,7 +3,7 @@ package eu.modernmt.rest.actions.admin;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import eu.modernmt.core.facade.ModernMT;
-import eu.modernmt.decoder.moses.MosesFeature;
+import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
@@ -22,16 +22,16 @@ public class GetFeatures extends JSONObjectAction {
     protected JsonObject execute(RESTRequest req, Parameters params) {
         JsonObject result = new JsonObject();
 
-        Map<MosesFeature, float[]> features = ModernMT.decoder.getFeatureWeights();
-        for (Map.Entry<MosesFeature, float[]> entry : features.entrySet()) {
-            MosesFeature feature = entry.getKey();
+        Map<DecoderFeature, float[]> features = ModernMT.decoder.getFeatureWeights();
+        for (Map.Entry<DecoderFeature, float[]> entry : features.entrySet()) {
+            DecoderFeature feature = entry.getKey();
             JsonArray weights = null;
 
             if (feature.isTunable()) {
                 weights = new JsonArray();
 
                 for (float w : entry.getValue())
-                    weights.add(w == MosesFeature.UNTUNEABLE_COMPONENT ? null : w);
+                    weights.add(w == DecoderFeature.UNTUNEABLE_COMPONENT ? null : w);
             }
 
             result.add(feature.getName(), weights);

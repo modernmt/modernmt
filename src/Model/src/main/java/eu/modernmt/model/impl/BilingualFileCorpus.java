@@ -1,6 +1,6 @@
 package eu.modernmt.model.impl;
 
-import eu.modernmt.config.Config;
+import eu.modernmt.constants.Const;
 import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.model.BilingualCorpus;
 import eu.modernmt.model.Corpus;
@@ -138,8 +138,8 @@ public class BilingualFileCorpus implements BilingualCorpus {
             boolean success = false;
 
             try {
-                this.sourceReader = new UnixLineReader(new InputStreamReader(new FileInputStream(source), Config.charset.get()));
-                this.targetReader = new UnixLineReader(new InputStreamReader(new FileInputStream(target), Config.charset.get()));
+                this.sourceReader = new UnixLineReader(new InputStreamReader(new FileInputStream(source), Const.charset.get()));
+                this.targetReader = new UnixLineReader(new InputStreamReader(new FileInputStream(target), Const.charset.get()));
 
                 success = true;
 

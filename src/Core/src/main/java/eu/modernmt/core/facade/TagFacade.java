@@ -1,7 +1,7 @@
 package eu.modernmt.core.facade;
 
 import eu.modernmt.aligner.AlignerException;
-import eu.modernmt.aligner.symal.Symmetrisation;
+import eu.modernmt.aligner.symal.Symmetrization;
 import eu.modernmt.core.cluster.error.SystemShutdownException;
 import eu.modernmt.core.facade.error.TranslationException;
 import eu.modernmt.core.facade.operations.ProjectTagsOperation;
@@ -23,11 +23,11 @@ public class TagFacade {
         return project(sentence, translation, null, inverted);
     }
 
-    public Translation project(String sentence, String translation, Symmetrisation.Strategy symmetrizationStrategy) throws TranslationException {
+    public Translation project(String sentence, String translation, Symmetrization.Strategy symmetrizationStrategy) throws TranslationException {
         return project(sentence, translation, symmetrizationStrategy, false);
     }
 
-    public Translation project(String sentence, String translation, Symmetrisation.Strategy symmetrizationStrategy, boolean invert) throws TranslationException {
+    public Translation project(String sentence, String translation, Symmetrization.Strategy symmetrizationStrategy, boolean invert) throws TranslationException {
         ProjectTagsOperation operation = new ProjectTagsOperation(sentence, translation, symmetrizationStrategy, invert);
 
         try {

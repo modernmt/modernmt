@@ -1,6 +1,6 @@
 package eu.modernmt.rest;
 
-import eu.modernmt.config.Config;
+import eu.modernmt.constants.Const;
 import eu.modernmt.decoder.TranslationHypothesis;
 import eu.modernmt.rest.framework.JSONSerializer;
 import eu.modernmt.rest.framework.routing.RouterServlet;
@@ -60,7 +60,7 @@ public class RESTServer {
                 ArrayList<Class<?>> classes = new ArrayList<>();
 
                 stream = getClass().getClassLoader().getResourceAsStream("rest-actions.list");
-                LineIterator lines = IOUtils.lineIterator(stream, Config.charset.get());
+                LineIterator lines = IOUtils.lineIterator(stream, Const.charset.get());
 
                 while (lines.hasNext()) {
                     String line = lines.nextLine();

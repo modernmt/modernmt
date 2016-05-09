@@ -1,5 +1,6 @@
 package eu.modernmt.cli;
 
+import eu.modernmt.cli.init.Submodules;
 import eu.modernmt.core.training.CleaningPipeline;
 import eu.modernmt.model.BilingualCorpus;
 import eu.modernmt.model.impl.BilingualFileCorpus;
@@ -15,6 +16,10 @@ import java.util.Locale;
  * Created by davide on 17/12/15.
  */
 public class CleaningPipelineMain {
+
+    static {
+        Submodules.link();
+    }
 
     private static class Args {
 

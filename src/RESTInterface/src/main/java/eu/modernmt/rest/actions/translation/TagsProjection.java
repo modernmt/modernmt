@@ -1,6 +1,6 @@
 package eu.modernmt.rest.actions.translation;
 
-import eu.modernmt.aligner.symal.Symmetrisation;
+import eu.modernmt.aligner.symal.Symmetrization;
 import eu.modernmt.core.facade.ModernMT;
 import eu.modernmt.core.facade.error.TranslationException;
 import eu.modernmt.model.Token;
@@ -83,7 +83,7 @@ public class TagsProjection extends ObjectAction<Object> {
 
         public final String sentence;
         public final String translation;
-        public final Symmetrisation.Strategy symmetrizationStrategy;
+        public final Symmetrization.Strategy symmetrizationStrategy;
         public final boolean showDetails;
         public final boolean inverted;
 
@@ -95,7 +95,7 @@ public class TagsProjection extends ObjectAction<Object> {
             int symmetrizationStrategy = getInt("symmetrization", -1);
             if (symmetrizationStrategy >= 0) {
                 try {
-                    this.symmetrizationStrategy = Symmetrisation.Strategy.values()[symmetrizationStrategy];
+                    this.symmetrizationStrategy = Symmetrization.Strategy.values()[symmetrizationStrategy];
                 } catch (Exception e) {
                     throw new ParameterParsingException("symmetrization", Integer.toString(symmetrizationStrategy));
                 }

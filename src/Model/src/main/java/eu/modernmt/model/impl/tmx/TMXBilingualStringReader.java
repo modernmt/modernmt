@@ -1,6 +1,6 @@
 package eu.modernmt.model.impl.tmx;
 
-import eu.modernmt.config.Config;
+import eu.modernmt.constants.Const;
 import eu.modernmt.model.BilingualCorpus;
 import org.apache.commons.io.IOUtils;
 
@@ -38,7 +38,7 @@ public class TMXBilingualStringReader implements BilingualCorpus.BilingualString
 
         try {
             stream = new FileInputStream(tmx);
-            reader = factory.createXMLEventReader(new InputStreamReader(stream, Config.charset.get()));
+            reader = factory.createXMLEventReader(new InputStreamReader(stream, Const.charset.get()));
         } catch (XMLStreamException e) {
             throw new IOException("Error while creating XMLStreamReader for TMX " + tmx, e);
         } finally {

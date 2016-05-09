@@ -1,0 +1,160 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>mmt-root</artifactId>
+        <groupId>eu.modernmt</groupId>
+        <version>0.12</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>mmt-moses</artifactId>
+    <packaging>jar</packaging>
+
+    <name>MMT Connector to Moses Decoder</name>
+    <url>http://maven.apache.org</url>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <project.nativedir>${project.basedir}/native</project.nativedir>
+        <project.nativedir.headers>${project.nativedir}/jheaders</project.nativedir.headers>
+        <mmt.builddir>${project.parent.basedir}/../build</mmt.builddir>
+        <mmt.libdir>${project.parent.basedir}/../lib</mmt.libdir>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>${project.nativedir.headers}</directory>
+                            <includes>
+                                <include>**/*.h</include>
+                            </includes>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>
+                        <fileset>
+                            <directory>${project.build.directory}</directory>
+                            <includes>
+                                <include>*jnimoses*</include>
+                            </includes>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.4.0</version>
+                <executions>
+
+                    <!-- Generate headers with javah -->
+                    <execution>
+                        <id>headers-generate</id>
+                        <phase>generate-sources</phase>
+
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+
+                        <configuration>
+                            <executable>javah</executable>
+                            <workingDirectory>${project.build.sourceDirectory}</workingDirectory>
+                            <arguments>
+                                <argument>-d</argument>
+                                <argument>${project.nativedir.headers}</argument>
+
+                                <!-- All native classes -->
+                                <argument>eu.modernmt.decoder.moses.MosesDecoder</argument>
+
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <!-- Run CMake to generate makefile -->
+                    <execution>
+                        <id>cmake-generate</id>
+                        <phase>compile</phase>
+
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+
+                        <configuration>
+                            <executable>cmake</executable>
+                            <workingDirectory>${project.build.directory}</workingDirectory>
+                            <arguments>
+                                <argument>${project.nativedir}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <!-- Run Make to compile native project -->
+                    <execution>
+                        <id>cmake-compile</id>
+                        <phase>compile</phase>
+
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+
+                        <configuration>
+                            <executable>make</executable>
+                            <workingDirectory>${project.build.directory}</workingDirectory>
+                            <arguments>
+                                <argument>-j4</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>2.7</version>
+                <executions>
+                    <execution>
+                        <id>copy-native-decoder-lib</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+
+                        <configuration>
+                            <outputDirectory>${mmt.libdir}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.build.directory}</directory>
+                                    <includes>
+                                        <include>*jnimoses*</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>eu.modernmt</groupId>
+            <artifactId>mmt-core</artifactId>
+            <version>${mmt.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>3.8.1</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

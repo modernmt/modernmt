@@ -10,7 +10,7 @@
     <artifactId>mmt-textprocessing</artifactId>
     <packaging>jar</packaging>
 
-    <name>MMT Tokenizer and Detokenizer</name>
+    <name>MMT Text Processors</name>
     <url>http://maven.apache.org</url>
 
     <properties>
