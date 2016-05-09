@@ -28,13 +28,18 @@ JNITranslator::
 
 uint64_t
 JNITranslator::
-create_session(const std::map<std::string, float> &contextWeights)
+create_session(const std::map<std::string, float> &contextWeights, const std::map<std::string, std::vector<float> > *featureWeights)
 {
   // insertion of session ID 1 magically creates a new Session entry - see SessionCache::operator[]() impl
   Session& session = (*m_sessionCache)[1];
 
-  boost::shared_ptr<std::map<std::string,float> > M(new std::map<std::string, float>(contextWeights));
-  session.scope->SetContextWeights(M);
+  boost::shared_ptr<std::map<std::string,float> > cw(new std::map<std::string, float>(contextWeights));
+  session.scope->SetContextWeights(cw);
+
+  if(featureWeights != NULL) {
+    boost::shared_ptr<std::map<std::string, std::vector<float> > > fw(new std::map<std::string, std::vector<float> >(*featureWeights));
+    session.scope->SetFeatureWeights(fw);
+  }
 
   return session.id;
 }

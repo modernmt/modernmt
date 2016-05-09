@@ -66,7 +66,7 @@ public:
                TranslationResponse *   const  retvalP);
 
   /** Creates a new moses session. Thread-safe. Destroy them with delete_session() after done. */
-  uint64_t create_session(const std::map<std::string, float> &contextWeights);
+  uint64_t create_session(const std::map<std::string, float> &contextWeights, const std::map<std::string, std::vector<float>> *featureWeights = NULL);
 
   Session const&
   get_session(uint64_t session_id) const;

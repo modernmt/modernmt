@@ -43,12 +43,19 @@ namespace JNIWrapper {
 
         virtual std::vector<float> getFeatureWeights(feature_t &feature) = 0;
 
-        virtual int64_t openSession(const std::map<std::string, float> &translationContext) = 0;
+        /**
+         * Open a new session with the given context weights.
+         *
+         * @param translationContext  map of context weights
+         * @param featureWeights      map of feature weights (may be NULL to use default, global feature weights)
+         */
+        virtual int64_t openSession(const std::map<std::string, float> &translationContext,
+                                    const std::map<std::string, std::vector<float>> *featureWeights = NULL) = 0;
 
         virtual void closeSession(uint64_t session) = 0;
 
         /**
-         * Sentence translation API.
+         * Translate a sentence.
          *
          * @param text                source sentence with space-separated tokens
          * @param session             either 0 to avoid use of sessions (translate individually), or session ID obtained from openSession()
