@@ -8,7 +8,7 @@ import requests
 
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
 
-from scripts.engine import MMTServerApi, DEFAULT_MMT_API_PORT
+from scripts.cluster import MMTApi, DEFAULT_MMT_API_PORT
 from scripts.libs import multithread
 
 
@@ -201,7 +201,7 @@ def main():
             raise CLIArgsException('alignment is not yet supported')
 
         # Create Api
-        api = MMTServerApi(args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT)
+        api = MMTApi(args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT)
 
         executor = BatchExecutor(api, args) if args.batch else InteractiveExecutor(api, args)
 
