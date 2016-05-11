@@ -17,6 +17,11 @@ if [ -z "$CONDA_ENV_PATH" ]; then
   exit 1
 fi
 
+root_dir=$(echo "$CONDA_ENV_PATH" | awk -F "/" '{print $2}')
+if [ "$root_dir" == "fs" ]; then
+  echo '(Edinburgh note: conda itself should be pointed to via /mnt instead of /fs so it sets up RPATHs correctly for cluster-wide use).' >&2
+fi
+
 if [ ! -e "$MMT_HOME/$FAST_ALIGN" ]; then
   echo "Could not find fast_align binary for RPATH patching - did you forget to download 'opt' resources?"
   echo "see https://github.com/ModernMT/MMT/blob/master/INSTALL.md#install-mmt"
