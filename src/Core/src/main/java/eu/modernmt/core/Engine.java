@@ -1,58 +1,42 @@
 package eu.modernmt.core;
 
 import eu.modernmt.aligner.Aligner;
-import eu.modernmt.aligner.fastalign.SymmetrizedAligner;
-import eu.modernmt.config.Config;
+import eu.modernmt.aligner.AlignerException;
+import eu.modernmt.aligner.AlignerFactory;
+import eu.modernmt.constants.Const;
 import eu.modernmt.context.ContextAnalyzer;
+import eu.modernmt.context.ContextAnalyzerException;
+import eu.modernmt.context.ContextAnalyzerFactory;
 import eu.modernmt.core.config.EngineConfig;
 import eu.modernmt.decoder.Decoder;
-import eu.modernmt.decoder.moses.MosesDecoder;
-import eu.modernmt.decoder.moses.MosesINI;
+import eu.modernmt.decoder.DecoderFactory;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
-import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.Locale;
-import java.util.Map;
 
 /**
  * Created by davide on 19/04/16.
  */
 public class Engine {
 
-    private static final String CONTEXT_ANALYZER_INDEX_PATH = path("models", "context", "index");
-    private static final String MOSES_INI_PATH = path("models", "moses.ini");
     public static final String ENGINE_CONFIG_PATH = "engine.ini";
 
-    private static String path(String... path) {
-        StringBuilder result = new StringBuilder();
-
-        for (int i = 0; i < path.length; i++) {
-            result.append(path[i]);
-            if (i < path.length - 1)
-                result.append(File.separatorChar);
-        }
-
-        return result.toString();
-    }
-
     public static File getRootPath(String engine) {
-        return new File(Config.fs.engines, engine);
+        return new File(Const.fs.engines, engine);
     }
 
     public static File getConfigFile(String engine) {
-        File root = new File(Config.fs.engines, engine);
+        File root = new File(Const.fs.engines, engine);
         return new File(root, ENGINE_CONFIG_PATH);
     }
 
     private final EngineConfig config;
     private final int threads;
     private final File root;
-    private final File decoderIniTemplatePath;
-    private final File caIndexPath;
+    private final File runtime;
     private final String name;
 
     private Decoder decoder = null;
@@ -65,9 +49,8 @@ public class Engine {
         this.config = config;
         this.threads = threads;
         this.name = config.getName();
-        this.root = new File(Config.fs.engines, config.getName());
-        this.decoderIniTemplatePath = new File(this.root, MOSES_INI_PATH);
-        this.caIndexPath = new File(this.root, CONTEXT_ANALYZER_INDEX_PATH);
+        this.root = new File(Const.fs.engines, config.getName());
+        this.runtime = new File(Const.fs.runtime, name);
     }
 
     public EngineConfig getConfig() {
@@ -83,18 +66,13 @@ public class Engine {
             synchronized (this) {
                 if (decoder == null) {
                     try {
-                        MosesINI mosesINI = MosesINI.load(decoderIniTemplatePath, root);
-                        Map<String, float[]> weights = config.getDecoderConfig().getWeights();
+                        DecoderFactory factory = DecoderFactory.getInstance();
+                        factory.setEnginePath(root);
+                        factory.setRuntimePath(runtime);
+                        factory.setFeatureWeights(config.getDecoderConfig().getWeights());
+                        factory.setDecoderThreads(threads);
 
-                        if (weights != null)
-                            mosesINI.setWeights(weights);
-
-                        mosesINI.setThreads(threads);
-
-                        File runtimeDir = new File(Config.fs.runtime, name);
-                        File inifile = new File(runtimeDir, "moses.ini");
-                        FileUtils.write(inifile, mosesINI.toString(), false);
-                        decoder = new MosesDecoder(inifile);
+                        decoder = factory.create();
                     } catch (IOException e) {
                         throw new LazyLoadException(e);
                     }
@@ -109,11 +87,13 @@ public class Engine {
         if (config.getAlignerConfig().isEnabled() && aligner == null) {
             synchronized (this) {
                 if (aligner == null) {
-                    aligner = new SymmetrizedAligner(root.getAbsolutePath());
+                    AlignerFactory factory = AlignerFactory.getInstance();
+                    factory.setEnginePath(root);
 
                     try {
-                        aligner.init();
-                    } catch (IOException | ParseException e) {
+                        aligner = factory.create();
+                        aligner.load();
+                    } catch (AlignerException e) {
                         throw new LazyLoadException(e);
                     }
                 }
@@ -151,9 +131,12 @@ public class Engine {
         if (contextAnalyzer == null) {
             synchronized (this) {
                 if (contextAnalyzer == null) {
+                    ContextAnalyzerFactory factory = ContextAnalyzerFactory.getInstance();
+                    factory.setEnginePath(root);
+
                     try {
-                        this.contextAnalyzer = new ContextAnalyzer(caIndexPath);
-                    } catch (IOException e) {
+                        this.contextAnalyzer = factory.create();
+                    } catch (ContextAnalyzerException e) {
                         throw new LazyLoadException(e);
                     }
                 }

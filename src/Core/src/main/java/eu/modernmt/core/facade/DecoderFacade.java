@@ -5,10 +5,10 @@ import eu.modernmt.core.cluster.SessionManager;
 import eu.modernmt.core.cluster.error.SystemShutdownException;
 import eu.modernmt.core.facade.error.TranslationException;
 import eu.modernmt.core.facade.operations.TranslateOperation;
+import eu.modernmt.decoder.Decoder;
+import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
-import eu.modernmt.decoder.moses.MosesDecoder;
-import eu.modernmt.decoder.moses.MosesFeature;
 import eu.modernmt.model.MultiOptionsToken;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
@@ -28,13 +28,13 @@ public class DecoderFacade {
     //  Decoder Weights
     // =============================
 
-    public Map<MosesFeature, float[]> getFeatureWeights() {
+    public Map<DecoderFeature, float[]> getFeatureWeights() {
         // Invoke on local decoder instance because it's just a matter of
         // properties reading and not a real computation
-        MosesDecoder decoder = (MosesDecoder) ModernMT.node.getEngine().getDecoder();
+        Decoder decoder = ModernMT.node.getEngine().getDecoder();
 
-        HashMap<MosesFeature, float[]> result = new HashMap<>();
-        for (MosesFeature feature : decoder.getFeatures()) {
+        HashMap<DecoderFeature, float[]> result = new HashMap<>();
+        for (DecoderFeature feature : decoder.getFeatures()) {
             float[] weights = feature.isTunable() ? decoder.getFeatureWeights(feature) : null;
             result.put(feature, weights);
         }

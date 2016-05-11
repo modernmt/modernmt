@@ -1,6 +1,8 @@
 package eu.modernmt.cli;
 
+import eu.modernmt.cli.init.Submodules;
 import eu.modernmt.context.ContextAnalyzer;
+import eu.modernmt.context.lucene.LuceneAnalyzer;
 import eu.modernmt.model.Corpus;
 import eu.modernmt.model.util.CorpusUtils;
 import org.apache.commons.cli.*;
@@ -13,6 +15,10 @@ import java.util.Locale;
  * Created by davide on 17/12/15.
  */
 public class ContextAnalyzerMain {
+
+    static {
+        Submodules.link();
+    }
 
     private static class Args {
 
@@ -53,7 +59,7 @@ public class ContextAnalyzerMain {
 
         List<Corpus> corpora = CorpusUtils.list(args.language, args.corporaRoots);
 
-        ContextAnalyzer contextAnalyzer = new ContextAnalyzer(args.indexPath);
+        ContextAnalyzer contextAnalyzer = new LuceneAnalyzer(args.indexPath);
         contextAnalyzer.rebuild(corpora);
     }
 }

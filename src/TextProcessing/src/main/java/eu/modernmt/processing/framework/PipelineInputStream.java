@@ -1,6 +1,6 @@
 package eu.modernmt.processing.framework;
 
-import eu.modernmt.config.Config;
+import eu.modernmt.constants.Const;
 import eu.modernmt.io.UnixLineReader;
 
 import java.io.*;
@@ -13,7 +13,7 @@ public interface PipelineInputStream<V> extends Closeable {
     V read() throws IOException;
 
     static PipelineInputStream<String> fromInputStream(InputStream stream) {
-        return fromReader(new InputStreamReader(stream, Config.charset.get()));
+        return fromReader(new InputStreamReader(stream, Const.charset.get()));
     }
 
     static PipelineInputStream<String> fromReader(final Reader _reader) {
