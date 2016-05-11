@@ -38,7 +38,6 @@ public class Symmetrization {
         Intersection,
         Union,
         GrowDiagFinalAnd,
-        GrowDiagFinalAnd_ORIGINAL,
         GrowDiag
     }
 
@@ -101,103 +100,13 @@ public class Symmetrization {
         return union;
     }
 
-    static public boolean[][] GrowDiagFinalAnd_ORIGINAL(Set<Integer>[] s2t, Set<Integer>[] t2s) {
-        List<Pair<Integer, Integer>> neighbors = new LinkedList<Pair<Integer, Integer>>(); //neighbors
-
-        //Diagonal (diag) neigourhood
-        neighbors.add(new Pair(-1, -1));
-        neighbors.add(new Pair(-1, 1));
-        neighbors.add(new Pair(1, -1));
-        neighbors.add(new Pair(1, 1));
-
-        //Defining neibourhood
-        neighbors.add(new Pair(0, 1));
-        neighbors.add(new Pair(-1, -0));
-        neighbors.add(new Pair(0, -1));
-        neighbors.add(new Pair(1, 0));
-
-        //Intersection of the alignments (starting point)
-        boolean[][] currentpoints = IntersectionSymal(s2t, t2s); //symmetric alignment
-        //Union of the alignments (space for growing)
-        boolean[][] unionalignment = UnionSymal(s2t, t2s); //union alignment
-        //Adding currently unaligned words in SL to the list
-        Set<Integer> unaligned_s = new LinkedHashSet<Integer>();
-        for (int current_row = 0; current_row < currentpoints.length; current_row++) {
-            boolean aligned = false;
-            for (int current_col = 0; current_col < currentpoints[current_row].length; current_col++) {
-                if (currentpoints[current_row][current_col]) {
-                    aligned = true;
-                    break;
-                }
-            }
-            if (!aligned)
-                unaligned_s.add(current_row);
-        }
-        //Adding currently unaligned words in TL to the list
-        Set<Integer> unaligned_t = new LinkedHashSet<Integer>();
-        for (int current_col = 0; current_col < currentpoints[0].length; current_col++) {
-            boolean aligned = false;
-            for (boolean[] currentpoint : currentpoints) {
-                if (currentpoint[current_col]) {
-                    aligned = true;
-                    break;
-                }
-            }
-            if (!aligned)
-                unaligned_t.add(current_col);
-        }
-
-        boolean added;
-        //Grow-diag
-        do {
-            added = false;
-            //For all the current alignment
-            for (int current_row = 0; current_row < currentpoints.length; current_row++) {
-                for (int current_col = 0; current_col < currentpoints[current_row].length; current_col++) {
-                    //If the word is aligned, the neibourghs are checked
-                    if (currentpoints[current_row][current_col]) {
-                        for (Pair<Integer, Integer> n : neighbors) {
-                            int p1 = current_row + n.getFirst();
-                            int p2 = current_col + n.getSecond();
-                            if (p1 >= 0 && p1 < currentpoints.length && p2 >= 0 && p2 < currentpoints[0].length) {
-                                //Check the neighbours
-                                if ((unaligned_s.contains(p1) || unaligned_t.contains(p2)) &&
-                                        unionalignment[p1][p2]) {
-                                    currentpoints[p1][p2] = true;
-                                    unaligned_s.remove(p1);
-                                    unaligned_t.remove(p2);
-                                    added = true;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        } while (added);
-
-        //Final-and
-        for (int sw : unaligned_s) {
-            int t_toremove = -1;
-            for (int tw : unaligned_t) {
-                if (unionalignment[sw][tw]) {
-                    t_toremove = tw;
-                    currentpoints[sw][tw] = true;
-                    break;
-                }
-            }
-            unaligned_t.remove(t_toremove);
-        }
-
-        return currentpoints;
-    }
-
     /**
      * Symmetrization method which produces, as a result, the final-and symmetrised alignment using the forward alignment
      *
      * @param currentpoints current aligned points
-     * @param unaligned_s set of unalinged source columns
-     * @param unaligned_t set of unalinged target columns
-     * @param s2t Source to target asymmetric alignment produced with GIZA++
+     * @param unaligned_s   set of unalinged source columns
+     * @param unaligned_t   set of unalinged target columns
+     * @param s2t           Source to target asymmetric alignment produced with GIZA++
      * @return
      */
     static public void FinalAndForward(boolean[][] currentpoints, Set<Integer> unaligned_s, Set<Integer> unaligned_t, Set<Integer>[] s2t) {
@@ -221,9 +130,9 @@ public class Symmetrization {
      * Symmetrization method which produces, as a result, the final-and symmetrised alignment using the backward alignment
      *
      * @param currentpoints current aligned points
-     * @param unaligned_s set of unalinged source columns
-     * @param unaligned_t set of unalinged target columns
-     * @param t2s Target to source asymmetric alignment produced with GIZA++
+     * @param unaligned_s   set of unalinged source columns
+     * @param unaligned_t   set of unalinged target columns
+     * @param t2s           Target to source asymmetric alignment produced with GIZA++
      * @return
      */
     static public void FinalAndBackward(boolean[][] currentpoints, Set<Integer> unaligned_s, Set<Integer> unaligned_t, Set<Integer>[] t2s) {
@@ -247,66 +156,30 @@ public class Symmetrization {
      * Symmetrization method which produces, as a result, the grow-diag symmetrised alignment
      *
      * @param currentpoints current aligned points
-     * @param unaligned_s set of unalinged source columns
-     * @param unaligned_t set of unalinged target columns
-     * @param s2t Source to target asymmetric alignment produced with GIZA++
-     * @param t2s Target to source asymmetric alignment produced with GIZA++
+     * @param unaligned_s   set of unalinged source columns
+     * @param unaligned_t   set of unalinged target columns
+     * @param s2t           Source to target asymmetric alignment produced with GIZA++
+     * @param t2s           Target to source asymmetric alignment produced with GIZA++
      * @return
      */
     static public void GrowDiag(boolean[][] currentpoints, Set<Integer> unaligned_s, Set<Integer> unaligned_t, Set<Integer>[] s2t, Set<Integer>[] t2s) {
 
         List<Pair<Integer, Integer>> neighbors = new LinkedList<Pair<Integer, Integer>>(); //neighbors
 
-        //Defining neighborhood on the axes and on the diagonals
-        //order of visit (Nicola version)
+        //From top left to bottom right
         //            column
         //          j-1 j j+1
-        // row i-1:  5  1  6
-        // row i:    2  P  3
-        // row i+1:  7  4  8
+        // row i-1:  1  2  4
+        // row i:    3  P  6
+        // row i+1:  5  7  8
+        neighbors.add(new Pair(-1, -1));
+        neighbors.add(new Pair(0, -1));
         neighbors.add(new Pair(-1, 0));
-        neighbors.add(new Pair(0, -1));
-        neighbors.add(new Pair(0, 1));
-        neighbors.add(new Pair(1, 0));
-        neighbors.add(new Pair(-1, -1));
-        neighbors.add(new Pair(-1, 1));
         neighbors.add(new Pair(1, -1));
-        neighbors.add(new Pair(1, 1));
-
-/*
-        //Defining neighborhood on the axes and on the diagonals
-        //order of visit (like in GrowDiagFinalAnd_ORIGINAL)
-        //            column
-        //          j-1 j j+1
-        // row i-1:  1  6  2
-        // row i:    7  P  5
-        // row i+1:  3  8  4
-        neighbors.add(new Pair(-1, -1));
         neighbors.add(new Pair(-1, 1));
-        neighbors.add(new Pair(1, -1));
-        neighbors.add(new Pair(1, 1));
-        neighbors.add(new Pair(0, 1));
-        neighbors.add(new Pair(-1, -0));
-        neighbors.add(new Pair(0, -1));
-        neighbors.add(new Pair(1, 0));
-*/
-/*
-        //Defining neighborhood on the axes and on the diagonals
-        //order of visit (Koehn's original)
-        //            column
-        //          j-1 j j+1
-        // row i-1:  5  1  6
-        // row i:    2  P  4
-        // row i+1:  7  3  8
-        neighbors.add(new Pair(-1, 0));
-        neighbors.add(new Pair(0, -1));
         neighbors.add(new Pair(1, 0));
         neighbors.add(new Pair(0, 1));
-        neighbors.add(new Pair(-1, -1));
-        neighbors.add(new Pair(-1, 1));
-        neighbors.add(new Pair(1, -1));
         neighbors.add(new Pair(1, 1));
-*/
 
         boolean[][] unionalignment = UnionSymal(s2t, t2s); //union alignment
 
@@ -344,8 +217,8 @@ public class Symmetrization {
      * Symmetrization method which produces, as a result, the grow-diag-final-and symmetrised alignment
      *
      * @param currentpoints current aligned points
-     * @param unaligned_s set of unalinged source columns
-     * @param unaligned_t set of unalinged target columns
+     * @param unaligned_s   set of unalinged source columns
+     * @param unaligned_t   set of unalinged target columns
      * @return
      */
     static public void SetUnaligned(boolean[][] currentpoints, Set<Integer> unaligned_s, Set<Integer> unaligned_t) {
@@ -422,7 +295,6 @@ public class Symmetrization {
     }
 
 
-
     /**
      * Method that extracts an alignment representation from an asymmetric alignment in GIZA++ format
      *
@@ -494,6 +366,7 @@ public class Symmetrization {
         }
         return alignment;
     }
+
     /**
      * Method that extracts an alignment representation from anu kind of alignemnt in the format "src-trg src-trg src-trg ..."
      * and stores in a vector (with index trg) of Sets containing all src associated with trg
@@ -653,9 +526,6 @@ public class Symmetrization {
             case GrowDiagFinalAnd:
                 al = Symmetrization.GrowDiagFinalAnd(s2talignment, t2salignment);
                 break;
-            case GrowDiagFinalAnd_ORIGINAL:
-                al = Symmetrization.GrowDiagFinalAnd_ORIGINAL(s2talignment, t2salignment);
-                break;
             case GrowDiag:
                 al = Symmetrization.GrowDiag(s2talignment, t2salignment);
                 break;
@@ -679,29 +549,35 @@ public class Symmetrization {
         return result;
     }
 
-    public static void main(String[] args){
+    public static void main(String[] args) {
         Strategy strategy = Strategy.GrowDiagFinalAnd;
         //Strategy strategy = Strategy.GrowDiag;
-        int[][] forward = new int[][]{{0, 0},{1, 1},{2, 2},{3, 3},{4, 4},{5, 5},{6, 6},{5, 7},{10, 9},{5, 10}};
-        int[][] backward = new int[][]{{0, 0},{1, 1},{2, 2},{3, 3},{4, 4},{5, 5},{6, 6},{7, 6},{8, 0},{9, 8},{10, 9},{11, 5},{12, 11}};
+        int[][] forward = new int[][]{{0, 0}, {1, 1}, {2, 2}, {3, 3}, {4, 4}, {5, 5}, {6, 6}, {5, 7}, {10, 9}, {5, 10}};
+        int[][] backward = new int[][]{{0, 0}, {1, 1}, {2, 2}, {3, 3}, {4, 4}, {5, 5}, {6, 6}, {7, 6}, {8, 0}, {9, 8}, {10, 9}, {11, 5}, {12, 11}};
 
         String slAlignment, tlAlignment, symmAlignment;
 
-        slAlignment= "";
-        for (int[] alg : forward) { slAlignment += " " + alg[0] + "-" + alg[1]; }
+        slAlignment = "";
+        for (int[] alg : forward) {
+            slAlignment += " " + alg[0] + "-" + alg[1];
+        }
         logger.debug("forward: " + slAlignment);
         System.out.print("forward: " + slAlignment + "\n");
 
-        tlAlignment= "";
-        for (int[] alg : backward) { tlAlignment += " " + alg[0] + "-" + alg[1]; }
+        tlAlignment = "";
+        for (int[] alg : backward) {
+            tlAlignment += " " + alg[0] + "-" + alg[1];
+        }
         logger.debug("backward: " + tlAlignment);
         System.out.print("backward: " + tlAlignment + "\n");
 
 
         int[][] symmetrized = symmetrizeAlignment(forward, backward, strategy);
 
-        symmAlignment= "";
-        for (int[] alg : symmetrized) { symmAlignment += " " + alg[0] + "-" + alg[1]; }
+        symmAlignment = "";
+        for (int[] alg : symmetrized) {
+            symmAlignment += " " + alg[0] + "-" + alg[1];
+        }
         logger.debug("symmetrized: " + symmAlignment + "\n");
         System.out.print("symmetrized: " + symmAlignment + "\n");
 
@@ -710,28 +586,34 @@ public class Symmetrization {
         //int[][] backward2 = new int[][]{{0, 0},{1, 1}};
 
 
-        int[][] forward2 = new int[][]{{0, 0},{1, 1},{1,2},{2,3},{8,4},{9,5},{6,6},{3, 8},{1,9},{6,10}};
-        int[][] backward2 = new int[][]{{0, 1},{1, 1},{2, 2},{3, 8},{4, 5},{6, 10},{8, 4},{9, 5}};
+        int[][] forward2 = new int[][]{{0, 0}, {1, 1}, {1, 2}, {2, 3}, {8, 4}, {9, 5}, {6, 6}, {3, 8}, {1, 9}, {6, 10}};
+        int[][] backward2 = new int[][]{{0, 1}, {1, 1}, {2, 2}, {3, 8}, {4, 5}, {6, 10}, {8, 4}, {9, 5}};
 
 //        int[][] forward2 = new int[][]{{0, 0},{1, 1},{2, 4},{3, 2},{4, 5},{4, 6},{5, 7},{6, 8},{8, 10},{9, 11},{10,11}, {11,9}};
 //        int[][] backward2 = new int[][]{{0, 0},{1, 1},{2, 4},{3, 2},{4, 4},{5,7},{6, 7},{7, 8},{8, 10},{9, 11},{10,11}, {11,9}};
 
 
-        slAlignment= "";
-        for (int[] alg : forward2) { slAlignment += " " + alg[0] + "-" + alg[1]; }
+        slAlignment = "";
+        for (int[] alg : forward2) {
+            slAlignment += " " + alg[0] + "-" + alg[1];
+        }
         logger.debug("forward2: " + slAlignment);
         System.out.print("forward2: " + slAlignment + "\n");
 
-        tlAlignment= "";
-        for (int[] alg : backward2) { tlAlignment += " " + alg[0] + "-" + alg[1]; }
+        tlAlignment = "";
+        for (int[] alg : backward2) {
+            tlAlignment += " " + alg[0] + "-" + alg[1];
+        }
         logger.debug("backward2: " + tlAlignment);
         System.out.print("backward2: " + tlAlignment + "\n");
 
 
         int[][] symmetrized2 = symmetrizeAlignment(forward2, backward2, strategy);
 
-        symmAlignment= "";
-        for (int[] alg : symmetrized2) { symmAlignment += " " + alg[0] + "-" + alg[1]; }
+        symmAlignment = "";
+        for (int[] alg : symmetrized2) {
+            symmAlignment += " " + alg[0] + "-" + alg[1];
+        }
         logger.debug("symmetrized2: " + symmAlignment + "\n");
         System.out.print("symmetrized2: " + symmAlignment + "\n");
     }
