@@ -8,6 +8,17 @@ from scripts.libs import fileutils, shell
 __author__ = 'Davide Caroselli'
 
 
+def meminfo():
+    """
+    Returns the memory usage from /proc/meminfo as a dict str -> int
+    Numbers are in kB.
+    """
+    with open('/proc/meminfo') as mi:
+        info_lines = [l.split()[0:2] for l in mi.readlines()]
+        info = {key.rstrip(':'): int(val) for key, val in info_lines}
+    return info
+
+
 class LanguageModel(MosesFeature):
     available_types = ['AdaptiveIRSTLM', 'MultiplexedIRSTLM', 'StaticIRSTLM', 'KenLM']
 
@@ -68,7 +79,7 @@ class KenLM(LanguageModel):
 
             # Create language model in ARPA format
             arpa_file = os.path.join(working_dir, 'lm.arpa')
-            arpa_command = [self._lmplz_bin, '--discount_fallback', '-o', str(self._order)]
+            arpa_command = [self._lmplz_bin, '--discount_fallback', '-o', str(self._order), '-S', str(self.get_mem_percent())]
             if self.prune:
                 arpa_command += ['--prune', '0', '0', '1']
 
@@ -82,6 +93,16 @@ class KenLM(LanguageModel):
         finally:
             if log_file is not None:
                 log.close()
+
+    @staticmethod
+    def get_mem_percent():
+        """:returns percentage of MemTotal (hardware memory) to use in `lmplz`."""
+        # Simple heuristic: use 80% of *available* memory (instead of MemTotal as is the lmplz default) - avoids crashing on machines with other jobs running.
+        # this may evict some disk caches (is not too nice to other programs using mmapped files unless you lower the 80%).
+        mi = meminfo()
+        total = float(mi['MemTotal'])
+        available = float(mi['MemFree'] + mi['Buffers'] + mi['Cached'])
+        return int(80.0 * available / total)
 
     def get_iniline(self):
         return 'factor=0 order={order} path={model}'.format(order=self._order, model=self.get_relpath(self._model))
