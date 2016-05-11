@@ -79,7 +79,7 @@ class KenLM(LanguageModel):
 
             # Create language model in ARPA format
             arpa_file = os.path.join(working_dir, 'lm.arpa')
-            arpa_command = [self._lmplz_bin, '--discount_fallback', '-o', str(self._order), '-S', str(self.get_mem_percent())]
+            arpa_command = [self._lmplz_bin, '--discount_fallback', '-o', str(self._order), '-S', str(self.get_mem_percent()) + '%']
             if self.prune:
                 arpa_command += ['--prune', '0', '0', '1']
 
