@@ -44,6 +44,17 @@ namespace JNIWrapper {
         virtual std::vector<float> getFeatureWeights(feature_t &feature) = 0;
 
         /**
+         * Change moses feature weights to the provided featureWeights.
+         *
+         * Ordering guarantees:
+         * * this call will not affect any translations that are in progress.
+         * * this call will affect every translation request after its completion.
+         *
+         * This does not change the 'moses.ini' file itself.
+         */
+        virtual void setDefaultFeatureWeights(const std::map<std::string, std::vector<float>> &featureWeights) = 0;
+
+        /**
          * Open a new session with the given context weights.
          *
          * @param translationContext  map of context weights

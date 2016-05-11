@@ -22,6 +22,8 @@ namespace JNIWrapper {
 
         virtual std::vector<float> getFeatureWeights(feature_t &feature) override;
 
+        virtual void setDefaultFeatureWeights(const std::map<std::string, std::vector<float>> &featureWeights) override;
+
         virtual int64_t openSession(const std::map<std::string, float> &translationContext,
                                     const std::map<std::string, std::vector<float>> *featureWeights = NULL) override;
 
@@ -96,6 +98,10 @@ std::vector<float> MosesDecoderImpl::getFeatureWeights(feature_t &_feature) {
     }
 
     return weights;
+}
+
+void MosesDecoderImpl::setDefaultFeatureWeights(const std::map<std::string, std::vector<float>> &featureWeights) {
+    Moses::StaticData::InstanceNonConst().SetAllWeights(Moses::ScoreComponentCollection::FromWeightMap(featureWeights));
 }
 
 int64_t MosesDecoderImpl::openSession(const std::map<std::string, float> &translationContext, const std::map<std::string, std::vector<float>> *featureWeights) {
