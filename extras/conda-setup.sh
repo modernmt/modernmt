@@ -1,16 +1,25 @@
 #!/bin/bash
 #
 # Set up MMT within a conda environment.
-#
-# Create conda environment 'mmt' like this:
-#
-# $ conda create --name mmt -c https://conda.anaconda.org/cidermole cmake gcc boost zlib gperftools python=2.7 requests jdk8 apache-maven
+
+FAST_ALIGN=opt/bin/fastalign-maurobuild/fast_align
 
 # this script is in <MMT>/extras/
 MMT_HOME=$(dirname $0)/..
 
 if [ -z "$CONDA_ENV_PATH" ]; then
-  echo "Please activate a conda environment with: source activate env-name"
+  echo 'Please activate a conda environment with: $ source activate <your-env-name>'
+  echo ""
+  echo "If you do not have one, create one with:"
+  echo '$ conda create --name mmt -c https://conda.anaconda.org/cidermole cmake gcc boost zlib gperftools python=2.7 requests jdk8 apache-maven patchelf'
+  echo ""
+  echo '$ source activate mmt'
+  exit 1
+fi
+
+if [ ! -e "$MMT_HOME/$FAST_ALIGN" ]; then
+  echo "Could not find fast_align binary for RPATH patching - did you forget to download 'opt' resources?"
+  echo "see https://github.com/ModernMT/MMT/blob/master/INSTALL.md#install-mmt"
   exit 1
 fi
 
@@ -19,3 +28,5 @@ for f in $CONDA_ENV_PATH/lib/libboost_* $CONDA_ENV_PATH/lib/{libstdc++.so.6,libg
 	ln -sf $f $MMT_HOME/lib/$(basename $f)
 done
 
+# fast_align is built with C++11 and its binary is shipped in opt/ - we have to patch it to find recent libstdc++.so.6
+patchelf --set-rpath $MMT_HOME/lib $MMT_HOME/$FAST_ALIGN
