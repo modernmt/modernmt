@@ -91,7 +91,7 @@ public class SymmetrizedAligner implements Aligner {
         logger.debug("Symmetrising");
         //int[][] symmetrisedAlignments = Symmetrisation.symmetriseMosesFormatAlignment(forwardAlignments, invertedBackwardAlignments, this.simmetrizationStrategy);
         int[][] symmetrisedAlignments = Symmetrisation.symmetriseAlignment(forwardAlignments, backwardAlignments, this.simmetrizationStrategy);
-        logger.debug("Symmetrised alignments: " + symmetrisedAlignments);
+        logger.debug("Symmetrised alignments: " + FastAlign.printAlignments(symmetrisedAlignments));
         return AlignmentsInterpolator.interpolateAlignments(symmetrisedAlignments, numberOfSentenceWords,
                 numberOfTranslationWords);
     }
