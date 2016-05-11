@@ -34,4 +34,4 @@ for f in $CONDA_ENV_PATH/lib/libboost_* $CONDA_ENV_PATH/lib/{libstdc++.so.6,libg
 done
 
 # fast_align is built with C++11 and its binary is shipped in opt/ - we have to patch it to find recent libstdc++.so.6
-patchelf --set-rpath $MMT_HOME/lib $MMT_HOME/$FAST_ALIGN
+patchelf --set-rpath $(readlink -f $MMT_HOME/lib) $MMT_HOME/$FAST_ALIGN
