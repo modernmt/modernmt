@@ -74,4 +74,11 @@ public class Languages {
         return LOCALES.get(languageTag);
     }
 
+    public static boolean sameLanguage(Locale language1, Locale language2) {
+        return language1.getLanguage().equals(language2.getLanguage());
+    }
+
+    public static boolean strictlyEqual(Locale language1, Locale language2) {
+        return language1.equals(language2);
+    }
 }

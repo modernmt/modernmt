@@ -117,7 +117,7 @@ class TagProjectionPricisionTest:
 
     def query_engine(self, source, translation):
         headers = {'content-type': 'application/json'}
-        payload = {'s': source, 't': translation, 'd': 1}
+        payload = {'s': source, 't': translation, 'sl':'en', 'tl':'it','d': 1}
         json_results = requests.get("http://localhost:" + str(self.__api_port) + "/tags-projection",
                                     params=payload, headers=headers)
         return json.loads(json_results.text)

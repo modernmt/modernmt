@@ -13,8 +13,6 @@ import eu.modernmt.processing.xml.XMLTagProjector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Locale;
-
 /**
  * Created by davide on 22/04/16.
  */
@@ -27,15 +25,13 @@ public class ProjectTagsOperation extends Operation<Translation> {
     private String sentenceString;
     private String translationString;
     private final Symmetrization.Strategy symmetrizationStrategy;
-    private final Locale sourceLanguage;
-    private final Locale targetLanguage;
+    private final boolean inverted;
 
-    public ProjectTagsOperation(String sentence, String translation, Locale sourceLanguage, Locale targetLanguage, Symmetrization.Strategy symmetrizationStrategy) {
+    public ProjectTagsOperation(String sentence, String translation, boolean inverted, Symmetrization.Strategy symmetrizationStrategy) {
         this.sentenceString = sentence;
         this.translationString = translation;
         this.symmetrizationStrategy = symmetrizationStrategy;
-        this.sourceLanguage = sourceLanguage;
-        this.targetLanguage = targetLanguage;
+        this.inverted = inverted;
     }
 
     @Override
@@ -54,10 +50,9 @@ public class ProjectTagsOperation extends Operation<Translation> {
 
         long beginTime = System.currentTimeMillis();
         long endTime;
-        boolean invert = this.isLanguagesInverted(sourceLanguage, targetLanguage, engine);
 
-        String sentenceString = invert ? this.translationString : this.sentenceString;
-        String translationString = invert ? this.sentenceString : this.translationString;
+        String sentenceString = this.inverted ? this.translationString : this.sentenceString;
+        String translationString = this.inverted ? this.sentenceString : this.translationString;
 
         Sentence sentence = preprocessor.process(sentenceString, true);
         Sentence translation = targetPreprocessor.process(translationString, true);
@@ -66,12 +61,13 @@ public class ProjectTagsOperation extends Operation<Translation> {
             if (aligner instanceof SymmetrizedAligner)
                 ((SymmetrizedAligner) aligner).setSymmetrizationStrategy(this.symmetrizationStrategy);
             else
-                throw new AlignerException("Symmetrization strategy specified but aligner is not an instance of SymmetrizedAligner: " + aligner.getClass());
+                throw new AlignerException("Symmetrization strategy specified but aligner is not an instance of " +
+                        "SymmetrizedAligner: " + aligner.getClass());
         }
 
         int[][] alignments = aligner.getAlignments(sentence, translation);
 
-        if (invert) {
+        if (this.inverted) {
             Aligner.invertAlignments(alignments);
             Sentence tmp = sentence;
             sentence = translation;
@@ -87,15 +83,6 @@ public class ProjectTagsOperation extends Operation<Translation> {
         }
 
         return taggedTranslation;
-    }
-
-    private static boolean isLanguagesInverted(Locale sourceLanguage, Locale targetLanguage, Engine engine) throws ProcessingException {
-        if (engine.getSourceLanguage().equals(sourceLanguage) && engine.getTargetLanguage().equals(targetLanguage)) {
-            return false;
-        } else if (engine.getSourceLanguage().equals(targetLanguage) && engine.getTargetLanguage().equals(sourceLanguage)) {
-            return true;
-        }
-        throw new ProcessingException("Languages pair not supported.");
     }
 
 }
