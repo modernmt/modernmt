@@ -13,6 +13,8 @@ import eu.modernmt.processing.xml.XMLTagProjector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Locale;
+
 /**
  * Created by davide on 22/04/16.
  */
@@ -25,13 +27,15 @@ public class ProjectTagsOperation extends Operation<Translation> {
     private String sentenceString;
     private String translationString;
     private final Symmetrization.Strategy symmetrizationStrategy;
-    private final boolean invert;
+    private final Locale sourceLanguage;
+    private final Locale targetLanguage;
 
-    public ProjectTagsOperation(String sentence, String translation, Symmetrization.Strategy symmetrizationStrategy, boolean invert) {
+    public ProjectTagsOperation(String sentence, String translation, Locale sourceLanguage, Locale targetLanguage, Symmetrization.Strategy symmetrizationStrategy) {
         this.sentenceString = sentence;
         this.translationString = translation;
         this.symmetrizationStrategy = symmetrizationStrategy;
-        this.invert = invert;
+        this.sourceLanguage = sourceLanguage;
+        this.targetLanguage = targetLanguage;
     }
 
     @Override
@@ -50,6 +54,7 @@ public class ProjectTagsOperation extends Operation<Translation> {
 
         long beginTime = System.currentTimeMillis();
         long endTime;
+        boolean invert = this.isLanguagesInverted(sourceLanguage, targetLanguage, engine);
 
         String sentenceString = invert ? this.translationString : this.sentenceString;
         String translationString = invert ? this.sentenceString : this.translationString;
@@ -66,6 +71,13 @@ public class ProjectTagsOperation extends Operation<Translation> {
 
         int[][] alignments = aligner.getAlignments(sentence, translation);
 
+        if (invert) {
+            Aligner.invertAlignments(alignments);
+            Sentence tmp = sentence;
+            sentence = translation;
+            translation = tmp;
+        }
+
         Translation taggedTranslation = new Translation(translation.getWords(), sentence, alignments);
         tagProjector.call(taggedTranslation, null);
 
@@ -74,17 +86,16 @@ public class ProjectTagsOperation extends Operation<Translation> {
             logger.debug("Total time for tags projection: " + (endTime - beginTime) + " [ms]");
         }
 
-        if (this.invert) {
-            taggedTranslation = invertTranslation(taggedTranslation);
-        }
-
         return taggedTranslation;
     }
 
-    private static Translation invertTranslation(Translation translation) {
-        return new Translation(
-                translation.getSource().getWords(), translation.getTags(),
-                translation, translation.getAlignment());
+    private static boolean isLanguagesInverted(Locale sourceLanguage, Locale targetLanguage, Engine engine) throws ProcessingException {
+        if (engine.getSourceLanguage().equals(sourceLanguage) && engine.getTargetLanguage().equals(targetLanguage)) {
+            return false;
+        } else if (engine.getSourceLanguage().equals(targetLanguage) && engine.getTargetLanguage().equals(sourceLanguage)) {
+            return true;
+        }
+        throw new ProcessingException("Languages pair not supported.");
     }
 
 }

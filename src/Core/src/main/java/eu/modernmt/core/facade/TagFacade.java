@@ -8,6 +8,7 @@ import eu.modernmt.core.facade.operations.ProjectTagsOperation;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.framework.ProcessingException;
 
+import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -15,20 +16,12 @@ import java.util.concurrent.ExecutionException;
  */
 public class TagFacade {
 
-    public Translation project(String sentence, String translation) throws TranslationException {
-        return project(sentence, translation, null, false);
+    public Translation project(String sentence, String translation, Locale sourceLanguage, Locale targetLanguage) throws TranslationException {
+        return project(sentence, translation, sourceLanguage, targetLanguage, null);
     }
 
-    public Translation project(String sentence, String translation, boolean inverted) throws TranslationException {
-        return project(sentence, translation, null, inverted);
-    }
-
-    public Translation project(String sentence, String translation, Symmetrization.Strategy symmetrizationStrategy) throws TranslationException {
-        return project(sentence, translation, symmetrizationStrategy, false);
-    }
-
-    public Translation project(String sentence, String translation, Symmetrization.Strategy symmetrizationStrategy, boolean invert) throws TranslationException {
-        ProjectTagsOperation operation = new ProjectTagsOperation(sentence, translation, symmetrizationStrategy, invert);
+    public Translation project(String sentence, String translation, Locale sourceLanguage, Locale targetLanguage, Symmetrization.Strategy symmetrizationStrategy) throws TranslationException {
+        ProjectTagsOperation operation = new ProjectTagsOperation(sentence, translation, sourceLanguage, targetLanguage, symmetrizationStrategy);
 
         try {
             return ModernMT.node.submit(operation).get();

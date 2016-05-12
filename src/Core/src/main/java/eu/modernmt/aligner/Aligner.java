@@ -13,7 +13,7 @@ public interface Aligner extends Closeable {
 
     int[][] getAlignments(Sentence sentence, Sentence translation) throws AlignerException;
 
-    public static String toString(int[][] alignments) {
+    static String toString(int[][] alignments) {
         StringBuilder result = new StringBuilder();
         for (int[] alignment : alignments) {
             result.append(alignment[0]);
@@ -22,6 +22,15 @@ public interface Aligner extends Closeable {
             result.append(" ");
         }
         return result.deleteCharAt(result.length() - 1).toString();
+    }
+
+    static void invertAlignments(int[][] alignments) {
+        int tmp;
+        for (int[] alignment : alignments) {
+            tmp = alignment[0];
+            alignment[0] = alignment[1];
+            alignment[1] = tmp;
+        }
     }
 
 }
