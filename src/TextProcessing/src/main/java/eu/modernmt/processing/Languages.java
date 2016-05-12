@@ -33,7 +33,7 @@ public class Languages {
     public static final Locale BULGARIAN = Locale.forLanguageTag("bg");
     public static final Locale BRAZILIAN = Locale.forLanguageTag("pt-BR");
     public static final Locale CATALAN = Locale.forLanguageTag("ca");
-    public static final Locale CZECH = Locale.forLanguageTag("cz");
+    public static final Locale CZECH = Locale.forLanguageTag("cs");
     public static final Locale GREEK = Locale.forLanguageTag("el");
     public static final Locale BASQUE = Locale.forLanguageTag("eu");
     public static final Locale FINNISH = Locale.forLanguageTag("fi");
