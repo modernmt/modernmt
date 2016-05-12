@@ -13,7 +13,6 @@ public class TokensAnnotatedString {
     public static final byte PROTECTED_FLAG = (byte) (1 << 1);
 
     private static final int WHITESPACE = 1;
-    private static final int CONTROL = 2;
     private static final int BREAK = 3;
 
     private char[] chars;
@@ -39,8 +38,6 @@ public class TokensAnnotatedString {
             if ((0x0009 <= c && c <= 0x000D) || c == 0x0020 || c == 0x00A0 || c == 0x1680 ||
                     (0x2000 <= c && c <= 0x200A) || c == 0x202F || c == 0x205F || c == 0x3000) {
                 type = WHITESPACE;
-            } else if (c <= 0x001F) {
-                type = CONTROL;
             } else if (c != '-' && !Character.isLetterOrDigit(c)) {
                 type = BREAK;
             }
@@ -48,9 +45,6 @@ public class TokensAnnotatedString {
             switch (type) {
                 case WHITESPACE:
                     whitespace = true;
-                    break;
-                case CONTROL:
-                    // Ignore it
                     break;
                 default:
                     if (start) {
