@@ -57,7 +57,9 @@ public class SymmetrizedAligner implements Aligner {
         int[][] backwardAlignments = backwardModel.getAlignments(sentence, translation);
 
         int[][] alignments = Symmetrization.symmetrizeAlignment(forwardAlignments, backwardAlignments, symmetrizationStrategy);
-
+        if(logger.isDebugEnabled()) {
+            logger.debug("Symmetrised alignments: " + Aligner.toString(alignments));
+        }
         return AlignmentsInterpolator.interpolateAlignments(alignments, sentence.getWords().length, translation.getWords().length);
     }
 
