@@ -6,6 +6,7 @@ import eu.modernmt.processing.numbers.NumericWordFactory;
 import eu.modernmt.processing.tokenizer.SimpleTokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.Tokenizers;
+import eu.modernmt.processing.util.ControlCharsRemover;
 import eu.modernmt.processing.util.RareCharsNormalizer;
 import eu.modernmt.processing.util.WhitespacesNormalizer;
 import eu.modernmt.processing.xmessage.XMessageParser;
@@ -24,6 +25,7 @@ import java.util.Locale;
  */
 public class Preprocessor implements Closeable {
 
+    private static final ControlCharsRemover ControlCharsRemover;
     private static final XMessageParser XMessageParser;
     private static final XMLStringBuilder XMLStringBuilder;
     private static final RareCharsNormalizer RareCharsNormalizer;
@@ -32,6 +34,7 @@ public class Preprocessor implements Closeable {
     private static final SentenceBuilder SentenceBuilder;
 
     static {
+        ControlCharsRemover = new ControlCharsRemover();
         XMessageParser = new XMessageParser();
         XMLStringBuilder = new XMLStringBuilder();
         RareCharsNormalizer = new RareCharsNormalizer();
@@ -56,6 +59,7 @@ public class Preprocessor implements Closeable {
         return new ProcessingPipeline.Builder<String, String>()
                 .setThreads(threads)
                 // Pre EditableString
+                .add(ControlCharsRemover)
                 .add(XMessageParser)
                 .add(XMLStringBuilder)
 
