@@ -346,7 +346,6 @@ II Liv.
  CONFIGURAZIONE APPLICAZIONE BANCARIA SERVIZIO TRS 
  SDK di Visual Studio Analyzer Questo SDK contiene un insieme di oggetti e interfacce che permettono agli sviluppatori di accedere a livello di codice a vari aspetti del sistema di eventi di analisi delle applicazioni. Queste interfacce consentono di: Includere la generazione di eventi nelle applicazioni distribuite per l&apos;analisi con Visual Studio Analyzer. Creare applicazioni di analisi personalizzate sottoscrivendo eventi di Visual Studio Analyzer. Automatizzare le attività più comuni di Visual Studio Analyzer. Estendere l&apos;interfaccia utente di Visual Studio Analyzer accedendo alle informazioni di analisi dai componenti aggiuntivi di Visual Studio .NET. 
  Concetti principali e terminologia: 
- - Prima versione del documento.
  _yyyymmgg_nnnnnn.log
 SRVGRP= SRVID= 
 /sbin/init.d start per lattivazione
@@ -571,9 +570,7 @@ Trade Sale
  Obiettivo Valore:
  Tempi:
 Il sistema SID, attraverso il sevizio VARIAZIONI , notifica a BIP alcune tipologie di variazioni (post-vendita prepagati) relative ai dati dell’utenza.
-Il sistema SIMBA, attraverso il sevizio VARIAZIONI , notifica a BIP alcune tipologie di variazioni (post-vendita clienti) relative ai dati dell’utenza.
 Tramite il sistema CODAR-JOLT, e attraverso il servizio ELEFATTURE , viene richiesto al sistema CODAR-CICS il numero delle fatture per un dato ordine.
-Successivamente, con il servizio CONFERORDCLI (in modalità asincrona / asincrona), SIMBA preleva dalla suddetta coda la notifica dell’avvenuta creazione dell’ordine (o del cliente).
 Creazione Cliente - CREACLIENTE; 
 Creazione Ordine – CREAORDIN. 
  Mozy dalla fase di start up partita nel 2005 ha raccolto circa USD 2.0 milioni 
@@ -656,7 +653,6 @@ Visualizza Utente Ricaricard - VUR
 Blocco/Sblocco Singola Ricaricard - BSSR 
  WCW con Marco.
 Thesis, L’azienda di famiglia crea datacenter per IBM .
-Il sistema SRTC tramite BIP, dopo aver ricevuta la richiesta associata ad uno dei servizi precedenti, effettua un’analoga richiesta di abilitazione roaming internazionale (ABILITA_ ROAM) , o di disabilitazione roaming internazionale (DISAB_ ROAM ), a OPSC.
 Il sistema OPSC in un secondo momento notifica ( NOTIFIC_ROAM ) l’avvenuta esecuzione del servizio richiesto da BIP; questo genera un evento di notifica EVNOATTI o EVNODISA , che InfoBus gestisce inoltrando una notifica verso SID.
 Visualizza Lotto Ricaricard - VLR 
 Visualizza Utilizzatore SC - VUSC 
@@ -708,7 +704,6 @@ La Multimedialità , quindi, è già disponibile su banda larga mobile per i cli
 Due sono le tecniche di accesso denominate (Wideband-Code Division Multiple Access) e (Time Division-Code Division Multiple Access).
  Mac (beta)
 Inserisce i campi trovati nel buffer fmlretcode .
-Buffer fml ; identificativo sistema; identificativo servizio.
 Utilizza i dati in ingresso ( id_system , id_srvc ) per individuare il numero di occorrenza nel buffer fmlservice contenente tutti i dati della tabella REPOS_SRVC .
  Linux (beta)
 Apre un cursore sulla tabella REPOS_SRVC .
@@ -718,7 +713,6 @@ Apre un cursore sulla tabella TAB_RETCODE .
 Alloca ed inizializza due buffer fml :
  fmlservice e fmlretcode .
  Chi siamo Chi siamo 
-Preleva dal buffer fml di input i campi chiave della tabella TAB_RETCODE attraverso la funzione Fget32 di Tuxedo.
 Invoca la funzione Prep_SendBufRetcode che si occuperà prima di individuare il record e poi di impostare il buffer con i dati di risposta.
 Return Code ( RET_CODE )
 Recovery ( RECOVERY )
@@ -726,8 +720,6 @@ Recovery ( RECOVERY )
 Invoca la funzione Prep_SendBuf che si occuperà prima di individuare il record e poi di impostare il buffer con i dati di risposta.
 Servizio IBSGetRetCode 
  Alcuni Esempi Alcuni Esempi 
-si occupa di recuperare un record inserito nella tabella TAB_RETCODE dati l’identificativo del sistema ( ID_SYSTEM ) e quello del retcode ( RET_CODE ).
-Si occupa della connessione al database e di caricare, in due differenti buffer fml , le tabelle REPOS_SRVC e TAB_RETCODE .
  Connessione, AllocaBufferRep, PrelevaDatiServizio, PrelevaRetCode, Disconnessione .
 Servizio IBSGetSrvcParam 
 Preleva dal buffer fml di input i campi chiave della tabella REPOS_SRVC attraverso la funzione Fget32 di Tuxedo.
@@ -743,7 +735,6 @@ Chiama nuovamente la funzione SetOutput.
 Chiama la funzione TrasfFmlToViewInput che effettuerà la trasformazione solo se il server è Host .
 Invoca il servizio attraverso la funzione InvocaServizio .
 Chiama la funzione SetOutput .
-Se il server è Host e ffettua la trasformazione chiamando la funzione TrasfViewToFmlOutput. 
  Sei abbonato ad un servizio di Backup Online ma non sei soddisfatto? 
  Compila il form sottostante e hai subito uno sconto del 30% per passare a Memopal ! 
 Invoca il servizio che si occupa della lettura dal repository attraverso la funzione GetSrvcParam .
@@ -806,7 +797,6 @@ Preleva i campi del record selezionato dal buffer fmlevent e li inserisce tramit
 si occupa dello scodamento di un messaggio precedentemente accodato tramite il servizio IBSRequest .
 8 Maggio 2009 
 Inserisce i campi trovati nel buffer fmlevent .
-Buffer fml ; identificativo evento.
 Scorre tutte le occorrenze del buffer fmlevent contenente tutti i dati della tabella REPOS_EVENT .
  Sezione 2 - Memopal Products and Services Overview 
 Invoca la funzione Prep_SendBufEvent che si occuperà di impostare il buffer con i dati di risposta.
@@ -872,13 +862,9 @@ L'eliminazione di tutte le tabelle avviene mediante lo script DropDB.sql .
 da 40 Euro per postazione. 
  Enterprise :
 Hardware Appliance 
-Se il client è Call Back ed il server è Sincrono chiama il servizio di risposta attraverso la funzione Tuxedo tpcall e poi trasforma il buffer output da view ad Fml se il client è un Host .
-Se il client è Sincrono ed il server è Call Back accoda il messaggio chiamando la funzione AccodaMsg e poi imposta il buffer output chiamando la funzione SetOutput .
  Partner :
 Revenue Sharing in White Label. 
 Chiama la funzione TrasFmlToViewOutput che effettuerà la trasformazione solo se il client è Host .
-Se il client è Asincrono ed il server è Call Back accoda il messaggio chiamando la funzione AccodaMsg .
-Se il client è Call Back ed il server è Call Back chiama il servizio di risposta attraverso la funzione Tuxedo tpcall e poi trasforma il buffer output da view ad Fml se il client è un Host .
 Imposta l’ output mediante la funzione GestOutput .
  Opportunità :
 Legge l’identificativo della richiesta, necessario per il colloquio, attraverso la funzione ImpostaIdReq .
@@ -914,7 +900,6 @@ l’ordine di grandezza di Atrapalo lo abbiamo già raggiunto noi nel mese di ag
 GR-L10 = ( n° change non  corrette / n° change totali ) * 10 
  La società è stata fondata a Boston nel 2005 e conta 80 dipendenti 
  Oltre ai soci fondatori Carbonite è stata supportata da Venture Capital:
-Il supporto di 2’ livello ha provveduto a sbloccare l ’ utenza ed ha quindi dichiarato il problema ‘ RESOLVED ’ . 
  Carbonite nel ’08 ha completato il terzo aumento di capitale da USD 20 milioni (complessivamente la società ha acquisito USD 47 milioni come fondi) 
  Mozy è stata lanciata negli Stati Uniti (Utah) nel 2005 e ha raccolto nei sui primi 2 anni di start up appena 2 Milioni di USD 
  Mozy è stata acquisita da EMC nel 2007 per ~ USD 76 milioni .
@@ -958,12 +943,10 @@ SELBIT2BXXX
  Cambi computer, i dati rimangono Memopal ti permette di mantenere i dati di tutti i computer che cambierai.
 Memopal è una protezione a lungo termine. 
  Supporto per file aperti o bloccati In grado di proteggere anche i file in uso da altre applicazioni grazie alla tecnologia di copia shadow. 
- Per informazioni su Memopal consulta oppure contattaci: 
  Supporto garantito in 24 ore Via web, email e telefono in Italiano, Inglese, Francese e Tedesco. 
  Bandwidth Throttling Concorrente Possibilità per più utenti contemporanei di utilizzare il servizio nella stessa rete locale mantenendo veloce la connessione Internet. 
 La versione Linux è un occasione di confronto continuo con utilizzatori, sviluppatori, sistemisti, ecc., a tale proposito circa dieci giorni fa è stata creta una piccola community di Beta-Tester che stanno fornendo feedback importanti ( ) “Grazie a loro…” – dichiara Gianluca Granero, Chief Technology Officer di Memopal, - “…riusciremo in breve ad ottenere una versione per Linux compatibile con un ampio numero di distribuzioni”
 Ha sviluppato una propria piattaforma (MGFS) in grado di sfruttare la similarità tra i dati degli utenti per ottenere una maggiore compressione.
- Non escludiamo quindi un futuro rilascio di una soluzione Open Source o di un ’ API” – dichiara Marco Trombetti, Amministratore Delegato.
  il Backup Online (protezione automatica, semplice e sicura dei propri file)
  lo Storage Remoto (possibilità di accedere ovunque e con password ai propri files)
  il File Sharing (possibilità di condividere velocemente files con colleghi ed amici)
@@ -1004,18 +987,10 @@ Attività sicuramente centrale e determinante è la fase di Design .
  2.2.5.1.4 Accesso ai ticket:
 Non vi è alcuna restrizione su l'uso della compile-line option. 
 Tuttavia, per ogni codice, la compile-line option utilizzata deve essere riportata con i risultati presentati (si veda la Tabella 7).
-Tabella Schema per il report dei risultati del codice NAMD. 
-Tabella Schema per il report dei risultati del codice ENZO. 
-Tabella Schema per il report dei risultati del codice LIGHT 
-Tabella Modalità di estrazione dei valori di temporizzazione (wallclock) e dei valori dei parametri di verifica per ciascun job. 
-Tabella V alori dei parametri di verifica da confrontare con i valori ottenuti secondo le procedure illustrate in tabella 3.
-Tabella In questa tabella devono essere riportate le caratteristiche generali del supercalcolatore su cui viene eseguito la BS100TF. 
 numero di core nella esecuzione; comando :
 mpirun –np XX, poe, mpiexec –n XX, ecc...); output dataset :
  ‡ per ottenere performance ottimali con GADGET è necessari ricompilare il sorgente sostituendo nel Makefile, il valore -DPMGRID=400 con -DPMGRID=608
-Tabella Elenco di tutti gli input dataset contenuti nella BS100TF. 
 Nella lista sono inclusi anche input dataset per simulazioni di piccole dimensioni per la verifica degli eseguibili e non per valutare la prestazione del sistema .
-Tabella Elenco di tutte le esecuzioni (una per riga) previste dalla BS100TF. 
 Una esecuzione è caratterizzata da input dataset :
 nome che identifica il set di dati di input utilizzato per il run; nproc :
 Per ciascun codice della BS100TF sono disponibili più insiemi di parametri di input (input data sets), di cui almeno uno per poter effettuare un controllo rapido dell’eseguibile ed almeno uno relativo ad un problema di dimensione tale che il codice possa essere eseguito utilizzando un numero di processori pari a 64, 128, 256, 512. Per alcuni codici della BS100TF è presente un ulteriore input dataset che rappresenta un problema di notevoli dimensioni adatto per mettere sotto sforzo il sistema in esame attraverso un run da effettuarsi utilizzando almeno 512 processori .
@@ -1028,28 +1003,21 @@ Tabella Codici che compongono la BS100TF.
  GADGET3 :
 il comando di esecuzione dove è il nome dell’applicazione di sistema utilizzata per eseguire un comando in parallelo (es:
 Mentre quelli MiniPCI Express testati sul PC Embedded Alix 62b ideale per queste applicazioni perché dotato di due slot per alloggiare le SIM delle compagnie telefoniche mobili:
-Tramite il tool di call tracking verrà svolto costantemente il monitoraggio dello stato della chiamata .
 Il sistema centrale dei tool a supporto dei servizi continuativi di ENGINEERING è costituito da Unicenter Service Desk , in seguito denominato USD.
 Il processo di Call Management ha un ruolo centrale nella metodologia CSDM; infatti definisce la modalità di accoglimento delle richieste utente, verso il quale costituisce il S ingle P oint O f C ontact.
 N7010 per il quale è stato necessario caricare manualmente il modulo Kernel usbserial.ko 
 Per automatizzare il caricamento del modulo Kernel al boot è sufficiente inserire il comando modprobe citato sopra, all'interno dello script di Pre Boot usando la sezione [Setup][Startup/Cron] dell'interfaccia web di Zeroshell.
  Classificazione della richiesta per determinare con precisione sia il sottoprocesso competente a esaudire la richiesta ;
- Attivazione del POG competente realizzato attraverso il cambio di stato del ticket ;
- Verifica dell ’ effettiva chiusura della richiesta alla ricezione della notifica di chiusura da parte del personale che ha preso in carico la richiesta;
- Chiusura del ticket con registrazione di tutti gli eventi rilevanti a corredo.
 Se non si conosce a priori i valori da assegnare ai parametri vendor e product , è sufficiente digitare il comando dmesg qualche secondo dopo aver connesso il modem al sistema.
 Il corso Operatore alle Abilitazioni IAM ha lo scopo di illustrare sia gli strumenti operativi sia le funzionalità di cui potrà disporre nell’ambito delle sue mansioni e precisamente:
 Figura - Il Centro di Supporto Operativo (OSC) di Engineering II
 Le seguenti attività, la cui esecuzione è prevista all’interno del Servizio di Supporto vengono regolate dal processo CSDM di “ Call Management ” :
- l ’ attivazione della strategia e azioni di recovery in caso di failure .
 Il corso per Sviluppatori fornirà le informazioni necessarie per l’integrazione delle applicazioni già esistenti o future all’interno del sistema IAM:
 Il corso per Amministratore IAM Tecnico ha lo scopo di illustrare sia gli strumenti operativi sia le funzionalità di cui potrà disporre nell’ambito delle sue mansioni e precisamente:
 Il corso Amministratore Gestione IAM ha lo scopo di illustrare sia gli strumenti operativi sia le funzionalità di cui potrà disporre nell’ambito delle sue mansioni e precisamente:
  APN :
 anche conosciuto come Access Point Name , indica il punto di accesso con cui il provider fornisce i servizi IP.
 Spesso corrisponde a *99***1# .
- L ’ Integrazione di nuove risorse e applicazioni .
- l ’ installazione e configurazione delle componenti della soluzione proposta .
 se impostato su Yes abilita la connessione automatica al boot del sistema.
 Autore, Titolo del secondo documento , Editore, Mese 19XX
  User &nbsp;&nbsp;&nbsp; 
@@ -1083,9 +1051,7 @@ Il modulo opzionale Netx Agent Builder estende le capacità del server integrand
  Produrre nuovi report personalizzati mediante impostazione autonoma di query SQL sul database di netx.
  Produrre e visualizzare report relativi all’attività dei sistemi monitorati.
  Connettività verso i principali database (Oracle 9.x/10.x, SQL 2000, SQL 2005, MySql, HSQLDB) garantita dall’adozione di driver JDBC Livello 4.
- Le principali funzionalità di NetX consentono di:
  Centralizzare e normalizzare , in qualsiasi database relazionale JDBC/ODBC compliant, tutte le informazioni relative a:
- Intercettare e storicizzare eventi di sistema provenienti dai device di rete e sistemi Windows/unix-like.
  Semplicità di installazione, configurazione e gestione.
  Massima scalabilità prestazionale e piena portabilità e dislocabilità dei moduli di sistema su piattaforme eterogenee, garantita dall’utilizzo del linguaggio Java.
  Role Association :
@@ -1102,17 +1068,13 @@ Come abbiamo detto, per definire una Funzionalità Logica occorre scegliere una 
  NetX è un prodotto progettato e sviluppato completamente in Italia da , finalizzato a risolvere in modo semplice ed efficace le problematiche di monitoraggio di nodi di rete, sia su piattaforma Windows che UNIX-like.
 Obiettivo della formazione è quella di fornire, alle diverse tipologie di risorse Europol, coinvolte in attività riconducibili alla gestione /utilizzo del sistema IAM, le informazioni che consentano alle varie categorie di utenza (come identificate e descritte al paragrafo IDEAS ARCHITECTURE ) di svolgere i loro compiti, quali:
 Il front-end è stato sviluppato in e garantisce un’interazione con l’infrastruttura interamente web-based.
- Le principali caratteristiche tecnologiche del sistema NetX sono:
  Non invasività degli agenti che effettuano il monitoraggio dei sistemi (gli agenti sono installati sul sistema NetX e non sui nodi monitorati).
 Da Memopal usando l'incona Browse Memopal Files qui sopra 
 Da Internet visitando il sito: 
 facendo click sul link: 
  Registrazione della Richiesta di Intervento, secondo le modalità descritte nel paragrafo precedente ;
- Identificazione del richiedente al fine di verificare il suo diritto a emettere richieste e/o completare i suoi dati anagrafici/tecnici; l’attività viene semplificata dall’impiego del tool di call tracking .
  Classificazione della richiesta per determinare la tipologia della chiamata (utilizzando eventualmente check-list che saranno appositamente predisposte).
- Validazione della richiesta nel caso in cui questa non riguardi processi coperti dal Servizio previsto, sarà seguita una sottoprocedura di escalation predefinita;
 La realizzazione della funzionalità logica Specify Role ricalca i passi visti in precedenza, ovviamente cambiano i parametri di configurazione.
-Le attività attuative EXE possono non richiede alcun intervento sul frontend web se l’operazione richiesta risulta connettorizzata .
 A tutte le attività definite possono essere fatte delle estensioni ( ext ).
 Nel processo descritto in precedenza è stato aggiunto un ext di tipo Messages per l’invio di una email all’Office Manager deputato all’approvazione della richiesta.
  Marco Trombetti :
@@ -1154,8 +1116,6 @@ Un look grazioso e un po’ ribelle quello proposto da D&G per la Primavera/Esta
 Ora puoi attivare Memopal con la chiave di attivazione visualizzata in questa pagina.
 tra fotografie, musica, video e documenti di lavoro si prevede che nel 2010 i dati generati saliranno a quota 998 e sabyte ( Università di Berkeley- CA). 
  69,00 (Tasse incluse) 
- A tal proposito si rimanda a quanto descritto nel paragrafo “ ” . 
-250Gb a soli 69 € /anno
 Clicca qui per tornare al carrello della spesa.
  La condivisione per questo file è stata attivata.
 Ora puoi attivare Memopal con la chiave di attivazione visualizzata in questa pagina. 
@@ -1173,7 +1133,6 @@ Garanzie ricevute sul sistema remoto non presenti le informazioni, saranno inser
 Garanzie in titoli sul sistema remoto non presenti le informazioni, saranno inserite manualmente in XF da personale RBS
 In questo modo si ha una differenza di un giorno per il calcolo del rateo . 
 Team di apparteneza Team Profile
-Non devono essere inviati i dati generati da sezional i di C/C e Rapporti. 
 Derivati (Interest Rate Swap ) 
 Piano di rientro casistica non gestita
 Autorizzazione Permission
@@ -1204,7 +1163,6 @@ Supporto Logistico Integrato, consistente nella disponibilità, da parte della V
  
  FTS SERVICE BANKING APPLICATION CONFIGURATION 
  Home Page Società interbancaria per l'Automazione      Utente:
-Gestisce il buffer do output attraverso la funzione GestOutput .
 La chiamata al servizio di risposta viene invece effettuata attraverso la funzione Tuxedo tpacall .
  IBSRequestReply(TPVCINFO *……..) :
  User &nbsp;&nbsp;&nbsp; / / : : 
@@ -1225,7 +1183,6 @@ Setta il codice di ritorno chiamando la funzione SetRetCode .
  
  FTS DETTAGLIO SINGOLA OPERAZIONE 
  User &nbsp;&nbsp;&nbsp; 
-Se il client è Call Back ed il server è Call Back chiama il servizio attraverso la funzione Tuxedo tpcall .
 Invoca poi la funzione TrafViewToFmlOutput e poi gestisce il buffer di output mediante la funzione GestOutput .
 Se il client è Call Back ed il server è Sincrono distingue due casi:
 Se l’ id_ques è stato specificato, accoda il messaggio chiamando la funzione AccodaMsg .
@@ -1260,7 +1217,6 @@ Se il client è Asincrono ed il server è Sincrono accoda semplicemente il messa
  
 Servizio IBSRequest 
 Calcola o legge l’identificativo della richiesta, necessario per il colloquio, attraverso la funzione ImpostaIdReq .
-Se il client è Asincrono ed il server è Call Back accoda il messaggio nella coda identificata dal servizio.
 Chiama poi la funzione SetOutput .
  AL 													 
  InvocaMappa ..
@@ -1277,7 +1233,6 @@ Chiama la funzione GetSrvcParam che si occupa di chiamare il servizio per la let
 Inserisce in questo buffer i campi prelevati dal buffer fmlevent (sistema e servizio).
 Chiama la funzione ImpostaDatiServizio che reperirà tutte le informazioni inserite nel repository.
 Se per quel servizio è stato specificato un qspace , allora inserisce il messaggio mediante la funzione AccodaMsg .
-Altrimenti chiama il servizio mediante la funzione tpcall di Tuxedo.
 Trasforma i dati se è un Host attraverso la funzione TrasfViewToFmlOutput .
 Chiama poi la funzione GestOutput .
 Alloca ed inizializza un buffer fml nel quale copierà il buffer di input .
@@ -1298,24 +1253,18 @@ Identificativo Servizio ( ID_SRV C)
 Calcola l’identificativo della richiesta, necessario per il colloquio, attraverso la funzione ImpostaIdReq .
 Configurazioni 	 	 	 	 	 	 	 	 	 	 	 
 Imposta il buffer di uscita (dato in input) mediante la funzione Add_Campi .
-Buffer fml ; identificativo sistema; return code.
 Utilizza i dati in ingresso ( id_system , retcode ) per individuare il numero di occorrenza nel buffer fmlretcode contenente tutti i dati della tabella TAB_RETCODE .
 Preleva i campi del record selezionato dal buffer fmlretcode mediante la funzione Fget32 di Tuxedo e li inserisce tramite la Fadd32 nel buffer input alla funzione.
-Buffer fml ; occorrenza.
-Utilizza il numero di occorrenza dato in input per prelevare i campi del record selezionato dal buffer fmlservice mediante la funzione Fget32 di Tuxedo.
 Utenti                    	 	 	 	 	 	 	 	 	 	 	 
 Per ogni evento presente su questa tabella viene invocato il servizio individuato dai campi ID_SYSTEM e ID_SRVC che è chiave esterna per la tabella REPOS_SRVC.
 GestInfobus è un eseguibile MS Visual Basic che gestisce il repository di Infobus .
 Scegliendo la voce Visualizza , come negli altri casi precedenti, si può scorrere tutta tabella.
-Il nuovo modello architetturale si basa sul concetto di Information Bus (IB) , inteso come un’entità capace di fornire un framework di supporto alla condivisione dell’informazione tra applicazioni eterogenee.
 Profili                     	 	 	 	 	 	 	 	 	 	 	 
-Questa tabella ha come chiave primaria i campi GRUPPO_BMQ e TIPO_MSG .
 Questa tabella ha come chiave primaria i campi ID_SYSTEM e RET_CODE .
 Gruppi                    	 	 	 	 	 	 	 	 	 	 	 
 Il seguente diagramma UML use-case mostra le funzionalità (implementate attraverso appositi servizi) messe a disposizione del sistema ASP dalla piattaforma InfoBUS.
 Il seguente diagramma UML use-case mostra le funzionalità (implementate attraverso appositi servizi) messe a disposizione del sistema AST dalla piattaforma InfoBUS.
 Il seguente diagramma UML use-case mostra le funzionalità (implementate attraverso appositi servizi) messe a disposizione del sistema BIP dalla piattaforma InfoBUS.
-E’ un sistema di gestione dell’anagrafic a o e del traffico relativ o i agli utenti che utilizzano il prepagato.
  Comunicazione asincrona :
 Config.Locale          	 	 	 	 	 	 	 	 	 	 	 
 Il seguente diagramma UML use-case mostra le funzionalità (implementate attraverso appositi servizi) messe a disposizione del sistema ISAP dalla piattaforma InfoBUS.
@@ -1370,8 +1319,6 @@ Size
  
  TRS LISTA OPERAZIONI 
  DAL 	 	 	 	 	 	 	 	 	 	 	 	 	 	 
-il tipo di sistema client e server con il quale Infobus si interfaccia, impostando i campi FLAG_CLIENT e FLAG_SERVER .
-La gestione del database di Infobus è effettuata dal programma GestInfobus , che permette l'inserimento, la cancellazione o la sola visualizzazione dei record contenuti nelle diverse tabelle.
 Il seguente diagramma UML use-case mostra le funzionalità (implementate attraverso appositi servizi) messe a disposizione del sistema SP dalla piattaforma InfoBUS.
  
  DSN 
@@ -1386,7 +1333,6 @@ Il seguente diagramma UML use-case mostra le funzionalità (implementate attrave
  FTS LISTA FILE 
  SIACOMIP LISTA CODE 
 il flag che specifica se il codice che identifica univocamente la richiesta fatta viene fornito dal client (Esterno) oppure calcolato all'interno di Infobus , impostando il campo FLAG_TID;
-il tipo di comunicazione utilizzata dal client invocante il servizio e dal server che deve soddisfare la richiesta, impostando i relativi flag TIPO_CLIENT e TIPO_SERVER .
 Data ora attivaz. (aammgghhmmss)
  SVECCHIAMENTO INVIO FILE 
  
@@ -1404,7 +1350,6 @@ Data ora attivaz. (aammgghhmmss)
 > 
  User &nbsp;&nbsp;&nbsp; / / : . 
 L’architettura applicativa ipotizzata in questa fase di studio è quella rappresentata in Figura 1. 
-L’architettura tecnica ipotizzata in questa fase di studio è quella di Figura 2 .
 le informazioni sulle code tuxedo, se il servizio deve essere configurato in modalità affidabile, impostando i relativi campi ID_QUES , ID_QUE_REQ , ID_QUE_RESP , ID_QUE_ERROR ;
 le informazioni sulle mappe di trasformazione dei dati di input/output, nel caso in cui i sistemi che si interfacciano abbiano una rappresentazione dei dati diversa, impostando i campi MAP_IN , MAP_OUT , MAP_IN_RESP , MAP_OUT_RESP ;
  Numero operazioni 
@@ -1485,7 +1430,6 @@ I Liv.
  LOG 
  DAl (gg/mm/aaaa)
  IBSGetBMQParam(TPVCINFO *……..) :
-si occupa di recuperare tutte le informazioni contenute nelle tabelle PARAM_BMQ e REPOS_SRVC dati il gruppo BMQ ( GRUPPO_BMQ ) ed il tipo di messaggio ( TIPO_MSG ).
  Al (gg/mm/aaaa)
  CONFIGURAZIONE LOCALE 
  AB Locale 
@@ -1506,7 +1450,6 @@ II Liv.
  SDK di Visual Studio Analyzer Questo SDK contiene un insieme di oggetti e interfacce che permettono agli sviluppatori di accedere a livello di codice a vari aspetti del sistema di eventi di analisi delle applicazioni. Queste interfacce consentono di: Includere la generazione di eventi nelle applicazioni distribuite per l'analisi con Visual Studio Analyzer. Creare applicazioni di analisi personalizzate sottoscrivendo eventi di Visual Studio Analyzer. Automatizzare le attività più comuni di Visual Studio Analyzer. Estendere l'interfaccia utente di Visual Studio Analyzer accedendo alle informazioni di analisi dai componenti aggiuntivi di Visual Studio .NET. 
  Concetti principali e terminologia: 
  } , da specificare
- - Prima versione del documento.
 Il portale della magistratura (CORBA) richiede a RDM, attraverso l’invocazione dei servizi INSERIMENTO, ANNULLAMENTO, CHIUSURA, RIAPERTURA, DECRETO, STAMPA, di effettuare le suddette operazioni sui report contenenti informazioni relative ad una determinata utenza.
  BEA WLS  Application server BEA che ospita il codice per l’interoperabilità con Tuxedo (e quindi con InfoBus).
 Comunicazioni in differita da OPSC ad ASP (servizio OPSCASPDIFF ):
@@ -1521,11 +1464,9 @@ Il sistema SID richiede a VAS916, attraverso l’invocazione del servizio SIDREG
  
  
 È infatti evidente che, laddove BSS e Web operino in modo molto disaccoppiato, i principali punti di contatto siano on-line (piuttosto che off-line – ETL), e che siano dunque veicolati attraverso TIBCO.
- Sulla base di queste considerazioni, e del fatto che le sinergie di effort possibili sono state in sostanza già realizzate nel corso del 2003 e primi mesi del 2004, Accenture-HP propone un dimensionamento per l ’ intera area, che sconta un ulteriore 10-20% di efficienza (l ’ effort mediamente erogato in overtime nel contratto precedente); è un obiettivo possibile per via dello skill mix raggiunto (ancora da migliorare, ma sostanzialmente efficace) e del fatto che tutte le persone chiave saranno confermate se il contratto sarà nuovamente assegnato ad Accenture-HP. 
 SRVGRP= SRVID= 
 CLOPT="-A -- -u -p -d 
 -m "
-Accenture-HP si pone come partner di riferimento soprattutto per tutte le per massimizzare i benefici ed attuare la metodologia definita da Accenture congiuntamente ad H3G nel corso del 
 È opportuno infine sottolineare che l’assegnazione di tutto il Deployment ad Accenture-HP consente in generale di affrontare meglio le situazioni critiche (malattie, ferie, canvass molto impegnativi, ecc.) in quanto il background dei membri dei due gruppi (conoscenze di BEA, Tibco, Oracle, conoscenza dei processi, del reporting ecc.) consente la migrazione temporanea di risorse tra i due ambiti del Deployment al fine di garantire adeguata copertura in tutte le situazioni di criticità.
 la piattaforma X-Platform ™ , supporta due installazioni.
 La piattaforma X-Platform ™ è una piattaforma multicanale di Front-End e middle office che supporta:
@@ -1536,25 +1477,18 @@ Il programma è iniziato nel Gennaio ’03 come soluzione convergente per il Bus
 Le funzionalità caratterizzate dalla indicazione “ Funzionalità Base ” nel campo “Rilascio” sono da intendersi obbligatorie nel contesto di questa RFQ e dovranno essere rese disponibili nella prima release del sistema secondo la pianificazione descritta nel capitolo 9.
  Supporto operativo su progetti complessi (es. CRM2):
 la componente di Service Management (PMO, Unit Leading, Service Managers) è quella che si avvantaggia maggiormente in caso di aumento dei fattori di scala/allargamento di ambito del servizio.
-rolePath = roles://portal_content/trenitalia/ laboratorio/ICT/ RoleName /Laboratorio/ICT/FunzioniHomePage 
 La procedura consiste nella creazione di un’iview partendo dalla iview standard com.sap.km.cm.docs o dal template standard di SAP EP 60 chimato “KM Document ivew”.
-configurazione iview km standard per visualizzazione documento word (com.sap.km.cm.docs) nel caso in cui per la funzione “ per saperne di più ” si scelga l ’ HTLML statico questo modulo verrà incorporato con M_LI01 
 LineeGuidaProcedure * 
-rolePath = roles://portal_content/trenitalia/ laboratorio/ICT/ RoleName /Laboratorio/ICT/ProgettoX/FunzioniDiProgetto 
- targetIView ID dell ’ IView configurata al passo precedente 
  Root :
  No Topics :
  Modulo M_LI11 (vedi ) 
  Il form da utilizzare per la creazione dei ticket è quello riportato nel paragrafo . 
 le query sono specificate secondo questa sintassi PROPERTY; OPERATOR; VALUE 
-/Trenitalia/Laboratorio/ICT / Knowledge Center/Intro /intro. htm
 /Trenitalia/Laboratorio/ICT / Knowledge Center/Intro
-/Trenitalia/Laboratorio/ICT / Redazione Laboratorio ICT/Glossario /Glossario.doc 
 /Trenitalia/Laboratorio/ICT / Redazione Laboratorio ICT/Glossario
 accesso al folder /Redazione/ FAQ di Laboratorio/On Line , creazione di nuovi contenuti e modifica contenuti esistenti
 Accesso al form di edit del contenuto “Chi Siamo” sotto /Redazione/FORMS/On Line, cliccando cliccando sulla freccia in basso alla destra del form e scegliendo “edit”
 Per creare un iview di questo tipo di deve selezionare “Create new iview from portal archive” e trovare la master iview com.sap.km.cm.uidiscussion , presente sotto al gruppo com.sap.km.cm .
-rolePath = roles://portal_content/trenitalia/ laboratorio/ICT/ RoleName /Laboratorio/ICT/Download 
 Scelta del tasto Cerca 
 Scelta del tasto Cerca senza modificare i parametri in Input
  Valorizzare l’attributo “Server di posta elettronica” nella iView del Contattaci (PCD location:
@@ -1565,17 +1499,10 @@ Questo documento descrive i test di collaudo, che dovrebbero essere eseguiti in 
  Only at Folders :
  Data Retention 
  Homepage Blocco informativo Help Desk 
-Se la stima post [DLD + FG] fosse minore del limite inferiore della stima effettuata alla milestone [HLD + IG], allora l’effort in difetto verrà comunque iscritto nella Capacità Produttiva e successivamente fatturato daHP ad Arrow secondo quanto stabilito nel punto 1, fatta salva la possibilità per Arrow di impegnare il delta di capacità inutilizzato con altre attività aggiuntive, da concordare con il Project Manager HP del Contratto di Capacità Produttiva, secondo quanto descritto al successivo paragrafo “ ”.
-Pertanto, dal momento dell’iscrizione definitiva nella Capacità Produttiva, ogni successiva variazione temporale, di ambito, di effort o il non rispetto delle assunzioni andranno regolate da un apposito processo di Issue management e Change Request Management, che verrà attivato come parte integrante della gestione di progetto, come descritto al successivo paragrafo “ ”.
  ·         Dopo la votazione 
  ·         Quando il sondaggio verrà chiuso 
  Home Page Contattaci 
-10% dell’effort finale, dichiarato alla milestone [DLD + FG], al momento della reciproca accettazione dei deliverable previsti per il raggiungimento della milestone [DLD + FG], secondo quanto descritto al paragrafo “ ”
 In alternativa si può creare l’iview partendo dal portal component com.sap.km.cm.quickpoll .
-50% dell’effort finale, dichiarato alla milestone [DLD + FG], al momento della reciproca accettazione dei deliverable previsti per il raggiungimento della milestone [EDEV], secondo quanto descritto al paragrafo “ ”, purché tale milestone venga raggiunta secondo i piani temporali concordati.
-In tal caso Arrow provvederà comunque al pagamento a HP della meta’ dell’importo stimato alla milestone [DLD + FG] Per le parti che non verranno erogate dal HP si applica quanto descritto al successivo paragrafo “ ”.
- Nel caso in cui Arrow non accetti i documenti entro i limiti stabiliti, HP procederà comunque alla fatturazione concordata con Arrow per questa fase e potranno essere riviste e concordate nuove stime per le fasi successive .
-(Si veda per maggiori dettagli il paragrafo ).
 In particolare, in ambito RFID HP opera mediante la propria rete di Innovation Center per lo sviluppo a livello internazionale delle soluzioni RFID.
  Homepage Richieste di HW e SW 
  SAG – Software Action Group.
@@ -1585,7 +1512,6 @@ Per un dettaglio dei progetti realizzati internamente fare riferimento al .
 Hewlett-Packard è in possesso delle seguenti certificazioni Nortel: 
 La Hewlett-Packard Italiana S.r.l, tramite la costituzione del programma innovativo RFID “ The Umbrella Program ”, costituisce un tassello importante del piano investimenti che HP corporate ha pianificato per i prossimi 5 anni (2004-2009).
  TECHNOLOGIES ET PARTECIPATIONS SAS FRANCE ;
- un Central Server ( o Manager ) ed un Web-AccessServer . 
  Homepage Richieste HW e SW 
  Home Page Administration Links 
  Home Page News 
@@ -1594,79 +1520,11 @@ Di seguito sono riportate tutte le specifiche tecniche dell’appparato Power In
 Dimensions and Mounting Specifications Figura 47 . 
 Di seguito sono riportate tutte le specifiche tecniche dell’appparato antenna Cisco AIR-ANT4941 che potrebbe essere utilizzato per la copertura radio dell’infrastruttura Wireless di Pomezia :
  [ PRC ] 
-Superamento del criterio di uscita della fase di Development e Unit Test, come indicato al paragrafo “ ”:
-Non esiste più del 15% di tutte le altre anomalie MEDIE e BASSE (rispetto al totale dei test case previsti nel System and Integration Test Plan ), con un workaround immediatamente praticabile e viene definito e concordato con HP un piano per risolverle entro una settimana lavorativa.
- Se appare una pop-up con msg Couldn ’ t open SNMP verificare la corretta risoluzione del nome dell ’ apparato . 
- Apparirà la finestra di gestione utenze User Administration . 
- fare click sul simbolo sottostante alla colonna Modify/Delete relativo all ’ utente da cancellare per rimuoverlo . 
- espandere il folder User Accounts e fare click su Users . 
- Il fatto di marcare il campo ISAdministrator determina o meno la visibilità del campo Administration e, quindi discrimina la possibilità di effettuare, ad esempio, gestione delle utenze . 
- Si consiglia di effettuarla tramite ReportBuilder (da lanciare tramite il comando builder sul Web_AccessServer) selezionando File Deploy e loggandosi con il profilo web sul quale si vuole effettuare il deploy . 
- Per la creazione di un nuovo utente web, espandere il folder User Accounts e fare click su Users . 
- Selezionare quindi Add New User e dopo aver compilato i campi del form fare click su Apply per salvare le impostazioni del nuovo utente . 
- Per gestire le utenze è necessario accedere al Web Access Server ( ), loggandosi con utenza di sistema trendadm (o come altro utente con privilegi di amministratore web ) e selezionare nel Navigation Frame la voce Administration ; nella struttura ad albero posizionata sulla sinistra appaiono le voci che consentono di modificare i paramentri di OVPI : 
- Qualora fosse stato necessario inserire manualmente uno o più device su un Satellite del sistema di Performance Monitoring come illustrato in è buona norma verificarne la raggiungibilità snmp prima di forzarne la discovery col comando trend_discover – t – E . Test ottimale di raggiungibilità SNMP è l ’ utilizzo del MIBbrowser al quale si accede come descritto in . 
- Tools Change Node selezionare nel menù a tendina il nodo sul quale si vuole effettuarenola query, selezionare all ’ interno dell ’ albero sulla destra la/le mib sulle quali fare l ’ interrogazione e da 
- Tools SNMP Tools Get lanciare la get ed attendere i risultati . 
- Un modo semplice di verifica può essere quello di selezionare il/i device sui quali si vuole effettuare la verifica attraverso la maschera offerta dai report di tipo Snapshot come DeviceResource Device NRT Device Snapshot e Interface_Reporting Interface NRT Snapshot e verificare la raccolta . 
- Selezionare nel Navigation Frame la voce Catalog per visualizzare la lista delle diverse tipologie di report sviluppati dopo la raccolta dei dati a nostra disposizione . 
- I report che maggiormente possono essere utili sono quelli relativa al cosiddetto Near Real Time dato che questi report forniscono i dati relativi alle ultime sei ore . 
- / sbin/init.d nome processo > stop per la chiusura 
- Metodo standard per la raccolta dei dati è la verifica, all ’ interno della reportistica, dello stato dei report che contengono il device sul quale si vuole effettuare la verifica . 
- Accedere al Web Access Server ( ), loggandosi con la propria utenza . 
- risiedono sotto la directory / OVPI/sbin/init.d 
- Qualora vi fosse la necessità di intervenire su di un singolo processo, con utenza di sistema trendadm , eseguire i seguenti comandi : 
- / sbin/init.d nome processo > start per l ’ attivazione 
- Una volta completato l ’ inserimento manuale dei nuovi apparati, lanciare da linea di comando e loggati come trendadm, il comando trend_discover – t – E per abilitare l ’ inizio della raccolta delle informazioni sugli apparati appena introdotti . 
- Lo stesso comando puo ’ piu ’ comodamente essere lanciato dall ’ intrefaccia grafica dal menu ’ a tendina alla la voce Tools Type Discovery . 
- Figure 2: 
- selezionare il nodo e fare click sul pulsante Delete per eliminarlo e confermare la cancellazione . 
- Sul lato sinistro del menù ad albero facendo click su Polling Policies si possono visualizzare tutte le informazioni relative alle polling policies correnti : 
- nella finestra Polling Policy Manager selezionare Edit Nodes per far apparire la finestra Edit Nodes 
- fare click sul pulsante Create per inserire un nuovo nodo ( Edit per modificarlo ) 
- riempire i campi della finestra Create Node inserendo il nome del nodo ( Node Name ), il profilo SNMP del nodo (Create per crearla), la Community String Profile ( il community profile attualmente utilizzato per i device attualmente in rete non riponde ad uno standard unico), lo Status ( inserendo Available per abilitare il nodo al polling ) Snmpv1 Node ed Snmpv2 ; per concludere fare click su OK . 
-Ciò solo nel caso di mancato rispetto dei tempi di risoluzione dei problemi riscontrati, come indicato al successivo paragrafo “ ”.
-L’insieme dei test di accettazione effettivamente eseguiti presenta un risultato positivo (vd.
- Come accennato in precedenza, l ’ utente trendadm è l ’ utente amministratore della piattaforma OVPI . 
- attraverso l ’ operazione di deploy ( che può essere eseguita dal web attraverso Deploy New Report o attraverso Report Builder) può darne la visibilità agli altri utenti . 
- L ’ accesso alla reportistica via web avviene attraverso la pagina . 
- La reportistica può essere consultata via web o attraverso report viewer una volta loggati sul sistema . 
- Per accedere alla reportistica via report viewer ci si deve collegare remotamente al Web-Accessserver e lanciare l ’ applicazione viewe . exe localizzata al percorso C :\ OVPI \ bin . 
  Homepage Blocco informativo Help Desk TBS 
-esempio nel caso di dichiarazione di rifiuto) o termina con risultato negativo (vd.
-Per ogni progetto, viene pianificata da Arrow e da HP la milestone che definisce la fine dello sviluppo e del test unitario, ossia l’inizio della valutazione del criterio di uscita dalla fase, secondo quanto definito al paragrafo “ ”.
-Analogamente una dichiarazione di rifiuto determina un allungamento dei tempi previsti di System Integration Test pari al tempo necessario ad Arrow per riprendere l’esecuzione dei test, secondo quanto definito al paragrafo “ ”.
- Lo SLA per la risoluzione delle anomalie è definito e concordato tra le parti nel modo seguente:
-In tal caso il periodo massimo previsto per l’effettuazione dei System Integration Test è prorogato fino al raggiungimento di un risultato positivo, sempre secondo quanto definito al paragrafo “ ”.
-Paragrafo “ ”);
- Per l ’ utilizzo in Poertrain non è prevista una discovery di questo tipo dato che i nodi vengono importati puntualmente utilizzando la interfaccia grafica o importati nel sitema da un file di testo appositamente formattato come descritto nel successivo paragrafo . 
- La voce di menù File consente di effettuare il logout e la chiusura della finestra Performance Manager (voce Exit ). 
- Si raccomanda di utilizzare le opzioni di uscita per la corretta chiusura delle interfacce grafiche in modo da evitare che processi restino appesi e riducano le performance del sistema . 
- La voce di menù Tools consente l ’ accesso al MIBbrowser ( accedibile dalla macchina che funge da web access server), che visualizza tramite una struttura ad albero , tutte le MIB e ne consente un interrogazione . 
- Dalla finestra del MIB browser, attraverso File Open LoadMIB è possibile caricare mib diverse da interrogare (e da utilizzare eventualmente per la creazione di datapipe ad hoc ). 
- La voce Help fornisce le informazioni sulla versione in uso di OVPI e consente la navigazione sulle pagine di Help di prodotto . 
- La voce di menù Tools consente l ’ accesso al Package Manager che è il tool che gestisce l ’ installazione o la rimozione dei Packages attraverso schermate successive . 
- In fase di installazione è possibile effettuare il deploy dei report predefiniti dal report pack ( o pubblicazione per renderli consultabili via web e via report viewer ) e l ’ undeploy (rimozione dei report) in fase di disinstallazione . 
- La voce di menù Tools consente l ’ accesso al la finestra relativa alla SNMP-discovery che consentirebbe la ricerca dei nodi nella rete attraverso l ’ impostazione di un range di indirizzi IP . 
- Quest ’ ultima può essere effettuata sia da command line ( utilizzando il ReportViewer ) sia da web . 
- La gestione di OVPI avviene tramite interfaccia grafica accessibile solamente all ’ utente trendadm , utente amministratore del prodotto . 
- Per la corretta visualizzazione dell ’ interfaccia dell ’ applicativo OVPI è necessario un emulatore grafico (Reflection, Exceed ecc) per il quale è a sua volta necessario configurare i settings del monitor a 256 colori . 
- Per lanciare l ’ interfaccia grafica loggarsi al sistema come utente trendadm, effettuare l ’ exp ort del display e lanciare il comando piadmin & : 
- Figure : 
- La finestra Performance Manager presenta un menù ( File, Tools, Help ) e quattro push button che consentono l ’ apertura delle seguenti viste Objects, Groups, Polling Policies, Tables Manager, System . 
-Paragrafo presente) fino al verificarsi di un criterio di uscita normale secondo quanto previsto al paragrafo “ t”;
-HP avrà un periodo franco (Grace Period) di dilazione delle attività, per cause a lui imputabili, pari a 5 giorni lavorativi Per ogni ulteriore giorno di ritardo cumulato HP sarà soggetto ad una penale dell’1% fino ad un massimo del 20% complessivo sul valore totale delle attività Fixed Price iscritto nella Capacità Produttiva alla milestone di [DLD + FG].
-L’applicazione delle penali a HP, in termini di mancata fatturazione e riutilizzo della corrispondente Capacità Produttiva non fatturata in termini di Service Credit segue quanto descritto al successivo paragrafo “ ”.
-Resta comunque inteso che HP, anche a fronte di un ritardo tale da determinare il non pagamento da parte di Arrow dell’intera penale (in termini di mancata fatturazione al fornitore), sarà tenuto alla risoluzione di tutte le anomalie riscontrate, fino al verificarsi di un criterio di uscita normale secondo quanto previsto al paragrafo “ t”, ossia fino all’accettazione definitiva del prodotto e conseguente inizio del successivo periodo di Garanzia.
 nome = template_Lab_ICT_Show_Folder_Description 
- I dati grezzi ( data raw ) vengono quindi convertiti in dati incrementali ( delta o rate data ): 
  Tabella 3 – Associazione Canali Radio e colori
-Si applicano nel caso di ritardi che eccedano il Grace Period previsto, secondo quanto definito al paragrafo “ ”.
-Si applicano nel caso in cui HP e Arrow decidano congiuntamente di non procedere nell’esecuzione di una delle fasi previste al paragrafo “2 ”.
-Arrow eil HP effettuano, a livello progettuale e secondo quanto descritto al paragrafo “ ”, l’intero ciclo di pianificazione, controllo ed amministrazione, attuando contestualmente i processi di acquisto e di amministrazione.
  Figura 12 - Aironet 350 PSG_AP01 Figura 13 - Aironet 350 PSG_AP02
  Figura 14 - Aironet 350 PSG_AP03 Figura 15 - Aironet 350 PSG_AP04
-Per le attività Time & Material saranno emesse, da parte di HP, fatture mensili a consuntivo, relativamente alle attività svolte nel mese di competenza e corrispondenti al numero di risorse concordate e pianificate con Arrow secondo quanto descritto al paragrafo “ ”.
 Confrontare le funzionalità e le prestazioni di JBOSS in architettura “ Multiple Node ” bilanciata e in cluster applicativo con l’Application Server Bea Weblogic 8.1 .
  CH11 2462 MHz
  CH3 2422 MHz
@@ -1680,11 +1538,7 @@ Il denaro speso per effettuare un determinato quantitativo di operazioni al minu
 Affidabilità rispetto a single point of failure del sottosistema Wireless
  CH9 2452 MHz
  CH5 2432 MHz
-{\b\f3 / } {\b\f5 sbin/init.d } {\b\f3 } {\b\i\f3 } {\b\f3 } {\b\f5 start } {\b\f3 } {\f5 per l } ’ {\f5 attivazione }
-{\b\f3 / } {\b\f5 sbin/init.d } {\b\f3 } {\b\i\f3 } {\b\f5 stop } {\b\f3 } {\f5 per la chiusura }
  ·         Sempre 
- I report, una volta creati, possono essere schedulati in modo da generarli in automatico nel futuro, oppure possono essere visti On-Demand utilizzando il Report Viewer oppure accedendo alla pagina web . 
- La prima si appoggia ai ReportPack per la creazione dei report; la seconda, attraverso il Report Builder , consente di creare in modo completamente custom i report relativi ai dati collezionati . 
  .
  
  (R)
@@ -1735,7 +1589,6 @@ Capitale Sociale Euro 6.000.000 i.v. -C.F., Partita IVA e Registro Imprese di Mi
  28) Utilizzo un client diverso da Outlook (ad es. Outlook Express, Netscape, Thunderbird, …) per leggere la posta elettronica.
 Un VPN Client che tenta di stabilire una connessione si connetterà all’indirizzo virtuale del cluster Virtual Cluster IP address. 
  10) A seguito del click su “Check” della pagina web, ho problemi di posta.
-- Accesso Sicuro Clienti (ASC) :
  12) Selezionando dalla Rubrica non vedo più i “Contatti personali” .
 In questa Solution Design si prevede di ampliare l’infrastruttura di Intrusion Prevention and Detection già presente in ASF.
  Info sulla Migrazione .
@@ -1750,9 +1603,7 @@ Le attività previste per la fase TEST prevedono:
  Per problemi tecnici , fare riferimento al numero 119970 (199 619970 dall'esterno) 
 Al termine della finestra di intervento concordata, tutte le mailbox degli utenti che non hanno eseguito la user action verranno bloccate come possibilità di invio ed accesso ad internet .
 La garanzia prevede un intervento di tipo Best Effort per la risoluzione di eventuali anomalie/problemi.
-É importante peró notare che, mentre l’attivitá di migrazione delle caselle di posta elettronica é un processo facilmente controllabile anche centralmente, le attivitá di inserimento delle postazioni di lavoro nel nuovo dominio e di aggiornamento del profilo ed attivazione dell ’ account richiedono un accesso amministrativo sulla postazione di lavoro .
  Info Generali 2 
-Ti ringraziamo per la collaborazione e ti ricordiamo che già al termine della procedura avrai a disposizione da subito la casella di posta da 50MB, e che nei prossimi giorni sarai abilitato al nuovo servizio di posta via web (outlook web access), al nuovo servizio antispam e all’ accesso internet dedicato (non appena disponibile).
  1) Chi è il Migration Team? .
 Assicurati di accedere SEMPRE al tuo PC con il dominio FIATAUTO
  2) Vorrei avere più informazioni.
@@ -1774,9 +1625,6 @@ Su questi PC é possibile intervenire a mano per riconfigurare i parametri di re
 Le attività previste per la fase di ANALISI prevedono:
  9) Dopo aver avviato la procedura mi compare un messaggio di errore relativo a problemi di rete (ad esempio il messaggio contiene “network error …”) 3 
 Su queste Postazioni di Lavoro non é possibile eseguire gli script che sono stati creati per la migrazione, ed é quindi necessario intervenire a mano per:
-Questi PC seguiranno il processo di migrazione pilotato direttamente da HP e dall ’ utente finale, che é giá stato utilizzato con successo per gli Enti Centrali Italia.
-Su queste postazioni é necessario intervenire manualmente per disabilitare l ’ applicazione che sta bloccando il funzionamento degli script.
-Questa categoria di Postazioni di Lavoro puó peró essere anche gestita remotamente da personale che sia in possesso delle credenziali amministrative opportune .
  PC in dominio con utenza amministrativa comune a tutti i PC (é il caso classico dell’utente Administrator o equivalente del Dominio che é inserito nel gruppo Domain Admins, gruppo che a sua volta é inserito nel gruppo Administrators locale presente su tutti i PC);
  PC in dominio o workgroup con utenza amministrativa locale (puó essere virtualmente comune a tutti i PC nel caso in cui l’utente Administrator locale abbia per tutti i PC la medesima password).
 In questo caso le attivitá possono essere svolte manualmente , esattamente come per il caso dei PC con Windows NT4, oppure utilizzando uno script fornito da HP .
@@ -1791,10 +1639,7 @@ La finestra successiva ti permetterà di impostare la nuova password sul dominio
 Figura - Accesso Sicuro Clienti
 Figura - Accesso Sicuro Fornitori
 • Event Management netForensics 
-• Sistemi radius ActivCard di ASF la soluzione prevede l ’ implementazione di opportune procedure di backup che, in caso di 
 Per i dettagli tecnici e i contenuti specifici delle attivita’ previste si rimanda interamente all’allegato tecnico “ Proposed Solution for Upgrade ISS e laboratorio Wind “ V. 1.1 del 10-10-2005 Ns Rif. 
- IT5_1-3L70Q che costituisce parte integrante della presente offerta.
- Per i dettagli tecnici e i contenuti specifici delle attivita ’ previste si rimanda interamente all ’ allegato tecnico “ Proposed Solution for Pilot Antivirus ” V. 1.0 del 06-10-2005 Ns Rif. 
  1) Chi è il Migration Team?
  Se hai bisogno di maggiori informazioni relativamente alle  procedure di migrazione, puoi contattarci all’indirizzo Migrazione.PostaFA@fiat.com  . 
  3) Che cosa succede quando eseguo la procedura di predisposizione (click su “ Check ” )? 
@@ -1813,7 +1658,6 @@ Contemporaneamente, viene creato il file ok.mig nella posizione %USERPROFILE% su
  ProfileImagePath (nuovo utente su FIATAUTO) = %USERPROFILE% (path profilo vecchio utente)
 Per evitare questo problema la procedura di migrazione, se intercetta, l’installazione del componente SystemUpdate a bordo del PC, redirige il path di installazione al server dove si trova il file SystemUpdate.msi
  6) Come faccio a sapere se la procedura è andata a buon fine?
-Come prima azione viene eseguito un comando RUNAS per inizializzare un nuovo profilo utente.
 Segnalare ad l’intervento manuale al fine di registrare il completamento dell’operazione.
  7) Quando tento di accedere alla pagina http://www.fiatauto.com/migrazione non si connette o ricevo un errore.
  HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\DisableDynamicUpdate=0   ( abilita, se già non lo era, il dns dynamic update)
@@ -1838,7 +1682,6 @@ Nel caso che, successivamente alla migrazione, l’utente lamenti ad ogni logon 
 La Tua collaborazione è richiesta solo per attivare la procedura di predisposizione, a valle della quale saranno attivate le verifiche tecniche necessarie. 
  16) A seguito della migrazione della Posta Elettronica, saranno modificati i miei dati sulla GAL (Rubrica)?
  No.
- Bisogna dire all ’ utente di attendere la risoluzione del problema e segnalare alla casella postale il problema. 
 La migrazione non modifica alcun dato, né il locale sul tuo PC, né sulla Global Address List (Rubrica). 
  17) Cambierà il modo di autenticarmi alla posta?
  19) Quando la mia casella di posta diventerà di almeno 50 MB?
@@ -1856,7 +1699,6 @@ La ricerca viene fatta su tutto il ramo fiatauto.adfa.local.
 Se, tra i tuoi profili non è configurato un profilo di default e non sai come configurarlo puoi contattarci all’indirizzo Migrazione.PostaFA@fiat.com . 
  In questo caso è importante, per evitare inconvenienti dopo la migrazione del servizio, che segnali questa tua configurazione all’indirizzo Migrazione.PostaFA@fiat.com  . 
 Al termine della copia viene eseguito localmente lo script DetectFramework.vbs che ha il compito di rilevare la presenza del .NET Framework 1.1 a bordo della PDL da migrare.
-Al termine del check lo script esegue la procedura di migrazione vera e propria lanciando l’eseguibile HPMigrationTool.exe    Un errore del tipo “ Impossibile inizializzare HPMigrationTool.exe ” oppure “ DLL non trovata ” o comunque un errore per cui l ’ utente non vede la schermata principale della procedura è da ricondursi ad un problema del .NET Framework. 
 La procedura scrive ogni operazione eseguita su un file di log che viene creato localmente sul PC dell’utente e, al termine, postato sulla share dove verrà processato da script di post-processing.
  POP3/IMAP4 Server:
  User don't have admin permissions 
@@ -1916,21 +1758,15 @@ Figura - Architettura implementata
  Prima della scrittura, i dati o i raggruppamenti di dati devono essere sottoposti a procedure informatiche per attestare la loro integrità, basate sull'utilizzo di tecnologie crittografiche. […]
 Visualizzazione (dei dati) VIEW, REPORT
 Esportazione/stampa/invio (dei dati) EXPORT, PRINT,SEND
- Informazione del tipo target dell ’ operazione richiesta (es. MSISDN per una azione di richiesta visualizzazione traffico telefonico di una utenza su base MSISDN, Username per una azione di richiesta visualizzazione traffico telefonico di una utenza su base Nome Utente, CF per una azione di richiesta visualizzazione traffico telefonico di una utenza su base Codice Fiscale). 
- Informazione del target dell ’ operazione richiesta (es. Numero telefonico per una azione di richiesta visualizzazione traffico telefonico di una utenza, Codice fiscale per una azione di richiesta visualizzazione traffico telefonico di una utenza su base Codice Fiscale. 
-Per quanto concerne i log di Sistema Operativo Unix/Linux (OS Log), questi saranno generati dal prodotto di Privilege Management Log Symark PowerBroker dal quale la piattaforma di Audit Log Management preleverà le informazioni necessarie.
 Per quanto concerene i log relativi ai database, questi devono essere prodotti dal DBMS stesso o da appliance dedicate in tecnologia Guardium.
-I file di log devono essere firmati digitalmente non appena chiusi (un file di log è chiuso quando nessun ulteriore dato viene scritto nel file e i nuovi record sono scritti in un nuovo file; il processo di chiusura del file di log viene chiamato rotazione del log o log rotation ).
 L’indicazione della durata temporale della chiave è funzione delle policy di sicurezza del gruppo di Operation di Wind e potrà variare.
  ’_’ ’_’ ’_’ ’.’ 
 Login/Logout (dall’applicazione) LOGIN, LOGOUT
 {\f1\fs20 AUDIT SELECT, INSERT, DELETE, UPDATE ON ; }  Se non sono disponibili le singole tabelle, ed e’ quindi necessario agire su uno schema completo, lo stesso comando si trasforma in
 E’ nato Memopal per iPhone .
-Il software con cui sincronizzi  i file di tutti i tuoi computer e poi vi accedi ovunque. 
 Insomma, grazie a Memopal lo storage, il backup e la condivisione diventano sempre più “mobile!” 
 Memopal integra infatti il “1-click-sharing”, crea cioè in tempo reale un’email con il link al file da condividere.
 Già disponibile nell’ App Store di Apple, la versione di Memopal per iPhone è gratuita per tutti i clienti Memopal passati e futuri.
-In tal senso però Wind qualora si trovasse nella necessità di operare tali interventi “OMISSIS…dovrà essere tenuta preventivamente traccia in un apposito "registro degli accessi" dell'evento, nonché delle motivazioni che lo hanno determinato, con una successiva descrizione sintetica delle operazioni svolte, anche mediante l'utilizzo di sistemi elettronici… Tale registro deve essere custodito dal fornitore presso le sedi di elaborazione e messo a disposizione del Garante nel caso di ispezioni o controlli, unitamente a un elenco nominativo dei soggetti abilitati all'accesso ai diversi sistemi di elaborazione con funzioni di amministratore di sistema, che deve essere formato e aggiornato costantemente dal fornitore ” 
 Con la licenza Personal puoi installare Memopal su tutti i tuoi PC (fino a 5) senza costi aggiuntivi .
 RavenDesk e' il software, pronto all'uso e distribuito gratuitamente , per l'invio di SMS via internet.
 Per un rapido test richiedi ora l' attivazione .
@@ -1965,8 +1801,6 @@ Deve assolutamente recuperare il file delle interviste!
 Per le aziende che intendono diventare player attivi nel mondo della messaggistica SMS, AirTelco fornisce un sistema di rivendita avanzato e pronto all'uso basato su un'interfaccia web di semplice utilizzo e di rapida integrazione nel proprio portale web.
 Per ulteriori informazioni chiama lo 0532.191.5140 oppure scrivi al supporto tecnico all'indirizzo support@airtelco.com .
 Per maggiori dettagli tecnici, riguardo l'integrazione dei nostri servizi, consulta la nostra documentazione tecnica online .
- Se non visualizzi correttamente questo messaggio clicca qui 
-si rinnova l'appuntamento con Micam the Shoevent , dal 4 al 7 marzo nel quartiere di Fieramilano - Rho.
 - attività di ricerca e sviluppo (-> link a testo sotto ) legate alle precedenti tematiche
 Ti ricordiamo che su Expopage puoi consultare il catalogo online della manifestazione, organizzare il tuo percorso di visita in fiera e fissare appuntamenti con gli espositori.
  - interactive design e comunicazione WEB (-> link a testo sotto )
@@ -2000,7 +1834,6 @@ Il Backup su Internet è il nuovo modo per archiviare file su server remoto.  M
  Albert abitualmente scarica tutta la posta per poi visionarla con calma.
  Albert sorride, usa Memopal per il Backup Online di Outlook .
  Il professore si reca ad un Internet point, recupera il prezioso materiale necessario e lo invia a Stephan, salvando così le sorti del suo assistito.  
- Il Backup Online di Outlook è il servizio che ti consente di non perdere mai le tue preziose email salvandole automaticamente su server remoto. 
 Ramon però è tranquillo perchè grazie a Memopal ha fatto il Backup su Internet di tutti i suoi file . 
 Con Memopal tutto il suo lavoro è salvo . 
 Il Backup su Internet è il nuovo modo per archiviare file su server remoto.  Memopal è la soluzione ideale per il Backup su Internet dei tuoi file.
@@ -2008,7 +1841,6 @@ Il Backup su Internet è il nuovo modo per archiviare file su server remoto.  M
  Ramon però è tranquillo perchè grazie a Memopal ha fatto il Backup su Internet di tutti i suoi file .
  Con Memopal tutto il suo lavoro è salvo . 
 Con il Remote Backup di Memopal hai il tuo spazio virtuale sempre disponibile e sicuro. 
-Ama molto il suo lavoro, è una mente vivace tanto che nello stesso giorno riesce a lavorare a più di una storia, che conserva all'interno del suo personal computer . 
 I racconti sono andati perduti ma Jane ha scelto di utilizzare il Remote Backup di Memopal per tutti i suoi documenti . 
 Tutti gli scritti di Jane sono salvi solo grazie a Memopal. 
  Memopal è un software che esegue il Remote Backup dei tuoi file in modo automatico e continuo su un server remoto tramite connessione Internet sicura. 
@@ -2035,7 +1867,6 @@ Variazione dati cliente– VARDATICLIEN.
 Lorelay ha un account Memopal e ha scaricato la versione gratuita per iPhone direttamente dall' iTunes store .
 In questo modo tutti i suoi articoli e gli appunti sono costantemente backuppati , protetti e accessibili via iPhone .
 Ogni file è disponibile in qualsiasi momento ed è, nello stesso tempo, al riparo da guasti, disfunzioni, furti o semplicemente da errore umano. 
- Il Backup con iPhone è il servizio che ti consente di accedere ai file backuppati online e di condividerli con chi vuoi in qualsiasi momento. 
 Memopal con soli 4 euro al mese è il sistema di Backup Online ideale per tutti i tuoi computer. 
 Per la sua tesi di laurea ha collezionato più di 2000 interviste face to face che conserva gelosamente sul suo computer , e dando retta al consiglio di un suo collega, le ha anche uplodate online usando uno dei servizi di backup online free che si trovano in Rete . 
  Fino a che punto puoi fidarti di un servizio di Backup Online Gratuito ?
@@ -2059,7 +1890,6 @@ Prova Memopal Business .
  - il File Sharing (condividi velocemente file di qualsiasi dimensione con colleghi e amici).
  OpenDNS mette a disposizione degli utilizzatori di Internet un servizio di Domain Name System consultabile da qualunque host, indipendentemente dalla network IP da cui arriva la richiesta e gratuitamente.
 Per utilizzare OpenDNS allo scopo di migliorare i tempi di risposta e contro il fenomeno del Phishing è sufficiente utilizzare i due DNS 208.67.222.222 e 208.67.220.220 senza preoccuparsi di altro.
- Linee guida dell ’ accordo … 
  Dmailer distribuisce il suo prodotto di backup locale su 30M di penne USB all’anno. 
 Si tenga presente, che la raccolta delle statistiche va preventivamente attivata mediante la Dashboard a cui si accede registrandosi sul sito OpenDNS .
 L'altra possibilità, disponibile se si ha nella LAN un proprio server DNS, consiste nel far lavorare quest'ultimo come DNS cache configurato per usare i DNS di OpenDNS come Forwarders per la risoluzione di qualsiasi dominio di cui non sia autoritario.
@@ -2068,90 +1898,52 @@ Per configurare il server DNS di Zeroshell come descritto, cioè affinché usi i
 Per configurarlo, dalla sezione [DNS][Dynamic DNS] (vedi figura sopra), basta scegliere OpenDNS come dominio, inserire Username e Password scelti durante la creazione dell'account sul sito di OpenDNS e attivare il servizio.
 Si noti, che tale blocco va impostato nella chain FORWARD che è quella che agisce sul traffico che attraversa il router.
 Per maggiori dettagli sono stati allegati alla risposta alla RFQ gli “ Annual Report ” di Accenture Global per gli anni 2001, 2002 e 2003 e i Bilanci di Accenture S.p.A. relativi agli ultimi 5 anni.
- o supporto all ’ utilizzo dello strumento; 
  o gestione delle attività di rilascio dei package software nei vari ambienti (System Test; Integration Test; Preproduzione; Produzione). 
 Le attività di CM e di Support Tool verranno erogate negli uffici H3G di Milano durante il normale orario lavorativo (09:00-18:00) nei giorni feriali. 
  · Per FTE (Full Time Equivalent) si intende una risorsa equivalente che lavora 8 (otto) ore. 
- Coerentemente con questo approccio è possibile raggiungere saving più elevati (25%) all ’ interno di un singolo lotto, rispetto a quelli che si ottengono all ’interno di una singola area (10%).
  Sublotto minimo (es. test dell’environment CRM1):
 il valore degli FTE inserito nelle celle di totale sublotto per area, a livello di singolo lotto, è inferiore alla somma delle singole celle a livello di sublotto minimo, in quanto abbiamo previsto una sinergia determinata dalla possibilità di fare efficienza sul service management e sulle attività a copertura continua (7 x24), oltre a fare economie di scala sui volumi maggiori; le tariffe unitarie rimangono le stesse previste a livello di sublotto minimo 44 .
  Totale sublotti per area BSS e Web/lotto (es. totale 1+2 per il test):
- pertanto il totale indicato per BSS + WEB per i lotti Deployment e Maintenance è valido solo nel caso in cui venga aggiudicata ad Accenture-HP la parte Tibco; in caso contrario varrà la somma delle singole aree; le tariffe unitarie sono comunque ridotte rispetto a quelle previste a livello di sublotto minimo e di area.
  Totale sublotti per area Web e Telco/lotto (es. totale 2+3 per il test):
  Totale per lotto (es. totale 1+2+3 per il test):
  Totale sublotti per servizio (es. test, deployment e maintenance del servizio CRM1):
  Totale per area (es. test, deployment e maintenance dell’area BSS):
  Totale aree BSS+Web (test, deployment e maintenance dell’area BSS+Web):
- Totale aree BSS+Web (test, deployment e maintenance dell ’ area Web+Telco) il valore degli FTE inserito nelle celle di totale delle aree Web+Telco è uguale alla somma degli stessi ragruppamenti previsti a livello di lotto, mentre le tariffe unitarie sono ridotte sia rispetto a quelle previste a livello di area sia rispetto a quelle previste per gli stessi raggruppamenti a livello di singolo lotto.
-(test, deployment e maintenance delle aree BSS+Web+Telco) Il valore degli FTE inserito nelle celle di totale è uguale alla somma degli stessi ragruppamenti previsti a livello di totale per i tre lotti, mentre le tariffe unitarie sono ulteriormente ridotte sia rispetto a quelle previste a livello di ragruppamenti di area sia rispetto a quelle previste a livello di singolo lotto.
  Altri ambiti eIncent 
 Realizzazione documentazione su eIncent (R4 e R5)
- Per quei sistemi per i quali è prevista la creazione o esiste già ambiente di training, i.e. un ambiente che replichi, in un ’ architettura semplificata e risk-free 40 , il sistema oggetto del training con tutte le sue funzionalità e le sue modalità operative, il team di training è responsabile di tali ambienti. 
- 40 Tipicamente viene realizzata un ’ architettura “ stubbata ” , dove le chiamate a sistemi esterni sono simulate 
 Aggiornamento e manutenzione ambiente di training BRT rel 1.3 (profili CC e Web Station) in corrispondenza dei nuovi canvass previsti dal 01/01/2004 al 01/05/2004 (data di roll-out CRM2).
 Station) in corrispondenza dei nuovi canvass previsti dal 01/05/2004 al 31/12/2004 41 .
 Erogazione training ai trainers H3G sulle nuove funzionalità introdotte dai nuovi canvass previsti dal roll-out del sistema (01/05/2004) al 31/12/2004 42 i.e.:
- 41 Il primo rilascio dell ’ ambiente per permettere l ’ esecuzione del training prima del lancio viene realizzata nell ’ ambito del progetto internazionale CRM2. 
- 42 L ’ erogazione del train-the-trainers precedente al lancio viene realizzata nell ’ ambito del progetto internazionale CRM2. 
  Consegna del materiale di training 1 settimana prima della due date 
  Accenture-HP intende coprire il servizio con una presenza standard delle risorse in orario di ufficio (Lun -Ven 09.00-19.00). 
-Organizzazione, scheduling e revisione delle Dotazione di ogni persona 
  100% (Sez. 6.2.3) 100% (Sez. 6.2.6) 100% (Sez. 6.2.6) 100% (Sez. 6.2.6) 
  100% (Sez. 6.2.6) 100% (Sez. 6.2.6) 100% (Sez. 6.2.7) 
-Nel l ’ambito del processo del CM Accenture-HP, già impegnata nel l ’erogazione di tale servizio nelle sue componenti indipendenti di Accenture ed HP, ha avuto modo di individuare delle aree di miglioramento quali: 
-Accenture-HP, in virtù delle sue recenti esperienze in H3G ha acquisito un eccellente conoscenza di tali attività di supporto e si ritiene dunque in grado di fornire l ’ adeguato contributo in tale ambito. 
-Entrambe le società garantiscono un ’ approfondita conoscenza delle specifiche tecnologie utilizzate in tale ambito ed una completa e riconosciuta padronanza delle metodologie e dei processi operativi che stanno alla base del ciclo di vita del Software. 
-la produzione, manutenzione e distribuzione del Configuration Management Plan; tracciamento delle versioni del SW prodotto (sia major che minor release), gestione della configurazione delle macchine utilizzate per il “buil d ”, rilascio del “buil d ” al gruppo di test e interfacciamento con i team di sviluppo, gestione del backup delle release, gestione delle release notes e della documentazione associata a ciascun rilascio. 
-Attraverso la definizione di un processo di CM che si adatta alle necessità di business del cliente, l ’ impiego di procedure dettagliate e l ’ utilizzo di appropriati tools a supporto, e ’ stato possibile ottenere notevoli benefici per il business, come la riduzione dei costi operativi per la gestione dello sviluppo e deployment dei nuovi servizi, un rapido time-to-market e differenziazione del servizio, una crescita della customer satisfaction attraverso l’utilizzo di SLA per la gestione della qualità del servizio e un rapido ritorno degli investimenti (ROI).
-Le competenze necessarie alle attività di Configuration Management e Support Tool che Accenture-HP intende fornire si adegueranno a quanto richiesto nel bando di gara per l ’ Application Management di H3G, sia per quanto riguarda le conoscenze tecniche sia sotto il profilo professionale. 
- Tali presentazioni forniscono un ’ introduzione e una descrizione all ’ applicativo in oggetto (o alla nuova release) e delle sue principali caratteristiche, focalizzandone gli aspetti funzionali e operativi che sono di rilevanza per gli utenti finali (gli aspetti tecnici e architetturali sono affrontati solamente se rilevanti ai fini della comprensione dell’utilizzo del sistema).
- Qualora non sia disponibile un ambiente di training per l’ applicativo in questione, le presentazioni sono corredate di screenshots dell’applicativo e di una navigazione guidata.
 Aggiornamento materiale di training sull’applicazione (profili CC e Dealer) relativamente ai nuovi rilasci previsti dal roll-out (01/05/2004) al 31/12/2004 38 tra cui.:
-per il Insert in File Properties – Summary – Title Contratto di Capacità Produttiva del Progetto ESSPRIT
- Un fattore distintivo che rafforza quanto gia' detto si puo' ricercare non solo nella capacita' di HP di rispettare e in parte migliorare le tempistiche di rilascio della soluzione, ma soprattutto nella profonda consapevolezza che HP ha, riguardo un fattore critico di successo come il Change Management, al quale dedica una attenzione particolare sia in termini di processo, servendosi di risorse pregiate per indirizzare gli aspetti piu' organizzativi e sia in termini di addestramento e formazione degli utenti che saranno impattati con il deployment della soluzione, dedicando a quest ultimo aspetto un team di persone focalizzato a condurre il cambiamento culturale necessario per far si che questo progetto sia un progetto di successo . 
- Il valore intrinseco di HP e' inoltre quello di poter convogliare nel team di progetto talenti che hanno maturato una comprovata esperienza in ambiti progettuali analoghi attingendo anche alle strutture come l'Invent Center HP di Dubai e Competence Center HP in Bangalore (India) nei quali HP svolge delle attivita' all'avanguardia per gli ambiti tecnologici e progettuali oggetto della gara, come la definizione di prototipi, studi di fattibilita' ed esecuzione di progetti . 
  o giorni di calendario target di mercato: 
  o sabato, domenica e festivi: 
  Il Sistema di Qualita' dell'HP si chiama "BUSINESS MANAGEMENT SYSTEM" (BMS) ed e' stato strutturato adottando l’approccio per processi.
 Questo consente ad ogni utente l'accesso via web alla documentazione di tutti i processi HP, supportando lo sviluppo di “ scorecard ” , fissando le responsabilita'dei processi e mantenendo allo stesso tempo gli sforzi amministrativi al minimo.
- Tutte le attivit a ' comprese nei processi principali sono documentate da documenti standard come segue:
 HP annovare molteplici esperienze di Oustourcing e di Managed Services in tutti i settori industriali e di servizi. 
  Nella tabella seguente vengono elencati i più significativi deal su base pluriennale il cui valore supera i 10 Milioni di $ degli ultimi tre anni.
- l'efficienza di un software è proporzionale al rapporto tra il livello generale di prestazioni del software e l'ammontare delle risorse necessarie al suo funzionamento . 
- Predisposizione e condivisione con il Responsabile di progetto di AgipRete e con il Project Manager ICT degli Stati di Avanzamento Lavori (SAL ). 
- Predisposizione di relazioni di sintesi di progetto e di presentazioni al Management del Committente, da condividere con il GdL, con il Responsabile di progetto di AgipRete ed il Project Manager ICT . 
  La matrice dei ruoli e delle responsabilità identifica le “figure chiave” ed attribuisce ad ognuna di esse gli ambiti decisionali e le responsabilità sia a livello HP che verso il cliente AGIP (punto vendita e non).
  I criteri di accettazione riguardano le modalità attraverso cui viene dichiarato un Punto Vendita operativo e funzionante con il nuovo ambiente.
- Nella definizione dei processi di roll-out vengono ordinate e razionalizzate le attività eseguite durante la realizzazione pilota. 
  La review della realizzazione pilota consente di evidenziare gli scostamenti tra quanto ipotizzato in fase di design e quanto effettivamente realizzato.
- Le procedure operative di dettaglio saranno redatte su un manuale in dotazione alla squadra dei tecnici che opereranno sul territorio.
  Tavola 6 ¡À 11 
  P&I Diagram - Serbatoio Lt 60 ? 1600 
- Dimensioni d ’ ingombro e massa - Serbatoio Lt 60 ? 1600 
  CATEGORIA B :
  CATEGORIA C :
  CATEGORIA D :
  CATEGORIA E :
 120 m 3 /h )
- Una diramazione montata a monte del proporzionatore munita di un sezionamento DN 15 e di un raccordo STAUBLI DN15 assicura la prova   in aria dei spruzzatori del circuito (attacco di un tubo flessibile di aria DN 15). 
  DECAPAGGIO CHIMICO (immediatamente prima della pitturazione )
- Startup (per la stesura di un ‘ piano di transizione ’ ) 
  Il periodo di transizione ha la funzione di mettere in grado la struttura di servizio HP di prendere in carico l ’ ambiente di riferimento di Eni ICT (oggetto dei servizi ). 
  A = Autorizza . 
  C = Coinvolto . 
  R = Responsabile . 
  I = Illimitato . 
- SLA = Service Level Agreement , secondo quanto definito nel capitolo Service Level Agreement .     s / u = startup . 
- L ’ attività viene svolta soltanto nella fase iniziale, ripetizioni dell ’ attività comporteranno una valorizzazione a parte .   n/a = non applicabile . 
- ll Provider di AM al termine delle attività nelle modalità sopra descritte redigerà il Verbale di Accettazione per il passaggio in A.M del sistema e lo consegnerà ad EN ICT/AgipRete . 
-sviluppo di uno specifico Prodotto), che concorre singolarmente all’utilizzo dell’intera capacità produttiva.
- Di norma, per ogni nuovo progetto, HP è inizialmente coinvolta da Arrow, fin dalla milestone [PR2], così come indicato al paragrafo “ ” . 
  EABMQ Release 2.0.0 
- eabmq0200 . 
- EABMQ . 
  E Link A dapter per BMQ .
 Servizio Tuxedo o, più semplicemente, Servizio 
-E’ il servizio invocato dal client con la tpcall o con la tpacall (p. es. EABMQSend , EABMQReceive ).
 Servizio BMQ o, più semplicemente, Operazione 
 E’ l’operazione che deve essere eseguita dal servizio Tuxedo invocato (p. es. “ RICARICA ”, “ VERIFICA_UTENZA ”).
 Per svolgere questa funzione, EABMQ si avvale della libreria ad oggetti libBmqoo , che esporta le funzioni del BMQ come servizi ad alto livello e che, a sua volta, utilizza la TimBmqLib (vers.
@@ -2162,7 +1954,6 @@ Per evitare tale pericolo, d’ora in avanti ci riferiremo con il termine di “
 Il client invoca il servizio Tuxedo (nell’esempio di prima, EABMQSend ) pubblicato dal server dell’adapter nella BBL, e gli passa come parametro un buffer FML32 contenente, tra l’altro, il nome dell’operazione richiesta ( RICARICA ).
 L’adapter EABMQ a questo punto, attraverso la libreria libBmqoo è in grado di estrarre dal proprio repository le informazioni necessarie allo svolgimento dell’operazione stessa.
 Il protocollo di comunicazione tra un qualsiasi client Tuxedo e l’adapter EABMQ prevede l’utilizzo dell’interfaccia standard di Tuxedo, per cui i servizi pubblicati dall’adapter stesso vengono invocati dal client con una tpcall (chiamata sincrona) oppure con una tpacall (chiamata asincrona).
-Per l’installazione dell’adapter occorre creare, nella macchina target, una utenza apposita che abbia le seguenti caratteristiche e che sia dedicata esclusivamente ad InfoBus, che ne sarà l ’ unico amministratore :
 “ $HOME/infobus ” (la struttura di tale cartella è descritta succesivamente);
 Una volta creato l’utente, occorre loggarsi al sistema come “ infobus ” e, dalla home directory, eseguire lo script “ EA_install ” fornito con il pacchetto di installazione.
  FLDTBLDIR32 = percorso per i file FML32.
@@ -2174,7 +1965,6 @@ Deve essere valorizzato con il percorso completo dei file FML32 ( /home/infobus/
  TRCAPP_LOGDIR ).
  TIMBMQ_LOGINIT= livello di trace della libreria libBmqoo .
 Nella directory contenente i file di ambiente ( /home/infobus/EABMQ/env ) è presente uno script ( eabmq.env ) che imposta le suddette variabili di ambiente.
-configurazione della libreria del BMQ ( libBmqoo.sl ), per quanto riguarda le operazioni che l’adpater dovrà eseguire, e configurazione dei servizi Tuxedo relativi all’adapter stesso.
 La libreria ad oggetti libBmqoo.sl legge i servizi configurati da un repository che può essere costituito da un database Oracle oppure da un file in formato XML (in quest’ultimo caso, il DTD verrà fornito dal gruppo InfoBus).
 Nome coda BMQ (il nome della coda oppure il binomio “ gruppo.coda ”) BMQ di destinazione (di ricezione)
 Nome della coda alternativa di risposta (il nome della coda oppure il binomio “ gruppo.coda ”)
@@ -2184,8 +1974,6 @@ Per la configurazione di un servizio Tuxedo per mezzo del file ubbconfig , si ri
 Dal momento che i server Tuxedo relativi all’adapter sono due (uno che pubblica i servizi EABMQSend , EABMQReply , EABMQReqReply e l’altro che pubblica il servizio EABMQReceive ) dovranno essere previste per lo meno due “ entry ” nel file di configurazione.
 I servizi dell’adapter EABMQ devono essere configurati nel file di configurazione di Tuxedo ( ubbconfig ).
 Nella sezione “ *GROUPS ” del file di configurazione di Tuxedo devono essere specificati i gruppi cui appartengono i servizi.
- EABMQSERVICES_GROUP specifica il nome del gruppo relativo ai servizi pubblicati da EABMQServices ;
- EABMQRECEIVE_GROUP specifica il nome del gruppo relativo al servizio pubblicato da EABMQReceive ;
  GROUP_No è l’identificativo numerico assegnato a quel gruppo.
 Nella sezione “ *SERVERS ” devono essere specificati i parametri relativi ai servizi stessi secondo il seguente formato:
  EABMQSERVICES_GROUP e EABMQRECEIVE_GROUP hanno lo stesso significato e valore descritto per la sezione “ *GROUPS ”;
@@ -2249,25 +2037,11 @@ Oltre alle normali funzionalità di spedizione( send ) e ricezione( receive ) di
 Oracle DBMS, v. 8.1.6. (opzionale, cfr. ).
  CSvcMgr è implementata come singleton, per cui all’interno di un processo ne può esistere una sola istanza.
  ICfgType : 
- pcLoadString : in funzione del tipo di configurazione contiene il pathname del file di configurazione o la stringa di connessione al database(nel formato ‘ utente/password@SID ’);
 Successivamente alla prima inizializzazione, il riferimento all’istanza del CSvcMgr può essere ottenuto tramite il metodo:
 La funzione createMsg permette di creare la bozza di un messaggio da inviare completo di tutti i campi; Tutti i campi del messaggio BMQ, compreso l’header TIM sono impostati in maniera trasparente all’utilizzatore il quale dovrà impostare solamente il corpo.
  PcServiceName :
-puntatore ad una istanza della classe CrcvMessage ottenuto tramite il metodo receive() ;
- MAJ_CODE ( se valorizzato )
- MIN_CODE ( se valorizzato )
- APP_DEP1 ( se valorizzato )
- APP_DEP2 ( se valorizzato )
- MAJ_CODE ( opzionale )
- MIN_CODE ( opzionale )
- APP_DEP1 ( opzionale )
- DATA ( opzionale )
- ID_REQ ( opzionale )
- RPLY_ADDR ( opzionale )
 invoca il servizio che si occupa di recuperare un’occorrenza nel repository di servizio ( IBSGetSrvcParam ).
 imposta il campo del buffer FML relativo al return code .
-calcola l’ id_req da inviare al chiamante.
-imposta l’ id_req da inviare al chiamante.
 invoca il servizio che si occupa della eventuale trasformazione dei dati di input o output ( mappa) .
 genera l’ id_req del servizio.
 calcola e/o imposta l’ id_req a seconda del valore assunto dal flag_tid .
@@ -2283,12 +2057,8 @@ Funzione SetRetCode
 Se il return code ret è diverso da zero calcola il return code da restituire al chiamante con i codici di errore.
 Imposta il campo ID_REQ nel buffer FML output. 
 Funzione SetIdReq 
-Calcola l’ id_req da inviare al chiamante attraverso la funzione GetCodeStr. 
-Imposta il campo ID_REQ per l’input . 
 Funzione GetIdReq 
-Trova l’ id_req da utilizzare nel servizio attraverso la funzione Fget32 di Tuxedo . 
 Funzione AllocaBuffer 
-Alloca un puntatore ad una struttura REP ( t_rep ) . 
 Funzione InvocaMappa 
 Nome del servizio da invocare ( mappa ).
 Buffer FML ( input o output ).
@@ -2303,7 +2073,6 @@ Trasferisce i dati di input nel buffer FML allocato attraverso la funzione Fvsto
 Sostituisce al buffer input di tipo View, il nuovo buffer FML.
 Funzione TrasfFmlToViewInput 
 Se il flag_server passato alla funzione è diverso da Host non effettua alcuna operazione, altrimenti:
-Alloca un puntatore ad una struttura di tipo HEADERHOST .
 Trasferisce i dati di input nel buffer View allocato attraverso la funzione Fvftos32 di Tuxedo
 Sostituisce al buffer input di tipo FML, il nuovo buffer View.
 Funzione TrasfViewToFmlOutput 
@@ -2325,18 +2094,12 @@ Funzione InvocaSrvcPost
 Legge nel buffer input il return code attraverso la funzione Fget32 di Tuxedo.
 Se il return code segnala che tutte le operazioni sono andate a buon fine e contemporaneamente è stato specificato il valore dell’ id_srvc_post allora:
 Alloca due buffer FML ( s_input ed s_output ) da utilizzare nella chiamata al servizio.
-Copia il buffer input nel buffer FML locale ( s_input ) chiamando la funzione Fcpy32 di Tuxedo.
-Modifica i campi DATA e LEN_DATA nel buffer s_input chiamando la funzione Fchg32 di Tuxedo.
 Sostituisce il servizio con quello di post nel buffer di appoggio.
-Inserisce nello stesso buffer s_input il valore nel campo FLAG_COMMIT. 
 Aggiorna il valore nel campo RET_CODE nel buffer input sostituendolo con quello letto nel buffer s_input .
 Funzione GestOutput 
 Preleva dal buffer output il valore del retcode attraverso la funzione Fget32 di Tuxedo.
-Se il retcode è diverso da OK allora:
-Alloca un buffer Fml da utilizzare per la chiamata al servizio ( datiretcode ).
 Chiama il servizio IBSGetRetcode attraverso la funzione tpcall di Tuxedo.
 Legge il campo recovery nel buffer datiretcode attraverso la funzione Fget32 .
-Se il valore del campo recovery è uguale a ‘ S ’ allora accoda il buffer output nella coda ERRQUEINFOBUS , altrimenti accoda il buffer input nella coda IBSFunction .
 inserisce i messaggi della coda di errore in una tabella di servizio ( TAB_ERR) .
 Sono implementate inoltre le funzioni tpsvrinit e tpsvrdone. 
 La prima si occupa della connessione al database e di invocare il servizio IBSGestErrQueue per la prima volta.
@@ -2351,8 +2114,6 @@ La funzione recupera i record nella tabella REPOS_SRVC utilizzando il cursore ap
 Chiude il cursore aperto dalla Apre_Cur_RS. 
  -T indica che le chiamate ai servizi Tuxedo saranno effettuate il modo transazionale;
  IBSBMQ Release 2.0.0 
- ibsbmq0200 . 
- IBSBMQ . 
 Il gruppo di server InfoBUS IBSBMQ ha lo scopo di interfacciare i servizi IBS che rappresentano il core di InfoBUS, con il mondo BMQ(Bea MessageQ), utilizzato come piattaforma di middleware dalla maggior parte dei sistemi TIM.
 Il modulo IBSBMQ si inserisce nell’architettura descritta in Figura ; in particolare si avvale delle funzionalità dell’adapter eLink/BMQ EABMQ (vedi ) e, indirettamente, della libreria libBmqoo(vedi ).
  IBSBMQReceive :
@@ -2361,10 +2122,8 @@ Servizio IBSBMQReceive ; svolge la funzione di collettore di tutti i messaggi ri
 Servizi IBSBMQSend , IBSQBMRequestReply e IBSQBMReply ; invocati dagli IBS, svolgono la funzione di colloquio asincrono e sincrono verso i sistemi del mondo BMQ; l’ultimo viene invocato da IBSBMQReceive per l’invio della risposta ad un client BMQ nel caso sincrono.
  IBSGetBMQParam :
 Inoltre IBSBMQ necessita dell’adapter EABMQ per la cui installazione riferirsi a .
-l'identificativo dell'evento, nel caso si utilizzi un meccanismo di Publishing & Subscribe, impostando il campo ID_EVENT .
  IBSBMQSERVICES_GROUP e IBSBMQRECEIVE_GROUP hanno lo stesso significato e valore descritto per la sezione “ *GROUPS ”;
  ORACLE_SRVC Oracle SID o servizio oracle di SQL-Net;
- USER l’utente del Database in cui sono contenute le configurazioni di InfoBUS;
 Per la configurazione dell’IBSBMQ è necessario una preventiva configurazione dell’adapter EABMQ e dei servizi della libreria libBmqoo .
 In questa sede, ricordiamo, solamente, che, per il corretto funzionamento dell’IBSBMQ, nella CLOPT configurazione del server EABMQReceive vanno impostati i seguenti parametri:
  -L :
@@ -2375,23 +2134,17 @@ per ogni messaggio va effettuata una tpcall del servizio Tuxedo specificato con 
 Servizio Tuxedo da invocare per ogni messaggio ricevuto; va impostato a IBSBMQReceive 
  -S IBSBMQReceive -R ALL_TYPES "
  IBSBMQSERVICES_GROUP specifica il nome del gruppo relativo ai servizi pubblicati da IBSBMQServices ;
- IBSBMQRECEIVE_GROUP specifica il nome del gruppo relativo al servizio pubblicato da IBSBMQReceive ;
- ASYNC_SRVC1 e ASYNC_SRVC1 sono gli alias del servizio IBSBMQSend che vengono usati da InfoBUS per l’invocazione del servizio stesso; tali alias devono corrispondere ad identificatori(ID_SRVC) di servizi nella configurazione di InfoBUS;
  SYNC_SRVC1 e SYNC_SRVC2 sono gli alias del servizio IBSBMQRequestReply;
 CLOPT="-A -- -u -p password > -d 
-Al fine di garantire un corretto processo comunicativo e l’ottimizzazione della gestione delle attività, il canale comunicativo da e verso i referenti H3G dovrà essere limitato alle figure dei Service Manager e ai Team Leader per delega del Service Manager. 
 L’approvazione e la validazione delle richieste delle attività on demand o Supporto Utente sarà autorizzata dai Service Manager o dai Team Leader per delega dei Service Manager. 
  La continua attività di rilascio di nuovi sistemi a supporto del business e di upgrade di quelli esistenti, genera, nelle aree impattate dal rilascio delle nuove applicazioni, un’esigenza costante di aggiornamento e integrazione della formazione agli utenti di tali sistemi.
 La soluzione proposta da Accenture-HP in ambito training prevede il sourcing delle attività di training abitualmente gestite da ICT-QA a un gruppo dedicato di risorse Accenture-HP che presidierà l ’ attività in maniera stabile, grazie a una vasta gamma di skills e a una conoscenza approfondita della realtà ICT-QA e H3G in generale, e potrà gestire in modalità end-to-end il processo di pianificazione, preparazione ed erogazione delle attività di train-the-trainer. 
  una strategia di formazione “ a cascata ” , dove il training viene erogato ai formatori del Cliente interno (CCM e Sales), che a sua volta provvede ad erogare il training agli utenti finali 37 ;
- la copertura di tutti gli ambiti di interesse (BSS e prodotti) e, all ’ interno di questi, di tutte le applicazioni di maggior rilevanza per l’attività di CCM e Sales;
 l’erogazione di materiale e di sessioni di formazione su tutti i domini e le applicazioni in ambito, nei tempi previsti e rispettando la pianificazione condivisa con ICT-QA e il Cliente interno;
  Sez. # 5.2
  37 Laddove i numeri lo consentano, sarà adottata anche una strategia di formazione tradizionale, dove i 
- A 9. Assegnazione automatica .
 Figure 2 – Planning
 File OCNMS.pdf 
-Le attività di Provisioning , sono veicolate tramite Work Order del sistema NDC o (in alcuni casi) avviate off-line da e-mail, telefonate.
 Nel caso del processo di Network Deployment non esiste nessuno strumento automatico per l'assegnazione e il tracciamento delle attività.
 La quota riservata abilita il cliente ad iniziare l’utilizzo del servizio e a procedere per un tempo/volume, definito (token), allo scadere del quale occorrerà riverificare la disponibilità di credito .
 La piattaforma in modalita postpagata, addebita ad un utente, ed eventualmente alla sua gerarchia , il traffico effettuato nonche’ eventuali canoni e contributi.
@@ -2401,7 +2154,6 @@ La piattaforma in modalita postpagata, addebita ad un utente, ed eventualmente a
  Cut-off :
  Quota Reserved (QR) :
  Token :
- Piano Tariffario :
  Listino :
 La prima soluzione, denominata “ Fase1 ”, e’ una soluzione robusta e stabile che permettera’ a Fastweb di:
 In fase successiva ( Fase 2 ) sarà introdotto:
@@ -2410,9 +2162,6 @@ Questo tipo di soluzione, se da una parte è considerevolmente più complessa ri
 L’Intelligent Peripheral contiene le Specialized Resource Function che gli permettono di aprire le richieste di asistenza al’SCP ogni volta che riceve una chiamata ISUP da parte dell’SSP ( di norma l’SCP ordina alla centrale di chiamare l’IP restando quindi in attesa di una richiesta di assistenza da parte dell’IP).
 Il Balance Manager (BM), che si occupa della gestione del Balance del cliente
 Il Rating Engine (RE), che si occupa di calcolare il costo della chiamata in funzione del listino da usare.
-L’ SCP che supporta l’SRF è realizzato con la piattaforma HP OCSC .
-L’ IP che supporta l’SRF è realizzato con la piattaforma HP OCNMS .
-L’ SDP che supporta le funzioni di billing è realizzato con il prodotto HP Starpay System .
 I servizi sono eseguiti da una specifica Virtual Machine associata ad un High Availabilty Environment (SLEE) progettato e realizzato per garantire in maniera predicibile le prestazioni real-time richieste globalmente dai servizi in esecuzione.
  Figure 4 – OSCS Architecture 
 La piattaforma è predisposta per supportare soluzioni leader di Text to Speech e di Automatic Speech Recognition Engine incluse quelle MRCP compatibili con Real Time Streaming Protocol (RTSP) per ogni sessione attiva.
@@ -2478,7 +2227,6 @@ BIP, dopo che il messaggio è stato criptato, invia a OPSC la richiesta di ricar
 Una volta che l’operazione è stata eseguita con successo BIP invia a OPSC, una notifica attraverso l’invocazione del servizio COMMITBCOTIM .
 Il sistema BIP invia un esito anche a SID, attraverso il servizio di ESIRICBCOTIM .
 Il sistema SID invocando il servizio SIDCCRM , invia un messaggio su una coda BMQ di InfoBus destinata all’interfaccia; in base al valore presente in un campo app_dep_1 dell’header del messaggio BMQ, e utilizzando un criterio di routing, viene depositato su una coda Tuxedo.
-Per prelevare il messaggio CCRM, tramite SIEBEL, invocherà i servizi SIDCCRMGSM1, SIDCCRMGSM2, SIDCCRMGSM3, SIDCCRMGSM4 e SIDCCRMTACS .
 Dai sistemi ASP e ASAP vengono inviati a CCRM, tramite i servizi ASPCCRM e ASAPCCRM , gli esiti di attività lanciate su di loro durante le normali attività di Customer Care.
 Il sistema BIP, tramite il servizio CONFDOMI , invia una richiesta di conferma domicilio utenza al sistema DPPSI.
 Il sistema BIP, inoltre, può invocare il servizio VERUTEDOMI , per avere una verifica del domicilio dell’utenza.
@@ -2521,7 +2269,6 @@ Modifica dello stato del servizio CLIP - PSVCLIP / RISPSVCLIP .
 Tale evento scatena l’invocazione dei servizi NOTIGFP e NOTIVAS (relativi ad una comunicazione push di traffico associata al superamento di soglia di Advertising) verso i sistemi VAS e GFP rispettivamente, sempre in modalita’ asincrona store & forward.
 Il sistema TSS2000 può inviare una richiesta di Cambio Apparato ai sistemi SIMBA, DPPSI e GSTM, utilizzando rispettivamente i servizi SMBCHGAPP , CATSSDPPSI , CATSSGSTM ,.
 viene invocato, allo scopo, il servizio READSMB da SIMBA a InfoBUS (per acquisire i dati della richiesta da un’apposita coda di InfoBUS tramite una getRequest ).
-viene invocato dapprima il servizio SMBCHGAPP da SIMBA a InfoBUS (per inserire la risposta richiesta in un’apposita coda di InfoBUS tramite una sendReply ).
 Il sistema TSS2000 invoca quindi il servizio READTSS di InfoBUS per acquisire la risposta ottenuta da uno dei sistemi succitati.
 Comunicazioni in differita da SID ad ASP (servizio ASPDIFFERITI ):
  Oops , stai per esaurire il tuo spazio!
@@ -2540,7 +2287,6 @@ Se i tuoi file non dovessero tornare disponibili entro 24 ore, contattaci .
 Per scoprire i dettagli dell’offerta vai all’indirizzo e rispondi a 2 semplici domande, potrai così acquistare una licenza Memopal Personal o Business con il 30% di sconto.
 Memopal è un software di backup e storage online  che archivia i file di tutti i computer, Windows, Mac e Linux, in tempo reale su server remoti.
 Con Memopal è possibile sfogliare tutti i file da qualsiasi postazione Internet o telefonino come iPhone, BlackBerry e qualsiasi altro smartphone come Nokia o Android.
-Memopal si distingue dai competitor perché i dati salvati sono anche sincronizzati , ricercabili ed accessibili non appena ognuno di essi viene caricato sul web .
  Memopal calcola l'importanza di questi file in base a quanto l'utente interagisce con essi.   
  Appendici – Informazioni supplementari 
  - Valore del mercato Global –
@@ -2556,7 +2302,6 @@ La mission di Memopal, start up europea dal cuore italiano, è quella diffondere
 Il servizio è completamente automatico :
 Il sistema infatti tiene traccia di tutte le modifiche effettuate su un determinato file per un tempo virtualmente infinito ( versioning ).
 Memopal è sviluppato con tecnologie di compressione logica dei files .
-La struttura checksum-based del Memopal Global File System (MGFS) e il suo algoritmo di compressione cross-file, basato su vocabolary specializzati, non solo permettono di poter offrire un basso costo per Gigabyte (circa 0,42$ ogni anno) , ma anche di rendere più veloci e sicuri i trasferimenti.
 Memopal è basato su un sistema Scalabile On-Demand :
 si può aumentare lo spazio disponibile in ogni momento, inoltre l ’ utilizzo di Memopal non rallenta il computer sul quale è installato.
 Una delle funzioni più interessanti è il “ One-Click Sharing ”.
@@ -2576,10 +2321,8 @@ Es. pcd:portal__content/trenitalia/Laboratorio/ICT/Systems
  System Administrator System Configuration Knowledge Management Index Administration. 
  Content Manager Taxonomy Query Editor 
 Es. tutti i folder d’archivio contengono la parola “ Archivio ” nel loro id
-Ciò implica che se si seleziona, ad esempio, il progetto RSMS che sta nel path del KM …/Progetti/ICT_Trenitalia/RSMS , la parte finale del PCD URL, che si accoderà a quella scritta precedentemente, sarà /Progetti/ICT_Trenitalia/RSMS/Contenuti/Introduzione. 
 Tutte le pagine introduttive dei progetti si chiameranno “ Introduzione ”
 Path, all’interno del KM, del folder Progetti .
-L’URL sarà costruito accodando al valore inserito in URLFisso, durante la configurazione dell’iview, la restante parte ricavata utilizzando i nomi dei folder e per ultimo il termine “ Introduzione ”, così come descritto nel paragrafo precedente.
  Titolo macrosezione := displayname del folder relativo ad essa
  Nome del progetto X – Nome Project Manager := displayname folder del progetto – valore della proprietà ProjectManager associata al folder
  ABC-Controllo investimenti divisione trasporto regionale, ABC-Controllo investimenti UTMR .
@@ -2609,39 +2352,19 @@ Figura – Home Page Laboratorio per utenti non profilati per il laboratorio
 Le modalità in cui tale lavoro di assegnazione dei privilegi si articola sono dettagliate nel paragrafo .
 Le modalità in cui si articola il lavoro di assegnazione dei privilegi di accesso sulle pagine del portale e sugli oggetti del sistema documentale sono dettagliate nel paragrafo .
 • i sistemi radius ActivCard di ASF   non è stato implementato alcuna procedura di backup di sistema operativo e/o di configurazioni. 
-Figura 1 — Schema logico dell ’ infrastruttura di sicurezza della rete DCN 
  5 coppie di firewall Sun Solaris 
  11 coppie di firewall Nokia 
  5 management CheckPoint installate su SPlat. 
- 8 sistemi MS Windows componenti l ’ architettura ISS SiteProtector 
- 2 sistemi MS Windows componenti l ’ architettura ISS WorkGroup Mng 
- 2 sistemi MS Windows componenti l ’ architettura di Accesso Fornitori 
- 5 sistemi RedHat Linux relativi all ’ infrastruttura di Event Mng SOC 
  2 Reverse Proxy installati su RedHat Linux 
  2 Sistemi installati su RedHat Linux 
  8 coppie di firewall Cisco Pix 
  1 Sistema di Backup HP DataProtector 
  Le cinque management CheckPoint; 
- Sette degli otto sistemi l ’ architettura ISS SiteProtector; 
- I due sistemi componenti l ’ architettura ISS WorkGroup Mng; 
- I cinque sistemi RedHat Linux relativi all ’ infrastruttura di Event Mng SOC; 
  Il sistema di Backup HP DataProtector; 
  I due sistemi RedHat Linux relativi all ’ infrastruttura di Solsoft. 
- 1 Internet Scanner facente parte dell ’ architettura ISS SiteProtector 
-Figura 2 — Schema Logico dell ’ architettura HP Data Protector 
 • i sistemi radius ActivCard di ASF 
 Per i dettagli tecnici della soluzione proposta si rimanda al documento “ Proposed Solution for Log Archiving II Wind ” V. 1.1 del 07/09/2005 Ns Rif.
-5 Tecnologia: Intel Sistema Operativo: Secure Platform Attestazione: Lan di Security Management Agente Data Protector: n.p. Backup Completo: n.p. Backup delle configurazioni: Si Controllo centralizzato attraverso HP Data Protector: Si Backup su device in locale: No Restore: Attraverso il CD di Installazione della Splat e HP Data Protector
-5 coppie Tecnologia: Sun Sistema Operativo: Solaris 9 Attestazione: DCN Agente Data Protector: No Backup Completo: Si Backup delle configurazioni: No Controllo centralizzato attraverso HP Data Protector: Si Backup su device in locale: Si, su nastro DAT Restore: Attraverso il CD di Installazione Sun Solaris 9 e il backup presente sul nastro locale
-11 coppie Tecnologia: Intel Sistema Operativo: IPSO 3.8.1 Attestazione: DCN Agente Data Protector: n.p. Backup Completo: n.p. Backup delle configurazioni: Si Controllo centralizzato attraverso HP Data Protector: Si Backup su device in locale: No Restore: Attraverso HP Data Protector
-8 coppie Tecnologia: Cisco Pix Sistema Operativo: Pix OS 6.3.4 Attestazione: DMZ-Pubblica Agente Data Protector: n.p. Backup Completo: n.p. Backup delle configurazioni: Si Controllo centralizzato attraverso HP Data Protector: Si Backup su device in locale: No Restore: In console, attraverso la configurazione presente su HP Data Protector
-7 Tecnologia: Intel Sistema Operativo: MS Windows 2000 Attestazione: Lan di Security Management Agente Data Protector: Si Backup Completo: Si (Escluso il DB) Backup delle configurazioni: No Controllo centralizzato attraverso HP Data Protector: Si Backup su device in locale: No Restore: Attraverso HP Data Protector
-1 Tecnologia: Intel Sistema Operativo: MS Windows 2000 Attestazione: DMZ 1 di Roma Veneziani Agente Data Protector: No Backup Completo: Si Backup delle configurazioni: No Controllo centralizzato attraverso HP Data Protector: No Backup su device in locale: Si, su DAT locale Restore: Installazione di MS Windows 2000 e restore del sistema dal DAT
-1 Tecnologia: Intel Sistema Operativo: Linux RedHat Enterprise AS 2.1 Attestazione: DMZ1 di Roma Veneziani Agente Data Protector: No Backup Completo: Si Backup delle configurazioni: No Controllo centralizzato attraverso HP Data Protector: No Backup su device in locale: Si Frequenza backup consigliata: Bimensile Restore: Attraverso CD e dati conservati su DAT
-2 Tecnology: Intel Sistema Operativo: Linux RedHat Enterprise ES 3 Attestazione: DMZ WoA di Roma Veneziani Agente Data Protector: No Backup Completo: Si Backup delle configurazioni: No Controllo centralizzato attraverso HP Data Protector: No Backup su device in locale: Si Restore: Attraverso CD e dati conservati su storage esterno
-2 Tecnologia: Intel Sistema Operativo: Linux RedHat Enterprise AS 3 Attestazione: Lan di Security Management Agente Data Protector: Si Backup Completo: Si Backup delle configurazioni: Si Controllo centralizzato attraverso HP Data Protector: Si Backup su device in locale: No Restore: Attraverso CD e HP Data Protector
 Figura 3 — Schema Logico della soluzione 
- Seguire costantemente l'avanzamento delle attivita ’ I responsabili delle varie attivita` dovranno incontrarsi ad intervalli di tempo regolari per controllare lo stato di avanzamento delle attivita` ed il rispetto dei tempi previsti sul piano di realizzazione.
 Scopo del presente documento è realizzare un Pilot Antivirus finalizzato all’individuazione di un prodotto Gateway Antivirus in grado di rispondere alle esigenze di protezione di Wind contro la diffusione dei virus e codice nocivo all’interno della rete DCN.
  Budget in Conto Investimento .
  Budget in Conto Esercizio .
@@ -2662,7 +2385,6 @@ con il simbolo sono evidenziate le scelte effettuate dagli operatori.
 • Pagamenti: 
 In riferimento all'oggetto ed a seguito della Vostra richiesta, Vi formalizziamo l’offerta economica di € 20.000,00 Iva esclusa per l’erogazione di servizi professionali per la realizzazione della CR relativa all’integrazione sulla piattaforma di fault management NNM dei nodi GGSN J20.
 Per i dettagli tecnici si rimanda al documento tecnico “ CR FBC Application and System Monitoring by NNM ” V.1.0 del 12/04/2005 Ns. Rif. 
- IT5_1-5C4QT che costituisce parte integrante della presente proposta economica.
 • Analisi 
 • Implementazione 
 • Reengineering Script 
@@ -2677,7 +2399,6 @@ Per i dettagli tecnici si rimanda al documento tecnico “ CR FBC Application an
 • Unix System Administrator 
 • Technical Writer 
 • Consegna come da Gantt 
-• Fatturazione Servizi all ’ Accettazione 
  Prodotti Hardware e Software ISS Server DL740 
  Q.ta' Modello 1 336543 1 351050 10 236854 2 286778 2 281541 1 339234 1 HA106A3 1 HA114A1 1 HA114A1 1 201723 1 218231 2 254786 1 218960 8 347708 1 HA101A3 1 HA114A1 2 221692 1 221546 1 165989 1 262585 1 HA113A1 1 HA113A1 Totale 
  Descrizione HP DL740G2 RACK DVD CTO CHASSIS X3.0-4M 740/760 G2 WW 1GB REG PC133 SGLDMM SDRAM MEMORY WW 72GB 15K U320 Pluggable Hard Drive WW FC HBA 2GB 64 Bit LNX ALL MS Windows 2003 Svr Ent Ed NPI FIO LTU MS & Novell OS Only Support 700 Series Hardware Installation HP I&S of Microsoft OS for IA-32 SVC HP MSA1000 ALL HP MSA1000 Controller 256 cach 256MB Battery Cache Upgrade Kit WW MSA FC I/O Module HP 146GB 15K RPM U320 Univ Hard Drive MSA1000 Support MSA1000/1500 Installation Cable Fibre Channel Integrated 1U Kybd & TFT Monitor Kit IT SP WIN 1 LTU/CD 4.0C all IP Console Switch Box (1x1x16) WW ProLiant Add On Options Installation SVC SecurePath 1 Host LTU Installation
@@ -2689,7 +2410,6 @@ Per i dettagli tecnici si rimanda al documento tecnico “ CR FBC Application an
  Q.ta' Modello 1 CSPS-001 1 CSPS-007 1 CSPS-014 1 CSPS-005 1 CSPS-009 1 CSPS-012 Totale 
  Prezzo listino Sconto Prezzo netto € 14.500,00 25% € 10.875,00 € 3.800,00 25% € 2.850,00 € 2.900,00 25% € 2.175,00 € 6.500,00 25% € 4.875,00 € 11.500,00 25% € 8.625,00 € 2.800,00 25% € 2.100,00 € 42.000,00 € 31.500,00 
 Piu’ in particolare, le attività previste per la fase di ANALISI prevedono:
-• Selezione delle due appliance oggetto della fase successiva (Test) • 
 I dati vengono caricati dal servizio di Acquisition in una area dati detta “Parking Area” in maniera rapida e draft, eventualmente applicando soltanto in questa fase delle prime regole di pre-filtering , evitando di caricare variazioni anagrafiche non di interesse del Ministero.
 Successivamente il servizio di Validation si occupera’ di:
  re-Coding/re-Formatting :
@@ -2723,19 +2443,15 @@ HP fornira’ la nuova interfaccia web (in un file freephone2.war copiato nella 
  su - wwwadmin 
  /www/hpws/tomcat/bin/shutdown.sh 
 cd /www/hpws/tomcat/webapps 
-Nel caso di piattaforma OTA out of service , i file che il Transfer Process deposita nella directory vengono eliminati e non si effettua l’inserimento nello Smart Roaming DB.
 Le informazioni, contenute in un file di configurazione SR_Config.txt , sono relative a:
 Nel caso in cui l’OTA Agent (vedi Paragrafo ) non risponde ad una richiesta proveniente dall’ SR Core (es. la piattaforma OTA non è attiva) esso elimina dal DB il record (MSISDN) per il quale la richiesta non ha ricevuto risposta.
 Il thread NEXT gestisce tutti gli MSISDN per i quali e’ necessario procedere con l’invocazione dei servizi OTA (record per i quali lo stato della configurazione e’ “ PRE_LOAD ” oppure “ OTA_OK ”).
-Per ognuno dei record estratti procede con l’invocazione del servizio relativo allo step successivo in cui si trova la configurazione ed imposta lo stato ad “ OTA_SUBMIT ” oppure ad “ OTA_KO nel caso OTA restituisca un messaggio di errore.
 Il thread END gestisce tutti gli MSISDN per i quali il flusso di riconfigurazione e’ terminato con successo (record per i quali lo stato della configurazione e’ “ OK ”).
 Ultima Location Update su Rete “Preferred” PREFERRED_AFTER_OK
 Ultima Location Update su Rete “Not Preferred” NOT_PREFERRED imposta lo stato a “PRE_LOAD” e incrementa il NUM_ATTEMPT
-Il thread RETRY gestisce tutti gli MSISDN per i quali si e’ avuto un fallimento su un comando OTA (record per i quali lo stato della configurazione e’ “ OTA_KO ”) . 
 Ultima Location Update su Rete “Preferred” PREFERRED_AFTER_OTAKO nessuna azione verso OTA
 Ultima Location Update su Rete “Not Preferred” ri-sottomissione del comando OTA e incremento del NUM_ATTEMPT
 ricarica in memoria le informazioni relative alla configurazione del servizio (es. file di configurazione SR_Config.txt , tabella degli MSISDN da processare, system parameter...)
-L’OTA Result Client in base agli esiti provenienti dalla piattaforma OTA, tramite l’RMI RM Stub, invoca i metodi esposti dall’interfaccia “ SRResultManagerInterface ” (vedi Appendice )
  OTA_OK :
 l’OTA Result Client invoca il metodo sendOTAOK e lo invia al Result Manager che, nella tabella di processo, fa avanzare lo stato del servizio a quello successivo e fa il reset del numero dei retry sui comandi OTA e del tempo di retry.
 l’OTA Result Client invoca il metodo sendOTAKO e lo invia al Result Manager che, nella tabella di processo, incrementa il numero degli OTA retry e reimposta il tempo di retry.
@@ -2743,16 +2459,12 @@ RMI SR server fornisce un’interfaccia verso SR Core, contentente i tutti i met
  Area di Staging , nella quale confluiranno i dati estratti dai sistemi alimentanti, prima di essere caricati sulla base dati di primo livello;
  Operational Data Store (DB di primo livello) :
  Datamart (DB di secondo livello) :
- È integrativa , cioè è rivolta al coordinamento, nell'ambito di un Progetto, di discipline multiple, organizzazioni e risorse umane sia di HP sia del CLIENTE sia di Terze Parti, indipendentemente dalla dislocazione geografica . 
- È flessibile perchè può essere ritagliata secondo i bisogni specifici, gli obiettivi di business, le strategie aziendali.
  È indipendente dalla tecnologia, permettendo l'uso dei metodi e strumenti più opportuni ai fini del successo del Progetto.
- È misurabile , offrendo quindi parametri reali di qualità con attività specificamente disegnate per effettuare un controllo economico e finanziario del progetto, garantirne la qualità, monitorare il rispetto dei tempi, gestire le richieste di modifiche e le configurazioni).
 Nella fase di Opportunity Assessment , sono sostanzialmente valutati gli aspetti tecnici, organizzativi e finanziari di massima, relativi alle richieste del CLIENTE, in modo da poter verificare le caratteristiche dell'impegno che le parti si accingono a sostenere.
 La fase di Development & Proposal , risponde all'esigenza di definire compiutamente le richieste del CLIENTE, e quindi poter inquadrare quali saranno i contenuti ed i limiti del Progetto, inclusi gli eventuali impatti organizzativi, che la fornitura della Soluzione richiesta può comportare.
 Durante la fase di Implementation , viene definito il TEAM DI PROGETTO.
 La fase di Management & Support identificabile per il fornitore con il periodo di garanzia, avviene con il coinvolgimento del CLIENTE.
 Si veda inoltre l’ Allegato_Certificati_HP .
- Il presente documento descrive la proposta per la fornitura di servizi professionali per la realizzazione del sistema di “ Score Comportamentale e Monitoraggio ” di Wind Telecomunicazioni S.p.A (in seguito Wind), come richiesto nel documento “id 9486 -RDO - Score Comportamentale -Allegato Tecnico v1.0.doc” , e di seguito indicata con [1]. 
 Vedi paragrafo (Report.class)
 Insieme di classi per la gestione dei parametri di configurazione dell’applicativo (definiti nel file smartroaming.properties ).
 Insieme di classi per la gestione del logging, secondo i parametri impostati nel file s martroaming.properties 
@@ -2775,7 +2487,6 @@ Figura - Azioni per l'installazione del nuovo typeDB
 • MaxNbOfFields (massimo numero di tutti i campi nelle tabelle del database) = 1300
 Digitare il comando scpmgr 
 Digitare i seguenti sotto comandi a , s 2 
-Digitare i seguenti sotto comandi a , s 1 , 2 
 Operare uno SwtchAll di tutti i processi
 il parametro del kernel shmmax dovrebbe essere sufficientemente grande da permettere l’esistenza simultanea nella memoria del typeDb corrente e di quello aggiornato fino a che la procedura di upgrade non e’ stata completata.
  Step 1. Controllare che lo stato del DbMaster sia il seguente:
@@ -2805,7 +2516,6 @@ digitare il comando OCSACcheckpoint.sh
  Step 2. Controllare che il typeDB installato e’ il typeDB.100.34 usando il MIB Browser.
  Step 2. Stop il SEP Standby host secondo la seguente procedura:
  Step 3. Restart il SEP Standby host secondo la seguente procedura:
-Digitare i seguenti sotto comandi “ a ” , “ s 1 ”, “ 2 ”
  Step 1. Loggarsi sull’ SMP Active come smsop.
  Step 3. Loggarsi come smsdba tramite il comando su - smsdba 
  Step 4. Operare un translate del nuovo data model tramite il comando:
@@ -2817,7 +2527,6 @@ cancellare il file typeDB.100.38 nella directory /usmpconfig/Platforms/SCP_1/con
 Nel caso in cui l’ASC ricevuta per una configurazione in corso è su un operatore preferred viene aggiornata l’ id_policy_last come NULL e gestito di conseguenza dal modulo SRCore perchè solo in questo modo sarà riconosciuto da tale modulo come preferred.
 Nel caso di ASC relative ad operatori per paesi con Policy non configurate è stato necessario introdurre nel DB una policy di appoggio con id_policy = 1, che è di fondamentale importanza per il trigger insert_configuration.
 Non si attende il risultato dell'invocazione, prima di impostare lo stato su SUBMIT o KO per mantenere la coerenza con il risultato che eventalmente il modulo ResultManager (vedi paragrafo ) va ad aggiornare; questa strategia è necessaria in quanto potrebbe accadere la situazione seguente:
-Verso il server OTA esporta i metodi di sendOTAOK , sendOTAKO e verso l’interfaccia web il metodo refresh. 
 Il metodo sendOTAOK esegue un aggiornamento della configurazione settando id_configuration_result = OTA_OK e nel caso del servizio DownloadApplet setta il flag applet_loaded = 1.
 Il metodo sendOTAOK esegue un aggiornamento della configurazione settando id_configuration_result = OTA_KO, num_retry = num_retry+1, retry_time= sysdate+ t_retry, che è l’intervallo di tempo tra due retry definito dalla system_parameter.
 Il metodo di refresh esegue una select sulla system_parameter e valorizza le variabili sys_max_retry, max_attempt, t_retry.
@@ -2849,15 +2558,11 @@ L’attivita’ di progettazione delle politiche di sicurezza della rete DCN con
  3) documentazione secondo i template documentali Wind.
 Figura – Schema della soluzione proposta
 La soluzione presentata al par. è stata studiata con l’obiettivo di minimizzare I tempi di disservizio legati ai fermi del master server IMS.
-, che Wind disponga di una rete dedicata fra i CED di Roma e di Milano (con le caratteristiche riportate in ), che consenta di poter effettuare l’allineamento dei due storage in tempi compatibili con la durata del progetto.
 Si ha disservizio per quel che riguarda:
 aggiunta del nodo al cluster del Master server (tale attività comporta un disservizio ).
 Figura – Schema del processo di assegnazione dello score
 Si andrebbe a capitalizzare l’investimento del SSC, riutilizzando ed ottimizzando quanto già andrebbe realizzato in temini di data-cleaning e di data-management;
- I pesi per la ‘ determinante ’ dell ’ indice di scoring, sarebbero forniti dall ’ applicazione di data-mining, valutando l’effettiva relazione tra ciascun potenziale predittore e il target;
  Vengano modificati gli indirizzi IP e non gli hostname dei server;
-Da tale momento si ha la perdita dell ’ alta affidabilità per il Master Server.
- E ’ fondamentale che l ’ hostname non venga modificato .
 Da tale momento si ha disservizio per quel che riguarda:
  Disservizio durante l ’aggiunta del secondo nodo al cluster del Master server di Milano.
 La classificazione individuata è gerarchica, aperta, e modificabile :
@@ -2867,8 +2572,6 @@ ad esempio la categoria WEB SERVER corrisponde all’insieme di asset appartenen
 Indirizzare, eventualmente necessario , le modalità di computazione dei rischi e degli impatti, valorizzando quanto presente in WIND e tenendo conto altresìdei requisiti mandatari dello standard ISO27001.
  La valutazione degli impatti derivanti da una perdita di confidenzialità, integrità e disponibilità,.
  valutazione delle minacce che insistono sugli information asset presi in esame (selezionate dallo standard ISO/IEC TR13335) e delle relative vulnerabilità espresse in termini ed in relazione alle contromisure (controlli previsti dallo standard ISO17799 - ISO27001) presenti, o meno, a salvaguardia dell’asset;
- computazione del rischio, espresso come funzione dell’impatto che deriverebbe dalla perdita dei requisiti di disponibilità, integrità, confidenzialità al verificarsi di una minaccia, della probabilità che la minaccia si verifichi e dell’insieme di contromisure presenti sul sistema:
-Obiettivo del WP è di identificare le politiche di sicurezza, sviluppando delle Security Policy / CSP e delle linee guida volte a perseguire i seguenti principi : 
 Il presente documento descrive l’offerta tecnica/economica di XXX per la fornitura di servizi di consulenza finalizzati alla costituzione dell’ISMS in ottica ISO27001 per l’area Rete ed IT dell’operatore mobile WIND.
 Il team XXXX coinvolto ha svolto attività concernenti la certificazione ISO27001 su diversi ambiti complessi quali:
 Figura – WBS ISMS Planning & Deployment & Improvement
@@ -2888,7 +2591,6 @@ Il prodotto ActivIdentity realizza le funzionalità di Strong Authentication att
 A tal fine, è possibile ispirarsi ai profili descritti in § .
 Sul sistema operativo devono esistere solo i profili standard definiti a livello aziendale secondo quanto indicato al § , salvo eccezioni da documentare
 Modifica/Cancellazioni (dei dati) MODIFY, ERASE
- Non devono contenere l’output della query.
 Nell’esempio il log rappresenta la query dell’utente username (profilo simpleuserprofile ) che esegue una query ( VIEW_TRAFFIC_DETAIL ).
 La query ha esito positivo ( FOUND ) ed ha come oggetto l’ MSISDN che ha il valore 393921111111 . L’ambito della query è ristretto dai due valori l20050412102226 e l20050422124321 .
 I file di Audit Log vengono memorizzati in un’area di staging ad hoc (che consiste di un file system dedicato) in modo da garantire spazio sufficiente (vedi punto successivo) ed un controllo degli accessi che minimizzi la possibilità di alterazione degli audit log (vedi paragrafo );

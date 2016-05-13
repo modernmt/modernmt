@@ -1,6 +1,6 @@
 package eu.modernmt.processing.util;
 
-import eu.modernmt.config.Config;
+import eu.modernmt.constants.Const;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Token;
 import eu.modernmt.processing.framework.PipelineOutputStream;
@@ -41,7 +41,7 @@ public class TokensOutputter implements PipelineOutputStream<Sentence> {
     }
 
     public TokensOutputter(OutputStream stream, boolean printTags, boolean printPlaceholders) {
-        this(new OutputStreamWriter(stream, Config.charset.get()), printTags, printPlaceholders);
+        this(new OutputStreamWriter(stream, Const.charset.get()), printTags, printPlaceholders);
     }
 
     public TokensOutputter(Writer writer, boolean printTags, boolean printPlaceholders) {

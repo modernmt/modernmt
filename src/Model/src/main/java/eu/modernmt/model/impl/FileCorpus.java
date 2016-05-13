@@ -1,6 +1,6 @@
 package eu.modernmt.model.impl;
 
-import eu.modernmt.config.Config;
+import eu.modernmt.constants.Const;
 import eu.modernmt.model.Corpus;
 
 import java.io.*;
@@ -53,12 +53,12 @@ public class FileCorpus implements Corpus {
 
     @Override
     public Reader getContentReader() throws FileNotFoundException {
-        return new InputStreamReader(new FileInputStream(file), Config.charset.get());
+        return new InputStreamReader(new FileInputStream(file), Const.charset.get());
     }
 
     @Override
     public Writer getContentWriter(boolean append) throws IOException {
-        return new OutputStreamWriter(new FileOutputStream(file, append), Config.charset.get());
+        return new OutputStreamWriter(new FileOutputStream(file, append), Const.charset.get());
     }
 
     @Override

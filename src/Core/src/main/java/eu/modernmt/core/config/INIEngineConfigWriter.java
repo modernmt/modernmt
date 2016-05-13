@@ -1,6 +1,6 @@
 package eu.modernmt.core.config;
 
-import eu.modernmt.decoder.moses.MosesFeature;
+import eu.modernmt.decoder.DecoderFeature;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
@@ -33,7 +33,7 @@ public class INIEngineConfigWriter {
 
                 StringBuilder encoded = new StringBuilder();
                 for (int i = 0; i < array.length; i++) {
-                    if (array[i] == MosesFeature.UNTUNEABLE_COMPONENT)
+                    if (array[i] == DecoderFeature.UNTUNEABLE_COMPONENT)
                         encoded.append("NULL");
                     else
                         encoded.append(array[i]);
