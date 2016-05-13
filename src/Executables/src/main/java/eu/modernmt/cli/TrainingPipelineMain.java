@@ -1,5 +1,6 @@
 package eu.modernmt.cli;
 
+import eu.modernmt.cli.init.Submodules;
 import eu.modernmt.core.training.TrainingPipeline;
 import eu.modernmt.core.training.partitioning.FilesCorporaPartition;
 import eu.modernmt.model.BilingualCorpus;
@@ -16,6 +17,10 @@ import java.util.Locale;
  * Created by davide on 17/12/15.
  */
 public class TrainingPipelineMain {
+
+    static {
+        Submodules.link();
+    }
 
     public static final int DEFAULT_PARTITION_SIZE = 1200;
 

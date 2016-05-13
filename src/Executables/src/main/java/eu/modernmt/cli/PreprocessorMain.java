@@ -1,5 +1,6 @@
 package eu.modernmt.cli;
 
+import eu.modernmt.cli.init.Submodules;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.framework.*;
@@ -14,6 +15,10 @@ import java.util.Locale;
  * Created by davide on 17/12/15.
  */
 public class PreprocessorMain {
+
+    static {
+        Submodules.link();
+    }
 
     private static class Args {
 

@@ -1,6 +1,6 @@
 package eu.modernmt.rest.actions.translation;
 
-import eu.modernmt.aligner.symal.Symmetrisation;
+import eu.modernmt.aligner.symal.Symmetrization;
 import eu.modernmt.core.facade.ModernMT;
 import eu.modernmt.core.facade.error.TranslationException;
 import eu.modernmt.model.Token;
@@ -10,6 +10,8 @@ import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
 import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
+
+import java.util.Locale;
 
 /**
  * Created by lucamastrostefano on 15/03/16.
@@ -47,9 +49,9 @@ public class TagsProjection extends ObjectAction<Object> {
 
         Translation taggedTranslation;
         if (params.symmetrizationStrategy != null) {
-            taggedTranslation = ModernMT.tags.project(params.sentence, params.translation, params.symmetrizationStrategy, params.inverted);
+            taggedTranslation = ModernMT.tags.project(params.sentence, params.translation, params.sourceLanguage, params.targetLanguage, params.symmetrizationStrategy);
         } else {
-            taggedTranslation = ModernMT.tags.project(params.sentence, params.translation, params.inverted);
+            taggedTranslation = ModernMT.tags.project(params.sentence, params.translation, params.sourceLanguage, params.targetLanguage);
         }
 
         ProjectedTranslation result;
@@ -83,9 +85,10 @@ public class TagsProjection extends ObjectAction<Object> {
 
         public final String sentence;
         public final String translation;
-        public final Symmetrisation.Strategy symmetrizationStrategy;
+        public final Symmetrization.Strategy symmetrizationStrategy;
         public final boolean showDetails;
-        public final boolean inverted;
+        public final Locale sourceLanguage;
+        public final Locale targetLanguage;
 
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
@@ -95,14 +98,15 @@ public class TagsProjection extends ObjectAction<Object> {
             int symmetrizationStrategy = getInt("symmetrization", -1);
             if (symmetrizationStrategy >= 0) {
                 try {
-                    this.symmetrizationStrategy = Symmetrisation.Strategy.values()[symmetrizationStrategy];
+                    this.symmetrizationStrategy = Symmetrization.Strategy.values()[symmetrizationStrategy];
                 } catch (Exception e) {
                     throw new ParameterParsingException("symmetrization", Integer.toString(symmetrizationStrategy));
                 }
             } else {
                 this.symmetrizationStrategy = null;
             }
-            this.inverted = getBoolean("i", false);
+            this.sourceLanguage = Locale.forLanguageTag(getString("sl", false));
+            this.targetLanguage = Locale.forLanguageTag(getString("tl", false));
         }
     }
 }

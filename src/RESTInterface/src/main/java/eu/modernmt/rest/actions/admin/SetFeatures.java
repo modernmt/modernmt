@@ -5,7 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import eu.modernmt.core.facade.ModernMT;
-import eu.modernmt.decoder.moses.MosesFeature;
+import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
@@ -59,7 +59,7 @@ public class SetFeatures extends VoidAction {
 
                     for (int i = 0; i < ws.length; i++) {
                         JsonElement e = array.get(i);
-                        ws[i] = e.isJsonNull() ? MosesFeature.UNTUNEABLE_COMPONENT : e.getAsFloat();
+                        ws[i] = e.isJsonNull() ? DecoderFeature.UNTUNEABLE_COMPONENT : e.getAsFloat();
                     }
 
                     weights.put(feature, ws);
