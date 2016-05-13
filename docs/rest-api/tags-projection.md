@@ -29,11 +29,13 @@ Translation with tags:  ```<br>ciao, <b id="1">primo<b id="2"> test<br>.```
 
 ```t*```: the XML encoded translation.
 
+```sl```: the source language (RFC-3066).
+
+```tl```: the target language (RFC-3066).
+
 ```d```: if equals to 1 then the source and target tokens and their alignments will be added to the json response.
 
-```i```: if equals to 1 then it indicates that the source and target languages are inverted.
-
-```symmetrization```: 0 = Intersection, 1 = Union, 2 = GrowDiagFinalAnd (default option).
+```symmetrization```: 0 = Intersection, 1 = Union, 2 = GrowDiagFinalAnd (default option), 3 = GrowDiag.
 
 ```*```: mandatory fields
 
