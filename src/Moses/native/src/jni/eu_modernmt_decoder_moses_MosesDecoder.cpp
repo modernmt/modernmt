@@ -99,6 +99,32 @@ JNIEXPORT jfloatArray JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_getFea
 
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
+ * Method:    setFeatureWeights
+ * Signature: ([Ljava/lang/String;[[F)V
+ */
+JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_setFeatureWeights(JNIEnv *jvm, jobject self, jobjectArray features, jobjectArray weights) {
+    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, self);
+    std::map<std::string, std::vector<float>> featureWeights;
+
+    int size = jvm->GetArrayLength(features);
+    for (int i = 0; i < size; i++) {
+        std::string feature = jni_jstrtostr(jvm, (jstring) jvm->GetObjectArrayElement(features, i));
+        jfloatArray jweights = (jfloatArray)jvm->GetObjectArrayElement(weights, i);
+
+        int wsize = jvm->GetArrayLength(jweights);
+        jfloat *weightsArray = jvm->GetFloatArrayElements(jweights, 0);
+
+        featureWeights[feature] = std::vector<float>(weightsArray, weightsArray + wsize);
+
+
+        jvm->ReleaseFloatArrayElements(jweights, weightsArray, 0);
+    }
+
+
+}
+
+/*
+ * Class:     eu_modernmt_decoder_moses_MosesDecoder
  * Method:    createSession
  * Signature: ([Ljava/lang/String;[F)J
  */

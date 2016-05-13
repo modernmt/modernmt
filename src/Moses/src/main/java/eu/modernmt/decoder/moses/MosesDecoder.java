@@ -14,6 +14,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by davide on 26/11/15.
@@ -53,6 +55,23 @@ public class MosesDecoder implements Decoder {
     }
 
     private native float[] getFeatureWeightsFromPointer(long ptr);
+
+    @Override
+    public void setDefaultFeatureWeights(Map<DecoderFeature, float[]> map) {
+        Set<DecoderFeature> keys = map.keySet();
+        String[] features = new String[keys.size()];
+        float[][] weights = new float[keys.size()][];
+
+        int i = 0;
+        for (DecoderFeature feature : keys) {
+            features[i] = feature.getName();
+            weights[i] = map.get(feature);
+        }
+
+        this.setFeatureWeights(features, weights);
+    }
+
+    private native void setFeatureWeights(String[] features, float[][] weights);
 
     @Override
     public TranslationSession openSession(long id, List<ContextDocument> translationContext) {

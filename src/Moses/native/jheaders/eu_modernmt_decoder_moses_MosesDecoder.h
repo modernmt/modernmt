@@ -33,6 +33,14 @@ JNIEXPORT jfloatArray JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_getFea
 
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
+ * Method:    setFeatureWeights
+ * Signature: ([Ljava/lang/String;[[F)V
+ */
+JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_setFeatureWeights
+  (JNIEnv *, jobject, jobjectArray, jobjectArray);
+
+/*
+ * Class:     eu_modernmt_decoder_moses_MosesDecoder
  * Method:    createSession
  * Signature: ([Ljava/lang/String;[F)J
  */
