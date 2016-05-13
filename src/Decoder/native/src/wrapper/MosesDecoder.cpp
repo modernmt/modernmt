@@ -88,7 +88,7 @@ std::vector<float> MosesDecoderImpl::getFeatureWeights(feature_t &_feature) {
     std::vector<float> weights;
 
     if (feature->IsTuneable()) {
-        weights = Moses::StaticData::Instance().GetAllWeights().GetScoresForProducer(feature);
+        weights = Moses::StaticData::Instance().GetAllWeightsNew().GetScoresForProducer(feature);
 
         for (size_t i = 0; i < feature->GetNumScoreComponents(); ++i) {
             if (!feature->IsTuneableComponent(i)) {
