@@ -28,6 +28,8 @@ if [ ! -e "$MMT_HOME/$FAST_ALIGN" ]; then
   exit 1
 fi
 
+mkdir -p $MMT_HOME/lib
+
 # due to the weird LD_LIBRARY_PATH setup in MMT, we need these libs to be available in <MMT>/lib/
 for f in $CONDA_ENV_PATH/lib/libboost_* $CONDA_ENV_PATH/lib/{libstdc++.so.6,libgcc_s*,libz.so*,libtcmalloc_minimal.so*}; do
 	ln -sf $f $MMT_HOME/lib/$(basename $f)
