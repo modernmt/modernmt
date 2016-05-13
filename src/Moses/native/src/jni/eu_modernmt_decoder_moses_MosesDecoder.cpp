@@ -97,6 +97,8 @@ JNIEXPORT jfloatArray JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_getFea
     return array;
 }
 
+#include <iostream>
+
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
  * Method:    setFeatureWeights
@@ -107,20 +109,20 @@ JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_setFeatureWei
     std::map<std::string, std::vector<float>> featureWeights;
 
     int size = jvm->GetArrayLength(features);
+
     for (int i = 0; i < size; i++) {
-        std::string feature = jni_jstrtostr(jvm, (jstring) jvm->GetObjectArrayElement(features, i));
+        std::string feature = jvm->GetStringUTFChars((jstring) jvm->GetObjectArrayElement(features, i), NULL);
         jfloatArray jweights = (jfloatArray)jvm->GetObjectArrayElement(weights, i);
 
         int wsize = jvm->GetArrayLength(jweights);
         jfloat *weightsArray = jvm->GetFloatArrayElements(jweights, 0);
 
-        featureWeights[feature] = std::vector<float>(weightsArray, weightsArray + wsize);
-
+        featureWeights[feature].assign(weightsArray, weightsArray + wsize);
 
         jvm->ReleaseFloatArrayElements(jweights, weightsArray, 0);
     }
 
-
+    instance->setDefaultFeatureWeights(featureWeights);
 }
 
 /*

@@ -16,11 +16,14 @@ import eu.modernmt.core.cluster.executor.DistributedExecutor;
 import eu.modernmt.core.cluster.executor.ExecutorDaemon;
 import eu.modernmt.core.config.EngineConfig;
 import eu.modernmt.core.config.INIEngineConfigWriter;
+import eu.modernmt.decoder.Decoder;
+import eu.modernmt.decoder.DecoderFeature;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -162,6 +165,19 @@ public class ClusterNode {
         logger.info("Received decoder weights changed notification");
 
         Map<String, float[]> weights = message.getMessageObject();
+
+        // Updating decoder weights
+        Decoder decoder = engine.getDecoder();
+        Map<DecoderFeature, float[]> map = new HashMap<>();
+
+        for (DecoderFeature feature : decoder.getFeatures()) {
+            if (feature.isTunable())
+                map.put(feature, weights.get(feature.getName()));
+        }
+
+        decoder.setDefaultFeatureWeights(map);
+
+        // Updating engine.ini
         EngineConfig config = engine.getConfig();
         config.getDecoderConfig().setWeights(weights);
 
@@ -170,15 +186,9 @@ public class ClusterNode {
         try {
             new INIEngineConfigWriter(config).write(file);
             logger.info("Engine's config file successfully written");
-            restart();
         } catch (IOException e) {
             throw new RuntimeException("Unable to write config file: " + file, e);
         }
-    }
-
-    private void restart() {
-        logger.info("Restarting member, exit code 101.");
-        System.exit(101);
     }
 
     public SessionManager getSessionManager() {

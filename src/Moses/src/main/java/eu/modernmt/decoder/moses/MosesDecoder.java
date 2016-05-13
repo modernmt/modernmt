@@ -66,6 +66,8 @@ public class MosesDecoder implements Decoder {
         for (DecoderFeature feature : keys) {
             features[i] = feature.getName();
             weights[i] = map.get(feature);
+
+            i++;
         }
 
         this.setFeatureWeights(features, weights);
