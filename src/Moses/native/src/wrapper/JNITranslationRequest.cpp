@@ -153,16 +153,9 @@ void
 JNITranslationRequest::
 parse_request()
 {
-  if (m_session_id != 0)
-  {
-    Session const& S = m_translator->get_session(m_session_id);
-    m_scope = S.scope;
-    m_session_id = S.id;
-  }
-  else
-  {
-    m_scope.reset(new Moses::ContextScope);
-  }
+  Session const& S = m_translator->get_session(m_session_id);
+  m_scope = S.scope;
+  m_session_id = S.id;
 
   boost::shared_ptr<Moses::AllOptions> opts(new Moses::AllOptions());
   *opts = *StaticData::Instance().options();

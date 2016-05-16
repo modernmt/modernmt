@@ -101,7 +101,7 @@ std::vector<float> MosesDecoderImpl::getFeatureWeights(feature_t &_feature) {
 }
 
 void MosesDecoderImpl::setDefaultFeatureWeights(const std::map<std::string, std::vector<float>> &featureWeights) {
-    Moses::StaticData::InstanceNonConst().SetAllWeights(Moses::ScoreComponentCollection::FromWeightMap(featureWeights));
+    m_translator.set_default_feature_weights(featureWeights);
 }
 
 int64_t MosesDecoderImpl::openSession(const std::map<std::string, float> &translationContext, const std::map<std::string, std::vector<float>> *featureWeights) {

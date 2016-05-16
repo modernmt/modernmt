@@ -74,6 +74,9 @@ public:
   void
   delete_session(uint64_t const session_id);
 
+  void
+  set_default_feature_weights(const std::map<std::string, std::vector<float>> &featureWeights);
+
 private:
   Moses::ThreadPool* m_threadPool;
   SessionCache* m_sessionCache;
