@@ -134,7 +134,7 @@ public class BilingualFileCorpus implements BilingualCorpus {
         private UnixLineReader sourceReader;
         private UnixLineReader targetReader;
 
-        public BilingualFilesStringReader(File source, File target) throws FileNotFoundException {
+        private BilingualFilesStringReader(File source, File target) throws FileNotFoundException {
             boolean success = false;
 
             try {
@@ -169,15 +169,15 @@ public class BilingualFileCorpus implements BilingualCorpus {
 
     private static class BilingualFilesStringWriter implements BilingualStringWriter {
 
-        private FileWriter sourceWriter;
-        private FileWriter targetWriter;
+        private Writer sourceWriter;
+        private Writer targetWriter;
 
-        public BilingualFilesStringWriter(boolean append, File source, File target) throws IOException {
+        private BilingualFilesStringWriter(boolean append, File source, File target) throws IOException {
             boolean success = false;
 
             try {
-                this.sourceWriter = new FileWriter(source, append);
-                this.targetWriter = new FileWriter(target, append);
+                this.sourceWriter = new OutputStreamWriter(new FileOutputStream(source, append), Const.charset.get());
+                this.targetWriter = new OutputStreamWriter(new FileOutputStream(target, append), Const.charset.get());
 
                 success = true;
             } finally {
@@ -201,7 +201,7 @@ public class BilingualFileCorpus implements BilingualCorpus {
         }
 
         @Override
-        public void close() throws IOException {
+        public void close() {
             IOUtils.closeQuietly(this.sourceWriter);
             IOUtils.closeQuietly(this.targetWriter);
         }
