@@ -44,6 +44,13 @@ public class TagFacade {
         }
     }
 
+    public boolean isLanguagesSupported(Locale sourceLanguage, Locale targetLanguage, Engine engine)
+            throws LanguageNotSupportedException {
+        isLanguagesInverted(sourceLanguage, targetLanguage, engine);
+        return true;
+    }
+
+
     private static boolean isLanguagesInverted(Locale sourceLanguage, Locale targetLanguage, Engine engine)
             throws LanguageNotSupportedException {
         if (Languages.sameLanguage(engine.getSourceLanguage(), sourceLanguage) &&
