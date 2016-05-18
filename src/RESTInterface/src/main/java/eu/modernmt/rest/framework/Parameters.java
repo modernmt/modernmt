@@ -185,7 +185,7 @@ public class Parameters {
         }
 
         public ParameterParsingException(Throwable cause) {
-            super("Missing or malformed request body", cause);
+            super("Missing or malformed request body: " + cause.getMessage(), cause);
         }
 
         public ParameterParsingException(String param) {
