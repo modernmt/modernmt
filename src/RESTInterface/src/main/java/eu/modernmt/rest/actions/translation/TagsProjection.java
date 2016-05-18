@@ -2,6 +2,7 @@ package eu.modernmt.rest.actions.translation;
 
 import eu.modernmt.aligner.symal.Symmetrization;
 import eu.modernmt.core.facade.ModernMT;
+import eu.modernmt.core.facade.error.LanguageNotSupportedException;
 import eu.modernmt.core.facade.error.TranslationException;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
@@ -9,6 +10,7 @@ import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
 import eu.modernmt.rest.framework.actions.ObjectAction;
+import eu.modernmt.rest.framework.errors.ParameterLanguageNotSupportedException;
 import eu.modernmt.rest.framework.routing.Route;
 
 import java.util.Locale;
@@ -107,6 +109,11 @@ public class TagsProjection extends ObjectAction<Object> {
             }
             this.sourceLanguage = Locale.forLanguageTag(getString("sl", false));
             this.targetLanguage = Locale.forLanguageTag(getString("tl", false));
+            try {
+                ModernMT.tags.isLanguagesSupported(this.sourceLanguage, this.targetLanguage, ModernMT.node.getEngine());
+            } catch (LanguageNotSupportedException e) {
+                throw new ParameterLanguageNotSupportedException(e);
+            }
         }
     }
 }
