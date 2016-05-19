@@ -178,7 +178,7 @@ public class Parameters {
         }
     }
 
-    public static class ParameterParsingException extends ClientException {
+    public static class ParameterParsingException extends Exception {
 
         public ParameterParsingException() {
             super("Missing or malformed request body");

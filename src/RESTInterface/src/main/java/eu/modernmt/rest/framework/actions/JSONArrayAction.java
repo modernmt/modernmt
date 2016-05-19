@@ -12,6 +12,6 @@ public abstract class JSONArrayAction extends JSONAction {
         return array == null ? null : new JSONArrayActionResult(array);
     }
 
-	protected abstract JsonArray execute(RESTRequest req, Parameters params) throws Throwable;
+    protected abstract JsonArray execute(RESTRequest req, Parameters params) throws Throwable;
 
 }

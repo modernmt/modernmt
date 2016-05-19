@@ -105,7 +105,7 @@ public abstract class RouterServlet extends HttpServlet {
                 action.execute(restRequest, restResponse);
             }
         } catch (Throwable e) {
-            logger.error("Unexpected error", e);
+            logger.error("Unexpected exceptions", e);
             restResponse.unexpectedError(e);
         } finally {
             if (logger.isInfoEnabled()) {

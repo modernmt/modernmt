@@ -45,7 +45,7 @@ public class ContextAnalyzerFacade {
         if (cause instanceof ContextAnalyzerException)
             return new ContextAnalyzerException("Problem in context analyzer", cause);
         else if (cause instanceof RuntimeException)
-            return new ContextAnalyzerException("Unexpected error in context analyzer", cause);
+            return new ContextAnalyzerException("Unexpected exceptions in context analyzer", cause);
         else
             throw new Error("Unexpected exception: " + cause.getMessage(), cause);
     }

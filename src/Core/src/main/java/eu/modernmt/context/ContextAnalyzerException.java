@@ -1,12 +1,11 @@
 package eu.modernmt.context;
 
+import eu.modernmt.core.facade.exceptions.InternalErrorException;
+
 /**
  * Created by davide on 26/01/16.
  */
-public class ContextAnalyzerException extends Exception {
-
-    public ContextAnalyzerException() {
-    }
+public class ContextAnalyzerException extends InternalErrorException {
 
     public ContextAnalyzerException(String message) {
         super(message);
@@ -19,5 +18,5 @@ public class ContextAnalyzerException extends Exception {
     public ContextAnalyzerException(Throwable cause) {
         super(cause);
     }
-    
+
 }

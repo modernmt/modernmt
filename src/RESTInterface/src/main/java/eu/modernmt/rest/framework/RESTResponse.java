@@ -98,21 +98,21 @@ public class RESTResponse {
         // Type
         String type = e.getClass().getSimpleName();
 
-        // Code
-        int code = 0;
-        if (e instanceof ClientException)
-            code = ((ClientException) e).getCode();
+//        // Code
+//        int code = 0;
+//        if (e instanceof ClientException)
+//            code = ((ClientException) e).getCode();
 
         // Encoding
         JsonObject json = new JsonObject();
         JsonObject error = new JsonObject();
-        json.add("error", error);
+        json.add("exceptions", error);
 
         error.addProperty("type", type);
         if (msg != null)
             error.addProperty("message", msg);
-        if (code > 0)
-            error.addProperty("code", code);
+//        if (code > 0)
+//            error.addProperty("code", code);
 
         return json;
     }

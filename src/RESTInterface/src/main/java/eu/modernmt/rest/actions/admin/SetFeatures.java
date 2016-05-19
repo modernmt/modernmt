@@ -12,7 +12,6 @@ import eu.modernmt.rest.framework.RESTRequest;
 import eu.modernmt.rest.framework.actions.VoidAction;
 import eu.modernmt.rest.framework.routing.Route;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,7 +22,7 @@ import java.util.Map;
 public class SetFeatures extends VoidAction {
 
     @Override
-    protected void execute(RESTRequest req, Parameters _params) throws IOException {
+    protected void execute(RESTRequest req, Parameters _params) {
         Params params = (Params) _params;
         ModernMT.decoder.setFeatureWeights(params.weights);
     }

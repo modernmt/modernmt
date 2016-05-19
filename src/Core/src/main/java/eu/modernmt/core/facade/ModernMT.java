@@ -7,7 +7,7 @@ import eu.modernmt.core.cluster.ClusterNode;
  */
 public class ModernMT {
 
-    protected static ClusterNode node;
+    static ClusterNode node;
 
     public static void setLocalNode(ClusterNode node) {
         ModernMT.node = node;

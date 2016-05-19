@@ -89,7 +89,7 @@ public class FastAlign implements Aligner {
     }
 
     private void checkRun(BufferedReader standardError) throws IOException {
-        // Consume and check the standard error of the process
+        // Consume and check the standard exceptions of the process
         int expectedOutputIndex = 0;
         int lineNumber = 0;
         String line;
@@ -103,7 +103,7 @@ public class FastAlign implements Aligner {
                     expectedOutput = EXPECTED_OUTPUT.get(expectedOutputIndex);
                     if (!line.matches(expectedOutput)) {
                         logger.error("FOUND: \"" + line + "\" REGEX_EXPECTED: " + expectedOutput);
-                        throw new IOException("Cannot parse the standard error of Fast Align, error at line " + lineNumber);
+                        throw new IOException("Cannot parse the standard exceptions of Fast Align, exceptions at line " + lineNumber);
                     }
                 }
                 if (line.equals(LAST_LINE)) {
@@ -111,7 +111,7 @@ public class FastAlign implements Aligner {
                 }
             }
         } catch (IndexOutOfBoundsException e) {
-            throw new IOException("Fast Align has produced more lines then expected on the standard error, error at line " + lineNumber);
+            throw new IOException("Fast Align has produced more lines then expected on the standard exceptions, exceptions at line " + lineNumber);
         }
     }
 

@@ -3,7 +3,7 @@ package eu.modernmt.core.facade;
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.core.cluster.SessionManager;
 import eu.modernmt.core.cluster.error.SystemShutdownException;
-import eu.modernmt.core.facade.error.TranslationException;
+import eu.modernmt.decoder.TranslationException;
 import eu.modernmt.core.facade.operations.TranslateOperation;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
@@ -111,7 +111,7 @@ public class DecoderFacade {
             if (cause instanceof ProcessingException)
                 throw new TranslationException("Problem while processing translation", cause);
             else if (cause instanceof RuntimeException)
-                throw new TranslationException("Unexpected error while translating", cause);
+                throw new TranslationException("Unexpected exceptions while translating", cause);
             else
                 throw new Error("Unexpected exception: " + cause.getMessage(), cause);
         }

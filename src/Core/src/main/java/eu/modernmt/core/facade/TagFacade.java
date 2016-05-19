@@ -4,8 +4,8 @@ import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.aligner.symal.Symmetrization;
 import eu.modernmt.core.Engine;
 import eu.modernmt.core.cluster.error.SystemShutdownException;
-import eu.modernmt.core.facade.error.LanguageNotSupportedException;
-import eu.modernmt.core.facade.error.TranslationException;
+import eu.modernmt.core.facade.exceptions.validation.LanguagePairNotSupportedException;
+import eu.modernmt.decoder.TranslationException;
 import eu.modernmt.core.facade.operations.ProjectTagsOperation;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.Languages;
@@ -19,11 +19,11 @@ import java.util.concurrent.ExecutionException;
  */
 public class TagFacade {
 
-    public Translation project(String sentence, String translation, Locale sourceLanguage, Locale targetLanguage) throws TranslationException {
+    public Translation project(String sentence, String translation, Locale sourceLanguage, Locale targetLanguage) throws TranslationException, LanguagePairNotSupportedException {
         return project(sentence, translation, sourceLanguage, targetLanguage, null);
     }
 
-    public Translation project(String sentence, String translation, Locale sourceLanguage, Locale targetLanguage, Symmetrization.Strategy symmetrizationStrategy) throws TranslationException {
+    public Translation project(String sentence, String translation, Locale sourceLanguage, Locale targetLanguage, Symmetrization.Strategy symmetrizationStrategy) throws TranslationException, LanguagePairNotSupportedException {
         boolean inverted = isLanguagesInverted(sourceLanguage, targetLanguage);
         ProjectTagsOperation operation = new ProjectTagsOperation(sentence, translation, inverted, symmetrizationStrategy);
         try {
@@ -38,21 +38,21 @@ public class TagFacade {
             else if (cause instanceof AlignerException)
                 throw new TranslationException("Problem while computing alignments", cause);
             else if (cause instanceof RuntimeException)
-                throw new TranslationException("Unexpected error while projecting tags", cause);
+                throw new TranslationException("Unexpected exceptions while projecting tags", cause);
             else
                 throw new Error("Unexpected exception: " + cause.getMessage(), cause);
         }
     }
 
     public boolean isLanguagesSupported(Locale sourceLanguage, Locale targetLanguage)
-            throws LanguageNotSupportedException {
+            throws LanguagePairNotSupportedException {
         isLanguagesInverted(sourceLanguage, targetLanguage);
         return true;
     }
 
 
     private static boolean isLanguagesInverted(Locale sourceLanguage, Locale targetLanguage)
-            throws LanguageNotSupportedException {
+            throws LanguagePairNotSupportedException {
         Engine engine = ModernMT.node.getEngine();
         if (Languages.sameLanguage(engine.getSourceLanguage(), sourceLanguage) &&
                 Languages.sameLanguage(engine.getTargetLanguage(), targetLanguage)) {
@@ -61,7 +61,7 @@ public class TagFacade {
                 Languages.sameLanguage(engine.getTargetLanguage(), sourceLanguage)) {
             return true;
         }
-        throw new LanguageNotSupportedException(sourceLanguage, targetLanguage);
+        throw new LanguagePairNotSupportedException(sourceLanguage, targetLanguage);
     }
 
 }

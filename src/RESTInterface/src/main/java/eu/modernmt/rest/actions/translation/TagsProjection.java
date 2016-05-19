@@ -2,15 +2,14 @@ package eu.modernmt.rest.actions.translation;
 
 import eu.modernmt.aligner.symal.Symmetrization;
 import eu.modernmt.core.facade.ModernMT;
-import eu.modernmt.core.facade.error.LanguageNotSupportedException;
-import eu.modernmt.core.facade.error.TranslationException;
+import eu.modernmt.core.facade.exceptions.validation.LanguagePairNotSupportedException;
+import eu.modernmt.decoder.TranslationException;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
 import eu.modernmt.rest.framework.actions.ObjectAction;
-import eu.modernmt.rest.framework.errors.ParameterLanguageNotSupportedException;
 import eu.modernmt.rest.framework.routing.Route;
 
 import java.util.Locale;
@@ -46,8 +45,10 @@ public class TagsProjection extends ObjectAction<Object> {
     }
 
     @Override
-    protected Object execute(RESTRequest req, Parameters _params) throws TranslationException {
+    protected Object execute(RESTRequest req, Parameters _params) throws TranslationException, LanguagePairNotSupportedException {
         Params params = (Params) _params;
+
+        ModernMT.tags.isLanguagesSupported(params.sourceLanguage, params.targetLanguage);
 
         Translation taggedTranslation;
         if (params.symmetrizationStrategy != null) {
@@ -97,6 +98,7 @@ public class TagsProjection extends ObjectAction<Object> {
             this.sentence = getString("s", false);
             this.translation = getString("t", false);
             this.showDetails = getBoolean("d", false);
+
             int symmetrizationStrategy = getInt("symmetrization", -1);
             if (symmetrizationStrategy >= 0) {
                 try {
@@ -107,13 +109,9 @@ public class TagsProjection extends ObjectAction<Object> {
             } else {
                 this.symmetrizationStrategy = null;
             }
+
             this.sourceLanguage = Locale.forLanguageTag(getString("sl", false));
             this.targetLanguage = Locale.forLanguageTag(getString("tl", false));
-            try {
-                ModernMT.tags.isLanguagesSupported(this.sourceLanguage, this.targetLanguage);
-            } catch (LanguageNotSupportedException e) {
-                throw new ParameterLanguageNotSupportedException(e);
-            }
         }
     }
 }
