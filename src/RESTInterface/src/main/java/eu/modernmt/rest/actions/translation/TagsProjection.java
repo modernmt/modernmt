@@ -110,7 +110,7 @@ public class TagsProjection extends ObjectAction<Object> {
             this.sourceLanguage = Locale.forLanguageTag(getString("sl", false));
             this.targetLanguage = Locale.forLanguageTag(getString("tl", false));
             try {
-                ModernMT.tags.isLanguagesSupported(this.sourceLanguage, this.targetLanguage, ModernMT.node.getEngine());
+                ModernMT.tags.isLanguagesSupported(this.sourceLanguage, this.targetLanguage);
             } catch (LanguageNotSupportedException e) {
                 throw new ParameterLanguageNotSupportedException(e);
             }

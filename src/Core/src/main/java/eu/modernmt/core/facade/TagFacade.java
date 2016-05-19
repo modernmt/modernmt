@@ -24,7 +24,7 @@ public class TagFacade {
     }
 
     public Translation project(String sentence, String translation, Locale sourceLanguage, Locale targetLanguage, Symmetrization.Strategy symmetrizationStrategy) throws TranslationException {
-        boolean inverted = isLanguagesInverted(sourceLanguage, targetLanguage, ModernMT.node.getEngine());
+        boolean inverted = isLanguagesInverted(sourceLanguage, targetLanguage);
         ProjectTagsOperation operation = new ProjectTagsOperation(sentence, translation, inverted, symmetrizationStrategy);
         try {
             return ModernMT.node.submit(operation).get();
@@ -44,15 +44,16 @@ public class TagFacade {
         }
     }
 
-    public boolean isLanguagesSupported(Locale sourceLanguage, Locale targetLanguage, Engine engine)
+    public boolean isLanguagesSupported(Locale sourceLanguage, Locale targetLanguage)
             throws LanguageNotSupportedException {
-        isLanguagesInverted(sourceLanguage, targetLanguage, engine);
+        isLanguagesInverted(sourceLanguage, targetLanguage);
         return true;
     }
 
 
-    private static boolean isLanguagesInverted(Locale sourceLanguage, Locale targetLanguage, Engine engine)
+    private static boolean isLanguagesInverted(Locale sourceLanguage, Locale targetLanguage)
             throws LanguageNotSupportedException {
+        Engine engine = ModernMT.node.getEngine();
         if (Languages.sameLanguage(engine.getSourceLanguage(), sourceLanguage) &&
                 Languages.sameLanguage(engine.getTargetLanguage(), targetLanguage)) {
             return false;
