@@ -106,7 +106,7 @@ public class RESTResponse {
         // Encoding
         JsonObject json = new JsonObject();
         JsonObject error = new JsonObject();
-        json.add("exceptions", error);
+        json.add("error", error);
 
         error.addProperty("type", type);
         if (msg != null)
