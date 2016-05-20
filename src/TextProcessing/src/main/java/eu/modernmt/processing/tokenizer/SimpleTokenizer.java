@@ -12,8 +12,12 @@ public class SimpleTokenizer implements Tokenizer {
 
     @Override
     public XMLEditableString call(XMLEditableString param, Map<String, Object> metadata) throws ProcessingException {
-        String[] tokens = param.toString().split(" +");
-        return TokenizerOutputTransformer.transform(param, tokens);
+        String[] tokens = param.toString().trim().split(" +");
+
+        if (tokens.length == 1 && tokens[0].isEmpty())
+            return TokenizerOutputTransformer.transform(param, new String[0]);
+        else
+            return TokenizerOutputTransformer.transform(param, tokens);
     }
 
     @Override
