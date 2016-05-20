@@ -309,7 +309,7 @@ def main_start(argv):
         print
 
         print 'Starting MMT engine \'{engine}\'...'.format(engine=engine.name),
-        node.start(daemonize=True)
+        node.start()
         started = True
         node.wait('JOINED')
         print 'OK'

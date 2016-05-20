@@ -78,26 +78,14 @@ class _DocumentTranslator:
             nbest_out.write(str(hyp['totalScore']))
             nbest_out.write('\n')
 
-    @staticmethod
-    def _wait_for_restart():
-        for i in range(0, 60):
-            try:
-                Api.translate('test')
-                return
-            except:
-                time.sleep(5)
-
-        raise Exception('Server unavailable - Too many failed attempts')
-
     def run(self):
         self._line_id = 0
 
         try:
             if self.weights is not None:
                 Api.update_features(self.weights)
-            time.sleep(5)
+            time.sleep(1)
 
-            self._wait_for_restart()
             self._features = _sorted_features_list()
 
             translations = []

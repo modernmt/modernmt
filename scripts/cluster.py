@@ -160,7 +160,8 @@ class ClusterNode:
         'NONE': 0,
         'JOINED': 100,
         'SYNCHRONIZED': 200,
-        'READY': 300,
+        'LOADED': 300,
+        'READY': 400,
         'ERROR': 9999,
     }
 
@@ -169,8 +170,6 @@ class ClusterNode:
         self.api = MMTApi(api_port)
 
         self._pidfile = os.path.join(engine.get_runtime_path(), 'node.pid')
-        self._process = None
-        self._stop_requested = False
 
         self._cluster_port = cluster_port if cluster_port is not None else DEFAULT_MMT_CLUSTER_PORT
         self._api_port = api_port if api_port is not None else DEFAULT_MMT_API_PORT
@@ -199,14 +198,6 @@ class ClusterNode:
         with open(self._pidfile, 'w') as pid_file:
             pid_file.write(str(pid))
 
-    def _kill_handler(self, sign, _):
-        self._stop_requested = True
-
-        self._process.send_signal(sign)
-        self._process.wait()
-
-        exit(0)
-
     def is_running(self):
         pid = self._get_pid()
 
@@ -215,31 +206,16 @@ class ClusterNode:
 
         return daemon.is_running(pid)
 
-    def start(self, daemonize=True):
+    def start(self):
         if self.is_running():
             raise IllegalStateException('process is already running')
 
-        i_am_a_daemon = daemon.daemonize() if daemonize else True
+        success = False
+        process = self._start_process()
+        pid = process.pid
 
-        if i_am_a_daemon:
-            self._set_pid(os.getpid())
-
-            signal.signal(signal.SIGINT, self._kill_handler)
-            signal.signal(signal.SIGTERM, self._kill_handler)
-
-            code = 0
-
-            while True:
-                self._process = self._start_process()
-                self._process.wait()
-                code = self._process.returncode
-
-                if self._stop_requested or code != 101:
-                    break
-
-            exit(code)
-        else:
-            success = False
+        if pid > 0:
+            self._set_pid(pid)
 
             for _ in range(0, 5):
                 success = self.is_running()
@@ -248,8 +224,8 @@ class ClusterNode:
 
                 time.sleep(1)
 
-            if not success:
-                raise Exception('failed to start node, check log file for more details: ' + self._log_file)
+        if not success:
+            raise Exception('failed to start node, check log file for more details: ' + self._log_file)
 
     def _start_process(self):
         if not os.path.isdir(self.engine.get_runtime_path()):
@@ -284,7 +260,7 @@ class ClusterNode:
         if os.path.isfile(self._status_file):
             os.remove(self._status_file)
 
-        return subprocess.Popen(command, stderr=log, shell=False, env=env)
+        return subprocess.Popen(command, stdout=open(os.devnull), stderr=log, shell=False, env=env)
 
     def _get_status(self):
         if os.path.isfile(self._status_file):

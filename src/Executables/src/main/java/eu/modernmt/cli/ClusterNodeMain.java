@@ -143,15 +143,17 @@ public class ClusterNodeMain {
                 status.onModelSynchronized();
             }
 
+            EngineConfig config = new INIEngineConfigBuilder(Engine.getConfigFile(args.engine)).build(args.engine);
+            node.bootstrap(config);
+
+            status.onModelLoaded();
+
             if (args.apiPort > 0) {
                 restServer = new RESTServer(args.apiPort);
                 restServer.start();
             }
 
-            EngineConfig config = new INIEngineConfigBuilder(Engine.getConfigFile(args.engine)).build(args.engine);
-            node.bootstrap(config);
-
-            status.onModelLoaded();
+            status.onSystemReady();
 
             ready = true;
         } catch (Throwable e) {
@@ -205,6 +207,10 @@ public class ClusterNodeMain {
         }
 
         public void onModelLoaded() {
+            write("LOADED");
+        }
+
+        public void onSystemReady() {
             write("READY");
         }
 
