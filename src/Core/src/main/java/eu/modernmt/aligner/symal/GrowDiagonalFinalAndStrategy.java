@@ -1,7 +1,6 @@
 package eu.modernmt.aligner.symal;
 
 import java.util.Arrays;
-import java.util.Set;
 
 /**
  * Created by davide on 20/05/16.
@@ -50,40 +49,6 @@ public class GrowDiagonalFinalAndStrategy implements SymmetrizationStrategy {
         }
 
         return intersect.toArray();
-    }
-
-    static public void FinalAndForward(boolean[][] currentpoints, Set<Integer> unaligned_s, Set<Integer> unaligned_t, Set<Integer>[] s2t) {
-        for (int s_word = 0; s_word < s2t.length; s_word++) {
-            if (s2t[s_word] != null) {
-                for (Integer t_word : s2t[s_word]) {
-                    if (!currentpoints[s_word][t_word]) {
-                        if (unaligned_s.contains(s_word) && unaligned_t.contains(t_word)) {
-                            currentpoints[s_word][t_word] = true;
-                            unaligned_s.remove(s_word);
-                            unaligned_t.remove(t_word);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    static public void FinalAndBackward(boolean[][] currentpoints, Set<Integer> unaligned_s, Set<Integer> unaligned_t, Set<Integer>[] t2s) {
-        for (int t_word = 0; t_word < t2s.length; t_word++) {
-            if (t2s[t_word] != null) {
-                for (Integer s_word : t2s[t_word]) {
-                    if (!currentpoints[s_word][t_word]) {
-                        if (unaligned_s.contains(s_word) && unaligned_t.contains(t_word)) {
-                            currentpoints[s_word][t_word] = true;
-                            unaligned_s.remove(s_word);
-                            unaligned_t.remove(t_word);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
     }
 
 }
