@@ -1,12 +1,12 @@
 package eu.modernmt.core.facade;
 
 import eu.modernmt.aligner.AlignerException;
-import eu.modernmt.aligner.symal.Symmetrization;
+import eu.modernmt.aligner.symal.SymmetrizationStrategy;
 import eu.modernmt.core.Engine;
 import eu.modernmt.core.cluster.error.SystemShutdownException;
 import eu.modernmt.core.facade.exceptions.validation.LanguagePairNotSupportedException;
-import eu.modernmt.decoder.TranslationException;
 import eu.modernmt.core.facade.operations.ProjectTagsOperation;
+import eu.modernmt.decoder.TranslationException;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.Languages;
 import eu.modernmt.processing.framework.ProcessingException;
@@ -23,9 +23,9 @@ public class TagFacade {
         return project(sentence, translation, sourceLanguage, targetLanguage, null);
     }
 
-    public Translation project(String sentence, String translation, Locale sourceLanguage, Locale targetLanguage, Symmetrization.Strategy symmetrizationStrategy) throws TranslationException, LanguagePairNotSupportedException {
+    public Translation project(String sentence, String translation, Locale sourceLanguage, Locale targetLanguage, SymmetrizationStrategy strategy) throws TranslationException, LanguagePairNotSupportedException {
         boolean inverted = isLanguagesInverted(sourceLanguage, targetLanguage);
-        ProjectTagsOperation operation = new ProjectTagsOperation(sentence, translation, inverted, symmetrizationStrategy);
+        ProjectTagsOperation operation = new ProjectTagsOperation(sentence, translation, inverted, strategy);
         try {
             return ModernMT.node.submit(operation).get();
         } catch (InterruptedException e) {

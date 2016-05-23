@@ -1,6 +1,6 @@
 package eu.modernmt.rest.actions.translation;
 
-import eu.modernmt.aligner.symal.Symmetrization;
+import eu.modernmt.aligner.symal.SymmetrizationStrategy;
 import eu.modernmt.core.facade.ModernMT;
 import eu.modernmt.core.facade.exceptions.validation.LanguagePairNotSupportedException;
 import eu.modernmt.decoder.TranslationException;
@@ -88,7 +88,7 @@ public class TagsProjection extends ObjectAction<Object> {
 
         public final String sentence;
         public final String translation;
-        public final Symmetrization.Strategy symmetrizationStrategy;
+        public final SymmetrizationStrategy symmetrizationStrategy;
         public final boolean showDetails;
         public final Locale sourceLanguage;
         public final Locale targetLanguage;
@@ -99,12 +99,12 @@ public class TagsProjection extends ObjectAction<Object> {
             this.translation = getString("t", false);
             this.showDetails = getBoolean("d", false);
 
-            int symmetrizationStrategy = getInt("symmetrization", -1);
-            if (symmetrizationStrategy >= 0) {
+            String symmetrizationStrategy = getString("symmetrization", false, null);
+            if (symmetrizationStrategy != null) {
                 try {
-                    this.symmetrizationStrategy = Symmetrization.Strategy.values()[symmetrizationStrategy];
-                } catch (Exception e) {
-                    throw new ParameterParsingException("symmetrization", Integer.toString(symmetrizationStrategy));
+                    this.symmetrizationStrategy = SymmetrizationStrategy.forName(symmetrizationStrategy);
+                } catch (IllegalArgumentException e) {
+                    throw new ParameterParsingException("symmetrization", symmetrizationStrategy);
                 }
             } else {
                 this.symmetrizationStrategy = null;

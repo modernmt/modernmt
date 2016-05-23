@@ -3,7 +3,7 @@ package eu.modernmt.core.facade.operations;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.aligner.SymmetrizedAligner;
-import eu.modernmt.aligner.symal.Symmetrization;
+import eu.modernmt.aligner.symal.SymmetrizationStrategy;
 import eu.modernmt.core.Engine;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -24,13 +24,13 @@ public class ProjectTagsOperation extends Operation<Translation> {
 
     private String sentenceString;
     private String translationString;
-    private final Symmetrization.Strategy symmetrizationStrategy;
+    private final SymmetrizationStrategy strategy;
     private final boolean inverted;
 
-    public ProjectTagsOperation(String sentence, String translation, boolean inverted, Symmetrization.Strategy symmetrizationStrategy) {
+    public ProjectTagsOperation(String sentence, String translation, boolean inverted, SymmetrizationStrategy strategy) {
         this.sentenceString = sentence;
         this.translationString = translation;
-        this.symmetrizationStrategy = symmetrizationStrategy;
+        this.strategy = strategy;
         this.inverted = inverted;
     }
 
@@ -57,9 +57,9 @@ public class ProjectTagsOperation extends Operation<Translation> {
         Sentence sentence = preprocessor.process(sentenceString, true);
         Sentence translation = targetPreprocessor.process(translationString, true);
 
-        if (this.symmetrizationStrategy != null) {
+        if (this.strategy != null) {
             if (aligner instanceof SymmetrizedAligner)
-                ((SymmetrizedAligner) aligner).setSymmetrizationStrategy(this.symmetrizationStrategy);
+                ((SymmetrizedAligner) aligner).setSymmetrizationStrategy(this.strategy);
             else
                 throw new AlignerException("Symmetrization strategy specified but aligner is not an instance of " +
                         "SymmetrizedAligner: " + aligner.getClass());

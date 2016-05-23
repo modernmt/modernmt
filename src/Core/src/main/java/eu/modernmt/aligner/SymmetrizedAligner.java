@@ -1,6 +1,7 @@
 package eu.modernmt.aligner;
 
-import eu.modernmt.aligner.symal.Symmetrization;
+import eu.modernmt.aligner.symal.GrowDiagonalFinalAndStrategy;
+import eu.modernmt.aligner.symal.SymmetrizationStrategy;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.AlignmentsInterpolator;
 import org.apache.logging.log4j.LogManager;
@@ -14,17 +15,15 @@ import java.util.concurrent.*;
  */
 public class SymmetrizedAligner implements Aligner {
 
-    public static final Symmetrization.Strategy DEFAULT_SYMMETRIZATION_STRATEGY = Symmetrization.Strategy.GrowDiagFinalAnd;
-
     private final Logger logger = LogManager.getLogger(getClass());
     private final Aligner forwardModel;
     private final Aligner backwardModel;
-    private Symmetrization.Strategy symmetrizationStrategy;
+    private SymmetrizationStrategy strategy;
 
     public SymmetrizedAligner(Aligner forwardModel, Aligner backwardModel) {
         this.forwardModel = forwardModel;
         this.backwardModel = backwardModel;
-        this.symmetrizationStrategy = DEFAULT_SYMMETRIZATION_STRATEGY;
+        this.strategy = new GrowDiagonalFinalAndStrategy();
     }
 
     @Override
@@ -56,15 +55,18 @@ public class SymmetrizedAligner implements Aligner {
         int[][] forwardAlignments = forwardModel.getAlignments(sentence, translation);
         int[][] backwardAlignments = backwardModel.getAlignments(sentence, translation);
 
-        int[][] alignments = Symmetrization.symmetrizeAlignment(forwardAlignments, backwardAlignments, symmetrizationStrategy);
-        if(logger.isDebugEnabled()) {
+        int[][] alignments = strategy.symmetrize(forwardAlignments, backwardAlignments);
+        if (logger.isDebugEnabled()) {
             logger.debug("Symmetrised alignments: " + Aligner.toString(alignments));
         }
         return AlignmentsInterpolator.interpolateAlignments(alignments, sentence.getWords().length, translation.getWords().length);
     }
 
-    public void setSymmetrizationStrategy(Symmetrization.Strategy strategy) {
-        this.symmetrizationStrategy = strategy;
+    public void setSymmetrizationStrategy(SymmetrizationStrategy strategy) {
+        if (strategy == null)
+            throw new NullPointerException();
+
+        this.strategy = strategy;
     }
 
     @Override
