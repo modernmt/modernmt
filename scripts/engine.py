@@ -63,6 +63,9 @@ class _builder_logger:
 
 
 class _MMTEngineBuilder:
+    __MB = (1024 * 1024)
+    __GB = (1024 * 1024 * 1024)
+
     def __init__(self, engine):
         self._engine = engine
         self._temp_dir = None
@@ -97,6 +100,26 @@ class _MMTEngineBuilder:
 
         shutil.rmtree(self._engine.path, ignore_errors=True)
         os.makedirs(self._engine.path)
+
+        # Check disk space constraints
+        free_space_on_disk = fileutils.df(self._engine.path)[2]
+        corpus_size_on_disk = 0
+        for root in roots:
+            corpus_size_on_disk += fileutils.du(root)
+        free_memory = fileutils.free()
+
+        recommended_mem = self.__GB * corpus_size_on_disk / (350 * self.__MB)  # 1G RAM every 350M on disk
+        recommended_disk = 10 * corpus_size_on_disk
+
+        if free_memory < recommended_mem or free_space_on_disk < recommended_disk:
+            print '!!! WARNING !!!'
+            if free_memory < recommended_mem:
+                print '   - More than %.fG of RAM recommended, only %.fG available' % \
+                      (recommended_mem / self.__GB, free_memory / self.__GB)
+            if free_space_on_disk < recommended_disk:
+                print '   - More than %.fG of storage recommended, only %.fG available' % \
+                      (recommended_disk / self.__GB, free_space_on_disk / self.__GB)
+            print
 
         try:
             corpora_roots = roots
