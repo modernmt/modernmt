@@ -25,9 +25,9 @@ Translation with tags:  ```<br>ciao, <b id="1">primo<b id="2"> test<br>.```
 
 **Input:**
 
-```s*```: the XML encoded source sentence.
+```s```: the XML encoded source sentence.
 
-```t*```: the XML encoded translation.
+```t```: the XML encoded translation.
 
 ```sl```: the source language (RFC-3066).
 
