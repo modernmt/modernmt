@@ -4,6 +4,7 @@ import eu.modernmt.context.ContextDocument;
 import eu.modernmt.model.Sentence;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -11,6 +12,8 @@ import java.util.Map;
  * Created by davide on 26/11/15.
  */
 public interface Decoder extends Closeable {
+
+    void load() throws IOException;
 
     // Features
 

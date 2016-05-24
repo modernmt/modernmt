@@ -36,15 +36,24 @@ public class MosesDecoder implements Decoder {
     }
 
     private long nativeHandle;
+    private File iniFile;
     private HashMap<Long, MosesSession> sessions;
 
-    public MosesDecoder(File inifile) throws IOException {
+    public MosesDecoder(File iniFile) throws IOException {
         this.sessions = new HashMap<>();
-
-        this.init(inifile.getAbsolutePath());
+        this.iniFile = iniFile;
     }
 
     private native void init(String inifile);
+
+
+    @Override
+    public void load() throws IOException {
+        if (!iniFile.isFile())
+            throw new IOException("Invalid INI file: " + iniFile);
+
+        this.init(iniFile.getAbsolutePath());
+    }
 
     @Override
     public native MosesFeature[] getFeatures();
@@ -76,7 +85,7 @@ public class MosesDecoder implements Decoder {
     private native void setFeatureWeights(String[] features, float[][] weights);
 
     @Override
-    public TranslationSession openSession(long id, List<ContextDocument> translationContext) {
+    public MosesSession openSession(long id, List<ContextDocument> translationContext) {
         ContextXObject context = ContextXObject.build(translationContext);
         long internalId = createSession(context.keys, context.values);
         MosesSession session = new MosesSession(id, translationContext, this, internalId);

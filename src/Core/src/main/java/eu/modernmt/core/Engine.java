@@ -65,14 +65,15 @@ public class Engine {
         if (decoder == null) {
             synchronized (this) {
                 if (decoder == null) {
-                    try {
-                        DecoderFactory factory = DecoderFactory.getInstance();
-                        factory.setEnginePath(root);
-                        factory.setRuntimePath(runtime);
-                        factory.setFeatureWeights(config.getDecoderConfig().getWeights());
-                        factory.setDecoderThreads(threads);
+                    DecoderFactory factory = DecoderFactory.getInstance();
+                    factory.setEnginePath(root);
+                    factory.setRuntimePath(runtime);
+                    factory.setFeatureWeights(config.getDecoderConfig().getWeights());
+                    factory.setDecoderThreads(threads);
 
+                    try {
                         decoder = factory.create();
+                        decoder.load();
                     } catch (IOException e) {
                         throw new LazyLoadException(e);
                     }
