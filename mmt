@@ -163,21 +163,17 @@ def main_evaluate(argv):
     scores = evaluator.evaluate(corpora=corpora, google_key=args.gt_key, heval_output=args.heval_output,
                                 use_sessions=not args.interactive, debug=args.debug)
 
-    matecat = sorted([(translator,
-                       -1 if isinstance(score, basestring) else score['matecat'],
-                       score if isinstance(score, basestring) else None)
-                      for translator, score in scores.iteritems()
-                      ], key=operator.itemgetter(1), reverse=True)
-    bleu = sorted([(translator,
-                    -1 if isinstance(score, basestring) else score['bleu'],
-                    score if isinstance(score, basestring) else None)
-                   for translator, score in scores.iteritems()
-                   ], key=operator.itemgetter(1), reverse=True)
-    mtt = sorted([(translator,
-                   -1 if isinstance(score, basestring) else score['_mtt'],
-                   score if isinstance(score, basestring) else None)
-                  for translator, score in scores.iteritems()
-                  ], key=operator.itemgetter(1), reverse=True)
+    def sort_organize_score(scores, metric):
+        return sorted([(translator,
+                        -1 if isinstance(score, basestring) else score[metric],
+                        score if isinstance(score, basestring) else None)
+                       for translator, score in scores.iteritems()
+                       ], key=operator.itemgetter(1), reverse=True)
+
+    matecat = sort_organize_score(scores, 'matecat')
+    bleu = sort_organize_score(scores, 'bleu')
+    mtt = sort_organize_score(scores, '_mtt')
+    parallelism = sort_organize_score(scores, '_parallelism')
 
     print 'Matecat Post-Editing Score:'
     for i in range(0, len(matecat)):
@@ -216,6 +212,18 @@ def main_evaluate(argv):
 
         if error is None:
             text = '%.2fs per sentence' % score
+        else:
+            text = error
+
+        print '  %s: %s' % (translator.ljust(20), text)
+    print
+
+    print 'Parallelism:'
+    for i in range(0, len(parallelism)):
+        translator, score, error = parallelism[i]
+
+        if error is None:
+            text = '%.2f' % score
         else:
             text = error
 
