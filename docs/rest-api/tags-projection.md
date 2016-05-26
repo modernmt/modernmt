@@ -29,9 +29,9 @@ Translation with tags:  ```<br>ciao, <b id="1">primo<b id="2"> test<br>.```
 
 ```t*```: the XML encoded translation.
 
-```sl```: the source language (RFC-3066).
+```sl*```: the source language (RFC-3066).
 
-```tl```: the target language (RFC-3066).
+```tl*```: the target language (RFC-3066).
 
 ```d```: if equals to 1 then the source and target tokens and their alignments will be added to the json response.
 
