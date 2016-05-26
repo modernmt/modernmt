@@ -244,10 +244,8 @@ class ClusterNode:
             args.append(str(self._verbosity))
 
         if self._sibling is not None:
-            for key, value in self._sibling.iteritems():
-                if value is not None:
-                    args.append('--node-' + key)
-                    args.append(str(value))
+            args.append('--member')
+            args.append(str(self._sibling))
 
         env = os.environ.copy()
         env['LD_LIBRARY_PATH'] = scripts.LIB_DIR

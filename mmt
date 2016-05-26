@@ -12,8 +12,7 @@ from scripts.cluster import ClusterNode, DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUST
 from scripts.engine import IllegalStateException, IllegalArgumentException
 from scripts.engine import MMTEngine
 from scripts.evaluation import Evaluator
-from scripts.libs import shell, ssh
-from scripts.libs.ssh import SSHException
+from scripts.libs import shell
 from scripts.mt import ParallelCorpus
 from scripts.mt.contextanalysis import ContextAnalyzer
 from scripts.mt.lm import LanguageModel, MultiplexedLM
@@ -247,11 +246,9 @@ def main_start(argv):
                         default=None, type=int, nargs=2)
     parser.add_argument('--no-rest', action='store_false', dest='has_rest', default=True,
                         help='if no-rest is set, no REST Api will be available on this node')
-    parser.add_argument('--join', dest='sibling', metavar='NODE', default=None,
+    parser.add_argument('--join', dest='sibling', metavar='NODE_IP', default=None,
                         help='use this option to join this node to an existent cluster. '
-                             'NODE is the remote host to connect to with the format user[:password]@host')
-    parser.add_argument('--join-pem', dest='sibling_pem', metavar='NODE_PEM', default=None,
-                        help='the PEM file needed to connect to the remote host')
+                             'NODE is the IP of the remote host to connect to.')
 
     # Parse args
     args = parser.parse_args(argv)
@@ -262,30 +259,6 @@ def main_start(argv):
 
     args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
     args.cluster_ports = args.cluster_ports if args.cluster_ports is not None else DEFAULT_MMT_CLUSTER_PORTS
-
-    if args.sibling is not None:
-        sibling = args.sibling
-        sibling_pem = args.sibling_pem
-
-        if sibling.count('@') != 1:
-            raise CLIArgsException(parser, 'remote host value must have the format "user[:password]@host"')
-        credentials, host = sibling.split('@')
-        user, passwd = credentials.split(':', 1) if ':' in credentials else [credentials, None]
-
-        if sibling_pem is not None:
-            sibling_pem = os.path.abspath(sibling_pem)
-
-            if not os.path.isfile(sibling_pem):
-                raise CLIArgsException(parser, 'pem file not found: ' + sibling_pem)
-
-            ssh.verify(host, sibling_pem)
-
-        args.sibling = {
-            'host': host,
-            'user': user,
-            'passwd': passwd,
-            'pem': sibling_pem
-        }
 
     # Check ports
     if args.has_rest and not __is_freeport(args.api_port):
@@ -518,9 +491,6 @@ def main():
         exit(1)
     except IllegalStateException as e:
         sys.stderr.write('ERROR Illegal State: {message}\n'.format(message=e.message))
-        exit(1)
-    except SSHException as e:
-        sys.stderr.write('ERROR SSH connection problem: {message}\n'.format(message=e.message))
         exit(1)
     except Exception as e:
         sys.stderr.write('ERROR Unexpected exception:\n\t{message}\n'.format(message=repr(e)))
