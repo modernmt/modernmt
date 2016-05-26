@@ -16,9 +16,7 @@ using namespace Moses;
 JNITranslator::
 JNITranslator(uint32_t numThreads)
     : m_threadPool(new Moses::ThreadPool(numThreads)), m_sessionCache(new SessionCache()) {
-  // insert session ID 0: holds the global ContextScope
-  Session &session = (*m_sessionCache)[0];
-  session.scope.reset(new ContextScope(StaticData::Instance().GetAllWeightsNew()));
+
 }
 
 JNITranslator::
@@ -79,12 +77,25 @@ execute(TranslationRequest const& paramList,
   boost::condition_variable cond;
   boost::mutex mut;
   boost::shared_ptr<JNITranslationRequest> task;
-  task = JNITranslationRequest::create(this, paramList,cond,mut);
+  bool have_session = (paramList.sessionId != 0);
+  TranslationRequest request = paramList;
+
+  // no session? create one on the fly.
+  if(!have_session)
+    request.sessionId = create_session(request.contextWeights);
+
+  task = JNITranslationRequest::create(this, request, cond, mut);
   m_threadPool->Submit(task);
   boost::unique_lock<boost::mutex> lock(mut);
   while (!task->IsDone())
     cond.wait(lock);
+
   *retvalP = task->GetRetData();
+
+  if(!have_session) {
+    delete_session(request.sessionId);
+    retvalP->session = 0; // pretend that nothing happened
+  }
 }
 
 }
