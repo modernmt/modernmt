@@ -112,12 +112,11 @@ class _MMTEngineBuilder:
         recommended_disk = 10 * corpus_size_on_disk
 
         if free_memory < recommended_mem or free_space_on_disk < recommended_disk:
-            print '!!! WARNING !!!'
             if free_memory < recommended_mem:
-                print '   - More than %.fG of RAM recommended, only %.fG available' % \
+                print '> WARNING: more than %.fG of RAM recommended, only %.fG available' % \
                       (recommended_mem / self.__GB, free_memory / self.__GB)
             if free_space_on_disk < recommended_disk:
-                print '   - More than %.fG of storage recommended, only %.fG available' % \
+                print '> WARNING: more than %.fG of storage recommended, only %.fG available' % \
                       (recommended_disk / self.__GB, free_space_on_disk / self.__GB)
             print
 
