@@ -20,8 +20,7 @@ class RSyncSynchronizer implements DirectorySynchronizer {
 
     @Override
     public void synchronize(InetAddress host, int port, File localPath) throws IOException {
-        File passwd = File.createTempFile("mmtrsync", ".passwd");
-        FileUtils.write(passwd, RSyncStorage.RSYNC_PASSWD, false);
+        File passwd = writePasswdFile();
 
         String remotePath = RSyncStorage.RSYNC_USER + '@' + host.getHostAddress() + "::engine/";
 
@@ -32,18 +31,30 @@ class RSyncSynchronizer implements DirectorySynchronizer {
 
         logger.info("Running command: " + Arrays.toString(command));
 
-        Runtime runtime = Runtime.getRuntime();
-        Process process = runtime.exec(command);
-
-        int code;
         try {
-            code = process.waitFor();
+            Runtime runtime = Runtime.getRuntime();
+            Process process = runtime.exec(command);
+
+            int code = process.waitFor();
+
+            if (code != 0)
+                throw new IOException("rsync command exit with code " + code + ": " + IOUtils.toString(process.getErrorStream()));
         } catch (InterruptedException e) {
             throw new IOException("Process interrupted", e);
+        } finally {
+            passwd.delete();
         }
+    }
 
-        if (code != 0)
-            throw new IOException("rsync command exit with code " + code + ": " + IOUtils.toString(process.getErrorStream()));
+    private static File writePasswdFile() throws IOException {
+        File passwdFile = File.createTempFile("mmtrsync", ".passwd");
+        FileUtils.write(passwdFile, RSyncStorage.RSYNC_PASSWD, false);
+
+        if (!passwdFile.setExecutable(false, false) || !passwdFile.setReadable(false, false)
+                || !passwdFile.setWritable(false, false) || !passwdFile.setReadable(true, true))
+            throw new IOException("Unable to change file permissions: " + passwdFile);
+
+        return passwdFile;
     }
 
 }

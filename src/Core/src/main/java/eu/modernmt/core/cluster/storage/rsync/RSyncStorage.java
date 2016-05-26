@@ -51,7 +51,8 @@ public class RSyncStorage extends StorageService implements AutoCloseable {
         File secretsFile = new File(folder, "rsyncd.secrets");
 
         FileUtils.write(secretsFile, RSYNC_USER + ":" + RSYNC_PASSWD, false);
-        if (!secretsFile.setExecutable(false, false) || !secretsFile.setReadable(true, true) || !secretsFile.setWritable(true, true))
+        if (!secretsFile.setExecutable(false, false) || !secretsFile.setReadable(false, false)
+                || !secretsFile.setWritable(false, false) || !secretsFile.setReadable(true, true))
             throw new IOException("Unable to change file permissions: " + secretsFile);
 
         return secretsFile;
