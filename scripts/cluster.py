@@ -6,6 +6,7 @@ import signal
 import subprocess
 import tempfile
 import time
+import ConfigParser
 
 import requests
 
@@ -261,15 +262,29 @@ class ClusterNode:
 
         return subprocess.Popen(command, stdout=open(os.devnull), stderr=log, shell=False, env=env)
 
+    def get_state(self):
+        state = None
+
+        if os.path.isfile(self._status_file) and self.is_running():
+            state = {}
+
+            with open(self._status_file) as properties:
+                for line in properties:
+                    line = line.strip()
+
+                    if not line.startswith('#'):
+                        (key, value) = line.split('=', 2)
+                        state[key] = value
+
+        return state
+
     def _get_status(self):
-        if os.path.isfile(self._status_file):
-            with open(self._status_file) as content:
-                status = content.read()
-            status = status.strip().upper()
+        status = 'NONE'
+        state = self.get_state()
+        if state is not None and 'status' in state:
+            status = state['status']
 
-            return ClusterNode.STATUS[status] if status in ClusterNode.STATUS else ClusterNode.STATUS['NONE']
-
-        return ClusterNode.STATUS['NONE']
+        return ClusterNode.STATUS[status] if status in ClusterNode.STATUS else ClusterNode.STATUS['NONE']
 
     def wait(self, status):
         status = ClusterNode.STATUS[status]

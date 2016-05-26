@@ -388,20 +388,31 @@ def main_delete(argv):
 def main_status(argv):
     _logconfig()
 
-    parser = argparse.ArgumentParser(description='Show the local MMT engine status')
+    parser = argparse.ArgumentParser(description='Show the MMT engines status')
     parser.prog = 'mmt status'
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
-                        default='default')
+                        default=None)
     args = parser.parse_args(argv)
 
-    # Exec command
-    engine = MMTEngine(name=args.engine)
-    if not engine.exists():
-        raise IllegalStateException('engine not found: ' + args.engine)
+    if args.engine is None:
+        engines = MMTEngine.list()
+    else:
+        engines = [MMTEngine(name=args.engine)]
+        if not engines[0].exists():
+            raise IllegalStateException('engine not found: ' + args.engine)
 
-    node = ClusterNode(engine)
+    for engine in engines:
+        node = ClusterNode(engine)
+        status = node.get_state()
 
-    print ('running' if node.is_running() else 'stopped')
+        print '-'
+        print 'Engine:   ', engine.name
+        print 'Node:     ', (
+            'running - ports %s, %s' % (status['control_port'], status['data_port'])
+            if status is not None else 'stopped')
+        print 'Rest API: ', (
+            'running - http://localhost:%s/translate' % status['api_port']
+            if status is not None and 'api_port' in status else 'stopped')
 
 
 def main_create(argv):

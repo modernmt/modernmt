@@ -23,8 +23,10 @@ class _builder_logger:
         self.count = count
         self._current_step = 0
         self._step = None
+        self._engine_name = None
 
     def start(self, engine, bilingual_corpora, monolingual_corpora):
+        self._engine_name = engine.name if engine.name != 'default' else None
         print '\n=========== TRAINING STARTED ===========\n'
         print 'ENGINE:  %s' % engine.name
         print 'BILINGUAL CORPORA: %d documents' % len(bilingual_corpora)
@@ -41,7 +43,7 @@ class _builder_logger:
     def completed(self):
         print '\n=========== TRAINING SUCCESS ===========\n'
         print 'You can now start, stop or check the status of the server with command:'
-        print '\t./mmt start|stop|status'
+        print '\t./mmt start|stop|status ' + ('' if self._engine_name is None else '-e %s' % self._engine_name)
         print
         sys.stdout.flush()
 
@@ -191,6 +193,11 @@ class MMTEngine:
     }
 
     training_steps = ['tm_cleanup', 'preprocess', 'context_analyzer', 'lm', 'tm']
+
+    @staticmethod
+    def list():
+        return sorted([MMTEngine(name=name) for name in os.listdir(scripts.ENGINES_DIR)
+                       if os.path.isdir(os.path.join(scripts.ENGINES_DIR, name))], key=lambda x: x.name)
 
     def __init__(self, langs=None, name=None):
         self.name = name if name is not None else 'default'

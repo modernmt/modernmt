@@ -11,13 +11,15 @@ import eu.modernmt.core.config.INIEngineConfigBuilder;
 import eu.modernmt.core.facade.ModernMT;
 import eu.modernmt.rest.RESTServer;
 import org.apache.commons.cli.*;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -89,7 +91,7 @@ public class ClusterNodeMain {
             e.printStackTrace();
         });
 
-        StatusManager status = new StatusManager(args.statusFile);
+        StatusManager status = new StatusManager(args);
 
         RESTServer restServer = null;
         ClusterNode node = null;
@@ -105,7 +107,7 @@ public class ClusterNodeMain {
             else
                 node.startCluster();
 
-            status.onClusterJoined();
+            status.onStatusChange(StatusManager.Status.JOINED);
 
             if (args.member != null) {
                 InetAddress host = InetAddress.getByName(args.member);
@@ -115,24 +117,24 @@ public class ClusterNodeMain {
                 DirectorySynchronizer synchronizer = storage.getDirectorySynchronizer();
                 synchronizer.synchronize(host, args.dataPort, localPath);
 
-                status.onModelSynchronized();
+                status.onStatusChange(StatusManager.Status.SYNCHRONIZED);
             }
 
             EngineConfig config = new INIEngineConfigBuilder(Engine.getConfigFile(args.engine)).build(args.engine);
             node.bootstrap(config);
 
-            status.onModelLoaded();
+            status.onStatusChange(StatusManager.Status.LOADED);
 
             if (args.apiPort > 0) {
                 restServer = new RESTServer(args.apiPort);
                 restServer.start();
             }
 
-            status.onSystemReady();
+            status.onStatusChange(StatusManager.Status.READY);
 
             ready = true;
         } catch (Throwable e) {
-            status.onError();
+            status.onStatusChange(StatusManager.Status.ERROR);
             throw e;
         } finally {
             if (ready) {
@@ -167,37 +169,33 @@ public class ClusterNodeMain {
 
     private static class StatusManager {
 
+        public enum Status {
+            JOINED, SYNCHRONIZED, LOADED, READY, ERROR
+        }
+
         private final File file;
+        private final Properties status;
 
-        public StatusManager(File file) {
-            this.file = file;
+        public StatusManager(Args args) {
+            this.file = args.statusFile;
+            this.status = new Properties();
+            status.setProperty("control_port", Integer.toString(args.controlPort));
+            status.setProperty("data_port", Integer.toString(args.dataPort));
+            if (args.apiPort > 0)
+                status.setProperty("api_port", Integer.toString(args.apiPort));
         }
 
-        public void onClusterJoined() {
-            write("JOINED");
-        }
+        public void onStatusChange(Status status) {
+            this.status.setProperty("status", status.toString());
 
-        public void onModelSynchronized() {
-            write("SYNCHRONIZED");
-        }
-
-        public void onModelLoaded() {
-            write("LOADED");
-        }
-
-        public void onSystemReady() {
-            write("READY");
-        }
-
-        public void onError() {
-            write("ERROR");
-        }
-
-        private void write(String status) {
+            FileOutputStream output = null;
             try {
-                FileUtils.write(file, status, "UTF-8", false);
+                output = new FileOutputStream(file, false);
+                this.status.store(output, null);
             } catch (IOException e) {
                 // Nothing to do
+            } finally {
+                IOUtils.closeQuietly(output);
             }
         }
     }
