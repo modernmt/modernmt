@@ -19,7 +19,7 @@ from scripts.mt.processing import TrainingPreprocessor
 __author__ = 'Davide Caroselli'
 
 DEFAULT_MMT_API_PORT = 8045
-DEFAULT_MMT_CLUSTER_PORT = 5016
+DEFAULT_MMT_CLUSTER_PORTS = [5016, 5017]
 
 
 class MMTApi:
@@ -165,13 +165,13 @@ class ClusterNode:
         'ERROR': 9999,
     }
 
-    def __init__(self, engine, rest=True, api_port=None, cluster_port=None, sibling=None, verbosity=None):
+    def __init__(self, engine, rest=True, api_port=None, cluster_ports=None, sibling=None, verbosity=None):
         self.engine = engine
         self.api = MMTApi(api_port)
 
         self._pidfile = os.path.join(engine.get_runtime_path(), 'node.pid')
 
-        self._cluster_port = cluster_port if cluster_port is not None else DEFAULT_MMT_CLUSTER_PORT
+        self._cluster_ports = cluster_ports if cluster_ports is not None else DEFAULT_MMT_CLUSTER_PORTS
         self._api_port = api_port if api_port is not None else DEFAULT_MMT_API_PORT
         self._start_rest_server = rest
         self._sibling = sibling
@@ -232,7 +232,8 @@ class ClusterNode:
             fileutils.makedirs(self.engine.get_runtime_path(), exist_ok=True)
         self._log_file = self.engine.get_logfile(ClusterNode.__LOG_FILENAME, ensure=True)
 
-        args = ['-e', self.engine.name, '-p', str(self._cluster_port), '--status-file', self._status_file]
+        args = ['-e', self.engine.name, '-p', str(self._cluster_ports[0]), str(self._cluster_ports[1]),
+                '--status-file', self._status_file]
 
         if self._start_rest_server:
             args.append('-a')

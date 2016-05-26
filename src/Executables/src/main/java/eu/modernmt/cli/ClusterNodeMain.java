@@ -4,8 +4,8 @@ import eu.modernmt.cli.init.Submodules;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.core.Engine;
 import eu.modernmt.core.cluster.ClusterNode;
-import eu.modernmt.core.cluster.DirectorySynchronizer;
-import eu.modernmt.core.cluster.RSyncSynchronizer;
+import eu.modernmt.core.cluster.storage.DirectorySynchronizer;
+import eu.modernmt.core.cluster.storage.StorageService;
 import eu.modernmt.core.config.EngineConfig;
 import eu.modernmt.core.config.INIEngineConfigBuilder;
 import eu.modernmt.core.facade.ModernMT;
@@ -36,43 +36,37 @@ public class ClusterNodeMain {
         static {
             Option engine = Option.builder("e").longOpt("engine").hasArg().required().build();
             Option apiPort = Option.builder("a").longOpt("api-port").hasArg().type(Integer.class).required(false).build();
-            Option clusterPort = Option.builder("p").longOpt("cluster-port").hasArg().type(Integer.class).required().build();
+            Option clusterPorts = Option.builder("p").longOpt("cluster-ports").numberOfArgs(2).type(Integer.class).required().build();
             Option statusFile = Option.builder().longOpt("status-file").hasArg().required().build();
             Option verbosity = Option.builder("v").longOpt("verbosity").hasArg().type(Integer.class).required(false).build();
 
-            Option memberHost = Option.builder().longOpt("node-host").hasArg().required(false).build();
-            Option memberUser = Option.builder().longOpt("node-user").hasArg().required(false).build();
-            Option memberPasswd = Option.builder().longOpt("node-passwd").hasArg().required(false).build();
-            Option memberPem = Option.builder().longOpt("node-pem").hasArg().required(false).build();
+            Option member = Option.builder().longOpt("member").hasArg().required(false).build();
 
             cliOptions = new Options();
             cliOptions.addOption(engine);
             cliOptions.addOption(apiPort);
-            cliOptions.addOption(clusterPort);
+            cliOptions.addOption(clusterPorts);
             cliOptions.addOption(statusFile);
             cliOptions.addOption(verbosity);
-            cliOptions.addOption(memberHost);
-            cliOptions.addOption(memberUser);
-            cliOptions.addOption(memberPasswd);
-            cliOptions.addOption(memberPem);
+            cliOptions.addOption(member);
         }
 
         public final String engine;
         public final int apiPort;
-        public final int clusterPort;
+        public final int controlPort;
+        public final int dataPort;
         public final File statusFile;
         public final int verbosity;
-        public final String memberHost;
-        public final String memberUser;
-        public final String memberPassword;
-        public final File memberPem;
+        public final String member;
 
         public Args(String[] args) throws ParseException {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
             this.engine = cli.getOptionValue("engine");
-            this.clusterPort = Integer.parseInt(cli.getOptionValue("cluster-port"));
+            String[] ports = cli.getOptionValues("cluster-ports");
+            this.controlPort = Integer.parseInt(ports[0]);
+            this.dataPort = Integer.parseInt(ports[1]);
             this.statusFile = new File(cli.getOptionValue("status-file"));
 
             String apiPort = cli.getOptionValue("api-port");
@@ -81,20 +75,8 @@ public class ClusterNodeMain {
             String verbosity = cli.getOptionValue("verbosity");
             this.verbosity = verbosity == null ? 2 : Integer.parseInt(verbosity);
 
-            this.memberHost = cli.getOptionValue("node-host");
-            if (this.memberHost != null) {
-                this.memberUser = cli.getOptionValue("node-user");
-
-                String memberPem = cli.getOptionValue("node-pem");
-                this.memberPem = memberPem == null ? null : new File(memberPem);
-                this.memberPassword = this.memberPem == null ? cli.getOptionValue("node-passwd") : null;
-            } else {
-                this.memberUser = null;
-                this.memberPassword = null;
-                this.memberPem = null;
-            }
+            this.member = cli.getOptionValue("member");
         }
-
     }
 
     public static void main(String[] _args) throws Throwable {
@@ -115,31 +97,24 @@ public class ClusterNodeMain {
         boolean ready = false;
 
         try {
-            node = new ClusterNode(args.clusterPort);
+            node = new ClusterNode(args.controlPort, args.dataPort);
             ModernMT.setLocalNode(node);
 
-            if (args.memberHost != null)
-                node.joinCluster(args.memberHost, 30, TimeUnit.SECONDS);
+            if (args.member != null)
+                node.joinCluster(args.member, 30, TimeUnit.SECONDS);
             else
                 node.startCluster();
 
             status.onClusterJoined();
 
-            if (args.memberHost != null) {
-                InetAddress host = InetAddress.getByName(args.memberHost);
+            if (args.member != null) {
+                InetAddress host = InetAddress.getByName(args.member);
                 File localPath = Engine.getRootPath(args.engine);
-                String remotePath = node.getMemberModelPath(args.memberHost);
 
-                if (remotePath == null)
-                    throw new ParseException("Invalid remote host: " + args.memberHost);
+                StorageService storage = StorageService.getInstance();
+                DirectorySynchronizer synchronizer = storage.getDirectorySynchronizer();
+                synchronizer.synchronize(host, args.dataPort, localPath);
 
-                DirectorySynchronizer synchronizer;
-                if (args.memberPem != null)
-                    synchronizer = new RSyncSynchronizer(host, args.memberUser, args.memberPem, localPath, remotePath);
-                else
-                    synchronizer = new RSyncSynchronizer(host, args.memberUser, args.memberPassword, localPath, remotePath);
-
-                synchronizer.synchronize();
                 status.onModelSynchronized();
             }
 

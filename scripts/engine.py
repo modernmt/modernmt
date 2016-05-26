@@ -16,9 +16,6 @@ from scripts.mt.processing import Preprocessor, TrainingPreprocessor, TMCleaner
 
 __author__ = 'Davide Caroselli'
 
-DEFAULT_MMT_API_PORT = 8045
-DEFAULT_MMT_CLUSTER_PORT = 5016
-
 
 class _builder_logger:
     def __init__(self, count, line_len=70):

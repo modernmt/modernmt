@@ -12,6 +12,7 @@ import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFactory;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
+import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -157,6 +158,17 @@ public class Engine {
 
     public File getRootPath() {
         return root;
+    }
+
+    public File getRuntimeFolder(String folderName, boolean ensure) throws IOException {
+        File folder = new File(this.runtime, folderName);
+
+        if (ensure) {
+            FileUtils.deleteDirectory(folder);
+            FileUtils.forceMkdir(folder);
+        }
+
+        return folder;
     }
 
 }

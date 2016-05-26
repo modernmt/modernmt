@@ -8,7 +8,7 @@ import socket
 import sys
 
 from scripts import dependency
-from scripts.cluster import ClusterNode, DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORT
+from scripts.cluster import ClusterNode, DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORTS
 from scripts.engine import IllegalStateException, IllegalArgumentException
 from scripts.engine import MMTEngine
 from scripts.evaluation import Evaluator
@@ -240,10 +240,11 @@ def main_start(argv):
     parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
                         help='the public REST Api port. (default is {port})'
                         .format(port=DEFAULT_MMT_API_PORT), default=None, type=int)
-    parser.add_argument('--cluster-port', dest='cluster_port', metavar='CLUSTER_PORT',
-                        help='the network port used internally by the cluster for data exchange between '
-                             'Cluster nodes. (default is {port})'.format(port=DEFAULT_MMT_CLUSTER_PORT),
-                        default=None, type=int)
+    parser.add_argument('--cluster-ports', dest='cluster_ports', metavar='CLUSTER_PORT',
+                        help='the network ports used internally by the cluster for data exchange between '
+                             'Cluster nodes. (default is {port0} and {port1})'
+                        .format(port0=DEFAULT_MMT_CLUSTER_PORTS[0], port1=DEFAULT_MMT_CLUSTER_PORTS[1]),
+                        default=None, type=int, nargs=2)
     parser.add_argument('--no-rest', action='store_false', dest='has_rest', default=True,
                         help='if no-rest is set, no REST Api will be available on this node')
     parser.add_argument('--join', dest='sibling', metavar='NODE', default=None,
@@ -260,7 +261,7 @@ def main_start(argv):
                                        'please remove option "-p/--api-port"')
 
     args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
-    args.cluster_port = args.cluster_port if args.cluster_port is not None else DEFAULT_MMT_CLUSTER_PORT
+    args.cluster_ports = args.cluster_ports if args.cluster_ports is not None else DEFAULT_MMT_CLUSTER_PORTS
 
     if args.sibling is not None:
         sibling = args.sibling
@@ -290,16 +291,19 @@ def main_start(argv):
     if args.has_rest and not __is_freeport(args.api_port):
         raise IllegalStateException(
             'port %d is already in use, please specify another port with option -p/--api-port' % args.api_port)
-    if not __is_freeport(args.cluster_port):
+    if not __is_freeport(args.cluster_ports[0]):
         raise IllegalStateException(
-            'port %d is already in use, please specify another port with option --cluster-port' % args.cluster_port)
+            'port %d is already in use, please specify another port with --cluster-ports' % args.cluster_ports[0])
+    if not __is_freeport(args.cluster_ports[1]):
+        raise IllegalStateException(
+            'port %d is already in use, please specify another port with --cluster-ports' % args.cluster_ports[1])
 
     # Exec command
     engine = MMTEngine(name=args.engine)
     if args.sibling is None and not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
 
-    node = ClusterNode(engine, rest=args.has_rest, api_port=args.api_port, cluster_port=args.cluster_port,
+    node = ClusterNode(engine, rest=args.has_rest, api_port=args.api_port, cluster_ports=args.cluster_ports,
                        sibling=args.sibling, verbosity=args.verbosity)
 
     started = False

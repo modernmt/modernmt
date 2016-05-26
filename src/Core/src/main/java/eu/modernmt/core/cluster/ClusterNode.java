@@ -14,6 +14,7 @@ import eu.modernmt.core.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.core.cluster.executor.DistributedCallable;
 import eu.modernmt.core.cluster.executor.DistributedExecutor;
 import eu.modernmt.core.cluster.executor.ExecutorDaemon;
+import eu.modernmt.core.cluster.storage.StorageService;
 import eu.modernmt.core.config.EngineConfig;
 import eu.modernmt.core.config.INIEngineConfigWriter;
 import eu.modernmt.decoder.Decoder;
@@ -33,8 +34,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class ClusterNode {
 
-    private static final String MODEL_PATH_ATTRIBUTE_NAME = "ClusterNode.ModelPath";
-
     private static final int SHUTDOWN_NOT_INVOKED = 0;
     private static final int SHUTDOWN_INVOKED = 1;
     private static final int SHUTDOWN_COMPLETED = 2;
@@ -44,6 +43,13 @@ public class ClusterNode {
     private final Thread shutdownThread = new Thread() {
         @Override
         public void run() {
+            StorageService storage = StorageService.getInstance();
+            try {
+                storage.close();
+            } catch (IOException e) {
+                // Ignore exception
+            }
+
             if (executor != null)
                 executor.shutdown();
             if (executorDaemon != null)
@@ -70,7 +76,8 @@ public class ClusterNode {
 
     private final Logger logger = LogManager.getLogger(ClusterNode.class);
 
-    private final int port;
+    private final int controlPort;
+    private final int dataPort;
     private final int capacity;
     private Engine engine;
 
@@ -80,12 +87,13 @@ public class ClusterNode {
     private SessionManager sessionManager;
     private ITopic<Map<String, float[]>> decoderWeightsTopic;
 
-    public ClusterNode(int port) {
-        this(port, ClusterConstants.DEFAULT_TRANSLATION_EXECUTOR_SIZE);
+    public ClusterNode(int controlPort, int dataPort) {
+        this(controlPort, dataPort, ClusterConstants.DEFAULT_TRANSLATION_EXECUTOR_SIZE);
     }
 
-    public ClusterNode(int port, int capacity) {
-        this.port = port;
+    public ClusterNode(int controlPort, int dataPort, int capacity) {
+        this.controlPort = controlPort;
+        this.dataPort = dataPort;
         this.capacity = capacity;
     }
 
@@ -97,7 +105,7 @@ public class ClusterNode {
 
     public void startCluster() {
         Config config = new XmlConfigBuilder().build();
-        config.getNetworkConfig().setPort(port);
+        config.getNetworkConfig().setPort(controlPort);
         config.setProperty("hazelcast.initial.min.cluster.size", "1");
 
         logger.info("Starting cluster");
@@ -111,7 +119,7 @@ public class ClusterNode {
 
     public void joinCluster(String address, long interval, TimeUnit unit) throws FailedToJoinClusterException {
         Config config = new XmlConfigBuilder().build();
-        config.getNetworkConfig().setPort(port);
+        config.getNetworkConfig().setPort(controlPort);
         config.setProperty("hazelcast.initial.min.cluster.size", "2");
 
         if (unit != null) {
@@ -138,6 +146,13 @@ public class ClusterNode {
         logger.info("Starting member bootstrap");
         engine = new Engine(config, capacity);
 
+        StorageService storage = StorageService.getInstance();
+        try {
+            storage.start(this.dataPort, engine);
+        } catch (IOException e) {
+            throw new BootstrapException(e);
+        }
+
         try {
             engine.getAligner();
             engine.getDecoder();
@@ -153,10 +168,6 @@ public class ClusterNode {
         sessionManager = new SessionManager(hazelcast);
         decoderWeightsTopic = hazelcast.getTopic(ClusterConstants.DECODER_WEIGHTS_TOPIC_NAME);
         decoderWeightsTopic.addMessageListener(this::onDecoderWeightsChanged);
-        hazelcast.getCluster().getLocalMember().setStringAttribute(
-                MODEL_PATH_ATTRIBUTE_NAME,
-                engine.getRootPath().getAbsolutePath()
-        );
 
         logger.info("Node bootstrap completed, all models loaded");
     }
@@ -193,17 +204,6 @@ public class ClusterNode {
 
     public SessionManager getSessionManager() {
         return sessionManager;
-    }
-
-    public String getMemberModelPath(String address) {
-        for (com.hazelcast.core.Member member : hazelcast.getCluster().getMembers()) {
-            String host = member.getAddress().getHost();
-
-            if (host.equals(address))
-                return member.getStringAttribute(MODEL_PATH_ATTRIBUTE_NAME);
-        }
-
-        return null;
     }
 
     public void notifyDecoderWeightsChanged(Map<String, float[]> weights) {
