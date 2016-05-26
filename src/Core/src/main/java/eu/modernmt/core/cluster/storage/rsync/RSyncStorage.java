@@ -4,12 +4,9 @@ import eu.modernmt.core.Engine;
 import eu.modernmt.core.cluster.storage.DirectorySynchronizer;
 import eu.modernmt.core.cluster.storage.StorageService;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -19,6 +16,14 @@ public class RSyncStorage extends StorageService implements AutoCloseable {
 
     public static final String RSYNC_USER = "mmtrsync";
     public static final String RSYNC_PASSWD = "9i2p9#uu7A!9a";
+
+    private static final String CONFIG_TEMPLATE = "[engine]\n" +
+            "path = {path}\n" +
+            "read only = true\n" +
+            "use chroot = false\n" +
+            "list = no\n" +
+            "auth users = " + RSYNC_USER + "\n" +
+            "secrets file = {secrets}\n";
 
     private DirectorySynchronizer synchronizer = new RSyncSynchronizer();
     private Process process = null;
@@ -30,28 +35,8 @@ public class RSyncStorage extends StorageService implements AutoCloseable {
 
         // Writing config files
         File folder = engine.getRuntimeFolder("rsync", true);
-        File configFile = new File(folder, "rsyncd.config");
-        File secretsFile = new File(folder, "rsyncd.secrets");
-
-        FileUtils.write(secretsFile, RSYNC_USER + ":" + RSYNC_PASSWD, false);
-
-        Properties config = new Properties();
-        config.setProperty("path", engine.getRootPath().getAbsolutePath());
-        config.setProperty("read only", "true");
-        config.setProperty("use chroot", "false");
-        config.setProperty("list", "no");
-        config.setProperty("auth users", RSYNC_USER);
-        config.setProperty("secrets file", secretsFile.getAbsolutePath());
-
-        FileOutputStream output = null;
-
-        try {
-            output = new FileOutputStream(configFile, false);
-            output.write("[engine]\n".getBytes());
-            config.store(output, null);
-        } finally {
-            IOUtils.closeQuietly(output);
-        }
+        File secretsFile = writeSecretsFile(folder);
+        File configFile = writeConfigFile(folder, engine, secretsFile);
 
         // Starting process
         String[] command = new String[]{
@@ -60,6 +45,27 @@ public class RSyncStorage extends StorageService implements AutoCloseable {
 
         Runtime runtime = Runtime.getRuntime();
         process = runtime.exec(command);
+    }
+
+    private static File writeSecretsFile(File folder) throws IOException {
+        File secretsFile = new File(folder, "rsyncd.secrets");
+
+        FileUtils.write(secretsFile, RSYNC_USER + ":" + RSYNC_PASSWD, false);
+        if (!secretsFile.setExecutable(false, false) || !secretsFile.setReadable(true, true) || !secretsFile.setWritable(true, true))
+            throw new IOException("Unable to change file permissions: " + secretsFile);
+
+        return secretsFile;
+    }
+
+    private static File writeConfigFile(File folder, Engine engine, File secretsFile) throws IOException {
+        File configFile = new File(folder, "rsyncd.config");
+
+        String content = CONFIG_TEMPLATE
+                .replace("{path}", engine.getRootPath().getAbsolutePath())
+                .replace("{secrets}", secretsFile.getAbsolutePath());
+
+        FileUtils.write(configFile, content);
+        return configFile;
     }
 
     @Override
