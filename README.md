@@ -3,11 +3,10 @@
 ## About MMT
 MMT is a context-aware, incremental and distributed general purpose Machine Translation technology.
 
-MMT is simple to use, fast to train, and easy to scale with respect to domains, data, and users.
-
-MMT is trained by pooling all available domains/projects/customers data and translation memories in one folder.
-
-MMT is queried by providing the sentence to be translated and some context text.
+MMT is:
+- Simple to use, fast to train, and easy to scale with respect to domains, data, and users.
+- Trained by pooling all available domains/projects/customers data and translation memories in one folder.
+- Queried by providing the sentence to be translated and some context text.
 
 MMT's goal is to deliver the quality of multiple custom engines by adapting on the fly to the provided context.
 
@@ -16,7 +15,7 @@ You can find more information on: http://www.modernmt.eu
 
 ## About this Release
 
-This release allows you to create an MT engine, from a collection of line aligned parallel data, 
+This release allows you to create an MT engine, from a collection of line aligned parallel data or TMX files, 
 that can be queried via a REST API.
 
 Intro video: http://87k.eu/lk9l
@@ -27,8 +26,8 @@ Intro video: http://87k.eu/lk9l
 
 Read [INSTALL.md](INSTALL.md)
 
-The distribution includes a small dataset (folder ./examples) to train and test translations from 
-English to Italian in two domains. 
+The distribution includes a small dataset (folder ./examples/data/train) to train and test translations from 
+English to Italian in three domains. 
 
 ### Create an engine
 
@@ -96,12 +95,12 @@ See the following example:
 
 How is your engine performing vs the commercial state-of-the-art technologies?
 
-Should I use Google Translate, Bing or MMT given this data? 
+Should I use Google Translate or ModernMT given this data? 
 
 Evaluate helps you answer these questions.
 
 Before training, MMT has removed sentences corresponding to 1% of the training set and up to 1200.
-During evaluate this sentences are used to compute the BLUE Score and Matecat Post-Editing Effort against the MMT and Google Translate.
+During evaluate this sentences are used to compute the BLUE Score and Matecat Post-Editing Score against the MMT and Google Translate.
 
 With your engine running, just type:
 ```
@@ -111,19 +110,17 @@ The typical output will be
 ```
 Testing on 980 sentences...
 
-Matecat Post-Editing Effort:
+Matecat Post-Editing Score:
   MMT              : 75.10 (Winner)
   Google Translate : 73.40 | API Limit Exeeded | Connection Error
-  Bing Translator  : Coming in next MMT release
 
 BLEU:
   MMT              : 37.50 (Winner)
   Google Translate : 36.10 | API Limit Exeeded | Connection Error
-  Bing Translator  : Coming in next MMT release
 
 Translation Speed:
-  MMT              :  12 words/s
-  Google Translate :  100 words/s
+  MMT              :  1.75s per sentence
+  Google Translate :  0.76s per sentence
   
 ```
 
@@ -133,7 +130,7 @@ If you want to test on a different Test Set just type:
 ```
 
 Notes:
-To run Evaluate you need internet connection for Google Translate API and the Matecat post-editing Effort API.
+To run Evaluate you need internet connection for Google Translate API and the Matecat Post-Editing Score API.
 MMT comes with a limited Google Translate API key. 
 
 Matecat kindly provides unlimited-fair-usage, access to their API to MMT users.
@@ -249,29 +246,22 @@ Tuning and evaluate runs also on a distributed MMT.
 Translation, Tuning and Evaluate can run on a MMT cluster to drastically reduce the time they take.
 Training cannot run on an MMT cluster.
 
-Let's distribute MMT to a second machine. First, make sure ports 8045 and 5016 are open on both machines
+Let's distribute MMT to a second machine. First, make sure ports 5016, 5017 and 8045 are open on both machines
 
 Login into the new machine and run
 
 ```bash 
-./mmt start --join ubuntu:pass123@3.14.15.92
+./mmt start --join 172.31.40.212
 ```
 
-Where *ubuntu* and *pass123* are your ssh credentials to the first MMT machine (ip *3.14.15.92*) - the one that was already running.
+Where *172.31.40.212* is the IP address of the first MMT machine - the one that was already running.
 
-If you're running your experiments on *Amazon*, copy your .pem file to the second machine and run the command as:
-
-```
-./mmt start --join ubuntu@3.14.15.92 --join-pem /path/to/master-credentials.pem
-```
-
-Please notice that on Amazon **you must use your machine's private ip**, not the public one (nor elastic ip if present) otherwise you won't be able to connect the two instances.
-
+If you're running your experiments on *Amazon*, **you must use your machine's private ip**, not the public one (nor elastic ip if present) otherwise you won't be able to connect the two instances.
 
 You can query the REST API on both machines, the requests are load balanced across the whole cluster:
 
 ```
-curl "http://3.14.15.92:8045/translate?q=world&context=computer" | python -mjson.tool
+curl "http://172.31.40.212:8045/translate?q=world&context=computer" | python -mjson.tool
 curl "http://localhost:8045/translate?q=world&context=computer" | python -mjson.tool
 ```
 
