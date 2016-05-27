@@ -1,6 +1,6 @@
 # HW Requirements
 
-**Storage**: at least 10 times the corpus size, min 10GB. If your unzipped training data is 10GB, make sure you have at least 80GB on drive.
+**Storage**: at least 10 times the corpus size, min 10GB. If your unzipped training data is 10GB, make sure you have at least 100GB on drive.
 
 
 **CPU**: No minimum required. 
@@ -9,7 +9,7 @@
 
 **Memory**: 
   - Min 5GB
-  - 3GB each 100M words (source+target) of training.
+  - 1GB each 350MB of training data
 
 # Support
 
