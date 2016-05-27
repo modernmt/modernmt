@@ -237,7 +237,7 @@ Tuning speed depends on many factors:
  - Number of sentences as dev set for tuning;
  - Luck. How close the random initial parameters are to the convergence.
 
-Expect a few days for a 1B words model with 1000 sentences used for tuning.
+Expect a few hours for a 1B words model with 1000 sentences used for tuning.
 
 Tuning and evaluate runs also on a distributed MMT.  
 
