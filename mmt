@@ -14,10 +14,6 @@ from scripts.engine import MMTEngine
 from scripts.evaluation import Evaluator
 from scripts.libs import shell
 from scripts.mt import ParallelCorpus
-from scripts.mt.contextanalysis import ContextAnalyzer
-from scripts.mt.lm import LanguageModel, MultiplexedLM
-from scripts.mt.moses import Moses
-from scripts.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
 from scripts.mt.processing import TrainingPreprocessor
 
 __author__ = 'Davide Caroselli'
@@ -34,9 +30,6 @@ __description = '''\
 
   You can find more information on: http://www.modernmt.eu/
 '''
-
-_injectable_components = [ContextAnalyzer, SuffixArraysPhraseTable, WordAligner, LanguageModel, MultiplexedLM, Moses,
-                          MMTEngine]
 
 
 def __check_java():
@@ -106,7 +99,7 @@ def main_tune(argv):
     engine = MMTEngine(name=args.engine)
     if not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
-    injector = dependency.Injector(*_injectable_components)
+    injector = dependency.Injector()
     injector.read_config(engine.config)
     engine = injector.inject(engine)
 
@@ -144,7 +137,7 @@ def main_evaluate(argv):
     engine = MMTEngine(name=args.engine)
     if not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
-    injector = dependency.Injector(*_injectable_components)
+    injector = dependency.Injector()
     injector.read_config(engine.config)
     engine = injector.inject(engine)
 
@@ -442,14 +435,14 @@ def main_create(argv):
     parser.add_argument('-s', '--steps', metavar='STEPS', dest='training_steps', choices=MMTEngine.training_steps,
                         nargs='+', help='run only specified training steps {%(choices)s}')
 
-    for component in _injectable_components:
+    for component in dependency.injectable_components:
         dependency.argparse_group(parser, component)
 
     if len(argv) > 0:
         args = parser.parse_args(argv)
         _logconfig(args.debug)
 
-        injector = dependency.Injector(*_injectable_components)
+        injector = dependency.Injector()
         injector.read_args(args)
 
         engine = MMTEngine((args.source_lang, args.target_lang), args.engine)
