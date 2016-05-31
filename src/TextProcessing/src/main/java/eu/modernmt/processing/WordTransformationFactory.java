@@ -2,15 +2,20 @@ package eu.modernmt.processing;
 
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
+import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.TextProcessor;
+import eu.modernmt.processing.numbers.NumericWordFactory;
+import eu.modernmt.processing.xmessage.XMessageWordTransformer;
 
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
  * Created by davide on 04/04/16.
  */
-public class WordTransformationFactory implements TextProcessor<Translation, Translation> {
+public class WordTransformationFactory extends TextProcessor<Translation, Translation> {
 
     public interface WordTransformer {
 
@@ -20,13 +25,13 @@ public class WordTransformationFactory implements TextProcessor<Translation, Tra
 
     }
 
-    private ArrayList<Class<? extends WordTransformer>> transformerList = new ArrayList<>();
-
-    void addWordTransformer(Class<? extends WordTransformer> transformerClass) {
-        transformerList.add(transformerClass);
+    public WordTransformationFactory(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+        super(sourceLanguage, targetLanguage);
     }
 
-    private static WordTransformer[] instantiate(ArrayList<Class<? extends WordTransformer>> transformerList) {
+    private static final List<Class<? extends WordTransformer>> TRANSFORMERS = Arrays.asList(NumericWordFactory.class, XMessageWordTransformer.class);
+
+    private static WordTransformer[] instantiate(List<Class<? extends WordTransformer>> transformerList) {
         WordTransformer[] instances = new WordTransformer[transformerList.size()];
 
         int i = 0;
@@ -54,7 +59,7 @@ public class WordTransformationFactory implements TextProcessor<Translation, Tra
 
     @Override
     public Translation call(Translation translation, Map<String, Object> metadata) {
-        WordTransformer[] transformers = instantiate(transformerList);
+        WordTransformer[] transformers = instantiate(TRANSFORMERS);
 
         Word[] words = translation.getWords();
         for (int i = 0; i < words.length; i++) {
@@ -67,8 +72,4 @@ public class WordTransformationFactory implements TextProcessor<Translation, Tra
         return translation;
     }
 
-    @Override
-    public void close() {
-        // Nothing to do
-    }
 }

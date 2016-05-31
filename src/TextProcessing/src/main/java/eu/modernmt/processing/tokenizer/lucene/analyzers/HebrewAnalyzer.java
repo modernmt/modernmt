@@ -1,4 +1,4 @@
-package eu.modernmt.processing.tokenizer.hebmorph;
+package eu.modernmt.processing.tokenizer.lucene.analyzers;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.hebrew.HebrewTokenizer;

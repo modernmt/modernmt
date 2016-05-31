@@ -2,16 +2,22 @@ package eu.modernmt.processing.xmessage;
 
 import eu.modernmt.model.xmessage.XMessage;
 import eu.modernmt.model.xmessage.XMessageFormatException;
+import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.TextProcessor;
 
+import java.util.Locale;
 import java.util.Map;
 
 /**
  * Created by davide on 08/04/16.
  */
-public class XMessageParser implements TextProcessor<String, String> {
+public class XMessageParser extends TextProcessor<String, String> {
 
     public static final String FORMATS_KEY = "XMessageParser.formats";
+
+    public XMessageParser(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+        super(sourceLanguage, targetLanguage);
+    }
 
     @Override
     public String call(String string, Map<String, Object> metadata) {
@@ -25,8 +31,4 @@ public class XMessageParser implements TextProcessor<String, String> {
         }
     }
 
-    @Override
-    public void close() {
-        // Nothing to do
-    }
 }

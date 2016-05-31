@@ -1,11 +1,18 @@
 package eu.modernmt.processing.detokenizer;
 
 import eu.modernmt.model.Translation;
+import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.TextProcessor;
+
+import java.util.Locale;
 
 /**
  * Created by davide on 26/01/16.
  */
-public interface Detokenizer extends TextProcessor<Translation, Translation> {
+public abstract class Detokenizer extends TextProcessor<Translation, Translation> {
+
+    public Detokenizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+        super(sourceLanguage, targetLanguage);
+    }
 
 }

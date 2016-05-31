@@ -1,123 +1,80 @@
 package eu.modernmt.processing;
 
 import eu.modernmt.model.Translation;
-import eu.modernmt.processing.detokenizer.Detokenizer;
-import eu.modernmt.processing.detokenizer.Detokenizers;
-import eu.modernmt.processing.framework.*;
-import eu.modernmt.processing.numbers.NumericWordFactory;
-import eu.modernmt.processing.recaser.Recaser;
-import eu.modernmt.processing.xmessage.XMessageWordTransformer;
-import eu.modernmt.processing.xml.XMLTagProjector;
+import eu.modernmt.processing.framework.PipelineInputStream;
+import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.framework.concurrent.PipelineExecutor;
+import eu.modernmt.processing.framework.xml.XMLPipelineFactory;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by davide on 19/02/16.
  */
 public class Postprocessor implements Closeable {
 
-    private static final AlignmentsInterpolator AlignmentsInterpolator;
-    private static final WordTransformationFactory WordTransformationFactory;
-    private static final WordTransformer WordTransformer;
-    private static final Recaser Recaser;
-    private static final XMLTagProjector XMLTagProjector;
+    private PipelineExecutor<Translation, Void> executor;
 
-    static {
-        AlignmentsInterpolator = new AlignmentsInterpolator();
-        WordTransformationFactory = new WordTransformationFactory();
-        WordTransformationFactory.addWordTransformer(NumericWordFactory.class);
-        WordTransformationFactory.addWordTransformer(XMessageWordTransformer.class);
-
-        WordTransformer = new WordTransformer();
-        Recaser = new Recaser();
-        XMLTagProjector = new XMLTagProjector();
+    public Postprocessor(Locale targetLanguage) throws ProcessingException {
+        this(null, targetLanguage);
     }
 
-    private final ProcessingPipeline<Translation, Void> pipelineWithDetokenization;
-    private final ProcessingPipeline<Translation, Void> pipelineWithoutDetokenization;
-
-    public static ProcessingPipeline<Translation, Void> getPipeline(Locale language, boolean detokenize) {
-        return getPipeline(language, detokenize, Runtime.getRuntime().availableProcessors());
+    public Postprocessor(Locale sourceLanguage, Locale targetLanguage) throws ProcessingException {
+        this(sourceLanguage, targetLanguage, Runtime.getRuntime().availableProcessors());
     }
 
-    public static ProcessingPipeline<Translation, Void> getPipeline(Locale language, boolean detokenize, int threads) {
-        Detokenizer detokenizer = detokenize ? Detokenizers.forLanguage(language) : null;
+    public Postprocessor(Locale sourceLanguage, Locale targetLanguage, int threads) throws ProcessingException {
+        String xmlPath = Preprocessor.class.getPackage().getName().replace('.', '/');
+        xmlPath = xmlPath + "/postprocessor-default.xml";
 
-        return new ProcessingPipeline.Builder<Translation, Translation>()
-                .setThreads(threads)
-                .add(AlignmentsInterpolator)
-                .add(detokenizer)
-                .add(WordTransformationFactory)
-                .add(WordTransformer)
-                .add(Recaser)
-                .add(XMLTagProjector)
-                .create();
-    }
-
-    public Postprocessor(Locale language) {
-        this(language, Runtime.getRuntime().availableProcessors());
-    }
-
-    public Postprocessor(Locale language, int threads) {
-        pipelineWithDetokenization = getPipeline(language, true, threads);
-        pipelineWithoutDetokenization = getPipeline(language, false, threads);
-    }
-
-    public void process(List<? extends Translation> translations, boolean detokenize) throws ProcessingException {
-        BatchTask task = new BatchTask(translations);
-        ProcessingPipeline<Translation, Void> pipeline = detokenize ? pipelineWithDetokenization : pipelineWithoutDetokenization;
+        InputStream stream = null;
 
         try {
-            ProcessingJob<Translation, Void> job = pipeline.createJob(task, task);
-            job.start();
-            job.join();
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Unexpected exception", e);
+            stream = Preprocessor.class.getClassLoader().getResourceAsStream(xmlPath);
+            XMLPipelineFactory<Translation, Void> factory = XMLPipelineFactory.loadFromXML(stream);
+            this.executor = new PipelineExecutor<>(sourceLanguage, targetLanguage, factory, threads);
+        } catch (IOException e) {
+            throw new ProcessingException("Unable to final default postprocessor file", e);
+        } finally {
+            IOUtils.closeQuietly(stream);
         }
     }
 
-    public void process(Translation translation, boolean detokenize) throws ProcessingException {
-        if (detokenize)
-            pipelineWithDetokenization.process(translation);
-        else
-            pipelineWithoutDetokenization.process(translation);
+    @SuppressWarnings("unchecked")
+    public void process(List<? extends Translation> translations) throws ProcessingException {
+        this.executor.process((Collection<Translation>) translations);
+    }
+
+    public void process(Translation[] translation) throws ProcessingException {
+        this.executor.process(Arrays.asList(translation));
+    }
+
+    public void process(Translation translation) throws ProcessingException {
+        this.executor.process(translation);
+    }
+
+    public void process(PipelineInputStream<Translation> input) throws ProcessingException {
+        this.executor.process(input, null);
     }
 
     @Override
     public void close() {
-        IOUtils.closeQuietly(pipelineWithDetokenization);
-        IOUtils.closeQuietly(pipelineWithoutDetokenization);
+        this.executor.shutdown();
+
+        try {
+            if (!this.executor.awaitTermination(1, TimeUnit.SECONDS))
+                this.executor.shutdownNow();
+        } catch (InterruptedException e) {
+            this.executor.shutdownNow();
+        }
     }
 
-    private static class BatchTask implements PipelineInputStream<Translation>, PipelineOutputStream<Void> {
-
-        private Translation[] source;
-        private int readIndex;
-
-        public BatchTask(List<? extends Translation> translations) {
-            this.source = translations.toArray(new Translation[translations.size()]);
-            this.readIndex = 0;
-        }
-
-        @Override
-        public Translation read() {
-            if (readIndex < source.length)
-                return source[readIndex++];
-            else
-                return null;
-        }
-
-        @Override
-        public void write(Void value) {
-        }
-
-        @Override
-        public void close() throws IOException {
-        }
-
-    }
 }

@@ -4,19 +4,20 @@ import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Tag;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Word;
+import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.TextProcessor;
 import eu.modernmt.processing.framework.string.TokenHook;
 import eu.modernmt.processing.framework.string.XMLEditableString;
+import eu.modernmt.processing.numbers.NumericWordFactory;
+import eu.modernmt.processing.xmessage.XMessageWordFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by davide on 31/03/16.
  */
-public class SentenceBuilder implements TextProcessor<XMLEditableString, Sentence> {
+public class SentenceBuilder extends TextProcessor<XMLEditableString, Sentence> {
 
     public interface WordFactory {
 
@@ -28,13 +29,15 @@ public class SentenceBuilder implements TextProcessor<XMLEditableString, Sentenc
 
     }
 
-    private ArrayList<Class<? extends WordFactory>> factoryList = new ArrayList<>();
+    private static final List<Class<? extends WordFactory>> FACTORIES = Arrays.asList(
+            NumericWordFactory.class, XMessageWordFactory.class
+    );
 
-    void addWordFactory(Class<? extends WordFactory> factoryClass) {
-        factoryList.add(factoryClass);
+    public SentenceBuilder(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+        super(sourceLanguage, targetLanguage);
     }
 
-    private static WordFactory[] instantiate(ArrayList<Class<? extends WordFactory>> factoryList, Map<String, Object> metadata) {
+    private static WordFactory[] instantiate(List<Class<? extends WordFactory>> factoryList, Map<String, Object> metadata) {
         WordFactory[] instances = new WordFactory[factoryList.size()];
 
         int i = 0;
@@ -72,7 +75,7 @@ public class SentenceBuilder implements TextProcessor<XMLEditableString, Sentenc
 
     @Override
     public Sentence call(XMLEditableString string, Map<String, Object> metadata) throws ProcessingException {
-        WordFactory[] wordFactories = instantiate(this.factoryList, metadata);
+        WordFactory[] wordFactories = instantiate(FACTORIES, metadata);
 
         char[] reference = string.getOriginalString().toCharArray();
 
@@ -124,8 +127,4 @@ public class SentenceBuilder implements TextProcessor<XMLEditableString, Sentenc
         return end > start ? new String(reference, start, end - start) : null;
     }
 
-    @Override
-    public void close() {
-        // Nothing to do
-    }
 }

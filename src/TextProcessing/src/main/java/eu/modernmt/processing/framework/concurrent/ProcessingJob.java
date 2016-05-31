@@ -1,19 +1,25 @@
-package eu.modernmt.processing.framework;
+package eu.modernmt.processing.framework.concurrent;
+
+import eu.modernmt.processing.framework.PipelineInputStream;
+import eu.modernmt.processing.framework.PipelineOutputStream;
+import eu.modernmt.processing.framework.ProcessingException;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 /**
- * Created by davide on 26/01/16.
+ * Created by davide on 31/05/16.
  */
-public class ProcessingJob<P, R> {
+class ProcessingJob<P, R> {
 
     private static final Object POISON_PILL = new Object();
 
-    private ProcessingPipeline<P, R> pipeline;
+    private PipelineExecutor<P, R> executor;
+    private Map<String, Object> metadata = null;
     private PipelineInputStream<P> input;
     private PipelineOutputStream<R> output;
 
@@ -26,14 +32,18 @@ public class ProcessingJob<P, R> {
 
     private Throwable error = null;
 
-    ProcessingJob(ProcessingPipeline<P, R> pipeline, PipelineInputStream<P> input, PipelineOutputStream<R> output) {
-        this.pipeline = pipeline;
+    ProcessingJob(PipelineExecutor<P, R> executor, PipelineInputStream<P> input, PipelineOutputStream<R> output) {
+        this.executor = executor;
         this.input = input;
         this.output = output;
 
-        int size = Math.max(50, pipeline.getThreads() * 2);
+        int size = Math.max(50, executor.getThreads() * 2);
         this.inputQueue = new ArrayBlockingQueue<>(size);
         this.outputQueue = new ArrayBlockingQueue<>(size);
+    }
+
+    public void setMetadata(Map<String, Object> metadata) {
+        this.metadata = metadata;
     }
 
     public void start() {
@@ -139,7 +149,7 @@ public class ProcessingJob<P, R> {
             P param;
 
             while ((param = next()) != null) {
-                Future<R> future = pipeline.submit(param);
+                Future<R> future = executor.submit(param, metadata);
                 try {
                     outputQueue.put(future);
                 } catch (InterruptedException e) {
@@ -175,7 +185,8 @@ public class ProcessingJob<P, R> {
             try {
                 while ((result = next()) != null) {
                     R value = result.get();
-                    output.write(value);
+                    if (output != null)
+                        output.write(value);
                 }
             } catch (InterruptedException e) {
                 // break

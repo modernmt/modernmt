@@ -1,167 +1,115 @@
 package eu.modernmt.processing;
 
 import eu.modernmt.model.Sentence;
-import eu.modernmt.processing.framework.*;
-import eu.modernmt.processing.numbers.NumericWordFactory;
-import eu.modernmt.processing.tokenizer.SimpleTokenizer;
+import eu.modernmt.processing.framework.PipelineInputStream;
+import eu.modernmt.processing.framework.PipelineOutputStream;
+import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.framework.concurrent.PipelineExecutor;
+import eu.modernmt.processing.framework.xml.XMLPipelineFactory;
 import eu.modernmt.processing.tokenizer.Tokenizer;
-import eu.modernmt.processing.tokenizer.Tokenizers;
-import eu.modernmt.processing.util.ControlCharsRemover;
-import eu.modernmt.processing.util.RareCharsNormalizer;
-import eu.modernmt.processing.util.WhitespacesNormalizer;
-import eu.modernmt.processing.xmessage.XMessageParser;
-import eu.modernmt.processing.xmessage.XMessageTokenizer;
-import eu.modernmt.processing.xmessage.XMessageWordFactory;
-import eu.modernmt.processing.xml.XMLStringBuilder;
+import eu.modernmt.processing.util.TokensOutputter;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by davide on 19/02/16.
  */
 public class Preprocessor implements Closeable {
 
-    private static final ControlCharsRemover ControlCharsRemover;
-    private static final XMessageParser XMessageParser;
-    private static final XMLStringBuilder XMLStringBuilder;
-    private static final RareCharsNormalizer RareCharsNormalizer;
-    private static final WhitespacesNormalizer WhitespacesNormalizer;
-    private static final XMessageTokenizer XMessageTokenizer;
-    private static final SentenceBuilder SentenceBuilder;
+    private PipelineExecutor<String, Sentence> executor;
 
-    static {
-        ControlCharsRemover = new ControlCharsRemover();
-        XMessageParser = new XMessageParser();
-        XMLStringBuilder = new XMLStringBuilder();
-        RareCharsNormalizer = new RareCharsNormalizer();
-        WhitespacesNormalizer = new WhitespacesNormalizer();
-        XMessageTokenizer = new XMessageTokenizer();
-
-        SentenceBuilder = new SentenceBuilder();
-        SentenceBuilder.addWordFactory(NumericWordFactory.class);
-        SentenceBuilder.addWordFactory(XMessageWordFactory.class);
+    public Preprocessor(Locale sourceLanguage) throws ProcessingException {
+        this(sourceLanguage, null);
     }
 
-    private final ProcessingPipeline<String, Sentence> pipelineWithTokenization;
-    private final ProcessingPipeline<String, Sentence> pipelineWithoutTokenization;
-
-    public static ProcessingPipeline<String, Sentence> getPipeline(Locale language, boolean tokenize) {
-        return getPipeline(language, tokenize, Runtime.getRuntime().availableProcessors());
+    public Preprocessor(Locale sourceLanguage, Locale targetLanguage) throws ProcessingException {
+        this(sourceLanguage, targetLanguage, Runtime.getRuntime().availableProcessors());
     }
 
-    public static ProcessingPipeline<String, Sentence> getPipeline(Locale language, boolean tokenize, int threads) {
-        Tokenizer languageTokenizer = tokenize ? Tokenizers.forLanguage(language) : new SimpleTokenizer();
+    public Preprocessor(Locale sourceLanguage, Locale targetLanguage, int threads) throws ProcessingException {
+        String xmlPath = Preprocessor.class.getPackage().getName().replace('.', '/');
+        xmlPath = xmlPath + "/preprocessor-default.xml";
 
-        return new ProcessingPipeline.Builder<String, String>()
-                .setThreads(threads)
-                // Pre EditableString
-                .add(ControlCharsRemover)
-                .add(XMessageParser)
-                .add(XMLStringBuilder)
+        InputStream stream = null;
 
-                // String normalization
-                .add(RareCharsNormalizer)
-                .add(WhitespacesNormalizer)
-
-                // Tokenization
-                .add(languageTokenizer)
-                .add(XMessageTokenizer)
-
-                // Sentence building
-                .add(SentenceBuilder)
-                .create();
+        try {
+            stream = Preprocessor.class.getClassLoader().getResourceAsStream(xmlPath);
+            XMLPipelineFactory<String, Sentence> factory = XMLPipelineFactory.loadFromXML(stream);
+            this.executor = new PipelineExecutor<>(sourceLanguage, targetLanguage, factory, threads);
+        } catch (IOException e) {
+            throw new ProcessingException("Unable to final default preprocessor file", e);
+        } finally {
+            IOUtils.closeQuietly(stream);
+        }
     }
 
-    public Preprocessor(Locale language) {
-        this(language, Runtime.getRuntime().availableProcessors());
-    }
+    public List<Sentence> process(List<String> text, boolean tokenize) throws ProcessingException {
+        HashMap<String, Object> metadata = null;
 
-    public Preprocessor(Locale language, int threads) {
-        pipelineWithTokenization = getPipeline(language, true, threads);
-        pipelineWithoutTokenization = getPipeline(language, false, threads);
-    }
+        if (!tokenize) {
+            metadata = new HashMap<>();
+            metadata.put(Tokenizer.KEY_ENABLE, false);
+        }
 
-    public Sentence[] process(List<String> text, boolean tokenize) throws ProcessingException {
-        return process(text.toArray(new String[text.size()]), tokenize);
+        return this.executor.process(text, metadata);
     }
 
     public Sentence[] process(String[] text, boolean tokenize) throws ProcessingException {
-        BatchTask task = new BatchTask(text);
-        ProcessingPipeline<String, Sentence> pipeline = tokenize ? pipelineWithTokenization : pipelineWithoutTokenization;
-
-        try {
-            ProcessingJob<String, Sentence> job = pipeline.createJob(task, task);
-            job.start();
-            job.join();
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Unexpected exception", e);
-        }
-
-        return task.getResult();
+        return process(Arrays.asList(text), tokenize).toArray(new Sentence[text.length]);
     }
 
     public Sentence process(String text, boolean tokenize) throws ProcessingException {
-        if (tokenize)
-            return pipelineWithTokenization.process(text);
-        else
-            return pipelineWithoutTokenization.process(text);
+        HashMap<String, Object> metadata = null;
+
+        if (!tokenize) {
+            metadata = new HashMap<>();
+            metadata.put(Tokenizer.KEY_ENABLE, false);
+        }
+
+        return this.executor.process(text, metadata);
+    }
+
+    public void process(PipelineInputStream<String> input, PipelineOutputStream<Sentence> output, boolean tokenize) throws ProcessingException {
+        HashMap<String, Object> metadata = null;
+
+        if (!tokenize) {
+            metadata = new HashMap<>();
+            metadata.put(Tokenizer.KEY_ENABLE, false);
+        }
+
+        this.executor.process(input, output, metadata);
     }
 
     @Override
     public void close() {
-        IOUtils.closeQuietly(pipelineWithTokenization);
-        IOUtils.closeQuietly(pipelineWithoutTokenization);
-    }
-
-    private static class BatchTask implements PipelineInputStream<String>, PipelineOutputStream<Sentence> {
-
-        private String[] source;
-        private Sentence[] result;
-        private int readIndex;
-        private int writeIndex;
-
-        public BatchTask(String[] source) {
-            this.source = source;
-            this.result = new Sentence[source.length];
-            this.readIndex = 0;
-            this.writeIndex = 0;
-        }
-
-        @Override
-        public String read() {
-            if (readIndex < source.length)
-                return source[readIndex++];
-            else
-                return null;
-        }
-
-        @Override
-        public void write(Sentence value) {
-            result[writeIndex++] = value;
-        }
-
-        public Sentence[] getResult() {
-            return result;
-        }
-
-        @Override
-        public void close() throws IOException {
-        }
-
-    }
-
-    public static void main(String[] args) throws Throwable {
-        ProcessingPipeline<String, Sentence> pipeline = null;
+        this.executor.shutdown();
 
         try {
-            pipeline = Preprocessor.getPipeline(Locale.ENGLISH, true);
-            System.out.println(pipeline.process("Hello <b>world</b>"));
+            if (!this.executor.awaitTermination(1, TimeUnit.SECONDS))
+                this.executor.shutdownNow();
+        } catch (InterruptedException e) {
+            this.executor.shutdownNow();
+        }
+    }
+
+
+    public static void main(String[] args) throws Throwable {
+        Preprocessor preprocessor = new Preprocessor(Locale.ENGLISH);
+
+        try {
+            Sentence sentence = preprocessor.process("That's example 101: \"Hello <b>world</b>\"", true);
+            System.out.println(sentence);
+            System.out.println(TokensOutputter.toString(sentence, true, true));
         } finally {
-            IOUtils.closeQuietly(pipeline);
+            preprocessor.close();
         }
     }
 }

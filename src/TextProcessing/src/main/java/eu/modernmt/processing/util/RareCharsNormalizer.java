@@ -1,15 +1,21 @@
 package eu.modernmt.processing.util;
 
+import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.TextProcessor;
 import eu.modernmt.processing.framework.string.XMLEditableString;
 
+import java.util.Locale;
 import java.util.Map;
 
 /**
  * Created by davide on 19/02/16.
  */
-public class RareCharsNormalizer implements TextProcessor<XMLEditableString, XMLEditableString> {
+public class RareCharsNormalizer extends TextProcessor<XMLEditableString, XMLEditableString> {
+
+    public RareCharsNormalizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+        super(sourceLanguage, targetLanguage);
+    }
 
     @Override
     public XMLEditableString call(XMLEditableString string, Map<String, Object> metadata) throws ProcessingException {
@@ -52,10 +58,6 @@ public class RareCharsNormalizer implements TextProcessor<XMLEditableString, XML
         }
 
         return nc;
-    }
-
-    @Override
-    public void close() {
     }
 
 }

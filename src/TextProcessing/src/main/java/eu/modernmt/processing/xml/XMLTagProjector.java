@@ -1,21 +1,23 @@
 package eu.modernmt.processing.xml;
 
 import eu.modernmt.model.*;
+import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.TextProcessor;
 
-import java.io.IOException;
 import java.util.*;
 
 /**
  * Created by lucamastrostefano on 4/04/16.
  */
-public class XMLTagProjector implements TextProcessor<Translation, Void> {
+public class XMLTagProjector extends TextProcessor<Translation, Translation> {
 
-    private static class TokenNotFoundException extends Exception {
+    public XMLTagProjector() throws LanguageNotSupportedException {
+        super(null, null);
+    }
 
-        public TokenNotFoundException() {
-        }
+    public XMLTagProjector(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+        super(sourceLanguage, targetLanguage);
     }
 
     private static class ExtendedTag implements Comparable<ExtendedTag> {
@@ -57,7 +59,7 @@ public class XMLTagProjector implements TextProcessor<Translation, Void> {
     }
 
     @Override
-    public Void call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
+    public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
         Sentence source = translation.getSource();
         if (source.hasTags()) {
             if (source.hasWords()) {
@@ -71,7 +73,7 @@ public class XMLTagProjector implements TextProcessor<Translation, Void> {
                 translation.setTags(copy);
             }
         }
-        return null;
+        return translation;
     }
 
     public static List<ExtendedTag> mapTags(Translation translation) {
@@ -369,11 +371,6 @@ public class XMLTagProjector implements TextProcessor<Translation, Void> {
         return newWordsAlignments;
     }
 
-    @Override
-    public void close() throws IOException {
-        // Nothing to do
-    }
-
     public static void main(String[] args) throws Throwable {
         // SRC: hello <b>world</b><f />!
         Sentence source = new Sentence(new Word[]{
@@ -405,7 +402,7 @@ public class XMLTagProjector implements TextProcessor<Translation, Void> {
         System.out.println("SRC (stripped):          " + source.getStrippedString(false));
         System.out.println();
 
-        XMLTagProjector mapper = new XMLTagProjector();
+        XMLTagProjector mapper = new XMLTagProjector(null, null);
         mapper.call(translation, null);
 
         System.out.println("TRANSLATION:             " + translation);

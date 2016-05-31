@@ -5,9 +5,6 @@ package eu.modernmt.processing.framework;
  */
 public class ProcessingException extends Exception {
 
-    public ProcessingException() {
-    }
-
     public ProcessingException(String message) {
         super(message);
     }
@@ -19,5 +16,5 @@ public class ProcessingException extends Exception {
     public ProcessingException(Throwable cause) {
         super(cause);
     }
-    
+
 }

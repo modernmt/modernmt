@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="pipeline">
+        <xs:complexType>
+            <xs:choice maxOccurs="unbounded">
+                <xs:element name="processor" maxOccurs="unbounded" type="ProcessorType"/>
+                <xs:element name="processorGroup" maxOccurs="unbounded" type="ProcessorGroupType"/>
+            </xs:choice>
+
+            <xs:attribute name="class" type="xs:string"/>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="ProcessorType">
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="source" type="xs:string" default=""/>
+                <xs:attribute name="target" type="xs:string" default=""/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+
+    <xs:complexType name="ProcessorGroupType">
+        <xs:sequence>
+            <xs:element name="processor" minOccurs="1" maxOccurs="unbounded" type="ProcessorType"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

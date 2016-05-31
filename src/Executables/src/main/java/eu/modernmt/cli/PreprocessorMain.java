@@ -3,7 +3,9 @@ package eu.modernmt.cli;
 import eu.modernmt.cli.init.Submodules;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Preprocessor;
-import eu.modernmt.processing.framework.*;
+import eu.modernmt.processing.framework.PipelineInputStream;
+import eu.modernmt.processing.framework.PipelineOutputStream;
+import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.util.SentenceOutputter;
 import eu.modernmt.processing.util.TokensOutputter;
 import org.apache.commons.cli.*;
@@ -57,12 +59,12 @@ public class PreprocessorMain {
     public static void main(String[] _args) throws InterruptedException, ProcessingException, ParseException {
         Args args = new Args(_args);
 
-        ProcessingPipeline<String, Sentence> pipeline = null;
+        Preprocessor preprocessor = null;
         PipelineInputStream<String> input = null;
         PipelineOutputStream<Sentence> output = null;
 
         try {
-            pipeline = Preprocessor.getPipeline(args.language, true);
+            preprocessor = new Preprocessor(args.language);
 
             input = PipelineInputStream.fromInputStream(System.in);
             if (args.keepSpaces)
@@ -70,12 +72,9 @@ public class PreprocessorMain {
             else
                 output = new TokensOutputter(System.out, args.printTags, args.printPlaceholders);
 
-            ProcessingJob<String, Sentence> job = pipeline.createJob(input, output);
-
-            job.start();
-            job.join();
+            preprocessor.process(input, output, true);
         } finally {
-            IOUtils.closeQuietly(pipeline);
+            IOUtils.closeQuietly(preprocessor);
             IOUtils.closeQuietly(input);
             IOUtils.closeQuietly(output);
         }

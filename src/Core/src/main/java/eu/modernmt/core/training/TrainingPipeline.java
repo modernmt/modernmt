@@ -3,10 +3,8 @@ package eu.modernmt.core.training;
 import eu.modernmt.core.training.partitioning.CorporaPartition;
 import eu.modernmt.model.BilingualCorpus;
 import eu.modernmt.model.Corpus;
-import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.framework.ProcessingPipeline;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -100,8 +98,8 @@ public class TrainingPipeline {
         ExecutorCompletionService<Void> ecs = new ExecutorCompletionService<>(executor);
 
         // Init pipelines
-        ProcessingPipeline<String, Sentence> sourcePipeline = Preprocessor.getPipeline(sourceLanguage, true, processingThreads);
-        ProcessingPipeline<String, Sentence> targetPipeline = Preprocessor.getPipeline(targetLanguage, true, processingThreads);
+        Preprocessor sourcePreprocessor = new Preprocessor(sourceLanguage, null, processingThreads);
+        Preprocessor targetPreprocessor = new Preprocessor(targetLanguage, null, processingThreads);
 
         int pendingTasks = 0;
 
@@ -119,8 +117,8 @@ public class TrainingPipeline {
                 throw new ProcessingException("Could not read corpus " + corpus, e);
             }
 
-            TrainingCorpusTask sourceTask = new TrainingCorpusTask(sourcePipeline, corpus.getSourceCorpus(), lineCount, mainPartition);
-            TrainingCorpusTask targetTask = new TrainingCorpusTask(targetPipeline, corpus.getTargetCorpus(), lineCount, mainPartition);
+            TrainingCorpusTask sourceTask = new TrainingCorpusTask(sourcePreprocessor, corpus.getSourceCorpus(), lineCount, mainPartition);
+            TrainingCorpusTask targetTask = new TrainingCorpusTask(targetPreprocessor, corpus.getTargetCorpus(), lineCount, mainPartition);
 
             for (CorporaPartition partition : extraPartitions) {
                 int size = (int) Math.round(weight * partition.getSize());
@@ -137,7 +135,7 @@ public class TrainingPipeline {
 
         // Enqueue monolingual corpora tasks
         for (Corpus corpus : monolingualCorpora) {
-            TrainingCorpusTask task = new TrainingCorpusTask(targetPipeline, corpus, 0, mainPartition);
+            TrainingCorpusTask task = new TrainingCorpusTask(targetPreprocessor, corpus, 0, mainPartition);
             ecs.submit(task);
             pendingTasks += 1;
         }
@@ -158,8 +156,8 @@ public class TrainingPipeline {
             else
                 throw new Error("Unexpected exception", cause);
         } finally {
-            IOUtils.closeQuietly(sourcePipeline);
-            IOUtils.closeQuietly(targetPipeline);
+            IOUtils.closeQuietly(sourcePreprocessor);
+            IOUtils.closeQuietly(targetPreprocessor);
 
             executor.shutdownNow();
             executor.awaitTermination(1, TimeUnit.SECONDS);

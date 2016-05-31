@@ -5,7 +5,10 @@ import eu.modernmt.core.training.partitioning.PartitionWriter;
 import eu.modernmt.core.training.partitioning.PartitionedInputStream;
 import eu.modernmt.model.Corpus;
 import eu.modernmt.model.Sentence;
-import eu.modernmt.processing.framework.*;
+import eu.modernmt.processing.Preprocessor;
+import eu.modernmt.processing.framework.PipelineInputStream;
+import eu.modernmt.processing.framework.PipelineOutputStream;
+import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.util.TokensOutputter;
 import org.apache.commons.io.IOUtils;
 
@@ -19,7 +22,7 @@ import java.util.concurrent.Callable;
  */
 class TrainingCorpusTask implements Callable<Void> {
 
-    private ProcessingPipeline<String, Sentence> pipeline;
+    private Preprocessor preprocessor;
 
     private Corpus corpus;
     private int corpusLines;
@@ -27,8 +30,8 @@ class TrainingCorpusTask implements Callable<Void> {
     private CorporaPartition mainPartition;
     private List<PartitionWriter> extraPartitions = new ArrayList<>();
 
-    public TrainingCorpusTask(ProcessingPipeline<String, Sentence> pipeline, Corpus corpus, int corpusLines, CorporaPartition mainPartition) {
-        this.pipeline = pipeline;
+    public TrainingCorpusTask(Preprocessor preprocessor, Corpus corpus, int corpusLines, CorporaPartition mainPartition) {
+        this.preprocessor = preprocessor;
         this.corpus = corpus;
         this.corpusLines = corpusLines;
         this.mainPartition = mainPartition;
@@ -53,10 +56,7 @@ class TrainingCorpusTask implements Callable<Void> {
 
             output = new TokensOutputter(outCorpus.getContentWriter(false), false, true);
 
-            ProcessingJob<String, Sentence> job = pipeline.createJob(input, output);
-
-            job.start();
-            job.join();
+            preprocessor.process(input, output, true);
         } catch (IOException | ProcessingException e) {
             throw new ProcessingException("Failed to process corpus '" + corpus.getName() + "'", e);
         } finally {

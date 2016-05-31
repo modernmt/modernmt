@@ -1,16 +1,20 @@
 package eu.modernmt.processing;
 
 import eu.modernmt.model.Translation;
+import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.TextProcessor;
 
-import java.io.IOException;
 import java.util.*;
 
 /**
  * Created by lucamastrostefano on 15/04/16.
  */
-public class AlignmentsInterpolator implements TextProcessor<Translation, Translation> {
+public class AlignmentsInterpolator extends TextProcessor<Translation, Translation> {
+
+    public AlignmentsInterpolator(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+        super(sourceLanguage, targetLanguage);
+    }
 
     @Override
     public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
@@ -88,8 +92,4 @@ public class AlignmentsInterpolator implements TextProcessor<Translation, Transl
         return interpolatedAlignments.toArray(result);
     }
 
-    @Override
-    public void close() throws IOException {
-
-    }
 }

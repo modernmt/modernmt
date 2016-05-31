@@ -2,14 +2,20 @@ package eu.modernmt.processing;
 
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
+import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.TextProcessor;
 
+import java.util.Locale;
 import java.util.Map;
 
 /**
  * Created by davide on 02/03/16.
  */
-public class WordTransformer implements TextProcessor<Translation, Translation> {
+public class WordTransformer extends TextProcessor<Translation, Translation> {
+
+    public WordTransformer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+        super(sourceLanguage, targetLanguage);
+    }
 
     @Override
     public Translation call(Translation translation, Map<String, Object> metadata) {
@@ -31,11 +37,6 @@ public class WordTransformer implements TextProcessor<Translation, Translation> 
         }
 
         return translation;
-    }
-
-    @Override
-    public void close() {
-        // Nothing to do
     }
 
 }

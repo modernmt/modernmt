@@ -1,13 +1,19 @@
 package eu.modernmt.processing.util;
 
+import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.TextProcessor;
 
+import java.util.Locale;
 import java.util.Map;
 
 /**
  * Created by davide on 12/05/16.
  */
-public class ControlCharsRemover implements TextProcessor<String, String> {
+public class ControlCharsRemover extends TextProcessor<String, String> {
+
+    public ControlCharsRemover(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+        super(sourceLanguage, targetLanguage);
+    }
 
     @Override
     public String call(String param, Map<String, Object> metadata) {
@@ -25,11 +31,6 @@ public class ControlCharsRemover implements TextProcessor<String, String> {
         }
 
         return new String(buffer, 0, newSize);
-    }
-
-    @Override
-    public void close() {
-        // Nothing to do
     }
 
 }

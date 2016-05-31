@@ -3,11 +3,11 @@ package eu.modernmt.processing.detokenizer.jflex;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.Languages;
 import eu.modernmt.processing.detokenizer.Detokenizer;
-import eu.modernmt.processing.detokenizer.MultiInstanceDetokenizer;
 import eu.modernmt.processing.detokenizer.jflex.annotators.EnglishSpaceAnnotator;
 import eu.modernmt.processing.detokenizer.jflex.annotators.FrenchSpaceAnnotator;
 import eu.modernmt.processing.detokenizer.jflex.annotators.ItalianSpaceAnnotator;
 import eu.modernmt.processing.detokenizer.jflex.annotators.StandardSpaceAnnotator;
+import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.ProcessingException;
 
 import java.io.IOException;
@@ -20,79 +20,53 @@ import java.util.Map;
 /**
  * Created by davide on 29/01/16.
  */
-public class JFlexDetokenizer extends MultiInstanceDetokenizer {
+public class JFlexDetokenizer extends Detokenizer {
 
-    public static final JFlexDetokenizer DEFAULT = new JFlexDetokenizer(StandardSpaceAnnotator.class);
-    public static final JFlexDetokenizer ENGLISH = new JFlexDetokenizer(EnglishSpaceAnnotator.class);
-    public static final JFlexDetokenizer ITALIAN = new JFlexDetokenizer(ItalianSpaceAnnotator.class);
-    public static final JFlexDetokenizer FRENCH = new JFlexDetokenizer(FrenchSpaceAnnotator.class);
-
-    public static final Map<Locale, JFlexDetokenizer> ALL = new HashMap<>();
+    private static final Map<Locale, Class<? extends JFlexSpaceAnnotator>> ANNOTATORS = new HashMap<>();
 
     static {
-        ALL.put(Languages.ENGLISH, ENGLISH);
-        ALL.put(Languages.ITALIAN, ITALIAN);
-        ALL.put(Languages.FRENCH, FRENCH);
+        ANNOTATORS.put(Languages.ENGLISH, EnglishSpaceAnnotator.class);
+        ANNOTATORS.put(Languages.ITALIAN, ItalianSpaceAnnotator.class);
+        ANNOTATORS.put(Languages.FRENCH, FrenchSpaceAnnotator.class);
     }
 
-    private static class JFlexDetokenizerFactory implements DetokenizerFactory {
+    private final JFlexSpaceAnnotator annotator;
 
-        private Class<? extends JFlexSpaceAnnotator> annotatorClass;
+    public JFlexDetokenizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+        super(sourceLanguage, targetLanguage);
 
-        public JFlexDetokenizerFactory(Class<? extends JFlexSpaceAnnotator> annotatorClass) {
-            this.annotatorClass = annotatorClass;
-        }
-
-        @Override
-        public Detokenizer newInstance() {
+        Class<? extends JFlexSpaceAnnotator> annotatorClass = ANNOTATORS.get(sourceLanguage);
+        if (annotatorClass == null) {
+            this.annotator = new StandardSpaceAnnotator((Reader) null);
+        } else {
             try {
-                JFlexSpaceAnnotator annotator = this.annotatorClass.getConstructor(Reader.class).newInstance((Reader) null);
-                return new JFlexDetokenizerImpl(annotator);
+                this.annotator = annotatorClass.getConstructor(Reader.class).newInstance((Reader) null);
             } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException | InstantiationException e) {
-                throw new Error("Error during class instantiation: " + this.annotatorClass.getName(), e);
+                throw new Error("Error during class instantiation: " + annotatorClass.getName(), e);
             }
         }
-
     }
 
-    public JFlexDetokenizer(Class<? extends JFlexSpaceAnnotator> annotatorClass) {
-        super(new JFlexDetokenizerFactory(annotatorClass));
+    @Override
+    public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
+        SpacesAnnotatedString text = SpacesAnnotatedString.fromTranslation(translation);
+
+        annotator.reset(text.getReader());
+
+        int type;
+        while ((type = next(annotator)) != JFlexSpaceAnnotator.YYEOF) {
+            annotator.annotate(text, type);
+        }
+
+        text.apply(translation);
+        return translation;
     }
 
-    private static class JFlexDetokenizerImpl implements Detokenizer {
-
-        private final JFlexSpaceAnnotator annotator;
-
-        public JFlexDetokenizerImpl(JFlexSpaceAnnotator annotator) {
-            this.annotator = annotator;
-        }
-
-        @Override
-        public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
-            SpacesAnnotatedString text = SpacesAnnotatedString.fromTranslation(translation);
-
-            annotator.reset(text.getReader());
-
-            int type;
-            while ((type = next(annotator)) != JFlexSpaceAnnotator.YYEOF) {
-                annotator.annotate(text, type);
-            }
-
-            text.apply(translation);
-            return translation;
-        }
-
-        private static int next(JFlexSpaceAnnotator annotator) throws ProcessingException {
-            try {
-                return annotator.next();
-            } catch (IOException e) {
-                throw new ProcessingException(e);
-            }
-        }
-
-        @Override
-        public void close() {
-            // Nothing to do
+    private static int next(JFlexSpaceAnnotator annotator) throws ProcessingException {
+        try {
+            return annotator.next();
+        } catch (IOException e) {
+            throw new ProcessingException(e);
         }
     }
 

@@ -1,11 +1,13 @@
 package eu.modernmt.processing.xml;
 
 import eu.modernmt.model.Tag;
+import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.TextProcessor;
 import eu.modernmt.processing.framework.string.XMLEditableString;
 
 import java.nio.CharBuffer;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -13,9 +15,13 @@ import java.util.regex.Pattern;
 /**
  * Created by davide on 08/03/16.
  */
-public class XMLStringBuilder implements TextProcessor<String, XMLEditableString> {
+public class XMLStringBuilder extends TextProcessor<String, XMLEditableString> {
 
     private static final Pattern EntityPattern = Pattern.compile("&((#[0-9]{1,4})|(#x[0-9a-fA-F]{1,4})|([a-zA-Z]+));");
+
+    public XMLStringBuilder(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+        super(sourceLanguage, targetLanguage);
+    }
 
     @Override
     public XMLEditableString call(String source, Map<String, Object> metadata) throws ProcessingException {
@@ -69,11 +75,6 @@ public class XMLStringBuilder implements TextProcessor<String, XMLEditableString
 
         if (stringIndex < end)
             builder.append(chars, stringIndex, end - stringIndex);
-    }
-
-    @Override
-    public void close() {
-        // Nothing to do
     }
 
 }

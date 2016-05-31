@@ -7,6 +7,7 @@ import edu.stanford.nlp.ling.HasWord;
 import edu.stanford.nlp.process.PTBTokenizer;
 import edu.stanford.nlp.process.TokenizerFactory;
 import eu.modernmt.processing.Languages;
+import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.string.XMLEditableString;
 import eu.modernmt.processing.tokenizer.Tokenizer;
@@ -22,36 +23,33 @@ import java.util.Map;
 /**
  * Created by davide on 11/11/15.
  */
-public class CoreNLPTokenizer implements Tokenizer {
+public class CoreNLPTokenizer extends Tokenizer {
 
-    public static final Tokenizer ENGLISH = new CoreNLPTokenizer(PTBTokenizer.factory(), "ptb3Escaping=false,asciiQuotes=true,normalizeSpace=false");
-    public static final Tokenizer ARABIC = new CoreNLPTokenizer(ArabicTokenizer.factory());
-    public static final Tokenizer FRENCH = new CoreNLPTokenizer(FrenchTokenizer.factory());
-    public static final Tokenizer SPANISH = new CoreNLPTokenizer(SpanishTokenizer.factory());
-
-    public static final Map<Locale, Tokenizer> ALL = new HashMap<>();
+    private static final Map<Locale, TokenizerFactory<?>> FACTORIES = new HashMap<>();
 
     static {
-        ALL.put(Languages.ENGLISH, ENGLISH);
-        ALL.put(Languages.ARABIC, ARABIC);
-        ALL.put(Languages.FRENCH, FRENCH);
-        ALL.put(Languages.SPANISH, SPANISH);
+        FACTORIES.put(Languages.ENGLISH, PTBTokenizer.factory());
+        FACTORIES.put(Languages.ARABIC, ArabicTokenizer.factory());
+        FACTORIES.put(Languages.FRENCH, FrenchTokenizer.factory());
+        FACTORIES.put(Languages.SPANISH, SpanishTokenizer.factory());
     }
 
-    private TokenizerFactory<?> factory;
+    private final TokenizerFactory<?> factory;
 
-    private CoreNLPTokenizer(TokenizerFactory<?> factory) {
-        this(factory, null);
-    }
+    public CoreNLPTokenizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+        super(sourceLanguage, targetLanguage);
 
-    private CoreNLPTokenizer(TokenizerFactory<?> factory, String options) {
-        this.factory = factory;
-        if (options != null)
-            factory.setOptions(options);
+        this.factory = FACTORIES.get(sourceLanguage);
+        if (this.factory == null)
+            throw new LanguageNotSupportedException(sourceLanguage);
+
+
+        if (Languages.sameLanguage(Languages.ENGLISH, sourceLanguage))
+            this.factory.setOptions("ptb3Escaping=false,asciiQuotes=true,normalizeSpace=false");
     }
 
     @Override
-    public XMLEditableString call(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
+    public XMLEditableString tokenize(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
         Reader reader = new StringReader(text.toString());
         edu.stanford.nlp.process.Tokenizer<?> tokenizer;
         synchronized (this) {
@@ -72,10 +70,6 @@ public class CoreNLPTokenizer implements Tokenizer {
         }
 
         return TokenizerOutputTransformer.transform(text, result);
-    }
-
-    @Override
-    public void close() {
     }
 
 }

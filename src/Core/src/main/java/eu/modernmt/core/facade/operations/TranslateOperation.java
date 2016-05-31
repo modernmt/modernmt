@@ -75,9 +75,9 @@ public class TranslateOperation extends Operation<DecoderTranslation> {
             translation = nbest > 0 ? decoder.translate(sentence, nbest) : decoder.translate(sentence);
         }
 
-        postprocessor.process(translation, processing);
+        postprocessor.process(translation);
         if (translation.hasNbest())
-            postprocessor.process(translation.getNbest(), processing);
+            postprocessor.process(translation.getNbest());
 
         return translation;
     }

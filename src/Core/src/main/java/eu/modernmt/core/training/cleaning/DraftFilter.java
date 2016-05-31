@@ -1,7 +1,6 @@
 package eu.modernmt.core.training.cleaning;
 
 import eu.modernmt.model.BilingualCorpus;
-import eu.modernmt.processing.util.RareCharsNormalizer;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -12,8 +11,6 @@ import java.util.HashMap;
 public class DraftFilter implements BilingualCorpusFilter {
 
     protected static class Signature {
-
-        private static final RareCharsNormalizer NORMALIZER = new RareCharsNormalizer();
 
         private long signature;
 

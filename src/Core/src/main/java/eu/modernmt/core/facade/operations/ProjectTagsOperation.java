@@ -8,6 +8,7 @@ import eu.modernmt.core.Engine;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.Preprocessor;
+import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.xml.XMLTagProjector;
 import org.apache.logging.log4j.LogManager;
@@ -19,7 +20,16 @@ import org.apache.logging.log4j.Logger;
 public class ProjectTagsOperation extends Operation<Translation> {
 
     private static final Logger logger = LogManager.getLogger(ProjectTagsOperation.class);
-    private static final XMLTagProjector tagProjector = new XMLTagProjector();
+    private static final XMLTagProjector tagProjector;
+
+    static {
+        try {
+            tagProjector = new XMLTagProjector();
+        } catch (LanguageNotSupportedException e) {
+            throw new Error("This cannot happen", e);
+        }
+    }
+
     private static Preprocessor targetPreprocessor = null;
 
     private String sentenceString;

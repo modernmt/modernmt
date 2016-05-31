@@ -12,6 +12,7 @@ import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFactory;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
+import eu.modernmt.processing.framework.ProcessingException;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -109,7 +110,11 @@ public class Engine {
         if (preprocessor == null) {
             synchronized (this) {
                 if (preprocessor == null) {
-                    preprocessor = new Preprocessor(config.getSourceLanguage());
+                    try {
+                        preprocessor = new Preprocessor(config.getSourceLanguage(), config.getTargetLanguage());
+                    } catch (ProcessingException e) {
+                        throw new LazyLoadException(e);
+                    }
                 }
             }
         }
@@ -121,7 +126,11 @@ public class Engine {
         if (postprocessor == null) {
             synchronized (this) {
                 if (postprocessor == null) {
-                    postprocessor = new Postprocessor(config.getTargetLanguage());
+                    try {
+                        postprocessor = new Postprocessor(config.getSourceLanguage(), config.getTargetLanguage());
+                    } catch (ProcessingException e) {
+                        throw new LazyLoadException(e);
+                    }
                 }
             }
         }

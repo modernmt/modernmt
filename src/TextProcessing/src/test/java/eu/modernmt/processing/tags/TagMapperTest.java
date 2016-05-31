@@ -4,7 +4,6 @@ import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Tag;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
-import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.xml.XMLTagProjector;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -14,7 +13,7 @@ import static org.junit.Assert.*;
 public class TagMapperTest {
 
     @Test
-    public void testOpeningNotEmptyMonotone() throws ProcessingException {
+    public void testOpeningNotEmptyMonotone() throws Throwable {
         Sentence source = new Sentence(new Word[]{
                 new Word("hello", " "),
                 new Word("world", null),
@@ -45,7 +44,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testOpeningNotEmptyNonMonotone() throws ProcessingException {
+    public void testOpeningNotEmptyNonMonotone() throws Throwable {
         Sentence source = new Sentence(new Word[]{
                 new Word("hello", " "),
                 new Word("world", null),
@@ -77,7 +76,7 @@ public class TagMapperTest {
 
     @Test
     @Ignore
-    public void testEmptyTag() throws ProcessingException {
+    public void testEmptyTag() throws Throwable {
         Sentence source = new Sentence(new Word[]{
                 new Word("Example", " "),
                 new Word("with", " "),
@@ -111,7 +110,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testOpeningEmptyMonotone() throws ProcessingException {
+    public void testOpeningEmptyMonotone() throws Throwable {
         Sentence source = new Sentence(new Word[]{
                 new Word("hello", " "),
                 new Word("world", null),
@@ -143,7 +142,7 @@ public class TagMapperTest {
 
     @Test
     @Ignore
-    public void testOpeningEmptyNonMonotone() throws ProcessingException {
+    public void testOpeningEmptyNonMonotone() throws Throwable {
         Sentence source = new Sentence(new Word[]{
                 new Word("hello", " "),
                 new Word("world", null),
@@ -174,7 +173,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testOpeningNonClosing() throws ProcessingException {
+    public void testOpeningNonClosing() throws Throwable {
         Sentence source = new Sentence(new Word[]{
                 new Word("Example", " "),
                 new Word("with", " "),
@@ -208,7 +207,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testClosingNonOpening() throws ProcessingException {
+    public void testClosingNonOpening() throws Throwable {
         Sentence source = new Sentence(new Word[]{
                 new Word("Example", " "),
                 new Word("with", " "),
@@ -242,7 +241,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testEmbeddedTags() throws ProcessingException {
+    public void testEmbeddedTags() throws Throwable {
         Sentence source = new Sentence(new Word[]{
                 new Word("Example", " "),
                 new Word("with", " "),
@@ -279,7 +278,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testSpacedXMLCommentTags() throws ProcessingException {
+    public void testSpacedXMLCommentTags() throws Throwable {
         Sentence source = new Sentence(new Word[]{
                 new Word("Example", " "),
                 new Word("with", " "),
@@ -313,7 +312,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testNotSpacedXMLCommentTags() throws ProcessingException {
+    public void testNotSpacedXMLCommentTags() throws Throwable {
         Sentence source = new Sentence(new Word[]{
                 new Word("Example", " "),
                 new Word("with", " "),
@@ -347,7 +346,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testSingleXMLComment() throws ProcessingException {
+    public void testSingleXMLComment() throws Throwable {
         Sentence source = new Sentence(new Word[]{
                 new Word("This", " "),
                 new Word("is", " "),
@@ -381,7 +380,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testDTDTags() throws ProcessingException {
+    public void testDTDTags() throws Throwable {
         Sentence source = new Sentence(new Word[]{
                 new Word("Test", null),
         }, new Tag[]{
@@ -404,7 +403,7 @@ public class TagMapperTest {
     }
 
     @Test
-    public void testOnlyTags() throws ProcessingException {
+    public void testOnlyTags() throws Throwable {
         Sentence source = new Sentence(null, new Tag[]{
                 Tag.fromText("<a>", false, null, 0),
                 Tag.fromText("</a>", false, null, 0),

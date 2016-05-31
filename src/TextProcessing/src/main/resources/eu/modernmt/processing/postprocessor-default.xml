@@ -1,0 +1,14 @@
+<pipeline class="eu.modernmt.processing.framework.VoidProcessingPipeline">
+
+    <processor>eu.modernmt.processing.AlignmentsInterpolator</processor>
+
+    <processor>eu.modernmt.processing.detokenizer.jflex.JFlexDetokenizer</processor>
+
+    <processor>eu.modernmt.processing.WordTransformationFactory</processor>
+    <processor>eu.modernmt.processing.WordTransformer</processor>
+
+    <processor>eu.modernmt.processing.recaser.SimpleRecaser</processor>
+
+    <processor>eu.modernmt.processing.xml.XMLTagProjector</processor>
+
+</pipeline>

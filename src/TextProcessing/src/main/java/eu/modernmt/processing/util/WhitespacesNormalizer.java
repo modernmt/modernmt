@@ -1,15 +1,21 @@
 package eu.modernmt.processing.util;
 
+import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.TextProcessor;
 import eu.modernmt.processing.framework.string.XMLEditableString;
 
+import java.util.Locale;
 import java.util.Map;
 
 /**
  * Created by davide on 19/02/16.
  */
-public class WhitespacesNormalizer implements TextProcessor<XMLEditableString, XMLEditableString> {
+public class WhitespacesNormalizer extends TextProcessor<XMLEditableString, XMLEditableString> {
+
+    public WhitespacesNormalizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+        super(sourceLanguage, targetLanguage);
+    }
 
     @Override
     public XMLEditableString call(XMLEditableString string, Map<String, Object> metadata) throws ProcessingException {
@@ -48,10 +54,6 @@ public class WhitespacesNormalizer implements TextProcessor<XMLEditableString, X
     public static boolean isWhitespace(char c) {
         return ((0x0009 <= c && c <= 0x000D) || c == 0x0020 || c == 0x00A0 || c == 0x1680 ||
                 (0x2000 <= c && c <= 0x200A) || c == 0x202F || c == 0x205F || c == 0x3000);
-    }
-
-    @Override
-    public void close() {
     }
 
 }
