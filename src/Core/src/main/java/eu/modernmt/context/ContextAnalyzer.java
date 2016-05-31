@@ -16,7 +16,6 @@ import java.util.Locale;
  * Created by davide on 02/12/15.
  */
 public abstract class ContextAnalyzer implements Closeable, AutoCloseable {
-
     public void rebuild(Collection<? extends BilingualCorpus> documents, boolean useSourceLanguage) throws ContextAnalyzerException {
         ArrayList<Corpus> corpora = new ArrayList<>(documents.size());
         for (BilingualCorpus corpus : documents)
@@ -31,8 +30,14 @@ public abstract class ContextAnalyzer implements Closeable, AutoCloseable {
         return getContext(new StringCorpus(null, lang, query), limit);
     }
 
+    private static String getNameFromFile(File file) {
+        String fullname = file.getName();
+        int lastDot = fullname.lastIndexOf('.');
+        return fullname.substring(0, lastDot == -1 ? fullname.length() : lastDot);
+    }
+
     public List<ContextDocument> getContext(File source, Locale lang, int limit) throws ContextAnalyzerException {
-        return getContext(new FileCorpus(source, null, lang), limit);
+        return getContext(new FileCorpus(source, getNameFromFile(source), lang), limit);
     }
 
     public abstract List<ContextDocument> getContext(Corpus query, int limit) throws ContextAnalyzerException;
