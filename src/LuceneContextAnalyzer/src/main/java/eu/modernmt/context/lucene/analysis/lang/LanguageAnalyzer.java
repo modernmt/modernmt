@@ -56,7 +56,7 @@ public abstract class LanguageAnalyzer extends StopwordAnalyzerBase {
         analyzers.put("nl", org.apache.lucene.analysis.nl.DutchAnalyzer.class);
         analyzers.put("nl-BE", org.apache.lucene.analysis.nl.DutchAnalyzer.class);
         analyzers.put("th", org.apache.lucene.analysis.th.ThaiAnalyzer.class);
-        analyzers.put("cz", org.apache.lucene.analysis.cz.CzechAnalyzer.class);
+        analyzers.put("cs", org.apache.lucene.analysis.cz.CzechAnalyzer.class);
 
 
         ANALYZERS = Collections.unmodifiableMap(analyzers);
