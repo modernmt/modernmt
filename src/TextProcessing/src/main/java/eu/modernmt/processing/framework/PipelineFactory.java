@@ -7,6 +7,8 @@ import java.util.Locale;
  */
 public abstract class PipelineFactory<P, R> {
 
+
+
     public abstract ProcessingPipeline<P, R> newPipeline(Locale source, Locale target) throws ProcessingException;
 
 }

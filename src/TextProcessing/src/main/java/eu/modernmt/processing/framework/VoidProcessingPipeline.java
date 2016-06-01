@@ -1,6 +1,6 @@
 package eu.modernmt.processing.framework;
 
-import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -8,7 +8,7 @@ import java.util.Map;
  */
 public class VoidProcessingPipeline<P> extends ProcessingPipeline<P, Void> {
 
-    protected VoidProcessingPipeline(LinkedList<TextProcessor<Object, Object>> processors) {
+    public VoidProcessingPipeline(List<TextProcessor<Object, Object>> processors) {
         super(processors);
     }
 
