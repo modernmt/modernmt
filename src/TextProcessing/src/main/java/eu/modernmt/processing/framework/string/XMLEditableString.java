@@ -226,7 +226,7 @@ public class XMLEditableString {
         private int deltaIndexes;
         private boolean inUse;
 
-        protected Editor(XMLEditableString xmlEditableString) {
+        private Editor(XMLEditableString xmlEditableString) {
             this.xmlEditableString = xmlEditableString;
         }
 
@@ -237,8 +237,8 @@ public class XMLEditableString {
             this.inUse = true;
         }
 
-        public void replace(int startIndex, int length, String replace,
-                            TokenHook.TokenType tokenType) throws InvalidOperationException {
+        private void replace(int startIndex, int length, String replace,
+                             TokenHook.TokenType tokenType) throws InvalidOperationException {
             if (!this.inUse) {
                 throw new RuntimeException("Closed editor");
             }
@@ -277,7 +277,7 @@ public class XMLEditableString {
             replace(startIndex, length, null, TokenHook.TokenType.Word);
         }
 
-        protected void setXMLTag(int startIndex, int length) throws InvalidOperationException {
+        private void setXMLTag(int startIndex, int length) throws InvalidOperationException {
             replace(startIndex, length, " ", TokenHook.TokenType.XML);
         }
 
@@ -296,7 +296,7 @@ public class XMLEditableString {
             return this.xmlEditableString;
         }
 
-        protected boolean isInUse() {
+        private boolean isInUse() {
             return inUse;
         }
     }

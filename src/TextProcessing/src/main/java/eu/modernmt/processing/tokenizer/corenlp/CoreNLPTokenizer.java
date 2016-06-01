@@ -56,7 +56,7 @@ public class CoreNLPTokenizer extends Tokenizer {
             tokenizer = this.factory.getTokenizer(reader);
         }
 
-        ArrayList<String> result = new ArrayList<String>();
+        ArrayList<String> result = new ArrayList<>();
 
         Boolean hasWord = null;
         while (tokenizer.hasNext()) {
