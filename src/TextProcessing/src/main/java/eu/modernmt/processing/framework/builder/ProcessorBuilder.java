@@ -1,4 +1,4 @@
-package eu.modernmt.processing.framework.xml;
+package eu.modernmt.processing.framework.builder;
 
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.TextProcessor;
@@ -9,11 +9,11 @@ import java.util.Locale;
 /**
  * Created by davide on 31/05/16.
  */
-class XMLProcessorFactory implements IProcessorFactory {
+class ProcessorBuilder extends AbstractBuilder {
 
     private final String className;
 
-    XMLProcessorFactory(String className) {
+    ProcessorBuilder(String className) {
         this.className = className;
     }
 
@@ -23,16 +23,9 @@ class XMLProcessorFactory implements IProcessorFactory {
             return (TextProcessor<P, R>) Class.forName(className)
                     .getConstructor(Locale.class, Locale.class)
                     .newInstance(sourceLanguage, targetLanguage);
-        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
-            throw new Error("Unable to instantiate class " + className);
-        } catch (ClassCastException | ClassNotFoundException e) {
-            throw new ProcessingException("Invalid TextProcessor class specified", e);
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException | ClassCastException | ClassNotFoundException e) {
+            throw new ProcessingException("Invalid TextProcessor class specified: " + className, e);
         }
-    }
-
-    @Override
-    public boolean accept(Locale sourceLanguage, Locale targetLanguage) {
-        return true;
     }
 
 }

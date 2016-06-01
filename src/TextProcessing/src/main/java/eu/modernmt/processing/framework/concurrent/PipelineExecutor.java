@@ -1,6 +1,7 @@
 package eu.modernmt.processing.framework.concurrent;
 
 import eu.modernmt.processing.framework.*;
+import eu.modernmt.processing.framework.builder.PipelineBuilder;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -15,16 +16,16 @@ public class PipelineExecutor<P, R> {
 
     private final Locale source;
     private final Locale target;
-    private final PipelineFactory<P, R> factory;
+    private final PipelineBuilder<P, R> builder;
     private final int threads;
 
-    public PipelineExecutor(Locale source, Locale target, PipelineFactory<P, R> factory, int threads) {
+    public PipelineExecutor(Locale source, Locale target, PipelineBuilder<P, R> builder, int threads) {
         this.executor = Executors.newFixedThreadPool(threads);
         this.pipelineBuffer = new ConcurrentLinkedQueue<>();
 
         this.source = source;
         this.target = target;
-        this.factory = factory;
+        this.builder = builder;
         this.threads = threads;
     }
 
@@ -102,7 +103,7 @@ public class PipelineExecutor<P, R> {
         ProcessingPipeline<P, R> instance = pipelineBuffer.poll();
 
         if (instance == null)
-            instance = factory.newPipeline(source, target);
+            instance = builder.newPipeline(source, target);
 
         return instance;
     }

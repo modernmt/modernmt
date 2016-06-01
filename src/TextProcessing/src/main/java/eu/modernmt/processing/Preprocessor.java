@@ -4,8 +4,9 @@ import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.framework.PipelineInputStream;
 import eu.modernmt.processing.framework.PipelineOutputStream;
 import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.framework.builder.PipelineBuilder;
+import eu.modernmt.processing.framework.builder.XMLPipelineBuilder;
 import eu.modernmt.processing.framework.concurrent.PipelineExecutor;
-import eu.modernmt.processing.framework.xml.XMLPipelineFactory;
 import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.util.TokensOutputter;
 import org.apache.commons.io.IOUtils;
@@ -24,31 +25,28 @@ import java.util.concurrent.TimeUnit;
  */
 public class Preprocessor implements Closeable {
 
+    private static final int DEFAULT_THREADS = Runtime.getRuntime().availableProcessors();
+
     private PipelineExecutor<String, Sentence> executor;
 
     public Preprocessor(Locale sourceLanguage) throws ProcessingException {
-        this(sourceLanguage, null);
+        this(sourceLanguage, null, DEFAULT_THREADS, getDefaultBuilder());
     }
 
     public Preprocessor(Locale sourceLanguage, Locale targetLanguage) throws ProcessingException {
-        this(sourceLanguage, targetLanguage, Runtime.getRuntime().availableProcessors());
+        this(sourceLanguage, targetLanguage, DEFAULT_THREADS, getDefaultBuilder());
+    }
+
+    public Preprocessor(Locale sourceLanguage, Locale targetLanguage, PipelineBuilder<String, Sentence> builder) throws ProcessingException {
+        this(sourceLanguage, targetLanguage, DEFAULT_THREADS, builder);
     }
 
     public Preprocessor(Locale sourceLanguage, Locale targetLanguage, int threads) throws ProcessingException {
-        String xmlPath = Preprocessor.class.getPackage().getName().replace('.', '/');
-        xmlPath = xmlPath + "/preprocessor-default.xml";
+        this(sourceLanguage, targetLanguage, threads, getDefaultBuilder());
+    }
 
-        InputStream stream = null;
-
-        try {
-            stream = Preprocessor.class.getClassLoader().getResourceAsStream(xmlPath);
-            XMLPipelineFactory<String, Sentence> factory = XMLPipelineFactory.loadFromXML(stream);
-            this.executor = new PipelineExecutor<>(sourceLanguage, targetLanguage, factory, threads);
-        } catch (IOException e) {
-            throw new ProcessingException("Unable to final default preprocessor file", e);
-        } finally {
-            IOUtils.closeQuietly(stream);
-        }
+    public Preprocessor(Locale sourceLanguage, Locale targetLanguage, int threads, PipelineBuilder<String, Sentence> builder) throws ProcessingException {
+        this.executor = new PipelineExecutor<>(sourceLanguage, targetLanguage, builder, threads);
     }
 
     public List<Sentence> process(List<String> text, boolean tokenize) throws ProcessingException {
@@ -100,9 +98,27 @@ public class Preprocessor implements Closeable {
         }
     }
 
+    private static XMLPipelineBuilder<String, Sentence> getDefaultBuilder() throws ProcessingException {
+        String xmlPath = Preprocessor.class.getPackage().getName().replace('.', '/');
+        xmlPath = xmlPath + "/preprocessor-default.xml";
+
+        InputStream stream = null;
+
+        try {
+            stream = Preprocessor.class.getClassLoader().getResourceAsStream(xmlPath);
+            if (stream == null)
+                throw new Error("Default preprocessor definition not found: " + xmlPath);
+
+            return XMLPipelineBuilder.loadFromXML(stream);
+        } catch (IOException e) {
+            throw new ProcessingException("Unable to parse default definition: " + xmlPath, e);
+        } finally {
+            IOUtils.closeQuietly(stream);
+        }
+    }
 
     public static void main(String[] args) throws Throwable {
-        Preprocessor preprocessor = new Preprocessor(Locale.ENGLISH);
+        Preprocessor preprocessor = new Preprocessor(Locale.ENGLISH, null);
 
         try {
             Sentence sentence = preprocessor.process("That's example 101: \"Hello <b>world</b>\"", true);

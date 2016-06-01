@@ -1,4 +1,4 @@
-package eu.modernmt.processing.framework.xml;
+package eu.modernmt.processing.framework.builder;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -7,12 +7,12 @@ import java.util.Locale;
 /**
  * Created by davide on 31/05/16.
  */
-class XMLFilteredProcessorFactory extends XMLProcessorFactory {
+class FilteredProcessorBuilder extends ProcessorBuilder {
 
     private final Filter sourceFilter;
     private final Filter targetFilter;
 
-    public XMLFilteredProcessorFactory(String className, String sourceFilter, String targetFilter) {
+    public FilteredProcessorBuilder(String className, String sourceFilter, String targetFilter) {
         super(className);
         this.sourceFilter = parseFilter(sourceFilter);
         this.targetFilter = parseFilter(targetFilter);

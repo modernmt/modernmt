@@ -3,8 +3,9 @@ package eu.modernmt.processing;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.framework.PipelineInputStream;
 import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.framework.builder.PipelineBuilder;
+import eu.modernmt.processing.framework.builder.XMLPipelineBuilder;
 import eu.modernmt.processing.framework.concurrent.PipelineExecutor;
-import eu.modernmt.processing.framework.xml.XMLPipelineFactory;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
@@ -21,31 +22,28 @@ import java.util.concurrent.TimeUnit;
  */
 public class Postprocessor implements Closeable {
 
+    private static final int DEFAULT_THREADS = Runtime.getRuntime().availableProcessors();
+
     private PipelineExecutor<Translation, Void> executor;
 
     public Postprocessor(Locale targetLanguage) throws ProcessingException {
-        this(null, targetLanguage);
+        this(null, targetLanguage, DEFAULT_THREADS, getDefaultBuilder());
     }
 
     public Postprocessor(Locale sourceLanguage, Locale targetLanguage) throws ProcessingException {
-        this(sourceLanguage, targetLanguage, Runtime.getRuntime().availableProcessors());
+        this(sourceLanguage, targetLanguage, DEFAULT_THREADS, getDefaultBuilder());
+    }
+
+    public Postprocessor(Locale sourceLanguage, Locale targetLanguage, PipelineBuilder<Translation, Void> builder) throws ProcessingException {
+        this(sourceLanguage, targetLanguage, DEFAULT_THREADS, builder);
     }
 
     public Postprocessor(Locale sourceLanguage, Locale targetLanguage, int threads) throws ProcessingException {
-        String xmlPath = Preprocessor.class.getPackage().getName().replace('.', '/');
-        xmlPath = xmlPath + "/postprocessor-default.xml";
+        this(sourceLanguage, targetLanguage, threads, getDefaultBuilder());
+    }
 
-        InputStream stream = null;
-
-        try {
-            stream = Preprocessor.class.getClassLoader().getResourceAsStream(xmlPath);
-            XMLPipelineFactory<Translation, Void> factory = XMLPipelineFactory.loadFromXML(stream);
-            this.executor = new PipelineExecutor<>(sourceLanguage, targetLanguage, factory, threads);
-        } catch (IOException e) {
-            throw new ProcessingException("Unable to final default postprocessor file", e);
-        } finally {
-            IOUtils.closeQuietly(stream);
-        }
+    public Postprocessor(Locale sourceLanguage, Locale targetLanguage, int threads, PipelineBuilder<Translation, Void> builder) throws ProcessingException {
+        this.executor = new PipelineExecutor<>(sourceLanguage, targetLanguage, builder, threads);
     }
 
     @SuppressWarnings("unchecked")
@@ -77,4 +75,21 @@ public class Postprocessor implements Closeable {
         }
     }
 
+    private static XMLPipelineBuilder<Translation, Void> getDefaultBuilder() throws ProcessingException {
+        String xmlPath = Postprocessor.class.getPackage().getName().replace('.', '/');
+        xmlPath = xmlPath + "/postprocessor-default.xml";
+        InputStream stream = null;
+
+        try {
+            stream = Postprocessor.class.getClassLoader().getResourceAsStream(xmlPath);
+            if (stream == null)
+                throw new Error("Default postprocessor definition not found: " + xmlPath);
+
+            return XMLPipelineBuilder.loadFromXML(stream);
+        } catch (IOException e) {
+            throw new ProcessingException("Unable to parse default definition: " + xmlPath, e);
+        } finally {
+            IOUtils.closeQuietly(stream);
+        }
+    }
 }

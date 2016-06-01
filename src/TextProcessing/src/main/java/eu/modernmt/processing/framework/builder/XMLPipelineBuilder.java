@@ -1,9 +1,7 @@
-package eu.modernmt.processing.framework.xml;
+package eu.modernmt.processing.framework.builder;
 
-import eu.modernmt.processing.framework.PipelineFactory;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.ProcessingPipeline;
-import eu.modernmt.processing.framework.TextProcessor;
 import org.apache.commons.io.IOUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -24,25 +22,19 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Created by davide on 31/05/16.
  */
-public class XMLPipelineFactory<P, R> extends PipelineFactory<P, R> {
+public class XMLPipelineBuilder<P, R> extends PipelineBuilder<P, R> {
 
-    private final List<IProcessorFactory> factories;
-    private final Class<ProcessingPipeline> pipelineClass;
-
-    private XMLPipelineFactory(Class<ProcessingPipeline> pipelineClass, List<IProcessorFactory> factories) {
-        this.pipelineClass = pipelineClass;
-        this.factories = factories;
+    protected XMLPipelineBuilder(List<AbstractBuilder> builders, Class<ProcessingPipeline> pipelineClass) {
+        super(builders, pipelineClass);
     }
 
-    public static <P, R> XMLPipelineFactory<P, R> loadFromXML(File file) throws IOException, ProcessingException {
+    public static <P, R> XMLPipelineBuilder<P, R> loadFromXML(File file) throws IOException, ProcessingException {
         FileInputStream input = null;
 
         try {
@@ -54,7 +46,7 @@ public class XMLPipelineFactory<P, R> extends PipelineFactory<P, R> {
     }
 
     @SuppressWarnings("unchecked")
-    public static <P, R> XMLPipelineFactory<P, R> loadFromXML(InputStream input) throws IOException, ProcessingException {
+    public static <P, R> XMLPipelineBuilder<P, R> loadFromXML(InputStream input) throws IOException, ProcessingException {
         Document xml = getXMLDocument(input);
         Element pipeline = xml.getDocumentElement();
 
@@ -69,16 +61,16 @@ public class XMLPipelineFactory<P, R> extends PipelineFactory<P, R> {
             }
         }
 
-        ArrayList<IProcessorFactory> factories = new ArrayList<>();
+        ArrayList<AbstractBuilder> builders = new ArrayList<>();
 
         NodeList processors = pipeline.getChildNodes();
         for (int i = 0; i < processors.getLength(); i++) {
             Node node = processors.item(i);
             if (node instanceof Element)
-                factories.add(parseNode((Element) node));
+                builders.add(parseNode((Element) node));
         }
 
-        return new XMLPipelineFactory(pipelineClass, factories);
+        return new XMLPipelineBuilder(builders, pipelineClass);
     }
 
     private static Document getXMLDocument(InputStream input) throws ProcessingException, IOException {
@@ -119,49 +111,34 @@ public class XMLPipelineFactory<P, R> extends PipelineFactory<P, R> {
         return xml;
     }
 
-    private static IProcessorFactory parseNode(Element node) {
+    private static AbstractBuilder parseNode(Element node) {
         String tag = node.getTagName();
 
         if ("processor".equals(tag)) {
             return getProcessorNode(node);
         } else if ("processorGroup".equals(tag)) {
-            ArrayList<XMLProcessorFactory> factories = new ArrayList<>();
+            ArrayList<ProcessorBuilder> factories = new ArrayList<>();
 
             NodeList nodes = node.getElementsByTagName("processor");
             for (int i = 0; i < nodes.getLength(); i++)
                 factories.add(getProcessorNode((Element) nodes.item(i)));
 
-            return new XMLProcessorGroupFactory(factories);
+            return new ProcessorGroupBuilder(factories);
         }
 
         throw new Error("This should never happen");
     }
 
-    private static XMLProcessorFactory getProcessorNode(Element node) {
+    private static ProcessorBuilder getProcessorNode(Element node) {
         String sourceAttribute = node.hasAttribute("source") ? node.getAttribute("source") : null;
         String targetAttribute = node.hasAttribute("target") ? node.getAttribute("target") : null;
         String className = node.getTextContent().trim();
 
         if (sourceAttribute == null && targetAttribute == null)
-            return new XMLProcessorFactory(className);
+            return new ProcessorBuilder(className);
         else
-            return new XMLFilteredProcessorFactory(className, sourceAttribute, targetAttribute);
+            return new FilteredProcessorBuilder(className, sourceAttribute, targetAttribute);
     }
 
-    @SuppressWarnings("unchecked")
-    public ProcessingPipeline<P, R> newPipeline(Locale source, Locale target) throws ProcessingException {
-        ArrayList<TextProcessor> processors = new ArrayList<>(factories.size());
-
-        for (IProcessorFactory factory : factories) {
-            if (factory.accept(source, target))
-                processors.add(factory.create(source, target));
-        }
-
-        try {
-            return (ProcessingPipeline<P, R>) pipelineClass.getConstructor(List.class).newInstance(processors);
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            throw new ProcessingException("Failed to instantiate class " + pipelineClass, e);
-        }
-    }
 
 }
