@@ -23,17 +23,9 @@ public abstract class Tokenizer extends TextProcessor<XMLEditableString, XMLEdit
     public final XMLEditableString call(XMLEditableString param, Map<String, Object> metadata) throws ProcessingException {
         Boolean enable = (Boolean) metadata.get(KEY_ENABLE);
 
-        return (enable == null || enable) ? tokenize(param, metadata) : whitespaceTokenize(param);
+        return (enable == null || enable) ? tokenize(param, metadata) : WhitespaceTokenizer.tokenize(param);
     }
 
     protected abstract XMLEditableString tokenize(XMLEditableString param, Map<String, Object> metadata) throws ProcessingException;
 
-    private XMLEditableString whitespaceTokenize(XMLEditableString param) throws ProcessingException {
-        String[] tokens = param.toString().trim().split(" +");
-
-        if (tokens.length == 1 && tokens[0].isEmpty())
-            return TokenizerOutputTransformer.transform(param, new String[0]);
-        else
-            return TokenizerOutputTransformer.transform(param, tokens);
-    }
 }
