@@ -6,7 +6,6 @@ import signal
 import subprocess
 import tempfile
 import time
-import ConfigParser
 
 import requests
 
@@ -37,8 +36,9 @@ class MMTApi:
     def _unpack(r):
         if r.status_code != requests.codes.ok:
             raise Exception('HTTP request failed with code ' + str(r.status_code) + ': ' + r.url)
+        content = r.json()
 
-        return r.json()['data']
+        return content['data'] if 'data' in content else None
 
     def _get(self, endpoint, params=None):
         url = self._url_template.format(port=self.port, endpoint=endpoint)

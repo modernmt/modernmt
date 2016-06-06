@@ -9,7 +9,7 @@ public abstract class VoidAction extends JSONAction {
     protected final JSONActionResult getResult(RESTRequest req, Parameters params) throws Throwable {
         try {
             execute(req, params);
-            return new VoidActionResult();
+            return VoidActionResult.INSTANCE;
         } catch (NotFoundException e) {
             return null;
         }
