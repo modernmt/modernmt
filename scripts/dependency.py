@@ -1,5 +1,5 @@
 import re
-from ConfigParser import ConfigParser, NoOptionError
+from ConfigParser import ConfigParser, NoOptionError, NoSectionError
 
 __author__ = 'Davide Caroselli'
 
@@ -77,7 +77,7 @@ class Injector:
                         value = (value == 'True')
                     elif ftype is not basestring:
                         value = ftype(value)
-                except NoOptionError:
+                except (NoOptionError, NoSectionError):
                     value = defval
 
                 self._params[section][field] = value

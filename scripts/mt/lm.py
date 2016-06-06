@@ -20,7 +20,7 @@ def meminfo():
 
 
 class LanguageModel(MosesFeature):
-    available_types = ['AdaptiveIRSTLM', 'MultiplexedIRSTLM', 'StaticIRSTLM', 'KenLM']
+    available_types = ['MultiplexedLM', 'StaticIRSTLM', 'KenLM']
 
     injector_section = 'lm'
     injectable_fields = {

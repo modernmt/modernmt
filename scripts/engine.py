@@ -186,9 +186,9 @@ class _MMTEngineBuilder:
 class MMTEngine:
     injector_section = 'engine'
     injectable_fields = {
-        'lm_type': ('LM implementation', (basestring, LanguageModel.available_types), 'MultiplexedLM'),
+        'lm_type': ('LM implementation', (basestring, LanguageModel.available_types), None),
         'aligner_type': ('Aligner implementation',
-                         (basestring, WordAligner.available_types), WordAligner.available_types[0]),
+                         (basestring, WordAligner.available_types), None),
         'enable_tag_projection': ('Enable Tag Projection, this may take some time during engine startup.', bool, False)
     }
 
@@ -243,6 +243,11 @@ class MMTEngine:
         if self.target_lang is None or self.source_lang is None:
             raise IllegalStateException('Engine target language or source language must be specified')
 
+        if self._lm_type is None:
+            self._lm_type = LanguageModel.available_types[0]
+        if self._aligner_type is None:
+            self._aligner_type = WordAligner.available_types[0]
+
         self.training_preprocessor = TrainingPreprocessor()
         self.preprocessor = Preprocessor()
 
@@ -285,7 +290,13 @@ class MMTEngine:
 
     def write_config(self):
         with open(self._config_file, 'wb') as out:
-            self._config.write(out)
+            out.write("[%s]\n" % self.injector_section)
+
+            for (key, value) in self._config.items(self.injector_section):
+                if value is not None:
+                    key = " = ".join((key, str(value).replace('\n', '\n\t')))
+                    out.write("%s\n" % key)
+            out.write("\n")
 
             if self._optimal_weights is not None and len(self._optimal_weights) > 0:
                 out.write('[weights]\n')
