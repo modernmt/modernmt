@@ -39,14 +39,17 @@ A JSON array of objects with ```id``` and ```score````:
 ```GET context?text=Mr+President```
 
 ```json
-[
-    {
-        "id": "europarl",
-        "score": 0.13375875
-    },
-    {
-        "id": "ibm",
-        "score": 0.008800022
-    }
-]
+{
+    "data": [
+        {
+            "id": "europarl",
+            "score": 0.13375875
+        },
+        {
+            "id": "ibm",
+            "score": 0.008800022
+        }
+    ],
+    "status": 200
+}
 ```
