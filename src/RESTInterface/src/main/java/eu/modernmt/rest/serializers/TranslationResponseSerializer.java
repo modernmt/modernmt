@@ -18,7 +18,7 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
     public JsonElement serialize(TranslationResponse src, Type typeOfSrc, JsonSerializationContext context) {
         JsonObject json = new JsonObject();
         json.addProperty("translation", src.processing ? src.translation.toString() : TokensOutputter.toString(src.translation, false, true));
-        json.addProperty("took", src.translation.getElapsedTime());
+        json.addProperty("decodingTime", src.translation.getElapsedTime());
 
         if (src.session > 0L)
             json.addProperty("session", src.session);

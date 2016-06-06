@@ -16,7 +16,7 @@ public class RESTResponse {
     protected final Logger logger = LogManager.getLogger(getClass());
 
     private HttpServletResponse response;
-    private JsonElement content = null;
+    private JsonObject content = null;
 
     public RESTResponse(HttpServletResponse response) {
         this.response = response;
@@ -71,7 +71,16 @@ public class RESTResponse {
     }
 
     private void output(int httpStatus, JsonElement json, Throwable throwable) {
-        content = throwable == null ? json : encode(throwable);
+        if (content != null)
+            throw new IllegalStateException("Output has been already set");
+
+        content = new JsonObject();
+        content.addProperty("status", httpStatus);
+
+        if (throwable != null)
+            content.add("error", encode(throwable));
+        else if (json != null)
+            content.add("data", json);
 
         response.setStatus(httpStatus);
         response.setContentType("application/json; charset=utf-8");
@@ -104,9 +113,7 @@ public class RESTResponse {
 //            code = ((ClientException) e).getCode();
 
         // Encoding
-        JsonObject json = new JsonObject();
         JsonObject error = new JsonObject();
-        json.add("error", error);
 
         error.addProperty("type", type);
         if (msg != null)
@@ -114,7 +121,7 @@ public class RESTResponse {
 //        if (code > 0)
 //            error.addProperty("code", code);
 
-        return json;
+        return error;
     }
 
     public int getHttpStatus() {
