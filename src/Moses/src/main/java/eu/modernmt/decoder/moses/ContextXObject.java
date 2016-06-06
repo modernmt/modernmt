@@ -13,7 +13,7 @@ class ContextXObject {
     public final float[] values;
 
     public static ContextXObject build(List<ContextDocument> context) {
-        if (context != null && context.size() > 0) {
+        if (context != null) {
             String[] keys = new String[context.size()];
             float[] values = new float[context.size()];
 
