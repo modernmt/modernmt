@@ -29,15 +29,13 @@ Translation with tags:  ```<br>ciao, <b id="1">primo<b id="2"> test<br>.```
 
 ```t```: the XML encoded translation.
 
-```sl*```: the source language (RFC-3066).
+```sl```: the source language (RFC-3066).
 
-```tl*```: the target language (RFC-3066).
+```tl```: the target language (RFC-3066).
 
-```d```: if equals to 1 then the source and target tokens and their alignments will be added to the json response.
+```d```: (optional) if equals to 1 then the source and target tokens and their alignments will be added to the json response.
 
-```symmetrization```: possible values are `Intersection`, `Union`, `GrowDiagonalFinalAnd` (default option) and `GrowDiagonal`.
-
-```*```: mandatory fields
+```symmetrization```: (optional) possible values are `Intersection`, `Union`, `GrowDiagonalFinalAnd` (default option) and `GrowDiagonal`.
 
 **Output:**
 
@@ -45,11 +43,14 @@ A JSON object with a key ```translation``` whose value is a XML encoded String r
 
 ### API call example
 
-```GET http://localhost:8045/tags-projection?s=<br>hello%2C%20this%20is%20the%20%3Cb%3Efirst%3C%2Fb%3E%20test%26t%3Dciao%2C%20primo%20test.```
+```GET tags-projection?sl=en&tl=it&s=%3Cbr%3Ehello%2C%20%3Cb%20id%3D%221%22%3Efirst%3Cb%20id%3D%222%22%3E%20test%3Cbr%3E.&t=ciao%2C%20primo%20test.```
 
 
 ```json
-    {
+{
+    "data": {
         "translation": "<br>ciao, <b id=\"1\">primo<b id=\"2\"> test<br>."
-    }
+    },
+    "status": 200
+}
 ```

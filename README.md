@@ -54,19 +54,23 @@ MMT will return a json structure showing the translation and the context similar
 ```
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-100   107  100   107    0     0    624      0 --:--:-- --:--:-- --:--:--   625
+100   145  100   145    0     0  14777      0 --:--:-- --:--:-- --:--:-- 16111
 {
-    "context": [
-        {
-            "id": "ibm",
-            "score": 0.050385196
-        },
-        {
-            "id": "europarl",
-            "score": 0.0074931374
-        }
-    ],
-    "translation": "mondo"
+    "data": {
+        "context": [
+            {
+                "id": "ibm",
+                "score": 0.048597444
+            },
+            {
+                "id": "europarl",
+                "score": 0.007114725
+            }
+        ],
+        "decodingTime": 1,
+        "translation": "mondo"
+    },
+    "status": 200
 }
 ```
 
@@ -237,7 +241,7 @@ Tuning speed depends on many factors:
  - Number of sentences as dev set for tuning;
  - Luck. How close the random initial parameters are to the convergence.
 
-Expect a few days for a 1B words model with 1000 sentences used for tuning.
+Expect a few hours for a 1B words model with 1000 sentences used for tuning.
 
 Tuning and evaluate runs also on a distributed MMT.  
 

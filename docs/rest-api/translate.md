@@ -48,17 +48,20 @@ A JSON object containing the following fields:
 
 ```json
 {
-    "context": [
-        {
-            "id": "europarl",
-            "score": 0.13375875
-        },
-        {
-            "id": "ibm",
-            "score": 0.008800022
-        }
-    ],
-    "took": 45,
-    "translation": "&quot;Questo \u00e8 un <b>esempio</b>&quot;"
+    "data": {
+        "context": [
+            {
+                "id": "europarl",
+                "score": 0.13375875
+            },
+            {
+                "id": "ibm",
+                "score": 0.008800022
+            }
+        ],
+        "decodingTime": 59,
+        "translation": "&quot;Questo \u00e8 un <b>esempio</b>&quot;"
+    },
+    "status": 200
 }
 ```
