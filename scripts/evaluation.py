@@ -162,9 +162,9 @@ class MMTTranslator(Translator):
             raise TranslateError(e.message)
 
         text = translation['translation']
-        took = float(translation['took']) / 1000.
+        decoding_time = float(translation['decodingTime']) / 1000.
 
-        return text, took
+        return text, decoding_time
 
 
 class GoogleTranslate(Translator):
