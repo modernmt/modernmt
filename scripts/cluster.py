@@ -38,7 +38,7 @@ class MMTApi:
         if r.status_code != requests.codes.ok:
             raise Exception('HTTP request failed with code ' + str(r.status_code) + ': ' + r.url)
 
-        return r.json()
+        return r.json()['data']
 
     def _get(self, endpoint, params=None):
         url = self._url_template.format(port=self.port, endpoint=endpoint)
