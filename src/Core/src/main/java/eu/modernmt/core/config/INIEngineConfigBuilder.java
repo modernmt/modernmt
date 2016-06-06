@@ -65,7 +65,7 @@ public class INIEngineConfigBuilder {
     }
 
     private static void readAlignerConfig(AlignerConfig alignerConfig, SubnodeConfiguration section) {
-        alignerConfig.setEnabled(section.getBoolean("enable_fastalign", true));
+        alignerConfig.setEnabled(section.getBoolean("enable_tag_projection", true));
     }
 
     private static void readDecoderConfig(DecoderConfig config, SubnodeConfiguration section) {

@@ -189,7 +189,7 @@ class MMTEngine:
         'lm_type': ('LM implementation', (basestring, LanguageModel.available_types), 'MultiplexedLM'),
         'aligner_type': ('Aligner implementation',
                          (basestring, WordAligner.available_types), WordAligner.available_types[0]),
-        'enable_fastalign': ('Enable fast_align loading at startup (provides word alignment API)', bool, True)
+        'enable_tag_projection': ('Enable Tag Projection, this may take some time during engine startup.', bool, False)
     }
 
     training_steps = ['tm_cleanup', 'preprocess', 'context_analyzer', 'lm', 'tm']
@@ -206,7 +206,7 @@ class MMTEngine:
 
         self._lm_type = None  # Injected
         self._aligner_type = None  # Injected
-        self._enable_fastalign = None  # Injected
+        self._enable_tag_projection = None  # Injected
 
         self._config = None
 
@@ -275,8 +275,6 @@ class MMTEngine:
             self._config = injector.to_config()
             self._config.set(self.injector_section, 'source_lang', self.source_lang)
             self._config.set(self.injector_section, 'target_lang', self.target_lang)
-
-            self._config.set(self.injector_section, 'enable_fastalign', str(self._enable_fastalign).lower())
 
     @property
     def config(self):
