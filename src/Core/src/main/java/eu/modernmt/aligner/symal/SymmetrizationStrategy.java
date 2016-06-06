@@ -1,9 +1,11 @@
 package eu.modernmt.aligner.symal;
 
+import java.io.Serializable;
+
 /**
  * Created by davide on 20/05/16.
  */
-public interface SymmetrizationStrategy {
+public interface SymmetrizationStrategy extends Serializable {
 
     static SymmetrizationStrategy forName(String name) {
         String className = SymmetrizationStrategy.class.getPackage().getName() + "." + name + "Strategy";
