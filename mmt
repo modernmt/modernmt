@@ -166,7 +166,6 @@ def main_evaluate(argv):
     matecat = sort_organize_score(scores, 'matecat')
     bleu = sort_organize_score(scores, 'bleu')
     mtt = sort_organize_score(scores, '_mtt')
-    parallelism = sort_organize_score(scores, '_parallelism')
 
     print 'Matecat Post-Editing Score:'
     for i in range(0, len(matecat)):
@@ -204,19 +203,7 @@ def main_evaluate(argv):
         translator, score, error = mtt[i]
 
         if error is None:
-            text = '%.2fs per sentence' % score
-        else:
-            text = error
-
-        print '  %s: %s' % (translator.ljust(20), text)
-    print
-
-    print 'Parallelism:'
-    for i in range(0, len(parallelism)):
-        translator, score, error = parallelism[i]
-
-        if error is None:
-            text = '%.2f' % score
+            text = '%.2fs per sentence (parallelism %.1fx)' % (score, scores[translator]['_parallelism'])
         else:
             text = error
 
