@@ -25,9 +25,7 @@ public interface Decoder extends Closeable {
 
     // Translation session
 
-    TranslationSession openSession(long id, List<ContextDocument> translationContext);
-
-    TranslationSession getSession(long id);
+    void closeSession(TranslationSession session);
 
     // Translate
 

@@ -3,12 +3,8 @@ package eu.modernmt.core.facade;
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.core.cluster.SessionManager;
 import eu.modernmt.core.cluster.error.SystemShutdownException;
-import eu.modernmt.decoder.TranslationException;
 import eu.modernmt.core.facade.operations.TranslateOperation;
-import eu.modernmt.decoder.Decoder;
-import eu.modernmt.decoder.DecoderFeature;
-import eu.modernmt.decoder.DecoderTranslation;
-import eu.modernmt.decoder.TranslationSession;
+import eu.modernmt.decoder.*;
 import eu.modernmt.model.MultiOptionsToken;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
@@ -55,9 +51,9 @@ public class DecoderFacade {
         return sessionManager.create(context);
     }
 
-    public void closeSession(long id) {
+    public TranslationSession getSession(long id) {
         SessionManager sessionManager = ModernMT.node.getSessionManager();
-        sessionManager.close(id);
+        return sessionManager.get(id);
     }
 
     // =============================

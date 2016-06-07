@@ -37,7 +37,7 @@ public class MosesDecoder implements Decoder {
 
     private long nativeHandle;
     private File iniFile;
-    private HashMap<Long, MosesSession> sessions;
+    private HashMap<Long, Long> sessions;
 
     public MosesDecoder(File iniFile) throws IOException {
         this.sessions = new HashMap<>();
@@ -54,6 +54,8 @@ public class MosesDecoder implements Decoder {
 
         this.init(iniFile.getAbsolutePath());
     }
+
+    // Features
 
     @Override
     public native MosesFeature[] getFeatures();
@@ -84,30 +86,31 @@ public class MosesDecoder implements Decoder {
 
     private native void setFeatureWeights(String[] features, float[][] weights);
 
-    @Override
-    public MosesSession openSession(long id, List<ContextDocument> translationContext) {
-        ContextXObject context = ContextXObject.build(translationContext);
-        long internalId = createSession(context.keys, context.values);
-        MosesSession session = new MosesSession(id, translationContext, this, internalId);
-        this.sessions.put(id, session);
+    // Translation session
 
-        return session;
+    private long getOrComputeSession(final TranslationSession session) {
+        return sessions.computeIfAbsent(session.getId(), key -> {
+            ContextXObject context = ContextXObject.build(session.getTranslationContext());
+            return createSession(context.keys, context.values);
+        });
     }
 
     private native long createSession(String[] contextKeys, float[] contextValues);
 
-    void closeSession(MosesSession session) {
-        session = this.sessions.remove(session.getId());
-        if (session != null)
-            destroySession(session.getInternalId());
+    @Override
+    public void closeSession(TranslationSession session) {
+        Long internalId = this.sessions.remove(session.getId());
+        if (internalId != null) {
+            this.destroySession(internalId);
+
+            if (logger.isDebugEnabled())
+                logger.debug(String.format("Session %d(%d) destroyed.", session.getId(), internalId));
+        }
     }
 
     private native void destroySession(long internalId);
 
-    @Override
-    public TranslationSession getSession(long id) {
-        return sessions.get(id);
-    }
+    // Translate
 
     @Override
     public DecoderTranslation translate(Sentence text) {
@@ -141,7 +144,7 @@ public class MosesDecoder implements Decoder {
 
     private DecoderTranslation translate(Sentence sentence, List<ContextDocument> translationContext, TranslationSession session, int nbest) {
         String text = serialize(sentence.getWords());
-        long sessionId = session == null ? 0L : ((MosesSession) session).getInternalId();
+        long sessionId = getOrComputeSession(session);
         ContextXObject context = ContextXObject.build(translationContext);
 
         if (logger.isDebugEnabled()) {
@@ -185,7 +188,7 @@ public class MosesDecoder implements Decoder {
 
     @Override
     public void close() {
-        this.sessions.values().forEach(MosesSession::close);
+        this.sessions.values().forEach(this::destroySession);
         dispose();
     }
 
