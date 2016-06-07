@@ -1,6 +1,7 @@
 package eu.modernmt.processing;
 
 import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Token;
 import eu.modernmt.processing.framework.PipelineInputStream;
 import eu.modernmt.processing.framework.PipelineOutputStream;
 import eu.modernmt.processing.framework.ProcessingException;
@@ -8,7 +9,6 @@ import eu.modernmt.processing.framework.builder.PipelineBuilder;
 import eu.modernmt.processing.framework.builder.XMLPipelineBuilder;
 import eu.modernmt.processing.framework.concurrent.PipelineExecutor;
 import eu.modernmt.processing.tokenizer.Tokenizer;
-import eu.modernmt.processing.util.TokensOutputter;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
@@ -118,14 +118,17 @@ public class Preprocessor implements Closeable {
     }
 
     public static void main(String[] args) throws Throwable {
-        Preprocessor preprocessor = new Preprocessor(Locale.ENGLISH, null);
+        Preprocessor preprocessor = new Preprocessor(Locale.ENGLISH);
 
         try {
-            Sentence sentence = preprocessor.process("That's example 101: \"Hello <b>world</b>\"", true);
+            Sentence sentence = preprocessor.process("Maria D'Avalos is the most famous:", true);
             System.out.println(sentence);
-            System.out.println(TokensOutputter.toString(sentence, true, true));
+
+            for (Token token : sentence)
+                System.out.println("\"" + token + "\"");
         } finally {
             preprocessor.close();
         }
     }
+
 }

@@ -28,5 +28,6 @@ import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
 
 s{_}{apos}{_}                                                       { return englishPossessiveCase(); }
 {_}{Currency}{_}                                                    { return REMOVE_LAST; }
+[[:letter:][:digit:]]{_}'s{_}                                       { return REMOVE_FIRST; }
 
 {_}{Contractions}{_}                                                { return REMOVE_INNER; }

@@ -35,3 +35,6 @@
 /* Placeholders */
 \_\_+                                                                                                                    { return PROTECT; }
 \.\.+                                                                                                                    { return PROTECT; }
+
+/* Names with apostrophe, like "O'Malley" */
+{_}[A-Z]'[A-Z][:letter:]+                                                                                                { return PROTECT; }
