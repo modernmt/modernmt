@@ -1,11 +1,9 @@
 package eu.modernmt.rest;
 
 import eu.modernmt.constants.Const;
-import eu.modernmt.decoder.TranslationHypothesis;
 import eu.modernmt.rest.framework.JSONSerializer;
 import eu.modernmt.rest.framework.routing.RouterServlet;
 import eu.modernmt.rest.model.TranslationResponse;
-import eu.modernmt.rest.serializers.TranslationHypothesisSerializer;
 import eu.modernmt.rest.serializers.TranslationResponseSerializer;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -24,7 +22,6 @@ import java.util.Collection;
 public class RESTServer {
 
     static {
-        JSONSerializer.registerCustomSerializer(TranslationHypothesis.class, new TranslationHypothesisSerializer());
         JSONSerializer.registerCustomSerializer(TranslationResponse.class, new TranslationResponseSerializer());
     }
 
