@@ -56,17 +56,11 @@ public class TranslateOperation extends Operation<DecoderTranslation> {
 
         DecoderTranslation translation;
         if (session != null) {
-            TranslationSession session = decoder.getSession(this.session);
+            SessionManager sessionManager = getLocalNode().getSessionManager();
+            TranslationSession session = sessionManager.get(this.session);
 
-            if (session == null) {
-                SessionManager sessionManager = getLocalNode().getSessionManager();
-                TranslationSession distributedSession = sessionManager.get(this.session);
-
-                if (distributedSession == null)
-                    throw new IllegalArgumentException("Session not found: " + this.session);
-                else
-                    session = decoder.openSession(this.session, distributedSession.getTranslationContext());
-            }
+            if (session == null)
+                throw new IllegalArgumentException("Session not found: " + this.session);
 
             translation = nbest > 0 ? decoder.translate(sentence, session, nbest) : decoder.translate(sentence, session);
         } else if (translationContext != null) {
