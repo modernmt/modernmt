@@ -3,6 +3,7 @@ import os
 import random
 import time
 
+from datetime import datetime
 import requests
 
 from scripts import IllegalArgumentException
@@ -37,10 +38,17 @@ class Translator:
         pass
 
     def translate(self, corpora, output):
+        """
+        Translate the given corpora in parallel processing fashion.
+        :param corpora: list of ParallelCorpus
+        :param output:  path to output directory
+        :return: ([ParallelCorpus, ...], time_per_sentence, parallelism)
+        """
         pool = multithread.Pool(self._threads)
 
         try:
             translations = []
+            start_time = datetime.now()
 
             for corpus in corpora:
                 self._before_translate(corpus)
@@ -79,7 +87,10 @@ class Translator:
             if stream is not None:
                 stream.close()
 
-            return ParallelCorpus.list(output), (elapsed_time / translation_count)
+            end_time = datetime.now()
+            total_time = end_time - start_time
+
+            return ParallelCorpus.list(output), (elapsed_time / translation_count), (elapsed_time / total_time.total_seconds())
         finally:
             pool.terminate()
 
@@ -325,9 +336,9 @@ class Evaluator:
                 fileutils.makedirs(translations_path, exist_ok=True)
 
                 try:
-                    translated, mtt = translator.translate(corpora, translations_path)
+                    translated, mtt, parallelism = translator.translate(corpora, translations_path)
                     translated = xmlencoder.encode(translated, xmltranslations_path)
-                    translations.append((translator, translated, mtt))
+                    translations.append((translator, translated, mtt, parallelism))
                 except TranslateError as e:
                     translations.append((translator, e))
                 except Exception as e:
@@ -344,7 +355,7 @@ class Evaluator:
 
             for translation in translations:
                 if len(translation) > 2:
-                    translator, translated, mtt = translation
+                    translator, translated, mtt, parallelism = translation
                     tid = translator.name().replace(' ', '_')
 
                     translated_merged = os.path.join(working_dir, tid + '.' + target_lang)
@@ -357,7 +368,8 @@ class Evaluator:
                     scores[translator.name()] = {
                         'bleu': BLEUScore().calculate(translated_merged, reference),
                         'matecat': MatecatScore().calculate(translated_merged, reference),
-                        '_mtt': mtt
+                        '_mtt': mtt,
+                        '_parallelism': parallelism
                     }
                 else:
                     translator, e = translation

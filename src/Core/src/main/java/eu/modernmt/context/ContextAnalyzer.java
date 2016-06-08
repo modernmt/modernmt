@@ -16,7 +16,7 @@ import java.util.Locale;
  * Created by davide on 02/12/15.
  */
 public abstract class ContextAnalyzer implements Closeable, AutoCloseable {
-
+    
     public void rebuild(Collection<? extends BilingualCorpus> documents, boolean useSourceLanguage) throws ContextAnalyzerException {
         ArrayList<Corpus> corpora = new ArrayList<>(documents.size());
         for (BilingualCorpus corpus : documents)

@@ -2,9 +2,18 @@ import inspect
 import re
 from ConfigParser import ConfigParser, NoOptionError, NoSectionError
 
+from scripts.mt.contextanalysis import ContextAnalyzer
+from scripts.mt.lm import LanguageModel, MultiplexedLM
+from scripts.mt.moses import Moses
+from scripts.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
+from scripts.engine import MMTEngine
+
 __author__ = 'Davide Caroselli'
 
 _global_section = 'global'
+
+injectable_components = [ContextAnalyzer, SuffixArraysPhraseTable, WordAligner, LanguageModel, MultiplexedLM, Moses,
+                          MMTEngine]
 
 
 def argparse_group(parser, clazz, name=None):
@@ -50,6 +59,9 @@ class Injector:
     def __init__(self, *classes):
         self._definitions = {}
         self._params = {}
+
+        if len(classes) == 0:
+            classes = injectable_components
 
         for clazz in classes:
             section, fields = self._get_definitions(clazz)

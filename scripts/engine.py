@@ -174,8 +174,7 @@ class _MMTEngineBuilder:
 
             # Writing config file
             with cmdlogger.step('Writing config files') as _:
-                self._engine.moses.create_ini()
-                self._engine.write_config()
+                self._engine.write_configs()
 
             cmdlogger.completed()
         finally:
@@ -183,7 +182,7 @@ class _MMTEngineBuilder:
                 self._engine.clear_tempdir('training')
 
 
-class MMTEngine:
+class MMTEngine(object):
     injector_section = 'engine'
     injectable_fields = {
         'lm_type': ('LM implementation', (basestring, LanguageModel.available_types), None),
@@ -288,7 +287,11 @@ class MMTEngine:
             self._config.read(self._config_file)
         return self._config
 
-    def write_config(self):
+    def write_configs(self):
+        self.moses.create_ini()
+        self.write_engine_config()
+
+    def write_engine_config(self):
         with open(self._config_file, 'wb') as out:
             out.write("[%s]\n" % self.injector_section)
 
@@ -298,7 +301,7 @@ class MMTEngine:
                     out.write("%s\n" % key)
             out.write("\n")
 
-            if self._optimal_weights is not None and len(self._optimal_weights) > 0:
+            if self._optimal_weights is not None and len(self._optimal_weights) > 0 and not 'weights' in self._config.sections():
                 out.write('[weights]\n')
 
                 for name, weights in self._optimal_weights.iteritems():

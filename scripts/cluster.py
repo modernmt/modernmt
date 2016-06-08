@@ -153,7 +153,7 @@ class _tuning_logger:
         print 'DONE (in %ds)' % int(self._end_time - self._start_time)
 
 
-class ClusterNode:
+class ClusterNode(object):
     __SIGTERM_TIMEOUT = 10  # after this amount of seconds, there is no excuse for a process to still be there.
     __LOG_FILENAME = 'node'
 

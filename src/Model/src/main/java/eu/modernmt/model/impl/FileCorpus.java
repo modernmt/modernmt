@@ -28,17 +28,17 @@ public class FileCorpus implements Corpus {
     }
 
     public FileCorpus(File file) {
-        this(file, getNameFromFile(file));
+        this(file, null);
     }
 
     public FileCorpus(File file, String name) {
-        this(file, name, getLangFromFile(file));
+        this(file, name, null);
     }
 
     public FileCorpus(File file, String name, Locale language) {
         this.file = file;
-        this.name = name;
-        this.language = language;
+        this.name = (name == null ? getNameFromFile(file) : name);
+        this.language = (language == null ? getLangFromFile(file) : language);
     }
 
     @Override

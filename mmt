@@ -14,10 +14,6 @@ from scripts.engine import MMTEngine
 from scripts.evaluation import Evaluator
 from scripts.libs import shell
 from scripts.mt import ParallelCorpus
-from scripts.mt.contextanalysis import ContextAnalyzer
-from scripts.mt.lm import LanguageModel, MultiplexedLM
-from scripts.mt.moses import Moses
-from scripts.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
 from scripts.mt.processing import TrainingPreprocessor
 
 __author__ = 'Davide Caroselli'
@@ -34,9 +30,6 @@ __description = '''\
 
   You can find more information on: http://www.modernmt.eu/
 '''
-
-_injectable_components = [ContextAnalyzer, SuffixArraysPhraseTable, WordAligner, LanguageModel, MultiplexedLM, Moses,
-                          MMTEngine]
 
 
 def __check_java():
@@ -106,7 +99,7 @@ def main_tune(argv):
     engine = MMTEngine(name=args.engine)
     if not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
-    injector = dependency.Injector(*_injectable_components)
+    injector = dependency.Injector()
     injector.read_config(engine.config)
     engine = injector.inject(engine)
 
@@ -144,7 +137,7 @@ def main_evaluate(argv):
     engine = MMTEngine(name=args.engine)
     if not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
-    injector = dependency.Injector(*_injectable_components)
+    injector = dependency.Injector()
     injector.read_config(engine.config)
     engine = injector.inject(engine)
 
@@ -163,21 +156,16 @@ def main_evaluate(argv):
     scores = evaluator.evaluate(corpora=corpora, google_key=args.gt_key, heval_output=args.heval_output,
                                 use_sessions=not args.interactive, debug=args.debug)
 
-    matecat = sorted([(translator,
-                       -1 if isinstance(score, basestring) else score['matecat'],
-                       score if isinstance(score, basestring) else None)
-                      for translator, score in scores.iteritems()
-                      ], key=operator.itemgetter(1), reverse=True)
-    bleu = sorted([(translator,
-                    -1 if isinstance(score, basestring) else score['bleu'],
-                    score if isinstance(score, basestring) else None)
-                   for translator, score in scores.iteritems()
-                   ], key=operator.itemgetter(1), reverse=True)
-    mtt = sorted([(translator,
-                   -1 if isinstance(score, basestring) else score['_mtt'],
-                   score if isinstance(score, basestring) else None)
-                  for translator, score in scores.iteritems()
-                  ], key=operator.itemgetter(1), reverse=True)
+    def sort_organize_score(scores, metric):
+        return sorted([(translator,
+                        -1 if isinstance(score, basestring) else score[metric],
+                        score if isinstance(score, basestring) else None)
+                       for translator, score in scores.iteritems()
+                       ], key=operator.itemgetter(1), reverse=True)
+
+    matecat = sort_organize_score(scores, 'matecat')
+    bleu = sort_organize_score(scores, 'bleu')
+    mtt = sort_organize_score(scores, '_mtt')
 
     print 'Matecat Post-Editing Score:'
     for i in range(0, len(matecat)):
@@ -215,7 +203,7 @@ def main_evaluate(argv):
         translator, score, error = mtt[i]
 
         if error is None:
-            text = '%.2fs per sentence' % score
+            text = '%.2fs per sentence (parallelism %.1fx)' % (score, scores[translator]['_parallelism'])
         else:
             text = error
 
@@ -434,14 +422,14 @@ def main_create(argv):
     parser.add_argument('-s', '--steps', metavar='STEPS', dest='training_steps', choices=MMTEngine.training_steps,
                         nargs='+', help='run only specified training steps {%(choices)s}')
 
-    for component in _injectable_components:
+    for component in dependency.injectable_components:
         dependency.argparse_group(parser, component)
 
     if len(argv) > 0:
         args = parser.parse_args(argv)
         _logconfig(args.debug)
 
-        injector = dependency.Injector(*_injectable_components)
+        injector = dependency.Injector()
         injector.read_args(args)
 
         engine = MMTEngine((args.source_lang, args.target_lang), args.engine)
