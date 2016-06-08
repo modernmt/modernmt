@@ -27,7 +27,7 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
         if (nbest != null) {
             JsonArray array = new JsonArray();
             for (TranslationHypothesis hypothesis : nbest)
-                array.add(context.serialize(hypothesis));
+                array.add(TranslationHypothesisSerializer.serialize(hypothesis, context, src.processing));
             json.add("nbest", array);
         }
 
