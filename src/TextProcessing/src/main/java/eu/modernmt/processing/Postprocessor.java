@@ -1,6 +1,9 @@
 package eu.modernmt.processing;
 
+import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
+import eu.modernmt.model.Word;
+import eu.modernmt.processing.detokenizer.jflex.JFlexDetokenizer;
 import eu.modernmt.processing.framework.PipelineInputStream;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.builder.PipelineBuilder;
@@ -91,5 +94,16 @@ public class Postprocessor implements Closeable {
         } finally {
             IOUtils.closeQuietly(stream);
         }
+    }
+
+    public static void main(String[] args) throws Throwable {
+        JFlexDetokenizer detokenizer = new JFlexDetokenizer(null, Locale.ENGLISH);
+        Translation translation = new Translation(new Word[]{new Word("Finland", " "), new Word("'s", " "), new Word("victory", " ")}, null, null);
+
+        detokenizer.call(translation, null);
+        System.out.println(translation);
+
+        for (Token token : translation)
+            System.out.println("\"" + token + "\"");
     }
 }

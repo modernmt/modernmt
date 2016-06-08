@@ -20,7 +20,7 @@ def meminfo():
 
 
 class LanguageModel(MosesFeature):
-    available_types = ['AdaptiveIRSTLM', 'MultiplexedIRSTLM', 'StaticIRSTLM', 'KenLM']
+    available_types = ['MultiplexedLM', 'StaticIRSTLM', 'KenLM']
 
     injector_section = 'lm'
     injectable_fields = {
@@ -71,7 +71,7 @@ class KenLM(LanguageModel):
 
         try:
             if log_file is not None:
-                log = open(log_file, 'w')
+                log = open(log_file, 'w') if isinstance(log_file, str) else log_file
 
             # Collapse all corpora into a single text file
             merged_corpus = os.path.join(working_dir, 'merge')
@@ -79,8 +79,9 @@ class KenLM(LanguageModel):
 
             # Create language model in ARPA format
             arpa_file = os.path.join(working_dir, 'lm.arpa')
-            arpa_command = [self._lmplz_bin, '--discount_fallback', '-o', str(self._order), '-S', str(self.get_mem_percent()) + '%', '-T', working_dir]
-            if self.prune:
+            arpa_command = [self._lmplz_bin, '--discount_fallback', '-o', str(self._order),
+                            '-S', str(self.get_mem_percent()) + '%', '-T', working_dir]
+            if self._order > 2 and self.prune:
                 arpa_command += ['--prune', '0', '0', '1']
 
             with open(merged_corpus) as stdin:
@@ -91,14 +92,17 @@ class KenLM(LanguageModel):
             binarize_command = [self._bbinary_bin, arpa_file, self._model]
             shell.execute(binarize_command, stdout=log, stderr=log)
         finally:
-            if log_file is not None:
+            if log_file is not None and isinstance(log_file, str):
                 log.close()
 
     @staticmethod
     def get_mem_percent():
         """:returns percentage of MemTotal (hardware memory) to use in `lmplz`."""
-        # Simple heuristic: use 80% of *available* memory (instead of MemTotal as is the lmplz default) - avoids crashing on machines with other jobs running.
-        # this may evict some disk caches (is not too nice to other programs using mmapped files unless you lower the 80%).
+        # Simple heuristic: use 80% of *available* memory (instead of MemTotal as is the lmplz default) - avoids
+        # crashing on machines with other jobs running.
+        # This may evict some disk caches (is not too nice to other programs using mmapped
+        # files unless you lower the 80%).
+
         mi = meminfo()
         total = float(mi['MemTotal'])
         available = float(mi['MemFree'] + mi['Buffers'] + mi['Cached'])
@@ -159,9 +163,8 @@ class StaticIRSTLM(LanguageModel):
 
 
 class MultiplexedLM(LanguageModel):
-    injector_section = 'muxlm'
+    injector_section = 'lm'
     injectable_fields = {
-        'order': ('LM order (N-grams length)', int, 5),
         'alpha': ('Adaptive LM weight fraction from [0,1), the rest is assigned to background LM', float, 0.5),
         'function': ('interpolation function',
                      (basestring, ['interpolate-linear', 'interpolate-log-linear', 'interpolate-max']),
@@ -199,7 +202,7 @@ class MultiplexedLM(LanguageModel):
             static_lm_model = os.path.join(model_folder, 'background.slm')
             static_lm = KenLM(static_lm_model)
             static_lm._order = self._order
-            static_lm.train(corpora, lang, os.path.join(working_dir, 'background.slm'))
+            static_lm.train(corpora, lang, os.path.join(working_dir, 'background.slm'), log_file=log)
             config_content.append(self.__get_config_line('__background_lm__', 'background.slm'))
 
             # Train domain-specific LMs
@@ -208,7 +211,7 @@ class MultiplexedLM(LanguageModel):
                 adaptive_lm = KenLM(adaptive_lm_model)
                 adaptive_lm.prune = False
                 adaptive_lm._order = self._order
-                adaptive_lm.train([corpus], lang, os.path.join(working_dir, corpus.name + '.alm'))
+                adaptive_lm.train([corpus], lang, os.path.join(working_dir, corpus.name + '.alm'), log_file=log)
                 config_content.append(self.__get_config_line(corpus.name, corpus.name + '.alm'))
 
             with open(self._model, 'w') as model:

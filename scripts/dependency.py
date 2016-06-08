@@ -1,5 +1,6 @@
+import inspect
 import re
-from ConfigParser import ConfigParser, NoOptionError
+from ConfigParser import ConfigParser, NoOptionError, NoSectionError
 
 __author__ = 'Davide Caroselli'
 
@@ -32,14 +33,19 @@ def argparse_group(parser, clazz, name=None):
 
 class Injector:
     @staticmethod
-    def _get_definitions(obj):
-        if not hasattr(obj, 'injectable_fields'):
-            return None, None
+    def _get_definitions(cls):
+        if not inspect.isclass(cls):
+            cls = cls.__class__
 
-        fields = obj.injectable_fields
-        section = _global_section if not hasattr(obj, 'injector_section') else obj.injector_section
+        section = _global_section if not hasattr(cls, 'injector_section') else cls.injector_section
+        fields = {}
 
-        return section, fields
+        for c in reversed(inspect.getmro(cls)):
+            if hasattr(c, 'injectable_fields'):
+                for key, value in c.injectable_fields.iteritems():
+                    fields[key] = value
+
+        return (section, fields) if len(fields) > 0 else (None, None)
 
     def __init__(self, *classes):
         self._definitions = {}
@@ -77,7 +83,7 @@ class Injector:
                         value = (value == 'True')
                     elif ftype is not basestring:
                         value = ftype(value)
-                except NoOptionError:
+                except (NoOptionError, NoSectionError):
                     value = defval
 
                 self._params[section][field] = value
