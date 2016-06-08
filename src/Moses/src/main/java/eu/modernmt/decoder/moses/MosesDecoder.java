@@ -144,7 +144,7 @@ public class MosesDecoder implements Decoder {
 
     private DecoderTranslation translate(Sentence sentence, List<ContextDocument> translationContext, TranslationSession session, int nbest) {
         String text = serialize(sentence.getWords());
-        long sessionId = getOrComputeSession(session);
+        long sessionId = session == null ? 0L : getOrComputeSession(session);
         ContextXObject context = ContextXObject.build(translationContext);
 
         if (logger.isDebugEnabled()) {

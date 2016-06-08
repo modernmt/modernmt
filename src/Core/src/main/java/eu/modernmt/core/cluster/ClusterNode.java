@@ -3,8 +3,10 @@ package eu.modernmt.core.cluster;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.config.XmlConfigBuilder;
-import com.hazelcast.core.*;
-import com.hazelcast.map.listener.EntryAddedListener;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.ITopic;
+import com.hazelcast.core.Message;
 import eu.modernmt.core.Engine;
 import eu.modernmt.core.LazyLoadException;
 import eu.modernmt.core.cluster.error.BootstrapException;
@@ -17,7 +19,6 @@ import eu.modernmt.core.config.EngineConfig;
 import eu.modernmt.core.config.INIEngineConfigWriter;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
-import eu.modernmt.decoder.TranslationSession;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -164,7 +165,7 @@ public class ClusterNode {
 
         executor = new DistributedExecutor(hazelcast, ClusterConstants.TRANSLATION_EXECUTOR_NAME);
         executorDaemon = new ExecutorDaemon(hazelcast, this, ClusterConstants.TRANSLATION_EXECUTOR_NAME, capacity);
-        sessionManager = new SessionManager(hazelcast, event -> engine.getDecoder().closeSession(event.getValue()));
+        sessionManager = new SessionManager(hazelcast, event -> engine.getDecoder().closeSession(event.getOldValue()));
         decoderWeightsTopic = hazelcast.getTopic(ClusterConstants.DECODER_WEIGHTS_TOPIC_NAME);
         decoderWeightsTopic.addMessageListener(this::onDecoderWeightsChanged);
 

@@ -19,7 +19,7 @@ public class SessionManager {
 
     private static final Logger logger = LogManager.getLogger(SessionManager.class);
 
-    private final IMap<Long, TranslationSession> sessions;
+    private final IMap<Long, TranslationSessionImpl> sessions;
     private final IdGenerator idGenerator;
 
     SessionManager(HazelcastInstance hazelcast, EntryRemovedListener<Long, TranslationSession> listener) {
@@ -29,23 +29,26 @@ public class SessionManager {
     }
 
     public TranslationSession get(long id) {
-        return sessions.get(id);
+        TranslationSessionImpl session = sessions.get(id);
+        if (session != null)
+            session.sessionMap = this.sessions;
+        return session;
     }
 
     public TranslationSession create(List<ContextDocument> context) {
         long id = idGenerator.newId() + 1; // starts from 0
-        TranslationSession session = new TranslationSessionImpl(this.sessions, id, context);
+        TranslationSessionImpl session = new TranslationSessionImpl(id, context);
+        session.sessionMap = this.sessions;
         sessions.put(id, session);
         return session;
     }
 
     private static class TranslationSessionImpl extends TranslationSession {
 
-        private transient Map<Long, TranslationSession> sessionMap;
+        transient Map<Long, TranslationSessionImpl> sessionMap;
 
-        private TranslationSessionImpl(Map<Long, TranslationSession> sessionMap, long id, List<ContextDocument> translationContext) {
+        private TranslationSessionImpl(long id, List<ContextDocument> translationContext) {
             super(id, translationContext);
-            this.sessionMap = sessionMap;
         }
 
         @Override
