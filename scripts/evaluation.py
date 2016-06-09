@@ -258,6 +258,8 @@ class BLEUScore(Score):
 
 
 class MatecatScore(Score):
+    DEFAULT_TIMEOUT = 60  # secs
+
     def __init__(self):
         Score.__init__(self)
 
@@ -273,7 +275,8 @@ class MatecatScore(Score):
             'reference_sentences': references
         }
 
-        r = requests.post(url, data=js.dumps(data), headers={'Content-type': 'application/json'})
+        r = requests.post(url, data=js.dumps(data), headers={'Content-type': 'application/json'},
+                          timeout=MatecatScore.DEFAULT_TIMEOUT)
         body = r.json()
 
         if r.status_code != requests.codes.ok:
