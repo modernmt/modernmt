@@ -58,10 +58,12 @@ public class Word extends Token {
 
     public final void applyTransformation(Word source) {
         if (this.transformation == null) {
-            if (source == null || !source.placeholder.equals(this.placeholder))
-                this.text = this.placeholder;
-            else
-                this.text = source.text;
+            if (this.text == null) {
+                if (source == null || !source.placeholder.equals(this.placeholder))
+                    this.text = this.placeholder;
+                else
+                    this.text = source.text;
+            }
         } else {
             this.transformation.apply(source, this);
 
