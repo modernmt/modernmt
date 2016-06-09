@@ -121,9 +121,9 @@ git submodule update
 Download `opt` resources for Ubuntu 14.04:
 
 ```
-wget "http://labs.mmt.rocks/builds/mmt-opt-0.12-ubuntu14_04.tar.gz"
-tar xvf mmt-opt-0.12-ubuntu14_04.tar.gz
-rm mmt-opt-0.12-ubuntu14_04.tar.gz
+wget "http://labs.mmt.rocks/builds/mmt-opt-0.13-ubuntu14_04.tar.gz"
+tar xvf mmt-opt-0.13-ubuntu14_04.tar.gz
+rm mmt-opt-0.13-ubuntu14_04.tar.gz
 ```
 
 Install custom maven dependencies:
