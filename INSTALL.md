@@ -75,7 +75,7 @@ sudo pip install -U requests
 Download from here: https://github.com/ModernMT/MMT/releases and then untar the files:
 
 ```
-tar xvfz mmt-0.12-ubuntu14_04.tar.gz
+tar xvfz mmt-0.13-ubuntu14_04.tar.gz
 cd mmt
 ```
 
