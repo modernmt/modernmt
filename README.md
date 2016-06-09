@@ -1,4 +1,4 @@
-# MMT 0.12 - Release for Ubuntu 14.04 
+# MMT 0.13 - Release for Ubuntu 14.04 
 
 ## About MMT
 MMT is a context-aware, incremental and distributed general purpose Machine Translation technology.
