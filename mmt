@@ -132,7 +132,7 @@ def main_evaluate(argv):
     args = parser.parse_args(argv)
     args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
 
-    _logconfig(args.debug)
+    _logconfig(False)
 
     engine = MMTEngine(name=args.engine)
     if not engine.exists():
@@ -142,73 +142,12 @@ def main_evaluate(argv):
     engine = injector.inject(engine)
 
     node = ClusterNode(engine, api_port=args.api_port)
-    evaluator = Evaluator(engine, node)
+    evaluator = Evaluator(node, google_key=args.gt_key, use_sessions=not args.interactive)
 
     corpora = ParallelCorpus.list(args.corpora_path) if args.corpora_path is not None \
         else ParallelCorpus.list(os.path.join(engine.data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
 
-    lines = 0
-    for corpus in corpora:
-        lines += corpus.count_lines()
-
-    print '\nTesting on {lines} sentences...\n'.format(lines=lines)
-
-    scores = evaluator.evaluate(corpora=corpora, google_key=args.gt_key, heval_output=args.heval_output,
-                                use_sessions=not args.interactive, debug=args.debug)
-
-    def sort_organize_score(scores, metric):
-        return sorted([(translator,
-                        -1 if isinstance(score, basestring) else score[metric],
-                        score if isinstance(score, basestring) else None)
-                       for translator, score in scores.iteritems()
-                       ], key=operator.itemgetter(1), reverse=True)
-
-    matecat = sort_organize_score(scores, 'matecat')
-    bleu = sort_organize_score(scores, 'bleu')
-    mtt = sort_organize_score(scores, '_mtt')
-
-    print 'Matecat Post-Editing Score:'
-    for i in range(0, len(matecat)):
-        translator, score, error = matecat[i]
-
-        if error is None:
-            text = '%.2f' % (score * 100)
-            if i == 0:
-                text += ' (Winner)'
-        else:
-            text = error
-
-        print '  %s: %s' % (translator.ljust(20), text)
-    print
-
-    print 'BLEU:'
-    for i in range(0, len(bleu)):
-        translator, score, error = bleu[i]
-
-        if error is None:
-            text = '%.2f' % (score * 100)
-            if i == 0:
-                text += ' (Winner)'
-        else:
-            text = error
-
-        print '  %s: %s' % (translator.ljust(20), text)
-    print
-
-    if args.interactive:
-        print 'Interactive Translation Speed:'
-    else:
-        print 'Translation Speed:'
-    for i in range(0, len(mtt)):
-        translator, score, error = mtt[i]
-
-        if error is None:
-            text = '%.2fs per sentence (parallelism %.1fx)' % (score, scores[translator]['_parallelism'])
-        else:
-            text = error
-
-        print '  %s: %s' % (translator.ljust(20), text)
-    print
+    evaluator.evaluate(corpora=corpora, heval_output=args.heval_output, debug=args.debug)
 
     if args.heval_output is not None:
         print 'Files for Human Evaluation are available here:', os.path.abspath(args.heval_output)
