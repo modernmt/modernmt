@@ -3,7 +3,7 @@
     <parent>
         <artifactId>mmt-root</artifactId>
         <groupId>eu.modernmt</groupId>
-        <version>0.12</version>
+        <version>0.13</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -16,7 +16,8 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <mmt.textprocessing.pyflex>${project.basedir}/script/pyflex.py</mmt.textprocessing.pyflex>
-        <project.build.generatedSources>${project.build.directory}/generated-sources/jflex/</project.build.generatedSources>
+        <project.build.generatedSources>${project.build.directory}/generated-sources/jflex/
+        </project.build.generatedSources>
     </properties>
 
     <build>
@@ -116,16 +117,16 @@
             <version>3.5.2</version>
         </dependency>
         <!--<dependency>-->
-            <!--<groupId>edu.stanford.nlp</groupId>-->
-            <!--<artifactId>stanford-corenlp</artifactId>-->
-            <!--<version>3.5.2</version>-->
-            <!--<classifier>models</classifier>-->
+        <!--<groupId>edu.stanford.nlp</groupId>-->
+        <!--<artifactId>stanford-corenlp</artifactId>-->
+        <!--<version>3.5.2</version>-->
+        <!--<classifier>models</classifier>-->
         <!--</dependency>-->
         <!--<dependency>-->
-            <!--<groupId>edu.stanford.nlp</groupId>-->
-            <!--<artifactId>stanford-corenlp</artifactId>-->
-            <!--<version>3.5.2</version>-->
-            <!--<classifier>models-spanish</classifier>-->
+        <!--<groupId>edu.stanford.nlp</groupId>-->
+        <!--<artifactId>stanford-corenlp</artifactId>-->
+        <!--<version>3.5.2</version>-->
+        <!--<classifier>models-spanish</classifier>-->
         <!--</dependency>-->
 
         <!-- HebMorph -->
@@ -182,9 +183,9 @@
             <version>3.1</version>
         </dependency>
         <!--<dependency>-->
-            <!--<groupId>org.languagetool</groupId>-->
-            <!--<artifactId>language-all</artifactId>-->
-            <!--<version>3.1</version>-->
+        <!--<groupId>org.languagetool</groupId>-->
+        <!--<artifactId>language-all</artifactId>-->
+        <!--<version>3.1</version>-->
         <!--</dependency>-->
 
         <!-- OpenNLP -->
