@@ -154,11 +154,17 @@ class MMTTranslator(Translator):
         return result
 
     def _before_translate(self, corpus):
-        corpus_file = corpus.get_file(self.source_lang)
-        context = self._api.get_context_f(corpus_file)
-        self._contexts[corpus_file] = context
-        if self._use_sessions:
-            self._sessions[corpus_file] = self._api.create_session(context)['id']
+        try:
+            corpus_file = corpus.get_file(self.source_lang)
+            context = self._api.get_context_f(corpus_file)
+            self._contexts[corpus_file] = context
+            if self._use_sessions:
+                self._sessions[corpus_file] = self._api.create_session(context)['id']
+        except requests.exceptions.ConnectionError:
+            raise TranslateError('Unable to connect to MMT. '
+                                 'Please check if engine is running on port %d.' % self._api.port)
+        except Exception as e:
+            raise TranslateError(e.message)
 
     def _get_translation(self, line, corpus):
         corpus_file = corpus.get_file(self.source_lang)
@@ -170,6 +176,9 @@ class MMTTranslator(Translator):
             ctxt = None if self._use_sessions else self._contexts[corpus_file]
 
             translation = self._api.translate(line, session=sess, context=ctxt, processing=True)
+        except requests.exceptions.ConnectionError:
+            raise TranslateError('Unable to connect to MMT. '
+                                 'Please check if engine is running on port %d.' % self._api.port)
         except Exception as e:
             raise TranslateError(e.message)
 
@@ -186,6 +195,24 @@ class GoogleTranslate(Translator):
 
     def name(self):
         return 'Google Translate'
+
+    @staticmethod
+    def _pack_error(request):
+        json = request.json()
+
+        daily_limit = False
+
+        if request.status_code == 403:
+            for error in json['error']['errors']:
+                if error['reason'] == 'dailyLimitExceeded':
+                    daily_limit = True
+                    break
+
+        if daily_limit:
+            return TranslateError('Google Translate free quota is over. Please use option --gt-key'
+                                  ' to specify your GT API key.')
+        else:
+            return TranslateError('Google Translate error (%d): %s' % (request.status_code, json['error']['message']))
 
     def _get_translation(self, line, corpus):
         url = 'https://www.googleapis.com/language/translate/v2'
@@ -206,13 +233,10 @@ class GoogleTranslate(Translator):
         r = requests.post(url, data=data, headers=headers)
         elapsed = time.time() - begin
 
-        json = r.json()
-
         if r.status_code != requests.codes.ok:
-            message = json['error']['message']
-            raise TranslateError('Google Translate query failed with code ' + str(r.status_code) + ': ' + message)
+            raise self._pack_error(r)
 
-        text = json['data']['translations'][0]['translatedText']
+        text = r.json()['data']['translations'][0]['translatedText']
         return text, elapsed
 
 
