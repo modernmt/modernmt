@@ -267,12 +267,12 @@ class MMTEngine(object):
         self.moses.add_feature(self.lm, 'MuxLM')
 
         self._optimal_weights = {
-            'MuxLM': [0.0792512],
-            'DM0': [0.0989067, 0.0663884, 0.100474, 0.0415722, 0.102493, 0.0571312, 0.125246, -0.0158022],
-            'Distortion0': [0.0296506],
-            'WordPenalty0': [-0.143112],
-            'PhrasePenalty0': [-0.00442695],
-            'PT0': [-0.00140294, 0.026676, 0.0486188, 0.00208103, 0.0567663],
+            'MuxLM': [0.0996981],
+            'DM0': [0.0940416, 0.0324946, 0.0884611, 0.0543363, 0.0258349, 0.107731, 0.102477, 0.0989888],
+            'Distortion0': [8.84199E-4],
+            'WordPenalty0': [-0.118122],
+            'PhrasePenalty0': [6.17961E-4],
+            'PT0': [0.0024974, 0.0102446, 0.0600407, 0.0316664, 0.071863],
         }
 
         if self._config is None:
@@ -301,7 +301,8 @@ class MMTEngine(object):
                     out.write("%s\n" % key)
             out.write("\n")
 
-            if self._optimal_weights is not None and len(self._optimal_weights) > 0 and not 'weights' in self._config.sections():
+            if self._optimal_weights is not None and len(
+                    self._optimal_weights) > 0 and not 'weights' in self._config.sections():
                 out.write('[weights]\n')
 
                 for name, weights in self._optimal_weights.iteritems():
