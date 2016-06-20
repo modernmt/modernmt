@@ -45,13 +45,10 @@ sub tokenization_international {
   my $i = 0;
   while ($norm_text =~ /(<($TAG_NAME_RX)[^>]*\/?>)|(<!($TAG_NAME_RX)[^>]*[^\/]>)|(<\/($TAG_NAME_RX)[^>]*>)|(<!--)|(-->)/g) {
     push @tags, $&;
-    $norm_text =~ s/$&/" MTEVALXMLTAG".$i." "/e;
+    $norm_text =~ s/\Q$&\E/" MTEVALXMLTAG".$i." "/e;
     $i++;
         
     }
-
-  $norm_text =~ s/\p{Hyphen}\p{Zl}//g; # strip end-of-line hyphenation and join lines
-  $norm_text =~ s/\p{Zl}/ /g; # join lines
 
   # replace entities
   $norm_text =~ s/&quot;/\"/g;  # quote to "
