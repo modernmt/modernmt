@@ -121,16 +121,21 @@ class XMLEncoder:
                 source = corpus.get_file(lang)
                 dest = ParallelCorpus(corpus.name, dest_folder, [lang]).get_file(lang)
 
-                self.encode_file(source, dest)
+                self.encode_file(source, dest, delete_nl=True)
 
         return ParallelCorpus.list(dest_folder)
 
-    def encode_file(self, source, dest):
+    def encode_file(self, source, dest, delete_nl=False):
         with open(dest, 'wb') as outstream:
             with open(source) as instream:
                 for line in instream:
-                    line = line.rstrip('\r\n') + '\n'
                     encoded = self.encode_string(line.decode('utf-8'))
+                    encoded = encoded.rstrip('\r\n')
+
+                    if delete_nl:
+                        encoded = encoded.replace('\n', ' ').replace('\r', '')
+
+                    encoded += '\n'
                     outstream.write(encoded.encode('utf-8'))
 
     def __escape(self, string):

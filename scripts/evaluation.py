@@ -472,6 +472,15 @@ class Evaluator:
                     except Exception as e:
                         result.error = TranslateError('Unexpected ERROR: ' + str(e.message))
 
+            # Check corpora length
+            reference_lines = fileutils.linecount(reference)
+            for result in results:
+                lines = fileutils.linecount(result.merge)
+
+                if lines != reference_lines:
+                    raise TranslateError('Invalid line count for translator %s: expected %d, found %d.'
+                                         % (result.translator.name(), reference_lines, lines))
+
             # Scoring
             scorers = [(MatecatScore(), 'pes'), (BLEUScore(), 'bleu')]
 

@@ -2,6 +2,8 @@ import os
 from multiprocessing import Lock
 from operator import attrgetter
 
+from scripts.libs import fileutils
+
 __author__ = 'Davide Caroselli'
 
 
@@ -97,11 +99,7 @@ class ParallelCorpus:
         if self._lines_count < 0 < len(self.langs):
             with self._lock:
                 if self._lines_count < 0 < len(self.langs):
-                    with open(self.get_file(self.langs[0])) as document:
-                        count = 0
-                        for _, _ in enumerate(document):
-                            count += 1
-                        self._lines_count = count
+                    self._lines_count = fileutils.linecount(self.get_file(self.langs[0]))
 
         return self._lines_count
 
