@@ -475,6 +475,9 @@ class Evaluator:
             # Check corpora length
             reference_lines = fileutils.linecount(reference)
             for result in results:
+                if result.error is not None:
+                    continue
+                    
                 lines = fileutils.linecount(result.merge)
 
                 if lines != reference_lines:
