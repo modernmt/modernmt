@@ -1,0 +1,71 @@
+NPROCS		:= 1
+OS			:= $(shell uname -s)
+
+ifeq ($(OS),Linux)
+	NPROCS := $(shell grep -c ^processor /proc/cpuinfo)
+endif
+ifeq ($(OS),Darwin) # Assume Mac OS X
+	NPROCS := $(shell sysctl -n hw.ncpu)
+endif
+
+# MMT Paths
+VENDOR_DIR		:= $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+
+MMT_HOME		:= $(realpath $(VENDOR_DIR)/..)
+MMT_BUILD_DIR	:= $(MMT_HOME)/build
+MMT_INSTALL_LIB	:= $(MMT_BUILD_DIR)/lib
+MMT_INSTALL_BIN	:= $(MMT_BUILD_DIR)/bin
+
+all: __moses
+
+install: __install_init __moses_install
+
+clean: __moses_clean
+
+__install_init:
+	@mkdir -p $(MMT_INSTALL_LIB)
+	@mkdir -p $(MMT_INSTALL_BIN)
+
+
+# ==========================================
+#  MODULE: Moses decoder
+# ==========================================
+
+MOSES_HOME		:= $(VENDOR_DIR)/moses
+MOSES_BUILD_DIR	:= $(MOSES_HOME)/build
+MOSES_LIB_DIR	:= $(MOSES_BUILD_DIR)/lib
+MOSES_BIN_DIR	:= $(MOSES_BUILD_DIR)/bin
+
+MOSES_INSTALL	:= $(MMT_INSTALL_BIN)/moses
+MERT_INSTALL	:= $(MMT_INSTALL_BIN)/mert
+KENLM_INSTALL	:= $(MMT_INSTALL_BIN)/kenlm
+MOSES_LIBS		:= libmoses libmertc 
+MOSES_EXES		:= mmlex-build mtt-build symal symal2mam
+MERT_EXES		:= evaluator extractor kbmira mert pro
+KENLM_EXES		:= lmplz build_binary
+
+__moses: 
+	@echo "Building Moses..."
+	@mkdir -p $(MOSES_BUILD_DIR)
+	@cd $(MOSES_BUILD_DIR); cmake $(MOSES_HOME) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$(MOSES_BUILD_DIR)" -Wno-dev
+	@cd $(MOSES_BUILD_DIR); make -j$(NPROCS)
+	@echo "SUCCESS (Moses)"
+	
+__moses_install:
+	@echo "Installing Moses..."
+	@mkdir -p $(MOSES_INSTALL)
+	@mkdir -p $(MERT_INSTALL)
+	@mkdir -p $(KENLM_INSTALL)
+	$(foreach exe,$(MOSES_EXES),cp $(MOSES_BIN_DIR)/$(exe) $(MOSES_INSTALL)/$(exe);)
+	$(foreach exe,$(MERT_EXES),cp $(MOSES_BIN_DIR)/$(exe) $(MERT_INSTALL)/$(exe);)
+	$(foreach exe,$(KENLM_EXES),cp $(MOSES_BIN_DIR)/$(exe) $(KENLM_INSTALL)/$(exe);)
+	$(foreach lib,$(MOSES_LIBS),cp -r $(MOSES_LIB_DIR)/$(lib)* $(MMT_INSTALL_LIB)/;)
+	@echo "SUCCESS (Moses)"
+
+__moses_clean:
+	rm -rf $(MOSES_BUILD_DIR)
+	rm -rf $(MOSES_INSTALL)
+	rm -rf $(MERT_INSTALL)
+	rm -rf $(KENLM_INSTALL)
+	rm -f $(foreach lib,$(MOSES_LIBS),$(MMT_INSTALL_LIB)/$(lib)*)
+
