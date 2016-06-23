@@ -38,14 +38,11 @@ class Moses:
         'distortion_limit': ('distortion limit', int, 6),
     }
 
-    bin_path = os.path.join(scripts.BIN_DIR, 'moses-mmt-dev_2c29__c231')
-
     def __init__(self, ini_file):
         self._stack_size = None  # Injected
         self._cube_pruning_pop_limit = None  # Injected
         self._distortion_limit = None  # Injected
 
-        self._moses_bin = os.path.join(Moses.bin_path, 'bin', 'moses')
         self._ini_file = ini_file
 
         self._server_process = None

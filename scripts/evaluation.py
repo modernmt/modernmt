@@ -6,6 +6,7 @@ import time
 from datetime import datetime
 import requests
 
+import scripts
 from scripts import IllegalArgumentException
 from scripts.libs import multithread, shell, fileutils
 from scripts.mt import ParallelCorpus
@@ -248,7 +249,7 @@ class BLEUScore(Score):
         return 'BLEU Score'
 
     def calculate(self, document, reference):
-        script = os.path.abspath(os.path.join(__file__, os.pardir, 'opt', 'mmt-bleu.perl'))
+        script = os.path.join(scripts.PYOPT_DIR, 'mmt-bleu.perl')
         command = ['perl', script, reference]
 
         with open(document) as input_stream:

@@ -6,16 +6,17 @@ __self_dir = os.path.dirname(os.path.realpath(__file__))
 
 MMT_VERSION = '0.13'
 
+PYOPT_DIR = os.path.join(__self_dir, 'opt')
 MMT_ROOT = os.path.abspath(os.path.join(__self_dir, os.pardir))
 ENGINES_DIR = os.path.join(MMT_ROOT, 'engines')
 RUNTIME_DIR = os.path.join(MMT_ROOT, 'runtime')
 BUILD_DIR = os.path.join(MMT_ROOT, 'build')
 
-OPT_DIR = os.path.join(MMT_ROOT, 'opt')
 LIB_DIR = os.path.join(BUILD_DIR, 'lib')
-BIN_DIR = os.path.join(OPT_DIR, 'bin')
+BIN_DIR = os.path.join(BUILD_DIR, 'bin')
+OLD_BIN_DIR = os.path.join(MMT_ROOT, 'opt', 'bin')
 
-MMT_JAR = os.path.join(BUILD_DIR, 'mmt-' + MMT_VERSION + ".jar")
+MMT_JAR = os.path.join(BUILD_DIR, 'mmt-' + MMT_VERSION + '.jar')
 
 # Environment setup
 os.environ['LD_LIBRARY_PATH'] = LIB_DIR

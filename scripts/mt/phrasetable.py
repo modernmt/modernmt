@@ -22,7 +22,8 @@ class _CorpusCleaner:
         self._min = 1
         self._max = 80
 
-        self._cleaner_script = os.path.join(Moses.bin_path, 'scripts', 'clean-corpus-n-ratio.perl')
+        # TODO: this can be a python native implementation
+        self._cleaner_script = os.path.join(scripts.PYOPT_DIR, 'clean-corpus-n-ratio.perl')
 
     @staticmethod
     def _pool_exec(function, jobs):
@@ -95,10 +96,10 @@ class SuffixArraysPhraseTable(MosesFeature):
 
         self._cleaner = _CorpusCleaner()
 
-        self._symal_bin = os.path.join(Moses.bin_path, 'bin', 'symal')
-        self._symal2mam_bin = os.path.join(Moses.bin_path, 'bin', 'symal2mam')
-        self._mttbuild_bin = os.path.join(Moses.bin_path, 'bin', 'mtt-build')
-        self._mmlexbuild_bin = os.path.join(Moses.bin_path, 'bin', 'mmlex-build')
+        self._symal_bin = os.path.join(scripts.BIN_DIR, 'moses', 'symal')
+        self._symal2mam_bin = os.path.join(scripts.BIN_DIR, 'moses', 'symal2mam')
+        self._mttbuild_bin = os.path.join(scripts.BIN_DIR, 'moses', 'mtt-build')
+        self._mmlexbuild_bin = os.path.join(scripts.BIN_DIR, 'moses', 'mmlex-build')
 
     def _get_model_basename(self):
         return os.path.join(self._model, 'model')
@@ -190,7 +191,7 @@ class FastAlign(WordAligner):
     def __init__(self):
         WordAligner.__init__(self)
 
-        self._align_bin = os.path.join(scripts.BIN_DIR, 'fastalign-maurobuild', 'fast_align')
+        self._align_bin = os.path.join(scripts.BIN_DIR, 'fastalign', 'fast_align')
 
     def align(self, corpus, langs, model_dir, working_dir='.', log_file=None):
         WordAligner.align(self, corpus, langs, working_dir, log_file)
@@ -222,16 +223,26 @@ class FastAlign(WordAligner):
 
             cpus = multiprocessing.cpu_count()
 
-            # Forward alignments
+            # Create forward model
             fwd_model = os.path.join(model_dir, 'model.align.fwd')
             command = [self._align_bin, '-d', '-v', '-o', '-n', str(cpus), '-B', '-p', fwd_model, '-i',
+                       aligned_file_path]
+            shell.execute(command, stderr=log)
+
+            # Compute forward alignments
+            command = [self._align_bin, '-d', '-v', '-o', '-n', str(cpus), '-B', '-f', fwd_model, '-i',
                        aligned_file_path]
             with open(fwd_file, 'w') as stdout:
                 shell.execute(command, stdout=stdout, stderr=log)
 
-            # Backward alignments
+            # Create backward model
             bwd_model = os.path.join(model_dir, 'model.align.bwd')
             command = [self._align_bin, '-d', '-v', '-o', '-n', str(cpus), '-B', '-p', bwd_model, '-r', '-i',
+                       aligned_file_path]
+            shell.execute(command, stderr=log)
+
+            # Compute backward alignments
+            command = [self._align_bin, '-d', '-v', '-o', '-n', str(cpus), '-B', '-f', bwd_model, '-r', '-i',
                        aligned_file_path]
             with open(bwd_file, 'w') as stdout:
                 shell.execute(command, stdout=stdout, stderr=log)

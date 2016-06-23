@@ -180,7 +180,7 @@ class ClusterNode(object):
         self._status_file = os.path.join(engine.get_runtime_path(), 'node.status')
         self._log_file = engine.get_logfile(ClusterNode.__LOG_FILENAME, ensure=False)
 
-        self._mert_script = os.path.join(Moses.bin_path, 'scripts', 'mert-moses.pl')
+        self._mert_script = os.path.join(scripts.OLD_BIN_DIR, 'moses-mmt-dev_2c29__c231', 'scripts', 'mert-moses.pl')
         self._mert_i_script = os.path.join(scripts.MMT_ROOT, 'scripts', 'mertinterface.py')
 
     def _get_pid(self):
@@ -368,7 +368,7 @@ class ClusterNode(object):
                 with tempfile.NamedTemporaryFile() as runtime_moses_ini:
                     command = [self._mert_script, source_merged_corpus, target_merged_corpus,
                                self._mert_i_script, runtime_moses_ini.name, '--threads',
-                               str(multiprocessing.cpu_count()), '--mertdir', os.path.join(Moses.bin_path, 'bin'),
+                               str(multiprocessing.cpu_count()), '--mertdir', os.path.join(scripts.OLD_BIN_DIR, 'moses-mmt-dev_2c29__c231', 'bin'),
                                '--mertargs', '\'--binary --sctype BLEU\'', '--working-dir', mert_wd, '--nbest', '100',
                                '--decoder-flags', '"' + ' '.join(decoder_flags) + '"', '--nonorm', '--closest',
                                '--no-filter-phrase-table']
