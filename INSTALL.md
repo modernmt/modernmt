@@ -96,13 +96,7 @@ sudo add-apt-repository ppa:george-edison55/cmake-3.x
 sudo add-apt-repository ppa:openjdk-r/ppa
 sudo apt-get update
 
-sudo apt-get install libbz2-dev
-sudo apt-get install libboost1.55-all-dev
-sudo apt-get install libgoogle-perftools-dev
-sudo apt-get install cmake
-sudo apt-get install openjdk-8-jdk
-sudo apt-get install git
-sudo apt-get install maven
+sudo apt-get install libbz2-dev libboost1.55-all-dev libgoogle-perftools-dev libsparsehash-dev cmake openjdk-8-jdk git maven
 ```
 
 ## Install MMT
@@ -118,25 +112,20 @@ git submodule init
 git submodule update
 ```
 
-Download `opt` resources for Ubuntu 14.04:
+Create MMT submodules resources:
 
 ```
-wget "http://labs.mmt.rocks/builds/mmt-opt-0.13-ubuntu14_04.tar.gz"
-tar xvf mmt-opt-0.13-ubuntu14_04.tar.gz
-rm mmt-opt-0.13-ubuntu14_04.tar.gz
-```
-
-Install custom maven dependencies:
-
-```
-mvn install:install-file -Dfile=opt/maven/paoding-analysis.jar -DpomFile=opt/maven/paoding-analysis.pom
+cd vendor
+make res
+cd ..
 ```
 
 Compile MMT submodules:
 
 ```
 cd vendor
-./compile.sh
+make
+make install
 cd ..
 ```
 
