@@ -1,7 +1,3 @@
-[submodule "vendor/irstlm"]
-	path = vendor/irstlm
-	url = https://github.com/irstlm-team/irstlm
-	branch = mmt-official
 [submodule "vendor/moses"]
 	path = vendor/moses
 	url = https://github.com/ModernMT/mosesdecoder
