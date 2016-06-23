@@ -18,9 +18,9 @@ MMT_INSTALL_BIN	:= $(MMT_BUILD_DIR)/bin
 
 all: __moses __fastalign
 
-install: __install_init __moses_install __fastalign_install
+install: __install_init __moses_install __fastalign_install __paoding_install
 
-clean: __moses_clean __fastalign_clean
+clean: __moses_clean __fastalign_clean __paoding_clean
 
 __install_init:
 	@mkdir -p $(MMT_INSTALL_LIB)
@@ -98,6 +98,23 @@ __fastalign_install:
 __fastalign_clean:
 	rm -rf $(FA_BUILD_DIR)
 	rm -rf $(FA_INSTALL)
+
+
+# ==========================================
+#  MODULE: Paoding Analysis
+# ==========================================
+
+PAODING_HOME	:= $(VENDOR_DIR)/paoding
+
+__paoding_install:
+	mvn install:install-file -Dfile=$(PAODING_HOME)/paoding-analysis.jar -DpomFile=$(PAODING_HOME)/paoding-analysis.pom
+
+__paoding_clean:
+
+
+
+
+
 
 
 
