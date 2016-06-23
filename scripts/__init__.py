@@ -14,7 +14,6 @@ BUILD_DIR = os.path.join(MMT_ROOT, 'build')
 
 LIB_DIR = os.path.join(BUILD_DIR, 'lib')
 BIN_DIR = os.path.join(BUILD_DIR, 'bin')
-OLD_BIN_DIR = os.path.join(MMT_ROOT, 'opt', 'bin')
 
 MMT_JAR = os.path.join(BUILD_DIR, 'mmt-' + MMT_VERSION + '.jar')
 
