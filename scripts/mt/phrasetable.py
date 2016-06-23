@@ -59,7 +59,7 @@ class _CorpusCleaner:
 
 
 class WordAligner:
-    available_types = ['FastAlign', 'mgizapp']
+    available_types = ['FastAlign']
 
     def __init__(self):
         pass
@@ -68,8 +68,6 @@ class WordAligner:
     def instantiate(type_name):
         if type_name == 'FastAlign':
             return FastAlign()
-        elif type_name == 'mgizapp':
-            return MGizaPP()
         else:
             raise NameError('Invalid Word Aligner type: ' + str(type_name))
 
@@ -247,6 +245,7 @@ class FastAlign(WordAligner):
 
         return bal_file
 
+
 class _FastAlignBALEncoder:
     def __init__(self, corpus, langs, fwd, bwd):
         self._corpus_l1 = corpus.get_file(langs[0])
@@ -283,129 +282,3 @@ class _FastAlignBALEncoder:
     def _alnvec(slen, alinks, mode):
         d = dict([(int(x[mode]), int(x[(mode + 1) % 2]) + 1) for x in [y.split('-') for y in alinks]])
         return [d.get(i, 0) for i in xrange(slen)]
-
-
-class MGizaPP(WordAligner):
-    __mgiza_config_template = 'adbackoff 0\ncompactadtable 1\ncompactalignmentformat 0\n' \
-                              'coocurrencefile {coocurrencefile}\ncorpusfile {corpusfile}\ncountcutoff 1e-06\n' \
-                              'countcutoffal 1e-05\ncountincreasecutoff 1e-06\ncountincreasecutoffal 1e-05\n' \
-                              'countoutputprefix\nd\ndeficientdistortionforemptyword 0\ndepm4 76\ndepm5 68\n' \
-                              'dictionary\ndopeggingyn 0\ndumpcount 0\ndumpcountusingwordstring 0\n' \
-                              'emalignmentdependencies 2\nemalsmooth 0.2\nemprobforempty 0.4\nemsmoothhmm 2\n' \
-                              'hmmdumpfrequency 0\nhmmiterations 5\nlog 0\nm1 5\nm2 0\nm3 3\nm4 3\nm5 0\nm5p0 -1\n' \
-                              'm6 0\nmanlexfactor1 0\nmanlexfactor2 0\nmanlexmaxmultiplicity 20\nmaxfertility 10\n' \
-                              'maxsentencelength 101\nmh 5\nmincountincrease 1e-07\nml 101\nmodel1dumpfrequency 1\n' \
-                              'model1iterations 5\nmodel23smoothfactor 0\nmodel2dumpfrequency 0\nmodel2iterations 0\n' \
-                              'model345dumpfrequency 0\nmodel3dumpfrequency 0\nmodel3iterations 3\n' \
-                              'model4iterations 3\nmodel4smoothfactor 0.4\nmodel5iterations 0\n' \
-                              'model5smoothfactor 0.1\nmodel6iterations 0\nnbestalignments 0\nncpus {ncpus}\n' \
-                              'nodumps 1\nnofiledumpsyn 1\nnoiterationsmodel1 5\nnoiterationsmodel2 0\n' \
-                              'noiterationsmodel3 3\nnoiterationsmodel4 3\nnoiterationsmodel5 0\n' \
-                              'noiterationsmodel6 0\nnsmooth 4\nnsmoothgeneral 0\n' \
-                              'numberofiterationsforhmmalignmentmodel 5\nonlyaldumps 1\n' \
-                              'outputfileprefix {outputfileprefix}\noutputpath\np 0\np0 0.999\npeggedcutoff 0.03\n' \
-                              'pegging 0\npreviousa\npreviousd\npreviousd4\npreviousd42\nprevioushmm\npreviousn\n' \
-                              'previousp0\nprevioust\nprobcutoff 1e-07\nprobsmooth 1e-07\nreadtableprefix\n' \
-                              'restart 0\nsourcevocabularyfile {sourcevocabularyfile}\nt1 1\nt2 0\nt2to3 0\nt3 0\n' \
-                              't345 0\ntargetvocabularyfile {targetvocabularyfile}\ntc\ntestcorpusfile\nth 0\n' \
-                              'transferdumpfrequency 0\nv 0\nverbose 0\nverbosesentence -10'
-
-    def __init__(self):
-        WordAligner.__init__(self)
-
-        self._mgiza_bin = os.path.join(scripts.BIN_DIR, 'mgizapp-master_a036__1e18', 'mgiza')
-        self._plain2snt_bin = os.path.join(scripts.BIN_DIR, 'mgizapp-master_a036__1e18', 'plain2snt')
-        self._snt2cooc_bin = os.path.join(scripts.BIN_DIR, 'mgizapp-master_a036__1e18', 'snt2cooc')
-        self._giza2bal_bin = os.path.join(scripts.BIN_DIR, 'mgizapp-master_a036__1e18', 'giza2bal.pl')
-        self._merge_bin = os.path.join(scripts.BIN_DIR, 'mgizapp-master_a036__1e18', 'merge_alignment.py')
-
-    def align(self, corpus, langs, model_dir, working_dir='.', log_file=None):
-        WordAligner.align(self, corpus, langs, working_dir, log_file)
-
-        l1 = langs[0]
-        l2 = langs[1]
-
-        corpus_name = 'corpus'
-
-        vcb1_file = os.path.join(working_dir, corpus_name + '.' + l1 + '.vcb')
-        vcb2_file = os.path.join(working_dir, corpus_name + '.' + l2 + '.vcb')
-        snt12_file = os.path.join(working_dir, corpus_name + '.' + l1 + '_' + l2 + '.snt')
-        snt21_file = os.path.join(working_dir, corpus_name + '.' + l2 + '_' + l1 + '.snt')
-        cooc12_file = os.path.join(working_dir, corpus_name + '.' + l1 + '_' + l2 + '.cooc')
-        cooc21_file = os.path.join(working_dir, corpus_name + '.' + l2 + '_' + l1 + '.cooc')
-        fwdc_file = os.path.join(working_dir, 'fwd.config')
-        bwdc_file = os.path.join(working_dir, 'bwd.config')
-        fwddict_file = os.path.join(working_dir, corpus_name + '.fwd.dict')
-        bwddict_file = os.path.join(working_dir, corpus_name + '.bwd.dict')
-        fwd_file = os.path.join(working_dir, corpus_name + '.fwd')
-        bwd_file = os.path.join(working_dir, corpus_name + '.bwd')
-        bal_file = os.path.join(working_dir, corpus_name + '.bal')
-
-        corpus_l1 = corpus.get_file(l1)
-        corpus_l2 = corpus.get_file(l2)
-
-        log = shell.DEVNULL
-
-        try:
-            ncpus = max(2, multiprocessing.cpu_count())
-
-            if log_file is not None:
-                log = open(log_file, 'a')
-
-            # Translate the corpora into GIZA format
-            command = [self._plain2snt_bin, corpus_l1, corpus_l2, '-vcb1', vcb1_file, '-vcb2', vcb2_file, '-snt1',
-                       snt12_file, '-snt2', snt21_file]
-            shell.execute(command, stdout=log, stderr=log)
-
-            # Create the cooccurence
-            command = [self._snt2cooc_bin, cooc12_file, vcb1_file, vcb2_file, snt12_file]
-            shell.execute(command, stdout=log, stderr=log)
-
-            command = [self._snt2cooc_bin, cooc21_file, vcb2_file, vcb1_file, snt21_file]
-            shell.execute(command, stdout=log, stderr=log)
-
-            # Forward alignments
-            with open(fwdc_file, 'w') as config:
-                config.write(self.__mgiza_config_template.format(
-                    coocurrencefile=cooc12_file,
-                    corpusfile=snt12_file,
-                    outputfileprefix=fwddict_file,
-                    sourcevocabularyfile=vcb1_file,
-                    targetvocabularyfile=vcb2_file,
-                    ncpus=ncpus
-                ))
-            command = [self._mgiza_bin, fwdc_file]
-            shell.execute(command, stdout=log, stderr=log)
-
-            parts = [fwddict_file + '.A3.final.part{part:03d}'.format(part=part) for part in range(0, ncpus)]
-            command = ['python', self._merge_bin] + parts
-            with open(fwd_file, 'w') as stdout:
-                shell.execute(command, stdout=stdout, stderr=log)
-
-            # Backward alignments
-            with open(bwdc_file, 'w') as config:
-                config.write(self.__mgiza_config_template.format(
-                    coocurrencefile=cooc21_file,
-                    corpusfile=snt21_file,
-                    outputfileprefix=bwddict_file,
-                    sourcevocabularyfile=vcb2_file,
-                    targetvocabularyfile=vcb1_file,
-                    ncpus=ncpus
-                ))
-            command = [self._mgiza_bin, bwdc_file]
-            shell.execute(command, stdout=log, stderr=log)
-
-            parts = [bwddict_file + '.A3.final.part{part:03d}'.format(part=part) for part in range(0, ncpus)]
-            command = ['python', self._merge_bin] + parts
-            with open(bwd_file, 'w') as stdout:
-                shell.execute(command, stdout=stdout, stderr=log)
-
-            # Create BAL file
-            command = [self._giza2bal_bin, '-i', bwd_file, '-d', fwd_file]
-            with open(bal_file, 'w') as stdout:
-                shell.execute(command, stdout=stdout, stderr=log)
-        finally:
-            if log_file is not None:
-                log.close()
-
-        return bal_file
