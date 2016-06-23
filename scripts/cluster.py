@@ -248,10 +248,6 @@ class ClusterNode(object):
             args.append('--member')
             args.append(str(self._sibling))
 
-        env = os.environ.copy()
-        env['LD_LIBRARY_PATH'] = scripts.LIB_DIR
-        env['LC_ALL'] = 'en_US.UTF-8'
-        env['LANG'] = 'en_US.UTF-8'
         command = mmt_javamain('eu.modernmt.cli.ClusterNodeMain', args,
                                hserr_path=os.path.abspath(os.path.join(self._log_file, os.pardir)))
 
@@ -260,7 +256,7 @@ class ClusterNode(object):
         if os.path.isfile(self._status_file):
             os.remove(self._status_file)
 
-        return subprocess.Popen(command, stdout=open(os.devnull), stderr=log, shell=False, env=env)
+        return subprocess.Popen(command, stdout=open(os.devnull), stderr=log, shell=False)
 
     def get_state(self):
         state = None

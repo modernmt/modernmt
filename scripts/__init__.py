@@ -17,6 +17,11 @@ BIN_DIR = os.path.join(OPT_DIR, 'bin')
 
 MMT_JAR = os.path.join(BUILD_DIR, 'mmt-' + MMT_VERSION + ".jar")
 
+# Environment setup
+os.environ['LD_LIBRARY_PATH'] = LIB_DIR
+os.environ['LC_ALL'] = 'en_US.UTF-8'
+os.environ['LANG'] = 'en_US.UTF-8'
+
 
 def mmt_javamain(main_class, args=None, hserr_path=None, remote_debug=False):
     command = ['java', '-cp', MMT_JAR, '-Dmmt.home=' + MMT_ROOT, '-Djava.library.path=' + LIB_DIR, main_class]
