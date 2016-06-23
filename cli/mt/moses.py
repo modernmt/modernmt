@@ -1,6 +1,6 @@
 import os
 
-import scripts
+import cli
 
 __author__ = 'Davide Caroselli'
 
@@ -11,7 +11,7 @@ class MosesFeature:
 
     def get_relpath(self, path):
         path = os.path.abspath(path)
-        root = os.path.abspath(scripts.ENGINES_DIR)
+        root = os.path.abspath(cli.ENGINES_DIR)
         path = path.replace(root, '').lstrip(os.sep)
 
         path = os.sep.join(path.split(os.sep)[1:])

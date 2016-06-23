@@ -7,8 +7,8 @@ import time
 
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, os.pardir)))
 
-from scripts.cluster import MMTApi
-from scripts.libs import multithread
+from cli.cluster import MMTApi
+from cli.libs import multithread
 
 __author__ = 'Davide Caroselli'
 

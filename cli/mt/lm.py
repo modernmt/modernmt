@@ -1,9 +1,9 @@
 import os
 from multiprocessing import cpu_count
 
-import scripts
+import cli
 from moses import MosesFeature
-from scripts.libs import fileutils, shell
+from cli.libs import fileutils, shell
 
 __author__ = 'Davide Caroselli'
 
@@ -59,8 +59,8 @@ class KenLM(LanguageModel):
         LanguageModel.__init__(self, model, 'KENLM')
 
         self.prune = True
-        self._lmplz_bin = os.path.join(scripts.BIN_DIR, 'kenlm', 'lmplz')
-        self._bbinary_bin = os.path.join(scripts.BIN_DIR, 'kenlm', 'build_binary')
+        self._lmplz_bin = os.path.join(cli.BIN_DIR, 'kenlm', 'lmplz')
+        self._bbinary_bin = os.path.join(cli.BIN_DIR, 'kenlm', 'build_binary')
 
     def train(self, corpora, lang, working_dir='.', log_file=None):
         LanguageModel.train(self, corpora, lang, working_dir, log_file)

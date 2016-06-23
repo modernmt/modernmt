@@ -3,9 +3,9 @@ import os
 import re
 from HTMLParser import HTMLParser
 
-from scripts import mmt_javamain
-from scripts.libs import multithread, fileutils, shell
-from scripts.mt import ParallelCorpus
+from cli import mmt_javamain
+from cli.libs import multithread, fileutils, shell
+from cli.mt import ParallelCorpus
 
 __author__ = 'Davide Caroselli'
 

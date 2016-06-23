@@ -4,7 +4,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
 
-from scripts.mt.processing import XMLEncoder
+from cli.mt.processing import XMLEncoder
 
 __author__ = 'Davide Caroselli'
 

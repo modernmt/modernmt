@@ -2,7 +2,7 @@ import os
 from multiprocessing import Lock
 from operator import attrgetter
 
-from scripts.libs import fileutils
+from cli.libs import fileutils
 
 __author__ = 'Davide Caroselli'
 

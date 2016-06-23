@@ -5,12 +5,12 @@ import os
 from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
-from scripts import dependency
-from scripts.cluster import ClusterNode, DEFAULT_MMT_API_PORT
-from scripts.engine import MMTEngine
-from scripts.evaluation import Evaluator
-from scripts.mt import ParallelCorpus
-from scripts.mt.processing import TrainingPreprocessor
+from cli import dependency
+from cli.cluster import ClusterNode, DEFAULT_MMT_API_PORT
+from cli.engine import MMTEngine
+from cli.evaluation import Evaluator
+from cli.mt import ParallelCorpus
+from cli.mt.processing import TrainingPreprocessor
 import argparse
 
 

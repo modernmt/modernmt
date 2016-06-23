@@ -6,11 +6,11 @@ import time
 from datetime import datetime
 import requests
 
-import scripts
-from scripts import IllegalArgumentException
-from scripts.libs import multithread, shell, fileutils
-from scripts.mt import ParallelCorpus
-from scripts.mt.processing import XMLEncoder
+import cli
+from cli import IllegalArgumentException
+from cli.libs import multithread, shell, fileutils
+from cli.mt import ParallelCorpus
+from cli.mt.processing import XMLEncoder
 
 DEFAULT_GOOGLE_KEY = 'AIzaSyBl9WAoivTkEfRdBBSCs4CruwnGL_aV74c'
 
@@ -249,7 +249,7 @@ class BLEUScore(Score):
         return 'BLEU Score'
 
     def calculate(self, document, reference):
-        script = os.path.join(scripts.PYOPT_DIR, 'mmt-bleu.perl')
+        script = os.path.join(cli.PYOPT_DIR, 'mmt-bleu.perl')
         command = ['perl', script, reference]
 
         with open(document) as input_stream:

@@ -8,8 +8,8 @@ import requests
 
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
 
-from scripts.cluster import MMTApi, DEFAULT_MMT_API_PORT
-from scripts.libs import multithread
+from cli.cluster import MMTApi, DEFAULT_MMT_API_PORT
+from cli.libs import multithread
 
 
 class CLIArgsException(Exception):

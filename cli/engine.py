@@ -4,15 +4,15 @@ import sys
 import time
 from ConfigParser import ConfigParser
 
-import scripts
-from scripts import IllegalArgumentException, IllegalStateException
-from scripts.libs import fileutils
-from scripts.mt import ParallelCorpus
-from scripts.mt.contextanalysis import ContextAnalyzer
-from scripts.mt.lm import LanguageModel
-from scripts.mt.moses import Moses, MosesFeature, LexicalReordering
-from scripts.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
-from scripts.mt.processing import Preprocessor, TrainingPreprocessor, TMCleaner
+import cli
+from cli import IllegalArgumentException, IllegalStateException
+from cli.libs import fileutils
+from cli.mt import ParallelCorpus
+from cli.mt.contextanalysis import ContextAnalyzer
+from cli.mt.lm import LanguageModel
+from cli.mt.moses import Moses, MosesFeature, LexicalReordering
+from cli.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
+from cli.mt.processing import Preprocessor, TrainingPreprocessor, TMCleaner
 
 __author__ = 'Davide Caroselli'
 
@@ -195,8 +195,8 @@ class MMTEngine(object):
 
     @staticmethod
     def list():
-        return sorted([MMTEngine(name=name) for name in os.listdir(scripts.ENGINES_DIR)
-                       if os.path.isdir(os.path.join(scripts.ENGINES_DIR, name))], key=lambda x: x.name)
+        return sorted([MMTEngine(name=name) for name in os.listdir(cli.ENGINES_DIR)
+                       if os.path.isdir(os.path.join(cli.ENGINES_DIR, name))], key=lambda x: x.name)
 
     def __init__(self, langs=None, name=None):
         self.name = name if name is not None else 'default'
@@ -209,7 +209,7 @@ class MMTEngine(object):
 
         self._config = None
 
-        self.path = os.path.join(scripts.ENGINES_DIR, self.name)
+        self.path = os.path.join(cli.ENGINES_DIR, self.name)
 
         self.data_path = os.path.join(self.path, 'data')
         self.models_path = os.path.join(self.path, 'models')
@@ -220,7 +220,7 @@ class MMTEngine(object):
         self._context_index = os.path.join(self.models_path, 'context', 'index')
         self._moses_ini_file = os.path.join(self.models_path, 'moses.ini')
 
-        self._runtime_path = os.path.join(scripts.RUNTIME_DIR, self.name)
+        self._runtime_path = os.path.join(cli.RUNTIME_DIR, self.name)
         self._logs_path = os.path.join(self._runtime_path, 'logs')
         self._temp_path = os.path.join(self._runtime_path, 'tmp')
 

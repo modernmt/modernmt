@@ -9,12 +9,12 @@ import time
 
 import requests
 
-import scripts
-from scripts import mmt_javamain, IllegalStateException, IllegalArgumentException
-from scripts.libs import fileutils, daemon, shell
-from scripts.mt import ParallelCorpus
-from scripts.mt.moses import Moses
-from scripts.mt.processing import TrainingPreprocessor
+import cli
+from cli import mmt_javamain, IllegalStateException, IllegalArgumentException
+from cli.libs import fileutils, daemon, shell
+from cli.mt import ParallelCorpus
+from cli.mt.moses import Moses
+from cli.mt.processing import TrainingPreprocessor
 
 __author__ = 'Davide Caroselli'
 
@@ -180,8 +180,8 @@ class ClusterNode(object):
         self._status_file = os.path.join(engine.get_runtime_path(), 'node.status')
         self._log_file = engine.get_logfile(ClusterNode.__LOG_FILENAME, ensure=False)
 
-        self._mert_script = os.path.join(scripts.PYOPT_DIR, 'mert-moses.perl')
-        self._mert_i_script = os.path.join(scripts.PYOPT_DIR, 'mertinterface.py')
+        self._mert_script = os.path.join(cli.PYOPT_DIR, 'mert-moses.perl')
+        self._mert_i_script = os.path.join(cli.PYOPT_DIR, 'mertinterface.py')
 
     def _get_pid(self):
         pid = 0
@@ -368,7 +368,7 @@ class ClusterNode(object):
                 with tempfile.NamedTemporaryFile() as runtime_moses_ini:
                     command = [self._mert_script, source_merged_corpus, target_merged_corpus,
                                self._mert_i_script, runtime_moses_ini.name, '--threads',
-                               str(multiprocessing.cpu_count()), '--mertdir', os.path.join(scripts.BIN_DIR, 'mert'),
+                               str(multiprocessing.cpu_count()), '--mertdir', os.path.join(cli.BIN_DIR, 'mert'),
                                '--mertargs', '\'--binary --sctype BLEU\'', '--working-dir', mert_wd, '--nbest', '100',
                                '--decoder-flags', '"' + ' '.join(decoder_flags) + '"', '--nonorm', '--closest',
                                '--no-filter-phrase-table']

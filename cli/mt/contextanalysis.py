@@ -1,5 +1,5 @@
-from scripts import mmt_javamain
-from scripts.libs import fileutils, shell
+from cli import mmt_javamain
+from cli.libs import fileutils, shell
 
 __author__ = 'Davide Caroselli'
 

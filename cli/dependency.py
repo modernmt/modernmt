@@ -2,11 +2,11 @@ import inspect
 import re
 from ConfigParser import ConfigParser, NoOptionError, NoSectionError
 
-from scripts.mt.contextanalysis import ContextAnalyzer
-from scripts.mt.lm import LanguageModel, MultiplexedLM
-from scripts.mt.moses import Moses
-from scripts.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
-from scripts.engine import MMTEngine
+from cli.mt.contextanalysis import ContextAnalyzer
+from cli.mt.lm import LanguageModel, MultiplexedLM
+from cli.mt.moses import Moses
+from cli.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
+from cli.engine import MMTEngine
 
 __author__ = 'Davide Caroselli'
 
