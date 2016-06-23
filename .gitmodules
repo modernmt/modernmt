@@ -2,3 +2,6 @@
 	path = vendor/moses
 	url = https://github.com/ModernMT/mosesdecoder
 	branch = mmt-official
+[submodule "vendor/fastalign"]
+	path = vendor/fastalign
+	url = https://github.com/ModernMT/WordAligner

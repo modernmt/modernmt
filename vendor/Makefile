@@ -16,11 +16,11 @@ MMT_BUILD_DIR	:= $(MMT_HOME)/build
 MMT_INSTALL_LIB	:= $(MMT_BUILD_DIR)/lib
 MMT_INSTALL_BIN	:= $(MMT_BUILD_DIR)/bin
 
-all: __moses
+all: __moses __fastalign
 
-install: __install_init __moses_install
+install: __install_init __moses_install __fastalign_install
 
-clean: __moses_clean
+clean: __moses_clean __fastalign_clean
 
 __install_init:
 	@mkdir -p $(MMT_INSTALL_LIB)
@@ -68,4 +68,37 @@ __moses_clean:
 	rm -rf $(MERT_INSTALL)
 	rm -rf $(KENLM_INSTALL)
 	rm -f $(foreach lib,$(MOSES_LIBS),$(MMT_INSTALL_LIB)/$(lib)*)
+
+
+# ==========================================
+#  MODULE: FastAlign
+# ==========================================
+
+FA_HOME			:= $(VENDOR_DIR)/fastalign
+FA_BUILD_DIR	:= $(FA_HOME)/build
+FA_LIB_DIR		:= $(FA_BUILD_DIR)/lib
+FA_BIN_DIR		:= $(FA_BUILD_DIR)/bin
+
+FA_INSTALL		:= $(MMT_INSTALL_BIN)/fastalign
+FA_EXES			:= fast_align
+
+__fastalign: 
+	@echo "Building FastAlign..."
+	@mkdir -p $(FA_BUILD_DIR)
+	@cd $(FA_BUILD_DIR); cmake $(FA_HOME) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$(FA_BUILD_DIR)" -Wno-dev
+	@cd $(FA_BUILD_DIR); make -j$(NPROCS)
+	@echo "SUCCESS (FastAlign)"
+	
+__fastalign_install:
+	@echo "Installing FastAlign..."
+	@mkdir -p $(FA_INSTALL)
+	$(foreach exe,$(FA_EXES),cp $(FA_BIN_DIR)/$(exe) $(FA_INSTALL)/$(exe);)
+	@echo "SUCCESS (FastAlign)"
+
+__fastalign_clean:
+	rm -rf $(FA_BUILD_DIR)
+	rm -rf $(FA_INSTALL)
+
+
+
 
