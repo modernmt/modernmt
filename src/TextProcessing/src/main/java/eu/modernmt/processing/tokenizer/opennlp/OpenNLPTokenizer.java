@@ -27,7 +27,7 @@ public class OpenNLPTokenizer extends Tokenizer {
     public OpenNLPTokenizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
         super(sourceLanguage, targetLanguage);
 
-        File opennlp = new File(Const.fs.tokenizerModels, "opennlp");
+        File opennlp = new File(Const.fs.resources, "opennlp");
         File modelFile = new File(opennlp, sourceLanguage.getLanguage() + "-token.bin");
 
         if (!modelFile.isFile())

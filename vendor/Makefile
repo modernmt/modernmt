@@ -15,17 +15,25 @@ MMT_HOME		:= $(realpath $(VENDOR_DIR)/..)
 MMT_BUILD_DIR	:= $(MMT_HOME)/build
 MMT_INSTALL_LIB	:= $(MMT_BUILD_DIR)/lib
 MMT_INSTALL_BIN	:= $(MMT_BUILD_DIR)/bin
+MMT_INSTALL_RES	:= $(MMT_BUILD_DIR)/res
 
 all: __moses __fastalign
 
 install: __install_init __moses_install __fastalign_install __paoding_install
 
-clean: __moses_clean __fastalign_clean __paoding_clean
+clean: __moses_clean __fastalign_clean
+
+res: __res_init __paoding_res __opennlp_res
+
+resclean:
+	rm -rf $(MMT_INSTALL_RES)
 
 __install_init:
 	@mkdir -p $(MMT_INSTALL_LIB)
 	@mkdir -p $(MMT_INSTALL_BIN)
 
+__res_init:
+	@mkdir -p $(MMT_INSTALL_RES)
 
 # ==========================================
 #  MODULE: Moses decoder
@@ -105,11 +113,33 @@ __fastalign_clean:
 # ==========================================
 
 PAODING_HOME	:= $(VENDOR_DIR)/paoding
+PAODING_RES		:= $(MMT_INSTALL_RES)/paoding
 
 __paoding_install:
 	mvn install:install-file -Dfile=$(PAODING_HOME)/paoding-analysis.jar -DpomFile=$(PAODING_HOME)/paoding-analysis.pom
 
-__paoding_clean:
+__paoding_res:
+	@mkdir -p $(PAODING_RES)
+	tar -xzf $(PAODING_HOME)/dictionary.tar.gz -C $(PAODING_RES)/
+
+
+# ==========================================
+#  MODULE: OpenNLP
+# ==========================================
+
+OPENNLP_HOME	:= $(VENDOR_DIR)/opennlp
+OPENNLP_RES		:= $(MMT_INSTALL_RES)/opennlp
+
+__opennlp_res:
+	@mkdir -p $(OPENNLP_RES)
+	cp $(OPENNLP_HOME)/*.bin $(OPENNLP_RES)/
+
+
+
+
+
+
+
 
 
 

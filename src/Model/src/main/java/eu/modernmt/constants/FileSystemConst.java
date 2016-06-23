@@ -10,7 +10,7 @@ public class FileSystemConst {
     public final File home;
     public final File engines;
     public final File runtime;
-    public final File tokenizerModels;
+    public final File resources;
     public final File lib;
 
     private static final String SYSPROP_MMT_HOME = "mmt.home";
@@ -34,13 +34,13 @@ public class FileSystemConst {
         if (!this.lib.isDirectory())
             throw new IllegalStateException("Invalid path for property '" + SYSPROP_MMT_HOME + "': " + this.lib + " must be a valid directory.");
 
+        this.resources = new File(build, "res");
+        if (!resources.isDirectory())
+            throw new IllegalStateException("Invalid path for property '" + SYSPROP_MMT_HOME + "': " + this.resources + " must be a valid directory.");
+
         this.runtime = new File(this.home, "runtime");
         if (!this.runtime.isDirectory())
             throw new IllegalStateException("Invalid path for property '" + SYSPROP_MMT_HOME + "': " + this.runtime + " must be a valid directory.");
-
-        tokenizerModels = new File(this.home, "opt" + File.separatorChar + "tokenizer" + File.separatorChar + "models");
-        if (!tokenizerModels.isDirectory())
-            throw new IllegalStateException("Invalid path for property '" + SYSPROP_MMT_HOME + "': " + tokenizerModels + " must be a valid directory.");
     }
 
 }

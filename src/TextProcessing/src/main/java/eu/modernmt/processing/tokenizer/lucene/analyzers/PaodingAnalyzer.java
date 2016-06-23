@@ -22,7 +22,7 @@ public class PaodingAnalyzer extends PaodingAnalyzerBean {
         if (PROPERTIES_FILE_PATH == null) {
             synchronized (PaodingAnalyzer.class) {
                 if (PROPERTIES_FILE_PATH == null) {
-                    File paoding = new File(Const.fs.tokenizerModels, "paoding");
+                    File paoding = new File(Const.fs.resources, "paoding");
                     File dic = new File(paoding, "dic");
 
                     File propertiesFile = new File(paoding, "paoding-analysis.properties");
