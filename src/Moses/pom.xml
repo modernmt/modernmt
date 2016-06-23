@@ -19,7 +19,7 @@
         <project.nativedir>${project.basedir}/native</project.nativedir>
         <project.nativedir.headers>${project.nativedir}/jheaders</project.nativedir.headers>
         <mmt.builddir>${project.parent.basedir}/../build</mmt.builddir>
-        <mmt.libdir>${project.parent.basedir}/../lib</mmt.libdir>
+        <mmt.libdir>${mmt.builddir}/lib</mmt.libdir>
     </properties>
 
     <build>
@@ -38,6 +38,13 @@
                         </fileset>
                         <fileset>
                             <directory>${project.build.directory}</directory>
+                            <includes>
+                                <include>*jnimoses*</include>
+                            </includes>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>
+                        <fileset>
+                            <directory>${mmt.libdir}</directory>
                             <includes>
                                 <include>*jnimoses*</include>
                             </includes>

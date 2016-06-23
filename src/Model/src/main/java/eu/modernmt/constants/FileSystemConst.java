@@ -28,7 +28,9 @@ public class FileSystemConst {
         if (!this.engines.isDirectory())
             throw new IllegalStateException("Invalid path for property '" + SYSPROP_MMT_HOME + "': " + this.engines + " must be a valid directory.");
 
-        this.lib = new File(this.home, "lib");
+        File build = new File(this.home, "build");
+
+        this.lib = new File(build, "lib");
         if (!this.lib.isDirectory())
             throw new IllegalStateException("Invalid path for property '" + SYSPROP_MMT_HOME + "': " + this.lib + " must be a valid directory.");
 
