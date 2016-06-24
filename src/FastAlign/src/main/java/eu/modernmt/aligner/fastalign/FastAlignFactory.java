@@ -22,8 +22,8 @@ public class FastAlignFactory extends AlignerFactory {
         File fwdModelFile = new File(modelDirectory, FORWARD_MODEL_NAME);
         File bwdModelFile = new File(modelDirectory, BACKWARD_MODEL_NAME);
 
-        FastAlign fwdModel = new FastAlign(false, fwdModelFile);
-        FastAlign bwdModel = new FastAlign(true, bwdModelFile);
+        FastAlign fwdModel = new FastAlign(fwdModelFile, false);
+        FastAlign bwdModel = new FastAlign(bwdModelFile, true);
 
         return new SymmetrizedAligner(fwdModel, bwdModel);
     }

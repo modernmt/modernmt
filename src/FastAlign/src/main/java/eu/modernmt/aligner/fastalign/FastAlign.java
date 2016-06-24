@@ -2,17 +2,12 @@ package eu.modernmt.aligner.fastalign;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
-import eu.modernmt.constants.Const;
-import eu.modernmt.io.Paths;
 import eu.modernmt.model.Sentence;
-import eu.modernmt.processing.util.TokensOutputter;
-import org.apache.commons.io.IOUtils;
+import eu.modernmt.model.Word;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.File;
 
 /**
  * Created by lucamastrostefano on 15/03/16.
@@ -20,136 +15,84 @@ import java.util.List;
 public class FastAlign implements Aligner {
 
     private static final Logger logger = LogManager.getLogger(FastAlign.class);
-    private static final String SENTENCE_SEPARATOR = " ||| ";
-    private static final String LAST_LINE = "Loading ttable finished.";
-    private static final List<String> EXPECTED_OUTPUT;
 
     static {
-        EXPECTED_OUTPUT = new ArrayList<>();
-        EXPECTED_OUTPUT.add("ARG=[a-zA-Z]");
-        EXPECTED_OUTPUT.add("\\s+DICT SIZE:\\s+[0-9]{1,11}");
-        EXPECTED_OUTPUT.add("Reading Lexical Translation Table");
-        EXPECTED_OUTPUT.add(LAST_LINE);
+        try {
+            logger.info("Loading jnifastalign library");
+            System.loadLibrary("jnifastalign");
+            logger.info("Library jnifastalign loaded successfully");
+        } catch (Throwable e) {
+            logger.error("Unable to load library jnifastalign", e);
+            throw e;
+        }
     }
 
-    private final boolean reverse;
-    private final String[] command;
-    private boolean init = false;
-    private OutputStream standardInput;
-    private BufferedReader standardOutput;
-    private BufferedReader standardError;
-    private Process process;
+    private File model;
+    private boolean reverse;
+    private long nativeHandle;
 
-    FastAlign(boolean reverse, File model) {
+    FastAlign(File model, boolean reverse) {
         this.reverse = reverse;
+        this.model = model;
 
-        String fastAlignPath = Paths.join(Const.fs.home.getAbsolutePath(), "opt", "bin", "fastalign-maurobuild", "fast_align");
-        if (reverse) {
-            this.command = new String[]{fastAlignPath, "-d", "-v", "-o", "-B", "-f", model.getAbsolutePath(),
-                    "-n", "1", "-b", "0", "-r"};
-        } else {
-            this.command = new String[]{fastAlignPath, "-d", "-v", "-o", "-B", "-f", model.getAbsolutePath(),
-                    "-n", "1", "-b", "0"};
-        }
+//        if (reverse) {
+//            this.command = new String[]{fastAlignPath, "-d", "-v", "-o", "-B", "-f", model.getAbsolutePath(),
+//                    "-n", "1", "-b", "0", "-r"};
+//        } else {
+//            this.command = new String[]{fastAlignPath, "-d", "-v", "-o", "-B", "-f", model.getAbsolutePath(),
+//                    "-n", "1", "-b", "0"};
+//        }
     }
 
-    private static int[][] parseAlignments(String stringAlignments) {
-        String[] links_str = stringAlignments.split(" ");
-        int[][] alignments = new int[links_str.length][];
-        for (int i = 0; i < links_str.length; i++) {
-            String[] alignment = links_str[i].split("-");
-            alignments[i] = new int[]{Integer.parseInt(alignment[0]), Integer.parseInt(alignment[1])};
-        }
-        return alignments;
-    }
+    private native void init(String modelFile, boolean reverse);
 
     @Override
     public void load() throws AlignerException {
-        if (this.init)
-            throw new IllegalStateException("Fast Align is already initialized");
+        if (!model.isFile())
+            throw new AlignerException("Invalid model path: " + model);
 
-        try {
-            Runtime rt = Runtime.getRuntime();
-            this.process = rt.exec(this.command, new String[]{
-                    "LD_LIBRARY_PATH=" + Const.fs.lib
-            });
-
-            standardOutput = new BufferedReader(new
-                    InputStreamReader(process.getInputStream()));
-            standardInput = process.getOutputStream();
-            standardError = new BufferedReader(new
-                    InputStreamReader(process.getErrorStream()));
-
-            this.checkRun(standardError);
-        } catch (IOException e) {
-            throw new AlignerException("Failed to start FastAlign process", e);
-        }
-
-        this.init = true;
-    }
-
-    private void checkRun(BufferedReader standardError) throws IOException {
-        // Consume and check the standard exceptions of the process
-        int expectedOutputIndex = 0;
-        int lineNumber = 0;
-        String line;
-
-        try {
-            while ((line = standardError.readLine()) != null) {
-                lineNumber++;
-                String expectedOutput = EXPECTED_OUTPUT.get(expectedOutputIndex);
-                if (!line.matches(expectedOutput)) {
-                    expectedOutputIndex++;
-                    expectedOutput = EXPECTED_OUTPUT.get(expectedOutputIndex);
-                    if (!line.matches(expectedOutput)) {
-                        logger.error("FOUND: \"" + line + "\" REGEX_EXPECTED: " + expectedOutput);
-                        throw new IOException("Cannot parse the standard exceptions of Fast Align, exceptions at line " + lineNumber);
-                    }
-                }
-                if (line.equals(LAST_LINE)) {
-                    break;
-                }
-            }
-        } catch (IndexOutOfBoundsException e) {
-            throw new IOException("Fast Align has produced more lines then expected on the standard exceptions, exceptions at line " + lineNumber);
-        }
-    }
-
-    private String getStringAlignments(Sentence sentence, Sentence translation) throws IOException {
-        String sentence_str = TokensOutputter.toString(sentence, false, true);
-        String translation_str = TokensOutputter.toString(translation, false, true);
-        String query = sentence_str + SENTENCE_SEPARATOR + translation_str + "\n";
-        logger.debug("Sending query to Fast Align's models: " + query);
-        this.standardInput.write(query.getBytes(Const.charset.get()));
-        this.standardInput.flush();
-        logger.debug("Waiting for alignments");
-        String modelResponse = this.standardOutput.readLine();
-        logger.debug((this.reverse ? "Backward" : "Forward") + " alignments: " + modelResponse);
-        return modelResponse;
+        this.init(model.getAbsolutePath(), reverse);
     }
 
     @Override
     public int[][] getAlignments(Sentence sentence, Sentence translation) throws AlignerException {
-        try {
-            return parseAlignments(this.getStringAlignments(sentence, translation));
-        } catch (IOException e) {
-            throw new AlignerException("Problem while communicating to FastAlign process.", e);
-        }
+        String source = serialize(sentence.getWords());
+        String target = serialize(translation.getWords());
+
+        String encodedResult = align(source, target);
+        System.out.println();
+        System.out.println(encodedResult);
+        System.out.println();
+
+        return new int[0][2];
+    }
+
+    private native String align(String source, String target);
+
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+        close();
     }
 
     @Override
-    public void close() throws IOException {
-        Closeable[] resources = new Closeable[]{
-                this.standardOutput,
-                this.standardInput,
-                this.standardError
-        };
+    public void close() {
+        dispose();
+    }
 
-        for (Closeable resource : resources) {
-            IOUtils.closeQuietly(resource);
+    private native void dispose();
+
+    private static String serialize(Word[] words) {
+        StringBuilder text = new StringBuilder();
+
+        for (int i = 0; i < words.length; i++) {
+            text.append(words[i].getPlaceholder());
+
+            if (i < words.length - 1)
+                text.append(' ');
         }
 
-        process.destroy();
+        return text.toString();
     }
 
 }
