@@ -1,9 +1,9 @@
 package eu.modernmt.rest.actions.translation;
 
+import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.aligner.symal.SymmetrizationStrategy;
 import eu.modernmt.core.facade.ModernMT;
 import eu.modernmt.core.facade.exceptions.validation.LanguagePairNotSupportedException;
-import eu.modernmt.decoder.TranslationException;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
 import eu.modernmt.rest.framework.HttpMethod;
@@ -45,7 +45,7 @@ public class TagsProjection extends ObjectAction<Object> {
     }
 
     @Override
-    protected Object execute(RESTRequest req, Parameters _params) throws TranslationException, LanguagePairNotSupportedException {
+    protected Object execute(RESTRequest req, Parameters _params) throws AlignerException, LanguagePairNotSupportedException {
         Params params = (Params) _params;
 
         ModernMT.tags.isLanguagesSupported(params.sourceLanguage, params.targetLanguage);
