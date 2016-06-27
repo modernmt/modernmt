@@ -89,6 +89,7 @@ FA_BIN_DIR		:= $(FA_BUILD_DIR)/bin
 
 FA_INSTALL		:= $(MMT_INSTALL_BIN)/fastalign
 FA_EXES			:= fast_align
+FA_LIBS			:= libfastalign
 
 __fastalign: 
 	@echo "Building FastAlign..."
@@ -101,11 +102,13 @@ __fastalign_install:
 	@echo "Installing FastAlign..."
 	@mkdir -p $(FA_INSTALL)
 	$(foreach exe,$(FA_EXES),cp $(FA_BIN_DIR)/$(exe) $(FA_INSTALL)/$(exe);)
+	$(foreach lib,$(FA_LIBS),cp -r $(FA_LIB_DIR)/$(lib)* $(MMT_INSTALL_LIB)/;)
 	@echo "SUCCESS (FastAlign)"
 
 __fastalign_clean:
 	rm -rf $(FA_BUILD_DIR)
 	rm -rf $(FA_INSTALL)
+	rm -f $(foreach lib,$(FA_LIBS),$(MMT_INSTALL_LIB)/$(lib)*)
 
 
 # ==========================================
