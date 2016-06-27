@@ -6,7 +6,6 @@ import eu.modernmt.core.Engine;
 import eu.modernmt.core.cluster.error.SystemShutdownException;
 import eu.modernmt.core.facade.exceptions.validation.LanguagePairNotSupportedException;
 import eu.modernmt.core.facade.operations.ProjectTagsOperation;
-import eu.modernmt.decoder.TranslationException;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.Languages;
 import eu.modernmt.processing.framework.ProcessingException;
@@ -19,11 +18,11 @@ import java.util.concurrent.ExecutionException;
  */
 public class TagFacade {
 
-    public Translation project(String sentence, String translation, Locale sourceLanguage, Locale targetLanguage) throws TranslationException, LanguagePairNotSupportedException {
+    public Translation project(String sentence, String translation, Locale sourceLanguage, Locale targetLanguage) throws AlignerException, LanguagePairNotSupportedException {
         return project(sentence, translation, sourceLanguage, targetLanguage, null);
     }
 
-    public Translation project(String sentence, String translation, Locale sourceLanguage, Locale targetLanguage, SymmetrizationStrategy strategy) throws TranslationException, LanguagePairNotSupportedException {
+    public Translation project(String sentence, String translation, Locale sourceLanguage, Locale targetLanguage, SymmetrizationStrategy strategy) throws AlignerException, LanguagePairNotSupportedException {
         boolean inverted = isLanguagesInverted(sourceLanguage, targetLanguage);
         ProjectTagsOperation operation = new ProjectTagsOperation(sentence, translation, inverted, strategy);
         try {
@@ -34,11 +33,11 @@ public class TagFacade {
             Throwable cause = e.getCause();
 
             if (cause instanceof ProcessingException)
-                throw new TranslationException("Problem while processing translation", cause);
+                throw new AlignerException("Problem while processing translation", cause);
             else if (cause instanceof AlignerException)
-                throw new TranslationException("Problem while computing alignments", cause);
+                throw new AlignerException("Problem while computing alignments", cause);
             else if (cause instanceof RuntimeException)
-                throw new TranslationException("Unexpected exceptions while projecting tags", cause);
+                throw new AlignerException("Unexpected exception while projecting tags", cause);
             else
                 throw new Error("Unexpected exception: " + cause.getMessage(), cause);
         }

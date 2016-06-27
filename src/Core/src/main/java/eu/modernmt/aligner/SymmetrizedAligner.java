@@ -33,7 +33,7 @@ public class SymmetrizedAligner implements Aligner {
         ExecutorService pool = Executors.newFixedThreadPool(2);
 
         Future<Void> forward = pool.submit(new LoadModelTask(forwardModel, true));
-        Future<Void> backward = pool.submit(new LoadModelTask(backwardModel, true));
+        Future<Void> backward = pool.submit(new LoadModelTask(backwardModel, false));
 
         try {
             forward.get();

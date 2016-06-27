@@ -26,6 +26,8 @@ inline jobjectArray AlignmentToArray(JNIEnv *jvm, alignment align) {
 
         jvm->SetObjectArrayElement(jarray, i, jpair);
     }
+
+    return jarray;
 }
 
 JNIEXPORT void JNICALL Java_eu_modernmt_aligner_fastalign_FastAlign_init(JNIEnv *jvm, jobject jself, jstring jmodelPath,
