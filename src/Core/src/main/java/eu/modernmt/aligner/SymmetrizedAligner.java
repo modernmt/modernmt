@@ -8,6 +8,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.*;
 
 /**
@@ -51,15 +53,36 @@ public class SymmetrizedAligner implements Aligner {
     }
 
     @Override
-    public int[][] getAlignments(Sentence sentence, Sentence translation) throws AlignerException {
-        int[][] forwardAlignments = forwardModel.getAlignments(sentence, translation);
-        int[][] backwardAlignments = backwardModel.getAlignments(sentence, translation);
+    public int[][] getAlignment(Sentence sentence, Sentence translation) throws AlignerException {
+        int[][] forwardAlignments = forwardModel.getAlignment(sentence, translation);
+        int[][] backwardAlignments = backwardModel.getAlignment(sentence, translation);
 
-        int[][] alignments = strategy.symmetrize(forwardAlignments, backwardAlignments);
-        if (logger.isDebugEnabled()) {
-            logger.debug("Symmetrised alignments: " + Aligner.toString(alignments));
+        int[][] alignment = strategy.symmetrize(forwardAlignments, backwardAlignments);
+        return AlignmentsInterpolator.interpolateAlignments(alignment, sentence.getWords().length, translation.getWords().length);
+    }
+
+    @Override
+    public int[][][] getAlignments(List<Sentence> sentences, List<Sentence> translations) throws AlignerException {
+        int[][][] forwardAlignments = forwardModel.getAlignments(sentences, translations);
+        int[][][] backwardAlignments = backwardModel.getAlignments(sentences, translations);
+
+        int[][][] alignments = new int[forwardAlignments.length][][];
+
+        Iterator<Sentence> sentenceIterator = sentences.iterator();
+        Iterator<Sentence> translationIterator = translations.iterator();
+
+        int i = 0;
+        while (sentenceIterator.hasNext() && translationIterator.hasNext()) {
+            Sentence sentence = sentenceIterator.next();
+            Sentence translation = translationIterator.next();
+
+            int[][] alignment = strategy.symmetrize(forwardAlignments[i], backwardAlignments[i]);
+            alignments[i] = AlignmentsInterpolator.interpolateAlignments(alignment, sentence.getWords().length, translation.getWords().length);
+
+            i++;
         }
-        return AlignmentsInterpolator.interpolateAlignments(alignments, sentence.getWords().length, translation.getWords().length);
+
+        return alignments;
     }
 
     public void setSymmetrizationStrategy(SymmetrizationStrategy strategy) {

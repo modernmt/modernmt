@@ -3,6 +3,7 @@ package eu.modernmt.aligner;
 import eu.modernmt.model.Sentence;
 
 import java.io.Closeable;
+import java.util.List;
 
 /**
  * Created by lucamastrostefano on 14/03/16.
@@ -11,7 +12,9 @@ public interface Aligner extends Closeable {
 
     void load() throws AlignerException;
 
-    int[][] getAlignments(Sentence sentence, Sentence translation) throws AlignerException;
+    int[][] getAlignment(Sentence sentence, Sentence translation) throws AlignerException;
+
+    int[][][] getAlignments(List<Sentence> sentences, List<Sentence> translations) throws AlignerException;
 
     static String toString(int[][] alignments) {
         StringBuilder result = new StringBuilder();

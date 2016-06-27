@@ -75,7 +75,7 @@ public class ProjectTagsOperation extends Operation<Translation> {
                         "SymmetrizedAligner: " + aligner.getClass());
         }
 
-        int[][] alignments = aligner.getAlignments(sentence, translation);
+        int[][] alignments = aligner.getAlignment(sentence, translation);
 
         if (this.inverted) {
             Aligner.invertAlignments(alignments);

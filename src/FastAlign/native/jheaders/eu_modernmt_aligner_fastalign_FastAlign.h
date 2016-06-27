@@ -10,18 +10,26 @@ extern "C" {
 /*
  * Class:     eu_modernmt_aligner_fastalign_FastAlign
  * Method:    init
- * Signature: (Ljava/lang/String;Z)V
+ * Signature: (Ljava/lang/String;ZI)V
  */
 JNIEXPORT void JNICALL Java_eu_modernmt_aligner_fastalign_FastAlign_init
-  (JNIEnv *, jobject, jstring, jboolean);
+  (JNIEnv *, jobject, jstring, jboolean, jint);
 
 /*
  * Class:     eu_modernmt_aligner_fastalign_FastAlign
- * Method:    align
- * Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+ * Method:    alignPair
+ * Signature: (Ljava/lang/String;Ljava/lang/String;)[[I
  */
-JNIEXPORT jstring JNICALL Java_eu_modernmt_aligner_fastalign_FastAlign_align
+JNIEXPORT jobjectArray JNICALL Java_eu_modernmt_aligner_fastalign_FastAlign_alignPair
   (JNIEnv *, jobject, jstring, jstring);
+
+/*
+ * Class:     eu_modernmt_aligner_fastalign_FastAlign
+ * Method:    alignPairs
+ * Signature: ([Ljava/lang/String;[Ljava/lang/String;)[[[I
+ */
+JNIEXPORT jobjectArray JNICALL Java_eu_modernmt_aligner_fastalign_FastAlign_alignPairs
+  (JNIEnv *, jobject, jobjectArray, jobjectArray);
 
 /*
  * Class:     eu_modernmt_aligner_fastalign_FastAlign

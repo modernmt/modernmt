@@ -8,6 +8,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Created by lucamastrostefano on 15/03/16.
@@ -34,40 +36,48 @@ public class FastAlign implements Aligner {
     FastAlign(File model, boolean reverse) {
         this.reverse = reverse;
         this.model = model;
-
-//        if (reverse) {
-//            this.command = new String[]{fastAlignPath, "-d", "-v", "-o", "-B", "-f", model.getAbsolutePath(),
-//                    "-n", "1", "-b", "0", "-r"};
-//        } else {
-//            this.command = new String[]{fastAlignPath, "-d", "-v", "-o", "-B", "-f", model.getAbsolutePath(),
-//                    "-n", "1", "-b", "0"};
-//        }
     }
 
-    private native void init(String modelFile, boolean reverse);
+    private native void init(String modelFile, boolean reverse, int threads);
 
     @Override
     public void load() throws AlignerException {
         if (!model.isFile())
             throw new AlignerException("Invalid model path: " + model);
 
-        this.init(model.getAbsolutePath(), reverse);
+        this.init(model.getAbsolutePath(), reverse, Runtime.getRuntime().availableProcessors());
     }
 
     @Override
-    public int[][] getAlignments(Sentence sentence, Sentence translation) throws AlignerException {
+    public int[][] getAlignment(Sentence sentence, Sentence translation) throws AlignerException {
         String source = serialize(sentence.getWords());
         String target = serialize(translation.getWords());
 
-        String encodedResult = align(source, target);
-        System.out.println();
-        System.out.println(encodedResult);
-        System.out.println();
-
-        return new int[0][2];
+        return alignPair(source, target);
     }
 
-    private native String align(String source, String target);
+    @Override
+    public int[][][] getAlignments(List<Sentence> sentences, List<Sentence> translations) throws AlignerException {
+        String[] sources = new String[sentences.size()];
+        String[] targets = new String[translations.size()];
+
+        Iterator<Sentence> sentenceIterator = sentences.iterator();
+        Iterator<Sentence> translationIterator = translations.iterator();
+
+        int i = 0;
+        while (sentenceIterator.hasNext() && translationIterator.hasNext()) {
+            sources[i] = serialize(sentenceIterator.next().getWords());
+            targets[i] = serialize(translationIterator.next().getWords());
+            i++;
+        }
+
+        return alignPairs(sources, targets);
+    }
+
+
+    private native int[][] alignPair(String source, String target);
+
+    private native int[][][] alignPairs(String[] sources, String[] targets);
 
     @Override
     protected void finalize() throws Throwable {
