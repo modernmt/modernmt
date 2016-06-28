@@ -2,9 +2,9 @@ import multiprocessing
 import os
 
 import cli
-from moses import MosesFeature, Moses
 from cli.libs import fileutils, shell, multithread
-from cli.mt import ParallelCorpus
+from cli.mt import ParallelCorpus, FileParallelCorpus
+from moses import MosesFeature
 
 __author__ = 'Davide Caroselli'
 
@@ -44,7 +44,8 @@ class _CorpusCleaner:
             langs = (corpora[0].langs[0], corpora[0].langs[1])
 
         self._pool_exec(self._clean_file,
-                        [(corpus, ParallelCorpus(corpus.name, dest_folder, corpus.langs), langs) for corpus in corpora])
+                        [(corpus, FileParallelCorpus(corpus.name, dest_folder, corpus.langs), langs) for corpus in
+                         corpora])
         return ParallelCorpus.list(dest_folder)
 
     def _clean_file(self, source, dest, langs):
@@ -144,7 +145,7 @@ class SuffixArraysPhraseTable(MosesFeature):
             corpora = self._cleaner.clean(corpora, clean_output, (self._source_lang, self._target_lang))
 
             # Create merged corpus and domains list file (dmp)
-            merged_corpus = ParallelCorpus(os.path.basename(mct_base), working_dir, langs)
+            merged_corpus = FileParallelCorpus(os.path.basename(mct_base), working_dir, langs)
 
             fileutils.merge([corpus.get_file(l1) for corpus in corpora], merged_corpus.get_file(l1))
             fileutils.merge([corpus.get_file(l2) for corpus in corpora], merged_corpus.get_file(l2))

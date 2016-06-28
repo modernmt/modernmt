@@ -3,8 +3,7 @@
 ## Description
 The ```Tags projection``` API takes as input a source sentence and its translation and gives as output the translation with the tags projected from the source sentence.
 
-**Note:** Tag Projection is disabled by default due some performance issues. To enable it set the property `enable_tag_projection` to `True` in configuration file `engines/<engine-name>/engine.ini`.
-You may experience slowdown when starting the engine.
+**Note:** Tag Projection is disabled by default because it slows down the engine startup. To enable it set the property `enable_tag_projection` to `True` in configuration file `engines/<engine-name>/engine.ini`.
 
 ### Example
 
