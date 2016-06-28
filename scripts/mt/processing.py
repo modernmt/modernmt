@@ -5,7 +5,7 @@ from HTMLParser import HTMLParser
 
 from scripts import mmt_javamain
 from scripts.libs import multithread, fileutils, shell
-from scripts.mt import ParallelCorpus
+from scripts.mt import ParallelCorpus, FileParallelCorpus
 
 __author__ = 'Davide Caroselli'
 
@@ -84,7 +84,7 @@ class Preprocessor:
         for corpus in corpora:
             for lang in corpus.langs:
                 source = corpus.get_file(lang)
-                dest = ParallelCorpus(corpus.name, dest_folder, [lang]).get_file(lang)
+                dest = FileParallelCorpus(corpus.name, dest_folder, [lang]).get_file(lang)
 
                 self.__process_file(source, dest, lang, print_tags, print_placeholders, original_spacing)
 
@@ -119,7 +119,7 @@ class XMLEncoder:
         for corpus in corpora:
             for lang in corpus.langs:
                 source = corpus.get_file(lang)
-                dest = ParallelCorpus(corpus.name, dest_folder, [lang]).get_file(lang)
+                dest = FileParallelCorpus(corpus.name, dest_folder, [lang]).get_file(lang)
 
                 self.encode_file(source, dest)
 

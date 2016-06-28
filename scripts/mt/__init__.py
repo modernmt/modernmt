@@ -1,4 +1,5 @@
 import os
+import xml.sax
 from multiprocessing import Lock
 from operator import attrgetter
 
@@ -8,23 +9,34 @@ __author__ = 'Davide Caroselli'
 class ParallelCorpus:
     @staticmethod
     def list(root='.'):
-        name2corpus = {}
+        name2langs = {}
 
         for filename in os.listdir(root):
             filepath = os.path.join(root, filename)
+
             if os.path.isfile(filepath):
                 filename, extension = os.path.splitext(filename)
                 extension = extension[1:]
 
-                if filename in name2corpus:
-                    corpus = name2corpus[filename]
+                if len(filename) == 0:
+                    continue
+
+                if extension.lower() == 'tmx':
+                    name2langs[filename] = None
                 else:
-                    corpus = (filename, root, [])
-                    name2corpus[filename] = corpus
+                    langs = name2langs[filename] if filename in name2langs else None
+                    if langs is None:
+                        langs = []
+                        name2langs[filename] = langs
+                    langs.append(extension)
 
-                corpus[2].append(extension)
+        corpora = [ParallelCorpus.__build(name, root, langs) for name, langs in name2langs.iteritems()]
 
-        return sorted([ParallelCorpus(*corpus) for _, corpus in name2corpus.iteritems()], key=attrgetter('name'))
+        return sorted(corpora, key=attrgetter('name'))
+
+    @staticmethod
+    def __build(name, root, langs=None):
+        return TMXParallelCorpus(name, root) if langs is None else FileParallelCorpus(name, root, langs)
 
     @staticmethod
     def splitlist(source_lang, target_lang, monolingual_is_target=True, roots=None):
@@ -39,34 +51,15 @@ class ParallelCorpus:
         monolingual_lang = target_lang if monolingual_is_target else source_lang
 
         for directory in roots:
-            name2file = {}
+            corpora = ParallelCorpus.list(directory)
 
-            for filename in os.listdir(directory):
-                if not (filename.endswith('.' + source_lang) or filename.endswith('.' + target_lang)):
-                    continue
-
-                filepath = os.path.join(directory, filename)
-                dotpos = filename.rfind('.')
-                # extension = filename[(dotpos + 1):]
-                filename = filename[:dotpos]
-
-                if len(filename) == 0:
-                    continue
-
-                if filename in name2file:
-                    del name2file[filename]
-                    bilingual_corpora.append(ParallelCorpus(filename, directory, [source_lang, target_lang]))
-                else:
-                    name2file[filename] = filepath
-
-            for _, path in name2file.iteritems():
-                filename = os.path.basename(path)
-                dotpos = filename.rfind('.')
-                extension = filename[(dotpos + 1):]
-                filename = filename[:dotpos]
-
-                if extension == monolingual_lang:
-                    monolingual_corpora.append(ParallelCorpus(filename, directory, [monolingual_lang]))
+            for corpus in corpora:
+                if len(corpus.langs) == 1:
+                    if monolingual_lang in corpus.langs:
+                        monolingual_corpora.append(corpus)
+                elif len(corpus.langs) > 1:
+                    if source_lang in corpus.langs and target_lang in corpus.langs:
+                        bilingual_corpora.append(corpus)
 
         return bilingual_corpora, monolingual_corpora
 
@@ -83,6 +76,26 @@ class ParallelCorpus:
         self.name = name
         self.langs = langs if langs is not None else []
         self.root = os.path.abspath(root)
+
+    def get_basename(self):
+        raise NotImplementedError('Abstract method')
+
+    def get_file(self, lang):
+        raise NotImplementedError('Abstract method')
+
+    def count_lines(self):
+        raise NotImplementedError('Abstract method')
+
+    def __str__(self):
+        return self.name + '(' + ','.join(self.langs) + ')'
+
+    def __repr__(self):
+        return self.__str__()
+
+
+class FileParallelCorpus(ParallelCorpus):
+    def __init__(self, name, root, langs=None):
+        ParallelCorpus.__init__(self, name, root, langs)
 
         self._lines_count = -1
         self._lock = Lock()
@@ -105,8 +118,54 @@ class ParallelCorpus:
 
         return self._lines_count
 
-    def __str__(self):
-        return self.name + '(' + ','.join(self.langs) + ')'
 
-    def __repr__(self):
-        return self.__str__()
+class _TMXContentReader(xml.sax.handler.ContentHandler):
+    langs = []
+
+    def startElement(self, name, attrs):
+        if name == 'tuv':
+            lang = str(attrs['xml:lang']) if 'xml:lang' in attrs else None
+
+            if lang is not None:
+                idx = lang.find('-')
+                if idx > 0:
+                    lang = lang[:idx]
+
+                if lang not in self.langs:
+                    self.langs.append(lang)
+
+                    if len(self.langs) > 1:
+                        raise StopIteration
+
+
+class TMXParallelCorpus(ParallelCorpus):
+    @staticmethod
+    def __get_langs(name, root):
+        handler = _TMXContentReader()
+
+        try:
+            parser = xml.sax.make_parser()
+            parser.setContentHandler(handler)
+
+            with open(os.path.join(root, name + '.tmx')) as f:
+                parser.parse(f)
+        except StopIteration:
+            pass
+
+        return handler.langs
+
+    def __init__(self, name, root):
+        ParallelCorpus.__init__(self, name, root, self.__get_langs(name, root))
+
+    def get_basename(self):
+        return os.path.join(self.root, self.name)
+
+    def get_file(self, lang):
+        raise NotImplementedError('Cannot read lang file for TMX')
+
+    def count_lines(self):
+        raise NotImplementedError('Count lines not supported for TMX')
+
+    def __str__(self):
+        return self.name + '[' + ','.join(self.langs) + ']'
+
