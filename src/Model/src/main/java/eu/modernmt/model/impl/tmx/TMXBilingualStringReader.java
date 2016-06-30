@@ -28,8 +28,8 @@ public class TMXBilingualStringReader implements BilingualCorpus.BilingualString
 
     public TMXBilingualStringReader(File tmx, Locale sourceLanguage, Locale targetLanguage) throws IOException {
         this.tmx = tmx;
-        this.sourceLanguage = sourceLanguage.toLanguageTag().substring(0, 2).toLowerCase();
-        this.targetLanguage = targetLanguage.toLanguageTag().substring(0, 2).toLowerCase();
+        this.sourceLanguage = sourceLanguage.getLanguage();
+        this.targetLanguage = targetLanguage.getLanguage();
 
         XMLInputFactory factory = XMLInputFactory.newInstance();
 

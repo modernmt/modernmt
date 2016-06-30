@@ -27,12 +27,15 @@ public class BilingualFileCorpus implements BilingualCorpus {
     private final FileCorpus targetCorpus;
 
     public BilingualFileCorpus(File directory, String name, Locale sourceLanguage, Locale targetLanguage) {
+        this(name, sourceLanguage, new File(directory, name + "." + sourceLanguage.toLanguageTag()), targetLanguage, new File(directory, name + "." + targetLanguage.toLanguageTag()));
+    }
+
+    public BilingualFileCorpus(String name, Locale sourceLanguage, File source, Locale targetLanguage, File target) {
         this.name = name;
         this.sourceLanguage = sourceLanguage;
         this.targetLanguage = targetLanguage;
-
-        this.source = new File(directory, name + "." + sourceLanguage.toLanguageTag());
-        this.target = new File(directory, name + "." + targetLanguage.toLanguageTag());
+        this.source = source;
+        this.target = target;
 
         this.sourceCorpus = new FileCorpus(this.source, this.name, this.sourceLanguage);
         this.targetCorpus = new FileCorpus(this.target, this.name, this.targetLanguage);
