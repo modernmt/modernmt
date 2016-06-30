@@ -9,7 +9,7 @@ from cli import dependency
 from cli.cluster import ClusterNode, DEFAULT_MMT_API_PORT
 from cli.engine import MMTEngine
 from cli.evaluation import Evaluator
-from cli.mt import ParallelCorpus
+from cli.mt import BilingualCorpus
 from cli.mt.processing import TrainingPreprocessor
 import argparse
 
@@ -95,8 +95,8 @@ def main_sweep(argv):
 
     evaluator = Evaluator(node.engine, node)
 
-    corpora = ParallelCorpus.list(args.corpora_path) if args.corpora_path is not None \
-        else ParallelCorpus.list(os.path.join(node.engine.data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
+    corpora = BilingualCorpus.list(args.corpora_path) if args.corpora_path is not None \
+        else BilingualCorpus.list(os.path.join(node.engine.data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
 
     lines = 0
     for corpus in corpora:

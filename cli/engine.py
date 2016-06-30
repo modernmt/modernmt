@@ -7,7 +7,7 @@ from ConfigParser import ConfigParser
 import cli
 from cli import IllegalArgumentException, IllegalStateException
 from cli.libs import fileutils
-from cli.mt import ParallelCorpus
+from cli.mt import BilingualCorpus
 from cli.mt.contextanalysis import ContextAnalyzer
 from cli.mt.lm import LanguageModel
 from cli.mt.moses import Moses, MosesFeature, LexicalReordering
@@ -81,7 +81,7 @@ class _MMTEngineBuilder:
         source_lang = self._engine.source_lang
         target_lang = self._engine.target_lang
 
-        bilingual_corpora, monolingual_corpora = ParallelCorpus.splitlist(source_lang, target_lang, roots=roots)
+        bilingual_corpora, monolingual_corpora = BilingualCorpus.splitlist(source_lang, target_lang, roots=roots)
 
         if len(bilingual_corpora) == 0:
             raise IllegalArgumentException(
@@ -137,8 +137,8 @@ class _MMTEngineBuilder:
                         os.symlink(cfile, link)
 
                     corpora_roots = [cleaned_output]
-                    unprocessed_bicorpora, unprocessed_mocorpora = ParallelCorpus.splitlist(source_lang, target_lang,
-                                                                                            roots=corpora_roots)
+                    unprocessed_bicorpora, unprocessed_mocorpora = BilingualCorpus.splitlist(source_lang, target_lang,
+                                                                                             roots=corpora_roots)
 
             # Preprocessing
             processed_bicorpora = unprocessed_bicorpora

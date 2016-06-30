@@ -18,8 +18,8 @@ class _CorpusBuilder:
         self.lang2file[lang] = f
 
     def build(self):
-        return TMXParallelCorpus(self.name, self.tmx) if self.tmx is not None \
-            else FileParallelCorpus(self.name, self.lang2file)
+        return _TMXCorpus(self.name, self.tmx) if self.tmx is not None else _FileParallelCorpus(self.name,
+                                                                                                self.lang2file)
 
 
 def _parse_lang(lang):
@@ -36,10 +36,12 @@ def _parse_lang(lang):
     return lang.lower()
 
 
-class ParallelCorpus:
+class BilingualCorpus:
     @staticmethod
     def list(root='.'):
         corpus_map = {}
+
+        root = os.path.abspath(root)
 
         for filename in os.listdir(root):
             filepath = os.path.join(root, filename)
@@ -82,7 +84,7 @@ class ParallelCorpus:
         monolingual_lang = target_lang if monolingual_is_target else source_lang
 
         for directory in roots:
-            corpora = ParallelCorpus.list(directory)
+            corpora = BilingualCorpus.list(directory)
 
             for corpus in corpora:
                 if len(corpus.langs) == 1:
@@ -94,17 +96,27 @@ class ParallelCorpus:
 
         return bilingual_corpora, monolingual_corpora
 
+    @staticmethod
+    def make_parallel(name, folder, langs):
+        folder = os.path.abspath(folder)
+        lang2file = {}
+
+        for lang in langs:
+            lang2file[lang] = os.path.join(folder, name + '.' + lang.lower())
+
+        return _FileParallelCorpus(name, lang2file)
+
     def __init__(self, name, langs=None):
         self.name = name
         self.langs = langs if langs is not None else []
-
-    def get_basename(self):
-        raise NotImplementedError('Abstract method')
 
     def get_file(self, lang):
         raise NotImplementedError('Abstract method')
 
     def count_lines(self):
+        raise NotImplementedError('Abstract method')
+
+    def get_folder(self):
         raise NotImplementedError('Abstract method')
 
     def __str__(self):
@@ -114,9 +126,9 @@ class ParallelCorpus:
         return self.__str__()
 
 
-class FileParallelCorpus(ParallelCorpus):
+class _FileParallelCorpus(BilingualCorpus):
     def __init__(self, name, lang2file):
-        ParallelCorpus.__init__(self, name, lang2file.keys())
+        BilingualCorpus.__init__(self, name, lang2file.keys())
 
         self._lang2file = lang2file
 
@@ -126,11 +138,11 @@ class FileParallelCorpus(ParallelCorpus):
         self._lines_count = -1
         self._lock = Lock()
 
-    def get_basename(self):
-        return os.path.join(self._root, self.name)
-
     def get_file(self, lang):
         return self._lang2file[lang] if lang in self._lang2file else None
+
+    def get_folder(self):
+        return self._root
 
     def count_lines(self):
         if self._lines_count < 0 < len(self.langs):
@@ -155,7 +167,7 @@ class _TMXContentReader(xml.sax.handler.ContentHandler):
                     raise StopIteration
 
 
-class TMXParallelCorpus(ParallelCorpus):
+class _TMXCorpus(BilingualCorpus):
     @staticmethod
     def __get_langs(tmx_file):
         handler = _TMXContentReader()
@@ -175,11 +187,12 @@ class TMXParallelCorpus(ParallelCorpus):
         return handler.langs
 
     def __init__(self, name, f):
-        ParallelCorpus.__init__(self, name, self.__get_langs(f))
+        BilingualCorpus.__init__(self, name, self.__get_langs(f))
         self._tmx_file = f
+        self._root = os.path.dirname(f)
 
-    def get_basename(self):
-        raise NotImplementedError('TMX file has no basename')
+    def get_folder(self):
+        return self._root
 
     def get_file(self, lang):
         raise NotImplementedError('Cannot read lang file for TMX')

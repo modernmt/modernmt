@@ -12,7 +12,7 @@ import requests
 import cli
 from cli import mmt_javamain, IllegalStateException, IllegalArgumentException
 from cli.libs import fileutils, daemon, shell
-from cli.mt import ParallelCorpus
+from cli.mt import BilingualCorpus
 from cli.mt.moses import Moses
 from cli.mt.processing import TrainingPreprocessor
 
@@ -125,7 +125,7 @@ class _tuning_logger:
 
         print '\n============ TUNING STARTED ============\n'
         print 'ENGINE:  %s' % engine.name
-        print 'CORPORA: %s (%d documents)' % (corpora[0].root, len(corpora))
+        print 'CORPORA: %s (%d documents)' % (corpora[0].get_folder(), len(corpora))
         print 'LANGS:   %s > %s' % (engine.source_lang, engine.target_lang)
         print
 
@@ -308,7 +308,7 @@ class ClusterNode(object):
 
     def tune(self, corpora=None, tokenize=True, debug=False, context_enabled=True):
         if corpora is None:
-            corpora = ParallelCorpus.list(os.path.join(self.engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME))
+            corpora = BilingualCorpus.list(os.path.join(self.engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME))
 
         if len(corpora) == 0:
             raise IllegalArgumentException('empty corpora')
@@ -344,7 +344,7 @@ class ClusterNode(object):
             with cmdlogger.step('Merging corpus') as _:
                 source_merged_corpus = os.path.join(working_dir, 'corpus.' + source_lang)
                 with open(source_merged_corpus, 'wb') as out:
-                    original_root = original_corpora[0].root
+                    original_root = original_corpora[0].get_folder()
 
                     for corpus in tokenized_corpora:
                         tokenized = corpus.get_file(source_lang)

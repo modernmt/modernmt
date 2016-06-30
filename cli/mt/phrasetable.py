@@ -3,7 +3,7 @@ import os
 
 import cli
 from cli.libs import fileutils, shell, multithread
-from cli.mt import ParallelCorpus, FileParallelCorpus
+from cli.mt import BilingualCorpus
 from moses import MosesFeature
 
 __author__ = 'Davide Caroselli'
@@ -43,20 +43,18 @@ class _CorpusCleaner:
         if langs is None and len(corpora) > 0:
             langs = (corpora[0].langs[0], corpora[0].langs[1])
 
-        self._pool_exec(self._clean_file,
-                        [(corpus, FileParallelCorpus(corpus.name, dest_folder, corpus.langs), langs) for corpus in
-                         corpora])
-        return ParallelCorpus.list(dest_folder)
+        self._pool_exec(self._clean_file, [(corpus, dest_folder, langs) for corpus in corpora])
+        return BilingualCorpus.list(dest_folder)
 
-    def _clean_file(self, source, dest, langs):
-        if not os.path.isdir(dest.root):
-            fileutils.makedirs(dest.root, exist_ok=True)
+    def _clean_file(self, source, dest_folder, langs):
+        if not os.path.isdir(dest_folder):
+            fileutils.makedirs(dest_folder, exist_ok=True)
 
-        source = os.path.splitext(source.get_file(langs[0]))[0]
-        output = os.path.splitext(dest.get_file(langs[0]))[0]
+        input_folder = os.path.join(source.get_folder(), source.name)
+        output_folder = os.path.join(dest_folder, source.name)
 
-        command = ['perl', self._cleaner_script, '-ratio', str(self._ratio), source, langs[0], langs[1], output,
-                   str(self._min), str(self._max)]
+        command = ['perl', self._cleaner_script, '-ratio', str(self._ratio), input_folder, langs[0], langs[1],
+                   output_folder, str(self._min), str(self._max)]
         shell.execute(command, stdout=shell.DEVNULL, stderr=shell.DEVNULL)
 
 
@@ -145,7 +143,7 @@ class SuffixArraysPhraseTable(MosesFeature):
             corpora = self._cleaner.clean(corpora, clean_output, (self._source_lang, self._target_lang))
 
             # Create merged corpus and domains list file (dmp)
-            merged_corpus = FileParallelCorpus(os.path.basename(mct_base), working_dir, langs)
+            merged_corpus = BilingualCorpus.make_parallel(os.path.basename(mct_base), working_dir, langs)
 
             fileutils.merge([corpus.get_file(l1) for corpus in corpora], merged_corpus.get_file(l1))
             fileutils.merge([corpus.get_file(l2) for corpus in corpora], merged_corpus.get_file(l2))

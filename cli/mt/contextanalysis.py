@@ -15,7 +15,7 @@ class ContextAnalyzer:
         source_paths = set()
 
         for corpus in corpora:
-            source_paths.add(corpus.root)
+            source_paths.add(corpus.get_folder())
 
         fileutils.makedirs(self._index, exist_ok=True)
 

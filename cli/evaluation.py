@@ -9,7 +9,7 @@ import requests
 import cli
 from cli import IllegalArgumentException
 from cli.libs import multithread, shell, fileutils
-from cli.mt import ParallelCorpus
+from cli.mt import BilingualCorpus
 from cli.mt.processing import XMLEncoder
 
 DEFAULT_GOOGLE_KEY = 'AIzaSyBl9WAoivTkEfRdBBSCs4CruwnGL_aV74c'
@@ -91,7 +91,7 @@ class Translator:
             end_time = datetime.now()
             total_time = end_time - start_time
 
-            return ParallelCorpus.list(output), (elapsed_time / translation_count), (
+            return BilingualCorpus.list(output), (elapsed_time / translation_count), (
                 elapsed_time / total_time.total_seconds())
         finally:
             pool.terminate()

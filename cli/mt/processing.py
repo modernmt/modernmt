@@ -5,7 +5,7 @@ from HTMLParser import HTMLParser
 
 from cli import mmt_javamain
 from cli.libs import multithread, fileutils, shell
-from cli.mt import ParallelCorpus, FileParallelCorpus
+from cli.mt import BilingualCorpus
 
 __author__ = 'Davide Caroselli'
 
@@ -37,7 +37,7 @@ class TMCleaner:
         command = mmt_javamain(self._java_mainclass, args)
         shell.execute(command, stdin=shell.DEVNULL, stdout=shell.DEVNULL, stderr=shell.DEVNULL)
 
-        return ParallelCorpus.splitlist(source, target, roots=output_path)[0]
+        return BilingualCorpus.splitlist(source, target, roots=output_path)[0]
 
 
 class TrainingPreprocessor:
@@ -62,7 +62,7 @@ class TrainingPreprocessor:
         command = mmt_javamain(self._java_mainclass, args)
         shell.execute(command, stdin=shell.DEVNULL, stdout=shell.DEVNULL, stderr=shell.DEVNULL)
 
-        return ParallelCorpus.splitlist(source, target, roots=output_path)
+        return BilingualCorpus.splitlist(source, target, roots=output_path)
 
 
 class Preprocessor:
@@ -84,22 +84,21 @@ class Preprocessor:
         for corpus in corpora:
             for lang in corpus.langs:
                 source = corpus.get_file(lang)
-                dest = FileParallelCorpus(corpus.name, dest_folder, [lang]).get_file(lang)
+                dest = BilingualCorpus.make_parallel(corpus.name, dest_folder, [lang])
 
                 self.__process_file(source, dest, lang, print_tags, print_placeholders, original_spacing)
 
-        return ParallelCorpus.list(dest_folder)
+        return BilingualCorpus.list(dest_folder)
 
     # noinspection PyTypeChecker
     def __process_file(self, source, dest, lang, print_tags=True, print_placeholders=False, original_spacing=False):
         command = self.__get_command(lang, print_tags, print_placeholders, original_spacing)
 
-        parent_dir = os.path.abspath(os.path.join(dest, os.pardir))
-        if not os.path.isdir(parent_dir):
-            fileutils.makedirs(parent_dir, exist_ok=True)
+        if not os.path.isdir(dest.get_folder()):
+            fileutils.makedirs(dest.get_folder(), exist_ok=True)
 
         with open(source) as input_stream:
-            with open(dest, 'w') as output_stream:
+            with open(dest.get_file(lang), 'w') as output_stream:
                 shell.execute(command, stdin=input_stream, stdout=output_stream, stderr=shell.DEVNULL)
 
 
@@ -119,14 +118,14 @@ class XMLEncoder:
         for corpus in corpora:
             for lang in corpus.langs:
                 source = corpus.get_file(lang)
-                dest = FileParallelCorpus(corpus.name, dest_folder, [lang]).get_file(lang)
+                dest_file = BilingualCorpus.make_parallel(corpus.name, dest_folder, [lang]).get_file(lang)
 
-                self.encode_file(source, dest, delete_nl=True)
+                self.encode_file(source, dest_file, delete_nl=True)
 
-        return ParallelCorpus.list(dest_folder)
+        return BilingualCorpus.list(dest_folder)
 
-    def encode_file(self, source, dest, delete_nl=False):
-        with open(dest, 'wb') as outstream:
+    def encode_file(self, source, dest_file, delete_nl=False):
+        with open(dest_file, 'wb') as outstream:
             with open(source) as instream:
                 for line in instream:
                     encoded = self.encode_string(line.decode('utf-8'))
@@ -138,7 +137,8 @@ class XMLEncoder:
                     encoded += '\n'
                     outstream.write(encoded.encode('utf-8'))
 
-    def __escape(self, string):
+    @staticmethod
+    def __escape(string):
         escaped = XMLEncoder.__HTML.unescape(string)
         return escaped \
             .replace('&', '&amp;') \

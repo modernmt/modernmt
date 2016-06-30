@@ -12,7 +12,7 @@ from cli.engine import IllegalStateException, IllegalArgumentException
 from cli.engine import MMTEngine
 from cli.evaluation import Evaluator
 from cli.libs import shell
-from cli.mt import ParallelCorpus
+from cli.mt import BilingualCorpus
 from cli.mt.processing import TrainingPreprocessor
 
 __author__ = 'Davide Caroselli'
@@ -102,7 +102,7 @@ def main_tune(argv):
     injector.read_config(engine.config)
     engine = injector.inject(engine)
 
-    corpora = ParallelCorpus.list(args.corpora_path) if args.corpora_path is not None else None
+    corpora = BilingualCorpus.list(args.corpora_path) if args.corpora_path is not None else None
 
     node = ClusterNode(engine, api_port=args.api_port)
     node.tune(corpora=corpora, debug=args.debug, context_enabled=args.context_enabled)
@@ -143,8 +143,8 @@ def main_evaluate(argv):
     node = ClusterNode(engine, api_port=args.api_port)
     evaluator = Evaluator(node, google_key=args.gt_key, use_sessions=not args.interactive)
 
-    corpora = ParallelCorpus.list(args.corpora_path) if args.corpora_path is not None \
-        else ParallelCorpus.list(os.path.join(engine.data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
+    corpora = BilingualCorpus.list(args.corpora_path) if args.corpora_path is not None \
+        else BilingualCorpus.list(os.path.join(engine.data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
 
     evaluator.evaluate(corpora=corpora, heval_output=args.heval_output, debug=args.debug)
 
