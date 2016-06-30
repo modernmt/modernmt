@@ -2,9 +2,8 @@ import os
 import xml.sax
 from multiprocessing import Lock
 from operator import attrgetter
-from xml.sax.handler import EntityResolver
 
-from cli.libs import fileutils
+from scripts.libs import fileutils
 
 __author__ = 'Davide Caroselli'
 
