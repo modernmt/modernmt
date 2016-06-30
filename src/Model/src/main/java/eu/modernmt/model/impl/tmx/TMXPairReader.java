@@ -97,11 +97,18 @@ class TMXPairReader {
 
                         String text = readTuv(reader, element);
 
-                        if (lang == null) {
+                        if (lang == null)
                             throw new XMLStreamException(format("Missing language for 'tuv'", event));
-                        } else if (lang.startsWith(sourceLanguage)) {
+
+                        lang = lang.toLowerCase();
+                        int dashIndex = lang.indexOf('-');
+
+                        if (dashIndex > 0)
+                            lang = lang.substring(0, dashIndex);
+
+                        if (lang.equals(sourceLanguage)) {
                             source = text;
-                        } else if (lang.startsWith(targetLanguage)) {
+                        } else if (lang.equals(targetLanguage)) {
                             target = text;
                         } else {
                             throw new XMLStreamException("Invalid language code found: " + lang);

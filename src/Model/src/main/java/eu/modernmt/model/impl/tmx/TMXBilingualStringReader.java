@@ -3,6 +3,7 @@ package eu.modernmt.model.impl.tmx;
 import eu.modernmt.constants.Const;
 import eu.modernmt.model.BilingualCorpus;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.BOMInputStream;
 
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
@@ -28,8 +29,8 @@ public class TMXBilingualStringReader implements BilingualCorpus.BilingualString
 
     public TMXBilingualStringReader(File tmx, Locale sourceLanguage, Locale targetLanguage) throws IOException {
         this.tmx = tmx;
-        this.sourceLanguage = sourceLanguage.toLanguageTag().substring(0, 2).toLowerCase();
-        this.targetLanguage = targetLanguage.toLanguageTag().substring(0, 2).toLowerCase();
+        this.sourceLanguage = sourceLanguage.getLanguage();
+        this.targetLanguage = targetLanguage.getLanguage();
 
         XMLInputFactory factory = XMLInputFactory.newInstance();
 
@@ -38,7 +39,7 @@ public class TMXBilingualStringReader implements BilingualCorpus.BilingualString
 
         try {
             stream = new FileInputStream(tmx);
-            reader = factory.createXMLEventReader(new InputStreamReader(stream, Const.charset.get()));
+            reader = factory.createXMLEventReader(new InputStreamReader(new BOMInputStream(stream, false), Const.charset.get()));
         } catch (XMLStreamException e) {
             throw new IOException("Error while creating XMLStreamReader for TMX " + tmx, e);
         } finally {

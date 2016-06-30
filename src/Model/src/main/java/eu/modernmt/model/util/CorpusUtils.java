@@ -6,6 +6,8 @@ import eu.modernmt.model.impl.BilingualFileCorpus;
 import eu.modernmt.model.impl.FileCorpus;
 import eu.modernmt.model.impl.tmx.TMXFile;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.FalseFileFilter;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,16 +38,10 @@ public class CorpusUtils {
     }
 
     public static void list(Collection<Corpus> monolingualOutput, boolean monolingualIsTarget, Collection<BilingualCorpus> bilingualOutput, Locale sourceLanguage, Locale targetLanguage, File... roots) throws IOException {
-        String sourceLangTag = sourceLanguage.toLanguageTag();
-        String targetLangTag = targetLanguage.toLanguageTag();
-        String monolingualLangTag = monolingualIsTarget ? targetLangTag : sourceLangTag;
-
-        String[] acceptedExtensions = new String[]{sourceLangTag, targetLangTag, TMX_EXTENSION};
-
         for (File directory : roots) {
-            HashMap<String, File> name2File = new HashMap<>();
+            HashMap<String, CorpusBuilder> builders = new HashMap<>();
 
-            for (File file : FileUtils.listFiles(directory, acceptedExtensions, false)) {
+            for (File file : FileUtils.listFiles(directory, TrueFileFilter.TRUE, FalseFileFilter.FALSE)) {
                 String filename = file.getName();
 
                 int lastDot = filename.lastIndexOf('.');
@@ -59,36 +55,109 @@ public class CorpusUtils {
                     continue;
 
                 if (TMX_EXTENSION.equalsIgnoreCase(extension)) {
-                    if (bilingualOutput != null)
-                        bilingualOutput.add(new TMXFile(filename, file, sourceLanguage, targetLanguage));
+                    builders.put(filename, new CorpusBuilder(filename, sourceLanguage, targetLanguage, file));
                 } else {
-                    File twin = name2File.get(filename);
+                    Locale locale = Locale.forLanguageTag(extension);
 
-                    if (twin == null) {
-                        name2File.put(filename, file);
-                    } else {
-                        name2File.remove(filename);
-                        if (bilingualOutput != null)
-                            bilingualOutput.add(new BilingualFileCorpus(directory, filename, sourceLanguage, targetLanguage));
+                    if (sourceLanguage.getLanguage().equals(locale.getLanguage())) {
+                        CorpusBuilder builder = builders.get(filename);
+
+                        if (builder == null) {
+                            builder = new CorpusBuilder(filename, sourceLanguage, targetLanguage);
+                            builders.put(filename, builder);
+                        }
+
+                        builder.setSourceFile(file);
+                    } else if (targetLanguage.getLanguage().equals(locale.getLanguage())) {
+                        CorpusBuilder builder = builders.get(filename);
+
+                        if (builder == null) {
+                            builder = new CorpusBuilder(filename, sourceLanguage, targetLanguage);
+                            builders.put(filename, builder);
+                        }
+
+                        builder.setTargetFile(file);
                     }
                 }
             }
 
-            if (monolingualOutput != null) {
-                for (File file : name2File.values()) {
-                    String filename = file.getName();
+            for (CorpusBuilder builder : builders.values()) {
+                if (builder.isMonolingual()) {
+                    if (monolingualIsTarget && !builder.hasTargetFile())
+                        continue;
+                    if (!monolingualIsTarget && !builder.hasSourceFile())
+                        continue;
 
-                    int lastDot = filename.lastIndexOf('.');
-
-                    String extension = filename.substring(lastDot + 1);
-                    filename = filename.substring(0, lastDot);
-
-                    if (monolingualLangTag.equalsIgnoreCase(extension))
-                        monolingualOutput.add(new FileCorpus(file, filename, monolingualIsTarget ? targetLanguage : sourceLanguage));
+                    if (monolingualOutput != null)
+                        monolingualOutput.add(builder.buildMonolingual());
+                } else {
+                    if (bilingualOutput != null)
+                        bilingualOutput.add(builder.buildBilingual());
                 }
+            }
+
+        }
+
+    }
+
+    private static class CorpusBuilder {
+
+        private final String name;
+        private final Locale sourceLanguage;
+        private final Locale targetLanguage;
+
+        private File sourceFile = null;
+        private File targetFile = null;
+        private final File tmxFile;
+
+        CorpusBuilder(String name, Locale sourceLanguage, Locale targetLanguage) {
+            this.sourceLanguage = sourceLanguage;
+            this.targetLanguage = targetLanguage;
+            this.tmxFile = null;
+            this.name = name;
+        }
+
+        CorpusBuilder(String name, Locale sourceLanguage, Locale targetLanguage, File tmxFile) {
+            this.sourceLanguage = sourceLanguage;
+            this.targetLanguage = targetLanguage;
+            this.tmxFile = tmxFile;
+            this.name = name;
+        }
+
+        void setSourceFile(File sourceFile) {
+            this.sourceFile = sourceFile;
+        }
+
+        void setTargetFile(File targetFile) {
+            this.targetFile = targetFile;
+        }
+
+        boolean isMonolingual() {
+            return tmxFile == null && ((sourceFile == null && targetFile != null) || (sourceFile != null && targetFile == null));
+        }
+
+        boolean hasSourceFile() {
+            return sourceFile != null;
+        }
+
+        boolean hasTargetFile() {
+            return targetFile != null;
+        }
+
+        BilingualCorpus buildBilingual() {
+            if (tmxFile == null) {
+                return new BilingualFileCorpus(this.name, this.sourceLanguage, this.sourceFile, this.targetLanguage, this.targetFile);
+            } else {
+                return new TMXFile(this.name, this.tmxFile, this.sourceLanguage, this.targetLanguage);
             }
         }
 
+        Corpus buildMonolingual() {
+            if (sourceFile != null)
+                return new FileCorpus(this.sourceFile, this.name, this.sourceLanguage);
+            else
+                return new FileCorpus(this.targetFile, this.name, this.targetLanguage);
+        }
     }
 
 }

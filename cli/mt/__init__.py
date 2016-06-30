@@ -8,37 +8,61 @@ from cli.libs import fileutils
 __author__ = 'Davide Caroselli'
 
 
+class _CorpusBuilder:
+    def __init__(self, name, tmx=None):
+        self.name = name
+        self.tmx = tmx
+        self.lang2file = {}
+
+    def add(self, lang, f):
+        self.lang2file[lang] = f
+
+    def build(self):
+        return TMXParallelCorpus(self.name, self.tmx) if self.tmx is not None \
+            else FileParallelCorpus(self.name, self.lang2file)
+
+
+def _parse_lang(lang):
+    if lang is None:
+        return None
+
+    idx = lang.find('-')
+    if idx > 0:
+        if idx > 3:
+            return None
+        else:
+            lang = lang[:idx]
+
+    return lang.lower()
+
+
 class ParallelCorpus:
     @staticmethod
     def list(root='.'):
-        name2langs = {}
+        corpus_map = {}
 
         for filename in os.listdir(root):
             filepath = os.path.join(root, filename)
 
             if os.path.isfile(filepath):
-                filename, extension = os.path.splitext(filename)
+                name, extension = os.path.splitext(filename)
                 extension = extension[1:]
 
-                if len(filename) == 0:
+                if len(name) == 0:
                     continue
 
                 if extension.lower() == 'tmx':
-                    name2langs[filename] = None
+                    corpus_map[name] = _CorpusBuilder(name, tmx=filepath)
                 else:
-                    langs = name2langs[filename] if filename in name2langs else None
-                    if langs is None:
-                        langs = []
-                        name2langs[filename] = langs
-                    langs.append(extension)
+                    lang = _parse_lang(extension)
 
-        corpora = [ParallelCorpus.__build(name, root, langs) for name, langs in name2langs.iteritems()]
+                    if lang is None:
+                        continue
 
-        return sorted(corpora, key=attrgetter('name'))
+                    builder = corpus_map[name] if name in corpus_map else _CorpusBuilder(name)
+                    builder.add(lang, filepath)
 
-    @staticmethod
-    def __build(name, root, langs=None):
-        return TMXParallelCorpus(name, root) if langs is None else FileParallelCorpus(name, root, langs)
+        return sorted([builder.build() for _, builder in corpus_map.iteritems()], key=attrgetter('name'))
 
     @staticmethod
     def splitlist(source_lang, target_lang, monolingual_is_target=True, roots=None):
@@ -65,19 +89,9 @@ class ParallelCorpus:
 
         return bilingual_corpora, monolingual_corpora
 
-    @staticmethod
-    def filter(corpora, lang):
-        result = []
-
-        for corpus in corpora:
-            result.append(ParallelCorpus(corpus.name, corpus.root, [lang]))
-
-        return result
-
-    def __init__(self, name, root, langs=None):
+    def __init__(self, name, langs=None):
         self.name = name
         self.langs = langs if langs is not None else []
-        self.root = os.path.abspath(root)
 
     def get_basename(self):
         raise NotImplementedError('Abstract method')
@@ -96,17 +110,22 @@ class ParallelCorpus:
 
 
 class FileParallelCorpus(ParallelCorpus):
-    def __init__(self, name, root, langs=None):
-        ParallelCorpus.__init__(self, name, root, langs)
+    def __init__(self, name, lang2file):
+        ParallelCorpus.__init__(self, name, lang2file.keys())
 
+        self._lang2file = lang2file
+
+        files = lang2file.values()
+
+        self._root = os.path.abspath(os.path.join(files[0], os.pardir)) if len(files) > 0 else None
         self._lines_count = -1
         self._lock = Lock()
 
     def get_basename(self):
-        return os.path.join(self.root, self.name)
+        return os.path.join(self._root, self.name)
 
     def get_file(self, lang):
-        return self.get_basename() + '.' + lang
+        return self._lang2file[lang] if lang in self._lang2file else None
 
     def count_lines(self):
         if self._lines_count < 0 < len(self.langs):
@@ -122,41 +141,40 @@ class _TMXContentReader(xml.sax.handler.ContentHandler):
 
     def startElement(self, name, attrs):
         if name == 'tuv':
-            lang = str(attrs['xml:lang']) if 'xml:lang' in attrs else None
+            lang = _parse_lang(str(attrs['xml:lang']) if 'xml:lang' in attrs else None)
 
-            if lang is not None:
-                idx = lang.find('-')
-                if idx > 0:
-                    lang = lang[:idx]
+            if lang is not None and lang not in self.langs:
+                self.langs.append(lang)
 
-                if lang not in self.langs:
-                    self.langs.append(lang)
-
-                    if len(self.langs) > 1:
-                        raise StopIteration
+                if len(self.langs) > 1:
+                    raise StopIteration
 
 
 class TMXParallelCorpus(ParallelCorpus):
     @staticmethod
-    def __get_langs(name, root):
+    def __get_langs(tmx_file):
         handler = _TMXContentReader()
 
         try:
             parser = xml.sax.make_parser()
+            parser.setFeature(xml.sax.handler.feature_validation, False)
+            parser.setFeature(xml.sax.handler.feature_external_ges, False)
+            parser.setFeature(xml.sax.handler.feature_external_pes, False)
             parser.setContentHandler(handler)
 
-            with open(os.path.join(root, name + '.tmx')) as f:
+            with open(tmx_file) as f:
                 parser.parse(f)
         except StopIteration:
             pass
 
         return handler.langs
 
-    def __init__(self, name, root):
-        ParallelCorpus.__init__(self, name, root, self.__get_langs(name, root))
+    def __init__(self, name, f):
+        ParallelCorpus.__init__(self, name, self.__get_langs(f))
+        self._tmx_file = f
 
     def get_basename(self):
-        return os.path.join(self.root, self.name)
+        raise NotImplementedError('TMX file has no basename')
 
     def get_file(self, lang):
         raise NotImplementedError('Cannot read lang file for TMX')
@@ -166,4 +184,3 @@ class TMXParallelCorpus(ParallelCorpus):
 
     def __str__(self):
         return self.name + '[' + ','.join(self.langs) + ']'
-
