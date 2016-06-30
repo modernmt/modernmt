@@ -52,13 +52,15 @@ public class JFlexTokenizer extends Tokenizer {
         super(sourceLanguage, targetLanguage);
 
         Class<? extends JFlexTokenAnnotator> annotatorClass = ANNOTATORS.get(sourceLanguage);
-        if (annotatorClass == null)
-            throw new LanguageNotSupportedException(sourceLanguage);
 
-        try {
-            this.annotator = annotatorClass.getConstructor(Reader.class).newInstance((Reader) null);
-        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException | InstantiationException e) {
-            throw new Error("Error during class instantiation: " + annotatorClass.getName(), e);
+        if (annotatorClass == null) {
+            this.annotator = new StandardTokenAnnotator((Reader) null);
+        } else {
+            try {
+                this.annotator = annotatorClass.getConstructor(Reader.class).newInstance((Reader) null);
+            } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException | InstantiationException e) {
+                throw new Error("Error during class instantiation: " + annotatorClass.getName(), e);
+            }
         }
     }
 

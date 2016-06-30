@@ -8,8 +8,9 @@
     <processor>eu.modernmt.processing.util.RareCharsNormalizer</processor>
     <processor>eu.modernmt.processing.util.WhitespacesNormalizer</processor>
 
-    <!-- Tokenization: Language specific -->
+    <!-- Tokenization -->
     <processorGroup>
+        <!-- Language specific -->
         <processor source="ca cs de el en es fi fr hu is it lv nl pl pt pt-BR ro ru sk sl sv ta">
             eu.modernmt.processing.tokenizer.jflex.JFlexTokenizer
         </processor>
@@ -27,6 +28,11 @@
         </processor>
         <processor source="ja">
             eu.modernmt.processing.tokenizer.kuromoji.KuromojiTokenizer
+        </processor>
+
+        <!-- Backoff strategy: default implementation -->
+        <processor>
+            eu.modernmt.processing.tokenizer.jflex.JFlexTokenizer
         </processor>
     </processorGroup>
 

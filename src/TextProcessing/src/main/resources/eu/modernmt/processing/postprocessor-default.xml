@@ -2,7 +2,18 @@
 
     <processor>eu.modernmt.processing.AlignmentsInterpolator</processor>
 
-    <processor>eu.modernmt.processing.detokenizer.jflex.JFlexDetokenizer</processor>
+    <!-- Detokenization -->
+    <processorGroup>
+        <!-- Language specific -->
+        <processor source="en fr it">
+            eu.modernmt.processing.detokenizer.jflex.JFlexDetokenizer
+        </processor>
+
+        <!-- Backoff strategy: default implementation -->
+        <processor>
+            eu.modernmt.processing.detokenizer.jflex.JFlexDetokenizer
+        </processor>
+    </processorGroup>
 
     <processor source="fr">eu.modernmt.processing.chars.GuillemetsToQuotesProcessor</processor>
     <processor>eu.modernmt.processing.WordTransformationFactory</processor>
