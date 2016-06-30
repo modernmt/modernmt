@@ -59,7 +59,12 @@ class ParallelCorpus:
                     if lang is None:
                         continue
 
-                    builder = corpus_map[name] if name in corpus_map else _CorpusBuilder(name)
+                    if name in corpus_map:
+                        builder = corpus_map[name]
+                    else:
+                        builder = _CorpusBuilder(name)
+                        corpus_map[name] = builder
+
                     builder.add(lang, filepath)
 
         return sorted([builder.build() for _, builder in corpus_map.iteritems()], key=attrgetter('name'))
