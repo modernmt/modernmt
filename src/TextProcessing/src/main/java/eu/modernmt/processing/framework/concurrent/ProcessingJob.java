@@ -6,10 +6,7 @@ import eu.modernmt.processing.framework.ProcessingException;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 /**
  * Created by davide on 31/05/16.
@@ -149,10 +146,10 @@ class ProcessingJob<P, R> {
             P param;
 
             while ((param = next()) != null) {
-                Future<R> future = executor.submit(param, metadata);
                 try {
+                    Future<R> future = executor.submit(param, metadata);
                     outputQueue.put(future);
-                } catch (InterruptedException e) {
+                } catch (RejectedExecutionException | InterruptedException e) {
                     signalException(e);
                     break;
                 }
