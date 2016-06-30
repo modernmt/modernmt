@@ -11,11 +11,18 @@ public class LanguageNotSupportedException extends ProcessingException {
         return language == null ? "[null]" : language.toLanguageTag();
     }
 
+    private static String makeMessage(Locale source, Locale target) {
+        if (source != null && target != null)
+            return "Language pair not supported: " + toString(source) + " > " + toString(target);
+        else
+            return "Language not supported: " + toString(source == null ? target : source);
+    }
+
     public LanguageNotSupportedException(Locale language) {
-        super("Language not supported: " + toString(language));
+        this(language, null);
     }
 
     public LanguageNotSupportedException(Locale source, Locale target) {
-        super("Language pair not supported: " + toString(source) + " > " + toString(target));
+        super(makeMessage(source, target));
     }
 }
