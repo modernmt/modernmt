@@ -1,8 +1,10 @@
 package eu.modernmt.model;
 
+import eu.modernmt.io.LineReader;
+import eu.modernmt.io.LineWriter;
+
 import java.io.IOException;
 import java.io.Reader;
-import java.io.Writer;
 import java.util.Locale;
 
 /**
@@ -14,8 +16,10 @@ public interface Corpus {
 
     Locale getLanguage();
 
-    Reader getContentReader() throws IOException;
+    LineReader getContentReader() throws IOException;
 
-    Writer getContentWriter(boolean append) throws IOException;
+    LineWriter getContentWriter(boolean append) throws IOException;
+
+    Reader getRawContentReader() throws IOException, UnsupportedOperationException;
 
 }

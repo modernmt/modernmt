@@ -13,7 +13,7 @@ import java.util.Locale;
 public interface BilingualCorpus {
 
     static int getLineCount(BilingualCorpus corpus) throws IOException {
-        BilingualStringReader reader = null;
+        BilingualLineReader reader = null;
 
         try {
             int count = 0;
@@ -36,21 +36,21 @@ public interface BilingualCorpus {
 
     int getLineCount() throws IOException;
 
-    BilingualStringReader getContentReader() throws IOException;
+    BilingualLineReader getContentReader() throws IOException;
 
-    BilingualStringWriter getContentWriter(boolean append) throws IOException;
+    BilingualLineWriter getContentWriter(boolean append) throws IOException;
 
     Corpus getSourceCorpus();
 
     Corpus getTargetCorpus();
 
-    interface BilingualStringReader extends Closeable {
+    interface BilingualLineReader extends Closeable {
 
         StringPair read() throws IOException;
 
     }
 
-    interface BilingualStringWriter extends Closeable {
+    interface BilingualLineWriter extends Closeable {
 
         void write(String source, String target) throws IOException;
 

@@ -1,11 +1,12 @@
 package eu.modernmt.model.impl.tmx;
 
+import eu.modernmt.io.LineReader;
+import eu.modernmt.io.LineWriter;
 import eu.modernmt.model.Corpus;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.Writer;
 import java.util.Locale;
 
 /**
@@ -34,14 +35,19 @@ public class TMXView implements Corpus {
     }
 
     @Override
-    public Reader getContentReader() throws IOException {
-        // If needed, we should choose between wrap a LineReader into a Reader,
-        // or change the method signature to "public LineReader getContentReader()"
+    public LineReader getContentReader() throws IOException {
+        // TODO: not implemented yet
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Writer getContentWriter(boolean append) throws IOException {
+    public LineWriter getContentWriter(boolean append) throws IOException {
+        // TODO: not implemented yet
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Reader getRawContentReader() throws IOException, UnsupportedOperationException {
         throw new UnsupportedOperationException();
     }
 }

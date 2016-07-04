@@ -152,7 +152,7 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
 
         Reader queryDocumentReader;
         try {
-            queryDocumentReader = queryDocument.getContentReader();
+            queryDocumentReader = queryDocument.getRawContentReader();
         } catch (IOException e) {
             throw new ContextAnalyzerException("Could not read content for similar documents query", e);
         }
@@ -162,10 +162,10 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
             searcher.search(query, collector);
         } catch (IOException e) {
             throw new ContextAnalyzerException("Failed to execute MoreLikeThis query", e);
-        }finally {
+        } finally {
             try {
                 queryDocumentReader.close();
-            }catch (Exception e){
+            } catch (Exception e) {
 
             }
         }

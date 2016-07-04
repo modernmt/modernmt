@@ -73,8 +73,8 @@ public class MockBilingualCorpus implements BilingualCorpus {
     }
 
     @Override
-    public BilingualStringReader getContentReader() throws IOException {
-        return new BilingualStringReader() {
+    public BilingualLineReader getContentReader() throws IOException {
+        return new BilingualLineReader() {
 
             private int i = 0;
 
@@ -91,7 +91,7 @@ public class MockBilingualCorpus implements BilingualCorpus {
     }
 
     @Override
-    public BilingualStringWriter getContentWriter(boolean append) throws IOException {
+    public BilingualLineWriter getContentWriter(boolean append) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -105,7 +105,7 @@ public class MockBilingualCorpus implements BilingualCorpus {
         throw new UnsupportedOperationException();
     }
 
-    public static MockBilingualCorpus drain(BilingualStringReader reader) throws IOException {
+    public static MockBilingualCorpus drain(BilingualLineReader reader) throws IOException {
         ArrayList<StringPair> pairs = new ArrayList<>();
 
         StringPair pair;

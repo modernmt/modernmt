@@ -64,12 +64,12 @@ public class TMXFile implements BilingualCorpus {
     }
 
     @Override
-    public BilingualStringReader getContentReader() throws IOException {
-        return new TMXBilingualStringReader(tmx, sourceLanguage, targetLanguage);
+    public BilingualLineReader getContentReader() throws IOException {
+        return new TMXBilingualLineReader(tmx, sourceLanguage, targetLanguage);
     }
 
     @Override
-    public BilingualStringWriter getContentWriter(boolean append) throws IOException {
+    public BilingualLineWriter getContentWriter(boolean append) throws IOException {
         throw new UnsupportedOperationException();
     }
 

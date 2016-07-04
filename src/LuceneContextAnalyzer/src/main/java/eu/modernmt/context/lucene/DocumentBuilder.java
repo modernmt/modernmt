@@ -41,7 +41,7 @@ public class DocumentBuilder {
         doc.add(new StringField(DOCUMENT_NAME_FIELD, name, Field.Store.YES));
 
         try {
-            doc.add(new CorpusContentField(fieldName, document.getContentReader(), Field.Store.NO));
+            doc.add(new CorpusContentField(fieldName, document.getRawContentReader(), Field.Store.NO));
         } catch (IOException e) {
             throw new ContextAnalyzerException("Unable to build document " + document.getName(), e);
         }

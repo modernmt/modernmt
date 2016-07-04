@@ -17,7 +17,7 @@ import java.util.Locale;
 /**
  * Created by davide on 14/03/16.
  */
-public class TMXBilingualStringReader implements BilingualCorpus.BilingualStringReader {
+public class TMXBilingualLineReader implements BilingualCorpus.BilingualLineReader {
 
     private final TMXPairReader tmxPairReader = new TMXPairReader();
 
@@ -27,7 +27,7 @@ public class TMXBilingualStringReader implements BilingualCorpus.BilingualString
     private final String sourceLanguage;
     private final String targetLanguage;
 
-    public TMXBilingualStringReader(File tmx, Locale sourceLanguage, Locale targetLanguage) throws IOException {
+    public TMXBilingualLineReader(File tmx, Locale sourceLanguage, Locale targetLanguage) throws IOException {
         this.tmx = tmx;
         this.sourceLanguage = sourceLanguage.getLanguage();
         this.targetLanguage = targetLanguage.getLanguage();

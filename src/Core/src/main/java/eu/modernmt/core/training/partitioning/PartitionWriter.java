@@ -1,11 +1,11 @@
 package eu.modernmt.core.training.partitioning;
 
+import eu.modernmt.io.LineWriter;
 import eu.modernmt.model.Corpus;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.Writer;
 
 /**
  * Created by davide on 12/02/16.
@@ -17,7 +17,7 @@ public class PartitionWriter implements Closeable {
     private final CorporaPartition partition;
 
     private int stored = 0;
-    private Writer writer = null;
+    private LineWriter writer = null;
 
     public PartitionWriter(CorporaPartition partition, Corpus inputCorpus, int size) {
         this.partition = partition;
@@ -38,8 +38,7 @@ public class PartitionWriter implements Closeable {
             }
         }
 
-        writer.write(line);
-        writer.write('\n');
+        writer.writeLine(line);
         stored++;
 
         return true;

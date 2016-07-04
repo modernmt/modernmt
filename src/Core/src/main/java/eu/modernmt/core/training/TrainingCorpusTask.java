@@ -52,7 +52,7 @@ class TrainingCorpusTask implements Callable<Void> {
             if (extraPartitions.size() > 0)
                 input = new PartitionedInputStream(corpus, corpusLines, extraPartitions);
             else
-                input = PipelineInputStream.fromReader(corpus.getContentReader());
+                input = PipelineInputStream.fromLineReader(corpus.getContentReader());
 
             output = new TokensOutputter(outCorpus.getContentWriter(false), false, true);
 

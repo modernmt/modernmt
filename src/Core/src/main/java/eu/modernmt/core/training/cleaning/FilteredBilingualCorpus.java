@@ -46,7 +46,7 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
     }
 
     @Override
-    public BilingualStringReader getContentReader() throws IOException {
+    public BilingualLineReader getContentReader() throws IOException {
         if (!initialized) {
             synchronized (this) {
                 if (!initialized) {
@@ -56,9 +56,9 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
             }
         }
 
-        return new BilingualStringReader() {
+        return new BilingualLineReader() {
 
-            private final BilingualStringReader reader = corpus.getContentReader();
+            private final BilingualLineReader reader = corpus.getContentReader();
 
             @Override
             public StringPair read() throws IOException {
@@ -94,7 +94,7 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
         }
 
         if (initializers.size() > 0) {
-            BilingualStringReader reader = null;
+            BilingualLineReader reader = null;
 
             try {
                 reader = corpus.getContentReader();
@@ -126,7 +126,7 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
     }
 
     @Override
-    public BilingualStringWriter getContentWriter(boolean append) throws IOException {
+    public BilingualLineWriter getContentWriter(boolean append) throws IOException {
         throw new UnsupportedOperationException();
     }
 

@@ -1,6 +1,10 @@
 package eu.modernmt.model.impl;
 
 import eu.modernmt.constants.Const;
+import eu.modernmt.io.LineReader;
+import eu.modernmt.io.LineWriter;
+import eu.modernmt.io.UnixLineReader;
+import eu.modernmt.io.UnixLineWriter;
 import eu.modernmt.model.Corpus;
 
 import java.io.*;
@@ -52,13 +56,18 @@ public class FileCorpus implements Corpus {
     }
 
     @Override
-    public Reader getContentReader() throws FileNotFoundException {
-        return new InputStreamReader(new FileInputStream(file), Const.charset.get());
+    public LineReader getContentReader() throws FileNotFoundException {
+        return new UnixLineReader(new FileInputStream(file), Const.charset.get());
     }
 
     @Override
-    public Writer getContentWriter(boolean append) throws IOException {
-        return new OutputStreamWriter(new FileOutputStream(file, append), Const.charset.get());
+    public LineWriter getContentWriter(boolean append) throws IOException {
+        return new UnixLineWriter(new FileOutputStream(file, append), Const.charset.get());
+    }
+
+    @Override
+    public Reader getRawContentReader() throws IOException {
+        return new InputStreamReader(new FileInputStream(file), Const.charset.get());
     }
 
     @Override

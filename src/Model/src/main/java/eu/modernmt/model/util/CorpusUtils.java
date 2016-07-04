@@ -2,7 +2,7 @@ package eu.modernmt.model.util;
 
 import eu.modernmt.model.BilingualCorpus;
 import eu.modernmt.model.Corpus;
-import eu.modernmt.model.impl.BilingualFileCorpus;
+import eu.modernmt.model.impl.ParallelFileCorpus;
 import eu.modernmt.model.impl.FileCorpus;
 import eu.modernmt.model.impl.tmx.TMXFile;
 import org.apache.commons.io.FileUtils;
@@ -146,7 +146,7 @@ public class CorpusUtils {
 
         BilingualCorpus buildBilingual() {
             if (tmxFile == null) {
-                return new BilingualFileCorpus(this.name, this.sourceLanguage, this.sourceFile, this.targetLanguage, this.targetFile);
+                return new ParallelFileCorpus(this.name, this.sourceLanguage, this.sourceFile, this.targetLanguage, this.targetFile);
             } else {
                 return new TMXFile(this.name, this.tmxFile, this.sourceLanguage, this.targetLanguage);
             }

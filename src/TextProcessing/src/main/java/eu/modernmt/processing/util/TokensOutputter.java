@@ -1,14 +1,11 @@
 package eu.modernmt.processing.util;
 
-import eu.modernmt.constants.Const;
+import eu.modernmt.io.LineWriter;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Token;
 import eu.modernmt.processing.framework.PipelineOutputStream;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.util.Iterator;
 
 /**
@@ -16,7 +13,7 @@ import java.util.Iterator;
  */
 public class TokensOutputter implements PipelineOutputStream<Sentence> {
 
-    private final Writer writer;
+    private final LineWriter writer;
     private boolean printTags;
     private boolean printPlaceholders;
 
@@ -40,11 +37,7 @@ public class TokensOutputter implements PipelineOutputStream<Sentence> {
         return builder.toString();
     }
 
-    public TokensOutputter(OutputStream stream, boolean printTags, boolean printPlaceholders) {
-        this(new OutputStreamWriter(stream, Const.charset.get()), printTags, printPlaceholders);
-    }
-
-    public TokensOutputter(Writer writer, boolean printTags, boolean printPlaceholders) {
+    public TokensOutputter(LineWriter writer, boolean printTags, boolean printPlaceholders) {
         this.writer = writer;
         this.printTags = printTags;
         this.printPlaceholders = printPlaceholders;
@@ -57,9 +50,7 @@ public class TokensOutputter implements PipelineOutputStream<Sentence> {
 
     @Override
     public void write(Sentence sentence) throws IOException {
-        writer.write(toString(sentence, printTags, printPlaceholders));
-        writer.write('\n');
-        writer.flush();
+        writer.writeLine(toString(sentence, printTags, printPlaceholders));
     }
 
     protected static final class ArrayIterator<V> implements Iterator<V> {

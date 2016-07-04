@@ -1,6 +1,6 @@
 package eu.modernmt.core.training.partitioning;
 
-import eu.modernmt.io.UnixLineReader;
+import eu.modernmt.io.LineReader;
 import eu.modernmt.model.Corpus;
 import eu.modernmt.processing.framework.PipelineInputStream;
 
@@ -13,14 +13,14 @@ import java.util.List;
 public class PartitionedInputStream implements PipelineInputStream<String> {
 
     private List<PartitionWriter> partitions;
-    private UnixLineReader reader;
+    private LineReader reader;
 
     private int windowSize;
     private int lineIndex;
     private int partitionIndex;
 
     public PartitionedInputStream(Corpus corpus, int lines, List<PartitionWriter> partitions) throws IOException {
-        this.reader = new UnixLineReader(corpus.getContentReader());
+        this.reader = corpus.getContentReader();
         this.partitions = partitions;
 
         int extraLines = 0;

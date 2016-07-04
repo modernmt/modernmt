@@ -1,11 +1,15 @@
 package eu.modernmt.model.impl;
 
+import eu.modernmt.io.LineReader;
+import eu.modernmt.io.LineWriter;
+import eu.modernmt.io.UnixLineReader;
+import eu.modernmt.io.UnixLineWriter;
 import eu.modernmt.model.Corpus;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.io.Writer;
+import java.io.StringWriter;
 import java.util.Locale;
 
 /**
@@ -15,7 +19,7 @@ public class StringCorpus implements Corpus {
 
     private final String name;
     private final Locale language;
-    private final String content;
+    private String content;
 
     public StringCorpus(String name, Locale language, String content) {
         this.name = name;
@@ -34,13 +38,39 @@ public class StringCorpus implements Corpus {
     }
 
     @Override
-    public Reader getContentReader() throws IOException {
+    public LineReader getContentReader() throws IOException {
+        return new UnixLineReader(new StringReader(content));
+    }
+
+    @Override
+    public LineWriter getContentWriter(boolean append) throws IOException {
+        return new StringLineWriter(append);
+    }
+
+    @Override
+    public Reader getRawContentReader() throws IOException {
         return new StringReader(content);
     }
 
     @Override
-    public Writer getContentWriter(boolean append) throws IOException {
-        throw new UnsupportedOperationException();
+    public String toString() {
+        return content;
+    }
+
+    private class StringLineWriter extends UnixLineWriter {
+
+        private final boolean append;
+
+        private StringLineWriter(boolean append) {
+            super(new StringWriter());
+            this.append = append;
+        }
+
+        @Override
+        public void close() throws IOException {
+            super.close();
+            StringCorpus.this.content = (append ? StringCorpus.this.content : "") + super.writer.toString();
+        }
     }
 
 }

@@ -1,20 +1,27 @@
 package eu.modernmt.io;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.Charset;
 
 /**
  * Created by davide on 24/02/16.
  */
-public class UnixLineReader extends Reader {
+public class UnixLineReader implements LineReader {
 
     private Reader reader;
     private char[] buffer;
     private int nextChar = 0;
     private int bufferLen = 0;
 
-    private static int defaultCharBufferSize = 8192;
-    private static int defaultExpectedLineLength = 80;
+    private static final int defaultCharBufferSize = 8192;
+    private static final int defaultExpectedLineLength = 80;
+
+    public UnixLineReader(InputStream stream, Charset charset) {
+        this(new InputStreamReader(stream, charset));
+    }
 
     public UnixLineReader(Reader reader) {
         this.reader = reader;
@@ -46,6 +53,7 @@ public class UnixLineReader extends Reader {
         return stop;
     }
 
+    @Override
     public String readLine() throws IOException {
         if (bufferLen < 0)
             return null;
@@ -63,11 +71,6 @@ public class UnixLineReader extends Reader {
         }
 
         return s.toString();
-    }
-
-    @Override
-    public int read(char[] cbuf, int off, int len) throws IOException {
-        return reader.read(cbuf, off, len);
     }
 
     @Override

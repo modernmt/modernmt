@@ -20,8 +20,8 @@ class CleaningCorpusTask implements Callable<Void> {
 
     @Override
     public Void call() throws Exception {
-        BilingualCorpus.BilingualStringReader reader = null;
-        BilingualCorpus.BilingualStringWriter writer = null;
+        BilingualCorpus.BilingualLineReader reader = null;
+        BilingualCorpus.BilingualLineWriter writer = null;
 
         try {
             reader = corpus.getContentReader();

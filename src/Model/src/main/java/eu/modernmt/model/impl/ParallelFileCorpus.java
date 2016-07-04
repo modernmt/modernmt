@@ -4,6 +4,7 @@ import eu.modernmt.constants.Const;
 import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.model.BilingualCorpus;
 import eu.modernmt.model.Corpus;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
@@ -12,7 +13,7 @@ import java.util.Locale;
 /**
  * Created by davide on 24/02/16.
  */
-public class BilingualFileCorpus implements BilingualCorpus {
+public class ParallelFileCorpus implements BilingualCorpus {
 
     private static final int DEFAULT_BUFFER_SIZE = 4096;
 
@@ -26,11 +27,15 @@ public class BilingualFileCorpus implements BilingualCorpus {
     private final FileCorpus sourceCorpus;
     private final FileCorpus targetCorpus;
 
-    public BilingualFileCorpus(File directory, String name, Locale sourceLanguage, Locale targetLanguage) {
+    public ParallelFileCorpus(File directory, String name, Locale sourceLanguage, Locale targetLanguage) {
         this(name, sourceLanguage, new File(directory, name + "." + sourceLanguage.toLanguageTag()), targetLanguage, new File(directory, name + "." + targetLanguage.toLanguageTag()));
     }
 
-    public BilingualFileCorpus(String name, Locale sourceLanguage, File source, Locale targetLanguage, File target) {
+    public ParallelFileCorpus(Locale sourceLanguage, File source, Locale targetLanguage, File target) {
+        this(FilenameUtils.removeExtension(source.getName()), sourceLanguage, source, targetLanguage, target);
+    }
+
+    public ParallelFileCorpus(String name, Locale sourceLanguage, File source, Locale targetLanguage, File target) {
         this.name = name;
         this.sourceLanguage = sourceLanguage;
         this.targetLanguage = targetLanguage;
@@ -89,13 +94,13 @@ public class BilingualFileCorpus implements BilingualCorpus {
     }
 
     @Override
-    public BilingualStringReader getContentReader() throws IOException {
-        return new BilingualFilesStringReader(source, target);
+    public BilingualLineReader getContentReader() throws IOException {
+        return new ParallelFileLineReader(source, target);
     }
 
     @Override
-    public BilingualStringWriter getContentWriter(boolean append) throws IOException {
-        return new BilingualFilesStringWriter(append, source, target);
+    public BilingualLineWriter getContentWriter(boolean append) throws IOException {
+        return new ParallelFileLineWriter(append, source, target);
     }
 
     @Override
@@ -113,7 +118,7 @@ public class BilingualFileCorpus implements BilingualCorpus {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        BilingualFileCorpus that = (BilingualFileCorpus) o;
+        ParallelFileCorpus that = (ParallelFileCorpus) o;
 
         if (!source.equals(that.source)) return false;
         return target.equals(that.target);
@@ -132,12 +137,12 @@ public class BilingualFileCorpus implements BilingualCorpus {
         return name + '.' + sourceLanguage.toLanguageTag() + '|' + targetLanguage.toLanguageTag();
     }
 
-    private static class BilingualFilesStringReader implements BilingualStringReader {
+    private static class ParallelFileLineReader implements BilingualLineReader {
 
         private UnixLineReader sourceReader;
         private UnixLineReader targetReader;
 
-        private BilingualFilesStringReader(File source, File target) throws FileNotFoundException {
+        private ParallelFileLineReader(File source, File target) throws FileNotFoundException {
             boolean success = false;
 
             try {
@@ -170,12 +175,12 @@ public class BilingualFileCorpus implements BilingualCorpus {
         }
     }
 
-    private static class BilingualFilesStringWriter implements BilingualStringWriter {
+    private static class ParallelFileLineWriter implements BilingualLineWriter {
 
         private Writer sourceWriter;
         private Writer targetWriter;
 
-        private BilingualFilesStringWriter(boolean append, File source, File target) throws IOException {
+        private ParallelFileLineWriter(boolean append, File source, File target) throws IOException {
             boolean success = false;
 
             try {

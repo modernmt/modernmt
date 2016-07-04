@@ -1,6 +1,11 @@
 package eu.modernmt.cli;
 
 import eu.modernmt.cli.init.Submodules;
+import eu.modernmt.constants.Const;
+import eu.modernmt.io.LineReader;
+import eu.modernmt.io.LineWriter;
+import eu.modernmt.io.UnixLineReader;
+import eu.modernmt.io.UnixLineWriter;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.framework.PipelineInputStream;
@@ -63,14 +68,17 @@ public class PreprocessorMain {
         PipelineInputStream<String> input = null;
         PipelineOutputStream<Sentence> output = null;
 
+        LineReader sin = new UnixLineReader(System.in, Const.charset.get());
+        LineWriter sout = new UnixLineWriter(System.out, Const.charset.get());
+
         try {
             preprocessor = new Preprocessor(args.language);
 
-            input = PipelineInputStream.fromInputStream(System.in);
+            input = PipelineInputStream.fromLineReader(sin);
             if (args.keepSpaces)
-                output = new SentenceOutputter(System.out, args.printTags, args.printPlaceholders);
+                output = new SentenceOutputter(sout, args.printTags, args.printPlaceholders);
             else
-                output = new TokensOutputter(System.out, args.printTags, args.printPlaceholders);
+                output = new TokensOutputter(sout, args.printTags, args.printPlaceholders);
 
             preprocessor.process(input, output, true);
         } finally {
