@@ -1,17 +1,14 @@
 package eu.modernmt.model.impl.tmx;
 
-import eu.modernmt.constants.Const;
 import eu.modernmt.model.BilingualCorpus;
+import eu.modernmt.xml.XMLUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.input.BOMInputStream;
 
 import javax.xml.stream.XMLEventReader;
-import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.Locale;
 
 /**
@@ -32,14 +29,12 @@ public class TMXBilingualLineReader implements BilingualCorpus.BilingualLineRead
         this.sourceLanguage = sourceLanguage.getLanguage();
         this.targetLanguage = targetLanguage.getLanguage();
 
-        XMLInputFactory factory = XMLInputFactory.newInstance();
-
         FileInputStream stream = null;
         XMLEventReader reader = null;
 
         try {
             stream = new FileInputStream(tmx);
-            reader = factory.createXMLEventReader(new InputStreamReader(new BOMInputStream(stream, false), Const.charset.get()));
+            reader = XMLUtils.createEventReader(stream);
         } catch (XMLStreamException e) {
             throw new IOException("Error while creating XMLStreamReader for TMX " + tmx, e);
         } finally {
@@ -67,7 +62,7 @@ public class TMXBilingualLineReader implements BilingualCorpus.BilingualLineRead
         } catch (XMLStreamException e) {
             throw new IOException("Error while closing XMLStreamReader", e);
         } finally {
-            stream.close();
+            IOUtils.closeQuietly(stream);
         }
     }
 
