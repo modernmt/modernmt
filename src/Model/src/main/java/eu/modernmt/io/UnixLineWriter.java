@@ -23,12 +23,13 @@ public class UnixLineWriter implements LineWriter {
 
     @Override
     public void writeLine(String line) throws IOException {
-        this.writer.write(line);
+        this.writer.write(line.replace('\n', ' '));
         this.writer.write('\n');
     }
 
     @Override
     public void close() throws IOException {
+        this.writer.flush();
         this.writer.close();
     }
 }

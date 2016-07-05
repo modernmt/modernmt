@@ -1,4 +1,4 @@
-package eu.modernmt.model.impl.fourcb;
+package eu.modernmt.model.impl.ebay4cb;
 
 import eu.modernmt.model.BilingualCorpus;
 import eu.modernmt.model.Corpus;
@@ -7,30 +7,36 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Locale;
+import java.util.*;
 
 /**
  * Created by davide on 14/03/16.
  */
-public class Parallel4CBFile implements BilingualCorpus {
+public class ParallelEbay4CBFile implements BilingualCorpus {
 
     private final File source;
     private final File target;
     private final String name;
     private final Locale sourceLanguage;
     private final Locale targetLanguage;
+    private final Ebay4CBCorpus sourceCorpus;
+    private final Ebay4CBCorpus targetCorpus;
+
     private int lineCount = -1;
 
-    public Parallel4CBFile(Locale sourceLanguage, File source, Locale targetLanguage, File target) {
+    public ParallelEbay4CBFile(Locale sourceLanguage, File source, Locale targetLanguage, File target) {
         this(FilenameUtils.removeExtension(source.getName()), sourceLanguage, source, targetLanguage, target);
     }
 
-    public Parallel4CBFile(String name, Locale sourceLanguage, File source, Locale targetLanguage, File target) {
+    public ParallelEbay4CBFile(String name, Locale sourceLanguage, File source, Locale targetLanguage, File target) {
         this.name = name;
         this.sourceLanguage = sourceLanguage;
         this.targetLanguage = targetLanguage;
         this.source = source;
         this.target = target;
+
+        this.sourceCorpus = new Ebay4CBCorpus(name, sourceLanguage, source);
+        this.targetCorpus = new Ebay4CBCorpus(name, targetLanguage, target);
     }
 
     @Override
@@ -73,14 +79,12 @@ public class Parallel4CBFile implements BilingualCorpus {
 
     @Override
     public Corpus getSourceCorpus() {
-        // TODO: not implemented yet
-        throw new UnsupportedOperationException();
+        return sourceCorpus;
     }
 
     @Override
     public Corpus getTargetCorpus() {
-        // TODO: not implemented yet
-        throw new UnsupportedOperationException();
+        return targetCorpus;
     }
 
     @Override
@@ -90,48 +94,54 @@ public class Parallel4CBFile implements BilingualCorpus {
 
     private static class Parallel4CBFileLineReader implements BilingualLineReader {
 
-        private FourCBFileReader sourceReader;
-        private FourCBFileReader targetReader;
+        private final ArrayList<StringPair> pairs;
+        private final Iterator<StringPair> iterator;
 
         private Parallel4CBFileLineReader(File source, File target) throws IOException {
-            boolean success = false;
+            Map<String, String> flattenedSource = getFlattened(source);
+            Map<String, String> flattenedTarget = getFlattened(target);
+
+            pairs = new ArrayList<>(flattenedSource.size());
+
+            for (Map.Entry<String, String> entry : flattenedSource.entrySet()) {
+                String sourceLine = entry.getValue();
+                String targetLine = flattenedTarget.get(entry.getKey());
+
+                if (targetLine == null)
+                    throw new IOException("Not parallel files: " + source + ", " + target);
+
+                pairs.add(new StringPair(sourceLine, targetLine));
+            }
+
+            iterator = pairs.iterator();
+        }
+
+        private static Map<String, String> getFlattened(File file) throws IOException {
+            HashMap<String, String> map = new HashMap<>();
+            Ebay4CBFileReader reader = null;
 
             try {
-                this.sourceReader = new FourCBFileReader(source);
-                this.targetReader = new FourCBFileReader(target);
+                reader = new Ebay4CBFileReader(file);
 
-                success = true;
+                Ebay4CBFileReader.Line4CB element;
+                while ((element = reader.readLineWithMetadata()) != null) {
+                    map.put(element.path, element.line);
+                }
             } finally {
-                if (!success)
-                    this.close();
+                IOUtils.closeQuietly(reader);
             }
+
+            return map;
         }
 
         @Override
         public StringPair read() throws IOException {
-            FourCBFileReader.Line4CB source = sourceReader.readLineWithMetadata();
-            FourCBFileReader.Line4CB target = targetReader.readLineWithMetadata();
-
-            if (source == null || target == null)
-                return null;
-
-            if (!equals(source.id, target.id))
-                throw new IOException("Mismatching ids in 4CB file: " + source.id + " and " + target.id);
-
-            return new StringPair(source.line, target.line);
-        }
-
-        private static final boolean equals(String id1, String id2) {
-            if (id1 == null) return id2 == null;
-            if (id2 == null) return false;
-
-            return id1.equals(id2);
+            return iterator.hasNext() ? iterator.next() : null;
         }
 
         @Override
         public void close() {
-            IOUtils.closeQuietly(this.sourceReader);
-            IOUtils.closeQuietly(this.targetReader);
+            // Nothing to do
         }
     }
 

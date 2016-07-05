@@ -1,20 +1,27 @@
 package eu.modernmt.xml;
 
+import eu.modernmt.constants.Const;
+import org.apache.commons.io.input.BOMInputStream;
+
 import javax.xml.XMLConstants;
 import javax.xml.namespace.QName;
 import javax.xml.stream.Location;
 import javax.xml.stream.XMLEventReader;
+import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.*;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
+import java.io.*;
 import java.util.Iterator;
 
 /**
  * Created by davide on 04/07/16.
  */
 public class XMLUtils {
+
+    public static XMLEventReader createEventReader(InputStream stream) throws XMLStreamException {
+        XMLInputFactory factory = XMLInputFactory.newInstance();
+        return factory.createXMLEventReader(new InputStreamReader(new BOMInputStream(stream, false), Const.charset.get()));
+    }
 
     public static String getLocalName(StartElement element) {
         return element.getName().getLocalPart();

@@ -1,13 +1,10 @@
-package eu.modernmt.model.impl.fourcb;
+package eu.modernmt.model.impl.ebay4cb;
 
-import eu.modernmt.constants.Const;
 import eu.modernmt.io.LineReader;
 import eu.modernmt.xml.XMLUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.input.BOMInputStream;
 
 import javax.xml.stream.XMLEventReader;
-import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.StartElement;
@@ -15,28 +12,27 @@ import javax.xml.stream.events.XMLEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.util.Stack;
 
 /**
  * Created by davide on 04/07/16.
  */
-class FourCBFileReader implements LineReader {
+class Ebay4CBFileReader implements LineReader {
 
     private final FileInputStream stream;
     private final XMLEventReader reader;
     private final File file;
+    private final Stack<String> path;
 
-    FourCBFileReader(File file) throws IOException {
+    Ebay4CBFileReader(File file) throws IOException {
         this.file = file;
-
-        XMLInputFactory factory = XMLInputFactory.newInstance();
 
         FileInputStream stream = null;
         XMLEventReader reader = null;
 
         try {
             stream = new FileInputStream(file);
-            reader = factory.createXMLEventReader(new InputStreamReader(new BOMInputStream(stream, false), Const.charset.get()));
+            reader = XMLUtils.createEventReader(stream);
         } catch (XMLStreamException e) {
             throw new IOException("Error while creating XMLStreamReader for 4CB " + file, e);
         } finally {
@@ -46,6 +42,7 @@ class FourCBFileReader implements LineReader {
 
         this.stream = stream;
         this.reader = reader;
+        this.path = new Stack<>();
     }
 
     Line4CB readLineWithMetadata() throws IOException {
@@ -59,9 +56,14 @@ class FourCBFileReader implements LineReader {
                         String name = XMLUtils.getLocalName(element);
 
                         if ("ContentElement".equals(name)) {
-                            return readContentElement(reader, element);
+                            return readContentElement(reader, element, path);
+                        } else {
+                            path.push(getContainerId(element, name));
                         }
 
+                        break;
+                    case XMLStreamConstants.END_ELEMENT:
+                        path.pop();
                         break;
                 }
             }
@@ -72,11 +74,42 @@ class FourCBFileReader implements LineReader {
         return null;
     }
 
-    private Line4CB readContentElement(XMLEventReader reader, StartElement element) throws XMLStreamException {
-        String id = XMLUtils.getAttributeValue(element, null, "id");
+    private static Line4CB readContentElement(XMLEventReader reader, StartElement element, Stack<String> stack) throws XMLStreamException {
         String line = XMLUtils.getXMLContent(reader, element, false);
 
-        return new Line4CB(id, line);
+        StringBuilder path = new StringBuilder();
+        for (String container : stack) {
+            path.append(container);
+            path.append(',');
+        }
+        path.append(getContainerId(element, "ContentElement"));
+
+        return new Line4CB(path.toString(), line);
+    }
+
+    private static String getContainerId(StartElement element, String name) throws XMLStreamException {
+        if (name == null)
+            name = XMLUtils.getLocalName(element);
+
+        if ("ContentBundle".equals(name))
+            return "";
+
+        String id = XMLUtils.getAttributeValue(element, null, "id");
+        String target = XMLUtils.getAttributeValue(element, null, "target");
+
+        if (id == null)
+            throw new XMLStreamException("Invalid container found: expected id for element " + name);
+
+        StringBuilder builder = new StringBuilder(name);
+        builder.append('[');
+        builder.append(id);
+        if (target != null) {
+            builder.append('#');
+            builder.append(target);
+        }
+        builder.append(']');
+
+        return builder.toString();
     }
 
     @Override
@@ -98,11 +131,11 @@ class FourCBFileReader implements LineReader {
 
     static final class Line4CB {
         public final String line;
-        public final String id;
+        public final String path;
 
-        private Line4CB(String id, String line) {
+        private Line4CB(String path, String line) {
             this.line = line;
-            this.id = id;
+            this.path = path;
         }
     }
 

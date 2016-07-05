@@ -1,7 +1,9 @@
 package eu.modernmt.model.impl;
 
 import eu.modernmt.constants.Const;
+import eu.modernmt.io.LineWriter;
 import eu.modernmt.io.UnixLineReader;
+import eu.modernmt.io.UnixLineWriter;
 import eu.modernmt.model.BilingualCorpus;
 import eu.modernmt.model.Corpus;
 import org.apache.commons.io.FilenameUtils;
@@ -177,15 +179,15 @@ public class ParallelFileCorpus implements BilingualCorpus {
 
     private static class ParallelFileLineWriter implements BilingualLineWriter {
 
-        private Writer sourceWriter;
-        private Writer targetWriter;
+        private LineWriter sourceWriter;
+        private LineWriter targetWriter;
 
         private ParallelFileLineWriter(boolean append, File source, File target) throws IOException {
             boolean success = false;
 
             try {
-                this.sourceWriter = new OutputStreamWriter(new FileOutputStream(source, append), Const.charset.get());
-                this.targetWriter = new OutputStreamWriter(new FileOutputStream(target, append), Const.charset.get());
+                this.sourceWriter = new UnixLineWriter(new FileOutputStream(source, append), Const.charset.get());
+                this.targetWriter = new UnixLineWriter(new FileOutputStream(target, append), Const.charset.get());
 
                 success = true;
             } finally {
@@ -196,11 +198,8 @@ public class ParallelFileCorpus implements BilingualCorpus {
 
         @Override
         public void write(String source, String target) throws IOException {
-            sourceWriter.write(source);
-            sourceWriter.write('\n');
-
-            targetWriter.write(target);
-            targetWriter.write('\n');
+            sourceWriter.writeLine(source);
+            targetWriter.writeLine(target);
         }
 
         @Override

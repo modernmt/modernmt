@@ -2,7 +2,8 @@ package eu.modernmt.cli;
 
 import eu.modernmt.model.BilingualCorpus;
 import eu.modernmt.model.impl.ParallelFileCorpus;
-import eu.modernmt.model.impl.fourcb.Parallel4CBFile;
+import eu.modernmt.model.impl.ParallelPropertiesCorpus;
+import eu.modernmt.model.impl.ebay4cb.ParallelEbay4CBFile;
 import eu.modernmt.model.impl.tmx.TMXFile;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
@@ -23,6 +24,7 @@ public class ConvertMain {
         FORMATS.put("tmx", new TMXInputFormat());
         FORMATS.put("4cb", new FourCBInputFormat());
         FORMATS.put("parallel", new ParallelFileInputFormat());
+        FORMATS.put("properties", new ParallelPropertiesInputFormat());
     }
 
     private static class TMXInputFormat implements InputFormat {
@@ -42,7 +44,7 @@ public class ConvertMain {
         public BilingualCorpus parse(Locale sourceLanguage, Locale targetLanguage, File[] files) throws ParseException {
             if (files.length != 2)
                 throw new ParseException("Invalid number of arguments: expected 2 files");
-            return new Parallel4CBFile(sourceLanguage, files[0], targetLanguage, files[1]);
+            return new ParallelEbay4CBFile(sourceLanguage, files[0], targetLanguage, files[1]);
         }
 
     }
@@ -56,6 +58,16 @@ public class ConvertMain {
             return new ParallelFileCorpus(sourceLanguage, files[0], targetLanguage, files[1]);
         }
 
+    }
+
+    private static class ParallelPropertiesInputFormat implements InputFormat {
+
+        @Override
+        public BilingualCorpus parse(Locale sourceLanguage, Locale targetLanguage, File[] files) throws ParseException {
+            if (files.length != 2)
+                throw new ParseException("Invalid number of arguments: expected 2 files");
+            return new ParallelPropertiesCorpus(sourceLanguage, files[0], targetLanguage, files[1]);
+        }
     }
 
     private interface InputFormat {
