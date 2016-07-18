@@ -1,7 +1,7 @@
 package eu.modernmt.core.training.cleaning;
 
 import eu.modernmt.engine.training.mock.MockBilingualCorpus;
-import eu.modernmt.model.BilingualCorpus;
+import eu.modernmt.model.corpus.BilingualCorpus;
 import org.junit.Test;
 
 import java.io.IOException;

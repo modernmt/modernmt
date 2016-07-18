@@ -3,8 +3,8 @@ package eu.modernmt.cli;
 import eu.modernmt.cli.init.Submodules;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.lucene.LuceneAnalyzer;
-import eu.modernmt.model.Corpus;
-import eu.modernmt.model.util.CorpusUtils;
+import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.corpus.Corpora;
 import org.apache.commons.cli.*;
 
 import java.io.File;
@@ -57,7 +57,7 @@ public class ContextAnalyzerMain {
     public static void main(String[] _args) throws Throwable {
         Args args = new Args(_args);
 
-        List<Corpus> corpora = CorpusUtils.list(args.language, args.corporaRoots);
+        List<Corpus> corpora = Corpora.list(args.language, args.corporaRoots);
 
         ContextAnalyzer contextAnalyzer = new LuceneAnalyzer(args.indexPath);
         contextAnalyzer.rebuild(corpora);

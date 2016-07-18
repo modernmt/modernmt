@@ -3,7 +3,7 @@ package eu.modernmt.core.training;
 import eu.modernmt.core.training.partitioning.CorporaPartition;
 import eu.modernmt.core.training.partitioning.PartitionWriter;
 import eu.modernmt.core.training.partitioning.PartitionedInputStream;
-import eu.modernmt.model.Corpus;
+import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.framework.PipelineInputStream;

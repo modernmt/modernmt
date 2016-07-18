@@ -1,8 +1,8 @@
-package eu.modernmt.model.impl.tmx;
+package eu.modernmt.model.corpus.impl.xliff;
 
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
-import eu.modernmt.model.Corpus;
+import eu.modernmt.model.corpus.Corpus;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,14 +12,14 @@ import java.util.Locale;
 /**
  * Created by davide on 14/03/16.
  */
-public class TMXView implements Corpus {
+class XLIFFMonolingualView implements Corpus {
 
-    // private final File tmx;
+    // private final File xliff;
     private final String name;
     private final Locale language;
 
-    public TMXView(File tmx, String name, Locale language) {
-        // this.tmx = tmx;
+    XLIFFMonolingualView(File xliff, String name, Locale language) {
+        // this.xliff = xliff;
         this.name = name;
         this.language = language;
     }
@@ -50,4 +50,5 @@ public class TMXView implements Corpus {
     public Reader getRawContentReader() throws IOException, UnsupportedOperationException {
         throw new UnsupportedOperationException();
     }
+
 }

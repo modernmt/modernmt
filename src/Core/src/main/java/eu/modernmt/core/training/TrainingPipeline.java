@@ -1,8 +1,8 @@
 package eu.modernmt.core.training;
 
 import eu.modernmt.core.training.partitioning.CorporaPartition;
-import eu.modernmt.model.BilingualCorpus;
-import eu.modernmt.model.Corpus;
+import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.framework.ProcessingException;
 import org.apache.commons.io.IOUtils;

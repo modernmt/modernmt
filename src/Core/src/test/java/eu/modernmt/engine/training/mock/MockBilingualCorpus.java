@@ -1,7 +1,7 @@
 package eu.modernmt.engine.training.mock;
 
-import eu.modernmt.model.BilingualCorpus;
-import eu.modernmt.model.Corpus;
+import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.Corpus;
 
 import java.io.IOException;
 import java.util.ArrayList;

@@ -1,4 +1,4 @@
-package eu.modernmt.model;
+package eu.modernmt.model.corpus;
 
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;

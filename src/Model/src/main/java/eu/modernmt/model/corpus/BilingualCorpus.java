@@ -1,4 +1,4 @@
-package eu.modernmt.model;
+package eu.modernmt.model.corpus;
 
 import org.apache.commons.io.IOUtils;
 

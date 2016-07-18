@@ -3,7 +3,7 @@ package eu.modernmt.context.lucene;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.context.lucene.analysis.CorpusAnalyzer;
-import eu.modernmt.model.Corpus;
+import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;

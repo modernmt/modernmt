@@ -1,8 +1,8 @@
-package eu.modernmt.model.impl;
+package eu.modernmt.model.corpus.impl.properties;
 
 import eu.modernmt.constants.Const;
-import eu.modernmt.model.BilingualCorpus;
-import eu.modernmt.model.Corpus;
+import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 

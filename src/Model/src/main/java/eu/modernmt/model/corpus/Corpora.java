@@ -1,10 +1,8 @@
-package eu.modernmt.model.util;
+package eu.modernmt.model.corpus;
 
-import eu.modernmt.model.BilingualCorpus;
-import eu.modernmt.model.Corpus;
-import eu.modernmt.model.impl.ParallelFileCorpus;
-import eu.modernmt.model.impl.FileCorpus;
-import eu.modernmt.model.impl.tmx.TMXFile;
+import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
+import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
+import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FalseFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
@@ -17,7 +15,7 @@ import java.util.stream.Collectors;
 /**
  * Created by davide on 24/02/16.
  */
-public class CorpusUtils {
+public class Corpora {
 
     public static final String TMX_EXTENSION = "tmx";
 
@@ -148,7 +146,7 @@ public class CorpusUtils {
             if (tmxFile == null) {
                 return new ParallelFileCorpus(this.name, this.sourceLanguage, this.sourceFile, this.targetLanguage, this.targetFile);
             } else {
-                return new TMXFile(this.name, this.tmxFile, this.sourceLanguage, this.targetLanguage);
+                return new TMXCorpus(this.name, this.tmxFile, this.sourceLanguage, this.targetLanguage);
             }
         }
 

@@ -1,6 +1,6 @@
 package eu.modernmt.core.training;
 
-import eu.modernmt.model.BilingualCorpus;
+import eu.modernmt.model.corpus.BilingualCorpus;
 import org.apache.commons.io.IOUtils;
 
 import java.util.concurrent.Callable;

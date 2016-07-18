@@ -1,6 +1,6 @@
 package eu.modernmt.core.training.partitioning;
 
-import eu.modernmt.model.Corpus;
+import eu.modernmt.model.corpus.Corpus;
 
 import java.io.IOException;
 

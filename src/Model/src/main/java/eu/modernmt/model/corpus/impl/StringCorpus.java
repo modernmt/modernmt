@@ -1,10 +1,10 @@
-package eu.modernmt.model.impl;
+package eu.modernmt.model.corpus.impl;
 
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
 import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.io.UnixLineWriter;
-import eu.modernmt.model.Corpus;
+import eu.modernmt.model.corpus.Corpus;
 
 import java.io.IOException;
 import java.io.Reader;

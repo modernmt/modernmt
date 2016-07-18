@@ -1,6 +1,6 @@
-package eu.modernmt.model.impl.tmx;
+package eu.modernmt.model.corpus.impl.tmx;
 
-import eu.modernmt.model.BilingualCorpus;
+import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.xml.XMLUtils;
 
 import javax.xml.stream.Location;

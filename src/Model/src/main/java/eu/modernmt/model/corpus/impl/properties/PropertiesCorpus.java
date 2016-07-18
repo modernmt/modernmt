@@ -1,9 +1,9 @@
-package eu.modernmt.model.impl;
+package eu.modernmt.model.corpus.impl.properties;
 
 import eu.modernmt.constants.Const;
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
-import eu.modernmt.model.Corpus;
+import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
