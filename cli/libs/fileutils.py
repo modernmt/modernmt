@@ -67,9 +67,8 @@ def du(f=None):
 
 
 def free():
-    output = subprocess.Popen(['free', '-t', '-b'], stdout=subprocess.PIPE).communicate()[0]
-    _, total, used, available = output.split('\n')[4].split()
-
+    output = subprocess.Popen(['free', '-b'], stdout=subprocess.PIPE).communicate()[0]
+    available = output.split('\n')[2].split()[-1]
     return int(available)
 
 
