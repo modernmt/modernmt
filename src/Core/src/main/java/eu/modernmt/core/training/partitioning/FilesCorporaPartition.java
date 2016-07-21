@@ -1,7 +1,7 @@
 package eu.modernmt.core.training.partitioning;
 
-import eu.modernmt.model.Corpus;
-import eu.modernmt.model.impl.FileCorpus;
+import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;

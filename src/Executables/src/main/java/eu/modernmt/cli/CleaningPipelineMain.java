@@ -2,9 +2,9 @@ package eu.modernmt.cli;
 
 import eu.modernmt.cli.init.Submodules;
 import eu.modernmt.core.training.CleaningPipeline;
-import eu.modernmt.model.BilingualCorpus;
-import eu.modernmt.model.impl.ParallelFileCorpus;
-import eu.modernmt.model.util.CorpusUtils;
+import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
+import eu.modernmt.model.corpus.Corpora;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
 
@@ -64,7 +64,7 @@ public class CleaningPipelineMain {
         Args args = new Args(_args);
 
         ArrayList<BilingualCorpus> bilingualCorpora = new ArrayList<>();
-        CorpusUtils.list(null, true, bilingualCorpora, args.sourceLanguage, args.targetLanguage, args.inputRoots);
+        Corpora.list(null, true, bilingualCorpora, args.sourceLanguage, args.targetLanguage, args.inputRoots);
 
         if (bilingualCorpora.isEmpty())
             throw new ParseException("Input path does not contains valid bilingual data");

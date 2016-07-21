@@ -1,10 +1,11 @@
 package eu.modernmt.cli;
 
-import eu.modernmt.model.BilingualCorpus;
-import eu.modernmt.model.impl.ParallelFileCorpus;
-import eu.modernmt.model.impl.ParallelPropertiesCorpus;
-import eu.modernmt.model.impl.ebay4cb.ParallelEbay4CBFile;
-import eu.modernmt.model.impl.tmx.TMXFile;
+import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.impl.ebay4cb.ParallelEbay4CBFile;
+import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
+import eu.modernmt.model.corpus.impl.properties.ParallelPropertiesCorpus;
+import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
+import eu.modernmt.model.corpus.impl.xliff.XLIFFCorpus;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 
@@ -25,6 +26,13 @@ public class ConvertMain {
         FORMATS.put("4cb", new FourCBInputFormat());
         FORMATS.put("parallel", new ParallelFileInputFormat());
         FORMATS.put("properties", new ParallelPropertiesInputFormat());
+        FORMATS.put("xliff", new XLIFFInputFormat());
+    }
+
+    private interface InputFormat {
+
+        BilingualCorpus parse(Locale sourceLanguage, Locale targetLanguage, File[] files) throws ParseException;
+
     }
 
     private static class TMXInputFormat implements InputFormat {
@@ -33,7 +41,7 @@ public class ConvertMain {
         public BilingualCorpus parse(Locale sourceLanguage, Locale targetLanguage, File[] files) throws ParseException {
             if (files.length != 1)
                 throw new ParseException("Invalid number of arguments: expected 1 file");
-            return new TMXFile(files[0], sourceLanguage, targetLanguage);
+            return new TMXCorpus(files[0], sourceLanguage, targetLanguage);
         }
 
     }
@@ -68,11 +76,17 @@ public class ConvertMain {
                 throw new ParseException("Invalid number of arguments: expected 2 files");
             return new ParallelPropertiesCorpus(sourceLanguage, files[0], targetLanguage, files[1]);
         }
+
     }
 
-    private interface InputFormat {
+    private static class XLIFFInputFormat implements InputFormat {
 
-        BilingualCorpus parse(Locale sourceLanguage, Locale targetLanguage, File[] files) throws ParseException;
+        @Override
+        public BilingualCorpus parse(Locale sourceLanguage, Locale targetLanguage, File[] files) throws ParseException {
+            if (files.length != 1)
+                throw new ParseException("Invalid number of arguments: expected 1 file");
+            return new XLIFFCorpus(files[0], sourceLanguage, targetLanguage);
+        }
 
     }
 

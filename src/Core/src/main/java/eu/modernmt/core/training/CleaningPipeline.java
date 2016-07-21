@@ -2,7 +2,7 @@ package eu.modernmt.core.training;
 
 import eu.modernmt.core.training.cleaning.DraftFilter;
 import eu.modernmt.core.training.cleaning.FilteredBilingualCorpus;
-import eu.modernmt.model.BilingualCorpus;
+import eu.modernmt.model.corpus.BilingualCorpus;
 
 import java.io.IOException;
 import java.util.ArrayList;

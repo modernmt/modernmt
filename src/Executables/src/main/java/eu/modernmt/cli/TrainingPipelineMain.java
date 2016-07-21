@@ -3,9 +3,9 @@ package eu.modernmt.cli;
 import eu.modernmt.cli.init.Submodules;
 import eu.modernmt.core.training.TrainingPipeline;
 import eu.modernmt.core.training.partitioning.FilesCorporaPartition;
-import eu.modernmt.model.BilingualCorpus;
-import eu.modernmt.model.Corpus;
-import eu.modernmt.model.util.CorpusUtils;
+import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.corpus.Corpora;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
 
@@ -78,7 +78,7 @@ public class TrainingPipelineMain {
         ArrayList<Corpus> monolingualCorpora = new ArrayList<>();
         ArrayList<BilingualCorpus> bilingualCorpora = new ArrayList<>();
 
-        CorpusUtils.list(monolingualCorpora, true, bilingualCorpora, args.sourceLanguage, args.targetLanguage, args.inputRoots);
+        Corpora.list(monolingualCorpora, true, bilingualCorpora, args.sourceLanguage, args.targetLanguage, args.inputRoots);
 
         if (bilingualCorpora.isEmpty())
             throw new ParseException("Input path does not contains valid bilingual data");

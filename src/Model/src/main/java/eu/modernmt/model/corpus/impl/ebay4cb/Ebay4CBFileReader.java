@@ -1,4 +1,4 @@
-package eu.modernmt.model.impl.ebay4cb;
+package eu.modernmt.model.corpus.impl.ebay4cb;
 
 import eu.modernmt.io.LineReader;
 import eu.modernmt.xml.XMLUtils;

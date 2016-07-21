@@ -1,8 +1,8 @@
-package eu.modernmt.model.impl.ebay4cb;
+package eu.modernmt.model.corpus.impl.tmx;
 
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
-import eu.modernmt.model.Corpus;
+import eu.modernmt.model.corpus.Corpus;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,18 +10,18 @@ import java.io.Reader;
 import java.util.Locale;
 
 /**
- * Created by davide on 05/07/16.
+ * Created by davide on 14/03/16.
  */
-public class Ebay4CBCorpus implements Corpus {
+class TMXMonolingualView implements Corpus {
 
+    // private final File tmx;
     private final String name;
     private final Locale language;
-    private final File file;
 
-    public Ebay4CBCorpus(String name, Locale language, File file) {
+    TMXMonolingualView(File tmx, String name, Locale language) {
+        // this.tmx = tmx;
         this.name = name;
         this.language = language;
-        this.file = file;
     }
 
     @Override
@@ -36,11 +36,13 @@ public class Ebay4CBCorpus implements Corpus {
 
     @Override
     public LineReader getContentReader() throws IOException {
-        return new Ebay4CBFileReader(file);
+        // TODO: not implemented yet
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public LineWriter getContentWriter(boolean append) throws IOException {
+        // TODO: not implemented yet
         throw new UnsupportedOperationException();
     }
 
@@ -48,5 +50,4 @@ public class Ebay4CBCorpus implements Corpus {
     public Reader getRawContentReader() throws IOException, UnsupportedOperationException {
         throw new UnsupportedOperationException();
     }
-
 }

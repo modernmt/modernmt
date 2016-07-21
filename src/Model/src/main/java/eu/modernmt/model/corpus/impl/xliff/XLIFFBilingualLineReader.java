@@ -1,6 +1,6 @@
-package eu.modernmt.model.impl.tmx;
+package eu.modernmt.model.corpus.impl.xliff;
 
-import eu.modernmt.model.BilingualCorpus;
+import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.xml.XMLUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -12,20 +12,20 @@ import java.io.IOException;
 import java.util.Locale;
 
 /**
- * Created by davide on 14/03/16.
+ * Created by davide on 18/07/16.
  */
-public class TMXBilingualLineReader implements BilingualCorpus.BilingualLineReader {
+class XLIFFBilingualLineReader implements BilingualCorpus.BilingualLineReader {
 
-    private final TMXPairReader tmxPairReader = new TMXPairReader();
+    private final XLIFFPairReader xliffPairReader = new XLIFFPairReader();
 
-    private File tmx;
+    private final File xliff;
     private final FileInputStream stream;
     private final XMLEventReader reader;
     private final String sourceLanguage;
     private final String targetLanguage;
 
-    public TMXBilingualLineReader(File tmx, Locale sourceLanguage, Locale targetLanguage) throws IOException {
-        this.tmx = tmx;
+    XLIFFBilingualLineReader(File xliff, Locale sourceLanguage, Locale targetLanguage) throws IOException {
+        this.xliff = xliff;
         this.sourceLanguage = sourceLanguage.getLanguage();
         this.targetLanguage = targetLanguage.getLanguage();
 
@@ -33,10 +33,10 @@ public class TMXBilingualLineReader implements BilingualCorpus.BilingualLineRead
         XMLEventReader reader = null;
 
         try {
-            stream = new FileInputStream(tmx);
+            stream = new FileInputStream(xliff);
             reader = XMLUtils.createEventReader(stream);
         } catch (XMLStreamException e) {
-            throw new IOException("Error while creating XMLStreamReader for TMX " + tmx, e);
+            throw new IOException("Error while creating XMLStreamReader for XLIFF " + xliff, e);
         } finally {
             if (reader == null)
                 IOUtils.closeQuietly(stream);
@@ -49,9 +49,9 @@ public class TMXBilingualLineReader implements BilingualCorpus.BilingualLineRead
     @Override
     public BilingualCorpus.StringPair read() throws IOException {
         try {
-            return tmxPairReader.read(reader, sourceLanguage, targetLanguage);
+            return xliffPairReader.read(reader, sourceLanguage, targetLanguage);
         } catch (XMLStreamException e) {
-            throw new IOException("Invalid TMX " + tmx, e);
+            throw new IOException("Invalid TMX " + xliff, e);
         }
     }
 
@@ -65,5 +65,4 @@ public class TMXBilingualLineReader implements BilingualCorpus.BilingualLineRead
             IOUtils.closeQuietly(stream);
         }
     }
-
 }

@@ -3,7 +3,7 @@ package eu.modernmt.context.oracle;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextDocument;
-import eu.modernmt.model.Corpus;
+import eu.modernmt.model.corpus.Corpus;
 
 import java.io.IOException;
 import java.util.Collection;

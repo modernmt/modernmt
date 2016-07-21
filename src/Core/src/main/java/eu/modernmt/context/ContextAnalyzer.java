@@ -1,9 +1,9 @@
 package eu.modernmt.context;
 
-import eu.modernmt.model.BilingualCorpus;
-import eu.modernmt.model.Corpus;
-import eu.modernmt.model.impl.FileCorpus;
-import eu.modernmt.model.impl.StringCorpus;
+import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
+import eu.modernmt.model.corpus.impl.StringCorpus;
 
 import java.io.Closeable;
 import java.io.File;

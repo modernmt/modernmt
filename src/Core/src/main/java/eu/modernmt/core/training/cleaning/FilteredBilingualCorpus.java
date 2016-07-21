@@ -1,7 +1,7 @@
 package eu.modernmt.core.training.cleaning;
 
-import eu.modernmt.model.BilingualCorpus;
-import eu.modernmt.model.Corpus;
+import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;

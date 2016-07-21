@@ -1,7 +1,7 @@
 package eu.modernmt.core.training.partitioning;
 
 import eu.modernmt.io.LineWriter;
-import eu.modernmt.model.Corpus;
+import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;

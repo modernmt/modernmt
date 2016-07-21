@@ -1,7 +1,7 @@
-package eu.modernmt.model.impl.ebay4cb;
+package eu.modernmt.model.corpus.impl.ebay4cb;
 
-import eu.modernmt.model.BilingualCorpus;
-import eu.modernmt.model.Corpus;
+import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 

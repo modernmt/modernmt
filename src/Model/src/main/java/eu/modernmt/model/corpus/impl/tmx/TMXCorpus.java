@@ -1,6 +1,6 @@
-package eu.modernmt.model.impl.tmx;
+package eu.modernmt.model.corpus.impl.tmx;
 
-import eu.modernmt.model.BilingualCorpus;
+import eu.modernmt.model.corpus.BilingualCorpus;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
@@ -10,7 +10,7 @@ import java.util.Locale;
 /**
  * Created by davide on 14/03/16.
  */
-public class TMXFile implements BilingualCorpus {
+public class TMXCorpus implements BilingualCorpus {
 
     private final File tmx;
     private final String name;
@@ -18,21 +18,21 @@ public class TMXFile implements BilingualCorpus {
     private final Locale targetLanguage;
     private int lineCount = -1;
 
-    private final TMXView sourceCorpus;
-    private final TMXView targetCorpus;
+    private final TMXMonolingualView sourceCorpus;
+    private final TMXMonolingualView targetCorpus;
 
-    public TMXFile(File tmx, Locale sourceLanguage, Locale targetLanguage) {
+    public TMXCorpus(File tmx, Locale sourceLanguage, Locale targetLanguage) {
         this(FilenameUtils.removeExtension(tmx.getName()), tmx, sourceLanguage, targetLanguage);
     }
 
-    public TMXFile(String name, File tmx, Locale sourceLanguage, Locale targetLanguage) {
+    public TMXCorpus(String name, File tmx, Locale sourceLanguage, Locale targetLanguage) {
         this.targetLanguage = targetLanguage;
         this.sourceLanguage = sourceLanguage;
         this.name = name;
         this.tmx = tmx;
 
-        this.sourceCorpus = new TMXView(tmx, name, sourceLanguage);
-        this.targetCorpus = new TMXView(tmx, name, targetLanguage);
+        this.sourceCorpus = new TMXMonolingualView(tmx, name, sourceLanguage);
+        this.targetCorpus = new TMXMonolingualView(tmx, name, targetLanguage);
     }
 
     @Override
@@ -74,12 +74,12 @@ public class TMXFile implements BilingualCorpus {
     }
 
     @Override
-    public TMXView getSourceCorpus() {
+    public TMXMonolingualView getSourceCorpus() {
         return sourceCorpus;
     }
 
     @Override
-    public TMXView getTargetCorpus() {
+    public TMXMonolingualView getTargetCorpus() {
         return targetCorpus;
     }
 
