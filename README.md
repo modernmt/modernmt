@@ -273,7 +273,7 @@ curl "http://localhost:8045/translate?q=world&context=computer" | python -mjson.
 
 The engine files will be synced from one instance to the other and translation requests will be load balanced across the whole cluster.
 
-If you updated the model on a machine, just stop and start the the nodes specifying the up-to-date host in the *--join* option and the model data will be rsynced again.
+If you updated the model on a machine, just stop and start the nodes specifying the up-to-date host in the *--join* option and the model data will be rsynced again.
 
 ### API documentation
 
