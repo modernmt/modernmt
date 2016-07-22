@@ -2,8 +2,8 @@ package eu.modernmt.rest.actions.translation;
 
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.aligner.symal.SymmetrizationStrategy;
-import eu.modernmt.core.facade.ModernMT;
-import eu.modernmt.core.facade.exceptions.validation.LanguagePairNotSupportedException;
+import eu.modernmt.facade.ModernMT;
+import eu.modernmt.facade.exceptions.validation.LanguagePairNotSupportedException;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
 import eu.modernmt.rest.framework.HttpMethod;

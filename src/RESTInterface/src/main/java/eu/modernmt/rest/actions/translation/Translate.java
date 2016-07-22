@@ -4,7 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonParseException;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextDocument;
-import eu.modernmt.core.facade.ModernMT;
+import eu.modernmt.facade.ModernMT;
 import eu.modernmt.decoder.TranslationException;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;

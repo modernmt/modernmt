@@ -1,8 +1,8 @@
 package eu.modernmt.cli;
 
 import eu.modernmt.cli.init.Submodules;
-import eu.modernmt.core.training.TrainingPipeline;
-import eu.modernmt.core.training.partitioning.FilesCorporaPartition;
+import eu.modernmt.training.TrainingPipeline;
+import eu.modernmt.training.partitioning.FilesCorporaPartition;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.Corpora;

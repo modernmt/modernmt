@@ -1,7 +1,7 @@
 package eu.modernmt.cli;
 
 import eu.modernmt.cli.init.Submodules;
-import eu.modernmt.core.training.CleaningPipeline;
+import eu.modernmt.training.CleaningPipeline;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
 import eu.modernmt.model.corpus.Corpora;

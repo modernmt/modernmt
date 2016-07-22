@@ -1,9 +1,9 @@
 package eu.modernmt.rest.framework.actions;
 
 import com.google.gson.JsonElement;
-import eu.modernmt.core.cluster.error.SystemShutdownException;
-import eu.modernmt.core.facade.exceptions.AuthenticationException;
-import eu.modernmt.core.facade.exceptions.ValidationException;
+import eu.modernmt.cluster.error.SystemShutdownException;
+import eu.modernmt.facade.exceptions.AuthenticationException;
+import eu.modernmt.facade.exceptions.ValidationException;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
 import eu.modernmt.rest.framework.RESTResponse;

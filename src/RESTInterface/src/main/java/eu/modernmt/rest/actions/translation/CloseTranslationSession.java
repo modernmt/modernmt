@@ -1,6 +1,6 @@
 package eu.modernmt.rest.actions.translation;
 
-import eu.modernmt.core.facade.ModernMT;
+import eu.modernmt.facade.ModernMT;
 import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
