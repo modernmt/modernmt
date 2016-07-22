@@ -1,11 +1,9 @@
 package eu.modernmt.decoder;
 
-import eu.modernmt.core.facade.exceptions.InternalErrorException;
-
 /**
  * Created by davide on 22/04/16.
  */
-public class TranslationException extends InternalErrorException {
+public class TranslationException extends Exception {
 
     public TranslationException(String message) {
         super(message);

@@ -1,11 +1,9 @@
 package eu.modernmt.context;
 
-import eu.modernmt.core.facade.exceptions.InternalErrorException;
-
 /**
  * Created by davide on 26/01/16.
  */
-public class ContextAnalyzerException extends InternalErrorException {
+public class ContextAnalyzerException extends Exception {
 
     public ContextAnalyzerException(String message) {
         super(message);
