@@ -1,24 +1,13 @@
-package eu.modernmt.processing.xml;
+package eu.modernmt.xml;
 
 import eu.modernmt.model.*;
-import eu.modernmt.processing.framework.LanguageNotSupportedException;
-import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.framework.TextProcessor;
 
 import java.util.*;
 
 /**
  * Created by lucamastrostefano on 4/04/16.
  */
-public class XMLTagProjector extends TextProcessor<Translation, Translation> {
-
-    public XMLTagProjector() throws LanguageNotSupportedException {
-        super(null, null);
-    }
-
-    public XMLTagProjector(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
-        super(sourceLanguage, targetLanguage);
-    }
+public class XMLTagProjector {
 
     private static class ExtendedTag implements Comparable<ExtendedTag> {
 
@@ -58,8 +47,7 @@ public class XMLTagProjector extends TextProcessor<Translation, Translation> {
 
     }
 
-    @Override
-    public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
+    public Translation project(Translation translation) {
         Sentence source = translation.getSource();
         if (source.hasTags()) {
             if (source.hasWords()) {
@@ -402,10 +390,11 @@ public class XMLTagProjector extends TextProcessor<Translation, Translation> {
         System.out.println("SRC (stripped):          " + source.getStrippedString(false));
         System.out.println();
 
-        XMLTagProjector mapper = new XMLTagProjector(null, null);
-        mapper.call(translation, null);
+        XMLTagProjector mapper = new XMLTagProjector();
+        mapper.project(translation);
 
         System.out.println("TRANSLATION:             " + translation);
         System.out.println("TRANSLATION (stripped):  " + translation.getStrippedString(false));
     }
+
 }

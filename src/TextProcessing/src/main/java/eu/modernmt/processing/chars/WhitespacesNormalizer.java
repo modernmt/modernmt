@@ -1,4 +1,4 @@
-package eu.modernmt.processing.util;
+package eu.modernmt.processing.chars;
 
 import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.ProcessingException;

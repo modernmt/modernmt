@@ -5,10 +5,10 @@ import eu.modernmt.model.Token;
 import eu.modernmt.processing.framework.PipelineInputStream;
 import eu.modernmt.processing.framework.PipelineOutputStream;
 import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.framework.TextProcessor;
 import eu.modernmt.processing.framework.builder.PipelineBuilder;
 import eu.modernmt.processing.framework.builder.XMLPipelineBuilder;
 import eu.modernmt.processing.framework.concurrent.PipelineExecutor;
-import eu.modernmt.processing.tokenizer.Tokenizer;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
@@ -54,7 +54,7 @@ public class Preprocessor implements Closeable {
 
         if (!tokenize) {
             metadata = new HashMap<>();
-            metadata.put(Tokenizer.KEY_ENABLE, false);
+            metadata.put(TextProcessor.KEY_TOKENIZE_TEXT, false);
         }
 
         return this.executor.process(text, metadata);
@@ -69,7 +69,7 @@ public class Preprocessor implements Closeable {
 
         if (!tokenize) {
             metadata = new HashMap<>();
-            metadata.put(Tokenizer.KEY_ENABLE, false);
+            metadata.put(TextProcessor.KEY_TOKENIZE_TEXT, false);
         }
 
         return this.executor.process(text, metadata);
@@ -80,7 +80,7 @@ public class Preprocessor implements Closeable {
 
         if (!tokenize) {
             metadata = new HashMap<>();
-            metadata.put(Tokenizer.KEY_ENABLE, false);
+            metadata.put(TextProcessor.KEY_TOKENIZE_TEXT, false);
         }
 
         this.executor.process(input, output, metadata);

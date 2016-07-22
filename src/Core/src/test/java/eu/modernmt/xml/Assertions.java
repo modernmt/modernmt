@@ -1,4 +1,4 @@
-package eu.modernmt.processing;
+package eu.modernmt.xml;
 
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Tag;

@@ -19,17 +19,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>eu.modernmt</groupId>
-            <artifactId>mmt-model</artifactId>
-            <version>${mmt.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>eu.modernmt</groupId>
-            <artifactId>mmt-textprocessing</artifactId>
-            <version>${mmt.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>com.hazelcast</groupId>
             <artifactId>hazelcast</artifactId>
             <version>3.6.2</version>

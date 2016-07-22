@@ -1,6 +1,6 @@
 <pipeline class="eu.modernmt.processing.framework.VoidProcessingPipeline">
 
-    <processor>eu.modernmt.processing.AlignmentsInterpolator</processor>
+    <processor>eu.modernmt.processing.AlignmentProcessor</processor>
 
     <!-- Detokenization -->
     <processorGroup>
@@ -21,6 +21,6 @@
 
     <processor>eu.modernmt.processing.recaser.SimpleRecaser</processor>
 
-    <processor>eu.modernmt.processing.xml.XMLTagProjector</processor>
+    <processor>eu.modernmt.processing.xml.XMLTagProcessor</processor>
 
 </pipeline>

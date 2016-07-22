@@ -1,16 +1,15 @@
 package eu.modernmt.facade.operations;
 
+import eu.modernmt.Engine;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.aligner.SymmetrizedAligner;
 import eu.modernmt.aligner.symal.SymmetrizationStrategy;
-import eu.modernmt.Engine;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.Preprocessor;
-import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.xml.XMLTagProjector;
+import eu.modernmt.xml.XMLTagProjector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -20,15 +19,7 @@ import org.apache.logging.log4j.Logger;
 public class ProjectTagsOperation extends Operation<Translation> {
 
     private static final Logger logger = LogManager.getLogger(ProjectTagsOperation.class);
-    private static final XMLTagProjector tagProjector;
-
-    static {
-        try {
-            tagProjector = new XMLTagProjector();
-        } catch (LanguageNotSupportedException e) {
-            throw new Error("This cannot happen", e);
-        }
-    }
+    private static final XMLTagProjector tagProjector = new XMLTagProjector();
 
     private static Preprocessor targetPreprocessor = null;
 
@@ -85,7 +76,7 @@ public class ProjectTagsOperation extends Operation<Translation> {
         }
 
         Translation taggedTranslation = new Translation(translation.getWords(), sentence, alignments);
-        tagProjector.call(taggedTranslation, null);
+        tagProjector.project(taggedTranslation);
 
         endTime = System.currentTimeMillis();
         if (logger.isDebugEnabled()) {

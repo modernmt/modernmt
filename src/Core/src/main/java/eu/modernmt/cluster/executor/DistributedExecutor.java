@@ -3,7 +3,6 @@ package eu.modernmt.cluster.executor;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ITopic;
 import com.hazelcast.core.Message;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,7 +43,6 @@ public class DistributedExecutor extends AbstractExecutorService {
         taskOutcomeTopic.destroy();
     }
 
-    @NotNull
     @Override
     public List<Runnable> shutdownNow() {
         shutdown();

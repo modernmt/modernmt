@@ -13,15 +13,13 @@ import java.util.Map;
  */
 public abstract class Tokenizer extends TextProcessor<XMLEditableString, XMLEditableString> {
 
-    public static final String KEY_ENABLE = "Tokenizer.ENABLE";
-
     public Tokenizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
         super(sourceLanguage, targetLanguage);
     }
 
     @Override
     public final XMLEditableString call(XMLEditableString param, Map<String, Object> metadata) throws ProcessingException {
-        Boolean enable = (Boolean) metadata.get(KEY_ENABLE);
+        Boolean enable = (Boolean) metadata.get(KEY_TOKENIZE_TEXT);
 
         return (enable == null || enable) ? tokenize(param, metadata) : WhitespaceTokenizer.tokenize(param);
     }

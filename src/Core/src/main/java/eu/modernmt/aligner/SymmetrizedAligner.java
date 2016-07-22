@@ -3,7 +3,6 @@ package eu.modernmt.aligner;
 import eu.modernmt.aligner.symal.GrowDiagonalFinalAndStrategy;
 import eu.modernmt.aligner.symal.SymmetrizationStrategy;
 import eu.modernmt.model.Sentence;
-import eu.modernmt.processing.AlignmentsInterpolator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -58,7 +57,7 @@ public class SymmetrizedAligner implements Aligner {
         int[][] backwardAlignments = backwardModel.getAlignment(sentence, translation);
 
         int[][] alignment = strategy.symmetrize(forwardAlignments, backwardAlignments);
-        return AlignmentsInterpolator.interpolateAlignments(alignment, sentence.getWords().length, translation.getWords().length);
+        return AlignmentInterpolator.interpolate(alignment, sentence.getWords().length, translation.getWords().length);
     }
 
     @Override
@@ -77,7 +76,7 @@ public class SymmetrizedAligner implements Aligner {
             Sentence translation = translationIterator.next();
 
             int[][] alignment = strategy.symmetrize(forwardAlignments[i], backwardAlignments[i]);
-            alignments[i] = AlignmentsInterpolator.interpolateAlignments(alignment, sentence.getWords().length, translation.getWords().length);
+            alignments[i] = AlignmentInterpolator.interpolate(alignment, sentence.getWords().length, translation.getWords().length);
 
             i++;
         }

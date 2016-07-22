@@ -1,12 +1,12 @@
 <pipeline>
     <!-- Pre EditableString processors -->
-    <processor>eu.modernmt.processing.util.ControlCharsRemover</processor>
+    <processor>eu.modernmt.processing.chars.ControlCharsRemover</processor>
     <processor>eu.modernmt.processing.xmessage.XMessageParser</processor>
     <processor>eu.modernmt.processing.xml.XMLStringBuilder</processor>
 
     <!-- String normalization -->
-    <processor>eu.modernmt.processing.util.RareCharsNormalizer</processor>
-    <processor>eu.modernmt.processing.util.WhitespacesNormalizer</processor>
+    <processor>eu.modernmt.processing.chars.RareCharsNormalizer</processor>
+    <processor>eu.modernmt.processing.chars.WhitespacesNormalizer</processor>
 
     <!-- Tokenization -->
     <processorGroup>

@@ -1,4 +1,4 @@
-package eu.modernmt.engine.training.mock;
+package eu.modernmt.training;
 
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;

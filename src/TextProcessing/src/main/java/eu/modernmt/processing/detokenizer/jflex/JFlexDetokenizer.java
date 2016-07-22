@@ -1,7 +1,7 @@
 package eu.modernmt.processing.detokenizer.jflex;
 
 import eu.modernmt.model.Translation;
-import eu.modernmt.processing.Languages;
+import eu.modernmt.model.Languages;
 import eu.modernmt.processing.detokenizer.Detokenizer;
 import eu.modernmt.processing.detokenizer.jflex.annotators.EnglishSpaceAnnotator;
 import eu.modernmt.processing.detokenizer.jflex.annotators.FrenchSpaceAnnotator;

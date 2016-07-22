@@ -1,46 +1,24 @@
-package eu.modernmt.processing;
+package eu.modernmt.aligner;
 
-import eu.modernmt.model.Translation;
-import eu.modernmt.processing.framework.LanguageNotSupportedException;
-import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.framework.TextProcessor;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
 
 /**
  * Created by lucamastrostefano on 15/04/16.
  */
-public class AlignmentsInterpolator extends TextProcessor<Translation, Translation> {
+public class AlignmentInterpolator {
 
-    public AlignmentsInterpolator(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
-        super(sourceLanguage, targetLanguage);
-    }
-
-    @Override
-    public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
-        if (translation.hasAlignment()) {
-            int numberOfSourceTokens = translation.getSource().getWords().length;
-            int numberOfTranslationTokens = translation.getWords().length;
-            int[][] interpolatedAlignments = interpolateAlignments(translation.getAlignment(), numberOfSourceTokens,
-                    numberOfTranslationTokens);
-            translation.setAlignment(interpolatedAlignments);
-        }
-        return translation;
-    }
-
-    public static int[][] interpolateAlignments(int[][] alignments, int numberOfSourceTokens, int numberOfTargetTokens) {
+    public static int[][] interpolate(int[][] alignments, int numberOfSourceTokens, int numberOfTargetTokens) {
         alignments = Arrays.copyOf(alignments, alignments.length + 1);
         alignments[alignments.length - 1] = new int[]{numberOfSourceTokens, numberOfTargetTokens};
         ArrayList<int[]> interpolatedAlignments = new ArrayList<>(alignments.length);
-        Arrays.sort(alignments, new Comparator<int[]>() {
-            @Override
-            public int compare(int[] a1, int[] a2) {
-                int c = a1[0] - a2[0];
-                if (c == 0) {
-                    c = a1[1] - a2[1];
-                }
-                return c;
+        Arrays.sort(alignments, (a1, a2) -> {
+            int c = a1[0] - a2[0];
+            if (c == 0) {
+                c = a1[1] - a2[1];
             }
+            return c;
         });
         BitSet targetCoveredTokens = new BitSet(numberOfTargetTokens);
         for (int[] alignment : alignments) {

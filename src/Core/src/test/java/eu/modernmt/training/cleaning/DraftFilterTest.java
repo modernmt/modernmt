@@ -1,6 +1,6 @@
 package eu.modernmt.training.cleaning;
 
-import eu.modernmt.engine.training.mock.MockBilingualCorpus;
+import eu.modernmt.training.MockBilingualCorpus;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import org.junit.Test;
 

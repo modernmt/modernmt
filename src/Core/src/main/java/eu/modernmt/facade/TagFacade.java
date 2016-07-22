@@ -1,13 +1,13 @@
 package eu.modernmt.facade;
 
+import eu.modernmt.Engine;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.aligner.symal.SymmetrizationStrategy;
-import eu.modernmt.Engine;
 import eu.modernmt.cluster.error.SystemShutdownException;
 import eu.modernmt.facade.exceptions.validation.LanguagePairNotSupportedException;
 import eu.modernmt.facade.operations.ProjectTagsOperation;
+import eu.modernmt.model.Languages;
 import eu.modernmt.model.Translation;
-import eu.modernmt.processing.Languages;
 import eu.modernmt.processing.framework.ProcessingException;
 
 import java.util.Locale;
@@ -53,6 +53,7 @@ public class TagFacade {
     private static boolean isLanguagesInverted(Locale sourceLanguage, Locale targetLanguage)
             throws LanguagePairNotSupportedException {
         Engine engine = ModernMT.node.getEngine();
+
         if (Languages.sameLanguage(engine.getSourceLanguage(), sourceLanguage) &&
                 Languages.sameLanguage(engine.getTargetLanguage(), targetLanguage)) {
             return false;
@@ -60,6 +61,7 @@ public class TagFacade {
                 Languages.sameLanguage(engine.getTargetLanguage(), sourceLanguage)) {
             return true;
         }
+
         throw new LanguagePairNotSupportedException(sourceLanguage, targetLanguage);
     }
 

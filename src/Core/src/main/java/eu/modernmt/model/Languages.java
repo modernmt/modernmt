@@ -1,4 +1,4 @@
-package eu.modernmt.processing;
+package eu.modernmt.model;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;

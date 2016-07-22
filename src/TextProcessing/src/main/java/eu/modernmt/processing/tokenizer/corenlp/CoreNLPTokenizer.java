@@ -6,7 +6,7 @@ import edu.stanford.nlp.international.spanish.process.SpanishTokenizer;
 import edu.stanford.nlp.ling.HasWord;
 import edu.stanford.nlp.process.PTBTokenizer;
 import edu.stanford.nlp.process.TokenizerFactory;
-import eu.modernmt.processing.Languages;
+import eu.modernmt.model.Languages;
 import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.string.XMLEditableString;

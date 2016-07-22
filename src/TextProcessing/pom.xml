@@ -75,7 +75,7 @@
     <dependencies>
         <dependency>
             <groupId>eu.modernmt</groupId>
-            <artifactId>mmt-model</artifactId>
+            <artifactId>mmt-core</artifactId>
             <version>${mmt.version}</version>
         </dependency>
 

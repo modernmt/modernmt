@@ -8,6 +8,8 @@ import java.util.Map;
  */
 public abstract class TextProcessor<P, R> {
 
+    public static final String KEY_TOKENIZE_TEXT = "TextProcessor.TOKENIZE_TEXT"; // Default true
+
     public TextProcessor(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
     }
 

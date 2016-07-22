@@ -7,9 +7,8 @@
     <version>0.13</version>
 
     <modules>
-        <module>Model</module>
-        <module>TextProcessing</module>
         <module>Core</module>
+        <module>TextProcessing</module>
 
         <module>FastAlign</module>
         <module>LuceneContextAnalyzer</module>

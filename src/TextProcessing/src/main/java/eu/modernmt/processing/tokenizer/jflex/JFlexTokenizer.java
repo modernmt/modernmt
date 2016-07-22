@@ -1,6 +1,6 @@
 package eu.modernmt.processing.tokenizer.jflex;
 
-import eu.modernmt.processing.Languages;
+import eu.modernmt.model.Languages;
 import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.string.XMLEditableString;
