@@ -1,4 +1,4 @@
-package eu.modernmt.model.xmessage;
+package eu.modernmt.processing.xmessage;
 
 /**
  * Created by davide on 07/04/16.

@@ -1,4 +1,4 @@
-package eu.modernmt.model.xmessage;
+package eu.modernmt.processing.xmessage;
 
 import java.io.Serializable;
 import java.util.ArrayList;

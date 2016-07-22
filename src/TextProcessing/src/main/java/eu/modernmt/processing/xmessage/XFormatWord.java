@@ -3,8 +3,6 @@ package eu.modernmt.processing.xmessage;
 import eu.modernmt.model.MultiOptionsToken;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
-import eu.modernmt.model.xmessage.XChoiceFormat;
-import eu.modernmt.model.xmessage.XFormat;
 
 /**
  * Created by davide on 08/04/16.

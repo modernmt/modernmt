@@ -1,7 +1,6 @@
 package eu.modernmt.processing.xmessage;
 
 import eu.modernmt.model.Word;
-import eu.modernmt.model.xmessage.XFormat;
 import eu.modernmt.processing.WordTransformationFactory;
 
 /**

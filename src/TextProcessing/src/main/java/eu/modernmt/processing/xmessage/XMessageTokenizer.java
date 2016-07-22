@@ -1,6 +1,5 @@
 package eu.modernmt.processing.xmessage;
 
-import eu.modernmt.model.xmessage.XFormat;
 import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.TextProcessor;
 import eu.modernmt.processing.framework.string.InvalidOperationException;
