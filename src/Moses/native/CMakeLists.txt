@@ -1,24 +1,30 @@
 cmake_minimum_required(VERSION 2.8.8)
-project(jnimoses)
+project(MosesDecoder)
 
-file(GLOB WRAPPER_SRC src/wrapper/*.h src/wrapper/*.cpp)
-file(GLOB JNI_SRC src/jni/*.h src/jni/*.cpp)
-
-# Set install prefix to use <MMT>/bin/ and <MMT>/lib/
-# ---------------------------------------------------
-#
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}" CACHE PATH "MMT install prefix" FORCE)
-endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+# where to find cmake_modules modules
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-add_library(${PROJECT_NAME} SHARED ${WRAPPER_SRC} ${JNI_SRC})
 
-add_executable(jnitest src/main.cpp)
-target_link_libraries(jnitest ${PROJECT_NAME})
+set(SOURCE_FILES
+        decoder/JNITranslationRequest.h decoder/JNITranslationRequest.cpp
+        decoder/JNITranslator.h decoder/JNITranslator.cpp
+        decoder/MosesDecoder.h decoder/MosesDecoder.cpp
 
-include_directories(src)
-include_directories(jheaders)
+        jheaders/eu_modernmt_decoder_moses_MosesDecoder.h
+
+        jni/handle.h
+        jni/jniutil.h
+        jni/eu_modernmt_decoder_moses_MosesDecoder.cpp
+        jni/JMosesFeature.h jni/JMosesFeature.cpp
+        jni/JTranslation.h jni/JTranslation.cpp )
+
+include_directories(${CMAKE_SOURCE_DIR})
+
+add_library(jnimoses SHARED ${SOURCE_FILES})
+
+add_executable(jnimoses_test test/main.cpp)
+target_link_libraries(jnimoses_test ${PROJECT_NAME})
 
 # External Libraries
 
@@ -27,39 +33,17 @@ set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 
-find_package(Boost 1.55.0 COMPONENTS filesystem thread system program_options iostreams)
-
-if (Boost_FOUND)
-    include_directories(${Boost_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
-else (Boost_FOUND)
-    message(FATAL_ERROR "Could not locate Boost. Check if BOOST_ROOT is defined in your system.")
-endif (Boost_FOUND)
+find_package(Boost 1.55.0 REQUIRED COMPONENTS filesystem thread system program_options iostreams)
+include_directories(${Boost_INCLUDE_DIRS})
+target_link_libraries(jnimoses ${Boost_LIBRARIES})
 
 ## JNI
-find_package(JNI)
-if (JNI_FOUND)
-    include_directories(${JNI_INCLUDE_DIRS})
-else (JNI_FOUND)
-    message(FATAL_ERROR "Could not locate JNI. Check if JAVA_HOME is defined in your system.")
-endif (JNI_FOUND)
+find_package(JNI REQUIRED)
+include_directories(${JNI_INCLUDE_DIRS})
 
 ## Moses
-# for FindMoses.cmake
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake/")
 find_package(Moses REQUIRED)
-
-# TODO: these should move into FindMoses.cmake, with set(Moses_DEFINITIONS ...) coming from the values defined in the original moses CMake configuration.
-# for a complicated version of generating the config, see https://cmake.org/cmake/help/git-master/manual/cmake-packages.7.html#creating-packages
-# but it may be entirely feasible to just dump these values into a MosesConfig.cmake in that build.
-
-add_definitions(-DMAX_NUM_FACTORS=4)
-add_definitions(-DWITH_THREADS=1)
-#add_definitions(-DHAVE_XMLRPC_C=0)  # note: even defining this to 0 triggers #ifdef ...
-#add_definitions(-DTRACE_ENABLE)  # add this to enable verbose moses output in general (otherwise, not even --verbose level will help)
+add_definitions(${Moses_DEFINITIONS})
 include_directories(${Moses_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} ${Moses_LIBRARIES})
-
-install(TARGETS ${PROJECT_NAME} DESTINATION lib)
-#install(TARGETS jnitest DESTINATION bin)  # we do not install that. no need for it in production.
+target_link_libraries(jnimoses ${Moses_LIBRARIES})
 

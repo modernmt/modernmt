@@ -2,10 +2,10 @@
 // Created by Davide  Caroselli on 26/11/15.
 //
 
-#include <eu_modernmt_decoder_moses_MosesDecoder.h>
+#include <jheaders/eu_modernmt_decoder_moses_MosesDecoder.h>
 #include <jni/handle.h>
 #include <jni/jniutil.h>
-#include <wrapper/MosesDecoder.h>
+#include <decoder/MosesDecoder.h>
 #include <stdlib.h>
 #include "JMosesFeature.h"
 #include "JTranslation.h"

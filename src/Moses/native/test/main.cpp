@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <iostream>
 
-#include "wrapper/MosesDecoder.h"
+#include "../decoder/MosesDecoder.h"
 
 using namespace JNIWrapper;
 
