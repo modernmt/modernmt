@@ -17,14 +17,20 @@ set(SOURCE_FILES
         jni/jniutil.h
         jni/eu_modernmt_decoder_moses_MosesDecoder.cpp
         jni/JMosesFeature.h jni/JMosesFeature.cpp
-        jni/JTranslation.h jni/JTranslation.cpp )
+        jni/JTranslation.h jni/JTranslation.cpp
+
+        vocabulary/Vocabulary.cpp vocabulary/Vocabulary.h
+        vocabulary/IdGenerator.cpp vocabulary/IdGenerator.h
+        vocabulary/NewWordOperator.cpp vocabulary/NewWordOperator.h)
 
 include_directories(${CMAKE_SOURCE_DIR})
 
 add_library(jnimoses SHARED ${SOURCE_FILES})
 
-add_executable(jnimoses_test test/main.cpp)
-target_link_libraries(jnimoses_test ${PROJECT_NAME})
+add_executable(decoder_test test/decoder_test.cpp)
+target_link_libraries(decoder_test jnimoses)
+add_executable(vocabulary_test test/vocabulary_test.cpp)
+target_link_libraries(vocabulary_test jnimoses)
 
 # External Libraries
 
@@ -47,3 +53,7 @@ add_definitions(${Moses_DEFINITIONS})
 include_directories(${Moses_INCLUDE_DIRS})
 target_link_libraries(jnimoses ${Moses_LIBRARIES})
 
+## RocksDB
+find_package(Rocksdb REQUIRED)
+include_directories(${Rocksdb_INCLUDE_DIR})
+target_link_libraries(jnimoses ${Rocksdb_LIBS})
