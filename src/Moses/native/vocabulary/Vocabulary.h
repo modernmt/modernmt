@@ -7,27 +7,28 @@
 
 #include <string>
 #include <rocksdb/db.h>
+#include <unordered_set>
 #include "IdGenerator.h"
 #include "NewWordOperator.h"
 
+const uint32_t kVocabularyUnknownWord = 0;
 const uint32_t kVocabularyWordIdStart = 1000;
-
-const uint32_t kVocabularyNoWord = 0;
-const uint32_t kVocabularyStartSymbol = 1;
-const uint32_t kVocabularyEndSymbol = 2;
 
 using namespace std;
 
 class Vocabulary {
     friend class NewWordOperator;
+    friend class VocabularyBuilder;
 public:
-    Vocabulary(string path);
+    Vocabulary(string path, bool prepareForBulkLoad = false);
 
     ~Vocabulary();
 
-    uint32_t Get(string word, bool putIfAbsent);
+    uint32_t Lookup(string &word, bool putIfAbsent);
 
-    bool Get(uint32_t id, string *output);
+    void Lookup(vector<vector<string>> &buffer, vector<vector<uint32_t>> &output, bool putIfAbsent);
+
+    bool ReverseLookup(uint32_t id, string *output);
 
 private:
     string idGeneratorPath;
@@ -35,10 +36,12 @@ private:
     rocksdb::DB* directDb;
     rocksdb::DB* reverseDb;
 
+    void Put(const string &word, const uint32_t id);
+    void ForceCompaction();
+
     static const void Serialize(uint32_t value, uint8_t *output);
     static const bool Deserialize(string &value, uint32_t *output);
     static const bool Deserialize(const rocksdb::Slice &value, uint32_t *output);
 };
-
 
 #endif //MOSESDECODER_VOCABULARY_H

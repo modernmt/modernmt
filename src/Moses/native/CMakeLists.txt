@@ -21,7 +21,7 @@ set(SOURCE_FILES
 
         vocabulary/Vocabulary.cpp vocabulary/Vocabulary.h
         vocabulary/IdGenerator.cpp vocabulary/IdGenerator.h
-        vocabulary/NewWordOperator.cpp vocabulary/NewWordOperator.h)
+        vocabulary/NewWordOperator.cpp vocabulary/NewWordOperator.h vocabulary/VocabularyBuilder.cpp vocabulary/VocabularyBuilder.h util/TokenSource.cpp util/TokenSource.h)
 
 include_directories(${CMAKE_SOURCE_DIR})
 
@@ -29,8 +29,8 @@ add_library(jnimoses SHARED ${SOURCE_FILES})
 
 add_executable(decoder_test test/decoder_test.cpp)
 target_link_libraries(decoder_test jnimoses)
-add_executable(vocabulary_test test/vocabulary_test.cpp)
-target_link_libraries(vocabulary_test jnimoses)
+add_executable(buildvb test/buildvb.cpp)
+target_link_libraries(buildvb jnimoses)
 
 # External Libraries
 
@@ -57,3 +57,11 @@ target_link_libraries(jnimoses ${Moses_LIBRARIES})
 find_package(Rocksdb REQUIRED)
 include_directories(${Rocksdb_INCLUDE_DIR})
 target_link_libraries(jnimoses ${Rocksdb_LIBS})
+
+## OpenMP
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    include_directories(${OPENMP_INCLUDE_DIRS})
+    target_link_libraries(jnimoses ${OPENMP_LIBRARIES})
+endif (OPENMP_FOUND)

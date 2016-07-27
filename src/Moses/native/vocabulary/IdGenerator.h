@@ -19,6 +19,8 @@ public:
 
     uint32_t Next();
 
+    void Reset(uint32_t id);
+
 private:
     uint32_t idStep;
     uint32_t counter;

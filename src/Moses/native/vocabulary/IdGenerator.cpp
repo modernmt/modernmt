@@ -69,3 +69,12 @@ uint32_t IdGenerator::Next() {
 
     return result;
 }
+
+void IdGenerator::Reset(uint32_t id) {
+    m.lock();
+    {
+        counter = id;
+        write(id + idStep, storage);
+    };
+    m.unlock();
+}
