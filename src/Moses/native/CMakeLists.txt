@@ -21,16 +21,19 @@ set(SOURCE_FILES
 
         vocabulary/Vocabulary.cpp vocabulary/Vocabulary.h
         vocabulary/IdGenerator.cpp vocabulary/IdGenerator.h
-        vocabulary/NewWordOperator.cpp vocabulary/NewWordOperator.h vocabulary/VocabularyBuilder.cpp vocabulary/VocabularyBuilder.h util/TokenSource.cpp util/TokenSource.h)
+        vocabulary/NewWordOperator.cpp vocabulary/NewWordOperator.h vocabulary/VocabularyBuilder.cpp
+        vocabulary/VocabularyBuilder.h util/TokenSource.cpp util/TokenSource.h)
 
 include_directories(${CMAKE_SOURCE_DIR})
 
 add_library(jnimoses SHARED ${SOURCE_FILES})
 
-add_executable(decoder_test test/decoder_test.cpp)
-target_link_libraries(decoder_test jnimoses)
-add_executable(buildvb test/buildvb.cpp)
-target_link_libraries(buildvb jnimoses)
+file(GLOB executables executables/*.cpp)
+foreach(exefile ${executables})
+    get_filename_component(exe ${exefile} NAME_WE)
+    add_executable(${exe} ${exefile})
+    target_link_libraries(${exe} jnimoses)
+endforeach()
 
 # External Libraries
 

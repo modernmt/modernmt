@@ -10,7 +10,6 @@
 #include <rocksdb/slice_transform.h>
 #include <thread>
 
-const size_t kMaxThread = 32;
 const string kPathSeparator =
 #ifdef _WIN32
         "\\";
@@ -31,11 +30,10 @@ Vocabulary::Vocabulary(string basepath, bool prepareForBulkLoad) : idGeneratorPa
     options.merge_operator.reset(new NewWordOperator());
     options.prefix_extractor.reset(NewNoopTransform());
 
-    rocksdb::BlockBasedTableOptions table_options;
-    table_options.index_type = rocksdb::BlockBasedTableOptions::kHashSearch;
-    table_options.block_size = 4 * 1024;
-    options.table_factory.reset(NewBlockBasedTableFactory(table_options));
+    options.table_factory.reset(NewPlainTableFactory());
+    options.memtable_factory.reset(NewHashLinkListRepFactory());
 
+    options.allow_mmap_reads = true;
     options.max_open_files = -1;
     options.compaction_style = kCompactionStyleLevel;
     options.memtable_prefix_bloom_bits = 1024 * 1024 * 8;
@@ -111,7 +109,7 @@ uint32_t Vocabulary::Lookup(string &word, bool putIfAbsent) {
 }
 
 void Vocabulary::Lookup(vector<vector<string>> &buffer, vector<vector<uint32_t>> &output, bool putIfAbsent) {
-    unordered_map<string, uint32_t> vocabulary;
+    unordered_map<string, uint32_t> vocabulary(buffer.size() * 20);
 
     for (auto line = buffer.begin(); line != buffer.end(); ++line) {
         size_t length = line->size();

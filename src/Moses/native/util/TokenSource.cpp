@@ -18,7 +18,7 @@ struct membuf : streambuf {
     }
 };
 
-void WhitespaceTokenize(string line, vector<string> &output) {
+void WhitespaceTokenize(string &line, vector<string> &output) {
     istringstream iss(line);
     string word;
 
@@ -43,27 +43,6 @@ Operator *TokenSource::Process() {
     munmap(buffer, filesize);
 
     return result;
-
-//    FILE *file = fopen(path.c_str(), "rb");
-//    if (file == NULL)
-//        return nullptr;
-//
-//    fseek(file, 0, SEEK_END);
-//    size_t size = (size_t) ftell(file);
-//    rewind(file);
-//
-//    char *buffer = new char[size];
-//    size_t copySize = fread(buffer, 1, size, file);
-//
-//    if (copySize != size) {
-//        delete buffer;
-//        return nullptr;
-//    }
-//
-//    Operator *result = Map(buffer, size);
-//    delete buffer;
-//
-//    return result;
 }
 
 Operator *TokenSource::Map(char *buffer, size_t size) {
