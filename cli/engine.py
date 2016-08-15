@@ -13,6 +13,8 @@ from cli.mt.lm import LanguageModel
 from cli.mt.moses import Moses, MosesFeature, LexicalReordering
 from cli.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
 from cli.mt.processing import Preprocessor, TrainingPreprocessor, TMCleaner
+from cli import dependency
+from cli.cluster import ClusterNode, DEFAULT_MMT_API_PORT
 
 __author__ = 'Davide Caroselli'
 
@@ -340,3 +342,68 @@ class MMTEngine(object):
     def clear_tempdir(self, subdir=None):
         path = os.path.join(self._temp_path, subdir) if subdir is not None else self._temp_path
         shutil.rmtree(path, ignore_errors=True)
+
+
+class ConfiguredEngine(MMTEngine):
+    """
+    MMTEngine with calls to ad-hoc reconfigure,
+    for tests of several different parameter settings.
+    """
+    def __init__(self, engine_name=None):
+        super(ConfiguredEngine, self).__init__(name=engine_name)
+        self._injector = dependency.Injector()
+        self._injector.inject(self)
+        self._injector.read_config(self.config)  # dummy config access to make it load
+
+    def set(self, section, option, value=None):
+        """Only sets values on the engine.config, until write_configs() is called.
+        After that, values are valid on the engine itself as well."""
+
+        assert(self.config_option_exists(section, option))
+
+        # coerce all types to str -- because they are parsed back in "ConfigParser.py", line 663, in _interpolate
+        self.config.set(section, option, str(value))
+
+    def config_option_exists(self, section, option):
+        """check if section and option indeed exist"""
+        for clazz in dependency.injectable_components:
+            if not hasattr(clazz, 'injectable_fields') or not hasattr(clazz, 'injector_section'):
+                continue
+            if clazz.injector_section == section and option in clazz.injectable_fields:
+                return True
+        return False
+
+    def write_configs(self):
+        """write engine.ini and moses.ini"""
+        self._injector.read_config(self.config)  # so injector params get updated
+        self._injector.inject(self)  # so engine instance itself gets updated (goes to moses.ini)
+        super(ConfiguredEngine, self).write_configs()  # write engine.ini and moses.ini
+
+
+class ConfiguredClusterNode(ClusterNode):
+    """
+    Local ClusterNode with calls to ad-hoc reconfigure,
+    for tests of several different parameter settings.
+    """
+    def __init__(self, engine_name=None):
+        super(ConfiguredClusterNode, self).__init__(engine=ConfiguredEngine(engine_name), api_port=DEFAULT_MMT_API_PORT)
+
+    def set(self, section, option, value=None):
+        self.engine.set(section, option, value)
+
+    def write_configs(self):
+        """Write config to disk without affecting the running node."""
+        self.engine.write_configs()
+
+    def apply_configs(self):
+        self.write_configs()
+        self.restart()
+
+    def restart(self):
+        # ensure engine is stopped
+        if self.is_running():
+            self.stop()
+
+        # start engine again (load up with new config)
+        self.start()
+        self.wait('READY')
