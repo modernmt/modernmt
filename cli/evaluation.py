@@ -502,7 +502,7 @@ class Evaluator:
 
 
 # similar to class Evaluator above. Alternatively we could have added a flag there, to call corpus.copy(dest_path)
-# but we also don't want to run BLEU, and want to support missing reference on the source, ...
+# but we also don't want to run all eval metrics, and want to support missing reference on the source, ...
 class BatchTranslator:
     def __init__(self, node, use_sessions=True):
         self._engine = node.engine
@@ -569,6 +569,15 @@ class BatchTranslator:
                     result.error = e
                 except Exception as e:
                     result.error = TranslateError('Unexpected ERROR: ' + str(e.message))
+
+                if result.error is None:
+                    scorer = BLEUScore()
+                    # bleu in range [0;1)
+                    bleu = scorer.calculate(result.merge, reference)
+                else:
+                    bleu = None
+
+                return bleu
         finally:
             if not debug:
                 self._engine.clear_tempdir('evaluation')
