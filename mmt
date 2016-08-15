@@ -388,11 +388,12 @@ def main_create(argv):
 def main_update(argv):
     parser = argparse.ArgumentParser(description='Update from git and compile complete MMT system from sources (for developers)')
     parser.prog = 'mmt update'
-    parser.add_argument('branch', nargs='?', default='develop', help='git branch to check out prior to update')
+    parser.add_argument('branch', nargs='?', default=None, help='git branch to check out prior to update')
 
     args = parser.parse_args(argv)
 
-    git_checkout(args.branch)
+    if args.branch:
+        git_checkout(args.branch)
     build_all()
 
 
