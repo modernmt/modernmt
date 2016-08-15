@@ -93,7 +93,7 @@ def main_sweep(argv):
 
     # more or less copy-pasted from mmt evaluate:
 
-    evaluator = Evaluator(node.engine, node)
+    evaluator = Evaluator(node, google_key='1234', use_sessions=True)
 
     corpora = BilingualCorpus.list(args.corpora_path) if args.corpora_path is not None \
         else BilingualCorpus.list(os.path.join(node.engine.data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
@@ -110,15 +110,15 @@ def main_sweep(argv):
         node.set('suffixarrays', 'sample', sample)
         node.apply_configs()
 
-        scores = evaluator.evaluate(corpora=corpora, google_key='1234', heval_output=None,
-                                    use_sessions=True, debug=False)
+        scores = evaluator.evaluate(corpora=corpora, heval_output=None,
+                                    debug=False)
 
-        engine_scores = scores['MMT']
+        engine_scores = [r for r in scores if r.id == 'MMT'][0]
 
-        if isinstance(engine_scores, str):
-            raise RuntimeError(engine_scores)
+        if engine_scores.error:
+            raise RuntimeError(engine_scores.error)
 
-        bleu = engine_scores['bleu']
+        bleu = engine_scores.bleu
         print(sample, '%.2f' % (bleu * 100))
 
 
