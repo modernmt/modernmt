@@ -14,6 +14,7 @@ from cli.evaluation import Evaluator
 from cli.libs import shell
 from cli.mt import BilingualCorpus
 from cli.mt.processing import TrainingPreprocessor
+from cli.build import git_checkout, build_all
 
 __author__ = 'Davide Caroselli'
 __description = '''\
@@ -384,6 +385,17 @@ def main_create(argv):
         parser.print_help()
 
 
+def main_update(argv):
+    parser = argparse.ArgumentParser(description='Update from git and compile complete MMT system from sources (for developers)')
+    parser.prog = 'mmt update'
+    parser.add_argument('branch', nargs='?', default='develop', help='git branch to check out prior to update')
+
+    args = parser.parse_args(argv)
+
+    git_checkout(args.branch)
+    build_all()
+
+
 def main():
     # Set unbuffered stdout
     unbuffered = os.fdopen(sys.stdout.fileno(), 'w', 0)
@@ -392,7 +404,7 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=__description,
                                      usage='%(prog)s [-h] ACTION [args]', add_help=False, prog='mmt')
     parser.add_argument('action', metavar='ACTION',
-                        choices=['create', 'start', 'stop', 'status', 'delete', 'tune', 'evaluate'],
+                        choices=['update', 'create', 'start', 'stop', 'status', 'delete', 'tune', 'evaluate'],
                         help='{%(choices)s}', nargs='?')
     parser.add_argument('-h', '--help', dest='help', action='store_true', help='show this help message and exit')
 
@@ -401,7 +413,9 @@ def main():
     args = argv[1:]
 
     try:
-        if 'create' == command:
+        if 'update' == command:
+            main_update(args)
+        elif 'create' == command:
             main_create(args)
         elif 'start' == command:
             main_start(args)
