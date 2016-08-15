@@ -10,7 +10,7 @@ from cli import dependency
 from cli.cluster import ClusterNode, DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORTS
 from cli.engine import IllegalStateException, IllegalArgumentException
 from cli.engine import MMTEngine
-from cli.evaluation import Evaluator
+from cli.evaluation import Evaluator, BatchTranslator
 from cli.libs import shell
 from cli.mt import BilingualCorpus
 from cli.mt.processing import TrainingPreprocessor
@@ -152,6 +152,65 @@ def main_evaluate(argv):
     if args.heval_output is not None:
         print 'Files for Human Evaluation are available here:', os.path.abspath(args.heval_output)
         print
+
+
+__desc_batch = '''\
+Batch-translate corpora in a directory and output into dest directory DEST
+
+Creates  [*.ref] *.src *.hyp  files in DEST. All files are XML-encoded, detokenized sentences, one per line.
+
+For example, the bundled 3-domain en-it test corpus creates these files:
+
+europarl.en.src
+europarl.it.hyp
+europarl.it.ref
+ibm.en.src
+ibm.it.hyp
+ibm.it.ref
+microsoft.en.src
+microsoft.it.hyp
+microsoft.it.ref
+'''
+
+def main_batch(argv):
+    parser = argparse.ArgumentParser(description=__desc_batch)
+    parser.prog = 'mmt batch'
+    parser.add_argument('--path', dest='corpora_path', metavar='CORPORA', default=None,
+                        help='the path to the test corpora (default is the automatically splitted sample)')
+    parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
+                        default='default')
+    parser.add_argument('--dest', dest='dest_path', metavar='DEST', required=True,
+                        help='the path to the output directory (created if it does not exist)')
+    parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
+                        help='the MMT API port. (default is {port})'.format(port=DEFAULT_MMT_API_PORT),
+                        default=None, type=int)
+    parser.add_argument('--gt-key', dest='gt_key', metavar='GT_API_KEY', default=None,
+                        help='A custom Google Translate API Key to use during evaluation')
+    parser.add_argument('-i', '--interactive', action='store_true', dest='interactive',
+                        help='Test without sessions, as if translating sentence by sentence')
+    parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='if debug is set, it enables verbose '
+                                                                                 'logging and prevents temporary files '
+                                                                                 'to be removed after execution')
+
+    args = parser.parse_args(argv)
+    args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
+
+    _logconfig(False)
+
+    engine = MMTEngine(name=args.engine)
+    if not engine.exists():
+        raise IllegalStateException('engine not found: ' + args.engine)
+    injector = dependency.Injector()
+    injector.read_config(engine.config)
+    engine = injector.inject(engine)
+
+    node = ClusterNode(engine, api_port=args.api_port)
+    translator = BatchTranslator(node, use_sessions=not args.interactive)
+
+    corpora = BilingualCorpus.list(args.corpora_path) if args.corpora_path is not None \
+        else BilingualCorpus.list(os.path.join(engine.data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
+
+    translator.translate(corpora=corpora, dest_path=args.dest_path, debug=args.debug)
 
 
 def main_start(argv):
@@ -405,7 +464,7 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=__description,
                                      usage='%(prog)s [-h] ACTION [args]', add_help=False, prog='mmt')
     parser.add_argument('action', metavar='ACTION',
-                        choices=['update', 'create', 'start', 'stop', 'status', 'delete', 'tune', 'evaluate'],
+                        choices=['update', 'create', 'start', 'stop', 'status', 'delete', 'tune', 'evaluate', 'batch'],
                         help='{%(choices)s}', nargs='?')
     parser.add_argument('-h', '--help', dest='help', action='store_true', help='show this help message and exit')
 
@@ -430,6 +489,8 @@ def main():
             main_tune(args)
         elif 'evaluate' == command:
             main_evaluate(args)
+        elif 'batch' == command:
+            main_batch(args)
         else:
             parser.print_help()
             exit(1)

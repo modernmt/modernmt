@@ -499,3 +499,76 @@ class Evaluator:
         finally:
             if not debug:
                 self._engine.clear_tempdir('evaluation')
+
+
+# similar to class Evaluator above. Alternatively we could have added a flag there, to call corpus.copy(dest_path)
+# but we also don't want to run BLEU, and want to support missing reference on the source, ...
+class BatchTranslator:
+    def __init__(self, node, use_sessions=True):
+        self._engine = node.engine
+        self._node = node
+
+        self._heval_outputter = HumanEvaluationFileOutputter()
+        self._xmlencoder = XMLEncoder()
+        self._translator = MMTTranslator(self._node, use_sessions)
+
+    def translate(self, corpora, dest_path, debug=False):
+        if len(corpora) == 0:
+            raise IllegalArgumentException('empty corpora')
+
+        fileutils.makedirs(dest_path, exist_ok=True)
+
+        target_lang = self._engine.target_lang
+        source_lang = self._engine.source_lang
+
+        logger = _evaluate_logger()
+        logger.start(corpora)
+
+        working_dir = self._engine.get_tempdir('evaluation')
+
+        try:
+            results = []
+
+            # Process references
+            with logger.step('Preparing corpora') as _:
+                corpora_path = os.path.join(working_dir, 'corpora')
+                corpora = self._xmlencoder.encode(corpora, corpora_path)
+
+                reference = os.path.join(working_dir, 'reference.' + target_lang)
+                source = os.path.join(working_dir, 'source.' + source_lang)
+                fileutils.merge([corpus.get_file(target_lang) for corpus in corpora if corpus.get_file(target_lang)], reference)  # tolerates missing reference
+                fileutils.merge([corpus.get_file(source_lang) for corpus in corpora], source)
+
+                for corpus in corpora:
+                    corpus.copy(dest_path, suffixes={source_lang: '.src', target_lang: '.ref', 'tmx': '.src'})
+
+            # Translate
+            translator = self._translator
+            name = translator.name()
+
+            with logger.step('Translating with %s' % name) as _:
+                result = _EvaluationResult(translator)
+                results.append(result)
+
+                translations_path = os.path.join(working_dir, 'translations', result.id + '.raw')
+                xmltranslations_path = os.path.join(working_dir, 'translations', result.id)
+                fileutils.makedirs(translations_path, exist_ok=True)
+
+                try:
+                    translated, mtt, parallelism = translator.translate(corpora, translations_path)
+                    filename = result.id + '.' + target_lang
+
+                    result.mtt = mtt
+                    result.parallelism = parallelism
+                    result.translated_corpora = self._xmlencoder.encode(translated, xmltranslations_path)
+
+                    for corpus in result.translated_corpora:
+                        corpus.copy(dest_path, suffixes={target_lang: '.hyp', 'tmx': '.hyp'})
+
+                except TranslateError as e:
+                    result.error = e
+                except Exception as e:
+                    result.error = TranslateError('Unexpected ERROR: ' + str(e.message))
+        finally:
+            if not debug:
+                self._engine.clear_tempdir('evaluation')
