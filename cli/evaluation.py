@@ -496,6 +496,8 @@ class Evaluator:
                         setattr(result, field, scorer.calculate(result.merge, reference))
 
             logger.completed(results, scorers)
+
+            return results
         finally:
             if not debug:
                 self._engine.clear_tempdir('evaluation')
@@ -512,11 +514,12 @@ class BatchTranslator:
         self._xmlencoder = XMLEncoder()
         self._translator = MMTTranslator(self._node, use_sessions)
 
-    def translate(self, corpora, dest_path, debug=False):
+    def translate(self, corpora, dest_path=None, debug=False):
         if len(corpora) == 0:
             raise IllegalArgumentException('empty corpora')
 
-        fileutils.makedirs(dest_path, exist_ok=True)
+        if dest_path:
+            fileutils.makedirs(dest_path, exist_ok=True)
 
         target_lang = self._engine.target_lang
         source_lang = self._engine.source_lang
@@ -535,8 +538,9 @@ class BatchTranslator:
             fileutils.merge([corpus.get_file(target_lang) for corpus in corpora if corpus.get_file(target_lang)], reference)  # tolerates missing reference
             fileutils.merge([corpus.get_file(source_lang) for corpus in corpora], source)
 
-            for corpus in corpora:
-                corpus.copy(dest_path, suffixes={source_lang: '.src', target_lang: '.ref', 'tmx': '.src'})
+            if dest_path:
+                for corpus in corpora:
+                    corpus.copy(dest_path, suffixes={source_lang: '.src', target_lang: '.ref', 'tmx': '.src'})
 
             # Translate
             translator = self._translator
@@ -556,9 +560,14 @@ class BatchTranslator:
                 result.mtt = mtt
                 result.parallelism = parallelism
                 result.translated_corpora = self._xmlencoder.encode(translated, xmltranslations_path)
+                result.merge = os.path.join(working_dir, filename)
 
-                for corpus in result.translated_corpora:
-                    corpus.copy(dest_path, suffixes={target_lang: '.hyp', 'tmx': '.hyp'})
+                fileutils.merge([corpus.get_file(target_lang)
+                                 for corpus in result.translated_corpora], result.merge)
+
+                if dest_path:
+                    for corpus in result.translated_corpora:
+                        corpus.copy(dest_path, suffixes={target_lang: '.hyp', 'tmx': '.hyp'})
 
             except TranslateError as e:
                 result.error = e

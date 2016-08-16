@@ -46,12 +46,12 @@ def main_sweep(argv):
         scores = evaluator.evaluate(corpora=corpora, heval_output=None,
                                     debug=False)
 
-        engine_scores = scores['MMT']
+        engine_scores = [r for r in scores if r.id == 'MMT'][0]
 
-        if isinstance(engine_scores, str):
-            raise RuntimeError(engine_scores)
+        if engine_scores.error:
+            raise RuntimeError(engine_scores.error)
 
-        bleu = engine_scores['bleu']
+        bleu = engine_scores.bleu
         print(sample, '%.2f' % (bleu * 100))
 
 

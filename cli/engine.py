@@ -305,6 +305,12 @@ class MMTEngine(object):
         with open(self._config_file, 'wb') as out:
             self._config.write(out)
 
+    def backup_engine_config(self):
+        shutil.copy(self._config_file, self._config_file + '.bak')
+
+    def restore_engine_config(self):
+        shutil.move(self._config_file + '.bak', self._config_file)
+
     def get_logfile(self, name, ensure=True):
         if ensure and not os.path.isdir(self._logs_path):
             fileutils.makedirs(self._logs_path, exist_ok=True)
