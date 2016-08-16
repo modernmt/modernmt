@@ -6,7 +6,7 @@
 #include <iostream>
 #include <util/TokenSource.h>
 #include <dirent.h>
-#include <vocabulary/VocabularyBuilder.h>
+#include <vocabulary/IMVocabulary.h>
 
 using namespace std;
 
@@ -47,7 +47,7 @@ int main(int argc, const char *argv[]) {
     string sourceLang = argv[3];
     string targetLang = argv[4];
 
-    VocabularyBuilder vocabularyBuilder;
+    IMVocabulary vocabulary;
     UniqueOperatorFactory factory;
 
     DIR *dir = opendir(inputDir.data());
@@ -62,7 +62,7 @@ int main(int argc, const char *argv[]) {
             TokenSource source(path, factory);
             UniqueOperator *collapsed = (UniqueOperator *) source.Process();
 
-            vocabularyBuilder.Put(collapsed->GetWords());
+            vocabulary.Put(collapsed->GetWords());
 
             delete collapsed;
         }
@@ -70,8 +70,8 @@ int main(int argc, const char *argv[]) {
 
     closedir(dir);
 
-    cout << "Vocabulary Size: " << vocabularyBuilder.GetSize() << endl;
-    vocabularyBuilder.Flush(modelPath);
+    cout << "Vocabulary Size: " << vocabulary.GetSize() << endl;
+    vocabulary.Flush(modelPath);
 
     return 0;
 }

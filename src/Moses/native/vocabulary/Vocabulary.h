@@ -18,7 +18,7 @@ using namespace std;
 
 class Vocabulary {
     friend class NewWordOperator;
-    friend class VocabularyBuilder;
+    friend class IMVocabulary;
 public:
     Vocabulary(string path, bool prepareForBulkLoad = false);
 
@@ -29,6 +29,8 @@ public:
     void Lookup(vector<vector<string>> &buffer, vector<vector<uint32_t>> &output, bool putIfAbsent);
 
     bool ReverseLookup(uint32_t id, string *output);
+
+    bool ReverseLookup(vector<vector<uint32_t>> &buffer, vector<vector<string>> &output);
 
 private:
     string idGeneratorPath;

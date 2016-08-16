@@ -154,6 +154,33 @@ bool Vocabulary::ReverseLookup(uint32_t id, string *output) {
     return true;
 }
 
+bool Vocabulary::ReverseLookup(vector<vector<uint32_t>> &buffer, vector<vector<string>> &output) {
+    unordered_map<uint32_t, string> vocabulary(buffer.size() * 20);
+
+    for (auto line = buffer.begin(); line != buffer.end(); ++line) {
+        size_t length = line->size();
+
+        vector<string> decoded;
+        for (size_t i = 0; i < length; ++i) {
+            uint32_t id = line->at(i);
+            string word;
+
+            auto valueRef = vocabulary.find(id);
+            if (valueRef != vocabulary.end()) {
+                word = valueRef->second;
+            } else {
+                if (!ReverseLookup(id, &word))
+                    return false;
+                vocabulary[id] = word;
+            }
+
+            decoded.push_back(word);
+        }
+
+        output.push_back(decoded);
+    }
+}
+
 const void Vocabulary::Serialize(uint32_t value, uint8_t *output) {
     output[0] = (uint8_t) (value & 0x000000FF);
     output[1] = (uint8_t) ((value & 0x0000FF00) >> 8);

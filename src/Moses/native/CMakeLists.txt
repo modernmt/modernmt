@@ -21,8 +21,9 @@ set(SOURCE_FILES
 
         vocabulary/Vocabulary.cpp vocabulary/Vocabulary.h
         vocabulary/IdGenerator.cpp vocabulary/IdGenerator.h
-        vocabulary/NewWordOperator.cpp vocabulary/NewWordOperator.h vocabulary/VocabularyBuilder.cpp
-        vocabulary/VocabularyBuilder.h util/TokenSource.cpp util/TokenSource.h)
+        vocabulary/NewWordOperator.cpp vocabulary/NewWordOperator.h
+        util/TokenSource.cpp util/TokenSource.h
+        vocabulary/IMVocabulary.cpp vocabulary/IMVocabulary.h)
 
 include_directories(${CMAKE_SOURCE_DIR})
 

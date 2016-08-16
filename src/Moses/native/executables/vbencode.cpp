@@ -5,9 +5,6 @@
 #include <vocabulary/Vocabulary.h>
 #include <sstream>
 #include <iostream>
-#include <util/TokenSource.h>
-#include <dirent.h>
-#include <vocabulary/VocabularyBuilder.h>
 
 using namespace std;
 
