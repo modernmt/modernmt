@@ -521,63 +521,58 @@ class BatchTranslator:
         target_lang = self._engine.target_lang
         source_lang = self._engine.source_lang
 
-        logger = _evaluate_logger()
-        logger.start(corpora)
-
         working_dir = self._engine.get_tempdir('evaluation')
 
         try:
             results = []
 
             # Process references
-            with logger.step('Preparing corpora') as _:
-                corpora_path = os.path.join(working_dir, 'corpora')
-                corpora = self._xmlencoder.encode(corpora, corpora_path)
+            corpora_path = os.path.join(working_dir, 'corpora')
+            corpora = self._xmlencoder.encode(corpora, corpora_path)
 
-                reference = os.path.join(working_dir, 'reference.' + target_lang)
-                source = os.path.join(working_dir, 'source.' + source_lang)
-                fileutils.merge([corpus.get_file(target_lang) for corpus in corpora if corpus.get_file(target_lang)], reference)  # tolerates missing reference
-                fileutils.merge([corpus.get_file(source_lang) for corpus in corpora], source)
+            reference = os.path.join(working_dir, 'reference.' + target_lang)
+            source = os.path.join(working_dir, 'source.' + source_lang)
+            fileutils.merge([corpus.get_file(target_lang) for corpus in corpora if corpus.get_file(target_lang)], reference)  # tolerates missing reference
+            fileutils.merge([corpus.get_file(source_lang) for corpus in corpora], source)
 
-                for corpus in corpora:
-                    corpus.copy(dest_path, suffixes={source_lang: '.src', target_lang: '.ref', 'tmx': '.src'})
+            for corpus in corpora:
+                corpus.copy(dest_path, suffixes={source_lang: '.src', target_lang: '.ref', 'tmx': '.src'})
 
             # Translate
             translator = self._translator
             name = translator.name()
 
-            with logger.step('Translating with %s' % name) as _:
-                result = _EvaluationResult(translator)
-                results.append(result)
+            result = _EvaluationResult(translator)
+            results.append(result)
 
-                translations_path = os.path.join(working_dir, 'translations', result.id + '.raw')
-                xmltranslations_path = os.path.join(working_dir, 'translations', result.id)
-                fileutils.makedirs(translations_path, exist_ok=True)
+            translations_path = os.path.join(working_dir, 'translations', result.id + '.raw')
+            xmltranslations_path = os.path.join(working_dir, 'translations', result.id)
+            fileutils.makedirs(translations_path, exist_ok=True)
 
-                try:
-                    translated, mtt, parallelism = translator.translate(corpora, translations_path)
-                    filename = result.id + '.' + target_lang
+            try:
+                translated, mtt, parallelism = translator.translate(corpora, translations_path)
+                filename = result.id + '.' + target_lang
 
-                    result.mtt = mtt
-                    result.parallelism = parallelism
-                    result.translated_corpora = self._xmlencoder.encode(translated, xmltranslations_path)
+                result.mtt = mtt
+                result.parallelism = parallelism
+                result.translated_corpora = self._xmlencoder.encode(translated, xmltranslations_path)
 
-                    for corpus in result.translated_corpora:
-                        corpus.copy(dest_path, suffixes={target_lang: '.hyp', 'tmx': '.hyp'})
+                for corpus in result.translated_corpora:
+                    corpus.copy(dest_path, suffixes={target_lang: '.hyp', 'tmx': '.hyp'})
 
-                except TranslateError as e:
-                    result.error = e
-                except Exception as e:
-                    result.error = TranslateError('Unexpected ERROR: ' + str(e.message))
+            except TranslateError as e:
+                result.error = e
+            except Exception as e:
+                result.error = TranslateError('Unexpected ERROR: ' + str(e.message))
 
-                if result.error is None:
-                    scorer = BLEUScore()
-                    # bleu in range [0;1)
-                    bleu = scorer.calculate(result.merge, reference)
-                else:
-                    bleu = None
+            if result.error is None:
+                scorer = BLEUScore()
+                # bleu in range [0;1)
+                bleu = scorer.calculate(result.merge, reference)
+            else:
+                bleu = None
 
-                return bleu
+            return bleu
         finally:
             if not debug:
                 self._engine.clear_tempdir('evaluation')
