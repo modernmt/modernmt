@@ -128,7 +128,6 @@ class Injector:
 
     def to_config(self):
         config = ConfigParser()
-        config.optionxform = str  # make ConfigParser() case sensitive (avoid lowercasing Moses feature weight names in write())
 
         for section, fields in self._definitions.iteritems():
             config.add_section(section)

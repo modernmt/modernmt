@@ -5,11 +5,78 @@ import os
 from os.path import dirname, realpath
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
+from cli import dependency
+from cli.cluster import ClusterNode, DEFAULT_MMT_API_PORT
+from cli.engine import MMTEngine
 from cli.evaluation import Evaluator
 from cli.mt import BilingualCorpus
 from cli.mt.processing import TrainingPreprocessor
-from cli.engine import ConfiguredClusterNode
 import argparse
+
+
+class ConfiguredEngine(MMTEngine):
+    """
+    MMTEngine with calls to ad-hoc reconfigure,
+    for tests of several different parameter settings.
+    """
+    def __init__(self, engine_name=None):
+        super(ConfiguredEngine, self).__init__(name=engine_name)
+        self._injector = dependency.Injector()
+        self._injector.inject(self)
+        self._injector.read_config(self.config)  # dummy config access to make it load
+
+    def set(self, section, option, value=None):
+        """Only sets values on the engine.config, until write_configs() is called.
+        After that, values are valid on the engine itself as well."""
+
+        assert(self.config_option_exists(section, option))
+
+        # coerce all types to str -- because they are parsed back in "ConfigParser.py", line 663, in _interpolate
+        self.config.set(section, option, str(value))
+
+    def config_option_exists(self, section, option):
+        """check if section and option indeed exist"""
+        for clazz in dependency.injectable_components:
+            if not hasattr(clazz, 'injectable_fields') or not hasattr(clazz, 'injector_section'):
+                continue
+            if clazz.injector_section == section and option in clazz.injectable_fields:
+                return True
+        return False
+
+    def write_configs(self):
+        """write engine.ini and moses.ini"""
+        self._injector.read_config(self.config)  # so injector params get updated
+        self._injector.inject(self)  # so engine instance itself gets updated (goes to moses.ini)
+        super(ConfiguredEngine, self).write_configs()  # write engine.ini and moses.ini
+
+
+class ConfiguredClusterNode(ClusterNode):
+    """
+    Local ClusterNode with calls to ad-hoc reconfigure,
+    for tests of several different parameter settings.
+    """
+    def __init__(self, engine_name=None):
+        super(ConfiguredClusterNode, self).__init__(engine=ConfiguredEngine(engine_name), api_port=DEFAULT_MMT_API_PORT)
+
+    def set(self, section, option, value=None):
+        self.engine.set(section, option, value)
+
+    def write_configs(self):
+        """Write config to disk without affecting the running node."""
+        self.engine.write_configs()
+
+    def apply_configs(self):
+        self.write_configs()
+        self.restart()
+
+    def restart(self):
+        # ensure engine is stopped
+        if self.is_running():
+            self.stop()
+
+        # start engine again (load up with new config)
+        self.start()
+        self.wait('READY')
 
 
 def main_sweep(argv):
@@ -26,7 +93,7 @@ def main_sweep(argv):
 
     # more or less copy-pasted from mmt evaluate:
 
-    evaluator = Evaluator(node, google_key='1234', use_sessions=True)
+    evaluator = Evaluator(node.engine, node)
 
     corpora = BilingualCorpus.list(args.corpora_path) if args.corpora_path is not None \
         else BilingualCorpus.list(os.path.join(node.engine.data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
@@ -43,15 +110,15 @@ def main_sweep(argv):
         node.set('suffixarrays', 'sample', sample)
         node.apply_configs()
 
-        scores = evaluator.evaluate(corpora=corpora, heval_output=None,
-                                    debug=False)
+        scores = evaluator.evaluate(corpora=corpora, google_key='1234', heval_output=None,
+                                    use_sessions=True, debug=False)
 
-        engine_scores = [r for r in scores if r.id == 'MMT'][0]
+        engine_scores = scores['MMT']
 
-        if engine_scores.error:
-            raise RuntimeError(engine_scores.error)
+        if isinstance(engine_scores, str):
+            raise RuntimeError(engine_scores)
 
-        bleu = engine_scores.bleu
+        bleu = engine_scores['bleu']
         print(sample, '%.2f' % (bleu * 100))
 
 
