@@ -284,6 +284,7 @@ class MMTEngine(object):
     def config(self):
         if self._config is None and os.path.isfile(self._config_file):
             self._config = ConfigParser()
+            self._config.optionxform = str  # make ConfigParser() case sensitive (avoid lowercasing Moses feature weight names in write())
             self._config.read(self._config_file)
         return self._config
 
@@ -292,24 +293,16 @@ class MMTEngine(object):
         self.write_engine_config()
 
     def write_engine_config(self):
+        # (to do: shouldn't this default weights block be in _on_fields_injected()?)
+        # set default weights if not already in config
+        if self._optimal_weights is not None and not 'weights' in self._config.sections():
+            self._config.add_section('weights')
+            for name, weights in self._optimal_weights.iteritems():
+                self._config.set('weights', name, ' '.join([str(w) for w in weights]))
+        # end "set default weights"
+
         with open(self._config_file, 'wb') as out:
-            out.write("[%s]\n" % self.injector_section)
-
-            for (key, value) in self._config.items(self.injector_section):
-                if value is not None:
-                    key = " = ".join((key, str(value).replace('\n', '\n\t')))
-                    out.write("%s\n" % key)
-            out.write("\n")
-
-            if self._optimal_weights is not None and len(
-                    self._optimal_weights) > 0 and not 'weights' in self._config.sections():
-                out.write('[weights]\n')
-
-                for name, weights in self._optimal_weights.iteritems():
-                    out.write(name)
-                    out.write(' = ')
-                    out.write(' '.join([str(w) for w in weights]))
-                    out.write('\n')
+            self._config.write(out)
 
     def get_logfile(self, name, ensure=True):
         if ensure and not os.path.isdir(self._logs_path):
