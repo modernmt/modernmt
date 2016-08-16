@@ -14,49 +14,13 @@ from cli.mt.processing import TrainingPreprocessor
 import argparse
 
 
-class ConfiguredEngine(MMTEngine):
-    """
-    MMTEngine with calls to ad-hoc reconfigure,
-    for tests of several different parameter settings.
-    """
-    def __init__(self, engine_name=None):
-        super(ConfiguredEngine, self).__init__(name=engine_name)
-        self._injector = dependency.Injector()
-        self._injector.inject(self)
-        self._injector.read_config(self.config)  # dummy config access to make it load
-
-    def set(self, section, option, value=None):
-        """Only sets values on the engine.config, until write_configs() is called.
-        After that, values are valid on the engine itself as well."""
-
-        assert(self.config_option_exists(section, option))
-
-        # coerce all types to str -- because they are parsed back in "ConfigParser.py", line 663, in _interpolate
-        self.config.set(section, option, str(value))
-
-    def config_option_exists(self, section, option):
-        """check if section and option indeed exist"""
-        for clazz in dependency.injectable_components:
-            if not hasattr(clazz, 'injectable_fields') or not hasattr(clazz, 'injector_section'):
-                continue
-            if clazz.injector_section == section and option in clazz.injectable_fields:
-                return True
-        return False
-
-    def write_configs(self):
-        """write engine.ini and moses.ini"""
-        self._injector.read_config(self.config)  # so injector params get updated
-        self._injector.inject(self)  # so engine instance itself gets updated (goes to moses.ini)
-        super(ConfiguredEngine, self).write_configs()  # write engine.ini and moses.ini
-
-
 class ConfiguredClusterNode(ClusterNode):
     """
     Local ClusterNode with calls to ad-hoc reconfigure,
     for tests of several different parameter settings.
     """
-    def __init__(self, engine_name=None):
-        super(ConfiguredClusterNode, self).__init__(engine=ConfiguredEngine(engine_name), api_port=DEFAULT_MMT_API_PORT)
+    def __init__(self, engine):
+        super(ConfiguredClusterNode, self).__init__(engine, api_port=DEFAULT_MMT_API_PORT)
 
     def set(self, section, option, value=None):
         self.engine.set(section, option, value)
@@ -89,7 +53,12 @@ def main_sweep(argv):
 
     samples = [int(e) for e in '10 20 50 70 80 90 100 110 120 150 200 350 500 800 1000 2000 5000'.split()]
 
-    node = ConfiguredClusterNode(args.engine)
+    injector = dependency.Injector()
+    #injector.read_args(args)
+    engine = MMTEngine(args.engine)
+    injector.inject(engine)
+
+    node = ConfiguredClusterNode(engine)
 
     # more or less copy-pasted from mmt evaluate:
 
@@ -107,8 +76,11 @@ def main_sweep(argv):
     print('sample bleu')
 
     for sample in samples:
-        node.set('suffixarrays', 'sample', sample)
-        node.apply_configs()
+        node.engine.set('suffixarrays', 'sample', sample)
+        injector.read_config(node.engine.config)
+        injector.inject(node.engine)
+        node.engine.write_configs()
+        node.restart()
 
         scores = evaluator.evaluate(corpora=corpora, heval_output=None,
                                     debug=False)
