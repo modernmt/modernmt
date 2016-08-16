@@ -67,10 +67,21 @@ def du(f=None):
     return int(total_size)
 
 
+def meminfo():
+    """
+    Returns the memory usage from /proc/meminfo as a dict str -> int
+    Numbers are in **bytes** (converted from /proc/meminfo which has kB)
+    """
+    with open('/proc/meminfo') as mi:
+        info_lines = [l.split()[0:2] for l in mi.readlines()]
+        info = {key.rstrip(':'): int(val) * 1024 for key, val in info_lines}
+    return info
+
+
 def free():
-    output = subprocess.Popen(['free', '-b'], stdout=subprocess.PIPE).communicate()[0]
-    available = output.split('\n')[2].split()[-1]
-    return int(available)
+    """real available RAM in bytes (excluding disk cache)"""
+    mi = meminfo()
+    return mi['MemFree'] + mi['Buffers'] + mi['Cached']
 
 
 def merge(srcs, dest, buffer_size=10 * 1024 * 1024, delimiter=None):
