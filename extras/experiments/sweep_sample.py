@@ -14,35 +14,6 @@ from cli.mt.processing import TrainingPreprocessor
 import argparse
 
 
-class ConfiguredClusterNode(ClusterNode):
-    """
-    Local ClusterNode with calls to ad-hoc reconfigure,
-    for tests of several different parameter settings.
-    """
-    def __init__(self, engine):
-        super(ConfiguredClusterNode, self).__init__(engine, api_port=DEFAULT_MMT_API_PORT)
-
-    def set(self, section, option, value=None):
-        self.engine.set(section, option, value)
-
-    def write_configs(self):
-        """Write config to disk without affecting the running node."""
-        self.engine.write_configs()
-
-    def apply_configs(self):
-        self.write_configs()
-        self.restart()
-
-    def restart(self):
-        # ensure engine is stopped
-        if self.is_running():
-            self.stop()
-
-        # start engine again (load up with new config)
-        self.start()
-        self.wait('READY')
-
-
 def main_sweep(argv):
     parser = argparse.ArgumentParser(description='Sweep SA sample size and measure BLEU scores at various settings.')
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
@@ -58,7 +29,7 @@ def main_sweep(argv):
     engine = MMTEngine(args.engine)
     injector.inject(engine)
 
-    node = ConfiguredClusterNode(engine)
+    node = ClusterNode(engine, api_port=DEFAULT_MMT_API_PORT)
 
     # more or less copy-pasted from mmt evaluate:
 
@@ -77,7 +48,7 @@ def main_sweep(argv):
 
     for sample in samples:
         node.engine.set('suffixarrays', 'sample', sample)
-        injector.read_config(node.engine.config)
+        injector.read_config(node.engine.config)  # to get engine.set() to affect MosesFeatures -> moses.ini
         injector.inject(node.engine)
         node.engine.write_configs()
         node.restart()
