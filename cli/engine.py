@@ -13,6 +13,7 @@ from cli.mt.lm import LanguageModel
 from cli.mt.moses import Moses, MosesFeature, LexicalReordering
 from cli.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
 from cli.mt.processing import Preprocessor, TrainingPreprocessor, TMCleaner
+from cli.cluster import ClusterNode, DEFAULT_MMT_API_PORT
 
 __author__ = 'Davide Caroselli'
 
@@ -284,6 +285,7 @@ class MMTEngine(object):
     def config(self):
         if self._config is None and os.path.isfile(self._config_file):
             self._config = ConfigParser()
+            self._config.optionxform = str  # make ConfigParser() case sensitive (avoid lowercasing Moses feature weight names in write())
             self._config.read(self._config_file)
         return self._config
 
@@ -292,24 +294,22 @@ class MMTEngine(object):
         self.write_engine_config()
 
     def write_engine_config(self):
+        # (to do: shouldn't this default weights block be in _on_fields_injected()?)
+        # set default weights if not already in config
+        if self._optimal_weights is not None and not 'weights' in self._config.sections():
+            self._config.add_section('weights')
+            for name, weights in self._optimal_weights.iteritems():
+                self._config.set('weights', name, ' '.join([str(w) for w in weights]))
+        # end "set default weights"
+
         with open(self._config_file, 'wb') as out:
-            out.write("[%s]\n" % self.injector_section)
+            self._config.write(out)
 
-            for (key, value) in self._config.items(self.injector_section):
-                if value is not None:
-                    key = " = ".join((key, str(value).replace('\n', '\n\t')))
-                    out.write("%s\n" % key)
-            out.write("\n")
+    def backup_engine_config(self):
+        shutil.copy(self._config_file, self._config_file + '.bak')
 
-            if self._optimal_weights is not None and len(
-                    self._optimal_weights) > 0 and not 'weights' in self._config.sections():
-                out.write('[weights]\n')
-
-                for name, weights in self._optimal_weights.iteritems():
-                    out.write(name)
-                    out.write(' = ')
-                    out.write(' '.join([str(w) for w in weights]))
-                    out.write('\n')
+    def restore_engine_config(self):
+        shutil.move(self._config_file + '.bak', self._config_file)
 
     def get_logfile(self, name, ensure=True):
         if ensure and not os.path.isdir(self._logs_path):
@@ -340,3 +340,71 @@ class MMTEngine(object):
     def clear_tempdir(self, subdir=None):
         path = os.path.join(self._temp_path, subdir) if subdir is not None else self._temp_path
         shutil.rmtree(path, ignore_errors=True)
+
+
+class ConfiguredEngine(MMTEngine):
+    """
+    MMTEngine with calls to ad-hoc reconfigure,
+    for tests of several different parameter settings.
+    """
+    def __init__(self, engine_name=None):
+        super(ConfiguredEngine, self).__init__(name=engine_name)
+
+        from cli import dependency  # cannot import at the top, due to import loop
+        self._injector = dependency.Injector()
+        self._injector.inject(self)
+        self._injector.read_config(self.config)  # dummy config access to make it load
+
+    def set(self, section, option, value=None):
+        """Only sets values on the engine.config, until write_configs() is called.
+        After that, values are valid on the engine itself as well."""
+
+        assert(self.config_option_exists(section, option))
+
+        # coerce all types to str -- because they are parsed back in "ConfigParser.py", line 663, in _interpolate
+        self.config.set(section, option, str(value))
+
+    def config_option_exists(self, section, option):
+        """check if section and option indeed exist"""
+        from cli import dependency  # cannot import at the top, due to import loop
+        for clazz in dependency.injectable_components:
+            if not hasattr(clazz, 'injectable_fields') or not hasattr(clazz, 'injector_section'):
+                continue
+            if clazz.injector_section == section and option in clazz.injectable_fields:
+                return True
+        return False
+
+    def write_configs(self):
+        """write engine.ini and moses.ini"""
+        self._injector.read_config(self.config)  # so injector params get updated
+        self._injector.inject(self)  # so engine instance itself gets updated (goes to moses.ini)
+        super(ConfiguredEngine, self).write_configs()  # write engine.ini and moses.ini
+
+
+class ConfiguredClusterNode(ClusterNode):
+    """
+    Local ClusterNode with calls to ad-hoc reconfigure,
+    for tests of several different parameter settings.
+    """
+    def __init__(self, engine_name=None):
+        super(ConfiguredClusterNode, self).__init__(engine=ConfiguredEngine(engine_name), api_port=DEFAULT_MMT_API_PORT)
+
+    def set(self, section, option, value=None):
+        self.engine.set(section, option, value)
+
+    def write_configs(self):
+        """Write config to disk without affecting the running node."""
+        self.engine.write_configs()
+
+    def apply_configs(self):
+        self.write_configs()
+        self.restart()
+
+    def restart(self):
+        # ensure engine is stopped
+        if self.is_running():
+            self.stop()
+
+        # start engine again (load up with new config)
+        self.start()
+        self.wait('READY')
