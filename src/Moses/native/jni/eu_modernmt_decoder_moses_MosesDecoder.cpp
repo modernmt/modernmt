@@ -114,6 +114,8 @@ JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_setFeatureWei
         std::string feature = jvm->GetStringUTFChars((jstring) jvm->GetObjectArrayElement(features, i), NULL);
         jfloatArray jweights = (jfloatArray)jvm->GetObjectArrayElement(weights, i);
 
+        // TODO: Not releasing jstring "jvm->GetObjectArrayElement(features, i)". Update and test
+
         int wsize = jvm->GetArrayLength(jweights);
         jfloat *weightsArray = jvm->GetFloatArrayElements(jweights, 0);
 

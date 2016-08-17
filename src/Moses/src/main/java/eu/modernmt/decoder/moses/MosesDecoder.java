@@ -26,7 +26,6 @@ public class MosesDecoder implements Decoder {
 
     static {
         try {
-            logger.info("Loading jnimoses library");
             System.loadLibrary("jnimoses");
             logger.info("Library jnimoses loaded successfully");
         } catch (Throwable e) {

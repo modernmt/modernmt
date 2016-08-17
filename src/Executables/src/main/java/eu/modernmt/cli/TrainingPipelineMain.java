@@ -1,13 +1,12 @@
 package eu.modernmt.cli;
 
 import eu.modernmt.cli.init.Submodules;
-import eu.modernmt.training.TrainingPipeline;
-import eu.modernmt.training.partitioning.FilesCorporaPartition;
+import eu.modernmt.facade.ModernMT;
+import eu.modernmt.facade.TrainingFacade;
 import eu.modernmt.model.corpus.BilingualCorpus;
-import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.Corpora;
+import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.cli.*;
-import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -22,8 +21,6 @@ public class TrainingPipelineMain {
         Submodules.link();
     }
 
-    public static final int DEFAULT_PARTITION_SIZE = 1200;
-
     private static class Args {
 
         private static final Options cliOptions;
@@ -31,6 +28,7 @@ public class TrainingPipelineMain {
         static {
             Option sourceLanguage = Option.builder("s").hasArg().required().build();
             Option targetLanguage = Option.builder("t").hasArg().required().build();
+            Option vocabularyPath = Option.builder("v").hasArgs().required(false).build();
             Option inputPath = Option.builder().longOpt("input").hasArgs().required().build();
             Option outputPath = Option.builder().longOpt("output").hasArg().required().build();
             Option devPath = Option.builder().longOpt("dev").hasArg().required(false).build();
@@ -39,6 +37,7 @@ public class TrainingPipelineMain {
             cliOptions = new Options();
             cliOptions.addOption(sourceLanguage);
             cliOptions.addOption(targetLanguage);
+            cliOptions.addOption(vocabularyPath);
             cliOptions.addOption(inputPath);
             cliOptions.addOption(outputPath);
             cliOptions.addOption(devPath);
@@ -47,6 +46,7 @@ public class TrainingPipelineMain {
 
         public final Locale sourceLanguage;
         public final Locale targetLanguage;
+        public final File vocabulary;
         public final File[] inputRoots;
         public final File outputRoot;
         public final File devRoot;
@@ -58,6 +58,7 @@ public class TrainingPipelineMain {
 
             sourceLanguage = Locale.forLanguageTag(cli.getOptionValue('s'));
             targetLanguage = Locale.forLanguageTag(cli.getOptionValue('t'));
+            vocabulary = cli.hasOption('v') ? new File(cli.getOptionValue('v')) : null;
 
             String[] roots = cli.getOptionValues("input");
             inputRoots = new File[roots.length];
@@ -83,26 +84,18 @@ public class TrainingPipelineMain {
         if (bilingualCorpora.isEmpty())
             throw new ParseException("Input path does not contains valid bilingual data");
 
-        FilesCorporaPartition mainPartition = new FilesCorporaPartition(args.outputRoot);
-        TrainingPipeline trainingPipeline = new TrainingPipeline(mainPartition, args.sourceLanguage, args.targetLanguage);
+        TrainingFacade.TrainingOptions options = new TrainingFacade.TrainingOptions();
 
-        trainingPipeline.addBilingualCorpora(bilingualCorpora);
-        if (!monolingualCorpora.isEmpty())
-            trainingPipeline.addMonolingualCorpora(monolingualCorpora);
+        if (args.devRoot != null)
+            options.developmentPartition = args.devRoot;
 
-        FileUtils.deleteDirectory(args.outputRoot);
+        if (args.testRoot != null)
+            options.testPartition = args.testRoot;
 
-        if (args.devRoot != null) {
-            FileUtils.deleteDirectory(args.devRoot);
-            trainingPipeline.addExtraPartition(new FilesCorporaPartition(args.devRoot, DEFAULT_PARTITION_SIZE));
-        }
+        if (args.vocabulary != null)
+            options.vocabulary = args.vocabulary;
 
-        if (args.testRoot != null) {
-            FileUtils.deleteDirectory(args.testRoot);
-            trainingPipeline.addExtraPartition(new FilesCorporaPartition(args.testRoot, DEFAULT_PARTITION_SIZE));
-        }
-
-        trainingPipeline.process();
+        ModernMT.training.preprocess(bilingualCorpora, monolingualCorpora, args.sourceLanguage, args.targetLanguage, args.outputRoot, options);
     }
 
 }

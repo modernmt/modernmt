@@ -2,7 +2,7 @@
 // Created by Davide  Caroselli on 16/08/16.
 //
 
-#include <vocabulary/Vocabulary.h>
+#include <vocabulary/PersistentVocabulary.h>
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -34,15 +34,14 @@ void FlushToStdout(vector<vector<string>> &output) {
 }
 
 int main(int argc, const char *argv[]) {
-    if (argc != 3) {
-        cerr << "USAGE: vbdecode <model_path> <input_file>" << endl;
+    if (argc != 2) {
+        cerr << "USAGE: vbdecode <model_path>" << endl;
         exit(1);
     }
 
     string modelPath = argv[1];
-    string inputPath = argv[2];
 
-    Vocabulary vocabulary(modelPath);
+    PersistentVocabulary vocabulary(modelPath);
 
     vector<vector<uint32_t>> buffer;
     vector<vector<string>> output;
@@ -50,10 +49,9 @@ int main(int argc, const char *argv[]) {
     buffer.reserve(kBufferSizeInWords / 20);
     output.reserve(kBufferSizeInWords / 20);
 
-    std::ifstream istream(inputPath);
     size_t bufferSizeInWords = 0;
 
-    for (string line; getline(istream, line);) {
+    for (string line; getline(cin, line);) {
         vector<uint32_t > tokens;
         WhitespaceTokenize(line, tokens);
         buffer.push_back(tokens);

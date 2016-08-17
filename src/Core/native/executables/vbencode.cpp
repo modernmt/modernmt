@@ -2,7 +2,7 @@
 // Created by Davide Caroselli on 26/07/16.
 //
 
-#include <vocabulary/Vocabulary.h>
+#include <vocabulary/PersistentVocabulary.h>
 #include <sstream>
 #include <iostream>
 
@@ -39,7 +39,7 @@ int main(int argc, const char *argv[]) {
     }
 
     string modelPath = argv[1];
-    Vocabulary vocabulary(modelPath);
+    PersistentVocabulary vocabulary(modelPath);
 
     vector<vector<string>> buffer;
     vector<vector<uint32_t>> output;
@@ -53,7 +53,7 @@ int main(int argc, const char *argv[]) {
         buffer.push_back(tokens);
 
         if (buffer.size() >= kBufferSize) {
-            vocabulary.Lookup(buffer, output, false);
+            vocabulary.Lookup(buffer, &output, false);
 
             FlushToStdout(output);
 
@@ -63,7 +63,7 @@ int main(int argc, const char *argv[]) {
     }
 
     if (buffer.size() > 0) {
-        vocabulary.Lookup(buffer, output, false);
+        vocabulary.Lookup(buffer, &output, false);
         FlushToStdout(output);
     }
 

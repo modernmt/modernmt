@@ -2,8 +2,8 @@
 // Created by Davide Caroselli on 26/07/16.
 //
 
-#ifndef MOSESDECODER_IDGENERATOR_H
-#define MOSESDECODER_IDGENERATOR_H
+#ifndef MMTCORE_IDGENERATOR_H
+#define MMTCORE_IDGENERATOR_H
 
 #include <string>
 #include <mutex>
@@ -29,4 +29,4 @@ private:
 };
 
 
-#endif //MOSESDECODER_IDGENERATOR_H
+#endif //MMTCORE_IDGENERATOR_H

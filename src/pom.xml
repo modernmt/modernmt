@@ -29,6 +29,19 @@
         <lucene.version>4.10.4</lucene.version>
 
         <mmt.version>0.13</mmt.version>
+
+        <!-- Native project definitions -->
+        <project.build.native>${project.build.directory}/native</project.build.native>
+        <project.nativedir>${project.basedir}/native</project.nativedir>
+        <project.nativedir.headers>${project.nativedir}/jheaders</project.nativedir.headers>
+
+        <!-- MMT build directory -->
+        <mmt.build>${project.basedir}/../../build</mmt.build>
+        <mmt.build.lib>${mmt.build}/lib</mmt.build.lib>
+
+        <!-- Vendor directory -->
+        <mmt.vendor>${project.basedir}/../../vendor</mmt.vendor>
+        <mmt.vendor.rocksdb>${mmt.vendor}/rocksdb/</mmt.vendor.rocksdb>
     </properties>
 
     <build>

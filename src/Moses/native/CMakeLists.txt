@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.8)
+cmake_minimum_required(VERSION 3.2)
 project(MosesDecoder)
 
 # where to find cmake_modules modules
@@ -17,13 +17,7 @@ set(SOURCE_FILES
         jni/jniutil.h
         jni/eu_modernmt_decoder_moses_MosesDecoder.cpp
         jni/JMosesFeature.h jni/JMosesFeature.cpp
-        jni/JTranslation.h jni/JTranslation.cpp
-
-        vocabulary/Vocabulary.cpp vocabulary/Vocabulary.h
-        vocabulary/IdGenerator.cpp vocabulary/IdGenerator.h
-        vocabulary/NewWordOperator.cpp vocabulary/NewWordOperator.h
-        util/TokenSource.cpp util/TokenSource.h
-        vocabulary/IMVocabulary.cpp vocabulary/IMVocabulary.h)
+        jni/JTranslation.h jni/JTranslation.cpp)
 
 include_directories(${CMAKE_SOURCE_DIR})
 
@@ -56,16 +50,3 @@ find_package(Moses REQUIRED)
 add_definitions(${Moses_DEFINITIONS})
 include_directories(${Moses_INCLUDE_DIRS})
 target_link_libraries(jnimoses ${Moses_LIBRARIES})
-
-## RocksDB
-find_package(Rocksdb REQUIRED)
-include_directories(${Rocksdb_INCLUDE_DIR})
-target_link_libraries(jnimoses ${Rocksdb_LIBS})
-
-## OpenMP
-find_package(OpenMP)
-if (OPENMP_FOUND)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    include_directories(${OPENMP_INCLUDE_DIRS})
-    target_link_libraries(jnimoses ${OPENMP_LIBRARIES})
-endif (OPENMP_FOUND)

@@ -1,12 +1,14 @@
 package eu.modernmt.training;
 
-import eu.modernmt.training.partitioning.CorporaPartition;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.training.partitioning.CorporaPartition;
+import eu.modernmt.vocabulary.VocabularyBuilder;
 import org.apache.commons.io.IOUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,11 +20,12 @@ import java.util.concurrent.*;
  */
 public class TrainingPipeline {
 
-    private static final int MAX_IO_THREADS = 10;
+    private static final int MAX_IO_THREADS = 16;
     private static final double MAX_CORPUS_PARTITION_RATIO = 0.01;
 
     private CorporaPartition mainPartition;
     private ArrayList<CorporaPartition> extraPartitions = new ArrayList<>();
+    private VocabularyBuilder vocabularyBuilder = null;
 
     private ArrayList<BilingualCorpus> bilingualCorpora = new ArrayList<>();
     private ArrayList<Corpus> monolingualCorpora = new ArrayList<>();
@@ -37,6 +40,10 @@ public class TrainingPipeline {
         this.mainPartition = mainPartition;
         this.sourceLanguage = source;
         this.targetLanguage = target;
+    }
+
+    public void setVocabularyOutput(File vocabulary) {
+        vocabularyBuilder = new VocabularyBuilder(vocabulary);
     }
 
     public void add(BilingualCorpus corpus) {
@@ -89,10 +96,10 @@ public class TrainingPipeline {
         this.processingThreads = processingThreads;
     }
 
-    public void process() throws InterruptedException, ProcessingException {
+    public void process() throws InterruptedException, ProcessingException, IOException {
         int totalCorporaCount = this.bilingualCorpora.size() * 2 + this.monolingualCorpora.size();
         int ioThreads = Math.min(Math.min(this.ioThreads, MAX_IO_THREADS), totalCorporaCount);
-        int processingThreads = Math.max(1, this.processingThreads / 2);
+        int processingThreads = Math.max(1, this.processingThreads);
 
         ExecutorService executor = Executors.newFixedThreadPool(ioThreads);
         ExecutorCompletionService<Void> ecs = new ExecutorCompletionService<>(executor);
@@ -120,6 +127,11 @@ public class TrainingPipeline {
             TrainingCorpusTask sourceTask = new TrainingCorpusTask(sourcePreprocessor, corpus.getSourceCorpus(), lineCount, mainPartition);
             TrainingCorpusTask targetTask = new TrainingCorpusTask(targetPreprocessor, corpus.getTargetCorpus(), lineCount, mainPartition);
 
+            if (vocabularyBuilder != null) {
+                sourceTask.setVocabularyBuilder(vocabularyBuilder);
+                targetTask.setVocabularyBuilder(vocabularyBuilder);
+            }
+
             for (CorporaPartition partition : extraPartitions) {
                 int size = (int) Math.round(weight * partition.getSize());
                 if (size > 0) {
@@ -136,6 +148,10 @@ public class TrainingPipeline {
         // Enqueue monolingual corpora tasks
         for (Corpus corpus : monolingualCorpora) {
             TrainingCorpusTask task = new TrainingCorpusTask(targetPreprocessor, corpus, 0, mainPartition);
+
+            if (vocabularyBuilder != null)
+                task.setVocabularyBuilder(vocabularyBuilder);
+
             ecs.submit(task);
             pendingTasks += 1;
         }
@@ -144,6 +160,9 @@ public class TrainingPipeline {
             for (int i = 0; i < pendingTasks; i++) {
                 ecs.take().get();
             }
+
+            if (vocabularyBuilder != null)
+                vocabularyBuilder.build();
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
 
