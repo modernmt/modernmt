@@ -44,11 +44,12 @@ class TrainingPreprocessor:
     DEV_FOLDER_NAME = 'dev'
     TEST_FOLDER_NAME = 'test'
 
-    def __init__(self):
+    def __init__(self, vocabulary_path):
         self._java_mainclass = 'eu.modernmt.cli.TrainingPipelineMain'
+        self._vocabulary_path = vocabulary_path
 
     def process(self, source, target, input_paths, output_path, data_path=None):
-        args = ['-s', source, '-t', target, '--output', output_path, '--input']
+        args = ['-s', source, '-t', target, '-v', self._vocabulary_path, '--output', output_path, '--input']
 
         for root in input_paths:
             args.append(root)

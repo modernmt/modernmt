@@ -215,6 +215,7 @@ class MMTEngine(object):
         self.models_path = os.path.join(self.path, 'models')
 
         self._config_file = os.path.join(self.path, 'engine.ini')
+        self._vocabulary_model = os.path.join(self.models_path, 'vocabulary')
         self._pt_model = os.path.join(self.models_path, 'phrase_tables')
         self._lm_model = os.path.join(self.models_path, 'lm', 'target.lm')
         self._context_index = os.path.join(self.models_path, 'context', 'index')
@@ -247,7 +248,7 @@ class MMTEngine(object):
         if self._aligner_type is None:
             self._aligner_type = WordAligner.available_types[0]
 
-        self.training_preprocessor = TrainingPreprocessor()
+        self.training_preprocessor = TrainingPreprocessor(self._vocabulary_model)
         self.preprocessor = Preprocessor()
 
         self.analyzer = injector.inject(ContextAnalyzer(self._context_index))
