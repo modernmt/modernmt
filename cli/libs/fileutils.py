@@ -2,6 +2,7 @@ import errno
 import os
 import shutil
 import subprocess
+from contextlib import contextmanager
 
 __author__ = 'Davide Caroselli'
 
@@ -90,3 +91,12 @@ def merge(srcs, dest, buffer_size=10 * 1024 * 1024, delimiter=None):
                 shutil.copyfileobj(source, blob, buffer_size)
             if delimiter is not None:
                 blob.write(delimiter)
+
+
+@contextmanager
+def chdir(path):
+    """Context Manager for chdir() that returns to the previous working directory afterwards"""
+    wd = os.getcwd()
+    os.chdir(path)
+    yield
+    os.chdir(wd)

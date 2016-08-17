@@ -316,7 +316,6 @@ class MMTEngine(object):
         self.write_engine_config()
 
     def write_engine_config(self):
-        # (to do: shouldn't this default weights block be in _on_fields_injected()?)
         # set default weights if not already in config
         if self._optimal_weights is not None and not 'weights' in self._config.sections():
             self._config.add_section('weights')
@@ -326,6 +325,12 @@ class MMTEngine(object):
 
         with open(self._config_file, 'wb') as out:
             self._config.write(out)
+
+    def backup_engine_config(self):
+        shutil.copy(self._config_file, self._config_file + '.bak')
+
+    def restore_engine_config(self):
+        shutil.move(self._config_file + '.bak', self._config_file)
 
     def get_logfile(self, name, ensure=True):
         if ensure and not os.path.isdir(self._logs_path):

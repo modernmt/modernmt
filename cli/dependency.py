@@ -89,7 +89,7 @@ class Injector:
                     ftype = ftype[0]
 
                 try:
-                    value = config.get(section, field)
+                    value = config.get(section, field, raw=True)
 
                     if ftype is bool:
                         value = (value == 'True')
