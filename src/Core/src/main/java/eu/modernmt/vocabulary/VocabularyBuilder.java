@@ -22,11 +22,11 @@ public class VocabularyBuilder {
 
     private native long instantiate();
 
-    public synchronized native int add(String word);
+    public native int add(String word);
 
-    public synchronized native int[] addLine(String[] line);
+    public native int[] addLine(String[] line);
 
-    public synchronized List<int[]> addLines(List<String[]> lines) {
+    public List<int[]> addLines(List<String[]> lines) {
         String[][] buffer = new String[lines.size()][];
         lines.toArray(buffer);
 
@@ -36,7 +36,7 @@ public class VocabularyBuilder {
         return Arrays.asList(result);
     }
 
-    public synchronized int[][] addLines(String[][] lines) {
+    public int[][] addLines(String[][] lines) {
         int[][] result = new int[lines.length][];
         addLines(lines, result);
 
