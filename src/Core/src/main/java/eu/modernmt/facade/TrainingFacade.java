@@ -3,8 +3,8 @@ package eu.modernmt.facade;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.training.TrainingPipeline;
 import eu.modernmt.training.partitioning.FilesCorporaPartition;
+import eu.modernmt.training.preprocessing.TrainingPreprocessor;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -36,34 +36,48 @@ public class TrainingFacade {
     public void preprocess(List<BilingualCorpus> bilingualCorpora, List<Corpus> monolingualCorpora, Locale sourceLanguage,
                            Locale targetLanguage, File destFolder, TrainingOptions options) throws ProcessingException, IOException {
         FilesCorporaPartition mainPartition = new FilesCorporaPartition(destFolder);
-        TrainingPipeline trainingPipeline = new TrainingPipeline(mainPartition, sourceLanguage, targetLanguage);
+        TrainingPreprocessor preprocessor = new TrainingPreprocessor(mainPartition, sourceLanguage, targetLanguage);
 
-        trainingPipeline.addBilingualCorpora(bilingualCorpora);
+        preprocessor.addBilingualCorpora(bilingualCorpora);
         if (monolingualCorpora != null && !monolingualCorpora.isEmpty())
-            trainingPipeline.addMonolingualCorpora(monolingualCorpora);
+            preprocessor.addMonolingualCorpora(monolingualCorpora);
 
         FileUtils.deleteDirectory(destFolder);
 
-        if (options.developmentPartition != null) {
-            FileUtils.deleteDirectory(options.developmentPartition);
-            trainingPipeline.addExtraPartition(new FilesCorporaPartition(options.developmentPartition, options.partitionSize));
-        }
-
-        if (options.testPartition != null) {
-            FileUtils.deleteDirectory(options.testPartition);
-            trainingPipeline.addExtraPartition(new FilesCorporaPartition(options.testPartition, options.partitionSize));
-        }
-
-        if (options.vocabulary != null) {
-            FileUtils.deleteDirectory(options.vocabulary);
-            trainingPipeline.setVocabularyOutput(options.vocabulary);
-        }
-
-        try {
-            trainingPipeline.process();
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Unexpected InterruptedException", e);
-        }
+        preprocessor.execute();
     }
+
+//    public void preprocess(List<BilingualCorpus> bilingualCorpora, List<Corpus> monolingualCorpora, Locale sourceLanguage,
+//                           Locale targetLanguage, File destFolder, TrainingOptions options) throws ProcessingException, IOException {
+//        FilesCorporaPartition mainPartition = new FilesCorporaPartition(destFolder);
+//        TrainingPipeline trainingPipeline = new TrainingPipeline(mainPartition, sourceLanguage, targetLanguage);
+//
+//        trainingPipeline.addBilingualCorpora(bilingualCorpora);
+//        if (monolingualCorpora != null && !monolingualCorpora.isEmpty())
+//            trainingPipeline.addMonolingualCorpora(monolingualCorpora);
+//
+//        FileUtils.deleteDirectory(destFolder);
+//
+//        if (options.developmentPartition != null) {
+//            FileUtils.deleteDirectory(options.developmentPartition);
+//            trainingPipeline.addExtraPartition(new FilesCorporaPartition(options.developmentPartition, options.partitionSize));
+//        }
+//
+//        if (options.testPartition != null) {
+//            FileUtils.deleteDirectory(options.testPartition);
+//            trainingPipeline.addExtraPartition(new FilesCorporaPartition(options.testPartition, options.partitionSize));
+//        }
+//
+//        if (options.vocabulary != null) {
+//            FileUtils.deleteDirectory(options.vocabulary);
+//            trainingPipeline.setVocabularyOutput(options.vocabulary);
+//        }
+//
+//        try {
+//            trainingPipeline.process();
+//        } catch (InterruptedException e) {
+//            throw new RuntimeException("Unexpected InterruptedException", e);
+//        }
+//    }
 
 }

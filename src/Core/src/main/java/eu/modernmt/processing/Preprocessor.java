@@ -2,10 +2,7 @@ package eu.modernmt.processing;
 
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Token;
-import eu.modernmt.processing.framework.PipelineInputStream;
-import eu.modernmt.processing.framework.PipelineOutputStream;
-import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.framework.TextProcessor;
+import eu.modernmt.processing.framework.*;
 import eu.modernmt.processing.framework.builder.PipelineBuilder;
 import eu.modernmt.processing.framework.builder.XMLPipelineBuilder;
 import eu.modernmt.processing.framework.concurrent.PipelineExecutor;
@@ -24,6 +21,14 @@ import java.util.concurrent.TimeUnit;
  * Created by davide on 19/02/16.
  */
 public class Preprocessor implements Closeable {
+
+    public static ProcessingPipeline<String, Sentence> createPipeline(Locale sourceLanguage) throws ProcessingException {
+        return getDefaultBuilder().newPipeline(sourceLanguage, null);
+    }
+
+    public static ProcessingPipeline<String, Sentence> createPipeline(Locale sourceLanguage, Locale targetLanguage) throws ProcessingException {
+        return getDefaultBuilder().newPipeline(sourceLanguage, targetLanguage);
+    }
 
     private static final int DEFAULT_THREADS = Runtime.getRuntime().availableProcessors();
 
