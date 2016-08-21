@@ -23,6 +23,8 @@ import java.util.Locale;
  */
 public class TrainingPreprocessor {
 
+    private static final long MAX_BUFFER_LENGTH = 100000000;
+
     private final int threads;
     private final CorporaPartition mainPartition;
     private final Locale sourceLanguage;
@@ -81,24 +83,65 @@ public class TrainingPreprocessor {
 
         for (Corpus corpus : corpora) {
             LineReader input = null;
+            LineWriter output = null;
 
             try {
-                input = corpus.getContentReader();
-
-                // Output
                 Corpus outCorpus = mainPartition.getDestinationCorpus(corpus);
-                LineWriter writer = outCorpus.getContentWriter(false);
 
-                output = new TokensOutputter(writer, false, true);
+                input = corpus.getContentReader();
+                output = outCorpus.getContentWriter(false);
 
-                // Process
-                preprocessor.process(input, output, true);
+                ArrayList<String> buffer = new ArrayList<>();
+                while (read(input, buffer)) {
+                    String[] batch = buffer.toArray(new String[buffer.size()]);
+                    buffer.clear();
+
+                    String[][] tokenized = executor.start(batch);
+                    executor.await();
+
+                    write(output, tokenized);
+                    tokenized = null;
+                }
             } catch (IOException | ProcessingException e) {
                 throw new ProcessingException("Failed to process corpus '" + corpus.getName() + "'", e);
             } finally {
                 IOUtils.closeQuietly(input);
                 IOUtils.closeQuietly(output);
             }
+        }
+
+        executor.shutdown();
+    }
+
+    private static boolean read(LineReader input, ArrayList<String> buffer) throws IOException {
+        long size = 0;
+
+        String line;
+        while ((line = input.readLine()) != null) {
+            buffer.add(line);
+
+            size += line.length();
+
+            if (size >= MAX_BUFFER_LENGTH)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static void write(LineWriter output, String[][] batch) throws IOException {
+        StringBuilder string = new StringBuilder();
+
+        for (String[] line : batch) {
+            string.setLength(0);
+
+            for (int i = 0; i < line.length; i++) {
+                if (i > 0)
+                    string.append(' ');
+                string.append(line[i]);
+            }
+
+            output.writeLine(string.toString());
         }
     }
 //

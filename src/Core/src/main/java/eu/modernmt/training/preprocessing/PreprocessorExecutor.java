@@ -53,7 +53,7 @@ class PreprocessorExecutor {
         return output;
     }
 
-    public void await() {
+    public void await() throws ProcessingException {
         for (Future<?> lock : locks) {
             if (lock == null)
                 break;
@@ -67,6 +67,10 @@ class PreprocessorExecutor {
 
         for (int i = 0; i < threads; i++)
             locks[i] = null;
+    }
+
+    public void shutdown() {
+        executor.shutdownNow();
     }
 
     private class FragmentProcessor implements Callable<Void> {
