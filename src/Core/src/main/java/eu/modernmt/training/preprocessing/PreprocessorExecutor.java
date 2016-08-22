@@ -6,33 +6,30 @@ import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.ProcessingPipeline;
 
+import java.io.Closeable;
 import java.util.Locale;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 /**
  * Created by davide on 19/08/16.
  */
-class PreprocessorExecutor {
+class PreprocessorExecutor implements Closeable {
 
     private final int threads;
     private final Locale language;
 
     private final ExecutorService executor;
-    private final Future<?>[] locks;
 
     public PreprocessorExecutor(int threads, Locale language) {
         this.threads = threads;
         this.language = language;
 
         this.executor = Executors.newFixedThreadPool(threads);
-        this.locks = new Future<?>[threads];
     }
 
-    public String[][] start(String[] batch) {
+    public String[][] process(String[] batch) throws ProcessingException {
         String[][] output = new String[batch.length][];
+        Future<?>[] locks = new Future<?>[threads];
 
         if (batch.length < threads) {
             locks[0] = executor.submit(new FragmentProcessor(batch, output, 0, batch.length));
@@ -50,27 +47,38 @@ class PreprocessorExecutor {
             }
         }
 
-        return output;
-    }
-
-    public void await() throws ProcessingException {
         for (Future<?> lock : locks) {
             if (lock == null)
                 break;
 
             try {
                 lock.get();
-            } catch (Throwable e) {
-                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                throw new ProcessingException("Execution interrupted", e);
+            } catch (ExecutionException e) {
+                Throwable cause = e.getCause();
+
+                if (cause instanceof ProcessingException)
+                    throw (ProcessingException) cause;
+                else if (cause instanceof RuntimeException)
+                    throw (RuntimeException) cause;
+                else
+                    throw new Error("Unexpected exception", cause);
             }
         }
 
-        for (int i = 0; i < threads; i++)
-            locks[i] = null;
+        return output;
     }
 
-    public void shutdown() {
-        executor.shutdownNow();
+    @Override
+    public void close() {
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(1, TimeUnit.SECONDS))
+                executor.shutdownNow();
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+        }
     }
 
     private class FragmentProcessor implements Callable<Void> {

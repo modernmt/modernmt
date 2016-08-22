@@ -4,7 +4,10 @@ import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.training.partitioning.FilesCorporaPartition;
+import eu.modernmt.training.preprocessing.PlainTextWriter;
+import eu.modernmt.training.preprocessing.ResultWriter;
 import eu.modernmt.training.preprocessing.TrainingPreprocessor;
+import eu.modernmt.training.preprocessing.VocabularyEncoderWriter;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -36,7 +39,14 @@ public class TrainingFacade {
     public void preprocess(List<BilingualCorpus> bilingualCorpora, List<Corpus> monolingualCorpora, Locale sourceLanguage,
                            Locale targetLanguage, File destFolder, TrainingOptions options) throws ProcessingException, IOException {
         FilesCorporaPartition mainPartition = new FilesCorporaPartition(destFolder);
-        TrainingPreprocessor preprocessor = new TrainingPreprocessor(mainPartition, sourceLanguage, targetLanguage);
+
+        ResultWriter writer;
+        if (options.vocabulary == null)
+            writer = new PlainTextWriter();
+        else
+            writer = new VocabularyEncoderWriter(options.vocabulary);
+
+        TrainingPreprocessor preprocessor = new TrainingPreprocessor(mainPartition, sourceLanguage, targetLanguage, writer);
 
         preprocessor.addBilingualCorpora(bilingualCorpora);
         if (monolingualCorpora != null && !monolingualCorpora.isEmpty())

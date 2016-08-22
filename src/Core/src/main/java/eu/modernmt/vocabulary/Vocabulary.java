@@ -12,6 +12,9 @@ import java.util.List;
  */
 public class Vocabulary {
 
+    public static final int VOCABULARY_UNKNOWN_WORD = 0;
+    public static final int VOCABULARY_WORD_ID_START = 1000;
+
     private long nativeHandle;
 
     public Vocabulary(File model) throws IOException {

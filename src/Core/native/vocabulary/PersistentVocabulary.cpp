@@ -298,6 +298,10 @@ void PersistentVocabulary::Put(const string &_word, const uint32_t _id) {
     assert(status.ok());
 }
 
+void PersistentVocabulary::ResetId(uint32_t id) {
+    idGenerator.Reset(id);
+}
+
 void PersistentVocabulary::ForceCompaction() {
     directDb->CompactRange(CompactRangeOptions(), NULL, NULL);
     reverseDb->CompactRange(CompactRangeOptions(), NULL, NULL);

@@ -9,51 +9,11 @@ extern "C" {
 #endif
 /*
  * Class:     eu_modernmt_vocabulary_VocabularyBuilder
- * Method:    instantiate
- * Signature: ()J
- */
-JNIEXPORT jlong JNICALL Java_eu_modernmt_vocabulary_VocabularyBuilder_instantiate
-  (JNIEnv *, jobject);
-
-/*
- * Class:     eu_modernmt_vocabulary_VocabularyBuilder
- * Method:    add
- * Signature: (Ljava/lang/String;)I
- */
-JNIEXPORT jint JNICALL Java_eu_modernmt_vocabulary_VocabularyBuilder_add
-  (JNIEnv *, jobject, jstring);
-
-/*
- * Class:     eu_modernmt_vocabulary_VocabularyBuilder
- * Method:    addLine
- * Signature: ([Ljava/lang/String;)[I
- */
-JNIEXPORT jintArray JNICALL Java_eu_modernmt_vocabulary_VocabularyBuilder_addLine
-  (JNIEnv *, jobject, jobjectArray);
-
-/*
- * Class:     eu_modernmt_vocabulary_VocabularyBuilder
- * Method:    addLines
- * Signature: ([[Ljava/lang/String;[[I)V
- */
-JNIEXPORT void JNICALL Java_eu_modernmt_vocabulary_VocabularyBuilder_addLines
-  (JNIEnv *, jobject, jobjectArray, jobjectArray);
-
-/*
- * Class:     eu_modernmt_vocabulary_VocabularyBuilder
  * Method:    flush
- * Signature: (Ljava/lang/String;)V
+ * Signature: ([Ljava/lang/String;[IILjava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_eu_modernmt_vocabulary_VocabularyBuilder_flush
-  (JNIEnv *, jobject, jstring);
-
-/*
- * Class:     eu_modernmt_vocabulary_VocabularyBuilder
- * Method:    dispose
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_eu_modernmt_vocabulary_VocabularyBuilder_dispose
-  (JNIEnv *, jobject, jlong);
+  (JNIEnv *, jobject, jobjectArray, jintArray, jint, jstring);
 
 #ifdef __cplusplus
 }

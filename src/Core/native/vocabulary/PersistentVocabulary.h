@@ -14,7 +14,6 @@
 using namespace std;
 
 class PersistentVocabulary : public Vocabulary {
-    friend class InMemoryVocabulary;
 public:
     PersistentVocabulary(string path, bool prepareForBulkLoad = false);
 
@@ -29,14 +28,17 @@ public:
 
     virtual const bool ReverseLookup(const vector<vector<uint32_t>> &buffer, vector<vector<string>> &output) override;
 
+    void Put(const string &word, const uint32_t id);
+
+    void ForceCompaction();
+
+    void ResetId(uint32_t id);
+
 private:
     string idGeneratorPath;
     IdGenerator idGenerator;
     rocksdb::DB* directDb;
     rocksdb::DB* reverseDb;
-
-    void Put(const string &word, const uint32_t id);
-    void ForceCompaction();
 };
 
 

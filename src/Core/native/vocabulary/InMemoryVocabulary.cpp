@@ -10,60 +10,33 @@ InMemoryVocabulary::InMemoryVocabulary(size_t estimatedSize) : id(kVocabularyWor
 }
 
 uint32_t InMemoryVocabulary::Lookup(const string &word, bool putIfAbsent) {
-    boost::shared_lock<boost::shared_mutex> read_lock(lookupMutex);
+    pair<unordered_map<string, uint32_t>::iterator, bool> el = dictionary.emplace(word, id);
 
-    auto iterator = dictionary.find(word);
-    if (iterator == dictionary.end()) {
-        read_lock.unlock();
-
-        if (putIfAbsent) {
-            boost::upgrade_lock<boost::shared_mutex> lock(lookupMutex);
-            boost::upgrade_to_unique_lock<boost::shared_mutex> uniqueLock(lock);
-
-            pair<unordered_map<string, uint32_t>::iterator, bool> element = dictionary.emplace(word, id);
-
-            if (element.second) { // element inserted
-                return id++;
-            } else {
-                return element.first->second;
-            }
-        } else {
-            return kVocabularyUnknownWord;
-        }
+    if (el.second) { // element inserted
+        return id++;
     } else {
-        return iterator->second;
+        return el.first->second;
     }
 }
 
 void
 InMemoryVocabulary::Lookup(const vector<vector<string>> &buffer, vector<vector<uint32_t>> *output, bool putIfAbsent) {
-    unordered_map<string, uint32_t> dict;
-    dict.reserve(buffer.size() * 5);
-
-    for (auto line = buffer.begin(); line != buffer.end(); ++line) {
-        for (auto word = line->begin(); word != line->end(); ++word) {
-            dict[*word] = kVocabularyUnknownWord;
-        }
-    }
-
-    if (output) {
+    if (output)
         output->reserve(buffer.size());
 
-        for (auto line = buffer.begin(); line != buffer.end(); ++line) {
-            vector<uint32_t> outLine;
+    for (auto line = buffer.begin(); line != buffer.end(); ++line) {
+        vector<uint32_t> outLine;
 
-            for (auto word = line->begin(); word != line->end(); ++word) {
-                outLine.push_back(dict[*word]);
-            }
+        for (auto word = line->begin(); word != line->end(); ++word) {
+            pair<unordered_map<string, uint32_t>::iterator, bool> el = dictionary.emplace(*word, id);
+            uint32_t newid = el.second ? id++ : el.first->second;
 
-            output->push_back(outLine);
+            if (output)
+                outLine.push_back(newid);
         }
-    }
-}
 
-void InMemoryVocabulary::TEST_Lookup(unordered_map<string, uint32_t> &dict, bool putIfAbsent) {
-    for (auto iterator = dict.begin(); iterator != dict.end(); ++iterator) {
-        iterator->second = Lookup(iterator->first, putIfAbsent);
+        if (output)
+            output->push_back(outLine);
     }
 }
 
@@ -83,5 +56,5 @@ void InMemoryVocabulary::Flush(const string path) {
     }
 
     vocabulary.ForceCompaction();
-    vocabulary.idGenerator.Reset(id);
+    vocabulary.ResetId(id);
 }

@@ -1,15 +1,8 @@
 package eu.modernmt.training.preprocessing;
 
-import eu.modernmt.io.LineReader;
-import eu.modernmt.io.LineWriter;
-import eu.modernmt.model.Sentence;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;
-import eu.modernmt.processing.Preprocessor;
-import eu.modernmt.processing.framework.PipelineInputStream;
-import eu.modernmt.processing.framework.PipelineOutputStream;
 import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.util.TokensOutputter;
 import eu.modernmt.training.partitioning.CorporaPartition;
 import org.apache.commons.io.IOUtils;
 
@@ -23,25 +16,25 @@ import java.util.Locale;
  */
 public class TrainingPreprocessor {
 
-    private static final long MAX_BUFFER_LENGTH = 100000000;
-
     private final int threads;
     private final CorporaPartition mainPartition;
     private final Locale sourceLanguage;
     private final Locale targetLanguage;
+    private final ResultWriter resultWriter;
 
     private ArrayList<Corpus> sourceCorpora = new ArrayList<>();
     private ArrayList<Corpus> targetCorpora = new ArrayList<>();
 
-    public TrainingPreprocessor(CorporaPartition mainPartition, Locale source, Locale target) {
-        this(mainPartition, source, target, Runtime.getRuntime().availableProcessors());
+    public TrainingPreprocessor(CorporaPartition mainPartition, Locale source, Locale target, ResultWriter writer) {
+        this(mainPartition, source, target, writer, Runtime.getRuntime().availableProcessors());
     }
 
-    public TrainingPreprocessor(CorporaPartition mainPartition, Locale source, Locale target, int threads) {
+    public TrainingPreprocessor(CorporaPartition mainPartition, Locale source, Locale target, ResultWriter writer, int threads) {
         this.threads = threads;
         this.mainPartition = mainPartition;
         this.sourceLanguage = source;
         this.targetLanguage = target;
+        this.resultWriter = writer;
     }
 
     public void add(BilingualCorpus corpus) {
@@ -73,81 +66,48 @@ public class TrainingPreprocessor {
         sourceCorpora.add(corpus);
     }
 
-    public void execute() throws ProcessingException {
+    public void execute() throws ProcessingException, IOException {
         process(sourceCorpora, sourceLanguage);
         process(targetCorpora, targetLanguage);
+
+        resultWriter.flush();
     }
 
-    private void process(ArrayList<Corpus> corpora, Locale language) throws ProcessingException {
+    private void process(ArrayList<Corpus> corpora, Locale language) throws ProcessingException, IOException {
         PreprocessorExecutor executor = new PreprocessorExecutor(threads, language);
 
-        for (Corpus corpus : corpora) {
-            LineReader input = null;
-            LineWriter output = null;
+        try {
+            for (Corpus corpus : corpora) {
+                CorpusReader reader = null;
+                ResultWriter.Instance writer = null;
 
-            try {
-                Corpus outCorpus = mainPartition.getDestinationCorpus(corpus);
+                try {
+                    Corpus outCorpus = mainPartition.getDestinationCorpus(corpus);
 
-                input = corpus.getContentReader();
-                output = outCorpus.getContentWriter(false);
+                    reader = new CorpusReader(corpus);
+                    writer = resultWriter.forCorpus(outCorpus);
 
-                ArrayList<String> buffer = new ArrayList<>();
-                while (read(input, buffer)) {
-                    String[] batch = buffer.toArray(new String[buffer.size()]);
-                    buffer.clear();
+                    ArrayList<String> buffer = null;
 
-                    String[][] tokenized = executor.start(batch);
-                    executor.await();
+                    while ((buffer = reader.read(buffer)) != null) {
+                        String[] batch = buffer.toArray(new String[buffer.size()]);
+                        buffer.clear();
 
-                    write(output, tokenized);
-                    tokenized = null;
+                        String[][] tokenized = executor.process(batch);
+                        writer.write(tokenized);
+                    }
+                } catch (ProcessingException e) {
+                    throw new ProcessingException("Failed to process corpus '" + corpus.getName() + "'", e);
+                } finally {
+                    IOUtils.closeQuietly(reader);
+                    IOUtils.closeQuietly(writer);
                 }
-            } catch (IOException | ProcessingException e) {
-                throw new ProcessingException("Failed to process corpus '" + corpus.getName() + "'", e);
-            } finally {
-                IOUtils.closeQuietly(input);
-                IOUtils.closeQuietly(output);
             }
-        }
-
-        executor.shutdown();
-    }
-
-    private static boolean read(LineReader input, ArrayList<String> buffer) throws IOException {
-        long size = 0;
-
-        String line;
-        while ((line = input.readLine()) != null) {
-            buffer.add(line);
-
-            size += line.length();
-
-            if (size >= MAX_BUFFER_LENGTH)
-                return true;
-        }
-
-        return false;
-    }
-
-    private static void write(LineWriter output, String[][] batch) throws IOException {
-        StringBuilder string = new StringBuilder();
-
-        for (String[] line : batch) {
-            string.setLength(0);
-
-            for (int i = 0; i < line.length; i++) {
-                if (i > 0)
-                    string.append(' ');
-                string.append(line[i]);
-            }
-
-            output.writeLine(string.toString());
+        } finally {
+            IOUtils.closeQuietly(executor);
         }
     }
-//
-//    public void setVocabularyOutput(File vocabulary) {
-//        vocabularyBuilder = new VocabularyBuilder(vocabulary);
-//    }
+
 //
 //    public void addExtraPartition(CorporaPartition partition) {
 //        this.extraPartitions.add(partition);

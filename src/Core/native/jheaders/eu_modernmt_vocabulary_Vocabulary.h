@@ -7,6 +7,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef eu_modernmt_vocabulary_Vocabulary_VOCABULARY_UNKNOWN_WORD
+#define eu_modernmt_vocabulary_Vocabulary_VOCABULARY_UNKNOWN_WORD 0L
+#undef eu_modernmt_vocabulary_Vocabulary_VOCABULARY_WORD_ID_START
+#define eu_modernmt_vocabulary_Vocabulary_VOCABULARY_WORD_ID_START 1000L
 /*
  * Class:     eu_modernmt_vocabulary_Vocabulary
  * Method:    instantiate
