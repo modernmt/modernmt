@@ -35,15 +35,6 @@ endforeach()
 find_package(JNI REQUIRED)
 include_directories(${JNI_INCLUDE_DIRS})
 
-## Boost
-set(Boost_USE_STATIC_LIBS OFF)
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_USE_STATIC_RUNTIME OFF)
-
-find_package(Boost 1.55.0 REQUIRED COMPONENTS thread system)
-include_directories(${Boost_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
-
 ## TcMalloc
 find_package(Tcmalloc REQUIRED)
 target_link_libraries(${PROJECT_NAME} ${Tcmalloc_LIBRARIES})

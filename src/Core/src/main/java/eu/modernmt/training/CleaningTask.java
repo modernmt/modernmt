@@ -8,12 +8,12 @@ import java.util.concurrent.Callable;
 /**
  * Created by davide on 24/02/16.
  */
-class CleaningCorpusTask implements Callable<Void> {
+class CleaningTask implements Callable<Void> {
 
     private BilingualCorpus corpus;
     private BilingualCorpus output;
 
-    public CleaningCorpusTask(BilingualCorpus corpus, BilingualCorpus output) {
+    public CleaningTask(BilingualCorpus corpus, BilingualCorpus output) {
         this.corpus = corpus;
         this.output = output;
     }

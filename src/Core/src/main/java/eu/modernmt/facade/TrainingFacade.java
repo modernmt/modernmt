@@ -3,9 +3,10 @@ package eu.modernmt.facade;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.training.PreprocessingPipeline;
 import eu.modernmt.training.partitioning.FilesCorporaPartition;
 import eu.modernmt.training.preprocessing.PlainTextWriter;
-import eu.modernmt.training.preprocessing.ResultWriter;
+import eu.modernmt.training.preprocessing.CorpusWriter;
 import eu.modernmt.training.preprocessing.TrainingPreprocessor;
 import eu.modernmt.training.preprocessing.VocabularyEncoderWriter;
 import org.apache.commons.io.FileUtils;
@@ -40,54 +41,27 @@ public class TrainingFacade {
                            Locale targetLanguage, File destFolder, TrainingOptions options) throws ProcessingException, IOException {
         FilesCorporaPartition mainPartition = new FilesCorporaPartition(destFolder);
 
-        ResultWriter writer;
+        CorpusWriter writer;
         if (options.vocabulary == null)
             writer = new PlainTextWriter();
         else
             writer = new VocabularyEncoderWriter(options.vocabulary);
 
-        TrainingPreprocessor preprocessor = new TrainingPreprocessor(mainPartition, sourceLanguage, targetLanguage, writer);
-
-        preprocessor.addBilingualCorpora(bilingualCorpora);
-        if (monolingualCorpora != null && !monolingualCorpora.isEmpty())
-            preprocessor.addMonolingualCorpora(monolingualCorpora);
+        PreprocessingPipeline pipeline = new PreprocessingPipeline(mainPartition, sourceLanguage, targetLanguage, writer);
 
         FileUtils.deleteDirectory(destFolder);
 
-        preprocessor.execute();
-    }
+        if (options.developmentPartition != null) {
+            FileUtils.deleteDirectory(options.developmentPartition);
+            pipeline.addExtraPartition(new FilesCorporaPartition(options.developmentPartition, options.partitionSize));
+        }
 
-//    public void preprocess(List<BilingualCorpus> bilingualCorpora, List<Corpus> monolingualCorpora, Locale sourceLanguage,
-//                           Locale targetLanguage, File destFolder, TrainingOptions options) throws ProcessingException, IOException {
-//        FilesCorporaPartition mainPartition = new FilesCorporaPartition(destFolder);
-//        TrainingPipeline trainingPipeline = new TrainingPipeline(mainPartition, sourceLanguage, targetLanguage);
-//
-//        trainingPipeline.addBilingualCorpora(bilingualCorpora);
-//        if (monolingualCorpora != null && !monolingualCorpora.isEmpty())
-//            trainingPipeline.addMonolingualCorpora(monolingualCorpora);
-//
-//        FileUtils.deleteDirectory(destFolder);
-//
-//        if (options.developmentPartition != null) {
-//            FileUtils.deleteDirectory(options.developmentPartition);
-//            trainingPipeline.addExtraPartition(new FilesCorporaPartition(options.developmentPartition, options.partitionSize));
-//        }
-//
-//        if (options.testPartition != null) {
-//            FileUtils.deleteDirectory(options.testPartition);
-//            trainingPipeline.addExtraPartition(new FilesCorporaPartition(options.testPartition, options.partitionSize));
-//        }
-//
-//        if (options.vocabulary != null) {
-//            FileUtils.deleteDirectory(options.vocabulary);
-//            trainingPipeline.setVocabularyOutput(options.vocabulary);
-//        }
-//
-//        try {
-//            trainingPipeline.process();
-//        } catch (InterruptedException e) {
-//            throw new RuntimeException("Unexpected InterruptedException", e);
-//        }
-//    }
+        if (options.testPartition != null) {
+            FileUtils.deleteDirectory(options.testPartition);
+            pipeline.addExtraPartition(new FilesCorporaPartition(options.testPartition, options.partitionSize));
+        }
+
+        pipeline.process(bilingualCorpora, monolingualCorpora);
+    }
 
 }

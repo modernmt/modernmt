@@ -1,267 +1,117 @@
 package eu.modernmt.training.preprocessing;
 
-import eu.modernmt.model.corpus.BilingualCorpus;
-import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Word;
+import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.training.partitioning.CorporaPartition;
-import org.apache.commons.io.IOUtils;
+import eu.modernmt.processing.framework.ProcessingPipeline;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.io.Closeable;
 import java.util.Locale;
+import java.util.concurrent.*;
 
 /**
- * Created by davide on 24/02/16.
+ * Created by davide on 19/08/16.
  */
-public class TrainingPreprocessor {
+public class TrainingPreprocessor implements Closeable {
 
     private final int threads;
-    private final CorporaPartition mainPartition;
-    private final Locale sourceLanguage;
-    private final Locale targetLanguage;
-    private final ResultWriter resultWriter;
+    private final Locale language;
 
-    private ArrayList<Corpus> sourceCorpora = new ArrayList<>();
-    private ArrayList<Corpus> targetCorpora = new ArrayList<>();
+    private final ExecutorService executor;
 
-    public TrainingPreprocessor(CorporaPartition mainPartition, Locale source, Locale target, ResultWriter writer) {
-        this(mainPartition, source, target, writer, Runtime.getRuntime().availableProcessors());
-    }
-
-    public TrainingPreprocessor(CorporaPartition mainPartition, Locale source, Locale target, ResultWriter writer, int threads) {
+    public TrainingPreprocessor(int threads, Locale language) {
         this.threads = threads;
-        this.mainPartition = mainPartition;
-        this.sourceLanguage = source;
-        this.targetLanguage = target;
-        this.resultWriter = writer;
+        this.language = language;
+
+        this.executor = Executors.newFixedThreadPool(threads);
     }
 
-    public void add(BilingualCorpus corpus) {
-        addSourceCorpus(corpus.getSourceCorpus());
-        addTargetCorpus(corpus.getTargetCorpus());
-    }
+    public String[][] process(String[] batch) throws ProcessingException {
+        String[][] output = new String[batch.length][];
+        Future<?>[] locks = new Future<?>[threads];
 
-    public void add(Corpus corpus) {
-        addTargetCorpus(corpus);
-    }
+        if (batch.length < threads) {
+            locks[0] = executor.submit(new FragmentProcessor(batch, output, 0, batch.length));
+        } else {
+            int fragmentSize = batch.length / threads;
 
-    public void addBilingualCorpora(Collection<? extends BilingualCorpus> corpora) {
-        corpora.forEach(this::add);
-    }
+            for (int i = 0; i < threads; i++) {
+                int offset = i * fragmentSize;
+                int length = fragmentSize;
 
-    public void addMonolingualCorpora(Collection<? extends Corpus> corpora) {
-        corpora.forEach(this::add);
-    }
+                if (i == threads - 1)
+                    length = batch.length - offset;
 
-    private void addTargetCorpus(Corpus corpus) {
-        if (!targetLanguage.equals(corpus.getLanguage()))
-            throw new IllegalArgumentException("Invalid corpus, expected '" + targetLanguage + "' but found '" + corpus.getLanguage() + "'");
-        targetCorpora.add(corpus);
-    }
-
-    private void addSourceCorpus(Corpus corpus) {
-        if (!sourceLanguage.equals(corpus.getLanguage()))
-            throw new IllegalArgumentException("Invalid corpus, expected '" + sourceLanguage + "' but found '" + corpus.getLanguage() + "'");
-        sourceCorpora.add(corpus);
-    }
-
-    public void execute() throws ProcessingException, IOException {
-        process(sourceCorpora, sourceLanguage);
-        process(targetCorpora, targetLanguage);
-
-        resultWriter.flush();
-    }
-
-    private void process(ArrayList<Corpus> corpora, Locale language) throws ProcessingException, IOException {
-        PreprocessorExecutor executor = new PreprocessorExecutor(threads, language);
-
-        try {
-            for (Corpus corpus : corpora) {
-                CorpusReader reader = null;
-                ResultWriter.Instance writer = null;
-
-                try {
-                    Corpus outCorpus = mainPartition.getDestinationCorpus(corpus);
-
-                    reader = new CorpusReader(corpus);
-                    writer = resultWriter.forCorpus(outCorpus);
-
-                    ArrayList<String> buffer = null;
-
-                    while ((buffer = reader.read(buffer)) != null) {
-                        String[] batch = buffer.toArray(new String[buffer.size()]);
-                        buffer.clear();
-
-                        String[][] tokenized = executor.process(batch);
-                        writer.write(tokenized);
-                    }
-                } catch (ProcessingException e) {
-                    throw new ProcessingException("Failed to process corpus '" + corpus.getName() + "'", e);
-                } finally {
-                    IOUtils.closeQuietly(reader);
-                    IOUtils.closeQuietly(writer);
-                }
+                locks[i] = executor.submit(new FragmentProcessor(batch, output, offset, length));
             }
-        } finally {
-            IOUtils.closeQuietly(executor);
+        }
+
+        for (Future<?> lock : locks) {
+            if (lock == null)
+                break;
+
+            try {
+                lock.get();
+            } catch (InterruptedException e) {
+                throw new ProcessingException("Execution interrupted", e);
+            } catch (ExecutionException e) {
+                Throwable cause = e.getCause();
+
+                if (cause instanceof ProcessingException)
+                    throw (ProcessingException) cause;
+                else if (cause instanceof RuntimeException)
+                    throw (RuntimeException) cause;
+                else
+                    throw new Error("Unexpected exception", cause);
+            }
+        }
+
+        return output;
+    }
+
+    @Override
+    public void close() {
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(1, TimeUnit.SECONDS))
+                executor.shutdownNow();
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
         }
     }
 
-//
-//    public void addExtraPartition(CorporaPartition partition) {
-//        this.extraPartitions.add(partition);
-//    }
-//
-//    public void process() throws InterruptedException, ProcessingException, IOException {
-//        int totalCorporaCount = this.bilingualCorpora.size() * 2 + this.monolingualCorpora.size();
-//        int ioThreads = Math.min(Math.min(this.ioThreads, MAX_IO_THREADS), totalCorporaCount);
-//        int processingThreads = Math.max(1, this.processingThreads);
-//
-//        ExecutorService executor = Executors.newFixedThreadPool(ioThreads);
-//        ExecutorCompletionService<Void> ecs = new ExecutorCompletionService<>(executor);
-//
-//        // Init pipelines
-//        Preprocessor sourcePreprocessor = new Preprocessor(sourceLanguage, null, processingThreads);
-//        Preprocessor targetPreprocessor = new Preprocessor(targetLanguage, null, processingThreads);
-//
-//        int pendingTasks = 0;
-//
-//        // Enqueue bilingual corpora tasks
-//        long bilingualCorporaLines = getCorporaLineCount(bilingualCorpora, ioThreads);
-//        long extraPartitionsLines = getPartitionsLines(extraPartitions);
-//
-//        for (BilingualCorpus corpus : bilingualCorpora) {
-//            double weight = getAdjustedWeight(corpus, extraPartitionsLines, bilingualCorporaLines);
-//
-//            int lineCount;
-//            try {
-//                lineCount = corpus.getLineCount();
-//            } catch (IOException e) {
-//                throw new ProcessingException("Could not read corpus " + corpus, e);
-//            }
-//
-//            TrainingCorpusTask sourceTask = new TrainingCorpusTask(sourcePreprocessor, corpus.getSourceCorpus(), lineCount, mainPartition);
-//            TrainingCorpusTask targetTask = new TrainingCorpusTask(targetPreprocessor, corpus.getTargetCorpus(), lineCount, mainPartition);
-//
-//            if (vocabularyBuilder != null) {
-//                sourceTask.setVocabularyBuilder(vocabularyBuilder);
-//                targetTask.setVocabularyBuilder(vocabularyBuilder);
-//            }
-//
-//            for (CorporaPartition partition : extraPartitions) {
-//                int size = (int) Math.round(weight * partition.getSize());
-//                if (size > 0) {
-//                    sourceTask.addExtraPartition(partition, size);
-//                    targetTask.addExtraPartition(partition, size);
-//                }
-//            }
-//
-//            ecs.submit(sourceTask);
-//            ecs.submit(targetTask);
-//            pendingTasks += 2;
-//        }
-//
-//        // Enqueue monolingual corpora tasks
-//        for (Corpus corpus : monolingualCorpora) {
-//            TrainingCorpusTask task = new TrainingCorpusTask(targetPreprocessor, corpus, 0, mainPartition);
-//
-//            if (vocabularyBuilder != null)
-//                task.setVocabularyBuilder(vocabularyBuilder);
-//
-//            ecs.submit(task);
-//            pendingTasks += 1;
-//        }
-//
-//        try {
-//            for (int i = 0; i < pendingTasks; i++) {
-//                ecs.take().get();
-//            }
-//
-//            if (vocabularyBuilder != null)
-//                vocabularyBuilder.build();
-//        } catch (ExecutionException e) {
-//            Throwable cause = e.getCause();
-//
-//            if (cause instanceof InterruptedException)
-//                throw (InterruptedException) cause;
-//            else if (cause instanceof ProcessingException)
-//                throw (ProcessingException) cause;
-//            else if (cause instanceof RuntimeException)
-//                throw (RuntimeException) cause;
-//            else
-//                throw new Error("Unexpected exception", cause);
-//        } finally {
-//            IOUtils.closeQuietly(sourcePreprocessor);
-//            IOUtils.closeQuietly(targetPreprocessor);
-//
-//            executor.shutdownNow();
-//            executor.awaitTermination(1, TimeUnit.SECONDS);
-//        }
-//    }
-//
-//    private static double getAdjustedWeight(BilingualCorpus corpus, long extraPartitionsLines, long corporaLines) {
-//        int corpusLines;
-//        try {
-//            corpusLines = corpus.getLineCount();
-//        } catch (IOException e) {
-//            throw new Error("This cannot happen", e);
-//        }
-//
-//        double weight = ((double) corpusLines) / corporaLines;
-//        int expectedSize = (int) Math.round(weight * extraPartitionsLines);
-//        int maxAllowedLines = (int) Math.round(corpusLines * MAX_CORPUS_PARTITION_RATIO);
-//
-//        if (expectedSize > maxAllowedLines) {
-//            return ((double) maxAllowedLines) / extraPartitionsLines;
-//        } else {
-//            return weight;
-//        }
-//    }
-//
-//    private static long getPartitionsLines(Collection<CorporaPartition> partitions) {
-//        long count = 0;
-//
-//        for (CorporaPartition partition : partitions)
-//            count += partition.getSize();
-//
-//        return count;
-//    }
-//
-//    private static long getCorporaLineCount(Collection<BilingualCorpus> corpora, int threads) throws ProcessingException, InterruptedException {
-//        ExecutorService executor = null;
-//
-//        try {
-//            executor = threads > 1 ? Executors.newFixedThreadPool(threads) : Executors.newSingleThreadExecutor();
-//
-//            ArrayList<Future<Long>> counts = new ArrayList<>(corpora.size());
-//            for (BilingualCorpus corpus : corpora) {
-//                counts.add(executor.submit(() -> (long) corpus.getLineCount()));
-//            }
-//
-//            long count = 0;
-//            for (Future<Long> c : counts) {
-//                try {
-//                    count += c.get();
-//                } catch (ExecutionException e) {
-//                    Throwable cause = e.getCause();
-//
-//                    if (cause instanceof IOException)
-//                        throw new ProcessingException("Unable to read from corpus", e);
-//                    else if (cause instanceof RuntimeException)
-//                        throw (RuntimeException) cause;
-//                    else
-//                        throw new Error("Unexpected exception", cause);
-//                }
-//            }
-//
-//            return count;
-//        } finally {
-//            if (executor != null) {
-//                executor.shutdownNow();
-//                executor.awaitTermination(1, TimeUnit.SECONDS);
-//            }
-//        }
-//    }
+    private class FragmentProcessor implements Callable<Void> {
+
+        private final String[] batch;
+        private final String[][] output;
+        private final int offset;
+        private final int length;
+
+        public FragmentProcessor(String[] batch, String[][] output, int offset, int length) {
+            this.batch = batch;
+            this.output = output;
+            this.offset = offset;
+            this.length = length;
+        }
+
+        @Override
+        public Void call() throws ProcessingException {
+            ProcessingPipeline<String, Sentence> pipeline = Preprocessor.createPipeline(language);
+
+            for (int i = 0; i < length; i++) {
+                Word[] words = pipeline.call(batch[offset + i]).getWords();
+                batch[offset + i] = null; // free memory
+
+                String[] array = new String[words.length];
+                for (int j = 0; j < array.length; j++)
+                    array[j] = words[j].getPlaceholder();
+
+                output[offset + i] = array;
+            }
+
+            return null;
+        }
+    }
 
 }

@@ -10,7 +10,7 @@ import java.util.concurrent.SynchronousQueue;
 /**
  * Created by davide on 22/08/16.
  */
-public abstract class ResultWriter {
+public abstract class CorpusWriter {
 
     private static final String[][] POISON_PILL = new String[0][0];
 

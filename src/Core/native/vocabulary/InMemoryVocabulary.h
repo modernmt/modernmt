@@ -6,7 +6,6 @@
 #define MMTCORE_INMEMORYVOCABULARY_H
 
 #include <string>
-#include <boost/thread/shared_mutex.hpp>
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>

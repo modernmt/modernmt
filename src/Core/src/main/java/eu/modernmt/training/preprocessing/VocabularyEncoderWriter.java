@@ -9,7 +9,7 @@ import java.io.IOException;
 /**
  * Created by davide on 22/08/16.
  */
-public class VocabularyEncoderWriter extends ResultWriter {
+public class VocabularyEncoderWriter extends CorpusWriter {
 
     private final VocabularyBuilder vocabulary;
 

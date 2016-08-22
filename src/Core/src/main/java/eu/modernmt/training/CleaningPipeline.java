@@ -73,7 +73,7 @@ public class CleaningPipeline {
 
         // Enqueue bilingual corpora tasks
         for (BilingualCorpus corpus : bilingualCorpora) {
-            CleaningCorpusTask task = new CleaningCorpusTask(corpus, outputFactory.getOutput(corpus));
+            CleaningTask task = new CleaningTask(corpus, outputFactory.getOutput(corpus));
             ecs.submit(task);
             pendingTasks++;
         }

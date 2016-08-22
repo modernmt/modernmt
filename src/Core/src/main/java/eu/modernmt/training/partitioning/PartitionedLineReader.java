@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Created by davide on 12/02/16.
  */
-public class PartitionedInputStream implements PipelineInputStream<String> {
+public class PartitionedLineReader implements LineReader {
 
     private List<PartitionWriter> partitions;
     private LineReader reader;
@@ -19,7 +19,7 @@ public class PartitionedInputStream implements PipelineInputStream<String> {
     private int lineIndex;
     private int partitionIndex;
 
-    public PartitionedInputStream(Corpus corpus, int lines, List<PartitionWriter> partitions) throws IOException {
+    public PartitionedLineReader(Corpus corpus, int lines, List<PartitionWriter> partitions) throws IOException {
         this.reader = corpus.getContentReader();
         this.partitions = partitions;
 
@@ -48,7 +48,7 @@ public class PartitionedInputStream implements PipelineInputStream<String> {
     }
 
     @Override
-    public String read() throws IOException {
+    public String readLine() throws IOException {
         String line;
 
         while ((line = getLine()) != null && (lineIndex % windowSize == 0)) {
