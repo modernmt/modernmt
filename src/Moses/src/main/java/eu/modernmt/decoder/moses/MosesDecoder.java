@@ -7,6 +7,7 @@ import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
+import eu.modernmt.vocabulary.Vocabulary;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -142,7 +143,9 @@ public class MosesDecoder implements Decoder {
     }
 
     private DecoderTranslation translate(Sentence sentence, List<ContextDocument> translationContext, TranslationSession session, int nbest) {
-        String text = serialize(sentence.getWords());
+        HashMap<Long, String> unseenWordsVocabulary = new HashMap<>();
+        String text = serialize(sentence.getWords(), unseenWordsVocabulary);
+
         long sessionId = session == null ? 0L : getOrComputeSession(session);
         ContextXObject context = ContextXObject.build(translationContext);
 
@@ -151,27 +154,46 @@ public class MosesDecoder implements Decoder {
         }
 
         long start = System.currentTimeMillis();
-        DecoderTranslation translation = this.translate(text, context == null ? null : context.keys, context == null ? null : context.values, sessionId, nbest).getTranslation(sentence);
+        TranslationXObject xtranslation = this.translate(text, context == null ? null : context.keys, context == null ? null : context.values, sessionId, nbest);
         long elapsed = System.currentTimeMillis() - start;
-        translation.setElapsedTime(elapsed);
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("Best translation: \"" + serialize(translation.getWords()) + "\"");
-        }
+        DecoderTranslation translation = xtranslation.getTranslation(sentence, unseenWordsVocabulary);
+        translation.setElapsedTime(elapsed);
 
         logger.info("Translation of " + sentence.length() + " words took " + (((double) elapsed) / 1000.) + "s");
 
         return translation;
     }
 
-    private static String serialize(Word[] words) {
+    private static String serialize(Word[] words, HashMap<Long, String> unseenWordsVocabulary) {
+        HashMap<String, Long> reverseVocabulary = new HashMap<>();
+
         StringBuilder text = new StringBuilder();
+        long unseenWordsCounter = 0xFFFFFFFF;
 
         for (int i = 0; i < words.length; i++) {
-            text.append(words[i].getPlaceholder());
-
-            if (i < words.length - 1)
+            if (i > 0)
                 text.append(' ');
+
+            Word word = words[i];
+
+            long id = Integer.toUnsignedLong(word.getId());
+
+            if (id == Vocabulary.VOCABULARY_UNKNOWN_WORD) {
+                String placeholder = word.getPlaceholder();
+
+                Long unseenId = reverseVocabulary.get(placeholder);
+
+                if (unseenId == null) {
+                    unseenId = unseenWordsCounter--;
+                    unseenWordsVocabulary.put(unseenId, placeholder);
+                    reverseVocabulary.put(placeholder, unseenId);
+                }
+
+                id = unseenId;
+            }
+
+            text.append(id);
         }
 
         return text.toString();

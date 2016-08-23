@@ -5,6 +5,7 @@
 #include "eu_modernmt_vocabulary_Vocabulary.h"
 #include <string>
 #include <vocabulary/PersistentVocabulary.h>
+#include <iostream>
 #include "handle.h"
 
 #define LoadStringClass(jvm) (jvm->FindClass("java/lang/String"))
@@ -35,8 +36,10 @@ static inline const jobjectArray EncodeStringLine(JNIEnv *jvm, vector<string> &l
     jobjectArray result = jvm->NewObjectArray(length, jstringClass, NULL);
 
     for (jsize i = 0; i < length; ++i) {
-        jstring jword = jvm->NewStringUTF(line[i].data());
-        jvm->SetObjectArrayElement(result, i, jword);
+        if (!line[i].empty()) {
+            jstring jword = jvm->NewStringUTF(line[i].data());
+            jvm->SetObjectArrayElement(result, i, jword);
+        }
     }
 
     return result;
@@ -101,7 +104,7 @@ JNIEXPORT jlong JNICALL Java_eu_modernmt_vocabulary_Vocabulary_dispose(JNIEnv *j
  * Signature: (Ljava/lang/String;Z)I
  */
 JNIEXPORT jint JNICALL
-Java_eu_modernmt_vocabulary_Vocabulary_getId(JNIEnv *jvm, jobject jself, jstring jword, jboolean putIfAbsent) {
+Java_eu_modernmt_vocabulary_Vocabulary_lookup(JNIEnv *jvm, jobject jself, jstring jword, jboolean putIfAbsent) {
     Vocabulary *self = jni_gethandle<Vocabulary>(jvm, jself);
 
     const char *word_chars = jvm->GetStringUTFChars(jword, NULL);
@@ -118,17 +121,20 @@ Java_eu_modernmt_vocabulary_Vocabulary_getId(JNIEnv *jvm, jobject jself, jstring
  * Signature: ([Ljava/lang/String;Z)[I
  */
 JNIEXPORT jintArray JNICALL
-Java_eu_modernmt_vocabulary_Vocabulary_encodeLine(JNIEnv *jvm, jobject jself, jobjectArray jline,
+Java_eu_modernmt_vocabulary_Vocabulary_lookupLine(JNIEnv *jvm, jobject jself, jobjectArray jline,
                                                   jboolean putIfAbsent) {
     Vocabulary *self = jni_gethandle<Vocabulary>(jvm, jself);
 
+    vector<string> line;
+    ParseStringLine(jvm, jline, line);
+
     vector<vector<uint32_t>> output;
-    vector<vector<string>> buffer(1);
-    ParseStringLine(jvm, jline, buffer[1]);
+    vector<vector<string>> buffer;
+    buffer.push_back(line);
 
     self->Lookup(buffer, &output, putIfAbsent);
 
-    return EncodeIntLine(jvm, output[1]);
+    return EncodeIntLine(jvm, output[0]);
 }
 
 /*
@@ -137,18 +143,20 @@ Java_eu_modernmt_vocabulary_Vocabulary_encodeLine(JNIEnv *jvm, jobject jself, jo
  * Signature: ([[Ljava/lang/String;[[IZ)V
  */
 JNIEXPORT void JNICALL
-Java_eu_modernmt_vocabulary_Vocabulary_encodeLines(JNIEnv *jvm, jobject jself, jobjectArray jbuffer,
+Java_eu_modernmt_vocabulary_Vocabulary_lookupLines(JNIEnv *jvm, jobject jself, jobjectArray jbuffer,
                                                    jobjectArray joutput, jboolean putIfAbsent) {
     Vocabulary *self = jni_gethandle<Vocabulary>(jvm, jself);
 
 
     // Parse input buffer
     jsize bufferSize = jvm->GetArrayLength(jbuffer);
-    vector<vector<string>> buffer((size_t) bufferSize);
+    vector<vector<string>> buffer;
 
     for (jsize i = 0; i < bufferSize; ++i) {
         jobjectArray jline = (jobjectArray) jvm->GetObjectArrayElement(jbuffer, i);
-        ParseStringLine(jvm, jline, buffer[i]);
+        vector<string> line;
+        ParseStringLine(jvm, jline, line);
+        buffer.push_back(line);
     }
 
     // Lookup
@@ -165,13 +173,13 @@ Java_eu_modernmt_vocabulary_Vocabulary_encodeLines(JNIEnv *jvm, jobject jself, j
  * Method:    getWord
  * Signature: (I)Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_eu_modernmt_vocabulary_Vocabulary_getWord(JNIEnv *jvm, jobject jself, jint id) {
+JNIEXPORT jstring JNICALL Java_eu_modernmt_vocabulary_Vocabulary_reverseLookup(JNIEnv *jvm, jobject jself, jint id) {
     Vocabulary *self = jni_gethandle<Vocabulary>(jvm, jself);
 
     string word;
 
     if (self->ReverseLookup((uint32_t) id, &word))
-        return jvm->NewStringUTF(word.data());
+        return word.empty() ? NULL : jvm->NewStringUTF(word.data());
     else
         return NULL;
 }
@@ -182,16 +190,18 @@ JNIEXPORT jstring JNICALL Java_eu_modernmt_vocabulary_Vocabulary_getWord(JNIEnv 
  * Signature: ([I)[Ljava/lang/String;
  */
 JNIEXPORT jobjectArray JNICALL
-Java_eu_modernmt_vocabulary_Vocabulary_decodeLine(JNIEnv *jvm, jobject jself, jintArray jline) {
+Java_eu_modernmt_vocabulary_Vocabulary_reverseLookupLine(JNIEnv *jvm, jobject jself, jintArray jline) {
     Vocabulary *self = jni_gethandle<Vocabulary>(jvm, jself);
 
-    vector<vector<string>> output;
-    vector<vector<uint32_t>> buffer(1);
-    ParseIntLine(jvm, jline, buffer[1]);
+    vector<uint32_t> line;
+    ParseIntLine(jvm, jline, line);
 
+    vector<vector<string>> output;
+    vector<vector<uint32_t>> buffer;
+    buffer.push_back(line);
     self->ReverseLookup(buffer, output);
 
-    return EncodeStringLine(jvm, output[1], NULL);
+    return EncodeStringLine(jvm, output[0], NULL);
 }
 
 /*
@@ -200,17 +210,19 @@ Java_eu_modernmt_vocabulary_Vocabulary_decodeLine(JNIEnv *jvm, jobject jself, ji
  * Signature: ([[I[[Ljava/lang/String;)V
  */
 JNIEXPORT void JNICALL
-Java_eu_modernmt_vocabulary_Vocabulary_decodeLines(JNIEnv *jvm, jobject jself, jobjectArray jbuffer,
+Java_eu_modernmt_vocabulary_Vocabulary_reverseLookupLines(JNIEnv *jvm, jobject jself, jobjectArray jbuffer,
                                                    jobjectArray joutput) {
     Vocabulary *self = jni_gethandle<Vocabulary>(jvm, jself);
 
     // Parse input buffer
     jsize bufferSize = jvm->GetArrayLength(jbuffer);
-    vector<vector<uint32_t>> buffer((size_t) bufferSize);
+    vector<vector<uint32_t>> buffer;
 
     for (jsize i = 0; i < bufferSize; ++i) {
+        vector<uint32_t> line;
         jintArray jline = (jintArray) jvm->GetObjectArrayElement(jbuffer, i);
-        ParseIntLine(jvm, jline, buffer[i]);
+        ParseIntLine(jvm, jline, line);
+        buffer.push_back(line);
     }
 
     // Reverse Lookup

@@ -6,6 +6,7 @@ import eu.modernmt.processing.framework.*;
 import eu.modernmt.processing.framework.builder.PipelineBuilder;
 import eu.modernmt.processing.framework.builder.XMLPipelineBuilder;
 import eu.modernmt.processing.framework.concurrent.PipelineExecutor;
+import eu.modernmt.vocabulary.Vocabulary;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
@@ -33,6 +34,7 @@ public class Preprocessor implements Closeable {
     private static final int DEFAULT_THREADS = Runtime.getRuntime().availableProcessors();
 
     private PipelineExecutor<String, Sentence> executor;
+    private Vocabulary vocabulary = null;
 
     public Preprocessor(Locale sourceLanguage) throws ProcessingException {
         this(sourceLanguage, null, DEFAULT_THREADS, getDefaultBuilder());
@@ -54,15 +56,12 @@ public class Preprocessor implements Closeable {
         this.executor = new PipelineExecutor<>(sourceLanguage, targetLanguage, builder, threads);
     }
 
+    public void setVocabulary(Vocabulary vocabulary) {
+        this.vocabulary = vocabulary;
+    }
+
     public List<Sentence> process(List<String> text, boolean tokenize) throws ProcessingException {
-        HashMap<String, Object> metadata = null;
-
-        if (!tokenize) {
-            metadata = new HashMap<>();
-            metadata.put(TextProcessor.KEY_TOKENIZE_TEXT, false);
-        }
-
-        return this.executor.process(text, metadata);
+        return this.executor.process(text, getMetadata(tokenize));
     }
 
     public Sentence[] process(String[] text, boolean tokenize) throws ProcessingException {
@@ -70,17 +69,14 @@ public class Preprocessor implements Closeable {
     }
 
     public Sentence process(String text, boolean tokenize) throws ProcessingException {
-        HashMap<String, Object> metadata = null;
-
-        if (!tokenize) {
-            metadata = new HashMap<>();
-            metadata.put(TextProcessor.KEY_TOKENIZE_TEXT, false);
-        }
-
-        return this.executor.process(text, metadata);
+        return this.executor.process(text, getMetadata(tokenize));
     }
 
     public void process(PipelineInputStream<String> input, PipelineOutputStream<Sentence> output, boolean tokenize) throws ProcessingException {
+        this.executor.process(input, output, getMetadata(tokenize));
+    }
+
+    private HashMap<String, Object> getMetadata(boolean tokenize) {
         HashMap<String, Object> metadata = null;
 
         if (!tokenize) {
@@ -88,7 +84,13 @@ public class Preprocessor implements Closeable {
             metadata.put(TextProcessor.KEY_TOKENIZE_TEXT, false);
         }
 
-        this.executor.process(input, output, metadata);
+        if (vocabulary != null) {
+            if (metadata == null)
+                metadata = new HashMap<>();
+            metadata.put(TextProcessor.KEY_VOCABULARY, vocabulary);
+        }
+
+        return metadata;
     }
 
     @Override

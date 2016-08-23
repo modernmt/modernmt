@@ -21,50 +21,50 @@ JNIEXPORT jlong JNICALL Java_eu_modernmt_vocabulary_Vocabulary_instantiate
 
 /*
  * Class:     eu_modernmt_vocabulary_Vocabulary
- * Method:    getId
+ * Method:    lookup
  * Signature: (Ljava/lang/String;Z)I
  */
-JNIEXPORT jint JNICALL Java_eu_modernmt_vocabulary_Vocabulary_getId
+JNIEXPORT jint JNICALL Java_eu_modernmt_vocabulary_Vocabulary_lookup
   (JNIEnv *, jobject, jstring, jboolean);
 
 /*
  * Class:     eu_modernmt_vocabulary_Vocabulary
- * Method:    encodeLine
+ * Method:    lookupLine
  * Signature: ([Ljava/lang/String;Z)[I
  */
-JNIEXPORT jintArray JNICALL Java_eu_modernmt_vocabulary_Vocabulary_encodeLine
+JNIEXPORT jintArray JNICALL Java_eu_modernmt_vocabulary_Vocabulary_lookupLine
   (JNIEnv *, jobject, jobjectArray, jboolean);
 
 /*
  * Class:     eu_modernmt_vocabulary_Vocabulary
- * Method:    encodeLines
+ * Method:    lookupLines
  * Signature: ([[Ljava/lang/String;[[IZ)V
  */
-JNIEXPORT void JNICALL Java_eu_modernmt_vocabulary_Vocabulary_encodeLines
+JNIEXPORT void JNICALL Java_eu_modernmt_vocabulary_Vocabulary_lookupLines
   (JNIEnv *, jobject, jobjectArray, jobjectArray, jboolean);
 
 /*
  * Class:     eu_modernmt_vocabulary_Vocabulary
- * Method:    getWord
+ * Method:    reverseLookup
  * Signature: (I)Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_eu_modernmt_vocabulary_Vocabulary_getWord
+JNIEXPORT jstring JNICALL Java_eu_modernmt_vocabulary_Vocabulary_reverseLookup
   (JNIEnv *, jobject, jint);
 
 /*
  * Class:     eu_modernmt_vocabulary_Vocabulary
- * Method:    decodeLine
+ * Method:    reverseLookupLine
  * Signature: ([I)[Ljava/lang/String;
  */
-JNIEXPORT jobjectArray JNICALL Java_eu_modernmt_vocabulary_Vocabulary_decodeLine
+JNIEXPORT jobjectArray JNICALL Java_eu_modernmt_vocabulary_Vocabulary_reverseLookupLine
   (JNIEnv *, jobject, jintArray);
 
 /*
  * Class:     eu_modernmt_vocabulary_Vocabulary
- * Method:    decodeLines
+ * Method:    reverseLookupLines
  * Signature: ([[I[[Ljava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_eu_modernmt_vocabulary_Vocabulary_decodeLines
+JNIEXPORT void JNICALL Java_eu_modernmt_vocabulary_Vocabulary_reverseLookupLines
   (JNIEnv *, jobject, jobjectArray, jobjectArray);
 
 /*

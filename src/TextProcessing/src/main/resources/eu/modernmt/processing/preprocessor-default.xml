@@ -45,4 +45,8 @@
         eu.modernmt.processing.SentenceBuilder
     </processor>
 
+    <processor>
+        eu.modernmt.processing.vocabulary.VocabularyLookup
+    </processor>
+
 </pipeline>

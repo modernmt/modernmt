@@ -13,31 +13,58 @@ public class Word extends Token {
 
     }
 
+    protected int id;
     protected boolean rightSpaceRequired;
     protected Transformation transformation;
+
+    public Word(int id) {
+        super(null);
+        this.rightSpaceRequired = super.rightSpace != null;
+        this.transformation = null;
+        this.id = id;
+    }
+
+    public Word(int id, String rightSpace) {
+        super(null, rightSpace);
+        this.rightSpaceRequired = super.rightSpace != null;
+        this.transformation = null;
+        this.id = id;
+    }
 
     public Word(String placeholder) {
         super(placeholder);
         this.rightSpaceRequired = super.rightSpace != null;
         this.transformation = null;
+        this.id = 0;
     }
 
     public Word(String placeholder, String rightSpace) {
         super(placeholder, rightSpace);
         this.rightSpaceRequired = super.rightSpace != null;
         this.transformation = null;
+        this.id = 0;
     }
 
     public Word(String text, String placeholder, String rightSpace) {
         super(text, placeholder, rightSpace);
         this.rightSpaceRequired = super.rightSpace != null;
         this.transformation = null;
+        this.id = 0;
     }
 
     public Word(String text, String placeholder, String rightSpace, boolean rightSpaceRequired) {
         super(text, placeholder, rightSpace);
         this.rightSpaceRequired = rightSpaceRequired;
         this.transformation = null;
+        this.id = 0;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public boolean isRightSpaceRequired() {

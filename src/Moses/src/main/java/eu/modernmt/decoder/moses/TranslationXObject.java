@@ -76,12 +76,17 @@ class TranslationXObject {
         this.alignment = alignment;
     }
 
-    public DecoderTranslation getTranslation(Sentence source) {
+    public DecoderTranslation getTranslation(Sentence source, HashMap<Long, String> unseenWordsVocabulary) {
         String[] pieces = text.split(" +");
         Word[] words = new Word[pieces.length];
 
         for (int i = 0; i < pieces.length; i++) {
-            words[i] = new Word(pieces[i], i < pieces.length - 1 ? " " : null);
+            String rightSpace = i < pieces.length - 1 ? " " : null;
+
+            long id = Long.parseLong(pieces[i]);
+            String placeholder = unseenWordsVocabulary.get(id);
+
+            words[i] = placeholder == null ? new Word((int) (id), rightSpace) : new Word(placeholder, rightSpace);
         }
 
         DecoderTranslation translation = new DecoderTranslation(words, source, alignment);

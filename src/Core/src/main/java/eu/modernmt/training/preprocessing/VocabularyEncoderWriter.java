@@ -26,7 +26,7 @@ public class VocabularyEncoderWriter extends CorpusWriter {
             for (int i = 0; i < line.length; i++) {
                 if (i > 0)
                     builder.append(' ');
-                builder.append(line[i]);
+                builder.append(Integer.toUnsignedString(line[i]));
             }
             builder.append('\n');
 

@@ -3,16 +3,18 @@ package eu.modernmt;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.aligner.AlignerFactory;
+import eu.modernmt.config.EngineConfig;
 import eu.modernmt.constants.Const;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextAnalyzerFactory;
-import eu.modernmt.config.EngineConfig;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFactory;
+import eu.modernmt.io.Paths;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.vocabulary.Vocabulary;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -25,6 +27,7 @@ import java.util.Locale;
 public class Engine {
 
     public static final String ENGINE_CONFIG_PATH = "engine.ini";
+    private static final String VOCABULARY_MODEL_PATH = Paths.join("models", "vocabulary");
 
     public static File getRootPath(String engine) {
         return new File(Const.fs.engines, engine);
@@ -46,6 +49,7 @@ public class Engine {
     private Preprocessor preprocessor = null;
     private Postprocessor postprocessor = null;
     private ContextAnalyzer contextAnalyzer = null;
+    private Vocabulary vocabulary = null;
 
     public Engine(EngineConfig config, int threads) {
         this.config = config;
@@ -112,6 +116,7 @@ public class Engine {
                 if (preprocessor == null) {
                     try {
                         preprocessor = new Preprocessor(config.getSourceLanguage(), config.getTargetLanguage());
+                        preprocessor.setVocabulary(getVocabulary());
                     } catch (ProcessingException e) {
                         throw new LazyLoadException(e);
                     }
@@ -128,6 +133,7 @@ public class Engine {
                 if (postprocessor == null) {
                     try {
                         postprocessor = new Postprocessor(config.getSourceLanguage(), config.getTargetLanguage());
+                        postprocessor.setVocabulary(getVocabulary());
                     } catch (ProcessingException e) {
                         throw new LazyLoadException(e);
                     }
@@ -155,6 +161,23 @@ public class Engine {
         }
 
         return contextAnalyzer;
+    }
+
+    public Vocabulary getVocabulary() {
+        if (vocabulary == null) {
+            synchronized (this) {
+                if (vocabulary == null) {
+                    try {
+                        File model = new File(this.root, VOCABULARY_MODEL_PATH);
+                        vocabulary = new Vocabulary(model);
+                    } catch (IOException e) {
+                        throw new LazyLoadException(e);
+                    }
+                }
+            }
+        }
+
+        return vocabulary;
     }
 
     public Locale getSourceLanguage() {

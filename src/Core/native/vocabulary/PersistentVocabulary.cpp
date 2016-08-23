@@ -238,6 +238,9 @@ PersistentVocabulary::Lookup(const vector<vector<string>> &buffer, vector<vector
 }
 
 const bool PersistentVocabulary::ReverseLookup(uint32_t id, string *output) {
+    if (id < kVocabularyWordIdStart)
+        return true;
+
     ReadOptions options = ReadOptions();
     options.verify_checksums = false;
 

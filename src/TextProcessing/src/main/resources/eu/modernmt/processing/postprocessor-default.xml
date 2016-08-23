@@ -1,5 +1,9 @@
 <pipeline class="eu.modernmt.processing.framework.VoidProcessingPipeline">
 
+    <processor>
+        eu.modernmt.processing.vocabulary.VocabularyReverseLookup
+    </processor>
+
     <processor>eu.modernmt.processing.AlignmentProcessor</processor>
 
     <!-- Detokenization -->
