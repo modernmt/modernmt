@@ -53,8 +53,8 @@ namespace fastalign {
 
         Model *model;
 
-        void InitialPass(const Corpus &corpus, double *n_target_tokens, double *tot_len_ratio,
-                                       vector<pair<pair<short, short>, unsigned int>> *size_counts);
+        void InitialPass(const Corpus &corpus, double *n_target_tokens,
+                         vector<pair<pair<short, short>, unsigned int>> *size_counts);
 
         void forceAlign(const Corpus &corpus);
 

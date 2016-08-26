@@ -65,11 +65,12 @@ ModelBuilder::ModelBuilder(Options options) : mean_srclen_multiplier(options.mea
     model = new Model(is_reverse, use_null, favor_diagonal, prob_align_null, options.initial_diagonal_tension);
 }
 
-void ModelBuilder::InitialPass(const Corpus &corpus, double *n_target_tokens, double *tot_len_ratio,
+void ModelBuilder::InitialPass(const Corpus &corpus, double *n_target_tokens,
                                vector<pair<pair<short, short>, unsigned int>> *size_counts) {
     CorpusReader reader(corpus);
 
     unordered_map<pair<short, short>, unsigned, PairHash> size_counts_;
+
     unordered_map<word, vector<word>> buffer;
     word maxSourceWord = 0;
     size_t buffer_items = 0;
@@ -79,7 +80,6 @@ void ModelBuilder::InitialPass(const Corpus &corpus, double *n_target_tokens, do
         if (is_reverse)
             swap(src, trg);
 
-        *tot_len_ratio += static_cast<double> (trg.size()) / static_cast<double> (src.size());
         *n_target_tokens += trg.size();
 
         if (use_null) {
@@ -104,6 +104,7 @@ void ModelBuilder::InitialPass(const Corpus &corpus, double *n_target_tokens, do
             maxSourceWord = 0;
             buffer.clear();
         }
+
         ++size_counts_[make_pair<short, short>(trg.size(), src.size())];
     }
 
@@ -135,12 +136,11 @@ Model *ModelBuilder::Build(const Corpus &corpus, const string &model_filename) {
     omp_set_num_threads(threads);
 
     vector<pair<pair<short, short>, unsigned >> size_counts;
-    double tot_len_ratio = 0;
     double n_target_tokens = 0;
 
 
     clock_start("Initial step");
-    InitialPass(corpus, &n_target_tokens, &tot_len_ratio, &size_counts);
+    InitialPass(corpus, &n_target_tokens, &size_counts);
     clock_stop()
 
     model->s2t.Freeze();
@@ -163,8 +163,8 @@ Model *ModelBuilder::Build(const Corpus &corpus, const string &model_filename) {
         stats.emp_feat /= n_target_tokens;
 
         if (iter < iterations - 1) { // TODO remove, why wasting last iteration?
-            clock_start("   Calculating diagonal tension");
             if (favor_diagonal && optimize_tension) {
+                clock_start("   Optimizing diagonal tension");
                 for (int ii = 0; ii < 8; ++ii) {
                     double mod_feat = 0;
 #pragma omp parallel for reduction(+:mod_feat)
@@ -179,8 +179,8 @@ Model *ModelBuilder::Build(const Corpus &corpus, const string &model_filename) {
                     if (model->diagonal_tension <= 0.1) model->diagonal_tension = 0.1;
                     if (model->diagonal_tension > 14) model->diagonal_tension = 14;
                 }
+                clock_stop()
             }
-            clock_stop()
 
             clock_start("   Normalizing");
             if (variational_bayes)
