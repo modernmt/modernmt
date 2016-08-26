@@ -2,9 +2,6 @@
 	path = vendor/moses
 	url = https://github.com/ModernMT/mosesdecoder
 	branch = mmt-official
-[submodule "vendor/fastalign"]
-	path = vendor/fastalign
-	url = https://github.com/ModernMT/WordAligner
 [submodule "vendor/rocksdb"]
 	path = vendor/rocksdb
 	url = https://github.com/facebook/rocksdb.git

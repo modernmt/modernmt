@@ -6,7 +6,6 @@ import eu.modernmt.model.Sentence;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.*;
@@ -89,15 +88,6 @@ public class SymmetrizedAligner implements Aligner {
             throw new NullPointerException();
 
         this.strategy = strategy;
-    }
-
-    @Override
-    public void close() throws IOException {
-        try {
-            forwardModel.close();
-        } finally {
-            backwardModel.close();
-        }
     }
 
     private class LoadModelTask implements Callable<Void> {

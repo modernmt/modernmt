@@ -21,6 +21,7 @@ public class FastAlign implements Aligner {
     static {
         try {
             System.loadLibrary("fastalign");
+            logger.info("Library 'fastalign' loaded successfully");
         } catch (Throwable e) {
             logger.error("Unable to load library 'fastalign'", e);
             throw e;

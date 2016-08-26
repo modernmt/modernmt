@@ -43,10 +43,10 @@ void ModelBuilder::setListener(ModelBuilder::Listener *listener) {
 void
 ModelBuilder::AllocateTTableSpace(ttable_t &table, const std::unordered_map<uint32_t, std::vector<uint32_t>> &values,
                                   const uint32_t sourceWordMaxValue) {
-    if (table.size() < sourceWordMaxValue) {
+    if (table.size() <= sourceWordMaxValue) {
 #pragma omp critical(resize_counts)
         {
-            if (table.size() < sourceWordMaxValue)
+            if (table.size() <= sourceWordMaxValue)
                 table.resize(sourceWordMaxValue + 1);
         }
     }
@@ -164,34 +164,32 @@ Model *ModelBuilder::Build(const Corpus &corpus, const string &model_filename) {
 
         stats.emp_feat /= n_target_tokens;
 
-        if (iter < iterations - 1) { // TODO remove, why wasting last iteration?
-            if (favor_diagonal && optimize_tension) {
-                if (listener) listener->Begin(kBuilderStepOptimizingDiagonalTension, iter + 1);
+        if (favor_diagonal && optimize_tension) {
+            if (listener) listener->Begin(kBuilderStepOptimizingDiagonalTension, iter + 1);
 
-                for (int ii = 0; ii < 8; ++ii) {
-                    double mod_feat = 0;
+            for (int ii = 0; ii < 8; ++ii) {
+                double mod_feat = 0;
 #pragma omp parallel for reduction(+:mod_feat)
-                    for (size_t i = 0; i < size_counts.size(); ++i) {
-                        const pair<short, short> &p = size_counts[i].first;
-                        for (short j = 1; j <= p.first; ++j)
-                            mod_feat += size_counts[i].second *
-                                        DiagonalAlignment::ComputeDLogZ(j, p.first, p.second, model->diagonal_tension);
-                    }
-                    mod_feat /= n_target_tokens;
-                    model->diagonal_tension += (stats.emp_feat - mod_feat) * 20.0;
-                    if (model->diagonal_tension <= 0.1) model->diagonal_tension = 0.1;
-                    if (model->diagonal_tension > 14) model->diagonal_tension = 14;
+                for (size_t i = 0; i < size_counts.size(); ++i) {
+                    const pair<short, short> &p = size_counts[i].first;
+                    for (short j = 1; j <= p.first; ++j)
+                        mod_feat += size_counts[i].second *
+                                    DiagonalAlignment::ComputeDLogZ(j, p.first, p.second, model->diagonal_tension);
                 }
-
-                if (listener) listener->End(kBuilderStepOptimizingDiagonalTension, iter + 1);
+                mod_feat /= n_target_tokens;
+                model->diagonal_tension += (stats.emp_feat - mod_feat) * 20.0;
+                if (model->diagonal_tension <= 0.1) model->diagonal_tension = 0.1;
+                if (model->diagonal_tension > 14) model->diagonal_tension = 14;
             }
 
-            if (listener) listener->Begin(kBuilderStepNormalizing, iter + 1);
-            NormalizeTTable(stagingArea, variational_bayes ? alpha : 0);
-            SwapTTables(stagingArea, model->translation_table);
-            ClearTTable(stagingArea);
-            if (listener) listener->End(kBuilderStepNormalizing, iter + 1);
+            if (listener) listener->End(kBuilderStepOptimizingDiagonalTension, iter + 1);
         }
+
+        if (listener) listener->Begin(kBuilderStepNormalizing, iter + 1);
+        NormalizeTTable(stagingArea, variational_bayes ? alpha : 0);
+        SwapTTables(stagingArea, model->translation_table);
+        ClearTTable(stagingArea);
+        if (listener) listener->End(kBuilderStepNormalizing, iter + 1);
 
         if (listener) listener->IterationEnd(iter + 1);
     }

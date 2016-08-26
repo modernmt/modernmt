@@ -190,7 +190,7 @@ class FastAlign(WordAligner):
     def __init__(self):
         WordAligner.__init__(self)
 
-        self._align_bin = os.path.join(cli.BIN_DIR, 'fastalign', 'fast_align')
+        self._align_bin = os.path.join(cli.BIN_DIR, 'fast_align')
 
     def align(self, corpus, langs, model_dir, working_dir='.', log_file=None):
         WordAligner.align(self, corpus, langs, working_dir, log_file)
@@ -203,7 +203,6 @@ class FastAlign(WordAligner):
         fwd_file = os.path.join(working_dir, corpus_name + '.' + langs_suffix + '.fwd')
         bwd_file = os.path.join(working_dir, corpus_name + '.' + langs_suffix + '.bwd')
         bal_file = os.path.join(working_dir, corpus_name + '.' + langs_suffix + '.bal')
-        aligned_file_path = os.path.join(working_dir, corpus_name + '.' + langs_suffix + '.aligned')
 
         corpus_l1 = corpus.get_file(l1)
         corpus_l2 = corpus.get_file(l2)
@@ -214,35 +213,15 @@ class FastAlign(WordAligner):
             if log_file is not None:
                 log = open(log_file, 'a')
 
-            with open(corpus_l1) as source_corpus, \
-                    open(corpus_l2) as target_corpus, \
-                    open(aligned_file_path, 'w') as aligned_file:
-                for x, y in zip(source_corpus, target_corpus):
-                    aligned_file.write(x.strip() + ' ||| ' + y.strip() + '\n')
-
-            cpus = multiprocessing.cpu_count()
-
             # Create forward model
             fwd_model = os.path.join(model_dir, 'model.align.fwd')
-            command = [self._align_bin, '-d', '-v', '-o', '-n', str(cpus), '-B', '-p', fwd_model, '-i',
-                       aligned_file_path]
-            shell.execute(command, stderr=log)
-
-            # Compute forward alignments
-            command = [self._align_bin, '-d', '-v', '-o', '-n', str(cpus), '-B', '-f', fwd_model, '-i',
-                       aligned_file_path]
+            command = [self._align_bin, '-s', corpus_l1, '-t', corpus_l2, '-m', fwd_model, '-I', '4']
             with open(fwd_file, 'w') as stdout:
                 shell.execute(command, stdout=stdout, stderr=log)
 
             # Create backward model
             bwd_model = os.path.join(model_dir, 'model.align.bwd')
-            command = [self._align_bin, '-d', '-v', '-o', '-n', str(cpus), '-B', '-p', bwd_model, '-r', '-i',
-                       aligned_file_path]
-            shell.execute(command, stderr=log)
-
-            # Compute backward alignments
-            command = [self._align_bin, '-d', '-v', '-o', '-n', str(cpus), '-B', '-f', bwd_model, '-r', '-i',
-                       aligned_file_path]
+            command = [self._align_bin, '-r', '-s', corpus_l1, '-t', corpus_l2, '-m', bwd_model, '-I', '4']
             with open(bwd_file, 'w') as stdout:
                 shell.execute(command, stdout=stdout, stderr=log)
 
