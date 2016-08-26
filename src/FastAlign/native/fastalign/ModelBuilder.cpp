@@ -27,10 +27,10 @@ void printAlignment(vector<alignment> &alignments) {
 
 void ModelBuilder::forceAlign(const Corpus &corpus) {
     CorpusReader reader(corpus);
-    vector<pair<sentence, sentence>> batch;
+    vector<pair<string, string>> batch;
     vector<alignment> alignments;
 
-    while (reader.Read(batch, buffer_size)) {
+    while (reader.ReadLines(batch, buffer_size)) {
         model->ComputeAlignments(batch, false, NULL, &alignments);
 
         printAlignment(alignments);
@@ -65,24 +65,14 @@ ModelBuilder::ModelBuilder(Options options) : mean_srclen_multiplier(options.mea
     model = new Model(is_reverse, use_null, favor_diagonal, prob_align_null, options.initial_diagonal_tension);
 }
 
-inline void AddTranslationOptions(vector<vector<unsigned> > &insert_buffer, TTable *s2t) {
-    s2t->SetMaxE(insert_buffer.size() - 1);
-#pragma omp parallel for schedule(dynamic)
-    for (unsigned e = 0; e < insert_buffer.size(); ++e) {
-        for (unsigned idxf = 0; idxf < insert_buffer[e].size(); ++idxf) {
-            s2t->Insert(e, insert_buffer[e][idxf]);
-        }
-        insert_buffer[e].clear();
-    }
-}
-
 void ModelBuilder::InitialPass(const Corpus &corpus, double *n_target_tokens, double *tot_len_ratio,
                                vector<pair<pair<short, short>, unsigned int>> *size_counts) {
     CorpusReader reader(corpus);
 
     unordered_map<pair<short, short>, unsigned, PairHash> size_counts_;
-    vector<vector<unsigned >> insert_buffer;
-    size_t insert_buffer_items = 0;
+    unordered_map<word, vector<word>> buffer;
+    word maxSourceWord = 0;
+    size_t buffer_items = 0;
     sentence src, trg;
 
     while (reader.Read(src, trg)) {
@@ -91,24 +81,28 @@ void ModelBuilder::InitialPass(const Corpus &corpus, double *n_target_tokens, do
 
         *tot_len_ratio += static_cast<double> (trg.size()) / static_cast<double> (src.size());
         *n_target_tokens += trg.size();
+
         if (use_null) {
-            for (unsigned idxf = 0; idxf < trg.size(); ++idxf) {
-                model->s2t.Insert(kNullWord, trg[idxf]);
+            for (size_t idxf = 0; idxf < trg.size(); ++idxf) {
+                buffer[kNullWord].push_back(trg[idxf]);
             }
-        }
-        for (unsigned idxe = 0; idxe < src.size(); ++idxe) {
-            if (src[idxe] >= insert_buffer.size()) {
-                insert_buffer.resize(src[idxe] + 1);
-            }
-            for (unsigned idxf = 0; idxf < trg.size(); ++idxf) {
-                insert_buffer[src[idxe]].push_back(trg[idxf]);
-            }
-            insert_buffer_items += trg.size();
+
+            buffer_items += trg.size();
         }
 
-        if (insert_buffer_items > buffer_size * 100) {
-            insert_buffer_items = 0;
-            AddTranslationOptions(insert_buffer, &model->s2t);
+        for (unsigned idxe = 0; idxe < src.size(); ++idxe) {
+            for (unsigned idxf = 0; idxf < trg.size(); ++idxf) {
+                maxSourceWord = max(maxSourceWord, src[idxe]);
+                buffer[src[idxe]].push_back(trg[idxf]);
+            }
+            buffer_items += trg.size();
+        }
+
+        if (buffer_items > buffer_size * 100) {
+            model->s2t.Emplace(buffer, maxSourceWord);
+            buffer_items = 0;
+            maxSourceWord = 0;
+            buffer.clear();
         }
         ++size_counts_[make_pair<short, short>(trg.size(), src.size())];
     }
@@ -118,7 +112,7 @@ void ModelBuilder::InitialPass(const Corpus &corpus, double *n_target_tokens, do
         size_counts->push_back(*p);
     }
 
-    AddTranslationOptions(insert_buffer, &model->s2t);
+    model->s2t.Emplace(buffer, maxSourceWord);
 }
 
 double get_wall_time() {
@@ -145,7 +139,6 @@ Model *ModelBuilder::Build(const Corpus &corpus, const string &model_filename) {
     double n_target_tokens = 0;
 
 
-    begin = get_wall_time();
     clock_start("Initial step");
     InitialPass(corpus, &n_target_tokens, &tot_len_ratio, &size_counts);
     clock_stop()
@@ -153,15 +146,15 @@ Model *ModelBuilder::Build(const Corpus &corpus, const string &model_filename) {
     model->s2t.Freeze();
 
     for (int iter = 0; iter < iterations; ++iter) {
-        cerr << "Iteration " << iter << ":" << endl;
+        cerr << "Iteration " << (iter + 1) << ":" << endl;
 
         AlignmentStats stats;
 
         CorpusReader reader(corpus);
-        vector<pair<sentence, sentence>> batch;
+        vector<pair<string, string>> batch;
 
         clock_start("   Aligning");
-        while (reader.Read(batch, buffer_size)) {
+        while (reader.ReadLines(batch, buffer_size)) {
             model->ComputeAlignments(batch, true, &stats);
             batch.clear();
         }
@@ -169,7 +162,7 @@ Model *ModelBuilder::Build(const Corpus &corpus, const string &model_filename) {
 
         stats.emp_feat /= n_target_tokens;
 
-        if (iter < iterations - 1) {
+        if (iter < iterations - 1) { // TODO remove, why wasting last iteration?
             clock_start("   Calculating diagonal tension");
             if (favor_diagonal && optimize_tension) {
                 for (int ii = 0; ii < 8; ++ii) {

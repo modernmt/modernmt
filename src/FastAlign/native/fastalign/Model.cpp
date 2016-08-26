@@ -4,6 +4,7 @@
 
 #include "Model.h"
 #include "DiagonalAlignment.h"
+#include "Corpus.h"
 
 using namespace fastalign;
 
@@ -12,7 +13,7 @@ Model::Model(const bool is_reverse, const bool use_null, const bool favor_diagon
                                         prob_align_null(prob_align_null), diagonal_tension(diagonal_tension) {
 }
 
-void Model::ComputeAlignments(vector<pair<sentence, sentence>> batch, bool updateModel,
+void Model::ComputeAlignments(vector<pair<string, string>> batch, bool updateModel,
                                AlignmentStats *outStats, vector<alignment> *outAlignments) {
     double emp_feat_ = 0.0;
     double c0_ = 0.0;
@@ -23,11 +24,10 @@ void Model::ComputeAlignments(vector<pair<sentence, sentence>> batch, bool updat
 
 #pragma omp parallel for schedule(dynamic) reduction(+:emp_feat_,c0_,likelihood_)
     for (int line_idx = 0; line_idx < static_cast<int> (batch.size()); ++line_idx) {
-        sentence src = batch[line_idx].first;
-        sentence trg = batch[line_idx].second;
+        sentence src, trg;
 
-        if (is_reverse)
-            swap(src, trg);
+        Corpus::ParseLine(is_reverse ? batch[line_idx].second : batch[line_idx].first, src);
+        Corpus::ParseLine(is_reverse ? batch[line_idx].first : batch[line_idx].second, trg);
 
         vector<double> probs(src.size() + 1);
         alignment outAlignment;
@@ -66,7 +66,7 @@ void Model::ComputeAlignments(vector<pair<sentence, sentence>> batch, bool updat
                 c0_ += count;
 
                 if (updateModel)
-                    s2t.Increment(kNullWord, f_j, count);
+                    s2t.Update(kNullWord, f_j, count);
             }
 
             if (updateModel || outStats) {
@@ -74,7 +74,7 @@ void Model::ComputeAlignments(vector<pair<sentence, sentence>> batch, bool updat
                     const double p = probs[i] / sum;
 
                     if (updateModel) {
-                        s2t.Increment(src[i - 1], f_j, p);
+                        s2t.Update(src[i - 1], f_j, p);
                     }
 
                     if (outStats)

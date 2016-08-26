@@ -46,7 +46,7 @@ void TTable::Normalize() {
             tot += it->second;
         if (!tot) tot = 1;
         for (Word2Double::iterator it = cpd.begin(); it != cpd.end(); ++it)
-            it->second /= tot;
+            it->second = it->second / tot;
     }
     ClearCounts();
     probs_initialized_ = true;

@@ -48,7 +48,7 @@ namespace fastalign {
         Model(const bool is_reverse, const bool use_null, const bool favor_diagonal, const double prob_align_null,
               double diagonal_tension);
 
-        void ComputeAlignments(vector<pair<sentence, sentence>> batch, bool updateModel,
+        void ComputeAlignments(vector<pair<string, string>> batch, bool updateModel,
                                AlignmentStats *outStats = NULL, vector<alignment> *outAlignments = NULL);
     };
 
