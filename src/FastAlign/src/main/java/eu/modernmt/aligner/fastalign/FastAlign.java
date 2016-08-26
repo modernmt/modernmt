@@ -20,33 +20,29 @@ public class FastAlign implements Aligner {
 
     static {
         try {
-            logger.info("Loading jnifastalign library");
-            System.loadLibrary("jnifastalign");
-            logger.info("Library jnifastalign loaded successfully");
+            System.loadLibrary("fastalign");
         } catch (Throwable e) {
-            logger.error("Unable to load library jnifastalign", e);
+            logger.error("Unable to load library 'fastalign'", e);
             throw e;
         }
     }
 
     private File model;
-    private boolean reverse;
     private long nativeHandle;
 
-    FastAlign(File model, boolean reverse) {
-        this.reverse = reverse;
+    FastAlign(File model) {
         this.model = model;
     }
-
-    private native void init(String modelFile, boolean reverse, int threads);
 
     @Override
     public void load() throws AlignerException {
         if (!model.isFile())
             throw new AlignerException("Invalid model path: " + model);
 
-        this.init(model.getAbsolutePath(), reverse, Runtime.getRuntime().availableProcessors());
+        this.nativeHandle = instantiate(model.getAbsolutePath(), Runtime.getRuntime().availableProcessors());
     }
+
+    private native long instantiate(String modelFile, int threads);
 
     @Override
     public int[][] getAlignment(Sentence sentence, Sentence translation) throws AlignerException {
@@ -82,21 +78,16 @@ public class FastAlign implements Aligner {
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
-        close();
+        nativeHandle = dispose(nativeHandle);
     }
 
-    @Override
-    public void close() {
-        dispose();
-    }
-
-    private native void dispose();
+    private native long dispose(long handle);
 
     private static String serialize(Word[] words) {
         StringBuilder text = new StringBuilder();
 
         for (int i = 0; i < words.length; i++) {
-            text.append(words[i].getPlaceholder());
+            text.append(words[i].getId());
 
             if (i < words.length - 1)
                 text.append(' ');

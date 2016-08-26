@@ -9,36 +9,7 @@
 #include "DiagonalAlignment.h"
 #include "ModelBuilder.h"
 
-#include <sys/time.h>
-
 using namespace fastalign;
-
-void printAlignment(vector<alignment> &alignments) {
-    for (auto a = alignments.begin(); a != alignments.end(); ++a) {
-        for (size_t i = 0; i < a->size(); ++i) {
-            if (i > 0)
-                cout << ' ';
-            cout << a->at(i).first << '-' << a->at(i).second;
-        }
-
-        cout << endl;
-    }
-}
-
-void ModelBuilder::forceAlign(const Corpus &corpus) {
-    CorpusReader reader(corpus);
-    vector<pair<string, string>> batch;
-    vector<alignment> alignments;
-
-    while (reader.ReadLines(batch, buffer_size)) {
-        model->ComputeAlignments(batch, false, NULL, &alignments);
-
-        printAlignment(alignments);
-
-        alignments.clear();
-        batch.clear();
-    }
-}
 
 
 struct PairHash {
@@ -65,7 +36,33 @@ ModelBuilder::ModelBuilder(Options options) : mean_srclen_multiplier(options.mea
     model = new Model(is_reverse, use_null, favor_diagonal, prob_align_null, options.initial_diagonal_tension);
 }
 
-void ModelBuilder::InitialPass(const Corpus &corpus, double *n_target_tokens,
+void ModelBuilder::setListener(ModelBuilder::Listener *listener) {
+    ModelBuilder::listener = listener;
+}
+
+void
+ModelBuilder::AllocateTTableSpace(ttable_t &table, const std::unordered_map<uint32_t, std::vector<uint32_t>> &values,
+                                  const uint32_t sourceWordMaxValue) {
+    if (table.size() < sourceWordMaxValue) {
+#pragma omp critical(resize_counts)
+        {
+            if (table.size() < sourceWordMaxValue)
+                table.resize(sourceWordMaxValue + 1);
+        }
+    }
+
+#pragma omp parallel for schedule(dynamic)
+    for (size_t bucket = 0; bucket < values.bucket_count(); ++bucket) {
+        for (auto row_ptr = values.begin(bucket); row_ptr != values.end(bucket); ++row_ptr) {
+            uint32_t sourceWord = row_ptr->first;
+
+            for (auto targetWord = row_ptr->second.begin(); targetWord != row_ptr->second.end(); ++targetWord)
+                table[sourceWord][*targetWord] = 0;
+        }
+    }
+}
+
+void ModelBuilder::InitialPass(const Corpus &corpus, double *n_target_tokens, ttable_t &ttable,
                                vector<pair<pair<short, short>, unsigned int>> *size_counts) {
     CorpusReader reader(corpus);
 
@@ -99,7 +96,7 @@ void ModelBuilder::InitialPass(const Corpus &corpus, double *n_target_tokens,
         }
 
         if (buffer_items > buffer_size * 100) {
-            model->s2t.Emplace(buffer, maxSourceWord);
+            AllocateTTableSpace(ttable, buffer, maxSourceWord);
             buffer_items = 0;
             maxSourceWord = 0;
             buffer.clear();
@@ -113,58 +110,64 @@ void ModelBuilder::InitialPass(const Corpus &corpus, double *n_target_tokens,
         size_counts->push_back(*p);
     }
 
-    model->s2t.Emplace(buffer, maxSourceWord);
+    AllocateTTableSpace(ttable, buffer, maxSourceWord);
 }
 
-double get_wall_time() {
-    struct timeval time;
-
-    if (gettimeofday(&time, NULL)) {
-        //  Handle error
-        return 0;
+void ModelBuilder::SwapTTables(ttable_t &source, ttable_t &destination) {
+    if (destination.empty()) {
+        destination.resize(source.size());
+        for (unsigned i = 0; i < source.size(); ++i) {
+            destination[i] = source[i];
+        }
+    } else {
+        destination.swap(source);
     }
-
-    return (double) time.tv_sec + ((double) time.tv_usec / 1000000.);
 }
 
-#define clock_start(msg) {cerr << msg << "..."; begin = get_wall_time();}
-#define clock_stop() {cerr << "DONE in " << (get_wall_time() - begin) << endl;}
+void ModelBuilder::ClearTTable(ttable_t &table) {
+#pragma omp parallel for schedule(dynamic)
+    for (size_t i = 0; i < table.size(); ++i) {
+        for (auto cell = table[i].begin(); cell != table[i].end(); ++cell)
+            cell->second = 0;
+    }
+}
 
 Model *ModelBuilder::Build(const Corpus &corpus, const string &model_filename) {
-    double begin;
     omp_set_dynamic(0);
     omp_set_num_threads(threads);
+
+    if (listener) listener->Begin();
 
     vector<pair<pair<short, short>, unsigned >> size_counts;
     double n_target_tokens = 0;
 
+    ttable_t stagingArea;
 
-    clock_start("Initial step");
-    InitialPass(corpus, &n_target_tokens, &size_counts);
-    clock_stop()
-
-    model->s2t.Freeze();
+    if (listener) listener->Begin(kBuilderStepSetup, 0);
+    InitialPass(corpus, &n_target_tokens, stagingArea, &size_counts);
+    if (listener) listener->End(kBuilderStepSetup, 0);
 
     for (int iter = 0; iter < iterations; ++iter) {
-        cerr << "Iteration " << (iter + 1) << ":" << endl;
+        if (listener) listener->IterationBegin(iter + 1);
 
         AlignmentStats stats;
 
         CorpusReader reader(corpus);
         vector<pair<string, string>> batch;
 
-        clock_start("   Aligning");
+        if (listener) listener->Begin(kBuilderStepAligning, iter + 1);
         while (reader.ReadLines(batch, buffer_size)) {
-            model->ComputeAlignments(batch, true, &stats);
+            model->ComputeAlignments(batch, &stagingArea, &stats);
             batch.clear();
         }
-        clock_stop()
+        if (listener) listener->End(kBuilderStepAligning, iter + 1);
 
         stats.emp_feat /= n_target_tokens;
 
         if (iter < iterations - 1) { // TODO remove, why wasting last iteration?
             if (favor_diagonal && optimize_tension) {
-                clock_start("   Optimizing diagonal tension");
+                if (listener) listener->Begin(kBuilderStepOptimizingDiagonalTension, iter + 1);
+
                 for (int ii = 0; ii < 8; ++ii) {
                     double mod_feat = 0;
 #pragma omp parallel for reduction(+:mod_feat)
@@ -179,34 +182,62 @@ Model *ModelBuilder::Build(const Corpus &corpus, const string &model_filename) {
                     if (model->diagonal_tension <= 0.1) model->diagonal_tension = 0.1;
                     if (model->diagonal_tension > 14) model->diagonal_tension = 14;
                 }
-                clock_stop()
+
+                if (listener) listener->End(kBuilderStepOptimizingDiagonalTension, iter + 1);
             }
 
-            clock_start("   Normalizing");
-            if (variational_bayes)
-                model->s2t.NormalizeVB(alpha);
-            else
-                model->s2t.Normalize();
-            clock_stop()
+            if (listener) listener->Begin(kBuilderStepNormalizing, iter + 1);
+            NormalizeTTable(stagingArea, variational_bayes ? alpha : 0);
+            SwapTTables(stagingArea, model->translation_table);
+            ClearTTable(stagingArea);
+            if (listener) listener->End(kBuilderStepNormalizing, iter + 1);
         }
+
+        if (listener) listener->IterationEnd(iter + 1);
     }
 
-    clock_start("Pruning");
-    model->s2t.Prune(1e-20);
-    clock_stop()
+    if (listener) listener->Begin(kBuilderStepPruning, 0);
+    model->Prune();
+    if (listener) listener->End(kBuilderStepPruning, 0);
 
-    clock_start("Storing model");
-    if (!model_filename.empty()) {
-        std::ofstream out(model_filename, ios::binary | ios::out);
-        assert(out);
-        model->s2t.SaveToBinFile(out, model->diagonal_tension, mean_srclen_multiplier);
-        out.close();
-    }
-    clock_stop()
+    if (listener) listener->Begin(kBuilderStepStoringModel, 0);
+    model->Store(model_filename);
+    if (listener) listener->End(kBuilderStepStoringModel, 0);
 
-    clock_start("Printing alignments");
-    forceAlign(corpus);
-    clock_stop()
+    if (listener) listener->End();
 
     return model;
+}
+
+inline double digamma(double x) {
+    double result = 0, xx, xx2, xx4;
+    for (; x < 7; ++x)
+        result -= 1 / x;
+    x -= 1.0 / 2.0;
+    xx = 1.0 / x;
+    xx2 = xx * xx;
+    xx4 = xx2 * xx2;
+    result += log(x) + (1. / 24.) * xx2 - (7.0 / 960.0) * xx4 + (31.0 / 8064.0) * xx4 * xx2 -
+              (127.0 / 30720.0) * xx4 * xx4;
+    return result;
+}
+
+void ModelBuilder::NormalizeTTable(ttable_t &table, double alpha) {
+#pragma omp parallel for schedule(dynamic)
+    for (size_t i = 0; i < table.size(); ++i) {
+        unordered_map<word, double> &row = table[i];
+        double row_norm = 0;
+
+        for (auto cell = row.begin(); cell != row.end(); ++cell)
+            row_norm += cell->second + alpha;
+
+        if (row_norm == 0) row_norm = 1;
+
+        if (alpha > 0)
+            row_norm = digamma(row_norm);
+
+        for (auto cell = row.begin(); cell != row.end(); ++cell)
+            cell->second = (double) (alpha > 0 ? exp(digamma(cell->second + alpha) - row_norm) :
+                                     cell->second / row_norm);
+    }
 }

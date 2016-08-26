@@ -17,138 +17,167 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include <fastalign/ModelBuilder.h>
-#include <sstream>
+#include <sys/time.h>
 
 using namespace std;
 using namespace fastalign;
 
-string input;
-string conditional_probability_filename = "";
-string input_model_file = "";
-string StringForExit = "EXIT";
-double mean_srclen_multiplier = 1.0;
-int is_reverse = 0;
-int ITERATIONS = 5;
-int favor_diagonal = 0;
-double beam_threshold = -4.0;
-double prob_align_null = 0.08;
-double diagonal_tension = 4.0;
-int optimize_tension = 0;
-int variational_bayes = 0;
-double alpha = 0.01;
-int no_null_word = 0;
-size_t thread_buffer_size = 10000;
-bool force_align = false;
-int NumberOfThreads = 8;
+string source_input;
+string target_input;
+string model_path;
+
+Options builderOptions(false);
+
 struct option options[] = {
-        {"input",                     required_argument, 0,                  'i'},
-        {"reverse",                   no_argument,       &is_reverse,        1},
-        {"iterations",                required_argument, 0,                  'I'},
-        {"favor_diagonal",            no_argument,       &favor_diagonal,    1},
-        {"force_align",               required_argument, 0,                  'f'},
-        {"mean_srclen_multiplier",    required_argument, 0,                  'm'},
-        {"beam_threshold",            required_argument, 0,                  't'},
-        {"p0",                        required_argument, 0,                  'q'},
-        {"diagonal_tension",          required_argument, 0,                  'T'},
-        {"optimize_tension",          no_argument,       &optimize_tension,  1},
-        {"variational_bayes",         no_argument,       &variational_bayes, 1},
-        {"alpha",                     required_argument, 0,                  'a'},
-        {"no_null_word",              no_argument,       &no_null_word,      1},
-        {"conditional_probabilities", required_argument, 0,                  'p'},
-        {"thread_buffer_size",        required_argument, 0,                  'b'},
-        {"NumberOfThreads",           required_argument, 0,                  'n'},
-        {"BinaryDump",                required_argument, 0,                  'B'},
-        {"StringForExit",             required_argument, 0,                  'e'},
-        {0, 0,                                           0,                  0}
+        {"source",     required_argument, NULL, 0},
+        {"target",     required_argument, NULL, 0},
+        {"model",      required_argument, NULL, 0},
+        {"threads",    optional_argument, NULL, 0},
+        {"reverse",    no_argument,       NULL, 0},
+        {"iterations", optional_argument, NULL, 0},
+        {0, 0, 0,                               0}
 };
 
 void help(const char *name) {
-    cerr << "Usage: " << name << " -i file.fr-en\n"
-         << " Standard options ([USE] = strongly recommended):\n"
-         << "  -i: [REQ] Input parallel corpus\n"
-         << "  -v: [USE] Use Dirichlet prior on lexical translation distributions\n"
-         << "  -d: [USE] Favor alignment points close to the monotonic diagonoal\n"
-         << "  -o: [USE] Optimize how close to the diagonal alignment points should be\n"
+    cerr << "Usage: " << name << " -s file.fr -t file.en -m model\n"
+         << "  -s: [REQ] Input source corpus\n"
+         << "  -t: [REQ] Input target corpus\n"
+         << "  -m: [REQ] Output model path\n"
          << "  -r: Run alignment in reverse (condition on target and predict source)\n"
-         << "  -p: Output conditional probability table\n"
-         << "  -f: Forced Align mode. Requires a conditional probability table to perform alignment.\n"
-         << " Advanced options:\n"
          << "  -I: number of iterations in EM training (default = 5)\n"
-         << "  -q: p_null parameter (default = 0.08)\n"
-         << "  -N: No null word\n"
-         << "  -m: Mean Source Length Multiplier.\n"
-         << "  -n: Number of threads. (default = 8)\n"
-         << "  -b: thread buffer size (default = 10000). [Use 0 to run in the single mode.]\n"
-         << "  -a: alpha parameter for optional Dirichlet prior (default = 0.01)\n"
-         << "  -T: starting lambda for diagonal distance parameter (default = 4)\n"
-         << "  -B: Save and load the models in the Binary mode? (default = False)\n"
-         << "  -e: string for exit (default = EXIT)\n";
+         << "  -n: Number of threads. (default = number of CPUs)\n";
 }
 
 bool InitCommandLine(int argc, char **argv) {
-    while (1) {
+    while (true) {
         int oi;
-        int c = getopt_long(argc, argv, "i:rI:df:m:t:q:T:ova:Np:b:n:Be:", options, &oi);
+        int c = getopt_long(argc, argv, "s:t:m:rI:n:", options, &oi);
         if (c == -1) break;
+
         switch (c) {
-            case 'i':
-                input = optarg;
-                break;
-            case 'r':
-                is_reverse = 1;
-                break;
-            case 'I':
-                ITERATIONS = atoi(optarg);
-                break;
-            case 'd':
-                favor_diagonal = 1;
-                break;
-            case 'f':
-                force_align = 1;
-                conditional_probability_filename = optarg;
-                break;
-            case 'm':
-                mean_srclen_multiplier = atof(optarg);
+            case 's':
+                source_input = optarg;
                 break;
             case 't':
-                beam_threshold = atof(optarg);
+                target_input = optarg;
                 break;
-            case 'q':
-                prob_align_null = atof(optarg);
+            case 'm':
+                model_path = optarg;
                 break;
-            case 'T':
-                diagonal_tension = atof(optarg);
+            case 'r':
+                builderOptions.is_reverse = true;
                 break;
-            case 'o':
-                optimize_tension = 1;
-                break;
-            case 'v':
-                variational_bayes = 1;
-                break;
-            case 'a':
-                alpha = atof(optarg);
-                break;
-            case 'N':
-                no_null_word = 1;
-                break;
-            case 'p':
-                conditional_probability_filename = optarg;
+            case 'I':
+                builderOptions.iterations = atoi(optarg);
                 break;
             case 'n':
-                NumberOfThreads = atoi(optarg);
-                break;
-            case 'b':
-                thread_buffer_size = atoi(optarg);
-                break;
-            case 'e':
-                StringForExit = optarg;
+                builderOptions.threads = atoi(optarg);
                 break;
             default:
                 return false;
         }
     }
-    if (input.size() == 0) return false;
-    return true;
+
+    return !source_input.empty() && !target_input.empty() && !model_path.empty();
+}
+
+class ProcessListener : public ModelBuilder::Listener {
+public:
+    virtual void Begin() override {
+        processBegin = GetTime();
+    }
+
+    virtual void IterationBegin(int iteration) override {
+        cerr << "Iteration " << iteration << ":" << endl;
+    }
+
+    virtual void Begin(const BuilderStep step, int iteration) override {
+        if (iteration > 0)
+            cerr << "\t";
+
+        string str_step;
+        switch (step) {
+            case kBuilderStepSetup:
+                str_step = "Initial setup";
+                break;
+            case kBuilderStepAligning:
+                str_step = "Computing alignments";
+                break;
+            case kBuilderStepOptimizingDiagonalTension:
+                str_step = "Optimizing diagonal tension";
+                break;
+            case kBuilderStepNormalizing:
+                str_step = "Normalizing translation table";
+                break;
+            case kBuilderStepPruning:
+                str_step = "Pruning model";
+                break;
+            case kBuilderStepStoringModel:
+                str_step = "Storing model";
+                break;
+            default:
+                str_step = "Unknown step";
+                break;
+        }
+
+        cerr << str_step << "... ";
+        stepBegin = GetTime();
+    }
+
+    virtual void End(const BuilderStep step, int iteration) override {
+        cerr << "DONE in " << (GetTime() - stepBegin) << "s" << endl;
+    }
+
+    virtual void IterationEnd(int iteration) override {
+        // Nothing to do
+    }
+
+    virtual void End() override {
+        cerr << "\nTraining done in " << (GetTime() - processBegin) << "s" << endl;
+
+    }
+
+private:
+    double stepBegin;
+    double processBegin;
+
+    double GetTime() {
+        struct timeval time;
+
+        if (gettimeofday(&time, NULL)) {
+            //  Handle error
+            return 0;
+        }
+
+        return (double) time.tv_sec + ((double) time.tv_usec / 1000000.);
+    }
+};
+
+void printAlignment(vector<alignment> &alignments) {
+    for (auto a = alignments.begin(); a != alignments.end(); ++a) {
+        for (size_t i = 0; i < a->size(); ++i) {
+            if (i > 0)
+                cout << ' ';
+            cout << a->at(i).first << '-' << a->at(i).second;
+        }
+
+        cout << endl;
+    }
+}
+
+void print(const Corpus &corpus, Model *model, size_t buffer_size) {
+    CorpusReader reader(corpus);
+    vector<pair<string, string>> batch;
+    vector<alignment> alignments;
+
+    while (reader.ReadLines(batch, buffer_size)) {
+        model->ComputeAlignments(batch, alignments);
+
+        printAlignment(alignments);
+
+        alignments.clear();
+        batch.clear();
+    }
 }
 
 int main(int argc, char **argv) {
@@ -157,18 +186,13 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    string source;
-    string target;
-    stringstream ss(input);
+    ProcessListener listener;
+    Corpus corpus(source_input, target_input);
 
-    getline(ss, source, ',');
-    getline(ss, target, ',');
-
-    Corpus corpus(source, target);
-
-    Options builderOptions(is_reverse);
     ModelBuilder builder(builderOptions);
+    builder.setListener(&listener);
 
-    builder.Build(corpus, conditional_probability_filename);
+    Model *model = builder.Build(corpus, model_path);
 
+    print(corpus, model, builderOptions.buffer_size);
 }

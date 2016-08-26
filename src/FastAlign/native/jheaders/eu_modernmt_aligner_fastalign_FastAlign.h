@@ -9,11 +9,11 @@ extern "C" {
 #endif
 /*
  * Class:     eu_modernmt_aligner_fastalign_FastAlign
- * Method:    init
- * Signature: (Ljava/lang/String;ZI)V
+ * Method:    instantiate
+ * Signature: (Ljava/lang/String;I)J
  */
-JNIEXPORT void JNICALL Java_eu_modernmt_aligner_fastalign_FastAlign_init
-  (JNIEnv *, jobject, jstring, jboolean, jint);
+JNIEXPORT jlong JNICALL Java_eu_modernmt_aligner_fastalign_FastAlign_instantiate
+  (JNIEnv *, jobject, jstring, jint);
 
 /*
  * Class:     eu_modernmt_aligner_fastalign_FastAlign
@@ -34,10 +34,10 @@ JNIEXPORT jobjectArray JNICALL Java_eu_modernmt_aligner_fastalign_FastAlign_alig
 /*
  * Class:     eu_modernmt_aligner_fastalign_FastAlign
  * Method:    dispose
- * Signature: ()V
+ * Signature: (J)J
  */
-JNIEXPORT void JNICALL Java_eu_modernmt_aligner_fastalign_FastAlign_dispose
-  (JNIEnv *, jobject);
+JNIEXPORT jlong JNICALL Java_eu_modernmt_aligner_fastalign_FastAlign_dispose
+  (JNIEnv *, jobject, jlong);
 
 #ifdef __cplusplus
 }

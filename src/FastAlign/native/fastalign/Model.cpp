@@ -13,8 +13,8 @@ Model::Model(const bool is_reverse, const bool use_null, const bool favor_diagon
                                         prob_align_null(prob_align_null), diagonal_tension(diagonal_tension) {
 }
 
-void Model::ComputeAlignments(vector<pair<string, string>> batch, bool updateModel,
-                               AlignmentStats *outStats, vector<alignment> *outAlignments) {
+void Model::ComputeAlignments(vector<pair<string, string>> &batch, ttable_t *outTable,
+                              AlignmentStats *outStats, vector<alignment> *outAlignments) {
     double emp_feat_ = 0.0;
     double c0_ = 0.0;
     double likelihood_ = 0.0;
@@ -42,7 +42,7 @@ void Model::ComputeAlignments(vector<pair<string, string>> batch, bool updateMod
             if (use_null) {
                 if (favor_diagonal)
                     prob_a_i = prob_align_null;
-                probs[0] = s2t.safe_prob(kNullWord, f_j) * prob_a_i;
+                probs[0] = GetProbability(kNullWord, f_j) * prob_a_i;
                 sum += probs[0];
             }
 
@@ -56,7 +56,7 @@ void Model::ComputeAlignments(vector<pair<string, string>> batch, bool updateMod
                     prob_a_i = DiagonalAlignment::UnnormalizedProb(j + 1, i, trg.size(), src.size(), diagonal_tension) /
                                az;
                 }
-                probs[i] = s2t.safe_prob(src[i - 1], f_j) * prob_a_i;
+                probs[i] = GetProbability(src[i - 1], f_j) * prob_a_i;
                 sum += probs[i];
             }
 
@@ -65,16 +65,19 @@ void Model::ComputeAlignments(vector<pair<string, string>> batch, bool updateMod
                 double count = probs[0] / sum;
                 c0_ += count;
 
-                if (updateModel)
-                    s2t.Update(kNullWord, f_j, count);
+                if (outTable) {
+#pragma omp atomic
+                    (*outTable)[kNullWord][f_j] += count;
+                }
             }
 
-            if (updateModel || outStats) {
+            if (outTable || outStats) {
                 for (size_t i = 1; i <= src.size(); ++i) {
                     const double p = probs[i] / sum;
 
-                    if (updateModel) {
-                        s2t.Update(src[i - 1], f_j, p);
+                    if (outTable) {
+#pragma omp atomic
+                        (*outTable)[src[i - 1]][f_j] += p;
                     }
 
                     if (outStats)
@@ -122,5 +125,99 @@ void Model::ComputeAlignments(vector<pair<string, string>> batch, bool updateMod
     }
 }
 
+void Model::Prune(double threshold) {
+#pragma omp parallel for schedule(dynamic)
+    for (size_t i = 0; i < translation_table.size(); ++i) {
+        unordered_map<word, double> &row = translation_table[i];
 
+        for (auto cell = row.cbegin(); cell != row.cend(); /* no increment */) {
+            if (cell->second <= threshold) {
+                row.erase(cell++);
+            } else {
+                ++cell;
+            }
+        }
+    }
+}
 
+void Model::Store(const string &filename) {
+    ofstream out(filename, ios::binary | ios::out);
+
+    out.write((const char *) &is_reverse, sizeof(bool));
+    out.write((const char *) &use_null, sizeof(bool));
+    out.write((const char *) &favor_diagonal, sizeof(bool));
+
+    out.write((const char *) &prob_align_null, sizeof(double));
+    out.write((const char *) &diagonal_tension, sizeof(double));
+
+    size_t ttable_size = translation_table.size();
+    out.write((const char *) &ttable_size, sizeof(size_t));
+
+    for (word sourceWord = 0; sourceWord < translation_table.size(); ++sourceWord) {
+        unordered_map<word, double> &row = translation_table[sourceWord];
+        size_t row_size = row.size();
+
+        if (row_size == 0)
+            continue;
+
+        out.write((const char *) &sourceWord, sizeof(word));
+        out.write((const char *) &row_size, sizeof(size_t));
+
+        for (auto it = row.begin(); it != row.end(); ++it) {
+            word targetWord = it->first;
+            double value = it->second;
+
+            out.write((const char *) &targetWord, sizeof(word));
+            out.write((const char *) &value, sizeof(double));
+        }
+    }
+}
+
+Model *Model::Open(const string &filename) {
+    bool is_reverse;
+    bool use_null;
+    bool favor_diagonal;
+    double prob_align_null;
+    double diagonal_tension;
+
+    ifstream in(filename, ios::binary | ios::in);
+
+    in.read((char *) &is_reverse, sizeof(bool));
+    in.read((char *) &use_null, sizeof(bool));
+    in.read((char *) &favor_diagonal, sizeof(bool));
+
+    in.read((char *) &prob_align_null, sizeof(double));
+    in.read((char *) &diagonal_tension, sizeof(double));
+
+    Model *model = new Model(is_reverse, use_null, favor_diagonal, prob_align_null, diagonal_tension);
+
+    size_t ttable_size;
+    in.read((char *) &ttable_size, sizeof(size_t));
+
+    model->translation_table.resize(ttable_size);
+
+    while (true) {
+        word sourceWord;
+        in.read((char *) &sourceWord, sizeof(word));
+
+        if (in.eof())
+            break;
+
+        unordered_map<word, double> &row = model->translation_table[sourceWord];
+
+        size_t row_size;
+        in.read((char *) &row_size, sizeof(size_t));
+
+        for (size_t i = 0; i < row_size; ++i) {
+            word targetWord;
+            double value;
+
+            in.read((char *) &targetWord, sizeof(word));
+            in.read((char *) &value, sizeof(double));
+
+            row[targetWord] = value;
+        }
+    }
+
+    return model;
+}

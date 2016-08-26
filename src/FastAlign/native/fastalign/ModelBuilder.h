@@ -8,7 +8,6 @@
 #include <cstddef>
 #include <string>
 #include "Model.h"
-#include "TTable.h"
 #include "Corpus.h"
 
 using namespace std;
@@ -32,9 +31,31 @@ namespace fastalign {
         Options(bool is_reverse = false) : is_reverse(is_reverse) {};
     };
 
+    typedef int BuilderStep;
+
+    static const BuilderStep kBuilderStepSetup = 1;
+    static const BuilderStep kBuilderStepAligning = 2;
+    static const BuilderStep kBuilderStepOptimizingDiagonalTension = 3;
+    static const BuilderStep kBuilderStepNormalizing = 4;
+    static const BuilderStep kBuilderStepPruning = 5;
+    static const BuilderStep kBuilderStepStoringModel = 6;
+
     class ModelBuilder {
     public:
+
+        class Listener {
+        public:
+            virtual void Begin() = 0;
+            virtual void IterationBegin(int iteration) = 0;
+            virtual void Begin(const BuilderStep step, int iteration) = 0;
+            virtual void End(const BuilderStep step, int iteration) = 0;
+            virtual void IterationEnd(int iteration) = 0;
+            virtual void End() = 0;
+        };
+
         ModelBuilder(Options options = Options());
+
+        void setListener(Listener *listener);
 
         Model *Build(const Corpus &corpus, const string &model_filename);
 
@@ -51,13 +72,21 @@ namespace fastalign {
         const size_t buffer_size;
         const int threads;
 
+        Listener *listener;
+
         Model *model;
 
-        void InitialPass(const Corpus &corpus, double *n_target_tokens,
+        void AllocateTTableSpace(ttable_t &table, const std::unordered_map<uint32_t, std::vector<uint32_t>> &values,
+                                 const uint32_t sourceWordMaxValue);
+
+        void SwapTTables(ttable_t &source, ttable_t &destination);
+
+        void ClearTTable(ttable_t &table);
+
+        void InitialPass(const Corpus &corpus, double *n_target_tokens, ttable_t &ttable,
                          vector<pair<pair<short, short>, unsigned int>> *size_counts);
 
-        void forceAlign(const Corpus &corpus);
-
+        void NormalizeTTable(ttable_t &table, double alpha = 0);
     };
 
 }
