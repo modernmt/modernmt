@@ -19,12 +19,14 @@ include_directories(${CMAKE_SOURCE_DIR})
 include_directories(jheaders) # Automatically generated JNI headers
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
+install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib)
 
 file(GLOB executables executables/*.cpp)
 foreach(exefile ${executables})
     get_filename_component(exe ${exefile} NAME_WE)
     add_executable(${exe} ${exefile})
     target_link_libraries(${exe} ${PROJECT_NAME})
+    install(TARGETS ${exe} RUNTIME DESTINATION bin/fastalign)
 endforeach()
 
 # External Libraries

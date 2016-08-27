@@ -38,6 +38,7 @@
         <!-- MMT build directory -->
         <mmt.build>${project.basedir}/../../build</mmt.build>
         <mmt.build.lib>${mmt.build}/lib</mmt.build.lib>
+        <mmt.build.bin>${mmt.build}/bin</mmt.build.bin>
 
         <!-- Vendor directory -->
         <mmt.vendor>${project.basedir}/../../vendor</mmt.vendor>
@@ -56,6 +57,21 @@
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.12</version>
+                <executions>
+                    <execution>
+                        <id>get-cpu-count</id>
+                        <goals>
+                            <goal>cpu-count</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 

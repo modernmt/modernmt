@@ -17,11 +17,11 @@ MMT_INSTALL_LIB	:= $(MMT_BUILD_DIR)/lib
 MMT_INSTALL_BIN	:= $(MMT_BUILD_DIR)/bin
 MMT_INSTALL_RES	:= $(MMT_BUILD_DIR)/res
 
-all: __moses
+all: __moses __rocksdb
 
-install: __install_init __moses_install __paoding_install
+install: __install_init __moses_install __rocksdb_install __paoding_install
 
-clean: __moses_clean
+clean: __moses_clean __rocksdb_clean
 
 res: __res_init __paoding_res __opennlp_res
 
@@ -34,6 +34,7 @@ __install_init:
 
 __res_init:
 	@mkdir -p $(MMT_INSTALL_RES)
+
 
 # ==========================================
 #  MODULE: Moses decoder
@@ -104,6 +105,27 @@ __opennlp_res:
 	@mkdir -p $(OPENNLP_RES)
 	cp $(OPENNLP_HOME)/*.bin $(OPENNLP_RES)/
 
+
+# ==========================================
+#  MODULE: RocksDB
+# ==========================================
+
+ROCKSDB_HOME		:= $(VENDOR_DIR)/rocksdb
+ROCKSDB_LIBS		:= librocksdb
+
+__rocksdb: 
+	@echo "Building RocksDB..."
+	@cd $(ROCKSDB_HOME); make -j$(NPROCS) shared_lib
+	@echo "SUCCESS (RocksDB)"
+	
+__rocksdb_install:
+	@echo "Installing RocksDB..."
+	$(foreach lib,$(ROCKSDB_LIBS),cp --preserve=links -r $(ROCKSDB_HOME)/$(lib)* $(MMT_INSTALL_LIB)/;)
+	@echo "SUCCESS (RocksDB)"
+
+__rocksdb_clean:
+	@cd $(ROCKSDB_HOME); make clean
+	rm -f $(foreach lib,$(ROCKSDB_LIBS),$(MMT_INSTALL_LIB)/$(lib)*)
 
 
 

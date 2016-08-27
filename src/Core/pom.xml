@@ -32,13 +32,6 @@
                             <followSymlinks>false</followSymlinks>
                         </fileset>
                         <fileset>
-                            <directory>${project.build.native}</directory>
-                            <includes>
-                                <include>**/*</include>
-                            </includes>
-                            <followSymlinks>false</followSymlinks>
-                        </fileset>
-                        <fileset>
                             <directory>${mmt.build.lib}</directory>
                             <includes>
                                 <include>*mmtcore*</include>
@@ -92,6 +85,7 @@
                             <workingDirectory>${project.build.native}</workingDirectory>
                             <arguments>
                                 <argument>-DROCKSDB_ROOT=${mmt.vendor.rocksdb}</argument>
+                                <argument>-DCMAKE_INSTALL_PREFIX=${mmt.build}</argument>
                                 <argument>${project.nativedir}</argument>
                             </arguments>
                         </configuration>
@@ -110,39 +104,29 @@
                             <executable>make</executable>
                             <workingDirectory>${project.build.native}</workingDirectory>
                             <arguments>
-                                <argument>-j4</argument>
+                                <argument>-j${cpu.count}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <!-- make install -->
+                    <execution>
+                        <id>cmake-install</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+
+                        <configuration>
+                            <executable>make</executable>
+                            <workingDirectory>${project.build.native}</workingDirectory>
+                            <arguments>
+                                <argument>install</argument>
                             </arguments>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-
-            <!--<plugin>-->
-            <!--<groupId>org.apache.maven.plugins</groupId>-->
-            <!--<artifactId>maven-resources-plugin</artifactId>-->
-            <!--<version>2.7</version>-->
-            <!--<executions>-->
-            <!--<execution>-->
-            <!--<id>copy-native-lib</id>-->
-            <!--<phase>install</phase>-->
-            <!--<goals>-->
-            <!--<goal>copy-resources</goal>-->
-            <!--</goals>-->
-
-            <!--<configuration>-->
-            <!--<outputDirectory>${mmt.libdir}</outputDirectory>-->
-            <!--<resources>-->
-            <!--<resource>-->
-            <!--<directory>${project.build.directory}</directory>-->
-            <!--<includes>-->
-            <!--<include>*jnimoses*</include>-->
-            <!--</includes>-->
-            <!--</resource>-->
-            <!--</resources>-->
-            <!--</configuration>-->
-            <!--</execution>-->
-            <!--</executions>-->
-            <!--</plugin>-->
         </plugins>
     </build>
 

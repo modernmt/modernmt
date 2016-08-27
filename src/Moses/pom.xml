@@ -15,11 +15,6 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
-        <project.nativedir>${project.basedir}/native</project.nativedir>
-        <project.nativedir.headers>${project.nativedir}/jheaders</project.nativedir.headers>
-        <mmt.builddir>${project.parent.basedir}/../build</mmt.builddir>
-        <mmt.libdir>${mmt.builddir}/lib</mmt.libdir>
     </properties>
 
     <build>
@@ -37,14 +32,7 @@
                             <followSymlinks>false</followSymlinks>
                         </fileset>
                         <fileset>
-                            <directory>${project.build.directory}</directory>
-                            <includes>
-                                <include>*jnimoses*</include>
-                            </includes>
-                            <followSymlinks>false</followSymlinks>
-                        </fileset>
-                        <fileset>
-                            <directory>${mmt.libdir}</directory>
+                            <directory>${mmt.build.lib}</directory>
                             <includes>
                                 <include>*jnimoses*</include>
                             </includes>
@@ -78,7 +66,6 @@
 
                                 <!-- All native classes -->
                                 <argument>eu.modernmt.decoder.moses.MosesDecoder</argument>
-
                             </arguments>
                         </configuration>
                     </execution>
@@ -94,8 +81,9 @@
 
                         <configuration>
                             <executable>cmake</executable>
-                            <workingDirectory>${project.build.directory}</workingDirectory>
+                            <workingDirectory>${project.build.native}</workingDirectory>
                             <arguments>
+                                <argument>-DCMAKE_INSTALL_PREFIX=${mmt.build}</argument>
                                 <argument>${project.nativedir}</argument>
                             </arguments>
                         </configuration>
@@ -112,37 +100,27 @@
 
                         <configuration>
                             <executable>make</executable>
-                            <workingDirectory>${project.build.directory}</workingDirectory>
+                            <workingDirectory>${project.build.native}</workingDirectory>
                             <arguments>
-                                <argument>-j4</argument>
+                                <argument>-j${cpu.count}</argument>
                             </arguments>
                         </configuration>
                     </execution>
-                </executions>
-            </plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>2.7</version>
-                <executions>
+                    <!-- make install -->
                     <execution>
-                        <id>copy-native-decoder-lib</id>
+                        <id>cmake-install</id>
                         <phase>install</phase>
                         <goals>
-                            <goal>copy-resources</goal>
+                            <goal>exec</goal>
                         </goals>
 
                         <configuration>
-                            <outputDirectory>${mmt.libdir}</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${project.build.directory}</directory>
-                                    <includes>
-                                        <include>*jnimoses*</include>
-                                    </includes>
-                                </resource>
-                            </resources>
+                            <executable>make</executable>
+                            <workingDirectory>${project.build.native}</workingDirectory>
+                            <arguments>
+                                <argument>install</argument>
+                            </arguments>
                         </configuration>
                     </execution>
                 </executions>

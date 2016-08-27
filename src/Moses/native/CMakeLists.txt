@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
-project(MosesDecoder)
+project(jnimoses)
 
 # where to find cmake_modules modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules")
@@ -21,13 +21,14 @@ set(SOURCE_FILES
 
 include_directories(${CMAKE_SOURCE_DIR})
 
-add_library(jnimoses SHARED ${SOURCE_FILES})
+add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
+install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib)
 
 file(GLOB executables executables/*.cpp)
 foreach(exefile ${executables})
     get_filename_component(exe ${exefile} NAME_WE)
     add_executable(${exe} ${exefile})
-    target_link_libraries(${exe} jnimoses)
+    target_link_libraries(${exe} ${PROJECT_NAME})
 endforeach()
 
 # External Libraries
@@ -39,7 +40,7 @@ set(Boost_USE_STATIC_RUNTIME OFF)
 
 find_package(Boost 1.55.0 REQUIRED COMPONENTS filesystem thread system program_options iostreams)
 include_directories(${Boost_INCLUDE_DIRS})
-target_link_libraries(jnimoses ${Boost_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 
 ## JNI
 find_package(JNI REQUIRED)
@@ -49,4 +50,4 @@ include_directories(${JNI_INCLUDE_DIRS})
 find_package(Moses REQUIRED)
 add_definitions(${Moses_DEFINITIONS})
 include_directories(${Moses_INCLUDE_DIRS})
-target_link_libraries(jnimoses ${Moses_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${Moses_LIBRARIES})

@@ -190,7 +190,7 @@ class FastAlign(WordAligner):
     def __init__(self):
         WordAligner.__init__(self)
 
-        self._align_bin = os.path.join(cli.BIN_DIR, 'fast_align')
+        self._align_bin = os.path.join(cli.BIN_DIR, 'fastalign', 'fast_align')
 
     def align(self, corpus, langs, model_dir, working_dir='.', log_file=None):
         WordAligner.align(self, corpus, langs, working_dir, log_file)
