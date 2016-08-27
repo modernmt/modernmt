@@ -285,6 +285,8 @@ const bool PersistentVocabulary::ReverseLookup(const vector<vector<uint32_t>> &b
 
         output.push_back(decoded);
     }
+
+    return true;
 }
 
 void PersistentVocabulary::Put(const string &_word, const uint32_t _id) {

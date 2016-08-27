@@ -66,7 +66,7 @@ static inline const jintArray EncodeIntLine(JNIEnv *jvm, vector<uint32_t> &line)
 
     jintArray result = jvm->NewIntArray(length);
     jvm->SetIntArrayRegion(result, 0, length, array);
-    delete array;
+    delete[] array;
 
     return result;
 }

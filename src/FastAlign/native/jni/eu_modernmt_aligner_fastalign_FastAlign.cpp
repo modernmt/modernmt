@@ -10,6 +10,16 @@
 using namespace std;
 using namespace fastalign;
 
+inline void ParseSentence(JNIEnv *jvm, jintArray jarray, sentence &outSentence) {
+    size_t size = (size_t) jvm->GetArrayLength(jarray);
+    outSentence.reserve(size);
+
+    jint *array = jvm->GetIntArrayElements(jarray, NULL);
+    for (jsize i = 0; i < size; i++)
+        outSentence.push_back((word) array[i]);
+    jvm->ReleaseIntArrayElements(jarray, array, 0);
+}
+
 inline jobjectArray AlignmentToArray(JNIEnv *jvm, alignment align) {
     jclass intArrayClass = jvm->FindClass("[I");
 
@@ -50,14 +60,16 @@ Java_eu_modernmt_aligner_fastalign_FastAlign_instantiate(JNIEnv *jvm, jobject js
 /*
  * Class:     eu_modernmt_aligner_fastalign_FastAlign
  * Method:    alignPair
- * Signature: (Ljava/lang/String;Ljava/lang/String;)[[I
+ * Signature: ([I[I)[[I
  */
 JNIEXPORT jobjectArray JNICALL
-Java_eu_modernmt_aligner_fastalign_FastAlign_alignPair(JNIEnv *jvm, jobject jself, jstring jsource, jstring jtarget) {
+Java_eu_modernmt_aligner_fastalign_FastAlign_alignPair(JNIEnv *jvm, jobject jself, jintArray jsource,
+                                                       jintArray jtarget) {
     Model *model = jni_gethandle<Model>(jvm, jself);
 
-    string source = jni_jstrtostr(jvm, jsource);
-    string target = jni_jstrtostr(jvm, jtarget);
+    sentence source, target;
+    ParseSentence(jvm, jsource, source);
+    ParseSentence(jvm, jtarget, target);
 
     alignment align = model->ComputeAlignment(source, target);
 
@@ -67,7 +79,7 @@ Java_eu_modernmt_aligner_fastalign_FastAlign_alignPair(JNIEnv *jvm, jobject jsel
 /*
  * Class:     eu_modernmt_aligner_fastalign_FastAlign
  * Method:    alignPairs
- * Signature: ([Ljava/lang/String;[Ljava/lang/String;)[[[I
+ * Signature: ([[I[[I)[[[I
  */
 JNIEXPORT jobjectArray JNICALL
 Java_eu_modernmt_aligner_fastalign_FastAlign_alignPairs(JNIEnv *jvm, jobject jself, jobjectArray jsources,
@@ -75,13 +87,15 @@ Java_eu_modernmt_aligner_fastalign_FastAlign_alignPairs(JNIEnv *jvm, jobject jse
     Model *model = jni_gethandle<Model>(jvm, jself);
     jsize length = jvm->GetArrayLength(jsources);
 
-    vector<pair<string, string>> batch;
+    vector<pair<sentence, sentence>> batch;
+    batch.reserve((size_t) length);
 
     for (jsize i = 0; i < length; i++) {
-        string source = jni_jstrtostr(jvm, (jstring) jvm->GetObjectArrayElement(jsources, i));
-        string target = jni_jstrtostr(jvm, (jstring) jvm->GetObjectArrayElement(jtargets, i));
+        sentence source, target;
+        ParseSentence(jvm, (jintArray) jvm->GetObjectArrayElement(jsources, i), source);
+        ParseSentence(jvm, (jintArray) jvm->GetObjectArrayElement(jtargets, i), target);
 
-        batch.push_back(pair<string, string>(source, target));
+        batch.push_back(pair<sentence, sentence>(source, target));
     }
 
     vector<alignment> alignments;

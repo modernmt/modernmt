@@ -47,24 +47,24 @@ public class FastAlign implements Aligner {
 
     @Override
     public int[][] getAlignment(Sentence sentence, Sentence translation) throws AlignerException {
-        String source = serialize(sentence.getWords());
-        String target = serialize(translation.getWords());
+        int[] source = getIds(sentence);
+        int[] target = getIds(translation);
 
         return alignPair(source, target);
     }
 
     @Override
     public int[][][] getAlignments(List<Sentence> sentences, List<Sentence> translations) throws AlignerException {
-        String[] sources = new String[sentences.size()];
-        String[] targets = new String[translations.size()];
+        int[][] sources = new int[sentences.size()][];
+        int[][] targets = new int[translations.size()][];
 
         Iterator<Sentence> sentenceIterator = sentences.iterator();
         Iterator<Sentence> translationIterator = translations.iterator();
 
         int i = 0;
         while (sentenceIterator.hasNext() && translationIterator.hasNext()) {
-            sources[i] = serialize(sentenceIterator.next().getWords());
-            targets[i] = serialize(translationIterator.next().getWords());
+            sources[i] = getIds(sentenceIterator.next());
+            targets[i] = getIds(translationIterator.next());
             i++;
         }
 
@@ -72,9 +72,9 @@ public class FastAlign implements Aligner {
     }
 
 
-    private native int[][] alignPair(String source, String target);
+    private native int[][] alignPair(int[] source, int[] target);
 
-    private native int[][][] alignPairs(String[] sources, String[] targets);
+    private native int[][][] alignPairs(int[][] sources, int[][] targets);
 
     @Override
     protected void finalize() throws Throwable {
@@ -84,17 +84,15 @@ public class FastAlign implements Aligner {
 
     private native long dispose(long handle);
 
-    private static String serialize(Word[] words) {
-        StringBuilder text = new StringBuilder();
+    private static int[] getIds(Sentence sentence) {
+        Word[] words = sentence.getWords();
+        int[] ids = new int[words.length];
 
-        for (int i = 0; i < words.length; i++) {
-            text.append(words[i].getId());
-
-            if (i < words.length - 1)
-                text.append(' ');
+        for (int i = 0; i < ids.length; i++) {
+            ids[i] = words[i].getId();
         }
 
-        return text.toString();
+        return ids;
     }
 
 }

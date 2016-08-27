@@ -13,8 +13,23 @@ Model::Model(const bool is_reverse, const bool use_null, const bool favor_diagon
                                         prob_align_null(prob_align_null), diagonal_tension(diagonal_tension) {
 }
 
-void Model::ComputeAlignments(vector<pair<string, string>> &batch, ttable_t *outTable,
+void Model::ComputeAlignments(const vector<pair<string, string>> &batch, ttable_t *outTable,
                               AlignmentStats *outStats, vector<alignment> *outAlignments) {
+    vector<pair<sentence, sentence>> parsed_batch;
+    parsed_batch.resize(batch.size());
+
+#pragma omp parallel for schedule(dynamic)
+    for (size_t i = 0; i < batch.size(); ++i) {
+        Corpus::ParseLine(batch[i].first, parsed_batch[i].first);
+        Corpus::ParseLine(batch[i].second, parsed_batch[i].second);
+    }
+
+    ComputeAlignments(parsed_batch, outTable, outStats, outAlignments);
+}
+
+void
+Model::ComputeAlignments(const vector<pair<sentence, sentence>> &batch, ttable_t *outTable, AlignmentStats *outStats,
+                         vector<alignment> *outAlignments) {
     double emp_feat_ = 0.0;
     double c0_ = 0.0;
     double likelihood_ = 0.0;
@@ -23,11 +38,9 @@ void Model::ComputeAlignments(vector<pair<string, string>> &batch, ttable_t *out
         outAlignments->resize(batch.size());
 
 #pragma omp parallel for schedule(dynamic) reduction(+:emp_feat_,c0_,likelihood_)
-    for (int line_idx = 0; line_idx < static_cast<int> (batch.size()); ++line_idx) {
-        sentence src, trg;
-
-        Corpus::ParseLine(is_reverse ? batch[line_idx].second : batch[line_idx].first, src);
-        Corpus::ParseLine(is_reverse ? batch[line_idx].first : batch[line_idx].second, trg);
+    for (size_t line_idx = 0; line_idx < batch.size(); ++line_idx) {
+        sentence src = is_reverse ? batch[line_idx].second : batch[line_idx].first;
+        sentence trg = is_reverse ? batch[line_idx].first : batch[line_idx].second;
 
         vector<double> probs(src.size() + 1);
         alignment outAlignment;
@@ -203,10 +216,11 @@ Model *Model::Open(const string &filename) {
         if (in.eof())
             break;
 
-        unordered_map<word, double> &row = model->translation_table[sourceWord];
-
         size_t row_size;
         in.read((char *) &row_size, sizeof(size_t));
+
+        unordered_map<word, double> &row = model->translation_table[sourceWord];
+        row.reserve(row_size);
 
         for (size_t i = 0; i < row_size; ++i) {
             word targetWord;

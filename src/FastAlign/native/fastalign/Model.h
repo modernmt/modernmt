@@ -37,9 +37,9 @@ namespace fastalign {
 
         static Model *Open(const string &filename);
 
-        inline alignment ComputeAlignment(string &source, string &target) {
-            vector<pair<string, string>> batch;
-            batch.push_back(pair<string, string>(source, target));
+        inline alignment ComputeAlignment(const sentence &source, const sentence &target) {
+            vector<pair<sentence, sentence>> batch;
+            batch.push_back(pair<sentence, sentence>(source, target));
 
             vector<alignment> outAlignments;
 
@@ -48,7 +48,11 @@ namespace fastalign {
             return outAlignments[0];
         }
 
-        inline void ComputeAlignments(vector<pair<string, string>> &batch, vector<alignment> &outAlignments) {
+        inline void ComputeAlignments(const vector<pair<string, string>> &batch, vector<alignment> &outAlignments) {
+            ComputeAlignments(batch, NULL, NULL, &outAlignments);
+        }
+
+        inline void ComputeAlignments(const vector<pair<sentence, sentence>> &batch, vector<alignment> &outAlignments) {
             ComputeAlignments(batch, NULL, NULL, &outAlignments);
         }
 
@@ -78,7 +82,10 @@ namespace fastalign {
         Model(const bool is_reverse, const bool use_null, const bool favor_diagonal, const double prob_align_null,
               double diagonal_tension);
 
-        void ComputeAlignments(vector<pair<string, string>> &batch, ttable_t *outTable,
+        void ComputeAlignments(const vector<pair<string, string>> &batch, ttable_t *outTable = NULL,
+                               AlignmentStats *outStats = NULL, vector<alignment> *outAlignments = NULL);
+
+        void ComputeAlignments(const vector<pair<sentence, sentence>> &batch, ttable_t *outTable = NULL,
                                AlignmentStats *outStats = NULL, vector<alignment> *outAlignments = NULL);
 
         void Store(const string &filename);
