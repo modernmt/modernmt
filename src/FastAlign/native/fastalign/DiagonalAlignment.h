@@ -58,19 +58,16 @@ struct DiagonalAlignment {
         if (num_top) {
             pct = arithmetico_geometric_series(Feature(i, ceil, m, n), UnnormalizedProb(i, ceil, m, n, alpha), ratio, d,
                                                num_top);
-            //cerr << "PCT = " << pct << endl;
         }
         if (floor) {
             pcb = arithmetico_geometric_series(Feature(i, floor, m, n), UnnormalizedProb(i, floor, m, n, alpha), ratio,
                                                d, floor);
-            //cerr << "PCB = " << pcb << endl;
         }
         return (pct + pcb) / z;
     }
 
     inline static double Feature(const unsigned i, const unsigned j, const unsigned m, const unsigned n) {
         return -(double(abs((int) (j * m - i * n))) / (m * n));
-        //return -fabs(double(j) / n - double(i) / m);
     }
 
 private:

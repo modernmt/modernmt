@@ -84,7 +84,7 @@ namespace fastalign {
         void ClearTTable(ttable_t &table);
 
         void InitialPass(const Corpus &corpus, double *n_target_tokens, ttable_t &ttable,
-                         vector<pair<pair<short, short>, unsigned int>> *size_counts);
+                         vector<pair<pair<uint16_t, uint16_t>, size_t>> *size_counts);
 
         void NormalizeTTable(ttable_t &table, double alpha = 0);
     };

@@ -13,8 +13,8 @@ using namespace fastalign;
 
 
 struct PairHash {
-    size_t operator()(const pair<short, short> &x) const {
-        return (unsigned short) x.first << 16 | (unsigned) x.second;
+    size_t operator()(const pair<uint16_t, uint16_t> &x) const {
+        return (size_t) ((x.first << 16) | ((x.second) & 0xffff));
     }
 };
 
@@ -58,10 +58,10 @@ ModelBuilder::AllocateTTableSpace(ttable_t &table, const std::unordered_map<uint
 }
 
 void ModelBuilder::InitialPass(const Corpus &corpus, double *n_target_tokens, ttable_t &ttable,
-                               vector<pair<pair<short, short>, unsigned int>> *size_counts) {
+                               vector<pair<pair<uint16_t, uint16_t>, size_t>> *size_counts) {
     CorpusReader reader(corpus);
 
-    unordered_map<pair<short, short>, unsigned, PairHash> size_counts_;
+    unordered_map<pair<uint16_t, uint16_t>, size_t, PairHash> size_counts_;
 
     unordered_map<word, vector<word>> buffer;
     word maxSourceWord = 0;
@@ -82,8 +82,8 @@ void ModelBuilder::InitialPass(const Corpus &corpus, double *n_target_tokens, tt
             buffer_items += trg.size();
         }
 
-        for (unsigned idxe = 0; idxe < src.size(); ++idxe) {
-            for (unsigned idxf = 0; idxf < trg.size(); ++idxf) {
+        for (size_t idxe = 0; idxe < src.size(); ++idxe) {
+            for (size_t idxf = 0; idxf < trg.size(); ++idxf) {
                 maxSourceWord = max(maxSourceWord, src[idxe]);
                 buffer[src[idxe]].push_back(trg[idxf]);
             }
@@ -97,11 +97,10 @@ void ModelBuilder::InitialPass(const Corpus &corpus, double *n_target_tokens, tt
             buffer.clear();
         }
 
-        ++size_counts_[make_pair<short, short>(trg.size(), src.size())];
+        ++size_counts_[make_pair<uint16_t, uint16_t>((uint16_t) trg.size(), (uint16_t) src.size())];
     }
 
-    for (unordered_map<pair<short, short>, unsigned, PairHash>::const_iterator p = size_counts_.begin();
-         p != size_counts_.end(); ++p) {
+    for (auto p = size_counts_.begin(); p != size_counts_.end(); ++p) {
         size_counts->push_back(*p);
     }
 
@@ -111,7 +110,7 @@ void ModelBuilder::InitialPass(const Corpus &corpus, double *n_target_tokens, tt
 void ModelBuilder::SwapTTables(ttable_t &source, ttable_t &destination) {
     if (destination.empty()) {
         destination.resize(source.size());
-        for (unsigned i = 0; i < source.size(); ++i) {
+        for (size_t i = 0; i < source.size(); ++i) {
             destination[i] = source[i];
         }
     } else {
@@ -133,7 +132,7 @@ Model *ModelBuilder::Build(const Corpus &corpus, const string &model_filename) {
 
     if (listener) listener->Begin();
 
-    vector<pair<pair<short, short>, unsigned >> size_counts;
+    vector<pair<pair<uint16_t, uint16_t>, size_t>> size_counts;
     double n_target_tokens = 0;
 
     ttable_t stagingArea;
@@ -166,8 +165,8 @@ Model *ModelBuilder::Build(const Corpus &corpus, const string &model_filename) {
                 double mod_feat = 0;
 #pragma omp parallel for reduction(+:mod_feat)
                 for (size_t i = 0; i < size_counts.size(); ++i) {
-                    const pair<short, short> &p = size_counts[i].first;
-                    for (short j = 1; j <= p.first; ++j)
+                    const pair<uint16_t, uint16_t> &p = size_counts[i].first;
+                    for (uint16_t j = 1; j <= p.first; ++j)
                         mod_feat += size_counts[i].second *
                                     DiagonalAlignment::ComputeDLogZ(j, p.first, p.second, model->diagonal_tension);
                 }
@@ -230,7 +229,6 @@ void ModelBuilder::NormalizeTTable(ttable_t &table, double alpha) {
             row_norm = digamma(row_norm);
 
         for (auto cell = row.begin(); cell != row.end(); ++cell)
-            cell->second = (double) (alpha > 0 ? exp(digamma(cell->second + alpha) - row_norm) :
-                                     cell->second / row_norm);
+            cell->second = alpha > 0 ? exp(digamma(cell->second + alpha) - row_norm) : cell->second / row_norm;
     }
 }

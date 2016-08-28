@@ -45,10 +45,13 @@ Model::ComputeAlignments(const vector<pair<sentence, sentence>> &batch, ttable_t
         vector<double> probs(src.size() + 1);
         alignment outAlignment;
 
-        for (size_t j = 0; j < trg.size(); ++j) {
-            const unsigned &f_j = trg[j];
+        uint32_t src_size = (uint32_t) src.size();
+        uint32_t trg_size = (uint32_t) trg.size();
+
+        for (uint32_t j = 0; j < trg_size; ++j) {
+            const word &f_j = trg[j];
             double sum = 0;
-            double prob_a_i = 1.0 / (src.size() +
+            double prob_a_i = 1.0 / (src_size +
                                      // uniform (model 1), Diagonal Alignment (distortion model)
                                      // ****** DIFFERENT FROM LEXICAL TRANSLATION PROBABILITY *****
                                      (use_null ? 1 : 0));
@@ -61,12 +64,12 @@ Model::ComputeAlignments(const vector<pair<sentence, sentence>> &batch, ttable_t
 
             double az = 0;
             if (favor_diagonal)
-                az = DiagonalAlignment::ComputeZ(j + 1, trg.size(), src.size(), diagonal_tension) /
+                az = DiagonalAlignment::ComputeZ(j + 1, trg_size, src_size, diagonal_tension) /
                      (1. - prob_align_null);
 
-            for (size_t i = 1; i <= src.size(); ++i) {
+            for (uint32_t i = 1; i <= src_size; ++i) {
                 if (favor_diagonal) {
-                    prob_a_i = DiagonalAlignment::UnnormalizedProb(j + 1, i, trg.size(), src.size(), diagonal_tension) /
+                    prob_a_i = DiagonalAlignment::UnnormalizedProb(j + 1, i, trg_size, src_size, diagonal_tension) /
                                az;
                 }
                 probs[i] = GetProbability(src[i - 1], f_j) * prob_a_i;
@@ -85,7 +88,7 @@ Model::ComputeAlignments(const vector<pair<sentence, sentence>> &batch, ttable_t
             }
 
             if (outTable || outStats) {
-                for (size_t i = 1; i <= src.size(); ++i) {
+                for (uint32_t i = 1; i <= src_size; ++i) {
                     const double p = probs[i] / sum;
 
                     if (outTable) {
@@ -94,7 +97,7 @@ Model::ComputeAlignments(const vector<pair<sentence, sentence>> &batch, ttable_t
                     }
 
                     if (outStats)
-                        emp_feat_ += DiagonalAlignment::Feature(j, i, trg.size(), src.size()) * p;
+                        emp_feat_ += DiagonalAlignment::Feature(j, i, trg_size, src_size) * p;
                 }
             }
 
@@ -107,7 +110,7 @@ Model::ComputeAlignments(const vector<pair<sentence, sentence>> &batch, ttable_t
                     max_p = probs[0];
                 }
 
-                for (unsigned i = 1; i <= src.size(); ++i) {
+                for (uint32_t i = 1; i <= src_size; ++i) {
                     if (probs[i] > max_p) {
                         max_index = i;
                         max_p = probs[i];
