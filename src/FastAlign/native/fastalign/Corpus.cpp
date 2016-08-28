@@ -60,6 +60,8 @@ bool CorpusReader::ReadLine(string &outSource, string &outTarget) {
         drained = true;
         return false;
     }
+
+    return true;
 }
 
 bool CorpusReader::ReadLines(vector<pair<string, string>> &outBuffer, size_t limit) {

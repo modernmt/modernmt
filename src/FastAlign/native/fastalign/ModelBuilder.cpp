@@ -43,13 +43,7 @@ void ModelBuilder::setListener(ModelBuilder::Listener *listener) {
 void
 ModelBuilder::AllocateTTableSpace(ttable_t &table, const std::unordered_map<uint32_t, std::vector<uint32_t>> &values,
                                   const uint32_t sourceWordMaxValue) {
-    if (table.size() <= sourceWordMaxValue) {
-#pragma omp critical(resize_counts)
-        {
-            if (table.size() <= sourceWordMaxValue)
-                table.resize(sourceWordMaxValue + 1);
-        }
-    }
+    table.resize(sourceWordMaxValue + 1);
 
 #pragma omp parallel for schedule(dynamic)
     for (size_t bucket = 0; bucket < values.bucket_count(); ++bucket) {
