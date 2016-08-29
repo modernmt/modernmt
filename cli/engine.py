@@ -12,7 +12,7 @@ from cli.mt.contextanalysis import ContextAnalyzer
 from cli.mt.lm import LanguageModel
 from cli.mt.moses import Moses, MosesFeature, LexicalReordering
 from cli.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
-from cli.mt.processing import Preprocessor, TrainingPreprocessor, TMCleaner
+from cli.mt.processing import TrainingPreprocessor, TMCleaner
 
 __author__ = 'Davide Caroselli'
 
@@ -249,7 +249,6 @@ class MMTEngine(object):
             self._aligner_type = WordAligner.available_types[0]
 
         self.training_preprocessor = TrainingPreprocessor(self._vocabulary_model)
-        self.preprocessor = Preprocessor()
 
         self.analyzer = injector.inject(ContextAnalyzer(self._context_index))
         self.cleaner = TMCleaner()

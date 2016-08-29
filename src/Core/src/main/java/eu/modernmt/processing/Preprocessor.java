@@ -60,33 +60,27 @@ public class Preprocessor implements Closeable {
         this.vocabulary = vocabulary;
     }
 
-    public List<Sentence> process(List<String> text, boolean tokenize) throws ProcessingException {
-        return this.executor.process(text, getMetadata(tokenize));
+    public List<Sentence> process(List<String> text) throws ProcessingException {
+        return this.executor.process(text, getMetadata());
     }
 
-    public Sentence[] process(String[] text, boolean tokenize) throws ProcessingException {
-        return process(Arrays.asList(text), tokenize).toArray(new Sentence[text.length]);
+    public Sentence[] process(String[] text) throws ProcessingException {
+        return process(Arrays.asList(text)).toArray(new Sentence[text.length]);
     }
 
-    public Sentence process(String text, boolean tokenize) throws ProcessingException {
-        return this.executor.process(text, getMetadata(tokenize));
+    public Sentence process(String text) throws ProcessingException {
+        return this.executor.process(text, getMetadata());
     }
 
-    public void process(PipelineInputStream<String> input, PipelineOutputStream<Sentence> output, boolean tokenize) throws ProcessingException {
-        this.executor.process(input, output, getMetadata(tokenize));
+    public void process(PipelineInputStream<String> input, PipelineOutputStream<Sentence> output) throws ProcessingException {
+        this.executor.process(input, output, getMetadata());
     }
 
-    private HashMap<String, Object> getMetadata(boolean tokenize) {
+    private HashMap<String, Object> getMetadata() {
         HashMap<String, Object> metadata = null;
 
-        if (!tokenize) {
-            metadata = new HashMap<>();
-            metadata.put(TextProcessor.KEY_TOKENIZE_TEXT, false);
-        }
-
         if (vocabulary != null) {
-            if (metadata == null)
-                metadata = new HashMap<>();
+            metadata = new HashMap<>();
             metadata.put(TextProcessor.KEY_VOCABULARY, vocabulary);
         }
 
@@ -128,7 +122,7 @@ public class Preprocessor implements Closeable {
         Preprocessor preprocessor = new Preprocessor(Locale.ENGLISH);
 
         try {
-            Sentence sentence = preprocessor.process("Maria D'Avalos is the most famous:", true);
+            Sentence sentence = preprocessor.process("Maria D'Avalos is the most famous:");
             System.out.println(sentence);
 
             for (Token token : sentence)

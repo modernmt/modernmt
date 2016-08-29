@@ -80,7 +80,7 @@ public class PreprocessorMain {
             else
                 output = new TokensOutputter(sout, args.printTags, args.printPlaceholders);
 
-            preprocessor.process(input, output, true);
+            preprocessor.process(input, output);
         } finally {
             IOUtils.closeQuietly(preprocessor);
             IOUtils.closeQuietly(input);

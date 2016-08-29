@@ -4,8 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonParseException;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextDocument;
-import eu.modernmt.facade.ModernMT;
 import eu.modernmt.decoder.TranslationException;
+import eu.modernmt.facade.ModernMT;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
@@ -26,18 +26,17 @@ public class Translate extends ObjectAction<TranslationResponse> {
         Params params = (Params) _params;
 
         TranslationResponse result = new TranslationResponse();
-        result.processing = params.textProcessing;
 
         if (params.sessionId > 0) {
             result.session = params.sessionId;
-            result.translation = ModernMT.decoder.translate(params.query, params.sessionId, params.textProcessing, params.nbest);
+            result.translation = ModernMT.decoder.translate(params.query, params.sessionId, params.nbest);
         } else if (params.context != null) {
-            result.translation = ModernMT.decoder.translate(params.query, params.context, params.textProcessing, params.nbest);
+            result.translation = ModernMT.decoder.translate(params.query, params.context, params.nbest);
         } else if (params.contextString != null) {
             result.context = ModernMT.context.get(params.contextString, params.contextLimit);
-            result.translation = ModernMT.decoder.translate(params.query, result.context, params.textProcessing, params.nbest);
+            result.translation = ModernMT.decoder.translate(params.query, result.context, params.nbest);
         } else {
-            result.translation = ModernMT.decoder.translate(params.query, params.textProcessing, params.nbest);
+            result.translation = ModernMT.decoder.translate(params.query, params.nbest);
         }
 
         return result;
@@ -55,13 +54,11 @@ public class Translate extends ObjectAction<TranslationResponse> {
         public final List<ContextDocument> context;
         public final String contextString;
         public final int contextLimit;
-        public final boolean textProcessing;
         public final int nbest;
 
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
 
-            textProcessing = getBoolean("processing", true);
             query = getString("q", true);
             sessionId = getLong("session", 0L);
             contextLimit = getInt("context_limit", 10);

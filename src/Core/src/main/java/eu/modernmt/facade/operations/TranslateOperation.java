@@ -1,8 +1,8 @@
 package eu.modernmt.facade.operations;
 
-import eu.modernmt.context.ContextDocument;
 import eu.modernmt.Engine;
 import eu.modernmt.cluster.SessionManager;
+import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
@@ -21,27 +21,23 @@ public class TranslateOperation extends Operation<DecoderTranslation> {
     private String text;
     private List<ContextDocument> translationContext;
     private Long session;
-    private boolean processing;
     private int nbest;
 
-    public TranslateOperation(String text, boolean processing, int nbest) {
+    public TranslateOperation(String text, int nbest) {
         this.text = text;
-        this.processing = processing;
         this.nbest = nbest;
     }
 
-    public TranslateOperation(String text, List<ContextDocument> translationContext, boolean processing, int nbest) {
+    public TranslateOperation(String text, List<ContextDocument> translationContext, int nbest) {
         this.text = text;
         this.translationContext = translationContext;
-        this.processing = processing;
         this.nbest = nbest;
     }
 
-    public TranslateOperation(String text, long session, boolean processing, int nbest) {
+    public TranslateOperation(String text, long session, int nbest) {
         this.text = text;
         this.session = session;
         this.translationContext = null;
-        this.processing = processing;
         this.nbest = nbest;
     }
 
@@ -52,7 +48,7 @@ public class TranslateOperation extends Operation<DecoderTranslation> {
         Preprocessor preprocessor = engine.getPreprocessor();
         Postprocessor postprocessor = engine.getPostprocessor();
 
-        Sentence sentence = preprocessor.process(text, processing);
+        Sentence sentence = preprocessor.process(text);
 
         DecoderTranslation translation;
         if (session != null) {

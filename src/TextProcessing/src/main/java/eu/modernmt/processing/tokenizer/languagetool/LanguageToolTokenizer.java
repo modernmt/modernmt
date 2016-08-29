@@ -3,8 +3,8 @@ package eu.modernmt.processing.tokenizer.languagetool;
 import eu.modernmt.model.Languages;
 import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.framework.TextProcessor;
 import eu.modernmt.processing.framework.string.XMLEditableString;
-import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 import org.languagetool.language.tokenizers.TagalogWordTokenizer;
 import org.languagetool.tokenizers.br.BretonWordTokenizer;
@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 /**
  * Created by davide on 12/11/15.
  */
-public class LanguageToolTokenizer extends Tokenizer {
+public class LanguageToolTokenizer extends TextProcessor<XMLEditableString, XMLEditableString> {
 
     private static final Map<Locale, Class<? extends org.languagetool.tokenizers.Tokenizer>> TOKENIZERS = new HashMap<>();
 
@@ -61,7 +61,7 @@ public class LanguageToolTokenizer extends Tokenizer {
     }
 
     @Override
-    public XMLEditableString tokenize(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
+    public XMLEditableString call(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
         List<String> tokens = tokenizer.tokenize(text.toString());
         ArrayList<String> result = new ArrayList<>(tokens.size());
 

@@ -1,10 +1,10 @@
 package eu.modernmt.facade;
 
-import eu.modernmt.context.ContextDocument;
 import eu.modernmt.cluster.SessionManager;
 import eu.modernmt.cluster.error.SystemShutdownException;
-import eu.modernmt.facade.operations.TranslateOperation;
+import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.*;
+import eu.modernmt.facade.operations.TranslateOperation;
 import eu.modernmt.model.MultiOptionsToken;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
@@ -60,39 +60,39 @@ public class DecoderFacade {
     //  TranslateOperation
     // =============================
 
-    public DecoderTranslation translate(String sentence, boolean textProcessing) throws TranslationException {
-        return translate(sentence, null, 0L, textProcessing, 0);
+    public DecoderTranslation translate(String sentence) throws TranslationException {
+        return translate(sentence, null, 0L, 0);
     }
 
-    public DecoderTranslation translate(String sentence, long sessionId, boolean textProcessing) throws TranslationException {
-        return translate(sentence, null, sessionId, textProcessing, 0);
+    public DecoderTranslation translate(String sentence, long sessionId) throws TranslationException {
+        return translate(sentence, null, sessionId, 0);
     }
 
-    public DecoderTranslation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing) throws TranslationException {
-        return translate(sentence, translationContext, 0L, textProcessing, 0);
+    public DecoderTranslation translate(String sentence, List<ContextDocument> translationContext) throws TranslationException {
+        return translate(sentence, translationContext, 0L, 0);
     }
 
-    public DecoderTranslation translate(String sentence, boolean textProcessing, int nbest) throws TranslationException {
-        return translate(sentence, null, 0L, textProcessing, nbest);
+    public DecoderTranslation translate(String sentence, int nbest) throws TranslationException {
+        return translate(sentence, null, 0L, nbest);
     }
 
-    public DecoderTranslation translate(String sentence, long sessionId, boolean textProcessing, int nbest) throws TranslationException {
-        return translate(sentence, null, sessionId, textProcessing, nbest);
+    public DecoderTranslation translate(String sentence, long sessionId, int nbest) throws TranslationException {
+        return translate(sentence, null, sessionId, nbest);
     }
 
-    public DecoderTranslation translate(String sentence, List<ContextDocument> translationContext, boolean textProcessing, int nbest) throws TranslationException {
-        return translate(sentence, translationContext, 0L, textProcessing, nbest);
+    public DecoderTranslation translate(String sentence, List<ContextDocument> translationContext, int nbest) throws TranslationException {
+        return translate(sentence, translationContext, 0L, nbest);
     }
 
-    private DecoderTranslation translate(String text, List<ContextDocument> translationContext, long session, boolean textProcessing, int nbest) throws TranslationException {
+    private DecoderTranslation translate(String text, List<ContextDocument> translationContext, long session, int nbest) throws TranslationException {
         TranslateOperation operation;
 
         if (translationContext != null) {
-            operation = new TranslateOperation(text, translationContext, textProcessing, nbest);
+            operation = new TranslateOperation(text, translationContext, nbest);
         } else if (session > 0) {
-            operation = new TranslateOperation(text, session, textProcessing, nbest);
+            operation = new TranslateOperation(text, session, nbest);
         } else {
-            operation = new TranslateOperation(text, textProcessing, nbest);
+            operation = new TranslateOperation(text, nbest);
         }
 
         DecoderTranslation rootTranslation;
@@ -121,7 +121,7 @@ public class DecoderFacade {
                     Translation[] translations = new Translation[options.length];
 
                     for (int i = 0; i < translations.length; i++) {
-                        translations[i] = translate(options[i], translationContext, session, textProcessing, 0);
+                        translations[i] = translate(options[i], translationContext, session, 0);
                     }
 
                     mop.setTranslatedOptions(translations);

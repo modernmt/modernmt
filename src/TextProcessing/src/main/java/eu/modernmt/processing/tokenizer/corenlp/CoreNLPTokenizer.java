@@ -9,8 +9,8 @@ import edu.stanford.nlp.process.TokenizerFactory;
 import eu.modernmt.model.Languages;
 import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.framework.TextProcessor;
 import eu.modernmt.processing.framework.string.XMLEditableString;
-import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 
 import java.io.Reader;
@@ -23,7 +23,7 @@ import java.util.Map;
 /**
  * Created by davide on 11/11/15.
  */
-public class CoreNLPTokenizer extends Tokenizer {
+public class CoreNLPTokenizer extends TextProcessor<XMLEditableString, XMLEditableString> {
 
     private static final Map<Locale, TokenizerFactory<?>> FACTORIES = new HashMap<>();
 
@@ -49,7 +49,7 @@ public class CoreNLPTokenizer extends Tokenizer {
     }
 
     @Override
-    public XMLEditableString tokenize(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
+    public XMLEditableString call(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
         Reader reader = new StringReader(text.toString());
         edu.stanford.nlp.process.Tokenizer<?> tokenizer;
         synchronized (this) {

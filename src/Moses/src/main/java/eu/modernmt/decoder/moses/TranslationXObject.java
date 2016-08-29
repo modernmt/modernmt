@@ -15,6 +15,22 @@ import java.util.List;
  */
 class TranslationXObject {
 
+    private static Word[] explode(String text, HashMap<Long, String> unseenWordsVocabulary) {
+        String[] pieces = text.split(" +");
+        Word[] words = new Word[pieces.length];
+
+        for (int i = 0; i < pieces.length; i++) {
+            String rightSpace = i < pieces.length - 1 ? " " : null;
+
+            long id = Long.parseLong(pieces[i]);
+            String placeholder = unseenWordsVocabulary.get(id);
+
+            words[i] = placeholder == null ? new Word((int) (id), rightSpace) : new Word(placeholder, rightSpace);
+        }
+
+        return words;
+    }
+
     static class Hypothesis {
         public String text;
         public float totalScore;
@@ -26,7 +42,7 @@ class TranslationXObject {
             this.fvals = fvals;
         }
 
-        public TranslationHypothesis getTranslationHypothesis(Sentence source) {
+        public TranslationHypothesis getTranslationHypothesis(Sentence source, HashMap<Long, String> unseenWordsVocabulary) {
             HashMap<String, float[]> scores = new HashMap<>();
 
             String[] tokens = fvals.trim().split("\\s+");
@@ -51,18 +67,7 @@ class TranslationXObject {
                 }
             }
 
-            return new TranslationHypothesis(explode(this.text), source, null, this.totalScore, scores);
-        }
-
-        private static Word[] explode(String text) {
-            String[] pieces = text.split(" +");
-            Word[] words = new Word[pieces.length];
-
-            for (int i = 0; i < pieces.length; i++) {
-                words[i] = new Word(pieces[i], " ");
-            }
-
-            return words;
+            return new TranslationHypothesis(explode(this.text, unseenWordsVocabulary), source, null, this.totalScore, scores);
         }
     }
 
@@ -77,17 +82,7 @@ class TranslationXObject {
     }
 
     public DecoderTranslation getTranslation(Sentence source, HashMap<Long, String> unseenWordsVocabulary) {
-        String[] pieces = text.split(" +");
-        Word[] words = new Word[pieces.length];
-
-        for (int i = 0; i < pieces.length; i++) {
-            String rightSpace = i < pieces.length - 1 ? " " : null;
-
-            long id = Long.parseLong(pieces[i]);
-            String placeholder = unseenWordsVocabulary.get(id);
-
-            words[i] = placeholder == null ? new Word((int) (id), rightSpace) : new Word(placeholder, rightSpace);
-        }
+        Word[] words = explode(text, unseenWordsVocabulary);
 
         DecoderTranslation translation = new DecoderTranslation(words, source, alignment);
 
@@ -95,7 +90,7 @@ class TranslationXObject {
             List<TranslationHypothesis> nbest = new ArrayList<>(nbestList.length);
 
             for (Hypothesis hyp : nbestList)
-                nbest.add(hyp.getTranslationHypothesis(source));
+                nbest.add(hyp.getTranslationHypothesis(source, unseenWordsVocabulary));
 
             translation.setNbest(nbest);
         }

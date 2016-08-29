@@ -3,7 +3,6 @@ package eu.modernmt.rest.serializers;
 import com.google.gson.*;
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.TranslationHypothesis;
-import eu.modernmt.processing.util.TokensOutputter;
 import eu.modernmt.rest.model.TranslationResponse;
 
 import java.lang.reflect.Type;
@@ -17,7 +16,7 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
     @Override
     public JsonElement serialize(TranslationResponse src, Type typeOfSrc, JsonSerializationContext context) {
         JsonObject json = new JsonObject();
-        json.addProperty("translation", src.processing ? src.translation.toString() : TokensOutputter.toString(src.translation, false, true));
+        json.addProperty("translation", src.translation.toString());
         json.addProperty("decodingTime", src.translation.getElapsedTime());
 
         if (src.session > 0L)
@@ -27,7 +26,7 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
         if (nbest != null) {
             JsonArray array = new JsonArray();
             for (TranslationHypothesis hypothesis : nbest)
-                array.add(TranslationHypothesisSerializer.serialize(hypothesis, context, src.processing));
+                array.add(context.serialize(hypothesis, TranslationHypothesis.class));
             json.add("nbest", array);
         }
 

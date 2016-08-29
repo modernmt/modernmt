@@ -13,11 +13,11 @@ import static org.junit.Assert.*;
 
 public class PreprocessorTest {
 
-    private static Sentence process(String text, boolean tokenize) throws ProcessingException {
+    private static Sentence process(String text) throws ProcessingException {
         Preprocessor preprocessor = new Preprocessor(Locale.ENGLISH);
 
         try {
-            return preprocessor.process(text, tokenize);
+            return preprocessor.process(text);
         } finally {
             IOUtils.closeQuietly(preprocessor);
         }
@@ -26,7 +26,7 @@ public class PreprocessorTest {
     @Test
     public void testCommonSentence() throws ProcessingException {
         String text = "Hello world!";
-        Sentence sentence = process(text, true);
+        Sentence sentence = process(text);
 
         assertEquals(text, sentence.toString(false));
         assertEquals("Hello world!", sentence.getStrippedString(false));
@@ -42,7 +42,7 @@ public class PreprocessorTest {
     @Test
     public void testInitialTagWithSpace() throws ProcessingException {
         String text = "<a> Hello world!";
-        Sentence sentence = process(text, true);
+        Sentence sentence = process(text);
 
         assertEquals(text, sentence.toString(false));
         assertEquals("Hello world!", sentence.getStrippedString(false));
@@ -61,7 +61,7 @@ public class PreprocessorTest {
     @Test
     public void testStrippedSentenceWithSpaceAfterTag() throws ProcessingException {
         String text = "Hello<a> world!";
-        Sentence sentence = process(text, true);
+        Sentence sentence = process(text);
 
         assertEquals(text, sentence.toString(false));
         assertEquals("Hello world!", sentence.getStrippedString(false));
@@ -80,7 +80,7 @@ public class PreprocessorTest {
     @Test
     public void testStrippedSentenceWithSpacesBetweenTags() throws ProcessingException {
         String text = "Hello<a> <b>world!";
-        Sentence sentence = process(text, true);
+        Sentence sentence = process(text);
 
         assertEquals(text, sentence.toString(false));
         assertEquals("Hello world!", sentence.getStrippedString(false));

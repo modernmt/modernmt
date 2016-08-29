@@ -3,8 +3,8 @@ package eu.modernmt.processing.tokenizer.jflex;
 import eu.modernmt.model.Languages;
 import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.framework.TextProcessor;
 import eu.modernmt.processing.framework.string.XMLEditableString;
-import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 import eu.modernmt.processing.tokenizer.jflex.annotators.*;
 
@@ -18,7 +18,7 @@ import java.util.Map;
 /**
  * Created by davide on 29/01/16.
  */
-public class JFlexTokenizer extends Tokenizer {
+public class JFlexTokenizer extends TextProcessor<XMLEditableString, XMLEditableString> {
 
     private static final Map<Locale, Class<? extends JFlexTokenAnnotator>> ANNOTATORS = new HashMap<>();
 
@@ -65,7 +65,7 @@ public class JFlexTokenizer extends Tokenizer {
     }
 
     @Override
-    public XMLEditableString tokenize(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
+    public XMLEditableString call(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
         TokensAnnotatedString astring = new TokensAnnotatedString(text.toString());
 
         annotator.yyreset(astring.getReader());

@@ -55,8 +55,8 @@ public class ProjectTagsOperation extends Operation<Translation> {
         String sentenceString = this.inverted ? this.translationString : this.sentenceString;
         String translationString = this.inverted ? this.sentenceString : this.translationString;
 
-        Sentence sentence = preprocessor.process(sentenceString, true);
-        Sentence translation = targetPreprocessor.process(translationString, true);
+        Sentence sentence = preprocessor.process(sentenceString);
+        Sentence translation = targetPreprocessor.process(translationString);
 
         if (this.strategy != null) {
             if (aligner instanceof SymmetrizedAligner)

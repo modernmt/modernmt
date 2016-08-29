@@ -4,8 +4,8 @@ package eu.modernmt.processing.tokenizer.lucene;
 import eu.modernmt.model.Languages;
 import eu.modernmt.processing.framework.LanguageNotSupportedException;
 import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.framework.TextProcessor;
 import eu.modernmt.processing.framework.string.XMLEditableString;
-import eu.modernmt.processing.tokenizer.Tokenizer;
 import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 import eu.modernmt.processing.tokenizer.lucene.analyzers.*;
 import org.apache.lucene.analysis.Analyzer;
@@ -21,7 +21,7 @@ import java.util.Map;
 /**
  * Created by davide on 13/11/15.
  */
-public class LuceneTokenizer extends Tokenizer {
+public class LuceneTokenizer extends TextProcessor<XMLEditableString, XMLEditableString> {
 
     private static final Map<Locale, Class<? extends Analyzer>> ANALYZERS = new HashMap<>();
 
@@ -79,7 +79,7 @@ public class LuceneTokenizer extends Tokenizer {
     }
 
     @Override
-    public XMLEditableString tokenize(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
+    public XMLEditableString call(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
         char[] chars = text.toCharArray();
 
         TokenStream stream = null;
