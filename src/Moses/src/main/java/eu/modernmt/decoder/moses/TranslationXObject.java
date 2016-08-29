@@ -15,7 +15,7 @@ import java.util.List;
  */
 class TranslationXObject {
 
-    private static Word[] explode(String text, HashMap<Long, String> unseenWordsVocabulary) {
+    private static Word[] explode(String text) {
         String[] pieces = text.split(" +");
         Word[] words = new Word[pieces.length];
 
@@ -23,9 +23,7 @@ class TranslationXObject {
             String rightSpace = i < pieces.length - 1 ? " " : null;
 
             long id = Long.parseLong(pieces[i]);
-            String placeholder = unseenWordsVocabulary.get(id);
-
-            words[i] = placeholder == null ? new Word((int) (id), rightSpace) : new Word(placeholder, rightSpace);
+            words[i] = new Word((int) (id), rightSpace);
         }
 
         return words;
@@ -42,7 +40,7 @@ class TranslationXObject {
             this.fvals = fvals;
         }
 
-        public TranslationHypothesis getTranslationHypothesis(Sentence source, HashMap<Long, String> unseenWordsVocabulary) {
+        public TranslationHypothesis getTranslationHypothesis(Sentence source) {
             HashMap<String, float[]> scores = new HashMap<>();
 
             String[] tokens = fvals.trim().split("\\s+");
@@ -67,7 +65,7 @@ class TranslationXObject {
                 }
             }
 
-            return new TranslationHypothesis(explode(this.text, unseenWordsVocabulary), source, null, this.totalScore, scores);
+            return new TranslationHypothesis(explode(this.text), source, null, this.totalScore, scores);
         }
     }
 
@@ -81,8 +79,8 @@ class TranslationXObject {
         this.alignment = alignment;
     }
 
-    public DecoderTranslation getTranslation(Sentence source, HashMap<Long, String> unseenWordsVocabulary) {
-        Word[] words = explode(text, unseenWordsVocabulary);
+    public DecoderTranslation getTranslation(Sentence source) {
+        Word[] words = explode(text);
 
         DecoderTranslation translation = new DecoderTranslation(words, source, alignment);
 
@@ -90,7 +88,7 @@ class TranslationXObject {
             List<TranslationHypothesis> nbest = new ArrayList<>(nbestList.length);
 
             for (Hypothesis hyp : nbestList)
-                nbest.add(hyp.getTranslationHypothesis(source, unseenWordsVocabulary));
+                nbest.add(hyp.getTranslationHypothesis(source));
 
             translation.setNbest(nbest);
         }

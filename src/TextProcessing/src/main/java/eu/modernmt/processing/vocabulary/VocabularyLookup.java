@@ -7,6 +7,7 @@ import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.TextProcessor;
 import eu.modernmt.vocabulary.Vocabulary;
 
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
@@ -41,8 +42,29 @@ public class VocabularyLookup extends TextProcessor<Sentence, Sentence> {
 
         int[] ids = vocabulary.lookupLine(line, false);
 
-        for (int i = 0; i < words.length; i++)
-            words[i].setId(ids[i]);
+        HashMap<String, Integer> reverseVocabulary = new HashMap<>();
+        long unseenWordsCounter = 0xFFFFFFFF;
+
+        for (int i = 0; i < words.length; i++) {
+            Word word = words[i];
+            int id = ids[i];
+
+            if (id == Vocabulary.VOCABULARY_UNKNOWN_WORD) {
+                String text = word.toString();
+
+                Integer unseenId = reverseVocabulary.get(text);
+
+                if (unseenId == null) {
+                    unseenId = (int) (unseenWordsCounter--);
+                    reverseVocabulary.put(text, unseenId);
+                }
+
+                word.setId(unseenId);
+                word.setOutOfVocabulary(true);
+            } else {
+                word.setId(id);
+            }
+        }
     }
 
 }

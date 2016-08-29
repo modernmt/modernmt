@@ -1,5 +1,6 @@
 package eu.modernmt.processing.vocabulary;
 
+import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
 import eu.modernmt.processing.framework.LanguageNotSupportedException;
@@ -7,6 +8,7 @@ import eu.modernmt.processing.framework.ProcessingException;
 import eu.modernmt.processing.framework.TextProcessor;
 import eu.modernmt.vocabulary.Vocabulary;
 
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
@@ -41,11 +43,34 @@ public class VocabularyReverseLookup extends TextProcessor<Translation, Translat
         }
 
         String[] strings = vocabulary.reverseLookupLine(ids);
+        HashMap<Integer, Word> oovs = getOOVMap(translation.getSource());
 
         for (int i = 0; i < words.length; i++) {
-            if (strings[i] != null)
-                words[i].setPlaceholder(strings[i]);
+            Word word = words[i];
+
+            if (strings[i] == null) { // OOV
+                Word twin = oovs.get(word.getId());
+
+                if (twin == null) {
+                    word.setPlaceholder("");
+                } else {
+                    word.setPlaceholder(twin.getPlaceholder());
+                    word.setText(twin.getText());
+                }
+            } else {
+                word.setPlaceholder(strings[i]);
+            }
         }
+    }
+
+    private HashMap<Integer, Word> getOOVMap(Sentence sentence) {
+        HashMap<Integer, Word> oovMap = new HashMap<>(sentence.length());
+        for (Word word : sentence.getWords()) {
+            if (word.isOutOfVocabulary())
+                oovMap.put(word.getId(), word);
+        }
+
+        return oovMap;
     }
 
 }

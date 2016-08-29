@@ -14,6 +14,7 @@ public class Word extends Token {
     }
 
     protected int id;
+    protected boolean oov;
     protected boolean rightSpaceRequired;
     protected Transformation transformation;
 
@@ -22,6 +23,7 @@ public class Word extends Token {
         this.rightSpaceRequired = super.rightSpace != null;
         this.transformation = null;
         this.id = id;
+        this.oov = false;
     }
 
     public Word(int id, String rightSpace) {
@@ -29,6 +31,7 @@ public class Word extends Token {
         this.rightSpaceRequired = super.rightSpace != null;
         this.transformation = null;
         this.id = id;
+        this.oov = false;
     }
 
     public Word(String placeholder) {
@@ -36,6 +39,7 @@ public class Word extends Token {
         this.rightSpaceRequired = super.rightSpace != null;
         this.transformation = null;
         this.id = 0;
+        this.oov = false;
     }
 
     public Word(String placeholder, String rightSpace) {
@@ -43,6 +47,7 @@ public class Word extends Token {
         this.rightSpaceRequired = super.rightSpace != null;
         this.transformation = null;
         this.id = 0;
+        this.oov = false;
     }
 
     public Word(String text, String placeholder, String rightSpace) {
@@ -50,6 +55,7 @@ public class Word extends Token {
         this.rightSpaceRequired = super.rightSpace != null;
         this.transformation = null;
         this.id = 0;
+        this.oov = false;
     }
 
     public Word(String text, String placeholder, String rightSpace, boolean rightSpaceRequired) {
@@ -57,6 +63,7 @@ public class Word extends Token {
         this.rightSpaceRequired = rightSpaceRequired;
         this.transformation = null;
         this.id = 0;
+        this.oov = false;
     }
 
     public int getId() {
@@ -65,6 +72,14 @@ public class Word extends Token {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public boolean isOutOfVocabulary() {
+        return oov;
+    }
+
+    public void setOutOfVocabulary(boolean oov) {
+        this.oov = oov;
     }
 
     public boolean isRightSpaceRequired() {

@@ -276,7 +276,7 @@ const bool PersistentVocabulary::ReverseLookup(const vector<vector<uint32_t>> &b
                 word = valueRef->second;
             } else {
                 if (!ReverseLookup(id, &word))
-                    return false;
+                    word = "";
                 vocabulary[id] = word;
             }
 
