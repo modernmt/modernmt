@@ -120,7 +120,7 @@ class TagProjectionPricisionTest:
         payload = {'s': source, 't': translation, 'sl':'en', 'tl':'it','d': 1}
         json_results = requests.get("http://localhost:" + str(self.__api_port) + "/tags-projection",
                                     params=payload, headers=headers)
-        return json.loads(json_results.text)
+        return json.loads(json_results.text)['data']
 
     def count_tags(self, text):
         return len(TagProjectionPricisionTest.TAG_RE.findall(text))
