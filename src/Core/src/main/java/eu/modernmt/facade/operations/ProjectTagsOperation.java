@@ -45,6 +45,7 @@ public class ProjectTagsOperation extends Operation<Translation> {
             synchronized (ProjectTagsOperation.class) {
                 if (targetPreprocessor == null) {
                     targetPreprocessor = new Preprocessor(engine.getTargetLanguage());
+                    targetPreprocessor.setVocabulary(engine.getVocabulary());
                 }
             }
         }
