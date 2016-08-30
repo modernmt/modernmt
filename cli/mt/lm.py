@@ -8,17 +8,6 @@ from cli.libs import fileutils, shell
 __author__ = 'Davide Caroselli'
 
 
-def meminfo():
-    """
-    Returns the memory usage from /proc/meminfo as a dict str -> int
-    Numbers are in kB.
-    """
-    with open('/proc/meminfo') as mi:
-        info_lines = [l.split()[0:2] for l in mi.readlines()]
-        info = {key.rstrip(':'): int(val) for key, val in info_lines}
-    return info
-
-
 class LanguageModel(MosesFeature):
     available_types = ['MultiplexedLM', 'KenLM']
 
@@ -101,9 +90,9 @@ class KenLM(LanguageModel):
         # This may evict some disk caches (is not too nice to other programs using mmapped
         # files unless you lower the 80%).
 
-        mi = meminfo()
+        mi = fileutils.meminfo()
         total = float(mi['MemTotal'])
-        available = float(mi['MemFree'] + mi['Buffers'] + mi['Cached'])
+        available = fileutils.free()
         return int(80.0 * available / total)
 
     def get_iniline(self):
