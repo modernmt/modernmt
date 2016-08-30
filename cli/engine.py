@@ -188,7 +188,6 @@ class MMTEngine(object):
         'lm_type': ('LM implementation', (basestring, LanguageModel.available_types), None),
         'aligner_type': ('Aligner implementation',
                          (basestring, WordAligner.available_types), None),
-        'enable_tag_projection': ('Enable Tag Projection, this may take some time during engine startup.', bool, False)
     }
 
     training_steps = ['tm_cleanup', 'preprocess', 'context_analyzer', 'lm', 'tm']
@@ -205,7 +204,6 @@ class MMTEngine(object):
 
         self._lm_type = None  # Injected
         self._aligner_type = None  # Injected
-        self._enable_tag_projection = None  # Injected
 
         self._config = None
 

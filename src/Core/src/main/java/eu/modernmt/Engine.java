@@ -91,7 +91,7 @@ public class Engine {
     }
 
     public Aligner getAligner() {
-        if (config.getAlignerConfig().isEnabled() && aligner == null) {
+        if (aligner == null) {
             synchronized (this) {
                 if (aligner == null) {
                     AlignerFactory factory = AlignerFactory.getInstance();

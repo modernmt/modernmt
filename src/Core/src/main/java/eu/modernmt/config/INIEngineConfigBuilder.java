@@ -34,7 +34,6 @@ public class INIEngineConfigBuilder {
 
         engineConfig.setName(name);
         readEngineConfig(engineConfig, getSection(config, "engine"));
-        readAlignerConfig(engineConfig.getAlignerConfig(), getSection(config, "engine"));
         readDecoderConfig(engineConfig.getDecoderConfig(), getSection(config, "weights", null));
 
         return engineConfig;
@@ -62,10 +61,6 @@ public class INIEngineConfigBuilder {
 
         config.setSourceLanguage(source);
         config.setTargetLanguage(target);
-    }
-
-    private static void readAlignerConfig(AlignerConfig alignerConfig, SubnodeConfiguration section) {
-        alignerConfig.setEnabled(section.getBoolean("enable_tag_projection", true));
     }
 
     private static void readDecoderConfig(DecoderConfig config, SubnodeConfiguration section) {

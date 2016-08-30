@@ -15,7 +15,6 @@ public class EngineConfig {
     private Locale sourceLanguage;
     private Locale targetLanguage;
     private final DecoderConfig decoderConfig = new DecoderConfig();
-    private final AlignerConfig alignerConfig = new AlignerConfig();
 
     public Locale getSourceLanguage() {
         return sourceLanguage;
@@ -45,7 +44,4 @@ public class EngineConfig {
         return decoderConfig;
     }
 
-    public AlignerConfig getAlignerConfig() {
-        return alignerConfig;
-    }
 }
