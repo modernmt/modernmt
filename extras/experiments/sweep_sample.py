@@ -47,7 +47,7 @@ def main_sweep(argv):
     print('sample bleu')
 
     for sample in samples:
-        node.engine.set('suffixarrays', 'sample', sample)
+        node.engine.set_config_option('suffixarrays', 'sample', sample)
         injector.read_config(node.engine.config)  # to get engine.set() to affect MosesFeatures -> moses.ini
         injector.inject(node.engine)
         node.engine.write_configs()

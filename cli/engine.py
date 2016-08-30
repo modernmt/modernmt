@@ -288,14 +288,14 @@ class MMTEngine(object):
             self._config.read(self._config_file)
         return self._config
 
-    def set(self, section, option, value=None):
+    def set_config_option(self, section, option, value=None):
         """
         Set engine configuration option in the config dictionary.
         * use dependency.Injector with read_config() and inject() to affect MoseeFeatures, so an up-to-date 'moses.ini' gets written to disk in write_configs()
         * call write_configs() to write 'engine.ini' (and 'moses.ini') to disk
         * call ClusterNode.restart() for values to take effect
         """
-        assert(MMTEngine.config_option_exists(section, option))
+        assert (MMTEngine.config_option_exists(section, option))
         # coerce all types to str -- because they are parsed back in "ConfigParser.py", line 663, in _interpolate
         self.config.set(section, option, str(value))
 
