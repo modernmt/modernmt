@@ -1,0 +1,83 @@
+#!/usr/bin/env python
+import argparse
+import logging
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
+
+from cli import dependency
+from cli.cluster import ClusterNode, DEFAULT_MMT_API_PORT
+from cli.engine import MMTEngine
+from cli.engine import IllegalStateException
+from cli.mt import BilingualCorpus
+from cli.mt.processing import TrainingPreprocessor
+from translator import BatchTranslator
+
+
+def _logconfig(debug=True):
+    level = logging.DEBUG if debug else logging.INFO
+    _format = '%(asctime)-15s [%(levelname)s] - %(message)s'
+    logging.basicConfig(format=_format, level=level, stream=sys.stderr)
+
+
+__desc_batch = '''\
+Batch-translate corpora in a directory and output into dest directory DEST
+
+Creates  [*.ref] *.src *.hyp  files in DEST. All files have XML entity encoding, are detokenized sentences, one per line.
+
+For example, the bundled 3-domain en-it test corpus creates these files:
+
+europarl.en.src
+europarl.it.hyp
+europarl.it.ref
+ibm.en.src
+ibm.it.hyp
+ibm.it.ref
+microsoft.en.src
+microsoft.it.hyp
+microsoft.it.ref
+'''
+
+def main_batch(argv):
+    parser = argparse.ArgumentParser(description=__desc_batch)
+    parser.prog = 'batch'
+    parser.add_argument('--path', dest='corpora_path', metavar='CORPORA', default=None,
+                        help='the path to the test corpora (default is the automatically splitted sample)')
+    parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
+                        default='default')
+    parser.add_argument('--dest', dest='dest_path', metavar='DEST', required=True,
+                        help='the path to the output directory (created if it does not exist)')
+    parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
+                        help='the MMT API port. (default is {port})'.format(port=DEFAULT_MMT_API_PORT),
+                        default=None, type=int)
+    parser.add_argument('-i', '--interactive', action='store_true', dest='interactive',
+                        help='Test without sessions, as if translating sentence by sentence')
+    parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='if debug is set, it enables verbose '
+                                                                                 'logging and prevents temporary files '
+                                                                                 'to be removed after execution')
+
+    args = parser.parse_args(argv)
+    args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
+
+    _logconfig(False)
+
+    engine = MMTEngine(name=args.engine)
+    if not engine.exists():
+        raise IllegalStateException('engine not found: ' + args.engine)
+    injector = dependency.Injector()
+    injector.read_config(engine.config)
+    engine = injector.inject(engine)
+
+    node = ClusterNode(engine, api_port=args.api_port)
+    translator = BatchTranslator(node, use_sessions=not args.interactive)
+
+    corpora = BilingualCorpus.list(args.corpora_path) if args.corpora_path is not None \
+        else BilingualCorpus.list(os.path.join(engine.data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
+
+    if not translator.translate(corpora=corpora, dest_path=args.dest_path, debug=args.debug):
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main_batch(sys.argv[1:])

@@ -1,0 +1,57 @@
+#!/usr/bin/env python
+import argparse
+import os
+import sys
+from os.path import dirname, abspath, join
+
+sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
+
+from cli.libs import shell, fileutils
+
+
+MMT_HOME = abspath(dirname(dirname(__file__)))
+
+
+def execute(cmd):
+    shell.execute(cmd, stdout=sys.stdout)
+
+
+def git_checkout(branch):
+    execute('git checkout {}'.format(branch))
+    execute('git submodule init')
+    execute('git submodule update')
+
+
+def build_all():
+    # see INSTALL.md
+    with fileutils.chdir(join(MMT_HOME, 'vendor')) as cd:
+        # Create MMT submodules resources
+        execute('make res')
+
+        # Compile MMT submodules
+        execute('make')
+        execute('make install')
+
+    with fileutils.chdir(join(MMT_HOME, 'src')) as cd:
+        # Finally compile your MMT distribution
+        execute('mvn clean install')
+
+
+def main_update(argv):
+    # Set unbuffered stdout
+    unbuffered = os.fdopen(sys.stdout.fileno(), 'w', 0)
+    sys.stdout = unbuffered
+
+    parser = argparse.ArgumentParser(description='Update from git and compile complete MMT system from sources (for developers)')
+    parser.prog = 'update'
+    parser.add_argument('branch', nargs='?', default=None, help='git branch to check out prior to update')
+
+    args = parser.parse_args(argv)
+
+    if args.branch:
+        git_checkout(args.branch)
+    build_all()
+
+
+if __name__ == '__main__':
+    main_update(sys.argv[1:])

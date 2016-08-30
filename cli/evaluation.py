@@ -496,6 +496,8 @@ class Evaluator:
                         setattr(result, field, scorer.calculate(result.merge, reference))
 
             logger.completed(results, scorers)
+
+            return results
         finally:
             if not debug:
                 self._engine.clear_tempdir('evaluation')

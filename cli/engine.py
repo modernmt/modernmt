@@ -284,32 +284,53 @@ class MMTEngine(object):
     def config(self):
         if self._config is None and os.path.isfile(self._config_file):
             self._config = ConfigParser()
+            self._config.optionxform = str  # make ConfigParser() case sensitive (avoid lowercasing Moses feature weight names in write())
             self._config.read(self._config_file)
         return self._config
 
+    def set_config_option(self, section, option, value=None):
+        """
+        Set engine configuration option in the config dictionary.
+        * use dependency.Injector with read_config() and inject() to affect MoseeFeatures, so an up-to-date 'moses.ini' gets written to disk in write_configs()
+        * call write_configs() to write 'engine.ini' (and 'moses.ini') to disk
+        * call ClusterNode.restart() for values to take effect
+        """
+        assert (MMTEngine.config_option_exists(section, option))
+        # coerce all types to str -- because they are parsed back in "ConfigParser.py", line 663, in _interpolate
+        self.config.set(section, option, str(value))
+
+    @staticmethod
+    def config_option_exists(section, option):
+        """check if section and option indeed exist"""
+        from cli import dependency  # cannot be at the top to avoid circular imports
+        for clazz in dependency.injectable_components:
+            if not hasattr(clazz, 'injectable_fields') or not hasattr(clazz, 'injector_section'):
+                continue
+            if clazz.injector_section == section and option in clazz.injectable_fields:
+                return True
+        return False
+
     def write_configs(self):
+        """write engine.ini and moses.ini"""
         self.moses.create_ini()
         self.write_engine_config()
 
     def write_engine_config(self):
+        # set default weights if not already in config
+        if self._optimal_weights is not None and not 'weights' in self._config.sections():
+            self._config.add_section('weights')
+            for name, weights in self._optimal_weights.iteritems():
+                self._config.set('weights', name, ' '.join([str(w) for w in weights]))
+        # end "set default weights"
+
         with open(self._config_file, 'wb') as out:
-            out.write("[%s]\n" % self.injector_section)
+            self._config.write(out)
 
-            for (key, value) in self._config.items(self.injector_section):
-                if value is not None:
-                    key = " = ".join((key, str(value).replace('\n', '\n\t')))
-                    out.write("%s\n" % key)
-            out.write("\n")
+    def backup_engine_config(self):
+        shutil.copy(self._config_file, self._config_file + '.bak')
 
-            if self._optimal_weights is not None and len(
-                    self._optimal_weights) > 0 and not 'weights' in self._config.sections():
-                out.write('[weights]\n')
-
-                for name, weights in self._optimal_weights.iteritems():
-                    out.write(name)
-                    out.write(' = ')
-                    out.write(' '.join([str(w) for w in weights]))
-                    out.write('\n')
+    def restore_engine_config(self):
+        shutil.move(self._config_file + '.bak', self._config_file)
 
     def get_logfile(self, name, ensure=True):
         if ensure and not os.path.isdir(self._logs_path):

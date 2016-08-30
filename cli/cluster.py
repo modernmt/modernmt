@@ -305,6 +305,15 @@ class ClusterNode(object):
             os.kill(pid, signal.SIGKILL)
             daemon.wait(pid)
 
+    def restart(self):
+        # ensure engine is stopped
+        if self.is_running():
+            self.stop()
+
+        # start engine again
+        self.start()
+        self.wait('READY')
+
     def tune(self, corpora=None, debug=False, context_enabled=True):
         if corpora is None:
             corpora = BilingualCorpus.list(os.path.join(self.engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME))
