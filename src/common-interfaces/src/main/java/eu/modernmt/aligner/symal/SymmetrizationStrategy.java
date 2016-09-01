@@ -1,5 +1,7 @@
 package eu.modernmt.aligner.symal;
 
+import eu.modernmt.model.Alignment;
+
 import java.io.Serializable;
 
 /**
@@ -17,6 +19,6 @@ public interface SymmetrizationStrategy extends Serializable {
         }
     }
 
-    int[][] symmetrize(int[][] forward, int[][] backward);
+    Alignment symmetrize(Alignment forward, Alignment backward);
 
 }

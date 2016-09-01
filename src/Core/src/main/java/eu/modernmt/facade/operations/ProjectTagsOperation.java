@@ -5,6 +5,7 @@ import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.aligner.SymmetrizedAligner;
 import eu.modernmt.aligner.symal.SymmetrizationStrategy;
+import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.Preprocessor;
@@ -12,6 +13,8 @@ import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.xml.XMLTagProjector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.io.IOException;
 
 /**
  * Created by davide on 22/04/16.
@@ -44,8 +47,11 @@ public class ProjectTagsOperation extends Operation<Translation> {
         if (targetPreprocessor == null) {
             synchronized (ProjectTagsOperation.class) {
                 if (targetPreprocessor == null) {
-                    targetPreprocessor = new Preprocessor(engine.getTargetLanguage());
-                    targetPreprocessor.setVocabulary(engine.getVocabulary());
+                    try {
+                        targetPreprocessor = new Preprocessor(engine.getTargetLanguage(), null, engine.getVocabulary());
+                    } catch (IOException e) {
+                        throw new ProcessingException("Unable to load target preprocessor", e);
+                    }
                 }
             }
         }
@@ -67,16 +73,16 @@ public class ProjectTagsOperation extends Operation<Translation> {
                         "SymmetrizedAligner: " + aligner.getClass());
         }
 
-        int[][] alignments = aligner.getAlignment(sentence, translation);
+        Alignment alignment = aligner.getAlignment(sentence, translation);
 
         if (this.inverted) {
-            Aligner.invertAlignments(alignments);
+            alignment = alignment.getInverse();
             Sentence tmp = sentence;
             sentence = translation;
             translation = tmp;
         }
 
-        Translation taggedTranslation = new Translation(translation.getWords(), sentence, alignments);
+        Translation taggedTranslation = new Translation(translation.getWords(), sentence, alignment);
         tagProjector.project(taggedTranslation);
 
         endTime = System.currentTimeMillis();

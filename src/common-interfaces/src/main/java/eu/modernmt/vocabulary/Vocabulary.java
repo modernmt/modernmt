@@ -8,8 +8,6 @@ import java.util.List;
  */
 public interface Vocabulary extends Closeable {
 
-    //TODO: replace Vocabulary with DbVocabulary implements Vocabulary
-
     int VOCABULARY_UNKNOWN_WORD = 0;
     int VOCABULARY_WORD_ID_START = 1000;
 

@@ -7,6 +7,7 @@ import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.ProcessingPipeline;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.util.Locale;
 import java.util.concurrent.*;
 
@@ -97,7 +98,13 @@ public class TrainingPreprocessor implements Closeable {
 
         @Override
         public Void call() throws ProcessingException {
-            ProcessingPipeline<String, Sentence> pipeline = Preprocessor.createPipeline(language);
+            ProcessingPipeline<String, Sentence> pipeline;
+
+            try {
+                pipeline = Preprocessor.createPipeline(language);
+            } catch (IOException e) {
+                throw new ProcessingException("Unable to load pipeline", e);
+            }
 
             for (int i = 0; i < length; i++) {
                 Word[] words = pipeline.call(batch[offset + i]).getWords();

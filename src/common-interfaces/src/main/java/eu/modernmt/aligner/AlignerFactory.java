@@ -1,6 +1,7 @@
 package eu.modernmt.aligner;
 
 import java.io.File;
+import java.io.IOException;
 
 /**
  * Created by davide on 09/05/16.
@@ -30,6 +31,6 @@ public abstract class AlignerFactory {
         this.enginePath = enginePath;
     }
 
-    public abstract Aligner create() throws AlignerException;
+    public abstract Aligner create() throws IOException;
 
 }

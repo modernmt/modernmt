@@ -1,5 +1,7 @@
 package eu.modernmt.aligner.symal;
 
+import eu.modernmt.model.Alignment;
+
 import java.util.Arrays;
 
 /**
@@ -7,12 +9,8 @@ import java.util.Arrays;
  */
 public class GrowDiagonalFinalAndStrategy implements SymmetrizationStrategy {
 
-
     @Override
-    public int[][] symmetrize(int[][] forward, int[][] backward) {
-        Arrays.sort(forward, AlignmentMatrix.Sorter.instance);
-        Arrays.sort(backward, AlignmentMatrix.Sorter.instance);
-
+    public Alignment symmetrize(Alignment forward, Alignment backward) {
         AlignmentMatrix intersect = AlignmentMatrix.build(forward, backward)
                 .or(forward)
                 .and(backward);
@@ -23,32 +21,38 @@ public class GrowDiagonalFinalAndStrategy implements SymmetrizationStrategy {
         intersect = GrowDiagonalStrategy.symmetrize(intersect, union);
 
         // Forward final and
-        for (int f = 0; f < intersect.getForwardSize(); f++) {
-            for (int[] el : forward) {
-                if (el[0] != f)
-                    continue;
+        for (int s = 0; s < intersect.getForwardSize(); s++) {
+            if (intersect.isSourceWordAligned(s))
+                continue;
 
-                if (!intersect.get(f, el[1]) && !intersect.isSourceWordAligned(f) && !intersect.isTargetWordAligned(el[1])) {
-                    intersect.set(f, el[1]);
+            int[] targets = forward.getWordsAlignedWithSource(s);
+            Arrays.sort(targets);
+
+            for (int t : targets) {
+                if (!intersect.isTargetWordAligned(t)) {
+                    intersect.set(s, t);
                     break;
                 }
             }
         }
 
         // Backward final and
-        for (int b = 0; b < intersect.getBackwardSize(); b++) {
-            for (int[] el : backward) {
-                if (el[1] != b)
-                    continue;
+        for (int t = 0; t < intersect.getBackwardSize(); t++) {
+            if (intersect.isTargetWordAligned(t))
+                continue;
 
-                if (!intersect.get(el[0], b) && !intersect.isSourceWordAligned(el[0]) && !intersect.isTargetWordAligned(b)) {
-                    intersect.set(el[0], b);
+            int[] sources = backward.getWordsAlignedWithTarget(t);
+            Arrays.sort(sources);
+
+            for (int s : sources) {
+                if (!intersect.isSourceWordAligned(s)) {
+                    intersect.set(s, t);
                     break;
                 }
             }
         }
 
-        return intersect.toArray();
+        return intersect.toAlignment();
     }
 
 }

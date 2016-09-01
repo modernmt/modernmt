@@ -25,7 +25,7 @@
                 <configuration>
                     <filesets>
                         <fileset>
-                            <directory>${project.nativedir.headers}</directory>
+                            <directory>${project.nativedir.javah}</directory>
                             <includes>
                                 <include>**/*.h</include>
                             </includes>
@@ -69,7 +69,7 @@
                             <workingDirectory>${project.build.sourceDirectory}</workingDirectory>
                             <arguments>
                                 <argument>-d</argument>
-                                <argument>${project.nativedir.headers}</argument>
+                                <argument>${project.nativedir.javah}</argument>
 
                                 <!-- All native classes -->
                                 <argument>eu.modernmt.aligner.fastalign.FastAlign</argument>

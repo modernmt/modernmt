@@ -46,7 +46,7 @@ public class XMLPipelineBuilder<P, R> extends PipelineBuilder<P, R> {
     }
 
     @SuppressWarnings("unchecked")
-    public static <P, R> XMLPipelineBuilder<P, R> loadFromXML(InputStream input) throws IOException, ProcessingException {
+    public static <P, R> XMLPipelineBuilder<P, R> loadFromXML(InputStream input) throws IOException {
         Document xml = getXMLDocument(input);
         Element pipeline = xml.getDocumentElement();
 
@@ -57,7 +57,7 @@ public class XMLPipelineBuilder<P, R> extends PipelineBuilder<P, R> {
             try {
                 pipelineClass = (Class<ProcessingPipeline>) Class.forName(className);
             } catch (ClassCastException | ClassNotFoundException e) {
-                throw new ProcessingException("Invalid pipeline class " + className, e);
+                throw new IOException("Invalid pipeline class " + className, e);
             }
         }
 
@@ -73,7 +73,7 @@ public class XMLPipelineBuilder<P, R> extends PipelineBuilder<P, R> {
         return new XMLPipelineBuilder(builders, pipelineClass);
     }
 
-    private static Document getXMLDocument(InputStream input) throws ProcessingException, IOException {
+    private static Document getXMLDocument(InputStream input) throws IOException {
         String packageName = ProcessingPipeline.class.getPackage().getName().replace('.', '/');
         String xsdPath = packageName + "/pipeline-schema.xsd";
 
@@ -83,7 +83,7 @@ public class XMLPipelineBuilder<P, R> extends PipelineBuilder<P, R> {
         try {
             xsdResource = ProcessingPipeline.class.getClassLoader().getResourceAsStream(xsdPath);
             if (xsdResource == null)
-                throw new ProcessingException("Unable to load XSD " + xsdPath);
+                throw new IOException("Unable to load XSD " + xsdPath);
 
             // Load XML
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -103,7 +103,7 @@ public class XMLPipelineBuilder<P, R> extends PipelineBuilder<P, R> {
         } catch (ParserConfigurationException e) {
             throw new Error("Unable to instantiate XML Document Factory", e);
         } catch (SAXException e) {
-            throw new ProcessingException(e);
+            throw new IOException(e);
         } finally {
             IOUtils.closeQuietly(xsdResource);
         }

@@ -1,5 +1,6 @@
 package eu.modernmt.aligner;
 
+import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 
 import java.util.List;
@@ -9,32 +10,8 @@ import java.util.List;
  */
 public interface Aligner {
 
-    //TODO refactor
+    Alignment getAlignment(Sentence source, Sentence target) throws AlignerException;
 
-    void load() throws AlignerException;
-
-    int[][] getAlignment(Sentence sentence, Sentence translation) throws AlignerException;
-
-    int[][][] getAlignments(List<Sentence> sentences, List<Sentence> translations) throws AlignerException;
-
-    static String toString(int[][] alignments) {
-        StringBuilder result = new StringBuilder();
-        for (int[] alignment : alignments) {
-            result.append(alignment[0]);
-            result.append("-");
-            result.append(alignment[1]);
-            result.append(" ");
-        }
-        return result.deleteCharAt(result.length() - 1).toString();
-    }
-
-    static void invertAlignments(int[][] alignments) {
-        int tmp;
-        for (int[] alignment : alignments) {
-            tmp = alignment[0];
-            alignment[0] = alignment[1];
-            alignment[1] = tmp;
-        }
-    }
+    Alignment[] getAlignments(List<Sentence> sources, List<Sentence> targets) throws AlignerException;
 
 }

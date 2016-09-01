@@ -1,9 +1,6 @@
 package eu.modernmt.decoder;
 
-import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Tag;
-import eu.modernmt.model.Translation;
-import eu.modernmt.model.Word;
+import eu.modernmt.model.*;
 
 import java.util.List;
 
@@ -14,11 +11,11 @@ public class DecoderTranslation extends Translation {
 
     protected List<TranslationHypothesis> nbest;
 
-    public DecoderTranslation(Word[] words, Sentence source, int[][] alignment) {
+    public DecoderTranslation(Word[] words, Sentence source, Alignment alignment) {
         super(words, source, alignment);
     }
 
-    public DecoderTranslation(Word[] words, Tag[] tags, Sentence source, int[][] alignment) {
+    public DecoderTranslation(Word[] words, Tag[] tags, Sentence source, Alignment alignment) {
         super(words, tags, source, alignment);
     }
 

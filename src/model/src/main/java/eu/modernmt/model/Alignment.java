@@ -9,8 +9,6 @@ import java.util.Iterator;
  */
 public class Alignment implements Iterable<int[]>, Serializable {
 
-    //TODO Must be replaced to int[][]
-
     private final int[] sourceIndexes;
     private final int[] targetIndexes;
 

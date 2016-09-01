@@ -55,7 +55,7 @@ class TagProjectionPricisionTest:
             try:
                 self.log(str(int(100 * n / num_lines)) + "%\t#line:" + str(n) + "\tsource length:" + str(len(source)))
                 results = self.query_engine(source, translation)
-                alignments = results['alignments']
+                alignments = results['alignment']
                 tagged_translation = results['translation']
                 if tagged_translation == reference:
                     precision += 1

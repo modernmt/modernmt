@@ -1,8 +1,6 @@
 package eu.modernmt.processing;
 
 import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Token;
-import eu.modernmt.processing.builder.PipelineBuilder;
 import eu.modernmt.processing.builder.XMLPipelineBuilder;
 import eu.modernmt.processing.concurrent.PipelineExecutor;
 import eu.modernmt.vocabulary.Vocabulary;
@@ -22,41 +20,36 @@ import java.util.concurrent.TimeUnit;
  */
 public class Preprocessor implements Closeable {
 
-    public static ProcessingPipeline<String, Sentence> createPipeline(Locale sourceLanguage) throws ProcessingException {
+    public static ProcessingPipeline<String, Sentence> createPipeline(Locale sourceLanguage) throws ProcessingException, IOException {
         return getDefaultBuilder().newPipeline(sourceLanguage, null);
     }
 
-    public static ProcessingPipeline<String, Sentence> createPipeline(Locale sourceLanguage, Locale targetLanguage) throws ProcessingException {
+    public static ProcessingPipeline<String, Sentence> createPipeline(Locale sourceLanguage, Locale targetLanguage) throws ProcessingException, IOException {
         return getDefaultBuilder().newPipeline(sourceLanguage, targetLanguage);
     }
 
     private static final int DEFAULT_THREADS = Runtime.getRuntime().availableProcessors();
 
-    private PipelineExecutor<String, Sentence> executor;
-    private Vocabulary vocabulary = null;
+    private final PipelineExecutor<String, Sentence> executor;
+    private final Vocabulary vocabulary;
 
-    public Preprocessor(Locale sourceLanguage) throws ProcessingException {
-        this(sourceLanguage, null, DEFAULT_THREADS, getDefaultBuilder());
+    public Preprocessor(Locale sourceLanguage) throws IOException {
+        this(sourceLanguage, null, null, DEFAULT_THREADS, null);
     }
 
-    public Preprocessor(Locale sourceLanguage, Locale targetLanguage) throws ProcessingException {
-        this(sourceLanguage, targetLanguage, DEFAULT_THREADS, getDefaultBuilder());
+    public Preprocessor(Locale sourceLanguage, Locale targetLanguage) throws IOException {
+        this(sourceLanguage, targetLanguage, null, DEFAULT_THREADS, null);
     }
 
-    public Preprocessor(Locale sourceLanguage, Locale targetLanguage, PipelineBuilder<String, Sentence> builder) throws ProcessingException {
-        this(sourceLanguage, targetLanguage, DEFAULT_THREADS, builder);
+    public Preprocessor(Locale sourceLanguage, Locale targetLanguage, Vocabulary vocabulary) throws IOException {
+        this(sourceLanguage, targetLanguage, vocabulary, DEFAULT_THREADS, null);
     }
 
-    public Preprocessor(Locale sourceLanguage, Locale targetLanguage, int threads) throws ProcessingException {
-        this(sourceLanguage, targetLanguage, threads, getDefaultBuilder());
-    }
+    public Preprocessor(Locale sourceLanguage, Locale targetLanguage, Vocabulary vocabulary, int threads, XMLPipelineBuilder<String, Sentence> builder) throws IOException {
+        if (builder == null)
+            builder = getDefaultBuilder();
 
-    public Preprocessor(Locale sourceLanguage, Locale targetLanguage, int threads, PipelineBuilder<String, Sentence> builder) throws ProcessingException {
         this.executor = new PipelineExecutor<>(sourceLanguage, targetLanguage, builder, threads);
-    }
-
-    public void setVocabulary(Vocabulary vocabulary) {
-        //TODO to remove, must be passed in constructor
         this.vocabulary = vocabulary;
     }
 
@@ -99,7 +92,7 @@ public class Preprocessor implements Closeable {
         }
     }
 
-    private static XMLPipelineBuilder<String, Sentence> getDefaultBuilder() throws ProcessingException {
+    private static XMLPipelineBuilder<String, Sentence> getDefaultBuilder() throws IOException {
         String xmlPath = Preprocessor.class.getPackage().getName().replace('.', '/');
         xmlPath = xmlPath + "/preprocessor-default.xml";
 
@@ -111,24 +104,8 @@ public class Preprocessor implements Closeable {
                 throw new Error("Default preprocessor definition not found: " + xmlPath);
 
             return XMLPipelineBuilder.loadFromXML(stream);
-        } catch (IOException e) {
-            throw new ProcessingException("Unable to parse default definition: " + xmlPath, e);
         } finally {
             IOUtils.closeQuietly(stream);
-        }
-    }
-
-    public static void main(String[] args) throws Throwable {
-        Preprocessor preprocessor = new Preprocessor(Locale.ENGLISH);
-
-        try {
-            Sentence sentence = preprocessor.process("Maria D'Avalos is the most famous:");
-            System.out.println(sentence);
-
-            for (Token token : sentence)
-                System.out.println("\"" + token + "\"");
-        } finally {
-            preprocessor.close();
         }
     }
 

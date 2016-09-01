@@ -68,7 +68,7 @@ public class XMLTagProjector {
         Tag[] sourceTags = translation.getSource().getTags();
         Token[] sourceWord = translation.getSource().getWords();
         Token[] targetTokens = translation.getWords();
-        int[][] alignments = translation.getAlignment();
+        Alignment alignment = translation.getAlignment();
         List<ExtendedTag> translationTags = new ArrayList<>(sourceTags.length);
         Map<Integer, Integer> closing2opening = new HashMap<>();
 
@@ -100,7 +100,7 @@ public class XMLTagProjector {
                 int maxPos = -1;
 
                 //Check if they contain some aligned words
-                for (int[] align : alignments) {
+                for (int[] align : alignment) {
                     if (align[0] >= sourcePosition && align[0] < closePosition) {
                         minPos = Math.min(minPos, align[1]);
                         maxPos = Math.max(maxPos, align[1]);
@@ -136,7 +136,7 @@ public class XMLTagProjector {
                 sourceRightToken.clear();
                 //Words that are at the left of the tag in the source sentence, should be at left of the mapped tag
                 //in the translation. Some reasoning for those that are at the right.
-                for (int[] align : alignments) {
+                for (int[] align : alignment) {
                     //If the word is at the left of the current tag
                     if (align[0] < sourcePosition) {
                         if (!sourceRightToken.contains(align[1])) {
@@ -296,105 +296,6 @@ public class XMLTagProjector {
             previousToken.setRightSpace(null);
         }
 
-    }
-
-    private static int[][] computeExtendedAlignments(List<ExtendedTag> extendedTags, Translation translation) {
-
-        //Change words indexes in the alignments including the tags positions in the source
-        int[][] wordsAlignments = translation.getAlignment();
-        int[][] newWordsAlignments = new int[wordsAlignments.length + extendedTags.size()][2];
-
-        int alignmentIndex, tokenIndex, wordIndex, tagCount, newAlignmentsIndex;
-        alignmentIndex = tokenIndex = wordIndex = tagCount = newAlignmentsIndex = 0;
-        for (Token token : translation.getSource()) {
-            if (token instanceof Tag) {
-                tagCount++;
-            } else {
-                while (alignmentIndex < wordsAlignments.length && wordsAlignments[alignmentIndex][0] == wordIndex) {
-                    newWordsAlignments[newAlignmentsIndex++] = new int[]{wordsAlignments[alignmentIndex][0] + tagCount,
-                            wordsAlignments[alignmentIndex][1]};
-                    alignmentIndex++;
-                }
-                wordIndex++;
-            }
-            tokenIndex++;
-        }
-
-        //Change words indexes in the alignments including the tags positions in the translation
-        Map<Integer, Integer> oldPosition2newPosition = new HashMap<Integer, Integer>(translation.getWords().length);
-        tokenIndex = tagCount = 0;
-        for (Token token : translation) {
-            if (token instanceof Tag) {
-                tagCount++;
-            } else {
-                oldPosition2newPosition.put(tokenIndex - tagCount, tokenIndex);
-            }
-            tokenIndex++;
-        }
-        for (int[] alignment : newWordsAlignments) {
-            Integer newPosition = oldPosition2newPosition.get(alignment[1]);
-            if (alignment != null && newPosition != null) {
-                alignment[1] = newPosition;
-            }
-        }
-
-        //Add alignments among tags
-        for (ExtendedTag tag : extendedTags) {
-            System.out.println((tag.sourcePosition + " " + tag.sourceTagIndex) + " " + tag.targetPosition + " " + tag.targetTagIndex);
-            newWordsAlignments[newAlignmentsIndex++] = new int[]{tag.sourcePosition + tag.sourceTagIndex, tag.targetPosition + tag.targetTagIndex};
-        }
-
-        //Sort the alignments
-        Arrays.sort(newWordsAlignments, new Comparator<int[]>() {
-            @Override
-            public int compare(int[] a1, int[] a2) {
-                int c = a1[0] - a2[0];
-                if (c == 0) {
-                    c = a1[1] - a2[1];
-                }
-                return c;
-            }
-        });
-
-        return newWordsAlignments;
-    }
-
-    public static void main(String[] args) throws Throwable {
-        // SRC: hello <b>world</b><f />!
-        Sentence source = new Sentence(new Word[]{
-                new Word("It", " "),
-                new Word("is", " "),
-                new Word("often", " "),
-                new Word("*99***1#", null),
-                new Word(".", null)
-        }, new Tag[]{
-                Tag.fromText("<i>", true, null, 3),
-                Tag.fromText("</i>", false, null, 4)
-        });
-        Translation translation = new Translation(new Word[]{
-                new Word("Spesso", " "),
-                new Word("corrisponde", " "),
-                new Word("a", " "),
-                new Word("*99***1#", null),
-                new Word(".", null)
-        }, source, new int[][]{
-                {1, 1},
-                {1, 2},
-                {2, 0},
-                {3, 3},
-                {4, 4}
-        });
-
-
-        System.out.println("SRC:                     " + source);
-        System.out.println("SRC (stripped):          " + source.getStrippedString(false));
-        System.out.println();
-
-        XMLTagProjector mapper = new XMLTagProjector();
-        mapper.project(translation);
-
-        System.out.println("TRANSLATION:             " + translation);
-        System.out.println("TRANSLATION (stripped):  " + translation.getStrippedString(false));
     }
 
 }

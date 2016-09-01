@@ -2,6 +2,7 @@ package eu.modernmt.decoder.moses;
 
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationHypothesis;
+import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
 
@@ -71,7 +72,7 @@ class TranslationXObject {
 
     public String text;
     public Hypothesis[] nbestList;
-    public int[][] alignment;
+    public int[][] alignment; // TODO: encode as jintArray
 
     public TranslationXObject(String text, Hypothesis[] nbestList, int[][] alignment) {
         this.text = text;
@@ -82,7 +83,7 @@ class TranslationXObject {
     public DecoderTranslation getTranslation(Sentence source) {
         Word[] words = explode(text);
 
-        DecoderTranslation translation = new DecoderTranslation(words, source, alignment);
+        DecoderTranslation translation = new DecoderTranslation(words, source, Alignment.fromAlignmentPairs(alignment));
 
         if (nbestList != null && nbestList.length > 0) {
             List<TranslationHypothesis> nbest = new ArrayList<>(nbestList.length);

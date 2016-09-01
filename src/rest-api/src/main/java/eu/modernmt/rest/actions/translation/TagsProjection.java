@@ -11,6 +11,7 @@ import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
 import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
+import eu.modernmt.rest.model.ProjectedTranslation;
 
 import java.util.Locale;
 
@@ -18,34 +19,10 @@ import java.util.Locale;
  * Created by lucamastrostefano on 15/03/16.
  */
 @Route(aliases = "tags-projection", method = HttpMethod.GET)
-public class TagsProjection extends ObjectAction<Object> {
-
-    private static class ProjectedTranslation {
-
-        final String translation;
-
-        public ProjectedTranslation(String translation) {
-            this.translation = translation;
-        }
-    }
-
-    private static class ExhaustiveProjectedTranslation extends ProjectedTranslation {
-
-        final String[] sourceToken;
-        final String[] targetToken;
-        final int[][] alignments;
-
-        public ExhaustiveProjectedTranslation(String translation, String[] sourceToken, String[] targetToken,
-                                              int[][] alignments) {
-            super(translation);
-            this.sourceToken = sourceToken;
-            this.targetToken = targetToken;
-            this.alignments = alignments;
-        }
-    }
+public class TagsProjection extends ObjectAction<ProjectedTranslation> {
 
     @Override
-    protected Object execute(RESTRequest req, Parameters _params) throws AlignerException, LanguagePairNotSupportedException {
+    protected ProjectedTranslation execute(RESTRequest req, Parameters _params) throws AlignerException, LanguagePairNotSupportedException {
         Params params = (Params) _params;
 
         ModernMT.tags.isLanguagesSupported(params.sourceLanguage, params.targetLanguage);
@@ -57,15 +34,12 @@ public class TagsProjection extends ObjectAction<Object> {
             taggedTranslation = ModernMT.tags.project(params.sentence, params.translation, params.sourceLanguage, params.targetLanguage);
         }
 
-        ProjectedTranslation result;
+        ProjectedTranslation result = new ProjectedTranslation(taggedTranslation.toString());
+
         if (params.showDetails) {
-            String[] sourceToken = stringifyTokens(taggedTranslation.getSource().getWords());
-            String[] targetToken = stringifyTokens(taggedTranslation.getWords());
-            int[][] alignments = taggedTranslation.getAlignment();
-            result = new ExhaustiveProjectedTranslation(taggedTranslation.toString(), sourceToken, targetToken,
-                    alignments);
-        } else {
-            result = new ProjectedTranslation(taggedTranslation.toString());
+            result.setSourceTokens(stringifyTokens(taggedTranslation.getSource().getWords()));
+            result.setTargetTokens(stringifyTokens(taggedTranslation.getWords()));
+            result.setAlignment(taggedTranslation.getAlignment());
         }
 
         return result;

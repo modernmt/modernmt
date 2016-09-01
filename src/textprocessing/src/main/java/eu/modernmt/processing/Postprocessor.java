@@ -1,7 +1,6 @@
 package eu.modernmt.processing;
 
 import eu.modernmt.model.Translation;
-import eu.modernmt.processing.builder.PipelineBuilder;
 import eu.modernmt.processing.builder.XMLPipelineBuilder;
 import eu.modernmt.processing.concurrent.PipelineExecutor;
 import eu.modernmt.vocabulary.Vocabulary;
@@ -20,31 +19,26 @@ public class Postprocessor implements Closeable {
 
     private static final int DEFAULT_THREADS = Runtime.getRuntime().availableProcessors();
 
-    private PipelineExecutor<Translation, Void> executor;
-    private Vocabulary vocabulary = null;
+    private final PipelineExecutor<Translation, Void> executor;
+    private final Vocabulary vocabulary;
 
-    public Postprocessor(Locale targetLanguage) throws ProcessingException {
-        this(null, targetLanguage, DEFAULT_THREADS, getDefaultBuilder());
+    public Postprocessor(Locale targetLanguage) throws IOException {
+        this(null, targetLanguage, null, DEFAULT_THREADS, null);
     }
 
-    public Postprocessor(Locale sourceLanguage, Locale targetLanguage) throws ProcessingException {
-        this(sourceLanguage, targetLanguage, DEFAULT_THREADS, getDefaultBuilder());
+    public Postprocessor(Locale sourceLanguage, Locale targetLanguage) throws IOException {
+        this(sourceLanguage, targetLanguage, null, DEFAULT_THREADS, null);
     }
 
-    public Postprocessor(Locale sourceLanguage, Locale targetLanguage, PipelineBuilder<Translation, Void> builder) throws ProcessingException {
-        this(sourceLanguage, targetLanguage, DEFAULT_THREADS, builder);
+    public Postprocessor(Locale sourceLanguage, Locale targetLanguage, Vocabulary vocabulary) throws IOException {
+        this(sourceLanguage, targetLanguage, vocabulary, DEFAULT_THREADS, null);
     }
 
-    public Postprocessor(Locale sourceLanguage, Locale targetLanguage, int threads) throws ProcessingException {
-        this(sourceLanguage, targetLanguage, threads, getDefaultBuilder());
-    }
+    public Postprocessor(Locale sourceLanguage, Locale targetLanguage, Vocabulary vocabulary, int threads, XMLPipelineBuilder<Translation, Void> builder) throws IOException {
+        if (builder == null)
+            builder = getDefaultBuilder();
 
-    public Postprocessor(Locale sourceLanguage, Locale targetLanguage, int threads, PipelineBuilder<Translation, Void> builder) throws ProcessingException {
         this.executor = new PipelineExecutor<>(sourceLanguage, targetLanguage, builder, threads);
-    }
-
-    public void setVocabulary(Vocabulary vocabulary) {
-        // TODO: remove must be passed in constructor
         this.vocabulary = vocabulary;
     }
 
@@ -88,7 +82,7 @@ public class Postprocessor implements Closeable {
         }
     }
 
-    private static XMLPipelineBuilder<Translation, Void> getDefaultBuilder() throws ProcessingException {
+    private static XMLPipelineBuilder<Translation, Void> getDefaultBuilder() throws IOException {
         String xmlPath = Postprocessor.class.getPackage().getName().replace('.', '/');
         xmlPath = xmlPath + "/postprocessor-default.xml";
         InputStream stream = null;
@@ -99,8 +93,6 @@ public class Postprocessor implements Closeable {
                 throw new Error("Default postprocessor definition not found: " + xmlPath);
 
             return XMLPipelineBuilder.loadFromXML(stream);
-        } catch (IOException e) {
-            throw new ProcessingException("Unable to parse default definition: " + xmlPath, e);
         } finally {
             IOUtils.closeQuietly(stream);
         }

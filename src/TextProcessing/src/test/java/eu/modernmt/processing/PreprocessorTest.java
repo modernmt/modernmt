@@ -6,6 +6,7 @@ import eu.modernmt.model.Word;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Locale;
 
 import static org.junit.Assert.*;
@@ -13,10 +14,13 @@ import static org.junit.Assert.*;
 public class PreprocessorTest {
 
     private static Sentence process(String text) throws ProcessingException {
-        Preprocessor preprocessor = new Preprocessor(Locale.ENGLISH);
+        Preprocessor preprocessor = null;
 
         try {
+            preprocessor = new Preprocessor(Locale.ENGLISH);
             return preprocessor.process(text);
+        } catch (IOException e) {
+            throw new ProcessingException(e);
         } finally {
             IOUtils.closeQuietly(preprocessor);
         }

@@ -3,8 +3,8 @@ package eu.modernmt.cli;
 import eu.modernmt.cli.init.Submodules;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.lucene.LuceneAnalyzer;
-import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.Corpora;
+import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.cli.*;
 
 import java.io.File;
@@ -55,6 +55,7 @@ public class ContextAnalyzerMain {
     }
 
     public static void main(String[] _args) throws Throwable {
+        //TODO: move this logic into Facade.training
         Args args = new Args(_args);
 
         List<Corpus> corpora = Corpora.list(args.language, args.corporaRoots);

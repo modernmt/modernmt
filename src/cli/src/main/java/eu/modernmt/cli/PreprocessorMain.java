@@ -3,10 +3,9 @@ package eu.modernmt.cli;
 import eu.modernmt.cli.init.Submodules;
 import eu.modernmt.io.*;
 import eu.modernmt.model.Sentence;
-import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.PipelineInputStream;
 import eu.modernmt.processing.PipelineOutputStream;
-import eu.modernmt.processing.ProcessingException;
+import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.util.SentenceOutputter;
 import eu.modernmt.processing.util.TokensOutputter;
 import org.apache.commons.cli.*;
@@ -57,7 +56,7 @@ public class PreprocessorMain {
 
     }
 
-    public static void main(String[] _args) throws InterruptedException, ProcessingException, ParseException {
+    public static void main(String[] _args) throws Throwable {
         Args args = new Args(_args);
 
         Preprocessor preprocessor = null;

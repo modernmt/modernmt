@@ -34,25 +34,16 @@ public class MosesDecoder implements Decoder {
         }
     }
 
+    private final HashMap<Long, Long> sessions = new HashMap<>();
     private long nativeHandle;
-    private File iniFile;
-    private HashMap<Long, Long> sessions;
 
     public MosesDecoder(File iniFile) throws IOException {
-        this.sessions = new HashMap<>();
-        this.iniFile = iniFile;
+        if (!iniFile.isFile())
+            throw new IOException("Invalid INI file: " + iniFile);
+        this.init(iniFile.getAbsolutePath());
     }
 
     private native void init(String inifile);
-
-
-    @Override
-    public void load() throws IOException {
-        if (!iniFile.isFile())
-            throw new IOException("Invalid INI file: " + iniFile);
-
-        this.init(iniFile.getAbsolutePath());
-    }
 
     // Features
 

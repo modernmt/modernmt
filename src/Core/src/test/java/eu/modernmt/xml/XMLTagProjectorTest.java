@@ -1,9 +1,6 @@
 package eu.modernmt.xml;
 
-import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Tag;
-import eu.modernmt.model.Translation;
-import eu.modernmt.model.Word;
+import eu.modernmt.model.*;
 import eu.modernmt.processing.xml.XMLTagProjector;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -27,11 +24,11 @@ public class XMLTagProjectorTest {
                 new Word("ciao", " "),
                 new Word("mondo", null),
                 new Word("!", null),
-        }, source, new int[][]{
+        }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
                 {2, 2},
-        });
+        }));
 
         new XMLTagProjector().project(translation);
 
@@ -58,11 +55,11 @@ public class XMLTagProjectorTest {
                 new Word("mondo", " "),
                 new Word("ciao", null),
                 new Word("!", null),
-        }, source, new int[][]{
+        }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 1},
                 {1, 0},
                 {2, 2},
-        });
+        }));
 
         new XMLTagProjector().project(translation);
 
@@ -92,13 +89,13 @@ public class XMLTagProjectorTest {
                 new Word("un", " "),
                 new Word("tag", " "),
                 new Word("empty", " "),
-        }, source, new int[][]{
+        }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
                 {2, 1},
                 {3, 4},
                 {4, 3},
-        });
+        }));
 
         new XMLTagProjector().project(translation);
 
@@ -124,11 +121,11 @@ public class XMLTagProjectorTest {
                 new Word("ciao", " "),
                 new Word("mondo", null),
                 new Word("!", null),
-        }, source, new int[][]{
+        }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
                 {2, 2},
-        });
+        }));
 
         new XMLTagProjector().project(translation);
 
@@ -156,11 +153,11 @@ public class XMLTagProjectorTest {
                 new Word("mondo", " "),
                 new Word("ciao", null),
                 new Word("!", null),
-        }, source, new int[][]{
+        }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 1},
                 {1, 0},
                 {2, 2},
-        });
+        }));
 
         new XMLTagProjector().project(translation);
         //System.out.println(translation.getSource().toString());
@@ -189,13 +186,13 @@ public class XMLTagProjectorTest {
                 new Word("un", " "),
                 new Word("tag", " "),
                 new Word("malformato", " "),
-        }, source, new int[][]{
+        }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
                 {2, 2},
                 {3, 4},
                 {4, 3},
-        });
+        }));
 
         new XMLTagProjector().project(translation);
 
@@ -223,13 +220,13 @@ public class XMLTagProjectorTest {
                 new Word("un", " "),
                 new Word("tag", " "),
                 new Word("malformato", " "),
-        }, source, new int[][]{
+        }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
                 {2, 2},
                 {3, 4},
                 {4, 3},
-        });
+        }));
 
         new XMLTagProjector().project(translation);
 
@@ -258,12 +255,12 @@ public class XMLTagProjectorTest {
                 new Word("con", " "),
                 new Word("tag", " "),
                 new Word("innestati", null),
-        }, source, new int[][]{
+        }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
                 {2, 3},
                 {3, 2},
-        });
+        }));
 
         new XMLTagProjector().project(translation);
 
@@ -294,12 +291,12 @@ public class XMLTagProjectorTest {
                 new Word("con", " "),
                 new Word("commenti", " "),
                 new Word("XML", " "),
-        }, source, new int[][]{
+        }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
                 {2, 3},
                 {3, 2},
-        });
+        }));
 
         new XMLTagProjector().project(translation);
 
@@ -328,12 +325,12 @@ public class XMLTagProjectorTest {
                 new Word("con", " "),
                 new Word("commenti", " "),
                 new Word("XML", " "),
-        }, source, new int[][]{
+        }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
                 {2, 3},
                 {3, 2},
-        });
+        }));
 
         new XMLTagProjector().project(translation);
 
@@ -362,12 +359,12 @@ public class XMLTagProjectorTest {
                 new Word("è", " "),
                 new Word("un", " "),
                 new Word("esempio", null),
-        }, source, new int[][]{
+        }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
                 {2, 2},
                 {3, 3},
-        });
+        }));
 
         new XMLTagProjector().project(translation);
 
@@ -389,9 +386,9 @@ public class XMLTagProjectorTest {
 
         Translation translation = new Translation(new Word[]{
                 new Word("Prova", null),
-        }, source, new int[][]{
+        }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0}
-        });
+        }));
 
         new XMLTagProjector().project(translation);
 

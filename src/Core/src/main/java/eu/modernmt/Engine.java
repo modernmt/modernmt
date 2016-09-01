@@ -1,7 +1,6 @@
 package eu.modernmt;
 
 import eu.modernmt.aligner.Aligner;
-import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.aligner.AlignerFactory;
 import eu.modernmt.config.EngineConfig;
 import eu.modernmt.constants.Const;
@@ -13,7 +12,6 @@ import eu.modernmt.decoder.DecoderFactory;
 import eu.modernmt.io.Paths;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
-import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.vocabulary.Vocabulary;
 import eu.modernmt.vocabulary.rocksdb.RocksDBVocabulary;
 import org.apache.commons.io.FileUtils;
@@ -80,7 +78,6 @@ public class Engine {
 
                     try {
                         decoder = factory.create();
-                        decoder.load();
                     } catch (IOException e) {
                         throw new LazyLoadException(e);
                     }
@@ -100,8 +97,7 @@ public class Engine {
 
                     try {
                         aligner = factory.create();
-                        aligner.load();
-                    } catch (AlignerException e) {
+                    } catch (IOException e) {
                         throw new LazyLoadException(e);
                     }
                 }
@@ -116,9 +112,8 @@ public class Engine {
             synchronized (this) {
                 if (preprocessor == null) {
                     try {
-                        preprocessor = new Preprocessor(config.getSourceLanguage(), config.getTargetLanguage());
-                        preprocessor.setVocabulary(getVocabulary());
-                    } catch (ProcessingException e) {
+                        preprocessor = new Preprocessor(getSourceLanguage(), getTargetLanguage(), getVocabulary());
+                    } catch (IOException e) {
                         throw new LazyLoadException(e);
                     }
                 }
@@ -133,9 +128,8 @@ public class Engine {
             synchronized (this) {
                 if (postprocessor == null) {
                     try {
-                        postprocessor = new Postprocessor(config.getSourceLanguage(), config.getTargetLanguage());
-                        postprocessor.setVocabulary(getVocabulary());
-                    } catch (ProcessingException e) {
+                        postprocessor = new Postprocessor(getSourceLanguage(), getTargetLanguage(), getVocabulary());
+                    } catch (IOException e) {
                         throw new LazyLoadException(e);
                     }
                 }

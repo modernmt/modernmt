@@ -12,6 +12,8 @@ import eu.modernmt.decoder.moses.MosesDecoderFactory;
  */
 public class Submodules {
 
+    // TODO: completely remove this implementation
+
     public static final String DECODER_FACTORY_PROPERTY = "mmt.decoder.factory";
     public static final String CONTEXT_FACTORY_PROPERTY = "mmt.context.factory";
     public static final String ALIGNER_FACTORY_PROPERTY = "mmt.aligner.factory";

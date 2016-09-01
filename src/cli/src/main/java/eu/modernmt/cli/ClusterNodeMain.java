@@ -1,8 +1,8 @@
 package eu.modernmt.cli;
 
+import eu.modernmt.Engine;
 import eu.modernmt.cli.init.Submodules;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
-import eu.modernmt.Engine;
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.storage.DirectorySynchronizer;
 import eu.modernmt.cluster.storage.StorageService;
@@ -82,6 +82,8 @@ public class ClusterNodeMain {
     }
 
     public static void main(String[] _args) throws Throwable {
+        //TODO: Move this logic inside Facade
+
         Args args = new Args(_args);
         Log4jConfiguration.setup(args.verbosity);
 

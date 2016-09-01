@@ -4,8 +4,6 @@
         eu.modernmt.processing.vocabulary.VocabularyReverseLookup
     </processor>
 
-    <processor>eu.modernmt.processing.AlignmentProcessor</processor>
-
     <!-- Detokenization -->
     <processorGroup>
         <!-- Language specific -->

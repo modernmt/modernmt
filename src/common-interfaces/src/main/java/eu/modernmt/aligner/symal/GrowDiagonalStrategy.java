@@ -1,5 +1,7 @@
 package eu.modernmt.aligner.symal;
 
+import eu.modernmt.model.Alignment;
+
 /**
  * Created by davide on 20/05/16.
  */
@@ -7,7 +9,7 @@ public class GrowDiagonalStrategy implements SymmetrizationStrategy {
 
 
     @Override
-    public int[][] symmetrize(int[][] forward, int[][] backward) {
+    public Alignment symmetrize(Alignment forward, Alignment backward) {
         AlignmentMatrix intersect = AlignmentMatrix.build(forward, backward)
                 .or(forward)
                 .and(backward);
@@ -16,7 +18,7 @@ public class GrowDiagonalStrategy implements SymmetrizationStrategy {
                 .or(backward);
 
 
-        return symmetrize(intersect, union).toArray();
+        return symmetrize(intersect, union).toAlignment();
     }
 
     static AlignmentMatrix symmetrize(AlignmentMatrix intersect, AlignmentMatrix union) {

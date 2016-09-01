@@ -15,8 +15,6 @@ public class DraftFilter implements BilingualCorpusFilter {
         private long signature;
 
         public static Signature fromPair(BilingualCorpus.StringPair pair) {
-            //TODO: preprocess string?
-//            String source = NORMALIZER.call(pair.source);
             String source = pair.source;
             int length = source.length();
 

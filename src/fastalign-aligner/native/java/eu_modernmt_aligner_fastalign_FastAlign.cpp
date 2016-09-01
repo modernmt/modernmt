@@ -2,7 +2,7 @@
 // Created by Davide  Caroselli on 26/08/16.
 //
 
-#include "eu_modernmt_aligner_fastalign_FastAlign.h"
+#include "javah/eu_modernmt_aligner_fastalign_FastAlign.h"
 #include "jniutils.h"
 #include "fastalign/Model.h"
 #include <omp.h>
@@ -20,23 +20,20 @@ inline void ParseSentence(JNIEnv *jvm, jintArray jarray, sentence &outSentence) 
     jvm->ReleaseIntArrayElements(jarray, array, 0);
 }
 
-inline jobjectArray AlignmentToArray(JNIEnv *jvm, alignment align) {
-    jclass intArrayClass = jvm->FindClass("[I");
+inline jintArray AlignmentToArray(JNIEnv *jvm, alignment align) {
+    jsize hsize = (jsize) align.size();
+    jsize size = (jsize) (hsize * 2);
 
-    jobjectArray jarray = jvm->NewObjectArray((jsize) align.size(), intArrayClass, NULL);
-
-    for (int i = 0; i < align.size(); i++) {
-        std::pair<unsigned, unsigned> pair = align[i];
-
-        jint buffer[2];
-        buffer[0] = pair.first;
-        buffer[1] = pair.second;
-
-        jintArray jpair = jvm->NewIntArray(2);
-        jvm->SetIntArrayRegion(jpair, 0, 2, buffer);
-
-        jvm->SetObjectArrayElement(jarray, i, jpair);
+    jint *buffer = new jint[size];
+    for (jsize i = 0; i < hsize; i++) {
+        pair<word, word> &pair = align[i];
+        buffer[i] = pair.first;
+        buffer[i + hsize] = pair.second;
     }
+
+    jintArray jarray = jvm->NewIntArray(size);
+    jvm->SetIntArrayRegion(jarray, 0, size, buffer);
+    delete[] buffer;
 
     return jarray;
 }
@@ -59,12 +56,12 @@ Java_eu_modernmt_aligner_fastalign_FastAlign_instantiate(JNIEnv *jvm, jobject js
 
 /*
  * Class:     eu_modernmt_aligner_fastalign_FastAlign
- * Method:    alignPair
- * Signature: ([I[I)[[I
+ * Method:    align
+ * Signature: ([I[I)[I
  */
-JNIEXPORT jobjectArray JNICALL
-Java_eu_modernmt_aligner_fastalign_FastAlign_alignPair(JNIEnv *jvm, jobject jself, jintArray jsource,
-                                                       jintArray jtarget) {
+JNIEXPORT jintArray JNICALL
+Java_eu_modernmt_aligner_fastalign_FastAlign_align___3I_3I(JNIEnv *jvm, jobject jself, jintArray jsource,
+                                                           jintArray jtarget) {
     Model *model = jni_gethandle<Model>(jvm, jself);
 
     sentence source, target;
@@ -78,12 +75,12 @@ Java_eu_modernmt_aligner_fastalign_FastAlign_alignPair(JNIEnv *jvm, jobject jsel
 
 /*
  * Class:     eu_modernmt_aligner_fastalign_FastAlign
- * Method:    alignPairs
- * Signature: ([[I[[I)[[[I
+ * Method:    align
+ * Signature: ([[I[[I[[I)V
  */
-JNIEXPORT jobjectArray JNICALL
-Java_eu_modernmt_aligner_fastalign_FastAlign_alignPairs(JNIEnv *jvm, jobject jself, jobjectArray jsources,
-                                                        jobjectArray jtargets) {
+JNIEXPORT void JNICALL
+Java_eu_modernmt_aligner_fastalign_FastAlign_align___3_3I_3_3I_3_3I(JNIEnv *jvm, jobject jself, jobjectArray jsources,
+                                                                    jobjectArray jtargets, jobjectArray joutput) {
     Model *model = jni_gethandle<Model>(jvm, jself);
     jsize length = jvm->GetArrayLength(jsources);
 
@@ -101,15 +98,10 @@ Java_eu_modernmt_aligner_fastalign_FastAlign_alignPairs(JNIEnv *jvm, jobject jse
     vector<alignment> alignments;
     model->ComputeAlignments(batch, alignments);
 
-    jclass intIntArrayClass = jvm->FindClass("[[I");
-    jobjectArray jalignments = jvm->NewObjectArray((jsize) alignments.size(), intIntArrayClass, NULL);
-
     for (jsize i = 0; i < alignments.size(); i++) {
-        jobjectArray alignment = AlignmentToArray(jvm, alignments[i]);
-        jvm->SetObjectArrayElement(jalignments, i, alignment);
+        jintArray alignment = AlignmentToArray(jvm, alignments[i]);
+        jvm->SetObjectArrayElement(joutput, i, alignment);
     }
-
-    return jalignments;
 }
 
 /*

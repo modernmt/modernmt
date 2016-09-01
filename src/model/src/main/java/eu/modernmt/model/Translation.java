@@ -6,14 +6,14 @@ package eu.modernmt.model;
 public class Translation extends Sentence {
 
     protected final Sentence source;
-    private int[][] alignment;
+    private Alignment alignment;
     private long elapsedTime;
 
-    public Translation(Word[] words, Sentence source, int[][] alignment) {
+    public Translation(Word[] words, Sentence source, Alignment alignment) {
         this(words, null, source, alignment);
     }
 
-    public Translation(Word[] words, Tag[] tags, Sentence source, int[][] alignment) {
+    public Translation(Word[] words, Tag[] tags, Sentence source, Alignment alignment) {
         super(words, tags);
         this.source = source;
         this.alignment = alignment;
@@ -32,16 +32,16 @@ public class Translation extends Sentence {
         return source;
     }
 
-    public void setAlignment(int[][] alignment) {
+    public void setAlignment(Alignment alignment) {
         this.alignment = alignment;
     }
 
-    public int[][] getAlignment() {
+    public Alignment getAlignment() {
         return alignment;
     }
 
     public boolean hasAlignment() {
-        return alignment != null && alignment.length > 0;
+        return alignment != null && alignment.size() > 0;
     }
 
 }

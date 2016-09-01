@@ -12,11 +12,11 @@ set(SOURCE_FILES
         fastalign/Corpus.h fastalign/Corpus.cpp
         fastalign/DiagonalAlignment.h
 
-        jni/jniutils.h
-        jheaders/eu_modernmt_aligner_fastalign_FastAlign.h jni/eu_modernmt_aligner_fastalign_FastAlign.cpp)
+        java/jniutils.h
+
+        javah/eu_modernmt_aligner_fastalign_FastAlign.h java/eu_modernmt_aligner_fastalign_FastAlign.cpp)
 
 include_directories(${CMAKE_SOURCE_DIR})
-include_directories(jheaders) # Automatically generated JNI headers
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib)
