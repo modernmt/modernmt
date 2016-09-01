@@ -1,6 +1,10 @@
-package eu.modernmt.vocabulary;
+package eu.modernmt.vocabulary.rocksdb;
 
+import eu.modernmt.vocabulary.Vocabulary;
+import eu.modernmt.vocabulary.VocabularyBuilder;
 import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,16 +12,33 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Created by davide on 16/08/16.
+ * Created by davide on 01/09/16.
  */
-public class Vocabulary implements IVocabulary {
+public class RocksDBVocabulary implements Vocabulary {
 
-    public static final int VOCABULARY_UNKNOWN_WORD = 0;
-    public static final int VOCABULARY_WORD_ID_START = 1000;
+    private static final Logger logger = LogManager.getLogger(RocksDBVocabulary.class);
+
+    static {
+        try {
+            System.loadLibrary("rocksvb");
+            logger.info("Library rocksvb loaded successfully");
+        } catch (Throwable e) {
+            logger.error("Unable to load library rocksvb", e);
+            throw e;
+        }
+    }
+
+    public static VocabularyBuilder newBuilder(File modelPath) {
+        return new RocksDBVocabularyBuilder(modelPath);
+    }
+
+    public static VocabularyBuilder newBuilder(File modelPath, int initialCapacity) {
+        return new RocksDBVocabularyBuilder(modelPath, initialCapacity);
+    }
 
     private long nativeHandle;
 
-    public Vocabulary(File model) throws IOException {
+    public RocksDBVocabulary(File model) throws IOException {
         if (!model.isDirectory())
             FileUtils.forceMkdir(model);
 

@@ -5,7 +5,7 @@ import eu.modernmt.model.Token;
 import eu.modernmt.processing.builder.PipelineBuilder;
 import eu.modernmt.processing.builder.XMLPipelineBuilder;
 import eu.modernmt.processing.concurrent.PipelineExecutor;
-import eu.modernmt.vocabulary.IVocabulary;
+import eu.modernmt.vocabulary.Vocabulary;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
@@ -33,7 +33,7 @@ public class Preprocessor implements Closeable {
     private static final int DEFAULT_THREADS = Runtime.getRuntime().availableProcessors();
 
     private PipelineExecutor<String, Sentence> executor;
-    private IVocabulary vocabulary = null;
+    private Vocabulary vocabulary = null;
 
     public Preprocessor(Locale sourceLanguage) throws ProcessingException {
         this(sourceLanguage, null, DEFAULT_THREADS, getDefaultBuilder());
@@ -55,7 +55,7 @@ public class Preprocessor implements Closeable {
         this.executor = new PipelineExecutor<>(sourceLanguage, targetLanguage, builder, threads);
     }
 
-    public void setVocabulary(IVocabulary vocabulary) {
+    public void setVocabulary(Vocabulary vocabulary) {
         //TODO to remove, must be passed in constructor
         this.vocabulary = vocabulary;
     }

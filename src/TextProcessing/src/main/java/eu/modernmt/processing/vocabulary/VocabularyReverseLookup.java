@@ -6,7 +6,7 @@ import eu.modernmt.model.Word;
 import eu.modernmt.processing.LanguageNotSupportedException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.vocabulary.IVocabulary;
+import eu.modernmt.vocabulary.Vocabulary;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -23,7 +23,7 @@ public class VocabularyReverseLookup extends TextProcessor<Translation, Translat
 
     @Override
     public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
-        IVocabulary vocabulary = (IVocabulary) metadata.get(TextProcessor.KEY_VOCABULARY);
+        Vocabulary vocabulary = (Vocabulary) metadata.get(TextProcessor.KEY_VOCABULARY);
 
         if (vocabulary != null)
             reverseLookup(vocabulary, translation);
@@ -31,7 +31,7 @@ public class VocabularyReverseLookup extends TextProcessor<Translation, Translat
         return translation;
     }
 
-    private void reverseLookup(IVocabulary vocabulary, Translation translation) {
+    private void reverseLookup(Vocabulary vocabulary, Translation translation) {
         Word[] words = translation.getWords();
 
         if (words == null || words.length == 0)

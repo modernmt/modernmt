@@ -5,6 +5,7 @@ package eu.modernmt.constants;
  */
 public class Const {
 
+    //TODO: refactoring
     public static final FileSystemConst fs = new FileSystemConst();
 
 }

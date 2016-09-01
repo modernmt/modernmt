@@ -19,6 +19,7 @@
 
         <module>rest-api</module>
         <module>cli</module>
+        <module>rocksdb-vocabulary</module>
     </modules>
 
     <packaging>pom</packaging>
@@ -36,6 +37,7 @@
         <!-- Native project definitions -->
         <project.build.native>${project.build.directory}/native</project.build.native>
         <project.nativedir>${project.basedir}/native</project.nativedir>
+        <project.nativedir.javah>${project.nativedir}/javah</project.nativedir.javah>
         <project.nativedir.headers>${project.nativedir}/jheaders</project.nativedir.headers>
 
         <!-- MMT build directory -->

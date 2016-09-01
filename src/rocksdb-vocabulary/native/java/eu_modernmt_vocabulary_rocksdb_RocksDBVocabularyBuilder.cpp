@@ -2,16 +2,16 @@
 // Created by Davide  Caroselli on 17/08/16.
 //
 
-#include "eu_modernmt_vocabulary_VocabularyBuilder.h"
+#include "javah/eu_modernmt_vocabulary_rocksdb_RocksDBVocabularyBuilder.h"
 #include <vocabulary/PersistentVocabulary.h>
 
 /*
- * Class:     eu_modernmt_vocabulary_VocabularyBuilder
+ * Class:     eu_modernmt_vocabulary_rocksdb_RocksDBVocabularyBuilder
  * Method:    flush
  * Signature: ([Ljava/lang/String;[ILjava/lang/String;)V
  */
 JNIEXPORT void JNICALL
-Java_eu_modernmt_vocabulary_VocabularyBuilder_flush(JNIEnv *jvm, jobject jself, jobjectArray jkeys, jintArray jvalues,
+Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabularyBuilder_flush(JNIEnv *jvm, jobject jself, jobjectArray jkeys, jintArray jvalues,
                                                     jint nextId, jstring jmodel) {
     const char *model = jvm->GetStringUTFChars(jmodel, NULL);
     PersistentVocabulary vocabulary(model, true);

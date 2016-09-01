@@ -15,6 +15,7 @@ import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.vocabulary.Vocabulary;
+import eu.modernmt.vocabulary.rocksdb.RocksDBVocabulary;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -169,7 +170,7 @@ public class Engine {
                 if (vocabulary == null) {
                     try {
                         File model = new File(this.root, VOCABULARY_MODEL_PATH);
-                        vocabulary = new Vocabulary(model);
+                        vocabulary = new RocksDBVocabulary(model);
                     } catch (IOException e) {
                         throw new LazyLoadException(e);
                     }

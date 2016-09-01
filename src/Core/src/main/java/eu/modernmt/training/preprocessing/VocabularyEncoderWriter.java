@@ -2,6 +2,7 @@ package eu.modernmt.training.preprocessing;
 
 import eu.modernmt.io.LineWriter;
 import eu.modernmt.vocabulary.VocabularyBuilder;
+import eu.modernmt.vocabulary.rocksdb.RocksDBVocabulary;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +15,7 @@ public class VocabularyEncoderWriter extends CorpusWriter {
     private final VocabularyBuilder vocabulary;
 
     public VocabularyEncoderWriter(File vocabularyOutput) {
-        vocabulary = new VocabularyBuilder(vocabularyOutput);
+        vocabulary = RocksDBVocabulary.newBuilder(vocabularyOutput);
     }
 
     @Override

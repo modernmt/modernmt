@@ -5,7 +5,7 @@ import eu.modernmt.model.Word;
 import eu.modernmt.processing.LanguageNotSupportedException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.vocabulary.IVocabulary;
+import eu.modernmt.vocabulary.Vocabulary;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -22,7 +22,7 @@ public class VocabularyLookup extends TextProcessor<Sentence, Sentence> {
 
     @Override
     public Sentence call(Sentence sentence, Map<String, Object> metadata) throws ProcessingException {
-        IVocabulary vocabulary = (IVocabulary) metadata.get(TextProcessor.KEY_VOCABULARY);
+        Vocabulary vocabulary = (Vocabulary) metadata.get(TextProcessor.KEY_VOCABULARY);
 
         if (vocabulary != null)
             lookup(vocabulary, sentence);
@@ -30,7 +30,7 @@ public class VocabularyLookup extends TextProcessor<Sentence, Sentence> {
         return sentence;
     }
 
-    private void lookup(IVocabulary vocabulary, Sentence sentence) {
+    private void lookup(Vocabulary vocabulary, Sentence sentence) {
         Word[] words = sentence.getWords();
 
         if (words == null || words.length == 0)
@@ -49,7 +49,7 @@ public class VocabularyLookup extends TextProcessor<Sentence, Sentence> {
             Word word = words[i];
             int id = ids[i];
 
-            if (id == IVocabulary.VOCABULARY_UNKNOWN_WORD) {
+            if (id == Vocabulary.VOCABULARY_UNKNOWN_WORD) {
                 String text = word.toString();
 
                 Integer unseenId = reverseVocabulary.get(text);

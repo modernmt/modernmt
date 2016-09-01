@@ -1,5 +1,7 @@
-package eu.modernmt.vocabulary;
+package eu.modernmt.vocabulary.rocksdb;
 
+import eu.modernmt.vocabulary.Vocabulary;
+import eu.modernmt.vocabulary.VocabularyBuilder;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -8,24 +10,25 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created by davide on 16/08/16.
+ * Created by davide on 01/09/16.
  */
-public class VocabularyBuilder {
+public class RocksDBVocabularyBuilder implements VocabularyBuilder {
 
     private final HashMap<String, Integer> vocabulary;
     private final File model;
 
     private int idCounter = Vocabulary.VOCABULARY_WORD_ID_START;
 
-    public VocabularyBuilder(File model) {
+    RocksDBVocabularyBuilder(File model) {
         this(model, 1000000);
     }
 
-    public VocabularyBuilder(File model, int initialCapacity) {
+    RocksDBVocabularyBuilder(File model, int initialCapacity) {
         this.model = model;
         this.vocabulary = new HashMap<>(initialCapacity);
     }
 
+    @Override
     public synchronized int add(String word) {
         Integer id = vocabulary.get(word);
 
@@ -37,6 +40,7 @@ public class VocabularyBuilder {
         return id;
     }
 
+    @Override
     public synchronized int[] addLine(String[] line) {
         int[] result = new int[line.length];
 
@@ -55,6 +59,7 @@ public class VocabularyBuilder {
         return result;
     }
 
+    @Override
     public synchronized int[][] addLines(String[][] lines) {
         int[][] result = new int[lines.length][];
 
@@ -65,6 +70,7 @@ public class VocabularyBuilder {
         return result;
     }
 
+    @Override
     public synchronized Vocabulary build() throws IOException {
         if (!model.isDirectory())
             FileUtils.forceMkdir(model);
@@ -83,7 +89,7 @@ public class VocabularyBuilder {
 
         flush(words, ids, idCounter, model.getAbsolutePath());
 
-        return new Vocabulary(model);
+        return new RocksDBVocabulary(model);
     }
 
     private native void flush(String[] words, int[] ids, int id, String path);

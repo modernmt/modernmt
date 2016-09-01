@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
-project(mmtcore)
+project(rocksvb)
 
 # where to find cmake_modules modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules")
@@ -12,13 +12,12 @@ set(SOURCE_FILES
         vocabulary/InMemoryVocabulary.cpp vocabulary/InMemoryVocabulary.h
         vocabulary/PersistentVocabulary.cpp vocabulary/PersistentVocabulary.h
 
-        jni/handle.h
+        java/handle.h
 
-        jheaders/eu_modernmt_vocabulary_Vocabulary.h jni/eu_modernmt_vocabulary_Vocabulary.cpp
-        jheaders/eu_modernmt_vocabulary_VocabularyBuilder.h jni/eu_modernmt_vocabulary_VocabularyBuilder.cpp)
+        javah/eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary.h java/eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary.cpp
+        javah/eu_modernmt_vocabulary_rocksdb_RocksDBVocabularyBuilder.h java/eu_modernmt_vocabulary_rocksdb_RocksDBVocabularyBuilder.cpp)
 
 include_directories(${CMAKE_SOURCE_DIR})
-include_directories(jheaders) # Automatically generated JNI headers
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib)

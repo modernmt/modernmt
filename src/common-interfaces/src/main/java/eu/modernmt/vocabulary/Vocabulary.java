@@ -6,7 +6,7 @@ import java.util.List;
 /**
  * Created by davide on 01/09/16.
  */
-public interface IVocabulary extends Closeable {
+public interface Vocabulary extends Closeable {
 
     //TODO: replace Vocabulary with DbVocabulary implements Vocabulary
 

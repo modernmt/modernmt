@@ -2,10 +2,9 @@
 // Created by Davide  Caroselli on 17/08/16.
 //
 
-#include "eu_modernmt_vocabulary_Vocabulary.h"
 #include <string>
 #include <vocabulary/PersistentVocabulary.h>
-#include <iostream>
+#include "javah/eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary.h"
 #include "handle.h"
 
 #define LoadStringClass(jvm) (jvm->FindClass("java/lang/String"))
@@ -72,11 +71,12 @@ static inline const jintArray EncodeIntLine(JNIEnv *jvm, vector<uint32_t> &line)
 }
 
 /*
- * Class:     eu_modernmt_vocabulary_Vocabulary
+ * Class:     eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary
  * Method:    instantiate
  * Signature: (Ljava/lang/String;)J
  */
-JNIEXPORT jlong JNICALL Java_eu_modernmt_vocabulary_Vocabulary_instantiate(JNIEnv *jvm, jobject jself, jstring jpath) {
+JNIEXPORT jlong JNICALL
+Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_instantiate(JNIEnv *jvm, jobject jself, jstring jpath) {
     const char *path = jvm->GetStringUTFChars(jpath, NULL);
     PersistentVocabulary *instance = new PersistentVocabulary(path);
     jvm->ReleaseStringUTFChars(jpath, path);
@@ -85,11 +85,12 @@ JNIEXPORT jlong JNICALL Java_eu_modernmt_vocabulary_Vocabulary_instantiate(JNIEn
 }
 
 /*
- * Class:     eu_modernmt_vocabulary_Vocabulary
+ * Class:     eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary
  * Method:    dispose
  * Signature: (J)V
  */
-JNIEXPORT jlong JNICALL Java_eu_modernmt_vocabulary_Vocabulary_dispose(JNIEnv *jvm, jobject jself, jlong ptr) {
+JNIEXPORT jlong JNICALL
+Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_dispose(JNIEnv *jvm, jobject jself, jlong ptr) {
     if (ptr != 0) {
         PersistentVocabulary *instance = (PersistentVocabulary *) ptr;
         delete instance;
@@ -99,12 +100,13 @@ JNIEXPORT jlong JNICALL Java_eu_modernmt_vocabulary_Vocabulary_dispose(JNIEnv *j
 }
 
 /*
- * Class:     eu_modernmt_vocabulary_Vocabulary
+ * Class:     eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary
  * Method:    getId
  * Signature: (Ljava/lang/String;Z)I
  */
 JNIEXPORT jint JNICALL
-Java_eu_modernmt_vocabulary_Vocabulary_lookup(JNIEnv *jvm, jobject jself, jstring jword, jboolean putIfAbsent) {
+Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_lookup(JNIEnv *jvm, jobject jself, jstring jword,
+                                                             jboolean putIfAbsent) {
     Vocabulary *self = jni_gethandle<Vocabulary>(jvm, jself);
 
     const char *word_chars = jvm->GetStringUTFChars(jword, NULL);
@@ -116,13 +118,13 @@ Java_eu_modernmt_vocabulary_Vocabulary_lookup(JNIEnv *jvm, jobject jself, jstrin
 }
 
 /*
- * Class:     eu_modernmt_vocabulary_Vocabulary
+ * Class:     eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary
  * Method:    encodeLine
  * Signature: ([Ljava/lang/String;Z)[I
  */
 JNIEXPORT jintArray JNICALL
-Java_eu_modernmt_vocabulary_Vocabulary_lookupLine(JNIEnv *jvm, jobject jself, jobjectArray jline,
-                                                  jboolean putIfAbsent) {
+Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_lookupLine(JNIEnv *jvm, jobject jself, jobjectArray jline,
+                                                                 jboolean putIfAbsent) {
     Vocabulary *self = jni_gethandle<Vocabulary>(jvm, jself);
 
     vector<string> line;
@@ -138,13 +140,13 @@ Java_eu_modernmt_vocabulary_Vocabulary_lookupLine(JNIEnv *jvm, jobject jself, jo
 }
 
 /*
- * Class:     eu_modernmt_vocabulary_Vocabulary
+ * Class:     eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary
  * Method:    encodeLines
  * Signature: ([[Ljava/lang/String;[[IZ)V
  */
 JNIEXPORT void JNICALL
-Java_eu_modernmt_vocabulary_Vocabulary_lookupLines(JNIEnv *jvm, jobject jself, jobjectArray jbuffer,
-                                                   jobjectArray joutput, jboolean putIfAbsent) {
+Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_lookupLines(JNIEnv *jvm, jobject jself, jobjectArray jbuffer,
+                                                                  jobjectArray joutput, jboolean putIfAbsent) {
     Vocabulary *self = jni_gethandle<Vocabulary>(jvm, jself);
 
 
@@ -169,11 +171,12 @@ Java_eu_modernmt_vocabulary_Vocabulary_lookupLines(JNIEnv *jvm, jobject jself, j
 }
 
 /*
- * Class:     eu_modernmt_vocabulary_Vocabulary
+ * Class:     eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary
  * Method:    getWord
  * Signature: (I)Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_eu_modernmt_vocabulary_Vocabulary_reverseLookup(JNIEnv *jvm, jobject jself, jint id) {
+JNIEXPORT jstring JNICALL
+Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_reverseLookup(JNIEnv *jvm, jobject jself, jint id) {
     Vocabulary *self = jni_gethandle<Vocabulary>(jvm, jself);
 
     string word;
@@ -185,12 +188,12 @@ JNIEXPORT jstring JNICALL Java_eu_modernmt_vocabulary_Vocabulary_reverseLookup(J
 }
 
 /*
- * Class:     eu_modernmt_vocabulary_Vocabulary
+ * Class:     eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary
  * Method:    decodeLine
  * Signature: ([I)[Ljava/lang/String;
  */
 JNIEXPORT jobjectArray JNICALL
-Java_eu_modernmt_vocabulary_Vocabulary_reverseLookupLine(JNIEnv *jvm, jobject jself, jintArray jline) {
+Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_reverseLookupLine(JNIEnv *jvm, jobject jself, jintArray jline) {
     Vocabulary *self = jni_gethandle<Vocabulary>(jvm, jself);
 
     vector<uint32_t> line;
@@ -205,13 +208,14 @@ Java_eu_modernmt_vocabulary_Vocabulary_reverseLookupLine(JNIEnv *jvm, jobject js
 }
 
 /*
- * Class:     eu_modernmt_vocabulary_Vocabulary
+ * Class:     eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary
  * Method:    decodeLines
  * Signature: ([[I[[Ljava/lang/String;)V
  */
 JNIEXPORT void JNICALL
-Java_eu_modernmt_vocabulary_Vocabulary_reverseLookupLines(JNIEnv *jvm, jobject jself, jobjectArray jbuffer,
-                                                   jobjectArray joutput) {
+Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_reverseLookupLines(JNIEnv *jvm, jobject jself,
+                                                                         jobjectArray jbuffer,
+                                                                         jobjectArray joutput) {
     Vocabulary *self = jni_gethandle<Vocabulary>(jvm, jself);
 
     // Parse input buffer
