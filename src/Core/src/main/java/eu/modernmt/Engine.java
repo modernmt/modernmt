@@ -1,29 +1,33 @@
 package eu.modernmt;
 
 import eu.modernmt.aligner.Aligner;
-import eu.modernmt.aligner.AlignerFactory;
+import eu.modernmt.aligner.SymmetrizedAligner;
+import eu.modernmt.aligner.fastalign.FastAlign;
 import eu.modernmt.config.EngineConfig;
 import eu.modernmt.constants.Const;
 import eu.modernmt.context.ContextAnalyzer;
-import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.context.ContextAnalyzerFactory;
+import eu.modernmt.context.lucene.LuceneAnalyzer;
 import eu.modernmt.decoder.Decoder;
-import eu.modernmt.decoder.DecoderFactory;
+import eu.modernmt.decoder.moses.MosesDecoder;
+import eu.modernmt.decoder.moses.MosesINI;
 import eu.modernmt.io.Paths;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.vocabulary.Vocabulary;
 import eu.modernmt.vocabulary.rocksdb.RocksDBVocabulary;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Created by davide on 19/04/16.
  */
-public class Engine {
+public class Engine implements Closeable {
 
     public static final String ENGINE_CONFIG_PATH = "engine.ini";
     private static final String VOCABULARY_MODEL_PATH = Paths.join("models", "vocabulary");
@@ -70,14 +74,19 @@ public class Engine {
         if (decoder == null) {
             synchronized (this) {
                 if (decoder == null) {
-                    DecoderFactory factory = DecoderFactory.getInstance();
-                    factory.setEnginePath(root);
-                    factory.setRuntimePath(runtime);
-                    factory.setFeatureWeights(config.getDecoderConfig().getWeights());
-                    factory.setDecoderThreads(threads);
-
                     try {
-                        decoder = factory.create();
+                        File iniTemplate = Paths.join(root, "models", "moses.ini");
+                        MosesINI mosesINI = MosesINI.load(iniTemplate, root);
+
+                        Map<String, float[]> featureWeights = config.getDecoderConfig().getWeights();
+                        if (featureWeights != null)
+                            mosesINI.setWeights(featureWeights);
+
+                        mosesINI.setThreads(threads);
+
+                        File inifile = new File(runtime, "moses.ini");
+                        FileUtils.write(inifile, mosesINI.toString(), false);
+                        decoder = new MosesDecoder(inifile);
                     } catch (IOException e) {
                         throw new LazyLoadException(e);
                     }
@@ -92,11 +101,15 @@ public class Engine {
         if (aligner == null) {
             synchronized (this) {
                 if (aligner == null) {
-                    AlignerFactory factory = AlignerFactory.getInstance();
-                    factory.setEnginePath(root);
-
                     try {
-                        aligner = factory.create();
+                        File modelDirectory = Paths.join(root, "models", "phrase_tables");
+                        File fwdModelFile = new File(modelDirectory, "model.align.fwd");
+                        File bwdModelFile = new File(modelDirectory, "model.align.bwd");
+
+                        FastAlign fwdModel = new FastAlign(fwdModelFile);
+                        FastAlign bwdModel = new FastAlign(bwdModelFile);
+
+                        aligner = new SymmetrizedAligner(fwdModel, bwdModel);
                     } catch (IOException e) {
                         throw new LazyLoadException(e);
                     }
@@ -143,12 +156,10 @@ public class Engine {
         if (contextAnalyzer == null) {
             synchronized (this) {
                 if (contextAnalyzer == null) {
-                    ContextAnalyzerFactory factory = ContextAnalyzerFactory.getInstance();
-                    factory.setEnginePath(root);
-
                     try {
-                        this.contextAnalyzer = factory.create();
-                    } catch (ContextAnalyzerException e) {
+                        File indexPath = Paths.join(root, "models", "context", "index");
+                        this.contextAnalyzer = new LuceneAnalyzer(indexPath);
+                    } catch (IOException e) {
                         throw new LazyLoadException(e);
                     }
                 }
@@ -196,6 +207,17 @@ public class Engine {
         }
 
         return folder;
+    }
+
+    @Override
+    public void close() {
+        IOUtils.closeQuietly(preprocessor);
+        IOUtils.closeQuietly(postprocessor);
+
+        IOUtils.closeQuietly(decoder);
+        IOUtils.closeQuietly(aligner);
+        IOUtils.closeQuietly(contextAnalyzer);
+        IOUtils.closeQuietly(vocabulary);
     }
 
 }

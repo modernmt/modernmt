@@ -1,7 +1,6 @@
 package eu.modernmt.cli;
 
 import eu.modernmt.Engine;
-import eu.modernmt.cli.init.Submodules;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.storage.DirectorySynchronizer;
@@ -26,10 +25,6 @@ import java.util.concurrent.TimeUnit;
  * Created by davide on 22/04/16.
  */
 public class ClusterNodeMain {
-
-    static {
-        Submodules.link();
-    }
 
     private static class Args {
 

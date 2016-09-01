@@ -4,6 +4,7 @@ import eu.modernmt.aligner.symal.GrowDiagonalFinalAndStrategy;
 import eu.modernmt.aligner.symal.SymmetrizationStrategy;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
+import org.apache.commons.io.IOUtils;
 
 import java.util.List;
 
@@ -48,6 +49,12 @@ public class SymmetrizedAligner implements Aligner {
             throw new NullPointerException();
 
         this.strategy = strategy;
+    }
+
+    @Override
+    public void close() {
+        IOUtils.closeQuietly(forwardModel);
+        IOUtils.closeQuietly(backwardModel);
     }
 
 }

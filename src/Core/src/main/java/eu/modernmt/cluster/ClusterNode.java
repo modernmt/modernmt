@@ -70,6 +70,9 @@ public class ClusterNode {
                 // Ignore exception
             }
 
+            // Close engine resources
+            engine.close();
+
             shutdownState = SHUTDOWN_COMPLETED;
         }
     };

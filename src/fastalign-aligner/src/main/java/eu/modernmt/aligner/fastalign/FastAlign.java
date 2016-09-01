@@ -82,6 +82,11 @@ public class FastAlign implements Aligner {
         nativeHandle = dispose(nativeHandle);
     }
 
+    @Override
+    public void close() {
+        nativeHandle = dispose(nativeHandle);
+    }
+
     private native long dispose(long handle);
 
     private static int[] getIds(Sentence sentence) {
