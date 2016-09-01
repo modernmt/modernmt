@@ -2,11 +2,13 @@ package eu.modernmt.facade;
 
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
 import eu.modernmt.processing.ProcessingException;
+import eu.modernmt.training.CleaningPipeline;
 import eu.modernmt.training.PreprocessingPipeline;
 import eu.modernmt.training.partitioning.FilesCorporaPartition;
-import eu.modernmt.training.preprocessing.PlainTextWriter;
 import eu.modernmt.training.preprocessing.CorpusWriter;
+import eu.modernmt.training.preprocessing.PlainTextWriter;
 import eu.modernmt.training.preprocessing.VocabularyEncoderWriter;
 import org.apache.commons.io.FileUtils;
 
@@ -29,6 +31,23 @@ public class TrainingFacade {
         public File testPartition = null;
         public File vocabulary = null;
 
+    }
+
+    public void clean(List<BilingualCorpus> bilingualCorpora, File outputDirectory) throws IOException {
+        BilingualCorpus sample = bilingualCorpora.get(0);
+
+        final Locale sourceLanguage = sample.getSourceLanguage();
+        final Locale targetLanguage = sample.getTargetLanguage();
+
+        CleaningPipeline cleaningPipeline = new CleaningPipeline(corpus ->
+                new ParallelFileCorpus(outputDirectory, corpus.getName(), sourceLanguage, targetLanguage),
+                sourceLanguage, targetLanguage);
+        bilingualCorpora.forEach(cleaningPipeline::add);
+
+        FileUtils.deleteDirectory(outputDirectory);
+        FileUtils.forceMkdir(outputDirectory);
+
+        cleaningPipeline.process();
     }
 
     public void preprocess(List<BilingualCorpus> bilingualCorpora, List<Corpus> monolingualCorpora, Locale sourceLanguage,

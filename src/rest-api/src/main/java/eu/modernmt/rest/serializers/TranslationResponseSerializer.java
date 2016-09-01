@@ -1,7 +1,7 @@
 package eu.modernmt.rest.serializers;
 
 import com.google.gson.*;
-import eu.modernmt.context.ContextDocument;
+import eu.modernmt.context.ContextScore;
 import eu.modernmt.decoder.TranslationHypothesis;
 import eu.modernmt.rest.model.TranslationResponse;
 
@@ -32,7 +32,7 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
 
         if (src.context != null) {
             JsonArray array = new JsonArray();
-            for (ContextDocument document : src.context)
+            for (ContextScore document : src.context)
                 array.add(context.serialize(document));
             json.add("context", array);
         }

@@ -3,7 +3,7 @@ package eu.modernmt.rest.actions.translation;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParseException;
 import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.context.ContextDocument;
+import eu.modernmt.context.ContextScore;
 import eu.modernmt.decoder.TranslationException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.rest.framework.HttpMethod;
@@ -51,7 +51,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
 
         public final String query;
         public final long sessionId;
-        public final List<ContextDocument> context;
+        public final List<ContextScore> context;
         public final String contextString;
         public final int contextLimit;
         public final int nbest;

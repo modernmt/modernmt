@@ -161,7 +161,7 @@ public class Engine implements Closeable {
                 if (contextAnalyzer == null) {
                     try {
                         File indexPath = Paths.join(root, "models", "context", "index");
-                        this.contextAnalyzer = new LuceneAnalyzer(indexPath);
+                        this.contextAnalyzer = new LuceneAnalyzer(indexPath, getSourceLanguage());
                     } catch (IOException e) {
                         throw new LazyLoadException(e);
                     }

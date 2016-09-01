@@ -1,7 +1,7 @@
 package eu.modernmt.rest.actions.translation;
 
 import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.context.ContextDocument;
+import eu.modernmt.context.ContextScore;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
@@ -21,10 +21,10 @@ import java.util.Collection;
  * Created by davide on 15/12/15.
  */
 @Route(aliases = "context", method = HttpMethod.GET)
-public class GetContext extends CollectionAction<ContextDocument> {
+public class GetContext extends CollectionAction<ContextScore> {
 
     @Override
-    protected Collection<ContextDocument> execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException {
+    protected Collection<ContextScore> execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException {
         Params params = (Params) _params;
 
         if (params.file == null) {

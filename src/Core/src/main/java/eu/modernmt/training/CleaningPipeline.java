@@ -1,8 +1,8 @@
 package eu.modernmt.training;
 
+import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.training.cleaning.DraftFilter;
 import eu.modernmt.training.cleaning.FilteredBilingualCorpus;
-import eu.modernmt.model.corpus.BilingualCorpus;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -62,7 +62,7 @@ public class CleaningPipeline {
         this.ioThreads = ioThreads;
     }
 
-    public void process() throws InterruptedException, IOException {
+    public void process() throws IOException {
         int totalCorporaCount = this.bilingualCorpora.size();
         int ioThreads = Math.min(Math.min(this.ioThreads, MAX_IO_THREADS), totalCorporaCount);
 
@@ -86,16 +86,22 @@ public class CleaningPipeline {
             Throwable cause = e.getCause();
 
             if (cause instanceof InterruptedException)
-                throw (InterruptedException) cause;
+                throw new IOException("Execution interrupted", cause);
             else if (cause instanceof IOException)
                 throw (IOException) cause;
             else if (cause instanceof RuntimeException)
                 throw (RuntimeException) cause;
             else
                 throw new Error("Unexpected exception", cause);
+        } catch (InterruptedException e) {
+            throw new IOException("Execution interrupted", e);
         } finally {
             executor.shutdownNow();
-            executor.awaitTermination(1, TimeUnit.SECONDS);
+            try {
+                executor.awaitTermination(1, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                // Nothing to do
+            }
         }
     }
 

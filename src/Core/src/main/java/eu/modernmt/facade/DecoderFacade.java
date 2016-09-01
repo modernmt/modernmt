@@ -2,7 +2,7 @@ package eu.modernmt.facade;
 
 import eu.modernmt.cluster.SessionManager;
 import eu.modernmt.cluster.error.SystemShutdownException;
-import eu.modernmt.context.ContextDocument;
+import eu.modernmt.context.ContextScore;
 import eu.modernmt.decoder.*;
 import eu.modernmt.facade.operations.TranslateOperation;
 import eu.modernmt.model.MultiOptionsToken;
@@ -46,7 +46,7 @@ public class DecoderFacade {
     //  Translation session
     // =============================
 
-    public TranslationSession openSession(List<ContextDocument> context) {
+    public TranslationSession openSession(List<ContextScore> context) {
         SessionManager sessionManager = ModernMT.node.getSessionManager();
         return sessionManager.create(context);
     }
@@ -68,7 +68,7 @@ public class DecoderFacade {
         return translate(sentence, null, sessionId, 0);
     }
 
-    public DecoderTranslation translate(String sentence, List<ContextDocument> translationContext) throws TranslationException {
+    public DecoderTranslation translate(String sentence, List<ContextScore> translationContext) throws TranslationException {
         return translate(sentence, translationContext, 0L, 0);
     }
 
@@ -80,11 +80,11 @@ public class DecoderFacade {
         return translate(sentence, null, sessionId, nbest);
     }
 
-    public DecoderTranslation translate(String sentence, List<ContextDocument> translationContext, int nbest) throws TranslationException {
+    public DecoderTranslation translate(String sentence, List<ContextScore> translationContext, int nbest) throws TranslationException {
         return translate(sentence, translationContext, 0L, nbest);
     }
 
-    private DecoderTranslation translate(String text, List<ContextDocument> translationContext, long session, int nbest) throws TranslationException {
+    private DecoderTranslation translate(String text, List<ContextScore> translationContext, long session, int nbest) throws TranslationException {
         TranslateOperation operation;
 
         if (translationContext != null) {

@@ -4,7 +4,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.IdGenerator;
 import com.hazelcast.map.listener.EntryRemovedListener;
-import eu.modernmt.context.ContextDocument;
+import eu.modernmt.context.ContextScore;
 import eu.modernmt.decoder.TranslationSession;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,7 +35,7 @@ public class SessionManager {
         return session;
     }
 
-    public TranslationSession create(List<ContextDocument> context) {
+    public TranslationSession create(List<ContextScore> context) {
         long id = idGenerator.newId() + 1; // starts from 0
         TranslationSessionImpl session = new TranslationSessionImpl(id, context);
         session.sessionMap = this.sessions;
@@ -47,7 +47,7 @@ public class SessionManager {
 
         transient Map<Long, TranslationSessionImpl> sessionMap;
 
-        private TranslationSessionImpl(long id, List<ContextDocument> translationContext) {
+        private TranslationSessionImpl(long id, List<ContextScore> translationContext) {
             super(id, translationContext);
         }
 

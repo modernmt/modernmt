@@ -1,11 +1,9 @@
 package eu.modernmt.cli;
 
+import eu.modernmt.facade.ModernMT;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpora;
-import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
-import eu.modernmt.training.CleaningPipeline;
 import org.apache.commons.cli.*;
-import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -56,7 +54,6 @@ public class CleaningPipelineMain {
     }
 
     public static void main(String[] _args) throws Throwable {
-        //TODO: move this logic inside Facade.training
         Args args = new Args(_args);
 
         ArrayList<BilingualCorpus> bilingualCorpora = new ArrayList<>();
@@ -65,12 +62,7 @@ public class CleaningPipelineMain {
         if (bilingualCorpora.isEmpty())
             throw new ParseException("Input path does not contains valid bilingual data");
 
-        CleaningPipeline cleaningPipeline = new CleaningPipeline(corpus -> new ParallelFileCorpus(args.outputRoot, corpus.getName(), args.sourceLanguage, args.targetLanguage), args.sourceLanguage, args.targetLanguage);
-        bilingualCorpora.forEach(cleaningPipeline::add);
-
-        FileUtils.deleteDirectory(args.outputRoot);
-        FileUtils.forceMkdir(args.outputRoot);
-        cleaningPipeline.process();
+        ModernMT.training.clean(bilingualCorpora, args.outputRoot);
     }
 
 }

@@ -1,40 +1,25 @@
 package eu.modernmt.context;
 
-import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;
-import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
-import eu.modernmt.model.corpus.impl.StringCorpus;
 
 import java.io.Closeable;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Created by davide on 02/12/15.
  */
-public abstract class ContextAnalyzer implements Closeable, AutoCloseable {
-    
-    public void rebuild(Collection<? extends BilingualCorpus> documents, boolean useSourceLanguage) throws ContextAnalyzerException {
-        ArrayList<Corpus> corpora = new ArrayList<>(documents.size());
-        for (BilingualCorpus corpus : documents)
-            corpora.add(useSourceLanguage ? corpus.getSourceCorpus() : corpus.getTargetCorpus());
+public interface ContextAnalyzer extends Closeable {
 
-        rebuild(corpora);
-    }
+    void add(Corpus corpus) throws ContextAnalyzerException;
 
-    public abstract void rebuild(Collection<? extends Corpus> documents) throws ContextAnalyzerException;
+    void add(Collection<Corpus> corpora) throws ContextAnalyzerException;
 
-    public List<ContextDocument> getContext(String query, Locale lang, int limit) throws ContextAnalyzerException {
-        return getContext(new StringCorpus(null, lang, query), limit);
-    }
+    List<ContextScore> getContext(String query, int limit) throws ContextAnalyzerException;
 
-    public List<ContextDocument> getContext(File source, Locale lang, int limit) throws ContextAnalyzerException {
-        return getContext(new FileCorpus(source, null, lang), limit);
-    }
+    List<ContextScore> getContext(File source, int limit) throws ContextAnalyzerException;
 
-    public abstract List<ContextDocument> getContext(Corpus query, int limit) throws ContextAnalyzerException;
+    List<ContextScore> getContext(Corpus query, int limit) throws ContextAnalyzerException;
 
 }

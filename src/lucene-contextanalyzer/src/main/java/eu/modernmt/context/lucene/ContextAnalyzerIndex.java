@@ -1,7 +1,7 @@
 package eu.modernmt.context.lucene;
 
 import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.context.ContextDocument;
+import eu.modernmt.context.ContextScore;
 import eu.modernmt.context.lucene.analysis.CorpusAnalyzer;
 import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.io.FileUtils;
@@ -25,10 +25,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by davide on 10/07/15.
@@ -44,12 +41,12 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
     private IndexWriter indexWriter;
     private DirectoryReader indexReader;
 
-    public ContextAnalyzerIndex(File indexPath) throws IOException {
+    public ContextAnalyzerIndex(File indexPath, Locale language) throws IOException {
         if (!indexPath.isDirectory())
             FileUtils.forceMkdir(indexPath);
 
         this.indexDirectory = FSDirectory.open(indexPath);
-        this.analyzer = new CorpusAnalyzer();
+        this.analyzer = new CorpusAnalyzer(language);
 
         // Index writer setup
         IndexWriterConfig indexConfig = new IndexWriterConfig(Version.LUCENE_4_10_4, this.analyzer);
@@ -130,18 +127,16 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
         }
     }
 
-    public List<ContextDocument> getSimilarDocuments(Corpus queryDocument, int limit) throws ContextAnalyzerException {
+    public List<ContextScore> getSimilarDocuments(Corpus queryDocument, int limit) throws ContextAnalyzerException {
         IndexReader reader = this.getIndexReader();
         IndexSearcher searcher = new IndexSearcher(reader);
-
-        String fieldName = DocumentBuilder.getContentField(queryDocument);
 
         // Get matching documents
 
         int rawLimit = limit < MIN_RESULT_BATCH ? MIN_RESULT_BATCH : limit;
 
         MoreLikeThis mlt = new MoreLikeThis(reader);
-        mlt.setFieldNames(new String[]{fieldName});
+        mlt.setFieldNames(new String[]{DocumentBuilder.CONTENT_FIELD});
         mlt.setMinDocFreq(0);
         mlt.setMinTermFreq(1);
         mlt.setMinWordLen(2);
@@ -158,24 +153,20 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
         }
 
         try {
-            Query query = mlt.like(fieldName, queryDocumentReader);
+            Query query = mlt.like(DocumentBuilder.CONTENT_FIELD, queryDocumentReader);
             searcher.search(query, collector);
         } catch (IOException e) {
             throw new ContextAnalyzerException("Failed to execute MoreLikeThis query", e);
         } finally {
-            try {
-                queryDocumentReader.close();
-            } catch (Exception e) {
-
-            }
+            IOUtils.closeQuietly(queryDocumentReader);
         }
 
         ScoreDoc[] topDocs = collector.topDocs().scoreDocs;
 
         // Compute cosine similarity
-        List<ContextDocument> result = new ArrayList<>(topDocs.length);
+        List<ContextScore> result = new ArrayList<>(topDocs.length);
 
-        ConsineSimilarityCalculator calculator = new ConsineSimilarityCalculator(reader, DocumentBuilder.getContentField(queryDocument));
+        ConsineSimilarityCalculator calculator = new ConsineSimilarityCalculator(reader, DocumentBuilder.CONTENT_FIELD);
         calculator.setAnalyzer(analyzer);
         calculator.setBoost(true);
         calculator.setReferenceDocument(DocumentBuilder.createDocument(queryDocument));
@@ -200,7 +191,7 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
                 throw new ContextAnalyzerException("Could not compute cosine similarity for doc " + name, e);
             }
 
-            result.add(new ContextDocument(name, similarityScore));
+            result.add(new ContextScore(name, similarityScore));
         }
 
         // Sort and limit result

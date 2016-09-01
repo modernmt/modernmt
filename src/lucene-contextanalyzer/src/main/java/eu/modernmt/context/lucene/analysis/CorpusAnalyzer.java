@@ -1,6 +1,5 @@
 package eu.modernmt.context.lucene.analysis;
 
-import eu.modernmt.context.lucene.DocumentBuilder;
 import eu.modernmt.context.lucene.analysis.lang.LanguageAnalyzer;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
@@ -19,16 +18,18 @@ public class CorpusAnalyzer extends DelegatingAnalyzerWrapper {
         ANALYZER_CONFIG.removeElisions = true;
     }
 
-    public CorpusAnalyzer() {
+    private Locale language;
+
+    public CorpusAnalyzer(Locale language) {
         super(PER_FIELD_REUSE_STRATEGY);
+        this.language = language;
     }
 
     @Override
     protected Analyzer getWrappedAnalyzer(String fieldName) {
         Analyzer baseAnalyzer;
         try {
-            Locale lang = DocumentBuilder.getLangOfContentField(fieldName);
-            baseAnalyzer = LanguageAnalyzer.getByLanguage(lang, ANALYZER_CONFIG);
+            baseAnalyzer = LanguageAnalyzer.getByLanguage(language, ANALYZER_CONFIG);
         } catch (Throwable e) {
             baseAnalyzer = new StandardAnalyzer();
         }

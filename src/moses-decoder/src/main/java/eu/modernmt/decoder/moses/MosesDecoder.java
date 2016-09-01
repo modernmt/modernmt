@@ -1,6 +1,6 @@
 package eu.modernmt.decoder.moses;
 
-import eu.modernmt.context.ContextDocument;
+import eu.modernmt.context.ContextScore;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.decoder.DecoderTranslation;
@@ -108,7 +108,7 @@ public class MosesDecoder implements Decoder {
     }
 
     @Override
-    public DecoderTranslation translate(Sentence text, List<ContextDocument> translationContext) {
+    public DecoderTranslation translate(Sentence text, List<ContextScore> translationContext) {
         return translate(text, translationContext, null, 0);
     }
 
@@ -123,7 +123,7 @@ public class MosesDecoder implements Decoder {
     }
 
     @Override
-    public DecoderTranslation translate(Sentence text, List<ContextDocument> translationContext, int nbestListSize) {
+    public DecoderTranslation translate(Sentence text, List<ContextScore> translationContext, int nbestListSize) {
         return translate(text, translationContext, null, nbestListSize);
     }
 
@@ -132,7 +132,7 @@ public class MosesDecoder implements Decoder {
         return translate(text, null, session, nbestListSize);
     }
 
-    private DecoderTranslation translate(Sentence sentence, List<ContextDocument> translationContext, TranslationSession session, int nbest) {
+    private DecoderTranslation translate(Sentence sentence, List<ContextScore> translationContext, TranslationSession session, int nbest) {
         String text = serialize(sentence.getWords());
 
         long sessionId = session == null ? 0L : getOrComputeSession(session);

@@ -50,13 +50,12 @@ public class ContextAnalyzerMain {
     }
 
     public static void main(String[] _args) throws Throwable {
-        //TODO: move this logic into Facade.training
         Args args = new Args(_args);
 
         List<Corpus> corpora = Corpora.list(args.language, args.corporaRoots);
 
-        ContextAnalyzer contextAnalyzer = new LuceneAnalyzer(args.indexPath);
-        contextAnalyzer.rebuild(corpora);
+        ContextAnalyzer contextAnalyzer = new LuceneAnalyzer(args.indexPath, args.language);
+        contextAnalyzer.add(corpora);
     }
 
 }

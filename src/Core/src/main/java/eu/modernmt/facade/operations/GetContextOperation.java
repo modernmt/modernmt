@@ -2,18 +2,17 @@ package eu.modernmt.facade.operations;
 
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.context.ContextDocument;
+import eu.modernmt.context.ContextScore;
 import eu.modernmt.engine.Engine;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Created by davide on 22/04/16.
  */
-public class GetContextOperation extends Operation<ArrayList<ContextDocument>> {
+public class GetContextOperation extends Operation<ArrayList<ContextScore>> {
 
     private final File file;
     private final int limit;
@@ -32,15 +31,14 @@ public class GetContextOperation extends Operation<ArrayList<ContextDocument>> {
     }
 
     @Override
-    public ArrayList<ContextDocument> call() throws ContextAnalyzerException {
+    public ArrayList<ContextScore> call() throws ContextAnalyzerException {
         Engine engine = getEngine();
         ContextAnalyzer analyzer = engine.getContextAnalyzer();
-        Locale lang = engine.getSourceLanguage();
 
-        List<ContextDocument> result = (file == null) ? analyzer.getContext(text, lang, limit) : analyzer.getContext(file, lang, limit);
+        List<ContextScore> result = (file == null) ? analyzer.getContext(text, limit) : analyzer.getContext(file, limit);
 
         if (result instanceof ArrayList)
-            return (ArrayList<ContextDocument>) result;
+            return (ArrayList<ContextScore>) result;
         else
             return new ArrayList<>(result);
     }

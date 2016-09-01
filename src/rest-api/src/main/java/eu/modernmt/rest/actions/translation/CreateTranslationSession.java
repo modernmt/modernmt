@@ -4,7 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import eu.modernmt.context.ContextDocument;
+import eu.modernmt.context.ContextScore;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.rest.framework.HttpMethod;
@@ -35,7 +35,7 @@ public class CreateTranslationSession extends ObjectAction<TranslationSession> {
 
     public static class Params extends Parameters {
 
-        public final List<ContextDocument> context;
+        public final List<ContextScore> context;
 
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
@@ -53,16 +53,16 @@ public class CreateTranslationSession extends ObjectAction<TranslationSession> {
 
     }
 
-    public static List<ContextDocument> parseContext(JsonElement root) throws JsonParseException {
+    public static List<ContextScore> parseContext(JsonElement root) throws JsonParseException {
         JsonArray array = root.getAsJsonArray();
-        ArrayList<ContextDocument> list = new ArrayList<>(array.size());
+        ArrayList<ContextScore> list = new ArrayList<>(array.size());
 
         for (JsonElement e : array) {
             JsonObject json = e.getAsJsonObject();
             String id = json.get("id").getAsString();
             float score = json.get("score").getAsFloat();
 
-            list.add(new ContextDocument(id, score));
+            list.add(new ContextScore(id, score));
         }
 
         return list;
