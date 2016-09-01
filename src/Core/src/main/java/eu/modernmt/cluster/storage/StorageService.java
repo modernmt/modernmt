@@ -1,6 +1,6 @@
 package eu.modernmt.cluster.storage;
 
-import eu.modernmt.Engine;
+import eu.modernmt.engine.Engine;
 import eu.modernmt.cluster.storage.rsync.RSyncStorage;
 
 import java.io.Closeable;

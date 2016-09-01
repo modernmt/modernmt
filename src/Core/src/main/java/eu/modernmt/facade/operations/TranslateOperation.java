@@ -1,6 +1,6 @@
 package eu.modernmt.facade.operations;
 
-import eu.modernmt.Engine;
+import eu.modernmt.engine.Engine;
 import eu.modernmt.cluster.SessionManager;
 import eu.modernmt.context.ContextDocument;
 import eu.modernmt.decoder.Decoder;

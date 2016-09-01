@@ -1,4 +1,4 @@
-package eu.modernmt.config;
+package eu.modernmt.engine.config;
 
 import java.util.Map;
 

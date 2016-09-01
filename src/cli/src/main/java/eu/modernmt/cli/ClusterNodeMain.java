@@ -1,12 +1,12 @@
 package eu.modernmt.cli;
 
-import eu.modernmt.Engine;
+import eu.modernmt.engine.Engine;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.storage.DirectorySynchronizer;
 import eu.modernmt.cluster.storage.StorageService;
-import eu.modernmt.config.EngineConfig;
-import eu.modernmt.config.INIEngineConfigBuilder;
+import eu.modernmt.engine.config.EngineConfig;
+import eu.modernmt.engine.config.INIEngineConfigBuilder;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.rest.RESTServer;
 import org.apache.commons.cli.*;

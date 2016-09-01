@@ -1,18 +1,18 @@
-package eu.modernmt;
+package eu.modernmt.engine;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.SymmetrizedAligner;
 import eu.modernmt.aligner.fastalign.FastAlign;
-import eu.modernmt.config.EngineConfig;
-import eu.modernmt.constants.Const;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.lucene.LuceneAnalyzer;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.moses.MosesDecoder;
 import eu.modernmt.decoder.moses.MosesINI;
+import eu.modernmt.engine.config.EngineConfig;
 import eu.modernmt.io.Paths;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
+import eu.modernmt.processing.TextProcessingModels;
 import eu.modernmt.vocabulary.Vocabulary;
 import eu.modernmt.vocabulary.rocksdb.RocksDBVocabulary;
 import org.apache.commons.io.FileUtils;
@@ -29,16 +29,19 @@ import java.util.Map;
  */
 public class Engine implements Closeable {
 
+    static {
+        TextProcessingModels.setPath(FileConst.getResourcePath());
+    }
+
     public static final String ENGINE_CONFIG_PATH = "engine.ini";
     private static final String VOCABULARY_MODEL_PATH = Paths.join("models", "vocabulary");
 
     public static File getRootPath(String engine) {
-        return new File(Const.fs.engines, engine);
+        return FileConst.getEngineRoot(engine);
     }
 
     public static File getConfigFile(String engine) {
-        File root = new File(Const.fs.engines, engine);
-        return new File(root, ENGINE_CONFIG_PATH);
+        return new File(FileConst.getEngineRoot(engine), ENGINE_CONFIG_PATH);
     }
 
     private final EngineConfig config;
@@ -58,8 +61,8 @@ public class Engine implements Closeable {
         this.config = config;
         this.threads = threads;
         this.name = config.getName();
-        this.root = new File(Const.fs.engines, config.getName());
-        this.runtime = new File(Const.fs.runtime, name);
+        this.root = FileConst.getEngineRoot(name);
+        this.runtime = FileConst.getEngineRuntime(name);
     }
 
     public EngineConfig getConfig() {

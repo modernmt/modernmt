@@ -1,6 +1,6 @@
 package eu.modernmt.facade.operations;
 
-import eu.modernmt.Engine;
+import eu.modernmt.engine.Engine;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.aligner.SymmetrizedAligner;

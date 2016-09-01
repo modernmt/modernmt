@@ -1,6 +1,6 @@
 package eu.modernmt.facade;
 
-import eu.modernmt.Engine;
+import eu.modernmt.engine.Engine;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.aligner.symal.SymmetrizationStrategy;
 import eu.modernmt.cluster.error.SystemShutdownException;

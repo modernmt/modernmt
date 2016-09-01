@@ -1,4 +1,4 @@
-package eu.modernmt.config;
+package eu.modernmt.engine.config;
 
 import eu.modernmt.decoder.DecoderFeature;
 import org.apache.commons.configuration.ConfigurationException;

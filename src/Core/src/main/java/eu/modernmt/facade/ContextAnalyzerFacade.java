@@ -3,7 +3,7 @@ package eu.modernmt.facade;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextDocument;
-import eu.modernmt.Engine;
+import eu.modernmt.engine.Engine;
 import eu.modernmt.cluster.error.SystemShutdownException;
 import eu.modernmt.facade.operations.GetContextOperation;
 

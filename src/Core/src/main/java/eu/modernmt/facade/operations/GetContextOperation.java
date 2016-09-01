@@ -3,7 +3,7 @@ package eu.modernmt.facade.operations;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextDocument;
-import eu.modernmt.Engine;
+import eu.modernmt.engine.Engine;
 
 import java.io.File;
 import java.util.ArrayList;

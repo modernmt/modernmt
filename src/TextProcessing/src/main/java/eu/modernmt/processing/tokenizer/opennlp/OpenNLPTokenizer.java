@@ -1,7 +1,7 @@
 package eu.modernmt.processing.tokenizer.opennlp;
 
 import eu.modernmt.processing.LanguageNotSupportedException;
-import eu.modernmt.processing.ModelsPath;
+import eu.modernmt.processing.TextProcessingModels;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.XMLEditableString;
@@ -27,7 +27,7 @@ public class OpenNLPTokenizer extends TextProcessor<XMLEditableString, XMLEditab
     public OpenNLPTokenizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
         super(sourceLanguage, targetLanguage);
 
-        File opennlp = new File(ModelsPath.get(), "opennlp");
+        File opennlp = new File(TextProcessingModels.getPath(), "opennlp");
         File modelFile = new File(opennlp, sourceLanguage.getLanguage() + "-token.bin");
 
         if (!modelFile.isFile())
