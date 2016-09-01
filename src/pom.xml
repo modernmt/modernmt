@@ -23,7 +23,7 @@
     </modules>
 
     <packaging>pom</packaging>
-    <name>MMT Root project</name>
+    <name>MMT Root Module</name>
     <url>http://www.modernmt.eu/</url>
 
     <properties>

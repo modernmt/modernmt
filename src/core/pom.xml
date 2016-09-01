@@ -10,7 +10,7 @@
     <artifactId>mmt-core</artifactId>
     <packaging>jar</packaging>
 
-    <name>MMT Core Components</name>
+    <name>MMT Core</name>
     <url>http://www.modernmt.eu/</url>
 
     <properties>

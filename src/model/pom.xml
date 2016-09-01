@@ -10,7 +10,7 @@
     <artifactId>mmt-model</artifactId>
     <packaging>jar</packaging>
 
-    <name>mmt-model</name>
+    <name>MMT Model Classes</name>
     <url>http://maven.apache.org</url>
 
     <properties>

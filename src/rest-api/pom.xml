@@ -10,7 +10,7 @@
     <artifactId>mmt-rest-api</artifactId>
     <packaging>jar</packaging>
 
-    <name>MMT REST interface built with Jetty</name>
+    <name>Jetty-based REST API</name>
     <url>http://maven.apache.org</url>
 
     <properties>

@@ -10,7 +10,7 @@
     <artifactId>mmt-fastalign-aligner</artifactId>
     <packaging>jar</packaging>
 
-    <name>MMT Fast Align</name>
+    <name>FastAlign-based MMT aligner</name>
     <url>http://maven.apache.org</url>
 
     <properties>

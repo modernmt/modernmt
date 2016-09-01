@@ -10,7 +10,7 @@
     <artifactId>mmt-cli</artifactId>
     <packaging>jar</packaging>
 
-    <name>MMT Executables</name>
+    <name>Command-line Interface</name>
     <url>http://maven.apache.org</url>
 
     <properties>

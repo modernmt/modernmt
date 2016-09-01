@@ -10,7 +10,7 @@
     <artifactId>mmt-textprocessing</artifactId>
     <packaging>jar</packaging>
 
-    <name>MMT Text Processors</name>
+    <name>Text Processing Module</name>
     <url>http://maven.apache.org</url>
 
     <properties>

@@ -10,7 +10,7 @@
     <artifactId>mmt-lucene-contextanalyzer</artifactId>
     <packaging>jar</packaging>
 
-    <name>MMT Lucene implementation of Context Analyzer</name>
+    <name>Lucene-based Context Analyzer</name>
     <url>http://maven.apache.org</url>
 
     <properties>

@@ -10,7 +10,7 @@
     <artifactId>mmt-moses-decoder</artifactId>
     <packaging>jar</packaging>
 
-    <name>MMT Connector to Moses Decoder</name>
+    <name>Moses-based Decoder</name>
     <url>http://maven.apache.org</url>
 
     <properties>

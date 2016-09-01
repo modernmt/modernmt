@@ -10,7 +10,7 @@
     <artifactId>mmt-rocksdb-vocabulary</artifactId>
     <packaging>jar</packaging>
 
-    <name>rocksdb-vocabulary</name>
+    <name>RocksDB-based Vocabulary</name>
     <url>http://maven.apache.org</url>
 
     <properties>
