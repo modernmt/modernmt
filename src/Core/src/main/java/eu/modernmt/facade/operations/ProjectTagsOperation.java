@@ -8,8 +8,8 @@ import eu.modernmt.aligner.symal.SymmetrizationStrategy;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.Preprocessor;
-import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.xml.XMLTagProjector;
+import eu.modernmt.processing.ProcessingException;
+import eu.modernmt.processing.xml.XMLTagProjector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

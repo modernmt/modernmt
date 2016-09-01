@@ -1,0 +1,157 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>mmt-root</artifactId>
+        <groupId>eu.modernmt</groupId>
+        <version>0.13</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>mmt-fastalign-aligner</artifactId>
+    <packaging>jar</packaging>
+
+    <name>MMT Fast Align</name>
+    <url>http://maven.apache.org</url>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>${project.nativedir.headers}</directory>
+                            <includes>
+                                <include>**/*.h</include>
+                            </includes>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>
+                        <fileset>
+                            <directory>${mmt.build.lib}</directory>
+                            <includes>
+                                <include>*fastalign*</include>
+                            </includes>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>
+                        <fileset>
+                            <directory>${mmt.build.bin}/fastalign</directory>
+                            <includes>
+                                <include>**/*</include>
+                            </includes>
+                            <followSymlinks>false</followSymlinks>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.4.0</version>
+                <executions>
+
+                    <!-- Generate headers with javah -->
+                    <execution>
+                        <id>headers-generate</id>
+                        <phase>generate-sources</phase>
+
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+
+                        <configuration>
+                            <executable>javah</executable>
+                            <workingDirectory>${project.build.sourceDirectory}</workingDirectory>
+                            <arguments>
+                                <argument>-d</argument>
+                                <argument>${project.nativedir.headers}</argument>
+
+                                <!-- All native classes -->
+                                <argument>eu.modernmt.aligner.fastalign.FastAlign</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <!-- Run CMake to generate makefile -->
+                    <execution>
+                        <id>cmake-generate</id>
+                        <phase>compile</phase>
+
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+
+                        <configuration>
+                            <executable>cmake</executable>
+                            <workingDirectory>${project.build.native}</workingDirectory>
+                            <arguments>
+                                <argument>-DCMAKE_INSTALL_PREFIX=${mmt.build}</argument>
+                                <argument>${project.nativedir}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <!-- Run Make to compile native project -->
+                    <execution>
+                        <id>cmake-compile</id>
+                        <phase>compile</phase>
+
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+
+                        <configuration>
+                            <executable>make</executable>
+                            <workingDirectory>${project.build.native}</workingDirectory>
+                            <arguments>
+                                <argument>-j${cpu.count}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <!-- make install -->
+                    <execution>
+                        <id>cmake-install</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+
+                        <configuration>
+                            <executable>make</executable>
+                            <workingDirectory>${project.build.native}</workingDirectory>
+                            <arguments>
+                                <argument>install</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>eu.modernmt</groupId>
+            <artifactId>mmt-common-interfaces</artifactId>
+            <version>${mmt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.modernmt</groupId>
+            <artifactId>mmt-model</artifactId>
+            <version>${mmt.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>3.8.1</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

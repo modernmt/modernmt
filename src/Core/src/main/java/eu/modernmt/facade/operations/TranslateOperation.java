@@ -9,7 +9,7 @@ import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
-import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.ProcessingException;
 
 import java.util.List;
 

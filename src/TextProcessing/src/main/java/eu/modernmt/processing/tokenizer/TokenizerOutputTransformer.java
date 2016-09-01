@@ -1,7 +1,7 @@
 package eu.modernmt.processing.tokenizer;
 
-import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.framework.string.XMLEditableString;
+import eu.modernmt.processing.ProcessingException;
+import eu.modernmt.processing.string.XMLEditableString;
 
 import java.util.List;
 

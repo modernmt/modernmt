@@ -3,8 +3,8 @@ package eu.modernmt.training.preprocessing;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
 import eu.modernmt.processing.Preprocessor;
-import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.framework.ProcessingPipeline;
+import eu.modernmt.processing.ProcessingException;
+import eu.modernmt.processing.ProcessingPipeline;
 
 import java.io.Closeable;
 import java.util.Locale;

@@ -1,8 +1,8 @@
 package eu.modernmt.processing.detokenizer;
 
 import eu.modernmt.model.Translation;
-import eu.modernmt.processing.framework.LanguageNotSupportedException;
-import eu.modernmt.processing.framework.TextProcessor;
+import eu.modernmt.processing.LanguageNotSupportedException;
+import eu.modernmt.processing.TextProcessor;
 
 import java.util.Locale;
 

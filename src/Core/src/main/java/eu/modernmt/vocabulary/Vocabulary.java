@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Created by davide on 16/08/16.
  */
-public class Vocabulary {
+public class Vocabulary implements IVocabulary {
 
     public static final int VOCABULARY_UNKNOWN_WORD = 0;
     public static final int VOCABULARY_WORD_ID_START = 1000;
@@ -26,10 +26,13 @@ public class Vocabulary {
 
     private native long instantiate(String modelPath);
 
+    @Override
     public native int lookup(String word, boolean putIfAbsent);
 
+    @Override
     public native int[] lookupLine(String[] line, boolean putIfAbsent);
 
+    @Override
     public List<int[]> lookupLines(List<String[]> lines, boolean putIfAbsent) {
         String[][] buffer = new String[lines.size()][];
         lines.toArray(buffer);
@@ -39,6 +42,7 @@ public class Vocabulary {
         return Arrays.asList(result);
     }
 
+    @Override
     public int[][] lookupLines(String[][] lines, boolean putIfAbsent) {
         int[][] result = new int[lines.length][];
         lookupLines(lines, result, putIfAbsent);
@@ -48,10 +52,13 @@ public class Vocabulary {
 
     private native void lookupLines(String[][] lines, int[][] output, boolean putIfAbsent);
 
+    @Override
     public native String reverseLookup(int id);
 
+    @Override
     public native String[] reverseLookupLine(int[] line);
 
+    @Override
     public List<String[]> reverseLookupLines(List<int[]> lines) {
         int[][] buffer = new int[lines.size()][];
         lines.toArray(buffer);
@@ -62,6 +69,7 @@ public class Vocabulary {
         return Arrays.asList(result);
     }
 
+    @Override
     public String[][] reverseLookupLines(int[][] lines) {
         String[][] result = new String[lines.length][];
         reverseLookupLines(lines, result);
@@ -70,6 +78,11 @@ public class Vocabulary {
     }
 
     private native void reverseLookupLines(int[][] lines, String[][] result);
+
+    @Override
+    public void close() throws IOException {
+        nativeHandle = dispose(nativeHandle);
+    }
 
     @Override
     protected void finalize() throws Throwable {

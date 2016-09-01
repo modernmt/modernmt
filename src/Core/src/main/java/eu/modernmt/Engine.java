@@ -13,7 +13,7 @@ import eu.modernmt.decoder.DecoderFactory;
 import eu.modernmt.io.Paths;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
-import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.vocabulary.Vocabulary;
 import org.apache.commons.io.FileUtils;
 

@@ -2,7 +2,6 @@ package eu.modernmt.training.partitioning;
 
 import eu.modernmt.io.LineReader;
 import eu.modernmt.model.corpus.Corpus;
-import eu.modernmt.processing.framework.PipelineInputStream;
 
 import java.io.IOException;
 import java.util.List;

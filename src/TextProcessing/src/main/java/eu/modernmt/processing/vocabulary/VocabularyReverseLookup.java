@@ -3,10 +3,10 @@ package eu.modernmt.processing.vocabulary;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
-import eu.modernmt.processing.framework.LanguageNotSupportedException;
-import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.framework.TextProcessor;
-import eu.modernmt.vocabulary.Vocabulary;
+import eu.modernmt.processing.LanguageNotSupportedException;
+import eu.modernmt.processing.ProcessingException;
+import eu.modernmt.processing.TextProcessor;
+import eu.modernmt.vocabulary.IVocabulary;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -23,7 +23,7 @@ public class VocabularyReverseLookup extends TextProcessor<Translation, Translat
 
     @Override
     public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
-        Vocabulary vocabulary = (Vocabulary) metadata.get(TextProcessor.KEY_VOCABULARY);
+        IVocabulary vocabulary = (IVocabulary) metadata.get(TextProcessor.KEY_VOCABULARY);
 
         if (vocabulary != null)
             reverseLookup(vocabulary, translation);
@@ -31,7 +31,7 @@ public class VocabularyReverseLookup extends TextProcessor<Translation, Translat
         return translation;
     }
 
-    private void reverseLookup(Vocabulary vocabulary, Translation translation) {
+    private void reverseLookup(IVocabulary vocabulary, Translation translation) {
         Word[] words = translation.getWords();
 
         if (words == null || words.length == 0)

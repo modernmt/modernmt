@@ -7,15 +7,18 @@
     <version>0.13</version>
 
     <modules>
-        <module>Core</module>
-        <module>TextProcessing</module>
+        <module>model</module>
+        <module>common-interfaces</module>
 
-        <module>FastAlign</module>
-        <module>LuceneContextAnalyzer</module>
-        <module>Moses</module>
+        <module>textprocessing</module>
+        <module>fastalign-aligner</module>
+        <module>lucene-contextanalyzer</module>
+        <module>moses-decoder</module>
 
-        <module>RESTInterface</module>
-        <module>Executables</module>
+        <module>core</module>
+
+        <module>rest-api</module>
+        <module>cli</module>
     </modules>
 
     <packaging>pom</packaging>

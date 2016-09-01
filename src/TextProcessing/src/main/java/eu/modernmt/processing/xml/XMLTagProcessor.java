@@ -1,10 +1,9 @@
 package eu.modernmt.processing.xml;
 
 import eu.modernmt.model.Translation;
-import eu.modernmt.processing.framework.LanguageNotSupportedException;
-import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.framework.TextProcessor;
-import eu.modernmt.xml.XMLTagProjector;
+import eu.modernmt.processing.LanguageNotSupportedException;
+import eu.modernmt.processing.ProcessingException;
+import eu.modernmt.processing.TextProcessor;
 
 import java.util.Locale;
 import java.util.Map;

@@ -4,12 +4,9 @@ import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Tag;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Word;
-import eu.modernmt.processing.framework.LanguageNotSupportedException;
-import eu.modernmt.processing.framework.ProcessingException;
-import eu.modernmt.processing.framework.TextProcessor;
-import eu.modernmt.processing.framework.string.TokenHook;
-import eu.modernmt.processing.framework.string.XMLEditableString;
 import eu.modernmt.processing.numbers.NumericWordFactory;
+import eu.modernmt.processing.string.TokenHook;
+import eu.modernmt.processing.string.XMLEditableString;
 import eu.modernmt.processing.xmessage.XMessageWordFactory;
 
 import java.util.*;

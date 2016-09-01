@@ -3,7 +3,7 @@ package eu.modernmt.training;
 import eu.modernmt.io.BufferedLineReader;
 import eu.modernmt.io.LineReader;
 import eu.modernmt.model.corpus.Corpus;
-import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.training.partitioning.CorporaPartition;
 import eu.modernmt.training.partitioning.PartitionWriter;
 import eu.modernmt.training.partitioning.PartitionedLineReader;

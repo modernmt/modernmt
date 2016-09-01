@@ -8,7 +8,7 @@ import eu.modernmt.facade.exceptions.validation.LanguagePairNotSupportedExceptio
 import eu.modernmt.facade.operations.ProjectTagsOperation;
 import eu.modernmt.model.Languages;
 import eu.modernmt.model.Translation;
-import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.ProcessingException;
 
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;

@@ -2,12 +2,11 @@ package eu.modernmt.facade;
 
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;
-import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.training.PreprocessingPipeline;
 import eu.modernmt.training.partitioning.FilesCorporaPartition;
 import eu.modernmt.training.preprocessing.PlainTextWriter;
 import eu.modernmt.training.preprocessing.CorpusWriter;
-import eu.modernmt.training.preprocessing.TrainingPreprocessor;
 import eu.modernmt.training.preprocessing.VocabularyEncoderWriter;
 import org.apache.commons.io.FileUtils;
 

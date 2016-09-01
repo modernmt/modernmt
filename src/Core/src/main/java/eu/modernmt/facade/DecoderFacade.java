@@ -8,7 +8,7 @@ import eu.modernmt.facade.operations.TranslateOperation;
 import eu.modernmt.model.MultiOptionsToken;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
-import eu.modernmt.processing.framework.ProcessingException;
+import eu.modernmt.processing.ProcessingException;
 
 import java.util.HashMap;
 import java.util.List;

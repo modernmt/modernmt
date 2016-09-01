@@ -1,6 +1,6 @@
 package eu.modernmt.processing.tokenizer.lucene.analyzers;
 
-import eu.modernmt.constants.Const;
+import eu.modernmt.processing.ModelsPath;
 import net.paoding.analysis.Constants;
 import net.paoding.analysis.analyzer.PaodingAnalyzerBean;
 import net.paoding.analysis.knife.Paoding;
@@ -22,7 +22,7 @@ public class PaodingAnalyzer extends PaodingAnalyzerBean {
         if (PROPERTIES_FILE_PATH == null) {
             synchronized (PaodingAnalyzer.class) {
                 if (PROPERTIES_FILE_PATH == null) {
-                    File paoding = new File(Const.fs.resources, "paoding");
+                    File paoding = new File(ModelsPath.get(), "paoding");
                     File dic = new File(paoding, "dic");
 
                     File propertiesFile = new File(paoding, "paoding-analysis.properties");

@@ -3,6 +3,7 @@ package eu.modernmt.xml;
 import eu.modernmt.model.Tag;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
+import eu.modernmt.processing.xml.XMLTagProjector;
 import org.junit.Ignore;
 import org.junit.Test;
 

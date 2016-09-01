@@ -3,7 +3,6 @@ package eu.modernmt.processing;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Tag;
 import eu.modernmt.model.Word;
-import eu.modernmt.processing.framework.ProcessingException;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 

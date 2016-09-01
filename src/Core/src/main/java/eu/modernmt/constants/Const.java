@@ -6,6 +6,5 @@ package eu.modernmt.constants;
 public class Const {
 
     public static final FileSystemConst fs = new FileSystemConst();
-    public static final CharsetConst charset = new CharsetConst();
 
 }
