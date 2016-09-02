@@ -4,20 +4,17 @@ project(rocksvb)
 # where to find cmake_modules modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 
 set(SOURCE_FILES
-        vocabulary/Vocabulary.h
         vocabulary/IdGenerator.cpp vocabulary/IdGenerator.h
-        vocabulary/InMemoryVocabulary.cpp vocabulary/InMemoryVocabulary.h
         vocabulary/PersistentVocabulary.cpp vocabulary/PersistentVocabulary.h
-
-        java/handle.h
 
         javah/eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary.h java/eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary.cpp
         javah/eu_modernmt_vocabulary_rocksdb_RocksDBVocabularyBuilder.h java/eu_modernmt_vocabulary_rocksdb_RocksDBVocabularyBuilder.cpp)
 
 include_directories(${CMAKE_SOURCE_DIR})
+include_directories(${MMT_INCLUDE_DIR})
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib)

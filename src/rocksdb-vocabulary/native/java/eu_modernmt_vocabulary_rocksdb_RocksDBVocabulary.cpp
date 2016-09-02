@@ -4,24 +4,24 @@
 
 #include <string>
 #include <vocabulary/PersistentVocabulary.h>
+#include <mmt/jniutil.h>
 #include "javah/eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary.h"
-#include "handle.h"
 
 #define LoadStringClass(jvm) (jvm->FindClass("java/lang/String"))
 
 using namespace std;
+using namespace mmt;
+using namespace mmt::vocabulary;
 
 // Utils
 
 static inline const void ParseStringLine(JNIEnv *jvm, jobjectArray line, vector<string> &output) {
-    size_t size = (size_t) jvm->GetArrayLength(line);
-    output.reserve(size);
+    jsize size = jvm->GetArrayLength(line);
+    output.reserve((size_t) size);
 
     for (jsize i = 0; i < size; i++) {
         jstring jword = (jstring) jvm->GetObjectArrayElement(line, i);
-        const char *word_chars = jvm->GetStringUTFChars(jword, NULL);
-        string word = word_chars;
-        jvm->ReleaseStringUTFChars(jword, word_chars);
+        string word = jni_jstrtostr(jvm, jword);
 
         output.push_back(word);
     }
@@ -44,20 +44,20 @@ static inline const jobjectArray EncodeStringLine(JNIEnv *jvm, vector<string> &l
     return result;
 }
 
-static inline const void ParseIntLine(JNIEnv *jvm, jintArray jline, vector<uint32_t> &output) {
-    size_t size = (size_t) jvm->GetArrayLength(jline);
-    output.reserve(size);
+static inline const void ParseIntLine(JNIEnv *jvm, jintArray jline, vector<wid_t> &output) {
+    jsize size = jvm->GetArrayLength(jline);
+    output.reserve((size_t) size);
 
     jint *line = jvm->GetIntArrayElements(jline, NULL);
     for (jsize i = 0; i < size; i++)
-        output.push_back((uint32_t) line[i]);
+        output.push_back((wid_t) line[i]);
     jvm->ReleaseIntArrayElements(jline, line, 0);
 }
 
-static inline const jintArray EncodeIntLine(JNIEnv *jvm, vector<uint32_t> &line) {
+static inline const jintArray EncodeIntLine(JNIEnv *jvm, vector<wid_t> &line) {
     jsize length = (jsize) line.size();
 
-    const uint32_t *rawLine = line.data();
+    const wid_t *rawLine = line.data();
     jint *array = new jint[length];
 
     for (jsize i = 0; i < length; ++i)
@@ -77,9 +77,8 @@ static inline const jintArray EncodeIntLine(JNIEnv *jvm, vector<uint32_t> &line)
  */
 JNIEXPORT jlong JNICALL
 Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_instantiate(JNIEnv *jvm, jobject jself, jstring jpath) {
-    const char *path = jvm->GetStringUTFChars(jpath, NULL);
+    string path = jni_jstrtostr(jvm, jpath);
     PersistentVocabulary *instance = new PersistentVocabulary(path);
-    jvm->ReleaseStringUTFChars(jpath, path);
 
     return (jlong) instance;
 }
@@ -108,11 +107,9 @@ JNIEXPORT jint JNICALL
 Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_lookup(JNIEnv *jvm, jobject jself, jstring jword,
                                                              jboolean putIfAbsent) {
     Vocabulary *self = jni_gethandle<Vocabulary>(jvm, jself);
+    string word = jni_jstrtostr(jvm, jword);
 
-    const char *word_chars = jvm->GetStringUTFChars(jword, NULL);
-    string word = word_chars;
-    uint32_t id = self->Lookup(word, putIfAbsent);
-    jvm->ReleaseStringUTFChars(jword, word_chars);
+    wid_t id = self->Lookup(word, putIfAbsent);
 
     return id;
 }
@@ -130,7 +127,7 @@ Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_lookupLine(JNIEnv *jvm, jo
     vector<string> line;
     ParseStringLine(jvm, jline, line);
 
-    vector<vector<uint32_t>> output;
+    vector<vector<wid_t>> output;
     vector<vector<string>> buffer;
     buffer.push_back(line);
 
@@ -162,7 +159,7 @@ Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_lookupLines(JNIEnv *jvm, j
     }
 
     // Lookup
-    vector<vector<uint32_t>> output;
+    vector<vector<wid_t>> output;
     self->Lookup(buffer, &output, putIfAbsent);
 
     // Encode result
@@ -181,7 +178,7 @@ Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_reverseLookup(JNIEnv *jvm,
 
     string word;
 
-    if (self->ReverseLookup((uint32_t) id, &word))
+    if (self->ReverseLookup((wid_t) id, &word))
         return word.empty() ? NULL : jvm->NewStringUTF(word.data());
     else
         return NULL;
@@ -196,11 +193,11 @@ JNIEXPORT jobjectArray JNICALL
 Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_reverseLookupLine(JNIEnv *jvm, jobject jself, jintArray jline) {
     Vocabulary *self = jni_gethandle<Vocabulary>(jvm, jself);
 
-    vector<uint32_t> line;
+    vector<wid_t> line;
     ParseIntLine(jvm, jline, line);
 
     vector<vector<string>> output;
-    vector<vector<uint32_t>> buffer;
+    vector<vector<wid_t>> buffer;
     buffer.push_back(line);
     self->ReverseLookup(buffer, output);
 
@@ -220,10 +217,10 @@ Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_reverseLookupLines(JNIEnv 
 
     // Parse input buffer
     jsize bufferSize = jvm->GetArrayLength(jbuffer);
-    vector<vector<uint32_t>> buffer;
+    vector<vector<wid_t>> buffer;
 
     for (jsize i = 0; i < bufferSize; ++i) {
-        vector<uint32_t> line;
+        vector<wid_t> line;
         jintArray jline = (jintArray) jvm->GetObjectArrayElement(jbuffer, i);
         ParseIntLine(jvm, jline, line);
         buffer.push_back(line);

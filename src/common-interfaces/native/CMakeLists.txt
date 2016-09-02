@@ -3,8 +3,19 @@ project(mmt-common-interfaces)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-set(SOURCE_FILES include/mmt/sentence.h include/mmt/Aligner.h include/mmt/jniutil.h)
-add_library(${PROJECT_NAME} INTERFACE)
+set(SOURCE_FILES
+        include/mmt/sentence.h
+        include/mmt/aligner/Aligner.h
+        include/mmt/jniutil.h
+
+        include/mmt/vocabulary/Vocabulary.h
+        junk.cpp
+        )
+
+add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
+#add_library(${PROJECT_NAME} INTERFACE)
+
+include_directories(include)
 
 ## JNI
 find_package(JNI REQUIRED)

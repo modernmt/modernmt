@@ -16,7 +16,7 @@ template <typename T> T *jni_gethandle(JNIEnv *env, jobject obj, const char *han
     return reinterpret_cast<T *>(ptr);
 }
 
-std::string jni_jstrtostr(JNIEnv *jvm, jstring string) {
+inline std::string jni_jstrtostr(JNIEnv *jvm, jstring string) {
     const char *content = jvm->GetStringUTFChars(string, NULL);
     std::string result = content;
     jvm->ReleaseStringUTFChars(string, content);

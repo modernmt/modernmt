@@ -8,6 +8,8 @@
 #include <fstream>
 
 using namespace std;
+using namespace mmt;
+using namespace mmt::vocabulary;
 
 const size_t kBufferSizeInWords = 20000000;
 
@@ -19,7 +21,7 @@ bool has_only_spaces(const std::string &str) {
     return true;
 }
 
-void WhitespaceTokenize(string &line, vector <uint32_t> &output) {
+void WhitespaceTokenize(string &line, vector<wid_t> &output) {
     if (has_only_spaces(line))
         return;
 
@@ -27,11 +29,11 @@ void WhitespaceTokenize(string &line, vector <uint32_t> &output) {
     string word;
 
     while (getline(iss, word, ' ')) {
-        output.push_back((uint32_t &&) stoi(word));
+        output.push_back((wid_t &&) stoi(word));
     }
 }
 
-void FlushToStdout(vector <vector<string>> &output) {
+void FlushToStdout(vector<vector<string>> &output) {
     for (auto it = output.begin(); it != output.end(); ++it) {
         for (size_t i = 0; i < it->size(); ++i) {
             if (i > 0)
@@ -54,8 +56,8 @@ int main(int argc, const char *argv[]) {
 
     PersistentVocabulary vocabulary(modelPath);
 
-    vector <vector<uint32_t>> buffer;
-    vector <vector<string>> output;
+    vector<vector<wid_t>> buffer;
+    vector<vector<string>> output;
 
     buffer.reserve(kBufferSizeInWords / 20);
     output.reserve(kBufferSizeInWords / 20);
@@ -63,7 +65,7 @@ int main(int argc, const char *argv[]) {
     size_t bufferSizeInWords = 0;
 
     for (string line; getline(cin, line);) {
-        vector <uint32_t> tokens;
+        vector<wid_t> tokens;
         WhitespaceTokenize(line, tokens);
         buffer.push_back(tokens);
         bufferSizeInWords += tokens.size();

@@ -5,7 +5,7 @@
 #ifndef MMTCORE_PERSISTENTVOCABULARY_H
 #define MMTCORE_PERSISTENTVOCABULARY_H
 
-#include "Vocabulary.h"
+#include <mmt/vocabulary/Vocabulary.h>
 #include <string>
 #include <rocksdb/db.h>
 #include <unordered_set>
@@ -13,33 +13,39 @@
 
 using namespace std;
 
-class PersistentVocabulary : public Vocabulary {
-public:
-    PersistentVocabulary(string path, bool prepareForBulkLoad = false);
+namespace mmt {
+    namespace vocabulary {
 
-    ~PersistentVocabulary();
+        class PersistentVocabulary : public Vocabulary {
+        public:
+            PersistentVocabulary(string path, bool prepareForBulkLoad = false);
 
-    virtual uint32_t Lookup(const string &word, bool putIfAbsent) override;
+            virtual ~PersistentVocabulary() override;
 
-    virtual void
-    Lookup(const vector<vector<string>> &buffer, vector<vector<uint32_t>> *output, bool putIfAbsent) override;
+            virtual wid_t Lookup(const string &word, bool putIfAbsent) override;
 
-    virtual const bool ReverseLookup(uint32_t id, string *output) override;
+            virtual void
+            Lookup(const vector<vector<string>> &buffer, vector<vector<wid_t>> *output, bool putIfAbsent) override;
 
-    virtual const bool ReverseLookup(const vector<vector<uint32_t>> &buffer, vector<vector<string>> &output) override;
+            virtual const bool ReverseLookup(wid_t id, string *output) override;
 
-    void Put(const string &word, const uint32_t id);
+            virtual const bool ReverseLookup(const vector<vector<wid_t>> &buffer, vector<vector<string>> &output) override;
 
-    void ForceCompaction();
+            void Put(const string &word, const wid_t id);
 
-    void ResetId(uint32_t id);
+            void ForceCompaction();
 
-private:
-    string idGeneratorPath;
-    IdGenerator idGenerator;
-    rocksdb::DB* directDb;
-    rocksdb::DB* reverseDb;
-};
+            void ResetId(wid_t id);
+
+        private:
+            string idGeneratorPath;
+            IdGenerator idGenerator;
+            rocksdb::DB* directDb;
+            rocksdb::DB* reverseDb;
+        };
+
+    }
+}
 
 
 #endif //MMTCORE_PERSISTENTVOCABULARY_H

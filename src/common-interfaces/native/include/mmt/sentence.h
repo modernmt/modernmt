@@ -11,15 +11,12 @@
 namespace mmt {
 
     typedef uint32_t wid_t;
+    typedef uint16_t length_t;
 
     struct word_t {
         wid_t id;
 
-        static inline word_t make_word(wid_t id) {
-            word_t word;
-            word.id = id;
-            return word;
-        }
+        word_t(wid_t id) : id(id) {};
     };
 
     typedef std::vector<word_t> sentence_t;

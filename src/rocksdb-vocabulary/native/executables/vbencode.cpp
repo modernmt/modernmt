@@ -7,6 +7,8 @@
 #include <iostream>
 
 using namespace std;
+using namespace mmt;
+using namespace mmt::vocabulary;
 
 const size_t kBufferSize = 1000000;
 
@@ -19,7 +21,7 @@ void WhitespaceTokenize(string &line, vector<string> &output) {
     }
 }
 
-void FlushToStdout(vector<vector<uint32_t>> &output) {
+void FlushToStdout(vector<vector<wid_t>> &output) {
     for (auto it = output.begin(); it != output.end(); ++it) {
         for (size_t i = 0; i < it->size(); ++i) {
             if (i > 0)
@@ -42,7 +44,7 @@ int main(int argc, const char *argv[]) {
     PersistentVocabulary vocabulary(modelPath);
 
     vector<vector<string>> buffer;
-    vector<vector<uint32_t>> output;
+    vector<vector<wid_t>> output;
 
     buffer.reserve(kBufferSize);
     output.reserve(kBufferSize);

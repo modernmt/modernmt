@@ -21,21 +21,25 @@ const string kPathSeparator =
 #endif
 
 using namespace rocksdb;
+using namespace mmt;
+using namespace mmt::vocabulary;
 
-static const void Serialize(uint32_t value, uint8_t *output) {
+static_assert(sizeof(wid_t) == 4, "Current implementation only support 4-byte word id");
+
+static const void Serialize(wid_t value, uint8_t *output) {
     output[0] = (uint8_t) (value & 0x000000FF);
     output[1] = (uint8_t) ((value & 0x0000FF00) >> 8);
     output[2] = (uint8_t) ((value & 0x00FF0000) >> 16);
     output[3] = (uint8_t) ((value & 0xFF000000) >> 24);
 }
 
-static const bool Deserialize(string &value, uint32_t *output) {
-    if (value.size() != sizeof(uint32_t))
+static const bool Deserialize(string &value, wid_t *output) {
+    if (value.size() != sizeof(wid_t))
         return false;
 
     const char *buffer = value.data();
 
-    uint32_t id = buffer[0] & 0xFFU;
+    wid_t id = buffer[0] & 0xFFU;
     id += (buffer[1] & 0xFFU) << 8;
     id += (buffer[2] & 0xFFU) << 16;
     id += (buffer[3] & 0xFFU) << 24;
@@ -45,13 +49,13 @@ static const bool Deserialize(string &value, uint32_t *output) {
     return true;
 }
 
-static const bool Deserialize(const rocksdb::Slice &value, uint32_t *output) {
-    if (value.size() != sizeof(uint32_t))
+static const bool Deserialize(const rocksdb::Slice &value, wid_t *output) {
+    if (value.size() != sizeof(wid_t))
         return false;
 
     const char *buffer = value.data();
 
-    uint32_t id = buffer[0] & 0xFFU;
+    wid_t id = buffer[0] & 0xFFU;
     id += (buffer[1] & 0xFFU) << 8;
     id += (buffer[2] & 0xFFU) << 16;
     id += (buffer[3] & 0xFFU) << 24;
@@ -63,17 +67,17 @@ static const bool Deserialize(const rocksdb::Slice &value, uint32_t *output) {
 
 // Operator
 
-class NewWordOperator : public rocksdb::MergeOperator {
+class NewWordOperator : public MergeOperator {
 public:
-    virtual bool FullMerge(const rocksdb::Slice &key, const rocksdb::Slice *existing_value,
-                           const std::deque<std::string> &operand_list, std::string *new_value,
-                           rocksdb::Logger *logger) const {
+    virtual bool
+    FullMerge(const Slice &key, const Slice *existing_value, const deque<string> &operand_list, string *new_value,
+              Logger *logger) const {
         if (existing_value == nullptr) {
-            uint32_t maxId = 0;
+            wid_t maxId = 0;
 
             for (auto i = operand_list.begin(); i != operand_list.end(); ++i) {
-                uint32_t temp;
-                uint32_t id = Deserialize(*i, &temp) ? temp : 0;
+                wid_t temp;
+                wid_t id = Deserialize(*i, &temp) ? temp : 0;
 
                 if (id > maxId)
                     maxId = id;
@@ -81,18 +85,18 @@ public:
 
             uint8_t buffer[4];
             Serialize(maxId, buffer);
-            *new_value = std::string(reinterpret_cast<char const *>(buffer), 4);
+            *new_value = string(reinterpret_cast<char const *>(buffer), 4);
         }
 
         return true;
     }
 
     virtual bool
-    PartialMerge(const rocksdb::Slice &key, const rocksdb::Slice &left_operand, const rocksdb::Slice &right_operand,
-                 std::string *new_value, rocksdb::Logger *logger) const {
-        uint32_t temp;
-        uint32_t id1 = Deserialize(left_operand, &temp) ? temp : 0;
-        uint32_t id2 = Deserialize(right_operand, &temp) ? temp : 0;
+    PartialMerge(const Slice &key, const Slice &left_operand, const Slice &right_operand, string *new_value,
+                 Logger *logger) const {
+        wid_t temp;
+        wid_t id1 = Deserialize(left_operand, &temp) ? temp : 0;
+        wid_t id2 = Deserialize(right_operand, &temp) ? temp : 0;
 
         uint8_t buffer[4];
         Serialize((id1 > id2 ? id1 : id2), buffer);
@@ -102,13 +106,13 @@ public:
     }
 
     virtual bool
-    PartialMergeMulti(const rocksdb::Slice &key, const deque<rocksdb::Slice, allocator<rocksdb::Slice>> &operand_list,
-                      std::string *new_value, rocksdb::Logger *logger) const {
-        uint32_t maxId = 0;
+    PartialMergeMulti(const Slice &key, const deque<Slice, allocator<Slice>> &operand_list,
+                      string *new_value, Logger *logger) const {
+        wid_t maxId = 0;
 
         for (auto i = operand_list.begin(); i != operand_list.end(); ++i) {
-            uint32_t temp;
-            uint32_t id = Deserialize(*i, &temp) ? temp : 0;
+            wid_t temp;
+            wid_t id = Deserialize(*i, &temp) ? temp : 0;
 
             if (id > maxId)
                 maxId = id;
@@ -172,7 +176,7 @@ PersistentVocabulary::PersistentVocabulary(string basepath, bool prepareForBulkL
     ForceCompaction();
 }
 
-uint32_t PersistentVocabulary::Lookup(const string &word, bool putIfAbsent) {
+wid_t PersistentVocabulary::Lookup(const string &word, bool putIfAbsent) {
     ReadOptions options = ReadOptions();
     options.verify_checksums = false;
 
@@ -184,7 +188,7 @@ uint32_t PersistentVocabulary::Lookup(const string &word, bool putIfAbsent) {
     if (!status.ok()) {
         if (status.IsNotFound()) {
             if (putIfAbsent) {
-                uint32_t id = idGenerator.Next() + kVocabularyWordIdStart;
+                wid_t id = idGenerator.Next() + kVocabularyWordIdStart;
                 uint8_t buffer[4];
                 Serialize(id, buffer);
 
@@ -204,20 +208,20 @@ uint32_t PersistentVocabulary::Lookup(const string &word, bool putIfAbsent) {
         }
     }
 
-    uint32_t output;
+    wid_t output;
     return Deserialize(value, &output) ? output : kVocabularyUnknownWord;
 }
 
 void
-PersistentVocabulary::Lookup(const vector<vector<string>> &buffer, vector<vector<uint32_t>> *output, bool putIfAbsent) {
-    unordered_map<string, uint32_t> vocabulary(buffer.size() * 20);
+PersistentVocabulary::Lookup(const vector<vector<string>> &buffer, vector<vector<wid_t>> *output, bool putIfAbsent) {
+    unordered_map<string, wid_t> vocabulary(buffer.size() * 20);
 
     for (auto line = buffer.begin(); line != buffer.end(); ++line) {
         size_t length = line->size();
 
-        vector<uint32_t> encoded;
+        vector<wid_t> encoded;
         for (size_t i = 0; i < length; ++i) {
-            uint32_t id;
+            wid_t id;
             const string &word = line->at(i);
 
             auto valueRef = vocabulary.find(word);
@@ -237,7 +241,7 @@ PersistentVocabulary::Lookup(const vector<vector<string>> &buffer, vector<vector
     }
 }
 
-const bool PersistentVocabulary::ReverseLookup(uint32_t id, string *output) {
+const bool PersistentVocabulary::ReverseLookup(wid_t id, string *output) {
     if (id < kVocabularyWordIdStart)
         return true;
 
@@ -260,15 +264,15 @@ const bool PersistentVocabulary::ReverseLookup(uint32_t id, string *output) {
     return true;
 }
 
-const bool PersistentVocabulary::ReverseLookup(const vector<vector<uint32_t>> &buffer, vector<vector<string>> &output) {
-    unordered_map<uint32_t, string> vocabulary(buffer.size() * 20);
+const bool PersistentVocabulary::ReverseLookup(const vector<vector<wid_t>> &buffer, vector<vector<string>> &output) {
+    unordered_map<wid_t, string> vocabulary(buffer.size() * 20);
 
     for (auto line = buffer.begin(); line != buffer.end(); ++line) {
         size_t length = line->size();
 
         vector<string> decoded;
         for (size_t i = 0; i < length; ++i) {
-            uint32_t id = line->at(i);
+            wid_t id = line->at(i);
             string word;
 
             auto valueRef = vocabulary.find(id);
@@ -289,7 +293,7 @@ const bool PersistentVocabulary::ReverseLookup(const vector<vector<uint32_t>> &b
     return true;
 }
 
-void PersistentVocabulary::Put(const string &_word, const uint32_t _id) {
+void PersistentVocabulary::Put(const string &_word, const wid_t _id) {
     uint8_t buffer[4];
     Serialize(_id, buffer);
 
@@ -303,7 +307,7 @@ void PersistentVocabulary::Put(const string &_word, const uint32_t _id) {
     assert(status.ok());
 }
 
-void PersistentVocabulary::ResetId(uint32_t id) {
+void PersistentVocabulary::ResetId(wid_t id) {
     idGenerator.Reset(id);
 }
 

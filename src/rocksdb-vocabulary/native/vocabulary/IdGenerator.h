@@ -8,25 +8,31 @@
 #include <string>
 #include <mutex>
 #include <cstdint>
+#include <mmt/sentence.h>
 
 using namespace std;
 
-class IdGenerator {
-public:
-    IdGenerator(string &filepath, uint32_t idStep = 1000);
+namespace mmt {
+    namespace vocabulary {
 
-    ~IdGenerator();
+        class IdGenerator {
+        public:
+            IdGenerator(string &filepath, wid_t idStep = 1000);
 
-    uint32_t Next();
+            ~IdGenerator();
 
-    void Reset(uint32_t id);
+            wid_t Next();
 
-private:
-    uint32_t idStep;
-    uint32_t counter;
-    FILE *storage;
-    mutex m;
-};
+            void Reset(wid_t id);
 
+        private:
+            wid_t idStep;
+            wid_t counter;
+            FILE *storage;
+            mutex m;
+        };
+
+    }
+}
 
 #endif //MMTCORE_IDGENERATOR_H

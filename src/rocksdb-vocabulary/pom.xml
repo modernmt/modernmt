@@ -85,6 +85,7 @@
                             <workingDirectory>${project.build.native}</workingDirectory>
                             <arguments>
                                 <argument>-DROCKSDB_ROOT=${mmt.vendor.rocksdb}</argument>
+                                <argument>-DMMT_INCLUDE_DIR=${project.native.include}</argument>
                                 <argument>-DCMAKE_INSTALL_PREFIX=${mmt.build}</argument>
                                 <argument>${project.nativedir}</argument>
                             </arguments>
