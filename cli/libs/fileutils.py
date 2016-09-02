@@ -2,6 +2,7 @@ import errno
 import os
 import shutil
 import subprocess
+import psutil
 
 __author__ = 'Davide Caroselli'
 
@@ -67,9 +68,11 @@ def du(f=None):
 
 
 def free():
-    output = subprocess.Popen(['free', '-b'], stdout=subprocess.PIPE).communicate()[0]
-    available = output.split('\n')[2].split()[-1]
-    return int(available)
+    # output = subprocess.Popen(['free', '-b'], stdout=subprocess.PIPE).communicate()[0]
+    # available = output.split('\n')[2].split()[-1]
+    # return int(available)
+    ## the output of free differs between OS versions. Better to use psutil here
+    return psutil.virtual_memory().available
 
 
 def merge(srcs, dest, buffer_size=10 * 1024 * 1024, delimiter=None):
