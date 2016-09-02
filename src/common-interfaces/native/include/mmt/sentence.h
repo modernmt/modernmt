@@ -20,7 +20,7 @@ namespace mmt {
     };
 
     typedef std::vector<word_t> sentence_t;
-    typedef uint16_t length_t;
+    typedef std::vector<std::pair<length_t, length_t>> alignment_t;
 
 }
 

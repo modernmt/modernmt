@@ -11,8 +11,6 @@ using namespace std;
 
 namespace mmt {
 
-    typedef vector<pair<length_t, length_t>> alignment_t;
-
     const wid_t kAlignerNullWord = 0;
 
     class AlignerModel {
