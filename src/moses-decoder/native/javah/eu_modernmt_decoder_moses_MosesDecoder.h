@@ -9,10 +9,10 @@ extern "C" {
 #endif
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
- * Method:    init
- * Signature: (Ljava/lang/String;)V
+ * Method:    instantiate
+ * Signature: (Ljava/lang/String;)J
  */
-JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_init
+JNIEXPORT jlong JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_instantiate
   (JNIEnv *, jobject, jstring);
 
 /*
@@ -66,10 +66,10 @@ JNIEXPORT jobject JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_translate
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
  * Method:    dispose
- * Signature: ()V
+ * Signature: (J)J
  */
-JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_dispose
-  (JNIEnv *, jobject);
+JNIEXPORT jlong JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_dispose
+  (JNIEnv *, jobject, jlong);
 
 #ifdef __cplusplus
 }

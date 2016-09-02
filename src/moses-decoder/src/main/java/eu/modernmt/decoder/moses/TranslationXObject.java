@@ -72,9 +72,9 @@ class TranslationXObject {
 
     public String text;
     public Hypothesis[] nbestList;
-    public int[][] alignment; // TODO: encode as jintArray
+    public int[] alignment;
 
-    public TranslationXObject(String text, Hypothesis[] nbestList, int[][] alignment) {
+    public TranslationXObject(String text, Hypothesis[] nbestList, int[] alignment) {
         this.text = text;
         this.nbestList = nbestList;
         this.alignment = alignment;
@@ -83,7 +83,7 @@ class TranslationXObject {
     public DecoderTranslation getTranslation(Sentence source) {
         Word[] words = explode(text);
 
-        DecoderTranslation translation = new DecoderTranslation(words, source, Alignment.fromAlignmentPairs(alignment));
+        DecoderTranslation translation = new DecoderTranslation(words, source, parseAlignment(alignment));
 
         if (nbestList != null && nbestList.length > 0) {
             List<TranslationHypothesis> nbest = new ArrayList<>(nbestList.length);
@@ -95,6 +95,21 @@ class TranslationXObject {
         }
 
         return translation;
+    }
+
+    private static Alignment parseAlignment(int[] encoded) {
+        if (encoded == null || encoded.length == 0)
+            return null;
+
+        int size = encoded.length / 2;
+
+        int[] source = new int[size];
+        int[] target = new int[size];
+
+        System.arraycopy(encoded, 0, source, 0, size);
+        System.arraycopy(encoded, size, target, 0, size);
+
+        return new Alignment(source, target);
     }
 
 }

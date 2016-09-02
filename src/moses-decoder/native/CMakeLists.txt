@@ -11,15 +11,12 @@ set(SOURCE_FILES
         decoder/JNITranslator.h decoder/JNITranslator.cpp
         decoder/MosesDecoder.h decoder/MosesDecoder.cpp
 
-        jheaders/eu_modernmt_decoder_moses_MosesDecoder.h
-
-        jni/handle.h
-        jni/jniutil.h
-        jni/eu_modernmt_decoder_moses_MosesDecoder.cpp
-        jni/JMosesFeature.h jni/JMosesFeature.cpp
-        jni/JTranslation.h jni/JTranslation.cpp)
+        javah/eu_modernmt_decoder_moses_MosesDecoder.h java/eu_modernmt_decoder_moses_MosesDecoder.cpp
+        java/JMosesFeature.h java/JMosesFeature.cpp
+        java/JTranslation.h java/JTranslation.cpp)
 
 include_directories(${CMAKE_SOURCE_DIR})
+include_directories(${MMT_INCLUDE_DIR})
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib)

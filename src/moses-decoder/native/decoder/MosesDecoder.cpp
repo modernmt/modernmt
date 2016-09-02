@@ -7,33 +7,36 @@
 #include <moses/StaticData.h>
 #include <moses/FF/StatefulFeatureFunction.h>
 
-using namespace JNIWrapper;
+using namespace mmt::decoder;
 
-namespace JNIWrapper {
+namespace mmt {
+    namespace decoder {
 
-    class MosesDecoderImpl : public MosesDecoder {
-        MosesServer::JNITranslator m_translator;
-        std::vector<feature_t> m_features;
-    public:
+        class MosesDecoderImpl : public MosesDecoder {
+            MosesServer::JNITranslator m_translator;
+            std::vector<feature_t> m_features;
+        public:
 
-        MosesDecoderImpl(Moses::Parameter &param);
+            MosesDecoderImpl(Moses::Parameter &param);
 
-        virtual std::vector<feature_t> getFeatures() override;
+            virtual std::vector<feature_t> getFeatures() override;
 
-        virtual std::vector<float> getFeatureWeights(feature_t &feature) override;
+            virtual std::vector<float> getFeatureWeights(feature_t &feature) override;
 
-        virtual void setDefaultFeatureWeights(const std::map<std::string, std::vector<float>> &featureWeights) override;
+            virtual void
+            setDefaultFeatureWeights(const std::map<std::string, std::vector<float>> &featureWeights) override;
 
-        virtual int64_t openSession(const std::map<std::string, float> &translationContext,
-                                    const std::map<std::string, std::vector<float>> *featureWeights = NULL) override;
+            virtual int64_t openSession(const std::map<std::string, float> &translationContext,
+                                        const std::map<std::string, std::vector<float>> *featureWeights = NULL) override;
 
-        virtual void closeSession(uint64_t session) override;
+            virtual void closeSession(uint64_t session) override;
 
-        virtual translation_t translate(const std::string &text, uint64_t session,
-                                        const std::map<std::string, float> *translationContext,
-                                        size_t nbestListSize) override;
-    };
+            virtual translation_t translate(const std::string &text, uint64_t session,
+                                            const std::map<std::string, float> *translationContext,
+                                            size_t nbestListSize) override;
+        };
 
+    }
 }
 
 MosesDecoder *MosesDecoder::createInstance(const char *inifile) {

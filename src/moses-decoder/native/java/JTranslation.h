@@ -17,9 +17,9 @@ public:
 
     JTranslation(JNIEnv *);
 
-    jobjectArray getAlignment(JNIEnv *jvm, std::vector <std::pair<size_t, size_t>> alignment);
+    jintArray getAlignment(JNIEnv *jvm, std::vector <std::pair<size_t, size_t>> alignment);
 
-    jobject create(JNIEnv *jvm, std::string &text, jobjectArray nbestList, jobjectArray alignment);
+    jobject create(JNIEnv *jvm, std::string &text, jobjectArray nbestList, jintArray alignment);
 };
 
 class JHypothesis {

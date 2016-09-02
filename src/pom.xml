@@ -40,9 +40,6 @@
         <project.nativedir>${project.basedir}/native</project.nativedir>
         <project.nativedir.javah>${project.nativedir}/javah</project.nativedir.javah>
 
-        <!-- TODO: to remove -->
-        <project.nativedir.headers>${project.nativedir}/jheaders</project.nativedir.headers>
-
         <!-- MMT build directory -->
         <mmt.build>${project.basedir}/../../build</mmt.build>
         <mmt.build.lib>${mmt.build}/lib</mmt.build.lib>

@@ -2,50 +2,41 @@
 // Created by Davide  Caroselli on 26/11/15.
 //
 
-#include <jheaders/eu_modernmt_decoder_moses_MosesDecoder.h>
-#include <jni/handle.h>
-#include <jni/jniutil.h>
+#include <javah/eu_modernmt_decoder_moses_MosesDecoder.h>
 #include <decoder/MosesDecoder.h>
 #include <stdlib.h>
 #include "JMosesFeature.h"
 #include "JTranslation.h"
+#include <mmt/jniutil.h>
 
-using namespace JNIWrapper;
+using namespace std;
+using namespace mmt::decoder;
 
-/*
- * Util function to translate a Java hash map to a std::map
- */
-std::map<std::string, float> __parse_context(JNIEnv *jvm, jobjectArray keys, jfloatArray values) {
-    std::map<std::string, float> context;
-
+void ParseContext(JNIEnv *jvm, jobjectArray keys, jfloatArray values, map<string, float> &outContext) {
     int size = jvm->GetArrayLength(values);
     jfloat *valuesArray = jvm->GetFloatArrayElements(values, 0);
 
     for (int i = 0; i < size; i++) {
-        std::string key = jni_jstrtostr(jvm, (jstring) jvm->GetObjectArrayElement(keys, i));
+        string key = jni_jstrtostr(jvm, (jstring) jvm->GetObjectArrayElement(keys, i));
         float value = valuesArray[i];
 
-        context[key] = value;
+        outContext[key] = value;
     }
 
     jvm->ReleaseFloatArrayElements(values, valuesArray, 0);
-
-    return context;
 }
 
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
- * Method:    init
- * Signature: (Ljava/lang/String;)V
+ * Method:    instantiate
+ * Signature: (Ljava/lang/String;)J
  */
-JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_init(JNIEnv *jvm, jobject self, jstring jinifile) {
-    const char *inifile = jvm->GetStringUTFChars(jinifile, NULL);
-    MosesDecoder *instance = MosesDecoder::createInstance(inifile);
-    jvm->ReleaseStringUTFChars(jinifile, inifile);
-
-    jni_sethandle(jvm, self, instance);
+JNIEXPORT jlong JNICALL
+Java_eu_modernmt_decoder_moses_MosesDecoder_instantiate(JNIEnv *jvm, jobject jself, jstring jinifile) {
+    string inifile = jni_jstrtostr(jvm, jinifile);
+    MosesDecoder *instance = MosesDecoder::createInstance(inifile.c_str());
+    return (jlong) instance;
 }
-
 
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
@@ -56,7 +47,7 @@ JNIEXPORT jobjectArray JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_getFe
     MosesDecoder *moses = jni_gethandle<MosesDecoder>(jvm, jself);
     JMosesFeature MosesFeature(jvm);
 
-    std::vector<feature_t> features = moses->getFeatures();
+    vector<feature_t> features = moses->getFeatures();
     jobjectArray array = jvm->NewObjectArray((jsize) features.size(), MosesFeature._class, nullptr);
 
     for (size_t i = 0; i < features.size(); ++i) {
@@ -75,13 +66,15 @@ JNIEXPORT jobjectArray JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_getFe
  * Method:    getFeatureWeightsFromPointer
  * Signature: (J)[F
  */
-JNIEXPORT jfloatArray JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_getFeatureWeightsFromPointer(JNIEnv *jvm, jobject jself, jlong jfeaturePtr) {
+JNIEXPORT jfloatArray JNICALL
+Java_eu_modernmt_decoder_moses_MosesDecoder_getFeatureWeightsFromPointer(JNIEnv *jvm, jobject jself,
+                                                                         jlong jfeaturePtr) {
     JMosesFeature MosesFeature(jvm);
     MosesDecoder *moses = jni_gethandle<MosesDecoder>(jvm, jself);
 
     feature_t mock;
-    mock.ptr = (void *)jfeaturePtr;
-    std::vector<float> weights = moses->getFeatureWeights(mock);
+    mock.ptr = (void *) jfeaturePtr;
+    vector<float> weights = moses->getFeatureWeights(mock);
 
     jfloat *buffer = (jfloat *) calloc(sizeof(jfloat), weights.size());
     for (size_t i = 0; i < weights.size(); ++i) {
@@ -104,17 +97,17 @@ JNIEXPORT jfloatArray JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_getFea
  * Method:    setFeatureWeights
  * Signature: ([Ljava/lang/String;[[F)V
  */
-JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_setFeatureWeights(JNIEnv *jvm, jobject self, jobjectArray features, jobjectArray weights) {
+JNIEXPORT void JNICALL
+Java_eu_modernmt_decoder_moses_MosesDecoder_setFeatureWeights(JNIEnv *jvm, jobject self, jobjectArray features,
+                                                              jobjectArray weights) {
     MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, self);
-    std::map<std::string, std::vector<float>> featureWeights;
+    map<string, vector<float>> featureWeights;
 
     int size = jvm->GetArrayLength(features);
 
     for (int i = 0; i < size; i++) {
-        std::string feature = jvm->GetStringUTFChars((jstring) jvm->GetObjectArrayElement(features, i), NULL);
-        jfloatArray jweights = (jfloatArray)jvm->GetObjectArrayElement(weights, i);
-
-        // TODO: Not releasing jstring "jvm->GetObjectArrayElement(features, i)". Update and test
+        string feature = jni_jstrtostr(jvm, (jstring) jvm->GetObjectArrayElement(features, i));
+        jfloatArray jweights = (jfloatArray) jvm->GetObjectArrayElement(weights, i);
 
         int wsize = jvm->GetArrayLength(jweights);
         jfloat *weightsArray = jvm->GetFloatArrayElements(jweights, 0);
@@ -132,9 +125,14 @@ JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_setFeatureWei
  * Method:    createSession
  * Signature: ([Ljava/lang/String;[F)J
  */
-JNIEXPORT jlong JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_createSession(JNIEnv *jvm, jobject self, jobjectArray contextKeys, jfloatArray contextValues) {
+JNIEXPORT jlong JNICALL
+Java_eu_modernmt_decoder_moses_MosesDecoder_createSession(JNIEnv *jvm, jobject self, jobjectArray contextKeys,
+                                                          jfloatArray contextValues) {
     MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, self);
-    std::map<std::string, float> context = __parse_context(jvm, contextKeys, contextValues);
+
+    map<string, float> context;
+    ParseContext(jvm, contextKeys, contextValues, context);
+
     return (jlong) instance->openSession(context);
 }
 
@@ -153,20 +151,24 @@ JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_destroySessio
  * Method:    translate
  * Signature: (Ljava/lang/String;[Ljava/lang/String;[FJI)Leu/modernmt/decoder/moses/TranslationXObject;
  */
-JNIEXPORT jobject JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_translate(JNIEnv *jvm, jobject self, jstring text, jobjectArray contextKeys, jfloatArray contextValues, jlong session, jint nbest) {
+JNIEXPORT jobject JNICALL
+Java_eu_modernmt_decoder_moses_MosesDecoder_translate(JNIEnv *jvm, jobject self, jstring text, jobjectArray contextKeys,
+                                                      jfloatArray contextValues, jlong session, jint nbest) {
     MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, self);
-    std::string sentence = jni_jstrtostr(jvm, text);
+    string sentence = jni_jstrtostr(jvm, text);
 
     translation_t translation;
     if (contextKeys != NULL) {
-        std::map<std::string, float> context = __parse_context(jvm, contextKeys, contextValues);
+        map<string, float> context;
+        ParseContext(jvm, contextKeys, contextValues, context);
+
         translation = instance->translate(sentence, (uint64_t) session, &context, (size_t) nbest);
     } else {
         translation = instance->translate(sentence, (uint64_t) session, NULL, (size_t) nbest);
     }
 
     jobjectArray hypothesesArray = NULL;
-    std::vector<hypothesis_t> hypotheses = translation.hypotheses;
+    vector<hypothesis_t> hypotheses = translation.hypotheses;
 
     if (hypotheses.size() > 0) {
         JHypothesis Hypothesis(jvm);
@@ -182,7 +184,7 @@ JNIEXPORT jobject JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_translate(
 
     JTranslation Translation(jvm);
 
-    jobjectArray jAlignment = Translation.getAlignment(jvm, translation.alignment);
+    jintArray jAlignment = Translation.getAlignment(jvm, translation.alignment);
     jobject jtranslation = Translation.create(jvm, translation.text, hypothesesArray, jAlignment);
 
     jvm->DeleteLocalRef(jAlignment);
@@ -195,10 +197,13 @@ JNIEXPORT jobject JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_translate(
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
  * Method:    dispose
- * Signature: ()V
+ * Signature: (J)J
  */
-JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_dispose(JNIEnv *jvm, jobject self) {
-    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, self);
-    jni_sethandle<MosesDecoder>(jvm, self, 0);
-    delete instance;
+JNIEXPORT jlong JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_dispose(JNIEnv *jvm, jobject jself, jlong ptr) {
+    if (ptr != 0) {
+        MosesDecoder *instance = (MosesDecoder *) ptr;
+        delete instance;
+    }
+
+    return 0;
 }

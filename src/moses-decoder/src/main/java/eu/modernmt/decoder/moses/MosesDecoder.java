@@ -40,10 +40,11 @@ public class MosesDecoder implements Decoder {
     public MosesDecoder(File iniFile) throws IOException {
         if (!iniFile.isFile())
             throw new IOException("Invalid INI file: " + iniFile);
-        this.init(iniFile.getAbsolutePath());
+
+        this.nativeHandle = instantiate(iniFile.getAbsolutePath());
     }
 
-    private native void init(String inifile);
+    private native long instantiate(String inifile);
 
     // Features
 
@@ -172,15 +173,15 @@ public class MosesDecoder implements Decoder {
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
-        close();
+        nativeHandle = dispose(nativeHandle);
     }
 
     @Override
     public void close() {
-        this.sessions.values().forEach(this::destroySession);
-        dispose();
+        sessions.values().forEach(this::destroySession);
+        nativeHandle = dispose(nativeHandle);
     }
 
-    protected native void dispose();
+    private native long dispose(long handle);
 
 }

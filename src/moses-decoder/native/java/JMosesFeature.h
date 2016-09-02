@@ -2,8 +2,8 @@
 // Created by Davide  Caroselli on 03/12/15.
 //
 
-#ifndef JNIWRAPPER_JMOSESFEATURE_H
-#define JNIWRAPPER_JMOSESFEATURE_H
+#ifndef JNIMOSES_JMOSESFEATURE_H
+#define JNIMOSES_JMOSESFEATURE_H
 
 #include <jni.h>
 #include <string>
@@ -22,4 +22,4 @@ public:
 };
 
 
-#endif //JNIWRAPPER_JMOSESFEATURE_H
+#endif //JNIMOSES_JMOSESFEATURE_H
