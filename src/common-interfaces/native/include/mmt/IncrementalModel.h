@@ -36,8 +36,9 @@ namespace mmt {
          *
          * An update always comes with an identifier consisting in a stream-id, the source identifier, and
          * a sequential id that identifies the sentence pair within the sequence. Within a particular stream,
-         * a newer update has always a higher sequential id of an older one; furthermore the updates delivery
-         * ensures that you will always receive increasing number of ids within the same stream.
+         * a newer update has always a higher sequential id of an older one. However it is possible to receive
+         * and update with an id that is lower than the current newest value for a particular stream; in
+         * this case the model must recognize this situation and discard the update.
          *
          * On the contrary, there are no guarantees for sequential ids with different stream-id:
          * a sequential id is valid only within its stream.
