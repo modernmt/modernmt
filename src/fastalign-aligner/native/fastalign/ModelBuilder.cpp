@@ -9,11 +9,11 @@
 #include "DiagonalAlignment.h"
 #include "ModelBuilder.h"
 
-using namespace fastalign;
+using namespace mmt;
+using namespace mmt::fastalign;
 
-
-struct PairHash {
-    size_t operator()(const pair<uint16_t, uint16_t> &x) const {
+struct LengthPairHash {
+    size_t operator()(const pair<length_t, length_t> &x) const {
         return (size_t) ((x.first << 16) | ((x.second) & 0xffff));
     }
 };
@@ -27,9 +27,9 @@ ModelBuilder::ModelBuilder(Options options) : mean_srclen_multiplier(options.mea
                                               variational_bayes(options.variational_bayes),
                                               alpha(options.alpha),
                                               use_null(options.use_null),
-                                              threads((options.threads == 0) ? thread::hardware_concurrency()
-                                                                             : options.threads),
-                                              buffer_size(options.buffer_size) {
+                                              buffer_size(options.buffer_size),
+                                              threads((options.threads == 0) ? (int) thread::hardware_concurrency()
+                                                                             : options.threads) {
     if (variational_bayes && alpha <= 0.0)
         throw invalid_argument("Parameter 'alpha' must be greather than 0");
 
@@ -41,15 +41,15 @@ void ModelBuilder::setListener(ModelBuilder::Listener *listener) {
 }
 
 void
-ModelBuilder::AllocateTTableSpace(ttable_t &table, const std::unordered_map<uint32_t, std::vector<uint32_t>> &values,
-                                  const uint32_t sourceWordMaxValue) {
+ModelBuilder::AllocateTTableSpace(ttable_t &table, const unordered_map<wid_t, vector<wid_t>> &values,
+                                  const wid_t sourceWordMaxValue) {
     if (table.size() <= sourceWordMaxValue)
         table.resize(sourceWordMaxValue + 1);
 
 #pragma omp parallel for schedule(dynamic)
     for (size_t bucket = 0; bucket < values.bucket_count(); ++bucket) {
         for (auto row_ptr = values.begin(bucket); row_ptr != values.end(bucket); ++row_ptr) {
-            uint32_t sourceWord = row_ptr->first;
+            wid_t sourceWord = row_ptr->first;
 
             for (auto targetWord = row_ptr->second.begin(); targetWord != row_ptr->second.end(); ++targetWord)
                 table[sourceWord][*targetWord] = 0;
@@ -58,15 +58,15 @@ ModelBuilder::AllocateTTableSpace(ttable_t &table, const std::unordered_map<uint
 }
 
 void ModelBuilder::InitialPass(const Corpus &corpus, double *n_target_tokens, ttable_t &ttable,
-                               vector<pair<pair<uint16_t, uint16_t>, size_t>> *size_counts) {
+                               vector<pair<pair<length_t, length_t>, size_t>> *size_counts) {
     CorpusReader reader(corpus);
 
-    unordered_map<pair<uint16_t, uint16_t>, size_t, PairHash> size_counts_;
+    unordered_map<pair<length_t, length_t>, size_t, LengthPairHash> size_counts_;
 
-    unordered_map<word, vector<word>> buffer;
-    word maxSourceWord = 0;
+    unordered_map<wid_t, vector<wid_t>> buffer;
+    wid_t maxSourceWord = 0;
     size_t buffer_items = 0;
-    sentence src, trg;
+    vector<wid_t> src, trg;
 
     while (reader.Read(src, trg)) {
         if (is_reverse)
@@ -76,7 +76,7 @@ void ModelBuilder::InitialPass(const Corpus &corpus, double *n_target_tokens, tt
 
         if (use_null) {
             for (size_t idxf = 0; idxf < trg.size(); ++idxf) {
-                buffer[kNullWord].push_back(trg[idxf]);
+                buffer[kAlignerNullWord].push_back(trg[idxf]);
             }
 
             buffer_items += trg.size();
@@ -97,7 +97,7 @@ void ModelBuilder::InitialPass(const Corpus &corpus, double *n_target_tokens, tt
             buffer.clear();
         }
 
-        ++size_counts_[make_pair<uint16_t, uint16_t>((uint16_t) trg.size(), (uint16_t) src.size())];
+        ++size_counts_[make_pair<length_t, length_t>((length_t) trg.size(), (length_t) src.size())];
     }
 
     for (auto p = size_counts_.begin(); p != size_counts_.end(); ++p) {
@@ -132,7 +132,7 @@ Model *ModelBuilder::Build(const Corpus &corpus, const string &model_filename) {
 
     if (listener) listener->Begin();
 
-    vector<pair<pair<uint16_t, uint16_t>, size_t>> size_counts;
+    vector<pair<pair<length_t, length_t>, size_t>> size_counts;
     double n_target_tokens = 0;
 
     ttable_t stagingArea;
@@ -165,8 +165,8 @@ Model *ModelBuilder::Build(const Corpus &corpus, const string &model_filename) {
                 double mod_feat = 0;
 #pragma omp parallel for reduction(+:mod_feat)
                 for (size_t i = 0; i < size_counts.size(); ++i) {
-                    const pair<uint16_t, uint16_t> &p = size_counts[i].first;
-                    for (uint16_t j = 1; j <= p.first; ++j)
+                    const pair<length_t, length_t> &p = size_counts[i].first;
+                    for (length_t j = 1; j <= p.first; ++j)
                         mod_feat += size_counts[i].second *
                                     DiagonalAlignment::ComputeDLogZ(j, p.first, p.second, model->diagonal_tension);
                 }
@@ -217,7 +217,7 @@ inline double digamma(double x) {
 void ModelBuilder::NormalizeTTable(ttable_t &table, double alpha) {
 #pragma omp parallel for schedule(dynamic)
     for (size_t i = 0; i < table.size(); ++i) {
-        unordered_map<word, double> &row = table[i];
+        unordered_map<wid_t, double> &row = table[i];
         double row_norm = 0;
 
         for (auto cell = row.begin(); cell != row.end(); ++cell)

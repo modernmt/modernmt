@@ -3,30 +3,31 @@
 //
 
 #include "javah/eu_modernmt_aligner_fastalign_FastAlign.h"
-#include "jniutils.h"
 #include "fastalign/Model.h"
+#include <mmt/jniutil.h>
 #include <omp.h>
 
 using namespace std;
-using namespace fastalign;
+using namespace mmt;
+using namespace mmt::fastalign;
 
-inline void ParseSentence(JNIEnv *jvm, jintArray jarray, sentence &outSentence) {
-    size_t size = (size_t) jvm->GetArrayLength(jarray);
-    outSentence.reserve(size);
+inline void ParseSentence(JNIEnv *jvm, jintArray jarray, vector<wid_t> &outSentence) {
+    jsize size = jvm->GetArrayLength(jarray);
+    outSentence.reserve((size_t) size);
 
     jint *array = jvm->GetIntArrayElements(jarray, NULL);
     for (jsize i = 0; i < size; i++)
-        outSentence.push_back((word) array[i]);
+        outSentence.push_back((wid_t) array[i]);
     jvm->ReleaseIntArrayElements(jarray, array, 0);
 }
 
-inline jintArray AlignmentToArray(JNIEnv *jvm, alignment align) {
+inline jintArray AlignmentToArray(JNIEnv *jvm, alignment_t align) {
     jsize hsize = (jsize) align.size();
     jsize size = (jsize) (hsize * 2);
 
     jint *buffer = new jint[size];
     for (jsize i = 0; i < hsize; i++) {
-        pair<word, word> &pair = align[i];
+        pair<length_t, length_t> &pair = align[i];
         buffer[i] = pair.first;
         buffer[i + hsize] = pair.second;
     }
@@ -64,11 +65,11 @@ Java_eu_modernmt_aligner_fastalign_FastAlign_align___3I_3I(JNIEnv *jvm, jobject 
                                                            jintArray jtarget) {
     Model *model = jni_gethandle<Model>(jvm, jself);
 
-    sentence source, target;
+    vector<wid_t> source, target;
     ParseSentence(jvm, jsource, source);
     ParseSentence(jvm, jtarget, target);
 
-    alignment align = model->ComputeAlignment(source, target);
+    alignment_t align = model->ComputeAlignment(source, target);
 
     return AlignmentToArray(jvm, align);
 }
@@ -84,21 +85,21 @@ Java_eu_modernmt_aligner_fastalign_FastAlign_align___3_3I_3_3I_3_3I(JNIEnv *jvm,
     Model *model = jni_gethandle<Model>(jvm, jself);
     jsize length = jvm->GetArrayLength(jsources);
 
-    vector<pair<sentence, sentence>> batch;
+    vector<pair<vector<wid_t>, vector<wid_t>>> batch;
     batch.reserve((size_t) length);
 
     for (jsize i = 0; i < length; i++) {
-        sentence source, target;
+        vector<wid_t> source, target;
         ParseSentence(jvm, (jintArray) jvm->GetObjectArrayElement(jsources, i), source);
         ParseSentence(jvm, (jintArray) jvm->GetObjectArrayElement(jtargets, i), target);
 
-        batch.push_back(pair<sentence, sentence>(source, target));
+        batch.push_back(pair<vector<wid_t>, vector<wid_t>>(source, target));
     }
 
-    vector<alignment> alignments;
+    vector<alignment_t> alignments;
     model->ComputeAlignments(batch, alignments);
 
-    for (jsize i = 0; i < alignments.size(); i++) {
+    for (jsize i = 0; i < ((jsize) alignments.size()); i++) {
         jintArray alignment = AlignmentToArray(jvm, alignments[i]);
         jvm->SetObjectArrayElement(joutput, i, alignment);
     }

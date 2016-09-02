@@ -7,44 +7,56 @@
 
 #include <string>
 #include <fstream>
-#include "Model.h"
+#include <sstream>
+#include <mmt/sentence.h>
 
 using namespace std;
 
-namespace fastalign {
+namespace mmt {
+    namespace fastalign {
 
-    class Corpus {
-        friend class CorpusReader;
-    public:
-        Corpus(const string &sourceFilePath, const string &targetFilePath);
+        class Corpus {
+            friend class CorpusReader;
 
-        static void ParseLine(const string &line, vector<word> &output);
+        public:
+            Corpus(const string &sourceFilePath, const string &targetFilePath) : sourcePath(sourceFilePath),
+                                                                                 targetPath(targetFilePath) {};
 
-    private:
-        const string sourcePath;
-        const string targetPath;
-    };
+        private:
+            const string sourcePath;
+            const string targetPath;
+        };
 
-    class CorpusReader {
-    public:
-        CorpusReader(const Corpus &corpus);
+        class CorpusReader {
+        public:
+            CorpusReader(const Corpus &corpus);
 
-        bool Read(sentence &outSource, sentence &outTarget);
+            bool Read(vector<wid_t> &outSource, vector<wid_t> &outTarget);
 
-        bool Read(vector<pair<sentence, sentence>> &outBuffer, size_t limit);
+            bool Read(vector<pair<vector<wid_t>, vector<wid_t>>> &outBuffer, size_t limit);
 
-        bool ReadLine(string &outSource, string &outTarget);
+            bool ReadLine(string &outSource, string &outTarget);
 
-        bool ReadLines(vector<pair<string, string>> &outBuffer, size_t limit);
+            bool ReadLines(vector<pair<string, string>> &outBuffer, size_t limit);
 
-    private:
-        bool drained;
+            static inline void ParseLine(const string &line, vector<wid_t> &output) {
+                output.clear();
 
-        std::ifstream source;
-        std::ifstream target;
-    };
+                std::stringstream stream(line);
+                wid_t word;
 
+                while (stream >> word)
+                    output.push_back(word);
+            }
+
+        private:
+            bool drained;
+
+            ifstream source;
+            ifstream target;
+        };
+
+    }
 }
-
 
 #endif //FASTALIGN_CORPUS_H

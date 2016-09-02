@@ -6,19 +6,40 @@
 #define MMT_COMMON_INTERFACES_ALIGNER_H
 
 #include <mmt/sentence.h>
+#include <mmt/aligner/AlignerModel.h>
 
 using namespace std;
 
 namespace mmt {
 
-    typedef vector<pair<length_t, length_t>> alignment_t;
+    enum SymmetrizationStrategy {
+        GrowDiagonalFinalAndStrategy = 1,
+        GrowDiagonalStrategy = 2,
+        IntersectionStrategy = 3,
+        UnionStrategy = 4
+    };
 
     class Aligner {
     public:
 
-        virtual alignment_t ComputeAlignment(const vector<wid_t> &source, const vector<wid_t> &target) = 0;
+        virtual alignment_t GetAlignment(const vector<wid_t> &source, const vector<wid_t> &target,
+                                         SymmetrizationStrategy strategy = GrowDiagonalFinalAndStrategy) = 0;
 
-        virtual void ComputeAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch, vector<alignment_t> &outAlignments) = 0;
+        virtual alignment_t GetForwardAlignment(const vector<wid_t> &source, const vector<wid_t> &target) = 0;
+
+        virtual alignment_t GetBackwardAlignment(const vector<wid_t> &source, const vector<wid_t> &target) = 0;
+
+        virtual void GetForwardAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch,
+                                          vector<alignment_t> &outAlignments) = 0;
+
+        virtual void GetBackwardAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch,
+                                           vector<alignment_t> &outAlignments) = 0;
+
+        virtual void
+        GetAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch, vector<alignment_t> &outAlignments,
+                      SymmetrizationStrategy strategy = GrowDiagonalFinalAndStrategy) = 0;
+
+        virtual ~Aligner() {};
 
     };
 }

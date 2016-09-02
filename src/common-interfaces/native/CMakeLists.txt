@@ -10,7 +10,7 @@ set(SOURCE_FILES
 
         include/mmt/vocabulary/Vocabulary.h
         junk.cpp
-        )
+        include/mmt/aligner/AlignerModel.h)
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 #add_library(${PROJECT_NAME} INTERFACE)

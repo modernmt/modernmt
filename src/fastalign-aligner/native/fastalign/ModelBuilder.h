@@ -12,84 +12,90 @@
 
 using namespace std;
 
-namespace fastalign {
+namespace mmt {
+    namespace fastalign {
 
-    struct Options {
-        double mean_srclen_multiplier = 1.0;
-        bool is_reverse;
-        int iterations = 5;
-        bool favor_diagonal = true;
-        double prob_align_null = 0.08;
-        double initial_diagonal_tension = 4.0;
-        bool optimize_tension = true;
-        bool variational_bayes = true;
-        double alpha = 0.01;
-        bool use_null = true;
-        int threads = 0; // Default is number of CPUs
-        size_t buffer_size = 10000;
+        struct Options {
+            double mean_srclen_multiplier = 1.0;
+            bool is_reverse;
+            int iterations = 5;
+            bool favor_diagonal = true;
+            double prob_align_null = 0.08;
+            double initial_diagonal_tension = 4.0;
+            bool optimize_tension = true;
+            bool variational_bayes = true;
+            double alpha = 0.01;
+            bool use_null = true;
+            int threads = 0; // Default is number of CPUs
+            size_t buffer_size = 10000;
 
-        Options(bool is_reverse = false) : is_reverse(is_reverse) {};
-    };
-
-    typedef int BuilderStep;
-
-    static const BuilderStep kBuilderStepSetup = 1;
-    static const BuilderStep kBuilderStepAligning = 2;
-    static const BuilderStep kBuilderStepOptimizingDiagonalTension = 3;
-    static const BuilderStep kBuilderStepNormalizing = 4;
-    static const BuilderStep kBuilderStepPruning = 5;
-    static const BuilderStep kBuilderStepStoringModel = 6;
-
-    class ModelBuilder {
-    public:
-
-        class Listener {
-        public:
-            virtual void Begin() = 0;
-            virtual void IterationBegin(int iteration) = 0;
-            virtual void Begin(const BuilderStep step, int iteration) = 0;
-            virtual void End(const BuilderStep step, int iteration) = 0;
-            virtual void IterationEnd(int iteration) = 0;
-            virtual void End() = 0;
+            Options(bool is_reverse = false) : is_reverse(is_reverse) {};
         };
 
-        ModelBuilder(Options options = Options());
+        typedef int BuilderStep;
 
-        void setListener(Listener *listener);
+        static const BuilderStep kBuilderStepSetup = 1;
+        static const BuilderStep kBuilderStepAligning = 2;
+        static const BuilderStep kBuilderStepOptimizingDiagonalTension = 3;
+        static const BuilderStep kBuilderStepNormalizing = 4;
+        static const BuilderStep kBuilderStepPruning = 5;
+        static const BuilderStep kBuilderStepStoringModel = 6;
 
-        Model *Build(const Corpus &corpus, const string &model_filename);
+        class ModelBuilder {
+        public:
 
-    private:
-        const double mean_srclen_multiplier;
-        const bool is_reverse;
-        const int iterations;
-        const bool favor_diagonal;
-        const double prob_align_null;
-        const bool optimize_tension;
-        const bool variational_bayes;
-        const double alpha;
-        const bool use_null;
-        const size_t buffer_size;
-        const int threads;
+            class Listener {
+            public:
+                virtual void Begin() = 0;
 
-        Listener *listener;
+                virtual void IterationBegin(int iteration) = 0;
 
-        Model *model;
+                virtual void Begin(const BuilderStep step, int iteration) = 0;
 
-        void AllocateTTableSpace(ttable_t &table, const std::unordered_map<uint32_t, std::vector<uint32_t>> &values,
-                                 const uint32_t sourceWordMaxValue);
+                virtual void End(const BuilderStep step, int iteration) = 0;
 
-        void SwapTTables(ttable_t &source, ttable_t &destination);
+                virtual void IterationEnd(int iteration) = 0;
 
-        void ClearTTable(ttable_t &table);
+                virtual void End() = 0;
+            };
 
-        void InitialPass(const Corpus &corpus, double *n_target_tokens, ttable_t &ttable,
-                         vector<pair<pair<uint16_t, uint16_t>, size_t>> *size_counts);
+            ModelBuilder(Options options = Options());
 
-        void NormalizeTTable(ttable_t &table, double alpha = 0);
-    };
+            void setListener(Listener *listener);
 
+            Model *Build(const Corpus &corpus, const string &model_filename);
+
+        private:
+            const double mean_srclen_multiplier;
+            const bool is_reverse;
+            const int iterations;
+            const bool favor_diagonal;
+            const double prob_align_null;
+            const bool optimize_tension;
+            const bool variational_bayes;
+            const double alpha;
+            const bool use_null;
+            const size_t buffer_size;
+            const int threads;
+
+            Listener *listener;
+
+            Model *model;
+
+            void AllocateTTableSpace(ttable_t &table, const unordered_map<wid_t, vector<wid_t>> &values,
+                                     const wid_t sourceWordMaxValue);
+
+            void SwapTTables(ttable_t &source, ttable_t &destination);
+
+            void ClearTTable(ttable_t &table);
+
+            void InitialPass(const Corpus &corpus, double *n_target_tokens, ttable_t &ttable,
+                             vector<pair<pair<length_t, length_t>, size_t>> *size_counts);
+
+            void NormalizeTTable(ttable_t &table, double alpha = 0);
+        };
+
+    }
 }
-
 
 #endif //FASTALIGN_MODELBUILDER_H

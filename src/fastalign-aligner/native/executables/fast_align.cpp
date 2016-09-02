@@ -20,7 +20,8 @@
 #include <sys/time.h>
 
 using namespace std;
-using namespace fastalign;
+using namespace mmt;
+using namespace mmt::fastalign;
 
 string source_input;
 string target_input;
@@ -153,7 +154,7 @@ private:
     }
 };
 
-void printAlignment(vector<alignment> &alignments) {
+void printAlignment(vector<alignment_t> &alignments) {
     for (auto a = alignments.begin(); a != alignments.end(); ++a) {
         for (size_t i = 0; i < a->size(); ++i) {
             if (i > 0)
@@ -168,7 +169,7 @@ void printAlignment(vector<alignment> &alignments) {
 void print(const Corpus &corpus, Model *model, size_t buffer_size) {
     CorpusReader reader(corpus);
     vector<pair<string, string>> batch;
-    vector<alignment> alignments;
+    vector<alignment_t> alignments;
 
     while (reader.ReadLines(batch, buffer_size)) {
         model->ComputeAlignments(batch, alignments);

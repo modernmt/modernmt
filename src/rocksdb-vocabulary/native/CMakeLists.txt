@@ -4,7 +4,7 @@ project(rocksvb)
 # where to find cmake_modules modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -O3")
 
 set(SOURCE_FILES
         vocabulary/IdGenerator.cpp vocabulary/IdGenerator.h

@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include <cassert>
 #include "IdGenerator.h"
 
 using namespace std;
@@ -28,7 +29,8 @@ static wid_t read(FILE *file) {
     fseek(file, 0, SEEK_SET);
 
     uint8_t buffer[4];
-    fread((void *) buffer, sizeof(uint8_t), 4, file);
+    size_t read_bytes = fread((void *) buffer, sizeof(uint8_t), 4, file);
+    assert(read_bytes == 4);
 
     wid_t id = buffer[0] & 0xFFU;
     id += (buffer[1] & 0xFFU) << 8;
