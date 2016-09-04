@@ -11,6 +11,9 @@ set(SOURCE_FILES
         fastalign/ModelBuilder.h fastalign/ModelBuilder.cpp
         fastalign/Corpus.h fastalign/Corpus.cpp
         fastalign/DiagonalAlignment.h
+        fastalign/FastAligner.cpp fastalign/FastAligner.h
+
+        symal/SymAlignment.cpp symal/SymAlignment.h
 
         javah/eu_modernmt_aligner_fastalign_FastAlign.h java/eu_modernmt_aligner_fastalign_FastAlign.cpp)
 
@@ -38,6 +41,6 @@ include_directories(${JNI_INCLUDE_DIRS})
 find_package(Tcmalloc REQUIRED)
 target_link_libraries(${PROJECT_NAME} ${Tcmalloc_LIBRARIES})
 
-## OpenMP
+# OpenMP
 find_package(OpenMP REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
