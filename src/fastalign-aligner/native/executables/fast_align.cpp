@@ -168,10 +168,10 @@ void printAlignment(vector<alignment_t> &alignments) {
 
 void print(const Corpus &corpus, Model *model, size_t buffer_size) {
     CorpusReader reader(corpus);
-    vector<pair<string, string>> batch;
+    vector<pair<vector<wid_t>, vector<wid_t>>> batch;
     vector<alignment_t> alignments;
 
-    while (reader.ReadLines(batch, buffer_size)) {
+    while (reader.Read(batch, buffer_size)) {
         model->ComputeAlignments(batch, alignments);
 
         printAlignment(alignments);

@@ -144,19 +144,19 @@ Model *ModelBuilder::Build(const Corpus &corpus, const string &model_filename) {
     for (int iter = 0; iter < iterations; ++iter) {
         if (listener) listener->IterationBegin(iter + 1);
 
-        AlignmentStats stats;
+        double emp_feat = 0.0;
 
         CorpusReader reader(corpus);
-        vector<pair<string, string>> batch;
+        vector<pair<vector<wid_t>, vector<wid_t>>> batch;
 
         if (listener) listener->Begin(kBuilderStepAligning, iter + 1);
-        while (reader.ReadLines(batch, buffer_size)) {
-            model->ComputeAlignments(batch, &stagingArea, &stats);
+        while (reader.Read(batch, buffer_size)) {
+            emp_feat += model->ComputeAlignments(batch, &stagingArea, NULL);
             batch.clear();
         }
         if (listener) listener->End(kBuilderStepAligning, iter + 1);
 
-        stats.emp_feat /= n_target_tokens;
+        emp_feat /= n_target_tokens;
 
         if (favor_diagonal && optimize_tension) {
             if (listener) listener->Begin(kBuilderStepOptimizingDiagonalTension, iter + 1);
@@ -171,7 +171,7 @@ Model *ModelBuilder::Build(const Corpus &corpus, const string &model_filename) {
                                     DiagonalAlignment::ComputeDLogZ(j, p.first, p.second, model->diagonal_tension);
                 }
                 mod_feat /= n_target_tokens;
-                model->diagonal_tension += (stats.emp_feat - mod_feat) * 20.0;
+                model->diagonal_tension += (emp_feat - mod_feat) * 20.0;
                 if (model->diagonal_tension <= 0.1) model->diagonal_tension = 0.1;
                 if (model->diagonal_tension > 14) model->diagonal_tension = 14;
             }
