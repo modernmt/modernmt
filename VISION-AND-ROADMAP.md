@@ -33,7 +33,7 @@ Goal: with 2 billion words perform better than commercially available technology
 * 0.14 - Incremental Training (Online Learning) Beta Released
 * 0.14 - Adding more languages and quality to tokenization, now 45.
 
-* 0.15 - Integration within the Matecat CAT Tool. Able to adapt to the corrections and TM used be the translator.
+* 0.15 - Integration within the Matecat CAT Tool. Able to adapt to the corrections and TM used by the translator.
 
 * 0.16 - Releasing commercial quality baseline engines for the top 5 languages.
 
