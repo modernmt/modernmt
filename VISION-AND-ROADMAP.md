@@ -16,7 +16,7 @@ We know that the challenge is big, but the reward is potentially so big that we 
 
 We aggregated most of the people that created the current state of the art machine translation technology, added great engineers and a few challengers to rethink the problem.
 
-If you fell you can contribute you are welcome to join.
+If you feel you can contribute you are welcome to join.
 
 # What? - MMT Dirty Hands Todo
 
@@ -30,21 +30,12 @@ Items should be in order of priority.
 
 Goal: with 2 billion words perform better than commercially available technology.
 
-* 0.12 - Quality measure against Google Translate and Microsoft integrated in the training process. Measure first!
-* 0.12 - Allowing monolingual LM data input
-* 0.12 - Porting Matecat/Moses tag management to MMT.
-
+* 0.14 - Incremental Training (Online Learning) Beta Released
 * 0.14 - Adding more languages and quality to tokenization, now 45.
-* 0.14 - More accurate context score and suffix sampling.  
 
-* 0.15 - Better coverage with a new suffix sampling. 
-* 0.15 - Adding Optional Human Evaluation and Tuning (BLEU or PEE are very imprecise metrics, few man hours of evaluation can deliver better results). 10 Euro for evaluation via A/B test vs Google Translate, 100 Euro for human tuning via nbest selection.
+* 0.15 - Integration within the Matecat CAT Tool. Able to adapt to the corrections and TM used be the translator.
 
-* 0.15 - Extended Log. See https://github.com/ModernMT/MMT/issues/87
-
-* 0.20 - Adding Data for the background models. EN-IT 2 billion words parallel, 5 billion words monolingual.
-* 0.30 - Adding Data for the background models. Adding Top 10 languages.
-* 0.40 - Adding multi-sentence-level Context as a feature. 
+* 0.16 - Releasing Commercial quality baseline engines for the top 5 languages.
 
 ## Speed
 
@@ -52,14 +43,14 @@ Goal: with 2 billion words perform better than commercially available technology
 
 Goal: Initial training to stay below 8 hours for each 1B word (36 cores). Make incremental training available.
 
-- Better multi-treads tokenization. +15% in total training speed
-- Better LM parallelization. +10% in total training speed.
+All done :) Waiting for new goals here.
 
 #### Translate
 
 Goal: with 2 billion words stay below 400ms for the average sentence length (15 words).
 
-* Faster sampling on Suffix, especially for frequent terms.
+Now 1s-5s
+
 * Pruning of models. 
 * Better caching.
 * Fine tuning the max number LM requests per translation and other parameters.
@@ -68,12 +59,11 @@ Goal: with 2 billion words stay below 400ms for the average sentence length (15 
 
 ### Research
 
-Need Marcello and Philipp input.
+All done :) Need Marcello and Philipp input.
 
 ### Industry
 
-- Provide more data to the users as baseline. Large enterprises want to customize MT with their data but still having a base model. MS translation Hub does this well. 
-- Add support TMX input.
+All done :) Need Marco and Alessandro input.
 
 # Donate
 
