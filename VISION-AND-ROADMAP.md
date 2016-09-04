@@ -35,7 +35,7 @@ Goal: with 2 billion words perform better than commercially available technology
 
 * 0.15 - Integration within the Matecat CAT Tool. Able to adapt to the corrections and TM used be the translator.
 
-* 0.16 - Releasing Commercial quality baseline engines for the top 5 languages.
+* 0.16 - Releasing commercial quality baseline engines for the top 5 languages.
 
 ## Speed
 
