@@ -94,7 +94,6 @@ class SuffixArraysPhraseTable(MosesFeature):
 
         self._cleaner = _CorpusCleaner()
 
-        self._symal_bin = os.path.join(cli.BIN_DIR, 'moses', 'symal')
         self._symal2mam_bin = os.path.join(cli.BIN_DIR, 'moses', 'symal2mam')
         self._mttbuild_bin = os.path.join(cli.BIN_DIR, 'moses', 'mtt-build')
         self._mmlexbuild_bin = os.path.join(cli.BIN_DIR, 'moses', 'mmlex-build')
