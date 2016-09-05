@@ -1,9 +1,9 @@
 package eu.modernmt.facade;
 
-import eu.modernmt.engine.Engine;
+import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
-import eu.modernmt.aligner.symal.SymmetrizationStrategy;
 import eu.modernmt.cluster.error.SystemShutdownException;
+import eu.modernmt.engine.Engine;
 import eu.modernmt.facade.exceptions.validation.LanguagePairNotSupportedException;
 import eu.modernmt.facade.operations.ProjectTagsOperation;
 import eu.modernmt.model.Languages;
@@ -22,7 +22,7 @@ public class TagFacade {
         return project(sentence, translation, sourceLanguage, targetLanguage, null);
     }
 
-    public Translation project(String sentence, String translation, Locale sourceLanguage, Locale targetLanguage, SymmetrizationStrategy strategy) throws AlignerException, LanguagePairNotSupportedException {
+    public Translation project(String sentence, String translation, Locale sourceLanguage, Locale targetLanguage, Aligner.SymmetrizationStrategy strategy) throws AlignerException, LanguagePairNotSupportedException {
         boolean inverted = isLanguagesInverted(sourceLanguage, targetLanguage);
         ProjectTagsOperation operation = new ProjectTagsOperation(sentence, translation, inverted, strategy);
         try {

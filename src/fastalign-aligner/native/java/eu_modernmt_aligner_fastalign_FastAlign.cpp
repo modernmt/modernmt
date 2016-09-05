@@ -3,7 +3,7 @@
 //
 
 #include "javah/eu_modernmt_aligner_fastalign_FastAlign.h"
-#include "fastalign/Model.h"
+#include "fastalign/FastAligner.h"
 #include <mmt/jniutil.h>
 #include <omp.h>
 
@@ -51,25 +51,25 @@ Java_eu_modernmt_aligner_fastalign_FastAlign_instantiate(JNIEnv *jvm, jobject js
     omp_set_num_threads(threads);
 
     string modelPath = jni_jstrtostr(jvm, jmodel);
-    return (jlong) Model::Open(modelPath);
+    return (jlong) FastAligner::Open(modelPath);
 }
 
 
 /*
  * Class:     eu_modernmt_aligner_fastalign_FastAlign
  * Method:    align
- * Signature: ([I[I)[I
+ * Signature: ([I[II)[I
  */
 JNIEXPORT jintArray JNICALL
-Java_eu_modernmt_aligner_fastalign_FastAlign_align___3I_3I(JNIEnv *jvm, jobject jself, jintArray jsource,
-                                                           jintArray jtarget) {
-    Model *model = jni_gethandle<Model>(jvm, jself);
+Java_eu_modernmt_aligner_fastalign_FastAlign_align___3I_3II(JNIEnv *jvm, jobject jself, jintArray jsource,
+                                                            jintArray jtarget, jint jstrategy) {
+    FastAligner *aligner = jni_gethandle<FastAligner>(jvm, jself);
 
     vector<wid_t> source, target;
     ParseSentence(jvm, jsource, source);
     ParseSentence(jvm, jtarget, target);
 
-    alignment_t align = model->ComputeAlignment(source, target);
+    alignment_t align = aligner->GetAlignment(source, target, (SymmetrizationStrategy) jstrategy);
 
     return AlignmentToArray(jvm, align);
 }
@@ -77,12 +77,13 @@ Java_eu_modernmt_aligner_fastalign_FastAlign_align___3I_3I(JNIEnv *jvm, jobject 
 /*
  * Class:     eu_modernmt_aligner_fastalign_FastAlign
  * Method:    align
- * Signature: ([[I[[I[[I)V
+ * Signature: ([[I[[I[[II)V
  */
 JNIEXPORT void JNICALL
-Java_eu_modernmt_aligner_fastalign_FastAlign_align___3_3I_3_3I_3_3I(JNIEnv *jvm, jobject jself, jobjectArray jsources,
-                                                                    jobjectArray jtargets, jobjectArray joutput) {
-    Model *model = jni_gethandle<Model>(jvm, jself);
+Java_eu_modernmt_aligner_fastalign_FastAlign_align___3_3I_3_3I_3_3II(JNIEnv *jvm, jobject jself, jobjectArray jsources,
+                                                                     jobjectArray jtargets, jobjectArray joutput,
+                                                                     jint jstrategy) {
+    FastAligner *aligner = jni_gethandle<FastAligner>(jvm, jself);
     jsize length = jvm->GetArrayLength(jsources);
 
     vector<pair<vector<wid_t>, vector<wid_t>>> batch;
@@ -97,7 +98,7 @@ Java_eu_modernmt_aligner_fastalign_FastAlign_align___3_3I_3_3I_3_3I(JNIEnv *jvm,
     }
 
     vector<alignment_t> alignments;
-    model->ComputeAlignments(batch, alignments);
+    aligner->GetAlignments(batch, alignments, (SymmetrizationStrategy) jstrategy);
 
     for (jsize i = 0; i < ((jsize) alignments.size()); i++) {
         jintArray alignment = AlignmentToArray(jvm, alignments[i]);
@@ -112,7 +113,7 @@ Java_eu_modernmt_aligner_fastalign_FastAlign_align___3_3I_3_3I_3_3I(JNIEnv *jvm,
  */
 JNIEXPORT jlong JNICALL Java_eu_modernmt_aligner_fastalign_FastAlign_dispose(JNIEnv *jvm, jobject jself, jlong ptr) {
     if (ptr != 0) {
-        Model *instance = (Model *) ptr;
+        FastAligner *instance = (FastAligner *) ptr;
         delete instance;
     }
 

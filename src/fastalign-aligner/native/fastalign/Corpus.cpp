@@ -12,9 +12,14 @@ CorpusReader::CorpusReader(const Corpus &corpus) : drained(false), source(corpus
 }
 
 bool CorpusReader::Read(vector<wid_t> &outSource, vector<wid_t> &outTarget) {
-    string sourceLine, targetLine;
-    if (!ReadLine(sourceLine, targetLine))
+    if (drained)
         return false;
+
+    string sourceLine, targetLine;
+    if (!getline(source, sourceLine) || !getline(target, targetLine)) {
+        drained = true;
+        return false;
+    }
 
     ParseLine(sourceLine, outSource);
     ParseLine(targetLine, outTarget);
@@ -26,41 +31,25 @@ bool CorpusReader::Read(vector<pair<vector<wid_t>, vector<wid_t>>> &outBuffer, s
     if (drained)
         return false;
 
+    vector<pair<string, string>> batch;
     for (size_t i = 0; i < limit; ++i) {
-        vector<wid_t> source, target;
-
-        if (!Read(source, target))
+        string sourceLine, targetLine;
+        if (!getline(source, sourceLine) || !getline(target, targetLine)) {
+            drained = true;
             break;
+        }
 
-        outBuffer.push_back(pair<vector<wid_t>, vector<wid_t>>(source, target));
+        batch.push_back(pair<string, string>(sourceLine, targetLine));
     }
 
-    return true;
-}
-
-bool CorpusReader::ReadLine(string &outSource, string &outTarget) {
-    if (drained)
+    if (batch.empty())
         return false;
 
-    if (!getline(source, outSource) || !getline(target, outTarget)) {
-        drained = true;
-        return false;
-    }
-
-    return true;
-}
-
-bool CorpusReader::ReadLines(vector<pair<string, string>> &outBuffer, size_t limit) {
-    if (drained)
-        return false;
-
-    for (size_t i = 0; i < limit; ++i) {
-        string source, target;
-
-        if (!ReadLine(source, target))
-            break;
-
-        outBuffer.push_back(pair<string, string>(source, target));
+    outBuffer.resize(batch.size());
+#pragma omp parallel for schedule(dynamic)
+    for (size_t i = 0; i < batch.size(); ++i) {
+        ParseLine(batch[i].first, outBuffer[i].first);
+        ParseLine(batch[i].second, outBuffer[i].second);
     }
 
     return true;

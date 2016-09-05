@@ -18,6 +18,14 @@
 #include <stdlib.h>
 #include <fastalign/ModelBuilder.h>
 #include <sys/time.h>
+#include <fastalign/FastAligner.h>
+
+const string kPathSeparator =
+#ifdef _WIN32
+        "\\";
+#else
+        "/";
+#endif
 
 using namespace std;
 using namespace mmt;
@@ -34,7 +42,6 @@ struct option options[] = {
         {"target",     required_argument, NULL, 0},
         {"model",      required_argument, NULL, 0},
         {"threads",    optional_argument, NULL, 0},
-        {"reverse",    no_argument,       NULL, 0},
         {"iterations", optional_argument, NULL, 0},
         {0, 0, 0,                               0}
 };
@@ -44,7 +51,6 @@ void help(const char *name) {
          << "  -s: [REQ] Input source corpus\n"
          << "  -t: [REQ] Input target corpus\n"
          << "  -m: [REQ] Output model path\n"
-         << "  -r: Run alignment in reverse (condition on target and predict source)\n"
          << "  -I: number of iterations in EM training (default = 5)\n"
          << "  -n: Number of threads. (default = number of CPUs)\n";
 }
@@ -52,7 +58,7 @@ void help(const char *name) {
 bool InitCommandLine(int argc, char **argv) {
     while (true) {
         int oi;
-        int c = getopt_long(argc, argv, "s:t:m:rI:n:", options, &oi);
+        int c = getopt_long(argc, argv, "s:t:m:I:n:", options, &oi);
         if (c == -1) break;
 
         switch (c) {
@@ -64,9 +70,6 @@ bool InitCommandLine(int argc, char **argv) {
                 break;
             case 'm':
                 model_path = optarg;
-                break;
-            case 'r':
-                builderOptions.is_reverse = true;
                 break;
             case 'I':
                 builderOptions.iterations = atoi(optarg);
@@ -154,31 +157,28 @@ private:
     }
 };
 
-void printAlignment(vector<alignment_t> &alignments) {
-    for (auto a = alignments.begin(); a != alignments.end(); ++a) {
-        for (size_t i = 0; i < a->size(); ++i) {
-            if (i > 0)
-                cout << ' ';
-            cout << a->at(i).first << '-' << a->at(i).second;
-        }
+Model *train_forward() {
+    ProcessListener listener;
+    Corpus corpus(source_input, target_input);
 
-        cout << endl;
-    }
+    builderOptions.is_reverse = false;
+
+    ModelBuilder builder(builderOptions);
+    builder.setListener(&listener);
+
+    return builder.Build(corpus, model_path + kPathSeparator + FastAligner::kForwardModelFilename);
 }
 
-void print(const Corpus &corpus, Model *model, size_t buffer_size) {
-    CorpusReader reader(corpus);
-    vector<pair<string, string>> batch;
-    vector<alignment_t> alignments;
+Model *train_backward() {
+    ProcessListener listener;
+    Corpus corpus(source_input, target_input);
 
-    while (reader.ReadLines(batch, buffer_size)) {
-        model->ComputeAlignments(batch, alignments);
+    builderOptions.is_reverse = true;
 
-        printAlignment(alignments);
+    ModelBuilder builder(builderOptions);
+    builder.setListener(&listener);
 
-        alignments.clear();
-        batch.clear();
-    }
+    return builder.Build(corpus, model_path + kPathSeparator + FastAligner::kBackwardModelFilename);
 }
 
 int main(int argc, char **argv) {
@@ -187,13 +187,11 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    ProcessListener listener;
-    Corpus corpus(source_input, target_input);
+    cerr << "== Forward model training ==" << endl;
+    Model *forwardModel = train_forward();
+    delete forwardModel;
 
-    ModelBuilder builder(builderOptions);
-    builder.setListener(&listener);
-
-    Model *model = builder.Build(corpus, model_path);
-
-    print(corpus, model, builderOptions.buffer_size);
+    cerr << "== Backward model training ==" << endl;
+    Model *backwardModel = train_backward();
+    delete backwardModel;
 }

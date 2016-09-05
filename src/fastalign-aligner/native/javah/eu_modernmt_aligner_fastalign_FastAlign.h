@@ -18,18 +18,18 @@ JNIEXPORT jlong JNICALL Java_eu_modernmt_aligner_fastalign_FastAlign_instantiate
 /*
  * Class:     eu_modernmt_aligner_fastalign_FastAlign
  * Method:    align
- * Signature: ([I[I)[I
+ * Signature: ([I[II)[I
  */
-JNIEXPORT jintArray JNICALL Java_eu_modernmt_aligner_fastalign_FastAlign_align___3I_3I
-  (JNIEnv *, jobject, jintArray, jintArray);
+JNIEXPORT jintArray JNICALL Java_eu_modernmt_aligner_fastalign_FastAlign_align___3I_3II
+  (JNIEnv *, jobject, jintArray, jintArray, jint);
 
 /*
  * Class:     eu_modernmt_aligner_fastalign_FastAlign
  * Method:    align
- * Signature: ([[I[[I[[I)V
+ * Signature: ([[I[[I[[II)V
  */
-JNIEXPORT void JNICALL Java_eu_modernmt_aligner_fastalign_FastAlign_align___3_3I_3_3I_3_3I
-  (JNIEnv *, jobject, jobjectArray, jobjectArray, jobjectArray);
+JNIEXPORT void JNICALL Java_eu_modernmt_aligner_fastalign_FastAlign_align___3_3I_3_3I_3_3II
+  (JNIEnv *, jobject, jobjectArray, jobjectArray, jobjectArray, jint);
 
 /*
  * Class:     eu_modernmt_aligner_fastalign_FastAlign

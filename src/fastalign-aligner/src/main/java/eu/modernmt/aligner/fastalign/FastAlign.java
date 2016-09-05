@@ -30,26 +30,47 @@ public class FastAlign implements Aligner {
         }
     }
 
+    private SymmetrizationStrategy strategy = SymmetrizationStrategy.GROW_DIAGONAL_FINAL_AND;
     private long nativeHandle;
 
     public FastAlign(File model) throws IOException {
-        if (!model.isFile())
+        if (!model.isDirectory())
             throw new IOException("Invalid model path: " + model);
 
         this.nativeHandle = instantiate(model.getAbsolutePath(), Runtime.getRuntime().availableProcessors());
     }
 
-    private native long instantiate(String modelFile, int threads);
+    private native long instantiate(String modelDirectory, int threads);
+
+    @Override
+    public void setDefaultSymmetrizationStrategy(SymmetrizationStrategy strategy) {
+        this.strategy = strategy;
+    }
+
+    @Override
+    public SymmetrizationStrategy getDefaultSymmetrizationStrategy() {
+        return strategy;
+    }
 
     @Override
     public Alignment getAlignment(Sentence source, Sentence target) throws AlignerException {
-        return parse(align(getIds(source), getIds(target)));
+        return getAlignment(source, target, strategy);
     }
 
-    private native int[] align(int[] source, int[] target);
+    @Override
+    public Alignment getAlignment(Sentence source, Sentence target, SymmetrizationStrategy strategy) throws AlignerException {
+        return parse(align(getIds(source), getIds(target), toInt(strategy)));
+    }
+
+    private native int[] align(int[] source, int[] target, int strategy);
 
     @Override
     public Alignment[] getAlignments(List<Sentence> sources, List<Sentence> targets) throws AlignerException {
+        return getAlignments(sources, targets, strategy);
+    }
+
+    @Override
+    public Alignment[] getAlignments(List<Sentence> sources, List<Sentence> targets, SymmetrizationStrategy strategy) throws AlignerException {
         int[][] sourcesIds = new int[sources.size()][];
         int[][] targetsIds = new int[targets.size()][];
 
@@ -64,7 +85,7 @@ public class FastAlign implements Aligner {
         }
 
         int[][] result = new int[sourcesIds.length][];
-        align(sourcesIds, targetsIds, result);
+        align(sourcesIds, targetsIds, result, toInt(strategy));
 
         Alignment[] alignments = new Alignment[result.length];
 
@@ -74,7 +95,22 @@ public class FastAlign implements Aligner {
         return alignments;
     }
 
-    private native void align(int[][] sources, int[][] targets, int[][] result);
+    private native void align(int[][] sources, int[][] targets, int[][] result, int strategy);
+
+    private static int toInt(SymmetrizationStrategy strategy) {
+        switch (strategy) {
+            case GROW_DIAGONAL_FINAL_AND:
+                return 1;
+            case GROW_DIAGONAL:
+                return 2;
+            case INTERSECT:
+                return 3;
+            case UNION:
+                return 4;
+        }
+
+        return 0;
+    }
 
     @Override
     protected void finalize() throws Throwable {

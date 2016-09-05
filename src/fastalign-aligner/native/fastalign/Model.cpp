@@ -112,130 +112,107 @@ void Model::Prune(double threshold) {
     }
 }
 
-void Model::ComputeAlignments(const vector<pair<string, string>> &batch, ttable_t *outTable,
-                              AlignmentStats *outStats, vector<alignment_t> *outAlignments) {
-    vector<pair<vector<wid_t>, vector<wid_t>>> parsed_batch;
-    parsed_batch.resize(batch.size());
-
-#pragma omp parallel for schedule(dynamic)
-    for (size_t i = 0; i < batch.size(); ++i) {
-        CorpusReader::ParseLine(batch[i].first, parsed_batch[i].first);
-        CorpusReader::ParseLine(batch[i].second, parsed_batch[i].second);
-    }
-
-    ComputeAlignments(parsed_batch, outTable, outStats, outAlignments);
-}
-
-void
-Model::ComputeAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch, ttable_t *outTable, AlignmentStats *outStats,
-                         vector<alignment_t> *outAlignments) {
-    double emp_feat_ = 0.0;
-    double c0_ = 0.0;
-    double likelihood_ = 0.0;
+double Model::ComputeAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch, ttable_t *outTable,
+                                vector<alignment_t> *outAlignments) {
+    double emp_feat = 0.0;
 
     if (outAlignments)
         outAlignments->resize(batch.size());
 
-#pragma omp parallel for schedule(dynamic) reduction(+:emp_feat_,c0_,likelihood_)
-    for (size_t line_idx = 0; line_idx < batch.size(); ++line_idx) {
-        vector<wid_t> src = is_reverse ? batch[line_idx].second : batch[line_idx].first;
-        vector<wid_t> trg = is_reverse ? batch[line_idx].first : batch[line_idx].second;
+#pragma omp parallel for schedule(dynamic) reduction(+:emp_feat)
+    for (size_t i = 0; i < batch.size(); ++i) {
+        const pair<vector<wid_t>, vector<wid_t>> &p = batch[i];
+        emp_feat += ComputeAlignment(p.first, p.second, outTable, outAlignments ? &outAlignments->at(i) : NULL);
+    }
 
-        vector<double> probs(src.size() + 1);
-        alignment_t outAlignment;
+    return emp_feat;
+}
 
-        length_t src_size = (length_t) src.size();
-        length_t trg_size = (length_t) trg.size();
+double Model::ComputeAlignment(const vector<wid_t> &source, const vector<wid_t> &target, ttable_t *outTable,
+                               alignment_t *outAlignment) {
+    double emp_feat = 0.0;
 
-        for (length_t j = 0; j < trg_size; ++j) {
-            const wid_t &f_j = trg[j];
-            double sum = 0;
-            double prob_a_i = 1.0 / (src_size +
-                                     // uniform (model 1), Diagonal Alignment (distortion model)
-                                     // ****** DIFFERENT FROM LEXICAL TRANSLATION PROBABILITY *****
-                                     (use_null ? 1 : 0));
-            if (use_null) {
-                if (favor_diagonal)
-                    prob_a_i = prob_align_null;
-                probs[0] = GetProbability(kAlignerNullWord, f_j) * prob_a_i;
-                sum += probs[0];
-            }
+    const vector<wid_t> src = is_reverse ? target : source;
+    const vector<wid_t> trg = is_reverse ? source : target;
 
-            double az = 0;
+    vector<double> probs(src.size() + 1);
+
+    length_t src_size = (length_t) src.size();
+    length_t trg_size = (length_t) trg.size();
+
+    for (length_t j = 0; j < trg_size; ++j) {
+        const wid_t &f_j = trg[j];
+        double sum = 0;
+        double prob_a_i = 1.0 / (src_size +
+                                 // uniform (model 1), Diagonal Alignment (distortion model)
+                                 // ****** DIFFERENT FROM LEXICAL TRANSLATION PROBABILITY *****
+                                 (use_null ? 1 : 0));
+        if (use_null) {
             if (favor_diagonal)
-                az = DiagonalAlignment::ComputeZ(j + 1, trg_size, src_size, diagonal_tension) /
-                     (1. - prob_align_null);
-
-            for (length_t i = 1; i <= src_size; ++i) {
-                if (favor_diagonal) {
-                    prob_a_i = DiagonalAlignment::UnnormalizedProb(j + 1, i, trg_size, src_size, diagonal_tension) /
-                               az;
-                }
-                probs[i] = GetProbability(src[i - 1], f_j) * prob_a_i;
-                sum += probs[i];
-            }
-
-
-            if (use_null) {
-                double count = probs[0] / sum;
-                c0_ += count;
-
-                if (outTable) {
-#pragma omp atomic
-                    (*outTable)[kAlignerNullWord][f_j] += count;
-                }
-            }
-
-            if (outTable || outStats) {
-                for (length_t i = 1; i <= src_size; ++i) {
-                    const double p = probs[i] / sum;
-
-                    if (outTable) {
-#pragma omp atomic
-                        (*outTable)[src[i - 1]][f_j] += p;
-                    }
-
-                    if (outStats)
-                        emp_feat_ += DiagonalAlignment::Feature(j, i, trg_size, src_size) * p;
-                }
-            }
-
-
-            if (outAlignments) {
-                double max_p = -1;
-                int max_index = -1;
-                if (use_null) {
-                    max_index = 0;
-                    max_p = probs[0];
-                }
-
-                for (length_t i = 1; i <= src_size; ++i) {
-                    if (probs[i] > max_p) {
-                        max_index = i;
-                        max_p = probs[i];
-                    }
-                }
-
-                if (max_index > 0) {
-                    if (is_reverse)
-                        outAlignment.push_back(pair<wid_t, wid_t>(j, max_index - 1));
-                    else
-                        outAlignment.push_back(pair<wid_t, wid_t>(max_index - 1, j));
-                }
-            }
-
-
-            if (outStats)
-                likelihood_ += log(sum);
+                prob_a_i = prob_align_null;
+            probs[0] = GetProbability(kAlignerNullWord, f_j) * prob_a_i;
+            sum += probs[0];
         }
 
-        if (outAlignments)
-            (*outAlignments)[line_idx] = outAlignment;
+        double az = 0;
+        if (favor_diagonal)
+            az = DiagonalAlignment::ComputeZ(j + 1, trg_size, src_size, diagonal_tension) /
+                 (1. - prob_align_null);
+
+        for (length_t i = 1; i <= src_size; ++i) {
+            if (favor_diagonal) {
+                prob_a_i = DiagonalAlignment::UnnormalizedProb(j + 1, i, trg_size, src_size, diagonal_tension) /
+                           az;
+            }
+            probs[i] = GetProbability(src[i - 1], f_j) * prob_a_i;
+            sum += probs[i];
+        }
+
+
+        if (use_null) {
+            double count = probs[0] / sum;
+
+            if (outTable) {
+#pragma omp atomic
+                (*outTable)[kAlignerNullWord][f_j] += count;
+            }
+        }
+
+        for (length_t i = 1; i <= src_size; ++i) {
+            const double p = probs[i] / sum;
+
+            if (outTable) {
+#pragma omp atomic
+                (*outTable)[src[i - 1]][f_j] += p;
+            }
+
+            emp_feat += DiagonalAlignment::Feature(j, i, trg_size, src_size) * p;
+        }
+
+
+        if (outAlignment) {
+            double max_p = -1;
+            int max_index = -1;
+            if (use_null) {
+                max_index = 0;
+                max_p = probs[0];
+            }
+
+            for (length_t i = 1; i <= src_size; ++i) {
+                if (probs[i] > max_p) {
+                    max_index = i;
+                    max_p = probs[i];
+                }
+            }
+
+            if (max_index > 0) {
+                if (is_reverse)
+                    outAlignment->push_back(pair<wid_t, wid_t>(j, max_index - 1));
+                else
+                    outAlignment->push_back(pair<wid_t, wid_t>(max_index - 1, j));
+            }
+        }
     }
 
-    if (outStats) {
-        outStats->emp_feat += emp_feat_;
-        outStats->c0 += c0_;
-        outStats->likelihood += likelihood_;
-    }
+    return emp_feat;
 }

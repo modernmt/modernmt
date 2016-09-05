@@ -1,10 +1,8 @@
 package eu.modernmt.facade.operations;
 
-import eu.modernmt.engine.Engine;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
-import eu.modernmt.aligner.SymmetrizedAligner;
-import eu.modernmt.aligner.symal.SymmetrizationStrategy;
+import eu.modernmt.engine.Engine;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -28,10 +26,10 @@ public class ProjectTagsOperation extends Operation<Translation> {
 
     private String sentenceString;
     private String translationString;
-    private final SymmetrizationStrategy strategy;
+    private final Aligner.SymmetrizationStrategy strategy;
     private final boolean inverted;
 
-    public ProjectTagsOperation(String sentence, String translation, boolean inverted, SymmetrizationStrategy strategy) {
+    public ProjectTagsOperation(String sentence, String translation, boolean inverted, Aligner.SymmetrizationStrategy strategy) {
         this.sentenceString = sentence;
         this.translationString = translation;
         this.strategy = strategy;
@@ -65,15 +63,12 @@ public class ProjectTagsOperation extends Operation<Translation> {
         Sentence sentence = preprocessor.process(sentenceString);
         Sentence translation = targetPreprocessor.process(translationString);
 
-        if (this.strategy != null) {
-            if (aligner instanceof SymmetrizedAligner)
-                ((SymmetrizedAligner) aligner).setSymmetrizationStrategy(this.strategy);
-            else
-                throw new AlignerException("Symmetrization strategy specified but aligner is not an instance of " +
-                        "SymmetrizedAligner: " + aligner.getClass());
-        }
+        Alignment alignment;
 
-        Alignment alignment = aligner.getAlignment(sentence, translation);
+        if (strategy != null)
+            alignment = aligner.getAlignment(sentence, translation, strategy);
+        else
+            alignment = aligner.getAlignment(sentence, translation);
 
         if (this.inverted) {
             alignment = alignment.getInverse();

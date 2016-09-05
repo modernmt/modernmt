@@ -72,8 +72,7 @@ class WordAligner:
             raise NameError('Invalid Word Aligner type: ' + str(type_name))
 
     def align(self, corpus, langs, model_dir, working_dir='.', log_file=None):
-        if not os.path.isdir(working_dir):
-            fileutils.makedirs(working_dir, exist_ok=True)
+        raise NotImplementedError('Abstract method')
 
 
 class SuffixArraysPhraseTable(MosesFeature):
@@ -95,7 +94,6 @@ class SuffixArraysPhraseTable(MosesFeature):
 
         self._cleaner = _CorpusCleaner()
 
-        self._symal_bin = os.path.join(cli.BIN_DIR, 'moses', 'symal')
         self._symal2mam_bin = os.path.join(cli.BIN_DIR, 'moses', 'symal2mam')
         self._mttbuild_bin = os.path.join(cli.BIN_DIR, 'moses', 'mtt-build')
         self._mmlexbuild_bin = os.path.join(cli.BIN_DIR, 'moses', 'mmlex-build')
@@ -151,14 +149,8 @@ class SuffixArraysPhraseTable(MosesFeature):
                 for corpus in corpora:
                     dmp.write(str(corpus.name) + ' ' + str(corpus.count_lines()) + '\n')
 
-            # Create alignments in 'bal' file and symmetrize
-            bal_file = aligner.align(merged_corpus, langs, self._model, working_dir, log_file)
-
-            symal_file = os.path.join(working_dir, 'alignments.' + langs_suffix + '.symal')
-            symal_command = [self._symal_bin, '-a=g', '-d=yes', '-f=yes', '-b=yes']
-            with open(bal_file) as stdin:
-                with open(symal_file, 'w') as stdout:
-                    shell.execute(symal_command, stdin=stdin, stdout=stdout, stderr=log)
+            # Create Aligner models and align corpus
+            symal_file = aligner.align(merged_corpus, langs, self._model, working_dir, log_file)
 
             # Execute mtt-build
             mttbuild_command = self._get_mttbuild_command(mct_base, dmp_file, l1)
@@ -190,22 +182,17 @@ class FastAlign(WordAligner):
     def __init__(self):
         WordAligner.__init__(self)
 
-        self._align_bin = os.path.join(cli.BIN_DIR, 'fastalign', 'fast_align')
+        self._train_bin = os.path.join(cli.BIN_DIR, 'fastalign', 'fa_build')
+        self._align_bin = os.path.join(cli.BIN_DIR, 'fastalign', 'fa_align')
 
     def align(self, corpus, langs, model_dir, working_dir='.', log_file=None):
-        WordAligner.align(self, corpus, langs, working_dir, log_file)
+        if not os.path.isdir(working_dir):
+            fileutils.makedirs(working_dir, exist_ok=True)
 
-        l1 = langs[0]
-        l2 = langs[1]
-        corpus_name = 'corpus'
-        langs_suffix = l1 + '-' + l2
+        symal_file = os.path.join(working_dir, 'alignments.symal')
 
-        fwd_file = os.path.join(working_dir, corpus_name + '.' + langs_suffix + '.fwd')
-        bwd_file = os.path.join(working_dir, corpus_name + '.' + langs_suffix + '.bwd')
-        bal_file = os.path.join(working_dir, corpus_name + '.' + langs_suffix + '.bal')
-
-        corpus_l1 = corpus.get_file(l1)
-        corpus_l2 = corpus.get_file(l2)
+        corpus_l1 = corpus.get_file(langs[0])
+        corpus_l2 = corpus.get_file(langs[1])
 
         log = shell.DEVNULL
 
@@ -213,61 +200,16 @@ class FastAlign(WordAligner):
             if log_file is not None:
                 log = open(log_file, 'a')
 
-            # Create forward model
-            fwd_model = os.path.join(model_dir, 'model.align.fwd')
-            command = [self._align_bin, '-s', corpus_l1, '-t', corpus_l2, '-m', fwd_model, '-I', '4']
-            with open(fwd_file, 'w') as stdout:
-                shell.execute(command, stdout=stdout, stderr=log)
+            # Train model
+            command = [self._train_bin, '-s', corpus_l1, '-t', corpus_l2, '-m', model_dir, '-I', '4']
+            shell.execute(command, stderr=log)
 
-            # Create backward model
-            bwd_model = os.path.join(model_dir, 'model.align.bwd')
-            command = [self._align_bin, '-r', '-s', corpus_l1, '-t', corpus_l2, '-m', bwd_model, '-I', '4']
-            with open(bwd_file, 'w') as stdout:
+            # Align
+            command = [self._align_bin, '-s', corpus_l1, '-t', corpus_l2, '-m', model_dir, '-a', '1']
+            with open(symal_file, 'w') as stdout:
                 shell.execute(command, stdout=stdout, stderr=log)
-
         finally:
             if log_file is not None:
                 log.close()
 
-        encoder = _FastAlignBALEncoder(corpus, langs, fwd_file, bwd_file)
-        encoder.encode(bal_file)
-
-        return bal_file
-
-
-class _FastAlignBALEncoder:
-    def __init__(self, corpus, langs, fwd, bwd):
-        self._corpus_l1 = corpus.get_file(langs[0])
-        self._corpus_l2 = corpus.get_file(langs[1])
-        self._fwd = fwd
-        self._bwd = bwd
-
-    def encode(self, output):
-        files = []
-
-        try:
-            files.append(open(self._corpus_l1))
-            files.append(open(self._corpus_l2))
-            files.append(open(self._fwd))
-            files.append(open(self._bwd))
-            files.append(open(output, 'w'))
-
-            c1, c2, fwd, bwd, bal = files
-
-            for t1 in c1:
-                t1 = t1.strip().split()
-                t2 = c2.readline().strip().split()
-                a1 = self._alnvec(len(t1), bwd.readline().split(), 0)
-                a2 = self._alnvec(len(t2), fwd.readline().split(), 1)
-
-                print >> bal, 1
-                print >> bal, len(t2), ' '.join(t2), '#', ' '.join(["%d" % x for x in a2])
-                print >> bal, len(t1), ' '.join(t1), '#', ' '.join(["%d" % x for x in a1])
-        finally:
-            for f in files:
-                f.close()
-
-    @staticmethod
-    def _alnvec(slen, alinks, mode):
-        d = dict([(int(x[mode]), int(x[(mode + 1) % 2]) + 1) for x in [y.split('-') for y in alinks]])
-        return [d.get(i, 0) for i in xrange(slen)]
+        return symal_file

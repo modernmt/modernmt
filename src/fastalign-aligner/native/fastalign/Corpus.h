@@ -35,9 +35,11 @@ namespace mmt {
 
             bool Read(vector<pair<vector<wid_t>, vector<wid_t>>> &outBuffer, size_t limit);
 
-            bool ReadLine(string &outSource, string &outTarget);
+        private:
+            bool drained;
 
-            bool ReadLines(vector<pair<string, string>> &outBuffer, size_t limit);
+            ifstream source;
+            ifstream target;
 
             static inline void ParseLine(const string &line, vector<wid_t> &output) {
                 output.clear();
@@ -48,12 +50,6 @@ namespace mmt {
                 while (stream >> word)
                     output.push_back(word);
             }
-
-        private:
-            bool drained;
-
-            ifstream source;
-            ifstream target;
         };
 
     }
