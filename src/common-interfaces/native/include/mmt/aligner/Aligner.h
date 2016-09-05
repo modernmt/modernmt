@@ -13,7 +13,7 @@ using namespace std;
 namespace mmt {
 
     enum SymmetrizationStrategy {
-        GrowDiagonalFinalStrategy = 1,
+        GrowDiagonalFinalAndStrategy = 1,
         GrowDiagonalStrategy = 2,
         IntersectionStrategy = 3,
         UnionStrategy = 4
@@ -23,7 +23,7 @@ namespace mmt {
     public:
 
         virtual alignment_t GetAlignment(const vector<wid_t> &source, const vector<wid_t> &target,
-                                         SymmetrizationStrategy strategy = GrowDiagonalFinalStrategy) = 0;
+                                         SymmetrizationStrategy strategy = GrowDiagonalFinalAndStrategy) = 0;
 
         virtual alignment_t GetForwardAlignment(const vector<wid_t> &source, const vector<wid_t> &target) = 0;
 
@@ -37,7 +37,7 @@ namespace mmt {
 
         virtual void
         GetAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch, vector<alignment_t> &outAlignments,
-                      SymmetrizationStrategy strategy = GrowDiagonalFinalStrategy) = 0;
+                      SymmetrizationStrategy strategy = GrowDiagonalFinalAndStrategy) = 0;
 
         virtual ~Aligner() {};
 

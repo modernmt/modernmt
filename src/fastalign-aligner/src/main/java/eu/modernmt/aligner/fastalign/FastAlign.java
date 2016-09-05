@@ -30,7 +30,7 @@ public class FastAlign implements Aligner {
         }
     }
 
-    private SymmetrizationStrategy strategy = SymmetrizationStrategy.GROW_DIAGONAL_FINAL;
+    private SymmetrizationStrategy strategy = SymmetrizationStrategy.GROW_DIAGONAL_FINAL_AND;
     private long nativeHandle;
 
     public FastAlign(File model) throws IOException {
@@ -99,7 +99,7 @@ public class FastAlign implements Aligner {
 
     private static int toInt(SymmetrizationStrategy strategy) {
         switch (strategy) {
-            case GROW_DIAGONAL_FINAL:
+            case GROW_DIAGONAL_FINAL_AND:
                 return 1;
             case GROW_DIAGONAL:
                 return 2;

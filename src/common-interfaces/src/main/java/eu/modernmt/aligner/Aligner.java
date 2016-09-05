@@ -15,7 +15,7 @@ public interface Aligner extends Closeable {
         UNION,
         INTERSECT,
         GROW_DIAGONAL,
-        GROW_DIAGONAL_FINAL,
+        GROW_DIAGONAL_FINAL_AND,
     }
 
     void setDefaultSymmetrizationStrategy(SymmetrizationStrategy strategy);

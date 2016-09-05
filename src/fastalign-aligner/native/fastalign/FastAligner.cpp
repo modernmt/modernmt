@@ -48,7 +48,7 @@ FastAligner::GetAlignment(const vector<wid_t> &source, const vector<wid_t> &targ
     SymAlignment symmetrizer(source.size(), target.size());
 
     switch (strategy) {
-        case GrowDiagonalFinalStrategy:
+        case GrowDiagonalFinalAndStrategy:
             symmetrizer.Grow(forward, backward, true, true);
             break;
         case GrowDiagonalStrategy:
@@ -88,7 +88,7 @@ FastAligner::GetAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &bat
         alignment_t &backward = backwards[i];
 
         switch (strategy) {
-            case GrowDiagonalFinalStrategy:
+            case GrowDiagonalFinalAndStrategy:
                 symal.Grow(forward, backward, true, true);
                 break;
             case GrowDiagonalStrategy:

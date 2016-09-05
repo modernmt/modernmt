@@ -14,7 +14,7 @@ using namespace mmt::fastalign;
 string source_input;
 string target_input;
 string model_path;
-SymmetrizationStrategy strategy = GrowDiagonalFinalStrategy;
+SymmetrizationStrategy strategy = GrowDiagonalFinalAndStrategy;
 int threads = 0;
 
 struct option options[] = {
