@@ -21,7 +21,9 @@ namespace mmt {
             }
 
             ~SymAlignment() {
-                delete[] data;
+                delete[] m;
+                delete[] src_coverage;
+                delete[] trg_coverage;
             }
 
             void Reset(size_t source_length, size_t target_length);
@@ -39,43 +41,36 @@ namespace mmt {
             size_t source_length = 0;
             size_t target_length = 0;
 
-            size_t size = 0;
-            uint8_t *data = NULL;
+            uint8_t *m = NULL;
+            uint8_t *src_coverage = NULL;
+            uint8_t *trg_coverage = NULL;
 
-            inline size_t idx(size_t s, size_t t) const {
+            size_t m_size = 0;
+            size_t src_coverage_size = 0;
+            size_t trg_coverage_size = 0;
+
+            inline size_t idx(size_t s, size_t t) {
                 return s * target_length + t;
             }
 
             inline void Merge(const alignment_t &forward, const alignment_t &backward) {
-                for (auto it = forward.begin(); it != forward.end(); ++it) {
-                    data[idx(it->first, it->second)] |= 0x01;
-                }
+                for (auto it = forward.begin(); it != forward.end(); ++it)
+                    m[idx(it->first, it->second)] |= 0x01;
 
                 for (auto it = backward.begin(); it != backward.end(); ++it) {
-                    data[idx(it->first, it->second)] |= 0x02;
-                }
-            }
+                    size_t i = idx(it->first, it->second);
 
-            inline bool IsSourceWordAligned(size_t s) const {
-                s = s * target_length;
+                    m[i] |= 0x02;
 
-                for (size_t t = 0; t < target_length; ++t) {
-                    if ((data[s + t] & 0x07) > 2)
-                        return true;
+                    if ((m[i] & 0x03) == 0x03) {
+                        src_coverage[it->first] = 1;
+                        trg_coverage[it->second] = 1;
+                    }
                 }
 
-                return false;
             }
 
-            bool IsTargetWordAligned(size_t t) const {
-                for (size_t s = 0; s < source_length; ++s) {
-                    size_t i = s * target_length + t;
-                    if ((data[i] & 0x07) > 2)
-                        return true;
-                }
 
-                return false;
-            }
         };
 
     }

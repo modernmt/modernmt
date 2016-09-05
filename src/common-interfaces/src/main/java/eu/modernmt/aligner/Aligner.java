@@ -11,8 +11,23 @@ import java.util.List;
  */
 public interface Aligner extends Closeable {
 
+    enum SymmetrizationStrategy {
+        UNION,
+        INTERSECT,
+        GROW_DIAGONAL,
+        GROW_DIAGONAL_FINAL,
+    }
+
+    void setDefaultSymmetrizationStrategy(SymmetrizationStrategy strategy);
+
+    SymmetrizationStrategy getDefaultSymmetrizationStrategy();
+
     Alignment getAlignment(Sentence source, Sentence target) throws AlignerException;
 
     Alignment[] getAlignments(List<Sentence> sources, List<Sentence> targets) throws AlignerException;
+
+    Alignment getAlignment(Sentence source, Sentence target, SymmetrizationStrategy strategy) throws AlignerException;
+
+    Alignment[] getAlignments(List<Sentence> sources, List<Sentence> targets, SymmetrizationStrategy strategy) throws AlignerException;
 
 }

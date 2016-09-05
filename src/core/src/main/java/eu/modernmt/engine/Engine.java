@@ -1,7 +1,6 @@
 package eu.modernmt.engine;
 
 import eu.modernmt.aligner.Aligner;
-import eu.modernmt.aligner.SymmetrizedAligner;
 import eu.modernmt.aligner.fastalign.FastAlign;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.lucene.LuceneAnalyzer;
@@ -106,13 +105,7 @@ public class Engine implements Closeable {
                 if (aligner == null) {
                     try {
                         File modelDirectory = Paths.join(root, "models", "phrase_tables");
-                        File fwdModelFile = new File(modelDirectory, "model.align.fwd");
-                        File bwdModelFile = new File(modelDirectory, "model.align.bwd");
-
-                        FastAlign fwdModel = new FastAlign(fwdModelFile);
-                        FastAlign bwdModel = new FastAlign(bwdModelFile);
-
-                        aligner = new SymmetrizedAligner(fwdModel, bwdModel);
+                        aligner = new FastAlign(modelDirectory);
                     } catch (IOException e) {
                         throw new LazyLoadException(e);
                     }

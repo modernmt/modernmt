@@ -14,12 +14,14 @@ using namespace mmt::fastalign;
 string source_input;
 string target_input;
 string model_path;
+SymmetrizationStrategy strategy = GrowDiagonalFinalStrategy;
 int threads = 0;
 
 struct option options[] = {
         {"source",  required_argument, NULL, 0},
         {"target",  required_argument, NULL, 0},
         {"model",   required_argument, NULL, 0},
+        {"symal",   required_argument, NULL, 0},
         {"threads", optional_argument, NULL, 0},
         {0, 0, 0,                            0}
 };
@@ -29,13 +31,14 @@ void help(const char *name) {
          << "  -s: [REQ] Input source corpus\n"
          << "  -t: [REQ] Input target corpus\n"
          << "  -m: [REQ] Model path\n"
+         << "  -a: Symmetrization (1 = GrowDiagonalFinal, 2 = GrowDiagonal, 3 = Intersection, 4 = Union)\n"
          << "  -n: Number of threads. (default = number of CPUs)\n";
 }
 
 bool InitCommandLine(int argc, char **argv) {
     while (true) {
         int oi;
-        int c = getopt_long(argc, argv, "s:t:m:n:", options, &oi);
+        int c = getopt_long(argc, argv, "s:t:m:a:n:", options, &oi);
         if (c == -1) break;
 
         switch (c) {
@@ -51,12 +54,15 @@ bool InitCommandLine(int argc, char **argv) {
             case 'n':
                 threads = atoi(optarg);
                 break;
+            case 'a':
+                strategy = (SymmetrizationStrategy) atoi(optarg);
+                break;
             default:
                 return false;
         }
     }
 
-    return !source_input.empty() && !target_input.empty() && !model_path.empty();
+    return !source_input.empty() && !target_input.empty() && !model_path.empty() && (strategy > 0 && strategy < 5);
 }
 
 void printAlignment(vector<alignment_t> &alignments) {
@@ -86,7 +92,7 @@ int main(int argc, char **argv) {
     vector<alignment_t> alignments;
 
     while (reader.Read(batch, 10000)) {
-        aligner->GetAlignments(batch, alignments, GrowDiagonalStrategy);
+        aligner->GetAlignments(batch, alignments, strategy);
 
         printAlignment(alignments);
 
