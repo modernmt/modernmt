@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hazelcast xsi:schemaLocation="http://www.hazelcast.com/schema/config hazelcast-config-3.6.xsd"
+           xmlns="http://www.hazelcast.com/schema/config"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <group>
+        <name>eu.modernmt</name>
+        <password>20aef13f-6535-4f65-a281-2e3580af944b</password>
+    </group>
+
+    <properties>
+        <property name="hazelcast.rest.enabled">false</property>
+        <property name="hazelcast.shutdownhook.enabled">true</property>
+    </properties>
+
+    <network>
+      <public-address>${hazelcast.public_address}</public-address> 
+      <reuse-address>true</reuse-address>
+        <port auto-increment="false">0</port>
+        <outbound-ports>
+            <!--
+            Allowed port range when connecting to other nodes.
+            0 or * means use system provided port.
+            -->
+            <ports>0</ports>
+        </outbound-ports>
+        <join>
+            <multicast enabled="false"/>
+            <tcp-ip enabled="true"/>
+            <aws enabled="false"/>
+        </join>
+    </network>
+</hazelcast>
