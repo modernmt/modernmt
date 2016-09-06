@@ -21,13 +21,18 @@ __author__ = 'Davide Caroselli'
 DEFAULT_MMT_API_PORT = 8045
 DEFAULT_MMT_CLUSTER_PORTS = [5016, 5017]
 
-
 class MMTApi:
     DEFAULT_TIMEOUT = 60 * 60  # sec
 
-    def __init__(self, port):
-        self.port = port
-        self._url_template = 'http://localhost:{port}/{endpoint}'
+    def __init__(self, host="localhost", port=None):
+        if host[:7] == "http://":
+            host = host[7:]
+        if host.find(":") != -1:
+            host, port = host.split(":")
+        port = port if port else DEFAULT_MMT_API_PORT
+        self.port = int(port)
+        self.host = host
+        self._url_template = 'http://{host}:{port}/{endpoint}'
 
         logging.getLogger('requests').setLevel(1000)
         logging.getLogger('urllib3').setLevel(1000)
@@ -41,17 +46,17 @@ class MMTApi:
         return content['data'] if 'data' in content else None
 
     def _get(self, endpoint, params=None):
-        url = self._url_template.format(port=self.port, endpoint=endpoint)
+        url = self._url_template.format(host=self.host, port=self.port, endpoint=endpoint)
         r = requests.get(url, params=params, timeout=MMTApi.DEFAULT_TIMEOUT)
         return self._unpack(r)
 
     def _delete(self, endpoint):
-        url = self._url_template.format(port=self.port, endpoint=endpoint)
+        url = self._url_template.format(host=self.host, port=self.port, endpoint=endpoint)
         r = requests.delete(url, timeout=MMTApi.DEFAULT_TIMEOUT)
         return self._unpack(r)
 
     def _put(self, endpoint, json=None):
-        url = self._url_template.format(port=self.port, endpoint=endpoint)
+        url = self._url_template.format(host=self.host, port=self.port, endpoint=endpoint)
 
         data = headers = None
         if json is not None:
@@ -62,7 +67,7 @@ class MMTApi:
         return self._unpack(r)
 
     def _post(self, endpoint, json=None):
-        url = self._url_template.format(port=self.port, endpoint=endpoint)
+        url = self._url_template.format(host=self.host, port=self.port, endpoint=endpoint)
 
         data = headers = None
         if json is not None:
@@ -166,9 +171,10 @@ class ClusterNode(object):
         'ERROR': 9999,
     }
 
-    def __init__(self, engine, rest=True, api_port=None, cluster_ports=None, sibling=None, verbosity=None):
+    def __init__(self, engine, rest=True, host="localhost", api_port=None, cluster_ports=None,
+                 sibling=None, verbosity=None):
         self.engine = engine
-        self.api = MMTApi(api_port)
+        self.api = MMTApi(host=host, port=api_port)
 
         self._pidfile = os.path.join(engine.get_runtime_path(), 'node.pid')
 

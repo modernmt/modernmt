@@ -140,6 +140,7 @@ def show_weighs():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='MMT Server wrapper script for \'mert-moses.pl\' script.')
+    parser.add_argument('--host', '-H', dest='host', help 'MMT engine host(:port)', default='localhost')
     parser.add_argument('--port', '-p', dest='port', type=int, help='MMT engine port')
     parser.add_argument('--skip-context-analysis', dest='context_analysis', type=int,
                         help='if present, skip context analysis')
@@ -162,7 +163,7 @@ if __name__ == '__main__':
         parser.print_help()
         exit(1)
 
-    Api = MMTApi(args.port)
+    Api = MMTApi(host=args.host, port=args.port)
 
     if args.show_weights:
         # Show weights
