@@ -16,21 +16,28 @@ import java.util.Map;
  */
 public class VocabularyLookup extends TextProcessor<Sentence, Sentence> {
 
+    public static final String KEY_VOCABULARY = "VocabularyLookup.VOCABULARY"; // Default null
+    public static final String KEY_VOCABULARY_STORE_WORDS = "VocabularyLookup.VOCABULARY_STORE_WORDS"; // Default false
+
     public VocabularyLookup(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
         super(sourceLanguage, targetLanguage);
     }
 
     @Override
     public Sentence call(Sentence sentence, Map<String, Object> metadata) throws ProcessingException {
-        Vocabulary vocabulary = (Vocabulary) metadata.get(TextProcessor.KEY_VOCABULARY);
+        Vocabulary vocabulary = (Vocabulary) metadata.get(KEY_VOCABULARY);
 
-        if (vocabulary != null)
-            lookup(vocabulary, sentence);
+        if (vocabulary != null) {
+            Boolean storeWords = (Boolean) metadata.get(KEY_VOCABULARY_STORE_WORDS);
+            boolean putIfAbsent = storeWords != null && storeWords;
+
+            lookup(vocabulary, sentence, putIfAbsent);
+        }
 
         return sentence;
     }
 
-    private void lookup(Vocabulary vocabulary, Sentence sentence) {
+    private void lookup(Vocabulary vocabulary, Sentence sentence, boolean putIfAbsent) {
         Word[] words = sentence.getWords();
 
         if (words == null || words.length == 0)
@@ -40,7 +47,7 @@ public class VocabularyLookup extends TextProcessor<Sentence, Sentence> {
         for (int i = 0; i < line.length; i++)
             line[i] = words[i].getPlaceholder();
 
-        int[] ids = vocabulary.lookupLine(line, false);
+        int[] ids = vocabulary.lookupLine(line, putIfAbsent);
 
         HashMap<String, Integer> reverseVocabulary = new HashMap<>();
         long unseenWordsCounter = 0xFFFFFFFF;

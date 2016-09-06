@@ -12,6 +12,8 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import static eu.modernmt.processing.vocabulary.VocabularyLookup.KEY_VOCABULARY;
+
 /**
  * Created by davide on 23/08/16.
  */
@@ -23,7 +25,7 @@ public class VocabularyReverseLookup extends TextProcessor<Translation, Translat
 
     @Override
     public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
-        Vocabulary vocabulary = (Vocabulary) metadata.get(TextProcessor.KEY_VOCABULARY);
+        Vocabulary vocabulary = (Vocabulary) metadata.get(KEY_VOCABULARY);
 
         if (vocabulary != null)
             reverseLookup(vocabulary, translation);

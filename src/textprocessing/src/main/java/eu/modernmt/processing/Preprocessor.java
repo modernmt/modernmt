@@ -3,6 +3,7 @@ package eu.modernmt.processing;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.builder.XMLPipelineBuilder;
 import eu.modernmt.processing.concurrent.PipelineExecutor;
+import eu.modernmt.processing.vocabulary.VocabularyLookup;
 import eu.modernmt.vocabulary.Vocabulary;
 import org.apache.commons.io.IOUtils;
 
@@ -54,27 +55,46 @@ public class Preprocessor implements Closeable {
     }
 
     public List<Sentence> process(List<String> text) throws ProcessingException {
-        return this.executor.process(text, getMetadata());
+        return process(text, false);
     }
 
     public Sentence[] process(String[] text) throws ProcessingException {
-        return process(Arrays.asList(text)).toArray(new Sentence[text.length]);
+        return process(text, false);
     }
 
     public Sentence process(String text) throws ProcessingException {
-        return this.executor.process(text, getMetadata());
+        return process(text, false);
     }
 
     public void process(PipelineInputStream<String> input, PipelineOutputStream<Sentence> output) throws ProcessingException {
-        this.executor.process(input, output, getMetadata());
+        process(input, output, false);
     }
 
-    private HashMap<String, Object> getMetadata() {
+    public List<Sentence> process(List<String> text, boolean storeVocabularyWords) throws ProcessingException {
+        return this.executor.process(text, getMetadata(storeVocabularyWords));
+    }
+
+    public Sentence[] process(String[] text, boolean storeVocabularyWords) throws ProcessingException {
+        return process(Arrays.asList(text), storeVocabularyWords).toArray(new Sentence[text.length]);
+    }
+
+    public Sentence process(String text, boolean storeVocabularyWords) throws ProcessingException {
+        return this.executor.process(text, getMetadata(storeVocabularyWords));
+    }
+
+    public void process(PipelineInputStream<String> input, PipelineOutputStream<Sentence> output, boolean storeVocabularyWords) throws ProcessingException {
+        this.executor.process(input, output, getMetadata(storeVocabularyWords));
+    }
+
+    private HashMap<String, Object> getMetadata(boolean storeWords) {
         HashMap<String, Object> metadata = null;
 
         if (vocabulary != null) {
             metadata = new HashMap<>();
-            metadata.put(TextProcessor.KEY_VOCABULARY, vocabulary);
+            metadata.put(VocabularyLookup.KEY_VOCABULARY, vocabulary);
+
+            if (storeWords)
+                metadata.put(VocabularyLookup.KEY_VOCABULARY_STORE_WORDS, Boolean.TRUE);
         }
 
         return metadata;

@@ -7,7 +7,7 @@ import java.util.Map;
  */
 public interface DataStreamListener {
 
-    void updateReceived(Update update);
+    void updateReceived(Update update) throws Exception;
 
     Map<Integer, Long> getLatestSequentialNumbers();
 

@@ -8,8 +8,6 @@ import java.util.Map;
  */
 public abstract class TextProcessor<P, R> {
 
-    public static final String KEY_VOCABULARY = "TextProcessor.VOCABULARY"; // Default null
-
     public TextProcessor(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
     }
 

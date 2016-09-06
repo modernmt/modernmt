@@ -3,6 +3,7 @@ package eu.modernmt.processing;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.builder.XMLPipelineBuilder;
 import eu.modernmt.processing.concurrent.PipelineExecutor;
+import eu.modernmt.processing.vocabulary.VocabularyLookup;
 import eu.modernmt.vocabulary.Vocabulary;
 import org.apache.commons.io.IOUtils;
 
@@ -64,7 +65,7 @@ public class Postprocessor implements Closeable {
 
         if (vocabulary != null) {
             metadata = new HashMap<>();
-            metadata.put(TextProcessor.KEY_VOCABULARY, vocabulary);
+            metadata.put(VocabularyLookup.KEY_VOCABULARY, vocabulary);
         }
 
         return metadata;

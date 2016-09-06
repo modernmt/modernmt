@@ -62,8 +62,8 @@ class UpdateBatch implements Iterable<Update> {
             targets.add(value.getTargetSentence());
         }
 
-        List<Sentence> sourceSentences = sourcePreprocessor.process(sources);
-        List<Sentence> targetSentences = targetPreprocessor.process(targets);
+        List<Sentence> sourceSentences = sourcePreprocessor.process(sources, true);
+        List<Sentence> targetSentences = targetPreprocessor.process(targets, true);
 
         Alignment[] alignments = aligner.getAlignments(sourceSentences, targetSentences);
 
