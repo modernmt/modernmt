@@ -51,7 +51,8 @@ public class Engine implements Closeable {
 
     private Decoder decoder = null;
     private Aligner aligner = null;
-    private Preprocessor preprocessor = null;
+    private Preprocessor sourcePreprocessor = null;
+    private Preprocessor targetPreprocessor = null;
     private Postprocessor postprocessor = null;
     private ContextAnalyzer contextAnalyzer = null;
     private Vocabulary vocabulary = null;
@@ -116,12 +117,12 @@ public class Engine implements Closeable {
         return aligner;
     }
 
-    public Preprocessor getPreprocessor() {
-        if (preprocessor == null) {
+    public Preprocessor getSourcePreprocessor() {
+        if (sourcePreprocessor == null) {
             synchronized (this) {
-                if (preprocessor == null) {
+                if (sourcePreprocessor == null) {
                     try {
-                        preprocessor = new Preprocessor(getSourceLanguage(), getTargetLanguage(), getVocabulary());
+                        sourcePreprocessor = new Preprocessor(getSourceLanguage(), getTargetLanguage(), getVocabulary());
                     } catch (IOException e) {
                         throw new LazyLoadException(e);
                     }
@@ -129,7 +130,23 @@ public class Engine implements Closeable {
             }
         }
 
-        return preprocessor;
+        return sourcePreprocessor;
+    }
+
+    public Preprocessor getTargetPreprocessor() {
+        if (targetPreprocessor == null) {
+            synchronized (this) {
+                if (targetPreprocessor == null) {
+                    try {
+                        targetPreprocessor = new Preprocessor(getTargetLanguage(), getSourceLanguage(), getVocabulary());
+                    } catch (IOException e) {
+                        throw new LazyLoadException(e);
+                    }
+                }
+            }
+        }
+
+        return targetPreprocessor;
     }
 
     public Postprocessor getPostprocessor() {
@@ -207,7 +224,8 @@ public class Engine implements Closeable {
 
     @Override
     public void close() {
-        IOUtils.closeQuietly(preprocessor);
+        IOUtils.closeQuietly(sourcePreprocessor);
+        IOUtils.closeQuietly(targetPreprocessor);
         IOUtils.closeQuietly(postprocessor);
 
         IOUtils.closeQuietly(decoder);

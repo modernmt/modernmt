@@ -65,7 +65,7 @@ namespace mmt {
          *
          * @return an array of all the latest registered update ids, one for every stream.
          */
-        virtual std::vector<updateid_t> GetLastestUpdatesIdetifier() = 0;
+        virtual std::vector<updateid_t> GetLatestUpdatesIdentifier() = 0;
 
     };
 }

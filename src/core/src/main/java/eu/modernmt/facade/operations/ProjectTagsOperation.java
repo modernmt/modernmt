@@ -12,8 +12,6 @@ import eu.modernmt.processing.xml.XMLTagProjector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
-
 /**
  * Created by davide on 22/04/16.
  */
@@ -21,8 +19,6 @@ public class ProjectTagsOperation extends Operation<Translation> {
 
     private static final Logger logger = LogManager.getLogger(ProjectTagsOperation.class);
     private static final XMLTagProjector tagProjector = new XMLTagProjector();
-
-    private static Preprocessor targetPreprocessor = null;
 
     private String sentenceString;
     private String translationString;
@@ -40,19 +36,9 @@ public class ProjectTagsOperation extends Operation<Translation> {
     public Translation call() throws ProcessingException, AlignerException {
         Engine engine = getEngine();
         Aligner aligner = engine.getAligner();
-        Preprocessor preprocessor = engine.getPreprocessor();
 
-        if (targetPreprocessor == null) {
-            synchronized (ProjectTagsOperation.class) {
-                if (targetPreprocessor == null) {
-                    try {
-                        targetPreprocessor = new Preprocessor(engine.getTargetLanguage(), null, engine.getVocabulary());
-                    } catch (IOException e) {
-                        throw new ProcessingException("Unable to load target preprocessor", e);
-                    }
-                }
-            }
-        }
+        Preprocessor sourcePreprocessor = engine.getSourcePreprocessor();
+        Preprocessor targetPreprocessor = engine.getTargetPreprocessor();
 
         long beginTime = System.currentTimeMillis();
         long endTime;
@@ -60,7 +46,7 @@ public class ProjectTagsOperation extends Operation<Translation> {
         String sentenceString = this.inverted ? this.translationString : this.sentenceString;
         String translationString = this.inverted ? this.sentenceString : this.translationString;
 
-        Sentence sentence = preprocessor.process(sentenceString);
+        Sentence sentence = sourcePreprocessor.process(sentenceString);
         Sentence translation = targetPreprocessor.process(translationString);
 
         Alignment alignment;

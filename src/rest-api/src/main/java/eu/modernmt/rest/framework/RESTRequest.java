@@ -202,6 +202,14 @@ public class RESTRequest {
         }
     }
 
+    public int getPathParameterAsInt(String varname) throws TemplateException {
+        try {
+            return Integer.parseInt(getPathParameter(varname));
+        } catch (NumberFormatException e) {
+            throw new TemplateException(varname);
+        }
+    }
+
     public JsonObject getJSONObject() {
         if (jsonObject == null) {
             String json = getJSONContent();

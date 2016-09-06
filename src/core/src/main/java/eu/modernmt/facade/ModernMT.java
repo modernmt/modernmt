@@ -17,5 +17,6 @@ public class ModernMT {
     public static final ContextAnalyzerFacade context = new ContextAnalyzerFacade();
     public static final TagFacade tags = new TagFacade();
     public static final TrainingFacade training = new TrainingFacade();
+    public static final DomainFacade domain = new DomainFacade();
 
 }

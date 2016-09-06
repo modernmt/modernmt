@@ -45,7 +45,7 @@ public class TranslateOperation extends Operation<DecoderTranslation> {
     public DecoderTranslation call() throws ProcessingException {
         Engine engine = getEngine();
         Decoder decoder = engine.getDecoder();
-        Preprocessor preprocessor = engine.getPreprocessor();
+        Preprocessor preprocessor = engine.getSourcePreprocessor();
         Postprocessor postprocessor = engine.getPostprocessor();
 
         Sentence sentence = preprocessor.process(text);

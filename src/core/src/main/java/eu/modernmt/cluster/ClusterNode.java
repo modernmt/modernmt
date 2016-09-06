@@ -7,18 +7,19 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ITopic;
 import com.hazelcast.core.Message;
-import eu.modernmt.engine.Engine;
-import eu.modernmt.engine.LazyLoadException;
+import eu.modernmt.datastream.DataStreamManager;
 import eu.modernmt.cluster.error.BootstrapException;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.cluster.executor.DistributedCallable;
 import eu.modernmt.cluster.executor.DistributedExecutor;
 import eu.modernmt.cluster.executor.ExecutorDaemon;
 import eu.modernmt.cluster.storage.StorageService;
-import eu.modernmt.engine.config.EngineConfig;
-import eu.modernmt.engine.config.INIEngineConfigWriter;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
+import eu.modernmt.engine.Engine;
+import eu.modernmt.engine.LazyLoadException;
+import eu.modernmt.engine.config.EngineConfig;
+import eu.modernmt.engine.config.INIEngineConfigWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -83,11 +84,13 @@ public class ClusterNode {
     private final int dataPort;
     private final int capacity;
     private Engine engine;
+    private String uuid;
 
     private HazelcastInstance hazelcast;
     private ExecutorDaemon executorDaemon;
     private DistributedExecutor executor;
     private SessionManager sessionManager;
+    private DataStreamManager dataStreamManager;
     private ITopic<Map<String, float[]>> decoderWeightsTopic;
 
     public ClusterNode(int controlPort, int dataPort) {
@@ -113,6 +116,7 @@ public class ClusterNode {
 
         logger.info("Starting cluster");
         hazelcast = Hazelcast.newHazelcastInstance(config);
+        uuid = hazelcast.getCluster().getLocalMember().getUuid();
         logger.info("Cluster successfully started");
     }
 
@@ -137,6 +141,7 @@ public class ClusterNode {
             logger.info("Joining cluster");
 
             hazelcast = Hazelcast.newHazelcastInstance(config);
+            uuid = hazelcast.getCluster().getLocalMember().getUuid();
 
             int members = hazelcast.getCluster().getMembers().size();
             logger.info("Cluster successfully joined with " + members + "members");
@@ -160,7 +165,8 @@ public class ClusterNode {
             engine.getAligner();
             engine.getDecoder();
             engine.getContextAnalyzer();
-            engine.getPreprocessor();
+            engine.getSourcePreprocessor();
+            engine.getTargetPreprocessor();
             engine.getPostprocessor();
         } catch (LazyLoadException e) {
             throw new BootstrapException(e.getCause());
@@ -171,6 +177,13 @@ public class ClusterNode {
         sessionManager = new SessionManager(hazelcast, event -> engine.getDecoder().closeSession(event.getOldValue()));
         decoderWeightsTopic = hazelcast.getTopic(ClusterConstants.DECODER_WEIGHTS_TOPIC_NAME);
         decoderWeightsTopic.addMessageListener(this::onDecoderWeightsChanged);
+
+        try {
+            dataStreamManager = new DataStreamManager(uuid, engine);
+            dataStreamManager.connect(); // TODO: should read host and ports from config
+        } catch (IOException e) {
+            throw new BootstrapException(e);
+        }
 
         logger.info("Node bootstrap completed, all models loaded");
     }
@@ -205,6 +218,10 @@ public class ClusterNode {
         }
     }
 
+    public DataStreamManager getDataStreamManager() {
+        return dataStreamManager;
+    }
+
     public SessionManager getSessionManager() {
         return sessionManager;
     }
@@ -229,5 +246,4 @@ public class ClusterNode {
             unit.timedJoin(shutdownThread, timeout);
         return !shutdownThread.isAlive();
     }
-
 }
