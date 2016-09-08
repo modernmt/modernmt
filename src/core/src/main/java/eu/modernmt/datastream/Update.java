@@ -29,5 +29,5 @@ public class Update {
         this.streamId = streamId;
         this.sequentialId = sequentialId;
     }
-    
+
 }

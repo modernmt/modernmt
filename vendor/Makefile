@@ -17,7 +17,7 @@ MMT_INSTALL_LIB	:= $(MMT_BUILD_DIR)/lib
 MMT_INSTALL_BIN	:= $(MMT_BUILD_DIR)/bin
 MMT_INSTALL_RES	:= $(MMT_BUILD_DIR)/res
 
-all: __moses __rocksdb
+all: __rocksdb __moses
 
 install: __install_init __moses_install __rocksdb_install __paoding_install
 
@@ -56,7 +56,7 @@ KENLM_EXES		:= lmplz build_binary
 __moses: 
 	@echo "Building Moses..."
 	@mkdir -p $(MOSES_BUILD_DIR)
-	@cd $(MOSES_BUILD_DIR); cmake $(MOSES_HOME) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$(MOSES_BUILD_DIR)" -Wno-dev
+	@cd $(MOSES_BUILD_DIR); cmake $(MOSES_HOME) -DUSE_ROCKSLM=1 -DROCKSDB_ROOT=/home/ubuntu/workspace/ModernMT/vendor/rocksdb/ -DROCKSLM_ROOT=/home/ubuntu/workspace/RocksLM/build/ -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$(MOSES_BUILD_DIR)" -Wno-dev
 	@cd $(MOSES_BUILD_DIR); make -j$(NPROCS)
 	@echo "SUCCESS (Moses)"
 	
