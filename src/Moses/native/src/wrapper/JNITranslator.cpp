@@ -16,7 +16,7 @@ using namespace Moses;
 JNITranslator::
 JNITranslator(uint32_t numThreads)
     : m_threadPool(new Moses::ThreadPool(numThreads)), m_sessionCache(new SessionCache()) {
-
+  (*m_sessionCache)[0].scope.reset(new ContextScope(StaticData::Instance().GetAllWeightsNew()));
 }
 
 JNITranslator::
@@ -42,19 +42,22 @@ create_session(const std::map<std::string, float> &contextWeights,
     session.scope->SetFeatureWeights(fw);
   }
 
+  assert(session.id != 1);
   return session.id;
 }
 
 Session const &
 JNITranslator::
 get_session(uint64_t session_id) const {
+  std::cerr << __FILE__ << ":" << __LINE__ << " SESSION ID IS " << session_id << std::endl;
   return m_sessionCache->at((uint32_t) session_id);
 }
 
 void
 JNITranslator::
 delete_session(uint64_t const session_id) {
-  return m_sessionCache->erase((uint32_t) session_id);
+  // never delete session 0 
+  if (session_id) m_sessionCache->erase((uint32_t) session_id);
 }
 
 void
@@ -77,13 +80,15 @@ execute(TranslationRequest const& paramList,
   boost::condition_variable cond;
   boost::mutex mut;
   boost::shared_ptr<JNITranslationRequest> task;
-  bool have_session = (paramList.sessionId != 0);
+  bool need_session = (paramList.sessionId == 0 && paramList.contextWeights.size());
   TranslationRequest request = paramList;
 
-  // no session? create one on the fly.
-  if(!have_session)
-    request.sessionId = create_session(request.contextWeights);
-
+  // need a session? create one on the fly.
+  if(need_session)
+    {
+      request.sessionId = create_session(request.contextWeights);
+    }
+  
   task = JNITranslationRequest::create(this, request, cond, mut);
   m_threadPool->Submit(task);
   boost::unique_lock<boost::mutex> lock(mut);
@@ -92,7 +97,7 @@ execute(TranslationRequest const& paramList,
 
   *retvalP = task->GetRetData();
 
-  if(!have_session) {
+  if(need_session) {
     delete_session(request.sessionId);
     retvalP->session = 0; // pretend that nothing happened
   }
