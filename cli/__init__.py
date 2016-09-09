@@ -22,10 +22,18 @@ os.environ['LD_LIBRARY_PATH'] = LIB_DIR
 os.environ['LC_ALL'] = 'en_US.UTF-8'
 os.environ['LANG'] = 'en_US.UTF-8'
 
+if not 'MMT_HAZELCAST_PUBLIC_ADDRESS' in os.environ:
+    import subprocess
+    ip = subprocess.check_output(["hostname","-I"]).strip().split()[0]
+    os.environ['MMT_HAZELCAST_PUBLIC_ADDRESS'] = ip
 
 def mmt_javamain(main_class, args=None, hserr_path=None, remote_debug=False):
-    command = ['java', '-cp', MMT_JAR, '-Dmmt.home=' + MMT_ROOT, '-Djava.library.path=' + LIB_DIR, main_class]
-
+    command = ['java', '-cp', MMT_JAR,
+               '-Dmmt.home=' + MMT_ROOT,
+               '-Djava.library.path=' + LIB_DIR,
+               '-Dhazelcast.public_address=' + os.environ['MMT_HAZELCAST_PUBLIC_ADDRESS'],
+               main_class]
+    
     if remote_debug:
         command.insert(1, '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005')
 

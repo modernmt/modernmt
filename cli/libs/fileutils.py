@@ -2,6 +2,7 @@ import errno
 import os
 import shutil
 import subprocess
+import psutil
 from contextlib import contextmanager
 
 __author__ = 'Davide Caroselli'
@@ -79,9 +80,11 @@ def meminfo():
 
 
 def free():
-    """real available RAM in bytes (excluding disk cache)"""
-    mi = meminfo()
-    return mi['MemFree'] + mi['Buffers'] + mi['Cached']
+    # output = subprocess.Popen(['free', '-b'], stdout=subprocess.PIPE).communicate()[0]
+    # available = output.split('\n')[2].split()[-1]
+    # return int(available)
+    ## the output of free differs between OS versions. Better to use psutil here
+    return psutil.virtual_memory().available
 
 
 def merge(srcs, dest, buffer_size=10 * 1024 * 1024, delimiter=None):
@@ -91,12 +94,3 @@ def merge(srcs, dest, buffer_size=10 * 1024 * 1024, delimiter=None):
                 shutil.copyfileobj(source, blob, buffer_size)
             if delimiter is not None:
                 blob.write(delimiter)
-
-
-@contextmanager
-def chdir(path):
-    """Context Manager for chdir() that returns to the previous working directory afterwards"""
-    wd = os.getcwd()
-    os.chdir(path)
-    yield
-    os.chdir(wd)

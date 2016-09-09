@@ -153,6 +153,9 @@ class InteractiveExecutor(Executor):
 def main():
     parser = argparse.ArgumentParser(description='Simple translation script to query MMT.')
 
+    parser.add_argument('--server', '-s', metavar='server(:port)', help="MMT server(:port) to use",
+                        default="localhost")
+    
     # Context arguments
     parser.add_argument('--context', metavar='CONTEXT', dest='context',
                         help='A string to be used as translation context')
@@ -174,12 +177,12 @@ def main():
                         help='The destination file for the alignments, default is stdout')
 
     # Mixed arguments
-    parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
-                        default=None)
+    # parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
+    # default=None)
     parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
                         help='the public available REST Api port. (default is {port})'
                         .format(port=DEFAULT_MMT_API_PORT), default=None, type=int)
-    parser.add_argument('--batch', action='store_true', dest='batch', default=False,
+    parser.add_argument('--batch', '-b', action='store_true', dest='batch', default=False,
                         help='if set, the script will read the whole stdin before send translations to MMT.'
                              'This can be used to execute translation in parallel for a faster translation. ')
 
@@ -198,8 +201,7 @@ def main():
             raise CLIArgsException('alignment is not yet supported')
 
         # Create Api
-        api = MMTApi(args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT)
-
+        api = MMTApi(host=args.server, port=args.api_port)
         executor = BatchExecutor(api, args) if args.batch else InteractiveExecutor(api, args)
 
         while 1:
