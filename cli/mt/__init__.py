@@ -1,4 +1,5 @@
 import os
+import shutil
 import xml.sax
 from multiprocessing import Lock
 from operator import attrgetter
@@ -119,6 +120,9 @@ class BilingualCorpus:
     def get_folder(self):
         raise NotImplementedError('Abstract method')
 
+    def copy(self, folder, suffixes=None):
+        raise NotImplementedError('Abstract method')
+
     def __str__(self):
         return self.name + '(' + ','.join(self.langs) + ')'
 
@@ -151,6 +155,11 @@ class _FileParallelCorpus(BilingualCorpus):
                     self._lines_count = fileutils.linecount(self.get_file(self.langs[0]))
 
         return self._lines_count
+
+    def copy(self, folder, suffixes=None):
+        for lang, file in self._lang2file.iteritems():
+            suffix = suffixes[lang] if suffixes else ''
+            shutil.copy(file, os.path.join(folder, os.path.basename(file) + suffix))
 
 
 class _TMXContentReader(xml.sax.handler.ContentHandler):
@@ -199,6 +208,10 @@ class _TMXCorpus(BilingualCorpus):
 
     def count_lines(self):
         raise NotImplementedError('Count lines not supported for TMX')
+
+    def copy(self, folder, suffixes=None):
+        suffix = suffixes['tmx'] if suffixes else ''
+        shutil.copy(self._tmx_file, os.path.join(folder, os.path.basename(self._tmx_file) + suffix))
 
     def __str__(self):
         return self.name + '[' + ','.join(self.langs) + ']'

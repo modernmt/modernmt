@@ -17,11 +17,11 @@ MMT_INSTALL_LIB	:= $(MMT_BUILD_DIR)/lib
 MMT_INSTALL_BIN	:= $(MMT_BUILD_DIR)/bin
 MMT_INSTALL_RES	:= $(MMT_BUILD_DIR)/res
 
-all: __moses __fastalign
+all: __moses __rocksdb
 
-install: __install_init __moses_install __fastalign_install __paoding_install
+install: __install_init __moses_install __rocksdb_install __paoding_install
 
-clean: __moses_clean __fastalign_clean
+clean: __moses_clean __rocksdb_clean
 
 res: __res_init __paoding_res __opennlp_res
 
@@ -34,6 +34,7 @@ __install_init:
 
 __res_init:
 	@mkdir -p $(MMT_INSTALL_RES)
+
 
 # ==========================================
 #  MODULE: Moses decoder
@@ -79,39 +80,6 @@ __moses_clean:
 
 
 # ==========================================
-#  MODULE: FastAlign
-# ==========================================
-
-FA_HOME			:= $(VENDOR_DIR)/fastalign
-FA_BUILD_DIR	:= $(FA_HOME)/build
-FA_LIB_DIR		:= $(FA_BUILD_DIR)/lib
-FA_BIN_DIR		:= $(FA_BUILD_DIR)/bin
-
-FA_INSTALL		:= $(MMT_INSTALL_BIN)/fastalign
-FA_EXES			:= fast_align
-FA_LIBS			:= libfastalign
-
-__fastalign: 
-	@echo "Building FastAlign..."
-	@mkdir -p $(FA_BUILD_DIR)
-	@cd $(FA_BUILD_DIR); cmake $(FA_HOME) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$(FA_BUILD_DIR)" -Wno-dev
-	@cd $(FA_BUILD_DIR); make -j$(NPROCS)
-	@echo "SUCCESS (FastAlign)"
-	
-__fastalign_install:
-	@echo "Installing FastAlign..."
-	@mkdir -p $(FA_INSTALL)
-	$(foreach exe,$(FA_EXES),cp $(FA_BIN_DIR)/$(exe) $(FA_INSTALL)/$(exe);)
-	$(foreach lib,$(FA_LIBS),cp -r $(FA_LIB_DIR)/$(lib)* $(MMT_INSTALL_LIB)/;)
-	@echo "SUCCESS (FastAlign)"
-
-__fastalign_clean:
-	rm -rf $(FA_BUILD_DIR)
-	rm -rf $(FA_INSTALL)
-	rm -f $(foreach lib,$(FA_LIBS),$(MMT_INSTALL_LIB)/$(lib)*)
-
-
-# ==========================================
 #  MODULE: Paoding Analysis
 # ==========================================
 
@@ -137,6 +105,27 @@ __opennlp_res:
 	@mkdir -p $(OPENNLP_RES)
 	cp $(OPENNLP_HOME)/*.bin $(OPENNLP_RES)/
 
+
+# ==========================================
+#  MODULE: RocksDB
+# ==========================================
+
+ROCKSDB_HOME		:= $(VENDOR_DIR)/rocksdb
+ROCKSDB_LIBS		:= librocksdb
+
+__rocksdb: 
+	@echo "Building RocksDB..."
+	@cd $(ROCKSDB_HOME); make -j$(NPROCS) shared_lib
+	@echo "SUCCESS (RocksDB)"
+	
+__rocksdb_install:
+	@echo "Installing RocksDB..."
+	$(foreach lib,$(ROCKSDB_LIBS),cp --preserve=links -r $(ROCKSDB_HOME)/$(lib)* $(MMT_INSTALL_LIB)/;)
+	@echo "SUCCESS (RocksDB)"
+
+__rocksdb_clean:
+	@cd $(ROCKSDB_HOME); make clean
+	rm -f $(foreach lib,$(ROCKSDB_LIBS),$(MMT_INSTALL_LIB)/$(lib)*)
 
 
 

@@ -176,7 +176,7 @@ class MMTTranslator(Translator):
             sess = self._sessions[corpus_file] if self._use_sessions else None
             ctxt = None if self._use_sessions else self._contexts[corpus_file]
 
-            translation = self._api.translate(line, session=sess, context=ctxt, processing=True)
+            translation = self._api.translate(line, session=sess, context=ctxt)
         except requests.exceptions.ConnectionError:
             raise TranslateError('Unable to connect to MMT. '
                                  'Please check if engine is running on port %d.' % self._api.port)
@@ -496,6 +496,8 @@ class Evaluator:
                         setattr(result, field, scorer.calculate(result.merge, reference))
 
             logger.completed(results, scorers)
+
+            return results
         finally:
             if not debug:
                 self._engine.clear_tempdir('evaluation')

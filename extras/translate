@@ -20,7 +20,6 @@ class CLIArgsException(Exception):
 class Executor:
     def __init__(self, api, args):
         self.api = api
-        self.processing = args.process
         self.nbest = args.nbest
 
         self.nbest_out = sys.stdout
@@ -65,7 +64,7 @@ class Executor:
         return ', '.join([(score['id'] + ' = ' + ('%.6f' % score['score'])) for score in context])
 
     def _translate(self, line, _=None):
-        return self.api.translate(line, session=self.session, processing=self.processing, nbest=self.nbest)
+        return self.api.translate(line, session=self.session, nbest=self.nbest)
 
     def _encode_translation(self, translation):
         return translation['translation'].encode('utf-8')
@@ -183,8 +182,6 @@ def main():
     parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
                         help='the public available REST Api port. (default is {port})'
                         .format(port=DEFAULT_MMT_API_PORT), default=None, type=int)
-    parser.add_argument('--no-process', action='store_false', dest='process', default=True,
-                        help='if set, the script will skip pre- and post-processing of the text')
     parser.add_argument('--batch', '-b', action='store_true', dest='batch', default=False,
                         help='if set, the script will read the whole stdin before send translations to MMT.'
                              'This can be used to execute translation in parallel for a faster translation. ')

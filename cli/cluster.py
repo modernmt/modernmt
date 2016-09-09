@@ -13,8 +13,7 @@ import cli
 from cli import mmt_javamain, IllegalStateException, IllegalArgumentException
 from cli.libs import fileutils, daemon, shell
 from cli.mt import BilingualCorpus
-from cli.mt.moses import Moses
-from cli.mt.processing import TrainingPreprocessor
+from cli.mt.processing import TrainingPreprocessor, Tokenizer
 
 __author__ = 'Davide Caroselli'
 
@@ -104,8 +103,8 @@ class MMTApi:
     def close_session(self, session):
         return self._delete('sessions/' + str(session))
 
-    def translate(self, source, session=None, context=None, processing=True, nbest=None):
-        p = {'q': source, 'processing': (1 if processing else 0)}
+    def translate(self, source, session=None, context=None, nbest=None):
+        p = {'q': source}
         if session is not None:
             p['session'] = session
         if nbest is not None:
@@ -312,7 +311,16 @@ class ClusterNode(object):
             os.kill(pid, signal.SIGKILL)
             daemon.wait(pid)
 
-    def tune(self, corpora=None, tokenize=True, debug=False, context_enabled=True):
+    def restart(self):
+        # ensure engine is stopped
+        if self.is_running():
+            self.stop()
+
+        # start engine again
+        self.start()
+        self.wait('READY')
+
+    def tune(self, corpora=None, debug=False, context_enabled=True):
         if corpora is None:
             corpora = BilingualCorpus.list(os.path.join(self.engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME))
 
@@ -322,43 +330,42 @@ class ClusterNode(object):
         if not self.is_running():
             raise IllegalStateException('No MMT Server running, start the engine first')
 
+        tokenizer = Tokenizer()
+
         target_lang = self.engine.target_lang
         source_lang = self.engine.source_lang
 
-        cmdlogger = _tuning_logger(4 if tokenize else 3)
+        source_corpora = [BilingualCorpus.make_parallel(corpus.name, corpus.get_folder(), [source_lang])
+                          for corpus in corpora]
+        reference_corpora = [BilingualCorpus.make_parallel(corpus.name, corpus.get_folder(), [target_lang])
+                             for corpus in corpora]
+
+        cmdlogger = _tuning_logger(4)
         cmdlogger.start(self, corpora)
 
         working_dir = self.engine.get_tempdir('tuning')
         mert_wd = os.path.join(working_dir, 'mert')
 
         try:
-            original_corpora = corpora
-
             # Tokenization
-            tokenized_corpora = original_corpora
+            tokenized_output = os.path.join(working_dir, 'reference_corpora')
+            fileutils.makedirs(tokenized_output, exist_ok=True)
 
-            if tokenize:
-                tokenizer_output = os.path.join(working_dir, 'tokenized_corpora')
-                fileutils.makedirs(tokenizer_output, exist_ok=True)
-
-                with cmdlogger.step('Corpus tokenization') as _:
-                    tokenized_corpora = self.engine.preprocessor.process(corpora, tokenizer_output, print_tags=False,
-                                                                         print_placeholders=True,
-                                                                         original_spacing=False)
+            with cmdlogger.step('Corpora tokenization') as _:
+                reference_corpora = tokenizer.process_corpora(reference_corpora, tokenized_output)
 
             # Create merged corpus
             with cmdlogger.step('Merging corpus') as _:
+                # source
                 source_merged_corpus = os.path.join(working_dir, 'corpus.' + source_lang)
+
                 with open(source_merged_corpus, 'wb') as out:
-                    original_root = original_corpora[0].get_folder()
+                    for corpus in source_corpora:
+                        out.write(corpus.get_file(source_lang) + '\n')
 
-                    for corpus in tokenized_corpora:
-                        tokenized = corpus.get_file(source_lang)
-                        original = os.path.join(original_root, corpus.name + '.' + source_lang)
-                        out.write(tokenized + ':' + original + '\n')
-
+                # target
                 target_merged_corpus = os.path.join(working_dir, 'corpus.' + target_lang)
-                fileutils.merge([corpus.get_file(target_lang) for corpus in tokenized_corpora], target_merged_corpus)
+                fileutils.merge([corpus.get_file(target_lang) for corpus in reference_corpora], target_merged_corpus)
 
             # Run MERT algorithm
             with cmdlogger.step('Tuning') as _:

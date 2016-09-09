@@ -24,6 +24,58 @@ def _pool_exec(function, jobs):
         pool.terminate()
 
 
+class Tokenizer:
+    __wspace = re.compile('\s+')
+
+    def __init__(self):
+        self._xml = XMLEncoder()
+
+    def process_corpora(self, corpora, dest_folder):
+        fileutils.makedirs(dest_folder, exist_ok=True)
+
+        for corpus in corpora:
+            for lang in corpus.langs:
+                source = corpus.get_file(lang)
+                dest = BilingualCorpus.make_parallel(corpus.name, dest_folder, [lang])
+
+                self.process_file(source, dest, lang)
+
+        return BilingualCorpus.list(dest_folder)
+
+    def process_file(self, source, dest, lang):
+        with open(source) as input_stream:
+            with open(dest.get_file(lang), 'w') as output_stream:
+                for line in input_stream:
+                    output_stream.write(self.process(line.decode('utf-8')).encode('utf-8'))
+                    output_stream.write('\n')
+
+    def process(self, string):
+        string = string.strip()
+        string = self._xml.decode_string(string)
+
+        chars = []
+
+        for i in xrange(0, len(string)):
+            p = None if i == 0 else string[i - 1]
+            c = string[i]
+            s = None if i == (len(string) - 1) else string[i + 1]
+
+            p_is_digit = p is not None and p.isdigit()
+            s_is_digit = s is not None and s.isdigit()
+
+            if not c.isspace() and not c.isalnum() and not p_is_digit and not s_is_digit:
+                chars.append(' ')
+                chars.append(c)
+                chars.append(' ')
+            else:
+                chars.append(c)
+
+        string = ''.join(chars)
+        string = self.__wspace.sub(' ', string)
+
+        return string.strip()
+
+
 class TMCleaner:
     def __init__(self):
         self._java_mainclass = 'eu.modernmt.cli.CleaningPipelineMain'
@@ -44,11 +96,12 @@ class TrainingPreprocessor:
     DEV_FOLDER_NAME = 'dev'
     TEST_FOLDER_NAME = 'test'
 
-    def __init__(self):
+    def __init__(self, vocabulary_path):
         self._java_mainclass = 'eu.modernmt.cli.TrainingPipelineMain'
+        self._vocabulary_path = vocabulary_path
 
     def process(self, source, target, input_paths, output_path, data_path=None):
-        args = ['-s', source, '-t', target, '--output', output_path, '--input']
+        args = ['-s', source, '-t', target, '-v', self._vocabulary_path, '--output', output_path, '--input']
 
         for root in input_paths:
             args.append(root)
@@ -63,43 +116,6 @@ class TrainingPreprocessor:
         shell.execute(command, stdin=shell.DEVNULL, stdout=shell.DEVNULL, stderr=shell.DEVNULL)
 
         return BilingualCorpus.splitlist(source, target, roots=output_path)
-
-
-class Preprocessor:
-    def __init__(self):
-        self._java_mainclass = 'eu.modernmt.cli.PreprocessorMain'
-
-    def __get_command(self, lang, print_tags, print_placeholders, original_spacing):
-        args = ['--lang', lang]
-        if original_spacing:
-            args.append('--original-spacing')
-        if not print_tags:
-            args.append('--no-tags')
-        if print_placeholders:
-            args.append('--print-placeholders')
-
-        return mmt_javamain(self._java_mainclass, args)
-
-    def process(self, corpora, dest_folder, print_tags=True, print_placeholders=False, original_spacing=False):
-        for corpus in corpora:
-            for lang in corpus.langs:
-                source = corpus.get_file(lang)
-                dest = BilingualCorpus.make_parallel(corpus.name, dest_folder, [lang])
-
-                self.__process_file(source, dest, lang, print_tags, print_placeholders, original_spacing)
-
-        return BilingualCorpus.list(dest_folder)
-
-    # noinspection PyTypeChecker
-    def __process_file(self, source, dest, lang, print_tags=True, print_placeholders=False, original_spacing=False):
-        command = self.__get_command(lang, print_tags, print_placeholders, original_spacing)
-
-        if not os.path.isdir(dest.get_folder()):
-            fileutils.makedirs(dest.get_folder(), exist_ok=True)
-
-        with open(source) as input_stream:
-            with open(dest.get_file(lang), 'w') as output_stream:
-                shell.execute(command, stdin=input_stream, stdout=output_stream, stderr=shell.DEVNULL)
 
 
 class XMLEncoder:
@@ -164,3 +180,21 @@ class XMLEncoder:
             result.append(self.__escape(string[index:]))
 
         return ''.join(result)
+
+    def decode_string(self, string):
+        result = []
+        index = 0
+
+        for match in self.__TAG_REGEX.finditer(string):
+            start = match.start()
+            end = match.end()
+
+            if index != start:
+                result.append(self.__HTML.unescape(string[index:start]).strip())
+
+            index = end
+
+        if index < len(string):
+            result.append(self.__HTML.unescape(string[index:]).strip())
+
+        return ' '.join(result)

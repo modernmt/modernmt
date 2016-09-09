@@ -105,7 +105,7 @@ def main_tune(argv):
     corpora = BilingualCorpus.list(args.corpora_path) if args.corpora_path is not None else None
 
     node = ClusterNode(engine, api_port=args.api_port)
-    node.tune(corpora=corpora, debug=args.debug, context_enabled=args.context_enabled)
+    node.tune(corpora, debug=args.debug, context_enabled=args.context_enabled)
 
 
 def main_evaluate(argv):

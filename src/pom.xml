@@ -7,20 +7,23 @@
     <version>0.13</version>
 
     <modules>
-        <module>Model</module>
-        <module>TextProcessing</module>
-        <module>Core</module>
+        <module>model</module>
+        <module>common-interfaces</module>
 
-        <module>FastAlign</module>
-        <module>LuceneContextAnalyzer</module>
-        <module>Moses</module>
+        <module>textprocessing</module>
+        <module>fastalign-aligner</module>
+        <module>lucene-contextanalyzer</module>
+        <module>moses-decoder</module>
 
-        <module>RESTInterface</module>
-        <module>Executables</module>
+        <module>core</module>
+
+        <module>rest-api</module>
+        <module>cli</module>
+        <module>rocksdb-vocabulary</module>
     </modules>
 
     <packaging>pom</packaging>
-    <name>MMT Root project</name>
+    <name>MMT Root Module</name>
     <url>http://www.modernmt.eu/</url>
 
     <properties>
@@ -30,6 +33,21 @@
         <lucene.version>4.10.4</lucene.version>
 
         <mmt.version>0.13</mmt.version>
+
+        <!-- Native project definitions -->
+        <project.native.include>${project.basedir}/../common-interfaces/native/include</project.native.include>
+        <project.build.native>${project.build.directory}/native</project.build.native>
+        <project.nativedir>${project.basedir}/native</project.nativedir>
+        <project.nativedir.javah>${project.nativedir}/javah</project.nativedir.javah>
+
+        <!-- MMT build directory -->
+        <mmt.build>${project.basedir}/../../build</mmt.build>
+        <mmt.build.lib>${mmt.build}/lib</mmt.build.lib>
+        <mmt.build.bin>${mmt.build}/bin</mmt.build.bin>
+
+        <!-- Vendor directory -->
+        <mmt.vendor>${project.basedir}/../../vendor</mmt.vendor>
+        <mmt.vendor.rocksdb>${mmt.vendor}/rocksdb/</mmt.vendor.rocksdb>
     </properties>
 
     <build>
@@ -44,6 +62,21 @@
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.12</version>
+                <executions>
+                    <execution>
+                        <id>get-cpu-count</id>
+                        <goals>
+                            <goal>cpu-count</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 

@@ -3,6 +3,7 @@ import os
 import shutil
 import subprocess
 import psutil
+from contextlib import contextmanager
 
 __author__ = 'Davide Caroselli'
 
@@ -65,6 +66,17 @@ def du(f=None):
             total_size += os.path.getsize(fp)
 
     return int(total_size)
+
+
+def meminfo():
+    """
+    Returns the memory usage from /proc/meminfo as a dict str -> int
+    Numbers are in **bytes** (converted from /proc/meminfo which has kB)
+    """
+    with open('/proc/meminfo') as mi:
+        info_lines = [l.split()[0:2] for l in mi.readlines()]
+        info = {key.rstrip(':'): int(val) * 1024 for key, val in info_lines}
+    return info
 
 
 def free():

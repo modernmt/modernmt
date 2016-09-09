@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, 
 
 from cli.cluster import MMTApi
 from cli.libs import multithread
+from cli.mt.processing import Tokenizer
 
 __author__ = 'Davide Caroselli'
 
@@ -35,6 +36,8 @@ class _DocumentTranslator:
         self._pool = multithread.Pool(workers)
         self._features = None
 
+        self._tokenizer = Tokenizer()
+
     def set_skipcontext(self, skip_context):
         self.skip_context = skip_context
 
@@ -52,9 +55,15 @@ class _DocumentTranslator:
             else:
                 array.append(float(token))
 
-    @staticmethod
-    def _get_translation(line, nbest, session):
-        return Api.translate(line, session=session, processing=False, nbest=nbest)
+    def _get_translation(self, line, nbest, session):
+        translation = Api.translate(line, session=session, nbest=nbest)
+
+        # tokenize
+        translation['translation'] = self._tokenizer.process(translation['translation'])
+        for hyp in translation['nbest']:
+            hyp['translation'] = self._tokenizer.process(hyp['translation'])
+
+        return translation
 
     def _print(self, translation, nbest_out):
         print translation['translation'].encode('utf-8')
@@ -94,16 +103,16 @@ class _DocumentTranslator:
             # Enqueue translations requests
             with open(self.corpus) as source:
                 for line in source:
-                    tokenized, original = line.strip().split(':')
+                    corpus_path = line.strip()
 
                     session = None
 
                     if not self.skip_context:
-                        context = Api.get_context_f(original)
+                        context = Api.get_context_f(corpus_path)
                         session = Api.create_session(context)['id']
                         sessions.append(session)
 
-                    with open(tokenized) as doc:
+                    with open(corpus_path) as doc:
                         for docline in doc:
                             translation = self._pool.apply_async(self._get_translation, (docline, self.nbest, session))
                             translations.append(translation)
