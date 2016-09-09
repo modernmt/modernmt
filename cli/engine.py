@@ -215,7 +215,7 @@ class MMTEngine(object):
         self._config_file = os.path.join(self.path, 'engine.ini')
         self._vocabulary_model = os.path.join(self.models_path, 'vocabulary')
         self._pt_model = os.path.join(self.models_path, 'phrase_tables')
-        self._lm_model = os.path.join(self.models_path, 'lm', 'target.lm')
+        self._lm_model = os.path.join(self.models_path, 'lm')
         self._context_index = os.path.join(self.models_path, 'context', 'index')
         self._moses_ini_file = os.path.join(self.models_path, 'moses.ini')
 

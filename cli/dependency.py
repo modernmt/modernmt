@@ -3,7 +3,7 @@ import re
 from ConfigParser import ConfigParser, NoOptionError, NoSectionError
 
 from cli.mt.contextanalysis import ContextAnalyzer
-from cli.mt.lm import LanguageModel, MultiplexedLM
+from cli.mt.lm import LanguageModel, RocksLM
 from cli.mt.moses import Moses
 from cli.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
 from cli.engine import MMTEngine
@@ -12,7 +12,7 @@ __author__ = 'Davide Caroselli'
 
 _global_section = 'global'
 
-injectable_components = [ContextAnalyzer, SuffixArraysPhraseTable, WordAligner, LanguageModel, MultiplexedLM, Moses,
+injectable_components = [ContextAnalyzer, SuffixArraysPhraseTable, WordAligner, LanguageModel, RocksLM, Moses,
                           MMTEngine]
 
 

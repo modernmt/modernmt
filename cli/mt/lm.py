@@ -9,7 +9,7 @@ __author__ = 'Davide Caroselli'
 
 
 class LanguageModel(MosesFeature):
-    available_types = ['MultiplexedLM', 'KenLM']
+    available_types = ['RocksLM', 'KenLM']
 
     injector_section = 'lm'
     injectable_fields = {
@@ -20,8 +20,8 @@ class LanguageModel(MosesFeature):
     def instantiate(type_name, *model):
         if type_name == 'KenLM':
             return KenLM(*model)
-        elif type_name == 'MultiplexedLM':
-            return MultiplexedLM(*model)
+        elif type_name == 'RocksLM':
+            return RocksLM(*model)
         else:
             raise NameError('Invalid Language Model type: ' + type_name)
 
@@ -99,24 +99,15 @@ class KenLM(LanguageModel):
         return 'factor=0 order={order} path={model}'.format(order=self._order, model=self.get_relpath(self._model))
 
 
-class MultiplexedLM(LanguageModel):
+class RocksLM(LanguageModel):
     injector_section = 'lm'
     injectable_fields = {
-        'alpha': ('Adaptive LM weight fraction from [0,1), the rest is assigned to background LM', float, 0.5),
-        'function': ('interpolation function',
-                     (basestring, ['interpolate-linear', 'interpolate-log-linear', 'interpolate-max']),
-                     'interpolate-linear'),
     }
 
     def __init__(self, model):
-        LanguageModel.__init__(self, model, 'MUXLM')
+        LanguageModel.__init__(self, model, 'ROCKSLM')
 
-        self._function = None  # Injected
-        self._alpha = None  # Injected
-
-    def __get_config_line(self, name, model):
-        return 'KENLM name={name} factor=0 order={order} path={model}'.format(name=name, model='${LM_PATH}' + model,
-                                                                              order=self._order)
+        self._create_bin = os.path.join(cli.BIN_DIR, 'rockslm', 'create_alm')
 
     def train(self, corpora, lang, working_dir='.', log_file=None):
         LanguageModel.train(self, corpora, lang, working_dir, log_file)
@@ -132,32 +123,28 @@ class MultiplexedLM(LanguageModel):
             if log_file is not None:
                 log = open(log_file, 'w')
 
-            model_folder = os.path.dirname(self._model)
-            config_content = ['[verbose]', '0', '[muxlm]']
-
             # Train static LM
-            static_lm_model = os.path.join(model_folder, 'background.slm')
+            static_lm_model = os.path.join(self._model, 'background.slm')
             static_lm = KenLM(static_lm_model)
             static_lm._order = self._order
             static_lm.train(corpora, lang, os.path.join(working_dir, 'background.slm'), log_file=log)
-            config_content.append(self.__get_config_line('__background_lm__', 'background.slm'))
 
-            # Train domain-specific LMs
+            # Create AdaptiveLM training folder
+            alm_train_folder = os.path.join(working_dir, 'alm_train')
+            fileutils.makedirs(alm_train_folder, exist_ok=True)
+
             for corpus in bicorpora:
-                adaptive_lm_model = os.path.join(model_folder, corpus.name + '.alm')
-                adaptive_lm = KenLM(adaptive_lm_model)
-                adaptive_lm.prune = False
-                adaptive_lm._order = self._order
-                adaptive_lm.train([corpus], lang, os.path.join(working_dir, corpus.name + '.alm'), log_file=log)
-                config_content.append(self.__get_config_line(corpus.name, corpus.name + '.alm'))
+                os.symlink(corpus.get_file(lang), os.path.join(alm_train_folder, corpus.name + '.' + lang))
 
-            with open(self._model, 'w') as model:
-                model.write('\n'.join(config_content))
-                model.write('\n')
+            # Train adaptive LM
+            adaptive_lm_model = os.path.join(self._model, 'foreground.alm')
+            fileutils.makedirs(adaptive_lm_model, exist_ok=True)
+
+            command = [self._create_bin, '-m', adaptive_lm_model, '-i', alm_train_folder, '-b', '100000000']
+            shell.execute(command, stdout=log, stderr=log)
         finally:
             if log_file is not None:
                 log.close()
 
     def get_iniline(self):
-        return 'factor=0 path={model} background-lm=__background_lm__ alpha={alpha} function={function}'.format(
-            model=self.get_relpath(self._model), alpha=self._alpha, function=self._function)
+        return 'path={model}'.format(model=self.get_relpath(self._model))
