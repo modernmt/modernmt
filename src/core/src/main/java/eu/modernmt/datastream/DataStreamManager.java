@@ -15,6 +15,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by davide on 06/09/16.
@@ -62,6 +63,10 @@ public class DataStreamManager implements Closeable {
         this.pollingThread = new DataStreamPollingThread(engine);
     }
 
+    public void addListener(DataStreamListener listener) {
+        this.pollingThread.addListener(listener);
+    }
+
     @Deprecated
     public void connect() throws IOException {
         connect("localhost", 9092);
@@ -78,9 +83,11 @@ public class DataStreamManager implements Closeable {
         this.pollingThread.start(this.consumer);
     }
 
-    public int upload(int domainId, BilingualCorpus corpus) throws IOException {
+    public int upload(int domainId, BilingualCorpus corpus) throws IOException, DataStreamException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
+
+        this.pollingThread.ensureRunning();
 
         if (logger.isDebugEnabled())
             logger.debug("Uploading domain " + domainId);
@@ -117,9 +124,11 @@ public class DataStreamManager implements Closeable {
         return count;
     }
 
-    public void upload(int domainId, String sourceSentence, String targetSentence) {
+    public void upload(int domainId, String sourceSentence, String targetSentence) throws DataStreamException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
+
+        this.pollingThread.ensureRunning();
 
         StreamUpdate update = new StreamUpdate(domainId, sourceSentence, targetSentence);
         producer.send(new ProducerRecord<>(TOPICS[UPDATE_STREAM], 0, update));
@@ -129,6 +138,14 @@ public class DataStreamManager implements Closeable {
     public void close() throws IOException {
         IOUtils.closeQuietly(consumer);
         IOUtils.closeQuietly(producer);
+
+        pollingThread.shutdown();
+        try {
+            if (!pollingThread.awaitTermination(TimeUnit.SECONDS, 2))
+                pollingThread.shutdownNow();
+        } catch (InterruptedException e) {
+            pollingThread.shutdownNow();
+        }
     }
 
 }
