@@ -86,8 +86,9 @@ class DataStreamPollingThread extends Thread {
         this.interrupt();
     }
 
-    public void awaitTermination(TimeUnit unit, long timeout) throws InterruptedException {
+    public boolean awaitTermination(TimeUnit unit, long timeout) throws InterruptedException {
         unit.timedJoin(this, timeout);
+        return !this.isAlive();
     }
 
     @Override
