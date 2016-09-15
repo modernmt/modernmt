@@ -1,5 +1,6 @@
 package eu.modernmt.rest.actions.domain;
 
+import eu.modernmt.datastream.DataStreamException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.model.Domain;
 import eu.modernmt.model.corpus.BilingualCorpus;
@@ -21,7 +22,7 @@ import java.io.IOException;
 public class AddToDomain extends ObjectAction<Domain> {
 
     @Override
-    protected Domain execute(RESTRequest req, Parameters _params) throws IOException {
+    protected Domain execute(RESTRequest req, Parameters _params) throws IOException, DataStreamException {
         Params params = (Params) _params;
 
         BilingualCorpus corpus = new ParallelFileCorpus(null, params.source, null, params.target);

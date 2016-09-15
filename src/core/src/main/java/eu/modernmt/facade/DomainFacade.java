@@ -1,5 +1,6 @@
 package eu.modernmt.facade;
 
+import eu.modernmt.datastream.DataStreamException;
 import eu.modernmt.datastream.DataStreamManager;
 import eu.modernmt.model.Domain;
 import eu.modernmt.model.corpus.BilingualCorpus;
@@ -22,7 +23,7 @@ public class DomainFacade {
         throw new UnsupportedOperationException("not yet implemented");
     }
 
-    public Domain add(int domainId, BilingualCorpus corpus) throws IOException {
+    public Domain add(int domainId, BilingualCorpus corpus) throws IOException, DataStreamException {
         DataStreamManager manager = ModernMT.node.getDataStreamManager();
 
         //TODO: check if domainId exists
@@ -31,7 +32,7 @@ public class DomainFacade {
         return new Domain(domainId, null);
     }
 
-    public Domain add(int domainId, String source, String target) {
+    public Domain add(int domainId, String source, String target) throws DataStreamException {
         DataStreamManager manager = ModernMT.node.getDataStreamManager();
 
         //TODO: check if domainId exists
