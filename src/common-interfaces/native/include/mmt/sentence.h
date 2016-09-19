@@ -7,9 +7,11 @@
 
 #include <cstdint>
 #include <vector>
+#include <unordered_map>
 
 namespace mmt {
 
+    typedef uint32_t domain_t;
     typedef uint32_t wid_t;
     typedef uint16_t length_t;
 
@@ -21,6 +23,7 @@ namespace mmt {
 
     typedef std::vector<word_t> sentence_t;
     typedef std::vector<std::pair<length_t, length_t>> alignment_t;
+    typedef std::unordered_map<domain_t, float> context_t;
 
 }
 

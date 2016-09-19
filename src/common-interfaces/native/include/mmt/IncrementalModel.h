@@ -5,7 +5,6 @@
 #ifndef MMT_COMMON_INTERFACES_INCREMENTALMODEL_H
 #define MMT_COMMON_INTERFACES_INCREMENTALMODEL_H
 
-#include <sentence.h>
 #include "sentence.h"
 
 namespace mmt {
@@ -13,10 +12,13 @@ namespace mmt {
     typedef uint8_t stream_t;
     typedef uint64_t seqid_t;
 
-    typedef struct {
+    struct updateid_t {
         stream_t stream_id;
-        seqid_t sequential_id;
-    } updateid_t;
+        seqid_t sentence_id;
+
+        updateid_t(stream_t stream_id = 0, seqid_t sentence_id = 0) : stream_id(stream_id), sentence_id(sentence_id) {};
+
+    };
 
     class IncrementalModel {
     public:
@@ -50,13 +52,15 @@ namespace mmt {
          * update twice.
          *
          * @param id the update unique id.
+         * @param domain the domain id.
          * @param source the source sentence.
          * @param target the target sentence.
          * @param alignment the sentence pair alignment.
          */
         virtual void
-        Add(const updateid_t id, const std::vector<wid_t> source, const std::vector<wid_t> target,
-            const alignment_t alignment) = 0;
+        Add(const updateid_t &id, const domain_t domain,
+            const std::vector<wid_t> &source, const std::vector <wid_t> &target,
+            const alignment_t &alignment) = 0;
 
         /**
          * Retrieve the latest update ids registered in the system. These values must be updated
