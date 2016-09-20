@@ -11,6 +11,7 @@
 #include <string>
 #include <map>
 #include <float.h>
+#include <mmt/IncrementalModel.h>
 
 typedef struct {
     bool stateless;
@@ -32,9 +33,15 @@ typedef struct {
     std::vector<std::pair<size_t, size_t> > alignment;
 } translation_t;
 
+typedef struct {
+    std::string source;
+    std::string target;
+    int64_t session;
+} update_t;
+
 namespace mmt {
     namespace decoder {
-        class MosesDecoder {
+        class MosesDecoder: public IncrementalModel {
         public:
             static constexpr float UNTUNEABLE_COMPONENT = FLT_MAX;
 

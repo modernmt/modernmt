@@ -15,6 +15,7 @@ namespace mmt {
         class MosesDecoderImpl : public MosesDecoder {
             MosesServer::JNITranslator m_translator;
             std::vector<feature_t> m_features;
+            std::vector<IncrementalModel *> m_incrementalModels;
         public:
 
             MosesDecoderImpl(Moses::Parameter &param);
@@ -34,8 +35,12 @@ namespace mmt {
             virtual translation_t translate(const std::string &text, uint64_t session,
                                             const std::map<std::string, float> *translationContext,
                                             size_t nbestListSize) override;
-        };
 
+            virtual void Add(const updateid_t &id, const domain_t domain, const std::vector<wid_t> &source,
+                             const std::vector<wid_t> &target, const alignment_t &alignment) override;
+
+            virtual std::vector<updateid_t> GetLatestUpdatesIdentifier() override;
+        };
     }
 }
 
@@ -66,6 +71,9 @@ MosesDecoderImpl::MosesDecoderImpl(Moses::Parameter &param) : m_features() {
         f.ptr = (void *) feature;
 
         m_features.push_back(f);
+        mmt::IncrementalModel* incrModel = feature->GetIncrementalModel();
+        if (incrModel)
+            m_incrementalModels.push_back(incrModel);
     }
 
     const std::vector<const Moses::StatefulFeatureFunction *> &sff = Moses::StatefulFeatureFunction::GetStatefulFeatureFunctions();
@@ -79,6 +87,9 @@ MosesDecoderImpl::MosesDecoderImpl(Moses::Parameter &param) : m_features() {
         f.ptr = (void *) feature;
 
         m_features.push_back(f);
+        mmt::IncrementalModel* incrModel = feature->GetIncrementalModel();
+        if (incrModel)
+            m_incrementalModels.push_back(incrModel);
     }
 }
 
@@ -152,4 +163,28 @@ translation_t MosesDecoderImpl::translate(const std::string &text, uint64_t sess
     return translation;
 }
 
+void MosesDecoderImpl::Add(const updateid_t &id, const domain_t domain, const std::vector<wid_t> &source,
+                           const std::vector<wid_t> &target, const alignment_t &alignment) {
+    for (size_t i = 0; i < m_incrementalModels.size(); ++i) {
+        m_incrementalModels[i]->Add(id, domain, source, target, alignment);
+    }
+}
 
+std::vector<updateid_t> MosesDecoderImpl::GetLatestUpdatesIdentifier() {
+    std::unordered_map<stream_t, seqid_t> stream_map;
+    for (auto it = m_incrementalModels.begin(); it != m_incrementalModels.end(); ++it) {
+        std::vector<updateid_t> vec = (*it)->GetLatestUpdatesIdentifier();
+        for (auto id = vec.begin(); id != vec.end(); ++id) {
+            auto e = stream_map.emplace(id->stream_id, id->sentence_id);
+            if (!e.second) {
+                (e.first)->second = std::min((e.first)->second, id->sentence_id);
+            }
+        }
+    }
+    std::vector<updateid_t> ret;
+    ret.reserve(stream_map.size());
+    for (auto it = stream_map.begin(); it != stream_map.end(); ++it) {
+        ret.push_back(updateid_t(it->first, it->second));
+    }
+    return ret;
+}
