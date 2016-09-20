@@ -86,7 +86,7 @@ public class MosesDecoder implements Decoder {
         });
     }
 
-    private native long createSession(String[] contextKeys, float[] contextValues);
+    private native long createSession(int[] contextKeys, float[] contextValues);
 
     @Override
     public void closeSession(TranslationSession session) {
@@ -168,7 +168,7 @@ public class MosesDecoder implements Decoder {
         return text.toString();
     }
 
-    private native TranslationXObject translate(String text, String[] contextKeys, float[] contextValues, long session, int nbest);
+    private native TranslationXObject translate(String text, int[] contextKeys, float[] contextValues, long session, int nbest);
 
     @Override
     protected void finalize() throws Throwable {

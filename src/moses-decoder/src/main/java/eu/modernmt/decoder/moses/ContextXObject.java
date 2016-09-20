@@ -9,17 +9,17 @@ import java.util.List;
  */
 class ContextXObject {
 
-    public final String[] keys;
+    public final int[] keys;
     public final float[] values;
 
     public static ContextXObject build(List<ContextScore> context) {
         if (context != null) {
-            String[] keys = new String[context.size()];
+            int[] keys = new int[context.size()];
             float[] values = new float[context.size()];
 
             int i = 0;
             for (ContextScore document : context) {
-                keys[i] = document.getId();
+                keys[i] = document.getDomain().getId();
                 values[i] = document.getScore();
                 i++;
             }
@@ -30,8 +30,9 @@ class ContextXObject {
         }
     }
 
-    private ContextXObject(String[] keys, float[] values) {
+    private ContextXObject(int[] keys, float[] values) {
         this.keys = keys;
         this.values = values;
     }
+    
 }

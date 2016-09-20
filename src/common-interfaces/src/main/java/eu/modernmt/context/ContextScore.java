@@ -1,5 +1,7 @@
 package eu.modernmt.context;
 
+import eu.modernmt.model.Domain;
+
 import java.io.Serializable;
 
 /**
@@ -7,16 +9,16 @@ import java.io.Serializable;
  */
 public class ContextScore implements Serializable, Comparable<ContextScore> {
 
-    private String id;
+    private Domain domain;
     private float score;
 
-    public ContextScore(String id, float score) {
-        this.id = id;
+    public ContextScore(Domain domain, float score) {
+        this.domain = domain;
         this.score = score;
     }
 
-    public String getId() {
-        return id;
+    public Domain getDomain() {
+        return domain;
     }
 
     public float getScore() {
