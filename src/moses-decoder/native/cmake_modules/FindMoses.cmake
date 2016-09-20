@@ -18,9 +18,6 @@ find_path(Moses_INCLUDE_DIRS moses/FF/StatefulFeatureFunction.h
 find_library(Moses_LIBRARIES NAMES moses libmoses
              HINTS "${PROJECT_SOURCE_DIR}/../../../build/lib/")
 
-# find_path(Moses_LIBRARIES build/lib/${CMAKE_SHARED_LIBRARY_PREFIX}moses${CMAKE_SHARED_LIBRARY_SUFFIX} PATHS ENV MosesDECODER_HOME)
-#mark_as_advanced(LIBXML2_INCLUDE_DIR LIBXML2_LIBRARY )
-
 if (Moses_LIBRARIES STREQUAL "Moses_LIBRARIES-NOTFOUND")
     message(FATAL_ERROR "Could not locate Moses shared library.")
 else()

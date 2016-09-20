@@ -65,6 +65,22 @@ JNIEXPORT jobject JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_translate
 
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
+ * Method:    updateReceived
+ * Signature: (IJI[I[I[I)V
+ */
+JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_updateReceived
+  (JNIEnv *, jobject, jint, jlong, jint, jintArray, jintArray, jintArray);
+
+/*
+ * Class:     eu_modernmt_decoder_moses_MosesDecoder
+ * Method:    getLatestUpdatesIdentifier
+ * Signature: ()[J
+ */
+JNIEXPORT jlongArray JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_getLatestUpdatesIdentifier
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     eu_modernmt_decoder_moses_MosesDecoder
  * Method:    dispose
  * Signature: (J)J
  */

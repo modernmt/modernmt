@@ -1,11 +1,11 @@
-package eu.modernmt.datastream;
+package eu.modernmt.updating;
 
 import java.util.Map;
 
 /**
  * Created by davide on 06/09/16.
  */
-public interface DataStreamListener {
+public interface UpdatesListener {
 
     void updateReceived(Update update) throws Exception;
 

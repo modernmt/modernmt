@@ -2,6 +2,7 @@ package eu.modernmt.datastream;
 
 import eu.modernmt.engine.Engine;
 import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.updating.UpdatesListener;
 import org.apache.commons.io.IOUtils;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -63,7 +64,7 @@ public class DataStreamManager implements Closeable {
         this.pollingThread = new DataStreamPollingThread(engine);
     }
 
-    public void addListener(DataStreamListener listener) {
+    public void addListener(UpdatesListener listener) {
         this.pollingThread.addListener(listener);
     }
 

@@ -130,6 +130,9 @@ class RocksLM(LanguageModel):
 
             # Train static LM
             static_lm_model = os.path.join(self._model, 'background.slm')
+            static_lm_wdir = os.path.join(working_dir, 'slm.temp')
+
+            fileutils.makedirs(static_lm_wdir, exist_ok=True)
 
             merged_corpus = os.path.join(working_dir, 'merged_corpus')
             fileutils.merge([corpus.get_file(lang) for corpus in corpora], merged_corpus)
@@ -137,7 +140,7 @@ class RocksLM(LanguageModel):
             command = [self._create_slm_bin, '--discount_fallback', '-o', str(self._order),
                        '--model', static_lm_model,
                        '-S', str(KenLM.get_mem_percent()) + '%',
-                       '-T', os.path.join(working_dir, 'slm.temp')]
+                       '-T', static_lm_wdir]
             if self._order > 2 and self.prune:
                 command += ['--prune', '0', '0', '1']
 

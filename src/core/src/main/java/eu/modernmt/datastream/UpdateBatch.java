@@ -7,6 +7,7 @@ import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
+import eu.modernmt.updating.Update;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 
@@ -55,7 +56,7 @@ class UpdateBatch implements Iterable<Update> {
 
         for (ConsumerRecord<Integer, StreamUpdate> record : records) {
             StreamUpdate value = record.value();
-            Update update = Update.fromStream(getTopicId(record.topic()), record.offset(), value);
+            Update update = value.toUpdate(getTopicId(record.topic()), record.offset());
 
             data.add(update);
             sources.add(value.getSourceSentence());

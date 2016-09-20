@@ -129,7 +129,9 @@ Java_eu_modernmt_decoder_moses_MosesDecoder_setFeatureWeights(JNIEnv *jvm, jobje
  * Method:    createSession
  * Signature: ([I[F)J
  */
-JNIEXPORT jlong JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_createSession(JNIEnv *jvm, jobject jself, jintArray contextKeys, jfloatArray contextValues) {
+JNIEXPORT jlong JNICALL
+Java_eu_modernmt_decoder_moses_MosesDecoder_createSession(JNIEnv *jvm, jobject jself, jintArray contextKeys,
+                                                          jfloatArray contextValues) {
     MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
 
     map<string, float> context;
@@ -191,9 +193,33 @@ Java_eu_modernmt_decoder_moses_MosesDecoder_translate(JNIEnv *jvm, jobject jself
 
     jvm->DeleteLocalRef(jAlignment);
     if (hypothesesArray)
-    jvm->DeleteLocalRef(hypothesesArray);
+        jvm->DeleteLocalRef(hypothesesArray);
 
     return jtranslation;
+}
+
+/*
+ * Class:     eu_modernmt_decoder_moses_MosesDecoder
+ * Method:    updateReceived
+ * Signature: (IJI[I[I[I)V
+ */
+JNIEXPORT void JNICALL
+Java_eu_modernmt_decoder_moses_MosesDecoder_updateReceived(JNIEnv *jvm, jobject jself, jint jstreamId,
+                                                           jlong jsentenceId, jint jdomain, jintArray jsource,
+                                                           jintArray jtarget,
+                                                           jintArray jalignment) {
+    throw invalid_argument("Not implemented yet");
+}
+
+/*
+ * Class:     eu_modernmt_decoder_moses_MosesDecoder
+ * Method:    getLatestUpdatesIdentifier
+ * Signature: ()[J
+ */
+JNIEXPORT jlongArray JNICALL
+Java_eu_modernmt_decoder_moses_MosesDecoder_getLatestUpdatesIdentifier(JNIEnv *jvm, jobject jself) {
+    // TODO: Not implemented yet
+    return jvm->NewLongArray(0);
 }
 
 /*
