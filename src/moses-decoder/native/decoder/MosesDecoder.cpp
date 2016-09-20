@@ -7,6 +7,7 @@
 #include <moses/StaticData.h>
 #include <moses/FF/StatefulFeatureFunction.h>
 
+using namespace mmt;
 using namespace mmt::decoder;
 
 namespace mmt {
@@ -71,9 +72,9 @@ MosesDecoderImpl::MosesDecoderImpl(Moses::Parameter &param) : m_features() {
         f.ptr = (void *) feature;
 
         m_features.push_back(f);
-        mmt::IncrementalModel* incrModel = feature->GetIncrementalModel();
-        if (incrModel)
-            m_incrementalModels.push_back(incrModel);
+        mmt::IncrementalModel *model = feature->GetIncrementalModel();
+        if (model)
+            m_incrementalModels.push_back(model);
     }
 
     const std::vector<const Moses::StatefulFeatureFunction *> &sff = Moses::StatefulFeatureFunction::GetStatefulFeatureFunctions();
@@ -87,9 +88,9 @@ MosesDecoderImpl::MosesDecoderImpl(Moses::Parameter &param) : m_features() {
         f.ptr = (void *) feature;
 
         m_features.push_back(f);
-        mmt::IncrementalModel* incrModel = feature->GetIncrementalModel();
-        if (incrModel)
-            m_incrementalModels.push_back(incrModel);
+        mmt::IncrementalModel *model = feature->GetIncrementalModel();
+        if (model)
+            m_incrementalModels.push_back(model);
     }
 }
 
@@ -98,7 +99,7 @@ std::vector<feature_t> MosesDecoderImpl::getFeatures() {
 }
 
 std::vector<float> MosesDecoderImpl::getFeatureWeights(feature_t &_feature) {
-    Moses::FeatureFunction *feature = (Moses::FeatureFunction *)_feature.ptr;
+    Moses::FeatureFunction *feature = (Moses::FeatureFunction *) _feature.ptr;
     std::vector<float> weights;
 
     if (feature->IsTuneable()) {
@@ -118,7 +119,8 @@ void MosesDecoderImpl::setDefaultFeatureWeights(const std::map<std::string, std:
     m_translator.set_default_feature_weights(featureWeights);
 }
 
-int64_t MosesDecoderImpl::openSession(const std::map<std::string, float> &translationContext, const std::map<std::string, std::vector<float>> *featureWeights) {
+int64_t MosesDecoderImpl::openSession(const std::map<std::string, float> &translationContext,
+                                      const std::map<std::string, std::vector<float>> *featureWeights) {
     return m_translator.create_session(translationContext, featureWeights);
 }
 
@@ -128,8 +130,7 @@ void MosesDecoderImpl::closeSession(uint64_t session) {
 
 translation_t MosesDecoderImpl::translate(const std::string &text, uint64_t session,
                                           const std::map<std::string, float> *translationContext,
-                                          size_t nbestListSize)
-{
+                                          size_t nbestListSize) {
     // MosesServer interface request...
 
     MosesServer::TranslationRequest request;
@@ -138,7 +139,7 @@ translation_t MosesDecoderImpl::translate(const std::string &text, uint64_t sess
     request.sourceSent = text;
     request.nBestListSize = nbestListSize;
     request.sessionId = session;
-    if(translationContext != nullptr) {
+    if (translationContext != nullptr) {
         assert(session == 0); // setting contextWeights only has an effect if we are not within a session
         request.contextWeights = *translationContext;
     }
@@ -155,7 +156,7 @@ translation_t MosesDecoderImpl::translate(const std::string &text, uint64_t sess
     translation_t translation;
 
     translation.text = response.text;
-    for(auto h: response.hypotheses)
+    for (auto h: response.hypotheses)
         translation.hypotheses.push_back(hypothesis_t{h.text, h.score, h.fvals});
     translation.session = response.session;
     translation.alignment = response.alignment;
@@ -172,19 +173,23 @@ void MosesDecoderImpl::Add(const updateid_t &id, const domain_t domain, const st
 
 std::vector<updateid_t> MosesDecoderImpl::GetLatestUpdatesIdentifier() {
     std::unordered_map<stream_t, seqid_t> stream_map;
+
     for (auto it = m_incrementalModels.begin(); it != m_incrementalModels.end(); ++it) {
         std::vector<updateid_t> vec = (*it)->GetLatestUpdatesIdentifier();
+
         for (auto id = vec.begin(); id != vec.end(); ++id) {
             auto e = stream_map.emplace(id->stream_id, id->sentence_id);
-            if (!e.second) {
-                (e.first)->second = std::min((e.first)->second, id->sentence_id);
-            }
+
+            if (!e.second)
+                e.first->second = std::min(e.first->second, id->sentence_id);
         }
     }
+
     std::vector<updateid_t> ret;
     ret.reserve(stream_map.size());
     for (auto it = stream_map.begin(); it != stream_map.end(); ++it) {
         ret.push_back(updateid_t(it->first, it->second));
     }
+
     return ret;
 }

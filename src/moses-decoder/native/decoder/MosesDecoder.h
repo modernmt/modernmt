@@ -33,12 +33,6 @@ typedef struct {
     std::vector<std::pair<size_t, size_t> > alignment;
 } translation_t;
 
-typedef struct {
-    std::string source;
-    std::string target;
-    int64_t session;
-} update_t;
-
 namespace mmt {
     namespace decoder {
         class MosesDecoder: public IncrementalModel {

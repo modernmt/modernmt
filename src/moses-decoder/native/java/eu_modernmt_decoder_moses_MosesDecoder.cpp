@@ -218,8 +218,26 @@ Java_eu_modernmt_decoder_moses_MosesDecoder_updateReceived(JNIEnv *jvm, jobject 
  */
 JNIEXPORT jlongArray JNICALL
 Java_eu_modernmt_decoder_moses_MosesDecoder_getLatestUpdatesIdentifier(JNIEnv *jvm, jobject jself) {
-    // TODO: Not implemented yet
-    return jvm->NewLongArray(0);
+    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
+
+    vector<mmt::updateid_t> ids = instance->GetLatestUpdatesIdentifier();
+
+    vector<jlong> jidsArray(ids.size());
+    for (auto id = ids.begin(); id != ids.end(); ++id) {
+        mmt::stream_t stream = id->stream_id;
+
+        if (stream >= jidsArray.size())
+            jidsArray.resize(stream + 1);
+
+        jidsArray[stream] = (jlong) id->sentence_id;
+    }
+
+    jsize size = (jsize) jidsArray.size();
+
+    jlongArray jarray = jvm->NewLongArray(size);
+    jvm->SetLongArrayRegion(jarray, 0, size, jidsArray.data());
+
+    return jarray;
 }
 
 /*

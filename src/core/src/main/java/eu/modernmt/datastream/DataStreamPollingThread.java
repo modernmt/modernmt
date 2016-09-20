@@ -72,8 +72,10 @@ class DataStreamPollingThread extends Thread {
             }
         }
 
-        for (int i = 0; i < offsets.length; i++)
+        for (int i = 0; i < offsets.length; i++) {
+            logger.info("Topic " + partitions[i].topic() + " seek to offset " + offsets[i]);
             consumer.seek(partitions[i], offsets[i]);
+        }
 
         super.start();
     }
