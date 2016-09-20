@@ -9,13 +9,14 @@ ifeq ($(OS),Darwin) # Assume Mac OS X
 endif
 
 # MMT Paths
-VENDOR_DIR		:= $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+VENDOR_DIR				:= $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
-MMT_HOME		:= $(realpath $(VENDOR_DIR)/..)
-MMT_BUILD_DIR	:= $(MMT_HOME)/build
-MMT_INSTALL_LIB	:= $(MMT_BUILD_DIR)/lib
-MMT_INSTALL_BIN	:= $(MMT_BUILD_DIR)/bin
-MMT_INSTALL_RES	:= $(MMT_BUILD_DIR)/res
+MMT_HOME				:= $(realpath $(VENDOR_DIR)/..)
+MMT_NATIVE_INCLUDE_DIR	:= $(MMT_HOME)/src/common-interfaces/native/include
+MMT_BUILD_DIR			:= $(MMT_HOME)/build
+MMT_INSTALL_LIB			:= $(MMT_BUILD_DIR)/lib
+MMT_INSTALL_BIN			:= $(MMT_BUILD_DIR)/bin
+MMT_INSTALL_RES			:= $(MMT_BUILD_DIR)/res
 
 all: __rocksdb __moses
 
@@ -56,7 +57,7 @@ KENLM_EXES		:= lmplz build_binary
 __moses: 
 	@echo "Building Moses..."
 	@mkdir -p $(MOSES_BUILD_DIR)
-	@cd $(MOSES_BUILD_DIR); cmake $(MOSES_HOME) -DUSE_ROCKSLM=1 -DROCKSDB_ROOT=/home/ubuntu/workspace/ModernMT/vendor/rocksdb/ -DROCKSLM_ROOT=/home/ubuntu/workspace/RocksLM/build/ -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$(MOSES_BUILD_DIR)" -Wno-dev
+	@cd $(MOSES_BUILD_DIR); cmake $(MOSES_HOME) -DMMT_INCLUDE_DIR=$(MMT_NATIVE_INCLUDE_DIR) -DUSE_ROCKSLM=1 -DROCKSDB_ROOT=/home/ubuntu/workspace/ModernMT/vendor/rocksdb/ -DROCKSLM_ROOT=/home/ubuntu/workspace/RocksLM/build/ -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$(MOSES_BUILD_DIR)" -Wno-dev
 	@cd $(MOSES_BUILD_DIR); make -j$(NPROCS)
 	@echo "SUCCESS (Moses)"
 	

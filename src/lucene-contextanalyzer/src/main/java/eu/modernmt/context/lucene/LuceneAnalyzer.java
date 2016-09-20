@@ -3,15 +3,18 @@ package eu.modernmt.context.lucene;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextScore;
+import eu.modernmt.model.Domain;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.impl.StringCorpus;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
+import org.apache.lucene.document.Document;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Created by davide on 09/05/16.
@@ -25,13 +28,19 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     }
 
     @Override
-    public void add(Corpus corpus) throws ContextAnalyzerException {
-        this.index.add(corpus);
+    public void add(Domain domain, Corpus corpus) throws ContextAnalyzerException {
+        this.index.add(DocumentBuilder.createDocument(domain, corpus));
     }
 
     @Override
-    public void add(Collection<Corpus> corpora) throws ContextAnalyzerException {
-        this.index.add(corpora);
+    public void add(Map<Domain, Corpus> corpora) throws ContextAnalyzerException {
+        ArrayList<Document> documents = new ArrayList<>(corpora.size());
+
+        for (Map.Entry<Domain, Corpus> entries : corpora.entrySet()) {
+            documents.add(DocumentBuilder.createDocument(entries.getKey(), entries.getValue()));
+        }
+
+        this.index.add(documents);
     }
 
     @Override

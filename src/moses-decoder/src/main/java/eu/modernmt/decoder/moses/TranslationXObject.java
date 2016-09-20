@@ -2,7 +2,6 @@ package eu.modernmt.decoder.moses;
 
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationHypothesis;
-import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
 
@@ -15,20 +14,6 @@ import java.util.List;
  * Created by davide on 02/12/15.
  */
 class TranslationXObject {
-
-    private static Word[] explode(String text) {
-        String[] pieces = text.split(" +");
-        Word[] words = new Word[pieces.length];
-
-        for (int i = 0; i < pieces.length; i++) {
-            String rightSpace = i < pieces.length - 1 ? " " : null;
-
-            long id = Long.parseLong(pieces[i]);
-            words[i] = new Word((int) (id), rightSpace);
-        }
-
-        return words;
-    }
 
     static class Hypothesis {
         public String text;
@@ -66,7 +51,7 @@ class TranslationXObject {
                 }
             }
 
-            return new TranslationHypothesis(explode(this.text), source, null, this.totalScore, scores);
+            return new TranslationHypothesis(XUtils.explode(this.text), source, null, this.totalScore, scores);
         }
     }
 
@@ -81,9 +66,9 @@ class TranslationXObject {
     }
 
     public DecoderTranslation getTranslation(Sentence source) {
-        Word[] words = explode(text);
+        Word[] words = XUtils.explode(text);
 
-        DecoderTranslation translation = new DecoderTranslation(words, source, parseAlignment(alignment));
+        DecoderTranslation translation = new DecoderTranslation(words, source, XUtils.decode(alignment));
 
         if (nbestList != null && nbestList.length > 0) {
             List<TranslationHypothesis> nbest = new ArrayList<>(nbestList.length);
@@ -95,21 +80,6 @@ class TranslationXObject {
         }
 
         return translation;
-    }
-
-    private static Alignment parseAlignment(int[] encoded) {
-        if (encoded == null || encoded.length == 0)
-            return null;
-
-        int size = encoded.length / 2;
-
-        int[] source = new int[size];
-        int[] target = new int[size];
-
-        System.arraycopy(encoded, 0, source, 0, size);
-        System.arraycopy(encoded, size, target, 0, size);
-
-        return new Alignment(source, target);
     }
 
 }

@@ -3,6 +3,7 @@ package eu.modernmt.context.lucene;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextScore;
 import eu.modernmt.context.lucene.analysis.CorpusAnalyzer;
+import eu.modernmt.model.Domain;
 import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -96,18 +97,20 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
         return this.indexReader;
     }
 
-    public void add(Corpus corpus) throws ContextAnalyzerException {
-        this.add(Collections.singleton(corpus));
+    public void add(Document document) throws ContextAnalyzerException {
+        this.add(Collections.singleton(document));
     }
 
-    public void add(Collection<? extends Corpus> corpora) throws ContextAnalyzerException {
-        for (Corpus corpus : corpora) {
-            logger.info("Adding to index document " + corpus);
+    public void add(Collection<Document> documents) throws ContextAnalyzerException {
+        for (Document document : documents) {
+            String name = DocumentBuilder.getName(document);
+
+            logger.info("Adding to index document " + name);
 
             try {
-                this.indexWriter.addDocument(DocumentBuilder.createDocument(corpus));
+                this.indexWriter.addDocument(document);
             } catch (IOException e) {
-                throw new ContextAnalyzerException("Failed to add document " + corpus.getName() + " to index", e);
+                throw new ContextAnalyzerException("Failed to add document " + name + " to index", e);
             }
         }
 
@@ -182,7 +185,8 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
                 throw new ContextAnalyzerException("Could not resolve document " + topDocRef.doc + " in index", e);
             }
 
-            String name = topDoc.get(DocumentBuilder.DOCUMENT_NAME_FIELD);
+            int id = DocumentBuilder.getId(topDoc);
+            String name = DocumentBuilder.getName(topDoc);
 
             float similarityScore;
             try {
@@ -191,7 +195,7 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
                 throw new ContextAnalyzerException("Could not compute cosine similarity for doc " + name, e);
             }
 
-            result.add(new ContextScore(name, similarityScore));
+            result.add(new ContextScore(new Domain(id, name), similarityScore));
         }
 
         // Sort and limit result

@@ -12,17 +12,20 @@
 using namespace std;
 using namespace mmt::decoder;
 
-void ParseContext(JNIEnv *jvm, jobjectArray keys, jfloatArray values, map<string, float> &outContext) {
+void ParseContext(JNIEnv *jvm, jintArray keys, jfloatArray values, map<string, float> &outContext) {
     int size = jvm->GetArrayLength(values);
+
+    jint *keysArray = jvm->GetIntArrayElements(keys, 0);
     jfloat *valuesArray = jvm->GetFloatArrayElements(values, 0);
 
     for (int i = 0; i < size; i++) {
-        string key = jni_jstrtostr(jvm, (jstring) jvm->GetObjectArrayElement(keys, i));
+        string key = std::to_string((uint32_t) keysArray[i]);
         float value = valuesArray[i];
 
         outContext[key] = value;
     }
 
+    jvm->ReleaseIntArrayElements(keys, keysArray, 0);
     jvm->ReleaseFloatArrayElements(values, valuesArray, 0);
 }
 
@@ -120,15 +123,16 @@ Java_eu_modernmt_decoder_moses_MosesDecoder_setFeatureWeights(JNIEnv *jvm, jobje
     instance->setDefaultFeatureWeights(featureWeights);
 }
 
+
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
  * Method:    createSession
- * Signature: ([Ljava/lang/String;[F)J
+ * Signature: ([I[F)J
  */
 JNIEXPORT jlong JNICALL
-Java_eu_modernmt_decoder_moses_MosesDecoder_createSession(JNIEnv *jvm, jobject self, jobjectArray contextKeys,
+Java_eu_modernmt_decoder_moses_MosesDecoder_createSession(JNIEnv *jvm, jobject jself, jintArray contextKeys,
                                                           jfloatArray contextValues) {
-    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, self);
+    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
 
     map<string, float> context;
     ParseContext(jvm, contextKeys, contextValues, context);
@@ -149,12 +153,12 @@ JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_destroySessio
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
  * Method:    translate
- * Signature: (Ljava/lang/String;[Ljava/lang/String;[FJI)Leu/modernmt/decoder/moses/TranslationXObject;
+ * Signature: (Ljava/lang/String;[I[FJI)Leu/modernmt/decoder/moses/TranslationXObject;
  */
 JNIEXPORT jobject JNICALL
-Java_eu_modernmt_decoder_moses_MosesDecoder_translate(JNIEnv *jvm, jobject self, jstring text, jobjectArray contextKeys,
+Java_eu_modernmt_decoder_moses_MosesDecoder_translate(JNIEnv *jvm, jobject jself, jstring text, jintArray contextKeys,
                                                       jfloatArray contextValues, jlong session, jint nbest) {
-    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, self);
+    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
     string sentence = jni_jstrtostr(jvm, text);
 
     translation_t translation;
@@ -192,6 +196,30 @@ Java_eu_modernmt_decoder_moses_MosesDecoder_translate(JNIEnv *jvm, jobject self,
         jvm->DeleteLocalRef(hypothesesArray);
 
     return jtranslation;
+}
+
+/*
+ * Class:     eu_modernmt_decoder_moses_MosesDecoder
+ * Method:    updateReceived
+ * Signature: (IJI[I[I[I)V
+ */
+JNIEXPORT void JNICALL
+Java_eu_modernmt_decoder_moses_MosesDecoder_updateReceived(JNIEnv *jvm, jobject jself, jint jstreamId,
+                                                           jlong jsentenceId, jint jdomain, jintArray jsource,
+                                                           jintArray jtarget,
+                                                           jintArray jalignment) {
+    throw invalid_argument("Not implemented yet");
+}
+
+/*
+ * Class:     eu_modernmt_decoder_moses_MosesDecoder
+ * Method:    getLatestUpdatesIdentifier
+ * Signature: ()[J
+ */
+JNIEXPORT jlongArray JNICALL
+Java_eu_modernmt_decoder_moses_MosesDecoder_getLatestUpdatesIdentifier(JNIEnv *jvm, jobject jself) {
+    // TODO: Not implemented yet
+    return jvm->NewLongArray(0);
 }
 
 /*

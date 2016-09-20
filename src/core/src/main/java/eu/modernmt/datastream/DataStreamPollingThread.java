@@ -3,6 +3,8 @@ package eu.modernmt.datastream;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.processing.ProcessingException;
+import eu.modernmt.updating.Update;
+import eu.modernmt.updating.UpdatesListener;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
@@ -26,7 +28,7 @@ class DataStreamPollingThread extends Thread {
     private DataStreamException exception;
     private KafkaConsumer<Integer, StreamUpdate> consumer;
     private boolean interrupted;
-    private final ArrayList<DataStreamListener> listeners = new ArrayList<>(10);
+    private final ArrayList<UpdatesListener> listeners = new ArrayList<>(10);
 
     public DataStreamPollingThread(Engine engine) {
         super("DataStreamPollingThread");
@@ -40,7 +42,7 @@ class DataStreamPollingThread extends Thread {
             throw e;
     }
 
-    public void addListener(DataStreamListener listener) {
+    public void addListener(UpdatesListener listener) {
         this.listeners.add(listener);
     }
 
@@ -60,12 +62,12 @@ class DataStreamPollingThread extends Thread {
         this.consumer.assign(Arrays.asList(partitions));
 
         long[] offsets = new long[partitions.length];
-        for (DataStreamListener listener : listeners) {
+        for (UpdatesListener listener : listeners) {
             for (Map.Entry<Integer, Long> entry : listener.getLatestSequentialNumbers().entrySet()) {
                 int id = entry.getKey();
                 long num = entry.getValue();
 
-                if (id < offsets.length && offsets[id] > num)
+                if (id < offsets.length && (offsets[id] == 0 || offsets[id] > num))
                     offsets[id] = num;
             }
         }
@@ -130,7 +132,7 @@ class DataStreamPollingThread extends Thread {
         }
 
         for (Update update : batch) {
-            for (DataStreamListener listener : listeners)
+            for (UpdatesListener listener : listeners)
                 listener.updateReceived(update);
         }
     }

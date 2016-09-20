@@ -42,10 +42,10 @@ JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_setFeatureWei
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
  * Method:    createSession
- * Signature: ([Ljava/lang/String;[F)J
+ * Signature: ([I[F)J
  */
 JNIEXPORT jlong JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_createSession
-  (JNIEnv *, jobject, jobjectArray, jfloatArray);
+  (JNIEnv *, jobject, jintArray, jfloatArray);
 
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
@@ -58,10 +58,26 @@ JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_destroySessio
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
  * Method:    translate
- * Signature: (Ljava/lang/String;[Ljava/lang/String;[FJI)Leu/modernmt/decoder/moses/TranslationXObject;
+ * Signature: (Ljava/lang/String;[I[FJI)Leu/modernmt/decoder/moses/TranslationXObject;
  */
 JNIEXPORT jobject JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_translate
-  (JNIEnv *, jobject, jstring, jobjectArray, jfloatArray, jlong, jint);
+  (JNIEnv *, jobject, jstring, jintArray, jfloatArray, jlong, jint);
+
+/*
+ * Class:     eu_modernmt_decoder_moses_MosesDecoder
+ * Method:    updateReceived
+ * Signature: (IJI[I[I[I)V
+ */
+JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_updateReceived
+  (JNIEnv *, jobject, jint, jlong, jint, jintArray, jintArray, jintArray);
+
+/*
+ * Class:     eu_modernmt_decoder_moses_MosesDecoder
+ * Method:    getLatestUpdatesIdentifier
+ * Signature: ()[J
+ */
+JNIEXPORT jlongArray JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_getLatestUpdatesIdentifier
+  (JNIEnv *, jobject);
 
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder

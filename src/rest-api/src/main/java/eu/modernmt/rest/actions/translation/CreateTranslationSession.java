@@ -5,8 +5,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import eu.modernmt.context.ContextScore;
-import eu.modernmt.facade.ModernMT;
 import eu.modernmt.decoder.TranslationSession;
+import eu.modernmt.facade.ModernMT;
+import eu.modernmt.model.Domain;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
@@ -59,10 +60,21 @@ public class CreateTranslationSession extends ObjectAction<TranslationSession> {
 
         for (JsonElement e : array) {
             JsonObject json = e.getAsJsonObject();
-            String id = json.get("id").getAsString();
-            float score = json.get("score").getAsFloat();
 
-            list.add(new ContextScore(id, score));
+            JsonElement domainElement = json.get("domain");
+            if (domainElement == null)
+                throw new JsonParseException("Missing value 'domain'");
+            JsonElement scoreElement = json.get("score");
+            if (scoreElement == null)
+                throw new JsonParseException("Missing value 'score'");
+
+            if (!domainElement.isJsonPrimitive())
+                domainElement = domainElement.getAsJsonObject().get("id");
+
+            int id = (int) domainElement.getAsLong(); // unsigned int
+            float score = scoreElement.getAsFloat();
+
+            list.add(new ContextScore(new Domain(id, null), score));
         }
 
         return list;

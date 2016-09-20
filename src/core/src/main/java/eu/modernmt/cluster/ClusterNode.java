@@ -7,19 +7,22 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ITopic;
 import com.hazelcast.core.Message;
-import eu.modernmt.datastream.DataStreamManager;
+import eu.modernmt.aligner.Aligner;
 import eu.modernmt.cluster.error.BootstrapException;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.cluster.executor.DistributedCallable;
 import eu.modernmt.cluster.executor.DistributedExecutor;
 import eu.modernmt.cluster.executor.ExecutorDaemon;
 import eu.modernmt.cluster.storage.StorageService;
+import eu.modernmt.context.ContextAnalyzer;
+import eu.modernmt.datastream.DataStreamManager;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.engine.LazyLoadException;
 import eu.modernmt.engine.config.EngineConfig;
 import eu.modernmt.engine.config.INIEngineConfigWriter;
+import eu.modernmt.updating.UpdatesListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -161,10 +164,14 @@ public class ClusterNode {
             throw new BootstrapException(e);
         }
 
+        Aligner aligner;
+        Decoder decoder;
+        ContextAnalyzer contextAnalyzer;
+
         try {
-            engine.getAligner();
-            engine.getDecoder();
-            engine.getContextAnalyzer();
+            aligner = engine.getAligner();
+            decoder = engine.getDecoder();
+            contextAnalyzer = engine.getContextAnalyzer();
             engine.getSourcePreprocessor();
             engine.getTargetPreprocessor();
             engine.getPostprocessor();
@@ -180,6 +187,14 @@ public class ClusterNode {
 
         try {
             dataStreamManager = new DataStreamManager(uuid, engine);
+
+            if (aligner instanceof UpdatesListener)
+                dataStreamManager.addListener((UpdatesListener) aligner);
+            if (decoder instanceof UpdatesListener)
+                dataStreamManager.addListener((UpdatesListener) decoder);
+            if (contextAnalyzer instanceof UpdatesListener)
+                dataStreamManager.addListener((UpdatesListener) contextAnalyzer);
+
             dataStreamManager.connect(); // TODO: should read host and ports from config
         } catch (IOException e) {
             throw new BootstrapException(e);

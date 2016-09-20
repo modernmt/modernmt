@@ -1,5 +1,7 @@
 package eu.modernmt.datastream;
 
+import eu.modernmt.updating.Update;
+
 /**
  * Created by davide on 06/09/16.
  */
@@ -22,6 +24,10 @@ class StreamUpdate {
         this.targetSentence = targetSentence;
         this.last = last;
         this.first = first;
+    }
+
+    public Update toUpdate(int topicId, long sequentialId) {
+        return new Update(topicId, sequentialId, domain, last, first);
     }
 
     public int getDomain() {
