@@ -60,8 +60,19 @@ public class CreateTranslationSession extends ObjectAction<TranslationSession> {
 
         for (JsonElement e : array) {
             JsonObject json = e.getAsJsonObject();
-            int id = (int) json.get("id").getAsLong(); // unsigned int
-            float score = json.get("score").getAsFloat();
+
+            JsonElement domainElement = json.get("domain");
+            if (domainElement == null)
+                throw new JsonParseException("Missing value 'domain'");
+            JsonElement scoreElement = json.get("score");
+            if (scoreElement == null)
+                throw new JsonParseException("Missing value 'score'");
+
+            if (!domainElement.isJsonPrimitive())
+                domainElement = domainElement.getAsJsonObject().get("id");
+
+            int id = (int) domainElement.getAsLong(); // unsigned int
+            float score = scoreElement.getAsFloat();
 
             list.add(new ContextScore(new Domain(id, null), score));
         }

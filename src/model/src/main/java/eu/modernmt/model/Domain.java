@@ -1,9 +1,11 @@
 package eu.modernmt.model;
 
+import java.io.Serializable;
+
 /**
  * Created by davide on 06/09/16.
  */
-public class Domain {
+public class Domain implements Serializable {
 
     private int id;
     private String name;

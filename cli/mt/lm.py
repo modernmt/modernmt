@@ -107,7 +107,10 @@ class RocksLM(LanguageModel):
     def __init__(self, model):
         LanguageModel.__init__(self, model, 'ROCKSLM')
 
-        self._create_bin = os.path.join(cli.BIN_DIR, 'rockslm', 'create_alm')
+        self._create_alm_bin = os.path.join(cli.BIN_DIR, 'rockslm', 'create_alm')
+        self._create_slm_bin = os.path.join(cli.BIN_DIR, 'rockslm', 'create_slm')
+
+        self.prune = True
 
     def train(self, corpora, lang, working_dir='.', log_file=None):
         LanguageModel.train(self, corpora, lang, working_dir, log_file)
@@ -123,11 +126,23 @@ class RocksLM(LanguageModel):
             if log_file is not None:
                 log = open(log_file, 'w')
 
+            fileutils.makedirs(self._model, exist_ok=True)
+
             # Train static LM
             static_lm_model = os.path.join(self._model, 'background.slm')
-            static_lm = KenLM(static_lm_model)
-            static_lm._order = self._order
-            static_lm.train(corpora, lang, os.path.join(working_dir, 'background.slm'), log_file=log)
+
+            merged_corpus = os.path.join(working_dir, 'merged_corpus')
+            fileutils.merge([corpus.get_file(lang) for corpus in corpora], merged_corpus)
+
+            command = [self._create_slm_bin, '--discount_fallback', '-o', str(self._order),
+                       '--model', static_lm_model,
+                       '-S', str(KenLM.get_mem_percent()) + '%',
+                       '-T', os.path.join(working_dir, 'slm.temp')]
+            if self._order > 2 and self.prune:
+                command += ['--prune', '0', '0', '1']
+
+            with open(merged_corpus) as stdin:
+                shell.execute(command, stdin=stdin, stdout=log, stderr=log)
 
             # Create AdaptiveLM training folder
             alm_train_folder = os.path.join(working_dir, 'alm_train')
@@ -140,7 +155,7 @@ class RocksLM(LanguageModel):
             adaptive_lm_model = os.path.join(self._model, 'foreground.alm')
             fileutils.makedirs(adaptive_lm_model, exist_ok=True)
 
-            command = [self._create_bin, '-m', adaptive_lm_model, '-i', alm_train_folder, '-b', '100000000']
+            command = [self._create_alm_bin, '-m', adaptive_lm_model, '-i', alm_train_folder, '-b', '100000000']
             shell.execute(command, stdout=log, stderr=log)
         finally:
             if log_file is not None:

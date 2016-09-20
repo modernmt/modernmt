@@ -130,7 +130,7 @@ Java_eu_modernmt_decoder_moses_MosesDecoder_setFeatureWeights(JNIEnv *jvm, jobje
  * Signature: ([I[F)J
  */
 JNIEXPORT jlong JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_createSession(JNIEnv *jvm, jobject jself, jintArray contextKeys, jfloatArray contextValues) {
-    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, self);
+    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
 
     map<string, float> context;
     ParseContext(jvm, contextKeys, contextValues, context);
@@ -154,9 +154,9 @@ JNIEXPORT void JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_destroySessio
  * Signature: (Ljava/lang/String;[I[FJI)Leu/modernmt/decoder/moses/TranslationXObject;
  */
 JNIEXPORT jobject JNICALL
-Java_eu_modernmt_decoder_moses_MosesDecoder_translate(JNIEnv *jvm, jobject self, jstring text, jintArray contextKeys,
+Java_eu_modernmt_decoder_moses_MosesDecoder_translate(JNIEnv *jvm, jobject jself, jstring text, jintArray contextKeys,
                                                       jfloatArray contextValues, jlong session, jint nbest) {
-    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, self);
+    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
     string sentence = jni_jstrtostr(jvm, text);
 
     translation_t translation;
