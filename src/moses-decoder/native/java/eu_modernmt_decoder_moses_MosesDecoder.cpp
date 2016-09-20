@@ -10,7 +10,36 @@
 #include <mmt/jniutil.h>
 
 using namespace std;
+using namespace mmt;
 using namespace mmt::decoder;
+
+void ParseSentence(JNIEnv *jvm, jintArray jsentence, vector<wid_t> &outSentence) {
+    size_t size = (size_t) jvm->GetArrayLength(jsentence);
+
+    outSentence.resize(size);
+
+    jint *jsentenceArray = jvm->GetIntArrayElements(jsentence, 0);
+    for (size_t i = 0; i < size; ++i)
+        outSentence[i] = (wid_t) jsentenceArray[i];
+
+    jvm->ReleaseIntArrayElements(jsentence, jsentenceArray, 0);
+}
+
+void ParseAlignment(JNIEnv *jvm, jintArray jalignment, alignment_t &outAlignment) {
+    size_t fullsize = (size_t) jvm->GetArrayLength(jalignment);
+    size_t size = fullsize / 2;
+
+    jint *jalignmentArray = jvm->GetIntArrayElements(jalignment, 0);
+
+    outAlignment.resize(size);
+
+    for (size_t i = 0; i < size; ++i) {
+        outAlignment[i].first = (length_t) jalignmentArray[i];
+        outAlignment[i].second = (length_t) jalignmentArray[i + size];
+    }
+
+    jvm->ReleaseIntArrayElements(jalignment, jalignmentArray, 0);
+}
 
 void ParseContext(JNIEnv *jvm, jintArray keys, jfloatArray values, map<string, float> &outContext) {
     int size = jvm->GetArrayLength(values);
@@ -208,7 +237,21 @@ Java_eu_modernmt_decoder_moses_MosesDecoder_updateReceived(JNIEnv *jvm, jobject 
                                                            jlong jsentenceId, jint jdomain, jintArray jsource,
                                                            jintArray jtarget,
                                                            jintArray jalignment) {
-    throw invalid_argument("Not implemented yet");
+    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
+
+    updateid_t id((stream_t) jstreamId, (seqid_t) jsentenceId);
+    domain_t domain = (domain_t) jdomain;
+
+    vector<wid_t> source;
+    ParseSentence(jvm, jsource, source);
+
+    vector<wid_t> target;
+    ParseSentence(jvm, jtarget, target);
+
+    alignment_t alignment;
+    ParseAlignment(jvm, jalignment, alignment);
+
+    instance->Add(id, domain, source, target, alignment);
 }
 
 /*
