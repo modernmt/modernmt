@@ -38,6 +38,11 @@
             <artifactId>mmt-lucene-contextanalyzer</artifactId>
             <version>${mmt.version}</version>
         </dependency>
+        <dependency>
+            <groupId>eu.modernmt</groupId>
+            <artifactId>mmt-persistence-sqlite</artifactId>
+            <version>${mmt.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>eu.modernmt</groupId>

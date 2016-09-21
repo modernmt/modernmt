@@ -175,6 +175,7 @@ public class ClusterNode {
             engine.getSourcePreprocessor();
             engine.getTargetPreprocessor();
             engine.getPostprocessor();
+            engine.getDatabase();
         } catch (LazyLoadException e) {
             throw new BootstrapException(e.getCause());
         }

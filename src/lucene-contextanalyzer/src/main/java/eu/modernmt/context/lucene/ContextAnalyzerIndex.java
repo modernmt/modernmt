@@ -126,7 +126,7 @@ public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
             this.indexWriter.deleteAll();
             this.indexWriter.commit();
         } catch (IOException e) {
-            throw new ContextAnalyzerException("Unable to clear context analyzer index", e);
+            throw new ContextAnalyzerException("Unable to drop context analyzer index", e);
         }
     }
 

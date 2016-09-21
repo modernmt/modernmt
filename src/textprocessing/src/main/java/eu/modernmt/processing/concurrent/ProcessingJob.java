@@ -54,7 +54,7 @@ class ProcessingJob<P, R> {
 
         try {
             // The POISON_PILL could be added twice, but this is not a problem.
-            // On the contrary the clear() call could have removed the POISON_PILL
+            // On the contrary the drop() call could have removed the POISON_PILL
             // added by the Collector thread.
             inputQueue.clear();
             inputQueue.put(POISON_PILL);

@@ -4,51 +4,132 @@ import eu.modernmt.datastream.DataStreamException;
 import eu.modernmt.datastream.DataStreamManager;
 import eu.modernmt.model.Domain;
 import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.persistence.Connection;
+import eu.modernmt.persistence.Database;
+import eu.modernmt.persistence.DomainDAO;
+import eu.modernmt.persistence.PersistenceException;
+import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Collection;
 
 /**
  * Created by davide on 06/09/16.
  */
 public class DomainFacade {
 
-    public List<Domain> list() {
-        //TODO: stub implementation
-        throw new UnsupportedOperationException("not yet implemented");
+    public Collection<Domain> list() throws PersistenceException {
+        Connection connection = null;
+        Database db = ModernMT.node.getEngine().getDatabase();
+
+        try {
+            connection = db.getConnection();
+
+            DomainDAO domainDAO = db.getDomainDAO(connection);
+            return domainDAO.retrieveAll();
+        } finally {
+            IOUtils.closeQuietly(connection);
+        }
     }
 
-    public Domain get(int domainId) {
-        //TODO: stub implementation
-        throw new UnsupportedOperationException("not yet implemented");
+    public Domain get(int domainId) throws PersistenceException {
+        Connection connection = null;
+        Database db = ModernMT.node.getEngine().getDatabase();
+
+        try {
+            connection = db.getConnection();
+
+            DomainDAO domainDAO = db.getDomainDAO(connection);
+            return domainDAO.retrieveBytId(domainId);
+        } finally {
+            IOUtils.closeQuietly(connection);
+        }
     }
 
-    public Domain add(int domainId, BilingualCorpus corpus) throws IOException, DataStreamException {
-        DataStreamManager manager = ModernMT.node.getDataStreamManager();
+    public Domain add(int domainId, BilingualCorpus corpus) throws IOException, DataStreamException, PersistenceException {
+        Connection connection = null;
+        Database db = ModernMT.node.getEngine().getDatabase();
 
-        //TODO: check if domainId exists
-        manager.upload(domainId, corpus);
+        try {
+            connection = db.getConnection();
 
-        return new Domain(domainId, null);
+            DomainDAO domainDAO = db.getDomainDAO(connection);
+            Domain domain = domainDAO.retrieveBytId(domainId);
+
+            if (domain == null)
+                return null;
+
+            DataStreamManager manager = ModernMT.node.getDataStreamManager();
+            manager.upload(domainId, corpus);
+
+            return domain;
+        } finally {
+            IOUtils.closeQuietly(connection);
+        }
     }
 
-    public Domain add(int domainId, String source, String target) throws DataStreamException {
-        DataStreamManager manager = ModernMT.node.getDataStreamManager();
+    public Domain add(int domainId, String source, String target) throws DataStreamException, PersistenceException {
+        Connection connection = null;
+        Database db = ModernMT.node.getEngine().getDatabase();
 
-        //TODO: check if domainId exists
-        manager.upload(domainId, source, target);
+        try {
+            connection = db.getConnection();
 
-        return new Domain(domainId, null);
+            DomainDAO domainDAO = db.getDomainDAO(connection);
+            Domain domain = domainDAO.retrieveBytId(domainId);
+
+            if (domain == null)
+                return null;
+
+            DataStreamManager manager = ModernMT.node.getDataStreamManager();
+            manager.upload(domainId, source, target);
+
+            return domain;
+        } finally {
+            IOUtils.closeQuietly(connection);
+        }
     }
 
-    public Domain create(String name, BilingualCorpus corpus) {
-        //TODO: stub implementation
-        throw new UnsupportedOperationException("not yet implemented");
+    public Domain create(String name, BilingualCorpus corpus) throws PersistenceException, IOException, DataStreamException {
+        Connection connection = null;
+        Database db = ModernMT.node.getEngine().getDatabase();
+
+        try {
+            connection = db.getConnection();
+
+            Domain domain = new Domain(0, name);
+
+            DomainDAO domainDAO = db.getDomainDAO(connection);
+            domain = domainDAO.put(domain);
+
+            DataStreamManager manager = ModernMT.node.getDataStreamManager();
+            manager.upload(domain.getId(), corpus);
+
+            return domain;
+        } finally {
+            IOUtils.closeQuietly(connection);
+        }
     }
 
-    public Domain create(String name, String source, String target) {
-        //TODO: stub implementation
-        throw new UnsupportedOperationException("not yet implemented");
+    public Domain create(String name, String source, String target) throws PersistenceException, DataStreamException {
+        Connection connection = null;
+        Database db = ModernMT.node.getEngine().getDatabase();
+
+        try {
+            connection = db.getConnection();
+
+            Domain domain = new Domain(0, name);
+
+            DomainDAO domainDAO = db.getDomainDAO(connection);
+            domain = domainDAO.put(domain);
+
+            DataStreamManager manager = ModernMT.node.getDataStreamManager();
+            manager.upload(domain.getId(), source, target);
+
+            return domain;
+        } finally {
+            IOUtils.closeQuietly(connection);
+        }
     }
 
 }

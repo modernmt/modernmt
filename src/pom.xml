@@ -20,6 +20,7 @@
         <module>rest-api</module>
         <module>cli</module>
         <module>rocksdb-vocabulary</module>
+        <module>persistence-sqlite</module>
     </modules>
 
     <packaging>pom</packaging>

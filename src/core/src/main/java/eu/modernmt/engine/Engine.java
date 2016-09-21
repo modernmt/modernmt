@@ -9,6 +9,9 @@ import eu.modernmt.decoder.moses.MosesDecoder;
 import eu.modernmt.decoder.moses.MosesINI;
 import eu.modernmt.engine.config.EngineConfig;
 import eu.modernmt.io.Paths;
+import eu.modernmt.persistence.Database;
+import eu.modernmt.persistence.PersistenceException;
+import eu.modernmt.persistence.sqlite.SQLiteDatabase;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.TextProcessingModels;
@@ -34,6 +37,7 @@ public class Engine implements Closeable {
 
     public static final String ENGINE_CONFIG_PATH = "engine.ini";
     private static final String VOCABULARY_MODEL_PATH = Paths.join("models", "vocabulary");
+    private static final String SQLITE_DATABASE_PATH = Paths.join("models", "sqlitedb");
 
     public static File getRootPath(String engine) {
         return FileConst.getEngineRoot(engine);
@@ -56,6 +60,7 @@ public class Engine implements Closeable {
     private Postprocessor postprocessor = null;
     private ContextAnalyzer contextAnalyzer = null;
     private Vocabulary vocabulary = null;
+    private Database database = null;
 
     public Engine(EngineConfig config, int threads) {
         this.config = config;
@@ -197,6 +202,24 @@ public class Engine implements Closeable {
         }
 
         return vocabulary;
+    }
+
+    public Database getDatabase() {
+        if (database == null) {
+            synchronized (this) {
+                if (database == null) {
+                    try {
+                        //TODO: hardcoded connection string and password
+                        File model = new File(this.root, SQLITE_DATABASE_PATH);
+                        database = new SQLiteDatabase("jdbc:sqlite:" + model, name, "test");
+                    } catch (PersistenceException e) {
+                        throw new LazyLoadException(e);
+                    }
+                }
+            }
+        }
+
+        return database;
     }
 
     public Locale getSourceLanguage() {
