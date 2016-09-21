@@ -1,5 +1,5 @@
 NPROCS		:= 1
-OS			:= $(shell uname -s)
+OS		:= $(shell uname -s)
 
 ifeq ($(OS),Linux)
 	NPROCS := $(shell grep -c ^processor /proc/cpuinfo)
@@ -18,11 +18,11 @@ MMT_INSTALL_LIB			:= $(MMT_BUILD_DIR)/lib
 MMT_INSTALL_BIN			:= $(MMT_BUILD_DIR)/bin
 MMT_INSTALL_RES			:= $(MMT_BUILD_DIR)/res
 
-all: __rocksdb __moses
+all: __rocksdb __rockslm __moses
 
-install: __install_init __moses_install __rocksdb_install __paoding_install
+install: __install_init __moses_install __rocksdb_install __rockslm_install __paoding_install
 
-clean: __moses_clean __rocksdb_clean
+clean: __moses_clean __rocksdb_clean __rockslm_clean
 
 res: __res_init __paoding_res __opennlp_res
 
@@ -41,6 +41,9 @@ __res_init:
 #  MODULE: Moses decoder
 # ==========================================
 
+ROCKSDB_HOME		:= $(VENDOR_DIR)/rocksdb
+ROCKSLM_HOME		:= $(MMT_BUILD_DIR)
+
 MOSES_HOME		:= $(VENDOR_DIR)/moses
 MOSES_BUILD_DIR	:= $(MOSES_HOME)/build
 MOSES_LIB_DIR	:= $(MOSES_BUILD_DIR)/lib
@@ -54,10 +57,11 @@ MOSES_EXES		:= mmlex-build mtt-build symal symal2mam
 MERT_EXES		:= evaluator extractor kbmira mert pro
 KENLM_EXES		:= lmplz build_binary
 
-__moses: 
+
+__moses: __rockslm 
 	@echo "Building Moses..."
 	@mkdir -p $(MOSES_BUILD_DIR)
-	@cd $(MOSES_BUILD_DIR); cmake $(MOSES_HOME) -DMMT_INCLUDE_DIR=$(MMT_NATIVE_INCLUDE_DIR) -DUSE_ROCKSLM=1 -DROCKSDB_ROOT=/home/ubuntu/workspace/ModernMT/vendor/rocksdb/ -DROCKSLM_ROOT=/home/ubuntu/workspace/RocksLM/build/ -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$(MOSES_BUILD_DIR)" -Wno-dev
+	@cd $(MOSES_BUILD_DIR); cmake $(MOSES_HOME) -DMMT_INCLUDE_DIR=$(MMT_NATIVE_INCLUDE_DIR) -DUSE_ROCKSLM=1 -DROCKSDB_ROOT=$(ROCKSDB_HOME) -DROCKSLM_ROOT=$(ROCKSLM_HOME) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$(MOSES_BUILD_DIR)" -Wno-dev
 	@cd $(MOSES_BUILD_DIR); make -j$(NPROCS)
 	@echo "SUCCESS (Moses)"
 	
@@ -128,17 +132,22 @@ __rocksdb_clean:
 	@cd $(ROCKSDB_HOME); make clean
 	rm -f $(foreach lib,$(ROCKSDB_LIBS),$(MMT_INSTALL_LIB)/$(lib)*)
 
+# ==========================================
+#  MODULE: RocksLM (under MMT)
+# ==========================================
 
+ROCKSLM_SOURCE_DIR	:= $(MMT_HOME)/src/rockslm
+__rockslm: 
+	@echo "Building RocksLM..."
+	@cd $(ROCKSLM_SOURCE_DIR); mvn clean install
+	@echo "SUCCESS (RocksLM)"
+        
+__rockslm_install:
+	@echo "Installing RocksLM..."
+	$(foreach lib,$(ROCKSLM_LIBS),cp --preserve=links -r $(ROCKSLM_HOME)/$(lib)* $(MMT_INSTALL_LIB)/;)
+	@echo "SUCCESS (RocksLM)"
 
-
-
-
-
-
-
-
-
-
-
-
+__rockslm_clean:
+	@cd $(ROCKSLM_HOME); make clean
+	rm -f $(foreach lib,$(ROCKSLM_LIBS),$(MMT_INSTALL_LIB)/$(lib)*)
 
