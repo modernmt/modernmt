@@ -203,3 +203,4 @@ void RocksLM::Add(const updateid_t &id, const domain_t domain, const vector<wid_
 vector<mmt::updateid_t> RocksLM::GetLatestUpdatesIdentifier() {
     return self->alm->GetLatestUpdatesIdentifier();
 }
+

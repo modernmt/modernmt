@@ -40,10 +40,14 @@ namespace rockslm {
 
         /* Incremental Model */
 
-        virtual void Add(const updateid_t &id, const domain_t domain, const vector<wid_t> &source, const vector<wid_t> &target,
-                         const alignment_t &alignment) override;
+        virtual void Add(const updateid_t &id, const domain_t domain,
+                         const vector<wid_t> &source, const vector<wid_t> &target, const alignment_t &alignment) override;
 
         virtual vector<updateid_t> GetLatestUpdatesIdentifier() override;
+
+        virtual void NormalizeContextMap(context_t *context) {
+            void self->alm->NormalizeContextMap(context);
+        };
 
     private:
         struct rockslm_private;

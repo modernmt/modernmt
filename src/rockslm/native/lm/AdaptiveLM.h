@@ -48,6 +48,8 @@ namespace rockslm {
 
         virtual vector<updateid_t> GetLatestUpdatesIdentifier() override;
 
+        virtual void NormalizeContextMap(context_t *context);
+
     private:
         const uint8_t order;
 

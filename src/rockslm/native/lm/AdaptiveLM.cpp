@@ -249,3 +249,31 @@ vector<updateid_t> AdaptiveLM::GetLatestUpdatesIdentifier() {
 
     return result;
 }
+
+
+void AdaptiveLM::NormalizeContextMap(context_t *context) {
+    context_t ret;
+    float total = 0.0;
+
+    for (auto it = context->begin(); it != context->end(); ++it) {
+        counts_t domainCounts;
+        storage.GetWordCounts(it->first, &domainCounts.count, &domainCounts.successors);
+
+        if (domainCounts.count > 0) continue;
+
+        total += it->second;
+    }
+
+    if (total == 0.0)
+        total = 1.0f;
+
+    for (auto it = context->begin(); it != context->end(); ++it) {
+        counts_t domainCounts;
+        storage.GetWordCounts(it->first, &domainCounts.count, &domainCounts.successors);
+
+        ret[it->first] = it->second / total;
+    }
+    // replace map contents
+    context->clear();
+    context->insert(ret.begin(), ret.end());
+}
