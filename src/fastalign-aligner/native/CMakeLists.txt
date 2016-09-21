@@ -28,7 +28,7 @@ foreach(exefile ${executables})
     get_filename_component(exe ${exefile} NAME_WE)
     add_executable(${exe} ${exefile})
     target_link_libraries(${exe} ${PROJECT_NAME})
-    install(TARGETS ${exe} RUNTIME DESTINATION bin/fastalign)
+    install(TARGETS ${exe} RUNTIME DESTINATION bin)
 endforeach()
 
 # External Libraries

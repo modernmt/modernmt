@@ -375,7 +375,7 @@ class ClusterNode(object):
                 with tempfile.NamedTemporaryFile() as runtime_moses_ini:
                     command = [self._mert_script, source_merged_corpus, target_merged_corpus,
                                self._mert_i_script, runtime_moses_ini.name, '--threads',
-                               str(multiprocessing.cpu_count()), '--mertdir', os.path.join(cli.BIN_DIR, 'mert'),
+                               str(multiprocessing.cpu_count()), '--mertdir', cli.BIN_DIR,
                                '--mertargs', '\'--binary --sctype BLEU\'', '--working-dir', mert_wd, '--nbest', '100',
                                '--decoder-flags', '"' + ' '.join(decoder_flags) + '"', '--nonorm', '--closest',
                                '--no-filter-phrase-table']

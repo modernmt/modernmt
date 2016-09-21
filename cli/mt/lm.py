@@ -48,8 +48,8 @@ class KenLM(LanguageModel):
         LanguageModel.__init__(self, model, 'KENLM')
 
         self.prune = True
-        self._lmplz_bin = os.path.join(cli.BIN_DIR, 'kenlm', 'lmplz')
-        self._bbinary_bin = os.path.join(cli.BIN_DIR, 'kenlm', 'build_binary')
+        self._lmplz_bin = os.path.join(cli.BIN_DIR, 'lmplz')
+        self._bbinary_bin = os.path.join(cli.BIN_DIR, 'build_binary')
 
     def train(self, corpora, lang, working_dir='.', log_file=None):
         LanguageModel.train(self, corpora, lang, working_dir, log_file)
@@ -107,8 +107,8 @@ class RocksLM(LanguageModel):
     def __init__(self, model):
         LanguageModel.__init__(self, model, 'ROCKSLM')
 
-        self._create_alm_bin = os.path.join(cli.BIN_DIR, 'rockslm', 'create_alm')
-        self._create_slm_bin = os.path.join(cli.BIN_DIR, 'rockslm', 'create_slm')
+        self._create_alm_bin = os.path.join(cli.BIN_DIR, 'create_alm')
+        self._create_slm_bin = os.path.join(cli.BIN_DIR, 'create_slm')
 
         self.prune = True
 

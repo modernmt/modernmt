@@ -94,9 +94,9 @@ class SuffixArraysPhraseTable(MosesFeature):
 
         self._cleaner = _CorpusCleaner()
 
-        self._symal2mam_bin = os.path.join(cli.BIN_DIR, 'moses', 'symal2mam')
-        self._mttbuild_bin = os.path.join(cli.BIN_DIR, 'moses', 'mtt-build')
-        self._mmlexbuild_bin = os.path.join(cli.BIN_DIR, 'moses', 'mmlex-build')
+        self._symal2mam_bin = os.path.join(cli.BIN_DIR, 'symal2mam')
+        self._mttbuild_bin = os.path.join(cli.BIN_DIR, 'mtt-build')
+        self._mmlexbuild_bin = os.path.join(cli.BIN_DIR, 'mmlex-build')
 
     def _get_model_basename(self):
         return os.path.join(self._model, 'model')
@@ -182,8 +182,8 @@ class FastAlign(WordAligner):
     def __init__(self):
         WordAligner.__init__(self)
 
-        self._train_bin = os.path.join(cli.BIN_DIR, 'fastalign', 'fa_build')
-        self._align_bin = os.path.join(cli.BIN_DIR, 'fastalign', 'fa_align')
+        self._train_bin = os.path.join(cli.BIN_DIR, 'fa_build')
+        self._align_bin = os.path.join(cli.BIN_DIR, 'fa_align')
 
     def align(self, corpus, langs, model_dir, working_dir='.', log_file=None):
         if not os.path.isdir(working_dir):
