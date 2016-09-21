@@ -37,7 +37,7 @@ public class Engine implements Closeable {
 
     public static final String ENGINE_CONFIG_PATH = "engine.ini";
     private static final String VOCABULARY_MODEL_PATH = Paths.join("models", "vocabulary");
-    private static final String SQLITE_DATABASE_PATH = Paths.join("models", "sqlitedb");
+    private static final String SQLITE_DATABASE_PATH = Paths.join("models", "db", "domains.db");
 
     public static File getRootPath(String engine) {
         return FileConst.getEngineRoot(engine);
