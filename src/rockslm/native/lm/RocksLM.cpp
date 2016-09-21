@@ -204,3 +204,7 @@ vector<mmt::updateid_t> RocksLM::GetLatestUpdatesIdentifier() {
     return self->alm->GetLatestUpdatesIdentifier();
 }
 
+void RocksLM::NormalizeContextMap(context_t *context) {
+    if (self->is_alm_active)
+        self->alm->NormalizeContextMap(context);
+}

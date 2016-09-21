@@ -255,11 +255,23 @@ void AdaptiveLM::NormalizeContextMap(context_t *context) {
     context_t ret;
     float total = 0.0;
 
+    context_t *context_map = context;
+    if (context_map == nullptr) {
+        std::cerr<< "BEFORE void AdaptiveLM::NormalizeContextMap(...) const context is null"
+                << std::endl;
+    } else if (context_map->empty()) {
+        std::cerr << "BEFORE void AdaptiveLM::NormalizeContextMap(...) const context is empty"
+                << std::endl;
+    } else {
+        std::cerr << "BEFORE void AdaptiveLM::NormalizeContextMap(...) context is not empty not null, size:|"
+                        <<
+                        context_map->size() << "|" << std::endl;
+    }
     for (auto it = context->begin(); it != context->end(); ++it) {
         counts_t domainCounts;
         storage.GetWordCounts(it->first, &domainCounts.count, &domainCounts.successors);
 
-        if (domainCounts.count > 0) continue;
+        if (domainCounts.count == 0) continue;
 
         total += it->second;
     }
@@ -271,8 +283,19 @@ void AdaptiveLM::NormalizeContextMap(context_t *context) {
         counts_t domainCounts;
         storage.GetWordCounts(it->first, &domainCounts.count, &domainCounts.successors);
 
+        if (domainCounts.count == 0) continue;
+
         ret[it->first] = it->second / total;
     }
+    if (ret.empty()) {
+        std::cerr << "AFTER void AdaptiveLM::NormalizeContextMap(...) const context is empty"
+                << std::endl;
+    } else {
+        std::cerr << "AFTER void AdaptiveLM::NormalizeContextMap(...) context is not empty not null, size:|"
+                        <<
+                        ret.size() << "|" << std::endl;
+    }
+
     // replace map contents
     context->clear();
     context->insert(ret.begin(), ret.end());

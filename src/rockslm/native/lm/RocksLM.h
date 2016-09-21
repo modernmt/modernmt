@@ -45,9 +45,7 @@ namespace rockslm {
 
         virtual vector<updateid_t> GetLatestUpdatesIdentifier() override;
 
-        virtual void NormalizeContextMap(context_t *context) {
-            void self->alm->NormalizeContextMap(context);
-        };
+        virtual void NormalizeContextMap(context_t *context);
 
     private:
         struct rockslm_private;
