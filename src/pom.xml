@@ -14,13 +14,14 @@
         <module>fastalign-aligner</module>
         <module>lucene-contextanalyzer</module>
         <module>moses-decoder</module>
+        <module>rocksdb-vocabulary</module>
+        <module>persistence-sqlite</module>
+        <module>rockslm</module>
 
         <module>core</module>
 
         <module>rest-api</module>
         <module>cli</module>
-        <module>rocksdb-vocabulary</module>
-        <module>persistence-sqlite</module>
     </modules>
 
     <packaging>pom</packaging>
