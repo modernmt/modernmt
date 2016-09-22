@@ -30,13 +30,10 @@ set(KENLM_LM_SOURCE
 #
 add_subdirectory(common)
 
-if (NOT MSVC)
-	set(THREADS pthread)
-endif()
+set(THREADS pthread)
 
 # This directory has children that need to be processed
 add_subdirectory(builder)
-###add_subdirectory(interpolate)
 
 add_library(kenlm OBJECT ${KENLM_LM_SOURCE} ${KENLM_LM_COMMON_SOURCE})
 set (TARGET_OBJECTS_kenlm $<TARGET_OBJECTS:kenlm> ${TARGET_OBJECTS_kenlm_builder} PARENT_SCOPE)

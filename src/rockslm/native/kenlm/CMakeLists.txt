@@ -11,23 +11,12 @@ if (FORCE_STATIC)
   set_property(GLOBAL PROPERTY LINK_SEARCH_START_STATIC ON)
   set_property(GLOBAL PROPERTY LINK_SEARCH_END_STATIC ON)
   set(BUILD_SHARED_LIBRARIES OFF)
-  if (MSVC)
-	set(flag_vars
-	  CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-	  CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
-	  CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-	  CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-	  foreach(flag_var ${flag_vars})
-	    if(${flag_var} MATCHES "/MD")
-	      string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-	    endif(${flag_var} MATCHES "/MD")
-	  endforeach(flag_var)
-  else (MSVC)
-    if (NOT CMAKE_C_COMPILER_ID MATCHES ".*Clang")
-      set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -static")
-    endif ()
-  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+
+  if (NOT CMAKE_C_COMPILER_ID MATCHES ".*Clang")
+    set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -static")
   endif ()
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+
   #Annoyingly the exectuables say "File not found" unless these are set
   set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS)
   set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
@@ -45,11 +34,6 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
-endif()
-
-if(MSVC)
-  set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} /w34716")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w34716")
 endif()
 
 # And our helper modules
