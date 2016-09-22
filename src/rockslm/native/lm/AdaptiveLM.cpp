@@ -256,17 +256,6 @@ void AdaptiveLM::NormalizeContextMap(context_t *context) {
     float total = 0.0;
 
     context_t *context_map = context;
-    if (context_map == nullptr) {
-        std::cerr<< "BEFORE void AdaptiveLM::NormalizeContextMap(...) const context is null"
-                << std::endl;
-    } else if (context_map->empty()) {
-        std::cerr << "BEFORE void AdaptiveLM::NormalizeContextMap(...) const context is empty"
-                << std::endl;
-    } else {
-        std::cerr << "BEFORE void AdaptiveLM::NormalizeContextMap(...) context is not empty not null, size:|"
-                        <<
-                        context_map->size() << "|" << std::endl;
-    }
     for (auto it = context->begin(); it != context->end(); ++it) {
         counts_t domainCounts;
         storage.GetWordCounts(it->first, &domainCounts.count, &domainCounts.successors);
@@ -286,14 +275,6 @@ void AdaptiveLM::NormalizeContextMap(context_t *context) {
         if (domainCounts.count == 0) continue;
 
         ret[it->first] = it->second / total;
-    }
-    if (ret.empty()) {
-        std::cerr << "AFTER void AdaptiveLM::NormalizeContextMap(...) const context is empty"
-                << std::endl;
-    } else {
-        std::cerr << "AFTER void AdaptiveLM::NormalizeContextMap(...) context is not empty not null, size:|"
-                        <<
-                        ret.size() << "|" << std::endl;
     }
 
     // replace map contents
