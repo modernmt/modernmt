@@ -7,6 +7,7 @@ from ConfigParser import ConfigParser
 import cli
 from cli import IllegalArgumentException, IllegalStateException
 from cli.libs import fileutils
+from cli.libs import shell
 from cli.mt import BilingualCorpus
 from cli.mt.contextanalysis import ContextAnalyzer
 from cli.mt.lm import LanguageModel
@@ -15,6 +16,49 @@ from cli.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
 from cli.mt.processing import TrainingPreprocessor, TMCleaner
 
 __author__ = 'Davide Caroselli'
+
+
+class _DomainMapBuilder:
+    def __init__(self, model, source_lang):
+        self._model = model
+        self._source_lang = source_lang
+
+        self._java_mainclass = 'eu.modernmt.cli.DomainMapMain'
+
+    def generate(self, corpora, output, log_file=None):
+        source_paths = set()
+
+        for corpus in corpora:
+            source_paths.add(corpus.get_folder())
+
+        fileutils.makedirs(self._model, exist_ok=True)
+
+        args = ['--db', os.path.join(self._model, 'domains.db'), '-l', self._source_lang, '-c']
+        for source_path in source_paths:
+            args.append(source_path)
+
+        command = cli.mmt_javamain(self._java_mainclass, args)
+
+        log = shell.DEVNULL
+
+        try:
+            if log_file is not None:
+                log = open(log_file, 'w')
+
+            with open(output, 'w') as stdout:
+                shell.execute(command, stdout=stdout, stderr=log)
+        finally:
+            if log_file is not None:
+                log.close()
+
+    @staticmethod
+    def load_map(filepath):
+        domains = {}
+
+        for domain, name in [line.rstrip('\n').split('\t', 2) for line in open(filepath)]:
+            domains[name] = domain
+
+        return domains
 
 
 class _builder_logger:
@@ -75,6 +119,27 @@ class _MMTEngineBuilder:
             fileutils.makedirs(path, exist_ok=True)
         return path
 
+    def _link_training_folder(self, domains_map_file, bilingual_corpora, monolingual_corpora):
+        if not os.path.isfile(domains_map_file):
+            raise IllegalStateException('Missing domain-map file: ' + domains_map_file)
+
+        domains = self._engine.db.load_map(domains_map_file)
+        folder = self._get_tempdir('training_corpora')
+
+        for corpus in bilingual_corpora:
+            dest_corpus = BilingualCorpus.make_parallel(domains[corpus.name], folder, corpus.langs)
+
+            for lang in corpus.langs:
+                os.symlink(corpus.get_file(lang), dest_corpus.get_file(lang))
+
+        for corpus in monolingual_corpora:
+            dest_corpus = BilingualCorpus.make_parallel(corpus.name, folder, corpus.langs)
+
+            for lang in corpus.langs:
+                os.symlink(corpus.get_file(lang), dest_corpus.get_file(lang))
+
+        return folder
+
     def build(self, roots, debug=False, steps=None, split_trainingset=True):
         self._temp_dir = self._engine.get_tempdir('training', ensure=True)
 
@@ -119,17 +184,25 @@ class _MMTEngineBuilder:
                       (recommended_disk / self.__GB, free_space_on_disk / self.__GB)
             print
 
-        try:
-            corpora_roots = roots
+        domains_map_file = os.path.join(self._temp_dir, 'domains.map')
 
+        try:
             unprocessed_bicorpora = bilingual_corpora
             unprocessed_mocorpora = monolingual_corpora
+
+            # Create db and rename domains with their ids
+
+            if 'db' in steps:
+                with cmdlogger.step('Building the database') as _:
+                    self._engine.db.generate(unprocessed_bicorpora, domains_map_file)
+
+            corpora_roots = [self._link_training_folder(domains_map_file, unprocessed_bicorpora, unprocessed_mocorpora)]
 
             # TM cleanup
             if 'tm_cleanup' in steps:
                 with cmdlogger.step('TMs clean-up') as _:
                     cleaned_output = self._get_tempdir('clean_tms')
-                    self._engine.cleaner.clean(source_lang, target_lang, roots, cleaned_output)
+                    self._engine.cleaner.clean(source_lang, target_lang, corpora_roots, cleaned_output)
 
                     for corpus in monolingual_corpora:
                         cfile = corpus.get_file(target_lang)
@@ -156,7 +229,8 @@ class _MMTEngineBuilder:
             if 'context_analyzer' in steps:
                 with cmdlogger.step('Context Analyzer training') as _:
                     log_file = self._engine.get_logfile('training.context')
-                    self._engine.analyzer.create_index(unprocessed_bicorpora, source_lang, log_file=log_file)
+                    self._engine.analyzer.create_index(unprocessed_bicorpora, source_lang, domains_map_file,
+                                                       log_file=log_file)
 
             # Training Adaptive Language Model (on the target side of all bilingual corpora)
             if 'lm' in steps:
@@ -190,7 +264,7 @@ class MMTEngine(object):
                          (basestring, WordAligner.available_types), None),
     }
 
-    training_steps = ['tm_cleanup', 'preprocess', 'context_analyzer', 'lm', 'tm']
+    training_steps = ['db', 'tm_cleanup', 'preprocess', 'context_analyzer', 'lm', 'tm']
 
     @staticmethod
     def list():
@@ -218,6 +292,7 @@ class MMTEngine(object):
         self._lm_model = os.path.join(self.models_path, 'lm')
         self._context_index = os.path.join(self.models_path, 'context', 'index')
         self._moses_ini_file = os.path.join(self.models_path, 'moses.ini')
+        self._db_path = os.path.join(self.models_path, 'db')
 
         self._runtime_path = os.path.join(cli.RUNTIME_DIR, self.name)
         self._logs_path = os.path.join(self._runtime_path, 'logs')
@@ -254,6 +329,8 @@ class MMTEngine(object):
         self.pt = injector.inject(SuffixArraysPhraseTable(self._pt_model, (self.source_lang, self.target_lang)))
         self.aligner = injector.inject(WordAligner.instantiate(self._aligner_type))
         self.lm = injector.inject(LanguageModel.instantiate(self._lm_type, self._lm_model))
+
+        self.db = _DomainMapBuilder(self._db_path, self.source_lang)
 
         self.moses = injector.inject(Moses(self._moses_ini_file))
         self.moses.add_feature(MosesFeature('UnknownWordPenalty'))
