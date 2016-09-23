@@ -7,6 +7,7 @@ import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -84,8 +85,13 @@ public class ContextAnalyzerMain {
             corpora.put(domain, corpus);
         }
 
-        ContextAnalyzer contextAnalyzer = new LuceneAnalyzer(args.indexPath, args.language);
-        contextAnalyzer.add(corpora);
+        ContextAnalyzer contextAnalyzer = null;
+        try {
+            contextAnalyzer = new LuceneAnalyzer(args.indexPath, args.language);
+            contextAnalyzer.add(corpora);
+        } finally {
+            IOUtils.closeQuietly(contextAnalyzer);
+        }
     }
 
 }

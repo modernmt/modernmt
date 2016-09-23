@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by davide on 09/05/16.
@@ -66,7 +67,14 @@ public class LuceneAnalyzer implements ContextAnalyzer, UpdatesListener {
 
     @Override
     public void close() throws IOException {
-        this.index.close();
+        try {
+            this.storage.shutdown();
+            this.storage.awaitTermination(TimeUnit.SECONDS, 2);
+        } catch (InterruptedException e) {
+            // Ignore it
+        } finally {
+            this.index.close();
+        }
     }
 
     // UpdateListener
