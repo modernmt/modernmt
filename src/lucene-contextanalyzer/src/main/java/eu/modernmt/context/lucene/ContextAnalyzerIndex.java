@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Created by davide on 10/07/15.
  */
-public class ContextAnalyzerIndex implements Closeable, AutoCloseable {
+public class ContextAnalyzerIndex implements Closeable {
 
     private static final int MIN_RESULT_BATCH = 20;
 

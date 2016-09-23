@@ -12,6 +12,7 @@ import eu.modernmt.rest.framework.RESTRequest;
 import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
 import eu.modernmt.rest.framework.routing.TemplateException;
+import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,8 +20,8 @@ import java.io.IOException;
 /**
  * Created by davide on 15/12/15.
  */
-@Route(aliases = "domains/:id", method = HttpMethod.PUT)
-public class AddToDomain extends ObjectAction<Domain> {
+@Route(aliases = "domains", method = HttpMethod.POST)
+public class CreateDomain extends ObjectAction<Domain> {
 
     @Override
     protected Domain execute(RESTRequest req, Parameters _params) throws IOException, DataStreamException, PersistenceException {
@@ -28,7 +29,7 @@ public class AddToDomain extends ObjectAction<Domain> {
 
         BilingualCorpus corpus = new ParallelFileCorpus(null, params.source, null, params.target);
 
-        return ModernMT.domain.add(params.id, corpus);
+        return ModernMT.domain.create(params.name, corpus);
     }
 
     @Override
@@ -38,14 +39,12 @@ public class AddToDomain extends ObjectAction<Domain> {
 
     public static class Params extends Parameters {
 
-        private final int id;
         private final File source;
         private final File target;
+        private final String name;
 
         public Params(RESTRequest req) throws ParameterParsingException, TemplateException {
             super(req);
-
-            id = req.getPathParameterAsInt("id");
 
             source = new File(getString("source_local_file", false));
             target = new File(getString("target_local_file", false));
@@ -54,6 +53,8 @@ public class AddToDomain extends ObjectAction<Domain> {
                 throw new ParameterParsingException("source_local_file", source.toString());
             if (!target.isFile())
                 throw new ParameterParsingException("target_local_file", target.toString());
+
+            name = getString("name", false, FilenameUtils.getName(source.getName()));
         }
     }
 

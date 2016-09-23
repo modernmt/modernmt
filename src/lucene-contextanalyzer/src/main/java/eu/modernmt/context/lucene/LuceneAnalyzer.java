@@ -3,10 +3,14 @@ package eu.modernmt.context.lucene;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextScore;
+import eu.modernmt.context.lucene.storage.CorporaStorage;
+import eu.modernmt.context.lucene.storage.Options;
 import eu.modernmt.model.Domain;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.impl.StringCorpus;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
+import eu.modernmt.updating.Update;
+import eu.modernmt.updating.UpdatesListener;
 import org.apache.lucene.document.Document;
 
 import java.io.File;
@@ -19,12 +23,14 @@ import java.util.Map;
 /**
  * Created by davide on 09/05/16.
  */
-public class LuceneAnalyzer implements ContextAnalyzer {
+public class LuceneAnalyzer implements ContextAnalyzer, UpdatesListener {
 
-    private ContextAnalyzerIndex index;
+    private final ContextAnalyzerIndex index;
+    private final CorporaStorage storage;
 
     public LuceneAnalyzer(File indexPath, Locale language) throws IOException {
-        this.index = new ContextAnalyzerIndex(indexPath, language);
+        this.index = new ContextAnalyzerIndex(new File(indexPath, "index"), language);
+        this.storage = new CorporaStorage(new File(indexPath, "storage"), new Options(), this.index);
     }
 
     @Override
@@ -61,6 +67,18 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     @Override
     public void close() throws IOException {
         this.index.close();
+    }
+
+    // UpdateListener
+
+    @Override
+    public void updateReceived(Update update) throws IOException, InterruptedException {
+        storage.updateReceived(update);
+    }
+
+    @Override
+    public Map<Integer, Long> getLatestSequentialNumbers() {
+        return storage.getLatestSequentialNumbers();
     }
 
 }
