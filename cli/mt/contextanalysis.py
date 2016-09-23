@@ -11,7 +11,7 @@ class ContextAnalyzer:
         self._index = index
         self._java_mainclass = 'eu.modernmt.cli.ContextAnalyzerMain'
 
-    def create_index(self, corpora, lang, domains_map_file, log_file=None):
+    def create_index(self, corpora, lang, log_file=None):
         source_paths = set()
 
         for corpus in corpora:
@@ -19,7 +19,7 @@ class ContextAnalyzer:
 
         fileutils.makedirs(self._index, exist_ok=True)
 
-        args = ['-l', lang, '-i', self._index, '-d', domains_map_file, '-c']
+        args = ['-l', lang, '-i', self._index, '-c']
         for source_path in source_paths:
             args.append(source_path)
 

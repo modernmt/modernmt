@@ -36,18 +36,32 @@ public class LuceneAnalyzer implements ContextAnalyzer, UpdatesListener {
 
     @Override
     public void add(Domain domain, Corpus corpus) throws ContextAnalyzerException {
-        this.index.add(DocumentBuilder.createDocument(domain, corpus));
+        int id = domain.getId();
+
+        try {
+            this.index.add(DocumentBuilder.createDocument(id, corpus));
+            this.index.flush();
+        } catch (IOException e) {
+            throw new ContextAnalyzerException("Unable to add domain " + id);
+        }
     }
 
     @Override
     public void add(Map<Domain, Corpus> corpora) throws ContextAnalyzerException {
         ArrayList<Document> documents = new ArrayList<>(corpora.size());
 
-        for (Map.Entry<Domain, Corpus> entries : corpora.entrySet()) {
-            documents.add(DocumentBuilder.createDocument(entries.getKey(), entries.getValue()));
+        for (Map.Entry<Domain, Corpus> entry : corpora.entrySet()) {
+            int id = entry.getKey().getId();
+
+            try {
+                documents.add(DocumentBuilder.createDocument(id, entry.getValue()));
+            } catch (IOException e) {
+                throw new ContextAnalyzerException("Unable to add domain " + id);
+            }
         }
 
         this.index.add(documents);
+        this.index.flush();
     }
 
     @Override

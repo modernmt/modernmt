@@ -1,5 +1,6 @@
 package eu.modernmt.context.lucene.storage;
 
+import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.lucene.ContextAnalyzerIndex;
 import eu.modernmt.updating.Update;
 import eu.modernmt.updating.UpdatesListener;
@@ -11,11 +12,11 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -29,18 +30,19 @@ public class CorporaStorage implements UpdatesListener {
 
     private final Logger logger = LogManager.getLogger(CorporaStorage.class);
 
-    private final File path;
     private final File indexPath;
     private final File swapIndexPath;
     private final Options options;
     private final BackgroundTask backgroundTask;
+    private final ExecutorService analysisExecutor;
 
     private final ContextAnalyzerIndex contextAnalyzer;
     private final CorporaIndex index;
     private HashSet<CorpusBucket> pendingUpdatesBuckets = new HashSet<>();
 
     public CorporaStorage(File path, Options options, ContextAnalyzerIndex contextAnalyzer) throws IOException {
-        this.path = path;
+        this.analysisExecutor = Executors.newFixedThreadPool(options.analysisThreads);
+
         this.options = options;
         this.contextAnalyzer = contextAnalyzer;
 
@@ -50,13 +52,15 @@ public class CorporaStorage implements UpdatesListener {
         this.swapIndexPath = new File(path, "~index");
 
         if (indexPath.exists())
-            this.index = CorporaIndex.load(options.analysisOptions, indexPath);
+            this.index = CorporaIndex.load(options.analysisOptions, indexPath, path);
         else
-            this.index = new CorporaIndex(options.analysisOptions);
+            this.index = new CorporaIndex(options.analysisOptions, path);
 
-        this.index.getBuckets().stream()
-                .filter(CorpusBucket::shouldAnalyze)
-                .forEach(this::analyze);
+        try {
+            this.analyzeIfNeeded(this.index.getBuckets());
+        } catch (ContextAnalyzerException e) {
+            throw new IOException(e);
+        }
 
         this.backgroundTask = new BackgroundTask(options.queueSize);
         this.backgroundTask.start();
@@ -80,9 +84,14 @@ public class CorporaStorage implements UpdatesListener {
 
         for (CorpusBucket bucket : pendingUpdatesBuckets) {
             bucket.flush();
+        }
 
-            if (!skipAnalysis && bucket.shouldAnalyze())
-                analyze(bucket);
+        if (!skipAnalysis) {
+            try {
+                analyzeIfNeeded(pendingUpdatesBuckets);
+            } catch (ContextAnalyzerException e) {
+                throw new IOException(e);
+            }
         }
 
         pendingUpdatesBuckets.clear();
@@ -92,11 +101,38 @@ public class CorporaStorage implements UpdatesListener {
         FileUtils.deleteQuietly(this.swapIndexPath);
     }
 
-    private void analyze(CorpusBucket bucket) {
-        logger.info("Indexing bucket " + bucket.getDomain());
+    private void analyzeIfNeeded(Collection<CorpusBucket> buckets) throws ContextAnalyzerException {
+        ArrayList<Future<Void>> pendingAnalysis = new ArrayList<>(buckets.size());
 
-        // TODO: must be implemented
+        buckets.stream()
+                .filter(CorpusBucket::shouldAnalyze)
+                .forEach(bucket -> {
+                    AnalysisTask task = new AnalysisTask(contextAnalyzer, bucket);
+                    pendingAnalysis.add(analysisExecutor.submit(task));
+                });
 
+        if (pendingAnalysis.isEmpty())
+            return;
+
+        for (Future<Void> analysis : pendingAnalysis) {
+            try {
+                analysis.get();
+            } catch (InterruptedException e) {
+                throw new ContextAnalyzerException("Analysis has been interrupted", e);
+            } catch (ExecutionException e) {
+                Throwable cause = e.getCause();
+
+                if (cause instanceof RuntimeException)
+                    throw (RuntimeException) cause;
+                else if (cause instanceof ContextAnalyzerException)
+                    throw (ContextAnalyzerException) cause;
+                else
+                    throw new Error("Unexpected exception", cause);
+            }
+        }
+
+        this.contextAnalyzer.flush();
+        this.contextAnalyzer.invalidateCache();
     }
 
     public void shutdown() {
@@ -163,7 +199,7 @@ public class CorporaStorage implements UpdatesListener {
                     CorpusBucket bucket = index.getBucket(update.domain);
 
                     if (!bucket.isOpen())
-                        bucket.open(path);
+                        bucket.open();
 
                     String line = update.sourceSentence.toString();
                     bucket.append(line);

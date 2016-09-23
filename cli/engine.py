@@ -229,8 +229,7 @@ class _MMTEngineBuilder:
             if 'context_analyzer' in steps:
                 with cmdlogger.step('Context Analyzer training') as _:
                     log_file = self._engine.get_logfile('training.context')
-                    self._engine.analyzer.create_index(unprocessed_bicorpora, source_lang, domains_map_file,
-                                                       log_file=log_file)
+                    self._engine.analyzer.create_index(unprocessed_bicorpora, source_lang, log_file=log_file)
 
             # Training Adaptive Language Model (on the target side of all bilingual corpora)
             if 'lm' in steps:

@@ -7,6 +7,10 @@ public class Options {
 
     public int queueSize = 1000;
 
+    // Background threads that add corpora to the
+    // context analyzer index
+    public int analysisThreads = 4;
+
     // This value controls the maximum write behind delay
     public long writeBehindDelay = 10000L; // 10s (10000 ms)
 

@@ -10,6 +10,10 @@ public class Domain implements Serializable {
     private int id;
     private String name;
 
+    public Domain(int id) {
+        this(id, null);
+    }
+
     public Domain(int id, String name) {
         this.id = id;
         this.name = name;

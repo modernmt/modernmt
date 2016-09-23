@@ -21,7 +21,7 @@ import java.util.concurrent.*;
  */
 public class ConsineSimilarityCalculator {
 
-    private static final ConcurrentHashMap<String, IDFTable> IDFTables = new ConcurrentHashMap<>();
+    private final IDFTable cache;
 
     private ExecutorService executor;
     private boolean running = false;
@@ -33,10 +33,11 @@ public class ConsineSimilarityCalculator {
     private ScoreDoc[] scoreDocs;
     private HashMap<Integer, Future<Float>> results;
 
-    public ConsineSimilarityCalculator(IndexReader indexReader, String fieldName) {
+    public ConsineSimilarityCalculator(IndexReader indexReader, String fieldName, IDFTable cache) {
         this.indexReader = indexReader;
         this.fieldName = fieldName;
         this.executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        this.cache = cache;
     }
 
     public void setAnalyzer(Analyzer analyzer) {
@@ -54,23 +55,6 @@ public class ConsineSimilarityCalculator {
 
     public void setBoost(boolean boost) {
         this.boost = boost;
-    }
-
-    private IDFTable getIDFTable(String fieldName) {
-        IDFTable table = IDFTables.get(fieldName);
-
-        if (table == null) {
-            synchronized (this) {
-                table = IDFTables.get(fieldName);
-
-                if (table == null) {
-                    table = new IDFTable(indexReader, fieldName);
-                    IDFTables.putIfAbsent(fieldName, table);
-                }
-            }
-        }
-
-        return table;
     }
 
     public void calculateSimilarity() {
@@ -140,7 +124,7 @@ public class ConsineSimilarityCalculator {
         TermsEnum termsEnum = vector.iterator(null);
         HashMap<String, Float> frequencies = new HashMap<>();
 
-        IDFTable idfTable = boost ? getIDFTable(fieldName) : null;
+        IDFTable idfTable = boost ? this.cache : null;
         BytesRef text;
         while ((text = termsEnum.next()) != null) {
             String term = text.utf8ToString();

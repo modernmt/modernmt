@@ -51,6 +51,12 @@ public class IDFTable {
         return tf(tf) * idf;
     }
 
+    public void invalidate() {
+        // TODO: we may implement a smarter strategy to invalidate cache when index changes
+        cache.clear();
+        numDocs = indexReader.numDocs();
+    }
+
     private static float tf(int freq) {
         return (float) Math.sqrt(freq);
     }

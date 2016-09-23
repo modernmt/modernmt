@@ -20,6 +20,8 @@ import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Version;
 
 import java.io.Closeable;
@@ -37,6 +39,7 @@ public class ContextAnalyzerIndex implements Closeable {
 
     private final Logger logger = LogManager.getLogger(ContextAnalyzerIndex.class);
 
+    private IDFTable idfCache;
     private Directory indexDirectory;
     private Analyzer analyzer;
     private IndexWriter indexWriter;
@@ -62,6 +65,23 @@ public class ContextAnalyzerIndex implements Closeable {
         });
 
         this.indexWriter = new IndexWriter(this.indexDirectory, indexConfig);
+    }
+
+    private IDFTable getIDFCache() throws ContextAnalyzerException {
+        if (idfCache == null) {
+            synchronized (this) {
+                if (idfCache == null) {
+                    idfCache = new IDFTable(getIndexReader(), DocumentBuilder.CONTENT_FIELD);
+                }
+            }
+        }
+
+        return idfCache;
+    }
+
+    public void invalidateCache() {
+        if (idfCache != null)
+            idfCache.invalidate();
     }
 
     private synchronized IndexReader getIndexReader() throws ContextAnalyzerException {
@@ -103,17 +123,32 @@ public class ContextAnalyzerIndex implements Closeable {
 
     public void add(Collection<Document> documents) throws ContextAnalyzerException {
         for (Document document : documents) {
-            String name = DocumentBuilder.getName(document);
+            int id = DocumentBuilder.getId(document);
 
-            logger.info("Adding to index document " + name);
+            logger.info("Adding to index document " + id);
 
             try {
                 this.indexWriter.addDocument(document);
             } catch (IOException e) {
-                throw new ContextAnalyzerException("Failed to add document " + name + " to index", e);
+                throw new ContextAnalyzerException("Failed to add document " + id + " to index", e);
             }
         }
+    }
 
+    public void update(int domain, Document document) throws ContextAnalyzerException {
+        BytesRefBuilder builder = new BytesRefBuilder();
+        NumericUtils.intToPrefixCoded(domain, 0, builder);
+
+        Term id = new Term(DocumentBuilder.ID_FIELD, builder.toBytesRef());
+
+        try {
+            this.indexWriter.updateDocument(id, document);
+        } catch (IOException e) {
+            throw new ContextAnalyzerException("Unable to update corpus " + domain);
+        }
+    }
+
+    public void flush() throws ContextAnalyzerException {
         try {
             this.indexWriter.commit();
         } catch (IOException e) {
@@ -167,12 +202,20 @@ public class ContextAnalyzerIndex implements Closeable {
         ScoreDoc[] topDocs = collector.topDocs().scoreDocs;
 
         // Compute cosine similarity
+        Document referenceDocument;
+
+        try {
+            referenceDocument = DocumentBuilder.createDocument(queryDocument);
+        } catch (IOException e) {
+            throw new ContextAnalyzerException("Unable to read query document", e);
+        }
+
         List<ContextScore> result = new ArrayList<>(topDocs.length);
 
-        ConsineSimilarityCalculator calculator = new ConsineSimilarityCalculator(reader, DocumentBuilder.CONTENT_FIELD);
+        ConsineSimilarityCalculator calculator = new ConsineSimilarityCalculator(reader, DocumentBuilder.CONTENT_FIELD, getIDFCache());
         calculator.setAnalyzer(analyzer);
         calculator.setBoost(true);
-        calculator.setReferenceDocument(DocumentBuilder.createDocument(queryDocument));
+        calculator.setReferenceDocument(referenceDocument);
         calculator.setScoreDocs(topDocs);
 
         calculator.calculateSimilarity();
@@ -186,16 +229,15 @@ public class ContextAnalyzerIndex implements Closeable {
             }
 
             int id = DocumentBuilder.getId(topDoc);
-            String name = DocumentBuilder.getName(topDoc);
 
             float similarityScore;
             try {
                 similarityScore = calculator.getSimilarity(topDocRef.doc);
             } catch (IOException e) {
-                throw new ContextAnalyzerException("Could not compute cosine similarity for doc " + name, e);
+                throw new ContextAnalyzerException("Could not compute cosine similarity for doc " + id, e);
             }
 
-            result.add(new ContextScore(new Domain(id, name), similarityScore));
+            result.add(new ContextScore(new Domain(id), similarityScore));
         }
 
         // Sort and limit result

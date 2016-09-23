@@ -17,12 +17,12 @@ import java.util.Map;
  */
 public class CorporaIndex implements Closeable {
 
-    public static CorporaIndex load(Options.AnalysisOptions analysisOptions, File path) throws IOException {
+    public static CorporaIndex load(Options.AnalysisOptions analysisOptions, File indexFile, File bucketsFolder) throws IOException {
         FileInputStream stream = null;
         byte[] bytes;
 
         try {
-            stream = new FileInputStream(path);
+            stream = new FileInputStream(indexFile);
             bytes = IOUtils.toByteArray(stream);
         } finally {
             IOUtils.closeQuietly(stream);
@@ -41,28 +41,25 @@ public class CorporaIndex implements Closeable {
 
         HashMap<Integer, CorpusBucket> buckets = new HashMap<>();
         while (buffer.hasRemaining()) {
-            CorpusBucket bucket = CorpusBucket.deserialize(analysisOptions, buffer);
+            CorpusBucket bucket = CorpusBucket.deserialize(analysisOptions, bucketsFolder, buffer);
             buckets.put(bucket.getDomain(), bucket);
         }
 
-        return new CorporaIndex(analysisOptions, buckets, streams);
+        return new CorporaIndex(analysisOptions, bucketsFolder, buckets, streams);
     }
 
     private final Options.AnalysisOptions analysisOptions;
+    private final File bucketsFolder;
+    private final HashMap<Integer, CorpusBucket> buckets;
+    private final HashMap<Integer, Long> streams;
 
-    private HashMap<Integer, CorpusBucket> buckets;
-    private HashMap<Integer, Long> streams;
-
-    public CorporaIndex(Options.AnalysisOptions analysisOptions) {
-        this.analysisOptions = analysisOptions;
-
-        this.buckets = new HashMap<>();
-        this.streams = new HashMap<>();
+    public CorporaIndex(Options.AnalysisOptions analysisOptions, File bucketsFolder) {
+        this(analysisOptions, bucketsFolder, new HashMap<>(), new HashMap<>());
     }
 
-    private CorporaIndex(Options.AnalysisOptions analysisOptions, HashMap<Integer, CorpusBucket> buckets, HashMap<Integer, Long> streams) {
+    private CorporaIndex(Options.AnalysisOptions analysisOptions, File bucketsFolder, HashMap<Integer, CorpusBucket> buckets, HashMap<Integer, Long> streams) {
         this.analysisOptions = analysisOptions;
-
+        this.bucketsFolder = bucketsFolder;
         this.buckets = buckets;
         this.streams = streams;
     }
@@ -82,7 +79,7 @@ public class CorporaIndex implements Closeable {
         CorpusBucket bucket = buckets.get(domain);
 
         if (bucket == null) {
-            bucket = new CorpusBucket(analysisOptions, domain);
+            bucket = new CorpusBucket(analysisOptions, bucketsFolder, domain);
             buckets.put(domain, bucket);
         }
 
