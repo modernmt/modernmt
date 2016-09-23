@@ -28,7 +28,7 @@ endif ()
 
 if (Rocksdb_FOUND)
     if (NOT Rocksdb_FIND_QUIETLY)
-        message(STATUS "Found the Rocksdb library: ${Rocksdb_LIB_PATH}")
+        message(STATUS "Found the Rocksdb library: ${Rocksdb_LIB_PATH} ${Rocksdb_INCLUDE_DIR}")
     endif ()
 else ()
     if (NOT Rocksdb_FIND_QUIETLY)

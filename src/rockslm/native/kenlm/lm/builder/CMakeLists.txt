@@ -29,6 +29,4 @@ set(KENLM_BUILDER_SOURCE
 add_library(kenlm_builder OBJECT ${KENLM_BUILDER_SOURCE})
 set (TARGET_OBJECTS_kenlm_builder $<TARGET_OBJECTS:kenlm_builder> PARENT_SCOPE)
 
-if (NOT MSVC)
-	set(THREADS pthread)
-endif()
+set(THREADS pthread)

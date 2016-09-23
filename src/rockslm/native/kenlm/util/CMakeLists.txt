@@ -50,8 +50,6 @@ if (LIBLZMA_FOUND)
   include_directories(${LIBLZMA_INCLUDE_DIRS})
 endif()
 set_source_files_properties(read_compressed.cc PROPERTIES COMPILE_FLAGS ${READ_COMPRESSED_FLAGS})
-set_source_files_properties(read_compressed_test.cc PROPERTIES COMPILE_FLAGS ${READ_COMPRESSED_FLAGS})
-set_source_files_properties(file_piece_test.cc PROPERTIES COMPILE_FLAGS ${READ_COMPRESSED_FLAGS})
 
 # This directory has children that need to be processed
 add_subdirectory(double-conversion)
@@ -63,9 +61,7 @@ else()
   set(TIMER_LINK)
 endif()
 
-if (NOT MSVC)
-	set(THREADS pthread)
-endif()
+set(THREADS pthread)
 
 # Group these objects together for later use.
 #
