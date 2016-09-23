@@ -11,7 +11,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -37,12 +37,14 @@ public class CorporaStorage implements UpdatesListener {
 
     private final ContextAnalyzerIndex contextAnalyzer;
     private final CorporaIndex index;
-    private ArrayList<CorpusBucket> pendingUpdatesBuckets = new ArrayList<>();
+    private HashSet<CorpusBucket> pendingUpdatesBuckets = new HashSet<>();
 
     public CorporaStorage(File path, Options options, ContextAnalyzerIndex contextAnalyzer) throws IOException {
         this.path = path;
         this.options = options;
         this.contextAnalyzer = contextAnalyzer;
+
+        FileUtils.forceMkdir(path);
 
         this.indexPath = new File(path, "index");
         this.swapIndexPath = new File(path, "~index");
@@ -92,8 +94,9 @@ public class CorporaStorage implements UpdatesListener {
 
     private void analyze(CorpusBucket bucket) {
         logger.info("Indexing bucket " + bucket.getDomain());
-        
+
         // TODO: must be implemented
+
     }
 
     public void shutdown() {

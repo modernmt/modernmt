@@ -62,19 +62,28 @@ class DataStreamPollingThread extends Thread {
         this.consumer.assign(Arrays.asList(partitions));
 
         long[] offsets = new long[partitions.length];
+        Arrays.fill(offsets, -1L);
+
         for (UpdatesListener listener : listeners) {
             for (Map.Entry<Integer, Long> entry : listener.getLatestSequentialNumbers().entrySet()) {
                 int id = entry.getKey();
                 long num = entry.getValue();
 
-                if (id < offsets.length && (offsets[id] == 0 || offsets[id] > num))
+                if (id < offsets.length && (offsets[id] == -1 || offsets[id] > num))
                     offsets[id] = num;
             }
         }
 
         for (int i = 0; i < offsets.length; i++) {
-            logger.info("Topic " + partitions[i].topic() + " seek to offset " + offsets[i]);
-            consumer.seek(partitions[i], offsets[i]);
+            long offset = offsets[i];
+
+            if (offset < 0)
+                offset = 0;
+            else
+                offset += 1;
+
+            logger.info("Topic " + partitions[i].topic() + " seek to offset " + offset);
+            consumer.seek(partitions[i], offset);
         }
 
         super.start();
