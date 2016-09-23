@@ -36,8 +36,6 @@ public class Engine implements Closeable {
     }
 
     public static final String ENGINE_CONFIG_PATH = "engine.ini";
-    private static final String VOCABULARY_MODEL_PATH = Paths.join("models", "vocabulary");
-    private static final String SQLITE_DATABASE_PATH = Paths.join("models", "db", "domains.db");
 
     public static File getRootPath(String engine) {
         return FileConst.getEngineRoot(engine);
@@ -175,7 +173,7 @@ public class Engine implements Closeable {
             synchronized (this) {
                 if (contextAnalyzer == null) {
                     try {
-                        File indexPath = Paths.join(root, "models", "context", "index");
+                        File indexPath = Paths.join(root, "models", "context");
                         this.contextAnalyzer = new LuceneAnalyzer(indexPath, getSourceLanguage());
                     } catch (IOException e) {
                         throw new LazyLoadException(e);
@@ -192,7 +190,7 @@ public class Engine implements Closeable {
             synchronized (this) {
                 if (vocabulary == null) {
                     try {
-                        File model = new File(this.root, VOCABULARY_MODEL_PATH);
+                        File model = Paths.join(this.root, "models", "vocabulary");
                         vocabulary = new RocksDBVocabulary(model);
                     } catch (IOException e) {
                         throw new LazyLoadException(e);
@@ -210,7 +208,7 @@ public class Engine implements Closeable {
                 if (database == null) {
                     try {
                         //TODO: hardcoded connection string and password
-                        File model = new File(this.root, SQLITE_DATABASE_PATH);
+                        File model = Paths.join(this.root, "models", "db", "domains.db");
                         database = new SQLiteDatabase("jdbc:sqlite:" + model, name, "test");
                     } catch (PersistenceException e) {
                         throw new LazyLoadException(e);

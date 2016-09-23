@@ -54,7 +54,7 @@ public class CreateDomain extends ObjectAction<Domain> {
             if (!target.isFile())
                 throw new ParameterParsingException("target_local_file", target.toString());
 
-            name = getString("name", false, FilenameUtils.getName(source.getName()));
+            name = getString("name", false, FilenameUtils.getBaseName(source.getName()));
         }
     }
 
