@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os
+import shutil
 import tarfile
 import tempfile
 
@@ -31,8 +32,9 @@ def apache_download(path, outfile):
         r = requests.get(mirror + '/' + path_info, stream=True)
 
         if r.status_code == 200:
-            for chunk in r:
-                outfile.write(chunk)
+            with open(outfile, 'wb') as f:
+                for chunk in r:
+                    f.write(chunk)
 
             return
 
@@ -40,7 +42,7 @@ def apache_download(path, outfile):
 
 
 def untar(filename, destination):
-    if filename.endswith('.tar.gz'):
+    if filename.endswith('.tar.gz') or filename.endswith('.tgz'):
         tar = tarfile.open(filename, 'r:gz')
     elif filename.endswith('.tar'):
         tar = tarfile.open(filename, 'r:')
@@ -54,18 +56,24 @@ def untar(filename, destination):
     tar.extractall(destination)
     tar.close()
 
-    return folder
+    return os.path.join(destination, folder)
 
 
-def install_apache_lib(path, dest_folder, name):
-    with tempfile.NamedTemporaryFile('wb', suffix='.tar.gz') as tmp_file:
-        apache_download(path, tmp_file)
-        tmp_file.flush()
+def install_apache_lib(path, output):
+    wdir = tempfile.mkdtemp()
 
-        result = untar(tmp_file.name, dest_folder)
-        os.rename(os.path.join(dest_folder, result), os.path.join(dest_folder, name))
+    try:
+        tardest = os.path.join(wdir, os.path.basename(path))
+        apache_download(path, tardest)
+
+        folder = untar(tardest, wdir)
+
+        shutil.rmtree(output, ignore_errors=True)
+        os.rename(folder, output)
+    finally:
+        shutil.rmtree(wdir, ignore_errors=True)
 
 
 if __name__ == '__main__':
-    install_apache_lib('/cassandra/3.7/apache-cassandra-3.7-bin.tar.gz', 'vendor', 'cassandra-3.7')
-    install_apache_lib('/kafka/0.10.0.1/kafka_2.11-0.10.0.1.tgz', 'vendor', 'kafka-0.10.0.1')
+    install_apache_lib('/cassandra/3.7/apache-cassandra-3.7-bin.tar.gz', 'vendor/cassandra-3.7')
+    install_apache_lib('/kafka/0.10.0.1/kafka_2.11-0.10.0.1.tgz', 'vendor/kafka-0.10.0.1')
