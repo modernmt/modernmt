@@ -135,7 +135,7 @@ public class ConsineSimilarityCalculator {
                 f = docsEnum.freq();
 
             if (idfTable != null && f > 0)
-                f = idfTable.getTFIDF(text, (int) f);
+                f = idfTable.getTFIDF(this.indexReader, text, (int) f);
 
             if (f > 0)
                 frequencies.put(term, f);
@@ -174,9 +174,9 @@ public class ConsineSimilarityCalculator {
                             IOUtils.closeQuietly(writer);
                             reader = DirectoryReader.open(directory);
                             terms = getTermFrequencies(reader, 0);
-                        } catch (Exception e){
+                        } catch (Exception e) {
                             e.printStackTrace();
-                        }finally {
+                        } finally {
                             IOUtils.closeQuietly(writer);
                             IOUtils.closeQuietly(reader);
                             IOUtils.closeQuietly(directory);

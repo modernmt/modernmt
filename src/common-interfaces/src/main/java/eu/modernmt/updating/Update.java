@@ -14,16 +14,21 @@ public class Update {
     public final int streamId;
     public final long sentenceId;
 
+    public final String originalSourceSentence;
+    public final String originalTargetSentence;
+
     public Sentence sourceSentence = null;
     public Sentence targetSentence = null;
     public Alignment alignment = null;
 
-    public Update(int streamId, long sentenceId, int domain, boolean last, boolean first) {
+    public Update(int streamId, long sentenceId, int domain, boolean last, boolean first, String originalSourceSentence, String originalTargetSentence) {
         this.domain = domain;
         this.last = last;
         this.first = first;
         this.streamId = streamId;
         this.sentenceId = sentenceId;
+        this.originalSourceSentence = originalSourceSentence;
+        this.originalTargetSentence = originalTargetSentence;
     }
 
 }

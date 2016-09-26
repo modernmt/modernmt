@@ -26,7 +26,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
  */
 public class CorporaStorage implements UpdatesListener {
 
-    private static final Update POISON_PILL = new Update(0, 0L, 0, false, false);
+    private static final Update POISON_PILL = new Update(0, 0L, 0, false, false, null, null);
 
     private final Logger logger = LogManager.getLogger(CorporaStorage.class);
 
@@ -201,9 +201,7 @@ public class CorporaStorage implements UpdatesListener {
                     if (!bucket.isOpen())
                         bucket.open();
 
-                    String line = update.sourceSentence.toString();
-                    bucket.append(line);
-
+                    bucket.append(update.originalSourceSentence);
                     pendingUpdatesBuckets.add(bucket);
                 }
             }

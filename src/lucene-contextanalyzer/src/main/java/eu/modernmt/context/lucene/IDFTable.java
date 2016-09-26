@@ -13,39 +13,36 @@ import java.util.concurrent.ConcurrentHashMap;
 public class IDFTable {
 
     private ConcurrentHashMap<String, Float> cache;
-    private IndexReader indexReader;
     private String fieldId;
-    private int numDocs;
 
-    public IDFTable(IndexReader indexReader, String fieldId) {
-        this.indexReader = indexReader;
+    public IDFTable(String fieldId) {
         this.fieldId = fieldId;
-        this.numDocs = indexReader.numDocs();
         this.cache = new ConcurrentHashMap<>();
     }
 
-    public float getTFIDF(String term, int tf) throws IOException {
-        return getTFIDF(new Term(fieldId, term), tf);
+    public float getTFIDF(IndexReader indexReader, String term, int tf) throws IOException {
+        return getTFIDF(indexReader, new Term(fieldId, term), tf);
     }
 
-    public float getTFIDF(BytesRef term, int tf) throws IOException {
-        return getTFIDF(new Term(fieldId, term), tf);
+    public float getTFIDF(IndexReader indexReader, BytesRef term, int tf) throws IOException {
+        return getTFIDF(indexReader, new Term(fieldId, term), tf);
     }
 
-    public float getTFIDF(Term term, int tf) throws IOException {
+    public float getTFIDF(IndexReader indexReader, Term term, int tf) throws IOException {
         String text = term.text();
-        Float idf = this.cache.get(text);
+        float idf;
 
-        if (idf == null) {
-            synchronized (this) {
-                idf = this.cache.get(text);
-
-                if (idf == null) {
-                    long df = this.indexReader.docFreq(term);
-                    idf = idf(numDocs, df);
-                    this.cache.putIfAbsent(text, idf);
+        try {
+            idf = cache.computeIfAbsent(text, s -> {
+                try {
+                    long df = indexReader.docFreq(term);
+                    return idf(indexReader.numDocs(), df);
+                } catch (IOException e) {
+                    throw new RuntimeIOException(e);
                 }
-            }
+            });
+        } catch (RuntimeIOException e) {
+            throw e.getIOException();
         }
 
         return tf(tf) * idf;
@@ -54,7 +51,6 @@ public class IDFTable {
     public void invalidate() {
         // TODO: we may implement a smarter strategy to invalidate cache when index changes
         cache.clear();
-        numDocs = indexReader.numDocs();
     }
 
     private static float tf(int freq) {
@@ -64,4 +60,17 @@ public class IDFTable {
     private static float idf(long numDocs, long docFreq) {
         return (float) (Math.log(numDocs / (double) (docFreq + 1)) + 1.0);
     }
+
+    private static class RuntimeIOException extends RuntimeException {
+
+        public RuntimeIOException(IOException cause) {
+            super(cause);
+        }
+
+        public IOException getIOException() {
+            return (IOException) getCause();
+        }
+
+    }
+
 }

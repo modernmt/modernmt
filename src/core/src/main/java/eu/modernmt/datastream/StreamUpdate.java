@@ -27,7 +27,7 @@ class StreamUpdate {
     }
 
     public Update toUpdate(int topicId, long sequentialId) {
-        return new Update(topicId, sequentialId, domain, last, first);
+        return new Update(topicId, sequentialId, domain, last, first, sourceSentence, targetSentence);
     }
 
     public int getDomain() {

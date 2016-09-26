@@ -71,7 +71,7 @@ public class ContextAnalyzerIndex implements Closeable {
         if (idfCache == null) {
             synchronized (this) {
                 if (idfCache == null) {
-                    idfCache = new IDFTable(getIndexReader(), DocumentBuilder.CONTENT_FIELD);
+                    idfCache = new IDFTable(DocumentBuilder.CONTENT_FIELD);
                 }
             }
         }
@@ -80,8 +80,12 @@ public class ContextAnalyzerIndex implements Closeable {
     }
 
     public void invalidateCache() {
-        if (idfCache != null)
+        if (idfCache != null) {
             idfCache.invalidate();
+
+            if (logger.isDebugEnabled())
+                logger.debug("IDF cache invalidated");
+        }
     }
 
     private synchronized IndexReader getIndexReader() throws ContextAnalyzerException {
@@ -200,6 +204,11 @@ public class ContextAnalyzerIndex implements Closeable {
         }
 
         ScoreDoc[] topDocs = collector.topDocs().scoreDocs;
+
+        if (logger.isTraceEnabled()) {
+            for (ScoreDoc doc : topDocs)
+                logger.trace("Lucene document score " + doc.doc + ": " + doc.score);
+        }
 
         // Compute cosine similarity
         Document referenceDocument;
