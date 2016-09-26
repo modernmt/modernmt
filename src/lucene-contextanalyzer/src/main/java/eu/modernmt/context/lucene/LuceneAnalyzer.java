@@ -11,11 +11,10 @@ import eu.modernmt.model.corpus.impl.StringCorpus;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
 import eu.modernmt.updating.Update;
 import eu.modernmt.updating.UpdatesListener;
-import org.apache.lucene.document.Document;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -30,38 +29,39 @@ public class LuceneAnalyzer implements ContextAnalyzer, UpdatesListener {
     private final CorporaStorage storage;
 
     public LuceneAnalyzer(File indexPath, Locale language) throws IOException {
+        this(indexPath, language, new Options());
+    }
+
+    public LuceneAnalyzer(File indexPath, Locale language, Options options) throws IOException {
         this.index = new ContextAnalyzerIndex(new File(indexPath, "index"), language);
-        this.storage = new CorporaStorage(new File(indexPath, "storage"), new Options(), this.index);
+        this.storage = new CorporaStorage(new File(indexPath, "storage"), options, this.index);
     }
 
     @Override
     public void add(Domain domain, Corpus corpus) throws ContextAnalyzerException {
-        int id = domain.getId();
+        HashMap<Domain, Corpus> map = new HashMap<>(1);
+        map.put(domain, corpus);
 
-        try {
-            this.index.add(DocumentBuilder.createDocument(id, corpus));
-            this.index.flush();
-        } catch (IOException e) {
-            throw new ContextAnalyzerException("Unable to add domain " + id);
-        }
+        this.add(map);
     }
 
     @Override
     public void add(Map<Domain, Corpus> corpora) throws ContextAnalyzerException {
-        ArrayList<Document> documents = new ArrayList<>(corpora.size());
-
         for (Map.Entry<Domain, Corpus> entry : corpora.entrySet()) {
             int id = entry.getKey().getId();
 
             try {
-                documents.add(DocumentBuilder.createDocument(id, entry.getValue()));
+                this.storage.bulkInsert(id, entry.getValue());
             } catch (IOException e) {
-                throw new ContextAnalyzerException("Unable to add domain " + id);
+                throw new ContextAnalyzerException("Unable to add domain " + id, e);
             }
         }
 
-        this.index.add(documents);
-        this.index.flush();
+        try {
+            this.storage.flushToDisk(false, true);
+        } catch (IOException e) {
+            throw new ContextAnalyzerException("Unable to write storage index to disk", e);
+        }
     }
 
     @Override

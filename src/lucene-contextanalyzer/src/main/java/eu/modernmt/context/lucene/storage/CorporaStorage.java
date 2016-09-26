@@ -2,6 +2,8 @@ package eu.modernmt.context.lucene.storage;
 
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.lucene.ContextAnalyzerIndex;
+import eu.modernmt.io.LineReader;
+import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.updating.Update;
 import eu.modernmt.updating.UpdatesListener;
 import org.apache.commons.io.FileUtils;
@@ -12,11 +14,9 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -25,6 +25,8 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
  * Created by davide on 22/09/16.
  */
 public class CorporaStorage implements UpdatesListener {
+
+    private static final int MAX_CONCURRENT_BUCKET_ANALYSIS = 8;
 
     private static final Update POISON_PILL = new Update(0, 0L, 0, false, false, null, null);
 
@@ -76,7 +78,7 @@ public class CorporaStorage implements UpdatesListener {
         return index.getStreams();
     }
 
-    private void flushToDisk(boolean skipAnalysis) throws IOException {
+    public synchronized void flushToDisk(boolean skipAnalysis, boolean forceAnalysis) throws IOException {
         if (pendingUpdatesBuckets.isEmpty())
             return;
 
@@ -86,9 +88,12 @@ public class CorporaStorage implements UpdatesListener {
             bucket.flush();
         }
 
-        if (!skipAnalysis) {
+        if (!skipAnalysis || forceAnalysis) {
             try {
-                analyzeIfNeeded(pendingUpdatesBuckets);
+                if (forceAnalysis)
+                    doAnalyze(pendingUpdatesBuckets);
+                else
+                    analyzeIfNeeded(pendingUpdatesBuckets);
             } catch (ContextAnalyzerException e) {
                 throw new IOException(e);
             }
@@ -99,20 +104,65 @@ public class CorporaStorage implements UpdatesListener {
         this.index.store(this.swapIndexPath);
         Files.move(this.swapIndexPath.toPath(), this.indexPath.toPath(), REPLACE_EXISTING, ATOMIC_MOVE);
         FileUtils.deleteQuietly(this.swapIndexPath);
+
+        logger.debug("CorporaStorage index successfully written to disk");
+    }
+
+    public void bulkInsert(int domain, Corpus corpus) throws IOException {
+        LineReader reader = null;
+
+        try {
+            reader = corpus.getContentReader();
+
+            CorpusBucket bucket = index.getBucket(domain);
+
+            if (!bucket.isOpen())
+                bucket.open();
+
+            String line;
+            while ((line = reader.readLine()) != null)
+                bucket.append(line);
+
+            pendingUpdatesBuckets.add(bucket);
+        } finally {
+            IOUtils.closeQuietly(reader);
+        }
+
+        logger.info("Bulk insert of domain " + domain);
     }
 
     private void analyzeIfNeeded(Collection<CorpusBucket> buckets) throws ContextAnalyzerException {
+        List<CorpusBucket> filteredBuckets = buckets.stream()
+                .filter(CorpusBucket::shouldAnalyze)
+                .collect(Collectors.toList());
+
+        if (filteredBuckets.isEmpty()) {
+            filteredBuckets = buckets.stream()
+                    .filter(CorpusBucket::hasUnanalyzedContent)
+                    .collect(Collectors.toList());
+
+            if (filteredBuckets.size() > MAX_CONCURRENT_BUCKET_ANALYSIS)
+                filteredBuckets = filteredBuckets.subList(0, MAX_CONCURRENT_BUCKET_ANALYSIS);
+        }
+
+        this.doAnalyze(filteredBuckets);
+    }
+
+    private void doAnalyze(Collection<CorpusBucket> buckets) throws ContextAnalyzerException {
+        if (buckets.isEmpty())
+            return;
+
         ArrayList<Future<Void>> pendingAnalysis = new ArrayList<>(buckets.size());
 
-        buckets.stream()
-                .filter(CorpusBucket::shouldAnalyze)
-                .forEach(bucket -> {
-                    AnalysisTask task = new AnalysisTask(contextAnalyzer, bucket);
-                    pendingAnalysis.add(analysisExecutor.submit(task));
-                });
-
-        if (pendingAnalysis.isEmpty())
-            return;
+        for (CorpusBucket bucket : buckets) {
+            AnalysisTask task = new AnalysisTask(contextAnalyzer, bucket);
+            try {
+                pendingAnalysis.add(analysisExecutor.submit(task));
+            } catch (RejectedExecutionException e) {
+                // Shutting down, ignore analyze instruction
+                return;
+            }
+        }
 
         for (Future<Void> analysis : pendingAnalysis) {
             try {
@@ -137,10 +187,29 @@ public class CorporaStorage implements UpdatesListener {
 
     public void shutdown() {
         backgroundTask.shutdown();
+        analysisExecutor.shutdownNow();
     }
 
     public void awaitTermination(TimeUnit unit, long timeout) throws InterruptedException {
-        unit.timedJoin(backgroundTask, timeout);
+        Thread waitThread = new Thread() {
+            @Override
+            public void run() {
+                try {
+                    backgroundTask.join();
+                } catch (InterruptedException e) {
+                    // Ignore it
+                }
+
+                try {
+                    analysisExecutor.awaitTermination(timeout, unit);
+                } catch (InterruptedException e) {
+                    // Ignore it
+                }
+            }
+        };
+        waitThread.start();
+
+        unit.timedJoin(waitThread, timeout);
     }
 
     private class BackgroundTask extends Thread {
@@ -191,9 +260,10 @@ public class CorporaStorage implements UpdatesListener {
 
                 if (update == null) {
                     // timeout
-                    flushToDisk(false);
+                    flushToDisk(false, false);
                     lastWriteDate = System.currentTimeMillis();
                 } else if (update == POISON_PILL) {
+                    logger.debug("CorporaStorage background thread KILL");
                     break;
                 } else if (index.registerUpdate(update.streamId, update.sentenceId)) {
                     CorpusBucket bucket = index.getBucket(update.domain);
@@ -211,7 +281,7 @@ public class CorporaStorage implements UpdatesListener {
         public void run() {
             try {
                 doRun();
-                flushToDisk(true);
+                flushToDisk(true, false);
             } catch (IOException e) {
                 error = e;
             } finally {

@@ -1,5 +1,6 @@
 package eu.modernmt.cli;
 
+import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.lucene.LuceneAnalyzer;
 import eu.modernmt.model.Domain;
@@ -7,6 +8,7 @@ import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.Level;
 
 import java.io.File;
 import java.util.HashMap;
@@ -52,6 +54,8 @@ public class ContextAnalyzerMain {
     }
 
     public static void main(String[] _args) throws Throwable {
+        Log4jConfiguration.setup(Level.DEBUG);
+
         Args args = new Args(_args);
 
         HashMap<Domain, Corpus> corpora = new HashMap<>();
@@ -64,7 +68,7 @@ public class ContextAnalyzerMain {
 
         ContextAnalyzer contextAnalyzer = null;
         try {
-            contextAnalyzer = new LuceneAnalyzer(args.indexPath, args.language);
+            contextAnalyzer = new LuceneAnalyzer(args.indexPath, args.language, eu.modernmt.context.lucene.storage.Options.prepareForBulkLoad());
             contextAnalyzer.add(corpora);
         } finally {
             IOUtils.closeQuietly(contextAnalyzer);

@@ -81,6 +81,10 @@ public class CorpusBucket implements Closeable {
         return domain;
     }
 
+    public boolean hasUnanalyzedContent() {
+        return analyzerOffset < currentOffset;
+    }
+
     public boolean shouldAnalyze() {
         if (currentOffset < analysisOptions.minOffset)
             return false;

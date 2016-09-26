@@ -5,6 +5,17 @@ package eu.modernmt.context.lucene.storage;
  */
 public class Options {
 
+    public static Options prepareForBulkLoad() {
+        Options options = new Options();
+        options.writeBehindDelay = Long.MAX_VALUE;
+
+        options.analysisOptions.minOffset = Long.MAX_VALUE;
+        options.analysisOptions.maxToleratedMisalignment = Long.MAX_VALUE;
+        options.analysisOptions.maxToleratedMisalignmentRatio = Float.MAX_VALUE;
+
+        return options;
+    }
+
     public int queueSize = 1000;
 
     // Background threads that add corpora to the
