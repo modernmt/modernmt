@@ -1,0 +1,71 @@
+#!/usr/bin/env python
+import os
+import tarfile
+import tempfile
+
+import requests
+
+__author__ = 'Davide Caroselli'
+
+
+def apache_download(path, outfile):
+    r = requests.get('https://www.apache.org/dyn/closer.cgi', params={
+        'path': path,
+        'as_json': '1',
+    }, timeout=60)
+
+    if r.status_code != requests.codes.ok:
+        raise Exception('HTTP request failed with code ' + str(r.status_code) + ': ' + r.url)
+
+    content = r.json()
+
+    path_info = content['path_info']
+    preferred = content['preferred']
+
+    mirrors = content['http']
+    if preferred in mirrors:
+        del mirrors[mirrors.index(preferred)]
+    mirrors.insert(0, preferred)
+
+    for mirror in mirrors:
+        r = requests.get(mirror + '/' + path_info, stream=True)
+
+        if r.status_code == 200:
+            for chunk in r:
+                outfile.write(chunk)
+
+            return
+
+    raise Exception('Failed to download ' + path)
+
+
+def untar(filename, destination):
+    if filename.endswith('.tar.gz'):
+        tar = tarfile.open(filename, 'r:gz')
+    elif filename.endswith('.tar'):
+        tar = tarfile.open(filename, 'r:')
+    else:
+        raise Exception('Unknown file type (supported .tar.gz or .tar): ' + filename)
+
+    folder = tar.getnames()[0]
+    if '/' in folder:
+        folder = folder[:folder.index('/')]
+
+    tar.extractall(destination)
+    tar.close()
+
+    return folder
+
+
+def install_apache_lib(path, dest_folder, name):
+    with tempfile.NamedTemporaryFile('wb', suffix='.tar.gz') as tmp_file:
+        apache_download(path, tmp_file)
+        tmp_file.flush()
+
+        result = untar(tmp_file.name, dest_folder)
+        os.rename(os.path.join(dest_folder, result), os.path.join(dest_folder, name))
+
+
+if __name__ == '__main__':
+    install_apache_lib('/cassandra/3.7/apache-cassandra-3.7-bin.tar.gz', 'vendor', 'cassandra-3.7')
+    install_apache_lib('/kafka/0.10.0.1/kafka_2.11-0.10.0.1.tgz', 'vendor', 'kafka-0.10.0.1')
