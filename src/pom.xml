@@ -22,6 +22,7 @@
 
         <module>rest-api</module>
         <module>cli</module>
+        <module>suffixarray-phrasetable</module>
     </modules>
 
     <packaging>pom</packaging>
