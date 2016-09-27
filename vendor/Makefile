@@ -16,9 +16,9 @@ MMT_NATIVE_INCLUDE_DIR	:= $(MMT_HOME)/src/common-interfaces/native/include
 MMT_BUILD_DIR			:= $(MMT_HOME)/build
 MMT_INSTALL_RES			:= $(MMT_BUILD_DIR)/res
 
-all: __moses_install __rocksdb_install __rockslm_install __paoding_install
+all: __moses_install __rocksdb_install __rockslm_install __sapt_install __paoding_install
 
-clean: __moses_clean __rocksdb_clean __rockslm_clean
+clean: __moses_clean __rocksdb_clean __rockslm_clean __sapt_clean
 
 res: __res_init __paoding_res __opennlp_res
 
@@ -41,15 +41,35 @@ __moses_install: __moses
 	@cd $(MOSES_BUILD_DIR); make install
 	@echo "SUCCESS (Moses)"
 
-__moses: __rockslm_install
+__moses: __rockslm_install __sapt_install
 	@echo "Building Moses..."
 	@mkdir -p $(MOSES_BUILD_DIR)
-	@cd $(MOSES_BUILD_DIR); cmake $(MOSES_HOME) -DMMT_INCLUDE_DIR=$(MMT_NATIVE_INCLUDE_DIR) -DUSE_ROCKSLM=1 -DROCKSDB_ROOT=$(MMT_BUILD_DIR) -DROCKSLM_ROOT=$(MMT_BUILD_DIR) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(MMT_BUILD_DIR) -Wno-dev
+	@cd $(MOSES_BUILD_DIR); cmake $(MOSES_HOME) -DMMT_INCLUDE_DIR=$(MMT_NATIVE_INCLUDE_DIR) -DUSE_SAPT=1 -DUSE_ROCKSLM=1 -DROCKSDB_ROOT=$(MMT_BUILD_DIR) -DROCKSLM_ROOT=$(MMT_BUILD_DIR) -DSAPT_ROOT=$(MMT_BUILD_DIR) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(MMT_BUILD_DIR) -Wno-dev
 	@cd $(MOSES_BUILD_DIR); make -j$(NPROCS)
 	@echo "SUCCESS (Moses)"
 
 __moses_clean:
 	rm -rf $(MOSES_BUILD_DIR)
+
+# ==========================================
+#  MODULE: SAPT (under MMT)
+# ==========================================
+
+SAPT_HOME    := $(MMT_HOME)/src/suffixarray-phrasetable
+
+__sapt_install: __sapt
+	@echo "Installing SAPT..."
+	@cd $(SAPT_HOME); mvn install
+	@echo "SUCCESS (SAPT)"
+
+__sapt: __rocksdb_install
+	@echo "Building SAPT..."
+	@cd $(ROCKSLM_HOME); mvn verify
+	@echo "SUCCESS (SAPT)"
+
+__sapt_clean:
+	@cd $(SAPT_HOME); mvn clean
+
 
 # ==========================================
 #  MODULE: RocksLM (under MMT)
