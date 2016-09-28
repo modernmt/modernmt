@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.2)
 project(sapt)
 
 if (NOT CMAKE_BUILD_TYPE)
-set(CMAKE_BUILD_TYPE Release)
+    set(CMAKE_BUILD_TYPE Release)
 endif ()
 
 option(BUILD_STATIC_LIBS "Build the static library (default is ON) " OFF)
@@ -27,11 +27,16 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -O3")
 
 set(SOURCE_FILES
+        sapt/position.h
+
         sapt/Options.h
         sapt/PhraseTable.cpp sapt/PhraseTable.h
         sapt/CorpusStorage.cpp sapt/CorpusStorage.h
         sapt/CorpusIndex.cpp sapt/CorpusIndex.h
         sapt/Options.h
+
+        sapt/UpdateBatch.cpp sapt/UpdateBatch.h
+        sapt/UpdateManager.cpp sapt/UpdateManager.h
 
         util/ioutils.h)
 
@@ -46,7 +51,6 @@ foreach (exefile ${executables})
     target_link_libraries(${exe} ${PROJECT_NAME})
 endforeach ()
 
-
 foreach (exefile ${executables})
     get_filename_component(exe ${exefile} NAME_WE)
     install(TARGETS ${exe}
@@ -59,7 +63,6 @@ install(TARGETS ${PROJECT_NAME}
         RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
         LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
         ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
-
 
 
 install(FILES sapt/PhraseTable.h sapt/Options.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/sapt)

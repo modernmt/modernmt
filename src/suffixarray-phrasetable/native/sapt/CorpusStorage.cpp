@@ -16,45 +16,28 @@ static_assert(sizeof(mmt::length_t) == 2, "Current implementation works only wit
 
 static const mmt::wid_t kEndOfSentenceSymbol = 0;
 
-static inline void WriteSentence(int fd, const vector<mmt::wid_t> &sentence) throw(storage_exception) {
-    size_t size = (sentence.size() + 1) * sizeof(mmt::wid_t);
-    char *buffer = new char[size];
-    int64_t ptr = 0;
+#define SentenceLengthInBytes(sentence) ((sentence.size() + 1) * sizeof(mmt::wid_t))
+#define AlignmentLengthInBytes(alignment) (4 + alignment.size() * 2 * sizeof(mmt::length_t))
 
+static inline void WriteSentence(char *data, size_t *ptr, const vector<mmt::wid_t> &sentence) {
     for (auto word = sentence.begin(); word != sentence.end(); ++word)
-        WriteInt32(buffer, &ptr, *word);
-    WriteInt32(buffer, &ptr, kEndOfSentenceSymbol);
-
-    ssize_t result = write(fd, buffer, size);
-    delete[] buffer;
-
-    if (result != size)
-        throw storage_exception("Unable to write to corpus storage");
+        WriteUInt32(data, ptr, *word);
+    WriteUInt32(data, ptr, kEndOfSentenceSymbol);
 }
 
-static inline void WriteAlignment(int fd, const mmt::alignment_t &alignment) throw(storage_exception) {
-    size_t size = 4 + alignment.size() * 2 * sizeof(mmt::length_t);
-    char *buffer = new char[size];
-    int64_t ptr = 0;
-
-    WriteInt32(buffer, &ptr, (uint32_t) alignment.size());
+static inline void WriteAlignment(char *data, size_t *ptr, const mmt::alignment_t &alignment) throw(storage_exception) {
+    WriteUInt32(data, ptr, (uint32_t) alignment.size());
     for (auto a = alignment.begin(); a != alignment.end(); ++a) {
-        WriteInt16(buffer, &ptr, a->first);
-        WriteInt16(buffer, &ptr, a->second);
+        WriteUInt16(data, ptr, a->first);
+        WriteUInt16(data, ptr, a->second);
     }
-
-    ssize_t result = write(fd, buffer, size);
-    delete[] buffer;
-
-    if (result != size)
-        throw storage_exception("Unable to write to corpus storage");
 }
 
-static inline bool ReadSentence(const char *data, size_t data_length, int64_t *ptr, vector<mmt::wid_t> *outSentence) {
+static inline bool ReadSentence(const char *data, size_t data_length, size_t *ptr, vector<mmt::wid_t> *outSentence) {
     bool endSymbolFound = false;
 
     while (!endSymbolFound && (*ptr + 4 <= data_length)) {
-        mmt::wid_t word = ReadInt32(data, ptr);
+        mmt::wid_t word = ReadUInt32(data, ptr);
 
         if (word == kEndOfSentenceSymbol)
             endSymbolFound = true;
@@ -65,19 +48,19 @@ static inline bool ReadSentence(const char *data, size_t data_length, int64_t *p
     return endSymbolFound;
 }
 
-static inline bool ReadAlignment(const char *data, size_t data_length, int64_t *ptr, mmt::alignment_t *outAlignment) {
+static inline bool ReadAlignment(const char *data, size_t data_length, size_t *ptr, mmt::alignment_t *outAlignment) {
     if (*ptr + 4 > data_length)
         return false;
 
-    uint32_t length = ReadInt32(data, ptr);
+    uint32_t length = ReadUInt32(data, ptr);
     outAlignment->reserve(length);
 
     if (*ptr + (4 * length) > data_length)
         return false;
 
     for (uint32_t i = 0; i < length; i++) {
-        mmt::length_t a = ReadInt16(data, ptr);
-        mmt::length_t b = ReadInt16(data, ptr);
+        mmt::length_t a = ReadUInt16(data, ptr);
+        mmt::length_t b = ReadUInt16(data, ptr);
 
         outAlignment->push_back(make_pair(a, b));
     }
@@ -95,7 +78,7 @@ CorpusStorage::CorpusStorage(const string &filepath, int64_t size) throw(storage
     if (fd == -1)
         throw storage_exception("Cannot open file " + filepath);
 
-    if (size > 0) {
+    if (size < 0) {
         if (lseek(fd, size, SEEK_SET) != size)
             throw storage_exception("Invalid file size specified: " + to_string(size));
     } else {
@@ -116,7 +99,7 @@ CorpusStorage::Retrieve(int64_t offset, vector<wid_t> *outSourceSentence, vector
     if (offset >= data_length)
         return false;
 
-    int64_t ptr = offset;
+    size_t ptr = offset;
 
     if (!ReadSentence(data, data_length, &ptr, outSourceSentence)) return false;
     if (!ReadSentence(data, data_length, &ptr, outTargetSentence)) return false;
@@ -124,15 +107,32 @@ CorpusStorage::Retrieve(int64_t offset, vector<wid_t> *outSourceSentence, vector
     return ReadAlignment(data, data_length, &ptr, outAlignment);
 }
 
-int64_t CorpusStorage::Append(const vector<wid_t> &sourceSentence, const vector<wid_t> &targetSentence,
-                              const mmt::alignment_t &alignment) throw(storage_exception) {
-    int64_t position = (int64_t) lseek(fd, 0, SEEK_CUR);
+void CorpusStorage::Encode(const vector<mmt::wid_t> &sourceSentence, const vector<mmt::wid_t> &targetSentence,
+                           const mmt::alignment_t &alignment, vector<char> *output) {
+    size_t size = SentenceLengthInBytes(sourceSentence) + SentenceLengthInBytes(targetSentence) +
+                  AlignmentLengthInBytes(alignment);
 
-    WriteSentence(fd, sourceSentence);
-    WriteSentence(fd, targetSentence);
-    WriteAlignment(fd, alignment);
+    output->resize(size);
+    char *data = output->data();
+    size_t ptr = 0;
 
-    return position;
+    WriteSentence(data, &ptr, sourceSentence);
+    WriteSentence(data, &ptr, targetSentence);
+    WriteAlignment(data, &ptr, alignment);
+}
+
+void CorpusStorage::PutBatch(UpdateBatch &batch) throw(storage_exception) {
+    batch.baseOffset = (int64_t) lseek(fd, 0, SEEK_CUR);
+
+    for (auto data = batch.encodedData.begin(); data != batch.encodedData.end(); ++data) {
+        char *buffer = data->data();
+        size_t size = data->size();
+
+        if (write(fd, buffer, size) != size)
+            throw storage_exception("unable to append data to corpus storage");
+    }
+
+    batch.storageSize = Flush();
 }
 
 int64_t CorpusStorage::Flush() throw(storage_exception) {
