@@ -31,6 +31,7 @@ set(SOURCE_FILES
         sapt/PhraseTable.cpp sapt/PhraseTable.h
         sapt/CorpusStorage.cpp sapt/CorpusStorage.h
         sapt/CorpusIndex.cpp sapt/CorpusIndex.h
+        sapt/Options.h
 
         util/ioutils.h)
 
@@ -61,7 +62,7 @@ install(TARGETS ${PROJECT_NAME}
 
 
 
-install(FILES sapt/PhraseTable.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/sapt)
+install(FILES sapt/PhraseTable.h sapt/Options.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/sapt)
 
 ## MMT common-interfaces
 find_package(MMTCommons REQUIRED)
