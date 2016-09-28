@@ -3,13 +3,12 @@
 #  MMTCommons_INCLUDE_DIR, directory containing headers
 #  MMTCommons_FOUND, whether MMT common-interface has been found
 
-set(MMTCommons_SEARCH_HEADER_PATHS ${CMAKE_SOURCE_DIR}/../../common-interfaces/native/)
+set(MMTCommons_SEARCH_HEADER_PATHS ${CMAKE_SOURCE_DIR}/../../common-interfaces/native/include)
 
-find_path(MMTCommons_INCLUDE_DIR include/mmt/sentence.h PATHS ${MMTCommons_SEARCH_HEADER_PATHS})
+find_path(MMTCommons_INCLUDE_DIR mmt/sentence.h PATHS ${MMTCommons_SEARCH_HEADER_PATHS})
 
 if (MMTCommons_INCLUDE_DIR)
     set(MMTCommons_FOUND TRUE)
-    set(MMTCommons_INCLUDE_DIR ${MMTCommons_INCLUDE_DIR}/include)
 else ()
     set(MMTCommons_FOUND FALSE)
 endif ()
