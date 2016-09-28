@@ -5,6 +5,7 @@
 #include "PhraseTable.h"
 #include "CorpusStorage.h"
 #include "CorpusIndex.h"
+#include "UpdateManager.h"
 #include <boost/filesystem.hpp>
 #include <iostream>
 
@@ -16,6 +17,7 @@ using namespace mmt::sapt;
 struct PhraseTable::pt_private {
     CorpusStorage *storage;
     CorpusIndex *index;
+    UpdateManager *updates;
 };
 
 PhraseTable::PhraseTable(const string &modelPath, const Options &options) {
@@ -28,11 +30,13 @@ PhraseTable::PhraseTable(const string &modelPath, const Options &options) {
     fs::path indexPath = fs::absolute(modelDir / fs::path("index"));
 
     self = new pt_private();
-    self->index = new CorpusIndex(indexPath.string());
-    self->storage = new CorpusStorage(storageFile.string());
+    self->index = new CorpusIndex(indexPath.string(), options.prefix_length);
+    self->storage = new CorpusStorage(storageFile.string(), self->index->GetStorageSize());
+    self->updates = new UpdateManager(self->storage, self->index, options.update_buffer_size, options.update_max_delay);
 }
 
 PhraseTable::~PhraseTable() {
+    delete self->updates;
     delete self->index;
     delete self->storage;
     delete self;
@@ -40,12 +44,20 @@ PhraseTable::~PhraseTable() {
 
 void PhraseTable::Add(const updateid_t &id, const domain_t domain, const std::vector<wid_t> &source,
                       const std::vector<wid_t> &target, const alignment_t &alignment) {
-    // TODO: stub implementation
-
-    cout << self->storage->Append(source, target, alignment) << endl;
+    self->updates->Add(id, domain, source, target, alignment);
 }
 
 vector<updateid_t> PhraseTable::GetLatestUpdatesIdentifier() {
-    // TODO: stub implementation
-    return vector<updateid_t>();
+    const vector<seqid_t> &streams = self->index->GetStreamsStatus();
+
+    vector<updateid_t> result;
+    result.reserve(streams.size());
+
+    for (size_t i = 0; i < streams.size(); ++i) {
+        if (streams[i] != 0)
+            result.push_back(updateid_t((stream_t) i, streams[i]));
+
+    }
+
+    return result;
 }

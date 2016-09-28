@@ -36,7 +36,7 @@ namespace rockslm {
         double waitTimeout;
         bool stop;
 
-        void AwakeBackgroundThread();
+        void AwakeBackgroundThread(bool wait);
 
         void BackgroundThreadRun();
     };

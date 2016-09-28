@@ -11,7 +11,7 @@ set(SOURCE_FILES
         sapt/CorpusStorage.cpp sapt/CorpusStorage.h
         sapt/CorpusIndex.cpp sapt/CorpusIndex.h
 
-        util/ioutils.h)
+        util/ioutils.h sapt/UpdateBatch.cpp sapt/UpdateBatch.h sapt/UpdateManager.cpp sapt/UpdateManager.h sapt/position.h)
 
 include_directories(${CMAKE_SOURCE_DIR})
 

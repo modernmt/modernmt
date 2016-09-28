@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <mmt/sentence.h>
+#include "UpdateBatch.h"
 
 using namespace std;
 
@@ -29,15 +30,17 @@ namespace mmt {
 
         class CorpusStorage {
         public:
-            CorpusStorage(const string &filepath, int64_t size = 0) throw(storage_exception);
+            CorpusStorage(const string &filepath, int64_t size = -1) throw(storage_exception);
 
             ~CorpusStorage();
 
             bool Retrieve(int64_t offset, vector<wid_t> *outSourceSentence, vector<wid_t> *outTargetSentence,
                           alignment_t *outAlignment);
 
-            int64_t Append(const vector<wid_t> &sourceSentence, const vector<wid_t> &targetSentence,
-                           const alignment_t &alignment) throw(storage_exception);
+            static void Encode(const vector<wid_t> &sourceSentence, const vector<wid_t> &targetSentence,
+                               const alignment_t &alignment, vector<char> *output);
+
+            void PutBatch(UpdateBatch &batch) throw(storage_exception);
 
             int64_t Flush() throw(storage_exception);
 

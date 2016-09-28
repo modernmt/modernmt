@@ -1,36 +1,37 @@
 //
-// Created by Davide  Caroselli on 19/09/16.
+// Created by Davide  Caroselli on 27/09/16.
 //
 
-#include "BufferedUpdateManager.h"
+#include "UpdateManager.h"
 
-using namespace rockslm;
+using namespace mmt::sapt;
 
-BufferedUpdateManager::BufferedUpdateManager(db::NGramStorage *storage, size_t bufferSize, double maxDelay) :
-        storage(storage), waitTimeout(maxDelay), stop(false) {
-    foregroundBatch = new db::NGramBatch(storage->GetOrder(), bufferSize, storage->GetStreamsStatus());
-    backgroundBatch = new db::NGramBatch(storage->GetOrder(), bufferSize, storage->GetStreamsStatus());
+UpdateManager::UpdateManager(CorpusStorage *storage, CorpusIndex *index, size_t bufferSize, double maxDelay) :
+        storage(storage), index(index), waitTimeout(maxDelay), stop(false) {
+    foregroundBatch = new UpdateBatch(index->GetPrefixLength(), bufferSize, index->GetStreamsStatus());
+    backgroundBatch = new UpdateBatch(index->GetPrefixLength(), bufferSize, index->GetStreamsStatus());
 
-    backgroundThread = new boost::thread(boost::bind(&BufferedUpdateManager::BackgroundThreadRun, this));
+    backgroundThread = new boost::thread(boost::bind(&UpdateManager::BackgroundThreadRun, this));
 }
 
-BufferedUpdateManager::~BufferedUpdateManager() {
+UpdateManager::~UpdateManager() {
     stop = true;
     AwakeBackgroundThread(false);
 
     backgroundThread->join();
-
+    
     delete backgroundThread;
     delete foregroundBatch;
     delete backgroundBatch;
 }
 
-void BufferedUpdateManager::Add(const updateid_t &id, const domain_t domain, const vector<wid_t> &sentence) {
+void UpdateManager::Add(const updateid_t &id, const domain_t domain, const vector<wid_t> &source,
+                        const vector<wid_t> &target, const alignment_t &alignment) {
     bool success = false;
 
     while (!success) {
         batchAccess.lock();
-        success = foregroundBatch->Add(id, domain, sentence);
+        success = foregroundBatch->Add(id, domain, source, target, alignment);
         batchAccess.unlock();
 
         if (!success)
@@ -38,7 +39,7 @@ void BufferedUpdateManager::Add(const updateid_t &id, const domain_t domain, con
     }
 }
 
-void BufferedUpdateManager::AwakeBackgroundThread(bool wait) {
+void UpdateManager::AwakeBackgroundThread(bool wait) {
     awakeCondition.notify_one();
 
     if (wait) {
@@ -47,7 +48,7 @@ void BufferedUpdateManager::AwakeBackgroundThread(bool wait) {
     }
 }
 
-void BufferedUpdateManager::BackgroundThreadRun() {
+void UpdateManager::BackgroundThreadRun() {
     auto timeout = std::chrono::milliseconds((int64_t) (waitTimeout * 1000.));
 
     while (!stop) {
@@ -57,7 +58,7 @@ void BufferedUpdateManager::BackgroundThreadRun() {
         if (!stop) {
             batchAccess.lock();
             {
-                db::NGramBatch *tmp = backgroundBatch;
+                UpdateBatch *tmp = backgroundBatch;
                 backgroundBatch = foregroundBatch;
                 foregroundBatch = tmp;
 
@@ -67,6 +68,7 @@ void BufferedUpdateManager::BackgroundThreadRun() {
 
             if (backgroundBatch->GetSize() > 0) {
                 storage->PutBatch(*backgroundBatch);
+                index->PutBatch(*backgroundBatch);
                 backgroundBatch->Clear();
             }
         }
