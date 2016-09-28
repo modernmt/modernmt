@@ -6,10 +6,10 @@
 
 using namespace mmt::sapt;
 
-UpdateManager::UpdateManager(CorpusStorage *storage, CorpusIndex *index, size_t bufferSize, double maxDelay) :
-        storage(storage), index(index), waitTimeout(maxDelay), stop(false) {
-    foregroundBatch = new UpdateBatch(index->GetPrefixLength(), bufferSize, index->GetStreamsStatus());
-    backgroundBatch = new UpdateBatch(index->GetPrefixLength(), bufferSize, index->GetStreamsStatus());
+UpdateManager::UpdateManager(SuffixArray *index, size_t bufferSize, double maxDelay) :
+        index(index), waitTimeout(maxDelay), stop(false) {
+    foregroundBatch = new UpdateBatch(bufferSize, index->GetStreams());
+    backgroundBatch = new UpdateBatch(bufferSize, index->GetStreams());
 
     backgroundThread = new boost::thread(boost::bind(&UpdateManager::BackgroundThreadRun, this));
 }
@@ -19,7 +19,7 @@ UpdateManager::~UpdateManager() {
     AwakeBackgroundThread(false);
 
     backgroundThread->join();
-    
+
     delete backgroundThread;
     delete foregroundBatch;
     delete backgroundBatch;
@@ -67,7 +67,6 @@ void UpdateManager::BackgroundThreadRun() {
             batchAccess.unlock();
 
             if (backgroundBatch->GetSize() > 0) {
-                storage->PutBatch(*backgroundBatch);
                 index->PutBatch(*backgroundBatch);
                 backgroundBatch->Clear();
             }

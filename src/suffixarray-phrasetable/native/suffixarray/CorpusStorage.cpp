@@ -71,7 +71,7 @@ static inline bool ReadAlignment(const char *data, size_t data_length, size_t *p
 /* CorpusStorage */
 
 CorpusStorage::CorpusStorage(const string &filepath, int64_t size) throw(storage_exception) : data(NULL),
-                                                                                              data_length(0) {
+                                                                                              dataLength(0) {
     mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
     fd = open(filepath.c_str(), O_RDWR | O_CREAT, mode);
 
@@ -85,10 +85,13 @@ CorpusStorage::CorpusStorage(const string &filepath, int64_t size) throw(storage
         lseek(fd, 0, SEEK_END);
     }
 
-    MMap();
+    ssize_t mappedSize = MemoryMap();
+    dataLength = mappedSize > 0 ? (size_t) mappedSize : 0;
 }
 
 CorpusStorage::~CorpusStorage() {
+    munmap(data, dataLength);
+
     fsync(fd);
     close(fd);
 }
@@ -96,80 +99,85 @@ CorpusStorage::~CorpusStorage() {
 bool
 CorpusStorage::Retrieve(int64_t offset, vector<wid_t> *outSourceSentence, vector<wid_t> *outTargetSentence,
                         mmt::alignment_t *outAlignment) {
-    if (offset >= data_length)
+    size_t ptr = (size_t) offset;
+
+    if (ptr >= dataLength)
         return false;
 
-    size_t ptr = offset;
+    if (!ReadSentence(data, dataLength, &ptr, outSourceSentence)) return false;
+    if (!ReadSentence(data, dataLength, &ptr, outTargetSentence)) return false;
 
-    if (!ReadSentence(data, data_length, &ptr, outSourceSentence)) return false;
-    if (!ReadSentence(data, data_length, &ptr, outTargetSentence)) return false;
-
-    return ReadAlignment(data, data_length, &ptr, outAlignment);
+    return ReadAlignment(data, dataLength, &ptr, outAlignment);
 }
 
-void CorpusStorage::Encode(const vector<mmt::wid_t> &sourceSentence, const vector<mmt::wid_t> &targetSentence,
-                           const mmt::alignment_t &alignment, vector<char> *output) {
+int64_t CorpusStorage::Append(const vector<mmt::wid_t> &sourceSentence, const vector<mmt::wid_t> &targetSentence,
+                              const mmt::alignment_t &alignment) throw(storage_exception) {
     size_t size = SentenceLengthInBytes(sourceSentence) + SentenceLengthInBytes(targetSentence) +
                   AlignmentLengthInBytes(alignment);
 
-    output->resize(size);
-    char *data = output->data();
-    size_t ptr = 0;
+    char *buffer = new char[size];
+    size_t i = 0;
 
-    WriteSentence(data, &ptr, sourceSentence);
-    WriteSentence(data, &ptr, targetSentence);
-    WriteAlignment(data, &ptr, alignment);
-}
+    WriteSentence(buffer, &i, sourceSentence);
+    WriteSentence(buffer, &i, targetSentence);
+    WriteAlignment(buffer, &i, alignment);
 
-void CorpusStorage::PutBatch(UpdateBatch &batch) throw(storage_exception) {
-    batch.baseOffset = (int64_t) lseek(fd, 0, SEEK_CUR);
+    writeMutex.lock();
+    int64_t ptr = (int64_t) lseek(fd, 0, SEEK_CUR);
+    ssize_t writeResult = write(fd, buffer, size);
+    writeMutex.unlock();
 
-    for (auto data = batch.encodedData.begin(); data != batch.encodedData.end(); ++data) {
-        char *buffer = data->data();
-        size_t size = data->size();
+    if (writeResult != (ssize_t) size)
+        throw storage_exception("unable to append data to corpus storage");
 
-        if (write(fd, buffer, size) != size)
-            throw storage_exception("unable to append data to corpus storage");
-    }
-
-    batch.storageSize = Flush();
+    return ptr;
 }
 
 int64_t CorpusStorage::Flush() throw(storage_exception) {
-    if (fsync(fd) == -1)
+    int fsyncResult;
+    ssize_t mmapSize = -1;
+
+    writeMutex.lock();
+    fsyncResult = fsync(fd);
+    if (fsyncResult != -1) {
+        mmapSize = MemoryMap();
+
+        if (mmapSize > 0)
+            dataLength = (size_t) mmapSize;
+    }
+    writeMutex.unlock();
+
+    if (fsyncResult == -1 || mmapSize == -1)
         throw storage_exception("Failed to flush data to disk");
 
-    MMap();
-
-    return (int64_t) data_length;
+    return (int64_t) mmapSize;
 }
 
-void CorpusStorage::MMap() throw(storage_exception) {
+ssize_t CorpusStorage::MemoryMap() {
     size_t size = (size_t) lseek(fd, 0, SEEK_CUR);
 
     if (size == 0)
-        return;
+        return 0;
 
     if (data == NULL) {
         data = (char *) mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
 
         if (data == MAP_FAILED)
-            throw storage_exception("Unable to mmap corpus storage");
+            return -1;
     } else {
 #ifdef __APPLE__
-        if (munmap(data, data_length) == -1)
-            throw storage_exception("Unable to unmap corpus storage");
+        if (munmap(data, dataLength) == -1)
+            return -1;
 
         data = (char *) mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
 #else
-        data = (char *) mremap(data, data_length, size, MREMAP_MAYMOVE);
+        data = (char *) mremap(data, dataLength, size, MREMAP_MAYMOVE);
 #endif
         if (data == MAP_FAILED)
-            throw storage_exception("Unable to mmap corpus storage");
+            return -1;
     }
 
-
-    data_length = size;
+    return size;
 }
 
 

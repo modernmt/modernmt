@@ -8,24 +8,22 @@
 #include <mutex>
 #include <condition_variable>
 #include <boost/thread.hpp>
-#include "CorpusStorage.h"
-#include "CorpusIndex.h"
+#include <suffixarray/SuffixArray.h>
 
 namespace mmt {
     namespace sapt {
 
         class UpdateManager {
         public:
-            UpdateManager(CorpusStorage *storage, CorpusIndex *index, size_t bufferSize, double maxDelay);
+            UpdateManager(SuffixArray *index, size_t bufferSize, double maxDelay);
 
             ~UpdateManager();
 
-            void Add(const updateid_t &id, const domain_t domain, const std::vector<wid_t> &source,
-                     const std::vector<wid_t> &target, const alignment_t &alignment);
+            void Add(const updateid_t &id, const domain_t domain, const vector<wid_t> &source,
+                     const vector<wid_t> &target, const alignment_t &alignment);
 
         private:
-            CorpusStorage *storage;
-            CorpusIndex *index;
+            SuffixArray *index;
 
             UpdateBatch *foregroundBatch;
             UpdateBatch *backgroundBatch;

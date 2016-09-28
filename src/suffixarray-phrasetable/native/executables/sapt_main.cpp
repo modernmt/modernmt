@@ -2,13 +2,14 @@
 
 #include <mmt/sentence.h>
 #include <sapt/PhraseTable.h>
-#include <sapt/CorpusStorage.h>
+#include <suffixarray/UpdateBatch.h>
+#include <suffixarray/SuffixArray.h>
 
 using namespace std;
 using namespace mmt;
 using namespace mmt::sapt;
 
-void add(PhraseTable &pt, int index, int size) {
+void add(UpdateBatch &batch, int index, int size) {
     vector<wid_t> sourceSentence;
     vector<wid_t> targetSentence;
     alignment_t alignment;
@@ -23,22 +24,16 @@ void add(PhraseTable &pt, int index, int size) {
             alignment.push_back(make_pair(i, size - i - 1));
     }
 
-    pt.Add(updateid_t(1, (seqid_t) index), 1, sourceSentence, targetSentence, alignment);
+    batch.Add(1, sourceSentence, targetSentence, alignment);
 }
 
-void print(CorpusStorage &storage, int offset) {
-//    vector<wid_t> sourceSentence;
-//    vector<wid_t> targetSentence;
-//    alignment_t alignment;
-//
-//    storage.Retrieve(offset, &sourceSentence, &targetSentence, &alignment);
-//
-//    for (auto word = sourceSentence.begin(); word != sourceSentence.end(); ++word) cout << *word << " ";
-//    cout << "||| ";
-//    for (auto word = targetSentence.begin(); word != targetSentence.end(); ++word) cout << *word << " ";
-//    cout << "||| ";
-//    for (auto a = alignment.begin(); a != alignment.end(); ++a) cout << a->first << "-" << a->second << " ";
-//    cout << endl;
+void print(sample_t &sample) {
+    for (auto word = sample.source.begin(); word != sample.source.end(); ++word) cout << *word << " ";
+    cout << "||| ";
+    for (auto word = sample.target.begin(); word != sample.target.end(); ++word) cout << *word << " ";
+    cout << "||| ";
+    for (auto a = sample.alignment.begin(); a != sample.alignment.end(); ++a) cout << a->first << "-" << a->second << " ";
+    cout << endl;
 }
 
 int main() {
@@ -46,14 +41,29 @@ int main() {
     options.update_max_delay = 1;
 
     PhraseTable pt("/home/ubuntu/sapt", options);
+    SuffixArray *index = (SuffixArray *) pt.__GetSuffixArray();
 
-//    add(pt, 1, 4);
-//    add(pt, 2, 5);
-//    add(pt, 3, 2);
+    // Insert
+//    UpdateBatch batch(1000, vector<seqid_t>());
 //
-//    sleep(2);
+//    add(batch, 1, 4);
+//    add(batch, 1, 3);
+//    add(batch, 2, 5);
+//    add(batch, 3, 2);
+//
+//    index->PutBatch(batch);
 
-    
+
+    // Query
+    vector<wid_t> phrase;
+    phrase.push_back(1001);
+    phrase.push_back(1002);
+
+    vector<sample_t> samples;
+    index->GetRandomSamples(1, phrase, 1000, samples);
+
+    for (auto sample = samples.begin(); sample != samples.end(); ++sample)
+        print(*sample);
 
     return 0;
 }

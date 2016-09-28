@@ -24,6 +24,9 @@ namespace mmt {
 
             virtual vector<updateid_t> GetLatestUpdatesIdentifier() override;
 
+            // TODO: just for testing purpose, must be removed asap
+            void *__GetSuffixArray();
+
         private:
             struct pt_private;
             pt_private *self;

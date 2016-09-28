@@ -8,8 +8,8 @@
 #include <cstddef>
 #include <string>
 #include <vector>
+#include <mutex>
 #include <mmt/sentence.h>
-#include "UpdateBatch.h"
 
 using namespace std;
 
@@ -37,19 +37,19 @@ namespace mmt {
             bool Retrieve(int64_t offset, vector<wid_t> *outSourceSentence, vector<wid_t> *outTargetSentence,
                           alignment_t *outAlignment);
 
-            static void Encode(const vector<wid_t> &sourceSentence, const vector<wid_t> &targetSentence,
-                               const alignment_t &alignment, vector<char> *output);
-
-            void PutBatch(UpdateBatch &batch) throw(storage_exception);
+            int64_t Append(const vector<wid_t> &sourceSentence, const vector<wid_t> &targetSentence,
+                           const alignment_t &alignment) throw(storage_exception);
 
             int64_t Flush() throw(storage_exception);
 
         private:
             int fd;
             char *data;
-            size_t data_length;
+            size_t dataLength;
 
-            void MMap() throw(storage_exception);
+            mutex writeMutex;
+
+            ssize_t MemoryMap();
         };
 
     }

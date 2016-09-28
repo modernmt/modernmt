@@ -7,26 +7,17 @@
 
 #include <mmt/IncrementalModel.h>
 #include <boost/functional/hash.hpp>
-#include <sapt/position.h>
 
 using namespace std;
-
-struct prefix_hash {
-    size_t operator()(const vector<mmt::wid_t> &c) const {
-        return boost::hash_range(c.begin(), c.end());
-    }
-};
 
 namespace mmt {
     namespace sapt {
 
         class UpdateBatch {
-            friend class CorpusIndex;
-
-            friend class CorpusStorage;
+            friend class SuffixArray;
 
         public:
-            UpdateBatch(uint8_t prefixLength, size_t maxSize, const vector<seqid_t> &streams);
+            UpdateBatch(size_t maxSize, const vector<seqid_t> &streams);
 
             bool Add(const updateid_t &id, const domain_t domain, const std::vector<wid_t> &source,
                      const std::vector<wid_t> &target, const alignment_t &alignment);
@@ -35,7 +26,7 @@ namespace mmt {
                      const std::vector<wid_t> &target, const alignment_t &alignment);
 
             inline size_t GetSize() const {
-                return size;
+                return data.size();
             }
 
             inline size_t GetMaxSize() const {
@@ -51,23 +42,22 @@ namespace mmt {
             }
 
         private:
-            typedef unordered_map<vector<wid_t>, vector<position_t>, prefix_hash> prefixmap_t;
 
-            const uint8_t prefixLength;
+            struct sentencepair_t {
+                domain_t domain;
+                vector<wid_t> source;
+                vector<wid_t> target;
+                alignment_t alignment;
+
+                sentencepair_t() {};
+            };
+
             const size_t maxSize;
-            size_t size;
 
-            int64_t currentOffset;
-            int64_t baseOffset;
-            int64_t storageSize;
             vector<seqid_t> streams;
-            vector<vector<char>> encodedData;
-            unordered_map<domain_t, prefixmap_t> prefixes;
+            vector<sentencepair_t> data;
 
             bool SetStreamIfValid(stream_t stream, seqid_t sentence);
-
-            inline void AddToBatch(const domain_t domain, const std::vector<wid_t> &source,
-                                   const std::vector<wid_t> &target, const alignment_t &alignment);
 
         };
 

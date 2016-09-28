@@ -24,20 +24,20 @@ endif ()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -O3 -Wall")
 
 set(SOURCE_FILES
-        sapt/position.h
+        suffixarray/CorpusStorage.cpp suffixarray/CorpusStorage.h
+        suffixarray/UpdateBatch.cpp suffixarray/UpdateBatch.h
+        suffixarray/SuffixArray.cpp suffixarray/SuffixArray.h
 
         sapt/Options.h
         sapt/PhraseTable.cpp sapt/PhraseTable.h
-        sapt/CorpusStorage.cpp sapt/CorpusStorage.h
-        sapt/CorpusIndex.cpp sapt/CorpusIndex.h
-
-        sapt/UpdateBatch.cpp sapt/UpdateBatch.h
         sapt/UpdateManager.cpp sapt/UpdateManager.h
 
-        util/ioutils.h)
+        util/ioutils.h
+        util/hashutils.h
+        )
 
 include_directories(${CMAKE_SOURCE_DIR})
 
