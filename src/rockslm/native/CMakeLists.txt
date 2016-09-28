@@ -45,6 +45,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 ##########################
 
 find_package(Rocksdb REQUIRED)
+find_package(MMTCommons REQUIRED)
+
 find_package(BZip2)
 find_package(ZLIB)
 find_package(lzma)
@@ -75,10 +77,9 @@ find_package(Boost 1.55.0 REQUIRED COMPONENTS filesystem thread system program_o
 ##########################
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/kenlm)
-include_directories(${MMT_INCLUDE_DIR})
 
 include_directories(${Rocksdb_INCLUDE_DIR})
-
+include_directories(${MMTCommons_INCLUDE_DIR})
 
 if (BZIP2_FOUND)
     include_directories(${BZIP_INCLUDE_DIRS})
@@ -115,9 +116,6 @@ add_subdirectory(db)
 add_subdirectory(kenlm)
 
 add_library(${PROJECT_NAME} ${TARGET_OBJECTS_kenlm} ${TARGET_OBJECTS_lm} ${TARGET_OBJECTS_db} ${TARGET_OBJECTS_corpus} ${SOURCE_FILES} )
-
-#target_compile_definitions(${PROJECT_NAME} PUBLIC -DROCKSLM_MAX_ORDER=${ROCKSLM_MAX_ORDER})
-
 
 LINK_DIRECTORIES (build)
 
