@@ -1,18 +1,18 @@
 # - Find Rocksdb (db.h, librocksdb.a, librocksdb.so)
 # This module defines
 #  Rocksdb_INCLUDE_DIR, directory containing headers
-#  Rocksdb_LIBS, directory containing snappy libraries
-#  Rocksdb_FOUND, whether snappy has been found
+#  Rocksdb_LIBS, directory containing rocksdb libraries
+#  Rocksdb_FOUND, whether rocksdb has been found
 
 set(Rocksdb_SEARCH_HEADER_PATHS
-        ${ROCKSDB_ROOT} $ENV{ROCKSDB_ROOT}
+        ${ROCKSDB_ROOT}/include
         )
 
 set(Rocksdb_SEARCH_LIB_PATH
-        ${ROCKSDB_ROOT} $ENV{ROCKSDB_ROOT}
+        ${ROCKSDB_ROOT}/lib
         )
 
-find_path(Rocksdb_INCLUDE_DIR include/rocksdb/db.h PATHS
+find_path(Rocksdb_INCLUDE_DIR rocksdb/db.h PATHS
         ${Rocksdb_SEARCH_HEADER_PATHS}
         )
 
@@ -21,7 +21,7 @@ find_library(Rocksdb_LIB_PATH NAMES rocksdb PATHS ${Rocksdb_SEARCH_LIB_PATH})
 if (Rocksdb_INCLUDE_DIR AND Rocksdb_LIB_PATH)
     set(Rocksdb_FOUND TRUE)
     set(Rocksdb_LIBS ${Rocksdb_LIB_PATH})
-    set(Rocksdb_INCLUDE_DIR ${Rocksdb_INCLUDE_DIR}/include)
+#    set(Rocksdb_INCLUDE_DIR ${Rocksdb_INCLUDE_DIR}/include)
 else ()
     set(Rocksdb_FOUND FALSE)
 endif ()
