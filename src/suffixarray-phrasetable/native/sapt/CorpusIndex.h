@@ -15,9 +15,9 @@ namespace mmt {
 
         class CorpusIndex {
         public:
-            CorpusIndex(const string &path, bool prepareForBulkLoad = false);
+            CorpusIndex(const string &path, bool prepareForBulkLoad = false){};
 
-            ~CorpusIndex();
+            ~CorpusIndex(){};
 
         private:
             rocksdb::DB *db;
