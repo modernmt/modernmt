@@ -44,14 +44,14 @@ int main() {
     SuffixArray *index = (SuffixArray *) pt.__GetSuffixArray();
 
     // Insert
-//    UpdateBatch batch(1000, vector<seqid_t>());
-//
-//    add(batch, 1, 4);
-//    add(batch, 1, 3);
-//    add(batch, 2, 5);
-//    add(batch, 3, 2);
-//
-//    index->PutBatch(batch);
+    UpdateBatch batch(1000, vector<seqid_t>());
+
+    add(batch, 1, 4);
+    add(batch, 1, 3);
+    add(batch, 2, 5);
+    add(batch, 3, 2);
+
+    index->PutBatch(batch);
 
 
     // Query

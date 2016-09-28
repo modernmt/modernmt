@@ -1,5 +1,5 @@
 //
-// Created by Davide  Caroselli on 27/09/16.
+// Created by Davide Caroselli on 27/07/16.
 //
 
 #ifndef SAPT_OPTIONS_H
@@ -7,11 +7,15 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 
 namespace mmt {
     namespace sapt {
 
         struct Options {
+
+            // Number of samples used to calculate phrase tables
+            size_t sample = 1000;
 
             // Internal storage prefix max length. This option does not
             // limit the length of searchable prefixes, it is just an
