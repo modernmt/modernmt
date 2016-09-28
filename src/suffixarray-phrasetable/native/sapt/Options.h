@@ -1,5 +1,5 @@
 //
-// Created by Davide  Caroselli on 27/09/16.
+// Created by Davide Caroselli on 27/07/16.
 //
 
 #ifndef SAPT_OPTIONS_H
@@ -7,17 +7,15 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 
 namespace mmt {
     namespace sapt {
 
         struct Options {
 
-            // Internal storage prefix max length. This option does not
-            // limit the length of searchable prefixes, it is just an
-            // internal representation option: higher values will speed
-            // up search time while raising the index size.
-            uint8_t prefix_length = 5;
+            // number of sample
+            int sample = 1000;
 
             /* Updates */
 
@@ -27,7 +25,7 @@ namespace mmt {
 
             // Maximum number of n-grams cached before flushing updates
             // to the underlying database.
-            size_t update_buffer_size = 100000; // number of prefixes
+            size_t update_buffer_size = 100000; // number of n-grams
 
             // Maximum time in seconds that an update can wait before
             // being flushed to disk; higher delays ensures better
@@ -36,7 +34,7 @@ namespace mmt {
             // to the user.
             double update_max_delay = 2.; // seconds
 
-            Options() {};
+            Options() { };
         };
 
     }
