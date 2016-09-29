@@ -15,13 +15,16 @@ namespace mmt {
         struct Options {
 
             // Number of samples used to calculate phrase tables
-            size_t sample = 1000;
+            size_t samples = 1000;
 
             // Internal storage prefix max length. This option does not
             // limit the length of searchable prefixes, it is just an
             // internal representation option: higher values will speed
             // up search time while raising the index size.
             uint8_t prefix_length = 5;
+
+            // Maximum length of the source phrase for a translation option
+            uint8_t max_option_length = 20;
 
             /* Updates */
 

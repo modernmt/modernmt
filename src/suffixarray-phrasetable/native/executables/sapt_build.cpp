@@ -24,7 +24,6 @@ namespace {
         string input_path;
         string source_lang;
         string target_lang;
-        uint8_t prefix_length = 5;
 
         size_t buffer_size = 100000;
     };
@@ -41,7 +40,6 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
             ("source,s", po::value<string>()->required(), "source language")
             ("target,t", po::value<string>()->required(), "target language")
             ("input,i", po::value<string>()->required(), "input folder with input corpora")
-            ("prefix-length,p", po::value<uint8_t>(), "the internal prefix length (default is 5)")
             ("buffer,b", po::value<size_t>(), "size of the buffer");
 
     po::variables_map vm;
@@ -62,9 +60,6 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
 
         if (vm.count("buffer"))
             args->buffer_size = vm["buffer"].as<size_t>();
-
-        if (vm.count("prefix-length"))
-            args->prefix_length = vm["prefix-length"].as<uint8_t>();
     } catch (po::error &e) {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         std::cerr << desc << std::endl;
@@ -111,11 +106,6 @@ void LoadCorpus(const BilingualCorpus &corpus, SuffixArray &index, size_t buffer
 }
 
 int main(int argc, const char *argv[]) {
-    int threads = std::min((thread::hardware_concurrency() * 2) / 3, 8U);
-
-//    omp_set_dynamic(0);
-//    omp_set_num_threads(threads);
-
     args_t args;
 
     if (!ParseArgs(argc, argv, &args))
@@ -129,12 +119,12 @@ int main(int argc, const char *argv[]) {
     if (!fs::is_directory(args.model_path))
         fs::create_directories(args.model_path);
 
-    SuffixArray index(args.model_path, args.prefix_length, true);
+    Options options;
+    SuffixArray index(args.model_path, options.prefix_length, options.max_option_length, true);
 
     vector<BilingualCorpus> corpora;
     BilingualCorpus::List(args.input_path, args.source_lang, args.target_lang, corpora);
 
-#pragma omp parallel for schedule(dynamic)
     for (auto corpus = corpora.begin(); corpus != corpora.end(); ++corpus) {
         double begin = GetTime();
         LoadCorpus(*corpus, index, args.buffer_size);
