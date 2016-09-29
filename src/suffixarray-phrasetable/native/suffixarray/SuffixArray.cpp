@@ -23,7 +23,17 @@ static_assert(sizeof(wid_t) == 4, "Current implementation works only with 32-bit
 static_assert(sizeof(domain_t) == 4, "Current implementation works only with 32-bit domain id");
 static_assert(sizeof(length_t) == 2, "Current implementation works only with 16-bit sentence length");
 
-#define GlobalInfoKey() MakeKey(0, vector<wid_t>(), 0, 0)
+static inline string MakeWordKey(domain_t domain, wid_t word) {
+    char bytes[8];
+
+    size_t ptr = 0;
+    WriteUInt32(bytes, &ptr, domain);
+    WriteUInt32(bytes, &ptr, word);
+
+    string key(bytes, 8);
+
+    return key;
+}
 
 static inline string MakeKey(domain_t domain, const vector<wid_t> &phrase, size_t offset, size_t length) {
     size_t size = sizeof(domain_t) + length * sizeof(wid_t);
@@ -74,6 +84,34 @@ static inline void DeserializePositionsList(const char *data, size_t bytes_size,
 
         outPositions[offset].push_back(sentence_offset);
     }
+}
+
+static inline string SerializeDomainList(const unordered_set<domain_t> &domains) {
+    size_t size = domains.size() * sizeof(domain_t);
+    char *bytes = new char[size];
+
+    size_t i = 0;
+    for (auto domain = domains.begin(); domain != domains.end(); ++domain)
+        WriteUInt32(bytes, &i, *domain);
+
+    string value(bytes, size);
+    delete[] bytes;
+
+    return value;
+}
+
+static inline void DeserializeDomainList(const char *data, size_t bytes_size, unordered_set<domain_t> &outDomains) {
+    size_t entry_size = sizeof(domain_t);
+
+    if (bytes_size % entry_size != 0)
+        return;
+
+    size_t count = bytes_size / entry_size;
+    outDomains.reserve(count);
+
+    size_t ptr = 0;
+    for (size_t i = 0; i < count; ++i)
+        outDomains.insert(ReadUInt32(data, &ptr));
 }
 
 static inline bool
@@ -133,6 +171,9 @@ namespace mmt {
     }
 }
 
+static const string kGlobalInfoKey = MakeWordKey(0, 0);
+static const string kDomainListKey = MakeWordKey(0, 1);
+
 SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength,
                          bool prepareForBulkLoad) throw(index_exception, storage_exception) :
         prefixLength(prefixLength) {
@@ -188,8 +229,13 @@ SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength,
     string raw_streams;
     int64_t storageSize = 0;
 
-    db->Get(ReadOptions(), GlobalInfoKey(), &raw_streams);
+    db->Get(ReadOptions(), kGlobalInfoKey, &raw_streams);
     DeserializeGlobalInfo(raw_streams.data(), raw_streams.size(), &storageSize, &streams);
+
+    // Read domains
+    string raw_domains;
+    db->Get(ReadOptions(), kDomainListKey, &raw_domains);
+    DeserializeDomainList(raw_domains.data(), raw_domains.size(), domains);
 
     // Load storage
     storage = new CorpusStorage(storageFile.string(), storageSize);
@@ -207,12 +253,19 @@ void SuffixArray::ForceCompaction() {
 void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_exception) {
     WriteBatch writeBatch;
 
+    unordered_set<domain_t> new_domains;
+
     // Compute prefixes
     unordered_map<string, vector<sptr_t>> prefixes;
 
     for (auto entry = batch.data.begin(); entry != batch.data.end(); ++entry) {
+        domain_t domain = entry->domain;
+
         int64_t offset = storage->Append(entry->source, entry->target, entry->alignment);
-        AddToBatch(entry->domain, entry->source, offset, prefixes);
+        AddToBatch(domain, entry->source, offset, prefixes);
+
+        if (new_domains.find(domain) == new_domains.end() && domains.find(domain) == domains.end())
+            new_domains.insert(domain);
     }
 
     int64_t storageSize = storage->Flush();
@@ -224,15 +277,26 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
     }
 
     // Write global info
-    writeBatch.Put(GlobalInfoKey(), SerializeGlobalInfo(batch.streams, storageSize));
+    writeBatch.Put(kGlobalInfoKey, SerializeGlobalInfo(batch.streams, storageSize));
+
+    // Write domain list if necessary
+    if (!new_domains.empty()) {
+        new_domains.insert(domains.begin(), domains.end());
+        writeBatch.Put(kDomainListKey, SerializeDomainList(new_domains));
+    }
 
     // Commit write batch
     Status status = db->Write(WriteOptions(), &writeBatch);
     if (!status.ok())
         throw index_exception("Unable to write to index: " + status.ToString());
 
-    // Reset streams
+    // Reset streams and domains
     streams = batch.GetStreams();
+    if (!new_domains.empty()) {
+        domainsAccess.lock();
+        domains = new_domains;
+        domainsAccess.unlock();
+    }
 }
 
 void SuffixArray::AddToBatch(domain_t domain, const vector<wid_t> &sentence, int64_t storageOffset,
@@ -244,6 +308,59 @@ void SuffixArray::AddToBatch(domain_t domain, const vector<wid_t> &sentence, int
 
         string key = MakeKey(domain, sentence, start, length);
         outBatch[key].push_back(sptr_t(storageOffset, start));
+    }
+}
+
+void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, vector<sample_t> &outSamples,
+                                   context_t *context) {
+    size_t remaining = limit;
+    outSamples.clear();
+
+    unordered_set<domain_t> covered_domains;
+
+    if (context) {
+        for (auto score = context->begin(); score != context->end(); ++score) {
+            covered_domains.insert(score->domain);
+
+            GetRandomSamples(score->domain, phrase, remaining, outSamples);
+
+            if (limit > 0) {
+                if (outSamples.size() >= limit) {
+                    remaining = 0;
+                    break;
+                } else {
+                    remaining = limit - outSamples.size();
+                }
+            }
+        }
+    }
+
+    if (limit == 0 || remaining > 0) {
+        vector<domain_t> domain_sequence;
+
+        domainsAccess.lock();
+        for (auto domain = domains.begin(); domain != domains.end(); ++domain) {
+            if (covered_domains.find(*domain) == covered_domains.end())
+                domain_sequence.push_back(*domain);
+        }
+        domainsAccess.unlock();
+
+        sort(domain_sequence.begin(), domain_sequence.end());
+
+        unsigned int seed = words_hash(phrase);
+        shuffle(domain_sequence.begin(), domain_sequence.end(), default_random_engine(seed));
+
+        for (auto domain = domain_sequence.begin(); domain != domain_sequence.end(); ++domain) {
+            GetRandomSamples(*domain, phrase, remaining, outSamples);
+
+            if (limit > 0) {
+                if (outSamples.size() >= limit) {
+                    break;
+                } else {
+                    remaining = limit - outSamples.size();
+                }
+            }
+        }
     }
 }
 

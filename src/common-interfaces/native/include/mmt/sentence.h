@@ -23,7 +23,13 @@ namespace mmt {
 
     typedef std::vector<word_t> sentence_t;
     typedef std::vector<std::pair<length_t, length_t>> alignment_t;
-    typedef std::unordered_map<domain_t, float> context_t;
+
+    struct cscore_t {
+        domain_t domain;
+        float score;
+    };
+
+    typedef std::vector<cscore_t> context_t;
 
 }
 

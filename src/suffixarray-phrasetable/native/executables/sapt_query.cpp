@@ -81,6 +81,9 @@ int main(int argc, const char *argv[]) {
 
     SuffixArray index(args.model_path, args.prefix_length);
 
+    vector<sample_t> samples;
+    index.GetRandomSamples(vector<wid_t>(), 1, samples, NULL);
+
     string line;
     vector<wid_t> sentence;
 
