@@ -304,8 +304,6 @@ void SuffixArray::GetRandomSamples(domain_t domain, const vector<wid_t> &phrase,
             else
                 Retain(positions, successors, start);
 
-            cerr << "start=" << start << " found " << positions.size() << " positions." << endl;
-
             if (positions.empty())
                 break;
 
