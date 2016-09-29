@@ -37,7 +37,7 @@ set(SOURCE_FILES
 
         util/ioutils.h
         util/hashutils.h
-        )
+        util/BilingualCorpus.cpp util/BilingualCorpus.h)
 
 include_directories(${CMAKE_SOURCE_DIR})
 

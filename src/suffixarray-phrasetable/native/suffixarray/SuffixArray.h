@@ -8,6 +8,8 @@
 #include <string>
 #include <rocksdb/db.h>
 #include <mmt/IncrementalModel.h>
+#include <unordered_set>
+#include <mutex>
 #include "UpdateBatch.h"
 #include "CorpusStorage.h"
 
@@ -51,6 +53,9 @@ namespace mmt {
 
             ~SuffixArray();
 
+            void GetRandomSamples(const vector<wid_t> &phrase, size_t limit, vector<sample_t> &outSamples,
+                                  context_t *context);
+
             void GetRandomSamples(domain_t domain, const vector<wid_t> &phrase, size_t limit,
                                   vector<sample_t> &outSamples);
 
@@ -68,6 +73,9 @@ namespace mmt {
             rocksdb::DB *db;
             CorpusStorage *storage;
             vector<seqid_t> streams;
+            unordered_set<domain_t> domains;
+
+            mutex domainsAccess;
 
             void AddToBatch(domain_t domain, const vector<wid_t> &sentence, int64_t storageOffset,
                             unordered_map<string, vector<sptr_t>> &outBatch);
