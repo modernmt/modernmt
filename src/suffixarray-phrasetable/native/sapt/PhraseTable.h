@@ -16,14 +16,12 @@ namespace mmt {
     namespace sapt {
 
         struct TranslationOption {
-            size_t numScoreComponent;
-            vector<wid_t> targetWords;
+            vector<wid_t> targetPhrase;
+            alignment_t alignment;
             vector<float> scores;
-            alignment_t alignments;
 
-            TranslationOption(size_t components) {
-                numScoreComponent = components;
-                scores.resize(numScoreComponent);
+            TranslationOption(size_t scoreSize) {
+                scores.resize(scoreSize);
             }
         };
 
@@ -37,7 +35,7 @@ namespace mmt {
                 // TODO: stub implementation (do nothing)
             }
 
-            void GetTargetPhraseCollection(const vector<wid_t> &phrase, vector<TranslationOption> *outOptions) {
+            void GetTargetPhraseCollection(const vector<wid_t> &phrase, vector<TranslationOption> &outOptions) {
                 // TODO: stub implementation (do nothing)
             };
 

@@ -11,6 +11,7 @@
 #include <util/ioutils.h>
 #include <util/hashutils.h>
 #include <boost/filesystem.hpp>
+#include <iostream>
 
 namespace fs = boost::filesystem;
 
@@ -56,7 +57,8 @@ static inline string MakePositionsList(const vector<sptr_t> &positions) {
     return value;
 }
 
-static inline void DeserializePositionsList(const char *data, size_t bytes_size, vector<sptr_t> &outPositions) {
+static inline void DeserializePositionsList(const char *data, size_t bytes_size,
+                                            unordered_map<int64_t, vector<length_t>> &outPositions) {
     size_t entry_size = sizeof(int64_t) + sizeof(length_t);
 
     if (bytes_size % entry_size != 0)
@@ -69,7 +71,8 @@ static inline void DeserializePositionsList(const char *data, size_t bytes_size,
     for (size_t i = 0; i < count; ++i) {
         int64_t offset = ReadInt64(data, &ptr);
         length_t sentence_offset = ReadUInt16(data, &ptr);
-        outPositions.push_back(sptr_t(offset, sentence_offset));
+
+        outPositions[offset].push_back(sentence_offset);
     }
 }
 
@@ -244,73 +247,107 @@ void SuffixArray::AddToBatch(domain_t domain, const vector<wid_t> &sentence, int
     }
 }
 
+static void Retain(unordered_map<int64_t, vector<length_t>> &map,
+                   const unordered_map<int64_t, vector<length_t>> &successors, length_t offset) {
+    auto it = map.begin();
+    while (it != map.end()) {
+        bool remove;
+
+        auto successor = successors.find(it->first);
+        if (successor == successors.end()) {
+            remove = true;
+        } else {
+            vector<length_t> &start_positions = it->second;
+            const vector<length_t> &successors_offsets = successor->second;
+
+            start_positions.erase(
+                    remove_if(start_positions.begin(), start_positions.end(),
+                              [successors_offsets, offset](length_t start) {
+                                  if (offset > start)
+                                      return false;
+
+                                  auto e = find(successors_offsets.begin(), successors_offsets.end(), start - offset);
+                                  return e != successors_offsets.end();
+                              }),
+                    start_positions.end()
+            );
+
+            remove = start_positions.empty();
+        }
+
+        if (remove)
+            it = map.erase(it);
+        else
+            it++;
+    }
+}
+
 void SuffixArray::GetRandomSamples(domain_t domain, const vector<wid_t> &phrase, size_t limit,
                                    vector<sample_t> &outSamples) {
-    vector<sptr_t> position_array;
+    length_t phraseLength = (length_t) phrase.size();
+    unordered_map<int64_t, vector<length_t>> positions;
 
-    if (phrase.size() <= prefixLength) {
-        CollectSamples(domain, phrase, 0, phrase.size(), limit, position_array);
+    if (phraseLength <= prefixLength) {
+        CollectSamples(domain, phrase, 0, phrase.size(), positions);
     } else {
-//        size_t phraseLength = phrase.size();
-//        unordered_map<sid_t, unordered_set<offset_t>> result;
-//
-//        size_t start = 0;
-//        while (start < phraseLength) {
-//            uint8_t length = kMaxInternalPhraseLength;
-//            if (start + length >= phraseLength)
-//                length = (uint8_t) (phraseLength - start);
-//
-//            vector<sptr_t> positions;
-//            CollectSamples(domain, phrase, start, length, positions, 0);
-//
-//            if (start == 0) {
-//                ToPositionMap(positions, result);
-//            } else {
-//                unordered_map<sid_t, unordered_set<offset_t>> successors;
-//                ToPositionMap(positions, successors);
-//                KeepExtensions(result, successors, start);
-//            }
-//
-//            if (result.empty())
-//                return;
-//
-//            start += length;
-//        }
-//
-//        for (auto i = result.begin(); i != result.end(); ++i) {
-//            sptr_t position;
-//            position.sentence = i->first;
-//
-//            for (auto j = i->second.begin(); j != i->second.end(); ++j) {
-//                position.offset = *j;
-//                outPositions.push_back(position);
-//
-//                if (limit > 0 && outPositions.size() >= limit)
-//                    return;
-//            }
-//        }
+        length_t start = 0;
+
+        while (start < phraseLength) {
+            if (start + prefixLength > phraseLength)
+                start = phraseLength - prefixLength;
+
+            unordered_map<int64_t, vector<length_t>> successors;
+            CollectSamples(domain, phrase, start, prefixLength, successors);
+
+            if (start == 0)
+                positions = successors;
+            else
+                Retain(positions, successors, start);
+
+            cerr << "start=" << start << " found " << positions.size() << " positions." << endl;
+
+            if (positions.empty())
+                break;
+
+            start += prefixLength;
+        }
     }
+
+    vector<int64_t> keys;
+    keys.reserve(positions.size());
+
+    for (auto &it : positions) {
+        keys.push_back(it.first);
+    }
+
+    // Limit result
+    if (limit > 0 && positions.size() > limit) {
+        sort(keys.begin(), keys.end());
+
+        unsigned int seed = 31 * words_hash(phrase) + domain;
+        shuffle(keys.begin(), keys.end(), default_random_engine(seed));
+
+        keys.resize(limit);
+    }
+
+    // Sort keys in order to minimize mmap jumps
+    sort(keys.begin(), keys.end());
 
     // Resolve positions
-    map<int64_t, vector<length_t>> position_map;
-    for (auto position = position_array.begin(); position != position_array.end(); ++position) {
-        position_map[position->offset].push_back(position->sentence_offset);
-    }
-
-    outSamples.resize(position_map.size());
+    outSamples.resize(keys.size());
     size_t i = 0;
 
-    for (auto entry = position_map.begin(); entry != position_map.end(); ++entry) {
+    for (auto key = keys.begin(); key != keys.end(); ++key) {
         sample_t &sample = outSamples[i++];
         sample.domain = domain;
-        sample.offsets = entry->second;
+        sample.offsets = positions[*key];
 
-        storage->Retrieve(entry->first, &sample.source, &sample.target, &sample.alignment);
+        storage->Retrieve(*key, &sample.source, &sample.target, &sample.alignment);
     }
 }
 
 void SuffixArray::CollectSamples(domain_t domain, const vector<wid_t> &phrase, size_t offset, size_t length,
-                                 size_t limit, vector<sptr_t> &output) {
+                                 unordered_map<int64_t, vector<length_t>> &output) {
     string key = MakeKey(domain, phrase, offset, length);
 
     Iterator *it = db->NewIterator(ReadOptions());
@@ -318,13 +355,6 @@ void SuffixArray::CollectSamples(domain_t domain, const vector<wid_t> &phrase, s
     for (it->Seek(key); it->Valid() && it->key().starts_with(key); it->Next()) {
         Slice value = it->value();
         DeserializePositionsList(value.data_, value.size_, output);
-    }
-
-    if (limit > 0 && output.size() > limit) {
-        unsigned int seed = string_hash(key);
-        shuffle(output.begin(), output.end(), default_random_engine(seed));
-
-        output.resize(limit);
     }
 
     delete it;

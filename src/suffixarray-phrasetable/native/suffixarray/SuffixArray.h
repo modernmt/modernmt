@@ -73,7 +73,7 @@ namespace mmt {
                             unordered_map<string, vector<sptr_t>> &outBatch);
 
             void CollectSamples(domain_t domain, const vector<wid_t> &phrase, size_t offset, size_t length,
-                                size_t limit, vector<sptr_t> &output);
+                                unordered_map<int64_t, vector<length_t>> &output);
         };
 
     }

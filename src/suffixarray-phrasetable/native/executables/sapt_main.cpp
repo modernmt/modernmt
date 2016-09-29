@@ -46,18 +46,18 @@ int main() {
     // Insert
     UpdateBatch batch(1000, vector<seqid_t>());
 
-    add(batch, 1, 4);
-    add(batch, 1, 3);
-    add(batch, 2, 5);
-    add(batch, 3, 2);
+    add(batch, 1, 20);
 
     index->PutBatch(batch);
 
-
     // Query
     vector<wid_t> phrase;
-    phrase.push_back(1001);
     phrase.push_back(1002);
+    phrase.push_back(1003);
+    phrase.push_back(1004);
+    phrase.push_back(1005);
+    phrase.push_back(1006);
+    phrase.push_back(1007);
 
     vector<sample_t> samples;
     index->GetRandomSamples(1, phrase, 1000, samples);
