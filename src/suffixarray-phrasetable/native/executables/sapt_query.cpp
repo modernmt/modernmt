@@ -18,7 +18,6 @@ namespace {
 
     struct args_t {
         string model_path;
-        uint8_t prefix_length = 5;
         bool quiet = false;
     };
 } // namespace
@@ -31,7 +30,6 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
     desc.add_options()
             ("help,h", "print this help message")
             ("model,m", po::value<string>()->required(), "output model path")
-            ("prefix-length,p", po::value<uint8_t>(), "the internal prefix length (default is 5)")
             ("quiet,q", "prints only number of match");
 
     po::variables_map vm;
@@ -49,9 +47,6 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
 
         if (vm.count("quiet"))
             args->quiet = true;
-
-        if (vm.count("prefix-length"))
-            args->prefix_length = vm["prefix-length"].as<uint8_t>();
     } catch (po::error &e) {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         std::cerr << desc << std::endl;
@@ -79,7 +74,8 @@ int main(int argc, const char *argv[]) {
     if (!ParseArgs(argc, argv, &args))
         return ERROR_IN_COMMAND_LINE;
 
-    SuffixArray index(args.model_path, args.prefix_length);
+    Options options;
+    SuffixArray index(args.model_path, options.prefix_length, options.max_option_length);
 
     vector<sample_t> samples;
     index.GetRandomSamples(vector<wid_t>(), 1, samples, NULL);

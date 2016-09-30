@@ -16,7 +16,7 @@ struct PhraseTable::pt_private {
 
 PhraseTable::PhraseTable(const string &modelPath, const Options &options) {
     self = new pt_private();
-    self->index = new SuffixArray(modelPath, options.prefix_length);
+    self->index = new SuffixArray(modelPath, options.prefix_length, options.max_option_length);
     self->updates = new UpdateManager(self->index, options.update_buffer_size, options.update_max_delay);
 }
 

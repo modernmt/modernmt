@@ -23,23 +23,27 @@ static_assert(sizeof(wid_t) == 4, "Current implementation works only with 32-bit
 static_assert(sizeof(domain_t) == 4, "Current implementation works only with 32-bit domain id");
 static_assert(sizeof(length_t) == 2, "Current implementation works only with 16-bit sentence length");
 
-static inline string MakeWordKey(domain_t domain, wid_t word) {
-    char bytes[8];
+const static char kGlobalInfoKeyType = 0;
+const static char kDomainListKeyType = 1;
+const static char kPrefixKeyType = 2;
+const static char kSourceOccurrencesKeyType = 3;
+const static char kTargetOccurrencesKeyType = 4;
 
-    size_t ptr = 0;
-    WriteUInt32(bytes, &ptr, domain);
-    WriteUInt32(bytes, &ptr, word);
+/* Keys */
 
-    string key(bytes, 8);
-
+static inline string MakeEmptyKey(char type) {
+    char bytes[1];
+    bytes[0] = type;
+    string key(bytes, 1);
     return key;
 }
 
-static inline string MakeKey(domain_t domain, const vector<wid_t> &phrase, size_t offset, size_t length) {
-    size_t size = sizeof(domain_t) + length * sizeof(wid_t);
+static inline string MakePrefixKey(domain_t domain, const vector<wid_t> &phrase, size_t offset, size_t length) {
+    size_t size = 1 + sizeof(domain_t) + length * sizeof(wid_t);
     char *bytes = new char[size];
+    bytes[0] = kPrefixKeyType;
 
-    size_t ptr = 0;
+    size_t ptr = 1;
 
     WriteUInt32(bytes, &ptr, domain);
     for (size_t i = 0; i < length; ++i)
@@ -51,7 +55,30 @@ static inline string MakeKey(domain_t domain, const vector<wid_t> &phrase, size_
     return key;
 }
 
-static inline string MakePositionsList(const vector<sptr_t> &positions) {
+static inline string MakeOccurrencesKey(char type, const vector<wid_t> &phrase, size_t offset, size_t length) {
+    uint64_t hash = 0;
+
+    for (size_t i = 0; i < length; ++i) {
+        wid_t word = phrase[offset + i];
+
+        if (hash == 0)
+            hash = word;
+        else
+            hash = ((hash * 8978948897894561157ULL) ^ (static_cast<uint64_t>(1 + word) * 17894857484156487943ULL));
+    }
+
+    char bytes[9];
+    bytes[0] = type;
+
+    size_t ptr = 1;
+    WriteUInt64(bytes, &ptr, hash);
+
+    return string(bytes, 9);
+}
+
+/* Values */
+
+static inline string SerializePositionsList(const vector<sptr_t> &positions) {
     size_t size = positions.size() * (sizeof(int64_t) + sizeof(length_t));
     char *bytes = new char[size];
 
@@ -114,6 +141,21 @@ static inline void DeserializeDomainList(const char *data, size_t bytes_size, un
         outDomains.insert(ReadUInt32(data, &ptr));
 }
 
+static inline string SerializeGlobalInfo(const vector<seqid_t> &streams, int64_t storageSize) {
+    size_t size = 8 + streams.size() * sizeof(seqid_t);
+    char *bytes = new char[size];
+    size_t i = 0;
+
+    WriteInt64(bytes, &i, storageSize);
+    for (auto id = streams.begin(); id != streams.end(); ++id)
+        WriteUInt64(bytes, &i, *id);
+
+    string result = string(bytes, size);
+    delete[] bytes;
+
+    return result;
+}
+
 static inline bool
 DeserializeGlobalInfo(const char *data, size_t bytes_size, int64_t *outStorageSize, vector<seqid_t> *outStreams) {
     if (bytes_size < 8 || bytes_size % 8 != 0)
@@ -132,20 +174,23 @@ DeserializeGlobalInfo(const char *data, size_t bytes_size, int64_t *outStorageSi
     return true;
 }
 
-static inline string SerializeGlobalInfo(const vector<seqid_t> &streams, int64_t storageSize) {
-    size_t size = 8 + streams.size() * sizeof(seqid_t);
-    char *bytes = new char[size];
-    size_t i = 0;
+static inline string SerializeCount(size_t count) {
+    char bytes[8];
+    size_t ptr = 0;
+    WriteUInt64(bytes, &ptr, (uint64_t) count);
 
-    WriteInt64(bytes, &i, storageSize);
-    for (auto id = streams.begin(); id != streams.end(); ++id)
-        WriteUInt64(bytes, &i, *id);
-
-    string result = string(bytes, size);
-    delete[] bytes;
-
-    return result;
+    return string(bytes, 8);
 }
+
+static inline size_t DeserializeCount(const char *data, size_t bytes_size) {
+    if (bytes_size != 8)
+        return 0;
+
+    size_t ptr = 0;
+    return (size_t) ReadUInt64(data, &ptr);
+}
+
+/* Merge operator implementation */
 
 namespace mmt {
     namespace sapt {
@@ -154,13 +199,36 @@ namespace mmt {
         public:
             virtual bool Merge(const Slice &key, const Slice *existing_value, const Slice &value, string *new_value,
                                Logger *logger) const override {
+                switch (key.data_[0]) {
+                    case kPrefixKeyType:
+                        MergePositionLists(existing_value, value, new_value);
+                        break;
+                    case kSourceOccurrencesKeyType:
+                    case kTargetOccurrencesKeyType:
+                        MergeCounts(existing_value, value, new_value);
+                        break;
+                    default:
+                        return false;
+                }
+
+                return true;
+            }
+
+            void MergePositionLists(const Slice *existing_value, const Slice &value, string *new_value) const {
                 if (existing_value) {
                     *new_value = existing_value->ToString() + value.ToString();
                 } else {
                     *new_value = value.ToString();
                 }
+            }
 
-                return true;
+            void MergeCounts(const Slice *existing_value, const Slice &value, string *new_value) const {
+                uint64_t existing = 0;
+                if (existing_value)
+                    existing = DeserializeCount(existing_value->data_, existing_value->size_);
+
+                uint64_t update = DeserializeCount(value.data_, value.size_);
+                *new_value = SerializeCount(existing + update);
             }
 
             virtual const char *Name() const override {
@@ -171,12 +239,14 @@ namespace mmt {
     }
 }
 
-static const string kGlobalInfoKey = MakeWordKey(0, 0);
-static const string kDomainListKey = MakeWordKey(0, 1);
+/* SuffixArray implementation */
 
-SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength,
+static const string kGlobalInfoKey = MakeEmptyKey(kGlobalInfoKeyType);
+static const string kDomainListKey = MakeEmptyKey(kDomainListKeyType);
+
+SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength, uint8_t maxPhraseLength,
                          bool prepareForBulkLoad) throw(index_exception, storage_exception) :
-        prefixLength(prefixLength) {
+        prefixLength(prefixLength), maxPhraseLength(maxPhraseLength) {
     fs::path modelDir(modelPath);
 
     if (!fs::is_directory(modelDir))
@@ -257,12 +327,16 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
 
     // Compute prefixes
     unordered_map<string, vector<sptr_t>> prefixes;
+    unordered_map<string, size_t> sourceOccurrences;
+    unordered_map<string, size_t> targetOccurrences;
 
     for (auto entry = batch.data.begin(); entry != batch.data.end(); ++entry) {
         domain_t domain = entry->domain;
 
         int64_t offset = storage->Append(entry->source, entry->target, entry->alignment);
-        AddToBatch(domain, entry->source, offset, prefixes);
+        AddPrefixesToBatch(domain, entry->source, offset, prefixes);
+        AddOccurrencesToBatch(kSourceOccurrencesKeyType, entry->source, sourceOccurrences);
+        AddOccurrencesToBatch(kTargetOccurrencesKeyType, entry->target, targetOccurrences);
 
         if (new_domains.find(domain) == new_domains.end() && domains.find(domain) == domains.end())
             new_domains.insert(domain);
@@ -272,8 +346,18 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
 
     // Add prefixes to write batch
     for (auto prefix = prefixes.begin(); prefix != prefixes.end(); ++prefix) {
-        string value = MakePositionsList(prefix->second);
+        string value = SerializePositionsList(prefix->second);
         writeBatch.Merge(prefix->first, value);
+    }
+
+    // Add occurrences to write batch
+    for (auto occurrences = sourceOccurrences.begin(); occurrences != sourceOccurrences.end(); ++occurrences) {
+        string value = SerializeCount(occurrences->second);
+        writeBatch.Merge(occurrences->first, value);
+    }
+    for (auto occurrences = targetOccurrences.begin(); occurrences != targetOccurrences.end(); ++occurrences) {
+        string value = SerializeCount(occurrences->second);
+        writeBatch.Merge(occurrences->first, value);
     }
 
     // Write global info
@@ -299,15 +383,28 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
     }
 }
 
-void SuffixArray::AddToBatch(domain_t domain, const vector<wid_t> &sentence, int64_t storageOffset,
-                             unordered_map<string, vector<sptr_t>> &outBatch) {
+void SuffixArray::AddPrefixesToBatch(domain_t domain, const vector<wid_t> &sentence, int64_t storageOffset,
+                                     unordered_map<string, vector<sptr_t>> &outBatch) {
     for (length_t start = 0; start < sentence.size(); ++start) {
         size_t length = prefixLength;
         if (start + length > sentence.size())
             length = sentence.size() - start;
 
-        string key = MakeKey(domain, sentence, start, length);
+        string key = MakePrefixKey(domain, sentence, start, length);
         outBatch[key].push_back(sptr_t(storageOffset, start));
+    }
+}
+
+void SuffixArray::AddOccurrencesToBatch(char type, const vector<wid_t> &sentence,
+                                        unordered_map<string, size_t> &outBatch) {
+    for (size_t iword = 0; iword < sentence.size(); ++iword) {
+        for (size_t iorder = 0; iorder < maxPhraseLength; ++iorder) {
+            if (iword + iorder >= sentence.size())
+                break;
+
+            string key = MakeOccurrencesKey(type, sentence, iword, iorder + 1);
+            outBatch[key]++;
+        }
     }
 }
 
@@ -463,7 +560,7 @@ void SuffixArray::GetRandomSamples(domain_t domain, const vector<wid_t> &phrase,
 
 void SuffixArray::CollectSamples(domain_t domain, const vector<wid_t> &phrase, size_t offset, size_t length,
                                  unordered_map<int64_t, vector<length_t>> &output) {
-    string key = MakeKey(domain, phrase, offset, length);
+    string key = MakePrefixKey(domain, phrase, offset, length);
 
     Iterator *it = db->NewIterator(ReadOptions());
 
@@ -473,4 +570,26 @@ void SuffixArray::CollectSamples(domain_t domain, const vector<wid_t> &phrase, s
     }
 
     delete it;
+}
+
+size_t SuffixArray::CountOccurrencesInSource(const vector<wid_t> &phrase) {
+    if (phrase.size() > maxPhraseLength)
+        return 0;
+
+    string key = MakeOccurrencesKey(kSourceOccurrencesKeyType, phrase, 0, phrase.size());
+    string value;
+
+    db->Get(ReadOptions(), key, &value);
+    return DeserializeCount(value.data(), value.size());
+}
+
+size_t SuffixArray::CountOccurrencesInTarget(const vector<wid_t> &phrase) {
+    if (phrase.size() > maxPhraseLength)
+        return 0;
+
+    string key = MakeOccurrencesKey(kTargetOccurrencesKeyType, phrase, 0, phrase.size());
+    string value;
+
+    db->Get(ReadOptions(), key, &value);
+    return DeserializeCount(value.data(), value.size());
 }

@@ -48,7 +48,7 @@ namespace mmt {
 
         class SuffixArray {
         public:
-            SuffixArray(const string &path, uint8_t prefixLength,
+            SuffixArray(const string &path, uint8_t prefixLength, uint8_t maxPhraseLength,
                         bool prepareForBulkLoad = false) throw(index_exception, storage_exception);
 
             ~SuffixArray();
@@ -58,6 +58,10 @@ namespace mmt {
 
             void GetRandomSamples(domain_t domain, const vector<wid_t> &phrase, size_t limit,
                                   vector<sample_t> &outSamples);
+
+            size_t CountOccurrencesInSource(const vector<wid_t> &phrase);
+
+            size_t CountOccurrencesInTarget(const vector<wid_t> &phrase);
 
             void PutBatch(UpdateBatch &batch) throw(index_exception, storage_exception);
 
@@ -69,6 +73,7 @@ namespace mmt {
 
         private:
             const uint8_t prefixLength;
+            const uint8_t maxPhraseLength;
 
             rocksdb::DB *db;
             CorpusStorage *storage;
@@ -77,8 +82,11 @@ namespace mmt {
 
             mutex domainsAccess;
 
-            void AddToBatch(domain_t domain, const vector<wid_t> &sentence, int64_t storageOffset,
-                            unordered_map<string, vector<sptr_t>> &outBatch);
+            void AddPrefixesToBatch(domain_t domain, const vector<wid_t> &sentence, int64_t storageOffset,
+                                    unordered_map<string, vector<sptr_t>> &outBatch);
+
+            void AddOccurrencesToBatch(char type, const vector<wid_t> &phrase,
+                                       unordered_map<string, size_t> &outBatch);
 
             void CollectSamples(domain_t domain, const vector<wid_t> &phrase, size_t offset, size_t length,
                                 unordered_map<int64_t, vector<length_t>> &output);
