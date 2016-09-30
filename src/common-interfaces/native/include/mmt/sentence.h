@@ -27,6 +27,8 @@ namespace mmt {
     struct cscore_t {
         domain_t domain;
         float score;
+
+        cscore_t(domain_t d, float s) : domain(d), score(s) { }
     };
 
     typedef std::vector<cscore_t> context_t;
