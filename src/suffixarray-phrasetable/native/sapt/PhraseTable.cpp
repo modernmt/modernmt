@@ -49,6 +49,14 @@ vector<updateid_t> PhraseTable::GetLatestUpdatesIdentifier() {
 void *PhraseTable::__GetSuffixArray() {
     return self->index;
 }
+void PhraseTable::GetTargetPhraseCollection(const vector<wid_t> &phrase, vector<TranslationOption> &outOptions, context_t *context_vec) {
+    // TODO: stub implementation (do nothing)
+
+    vector<sample_t> samples;
+    domain_t domain = 1;
+    self->index->GetRandomSamples(domain, phrase, 1000000, samples);
+
+};
 
 
 
