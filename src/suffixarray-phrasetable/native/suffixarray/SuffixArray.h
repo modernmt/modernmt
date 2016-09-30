@@ -18,6 +18,8 @@ using namespace std;
 namespace mmt {
     namespace sapt {
 
+        extern const domain_t kBackgroundModelDomain;
+
         class index_exception : public exception {
         public:
             index_exception(const string &msg) : message(msg) {};
@@ -38,6 +40,8 @@ namespace mmt {
                                                                        sentence_offset(sentence_offset) {};
         };
 
+        typedef unordered_map<int64_t, pair<domain_t, vector<length_t>>> positionsmap_t;
+
         struct sample_t {
             domain_t domain;
             vector<wid_t> source;
@@ -56,12 +60,7 @@ namespace mmt {
             void GetRandomSamples(const vector<wid_t> &phrase, size_t limit, vector<sample_t> &outSamples,
                                   context_t *context);
 
-            void GetRandomSamples(domain_t domain, const vector<wid_t> &phrase, size_t limit,
-                                  vector<sample_t> &outSamples);
-
-            size_t CountOccurrencesInSource(const vector<wid_t> &phrase);
-
-            size_t CountOccurrencesInTarget(const vector<wid_t> &phrase);
+            size_t CountOccurrences(bool isSource, const vector<wid_t> &phrase);
 
             void PutBatch(UpdateBatch &batch) throw(index_exception, storage_exception);
 
@@ -78,18 +77,18 @@ namespace mmt {
             rocksdb::DB *db;
             CorpusStorage *storage;
             vector<seqid_t> streams;
-            unordered_set<domain_t> domains;
 
-            mutex domainsAccess;
+            void AddPrefixesToBatch(bool isSource, domain_t domain, const vector<wid_t> &sentence,
+                                    int64_t storageOffset, unordered_map<string, vector<sptr_t>> &outBatch);
 
-            void AddPrefixesToBatch(domain_t domain, const vector<wid_t> &sentence, int64_t storageOffset,
-                                    unordered_map<string, vector<sptr_t>> &outBatch);
+            void CollectPositions(bool isSource, domain_t domain, const vector<wid_t> &sentence,
+                                  positionsmap_t &output, positionsmap_t *coveredPositions = NULL);
 
-            void AddOccurrencesToBatch(char type, const vector<wid_t> &phrase,
-                                       unordered_map<string, size_t> &outBatch);
+            void CollectPositions(bool isSource, domain_t domain, const vector<wid_t> &phrase,
+                                  size_t offset, size_t length, positionsmap_t &output,
+                                  positionsmap_t *coveredPositions = NULL);
 
-            void CollectSamples(domain_t domain, const vector<wid_t> &phrase, size_t offset, size_t length,
-                                unordered_map<int64_t, vector<length_t>> &output);
+            void Retrieve(const positionsmap_t &positions, vector<sample_t> &outSamples, size_t limit);
         };
 
     }

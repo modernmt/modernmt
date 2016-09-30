@@ -18,6 +18,7 @@ namespace {
 
     struct args_t {
         string model_path;
+        context_t context;
         bool quiet = false;
     };
 } // namespace
@@ -25,11 +26,31 @@ namespace {
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 
+bool ParseContextMap(const string &str, context_t &context) {
+    istringstream iss(str);
+    string element;
+
+    while (getline(iss, element, ',')) {
+        istringstream ess(element);
+
+        string tok;
+        getline(ess, tok, ':');
+        domain_t id = (domain_t) stoi(tok);
+        getline(ess, tok, ':');
+        float w = stof(tok);
+
+        context.push_back(cscore_t(id, w));
+    }
+
+    return true;
+}
+
 bool ParseArgs(int argc, const char *argv[], args_t *args) {
     po::options_description desc("Query the SuffixArray Phrase Table");
     desc.add_options()
             ("help,h", "print this help message")
             ("model,m", po::value<string>()->required(), "output model path")
+            ("context,c", po::value<string>(), "context map in the format <id>:<w>[,<id>:<w>]")
             ("quiet,q", "prints only number of match");
 
     po::variables_map vm;
@@ -39,6 +60,11 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
         if (vm.count("help")) {
             std::cout << desc << std::endl;
             return false;
+        }
+
+        if (vm.count("context")) {
+            if (!ParseContextMap(vm["context"].as<string>(), args->context))
+                throw po::error("invalid context map: " + vm["context"].as<string>());
         }
 
         po::notify(vm);
@@ -77,17 +103,16 @@ int main(int argc, const char *argv[]) {
     Options options;
     SuffixArray index(args.model_path, options.prefix_length, options.max_option_length);
 
-    vector<sample_t> samples;
-    index.GetRandomSamples(vector<wid_t>(), 1, samples, NULL);
-
     string line;
     vector<wid_t> sentence;
+
+    context_t *context = args.context.empty() ? NULL : &args.context;
 
     while (getline(cin, line)) {
         ParseSentenceLine(line, sentence);
 
         vector<sample_t> samples;
-        index.GetRandomSamples(1, sentence, 1000000, samples);
+        index.GetRandomSamples(sentence, 1000, samples, context);
 
         if (args.quiet) {
             cout << "Found " << samples.size() << " samples" << endl;
