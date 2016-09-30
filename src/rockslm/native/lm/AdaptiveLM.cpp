@@ -109,14 +109,14 @@ cachevalue_t AdaptiveLM::ComputeProbability(const context_t *context, const vect
             uint8_t maxLength = 0;
 
             for (context_t::const_iterator it = context->begin(); it != context->end(); ++it) {
-                counts_t domainHistoryCounts = storage.GetCounts(it->first, historyKey);
+                counts_t domainHistoryCounts = storage.GetCounts(it->domain, historyKey);
 
                 float fstar = 0.f;
                 float lambda = 1.f;
                 uint8_t length = 0;
 
                 if (domainHistoryCounts.count > 0) {
-                    count_t domainNgramCount = storage.GetCounts(it->first, ngramKey).count;
+                    count_t domainNgramCount = storage.GetCounts(it->domain, ngramKey).count;
 
                     if (domainNgramCount > 0) {
                         fstar = (float) domainNgramCount / (domainHistoryCounts.count + domainHistoryCounts.successors);
@@ -127,8 +127,8 @@ cachevalue_t AdaptiveLM::ComputeProbability(const context_t *context, const vect
                              (domainHistoryCounts.count + domainHistoryCounts.successors);
                 }
 
-                interpolatedFstar += it->second * fstar;
-                interpolatedLambda += it->second * lambda;
+                interpolatedFstar += it->score * fstar;
+                interpolatedLambda += it->score * lambda;
                 maxLength = max(maxLength, (uint8_t) length);
             }
 
@@ -169,12 +169,12 @@ cachevalue_t AdaptiveLM::ComputeUnigramProbability(const context_t *context, db:
     for (context_t::const_iterator it = context->begin(); it != context->end(); ++it) {
         count_t wordCount; // This value includes also the occurrencies of the kVocabularyStartSymbol
         count_t uniqueWordCount;
-        storage.GetWordCounts(it->first, &uniqueWordCount, &wordCount);
+        storage.GetWordCounts(it->domain, &uniqueWordCount, &wordCount);
 
         count_t oovFrequency = OOVClassFrequency(uniqueWordCount);
         count_t den = (count_t) (wordCount + oovFrequency + kUnigramEpsilon * uniqueWordCount);
 
-        count_t unigramCount = storage.GetCounts(it->first, wordKey).count;
+        count_t unigramCount = storage.GetCounts(it->domain, wordKey).count;
 
         float probability;
 
@@ -187,7 +187,7 @@ cachevalue_t AdaptiveLM::ComputeUnigramProbability(const context_t *context, db:
             probability /= OOVClassSize(uniqueWordCount);  // compute the probability of one single OOV
         }
 
-        interpolatedProbability += it->second * probability;
+        interpolatedProbability += it->score * probability;
     }
 
     cachevalue_t result;
@@ -222,7 +222,7 @@ bool AdaptiveLM::IsOOV(const context_t *context, const wid_t word) const {
     dbkey_t key = make_key(word);
 
     for (context_t::const_iterator it = context->begin(); it != context->end(); ++it) {
-        counts_t domainCounts = storage.GetCounts(it->first, key);
+        counts_t domainCounts = storage.GetCounts(it->domain, key);
         if (domainCounts.count > 0)
             return false;
     }
@@ -251,18 +251,17 @@ vector<updateid_t> AdaptiveLM::GetLatestUpdatesIdentifier() {
 }
 
 
-void AdaptiveLM::NormalizeContextMap(context_t *context) {
+void AdaptiveLM::NormalizeContext(context_t *context) {
     context_t ret;
     float total = 0.0;
 
-    context_t *context_map = context;
     for (auto it = context->begin(); it != context->end(); ++it) {
         counts_t domainCounts;
-        storage.GetWordCounts(it->first, &domainCounts.count, &domainCounts.successors);
+        storage.GetWordCounts(it->domain, &domainCounts.count, &domainCounts.successors);
 
         if (domainCounts.count == 0) continue;
 
-        total += it->second;
+        total += it->score;
     }
 
     if (total == 0.0)
@@ -270,14 +269,17 @@ void AdaptiveLM::NormalizeContextMap(context_t *context) {
 
     for (auto it = context->begin(); it != context->end(); ++it) {
         counts_t domainCounts;
-        storage.GetWordCounts(it->first, &domainCounts.count, &domainCounts.successors);
+        storage.GetWordCounts(it->domain, &domainCounts.count, &domainCounts.successors);
 
         if (domainCounts.count == 0) continue;
 
-        ret[it->first] = it->second / total;
+        it->score /= total;
+
+        ret.push_back(*it);
     }
 
-    // replace map contents
+    // replace new vector into old vector
     context->clear();
-    context->insert(ret.begin(), ret.end());
+    //todo: check if the following insert is correct
+    context->insert(context->begin(), ret.begin(), ret.end());
 }

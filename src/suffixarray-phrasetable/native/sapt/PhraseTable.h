@@ -31,13 +31,10 @@ namespace mmt {
 
             ~PhraseTable();
 
-            void NormalizeContextMap(context_t *context) {
-                // TODO: stub implementation (do nothing)
-            }
+            void NormalizeContext(context_t *context);
 
-            void GetTargetPhraseCollection(const vector<wid_t> &phrase, vector<TranslationOption> &outOptions) {
-                // TODO: stub implementation (do nothing)
-            };
+            //void GetTargetPhraseCollection(const vector<wid_t> &phrase, vector<mmt::sapt::TranslationOption> &outOptions) {
+            void GetTargetPhraseCollection(const vector<wid_t> &phrase, vector<TranslationOption> &outOptions, context_t *context_vec);
 
             // TODO: just for testing purpose, must be removed asap
             void *__GetSuffixArray();

@@ -49,3 +49,38 @@ vector<updateid_t> PhraseTable::GetLatestUpdatesIdentifier() {
 void *PhraseTable::__GetSuffixArray() {
     return self->index;
 }
+void PhraseTable::GetTargetPhraseCollection(const vector<wid_t> &phrase, vector<TranslationOption> &outOptions, context_t *context_vec) {
+    // TODO: stub implementation (do nothing)
+
+    vector<sample_t> samples;
+    domain_t domain = 1;
+    self->index->GetRandomSamples(domain, phrase, 1000000, samples);
+
+};
+
+
+
+void PhraseTable::NormalizeContext(context_t *context) {
+    context_t ret;
+    float total = 0.0;
+
+    for (auto it = context->begin(); it != context->end(); ++it) {
+        //todo:: can it happen that the domain is empty?
+        total += it->score;
+    }
+
+    if (total == 0.0)
+        total = 1.0f;
+
+    for (auto it = context->begin(); it != context->end(); ++it) {
+        //todo:: can it happen that the domain is empty?
+        it->score /= total;
+
+        ret.push_back(*it);
+    }
+
+    // replace new vector into old vector
+    context->clear();
+    //todo: check if the following insert is correct
+    context->insert(context->begin(), ret.begin(), ret.end());
+}
