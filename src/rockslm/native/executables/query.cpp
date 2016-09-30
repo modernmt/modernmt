@@ -41,7 +41,8 @@ bool ParseContextMap(const string &str, context_t &context) {
         getline(ess, tok, ':');
         float w = stof(tok);
 
-        context[id] = w;
+        cscore_t entry(id, w);
+        context.push_back(entry);
     }
 
     return true;
