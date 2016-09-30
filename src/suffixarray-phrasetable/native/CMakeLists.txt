@@ -30,6 +30,7 @@ set(SOURCE_FILES
         suffixarray/dbkv.h
         suffixarray/CorpusStorage.cpp suffixarray/CorpusStorage.h
         suffixarray/UpdateBatch.cpp suffixarray/UpdateBatch.h
+        suffixarray/PostingList.cpp suffixarray/PostingList.h
         suffixarray/SuffixArray.cpp suffixarray/SuffixArray.h
 
         sapt/Options.h
@@ -37,7 +38,8 @@ set(SOURCE_FILES
         sapt/UpdateManager.cpp sapt/UpdateManager.h
 
         util/ioutils.h
-        util/BilingualCorpus.cpp util/BilingualCorpus.h util/chrono.h suffixarray/PostingList.cpp suffixarray/PostingList.h)
+        util/chrono.h
+        util/BilingualCorpus.cpp util/BilingualCorpus.h util/hashutils.h)
 
 include_directories(${CMAKE_SOURCE_DIR})
 

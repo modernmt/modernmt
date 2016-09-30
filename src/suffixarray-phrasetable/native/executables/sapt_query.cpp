@@ -101,7 +101,7 @@ int main(int argc, const char *argv[]) {
         return ERROR_IN_COMMAND_LINE;
 
     Options options;
-    SuffixArray index(args.model_path, options.prefix_length, options.max_option_length);
+    SuffixArray index(args.model_path, options.prefix_length);
 
     string line;
     vector<wid_t> sentence;

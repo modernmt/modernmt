@@ -47,6 +47,11 @@ static inline uint16_t ReadUInt16(const char *data, size_t *ptr) {
     return value;
 }
 
+static inline uint16_t ReadUInt16(const char *data, size_t i) {
+    return (uint16_t) ((data[i] & 0xFFL) +
+                       ((data[i + 1] & 0xFFL) << 8));
+}
+
 static inline uint32_t ReadUInt32(const char *data, size_t *ptr) {
     uint32_t value = (uint32_t) ((data[*ptr] & 0xFFUL) +
                                  ((data[*ptr + 1] & 0xFFUL) << 8) +
@@ -54,6 +59,13 @@ static inline uint32_t ReadUInt32(const char *data, size_t *ptr) {
                                  ((data[*ptr + 3] & 0xFFUL) << 24));
     *ptr = *ptr + 4;
     return value;
+}
+
+static inline uint32_t ReadUInt32(const char *data, size_t i) {
+    return (uint32_t) ((data[i] & 0xFFUL) +
+                       ((data[i + 1] & 0xFFUL) << 8) +
+                       ((data[i + 2] & 0xFFUL) << 16) +
+                       ((data[i + 3] & 0xFFUL) << 24));
 }
 
 static inline uint64_t ReadUInt64(const char *data, size_t *ptr) {
@@ -71,6 +83,21 @@ static inline uint64_t ReadUInt64(const char *data, size_t *ptr) {
 
 static inline int64_t ReadInt64(const char *data, size_t *ptr) {
     return ReadUInt64(data, ptr);
+}
+
+static inline uint64_t ReadUInt64(const char *data, size_t i) {
+    return (data[i] & 0xFFUL) +
+           ((data[i + 1] & 0xFFUL) << 8) +
+           ((data[i + 2] & 0xFFUL) << 16) +
+           ((data[i + 3] & 0xFFUL) << 24) +
+           ((data[i + 4] & 0xFFUL) << 32) +
+           ((data[i + 5] & 0xFFUL) << 40) +
+           ((data[i + 6] & 0xFFUL) << 48) +
+           ((data[i + 7] & 0xFFUL) << 56);
+}
+
+static inline int64_t ReadInt64(const char *data, size_t i) {
+    return ReadUInt64(data, i);
 }
 
 #endif //SAPT_IOUTILS_H

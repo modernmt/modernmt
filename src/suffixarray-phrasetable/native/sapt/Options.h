@@ -23,9 +23,6 @@ namespace mmt {
             // up search time while raising the index size.
             uint8_t prefix_length = 5;
 
-            // Maximum length of the source phrase for a translation option
-            uint8_t max_option_length = 20;
-
             /* Updates */
 
             // Updates are flushed to disk when one of the following

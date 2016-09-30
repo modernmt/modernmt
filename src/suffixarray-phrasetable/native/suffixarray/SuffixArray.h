@@ -12,6 +12,7 @@
 #include <mutex>
 #include "UpdateBatch.h"
 #include "CorpusStorage.h"
+#include "PostingList.h"
 
 using namespace std;
 
@@ -32,16 +33,6 @@ namespace mmt {
             string message;
         };
 
-        struct sptr_t {
-            int64_t offset;
-            length_t sentence_offset;
-
-            sptr_t(int64_t offset = 0, length_t sentence_offset = 0) : offset(offset),
-                                                                       sentence_offset(sentence_offset) {};
-        };
-
-        typedef unordered_map<int64_t, pair<domain_t, vector<length_t>>> positionsmap_t;
-
         struct sample_t {
             domain_t domain;
             vector<wid_t> source;
@@ -52,7 +43,7 @@ namespace mmt {
 
         class SuffixArray {
         public:
-            SuffixArray(const string &path, uint8_t prefixLength, uint8_t maxPhraseLength,
+            SuffixArray(const string &path, uint8_t prefixLength,
                         bool prepareForBulkLoad = false) throw(index_exception, storage_exception);
 
             ~SuffixArray();
@@ -72,23 +63,23 @@ namespace mmt {
 
         private:
             const uint8_t prefixLength;
-            const uint8_t maxPhraseLength;
 
             rocksdb::DB *db;
             CorpusStorage *storage;
             vector<seqid_t> streams;
 
             void AddPrefixesToBatch(bool isSource, domain_t domain, const vector<wid_t> &sentence,
-                                    int64_t storageOffset, unordered_map<string, vector<sptr_t>> &outBatch);
+                                    int64_t location, unordered_map<string, PostingList> &outBatch);
 
-            void CollectPositions(bool isSource, domain_t domain, const vector<wid_t> &sentence,
-                                  positionsmap_t &output, positionsmap_t *coveredPositions = NULL);
+            void CollectLocations(bool isSource, domain_t domain, const vector<wid_t> &sentence,
+                                  PostingList &output, unordered_set<int64_t> *coveredLocations = NULL);
 
-            void CollectPositions(bool isSource, domain_t domain, const vector<wid_t> &phrase,
-                                  size_t offset, size_t length, positionsmap_t &output,
-                                  positionsmap_t *coveredPositions = NULL);
+            void CollectLocations(bool isSource, domain_t domain, const vector<wid_t> &phrase,
+                                  size_t offset, size_t length, PostingList &output,
+                                  const unordered_set<int64_t> *coveredLocations = NULL);
 
-            void Retrieve(const positionsmap_t &positions, vector<sample_t> &outSamples, size_t limit);
+            void Retrieve(const map<int64_t, pair<domain_t, vector<length_t>>> &locations,
+                          vector<sample_t> &outSamples);
         };
 
     }
