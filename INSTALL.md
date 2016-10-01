@@ -112,20 +112,12 @@ git submodule init
 git submodule update
 ```
 
-Create MMT submodules resources:
-
-```
-cd vendor
-make res
-cd ..
-```
-
 Compile MMT submodules:
 
 ```
 cd vendor
+make res
 make
-make install
 cd ..
 ```
 

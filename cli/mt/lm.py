@@ -9,7 +9,7 @@ __author__ = 'Davide Caroselli'
 
 
 class LanguageModel(MosesFeature):
-    available_types = ['RocksLM', 'KenLM']
+    available_types = ['InterpolatedLM', 'KenLM']
 
     injector_section = 'lm'
     injectable_fields = {
@@ -20,8 +20,8 @@ class LanguageModel(MosesFeature):
     def instantiate(type_name, *model):
         if type_name == 'KenLM':
             return KenLM(*model)
-        elif type_name == 'RocksLM':
-            return RocksLM(*model)
+        elif type_name == 'InterpolatedLM':
+            return InterpolatedLM(*model)
         else:
             raise NameError('Invalid Language Model type: ' + type_name)
 
@@ -99,13 +99,13 @@ class KenLM(LanguageModel):
         return 'factor=0 order={order} path={model}'.format(order=self._order, model=self.get_relpath(self._model))
 
 
-class RocksLM(LanguageModel):
+class InterpolatedLM(LanguageModel):
     injector_section = 'lm'
     injectable_fields = {
     }
 
     def __init__(self, model):
-        LanguageModel.__init__(self, model, 'ROCKSLM')
+        LanguageModel.__init__(self, model, 'MMTILM')
 
         self._create_alm_bin = os.path.join(cli.BIN_DIR, 'create_alm')
         self._create_slm_bin = os.path.join(cli.BIN_DIR, 'create_slm')
