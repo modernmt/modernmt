@@ -12,13 +12,12 @@ endif
 VENDOR_DIR				:= $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 MMT_HOME				:= $(realpath $(VENDOR_DIR)/..)
-MMT_NATIVE_INCLUDE_DIR	:= $(MMT_HOME)/src/common-interfaces/native/include
 MMT_BUILD_DIR			:= $(MMT_HOME)/build
 MMT_INSTALL_RES			:= $(MMT_BUILD_DIR)/res
 
-all: __moses_install __rocksdb_install __rockslm_install __sapt_install __paoding_install
+all: __moses_install __rocksdb_install __ilm_install __sapt_install __paoding_install
 
-clean: __moses_clean __rocksdb_clean __rockslm_clean __sapt_clean
+clean: __moses_clean __rocksdb_clean __ilm_clean __sapt_clean
 
 res: __res_init __paoding_res __opennlp_res
 
@@ -41,10 +40,10 @@ __moses_install: __moses
 	@cd $(MOSES_BUILD_DIR); make install
 	@echo "SUCCESS (Moses)"
 
-__moses: __rockslm_install __sapt_install
+__moses: __ilm_install
 	@echo "Building Moses..."
 	@mkdir -p $(MOSES_BUILD_DIR)
-	@cd $(MOSES_BUILD_DIR); cmake $(MOSES_HOME) -DMMT_ROOT=$(MMT_HOME) -DUSE_SAPT=1 -DUSE_ROCKSLM=1 -DROCKSDB_ROOT=$(MMT_BUILD_DIR) -DROCKSLM_ROOT=$(MMT_BUILD_DIR) -DSAPT_ROOT=$(MMT_BUILD_DIR) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(MMT_BUILD_DIR) -Wno-dev
+	@cd $(MOSES_BUILD_DIR); cmake $(MOSES_HOME) -DMMT_ROOT=$(MMT_HOME) -DROCKSDB_ROOT=$(MMT_BUILD_DIR) -DUSE_MMTILM=1 -DMMTILM_ROOT=$(MMT_BUILD_DIR) -DUSE_SAPT=1 -DSAPT_ROOT=$(MMT_BUILD_DIR) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(MMT_BUILD_DIR) -Wno-dev
 	@cd $(MOSES_BUILD_DIR); make -j$(NPROCS)
 	@echo "SUCCESS (Moses)"
 
@@ -64,7 +63,7 @@ __sapt_install: __sapt
 
 __sapt: __rocksdb_install
 	@echo "Building SAPT..."
-	@cd $(ROCKSLM_HOME); mvn verify
+	@cd $(SAPT_HOME); mvn verify
 	@echo "SUCCESS (SAPT)"
 
 __sapt_clean:
@@ -72,23 +71,23 @@ __sapt_clean:
 
 
 # ==========================================
-#  MODULE: RocksLM (under MMT)
+#  MODULE: InterpolatedLM (under MMT)
 # ==========================================
 
-ROCKSLM_HOME	:= $(MMT_HOME)/src/rockslm
+ILM_HOME	:= $(MMT_HOME)/src/interpolated-lm
 
-__rockslm_install: __rockslm
-	@echo "Installing RocksLM..."
-	@cd $(ROCKSLM_HOME); mvn install
-	@echo "SUCCESS (RocksLM)"
+__ilm_install: __ilm
+	@echo "Installing InterpolatedLM..."
+	@cd $(ILM_HOME); mvn install
+	@echo "SUCCESS (InterpolatedLM)"
 
-__rockslm: __rocksdb_install
-	@echo "Building RocksLM..."
-	@cd $(ROCKSLM_HOME); mvn verify
-	@echo "SUCCESS (RocksLM)"
+__ilm: __rocksdb_install
+	@echo "Building InterpolatedLM..."
+	@cd $(ILM_HOME); mvn verify
+	@echo "SUCCESS (InterpolatedLM)"
 
-__rockslm_clean:
-	@cd $(ROCKSLM_HOME); mvn clean
+__ilm_clean:
+	@cd $(ILM_HOME); mvn clean
 
 
 # ==========================================

@@ -16,7 +16,7 @@
         <module>moses-decoder</module>
         <module>rocksdb-vocabulary</module>
         <module>persistence-sqlite</module>
-        <module>rockslm</module>
+        <module>interpolated-lm</module>
 
         <module>core</module>
 
