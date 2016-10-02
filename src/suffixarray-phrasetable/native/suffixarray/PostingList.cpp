@@ -35,6 +35,14 @@ void PostingList::Append(domain_t domain, const char *_data, size_t size, const 
         return;
 
     if (filterBy && !filterBy->empty()) {
+        // TODO: Questo algoritmo non è accettabile,
+        // l'append di piccoli pezzetti insieme al lookup nella mappa
+        // è troppo lento (tutti e due, ho controllato che non sia solo uno dei due).
+        // Questo si può risolvere filtrando le entry direttamente con la chiave del dominio.
+        // Questo significa che dovremo optare per chiavi che hanno il dominio in coda,
+        // (quindi inserire tutti gli ngram da 1 a prefixLength).
+        // Facendo così ci risparmieremo anche il dominio di background, almeno per il source.
+        // Valutare se vale la pena anche per il target.
         data.reserve(data.size() + size);
 
         for (size_t i = 0; i < size; i += kEntrySize) {
@@ -181,6 +189,9 @@ void PostingList::Retain(const PostingList &_successors, length_t start) {
         }
 
         if (!remove) {
+            // TODO: Possibilità di speedup che dovrebbe vedersi in n-gram di ordine maggiore
+            // evitare numerosi piccoli append, piuttosto cercare di raggrupparli
+            // tenendo in memoria l'ultima posizione copiata (copyBegin e copyEnd)
             memcpy(&_data[tail], &_data[i], kEntrySize);
             tail += kEntrySize;
         }
