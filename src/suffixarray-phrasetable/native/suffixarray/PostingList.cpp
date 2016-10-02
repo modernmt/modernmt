@@ -7,6 +7,7 @@
 #include <util/ioutils.h>
 #include <util/hashutils.h>
 #include <util/randutils.h>
+#include <iostream>
 
 using namespace mmt;
 using namespace mmt::sapt;
@@ -99,7 +100,11 @@ map<int64_t, pair<domain_t, vector<length_t>>> PostingList::GetSamples(size_t li
 
     if (!empty()) {
         if (limit == 0 || size() <= limit || shuffleSeed == 0) {
-            CollectAll(std::min(limit * kEntrySize, data.size()), result);
+            size_t size_limit = data.size();
+            if (limit > 0)
+                size_limit = std::min(limit * kEntrySize, size_limit);
+
+            CollectAll(size_limit, result);
         } else {
             // Domain report is not supported when shuffle is true for
             // performance issues. This is not a problem for the
@@ -176,6 +181,8 @@ void PostingList::Retain(const PostingList &_successors, length_t start) {
             tail += kEntrySize;
         }
     }
+
+    data.resize(tail);
 }
 
 void PostingList::GetLocationMap(unordered_map<int64_t, unordered_set<length_t>> &output) const {

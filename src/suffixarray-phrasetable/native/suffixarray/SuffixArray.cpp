@@ -9,7 +9,6 @@
 #include <thread>
 #include <boost/filesystem.hpp>
 #include <iostream>
-#include <util/chrono.h>
 #include <util/hashutils.h>
 
 namespace fs = boost::filesystem;
@@ -197,8 +196,6 @@ size_t SuffixArray::CountOccurrences(bool isSource, const vector<wid_t> &phrase)
 
 void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, vector<sample_t> &outSamples,
                                    context_t *context) {
-    double begin = GetTime();
-    double globalBegin = begin;
     PostingList inContextLocations(phrase);
     PostingList outContextLocations(phrase);
     size_t remaining = limit;
@@ -217,16 +214,11 @@ void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, ve
             }
         }
     }
-    cerr << "SuffixArray::GetRandomSamples from context took " << GetElapsedTime(begin) << "s" << endl;
-
-    begin = GetTime();
 
     if (limit == 0 || remaining > 0) {
-        unordered_set<int64_t> coveredLocations = outContextLocations.GetLocations();
+        unordered_set<int64_t> coveredLocations = inContextLocations.GetLocations();
         CollectLocations(true, kBackgroundModelDomain, phrase, outContextLocations, &coveredLocations);
     }
-
-    cerr << "SuffixArray::GetRandomSamples from background took " << GetElapsedTime(begin) << "s" << endl;
 
     outSamples.clear();
 
@@ -242,8 +234,6 @@ void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, ve
         map<int64_t, pair<domain_t, vector<length_t>>> inContext = inContextLocations.GetSamples(limit);
         Retrieve(inContext, outSamples);
     }
-
-    cerr << "SuffixArray::GetRandomSamples took " << GetElapsedTime(globalBegin) << "s" << endl;
 }
 
 void SuffixArray::CollectLocations(bool isSource, domain_t domain, const vector<wid_t> &sentence,
@@ -282,27 +272,20 @@ void SuffixArray::CollectLocations(bool isSource, domain_t domain, const vector<
 void SuffixArray::CollectLocations(bool isSource, domain_t domain, const vector<wid_t> &phrase,
                                    size_t offset, size_t length, PostingList &output,
                                    const unordered_set<int64_t> *coveredLocations) {
-    double begin = GetTime();
-    int count = 0;
-
     string key = MakePrefixKey(isSource, domain, phrase, offset, length);
 
     Iterator *it = db->NewIterator(ReadOptions());
 
     for (it->Seek(key); it->Valid() && it->key().starts_with(key); it->Next()) {
-        count++;
         Slice value = it->value();
         output.Append(domain, value.data_, value.size_, coveredLocations);
     }
-
-    cerr << "SuffixArray::CollectLocations took " << GetElapsedTime(begin) << "s for " << count << " prefixes" << endl;
 
     delete it;
 }
 
 void
 SuffixArray::Retrieve(const map<int64_t, pair<domain_t, vector<length_t>>> &locations, vector<sample_t> &outSamples) {
-    double begin = GetTime();
     // Resolve positions
     outSamples.reserve(outSamples.size() + locations.size());
 
@@ -317,6 +300,4 @@ SuffixArray::Retrieve(const map<int64_t, pair<domain_t, vector<length_t>>> &loca
 
         outSamples.push_back(sample);
     }
-
-    cerr << "SuffixArray::Retrieve lookup took " << GetElapsedTime(begin) << "s" << endl;
 }

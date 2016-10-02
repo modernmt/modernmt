@@ -94,6 +94,20 @@ static inline void ParseSentenceLine(const string &line, vector<wid_t> &output) 
 
 }
 
+static void PrintSample(const sample_t &sample) {
+    cout << "(" << sample.domain << ")";
+
+    for (auto word = sample.source.begin(); word != sample.source.end(); ++word)
+        cout << " " << *word;
+    cout << " |||";
+    for (auto word = sample.target.begin(); word != sample.target.end(); ++word)
+        cout << " " << *word;
+    cout << " |||";
+    for (auto a = sample.alignment.begin(); a != sample.alignment.end(); ++a)
+        cout << " " << a->first << "-" << a->second;
+    cout << endl;
+}
+
 int main(int argc, const char *argv[]) {
     args_t args;
 
@@ -114,9 +128,12 @@ int main(int argc, const char *argv[]) {
         vector<sample_t> samples;
         index.GetRandomSamples(sentence, 1000, samples, context);
 
-        if (args.quiet) {
-            cout << "Found " << samples.size() << " samples" << endl;
+        if (!args.quiet) {
+            for (int i = 0; i < samples.size(); i++)
+                PrintSample(samples[i]);
         }
+
+        cout << "Found " << samples.size() << " samples" << endl;
     }
 
     return SUCCESS;
