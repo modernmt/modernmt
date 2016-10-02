@@ -8,6 +8,7 @@
 #include <boost/filesystem.hpp>
 #include <util/BilingualCorpus.h>
 #include <test/util/NGramTable.h>
+#include <util/chrono.h>
 
 using namespace std;
 using namespace mmt;
@@ -17,7 +18,6 @@ using namespace mmt::sapt::test;
 namespace {
     const size_t ERROR_IN_COMMAND_LINE = 1;
     const size_t GENERIC_ERROR = 2;
-    const size_t TEST_FAILED = 3;
     const size_t SUCCESS = 0;
 
     struct args_t {
@@ -27,12 +27,40 @@ namespace {
         string target_lang;
 
         domain_t domain;
+        context_t context;
         uint8_t order = 16;
+    };
+
+    struct speed_perf_t {
+        double seconds;
+        size_t requests;
+
+        speed_perf_t() : seconds(0.), requests(0) {};
+
     };
 } // namespace
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
+
+bool ParseContextMap(const string &str, context_t &context) {
+    istringstream iss(str);
+    string element;
+
+    while (getline(iss, element, ',')) {
+        istringstream ess(element);
+
+        string tok;
+        getline(ess, tok, ':');
+        domain_t id = (domain_t) stoi(tok);
+        getline(ess, tok, ':');
+        float w = stof(tok);
+
+        context.push_back(cscore_t(id, w));
+    }
+
+    return true;
+}
 
 bool ParseArgs(int argc, const char *argv[], args_t *args) {
     po::options_description desc("Test the SuffixArray querying the input domain");
@@ -42,7 +70,8 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
             ("source,s", po::value<string>()->required(), "source language")
             ("target,t", po::value<string>()->required(), "target language")
             ("input,i", po::value<string>()->required(), "input folder with input corpora")
-            ("domain,d", po::value<domain_t>()->required(), "domain to test")
+            ("domain,d", po::value<domain_t>()->required(), "domain for data loading")
+            ("context,c", po::value<string>(), "context map in the format <id>:<w>[,<id>:<w>]")
             ("order", po::value<uint8_t>(), "order (default = 16)");
 
     po::variables_map vm;
@@ -61,6 +90,11 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
         args->source_lang = vm["source"].as<string>();
         args->target_lang = vm["target"].as<string>();
         args->domain = vm["domain"].as<domain_t>();
+
+        if (vm.count("context")) {
+            if (!ParseContextMap(vm["context"].as<string>(), args->context))
+                throw po::error("invalid context map: " + vm["context"].as<string>());
+        }
 
         if (vm.count("order"))
             args->order = vm["order"].as<uint8_t>();
@@ -89,71 +123,28 @@ NGramTable LoadTable(const args_t &args) {
 
 // ------ Testing
 
-bool VerifyIntegrity(domain_t domain, const vector<sample_t> &samples, const vector<wid_t> &phrase) {
-    for (auto sample = samples.begin(); sample != samples.end(); ++sample) {
-        if (sample->domain != domain)
-            return false;
-
-        if (sample->offsets.empty())
-            return false;
-
-        for (auto start = sample->offsets.begin(); start != sample->offsets.end(); ++start) {
-            for (size_t i = 0; i < phrase.size(); ++i) {
-                size_t source_i = (*start) + i;
-                if (source_i >= sample->source.size())
-                    return false;
-
-                if (sample->source[source_i] != phrase[i])
-                    return false;
-            }
-        }
-    }
-
-    return true;
-}
-
-size_t CountSamples(const vector<sample_t> &samples) {
-    size_t count = 0;
-    for (auto sample = samples.begin(); sample != samples.end(); ++sample) {
-        count += sample->offsets.size();
-    }
-    return count;
-}
-
-bool RunTest(domain_t domain, SuffixArray &index, const unordered_map<vector<wid_t>, size_t, phrase_hash> &ngrams) {
-    context_t context;
-    context.push_back(cscore_t(domain, 1.f));
+void RunTest(const context_t *context, SuffixArray &index,
+             const unordered_map<vector<wid_t>, size_t, phrase_hash> &ngrams, speed_perf_t &speed) {
 
     size_t ngramsCount = ngrams.size();
     size_t currentCount = 0;
 
+    speed.requests += ngramsCount;
+
     for (auto entry = ngrams.begin(); entry != ngrams.end(); ++entry) {
         const vector<wid_t> &phrase = entry->first;
-        size_t expectedCount = entry->second;
 
+        double begin = GetTime();
         vector<sample_t> samples;
-        index.GetRandomSamples(phrase, 0, samples, &context, false);
-
-        samples.erase(std::remove_if(samples.begin(), samples.end(),
-                                     [domain](const sample_t &sample) {
-                                         return sample.domain != domain;
-                                     }), samples.end());
-
-        if (!VerifyIntegrity(domain, samples, phrase) ||
-            CountSamples(samples) != expectedCount) {
-            cout << "FAILED" << endl;
-            return false;
-        }
+        index.GetRandomSamples(phrase, 1000, samples, context);
+        speed.seconds += GetElapsedTime(begin);
 
         currentCount++;
 
-        if (currentCount % (ngramsCount / 10) == 0)
+        if (currentCount % 10000 == 0)
             cout << "." << flush;
     }
-
-    cout << "SUCCESS" << endl;
-
-    return true;
+    cout << "." << endl;
 }
 
 // --------------
@@ -172,15 +163,19 @@ int main(int argc, const char *argv[]) {
     Options options;
     SuffixArray index(args.model_path, options.prefix_length);
 
+    speed_perf_t speed;
     NGramTable nGramTable = LoadTable(args);
     for (uint8_t i = args.order; i > 0; --i) {
         unordered_map<vector<wid_t>, size_t, phrase_hash> ngrams = nGramTable.GetNGrams(i);
 
         cout << "Testing " << ((int) i) << "-grams (" << ngrams.size() << "):" << endl;
-        if (!RunTest(args.domain, index, ngrams)) {
-            exit(TEST_FAILED);
-        }
+        RunTest(&args.context, index, ngrams, speed);
     }
+
+    cout << endl;
+    cout << "Total " << speed.requests << " queries in " << speed.seconds << " seconds, speed is "
+         << (((double) speed.requests) / speed.seconds) << " q/s" << endl;
+
 
     return SUCCESS;
 }

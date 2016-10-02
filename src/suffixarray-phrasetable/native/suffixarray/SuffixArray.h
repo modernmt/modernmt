@@ -51,7 +51,7 @@ namespace mmt {
             ~SuffixArray();
 
             void GetRandomSamples(const vector<wid_t> &phrase, size_t limit, vector<sample_t> &outSamples,
-                                  context_t *context, bool searchInBackground = true);
+                                  const context_t *context, bool searchInBackground = true);
 
             size_t CountOccurrences(bool isSource, const vector<wid_t> &phrase);
 

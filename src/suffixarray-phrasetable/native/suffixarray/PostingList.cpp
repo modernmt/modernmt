@@ -78,6 +78,7 @@ void PostingList::Append(const PostingList &other) {
 
 unordered_set<int64_t> PostingList::GetLocations() const {
     unordered_set<int64_t> locations;
+    locations.reserve(data.size());
 
     const char *_data = data.data();
     for (size_t i = 0; i < data.size(); i += kEntrySize)
@@ -189,6 +190,8 @@ void PostingList::Retain(const PostingList &_successors, length_t start) {
 }
 
 void PostingList::GetLocationMap(unordered_map<int64_t, unordered_set<length_t>> &output) const {
+    output.reserve(data.size());
+
     const char *_data = data.data();
     for (size_t i = 0; i < data.size(); i += kEntrySize) {
         int64_t location = ReadInt64(_data, i);

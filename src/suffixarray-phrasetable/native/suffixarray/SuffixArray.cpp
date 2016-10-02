@@ -197,7 +197,7 @@ size_t SuffixArray::CountOccurrences(bool isSource, const vector<wid_t> &phrase)
 }
 
 void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, vector<sample_t> &outSamples,
-                                   context_t *context, bool searchInBackground) {
+                                   const context_t *context, bool searchInBackground) {
     PostingList inContextLocations(phrase);
     PostingList outContextLocations(phrase);
     size_t remaining = limit;
