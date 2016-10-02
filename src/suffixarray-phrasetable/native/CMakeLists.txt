@@ -92,4 +92,6 @@ message(STATUS "Executables will be installed in ${CMAKE_INSTALL_PREFIX}/bin")
 message(STATUS "Libraries will be installed in ${CMAKE_INSTALL_PREFIX}/lib")
 message(STATUS "Include files will be installed in ${CMAKE_INSTALL_PREFIX}/include")
 
+# Test cases
 
+add_subdirectory(test)

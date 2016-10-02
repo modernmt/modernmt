@@ -74,7 +74,6 @@ SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength,
     rocksdb::Options options;
     options.create_if_missing = true;
     options.merge_operator.reset(new MergePositionOperator);
-    options.prefix_extractor.reset(NewNoopTransform());
     options.max_open_files = -1;
     options.compaction_style = kCompactionStyleLevel;
 
@@ -86,13 +85,16 @@ SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength,
         if (cpus > 1)
             options.IncreaseParallelism(cpus > 4 ? 4 : 2);
 
-        options.level0_file_num_compaction_trigger = 10;
-        options.level0_slowdown_writes_trigger = 20;
-        options.level0_stop_writes_trigger = 40;
+        options.level0_file_num_compaction_trigger = 8;
+        options.level0_slowdown_writes_trigger = 17;
+        options.level0_stop_writes_trigger = 24;
+        options.num_levels = 4;
 
-        options.write_buffer_size = 64 * 1024 * 1024;
-        options.target_file_size_base = 64 * 1024 * 1024;
-        options.max_bytes_for_level_base = 512 * 1024 * 1024;
+        options.write_buffer_size = 64L * 1024L * 1024L;
+        options.max_write_buffer_number = 3;
+        options.target_file_size_base = 64L * 1024L * 1024L;
+        options.max_bytes_for_level_base = 512L * 1024L * 1024L;
+        options.max_bytes_for_level_multiplier = 8;
     }
 
     Status status = DB::Open(options, indexPath.string(), &db);
@@ -195,7 +197,7 @@ size_t SuffixArray::CountOccurrences(bool isSource, const vector<wid_t> &phrase)
 }
 
 void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, vector<sample_t> &outSamples,
-                                   context_t *context) {
+                                   context_t *context, bool searchInBackground) {
     PostingList inContextLocations(phrase);
     PostingList outContextLocations(phrase);
     size_t remaining = limit;
@@ -215,7 +217,7 @@ void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, ve
         }
     }
 
-    if (limit == 0 || remaining > 0) {
+    if (searchInBackground && (limit == 0 || remaining > 0)) {
         unordered_set<int64_t> coveredLocations = inContextLocations.GetLocations();
         CollectLocations(true, kBackgroundModelDomain, phrase, outContextLocations, &coveredLocations);
     }

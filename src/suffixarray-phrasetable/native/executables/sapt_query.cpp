@@ -49,7 +49,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
     po::options_description desc("Query the SuffixArray Phrase Table");
     desc.add_options()
             ("help,h", "print this help message")
-            ("model,m", po::value<string>()->required(), "output model path")
+            ("model,m", po::value<string>()->required(), "input model path")
             ("context,c", po::value<string>(), "context map in the format <id>:<w>[,<id>:<w>]")
             ("quiet,q", "prints only number of match");
 
@@ -91,7 +91,6 @@ static inline void ParseSentenceLine(const string &line, vector<wid_t> &output) 
     while (stream >> word) {
         output.push_back(word);
     }
-
 }
 
 static void PrintSample(const sample_t &sample) {
@@ -129,7 +128,7 @@ int main(int argc, const char *argv[]) {
         index.GetRandomSamples(sentence, 1000, samples, context);
 
         if (!args.quiet) {
-            for (int i = 0; i < samples.size(); i++)
+            for (size_t i = 0; i < samples.size(); i++)
                 PrintSample(samples[i]);
         }
 

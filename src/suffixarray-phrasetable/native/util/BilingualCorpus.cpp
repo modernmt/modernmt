@@ -13,8 +13,9 @@ using namespace mmt::sapt;
 
 namespace fs = boost::filesystem;
 
-BilingualCorpus::BilingualCorpus(domain_t domain, const string &source, const string &target, const string &alignment)
-        : domain(domain), source(source), target(target), alignment(alignment) {
+BilingualCorpus::BilingualCorpus(domain_t domain, const string &sourceFile, const string &targetFile,
+                                 const string &alignmentFile)
+        : domain(domain), source(sourceFile), target(targetFile), alignment(alignmentFile) {
 }
 
 static inline void ParseSentenceLine(const string &line, vector<wid_t> &output) {
