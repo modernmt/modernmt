@@ -338,10 +338,10 @@ class MMTEngine(object):
         self.moses.add_feature(MosesFeature('PhrasePenalty'))
         self.moses.add_feature(self.pt, 'PT0')
         self.moses.add_feature(LexicalReordering(), 'DM0')
-        self.moses.add_feature(self.lm, 'MuxLM')
+        self.moses.add_feature(self.lm, 'InterpolatedLM')
 
         self._optimal_weights = {
-            'MuxLM': [0.0996981],
+            'InterpolatedLM': [0.0996981],
             'DM0': [0.0940416, 0.0324946, 0.0884611, 0.0543363, 0.0258349, 0.107731, 0.102477, 0.0989888],
             'Distortion0': [8.84199E-4],
             'WordPenalty0': [-0.118122],

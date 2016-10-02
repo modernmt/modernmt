@@ -27,6 +27,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -O3 -Wall")
 
 set(SOURCE_FILES
+        suffixarray/dbkv.h
         suffixarray/CorpusStorage.cpp suffixarray/CorpusStorage.h
         suffixarray/UpdateBatch.cpp suffixarray/UpdateBatch.h
         suffixarray/SuffixArray.cpp suffixarray/SuffixArray.h
@@ -36,8 +37,7 @@ set(SOURCE_FILES
         sapt/UpdateManager.cpp sapt/UpdateManager.h
 
         util/ioutils.h
-        util/hashutils.h
-        util/BilingualCorpus.cpp util/BilingualCorpus.h)
+        util/BilingualCorpus.cpp util/BilingualCorpus.h util/chrono.h suffixarray/PostingList.cpp suffixarray/PostingList.h)
 
 include_directories(${CMAKE_SOURCE_DIR})
 

@@ -18,6 +18,7 @@ namespace {
 
     struct args_t {
         string model_path;
+        context_t context;
         bool quiet = false;
     };
 } // namespace
@@ -25,11 +26,31 @@ namespace {
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 
+bool ParseContextMap(const string &str, context_t &context) {
+    istringstream iss(str);
+    string element;
+
+    while (getline(iss, element, ',')) {
+        istringstream ess(element);
+
+        string tok;
+        getline(ess, tok, ':');
+        domain_t id = (domain_t) stoi(tok);
+        getline(ess, tok, ':');
+        float w = stof(tok);
+
+        context.push_back(cscore_t(id, w));
+    }
+
+    return true;
+}
+
 bool ParseArgs(int argc, const char *argv[], args_t *args) {
     po::options_description desc("Query the SuffixArray Phrase Table");
     desc.add_options()
             ("help,h", "print this help message")
             ("model,m", po::value<string>()->required(), "output model path")
+            ("context,c", po::value<string>(), "context map in the format <id>:<w>[,<id>:<w>]")
             ("quiet,q", "prints only number of match");
 
     po::variables_map vm;
@@ -39,6 +60,11 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
         if (vm.count("help")) {
             std::cout << desc << std::endl;
             return false;
+        }
+
+        if (vm.count("context")) {
+            if (!ParseContextMap(vm["context"].as<string>(), args->context))
+                throw po::error("invalid context map: " + vm["context"].as<string>());
         }
 
         po::notify(vm);
@@ -79,17 +105,15 @@ int main(int argc, const char *argv[]) {
 
     std::cerr << "Model loaded" << std::endl;
 
-    vector<sample_t> samples;
-    index.GetRandomSamples(vector<wid_t>(), 1, samples, NULL);
-    std::cerr << "Sample loaded with no context" << std::endl;
-
     string line;
     vector<wid_t> sourcePhrase;
 
-    //context_t *context_vec = NULL;
-    context_t *context_vec = new context_t;
-    context_vec->push_back(cscore_t(1,1.0));
-    std::cerr << "context_vec->size():" << context_vec->size() << std::endl;
+    context_t *context = args.context.empty() ? NULL : &args.context;
+    if (context){
+        std::cerr << "context->size():" << context->size() << std::endl;
+    } else{
+        std::cerr << "context not provided" << std::endl;
+    }
 
     while (getline(cin, line)) {
         std::cerr << "Reading line:" << line << std::endl;
@@ -101,12 +125,13 @@ int main(int argc, const char *argv[]) {
         std::cerr << "|" << std::endl;
 
         vector<sample_t> samples;
-        /*index.GetRandomSamples(1, sourcePhrase, 100, samples);
+        /*
+        index.GetRandomSamples(1, sourcePhrase, 100, samples);
         cout << "Found " << samples.size() << " samples" << endl;
         index.GetRandomSamples(1, sourcePhrase, 100, samples);
         cout << "Found " << samples.size() << " samples" << endl;
         */
-        index.GetRandomSamples(sourcePhrase, 100, samples, context_vec);
+        index.GetRandomSamples(sourcePhrase, 100, samples, context);
 
         if (args.quiet) {
             cout << "Found " << samples.size() << " samples" << endl;
