@@ -18,7 +18,11 @@ namespace mmt {
         class PostingList {
         public:
 
-            PostingList() {};
+            PostingList();
+
+            PostingList(const vector<wid_t> &phrase);
+
+            PostingList(const vector<wid_t> &sentence, size_t offset, size_t size);
 
             void Append(domain_t domain, const char *data, size_t size, const unordered_set<int64_t> *filterBy = NULL);
 
@@ -40,10 +44,13 @@ namespace mmt {
             bool empty() const;
 
         private:
+            const unsigned int phraseHash;
             vector<pair<domain_t, size_t>> domains;
             vector<char> data;
 
-            map<int64_t, pair<domain_t, vector<length_t>>> CollectAll(size_t size_limit) const;
+            void CollectAll(size_t size_limit, map<int64_t, pair<domain_t, vector<length_t>>> &output) const;
+
+            void GetLocationMap(unordered_map<int64_t, unordered_set<length_t>> &output) const;
         };
 
     }

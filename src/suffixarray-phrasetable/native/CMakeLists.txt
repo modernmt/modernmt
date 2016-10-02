@@ -37,9 +37,11 @@ set(SOURCE_FILES
         sapt/PhraseTable.cpp sapt/PhraseTable.h
         sapt/UpdateManager.cpp sapt/UpdateManager.h
 
+        util/hashutils.h
         util/ioutils.h
         util/chrono.h
-        util/BilingualCorpus.cpp util/BilingualCorpus.h util/hashutils.h)
+        util/randutils.h util/randutils.cpp
+        util/BilingualCorpus.cpp util/BilingualCorpus.h)
 
 include_directories(${CMAKE_SOURCE_DIR})
 

@@ -189,7 +189,7 @@ void SuffixArray::AddPrefixesToBatch(bool isSource, domain_t domain, const vecto
  */
 
 size_t SuffixArray::CountOccurrences(bool isSource, const vector<wid_t> &phrase) {
-    PostingList locations;
+    PostingList locations(phrase);
     CollectLocations(isSource, kBackgroundModelDomain, phrase, locations);
 
     return locations.size();
@@ -199,8 +199,8 @@ void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, ve
                                    context_t *context) {
     double begin = GetTime();
     double globalBegin = begin;
-    PostingList inContextLocations;
-    PostingList outContextLocations;
+    PostingList inContextLocations(phrase);
+    PostingList outContextLocations(phrase);
     size_t remaining = limit;
 
     if (context) {
@@ -254,7 +254,7 @@ void SuffixArray::CollectLocations(bool isSource, domain_t domain, const vector<
         CollectLocations(isSource, domain, sentence, 0, sentence.size(), output, coveredLocations);
     } else {
         length_t start = 0;
-        PostingList collected;
+        PostingList collected(sentence);
 
         while (start < sentenceLength) {
             if (start + prefixLength > sentenceLength)
@@ -263,7 +263,7 @@ void SuffixArray::CollectLocations(bool isSource, domain_t domain, const vector<
             if (start == 0) {
                 CollectLocations(isSource, domain, sentence, start, prefixLength, collected, coveredLocations);
             } else {
-                PostingList successors;
+                PostingList successors(sentence, start, prefixLength);
                 CollectLocations(isSource, domain, sentence, start, prefixLength, successors, coveredLocations);
 
                 collected.Retain(successors, start);
