@@ -67,7 +67,7 @@ void PostingList::Append(domain_t domain, int64_t location, length_t offset) {
 
     data.resize(ptr + kEntrySize);
     WriteInt64(data.data(), &ptr, location);
-    WriteUInt32(data.data(), &ptr, offset);
+    WriteUInt16(data.data(), &ptr, offset);
 
     if (domains.empty() || domains[domains.size() - 1].first != domain) {
         domains.push_back(make_pair(domain, kEntrySize));
