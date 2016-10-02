@@ -188,7 +188,7 @@ int main(int argc, const char *argv[]) {
 
     speed_perf_t speed;
     NGramTable nGramTable = LoadTable(args);
-    for (uint8_t i = 1; i <= args.order; ++i) {
+    for (uint8_t i = args.order; i > 0; --i) {
         unordered_map<vector<wid_t>, size_t, phrase_hash> ngrams = nGramTable.GetNGrams(i);
 
         cout << "Testing " << ((int) i) << "-grams (" << ngrams.size() << "):" << endl;

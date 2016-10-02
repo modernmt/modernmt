@@ -31,6 +31,9 @@ PostingList::PostingList(const vector<wid_t> &sentence, size_t offset, size_t si
 }
 
 void PostingList::Append(domain_t domain, const char *_data, size_t size, const unordered_set<int64_t> *filterBy) {
+    if (size == 0)
+        return;
+
     if (filterBy && !filterBy->empty()) {
         data.reserve(data.size() + size);
 

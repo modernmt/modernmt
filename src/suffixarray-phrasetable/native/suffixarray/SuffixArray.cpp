@@ -276,14 +276,21 @@ void SuffixArray::CollectLocations(bool isSource, domain_t domain, const vector<
                                    const unordered_set<int64_t> *coveredLocations) {
     string key = MakePrefixKey(isSource, domain, phrase, offset, length);
 
-    Iterator *it = db->NewIterator(ReadOptions());
+    if (length == prefixLength) {
+        string value;
+        db->Get(ReadOptions(), key, &value);
 
-    for (it->Seek(key); it->Valid() && it->key().starts_with(key); it->Next()) {
-        Slice value = it->value();
-        output.Append(domain, value.data_, value.size_, coveredLocations);
+        output.Append(domain, value.data(), value.size(), coveredLocations);
+    } else {
+        Iterator *it = db->NewIterator(ReadOptions());
+
+        for (it->Seek(key); it->Valid() && it->key().starts_with(key); it->Next()) {
+            Slice value = it->value();
+            output.Append(domain, value.data_, value.size_, coveredLocations);
+        }
+
+        delete it;
     }
-
-    delete it;
 }
 
 void
