@@ -8,6 +8,7 @@
 #include <set>
 
 #include <mmt/IncrementalModel.h>
+#include <suffixarray/SuffixArray.h>
 #include "Options.h"
 
 using namespace std;
@@ -34,7 +35,8 @@ namespace mmt {
             void NormalizeContext(context_t *context);
 
             //void GetTargetPhraseCollection(const vector<wid_t> &phrase, vector<mmt::sapt::TranslationOption> &outOptions) {
-            void GetTargetPhraseCollection(const vector<wid_t> &phrase, vector<TranslationOption> &outOptions, context_t *context_vec);
+            void GetTargetPhraseCollection(const vector<wid_t> &phrase, vector<TranslationOption> &outOptions,
+                                           context_t *context_vec);
 
             // TODO: just for testing purpose, must be removed asap
             void *__GetSuffixArray();
@@ -49,8 +51,14 @@ namespace mmt {
         private:
             struct pt_private;
             pt_private *self;
-        };
+            size_t numScoreComponent;
 
+            void GetTranslationOptions(const vector<wid_t> &source_phrase, sample_t &sample,
+                                       vector<TranslationOption> &outOptions);
+
+            void ExtractPhrasePairs(std::vector<wid_t> &sourceSentence, std::vector<wid_t> &targetSentence, alignment_t &alignment, std::vector<bool> targetAligned, length_t sourceStart, length_t sourceEnd, int targetStart, int targetEnd, std::vector<TranslationOption> &outOptions);
+
+        };
     }
 }
 
