@@ -22,7 +22,8 @@ namespace mmt {
     };
 
     typedef std::vector<word_t> sentence_t;
-    typedef std::vector<std::pair<length_t, length_t>> alignment_t;
+    typedef std::pair<length_t, length_t> alignmentPoint_t;
+    typedef std::vector<alignmentPoint_t > alignment_t;
 
     struct cscore_t {
         domain_t domain;
