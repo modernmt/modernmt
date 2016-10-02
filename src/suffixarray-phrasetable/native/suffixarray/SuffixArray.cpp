@@ -417,9 +417,13 @@ void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, ve
 
     if (context) {
         for (auto score = context->begin(); score != context->end(); ++score) {
+
+            cout << "domain: " << score->domain << " score: " << score->score << " remaining:" << remaining << endl;
             covered_domains.insert(score->domain);
 
             GetRandomSamples(score->domain, phrase, remaining, outSamples);
+
+            std::cerr << "Found " << outSamples.size()  << " samples" << std::endl;
 
             if (limit > 0) {
                 if (outSamples.size() >= limit) {

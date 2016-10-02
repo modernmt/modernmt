@@ -77,20 +77,54 @@ int main(int argc, const char *argv[]) {
     Options options;
     SuffixArray index(args.model_path, options.prefix_length, options.max_option_length);
 
+    std::cerr << "Model loaded" << std::endl;
+
     vector<sample_t> samples;
     index.GetRandomSamples(vector<wid_t>(), 1, samples, NULL);
+    std::cerr << "Sample loaded with no context" << std::endl;
 
     string line;
-    vector<wid_t> sentence;
+    vector<wid_t> sourcePhrase;
+
+    //context_t *context_vec = NULL;
+    context_t *context_vec = new context_t;
+    context_vec->push_back(cscore_t(1,1.0));
+    std::cerr << "context_vec->size():" << context_vec->size() << std::endl;
 
     while (getline(cin, line)) {
-        ParseSentenceLine(line, sentence);
+        std::cerr << "Reading line:" << line << std::endl;
+        ParseSentenceLine(line, sourcePhrase);
+
+        cout << "sourcePhrase.size():" << sourcePhrase.size()  << endl;
+        std::cerr << "SourcePhrase:|";
+        for (auto w = sourcePhrase.begin(); w != sourcePhrase.end(); ++w) { std::cerr << *w << " "; }
+        std::cerr << "|" << std::endl;
 
         vector<sample_t> samples;
-        index.GetRandomSamples(1, sentence, 1000000, samples);
+        /*index.GetRandomSamples(1, sourcePhrase, 100, samples);
+        cout << "Found " << samples.size() << " samples" << endl;
+        index.GetRandomSamples(1, sourcePhrase, 100, samples);
+        cout << "Found " << samples.size() << " samples" << endl;
+        */
+        index.GetRandomSamples(sourcePhrase, 100, samples, context_vec);
 
         if (args.quiet) {
             cout << "Found " << samples.size() << " samples" << endl;
+        } else{
+            cout << "Found " << samples.size() << " samples" << endl;
+            for (auto sample = samples.begin(); sample != samples.end(); ++sample) {
+                std::cerr << "Source:|";
+                for (auto w = sample->source.begin(); w != sample->source.end(); ++w) { std::cerr << *w << " "; }
+                std::cerr << "| Target:|";
+                for (auto w = sample->target.begin(); w != sample->target.end(); ++w) { std::cerr << *w << " "; }
+                std::cerr << "| Offset:|";
+                for (auto o = sample->offsets.begin(); o != sample->offsets.end(); ++o) { std::cerr << *o << " "; }
+                std::cerr << "| Alignemnt:|";
+                for (auto a = sample->alignment.begin(); a != sample->alignment.end(); ++a) { std::cerr << a->first << "-" << a->second << " "; }
+                std::cerr << "|";
+                std::cerr << " Domain:|" << sample->domain << "|" << std::endl;
+
+            }
         }
     }
 
