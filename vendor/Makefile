@@ -40,7 +40,7 @@ __moses_install: __moses
 	@cd $(MOSES_BUILD_DIR); make install
 	@echo "SUCCESS (Moses)"
 
-__moses: __ilm_install
+__moses: __ilm_install __sapt_install
 	@echo "Building Moses..."
 	@mkdir -p $(MOSES_BUILD_DIR)
 	@cd $(MOSES_BUILD_DIR); cmake $(MOSES_HOME) -DMMT_ROOT=$(MMT_HOME) -DROCKSDB_ROOT=$(MMT_BUILD_DIR) -DUSE_MMTILM=1 -DMMTILM_ROOT=$(MMT_BUILD_DIR) -DUSE_SAPT=1 -DSAPT_ROOT=$(MMT_BUILD_DIR) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(MMT_BUILD_DIR) -Wno-dev
