@@ -18,9 +18,30 @@ namespace {
 
     struct args_t {
         string model_path;
+        context_t context;
+        size_t sample_limit = 100;
         bool quiet = false;
     };
 } // namespace
+
+bool ParseContext(const string &str, context_t &context) {
+    istringstream iss(str);
+    string element;
+
+    while (getline(iss, element, ',')) {
+        istringstream ess(element);
+
+        string tok;
+        getline(ess, tok, ':');
+        domain_t id = (domain_t) stoi(tok);
+        getline(ess, tok, ':');
+        float w = stof(tok);
+
+        context.push_back(cscore_t(id, w));
+    }
+
+    return true;
+}
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -30,7 +51,10 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
     desc.add_options()
             ("help,h", "print this help message")
             ("model,m", po::value<string>()->required(), "output model path")
+            ("context,c", po::value<string>(), "context map in the format <id>:<w>[,<id>:<w>]")
+            ("sample,s", po::value<size_t>(), "number of samples (default is 100)")
             ("quiet,q", "prints only number of match");
+
 
     po::variables_map vm;
     try {
@@ -41,12 +65,21 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
             return false;
         }
 
+        if (vm.count("context")) {
+            if (!ParseContext(vm["context"].as<string>(), args->context))
+                throw po::error("invalid context map: " + vm["context"].as<string>());
+        }
+
         po::notify(vm);
 
         args->model_path = vm["model"].as<string>();
 
+        if (vm.count("sample"))
+            args->sample_limit = vm["sample"].as<size_t>();
+
         if (vm.count("quiet"))
             args->quiet = true;
+
     } catch (po::error &e) {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         std::cerr << desc << std::endl;
@@ -68,24 +101,6 @@ static inline void ParseSentenceLine(const string &line, vector<wid_t> &output) 
 
 }
 
-static inline void ParseAlignmentLine(const string &line, alignment_t &alignment) {
-    alignment.clear();
-
-    stringstream stream(line);
-    std::string pointString;
-
-    while (stream >> pointString) {
-        alignmentPoint_t point;
-        unsigned long pos = pointString.find('-');
-        length_t sourcePos = (length_t) atoi(pointString.substr(0,pos).c_str());
-        length_t targetPos = (length_t) atoi(pointString.substr(pos+1).c_str());
-        point.first = sourcePos;
-        point.second = targetPos;
-        alignment.push_back(point);
-    }
-
-}
-
 int main(int argc, const char *argv[]) {
     args_t args;
 
@@ -101,29 +116,33 @@ int main(int argc, const char *argv[]) {
 
     std::vector<TranslationOption> outOptions;
 
-    context_t *context_vec = new context_t;
-    context_vec->push_back(cscore_t(1,1.0));
-    std::cerr << "context_vec->size():" << context_vec->size() << std::endl;
+
+    context_t *context = args.context.empty() ? NULL : &args.context;
+    if (context){
+        std::cerr << "context->size():" << context->size() << std::endl;
+    } else{
+        std::cerr << "context not provided" << std::endl;
+    }
+    size_t sample_limit = args.sample_limit;
 
     while (getline(cin, line)) {
-        std::cerr << "Reading line:" << line << std::endl;
 
         vector<wid_t> sourcePhrase;
         ParseSentenceLine(line, sourcePhrase);
 
-        pt.GetTargetPhraseCollection(sourcePhrase, outOptions, context_vec);
+        std::cout << "SourcePhrase:|";
+        for (auto w = sourcePhrase.begin(); w != sourcePhrase.end(); ++w) { std::cerr << *w << " "; }
+        std::cout << "|" << std::endl;
+
+        pt.GetTargetPhraseCollection(sourcePhrase, sample_limit, outOptions, context);
 
         std::cerr << "Found " << outOptions.size()  << " options" << std::endl;
 
-        for (auto option = outOptions.begin(); option != outOptions.end(); ++ option){
-
-            std::cerr << "targetPhrase:|";
-            for (auto w = option->targetPhrase.begin(); w != option->targetPhrase.end(); ++w) { std::cerr << *w << " "; }
-            std::cerr << "|";
-            std::cerr << std::endl;
+        if (!args.quiet) {
+            for (auto option = outOptions.begin(); option != outOptions.end(); ++option) {
+                option->Print();
+            }
         }
-        std::cerr << "Finished" << std::endl;
-
     }
 
     return SUCCESS;

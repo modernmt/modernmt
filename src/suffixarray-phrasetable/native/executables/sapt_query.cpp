@@ -19,6 +19,7 @@ namespace {
     struct args_t {
         string model_path;
         context_t context;
+        size_t sample_limit;
         bool quiet = false;
     };
 } // namespace
@@ -26,7 +27,7 @@ namespace {
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 
-bool ParseContextMap(const string &str, context_t &context) {
+bool ParseContext(const string &str, context_t &context) {
     istringstream iss(str);
     string element;
 
@@ -51,6 +52,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
             ("help,h", "print this help message")
             ("model,m", po::value<string>()->required(), "input model path")
             ("context,c", po::value<string>(), "context map in the format <id>:<w>[,<id>:<w>]")
+            ("sample,s", po::value<size_t>(), "number of samples (default is 100)")
             ("quiet,q", "prints only number of match");
 
     po::variables_map vm;
@@ -63,7 +65,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
         }
 
         if (vm.count("context")) {
-            if (!ParseContextMap(vm["context"].as<string>(), args->context))
+            if (!ParseContext(vm["context"].as<string>(), args->context))
                 throw po::error("invalid context map: " + vm["context"].as<string>());
         }
 
@@ -71,8 +73,12 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
 
         args->model_path = vm["model"].as<string>();
 
+        if (vm.count("sample"))
+            args->sample_limit = vm["sample"].as<size_t>();
+
         if (vm.count("quiet"))
             args->quiet = true;
+        
     } catch (po::error &e) {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         std::cerr << desc << std::endl;
@@ -91,20 +97,6 @@ static inline void ParseSentenceLine(const string &line, vector<wid_t> &output) 
     while (stream >> word) {
         output.push_back(word);
     }
-}
-
-static void PrintSample(const sample_t &sample) {
-    cout << "(" << sample.domain << ")";
-
-    for (auto word = sample.source.begin(); word != sample.source.end(); ++word)
-        cout << " " << *word;
-    cout << " |||";
-    for (auto word = sample.target.begin(); word != sample.target.end(); ++word)
-        cout << " " << *word;
-    cout << " |||";
-    for (auto a = sample.alignment.begin(); a != sample.alignment.end(); ++a)
-        cout << " " << a->first << "-" << a->second;
-    cout << endl;
 }
 
 int main(int argc, const char *argv[]) {
@@ -127,28 +119,21 @@ int main(int argc, const char *argv[]) {
     } else{
         std::cerr << "context not provided" << std::endl;
     }
+    size_t sample_limit = args.sample_limit;
 
     while (getline(cin, line)) {
-        std::cerr << "Reading line:" << line << std::endl;
         ParseSentenceLine(line, sourcePhrase);
 
-        cout << "sourcePhrase.size():" << sourcePhrase.size()  << endl;
-        std::cerr << "SourcePhrase:|";
-        for (auto w = sourcePhrase.begin(); w != sourcePhrase.end(); ++w) { std::cerr << *w << " "; }
-        std::cerr << "|" << std::endl;
+        std::cerr << "SourcePhrase: ";
+        for (auto w = sourcePhrase.begin(); w != sourcePhrase.end(); ++w) { std::cerr << " " << *w; }
+        std::cerr << std::endl;
 
         vector<sample_t> samples;
-        /*
-        index.GetRandomSamples(1, sourcePhrase, 100, samples);
-        cout << "Found " << samples.size() << " samples" << endl;
-        index.GetRandomSamples(1, sourcePhrase, 100, samples);
-        cout << "Found " << samples.size() << " samples" << endl;
-        */
-        index.GetRandomSamples(sourcePhrase, 100, samples, context);
+        index.GetRandomSamples(sourcePhrase, sample_limit, samples, context);
 
         if (!args.quiet) {
-            for (size_t i = 0; i < samples.size(); i++)
-                PrintSample(samples[i]);
+            for (auto sample = samples.begin(); sample != samples.end(); ++sample)
+                sample->Print();
         }
 
         cout << "Found " << samples.size() << " samples" << endl;
