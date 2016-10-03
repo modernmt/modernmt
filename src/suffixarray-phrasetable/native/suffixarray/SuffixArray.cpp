@@ -139,7 +139,7 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
 
         int64_t offset = storage->Append(entry->source, entry->target, entry->alignment);
         AddPrefixesToBatch(true, domain, entry->source, offset, sourcePrefixes);
-        AddPrefixesToBatch(false, kBackgroundModelDomain, entry->target, offset, targetPrefixes);
+        AddPrefixesToBatch(false, domain, entry->target, offset, targetPrefixes);
     }
 
     int64_t storageSize = storage->Flush();
@@ -168,19 +168,15 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
 
 void SuffixArray::AddPrefixesToBatch(bool isSource, domain_t domain, const vector<wid_t> &sentence,
                                      int64_t location, unordered_map<string, PostingList> &outBatch) {
-    for (length_t start = 0; start < sentence.size(); ++start) {
-        size_t length = prefixLength;
-        if (start + length > sentence.size())
-            length = sentence.size() - start;
+    size_t size = sentence.size();
 
-        // Add to background model
-        string key = MakePrefixKey(isSource, kBackgroundModelDomain, sentence, start, length);
-        outBatch[key].Append(kBackgroundModelDomain, location, start);
+    for (size_t start = 0; start < size; ++start) {
+        for (size_t length = 1; length <= prefixLength; ++length) {
+            if (start + length > size)
+                break;
 
-        // Add to domain
-        if (domain != kBackgroundModelDomain) {
-            string dkey = MakePrefixKey(isSource, domain, sentence, start, length);
-            outBatch[dkey].Append(domain, location, start);
+            string dkey = MakePrefixKey(prefixLength, isSource, domain, sentence, start, length);
+            outBatch[dkey].Append(domain, location, (length_t) start);
         }
     }
 }
@@ -190,6 +186,7 @@ void SuffixArray::AddPrefixesToBatch(bool isSource, domain_t domain, const vecto
  */
 
 size_t SuffixArray::CountOccurrences(bool isSource, const vector<wid_t> &phrase) {
+    // TODO: otitmizzare nel caso phrase.size() < phraseLength
     PostingList locations(phrase);
     CollectLocations(isSource, kBackgroundModelDomain, phrase, locations);
 
@@ -198,52 +195,48 @@ size_t SuffixArray::CountOccurrences(bool isSource, const vector<wid_t> &phrase)
 
 void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, vector<sample_t> &outSamples,
                                    const context_t *context, bool searchInBackground) {
-    PostingList inContextLocations(phrase);
-    PostingList outContextLocations(phrase);
-    size_t remaining = limit;
+    // Get in-context samples
+    samplemap_t inContextSamples;
+    size_t inContextSize = 0;
 
-    if (context) {
+    if (context && !context->empty()) {
         for (auto score = context->begin(); score != context->end(); ++score) {
-            CollectLocations(true, score->domain, phrase, inContextLocations);
+            PostingList inContextPostingList(phrase);
+            CollectLocations(true, score->domain, phrase, inContextPostingList);
 
-            if (limit > 0) {
-                if (inContextLocations.size() >= limit) {
-                    remaining = 0;
-                    break;
-                } else {
-                    remaining = limit - inContextLocations.size();
-                }
+            if (limit == 0 || inContextSize + inContextPostingList.size() <= limit) {
+                inContextPostingList.GetSamples(inContextSamples);
+                inContextSize += inContextPostingList.size();
+            } else {
+                inContextPostingList.GetSamples(inContextSamples, limit - inContextSize);
+                inContextSize = limit;
+                break;
             }
         }
     }
 
-    if (searchInBackground && (limit == 0 || remaining > 0)) {
-        unordered_set<int64_t> coveredLocations = inContextLocations.GetLocations();
-        CollectLocations(true, kBackgroundModelDomain, phrase, outContextLocations, &coveredLocations);
+    // Get out-context samples
+    samplemap_t outContextSamples;
+
+    if (searchInBackground && (limit == 0 || inContextSize < limit)) {
+        PostingList outContextPostingList(phrase);
+        //TODO: search in background
+        throw runtime_error("Not implemented yet!");
     }
 
     outSamples.clear();
 
-    ssize_t inContextSize = inContextLocations.size() - limit;
-    if (inContextSize < 0) {
-        map<int64_t, pair<domain_t, vector<length_t>>> inContext = inContextLocations.GetSamples();
-        map<int64_t, pair<domain_t, vector<length_t>>> outContext =
-                outContextLocations.GetSamples((size_t) -inContextSize, words_hash(phrase));
-
-        Retrieve(inContext, outSamples);
-        Retrieve(outContext, outSamples);
-    } else {
-        map<int64_t, pair<domain_t, vector<length_t>>> inContext = inContextLocations.GetSamples(limit);
-        Retrieve(inContext, outSamples);
-    }
+    if (inContextSamples.size() > 0)
+        Retrieve(inContextSamples, outSamples);
+    if (outContextSamples.size() > 0)
+        Retrieve(outContextSamples, outSamples);
 }
 
-void SuffixArray::CollectLocations(bool isSource, domain_t domain, const vector<wid_t> &sentence,
-                                   PostingList &output, unordered_set<int64_t> *coveredLocations) {
+void SuffixArray::CollectLocations(bool isSource, domain_t domain, const vector<wid_t> &sentence, PostingList &output) {
     length_t sentenceLength = (length_t) sentence.size();
 
     if (sentenceLength <= prefixLength) {
-        CollectLocations(isSource, domain, sentence, 0, sentence.size(), output, coveredLocations);
+        CollectLocations(isSource, domain, sentence, 0, sentence.size(), output);
     } else {
         length_t start = 0;
         PostingList collected(sentence);
@@ -253,10 +246,10 @@ void SuffixArray::CollectLocations(bool isSource, domain_t domain, const vector<
                 start = sentenceLength - prefixLength;
 
             if (start == 0) {
-                CollectLocations(isSource, domain, sentence, start, prefixLength, collected, coveredLocations);
+                CollectLocations(isSource, domain, sentence, start, prefixLength, collected);
             } else {
                 PostingList successors(sentence, start, prefixLength);
-                CollectLocations(isSource, domain, sentence, start, prefixLength, successors, coveredLocations);
+                CollectLocations(isSource, domain, sentence, start, prefixLength, successors);
 
                 collected.Retain(successors, start);
             }
@@ -267,46 +260,33 @@ void SuffixArray::CollectLocations(bool isSource, domain_t domain, const vector<
             start += prefixLength;
         }
 
-        output.Append(collected);
+        output.Join(collected);
     }
 }
 
-void SuffixArray::CollectLocations(bool isSource, domain_t domain, const vector<wid_t> &phrase,
-                                   size_t offset, size_t length, PostingList &output,
-                                   const unordered_set<int64_t> *coveredLocations) {
-    string key = MakePrefixKey(isSource, domain, phrase, offset, length);
+void SuffixArray::CollectLocations(bool isSource, domain_t domain,
+                                   const vector<wid_t> &phrase, size_t offset, size_t length,
+                                   PostingList &output) {
+    string key = MakePrefixKey(prefixLength, isSource, domain, phrase, offset, length);
+    string value;
+    db->Get(ReadOptions(), key, &value);
 
-    if (length == prefixLength) {
-        string value;
-        db->Get(ReadOptions(), key, &value);
+    output.Append(domain, value);
+}
 
-        output.Append(domain, value.data(), value.size(), coveredLocations);
-    } else {
-        Iterator *it = db->NewIterator(ReadOptions());
+void SuffixArray::Retrieve(const samplemap_t &locations, vector<sample_t> &outSamples) {
+    for (auto entry = locations.begin(); entry != locations.end(); ++entry) {
+        outSamples.reserve(outSamples.size() + entry->second.size());
 
-        for (it->Seek(key); it->Valid() && it->key().starts_with(key); it->Next()) {
-            Slice value = it->value();
-            output.Append(domain, value.data_, value.size_, coveredLocations);
+        domain_t domain = entry->first;
+        for (auto location = entry->second.begin(); location != entry->second.end(); ++location) {
+            sample_t sample;
+            sample.domain = domain;
+            sample.offsets = location->second;
+
+            storage->Retrieve(location->first, &sample.source, &sample.target, &sample.alignment);
+
+            outSamples.push_back(sample);
         }
-
-        delete it;
-    }
-}
-
-void
-SuffixArray::Retrieve(const map<int64_t, pair<domain_t, vector<length_t>>> &locations, vector<sample_t> &outSamples) {
-    // Resolve positions
-    outSamples.reserve(outSamples.size() + locations.size());
-
-    for (auto location = locations.begin(); location != locations.end(); ++location) {
-        auto &value = location->second;
-
-        sample_t sample;
-        sample.domain = value.first;
-        sample.offsets = value.second;
-
-        storage->Retrieve(location->first, &sample.source, &sample.target, &sample.alignment);
-
-        outSamples.push_back(sample);
     }
 }

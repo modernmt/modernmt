@@ -173,7 +173,7 @@ int main(int argc, const char *argv[]) {
     SuffixArray index(args.model_path, options.prefix_length);
 
     NGramTable nGramTable = LoadTable(args);
-    for (uint8_t i = args.order; i > 0; --i) {
+    for (uint8_t i = 1; i <= args.order; ++i) {
         unordered_map<vector<wid_t>, size_t, phrase_hash> ngrams = nGramTable.GetNGrams(i);
 
         cout << "Testing " << ((int) i) << "-grams (" << ngrams.size() << "):" << endl;

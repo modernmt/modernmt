@@ -136,7 +136,7 @@ void RunTest(const context_t *context, SuffixArray &index,
 
         double begin = GetTime();
         vector<sample_t> samples;
-        index.GetRandomSamples(phrase, 1000, samples, context);
+        index.GetRandomSamples(phrase, 1000, samples, context, false);
         speed.seconds += GetElapsedTime(begin);
 
         currentCount++;
