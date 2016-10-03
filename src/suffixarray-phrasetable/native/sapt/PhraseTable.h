@@ -8,7 +8,7 @@
 #include <set>
 
 #include <mmt/IncrementalModel.h>
-#include <suffixarray/SuffixArray.h>
+//#include <suffixarray/SuffixArray.h>
 #include "Options.h"
 
 using namespace std;
@@ -51,10 +51,19 @@ namespace mmt {
             pt_private *self;
             size_t numScoreComponent;
 
-            void GetTranslationOptions(const vector<wid_t> &source_phrase, sample_t &sample,
-                                       vector<TranslationOption> &outOptions);
+            void GetTranslationOptions(const vector<wid_t> &sourcePhrase,
+                                       const std::vector<wid_t> &sourceSentence,
+                                       const std::vector<wid_t> &targetSentence,
+                                       const alignment_t &alignment,
+                                       const std::vector<length_t> &offsets,
+                                       std::vector<TranslationOption> &outOptions);
 
-            void ExtractPhrasePairs(std::vector<wid_t> &sourceSentence, std::vector<wid_t> &targetSentence, alignment_t &alignment, std::vector<bool> targetAligned, length_t sourceStart, length_t sourceEnd, int targetStart, int targetEnd, std::vector<TranslationOption> &outOptions);
+            void ExtractPhrasePairs(const std::vector<wid_t> &sourceSentence,
+                                    const std::vector<wid_t> &targetSentence,
+                                    const alignment_t &alignment,
+                                    const std::vector<bool> &targetAligned,
+                                    length_t sourceStart, length_t sourceEnd, int targetStart, int targetEnd,
+                                    std::vector<TranslationOption> &outOptions);
 
         };
     }
