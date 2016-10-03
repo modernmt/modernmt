@@ -4,14 +4,12 @@
 
 #include "SuffixArray.h"
 #include "dbkv.h"
-#include <random>
-#include <algorithm>
 #include <rocksdb/slice_transform.h>
 #include <rocksdb/merge_operator.h>
 #include <thread>
 #include <boost/filesystem.hpp>
 #include <iostream>
-#include <util/chrono.h>
+#include <util/hashutils.h>
 
 namespace fs = boost::filesystem;
 
@@ -62,9 +60,9 @@ namespace mmt {
  * SuffixArray - Initialization
  */
 
-SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength, uint8_t maxPhraseLength,
+SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength,
                          bool prepareForBulkLoad) throw(index_exception, storage_exception) :
-        prefixLength(prefixLength), maxPhraseLength(maxPhraseLength) {
+        prefixLength(prefixLength) {
     fs::path modelDir(modelPath);
 
     if (!fs::is_directory(modelDir))
@@ -76,7 +74,6 @@ SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength, uint8_t 
     rocksdb::Options options;
     options.create_if_missing = true;
     options.merge_operator.reset(new MergePositionOperator);
-    options.prefix_extractor.reset(NewNoopTransform());
     options.max_open_files = -1;
     options.compaction_style = kCompactionStyleLevel;
 
@@ -88,13 +85,16 @@ SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength, uint8_t 
         if (cpus > 1)
             options.IncreaseParallelism(cpus > 4 ? 4 : 2);
 
-        options.level0_file_num_compaction_trigger = 10;
-        options.level0_slowdown_writes_trigger = 20;
-        options.level0_stop_writes_trigger = 40;
+        options.level0_file_num_compaction_trigger = 8;
+        options.level0_slowdown_writes_trigger = 17;
+        options.level0_stop_writes_trigger = 24;
+        options.num_levels = 4;
 
-        options.write_buffer_size = 64 * 1024 * 1024;
-        options.target_file_size_base = 64 * 1024 * 1024;
-        options.max_bytes_for_level_base = 512 * 1024 * 1024;
+        options.write_buffer_size = 64L * 1024L * 1024L;
+        options.max_write_buffer_number = 3;
+        options.target_file_size_base = 64L * 1024L * 1024L;
+        options.max_bytes_for_level_base = 512L * 1024L * 1024L;
+        options.max_bytes_for_level_multiplier = 8;
     }
 
     Status status = DB::Open(options, indexPath.string(), &db);
@@ -131,8 +131,8 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
     WriteBatch writeBatch;
 
     // Compute prefixes
-    unordered_map<string, vector<sptr_t>> sourcePrefixes;
-    unordered_map<string, vector<sptr_t>> targetPrefixes;
+    unordered_map<string, PostingList> sourcePrefixes;
+    unordered_map<string, PostingList> targetPrefixes;
 
     for (auto entry = batch.data.begin(); entry != batch.data.end(); ++entry) {
         domain_t domain = entry->domain;
@@ -146,11 +146,11 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
 
     // Add prefixes to write batch
     for (auto prefix = sourcePrefixes.begin(); prefix != sourcePrefixes.end(); ++prefix) {
-        string value = SerializePositionsList(prefix->second);
+        string value = prefix->second.Serialize();
         writeBatch.Merge(prefix->first, value);
     }
     for (auto prefix = targetPrefixes.begin(); prefix != targetPrefixes.end(); ++prefix) {
-        string value = SerializePositionsList(prefix->second);
+        string value = prefix->second.Serialize();
         writeBatch.Merge(prefix->first, value);
     }
 
@@ -167,7 +167,7 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
 }
 
 void SuffixArray::AddPrefixesToBatch(bool isSource, domain_t domain, const vector<wid_t> &sentence,
-                                     int64_t storageOffset, unordered_map<string, vector<sptr_t>> &outBatch) {
+                                     int64_t location, unordered_map<string, PostingList> &outBatch) {
     for (length_t start = 0; start < sentence.size(); ++start) {
         size_t length = prefixLength;
         if (start + length > sentence.size())
@@ -175,12 +175,12 @@ void SuffixArray::AddPrefixesToBatch(bool isSource, domain_t domain, const vecto
 
         // Add to background model
         string key = MakePrefixKey(isSource, kBackgroundModelDomain, sentence, start, length);
-        outBatch[key].push_back(sptr_t(storageOffset, start));
+        outBatch[key].Append(kBackgroundModelDomain, location, start);
 
         // Add to domain
         if (domain != kBackgroundModelDomain) {
             string dkey = MakePrefixKey(isSource, domain, sentence, start, length);
-            outBatch[dkey].push_back(sptr_t(storageOffset, start));
+            outBatch[dkey].Append(domain, location, start);
         }
     }
 }
@@ -190,120 +190,78 @@ void SuffixArray::AddPrefixesToBatch(bool isSource, domain_t domain, const vecto
  */
 
 size_t SuffixArray::CountOccurrences(bool isSource, const vector<wid_t> &phrase) {
-    positionsmap_t positions;
-    CollectPositions(isSource, kBackgroundModelDomain, phrase, positions);
+    PostingList locations(phrase);
+    CollectLocations(isSource, kBackgroundModelDomain, phrase, locations);
 
-    size_t size = 0;
-    for (auto entry = positions.begin(); entry != positions.end(); ++entry) {
-        size += entry->second.second.size();
-    }
-
-    return size;
+    return locations.size();
 }
 
 void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, vector<sample_t> &outSamples,
-                                   context_t *context) {
-    double begin = GetTime();
-    double globalBegin = begin;
-    positionsmap_t inContextPositions;
-    positionsmap_t outContextPositions;
+                                   const context_t *context, bool searchInBackground) {
+    PostingList inContextLocations(phrase);
+    PostingList outContextLocations(phrase);
     size_t remaining = limit;
 
     if (context) {
         for (auto score = context->begin(); score != context->end(); ++score) {
-
-            cout << "domain: " << score->domain << " score: " << score->score << " remaining:" << remaining << endl;
             CollectPositions(true, score->domain, phrase, inContextPositions);
 
             std::cerr << "Found " << outSamples.size()  << " samples" << std::endl;
 
             if (limit > 0) {
-                if (inContextPositions.size() >= limit) {
+                if (inContextLocations.size() >= limit) {
                     remaining = 0;
                     break;
                 } else {
-                    remaining = limit - inContextPositions.size();
+                    remaining = limit - inContextLocations.size();
                 }
             }
         }
     }
-    cerr << "SuffixArray::GetRandomSamples from context took " << GetElapsedTime(begin) << "s" << endl;
 
-    begin = GetTime();
-
-    if (limit == 0 || remaining > 0)
-        CollectPositions(true, kBackgroundModelDomain, phrase, outContextPositions, &inContextPositions);
-
-    cerr << "SuffixArray::GetRandomSamples from background took " << GetElapsedTime(begin) << "s" << endl;
+    if (searchInBackground && (limit == 0 || remaining > 0)) {
+        unordered_set<int64_t> coveredLocations = inContextLocations.GetLocations();
+        CollectLocations(true, kBackgroundModelDomain, phrase, outContextLocations, &coveredLocations);
+    }
 
     outSamples.clear();
 
-    ssize_t inContextSize = inContextPositions.size() - limit;
+    ssize_t inContextSize = inContextLocations.size() - limit;
     if (inContextSize < 0) {
-        Retrieve(inContextPositions, outSamples, 0);
-        Retrieve(outContextPositions, outSamples, (size_t) -inContextSize);
+        map<int64_t, pair<domain_t, vector<length_t>>> inContext = inContextLocations.GetSamples();
+        map<int64_t, pair<domain_t, vector<length_t>>> outContext =
+                outContextLocations.GetSamples((size_t) -inContextSize, words_hash(phrase));
+
+        Retrieve(inContext, outSamples);
+        Retrieve(outContext, outSamples);
     } else {
-        Retrieve(inContextPositions, outSamples, limit);
-    }
-
-    cerr << "SuffixArray::GetRandomSamples took " << GetElapsedTime(globalBegin) << "s" << endl;
-}
-
-static void Retain(positionsmap_t &map, const positionsmap_t &successors, length_t offset) {
-    auto it = map.begin();
-    while (it != map.end()) {
-        bool remove;
-
-        auto successor = successors.find(it->first);
-        if (successor == successors.end()) {
-            remove = true;
-        } else {
-            vector<length_t> &start_positions = it->second.second;
-            const vector<length_t> &successors_offsets = successor->second.second;
-
-            start_positions.erase(
-                    remove_if(start_positions.begin(), start_positions.end(),
-                              [successors_offsets, offset](length_t start) {
-                                  if (offset > start)
-                                      return false;
-
-                                  auto e = find(successors_offsets.begin(), successors_offsets.end(), start - offset);
-                                  return e != successors_offsets.end();
-                              }),
-                    start_positions.end()
-            );
-
-            remove = start_positions.empty();
-        }
-
-        if (remove)
-            it = map.erase(it);
-        else
-            it++;
+        map<int64_t, pair<domain_t, vector<length_t>>> inContext = inContextLocations.GetSamples(limit);
+        Retrieve(inContext, outSamples);
     }
 }
 
-void SuffixArray::CollectPositions(bool isSource, domain_t domain, const vector<wid_t> &sentence,
-                                   positionsmap_t &outPositions, positionsmap_t *coveredPositions) {
+void SuffixArray::CollectLocations(bool isSource, domain_t domain, const vector<wid_t> &sentence,
+                                   PostingList &output, unordered_set<int64_t> *coveredLocations) {
     length_t sentenceLength = (length_t) sentence.size();
 
     if (sentenceLength <= prefixLength) {
-        CollectPositions(isSource, domain, sentence, 0, sentence.size(), outPositions, coveredPositions);
+        CollectLocations(isSource, domain, sentence, 0, sentence.size(), output, coveredLocations);
     } else {
         length_t start = 0;
-        positionsmap_t collected;
+        PostingList collected(sentence);
 
         while (start < sentenceLength) {
             if (start + prefixLength > sentenceLength)
                 start = sentenceLength - prefixLength;
 
-            positionsmap_t successors;
-            CollectPositions(isSource, domain, sentence, start, prefixLength, successors, coveredPositions);
+            if (start == 0) {
+                CollectLocations(isSource, domain, sentence, start, prefixLength, collected, coveredLocations);
+            } else {
+                PostingList successors(sentence, start, prefixLength);
+                CollectLocations(isSource, domain, sentence, start, prefixLength, successors, coveredLocations);
 
-            if (start == 0)
-                collected = successors;
-            else
-                Retain(collected, successors, start);
+                collected.Retain(successors, start);
+            }
 
             if (collected.empty())
                 break;
@@ -311,76 +269,46 @@ void SuffixArray::CollectPositions(bool isSource, domain_t domain, const vector<
             start += prefixLength;
         }
 
-        outPositions.reserve(outPositions.size() + collected.size());
-        outPositions.insert(collected.begin(), collected.end());
+        output.Append(collected);
     }
 }
 
-void SuffixArray::CollectPositions(bool isSource, domain_t domain, const vector<wid_t> &phrase,
-                                   size_t offset, size_t length, positionsmap_t &output,
-                                   positionsmap_t *coveredPositions) {
-    double begin = GetTime();
-    int count = 0;
-
+void SuffixArray::CollectLocations(bool isSource, domain_t domain, const vector<wid_t> &phrase,
+                                   size_t offset, size_t length, PostingList &output,
+                                   const unordered_set<int64_t> *coveredLocations) {
     string key = MakePrefixKey(isSource, domain, phrase, offset, length);
 
-    Iterator *it = db->NewIterator(ReadOptions());
+    if (length == prefixLength) {
+        string value;
+        db->Get(ReadOptions(), key, &value);
 
-    for (it->Seek(key); it->Valid() && it->key().starts_with(key); it->Next()) {
-        count++;
-        Slice value = it->value();
-        DeserializePositionsList(domain, value.data_, value.size_, output, coveredPositions);
+        output.Append(domain, value.data(), value.size(), coveredLocations);
+    } else {
+        Iterator *it = db->NewIterator(ReadOptions());
+
+        for (it->Seek(key); it->Valid() && it->key().starts_with(key); it->Next()) {
+            Slice value = it->value();
+            output.Append(domain, value.data_, value.size_, coveredLocations);
+        }
+
+        delete it;
     }
-
-    cerr << "SuffixArray::CollectPositions took " << GetElapsedTime(begin) << "s for " << count << " prefixes" << endl;
-
-    delete it;
 }
 
-void SuffixArray::Retrieve(const positionsmap_t &positions, vector<sample_t> &outSamples, size_t limit) {
-    if (positions.empty())
-        return;
-
-    double begin = GetTime();
-    vector<int64_t> keys;
-    keys.reserve(positions.size());
-
-    for (auto &it : positions) {
-        keys.push_back(it.first);
-    }
-    cerr << "SuffixArray::Retrieve collect keys took " << GetElapsedTime(begin) << "s" << endl;
-
-    begin = GetTime();
-    // Limit result
-    if (limit > 0 && positions.size() > limit) {
-        sort(keys.begin(), keys.end());
-
-        unsigned int seed = 3874556238;
-        shuffle(keys.begin(), keys.end(), default_random_engine(seed));
-
-        keys.resize(limit);
-    }
-
-    cerr << "SuffixArray::Retrieve limit results took " << GetElapsedTime(begin) << "s" << endl;
-
-    begin = GetTime();
-    // Sort keys in order to minimize mmap jumps
-    sort(keys.begin(), keys.end());
-
+void
+SuffixArray::Retrieve(const map<int64_t, pair<domain_t, vector<length_t>>> &locations, vector<sample_t> &outSamples) {
     // Resolve positions
-    outSamples.reserve(outSamples.size() + keys.size());
+    outSamples.reserve(outSamples.size() + locations.size());
 
-    for (auto key = keys.begin(); key != keys.end(); ++key) {
-        auto &value = positions.find(*key)->second;
+    for (auto location = locations.begin(); location != locations.end(); ++location) {
+        auto &value = location->second;
 
         sample_t sample;
         sample.domain = value.first;
         sample.offsets = value.second;
 
-        storage->Retrieve(*key, &sample.source, &sample.target, &sample.alignment);
+        storage->Retrieve(location->first, &sample.source, &sample.target, &sample.alignment);
 
         outSamples.push_back(sample);
     }
-
-    cerr << "SuffixArray::Retrieve lookup took " << GetElapsedTime(begin) << "s" << endl;
 }

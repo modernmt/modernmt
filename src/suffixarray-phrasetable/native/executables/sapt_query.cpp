@@ -49,7 +49,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
     po::options_description desc("Query the SuffixArray Phrase Table");
     desc.add_options()
             ("help,h", "print this help message")
-            ("model,m", po::value<string>()->required(), "output model path")
+            ("model,m", po::value<string>()->required(), "input model path")
             ("context,c", po::value<string>(), "context map in the format <id>:<w>[,<id>:<w>]")
             ("quiet,q", "prints only number of match");
 
@@ -91,7 +91,20 @@ static inline void ParseSentenceLine(const string &line, vector<wid_t> &output) 
     while (stream >> word) {
         output.push_back(word);
     }
+}
 
+static void PrintSample(const sample_t &sample) {
+    cout << "(" << sample.domain << ")";
+
+    for (auto word = sample.source.begin(); word != sample.source.end(); ++word)
+        cout << " " << *word;
+    cout << " |||";
+    for (auto word = sample.target.begin(); word != sample.target.end(); ++word)
+        cout << " " << *word;
+    cout << " |||";
+    for (auto a = sample.alignment.begin(); a != sample.alignment.end(); ++a)
+        cout << " " << a->first << "-" << a->second;
+    cout << endl;
 }
 
 int main(int argc, const char *argv[]) {
@@ -101,7 +114,7 @@ int main(int argc, const char *argv[]) {
         return ERROR_IN_COMMAND_LINE;
 
     Options options;
-    SuffixArray index(args.model_path, options.prefix_length, options.max_option_length);
+    SuffixArray index(args.model_path, options.prefix_length);
 
     std::cerr << "Model loaded" << std::endl;
 
@@ -133,24 +146,12 @@ int main(int argc, const char *argv[]) {
         */
         index.GetRandomSamples(sourcePhrase, 100, samples, context);
 
-        if (args.quiet) {
-            cout << "Found " << samples.size() << " samples" << endl;
-        } else{
-            cout << "Found " << samples.size() << " samples" << endl;
-            for (auto sample = samples.begin(); sample != samples.end(); ++sample) {
-                std::cerr << "Source:|";
-                for (auto w = sample->source.begin(); w != sample->source.end(); ++w) { std::cerr << *w << " "; }
-                std::cerr << "| Target:|";
-                for (auto w = sample->target.begin(); w != sample->target.end(); ++w) { std::cerr << *w << " "; }
-                std::cerr << "| Offset:|";
-                for (auto o = sample->offsets.begin(); o != sample->offsets.end(); ++o) { std::cerr << *o << " "; }
-                std::cerr << "| Alignemnt:|";
-                for (auto a = sample->alignment.begin(); a != sample->alignment.end(); ++a) { std::cerr << a->first << "-" << a->second << " "; }
-                std::cerr << "|";
-                std::cerr << " Domain:|" << sample->domain << "|" << std::endl;
-
-            }
+        if (!args.quiet) {
+            for (size_t i = 0; i < samples.size(); i++)
+                PrintSample(samples[i]);
         }
+
+        cout << "Found " << samples.size() << " samples" << endl;
     }
 
     return SUCCESS;

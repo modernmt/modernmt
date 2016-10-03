@@ -30,14 +30,18 @@ set(SOURCE_FILES
         suffixarray/dbkv.h
         suffixarray/CorpusStorage.cpp suffixarray/CorpusStorage.h
         suffixarray/UpdateBatch.cpp suffixarray/UpdateBatch.h
+        suffixarray/PostingList.cpp suffixarray/PostingList.h
         suffixarray/SuffixArray.cpp suffixarray/SuffixArray.h
 
         sapt/Options.h
         sapt/PhraseTable.cpp sapt/PhraseTable.h
         sapt/UpdateManager.cpp sapt/UpdateManager.h
 
+        util/hashutils.h
         util/ioutils.h
-        util/BilingualCorpus.cpp util/BilingualCorpus.h util/chrono.h suffixarray/PostingList.cpp suffixarray/PostingList.h)
+        util/chrono.h
+        util/randutils.h util/randutils.cpp
+        util/BilingualCorpus.cpp util/BilingualCorpus.h)
 
 include_directories(${CMAKE_SOURCE_DIR})
 
@@ -88,4 +92,6 @@ message(STATUS "Executables will be installed in ${CMAKE_INSTALL_PREFIX}/bin")
 message(STATUS "Libraries will be installed in ${CMAKE_INSTALL_PREFIX}/lib")
 message(STATUS "Include files will be installed in ${CMAKE_INSTALL_PREFIX}/include")
 
+# Test cases
 
+add_subdirectory(test)

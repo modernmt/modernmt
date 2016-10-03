@@ -17,7 +17,7 @@ struct PhraseTable::pt_private {
 
 PhraseTable::PhraseTable(const string &modelPath, const Options &options) {
     self = new pt_private();
-    self->index = new SuffixArray(modelPath, options.prefix_length, options.max_option_length);
+    self->index = new SuffixArray(modelPath, options.prefix_length);
     self->updates = new UpdateManager(self->index, options.update_buffer_size, options.update_max_delay);
     numScoreComponent = options.numScoreComponent;
 }
@@ -51,16 +51,15 @@ vector<updateid_t> PhraseTable::GetLatestUpdatesIdentifier() {
 void *PhraseTable::__GetSuffixArray() {
     return self->index;
 }
-
-void PhraseTable::GetTargetPhraseCollection(const vector<wid_t> &sourcePhrase, vector<TranslationOption> &outOptions, context_t *context_vec) {
-    vector<sample_t> samples;
+void PhraseTable::GetTargetPhraseCollection(const vector<wid_t> &sourcePhrase, vector<TranslationOption> &outOptions, context_t *context) {
 
     cout << "sourcePhrase.size():" << sourcePhrase.size()  << endl;
     std::cerr << "SourcePhrase:|";
     for (auto w = sourcePhrase.begin(); w != sourcePhrase.end(); ++w) { std::cerr << *w << " "; }
     std::cerr << "|" << std::endl;
 
-    self->index->GetRandomSamples(sourcePhrase, 10, samples, context_vec);
+    vector<sample_t> samples;
+    self->index->GetRandomSamples(sourcePhrase, 10, samples, context);
 
     cout << "Found " << samples.size() << " samples" << endl;
 

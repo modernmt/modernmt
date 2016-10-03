@@ -15,8 +15,10 @@ namespace mmt {
 
         class BilingualCorpus {
             friend class CorpusReader;
+
         public:
-            BilingualCorpus(domain_t domain, const string &source, const string &target, const string &alignment);
+            BilingualCorpus(domain_t domain, const string &sourceFile, const string &targetFile,
+                            const string &alignmentFile);
 
             const domain_t GetDomain() const {
                 return domain;
