@@ -13,6 +13,7 @@
 #include "UpdateBatch.h"
 #include "CorpusStorage.h"
 #include "PostingList.h"
+#include <iostream>
 
 using namespace std;
 
@@ -39,6 +40,23 @@ namespace mmt {
             vector<wid_t> target;
             alignment_t alignment;
             vector<length_t> offsets;
+
+            void Print() {
+                std::cout << "(" << domain << ")";
+
+                for (auto word = source.begin(); word != source.end(); ++word)
+                    std::cout << " " << *word;
+                std::cout << " |||";
+                for (auto word = target.begin(); word != target.end(); ++word)
+                    std::cout << " " << *word;
+                std::cout << " |||";
+                for (auto a = alignment.begin(); a != alignment.end(); ++a)
+                    std::cout << " " << a->first << "-" << a->second;
+                std::cout << " ||| offsets:";
+                for (auto o = offsets.begin(); o != offsets.end(); ++o)
+                    std::cout << " " << *o;
+                std::cout << std::endl;
+            }
         };
 
 
