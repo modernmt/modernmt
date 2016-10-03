@@ -8,7 +8,6 @@
 #include <set>
 
 #include <mmt/IncrementalModel.h>
-//#include <suffixarray/SuffixArray.h>
 #include "Options.h"
 
 using namespace std;

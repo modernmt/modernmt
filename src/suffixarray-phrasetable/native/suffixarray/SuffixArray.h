@@ -39,21 +39,23 @@ namespace mmt {
             alignment_t alignment;
             vector<length_t> offsets;
 
-            void Print() {
-                std::cout << "(" << domain << ")";
+            string ToString() {
+                ostringstream repr;
+                repr << "(" << domain << ")";
 
                 for (auto word = source.begin(); word != source.end(); ++word)
-                    std::cout << " " << *word;
-                std::cout << " |||";
+                    repr << " " << *word;
+                repr << " |||";
                 for (auto word = target.begin(); word != target.end(); ++word)
-                    std::cout << " " << *word;
-                std::cout << " |||";
+                    repr << " " << *word;
+                repr << " |||";
                 for (auto a = alignment.begin(); a != alignment.end(); ++a)
-                    std::cout << " " << a->first << "-" << a->second;
-                std::cout << " ||| offsets:";
+                    repr << " " << a->first << "-" << a->second;
+                repr << " ||| offsets:";
                 for (auto o = offsets.begin(); o != offsets.end(); ++o)
-                    std::cout << " " << *o;
-                std::cout << std::endl;
+                    repr << " " << *o;
+
+                return repr.str();
             }
         };
 

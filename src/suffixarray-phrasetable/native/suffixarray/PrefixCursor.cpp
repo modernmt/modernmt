@@ -53,8 +53,8 @@ namespace mmt {
         class GlobalCursor : public PrefixCursor {
         public:
             GlobalCursor(rocksdb::DB *db, length_t prefixLength, bool sourceSide, unordered_set<domain_t> *_skipList)
-                    : prefixLength(prefixLength), sourceSide(sourceSide),
-                      skipDomains(_skipList != NULL), it(db->NewIterator(ReadOptions())) {
+                    : sourceSide(sourceSide), skipDomains(_skipList != NULL), prefixLength(prefixLength),
+                      it(db->NewIterator(ReadOptions())) {
                 if (_skipList)
                     skipList.insert(_skipList->begin(), _skipList->end());
             }
