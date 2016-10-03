@@ -204,7 +204,7 @@ void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, ve
 
     if (context) {
         for (auto score = context->begin(); score != context->end(); ++score) {
-            CollectPositions(true, score->domain, phrase, inContextPositions);
+            CollectLocations(true, score->domain, phrase, inContextLocations);
 
             std::cerr << "Found " << outSamples.size()  << " samples" << std::endl;
 
