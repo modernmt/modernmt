@@ -134,11 +134,6 @@ bool RunTest(domain_t domain, SuffixArray &index, const unordered_map<vector<wid
         vector<sample_t> samples;
         index.GetRandomSamples(phrase, 0, samples, &context, false);
 
-        samples.erase(std::remove_if(samples.begin(), samples.end(),
-                                     [domain](const sample_t &sample) {
-                                         return sample.domain != domain;
-                                     }), samples.end());
-
         if (!VerifyIntegrity(domain, samples, phrase) ||
             CountSamples(samples) != expectedCount) {
             cout << "FAILED" << endl;
@@ -173,7 +168,7 @@ int main(int argc, const char *argv[]) {
     SuffixArray index(args.model_path, options.prefix_length);
 
     NGramTable nGramTable = LoadTable(args);
-    for (uint8_t i = args.order; i > 0; --i) {
+    for (uint8_t i = 1; i <= args.order; ++i) {
         unordered_map<vector<wid_t>, size_t, phrase_hash> ngrams = nGramTable.GetNGrams(i);
 
         cout << "Testing " << ((int) i) << "-grams (" << ngrams.size() << "):" << endl;

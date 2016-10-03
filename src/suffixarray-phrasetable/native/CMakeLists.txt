@@ -31,6 +31,7 @@ set(SOURCE_FILES
         suffixarray/CorpusStorage.cpp suffixarray/CorpusStorage.h
         suffixarray/UpdateBatch.cpp suffixarray/UpdateBatch.h
         suffixarray/PostingList.cpp suffixarray/PostingList.h
+        suffixarray/PrefixCursor.cpp suffixarray/PrefixCursor.h
         suffixarray/SuffixArray.cpp suffixarray/SuffixArray.h
 
         sapt/Options.h

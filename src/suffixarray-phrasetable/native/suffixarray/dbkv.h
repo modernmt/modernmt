@@ -35,16 +35,20 @@ namespace mmt {
         }
 
         static inline string
-        MakePrefixKey(bool isSource, domain_t domain, const vector<wid_t> &phrase, size_t offset, size_t length) {
-            size_t size = 1 + sizeof(domain_t) + length * sizeof(wid_t);
+        MakePrefixKey(length_t prefixLength, bool isSource, domain_t domain,
+                      const vector<wid_t> &phrase, size_t offset, size_t length) {
+            size_t size = 1 + sizeof(domain_t) + prefixLength * sizeof(wid_t);
             char *bytes = new char[size];
             bytes[0] = isSource ? kSourcePrefixKeyType : kTargetPrefixKeyType;
 
             size_t ptr = 1;
 
-            WriteUInt32(bytes, &ptr, domain);
             for (size_t i = 0; i < length; ++i)
                 WriteUInt32(bytes, &ptr, phrase[offset + i]);
+            for (size_t i = length; i < prefixLength; ++i)
+                WriteUInt32(bytes, &ptr, 0);
+
+            WriteUInt32(bytes, &ptr, domain);
 
             string key(bytes, size);
             delete[] bytes;
@@ -52,48 +56,12 @@ namespace mmt {
             return key;
         }
 
-        /* Values */
+        static inline domain_t GetDomainFromKey(const char *data, length_t prefixLength) {
+            size_t i = 1 + prefixLength * sizeof(wid_t);
+            return ReadUInt32(data, i);
+        }
 
-//        static inline string SerializePositionsList(const vector<location_t> &positions) {
-//            size_t size = positions.size() * (sizeof(int64_t) + sizeof(length_t));
-//            char *bytes = new char[size];
-//
-//            size_t i = 0;
-//            for (auto position = positions.begin(); position != positions.end(); ++position) {
-//                WriteInt64(bytes, &i, position->offset);
-//                WriteUInt16(bytes, &i, position->sentence_offset);
-//            }
-//
-//            string value(bytes, size);
-//            delete[] bytes;
-//
-//            return value;
-//        }
-//
-//        static inline void
-//        DeserializePositionsList(domain_t domain, const char *data, size_t bytes_size, positionsmap_t &outPositions,
-//                                 positionsmap_t *coveredPositions = NULL) {
-//            size_t entry_size = sizeof(int64_t) + sizeof(length_t);
-//
-//            if (bytes_size % entry_size != 0)
-//                return;
-//
-//            size_t count = bytes_size / entry_size;
-//            outPositions.reserve(outPositions.size() + count);
-//
-//            size_t ptr = 0;
-//            for (size_t i = 0; i < count; ++i) {
-//                int64_t offset = ReadInt64(data, &ptr);
-//                length_t sentence_offset = ReadUInt16(data, &ptr);
-//
-//                if (coveredPositions && coveredPositions->find(offset) != coveredPositions->end())
-//                    continue;
-//
-//                auto &value = outPositions[offset];
-//                value.first = domain;
-//                value.second.push_back(sentence_offset);
-//            }
-//        }
+        /* Values */
 
         static inline string SerializeGlobalInfo(const vector<seqid_t> &streams, int64_t storageSize) {
             size_t size = 8 + streams.size() * sizeof(seqid_t);
