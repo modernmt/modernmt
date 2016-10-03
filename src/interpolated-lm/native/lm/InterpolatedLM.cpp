@@ -206,7 +206,7 @@ vector<mmt::updateid_t> InterpolatedLM::GetLatestUpdatesIdentifier() {
     return self->alm->GetLatestUpdatesIdentifier();
 }
 
-void InterpolatedLM::NormalizeContextMap(context_t *context) {
+void InterpolatedLM::NormalizeContext(context_t *context) {
     if (self->is_alm_active)
         self->alm->NormalizeContext(context);
 }

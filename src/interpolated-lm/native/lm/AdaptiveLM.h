@@ -50,7 +50,7 @@ namespace mmt {
 
             virtual vector <updateid_t> GetLatestUpdatesIdentifier() override;
 
-            virtual void NormalizeContextMap(context_t *context);
+            virtual void NormalizeContext(context_t *context);
 
         private:
             const uint8_t order;
