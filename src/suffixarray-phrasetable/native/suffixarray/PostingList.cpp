@@ -14,8 +14,6 @@
 using namespace mmt;
 using namespace mmt::sapt;
 
-const static size_t kEntrySize = sizeof(int64_t) + sizeof(length_t);
-
 PostingList::PostingList() : phraseHash(0), entryCount(0) {
 
 }
@@ -48,6 +46,8 @@ void PostingList::Append(domain_t domain, int64_t location, length_t offset) {
     data.resize(ptr + kEntrySize);
     WriteInt64(data.data(), &ptr, location);
     WriteUInt16(data.data(), &ptr, offset);
+
+    entryCount++;
 }
 
 void PostingList::Join(const PostingList &other) {
@@ -65,61 +65,70 @@ size_t PostingList::size() const {
     return entryCount;
 }
 
-void PostingList::GetLocationMap(unordered_map<int64_t, unordered_set<length_t>> &output) const {
-    output.reserve(size());
+void PostingList::GetLocationMap(domain_t domain, unordered_map<int64_t, unordered_set<length_t>> &output) const {
+    auto entry = datamap.find(domain);
 
-    for (auto entry = datamap.begin(); entry != datamap.end(); ++entry) {
-        const char *bytes = entry->second.data();
+    if (entry == datamap.end())
+        return;
 
-        for (size_t i = 0; i < entry->second.size(); i += kEntrySize) {
-            int64_t location = ReadInt64(bytes, i);
-            length_t offset = ReadUInt16(bytes, i + 8);
+    output.reserve(entry->second.size() / kEntrySize);
 
-            output[location].insert(offset);
-        }
+    const char *bytes = entry->second.data();
+    for (size_t i = 0; i < entry->second.size(); i += kEntrySize) {
+        int64_t location = ReadInt64(bytes, i);
+        length_t offset = ReadUInt16(bytes, i + 8);
+
+        output[location].insert(offset);
     }
 }
 
 void PostingList::Retain(const PostingList &other, length_t start) {
-    assert(datamap.size() == 1);
-    assert(other.datamap.size() == 1);
-    assert(datamap.begin()->first == other.datamap.begin()->first);
-
-    unordered_map<int64_t, unordered_set<length_t>> successors;
-    other.GetLocationMap(successors);
-
     auto entry = datamap.begin();
     while (entry != datamap.end()) {
-        size_t tail = 0;
+        bool deleteEntry;
 
-        char *bytes = entry->second.data();
-        for (size_t i = 0; i < entry->second.size(); i += kEntrySize) {
-            int64_t location = ReadInt64(bytes, i);
-            length_t offset = ReadUInt16(bytes, i + 8);
+        if (other.datamap.find(entry->first) == other.datamap.end()) {
+            deleteEntry = true;
+        } else {
+            unordered_map<int64_t, unordered_set<length_t>> successors;
+            other.GetLocationMap(entry->first, successors);
 
-            bool remove;
+            size_t tail = 0;
 
-            auto successor = successors.find(location);
-            if (successor == successors.end()) {
-                remove = true;
-            } else {
-                unordered_set<length_t> &successors_offsets = successor->second;
-                remove = successors_offsets.find(offset + start) == successors_offsets.end();
+            char *bytes = entry->second.data();
+            for (size_t i = 0; i < entry->second.size(); i += kEntrySize) {
+                int64_t location = ReadInt64(bytes, i);
+                length_t offset = ReadUInt16(bytes, i + 8);
+
+                bool remove;
+
+                auto successor = successors.find(location);
+                if (successor == successors.end()) {
+                    remove = true;
+                } else {
+                    unordered_set<length_t> &successors_offsets = successor->second;
+                    remove = successors_offsets.find(offset + start) == successors_offsets.end();
+                }
+
+                if (!remove) {
+                    // TODO: Possibilità di speedup che dovrebbe vedersi in n-gram di ordine maggiore
+                    // evitare numerosi piccoli append, piuttosto cercare di raggrupparli
+                    // tenendo in memoria l'ultima posizione copiata (copyBegin e copyEnd)
+                    memcpy(&bytes[tail], &bytes[i], kEntrySize);
+                    tail += kEntrySize;
+                } else {
+                    entryCount--;
+                }
             }
 
-            if (!remove) {
-                // TODO: Possibilità di speedup che dovrebbe vedersi in n-gram di ordine maggiore
-                // evitare numerosi piccoli append, piuttosto cercare di raggrupparli
-                // tenendo in memoria l'ultima posizione copiata (copyBegin e copyEnd)
-                memcpy(&bytes[tail], &bytes[i], kEntrySize);
-                tail += kEntrySize;
-            }
+            deleteEntry = (tail == 0);
+            entry->second.resize(tail);
         }
 
-        if (tail == 0) {
+        if (deleteEntry) {
+            entryCount -= entry->second.size() / kEntrySize;
             entry = datamap.erase(entry);
         } else {
-            entry->second.resize(tail);
             ++entry;
         }
     }

@@ -134,11 +134,6 @@ bool RunTest(domain_t domain, SuffixArray &index, const unordered_map<vector<wid
         vector<sample_t> samples;
         index.GetRandomSamples(phrase, 0, samples, &context, false);
 
-        samples.erase(std::remove_if(samples.begin(), samples.end(),
-                                     [domain](const sample_t &sample) {
-                                         return sample.domain != domain;
-                                     }), samples.end());
-
         if (!VerifyIntegrity(domain, samples, phrase) ||
             CountSamples(samples) != expectedCount) {
             cout << "FAILED" << endl;

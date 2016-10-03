@@ -56,6 +56,11 @@ namespace mmt {
             return key;
         }
 
+        static inline domain_t GetDomainFromKey(const char *data, length_t prefixLength) {
+            size_t i = 1 + prefixLength * sizeof(wid_t);
+            return ReadUInt32(data, i);
+        }
+
         /* Values */
 
         static inline string SerializeGlobalInfo(const vector<seqid_t> &streams, int64_t storageSize) {

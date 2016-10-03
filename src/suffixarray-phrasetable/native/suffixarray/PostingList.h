@@ -20,6 +20,8 @@ namespace mmt {
         class PostingList {
         public:
 
+            static const size_t kEntrySize = sizeof(int64_t) + sizeof(length_t);
+
             PostingList();
 
             PostingList(const vector<wid_t> &phrase) :
@@ -48,7 +50,7 @@ namespace mmt {
             size_t entryCount;
             map<domain_t, vector<char>> datamap;
 
-            void GetLocationMap(unordered_map<int64_t, unordered_set<length_t>> &output) const;
+            void GetLocationMap(domain_t domain, unordered_map<int64_t, unordered_set<length_t>> &output) const;
 
             inline void Get(const vector<char> &chunk, size_t index, int64_t *outLocation, length_t *outOffset);
         };

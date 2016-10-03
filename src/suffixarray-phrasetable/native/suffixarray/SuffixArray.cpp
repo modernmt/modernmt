@@ -6,10 +6,9 @@
 #include "dbkv.h"
 #include <rocksdb/slice_transform.h>
 #include <rocksdb/merge_operator.h>
-#include <thread>
 #include <boost/filesystem.hpp>
+#include <thread>
 #include <iostream>
-#include <util/hashutils.h>
 
 namespace fs = boost::filesystem;
 
@@ -17,7 +16,6 @@ using namespace rocksdb;
 using namespace mmt;
 using namespace mmt::sapt;
 
-const domain_t mmt::sapt::kBackgroundModelDomain = 0;
 static const string kGlobalInfoKey = MakeEmptyKey(kGlobalInfoKeyType);
 
 /*
@@ -186,11 +184,21 @@ void SuffixArray::AddPrefixesToBatch(bool isSource, domain_t domain, const vecto
  */
 
 size_t SuffixArray::CountOccurrences(bool isSource, const vector<wid_t> &phrase) {
-    // TODO: otitmizzare nel caso phrase.size() < phraseLength
-    PostingList locations(phrase);
-    CollectLocations(isSource, kBackgroundModelDomain, phrase, locations);
+    size_t count = 0;
+    PrefixCursor *cursor = PrefixCursor::NewGlobalCursor(db, prefixLength, isSource);
 
-    return locations.size();
+    if (phrase.size() <= prefixLength) {
+        for (cursor->Seek(phrase); cursor->HasNext(); cursor->Next())
+            count += cursor->CountValue();
+    } else {
+        PostingList locations(phrase);
+        CollectLocations(cursor, phrase, locations);
+
+        count = locations.size();
+    }
+
+    delete cursor;
+    return count;
 }
 
 void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, vector<sample_t> &outSamples,
@@ -202,7 +210,10 @@ void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, ve
     if (context && !context->empty()) {
         for (auto score = context->begin(); score != context->end(); ++score) {
             PostingList inContextPostingList(phrase);
-            CollectLocations(true, score->domain, phrase, inContextPostingList);
+
+            PrefixCursor *cursor = PrefixCursor::NewDomainCursor(db, prefixLength, true, score->domain);
+            CollectLocations(cursor, phrase, inContextPostingList);
+            delete cursor;
 
             if (limit == 0 || inContextSize + inContextPostingList.size() <= limit) {
                 inContextPostingList.GetSamples(inContextSamples);
@@ -220,8 +231,12 @@ void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, ve
 
     if (searchInBackground && (limit == 0 || inContextSize < limit)) {
         PostingList outContextPostingList(phrase);
-        //TODO: search in background
-        throw runtime_error("Not implemented yet!");
+
+        PrefixCursor *cursor = PrefixCursor::NewGlobalCursor(db, prefixLength, true, context);
+        CollectLocations(cursor, phrase, outContextPostingList);
+        delete cursor;
+
+        outContextPostingList.GetSamples(outContextSamples, limit == 0 ? 0 : limit - inContextSize);
     }
 
     outSamples.clear();
@@ -232,11 +247,11 @@ void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, ve
         Retrieve(outContextSamples, outSamples);
 }
 
-void SuffixArray::CollectLocations(bool isSource, domain_t domain, const vector<wid_t> &sentence, PostingList &output) {
+void SuffixArray::CollectLocations(PrefixCursor *cursor, const vector<wid_t> &sentence, PostingList &output) {
     length_t sentenceLength = (length_t) sentence.size();
 
     if (sentenceLength <= prefixLength) {
-        CollectLocations(isSource, domain, sentence, 0, sentence.size(), output);
+        CollectLocations(cursor, sentence, 0, sentence.size(), output);
     } else {
         length_t start = 0;
         PostingList collected(sentence);
@@ -246,10 +261,10 @@ void SuffixArray::CollectLocations(bool isSource, domain_t domain, const vector<
                 start = sentenceLength - prefixLength;
 
             if (start == 0) {
-                CollectLocations(isSource, domain, sentence, start, prefixLength, collected);
+                CollectLocations(cursor, sentence, start, prefixLength, collected);
             } else {
                 PostingList successors(sentence, start, prefixLength);
-                CollectLocations(isSource, domain, sentence, start, prefixLength, successors);
+                CollectLocations(cursor, sentence, start, prefixLength, successors);
 
                 collected.Retain(successors, start);
             }
@@ -264,14 +279,11 @@ void SuffixArray::CollectLocations(bool isSource, domain_t domain, const vector<
     }
 }
 
-void SuffixArray::CollectLocations(bool isSource, domain_t domain,
-                                   const vector<wid_t> &phrase, size_t offset, size_t length,
+void SuffixArray::CollectLocations(PrefixCursor *cursor, const vector<wid_t> &phrase, size_t offset, size_t length,
                                    PostingList &output) {
-    string key = MakePrefixKey(prefixLength, isSource, domain, phrase, offset, length);
-    string value;
-    db->Get(ReadOptions(), key, &value);
-
-    output.Append(domain, value);
+    for (cursor->Seek(phrase, offset, length); cursor->HasNext(); cursor->Next()) {
+        cursor->CollectValue(output);
+    }
 }
 
 void SuffixArray::Retrieve(const samplemap_t &locations, vector<sample_t> &outSamples) {
