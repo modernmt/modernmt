@@ -108,34 +108,36 @@ int main(int argc, const char *argv[]) {
     if (!ParseArgs(argc, argv, &args))
         return ERROR_IN_COMMAND_LINE;
 
+    context_t *context = args.context.empty() ? NULL : &args.context;
+    size_t sample_limit = args.sample_limit;
+
     Options options;
 
     PhraseTable pt(args.model_path, options);
+
     if (!args.quiet) pt.setDebug(true);
 
-    std::cout << "Model loaded" << std::endl;
+    if (!args.quiet) {
+        std::cout << "Model loaded" << std::endl;
+        if (context) {
+            std::cout << "context->size():" << context->size() << std::endl;
+        } else {
+            std::cout << "context not provided" << std::endl;
+        }
+    }
 
     string line;
-
     std::vector<TranslationOption> outOptions;
-
-
-    context_t *context = args.context.empty() ? NULL : &args.context;
-    if (context){
-        std::cout << "context->size():" << context->size() << std::endl;
-    } else{
-        std::cout << "context not provided" << std::endl;
-    }
-    size_t sample_limit = args.sample_limit;
+    vector<wid_t> sourcePhrase;
 
     while (getline(cin, line)) {
-
-        vector<wid_t> sourcePhrase;
         ParseSentenceLine(line, sourcePhrase);
 
-        std::cout << "SourcePhrase:|";
-        for (auto w = sourcePhrase.begin(); w != sourcePhrase.end(); ++w) { std::cout << *w << " "; }
-        std::cout << "|" << std::endl;
+        if (!args.quiet) {
+            std::cout << "SourcePhrase:";
+            for (auto w = sourcePhrase.begin(); w != sourcePhrase.end(); ++w) { std::cout << *w << " "; }
+            std::cout << std::endl;
+        }
 
         pt.GetTargetPhraseCollection(sourcePhrase, sample_limit, outOptions, context);
 
@@ -144,6 +146,7 @@ int main(int argc, const char *argv[]) {
                 std::cout << *option << endl;
             }
         }
+        cout << "Found " << outOptions.size() << " options" << endl;
     }
 
     return SUCCESS;

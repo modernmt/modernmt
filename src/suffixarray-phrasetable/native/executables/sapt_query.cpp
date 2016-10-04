@@ -105,28 +105,34 @@ int main(int argc, const char *argv[]) {
     if (!ParseArgs(argc, argv, &args))
         return ERROR_IN_COMMAND_LINE;
 
+    context_t *context = args.context.empty() ? NULL : &args.context;
+
+    size_t sample_limit = args.sample_limit;
+
     Options options;
     SuffixArray index(args.model_path, options.prefix_length);
 
-    std::cerr << "Model loaded" << std::endl;
+    if (!args.quiet) {
+        std::cerr << "Model loaded" << std::endl;
+        if (context) {
+            std::cerr << "context->size():" << context->size() << std::endl;
+        } else {
+            std::cerr << "context not provided" << std::endl;
+        }
+    }
+
 
     string line;
     vector<wid_t> sourcePhrase;
 
-    context_t *context = args.context.empty() ? NULL : &args.context;
-    if (context){
-        std::cerr << "context->size():" << context->size() << std::endl;
-    } else{
-        std::cerr << "context not provided" << std::endl;
-    }
-    size_t sample_limit = args.sample_limit;
-
     while (getline(cin, line)) {
         ParseSentenceLine(line, sourcePhrase);
 
-        std::cerr << "SourcePhrase: ";
-        for (auto w = sourcePhrase.begin(); w != sourcePhrase.end(); ++w) { std::cerr << " " << *w; }
-        std::cerr << std::endl;
+        if (!args.quiet) {
+            std::cerr << "SourcePhrase: ";
+            for (auto w = sourcePhrase.begin(); w != sourcePhrase.end(); ++w) { std::cerr << " " << *w; }
+            std::cerr << std::endl;
+        }
 
         vector<sample_t> samples;
         index.GetRandomSamples(sourcePhrase, sample_limit, samples, context);
