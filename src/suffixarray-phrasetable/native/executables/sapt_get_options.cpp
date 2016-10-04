@@ -102,48 +102,52 @@ static inline void ParseSentenceLine(const string &line, vector<wid_t> &output) 
 }
 
 int main(int argc, const char *argv[]) {
-//    args_t args;
-//
-//    if (!ParseArgs(argc, argv, &args))
-//        return ERROR_IN_COMMAND_LINE;
-//
-//    Options options;
-//
-//    PhraseTable pt(args.model_path, options);
-//    std::cerr << "Model loaded" << std::endl;
-//
-//    string line;
-//
-//    std::vector<TranslationOption> outOptions;
-//
-//
-//    context_t *context = args.context.empty() ? NULL : &args.context;
-//    if (context){
-//        std::cerr << "context->size():" << context->size() << std::endl;
-//    } else{
-//        std::cerr << "context not provided" << std::endl;
-//    }
-//    size_t sample_limit = args.sample_limit;
-//
-//    while (getline(cin, line)) {
-//
-//        vector<wid_t> sourcePhrase;
-//        ParseSentenceLine(line, sourcePhrase);
-//
-//        std::cout << "SourcePhrase:|";
-//        for (auto w = sourcePhrase.begin(); w != sourcePhrase.end(); ++w) { std::cerr << *w << " "; }
-//        std::cout << "|" << std::endl;
-//
-//        pt.GetTargetPhraseCollection(sourcePhrase, sample_limit, outOptions, context);
-//
-//        std::cerr << "Found " << outOptions.size()  << " options" << std::endl;
-//
-//        if (!args.quiet) {
-//            for (auto option = outOptions.begin(); option != outOptions.end(); ++option) {
-//                option->Print();
-//            }
-//        }
-//    }
+
+    args_t args;
+
+    if (!ParseArgs(argc, argv, &args))
+        return ERROR_IN_COMMAND_LINE;
+
+    context_t *context = args.context.empty() ? NULL : &args.context;
+    size_t sample_limit = args.sample_limit;
+
+    Options options;
+
+    PhraseTable pt(args.model_path, options);
+
+    if (!args.quiet) pt.setDebug(true);
+
+    if (!args.quiet) {
+        std::cout << "Model loaded" << std::endl;
+        if (context) {
+            std::cout << "context->size():" << context->size() << std::endl;
+        } else {
+            std::cout << "context not provided" << std::endl;
+        }
+    }
+
+    string line;
+    std::vector<TranslationOption> outOptions;
+    vector<wid_t> sourcePhrase;
+
+    while (getline(cin, line)) {
+        ParseSentenceLine(line, sourcePhrase);
+
+        if (!args.quiet) {
+            std::cout << "SourcePhrase:";
+            for (auto w = sourcePhrase.begin(); w != sourcePhrase.end(); ++w) { std::cout << *w << " "; }
+            std::cout << std::endl;
+        }
+
+        pt.GetTargetPhraseCollection(sourcePhrase, sample_limit, outOptions, context);
+
+        if (!args.quiet) {
+            for (auto option = outOptions.begin(); option != outOptions.end(); ++option) {
+                std::cout << *option << endl;
+            }
+        }
+        cout << "Found " << outOptions.size() << " options" << endl;
+    }
 
     return SUCCESS;
 }

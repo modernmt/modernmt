@@ -39,7 +39,7 @@ namespace mmt {
             alignment_t alignment;
             vector<length_t> offsets;
 
-            string ToString() {
+            string ToString() const{
                 ostringstream repr;
                 repr << "(" << domain << ")";
 
@@ -56,6 +56,12 @@ namespace mmt {
                     repr << " " << *o;
 
                 return repr.str();
+            }
+//friend
+            friend std::ostream &operator<<(std::ostream &os, const sample_t &sample)
+            {
+                os << sample.ToString();
+                return os;
             }
         };
 
