@@ -133,7 +133,7 @@ int main(int argc, const char *argv[]) {
 
         if (!args.quiet) {
             for (auto sample = samples.begin(); sample != samples.end(); ++sample)
-                sample->Print();
+                cout << sample->ToString() << endl;
         }
 
         cout << "Found " << samples.size() << " samples" << endl;
