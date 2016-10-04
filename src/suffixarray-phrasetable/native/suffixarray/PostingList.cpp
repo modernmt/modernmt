@@ -111,9 +111,6 @@ void PostingList::Retain(const PostingList &other, length_t start) {
                 }
 
                 if (!remove) {
-                    // TODO: Possibilità di speedup che dovrebbe vedersi in n-gram di ordine maggiore
-                    // evitare numerosi piccoli append, piuttosto cercare di raggrupparli
-                    // tenendo in memoria l'ultima posizione copiata (copyBegin e copyEnd)
                     memcpy(&bytes[tail], &bytes[i], kEntrySize);
                     tail += kEntrySize;
                 } else {
@@ -143,26 +140,25 @@ string PostingList::Serialize() const {
     return buffer;
 }
 
-void PostingList::GetSamples(samplemap_t &output, size_t limit) {
+void PostingList::GetLocations(vector<location_t> &output, size_t limit) {
     if (empty())
         return;
+
+    output.clear();
+    output.reserve(limit == 0 ? size() : limit);
 
     if (limit == 0 || size() <= limit) {
         // Collect all
         for (auto entry = datamap.begin(); entry != datamap.end(); ++entry) {
-            unordered_map<int64_t, vector<length_t>> &outEntry = output[entry->first];
-
             for (size_t i = 0; i < entry->second.size(); i += kEntrySize) {
                 int64_t location;
                 length_t offset;
 
                 Get(entry->second, i, &location, &offset);
-                outEntry[location].push_back(offset);
+                output.push_back(location_t(location, offset, entry->first));
             }
         }
     } else {
-        assert(phraseHash != 0);
-
         vector<size_t> sequence;
         GenerateRandomSequence(size(), limit, phraseHash, sequence);
         sort(sequence.begin(), sequence.end());
@@ -170,30 +166,31 @@ void PostingList::GetSamples(samplemap_t &output, size_t limit) {
         auto sequencePtr = sequence.begin();
         size_t dataOffset = 0;
 
-        for (auto entry = datamap.begin(); entry != datamap.end() && sequencePtr != sequence.end(); ++entry) {
-            unordered_map<int64_t, vector<length_t>> *outEntry = NULL;
 
-            size_t i = (*sequencePtr) * kEntrySize;
-            if (i < dataOffset + entry->second.size())
-                outEntry = &(output[entry->first]);
+        for (auto entry = datamap.begin(); entry != datamap.end() && sequencePtr != sequence.end(); ++entry) {//
+            size_t i;
 
-            while (i < dataOffset + entry->second.size() && sequencePtr != sequence.end()) {
+            while ((i = (*sequencePtr) * kEntrySize) < dataOffset + entry->second.size()
+                   && sequencePtr != sequence.end()) {
                 int64_t location;
                 length_t offset;
 
                 Get(entry->second, i - dataOffset, &location, &offset);
-                (*outEntry)[location].push_back(offset);
+                output.push_back(location_t(location, offset, entry->first));
 
                 sequencePtr++;
-                i = (*sequencePtr) * kEntrySize;
             }
 
             dataOffset += entry->second.size();
         }
     }
+
+    sort(output.begin(), output.end(), [](const location_t &a, const location_t &b) {
+        return a.pointer == b.pointer ? a.offset > b.offset : a.pointer > b.pointer;
+    });
 }
 
-void PostingList::Get(const vector<char> &chunk, size_t index, int64_t *outLocation, length_t *outOffset) {
+inline void PostingList::Get(const vector<char> &chunk, size_t index, int64_t *outLocation, length_t *outOffset) {
     const char *bytes = chunk.data();
     *outLocation = ReadInt64(bytes, index);
     *outOffset = ReadUInt16(bytes, index + 8);

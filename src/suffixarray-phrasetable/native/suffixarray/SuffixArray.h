@@ -95,7 +95,7 @@ namespace mmt {
             void CollectLocations(PrefixCursor *cursor, const vector<wid_t> &phrase, size_t offset, size_t length,
                                   PostingList &output);
 
-            void Retrieve(const samplemap_t &locations, vector<sample_t> &outSamples);
+            void Retrieve(const vector<location_t> &locations, vector<sample_t> &outSamples);
         };
 
     }

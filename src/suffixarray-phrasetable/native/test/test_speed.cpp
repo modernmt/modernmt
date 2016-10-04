@@ -72,7 +72,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
             ("input,i", po::value<string>()->required(), "input folder with input corpora")
             ("domain,d", po::value<domain_t>()->required(), "domain for data loading")
             ("context,c", po::value<string>(), "context map in the format <id>:<w>[,<id>:<w>]")
-            ("order", po::value<uint8_t>(), "order (default = 16)");
+            ("order", po::value<unsigned int>(), "order (default = 16)");
 
     po::variables_map vm;
     try {
@@ -97,7 +97,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
         }
 
         if (vm.count("order"))
-            args->order = vm["order"].as<uint8_t>();
+            args->order = vm["order"].as<unsigned int>();
     } catch (po::error &e) {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         std::cerr << desc << std::endl;
@@ -129,7 +129,7 @@ void RunTest(const context_t *context, SuffixArray &index,
     size_t ngramsCount = ngrams.size();
     size_t currentCount = 0;
 
-    speed.requests += ngramsCount;
+    double totalElapsedTime = 0;
 
     for (auto entry = ngrams.begin(); entry != ngrams.end(); ++entry) {
         const vector<wid_t> &phrase = entry->first;
@@ -137,14 +137,18 @@ void RunTest(const context_t *context, SuffixArray &index,
         double begin = GetTime();
         vector<sample_t> samples;
         index.GetRandomSamples(phrase, 1000, samples, context, true);
-        speed.seconds += GetElapsedTime(begin);
+        totalElapsedTime += GetElapsedTime(begin);
 
         currentCount++;
 
         if (currentCount % 10000 == 0)
             cout << "." << flush;
     }
-    cout << "." << endl;
+    cout << "." << ngramsCount << " queries in " << totalElapsedTime << " seconds, speed is "
+         << (((double) ngramsCount) / totalElapsedTime) << " q/s" << endl;
+
+    speed.requests += ngramsCount;
+    speed.seconds += totalElapsedTime;
 }
 
 // --------------

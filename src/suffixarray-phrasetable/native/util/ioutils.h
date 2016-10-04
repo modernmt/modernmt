@@ -23,6 +23,17 @@ static inline void WriteUInt32(char *buffer, size_t *ptr, uint32_t value) {
     *ptr = *ptr + 4;
 }
 
+static inline void WriteInt64(char *buffer, size_t i, int64_t value) {
+    buffer[i] = (char) (value & 0xFF);
+    buffer[i + 1] = (char) ((value >> 8) & 0xFF);
+    buffer[i + 2] = (char) ((value >> 16) & 0xFF);
+    buffer[i + 3] = (char) ((value >> 24) & 0xFF);
+    buffer[i + 4] = (char) ((value >> 32) & 0xFF);
+    buffer[i + 5] = (char) ((value >> 40) & 0xFF);
+    buffer[i + 6] = (char) ((value >> 48) & 0xFF);
+    buffer[i + 7] = (char) ((value >> 56) & 0xFF);
+}
+
 static inline void WriteInt64(char *buffer, size_t *ptr, int64_t value) {
     buffer[*ptr] = (char) (value & 0xFF);
     buffer[*ptr + 1] = (char) ((value >> 8) & 0xFF);

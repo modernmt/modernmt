@@ -15,7 +15,14 @@ using namespace std;
 namespace mmt {
     namespace sapt {
 
-        typedef unordered_map<domain_t, unordered_map<int64_t, vector<length_t>>> samplemap_t;
+        struct location_t {
+            int64_t pointer;
+            length_t offset;
+            domain_t domain;
+
+            location_t(int64_t pointer, length_t offset, domain_t domain) : pointer(pointer), offset(offset),
+                                                                            domain(domain) {}
+        };
 
         class PostingList {
         public:
@@ -37,7 +44,7 @@ namespace mmt {
 
             void Retain(const PostingList &successors, length_t start);
 
-            void GetSamples(samplemap_t &output, size_t limit = 0);
+            void GetLocations(vector<location_t> &output, size_t limit = 0);
 
             bool empty() const;
 
