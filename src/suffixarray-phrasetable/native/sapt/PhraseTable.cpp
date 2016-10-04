@@ -20,7 +20,7 @@ PhraseTable::PhraseTable(const string &modelPath, const Options &options) {
     self = new pt_private();
     self->index = new SuffixArray(modelPath, options.prefix_length);
     self->updates = new UpdateManager(self->index, options.update_buffer_size, options.update_max_delay);
-    numScoreComponent = options.numScoreComponent;
+    numScoreComponent = 4;
 }
 
 PhraseTable::~PhraseTable() {
@@ -52,54 +52,163 @@ vector<updateid_t> PhraseTable::GetLatestUpdatesIdentifier() {
 void *PhraseTable::__GetSuffixArray() {
     return self->index;
 }
-void PhraseTable::GetTargetPhraseCollection(const vector<wid_t> &sourcePhrase, vector<TranslationOption> &outOptions, context_t *context) {
+void PhraseTable::GetTargetPhraseCollection(const vector<wid_t> &sourcePhrase, size_t limit, vector<TranslationOption> &optionsVec, context_t *context) {
 
-    cout << "sourcePhrase.size():" << sourcePhrase.size()  << endl;
-    std::cerr << "SourcePhrase:|";
-    for (auto w = sourcePhrase.begin(); w != sourcePhrase.end(); ++w) { std::cerr << *w << " "; }
-    std::cerr << "|" << std::endl;
+    OptionsMap_t optionsMap;
 
     vector<sample_t> samples;
-    self->index->GetRandomSamples(sourcePhrase, 10, samples, context);
+    self->index->GetRandomSamples(sourcePhrase, limit, samples, context);
 
-    cout << "Found " << samples.size() << " samples" << endl;
-
-    std::cerr << "Found " << samples.size()  << " samples" << std::endl;
+    cout << "PhraseTable::GetTargetPhraseCollection(...) Found " << samples.size() << " samples" << endl;
 
     for (auto sample=samples.begin(); sample != samples.end(); ++ sample){
-/*        std::cerr << "Source:|";
-        for (auto w = sample->source.begin(); w != sample->source.end(); ++w) { std::cerr << *w << " "; }
-        std::cerr << "| Target:|";
-        for (auto w = sample->target.begin(); w != sample->target.end(); ++w) { std::cerr << *w << " "; }
-        std::cerr << "| Offset:|";
-        for (auto o = sample->offsets.begin(); o != sample->offsets.end(); ++o) { std::cerr << *o << " "; }
-        std::cerr << "| Alignemnt:|";
-        for (auto a = sample->alignment.begin(); a != sample->alignment.end(); ++a) { std::cerr << a->first << "-" << a->second << " "; }
-        std::cerr << "|";
-        std::cerr << " Domain:|" << sample->domain << "|" << std::endl;*/
-
-        //GetTranslationOptions(sourcePhrase, *sample, outOptions);
-        //GetTranslationOptions(sourcePhrase, outOptions);
-        GetTranslationOptions(sourcePhrase, sample->source, sample->target, sample->alignment, sample->offsets, outOptions);
+        //sample->Print();
+        //std::cout << "sample->source.size():" << sample->source.size() << " sample->target.size():" << sample->target.size()<< std::endl;
+        //GetTranslationOptions(sourcePhrase, sample->source, sample->target, sample->alignment, sample->offsets, optionsVec);
+        GetTranslationOptions(sourcePhrase, sample->source, sample->target, sample->alignment, sample->offsets, optionsMap);
     }
-    std::cerr << "Found " << outOptions.size()  << " options" << std::endl;
+    //std::cerr << "PhraseTable::GetTargetPhraseCollection(...) Found " << optionsVec.size()  << " options" << std::endl;
+    //std::cerr << "PhraseTable::GetTargetPhraseCollection(...) Found and Scoring " << optionsMap.size()  << " options" << std::endl;
 
     //loop over all Options and score them
+    ScoreTranslationOptions(optionsMap, samples.size());
+
+    //transform the map into a vector
+    for (auto entry = optionsMap.begin(); entry != optionsMap.end(); ++entry) {
+        //entry->first.Print();
+        optionsVec.push_back(entry->first);
+    }
 };
+
+void PhraseTable::ScoreTranslationOptions(OptionsMap_t &optionsMap, size_t NumberOfSamples){
+    size_t GlobalSourceFrequency = 1;
+    size_t GlobalTargetFrequency = 1;
+    size_t SampleSourceFrequency = 0;
+    for (auto entry = optionsMap.begin(); entry != optionsMap.end(); ++ entry) {
+        SampleSourceFrequency += entry->second;
+    }
+    for (auto entry = optionsMap.begin(); entry != optionsMap.end(); ++ entry) {
+
+        std::vector<float> scores(numScoreComponent);
+
+        //set the forward and backward frequency-based scores of the current option
+        scores[0] = (float) entry->second / SampleSourceFrequency;
+        scores[1] = ((float) entry->second / GlobalTargetFrequency) * ((float) GlobalSourceFrequency / NumberOfSamples);
+
+        //set the forward and backward lexical scores of the current option
+        scores[2] = 0.0;
+        scores[3] = 0.0;
+        for (auto a = entry->first.alignment.begin(); a != entry->first.alignment.end(); ++a) {
+            scores[2] += GetForwardLexicalScore(a->first, a->second);
+            scores[3] += GetBackwardLexicalScore(a->first, a->second);
+        }
+        ((TranslationOption*) &entry->first)->SetScores(scores);
+    }
+}
+
+float PhraseTable::GetForwardLexicalScore(length_t sourceWord, length_t targetWord){
+    return 0.1;
+}
+
+float PhraseTable::GetBackwardLexicalScore(length_t sourceWord, length_t targetWord){
+    return 0.2;
+}
+
 
 void PhraseTable::GetTranslationOptions(const vector<wid_t> &sourcePhrase,
                                         const std::vector<wid_t> &sourceSentence,
                                         const std::vector<wid_t> &targetSentence,
                                         const alignment_t &alignment,
                                         const std::vector<length_t> &offsets,
-                                        std::vector<TranslationOption> &outOptions){
+                                        OptionsMap_t &optionsMap){
 
 //void PhraseTable::GetTranslationOptions(const vector<wid_t> &sourcePhrase, sample_t &sample, vector<TranslationOption> &outOptions) {
 
 // Keeps a vector to know whether a target word is aligned.
     std::vector<bool> targetAligned(targetSentence.size(),false);
 
+
+    /*   alignment_t corrected_alignment;
+    for (auto alignPoint = alignment.begin(); alignPoint != alignment.end(); ++alignPoint) {
+        if ((alignPoint->first < sourceSentence.size()) && (alignPoint->second < targetSentence.size())) {
+            corrected_alignment.push_back(*alignPoint);
+        }
+    }
+    */
+    //for (auto alignPoint = corrected_alignment.begin(); alignPoint != corrected_alignment.end(); ++alignPoint){
     for (auto alignPoint = alignment.begin(); alignPoint != alignment.end(); ++alignPoint){
+        if ((alignPoint->first < sourceSentence.size()) && (alignPoint->second < targetSentence.size())) {
+            targetAligned[alignPoint->second] = true;
+        }
+    }
+
+    for (auto offset = offsets.begin(); offset != offsets.end(); ++ offset){ //for each occurrence of the source in the sampled sentence pair
+            //get source position lowerBound  and  upperBound
+        int sourceStart = *offset; // lowerBound is always larger than or equal to 0
+        int sourceEnd = sourceStart + sourcePhrase.size() - 1; // upperBound is always larger than or equal to 0, because sourcePhrase.size()>=1
+
+        // find the minimally matching foreign phrase
+        int targetStart = targetSentence.size() - 1;
+        int targetEnd = -1;
+
+        //for (auto alignPoint = corrected_alignment.begin(); alignPoint != corrected_alignment.end(); ++alignPoint) {
+        for (auto alignPoint = alignment.begin(); alignPoint != alignment.end(); ++alignPoint) {
+            if ((alignPoint->first < sourceSentence.size()) && (alignPoint->second < targetSentence.size())) {
+                if ((alignPoint->first >= sourceStart) && (alignPoint->first <= sourceEnd)) {
+                    targetStart = std::min((int) alignPoint->second, targetStart);
+                    targetEnd = std::max((int) alignPoint->second, targetEnd);
+                }
+            }
+        }
+
+        alignment_t considered_alignment;
+        //for (auto alignPoint = corrected_alignment.begin(); alignPoint != corrected_alignment.end(); ++alignPoint) {
+        for (auto alignPoint = alignment.begin(); alignPoint != alignment.end(); ++alignPoint) {
+            //std::cerr << "\n\nalignPoint->first:" << alignPoint->first << " alignPoint->second:" << alignPoint->second << std::endl;
+
+            if ((alignPoint->first < sourceSentence.size()) && (alignPoint->second < targetSentence.size())) {
+                if ( ((alignPoint->first >= sourceStart) && (alignPoint->first <= sourceEnd)) || ((alignPoint->second >= targetStart) && (alignPoint->second <= targetEnd)) ){
+                    considered_alignment.push_back(*alignPoint);
+                }
+            }
+        }
+
+/*
+        std::cout <<"Considered " << considered_alignment.size() << " points ";
+        for (auto point = considered_alignment.begin(); point != considered_alignment.end(); ++ point) {
+            std::cout << " " << point->first << "," << point->second;
+        }
+        std::cout << std::endl;
+*/
+
+
+        //std::cerr << "calling ExtractPhrasePairs for range [" << sourceStart << "," << sourceEnd << "][" << targetStart << "," << targetEnd << "]" << std::endl;
+
+        //ExtractPhrasePairs(sourceSentence, targetSentence, corrected_alignment, targetAligned, sourceStart, sourceEnd, targetStart, targetEnd, outOptions); //add all extracted phrase pairs into outOptions
+        //ExtractPhrasePairs(sourceSentence, targetSentence, corrected_alignment, targetAligned, sourceStart, sourceEnd, targetStart, targetEnd, optionsMap); //add all extracted phrase pairs into outOptions
+        ExtractPhrasePairs(sourceSentence, targetSentence, considered_alignment, targetAligned, sourceStart, sourceEnd, targetStart, targetEnd, optionsMap); //add all extracted phrase pairs into outOptions
+    }
+}
+
+void PhraseTable::GetTranslationOptions(const vector<wid_t> &sourcePhrase,
+                                        const std::vector<wid_t> &sourceSentence,
+                                        const std::vector<wid_t> &targetSentence,
+                                        const alignment_t &alignment,
+                                        const std::vector<length_t> &offsets,
+                                        OptionsVec_t &optionsVec){
+
+//void PhraseTable::GetTranslationOptions(const vector<wid_t> &sourcePhrase, sample_t &sample, vector<TranslationOption> &outOptions) {
+
+// Keeps a vector to know whether a target word is aligned.
+    std::vector<bool> targetAligned(targetSentence.size(),false);
+
+    alignment_t corrected_alignment;
+    for (auto alignPoint = alignment.begin(); alignPoint != alignment.end(); ++alignPoint) {
+        if ( (alignPoint->first < sourceSentence.size()) && (alignPoint->second < targetSentence.size())) {
+            corrected_alignment.push_back(*alignPoint);
+        }
+    }
+    for (auto alignPoint = corrected_alignment.begin(); alignPoint != corrected_alignment.end(); ++alignPoint){
         targetAligned[alignPoint->second] = true;
     }
 
@@ -116,10 +225,10 @@ void PhraseTable::GetTranslationOptions(const vector<wid_t> &sourcePhrase,
         int targetStart = targetSentence.size() - 1;
         int targetEnd = -1;
 
-        for (auto alignPoint = alignment.begin(); alignPoint != alignment.end(); ++alignPoint) {
+        for (auto alignPoint = corrected_alignment.begin(); alignPoint != corrected_alignment.end(); ++alignPoint) {
 //            std::cerr << "\n\nalignPoint->first:" << alignPoint->first << " alignPoint->second:" << alignPoint->second << std::endl;
 
-            if ( (alignPoint->first >= sourceStart ) && (alignPoint->first <= sourceEnd ) ){
+            if ( (alignPoint->first >= sourceStart ) && (alignPoint->first <= sourceEnd ) ) {
                 targetStart = std::min((int) alignPoint->second, targetStart);
                 targetEnd = std::max((int) alignPoint->second, targetEnd);
             }
@@ -129,7 +238,7 @@ void PhraseTable::GetTranslationOptions(const vector<wid_t> &sourcePhrase,
         std::cerr << "calling ExtractPhrasePairs with " << std::endl;
         std::cerr << "sourceStart:" << sourceStart << " sourceEnd:" << sourceEnd << " targetStart:" << targetStart << " targetEnd:" << targetEnd << std::endl;
 
-        ExtractPhrasePairs(sourceSentence, targetSentence, alignment, targetAligned, sourceStart, sourceEnd, targetStart, targetEnd, outOptions); //add all extracted phrase pairs into outOptions
+        ExtractPhrasePairs(sourceSentence, targetSentence, corrected_alignment, targetAligned, sourceStart, sourceEnd, targetStart, targetEnd, optionsVec); //add all extracted phrase pairs into outOptions
 
     }
 }
@@ -139,8 +248,8 @@ void PhraseTable::ExtractPhrasePairs(const std::vector<wid_t> &sourceSentence,
                                      const std::vector<wid_t> &targetSentence,
                                      const alignment_t &alignment,
                                      const std::vector<bool> &targetAligned,
-                                     length_t sourceStart, length_t sourceEnd, int targetStart, int targetEnd,
-                                     std::vector<TranslationOption> &outOptions) {
+                                     int sourceStart, int sourceEnd, int targetStart, int targetEnd,
+                                     OptionsMap_t &optionsMap) {
 
     if (targetEnd < 0) // 0-based indexing.
         return;
@@ -149,24 +258,108 @@ void PhraseTable::ExtractPhrasePairs(const std::vector<wid_t> &sourceSentence,
     alignment_t currentAlignments;
     for (auto alignPoint = alignment.begin(); alignPoint != alignment.end(); ++alignPoint) {
 
-        if (((alignPoint->first >= sourceStart) && (alignPoint->first <= sourceEnd)) &&
-            ((alignPoint->second < targetStart) && (alignPoint->second > targetEnd))) {
+        //std::cout << "PhraseTable::ExtractPhrasePairs(...)  checking " << alignPoint->first << "," << alignPoint->second << " versus range [" << sourceStart << "," << sourceEnd << "][" << targetStart << "," << targetEnd << "]";
+
+        //checking whether there are other alignment points outside the current phrase pair; if yes, return doing nothing, because the phrase pair is not valid
+        if ( ( (alignPoint->first >= sourceStart) && (alignPoint->first <= sourceEnd) ) &&  ( (alignPoint->second < targetStart) || (alignPoint->second > targetEnd) ) ){
+            //std::cout << " INVALID" << std::endl;;
             return;
         }
-        currentAlignments.push_back(*alignPoint);
+        if ( ( (alignPoint->second >= targetStart) && (alignPoint->second <= targetEnd) ) && ( (alignPoint->first < sourceStart) || (alignPoint->first > sourceEnd) ) ){
+            //std::cout << " INVALID" << std::endl;;
+            return;
+        }
+
+        alignmentPoint_t currentPoint(alignPoint->first - sourceStart, alignPoint->second - targetStart);
+        currentAlignments.push_back(currentPoint);
     }
+    /*
+    std::cout << "Selected " << currentAlignments.size() << " points:";
+    for (auto alignPoint = currentAlignments.begin(); alignPoint != currentAlignments.end(); ++alignPoint) {
+        std::cout << " " << alignPoint->first << "," << alignPoint->second;
+    }
+    std::cout << std::endl;
+    */
 
     int ts = targetStart;
     while (true) {
         int te = targetEnd;
         while (true) {
+            //std::cout << " current from:" << ts << " to " << te << " targetSentence.size():" << targetSentence.size() << std::endl;
 // add phrase pair ([e_start, e_end], [fs, fe]) to set E
             TranslationOption option(numScoreComponent);
+            //std::cout << "targetPhrase will be from:" << ts << " to " << te << std::endl;
+            option.targetPhrase.insert(option.targetPhrase.begin(),
+                                       targetSentence.begin() + ts,
+                                       targetSentence.begin() + te + 1);
+            option.alignment = currentAlignments;
+
+            auto key = optionsMap.find(option);
+            if (key != optionsMap.end()) {
+                key->second += 1;
+            } else {
+                optionsMap.insert(std::make_pair(option,1));
+            }
+            //std::cerr << "PhraseTable::ExtractPhrasePairs(...) Found " << optionsMap.size()  << " options" << std::endl;
+
+            te += 1;
+// if fe is in word alignment or out-of-bounds
+            if (targetAligned[te] || te == targetSentence.size()) {
+                break;
+            }
+        }
+        ts -= 1;
+// if fs is in word alignment or out-of-bounds
+        if (targetAligned[ts] || ts < 0) {
+            break;
+        }
+    }
+}
+
+void PhraseTable::ExtractPhrasePairs(const std::vector<wid_t> &sourceSentence,
+                                     const std::vector<wid_t> &targetSentence,
+                                     const alignment_t &alignment,
+                                     const std::vector<bool> &targetAligned,
+                                     int sourceStart, int sourceEnd, int targetStart, int targetEnd,
+                                     OptionsVec_t &optionsVec) {
+
+    if (targetEnd < 0) // 0-based indexing.
+        return;
+
+// Check if alignment points are consistent. if yes, copy
+    alignment_t currentAlignments;
+    for (auto alignPoint = alignment.begin(); alignPoint != alignment.end(); ++alignPoint) {
+
+        //std::cout << "checking alignPoint->first:" << alignPoint->first << " alignPoint->second:" << alignPoint->second << " versus sourceStart:" << sourceStart << " sourceEnd:" << sourceEnd << " targetStart:" << targetStart << " targetEnd:" << targetEnd << std::endl;
+
+        if ((alignPoint->first >= sourceStart) && (alignPoint->first <= sourceEnd)) {
+            std::cout << "adding alignPoint->first:" << alignPoint->first << " alignPoint->second:" << alignPoint->second << std::endl;
+            alignmentPoint_t currentPoint(alignPoint->first,alignPoint->second);
+            currentAlignments.push_back(currentPoint);
+            std::cout << "now (possible) currentAlignments.size():" << currentAlignments.size() << std::endl;
+
+
+            if ((alignPoint->second < targetStart) && (alignPoint->second > targetEnd)) {
+                std::cout << "alignmentPoint not valid; hence, phrase pair is not legal" << std::endl;
+                return;
+            }
+        }
+    }
+    std::cout << "Final currentAlignments.size():" << currentAlignments.size() << std::endl;
+
+    int ts = targetStart;
+    while (true) {
+        int te = targetEnd;
+        while (true) {
+            std::cout << " current from:" << ts << " to " << te << " targetSentence.size():" << targetSentence.size()<< std::endl;
+// add phrase pair ([e_start, e_end], [fs, fe]) to set E
+            TranslationOption option(numScoreComponent);
+            std::cout << "targetPhrase will be from:" << ts << " to " << te << std::endl;
             option.targetPhrase.insert(option.targetPhrase.begin(), targetSentence.begin() + ts,
                                        targetSentence.begin() + te + 1);
             option.alignment = currentAlignments;
 
-            outOptions.push_back(option);
+            optionsVec.push_back(option);
             te += 1;
 // if fe is in word alignment or out-of-bounds
             if (targetAligned[te] || te == targetSentence.size()) {

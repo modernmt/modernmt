@@ -40,9 +40,6 @@ namespace mmt {
             // to the user.
             double update_max_delay = 2.; // seconds
 
-
-            double numScoreComponent = 4; // number of scores provided by the Phrase Table
-
             Options() {};
         };
 
