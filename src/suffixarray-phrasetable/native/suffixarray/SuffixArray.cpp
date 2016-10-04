@@ -8,7 +8,6 @@
 #include <rocksdb/merge_operator.h>
 #include <boost/filesystem.hpp>
 #include <thread>
-#include <iostream>
 
 namespace fs = boost::filesystem;
 

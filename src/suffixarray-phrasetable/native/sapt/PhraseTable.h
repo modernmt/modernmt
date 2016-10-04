@@ -5,6 +5,8 @@
 #ifndef SAPT_PHRASETABLE_H
 #define SAPT_PHRASETABLE_H
 
+#include <iostream>
+#include <sstream>
 #include <map>
 
 #include <mmt/IncrementalModel.h>
@@ -31,16 +33,25 @@ namespace mmt {
                 targetPhrase.assign(tp.begin(),tp.end());
             }
 
-            void Print() const {
+            string ToString() const {
+                ostringstream repr;
                 for (auto w = targetPhrase.begin(); w != targetPhrase.end(); ++w)
-                    std::cerr << *w << " ";
-                std::cout << " |||";
+                    repr << *w << " ";
+                repr << " |||";
                 for (auto a = alignment.begin(); a != alignment.end(); ++a)
-                    std::cout << " " << a->first << "-" << a->second;
-                std::cout << " |||";
+                    repr << " " << a->first << "-" << a->second;
+                repr << " |||";
                 for (auto o = scores.begin(); o != scores.end(); ++o)
-                    std::cout << " " << *o;
-                std::cout << std::endl;
+                    repr << " " << *o;
+
+                return repr.str();
+            }
+
+//friend
+            friend std::ostream &operator<<(std::ostream &os, const TranslationOption &option)
+            {
+                os << option.ToString();
+                return os;
             }
         };
 
@@ -90,10 +101,19 @@ namespace mmt {
 
             virtual vector<updateid_t> GetLatestUpdatesIdentifier() override;
 
+            bool isDebug() const {
+                return debug;
+            }
+
+            void setDebug(bool debug) {
+                PhraseTable::debug = debug;
+            }
+
         private:
             struct pt_private;
             pt_private *self;
             size_t numScoreComponent;
+            bool debug;
 
             void GetTranslationOptions(const vector<wid_t> &sourcePhrase,
                                        const std::vector<wid_t> &sourceSentence,
@@ -102,13 +122,6 @@ namespace mmt {
                                        const std::vector<length_t> &offsets,
                                        OptionsMap_t &optionsMap);
 
-            void GetTranslationOptions(const vector<wid_t> &sourcePhrase,
-                                       const std::vector<wid_t> &sourceSentence,
-                                       const std::vector<wid_t> &targetSentence,
-                                       const alignment_t &alignment,
-                                       const std::vector<length_t> &offsets,
-                                       OptionsVec_t &optionsVec);
-
             void ExtractPhrasePairs(const std::vector<wid_t> &sourceSentence,
                                     const std::vector<wid_t> &targetSentence,
                                     const alignment_t &alignment,
@@ -116,14 +129,7 @@ namespace mmt {
                                     int sourceStart, int sourceEnd, int targetStart, int targetEnd,
                                     OptionsMap_t &optionsMap);
 
-            void ExtractPhrasePairs(const std::vector<wid_t> &sourceSentence,
-                                    const std::vector<wid_t> &targetSentence,
-                                    const alignment_t &alignment,
-                                    const std::vector<bool> &targetAligned,
-                                    int sourceStart, int sourceEnd, int targetStart, int targetEnd,
-                                    OptionsVec_t &optionsVec);
-
-            void ScoreTranslationOptions(OptionsMap_t &optionsMap, size_t NumberOfSamples);
+            void ScoreTranslationOptions(OptionsMap_t &optionsMap, const vector<wid_t> &sourcePhrase, size_t NumberOfSamples);
 
             float GetForwardLexicalScore(length_t sourceWord, length_t targetWord);
             float GetBackwardLexicalScore(length_t sourceWord, length_t targetWord);

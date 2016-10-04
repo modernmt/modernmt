@@ -78,7 +78,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
 
         if (vm.count("quiet"))
             args->quiet = true;
-        
+
     } catch (po::error &e) {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         std::cerr << desc << std::endl;
@@ -133,7 +133,8 @@ int main(int argc, const char *argv[]) {
 
         if (!args.quiet) {
             for (auto sample = samples.begin(); sample != samples.end(); ++sample)
-                sample->Print();
+                std::cout << *sample << endl;
+
         }
 
         cout << "Found " << samples.size() << " samples" << endl;
