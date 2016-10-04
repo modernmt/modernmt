@@ -102,6 +102,7 @@ static inline void ParseSentenceLine(const string &line, vector<wid_t> &output) 
 }
 
 int main(int argc, const char *argv[]) {
+
     args_t args;
 
     if (!ParseArgs(argc, argv, &args))

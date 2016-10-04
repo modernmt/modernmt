@@ -89,11 +89,8 @@ NGramTable LoadTable(const args_t &args) {
 
 // ------ Testing
 
-bool VerifyIntegrity(domain_t domain, const vector<sample_t> &samples, const vector<wid_t> &phrase) {
+bool VerifyIntegrity(const vector<sample_t> &samples, const vector<wid_t> &phrase) {
     for (auto sample = samples.begin(); sample != samples.end(); ++sample) {
-        if (sample->domain != domain)
-            return false;
-
         if (sample->offsets.empty())
             return false;
 
@@ -132,11 +129,20 @@ bool RunTest(domain_t domain, SuffixArray &index, const unordered_map<vector<wid
         size_t expectedCount = entry->second;
 
         vector<sample_t> samples;
-        index.GetRandomSamples(phrase, 0, samples, &context, false);
+        index.GetRandomSamples(phrase, expectedCount + 100, samples, &context);
 
-        if (!VerifyIntegrity(domain, samples, phrase) ||
-            CountSamples(samples) != expectedCount) {
-            cout << "FAILED" << endl;
+        if (!VerifyIntegrity(samples, phrase)) {
+            cout << "VerifyIntegrity::FAILED" << endl;
+            return false;
+        }
+
+        samples.erase(std::remove_if(samples.begin(), samples.end(),
+                                     [domain](const sample_t &sample) {
+                                         return sample.domain != domain;
+                                     }), samples.end());
+
+        if (CountSamples(samples) != expectedCount) {
+            cout << "CountSamples::FAILED" << endl;
             return false;
         }
 
