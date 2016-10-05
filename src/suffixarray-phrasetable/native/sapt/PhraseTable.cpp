@@ -90,11 +90,17 @@ void PhraseTable::ScoreTranslationOptions(OptionsMap_t &optionsMap, const vector
     for (auto entry = optionsMap.begin(); entry != optionsMap.end(); ++ entry) {
         size_t GlobalTargetFrequency = self->index->CountOccurrences(false, entry->first.targetPhrase);
 
+        if (debug) std::cout << "options is:|" << entry->first
+                   << " Frequency:" << entry->second << " SampleSourceFrequency:" << SampleSourceFrequency
+                   << " GlobalSourceFrequency:"<< GlobalSourceFrequency << " GlobalTargetFrequency:" << GlobalTargetFrequency
+                   <<  " NumberOfSamples:"<< NumberOfSamples << std::endl;
+
         std::vector<float> scores(numScoreComponent);
 
         //set the forward and backward frequency-based scores of the current option
         scores[0] = (float) entry->second / SampleSourceFrequency;
-        scores[1] = ((float) entry->second / GlobalTargetFrequency) * ((float) GlobalSourceFrequency / NumberOfSamples);
+        //scores[1] = ((float) entry->second / NumberOfSamples) * ((float) GlobalSourceFrequency / GlobalTargetFrequency);
+        scores[1] = ((float) entry->second / SampleSourceFrequency) * ((float) GlobalSourceFrequency / GlobalTargetFrequency);
 
         //set the forward and backward lexical scores of the current option
         scores[2] = 0.0;
