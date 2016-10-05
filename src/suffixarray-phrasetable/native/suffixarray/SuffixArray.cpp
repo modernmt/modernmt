@@ -203,7 +203,7 @@ size_t SuffixArray::CountOccurrences(bool isSource, const vector<wid_t> &phrase)
 void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, vector<sample_t> &outSamples,
                                    const context_t *context, bool searchInBackground) {
     // Get in-context samples
-    samplemap_t inContextSamples;
+    vector<location_t> inContextSamples;
     size_t inContextSize = 0;
 
     if (context && !context->empty()) {
@@ -215,10 +215,10 @@ void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, ve
             delete cursor;
 
             if (limit == 0 || inContextSize + inContextPostingList.size() <= limit) {
-                inContextPostingList.GetSamples(inContextSamples);
+                inContextPostingList.GetLocations(inContextSamples);
                 inContextSize += inContextPostingList.size();
             } else {
-                inContextPostingList.GetSamples(inContextSamples, limit - inContextSize);
+                inContextPostingList.GetLocations(inContextSamples, limit - inContextSize);
                 inContextSize = limit;
                 break;
             }
@@ -226,7 +226,7 @@ void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, ve
     }
 
     // Get out-context samples
-    samplemap_t outContextSamples;
+    vector<location_t> outContextSamples;
 
     if (searchInBackground && (limit == 0 || inContextSize < limit)) {
         PostingList outContextPostingList(phrase);
@@ -235,7 +235,7 @@ void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, ve
         CollectLocations(cursor, phrase, outContextPostingList);
         delete cursor;
 
-        outContextPostingList.GetSamples(outContextSamples, limit == 0 ? 0 : limit - inContextSize);
+        outContextPostingList.GetLocations(outContextSamples, limit == 0 ? 0 : limit - inContextSize);
     }
 
     outSamples.clear();
@@ -285,19 +285,25 @@ void SuffixArray::CollectLocations(PrefixCursor *cursor, const vector<wid_t> &ph
     }
 }
 
-void SuffixArray::Retrieve(const samplemap_t &locations, vector<sample_t> &outSamples) {
-    for (auto entry = locations.begin(); entry != locations.end(); ++entry) {
-        outSamples.reserve(outSamples.size() + entry->second.size());
+void SuffixArray::Retrieve(const vector<location_t> &locations, vector<sample_t> &outSamples) {
+    outSamples.reserve(outSamples.size() + locations.size());
 
-        domain_t domain = entry->first;
-        for (auto location = entry->second.begin(); location != entry->second.end(); ++location) {
+    sample_t *lastSample = NULL;
+    int64_t lastPointer = -1;
+
+    for (auto location = locations.begin(); location != locations.end(); ++location) {
+        if (lastSample && lastPointer == location->pointer) {
+            lastSample->offsets.push_back(location->offset);
+        } else {
             sample_t sample;
-            sample.domain = domain;
-            sample.offsets = location->second;
-
-            storage->Retrieve(location->first, &sample.source, &sample.target, &sample.alignment);
+            sample.domain = location->domain;
+            sample.offsets.push_back(location->offset);
+            storage->Retrieve(location->pointer, &sample.source, &sample.target, &sample.alignment);
 
             outSamples.push_back(sample);
+
+            lastPointer = location->pointer;
+            lastSample = &(outSamples[outSamples.size() - 1]);
         }
     }
 }

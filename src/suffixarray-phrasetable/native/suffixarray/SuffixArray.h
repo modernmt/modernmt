@@ -39,7 +39,7 @@ namespace mmt {
             alignment_t alignment;
             vector<length_t> offsets;
 
-            string ToString() const{
+            string ToString() const {
                 ostringstream repr;
                 repr << "(" << domain << ")";
 
@@ -57,9 +57,8 @@ namespace mmt {
 
                 return repr.str();
             }
-//friend
-            friend std::ostream &operator<<(std::ostream &os, const sample_t &sample)
-            {
+
+            friend std::ostream &operator<<(std::ostream &os, const sample_t &sample) {
                 os << sample.ToString();
                 return os;
             }
@@ -101,7 +100,7 @@ namespace mmt {
             void CollectLocations(PrefixCursor *cursor, const vector<wid_t> &phrase, size_t offset, size_t length,
                                   PostingList &output);
 
-            void Retrieve(const samplemap_t &locations, vector<sample_t> &outSamples);
+            void Retrieve(const vector<location_t> &locations, vector<sample_t> &outSamples);
         };
 
     }
