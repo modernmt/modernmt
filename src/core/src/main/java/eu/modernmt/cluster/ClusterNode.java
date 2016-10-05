@@ -169,6 +169,7 @@ public class ClusterNode {
         ContextAnalyzer contextAnalyzer;
 
         try {
+            engine.getVocabulary();
             aligner = engine.getAligner();
             decoder = engine.getDecoder();
             contextAnalyzer = engine.getContextAnalyzer();

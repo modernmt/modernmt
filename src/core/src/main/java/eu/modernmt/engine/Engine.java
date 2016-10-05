@@ -92,7 +92,7 @@ public class Engine implements Closeable {
 
                         File inifile = new File(runtime, "moses.ini");
                         FileUtils.write(inifile, mosesINI.toString(), false);
-                        decoder = new MosesDecoder(inifile);
+                        decoder = new MosesDecoder(inifile, getAligner(), getVocabulary());
                     } catch (IOException e) {
                         throw new LazyLoadException(e);
                     }
