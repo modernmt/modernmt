@@ -1,5 +1,6 @@
 package eu.modernmt.decoder.moses;
 
+import eu.modernmt.aligner.Aligner;
 import eu.modernmt.context.ContextScore;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
@@ -8,6 +9,7 @@ import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.updating.Update;
 import eu.modernmt.updating.UpdatesListener;
+import eu.modernmt.vocabulary.Vocabulary;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,14 +40,15 @@ public class MosesDecoder implements Decoder, UpdatesListener {
     private final HashMap<Long, Long> sessions = new HashMap<>();
     private long nativeHandle;
 
-    public MosesDecoder(File iniFile) throws IOException {
+    public MosesDecoder(File iniFile, Aligner aligner, Vocabulary vocabulary) throws IOException {
         if (!iniFile.isFile())
             throw new IOException("Invalid INI file: " + iniFile);
 
-        this.nativeHandle = instantiate(iniFile.getAbsolutePath());
+        this.nativeHandle = instantiate(iniFile.getAbsolutePath(),
+                aligner.getNativeHandle(), vocabulary.getNativeHandle());
     }
 
-    private native long instantiate(String inifile);
+    private native long instantiate(String inifile, long aligner, long vocabulary);
 
     // Features
 

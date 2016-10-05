@@ -30,4 +30,6 @@ public interface Aligner extends Closeable {
 
     Alignment[] getAlignments(List<Sentence> sources, List<Sentence> targets, SymmetrizationStrategy strategy) throws AlignerException;
 
+    long getNativeHandle();
+
 }

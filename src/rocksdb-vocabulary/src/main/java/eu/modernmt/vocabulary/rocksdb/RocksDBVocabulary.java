@@ -98,6 +98,11 @@ public class RocksDBVocabulary implements Vocabulary {
         return result;
     }
 
+    @Override
+    public long getNativeHandle() {
+        return nativeHandle;
+    }
+
     private native void reverseLookupLines(int[][] lines, String[][] result);
 
     @Override

@@ -95,6 +95,11 @@ public class FastAlign implements Aligner {
         return alignments;
     }
 
+    @Override
+    public long getNativeHandle() {
+        return nativeHandle;
+    }
+
     private native void align(int[][] sources, int[][] targets, int[][] result, int strategy);
 
     private static int toInt(SymmetrizationStrategy strategy) {

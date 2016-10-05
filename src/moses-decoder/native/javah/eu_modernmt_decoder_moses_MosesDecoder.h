@@ -10,10 +10,10 @@ extern "C" {
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
  * Method:    instantiate
- * Signature: (Ljava/lang/String;)J
+ * Signature: (Ljava/lang/String;JJ)J
  */
 JNIEXPORT jlong JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_instantiate
-  (JNIEnv *, jobject, jstring);
+  (JNIEnv *, jobject, jstring, jlong, jlong);
 
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder

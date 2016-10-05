@@ -12,6 +12,8 @@
 #include <map>
 #include <float.h>
 #include <mmt/IncrementalModel.h>
+#include <mmt/aligner/Aligner.h>
+#include <mmt/vocabulary/Vocabulary.h>
 
 typedef struct {
     bool stateless;
@@ -39,7 +41,7 @@ namespace mmt {
         public:
             static constexpr float UNTUNEABLE_COMPONENT = FLT_MAX;
 
-            static MosesDecoder *createInstance(const char *inifile);
+            static MosesDecoder *createInstance(const char *inifile, Aligner *aligner, Vocabulary *vocabulary);
 
             virtual std::vector<feature_t> getFeatures() = 0;
 

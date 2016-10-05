@@ -45,7 +45,7 @@ namespace mmt {
     }
 }
 
-MosesDecoder *MosesDecoder::createInstance(const char *inifile) {
+MosesDecoder *MosesDecoder::createInstance(const char *inifile, Aligner *aligner, Vocabulary *vocabulary) {
     const char *argv[2] = {"-f", inifile};
 
     Moses::Parameter params;
@@ -55,7 +55,7 @@ MosesDecoder *MosesDecoder::createInstance(const char *inifile) {
 
     // initialize all "global" variables, which are stored in StaticData
     // note: this also loads models such as the language model, etc.
-    if (!Moses::StaticData::LoadDataStatic(&params, "moses"))
+    if (!Moses::StaticData::LoadDataStatic(&params, "moses", aligner, vocabulary))
         return NULL;
 
     return new MosesDecoderImpl(params);

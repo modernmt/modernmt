@@ -27,4 +27,6 @@ public interface Vocabulary extends Closeable {
 
     String[][] reverseLookupLines(int[][] lines);
 
+    long getNativeHandle();
+
 }
