@@ -14,12 +14,14 @@ using namespace mmt::sapt;
 struct PhraseTable::pt_private {
     SuffixArray *index;
     UpdateManager *updates;
+    mmt::Aligner *aligner;
 };
 
-PhraseTable::PhraseTable(const string &modelPath, const Options &options) {
+PhraseTable::PhraseTable(const string &modelPath, const Options &options, mmt::Aligner *alignerModel) {
     self = new pt_private();
     self->index = new SuffixArray(modelPath, options.prefix_length);
     self->updates = new UpdateManager(self->index, options.update_buffer_size, options.update_max_delay);
+    self->aligner = alignerModel;
     numScoreComponent = 4;
     debug=false;
 }
@@ -98,28 +100,38 @@ void PhraseTable::ScoreTranslationOptions(OptionsMap_t &optionsMap, const vector
         std::vector<float> scores(numScoreComponent);
 
         //set the forward and backward frequency-based scores of the current option
-        scores[0] = (float) entry->second / SampleSourceFrequency;
+        scores[0] = log( (float) entry->second / SampleSourceFrequency );
         //scores[1] = ((float) entry->second / NumberOfSamples) * ((float) GlobalSourceFrequency / GlobalTargetFrequency);
-        scores[1] = ((float) entry->second / SampleSourceFrequency) * ((float) GlobalSourceFrequency / GlobalTargetFrequency);
+        scores[1] = log(((float) entry->second / SampleSourceFrequency) * ((float) GlobalSourceFrequency / GlobalTargetFrequency) );
+        scores[1] = std::max(scores[1], (float) 0.0);  //thresholded to 1.0
 
         //set the forward and backward lexical scores of the current option
         scores[2] = 0.0;
         scores[3] = 0.0;
-        for (auto a = entry->first.alignment.begin(); a != entry->first.alignment.end(); ++a) {
-            scores[2] += GetForwardLexicalScore(a->first, a->second);
-            scores[3] += GetBackwardLexicalScore(a->first, a->second);
+        if (self->aligner) { // if the AlignmentModel is provided, compute the lexical probabilities
+            GetLexicalScores(sourcePhrase, entry->first, scores[2], scores[3]);
         }
+
         ((TranslationOption*) &entry->first)->SetScores(scores);
     }
 }
 
+
+void PhraseTable::GetLexicalScores(const vector<wid_t> &sourcePhrase, const TranslationOption &option, float &fwdScore, float &bwdScore){
+    for (auto a = option.alignment.begin(); a != option.alignment.end(); ++a) {
+        fwdScore += self->aligner->GetForwardProbability(sourcePhrase[a->first], option.targetPhrase[a->second]);
+        bwdScore += self->aligner->GetBackwardProbability(sourcePhrase[a->first], option.targetPhrase[a->second]);
+    }
+}
+
+/*
 float PhraseTable::GetForwardLexicalScore(length_t sourceWord, length_t targetWord){
-    return 0.1;
+    return 0.0;
 }
 
 float PhraseTable::GetBackwardLexicalScore(length_t sourceWord, length_t targetWord){
-    return 0.2;
-}
+    return 0.0;
+}*/
 
 
 void PhraseTable::GetTranslationOptions(const vector<wid_t> &sourcePhrase,
@@ -225,13 +237,13 @@ void PhraseTable::ExtractPhrasePairs(const std::vector<wid_t> &sourceSentence,
 
             te += 1;
 // if fe is in word alignment or out-of-bounds
-            if (targetAligned[te] || te == targetSentence.size()) {
+            if (te == targetSentence.size() || targetAligned[te]) {
                 break;
             }
         }
         ts -= 1;
 // if fs is in word alignment or out-of-bounds
-        if (targetAligned[ts] || ts < 0) {
+        if (ts < 0 || targetAligned[ts]) {
             break;
         }
     }

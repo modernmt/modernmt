@@ -10,6 +10,7 @@
 #include <map>
 
 #include <mmt/IncrementalModel.h>
+#include <mmt/aligner/Aligner.h>
 #include "Options.h"
 
 using namespace std;
@@ -83,7 +84,7 @@ namespace mmt {
             typedef std::vector<TranslationOption> OptionsVec_t;
 
         public:
-            PhraseTable(const string &modelPath, const Options &options = Options());
+            PhraseTable(const string &modelPath, const Options &options = Options(), mmt::Aligner *alignerModel=NULL);
 
             ~PhraseTable();
 
@@ -131,8 +132,11 @@ namespace mmt {
 
             void ScoreTranslationOptions(OptionsMap_t &optionsMap, const vector<wid_t> &sourcePhrase, size_t NumberOfSamples);
 
+            void GetLexicalScores(const vector<wid_t> &sourcePhrase, const TranslationOption &option, float &fwdScore, float &bwdScore);
+/*
             float GetForwardLexicalScore(length_t sourceWord, length_t targetWord);
             float GetBackwardLexicalScore(length_t sourceWord, length_t targetWord);
+*/
         };
     }
 }
