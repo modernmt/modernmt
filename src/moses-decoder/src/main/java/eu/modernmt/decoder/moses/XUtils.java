@@ -54,6 +54,9 @@ class XUtils {
     }
 
     public static Word[] explode(String text) {
+        if (text.isEmpty())
+            return new Word[0];
+
         String[] pieces = text.split(" +");
         Word[] words = new Word[pieces.length];
 
