@@ -124,6 +124,11 @@ void FastAligner::GetBackwardAlignments(const vector<pair<vector<wid_t>, vector<
     backwardModel->ComputeAlignments(batch, outAlignments);
 }
 
-float FastAligner::GetForwardProbability(wid_t source, wid_t target)  { return 0.1; } ;
-float FastAligner::GetBackwardProbability(wid_t source, wid_t target) { return 0.1; } ;
+float FastAligner::GetForwardProbability(wid_t source, wid_t target) {
+    return (float) forwardModel->GetProbability(source, target);
+}
+
+float FastAligner::GetBackwardProbability(wid_t source, wid_t target) {
+    return (float) backwardModel->GetProbability(target, source);
+}
 

@@ -38,8 +38,9 @@ namespace mmt {
             virtual void GetBackwardAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch,
                                                vector<alignment_t> &outAlignments) override;
 
-	    float GetForwardProbability(wid_t source, wid_t target) override;
-            float GetBackwardProbability(wid_t source, wid_t target) override;
+            virtual float GetForwardProbability(wid_t source, wid_t target) override;
+
+            virtual float GetBackwardProbability(wid_t source, wid_t target) override;
 
             virtual ~FastAligner() override;
 
