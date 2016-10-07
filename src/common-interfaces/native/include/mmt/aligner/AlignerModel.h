@@ -22,8 +22,6 @@ namespace mmt {
 
         virtual ~AlignerModel() {};
 
-        virtual inline wid_t GetNullWord(){ return kAlignerNullWord; };
-
     };
 }
 
