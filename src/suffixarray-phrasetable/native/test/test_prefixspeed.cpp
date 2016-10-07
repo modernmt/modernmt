@@ -115,7 +115,8 @@ NGramTable LoadTable(const args_t &args) {
     );
 
     cout << "Loading domain... " << flush;
-    NGramTable nGramTable(corpus, args.order);
+    NGramTable nGramTable(args.order);
+    nGramTable.Load(corpus);
     cout << "DONE" << endl;
 
     return nGramTable;

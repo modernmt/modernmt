@@ -22,11 +22,9 @@ namespace mmt {
 
             class NGramTable {
             public:
-                NGramTable(const BilingualCorpus &corpus, uint8_t order);
+                NGramTable(uint8_t order);
 
-                const domain_t GetDomain() const {
-                    return domain;
-                }
+                void Load(const BilingualCorpus &corpus, bool loadSource = true);
 
                 const unordered_map<vector<wid_t>, size_t, phrase_hash> &GetNGrams(uint8_t order) const {
                     if (order == 0 || order > ngrams.size())
@@ -35,7 +33,7 @@ namespace mmt {
                 };
 
             private:
-                const domain_t domain;
+                const uint8_t order;
                 vector<unordered_map<vector<wid_t>, size_t, phrase_hash>> ngrams;
             };
 
