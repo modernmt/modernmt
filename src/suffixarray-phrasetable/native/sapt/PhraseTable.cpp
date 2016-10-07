@@ -103,7 +103,7 @@ void PhraseTable::ScoreTranslationOptions(OptionsMap_t &optionsMap, const vector
         scores[0] = log( (float) entry->second / SampleSourceFrequency );
         //scores[1] = ((float) entry->second / NumberOfSamples) * ((float) GlobalSourceFrequency / GlobalTargetFrequency);
         scores[1] = log(((float) entry->second / SampleSourceFrequency) * ((float) GlobalSourceFrequency / GlobalTargetFrequency) );
-        scores[1] = std::max(scores[1], (float) 0.0);  //thresholded to 1.0
+        scores[1] = std::max(scores[1], (float) 0.0);  //thresholded to log(1.0)
 
         //set the forward and backward lexical scores of the current option
         scores[2] = 0.0;
@@ -137,6 +137,8 @@ void PhraseTable::GetLexicalScores(const vector<wid_t> &sourcePhrase, const Tran
         if (tmp<0.0) tmp = 1.0e-9;  //should never happen
         fwdScore *= tmp;
     }
+    fwdScore = log(fwdScore);
+
     bwdScore = 0.0;
     for (size_t si = 0; si < sSize; ++si) {
         float tmp = 0.0;
@@ -146,6 +148,7 @@ void PhraseTable::GetLexicalScores(const vector<wid_t> &sourcePhrase, const Tran
         if (tmp<0.0) tmp = 1.0e-9;  //should never happen
         bwdScore *= tmp;
     }
+    bwdScore = log(bwdScore);
 
 }
 
