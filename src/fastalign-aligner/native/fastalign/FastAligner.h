@@ -42,6 +42,10 @@ namespace mmt {
 
             virtual float GetBackwardProbability(wid_t source, wid_t target) override;
 
+            virtual float GetForwardNullProbability(wid_t source) override { return GetForwardProbability(source, backwardModel->GetNullWord()); };
+
+            virtual float GetBackwardNullProbability(wid_t target) override { return GetForwardProbability(forwardModel->GetNullWord(), target); };
+
             virtual ~FastAligner() override;
 
         private:
