@@ -94,10 +94,10 @@ void PhraseTable::ScoreTranslationOptions(OptionsMap_t &optionsMap, const vector
         //std::cerr << "void PhraseTable::ScoreTranslationOptions(....) options is:|" << entry->first << "|" << std::endl;
         size_t GlobalTargetFrequency = self->index->CountOccurrences(false, entry->first.targetPhrase);
 
-        if (debug) std::cerr << "options is:|" << entry->first
-                   << " Frequency:" << entry->second << " SampleSourceFrequency:" << SampleSourceFrequency
-                   << " GlobalSourceFrequency:"<< GlobalSourceFrequency << " GlobalTargetFrequency:" << GlobalTargetFrequency
-                   <<  " NumberOfSamples:"<< NumberOfSamples << std::endl;
+        //std::cerr << "options is:|" << entry->first
+        //          << " Frequency:" << entry->second << " SampleSourceFrequency:" << SampleSourceFrequency
+        //           << " GlobalSourceFrequency:"<< GlobalSourceFrequency << " GlobalTargetFrequency:" << GlobalTargetFrequency
+        //           <<  " NumberOfSamples:"<< NumberOfSamples << std::endl;
 
         std::vector<float> scores(numScoreComponent);
 
@@ -118,6 +118,75 @@ void PhraseTable::ScoreTranslationOptions(OptionsMap_t &optionsMap, const vector
     }
 }
 
+void PhraseTable::GetLexicalScores(const vector<wid_t> &sourcePhrase, const TranslationOption &option, float &fwdScore, float &bwdScore){
+    if (self->aligner) { // if the AlignmentModel is provided, compute the lexical probabilities
+        std::vector<std::vector<float> > fwdWordProb(option.targetPhrase.size());
+        std::vector<std::vector<float> > bwdWordProb(sourcePhrase.size());
+        size_t sSize = sourcePhrase.size();
+        size_t tSize = option.targetPhrase.size();
+        //std::cerr << "void PhraseTable::GetLexicalScores(...) sSize:" << sSize << " tSize:" << tSize << std::endl;
+        for (auto a = option.alignment.begin(); a != option.alignment.end(); ++a) {
+            //std::cerr << "void PhraseTable::GetLexicalScores(...) a->first:" << a->first << " a->second:" << a->second << std::endl;
+            wid_t sWord = sourcePhrase[a->first];
+            wid_t tWord = option.targetPhrase[a->second];
+            //std::cerr << "void PhraseTable::GetLexicalScores(...) sWord:" << sWord << " tWord:" << tWord << std::endl;
+            fwdWordProb[a->second].push_back(self->aligner->GetForwardProbability(sWord, tWord));  //P(tWord | sWord)
+            bwdWordProb[a->first].push_back(self->aligner->GetBackwardProbability(sWord, tWord));  //P(sWord | tWord)
+            //std::cerr << "void PhraseTable::GetLexicalScores(...) fwdProb:" << self->aligner->GetForwardProbability(sWord, tWord) << " bwdProb:" << self->aligner->GetBackwardProbability(sWord, tWord) << std::endl;
+
+        }
+        fwdScore = 0.0;
+        for (size_t ti = 0; ti < tSize; ++ti) {
+            float tmpProb = 0.0;
+            size_t tmpSize = fwdWordProb[ti].size();
+            //std::cerr << "void PhraseTable::GetLexicalScores(...) ti:" << ti << " tmpSize:" << tmpSize << " fwdWordProb[ti].size():" << fwdWordProb[ti].size() << std::endl;
+
+            if (tmpSize > 0) {
+                for (size_t i = 0; i < tmpSize; ++i) {
+                    //std::cerr << "void PhraseTable::GetLexicalScores(...) ti: " << ti << " i:" << i << " fwdWordProb[ti][i]:" << fwdWordProb[ti][i] << std::endl;
+                    tmpProb += fwdWordProb[ti][i];
+                    //std::cerr << "void PhraseTable::GetLexicalScores(...) tmpProb:" << tmpProb << std::endl;
+                }
+                tmpProb /= tmpSize;
+            } else {
+                //std::cerr << "void PhraseTable::GetLexicalScores(...) ti:" << ti << " NullProb[ti]:" << self->aligner->GetTargetNullProbability(option.targetPhrase[ti]) << std::endl;
+                tmpProb = self->aligner->GetTargetNullProbability(option.targetPhrase[ti]);
+                //std::cerr << "void PhraseTable::GetLexicalScores(...) tmpProb:" << tmpProb << std::endl;
+            }
+            //std::cerr << "void PhraseTable::GetLexicalScores(...) FINAL tmpProb:" << tmpProb << std::endl;
+            //should never happen that tmpProb <= 0
+            fwdScore += (tmpProb <= 0.0) ? -9 : log(tmpProb);
+            //std::cerr << "void PhraseTable::GetLexicalScores(...) fwdScore:" << fwdScore << std::endl;
+        }
+        //std::cerr << "void PhraseTable::GetLexicalScores(...) FINAL fwdScore:" << fwdScore << std::endl;
+
+        bwdScore = 0.0;
+        for (size_t si = 0; si < sSize; ++si) {
+            float tmpProb = 0.0;
+            size_t tmpSize = bwdWordProb[si].size();
+            //std::cerr << "void PhraseTable::GetLexicalScores(...) si:" << si << " tmpSize:" << tmpSize << " bwdWordProb[si].size():" << bwdWordProb[si].size() << std::endl;
+            if (tmpSize > 0) {
+                for (size_t i = 0; i < tmpSize; ++i) {
+                    //std::cerr << "void PhraseTable::GetLexicalScores(...) si: " << si << " i:" << i << " bwdWordProb[si][i]:" << bwdWordProb[si][i] << std::endl;
+                    tmpProb += bwdWordProb[si][i];
+                   //std::cerr << "void PhraseTable::GetLexicalScores(...) tmpProb:" << tmpProb << std::endl;
+
+                }
+                tmpProb /= tmpSize;
+            } else {
+                //std::cerr << "void PhraseTable::GetLexicalScores(...) si:" << si << " NullProb[si]:" << self->aligner->GetTargetNullProbability(sourcePhrase[si]) << std::endl;
+                tmpProb = self->aligner->GetSourceNullProbability(sourcePhrase[si]);
+                //std::cerr << "void PhraseTable::GetLexicalScores(...) tmpProb:" << tmpProb << std::endl;
+            }
+            //std::cerr << "void PhraseTable::GetLexicalScores(...) FINAL tmpProb:" << tmpProb << std::endl;
+            //should never happen that tmpProb <= 0
+            bwdScore += (tmpProb <= 0.0) ? -9 : log(tmpProb);
+            //std::cerr << "void PhraseTable::GetLexicalScores(...) bwdScore:" << bwdScore << std::endl;
+        }
+        //std::cerr << "void PhraseTable::GetLexicalScores(...) FINAL bwdScore:" << bwdScore << std::endl;
+    }
+}
+/*
 void PhraseTable::GetLexicalScores(const vector<wid_t> &sourcePhrase, const TranslationOption &option, float &fwdScore, float &bwdScore){
     if (self->aligner) { // if the AlignmentModel is provided, compute the lexical probabilities
         std::vector<std::vector<float> > fwdWordProb(sourcePhrase.size());
@@ -182,6 +251,7 @@ void PhraseTable::GetLexicalScores(const vector<wid_t> &sourcePhrase, const Tran
         //std::cerr << "void PhraseTable::GetLexicalScores(...) bwdScore:" << bwdScore << std::endl;
     }
 }
+*/
 
 /*
 float PhraseTable::GetForwardLexicalScore(length_t sourceWord, length_t targetWord){
