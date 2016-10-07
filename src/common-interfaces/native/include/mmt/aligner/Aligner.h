@@ -43,6 +43,10 @@ namespace mmt {
 
         virtual float GetBackwardProbability(wid_t source, wid_t target) = 0;
 
+        virtual float GetForwardNullProbability(wid_t source) = 0;
+
+        virtual float GetBackwardNullProbability(wid_t target) = 0;
+
         virtual ~Aligner() {};
 
     };
