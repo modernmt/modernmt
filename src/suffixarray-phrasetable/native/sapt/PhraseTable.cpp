@@ -103,7 +103,7 @@ void PhraseTable::ScoreTranslationOptions(OptionsMap_t &optionsMap, const vector
         scores[0] = log( (float) entry->second / SampleSourceFrequency );
         //scores[1] = ((float) entry->second / NumberOfSamples) * ((float) GlobalSourceFrequency / GlobalTargetFrequency);
         scores[1] = log(((float) entry->second / SampleSourceFrequency) * ((float) GlobalSourceFrequency / GlobalTargetFrequency) );
-        scores[1] = std::max(scores[1], (float) 0.0);  //thresholded to 1.0
+        scores[1] = std::max(scores[1], (float) 0.0);  //thresholded to log(1.0)
 
         //set the forward and backward lexical scores of the current option
         scores[2] = 0.0;
@@ -118,10 +118,38 @@ void PhraseTable::ScoreTranslationOptions(OptionsMap_t &optionsMap, const vector
 
 
 void PhraseTable::GetLexicalScores(const vector<wid_t> &sourcePhrase, const TranslationOption &option, float &fwdScore, float &bwdScore){
+    std::vector< std::vector< float > > fwdWordProb(sourcePhrase.size(),std::vector< float >(option.targetPhrase.size(),0.0));
+    std::vector< std::vector< float > > bwdWordProb(sourcePhrase.size(),std::vector< float >(option.targetPhrase.size(),0.0));
+    size_t sSize = sourcePhrase.size();
+    size_t tSize = option.targetPhrase.size();
     for (auto a = option.alignment.begin(); a != option.alignment.end(); ++a) {
-        fwdScore += self->aligner->GetForwardProbability(sourcePhrase[a->first], option.targetPhrase[a->second]);
-        bwdScore += self->aligner->GetBackwardProbability(sourcePhrase[a->first], option.targetPhrase[a->second]);
+        wid_t sWord = sourcePhrase[a->first];
+        wid_t tWord = option.targetPhrase[a->second];
+        fwdWordProb[a->first][a->second] = self->aligner->GetForwardProbability(sWord, tWord);
+        bwdWordProb[a->first][a->second] = self->aligner->GetBackwardProbability(sWord, tWord);
     }
+    fwdScore = 0.0;
+    for (size_t ti = 0; ti < tSize; ++ti) {
+        float tmp = 0.0;
+        for (size_t si = 0; si < sSize; ++si) {
+            tmp += fwdWordProb[ti][si];
+        }
+        if (tmp<0.0) tmp = 1.0e-9;  //should never happen
+        fwdScore *= tmp;
+    }
+    fwdScore = log(fwdScore);
+
+    bwdScore = 0.0;
+    for (size_t si = 0; si < sSize; ++si) {
+        float tmp = 0.0;
+        for (size_t ti = 0; ti < tSize; ++ti) {
+            tmp += bwdWordProb[ti][si];
+        }
+        if (tmp<0.0) tmp = 1.0e-9;  //should never happen
+        bwdScore *= tmp;
+    }
+    bwdScore = log(bwdScore);
+
 }
 
 /*
