@@ -56,13 +56,17 @@ void *PhraseTable::__GetSuffixArray() {
     return self->index;
 }
 void PhraseTable::GetTargetPhraseCollection(const vector<wid_t> &sourcePhrase, size_t limit, vector<TranslationOption> &optionsVec, context_t *context) {
+    cerr << "void PhraseTable::GetTargetPhraseCollection(...) sourcePhrase.size():" << sourcePhrase.size() << endl;
+    for (size_t i=0; i< sourcePhrase.size(); ++i){
+        cerr << "void PhraseTable::GetTargetPhraseCollection(...) sourcePhrase[" << i << "]:" << sourcePhrase[i] << endl;
+    }
 
     OptionsMap_t optionsMap;
 
     vector<sample_t> samples;
     self->index->GetRandomSamples(sourcePhrase, limit, samples, context);
 
-    if (debug) cout << "Found " << samples.size() << " samples (maximum was " << limit << ")" << endl;
+    cerr << "Found " << samples.size() << " samples (maximum was " << limit << ")" << endl;
 
     for (auto sample=samples.begin(); sample != samples.end(); ++ sample){
         //cout << *sample << endl;
@@ -70,6 +74,7 @@ void PhraseTable::GetTargetPhraseCollection(const vector<wid_t> &sourcePhrase, s
         //GetTranslationOptions(sourcePhrase, sample->source, sample->target, sample->alignment, sample->offsets, optionsVec);
         GetTranslationOptions(sourcePhrase, sample->source, sample->target, sample->alignment, sample->offsets, optionsMap);
     }
+    cerr << "void PhraseTable::GetTargetPhraseCollection(...) sourcePhrase.size():" << sourcePhrase.size() << " optionsMap.size():" << optionsMap.size() << endl;
 
     //loop over all Options and score them
     ScoreTranslationOptions(optionsMap, sourcePhrase, samples.size());
@@ -94,18 +99,19 @@ void PhraseTable::ScoreTranslationOptions(OptionsMap_t &optionsMap, const vector
         //std::cerr << "void PhraseTable::ScoreTranslationOptions(....) options is:|" << entry->first << "|" << std::endl;
         size_t GlobalTargetFrequency = self->index->CountOccurrences(false, entry->first.targetPhrase);
 
-        if (debug) std::cerr << "options is:|" << entry->first
+        /*std::cerr << "options is:|" << entry->first
                    << " Frequency:" << entry->second << " SampleSourceFrequency:" << SampleSourceFrequency
                    << " GlobalSourceFrequency:"<< GlobalSourceFrequency << " GlobalTargetFrequency:" << GlobalTargetFrequency
                    <<  " NumberOfSamples:"<< NumberOfSamples << std::endl;
-
+*/
         std::vector<float> scores(numScoreComponent);
 
         //set the forward and backward frequency-based scores of the current option
         scores[0] = log( (float) entry->second / SampleSourceFrequency );
         //scores[1] = ((float) entry->second / NumberOfSamples) * ((float) GlobalSourceFrequency / GlobalTargetFrequency);
         scores[1] = log(((float) entry->second / SampleSourceFrequency) * ((float) GlobalSourceFrequency / GlobalTargetFrequency) );
-        scores[1] = std::max(scores[1], (float) 0.0);  //thresholded to log(1.0)
+        //std::cerr << "scores[1]:"<< scores[1] << std::endl;
+        scores[1] = std::min(scores[1], (float) 0.0);  //thresholded to log(1.0)
 
         //set the forward and backward lexical scores of the current option
         scores[2] = 0.0;
@@ -149,7 +155,7 @@ void PhraseTable::GetLexicalScores(const vector<wid_t> &sourcePhrase, const Tran
                 //std::cerr << "void PhraseTable::GetLexicalScores(...) tmp:" << tmp << std::endl;
             }
             //std::cerr << "void PhraseTable::GetLexicalScores(...) FINAL tmp:" << tmp << std::endl;
-            if (tmp <= 0.0){ 
+            if (tmp <= 0.0){
                 tmp = -9;  //should never happen
             } else {
                 tmp=log(tmp);
