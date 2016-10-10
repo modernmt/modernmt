@@ -72,7 +72,8 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
             ("input,i", po::value<string>()->required(), "input folder with input corpora")
             ("domain,d", po::value<domain_t>()->required(), "domain for data loading")
             ("context,c", po::value<string>(), "context map in the format <id>:<w>[,<id>:<w>]")
-            ("order", po::value<unsigned int>(), "order (default = 16)");
+            ("order", po::value < unsigned
+    int > (), "order (default = 16)");
 
     po::variables_map vm;
     try {
@@ -97,7 +98,8 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
         }
 
         if (vm.count("order"))
-            args->order = vm["order"].as<unsigned int>();
+            args->order = vm["order"].as < unsigned
+        int > ();
     } catch (po::error &e) {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         std::cerr << desc << std::endl;
@@ -124,32 +126,28 @@ NGramTable LoadTable(const args_t &args) {
 
 // ------ Testing
 
-void RunTest(const context_t *context, SuffixArray &index,
-             const unordered_map<vector<wid_t>, size_t, phrase_hash> &ngrams, speed_perf_t &speed) {
-
-    size_t ngramsCount = ngrams.size();
-    size_t currentCount = 0;
-
-    double totalElapsedTime = 0;
+void RunTest(SuffixArray &index, const context_t *context,
+             const unordered_map<vector<wid_t>, size_t, phrase_hash> &ngrams, vector<speed_perf_t> &speedData) {
+    size_t queryCount = 0;
 
     for (auto entry = ngrams.begin(); entry != ngrams.end(); ++entry) {
-        const vector<wid_t> &phrase = entry->first;
+        Collector *collector = index.NewCollector(context, true);
 
-        double begin = GetTime();
-        vector<sample_t> samples;
-        index.GetRandomSamples(phrase, 1000, samples, context, true);
-        totalElapsedTime += GetElapsedTime(begin);
+        for (size_t i = 0; i < entry->first.size(); ++i) {
+            double begin = GetTime();
+            vector<sample_t> samples;
+            collector->Extend(entry->first[i], 1000, samples);
+            speedData[i].seconds += GetElapsedTime(begin);
+            speedData[i].requests++;
 
-        currentCount++;
+            queryCount++;
 
-        if (currentCount % 10000 == 0)
-            cout << "." << flush;
+            if (queryCount % 10000 == 0)
+                cout << "." << flush;
+        }
+
+        delete collector;
     }
-    cout << "." << ngramsCount << " queries in " << totalElapsedTime << " seconds, speed is "
-         << (((double) ngramsCount) / totalElapsedTime) << " q/s" << endl;
-
-    speed.requests += ngramsCount;
-    speed.seconds += totalElapsedTime;
 }
 
 // --------------
@@ -168,19 +166,21 @@ int main(int argc, const char *argv[]) {
     Options options;
     SuffixArray index(args.model_path, options.prefix_length);
 
-    speed_perf_t speed;
     NGramTable nGramTable = LoadTable(args);
-    for (uint8_t i = args.order; i > 0; --i) {
-        unordered_map<vector<wid_t>, size_t, phrase_hash> ngrams = nGramTable.GetNGrams(i);
 
-        cout << "Testing " << ((int) i) << "-grams (" << ngrams.size() << "):" << endl;
-        RunTest(&args.context, index, ngrams, speed);
+    unordered_map<vector<wid_t>, size_t, phrase_hash> ngrams = nGramTable.GetNGrams(args.order);
+    cout << "Running test" << flush;
+    vector<speed_perf_t> speedData(args.order);
+    RunTest(index, &args.context, ngrams, speedData);
+    cout << " DONE" << endl;
+
+    cout << endl << "Results:" << endl;
+    for (uint8_t i = 0; i < args.order; ++i) {
+        speed_perf_t speed = speedData[i];
+
+        cout << "  - " << (i + 1) << "-grams: " << speed.requests << " queries in " << speed.seconds
+             << " seconds, speed is " << (int) round(((double) speed.requests) / speed.seconds) << " q/s" << endl;
     }
-
-    cout << endl;
-    cout << "Total " << speed.requests << " queries in " << speed.seconds << " seconds, speed is "
-         << (((double) speed.requests) / speed.seconds) << " q/s" << endl;
-
 
     return SUCCESS;
 }

@@ -18,6 +18,7 @@ public class ClusterConstants {
         // current version of Moses Decoder seems to not scale well if number of threads is
         // more than 16.
         cores = Math.min(16, cores);
+        cores = cores > 4 ? cores / 2 : cores; // TODO: fast hack to reduce multithread overload
 
         DEFAULT_TRANSLATION_EXECUTOR_SIZE = cores;
     }

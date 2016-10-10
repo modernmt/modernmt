@@ -3,6 +3,7 @@
 //
 
 #include <util/hashutils.h>
+#include <iostream>
 #include "Collector.h"
 
 using namespace mmt;
@@ -16,13 +17,15 @@ Collector::Collector(CorpusStorage *storage, rocksdb::DB *db, length_t prefixLen
         inDomainStates.resize(context->size());
 
         for (size_t i = 0; i < context->size(); ++i) {
-            inDomainStates[i].cursor = PrefixCursor::NewDomainCursor(db, prefixLength, true, context->at(i).domain);
+            inDomainStates[i].cursor.reset(
+                    PrefixCursor::NewDomainCursor(db, prefixLength, true, context->at(i).domain)
+            );
         }
     }
 
     if (searchInBackground) {
         backgroundState = new state_t();
-        backgroundState->cursor = PrefixCursor::NewGlobalCursor(db, prefixLength, true, context);
+        backgroundState->cursor.reset(PrefixCursor::NewGlobalCursor(db, prefixLength, true, context));
     }
 }
 
@@ -35,8 +38,12 @@ void Collector::Extend(const vector<wid_t> &words, size_t limit, vector<sample_t
     size_t inContextSize = 0;
 
     for (auto state = inDomainStates.begin(); state != inDomainStates.end(); /* no increment */) {
-        PrefixCursor *cursor = state->cursor;
-        size_t collected = CollectLocations(cursor, phrase, prefixLength, state->phraseOffset, &(state->postingList));
+        PrefixCursor *cursor = state->cursor.get();
+
+        PostingList *postingList = NULL;
+        size_t collected = CollectLocations(cursor, phrase, prefixLength, state->phraseOffset, &postingList);
+        state->postingList.reset(postingList);
+
         state->phraseOffset = phrase.size();
 
         if (collected > 0) {
@@ -54,8 +61,7 @@ void Collector::Extend(const vector<wid_t> &words, size_t limit, vector<sample_t
 
             if (phrase.size() < prefixLength) {
                 // No need to cache Posting Lists shorter than prefixLength
-                delete state->postingList;
-                state->postingList = NULL;
+                state->postingList.reset();
             }
 
             if (breakLoop)
@@ -71,9 +77,10 @@ void Collector::Extend(const vector<wid_t> &words, size_t limit, vector<sample_t
     vector<location_t> outContextSamples;
 
     if (backgroundState && (limit == 0 || inContextSize < limit)) {
-        PrefixCursor *cursor = backgroundState->cursor;
-        size_t collected = CollectLocations(cursor, phrase, prefixLength, backgroundState->phraseOffset,
-                                            &(backgroundState->postingList));
+        PrefixCursor *cursor = backgroundState->cursor.get();
+        PostingList *postingList = NULL;
+        size_t collected = CollectLocations(cursor, phrase, prefixLength, backgroundState->phraseOffset, &postingList);
+        backgroundState->postingList.reset(postingList);
         backgroundState->phraseOffset = phrase.size();
 
         if (collected > 0) {
@@ -81,8 +88,7 @@ void Collector::Extend(const vector<wid_t> &words, size_t limit, vector<sample_t
 
             if (phrase.size() < prefixLength) {
                 // No need to cache Posting Lists shorter than prefixLength
-                delete backgroundState->postingList;
-                backgroundState->postingList = NULL;
+                backgroundState->postingList.reset();
             }
         } else {
             delete backgroundState;
@@ -153,8 +159,9 @@ void Collector::CollectPhraseLocations(PrefixCursor *cursor, const vector<wid_t>
     if (*postingList == NULL)
         *postingList = new PostingList();
 
-    for (cursor->Seek(phrase, offset, length); cursor->HasNext(); cursor->Next())
+    for (cursor->Seek(phrase, offset, length); cursor->HasNext(); cursor->Next()) {
         cursor->CollectValue(*postingList);
+    }
 }
 
 void Collector::Retrieve(const vector<location_t> &locations, vector<sample_t> &outSamples) {

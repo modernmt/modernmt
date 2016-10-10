@@ -27,6 +27,10 @@ namespace mmt {
 
             void Extend(const vector<wid_t> &words, size_t limit, vector<sample_t> &outSamples);
 
+            ~Collector() {
+                if (backgroundState) delete backgroundState;
+            }
+
         private:
             Collector(CorpusStorage *storage, rocksdb::DB *db, length_t prefixLength, const context_t *context,
                       bool searchInBackground);
@@ -39,21 +43,13 @@ namespace mmt {
             static inline void CollectPhraseLocations(PrefixCursor *cursor, const vector<wid_t> &phrase,
                                                       size_t offset, size_t length, PostingList **postingList);
 
-            ~Collector() {
-                if (backgroundState) delete backgroundState;
-            }
-
             struct state_t {
                 size_t phraseOffset;
-                PrefixCursor *cursor;
-                PostingList *postingList;
+                shared_ptr<PrefixCursor> cursor;
+                shared_ptr<PostingList> postingList;
 
-                state_t() : phraseOffset(0), cursor(NULL), postingList(NULL) {};
+                state_t() : phraseOffset(0) {};
 
-                ~state_t() {
-                    if (cursor) delete cursor;
-                    if (postingList) delete postingList;
-                }
             };
 
             const length_t prefixLength;
