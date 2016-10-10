@@ -28,7 +28,7 @@ Collector::Collector(CorpusStorage *storage, rocksdb::DB *db, length_t prefixLen
 
 void Collector::Extend(const vector<wid_t> &words, size_t limit, vector<sample_t> &outSamples) {
     phrase.insert(phrase.end(), words.begin(), words.end());
-    unsigned int shuffleSeed = words_hash(phrase);
+    unsigned int shuffleSeed = max(1U, words_hash(phrase));
 
     // Get in-context samples
     vector<location_t> inContextSamples;
@@ -44,7 +44,7 @@ void Collector::Extend(const vector<wid_t> &words, size_t limit, vector<sample_t
 
             inContextSize = min(limit, inContextSize + collected);
 
-            if (limit == 0 || inContextSize + collected <= limit) {
+            if (limit == 0 || inContextSize < limit) {
                 state->postingList->GetLocations(inContextSamples);
                 breakLoop = false;
             } else {
@@ -57,7 +57,6 @@ void Collector::Extend(const vector<wid_t> &words, size_t limit, vector<sample_t
                 delete state->postingList;
                 state->postingList = NULL;
             }
-
 
             if (breakLoop)
                 break;
@@ -99,29 +98,6 @@ void Collector::Extend(const vector<wid_t> &words, size_t limit, vector<sample_t
         Retrieve(outContextSamples, outSamples);
 }
 
-void Collector::Retrieve(const vector<location_t> &locations, vector<sample_t> &outSamples) {
-    outSamples.reserve(outSamples.size() + locations.size());
-
-    sample_t *lastSample = NULL;
-    int64_t lastPointer = -1;
-
-    for (auto location = locations.begin(); location != locations.end(); ++location) {
-        if (lastSample && lastPointer == location->pointer) {
-            lastSample->offsets.push_back(location->offset);
-        } else {
-            sample_t sample;
-            sample.domain = location->domain;
-            sample.offsets.push_back(location->offset);
-            storage->Retrieve(location->pointer, &sample.source, &sample.target, &sample.alignment);
-
-            outSamples.push_back(sample);
-
-            lastPointer = location->pointer;
-            lastSample = &(outSamples[outSamples.size() - 1]);
-        }
-    }
-}
-
 size_t Collector::CollectLocations(PrefixCursor *cursor, const vector<wid_t> &phrase, length_t prefixLength,
                                    size_t offset, PostingList **postingList) {
     if (offset == 0)
@@ -152,7 +128,7 @@ size_t Collector::CollectLocations(PrefixCursor *cursor, const vector<wid_t> &ph
             if (start == 0) {
                 CollectPhraseLocations(cursor, phrase, start, prefixLength, postingList);
             } else {
-                PostingList *successors;
+                PostingList *successors = NULL;
                 CollectPhraseLocations(cursor, phrase, start, prefixLength, &successors);
 
                 (*postingList)->Retain(successors, start);
@@ -179,4 +155,27 @@ void Collector::CollectPhraseLocations(PrefixCursor *cursor, const vector<wid_t>
 
     for (cursor->Seek(phrase, offset, length); cursor->HasNext(); cursor->Next())
         cursor->CollectValue(*postingList);
+}
+
+void Collector::Retrieve(const vector<location_t> &locations, vector<sample_t> &outSamples) {
+    outSamples.reserve(outSamples.size() + locations.size());
+
+    sample_t *lastSample = NULL;
+    int64_t lastPointer = -1;
+
+    for (auto location = locations.begin(); location != locations.end(); ++location) {
+        if (lastSample && lastPointer == location->pointer) {
+            lastSample->offsets.push_back(location->offset);
+        } else {
+            sample_t sample;
+            sample.domain = location->domain;
+            sample.offsets.push_back(location->offset);
+            storage->Retrieve(location->pointer, &sample.source, &sample.target, &sample.alignment);
+
+            outSamples.push_back(sample);
+
+            lastPointer = location->pointer;
+            lastSample = &(outSamples[outSamples.size() - 1]);
+        }
+    }
 }

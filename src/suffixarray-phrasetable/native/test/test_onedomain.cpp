@@ -133,7 +133,10 @@ bool RunTest(domain_t domain, SuffixArray &index, const unordered_map<vector<wid
         index.GetRandomSamples(phrase, expectedCount + 100, samples, &context);
 
         if (!VerifyIntegrity(samples, phrase)) {
-            cout << "VerifyIntegrity::FAILED" << endl;
+            cout << "VerifyIntegrity::FAILED - ";
+            for (auto word = phrase.begin(); word != phrase.end(); ++word)
+                cout << " " << *word;
+            cout << endl;
             return false;
         }
 
@@ -142,8 +145,12 @@ bool RunTest(domain_t domain, SuffixArray &index, const unordered_map<vector<wid
                                          return sample.domain != domain;
                                      }), samples.end());
 
-        if (CountSamples(samples) != expectedCount) {
-            cout << "CountSamples::FAILED" << endl;
+        size_t count = CountSamples(samples);
+        if (count != expectedCount) {
+            cout << "CountSamples::FAILED (expected " << expectedCount << " but found " << count << ") -";
+            for (auto word = phrase.begin(); word != phrase.end(); ++word)
+                cout << " " << *word;
+            cout << endl;
             return false;
         }
 

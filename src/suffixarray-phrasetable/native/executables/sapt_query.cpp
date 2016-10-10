@@ -99,6 +99,14 @@ static inline void ParseSentenceLine(const string &line, vector<wid_t> &output) 
     }
 }
 
+size_t CountSamples(const vector<sample_t> &samples) {
+    size_t count = 0;
+    for (auto sample = samples.begin(); sample != samples.end(); ++sample) {
+        count += sample->offsets.size();
+    }
+    return count;
+}
+
 int main(int argc, const char *argv[]) {
     args_t args;
 
@@ -139,10 +147,10 @@ int main(int argc, const char *argv[]) {
 
         if (!args.quiet) {
             for (auto sample = samples.begin(); sample != samples.end(); ++sample)
-                std::cout << *sample << endl;
+                std::cout << sample->ToString() << endl;
         }
 
-        cout << "Found " << samples.size() << " samples" << endl;
+        cout << "Found " << CountSamples(samples) << " samples" << endl;
     }
 
     return SUCCESS;
