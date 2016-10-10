@@ -17,21 +17,24 @@ static vector<wid_t> SubVector(const vector<wid_t> &sentence, size_t offset, siz
     return output;
 }
 
-NGramTable::NGramTable(const BilingualCorpus &corpus, uint8_t order) : domain(corpus.GetDomain()) {
+NGramTable::NGramTable(uint8_t order) : order(order) {
     ngrams.resize((size_t) order);
+}
 
+void NGramTable::Load(const BilingualCorpus &corpus, bool loadSource) {
     vector<wid_t> source, target;
     alignment_t alignment;
 
     CorpusReader reader(corpus);
     while (reader.Read(source, target, alignment)) {
+        vector<wid_t> &sentence = loadSource ? source : target;
 
-        for (size_t iword = 0; iword < source.size(); ++iword) {
+        for (size_t iword = 0; iword < sentence.size(); ++iword) {
             for (size_t iorder = 0; iorder < order; ++iorder) {
-                if (iword + iorder >= source.size())
+                if (iword + iorder >= sentence.size())
                     break;
 
-                vector<wid_t> ngram = SubVector(source, iword, iorder + 1);
+                vector<wid_t> ngram = SubVector(sentence, iword, iorder + 1);
                 ngrams[iorder][ngram]++;
             }
         }
