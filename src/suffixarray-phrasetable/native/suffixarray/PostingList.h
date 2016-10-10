@@ -35,8 +35,6 @@ namespace mmt {
 
             void Append(domain_t domain, int64_t location, length_t offset);
 
-            void Join(const PostingList *other);
-
             void Retain(const PostingList *successors, size_t start);
 
             void GetLocations(vector<location_t> &output, size_t limit = 0, unsigned int seed = 0);

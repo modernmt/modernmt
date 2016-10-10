@@ -46,11 +46,6 @@ void PostingList::Append(domain_t domain, int64_t location, length_t offset) {
     entryCount++;
 }
 
-void PostingList::Join(const PostingList *other) {
-    datamap.insert(other->datamap.cbegin(), other->datamap.cend());
-    entryCount += other->entryCount;
-}
-
 bool PostingList::empty() const {
     return datamap.empty();
 }
@@ -101,7 +96,7 @@ void PostingList::Retain(const PostingList *other, size_t start) {
                     remove = true;
                 } else {
                     unordered_set<length_t> &successors_offsets = successor->second;
-                    remove = successors_offsets.find(offset + start) == successors_offsets.end();
+                    remove = successors_offsets.find((length_t) (offset + start)) == successors_offsets.end();
                 }
 
                 if (!remove) {
