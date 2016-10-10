@@ -190,10 +190,7 @@ size_t SuffixArray::CountOccurrences(bool isSource, const vector<wid_t> &phrase)
         for (cursor->Seek(phrase); cursor->HasNext(); cursor->Next())
             count += cursor->CountValue();
     } else {
-        PostingList locations(phrase);
-        CollectLocations(cursor, phrase, locations);
-
-        count = locations.size();
+        count = Collector::CollectLocations(cursor, phrase, prefixLength);
     }
 
     delete cursor;
@@ -202,108 +199,13 @@ size_t SuffixArray::CountOccurrences(bool isSource, const vector<wid_t> &phrase)
 
 void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, vector<sample_t> &outSamples,
                                    const context_t *context, bool searchInBackground) {
-    // Get in-context samples
-    vector<location_t> inContextSamples;
-    size_t inContextSize = 0;
-
-    if (context && !context->empty()) {
-        for (auto score = context->begin(); score != context->end(); ++score) {
-            PostingList inContextPostingList(phrase);
-
-            PrefixCursor *cursor = PrefixCursor::NewDomainCursor(db, prefixLength, true, score->domain);
-            CollectLocations(cursor, phrase, inContextPostingList);
-            delete cursor;
-
-            if (limit == 0 || inContextSize + inContextPostingList.size() <= limit) {
-                inContextPostingList.GetLocations(inContextSamples);
-                inContextSize += inContextPostingList.size();
-            } else {
-                inContextPostingList.GetLocations(inContextSamples, limit - inContextSize);
-                inContextSize = limit;
-                break;
-            }
-        }
-    }
-
-    // Get out-context samples
-    vector<location_t> outContextSamples;
-
-    if (searchInBackground && (limit == 0 || inContextSize < limit)) {
-        PostingList outContextPostingList(phrase);
-
-        PrefixCursor *cursor = PrefixCursor::NewGlobalCursor(db, prefixLength, true, context);
-        CollectLocations(cursor, phrase, outContextPostingList);
-        delete cursor;
-
-        outContextPostingList.GetLocations(outContextSamples, limit == 0 ? 0 : limit - inContextSize);
-    }
-
-    outSamples.clear();
-
-    if (inContextSamples.size() > 0)
-        Retrieve(inContextSamples, outSamples);
-    if (outContextSamples.size() > 0)
-        Retrieve(outContextSamples, outSamples);
+    Collector collector(storage, db, prefixLength, context, searchInBackground);
+    collector.Extend(phrase, limit, outSamples);
 }
 
-void SuffixArray::CollectLocations(PrefixCursor *cursor, const vector<wid_t> &sentence, PostingList &output) {
-    length_t sentenceLength = (length_t) sentence.size();
-
-    if (sentenceLength <= prefixLength) {
-        CollectLocations(cursor, sentence, 0, sentence.size(), output);
-    } else {
-        length_t start = 0;
-        PostingList collected(sentence);
-
-        while (start < sentenceLength) {
-            if (start + prefixLength > sentenceLength)
-                start = sentenceLength - prefixLength;
-
-            if (start == 0) {
-                CollectLocations(cursor, sentence, start, prefixLength, collected);
-            } else {
-                PostingList successors(sentence, start, prefixLength);
-                CollectLocations(cursor, sentence, start, prefixLength, successors);
-
-                collected.Retain(successors, start);
-            }
-
-            if (collected.empty())
-                break;
-
-            start += prefixLength;
-        }
-
-        output.Join(collected);
-    }
+Collector *SuffixArray::NewCollector(const context_t *context, bool searchInBackground) {
+    return new Collector(storage, db, prefixLength, context, searchInBackground);
 }
 
-void SuffixArray::CollectLocations(PrefixCursor *cursor, const vector<wid_t> &phrase, size_t offset, size_t length,
-                                   PostingList &output) {
-    for (cursor->Seek(phrase, offset, length); cursor->HasNext(); cursor->Next()) {
-        cursor->CollectValue(output);
-    }
-}
 
-void SuffixArray::Retrieve(const vector<location_t> &locations, vector<sample_t> &outSamples) {
-    outSamples.reserve(outSamples.size() + locations.size());
 
-    sample_t *lastSample = NULL;
-    int64_t lastPointer = -1;
-
-    for (auto location = locations.begin(); location != locations.end(); ++location) {
-        if (lastSample && lastPointer == location->pointer) {
-            lastSample->offsets.push_back(location->offset);
-        } else {
-            sample_t sample;
-            sample.domain = location->domain;
-            sample.offsets.push_back(location->offset);
-            storage->Retrieve(location->pointer, &sample.source, &sample.target, &sample.alignment);
-
-            outSamples.push_back(sample);
-
-            lastPointer = location->pointer;
-            lastSample = &(outSamples[outSamples.size() - 1]);
-        }
-    }
-}

@@ -31,20 +31,15 @@ namespace mmt {
 
             PostingList();
 
-            PostingList(const vector<wid_t> &phrase) :
-                    PostingList(phrase, 0, phrase.size()) {};
-
-            PostingList(const vector<wid_t> &sentence, size_t offset, size_t size);
-
             void Append(domain_t domain, const string &value);
 
             void Append(domain_t domain, int64_t location, length_t offset);
 
-            void Join(const PostingList &other);
+            void Join(const PostingList *other);
 
-            void Retain(const PostingList &successors, length_t start);
+            void Retain(const PostingList *successors, size_t start);
 
-            void GetLocations(vector<location_t> &output, size_t limit = 0);
+            void GetLocations(vector<location_t> &output, size_t limit = 0, unsigned int seed = 0);
 
             bool empty() const;
 
@@ -53,7 +48,6 @@ namespace mmt {
             string Serialize() const;
 
         private:
-            const unsigned int phraseHash;
             size_t entryCount;
             map<domain_t, vector<char>> datamap;
 

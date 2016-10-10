@@ -98,7 +98,7 @@ CorpusStorage::~CorpusStorage() {
 
 bool
 CorpusStorage::Retrieve(int64_t offset, vector<wid_t> *outSourceSentence, vector<wid_t> *outTargetSentence,
-                        mmt::alignment_t *outAlignment) {
+                        mmt::alignment_t *outAlignment) const {
     size_t ptr = (size_t) offset;
 
     if (ptr >= dataLength)

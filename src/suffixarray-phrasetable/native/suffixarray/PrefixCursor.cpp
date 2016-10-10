@@ -32,8 +32,8 @@ namespace mmt {
                 value.resize(0);
             }
 
-            virtual void CollectValue(PostingList &output) override {
-                output.Append(domain, value);
+            virtual void CollectValue(PostingList *output) override {
+                output->Append(domain, value);
             }
 
             virtual size_t CountValue() override {
@@ -88,9 +88,9 @@ namespace mmt {
                 it->Next();
             }
 
-            virtual void CollectValue(PostingList &output) override {
+            virtual void CollectValue(PostingList *output) override {
                 Slice value = it->value();
-                output.Append(domain, string(value.data(), value.size()));
+                output->Append(domain, string(value.data(), value.size()));
             }
 
             virtual size_t CountValue() override {

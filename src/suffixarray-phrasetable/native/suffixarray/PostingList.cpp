@@ -14,12 +14,8 @@
 using namespace mmt;
 using namespace mmt::sapt;
 
-PostingList::PostingList() : phraseHash(0), entryCount(0) {
+PostingList::PostingList() : entryCount(0) {
 
-}
-
-PostingList::PostingList(const vector<wid_t> &sentence, size_t offset, size_t size)
-        : phraseHash(words_hash(sentence, offset, size)), entryCount(0) {
 }
 
 void PostingList::Append(domain_t domain, const string &value) {
@@ -50,11 +46,9 @@ void PostingList::Append(domain_t domain, int64_t location, length_t offset) {
     entryCount++;
 }
 
-void PostingList::Join(const PostingList &other) {
-    assert(other.phraseHash == phraseHash);
-
-    datamap.insert(other.datamap.cbegin(), other.datamap.cend());
-    entryCount += other.entryCount;
+void PostingList::Join(const PostingList *other) {
+    datamap.insert(other->datamap.cbegin(), other->datamap.cend());
+    entryCount += other->entryCount;
 }
 
 bool PostingList::empty() const {
@@ -82,16 +76,16 @@ void PostingList::GetLocationMap(domain_t domain, unordered_map<int64_t, unorder
     }
 }
 
-void PostingList::Retain(const PostingList &other, length_t start) {
+void PostingList::Retain(const PostingList *other, size_t start) {
     auto entry = datamap.begin();
     while (entry != datamap.end()) {
         bool deleteEntry;
 
-        if (other.datamap.find(entry->first) == other.datamap.end()) {
+        if (other->datamap.find(entry->first) == other->datamap.end()) {
             deleteEntry = true;
         } else {
             unordered_map<int64_t, unordered_set<length_t>> successors;
-            other.GetLocationMap(entry->first, successors);
+            other->GetLocationMap(entry->first, successors);
 
             size_t tail = 0;
 
@@ -140,7 +134,7 @@ string PostingList::Serialize() const {
     return buffer;
 }
 
-void PostingList::GetLocations(vector<location_t> &output, size_t limit) {
+void PostingList::GetLocations(vector<location_t> &output, size_t limit, unsigned int seed) {
     if (empty())
         return;
 
@@ -159,8 +153,11 @@ void PostingList::GetLocations(vector<location_t> &output, size_t limit) {
             }
         }
     } else {
+        if (seed == 0)
+            seed = (unsigned int) time(NULL);
+
         vector<size_t> sequence;
-        GenerateRandomSequence(size(), limit, phraseHash, sequence);
+        GenerateRandomSequence(size(), limit, seed, sequence);
         sort(sequence.begin(), sequence.end());
 
         auto sequencePtr = sequence.begin();

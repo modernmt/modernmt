@@ -35,7 +35,7 @@ namespace mmt {
             ~CorpusStorage();
 
             bool Retrieve(int64_t offset, vector<wid_t> *outSourceSentence, vector<wid_t> *outTargetSentence,
-                          alignment_t *outAlignment);
+                          alignment_t *outAlignment) const;
 
             int64_t Append(const vector<wid_t> &sourceSentence, const vector<wid_t> &targetSentence,
                            const alignment_t &alignment) throw(storage_exception);

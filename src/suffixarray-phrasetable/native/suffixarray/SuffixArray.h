@@ -10,10 +10,13 @@
 #include <mmt/IncrementalModel.h>
 #include <unordered_set>
 #include <mutex>
+#include <mmt/sentence.h>
 #include "UpdateBatch.h"
 #include "CorpusStorage.h"
 #include "PostingList.h"
 #include "PrefixCursor.h"
+#include "Collector.h"
+#include "sample.h"
 
 using namespace std;
 
@@ -32,39 +35,6 @@ namespace mmt {
             string message;
         };
 
-        struct sample_t {
-            domain_t domain;
-            vector<wid_t> source;
-            vector<wid_t> target;
-            alignment_t alignment;
-            vector<length_t> offsets;
-
-            string ToString() const {
-                ostringstream repr;
-                repr << "(" << domain << ")";
-
-                for (auto word = source.begin(); word != source.end(); ++word)
-                    repr << " " << *word;
-                repr << " |||";
-                for (auto word = target.begin(); word != target.end(); ++word)
-                    repr << " " << *word;
-                repr << " |||";
-                for (auto a = alignment.begin(); a != alignment.end(); ++a)
-                    repr << " " << a->first << "-" << a->second;
-                repr << " ||| offsets:";
-                for (auto o = offsets.begin(); o != offsets.end(); ++o)
-                    repr << " " << *o;
-
-                return repr.str();
-            }
-
-            friend std::ostream &operator<<(std::ostream &os, const sample_t &sample) {
-                os << sample.ToString();
-                return os;
-            }
-        };
-
-
         class SuffixArray {
         public:
             SuffixArray(const string &path, uint8_t prefixLength,
@@ -74,6 +44,8 @@ namespace mmt {
 
             void GetRandomSamples(const vector<wid_t> &phrase, size_t limit, vector<sample_t> &outSamples,
                                   const context_t *context = NULL, bool searchInBackground = true);
+
+            Collector *NewCollector(const context_t *context = NULL, bool searchInBackground = true);
 
             size_t CountOccurrences(bool isSource, const vector<wid_t> &phrase);
 
@@ -94,13 +66,6 @@ namespace mmt {
 
             void AddPrefixesToBatch(bool isSource, domain_t domain, const vector<wid_t> &sentence,
                                     int64_t location, unordered_map<string, PostingList> &outBatch);
-
-            void CollectLocations(PrefixCursor *cursor, const vector<wid_t> &sentence, PostingList &output);
-
-            void CollectLocations(PrefixCursor *cursor, const vector<wid_t> &phrase, size_t offset, size_t length,
-                                  PostingList &output);
-
-            void Retrieve(const vector<location_t> &locations, vector<sample_t> &outSamples);
         };
 
     }

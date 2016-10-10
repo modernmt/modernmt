@@ -35,7 +35,7 @@ namespace mmt {
 
             virtual void Next() = 0;
 
-            virtual void CollectValue(PostingList &output) = 0;
+            virtual void CollectValue(PostingList *output) = 0;
 
             virtual size_t CountValue() = 0;
         };
