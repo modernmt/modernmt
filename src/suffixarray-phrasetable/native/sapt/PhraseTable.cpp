@@ -327,7 +327,6 @@ void PhraseTable::ExtractPhrasePairs(const std::vector<wid_t> &sourceSentence,
                                      const std::vector<bool> &targetAligned,
                                      int sourceStart, int sourceEnd, int targetStart, int targetEnd,
                                      OptionsMap_t &optionsMap) {
-
     if (targetEnd < 0) // 0-based indexing.
         return;
 
@@ -368,8 +367,10 @@ void PhraseTable::ExtractPhrasePairs(const std::vector<wid_t> &sourceSentence,
             if (key != optionsMap.end()) {
                 key->second += 1;
             } else {
-                optionsMap.insert(std::make_pair(option,1));
+                optionsMap.insert(std::pair<TranslationOption, size_t>(option,1));
+
             }
+
 
             te += 1;
 // if fe is in word alignment or out-of-bounds
