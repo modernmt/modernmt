@@ -39,17 +39,13 @@ namespace mmt {
         GetAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch, vector<alignment_t> &outAlignments,
                       SymmetrizationStrategy strategy = GrowDiagonalFinalAndStrategy) = 0;
 
-        virtual float GetForwardProbability(wid_t source, wid_t target) = 0;
+        virtual float GetForwardProbability(wid_t source, wid_t target) = 0;  //P(target | source)
 
-        virtual float GetBackwardProbability(wid_t source, wid_t target) = 0;
+        virtual float GetBackwardProbability(wid_t source, wid_t target) = 0;  //P(source | target)
 
-        inline float GetForwardNullProbability(wid_t source) {
-            return GetForwardProbability(source, kAlignerNullWord);
-        };
+        virtual float GetSourceNullProbability(wid_t source) = 0;  //P(NULL | source)
 
-        inline float GetBackwardNullProbability(wid_t target) {
-            return GetForwardProbability(kAlignerNullWord, target);
-        };
+        virtual float GetTargetNullProbability(wid_t target) = 0;  //P(NULL | target)
 
         virtual ~Aligner() {};
 

@@ -139,7 +139,8 @@ int main(int argc, const char *argv[]) {
             std::cout << std::endl;
         }
 
-        pt.GetTargetPhraseCollection(sourcePhrase, context, outOptions);
+        // TODO: reactivate
+//        pt.GetTargetPhraseCollection(sourcePhrase, context, outOptions);
 
         if (!args.quiet) {
             for (auto option = outOptions.begin(); option != outOptions.end(); ++option) {

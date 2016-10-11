@@ -54,33 +54,43 @@ namespace mmt {
                 os << option.ToString();
                 return os;
             }
-        };
 
-        struct TranslationOptionComparison {
-            //todo: in the original UG sapt two options are equal even if their alignments differ, and (probably) the winning alignment is the more frequent; while with this comparison function two options are equal if and only both targetPhrases and alignments are the same
-            bool operator() (const TranslationOption& lhs, const TranslationOption& rhs) const {
+            bool operator<(const TranslationOption& rhs) const {
+                //TODO: in the original UG sapt two options are equal even if their alignments differ, and (probably) the winning alignment is the more frequent; no idea what count is associated with the winning option
+                //TODO: With this comparison function two options are equal if and only both targetPhrases and alignments are the same
+                //TODO: To replicate the original UG SAPT behavior, commentout the portion of code related to the alignment
                 //check whether the 2 targetPhrases have the same length
-                if (lhs.targetPhrase.size() != rhs.targetPhrase.size())
-                    return lhs.targetPhrase.size() < rhs.targetPhrase.size();
+                if (this->targetPhrase.size() < rhs.targetPhrase.size()) return true;
+                if (this->targetPhrase.size() > rhs.targetPhrase.size()) return false;
 
+                /* comment to replicate original UG SAPT
                 //check whether the 2 alignments have the same length
-                if (lhs.alignment.size() != rhs.alignment.size())
-                    return lhs.alignment.size() < rhs.alignment.size();
+                if (this->alignment.size() < rhs.alignment.size()) return true;
+                if (this->alignment.size() > rhs.alignment.size()) return false;
+                */
 
                 //check whether the all words of the 2 targetPhrases are the same
-                for (size_t i = 0; i < lhs.targetPhrase.size(); ++i)
-                    return lhs.targetPhrase[i] < rhs.targetPhrase[i];
+                for (size_t i = 0; i < this->targetPhrase.size(); ++i) {
+                    if (this->targetPhrase[i] < rhs.targetPhrase[i]) return true;
+                    if (this->targetPhrase[i] > rhs.targetPhrase[i]) return false;
+                }
 
+                /* comment to replicate original UG SAPT
                 //check whether the all words of the 2 alignments are the same
-                for (size_t i = 0; i < lhs.alignment.size(); ++i)
-                    return lhs.alignment[i] < rhs.alignment[i];
-
-                return true;
+                for (size_t i = 0; i < this->alignment.size(); ++i) {
+                    if (this->alignment[i].first < rhs.alignment[i].first) return true;
+                    if (this->alignment[i].first > rhs.alignment[i].first) return false;
+                    if (this->alignment[i].second < rhs.alignment[i].second) return true;
+                    if (this->alignment[i].second > rhs.alignment[i].second) return false;
+                }
+                */
+                return false;
             }
+
         };
 
         class PhraseTable : public IncrementalModel {
-            typedef std::map<TranslationOption, size_t, mmt::sapt::TranslationOptionComparison> OptionsMap_t;
+            typedef std::map<TranslationOption, size_t> OptionsMap_t;
             typedef std::vector<TranslationOption> OptionsVec_t;
 
         public:
