@@ -56,17 +56,17 @@ void *PhraseTable::__GetSuffixArray() {
     return self->index;
 }
 void PhraseTable::GetTargetPhraseCollection(const vector<wid_t> &sourcePhrase, size_t limit, vector<TranslationOption> &optionsVec, context_t *context) {
-    cerr << "void PhraseTable::GetTargetPhraseCollection(...) sourcePhrase.size():" << sourcePhrase.size() << endl;
-    for (size_t i=0; i< sourcePhrase.size(); ++i){
-        cerr << "void PhraseTable::GetTargetPhraseCollection(...) sourcePhrase[" << i << "]:" << sourcePhrase[i] << endl;
-    }
+    //cerr << "void PhraseTable::GetTargetPhraseCollection(...) sourcePhrase.size():" << sourcePhrase.size() << endl;
+    //for (size_t i=0; i< sourcePhrase.size(); ++i){
+    //    cerr << "void PhraseTable::GetTargetPhraseCollection(...) sourcePhrase[" << i << "]:" << sourcePhrase[i] << endl;
+    //}
 
     OptionsMap_t optionsMap;
 
     vector<sample_t> samples;
     self->index->GetRandomSamples(sourcePhrase, limit, samples, context);
 
-    cerr << "Found " << samples.size() << " samples (maximum was " << limit << ")" << endl;
+    //cerr << "Found " << samples.size() << " samples (maximum was " << limit << ")" << endl;
 
     for (auto sample=samples.begin(); sample != samples.end(); ++ sample){
         //cout << *sample << endl;
@@ -74,7 +74,7 @@ void PhraseTable::GetTargetPhraseCollection(const vector<wid_t> &sourcePhrase, s
         //GetTranslationOptions(sourcePhrase, sample->source, sample->target, sample->alignment, sample->offsets, optionsVec);
         GetTranslationOptions(sourcePhrase, sample->source, sample->target, sample->alignment, sample->offsets, optionsMap);
     }
-    cerr << "void PhraseTable::GetTargetPhraseCollection(...) sourcePhrase.size():" << sourcePhrase.size() << " optionsMap.size():" << optionsMap.size() << endl;
+    //cerr << "void PhraseTable::GetTargetPhraseCollection(...) sourcePhrase.size():" << sourcePhrase.size() << " optionsMap.size():" << optionsMap.size() << endl;
 
     //loop over all Options and score them
     ScoreTranslationOptions(optionsMap, sourcePhrase, samples.size());
