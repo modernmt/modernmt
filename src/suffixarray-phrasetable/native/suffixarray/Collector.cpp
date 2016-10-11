@@ -38,11 +38,8 @@ void Collector::Extend(const vector<wid_t> &words, size_t limit, vector<sample_t
     size_t inContextSize = 0;
 
     for (auto state = inDomainStates.begin(); state != inDomainStates.end(); /* no increment */) {
-        PrefixCursor *cursor = state->cursor.get();
-
-        PostingList *postingList = NULL;
-        size_t collected = CollectLocations(cursor, phrase, prefixLength, state->phraseOffset, &postingList);
-        state->postingList.reset(postingList);
+        size_t collected = CollectLocations(state->cursor.get(), phrase, prefixLength, state->phraseOffset,
+                                            state->postingList);
 
         state->phraseOffset = phrase.size();
 
@@ -77,10 +74,8 @@ void Collector::Extend(const vector<wid_t> &words, size_t limit, vector<sample_t
     vector<location_t> outContextSamples;
 
     if (backgroundState && (limit == 0 || inContextSize < limit)) {
-        PrefixCursor *cursor = backgroundState->cursor.get();
-        PostingList *postingList = NULL;
-        size_t collected = CollectLocations(cursor, phrase, prefixLength, backgroundState->phraseOffset, &postingList);
-        backgroundState->postingList.reset(postingList);
+        size_t collected = CollectLocations(backgroundState->cursor.get(), phrase, prefixLength,
+                                            backgroundState->phraseOffset, backgroundState->postingList);
         backgroundState->phraseOffset = phrase.size();
 
         if (collected > 0) {
@@ -104,19 +99,14 @@ void Collector::Extend(const vector<wid_t> &words, size_t limit, vector<sample_t
         Retrieve(outContextSamples, outSamples);
 }
 
-size_t Collector::CollectLocations(PrefixCursor *cursor, const vector<wid_t> &phrase, length_t prefixLength,
-                                   size_t offset, PostingList **postingList) {
+size_t Collector::CollectLocations(PrefixCursor *cursor, const vector<wid_t> &phrase,
+                                   length_t prefixLength, size_t offset, shared_ptr<PostingList> &postingList) {
     if (offset == 0)
-        assert(postingList == NULL || (*postingList) == NULL);
-
-    // if postingList is NULL, create a local variable to be used by the method
-    PostingList *localPostingList = NULL;
-    if (postingList == NULL)
-        postingList = &localPostingList;
+        assert(postingList == NULL);
 
     // adjust offset: if no previous posting list is provided, we need to iterate from
     //                the very beginning
-    if (*postingList == NULL)
+    if (postingList == NULL)
         offset = 0;
 
     // collect the locations
@@ -134,34 +124,29 @@ size_t Collector::CollectLocations(PrefixCursor *cursor, const vector<wid_t> &ph
             if (start == 0) {
                 CollectPhraseLocations(cursor, phrase, start, prefixLength, postingList);
             } else {
-                PostingList *successors = NULL;
-                CollectPhraseLocations(cursor, phrase, start, prefixLength, &successors);
+                shared_ptr<PostingList> successors;
+                CollectPhraseLocations(cursor, phrase, start, prefixLength, successors);
 
-                (*postingList)->Retain(successors, start);
+                postingList->Retain(successors.get(), start);
             }
 
-            if ((*postingList)->empty())
+            if (postingList->empty())
                 break;
 
             start += prefixLength;
         }
     }
 
-    // save result and delete local posting list if needed
-    size_t result = (*postingList)->size();
-    if (localPostingList)
-        delete localPostingList;
-    return result;
+    return postingList == NULL ? 0 : postingList->size();
 }
 
 void Collector::CollectPhraseLocations(PrefixCursor *cursor, const vector<wid_t> &phrase, size_t offset, size_t length,
-                                       PostingList **postingList) {
-    if (*postingList == NULL)
-        *postingList = new PostingList();
+                                       shared_ptr<PostingList> &postingList) {
+    if (postingList == NULL)
+        postingList.reset(new PostingList());
 
-    for (cursor->Seek(phrase, offset, length); cursor->HasNext(); cursor->Next()) {
-        cursor->CollectValue(*postingList);
-    }
+    for (cursor->Seek(phrase, offset, length); cursor->HasNext(); cursor->Next())
+        cursor->CollectValue(postingList.get());
 }
 
 void Collector::Retrieve(const vector<location_t> &locations, vector<sample_t> &outSamples) {

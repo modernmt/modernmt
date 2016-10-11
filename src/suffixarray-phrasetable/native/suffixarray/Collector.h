@@ -38,10 +38,11 @@ namespace mmt {
             void Retrieve(const vector<location_t> &locations, vector<sample_t> &outSamples);
 
             static size_t CollectLocations(PrefixCursor *cursor, const vector<wid_t> &phrase, length_t prefixLength,
-                                           size_t offset = 0, PostingList **postingList = NULL);
+                                           size_t offset, shared_ptr<PostingList> &postingList);
 
             static inline void CollectPhraseLocations(PrefixCursor *cursor, const vector<wid_t> &phrase,
-                                                      size_t offset, size_t length, PostingList **postingList);
+                                                      size_t offset, size_t length,
+                                                      shared_ptr<PostingList> &postingList);
 
             struct state_t {
                 size_t phraseOffset;

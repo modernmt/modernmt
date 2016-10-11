@@ -190,7 +190,8 @@ size_t SuffixArray::CountOccurrences(bool isSource, const vector<wid_t> &phrase)
         for (cursor->Seek(phrase); cursor->HasNext(); cursor->Next())
             count += cursor->CountValue();
     } else {
-        count = Collector::CollectLocations(cursor, phrase, prefixLength);
+        shared_ptr<PostingList> postingList;
+        count = Collector::CollectLocations(cursor, phrase, prefixLength, 0, postingList);
     }
 
     delete cursor;
