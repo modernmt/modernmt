@@ -19,7 +19,7 @@ using namespace std;
 namespace mmt {
     namespace sapt {
 
-        struct phrase_hash {
+        struct ptphrase_hash {
             size_t operator()(const vector<wid_t> &x) const {
                 size_t hash = 1;
                 for (size_t i = 0; i < x.size(); ++i)
@@ -29,7 +29,7 @@ namespace mmt {
             }
         };
 
-        typedef unordered_map<vector<wid_t>, vector<TranslationOption>, phrase_hash> translation_table_t;
+        typedef unordered_map<vector<wid_t>, vector<TranslationOption>, ptphrase_hash> translation_table_t;
 
         class PhraseTable : public IncrementalModel {
         public:
