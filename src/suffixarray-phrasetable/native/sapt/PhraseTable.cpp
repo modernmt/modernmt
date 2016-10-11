@@ -14,16 +14,17 @@ using namespace mmt::sapt;
 struct PhraseTable::pt_private {
     SuffixArray *index;
     UpdateManager *updates;
-    mmt::Aligner *aligner;
+    Aligner *aligner;
+
+    size_t numberOfSamples;
 };
 
-PhraseTable::PhraseTable(const string &modelPath, const Options &options, mmt::Aligner *alignerModel) {
+PhraseTable::PhraseTable(const string &modelPath, const Options &options, Aligner *aligner) {
     self = new pt_private();
     self->index = new SuffixArray(modelPath, options.prefix_length);
     self->updates = new UpdateManager(self->index, options.update_buffer_size, options.update_max_delay);
-    self->aligner = alignerModel;
-    numScoreComponent = 4;
-    debug=false;
+    self->aligner = aligner;
+    self->numberOfSamples = options.samples;
 }
 
 PhraseTable::~PhraseTable() {
@@ -52,249 +53,28 @@ vector<updateid_t> PhraseTable::GetLatestUpdatesIdentifier() {
     return result;
 }
 
-void *PhraseTable::__GetSuffixArray() {
-    return self->index;
-}
-void PhraseTable::GetTargetPhraseCollection(const vector<wid_t> &sourcePhrase, size_t limit, vector<TranslationOption> &optionsVec, context_t *context) {
-    OptionsMap_t optionsMap;
+/* Translation Options extraction */
 
-    vector<sample_t> samples;
-    self->index->GetRandomSamples(sourcePhrase, limit, samples, context);
+typedef unordered_map<TranslationOption, size_t, TranslationOption::hash> optionsmap_t;
 
-    for (auto sample=samples.begin(); sample != samples.end(); ++ sample){
-        GetTranslationOptions(sourcePhrase, sample->source, sample->target, sample->alignment, sample->offsets, optionsMap);
-    }
-
-    //loop over all Options and score them
-    ScoreTranslationOptions(optionsMap, sourcePhrase, samples.size());
-
-    //transform the map into a vector
-    for (auto entry = optionsMap.begin(); entry != optionsMap.end(); ++entry) {
-        optionsVec.push_back(entry->first);
-    }
-};
-
-void PhraseTable::ScoreTranslationOptions(OptionsMap_t &optionsMap, const vector<wid_t> &sourcePhrase, size_t NumberOfSamples){
-
-    size_t SampleSourceFrequency = 0;
-    for (auto entry = optionsMap.begin(); entry != optionsMap.end(); ++ entry) {
-        SampleSourceFrequency += entry->second;
-    }
-
-    size_t GlobalSourceFrequency = self->index->CountOccurrences(true, sourcePhrase);
-    for (auto entry = optionsMap.begin(); entry != optionsMap.end(); ++ entry) {
-        size_t GlobalTargetFrequency = self->index->CountOccurrences(false, entry->first.targetPhrase);
-
-/*
-	std::cerr << "options is:|" << entry->first
-                   << " Frequency:" << entry->second << " SampleSourceFrequency:" << SampleSourceFrequency
-                   << " GlobalSourceFrequency:"<< GlobalSourceFrequency << " GlobalTargetFrequency:" << GlobalTargetFrequency
-                   <<  " NumberOfSamples:"<< NumberOfSamples << std::endl;
-*/
-        std::vector<float> scores(numScoreComponent);
-
-        //set the forward and backward frequency-based scores of the current option
-        scores[0] = log( (float) entry->second / SampleSourceFrequency );
-        scores[1] = log(((float) entry->second / SampleSourceFrequency) * ((float) GlobalSourceFrequency / GlobalTargetFrequency) );
-        scores[1] = std::min(scores[1], (float) 0.0);  //thresholded to log(1.0)
-
-        //set the forward and backward lexical scores of the current option
-        scores[2] = 0.0;
-        scores[3] = 0.0;
-        GetLexicalScores(sourcePhrase, entry->first, scores[2], scores[3]);
-
-        ((TranslationOption*) &entry->first)->SetScores(scores);
-    }
-}
-
-void PhraseTable::GetLexicalScores(const vector<wid_t> &sourcePhrase, const TranslationOption &option, float &fwdScore, float &bwdScore){
-    if (self->aligner) { // if the AlignmentModel is provided, compute the lexical probabilities
-        std::vector<std::vector<float> > fwdWordProb(option.targetPhrase.size());
-        std::vector<std::vector<float> > bwdWordProb(sourcePhrase.size());
-        size_t sSize = sourcePhrase.size();
-        size_t tSize = option.targetPhrase.size();
-        //std::cerr << "void PhraseTable::GetLexicalScores(...) sSize:" << sSize << " tSize:" << tSize << std::endl;
-        for (auto a = option.alignment.begin(); a != option.alignment.end(); ++a) {
-            //std::cerr << "void PhraseTable::GetLexicalScores(...) a->first:" << a->first << " a->second:" << a->second << std::endl;
-            wid_t sWord = sourcePhrase[a->first];
-            wid_t tWord = option.targetPhrase[a->second];
-            //std::cerr << "void PhraseTable::GetLexicalScores(...) sWord:" << sWord << " tWord:" << tWord << std::endl;
-            fwdWordProb[a->second].push_back(self->aligner->GetForwardProbability(sWord, tWord));  //P(tWord | sWord)
-            bwdWordProb[a->first].push_back(self->aligner->GetBackwardProbability(sWord, tWord));  //P(sWord | tWord)
-            //std::cerr << "void PhraseTable::GetLexicalScores(...) fwdProb:" << self->aligner->GetForwardProbability(sWord, tWord) << " bwdProb:" << self->aligner->GetBackwardProbability(sWord, tWord) << std::endl;
-
-        }
-        fwdScore = 0.0;
-        for (size_t ti = 0; ti < tSize; ++ti) {
-            float tmpProb = 0.0;
-            size_t tmpSize = fwdWordProb[ti].size();
-            //std::cerr << "void PhraseTable::GetLexicalScores(...) ti:" << ti << " tmpSize:" << tmpSize << " fwdWordProb[ti].size():" << fwdWordProb[ti].size() << std::endl;
-
-            if (tmpSize > 0) {
-                for (size_t i = 0; i < tmpSize; ++i) {
-                    //std::cerr << "void PhraseTable::GetLexicalScores(...) ti: " << ti << " i:" << i << " fwdWordProb[ti][i]:" << fwdWordProb[ti][i] << std::endl;
-                    tmpProb += fwdWordProb[ti][i];
-                    //std::cerr << "void PhraseTable::GetLexicalScores(...) tmpProb:" << tmpProb << std::endl;
-                }
-                tmpProb /= tmpSize;
-            } else {
-                //std::cerr << "void PhraseTable::GetLexicalScores(...) ti:" << ti << " NullProb[ti]:" << self->aligner->GetTargetNullProbability(option.targetPhrase[ti]) << std::endl;
-                tmpProb = self->aligner->GetTargetNullProbability(option.targetPhrase[ti]);
-                //std::cerr << "void PhraseTable::GetLexicalScores(...) tmpProb:" << tmpProb << std::endl;
-            }
-            //std::cerr << "void PhraseTable::GetLexicalScores(...) FINAL tmpProb:" << tmpProb << std::endl;
-            //should never happen that tmpProb <= 0
-            fwdScore += (tmpProb <= 0.0) ? -9 : log(tmpProb);
-            //std::cerr << "void PhraseTable::GetLexicalScores(...) fwdScore:" << fwdScore << std::endl;
-        }
-        //std::cerr << "void PhraseTable::GetLexicalScores(...) FINAL fwdScore:" << fwdScore << std::endl;
-
-        bwdScore = 0.0;
-        for (size_t si = 0; si < sSize; ++si) {
-            float tmpProb = 0.0;
-            size_t tmpSize = bwdWordProb[si].size();
-            //std::cerr << "void PhraseTable::GetLexicalScores(...) si:" << si << " tmpSize:" << tmpSize << " bwdWordProb[si].size():" << bwdWordProb[si].size() << std::endl;
-            if (tmpSize > 0) {
-                for (size_t i = 0; i < tmpSize; ++i) {
-                    //std::cerr << "void PhraseTable::GetLexicalScores(...) si: " << si << " i:" << i << " bwdWordProb[si][i]:" << bwdWordProb[si][i] << std::endl;
-                    tmpProb += bwdWordProb[si][i];
-                   //std::cerr << "void PhraseTable::GetLexicalScores(...) tmpProb:" << tmpProb << std::endl;
-
-                }
-                tmpProb /= tmpSize;
-            } else {
-                //std::cerr << "void PhraseTable::GetLexicalScores(...) si:" << si << " NullProb[si]:" << self->aligner->GetTargetNullProbability(sourcePhrase[si]) << std::endl;
-                tmpProb = self->aligner->GetSourceNullProbability(sourcePhrase[si]);
-                //std::cerr << "void PhraseTable::GetLexicalScores(...) tmpProb:" << tmpProb << std::endl;
-            }
-            //std::cerr << "void PhraseTable::GetLexicalScores(...) FINAL tmpProb:" << tmpProb << std::endl;
-            //should never happen that tmpProb <= 0
-            bwdScore += (tmpProb <= 0.0) ? -9 : log(tmpProb);
-            //std::cerr << "void PhraseTable::GetLexicalScores(...) bwdScore:" << bwdScore << std::endl;
-        }
-        //std::cerr << "void PhraseTable::GetLexicalScores(...) FINAL bwdScore:" << bwdScore << std::endl;
-    }
-}
-/*
-void PhraseTable::GetLexicalScores(const vector<wid_t> &sourcePhrase, const TranslationOption &option, float &fwdScore, float &bwdScore){
-    if (self->aligner) { // if the AlignmentModel is provided, compute the lexical probabilities
-        std::vector<std::vector<float> > fwdWordProb(sourcePhrase.size());
-        std::vector<std::vector<float> > bwdWordProb(option.targetPhrase.size());
-        size_t sSize = sourcePhrase.size();
-        size_t tSize = option.targetPhrase.size();
-
-        for (auto a = option.alignment.begin(); a != option.alignment.end(); ++a) {
-            wid_t sWord = sourcePhrase[a->first];
-            wid_t tWord = option.targetPhrase[a->second];
-            fwdWordProb[a->first].push_back(self->aligner->GetForwardProbability(sWord, tWord));
-            bwdWordProb[a->second].push_back(self->aligner->GetBackwardProbability(sWord, tWord));
-        }
-        fwdScore = 0.0;
-        for (size_t si = 0; si < sSize; ++si) {
-            float tmp = 0.0;
-            if (fwdWordProb[si].size() > 0) {
-                for (size_t i = 0; i < fwdWordProb[si].size(); ++i) {
-                    tmp += fwdWordProb[si][i];
-                }
-            } else {
-                tmp = self->aligner->GetForwardNullProbability(sourcePhrase[si]);
-            }
-            if (tmp <= 0.0){
-                tmp = -9;  //should never happen
-            } else {
-                tmp=log(tmp);
-            }
-            fwdScore += tmp;
-        }
-
-        bwdScore = 0.0;
-        for (size_t ti = 0; ti < tSize; ++ti) {
-            float tmp = 0.0;
-            if (bwdWordProb[ti].size() > 0) {
-                for (size_t i = 0; i < bwdWordProb[ti].size(); ++i) {
-                    tmp += bwdWordProb[ti][i];
-                }
-            } else {
-                tmp = self->aligner->GetBackwardNullProbability(option.targetPhrase[ti]);
-            }
-            if (tmp <= 0.0){
-		tmp = -9;  //should never happen
-            } else {
-                tmp=log(tmp);
-            }
-            bwdScore += tmp;
-        }
-    }
-}
-*/
-
-void PhraseTable::GetTranslationOptions(const vector<wid_t> &sourcePhrase,
-                                        const std::vector<wid_t> &sourceSentence,
-                                        const std::vector<wid_t> &targetSentence,
-                                        const alignment_t &alignment,
-                                        const std::vector<length_t> &offsets,
-                                        OptionsMap_t &optionsMap){
-
-// Keeps a vector to know whether a target word is aligned.
-    std::vector<bool> targetAligned(targetSentence.size(),false);
-
-    //for (auto alignPoint = corrected_alignment.begin(); alignPoint != corrected_alignment.end(); ++alignPoint){
-    for (auto alignPoint = alignment.begin(); alignPoint != alignment.end(); ++alignPoint){
-        if ((alignPoint->first < sourceSentence.size()) && (alignPoint->second < targetSentence.size())) {
-            targetAligned[alignPoint->second] = true;
-        }
-    }
-
-    for (auto offset = offsets.begin(); offset != offsets.end(); ++ offset){ //for each occurrence of the source in the sampled sentence pair
-        // get source position lowerBound  and  upperBound
-        int sourceStart = *offset; // lowerBound is always larger than or equal to 0
-        int sourceEnd = sourceStart + sourcePhrase.size() - 1; // upperBound is always larger than or equal to 0, because sourcePhrase.size()>=1
-
-        // find the minimally matching foreign phrase
-        int targetStart = targetSentence.size() - 1;
-        int targetEnd = -1;
-
-        //for (auto alignPoint = corrected_alignment.begin(); alignPoint != corrected_alignment.end(); ++alignPoint) {
-        for (auto alignPoint = alignment.begin(); alignPoint != alignment.end(); ++alignPoint) {
-            if ((alignPoint->first < sourceSentence.size()) && (alignPoint->second < targetSentence.size())) {
-                if ((alignPoint->first >= sourceStart) && (alignPoint->first <= sourceEnd)) {
-                    targetStart = std::min((int) alignPoint->second, targetStart);
-                    targetEnd = std::max((int) alignPoint->second, targetEnd);
-                }
-            }
-        }
-
-        alignment_t considered_alignment;
-        for (auto alignPoint = alignment.begin(); alignPoint != alignment.end(); ++alignPoint) {
-
-            if ((alignPoint->first < sourceSentence.size()) && (alignPoint->second < targetSentence.size())) {
-                if ( ((alignPoint->first >= sourceStart) && (alignPoint->first <= sourceEnd)) || ((alignPoint->second >= targetStart) && (alignPoint->second <= targetEnd)) ){
-                    considered_alignment.push_back(*alignPoint);
-                }
-            }
-        }
-        ExtractPhrasePairs(sourceSentence, targetSentence, considered_alignment, targetAligned, sourceStart, sourceEnd, targetStart, targetEnd, optionsMap); //add all extracted phrase pairs into outOptions
-    }
-}
-
-void PhraseTable::ExtractPhrasePairs(const std::vector<wid_t> &sourceSentence,
-                                     const std::vector<wid_t> &targetSentence,
-                                     const alignment_t &alignment,
-                                     const std::vector<bool> &targetAligned,
-                                     int sourceStart, int sourceEnd, int targetStart, int targetEnd,
-                                     OptionsMap_t &optionsMap) {
+static void ExtractPhrasePairs(const vector<wid_t> &sourceSentence, const vector<wid_t> &targetSentence,
+                               const alignment_t &alignment, const vector<bool> &targetAligned,
+                               int sourceStart, int sourceEnd, int targetStart, int targetEnd,
+                               optionsmap_t &outOptions) {
     if (targetEnd < 0) // 0-based indexing.
         return;
 
-// Check if alignment points are consistent. if yes, copy
+    // Check if alignment points are consistent. if yes, copy
     alignment_t currentAlignments;
     for (auto alignPoint = alignment.begin(); alignPoint != alignment.end(); ++alignPoint) {
 
         //checking whether there are other alignment points outside the current phrase pair; if yes, return doing nothing, because the phrase pair is not valid
-        if ( ( (alignPoint->first >= sourceStart) && (alignPoint->first <= sourceEnd) ) &&  ( (alignPoint->second < targetStart) || (alignPoint->second > targetEnd) ) ){
+        if (((alignPoint->first >= sourceStart) && (alignPoint->first <= sourceEnd)) &&
+            ((alignPoint->second < targetStart) || (alignPoint->second > targetEnd))) {
             return;
         }
-        if ( ( (alignPoint->second >= targetStart) && (alignPoint->second <= targetEnd) ) && ( (alignPoint->first < sourceStart) || (alignPoint->first > sourceEnd) ) ){
+        if (((alignPoint->second >= targetStart) && (alignPoint->second <= targetEnd)) &&
+            ((alignPoint->first < sourceStart) || (alignPoint->first > sourceEnd))) {
             return;
         }
 
@@ -306,7 +86,7 @@ void PhraseTable::ExtractPhrasePairs(const std::vector<wid_t> &sourceSentence,
     while (true) {
         int te = targetEnd;
         while (true) {
-            TranslationOption option(numScoreComponent);
+            TranslationOption option;
             option.targetPhrase.insert(option.targetPhrase.begin(),
                                        targetSentence.begin() + ts,
                                        targetSentence.begin() + te + 1);
@@ -314,56 +94,205 @@ void PhraseTable::ExtractPhrasePairs(const std::vector<wid_t> &sourceSentence,
             option.alignment = currentAlignments;
 
             //re-set the word positions within the phrase pair, regardless the sentence context
-            for (auto a = option.alignment.begin(); a != option.alignment.end(); ++a){
+            for (auto a = option.alignment.begin(); a != option.alignment.end(); ++a) {
                 a->first -= sourceStart;
                 a->second -= ts;
             }
 
-            auto key = optionsMap.find(option);
-            if (key != optionsMap.end()) {
-                key->second += 1;
-            } else {
-                optionsMap.insert(std::pair<TranslationOption, size_t>(option,1));
-
-            }
-
+            outOptions[option]++;
 
             te += 1;
-// if fe is in word alignment or out-of-bounds
+            // if fe is in word alignment or out-of-bounds
             if (te == targetSentence.size() || targetAligned[te]) {
                 break;
             }
         }
+
         ts -= 1;
-// if fs is in word alignment or out-of-bounds
+        // if fs is in word alignment or out-of-bounds
         if (ts < 0 || targetAligned[ts]) {
             break;
         }
     }
 }
 
+static void GetTranslationOptionsFromSample(const vector<wid_t> &sourcePhrase, const sample_t &sample,
+                                            optionsmap_t &outOptions) {
+    // keeps a vector to know whether a target word is aligned.
+    vector<bool> targetAligned(sample.target.size(), false);
+    for (auto alignPoint = sample.alignment.begin(); alignPoint != sample.alignment.end(); ++alignPoint)
+        targetAligned[alignPoint->second] = true;
 
-void PhraseTable::NormalizeContext(context_t *context) {
-    context_t ret;
-    float total = 0.0;
+    // for each occurrence of the source in the sampled sentence pair
+    for (auto offset = sample.offsets.begin(); offset != sample.offsets.end(); ++offset) {
+        // get source position lowerBound  and  upperBound
+        int sourceStart = *offset; // lowerBound is always larger than or equal to 0
+        int sourceEnd = sourceStart + sourcePhrase.size() -
+                        1; // upperBound is always larger than or equal to 0, because sourcePhrase.size()>=1
 
-    for (auto it = context->begin(); it != context->end(); ++it) {
-        //todo:: can it happen that the domain is empty?
-        total += it->score;
+        // find the minimally matching foreign phrase
+        int targetStart = sample.target.size() - 1;
+        int targetEnd = -1;
+
+        for (auto alignPoint = sample.alignment.begin(); alignPoint != sample.alignment.end(); ++alignPoint) {
+            if ((alignPoint->first >= sourceStart) && (alignPoint->first <= sourceEnd)) {
+                targetStart = min((int) alignPoint->second, targetStart);
+                targetEnd = max((int) alignPoint->second, targetEnd);
+            }
+        }
+
+        alignment_t inBoundsAlignment;
+        for (auto alignPoint = sample.alignment.begin(); alignPoint != sample.alignment.end(); ++alignPoint) {
+            if (((alignPoint->first >= sourceStart) && (alignPoint->first <= sourceEnd)) ||
+                ((alignPoint->second >= targetStart) && (alignPoint->second <= targetEnd))) {
+                inBoundsAlignment.push_back(*alignPoint);
+            }
+        }
+
+        ExtractPhrasePairs(sample.source, sample.target, inBoundsAlignment, targetAligned,
+                           sourceStart, sourceEnd, targetStart, targetEnd, outOptions);
+    }
+}
+
+/* Translation Options scoring */
+
+static void GetLexicalScores(Aligner *aligner, const vector<wid_t> &phrase, const TranslationOption &option,
+                             float &fwdScore, float &bwdScore) {
+    vector<vector<float>> fwdWordProb(option.targetPhrase.size());
+    vector<vector<float>> bwdWordProb(phrase.size());
+    size_t sSize = phrase.size();
+    size_t tSize = option.targetPhrase.size();
+
+    for (auto a = option.alignment.begin(); a != option.alignment.end(); ++a) {
+        wid_t sWord = phrase[a->first];
+        wid_t tWord = option.targetPhrase[a->second];
+        fwdWordProb[a->second].push_back(aligner->GetForwardProbability(sWord, tWord));  //P(tWord | sWord)
+        bwdWordProb[a->first].push_back(aligner->GetBackwardProbability(sWord, tWord));  //P(sWord | tWord)
+
+    }
+    fwdScore = 0.0;
+    for (size_t ti = 0; ti < tSize; ++ti) {
+        float tmpProb = 0.0;
+        size_t tmpSize = fwdWordProb[ti].size();
+
+        if (tmpSize > 0) {
+            for (size_t i = 0; i < tmpSize; ++i) {
+                tmpProb += fwdWordProb[ti][i];
+            }
+            tmpProb /= tmpSize;
+        } else {
+            tmpProb = aligner->GetTargetNullProbability(option.targetPhrase[ti]);
+        }
+        //should never happen that tmpProb <= 0
+        fwdScore += (tmpProb <= 0.0) ? -9 : log(tmpProb);
     }
 
-    if (total == 0.0)
-        total = 1.0f;
+    bwdScore = 0.0;
+    for (size_t si = 0; si < sSize; ++si) {
+        float tmpProb = 0.0;
+        size_t tmpSize = bwdWordProb[si].size();
 
-    for (auto it = context->begin(); it != context->end(); ++it) {
-        //todo:: can it happen that the domain is empty?
-        it->score /= total;
+        if (tmpSize > 0) {
+            for (size_t i = 0; i < tmpSize; ++i) {
+                tmpProb += bwdWordProb[si][i];
+            }
+            tmpProb /= tmpSize;
+        } else {
+            tmpProb = aligner->GetSourceNullProbability(phrase[si]);
+        }
 
-        ret.push_back(*it);
+        //should never happen that tmpProb <= 0
+        bwdScore += (tmpProb <= 0.0) ? -9 : log(tmpProb);
+    }
+}
+
+static void ScoreTranslationOptions(SuffixArray *index, Aligner *aligner,
+                                    const vector<wid_t> &phrase, optionsmap_t &options) {
+
+    size_t SampleSourceFrequency = 0;
+    for (auto entry = options.begin(); entry != options.end(); ++entry) {
+        SampleSourceFrequency += entry->second;
     }
 
-    // replace new vector into old vector
-    context->clear();
-    //todo: check if the following insert is correct
-    context->insert(context->begin(), ret.begin(), ret.end());
+    size_t GlobalSourceFrequency = index->CountOccurrences(true, phrase);
+
+    for (auto entry = options.begin(); entry != options.end(); ++entry) {
+        size_t GlobalTargetFrequency = index->CountOccurrences(false, entry->first.targetPhrase);
+
+        float fwdScore = log((float) entry->second / SampleSourceFrequency);
+        float bwdScore = log(((float) entry->second / SampleSourceFrequency) *
+                             ((float) GlobalSourceFrequency / GlobalTargetFrequency));
+        float fwdLexScore = 0.f;
+        float bwdLexScore = 0.f;
+
+        if (aligner)
+            GetLexicalScores(aligner, phrase, entry->first, fwdLexScore, bwdLexScore);
+
+        vector<float> &scores = (vector<float> &) entry->first.scores;
+        scores[kTOForwardProbability] = fwdScore;
+        scores[kTOBackwardProbability] = min(0.f, bwdScore);
+        scores[kTOForwardLexicalProbability] = fwdLexScore;
+        scores[kTOBackwardLexicalProbability] = bwdLexScore;
+    }
+}
+
+/* SAPT methods */
+
+static void MakeOptions(SuffixArray *index, Aligner *aligner,
+                        const vector<wid_t> &phrase, const vector<sample_t> &samples,
+                        vector<TranslationOption> &output) {
+    optionsmap_t options;
+
+    for (auto sample = samples.begin(); sample != samples.end(); ++sample)
+        GetTranslationOptionsFromSample(phrase, *sample, options);
+
+    ScoreTranslationOptions(index, aligner, phrase, options);
+
+    for (auto entry = options.begin(); entry != options.end(); ++entry)
+        output.push_back(entry->first);
+}
+
+vector<TranslationOption> PhraseTable::GetTranslationOptions(const vector<wid_t> &phrase, context_t *context) {
+    vector<sample_t> samples;
+    self->index->GetRandomSamples(phrase, self->numberOfSamples, samples, context);
+
+    vector<TranslationOption> result;
+    MakeOptions(self->index, self->aligner, phrase, samples, result);
+
+    return result;
+}
+
+translation_table_t PhraseTable::GetAllTranslationOptions(const vector<wid_t> &sentence, context_t *context) {
+    translation_table_t ttable;
+
+    for (size_t start = 0; start < sentence.size(); ++start) {
+        Collector *collector = self->index->NewCollector(context);
+
+        vector<wid_t> phrase;
+        vector<wid_t> phraseDelta;
+
+        for (size_t end = start; end < sentence.size(); ++end) {
+            wid_t word = sentence[end];
+            phrase.push_back(word);
+            phraseDelta.push_back(word);
+
+            if (ttable.find(phrase) == ttable.end()) {
+                vector<sample_t> samples;
+                collector->Extend(phraseDelta, self->numberOfSamples, samples);
+                phraseDelta.clear();
+
+                if (samples.empty())
+                    break;
+
+                vector<TranslationOption> options;
+                MakeOptions(self->index, self->aligner, phrase, samples, options);
+
+                ttable[phrase] = options;
+            }
+        }
+
+        delete collector;
+    }
+
+    return ttable;
 }

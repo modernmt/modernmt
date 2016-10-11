@@ -110,12 +110,10 @@ int main(int argc, const char *argv[]) {
 
     context_t *context = args.context.empty() ? NULL : &args.context;
 
-    Options options;
-    options.samples = args.sample_limit;
+    Options ptOptions;
+    ptOptions.samples = args.sample_limit;
 
-    PhraseTable pt(args.model_path, options);
-
-    if (!args.quiet) pt.setDebug(true);
+    PhraseTable pt(args.model_path, ptOptions);
 
     if (!args.quiet) {
         std::cout << "Model loaded" << std::endl;
@@ -127,7 +125,6 @@ int main(int argc, const char *argv[]) {
     }
 
     string line;
-    std::vector<TranslationOption> outOptions;
     vector<wid_t> sourcePhrase;
 
     while (getline(cin, line)) {
@@ -139,15 +136,14 @@ int main(int argc, const char *argv[]) {
             std::cout << std::endl;
         }
 
-        // TODO: reactivate
-//        pt.GetTargetPhraseCollection(sourcePhrase, context, outOptions);
+        vector<TranslationOption> options = pt.GetTranslationOptions(sourcePhrase, context);
 
         if (!args.quiet) {
-            for (auto option = outOptions.begin(); option != outOptions.end(); ++option) {
-                std::cout << *option << endl;
+            for (auto option = options.begin(); option != options.end(); ++option) {
+                cout << option->ToString() << endl;
             }
         }
-        cout << "Found " << outOptions.size() << " options" << endl;
+        cout << "Found " << options.size() << " options" << endl;
     }
 
     return SUCCESS;

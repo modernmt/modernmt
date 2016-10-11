@@ -37,6 +37,7 @@ set(SOURCE_FILES
         suffixarray/Collector.cpp suffixarray/Collector.h
 
         sapt/Options.h
+        sapt/TranslationOption.h
         sapt/PhraseTable.cpp sapt/PhraseTable.h
         sapt/UpdateManager.cpp sapt/UpdateManager.h
 
