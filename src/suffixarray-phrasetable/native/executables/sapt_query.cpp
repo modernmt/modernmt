@@ -142,6 +142,23 @@ int main(int argc, const char *argv[]) {
             std::cerr << std::endl;
         }
 
+        // -------------------------------
+        vector<sample_t> samples2;
+        Collector *collector = index.NewCollector(context);
+        for (auto word = sourcePhrase.begin(); word != sourcePhrase.end(); ++word) {
+            samples2.clear();
+            collector->Extend(*word, sample_limit, samples2);
+        }
+        delete collector;
+
+//        if (!args.quiet) {
+//            for (auto sample = samples2.begin(); sample != samples2.end(); ++sample)
+//                std::cout << sample->ToString() << endl;
+//        }
+
+        cout << "Iterative found " << CountSamples(samples2) << " samples" << endl;
+        // -------------------------------
+
         vector<sample_t> samples;
         index.GetRandomSamples(sourcePhrase, sample_limit, samples, context);
 

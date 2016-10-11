@@ -109,9 +109,9 @@ int main(int argc, const char *argv[]) {
         return ERROR_IN_COMMAND_LINE;
 
     context_t *context = args.context.empty() ? NULL : &args.context;
-    size_t sample_limit = args.sample_limit;
 
     Options options;
+    options.samples = args.sample_limit;
 
     PhraseTable pt(args.model_path, options);
 
@@ -139,7 +139,7 @@ int main(int argc, const char *argv[]) {
             std::cout << std::endl;
         }
 
-        pt.GetTargetPhraseCollection(sourcePhrase, sample_limit, outOptions, context);
+        pt.GetTargetPhraseCollection(sourcePhrase, context, outOptions);
 
         if (!args.quiet) {
             for (auto option = outOptions.begin(); option != outOptions.end(); ++option) {

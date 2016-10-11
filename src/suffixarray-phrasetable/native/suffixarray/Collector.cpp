@@ -104,11 +104,6 @@ size_t Collector::CollectLocations(PrefixCursor *cursor, const vector<wid_t> &ph
     if (offset == 0)
         assert(postingList == NULL);
 
-    // adjust offset: if no previous posting list is provided, we need to iterate from
-    //                the very beginning
-    if (postingList == NULL)
-        offset = 0;
-
     // collect the locations
     size_t phraseLength = phrase.size();
 

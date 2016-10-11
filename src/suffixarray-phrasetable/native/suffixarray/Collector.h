@@ -27,6 +27,10 @@ namespace mmt {
 
             void Extend(const vector<wid_t> &words, size_t limit, vector<sample_t> &outSamples);
 
+            const vector<wid_t> &GetPhrase() const {
+                return phrase;
+            }
+
             ~Collector() {
                 if (backgroundState) delete backgroundState;
             }
