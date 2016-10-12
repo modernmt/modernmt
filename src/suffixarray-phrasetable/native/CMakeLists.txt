@@ -72,7 +72,7 @@ install(TARGETS ${PROJECT_NAME}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
 
-install(FILES sapt/PhraseTable.h sapt/Options.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/sapt)
+install(FILES sapt/PhraseTable.h sapt/Options.h sapt/TranslationOption.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/sapt)
 
 ## MMT common-interfaces
 find_package(MMTCommons REQUIRED)
