@@ -171,7 +171,7 @@ if __name__ == '__main__':
         parser.print_help()
         exit(1)
 
-    Api = MMTApi(args.port)
+    Api = MMTApi(port=args.port)
 
     if args.show_weights:
         # Show weights
