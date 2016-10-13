@@ -3,6 +3,7 @@
 //
 
 #include <algorithm>
+#include <boost/math/distributions/binomial.hpp>
 #include <suffixarray/SuffixArray.h>
 
 #include "PhraseTable.h"
@@ -206,8 +207,17 @@ static void GetLexicalScores(Aligner *aligner, const vector<wid_t> &phrase, cons
     }
 }
 
+static float lbop(float succ, float tries, float confidence) {
+    if(confidence == 0)
+        return succ / tries;
+    else
+        return (float) boost::math::binomial_distribution<>::find_lower_bound_on_p(tries, succ, confidence);
+}
+
 static void ScoreTranslationOptions(SuffixArray *index, Aligner *aligner,
                                     const vector<wid_t> &phrase, optionsmap_t &options) {
+
+    static constexpr float confidence = 0.01;
 
     size_t SampleSourceFrequency = 0;
     for (auto entry = options.begin(); entry != options.end(); ++entry) {
@@ -219,9 +229,9 @@ static void ScoreTranslationOptions(SuffixArray *index, Aligner *aligner,
     for (auto entry = options.begin(); entry != options.end(); ++entry) {
         size_t GlobalTargetFrequency = index->CountOccurrences(false, entry->first.targetPhrase);
 
-        float fwdScore = log((float) entry->second / SampleSourceFrequency);
-        float bwdScore = log(((float) entry->second / SampleSourceFrequency) *
-                             ((float) GlobalSourceFrequency / GlobalTargetFrequency));
+        float fwdScore = log(lbop(entry->second, SampleSourceFrequency, confidence));
+        float bwdScore = log(lbop(entry->second, std::max((float) entry->second, (float) SampleSourceFrequency *
+                             GlobalTargetFrequency / GlobalSourceFrequency), confidence));
         float fwdLexScore = 0.f;
         float bwdLexScore = 0.f;
 
