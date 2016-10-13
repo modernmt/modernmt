@@ -20,6 +20,7 @@ __author__ = 'Davide Caroselli'
 DEFAULT_MMT_API_PORT = 8045
 DEFAULT_MMT_CLUSTER_PORTS = [5016, 5017]
 
+
 class MMTApi:
     DEFAULT_TIMEOUT = 60 * 60  # sec
 
