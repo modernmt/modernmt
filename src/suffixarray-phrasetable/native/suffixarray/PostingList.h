@@ -20,8 +20,8 @@ namespace mmt {
             length_t offset;
             domain_t domain;
 
-            location_t(int64_t pointer, length_t offset, domain_t domain) : pointer(pointer), offset(offset),
-                                                                            domain(domain) {}
+            location_t(int64_t pointer = -1, length_t offset = 0, domain_t domain = 0)
+                    : pointer(pointer), offset(offset), domain(domain) {}
         };
 
         class PostingList {

@@ -175,10 +175,6 @@ void PostingList::GetLocations(vector<location_t> &output, size_t limit, unsigne
             dataOffset += entry->second.size();
         }
     }
-
-    sort(output.begin(), output.end(), [](const location_t &a, const location_t &b) {
-        return a.pointer == b.pointer ? a.offset > b.offset : a.pointer > b.pointer;
-    });
 }
 
 inline void PostingList::Get(const vector<char> &chunk, size_t index, int64_t *outLocation, length_t *outOffset) {

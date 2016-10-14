@@ -4,6 +4,7 @@
 
 #include <util/hashutils.h>
 #include <iostream>
+#include <algorithm>
 #include "Collector.h"
 
 using namespace mmt;
@@ -33,11 +34,10 @@ void Collector::Extend(const vector<wid_t> &words, size_t limit, vector<sample_t
     phrase.insert(phrase.end(), words.begin(), words.end());
     unsigned int shuffleSeed = max(1U, words_hash(phrase));
 
+    vector<location_t> locations;
+    size_t availability = limit;
+
     // Get in-context samples
-    vector<location_t> inContextSamples;
-    size_t inContextSize = 0; //the amount of sample inserted
-    size_t missing = limit; //the amount of sample missing to reach the required limit
-    //cerr << "collecting at most " << limit << " samples from in-domain" << endl;
 
     for (auto state = inDomainStates.begin(); state != inDomainStates.end(); /* no increment */) {
         size_t collected = CollectLocations(state->cursor.get(), phrase, prefixLength, state->phraseOffset,
@@ -48,16 +48,18 @@ void Collector::Extend(const vector<wid_t> &words, size_t limit, vector<sample_t
         if (collected > 0) {
             bool breakLoop;
 
-            if (limit == 0 || collected < missing) {
-                state->postingList->GetLocations(inContextSamples);
+            if (limit == 0 || collected < availability) {
+                state->postingList->GetLocations(locations);
+                availability -= collected;
                 breakLoop = false;
-                inContextSize += collected;
-                missing -= collected;
             } else {
-                state->postingList->GetLocations(inContextSamples, missing, shuffleSeed);
+                state->postingList->GetLocations(locations, availability, shuffleSeed);
+                availability = 0;
+
+                if (locations.size() > limit)
+                    locations.resize(limit);
+
                 breakLoop = true;
-                missing = 0;
-                inContextSize += missing;
             }
 
             if (phrase.size() < prefixLength) {
@@ -72,29 +74,17 @@ void Collector::Extend(const vector<wid_t> &words, size_t limit, vector<sample_t
         } else {
             state = inDomainStates.erase(state);
         }
-        //cerr << "actual " <<  inContextSize << " samples,  missing " << missing << " samples" << endl;
     }
 
-
     // Get out-context samples
-    vector<location_t> outContextSamples;
 
-    if (backgroundState && (limit == 0 || missing > 0)) {
-        //cerr << "collecting " << missing << " samples from background" << endl;
+    if (backgroundState && (limit == 0 || availability > 0)) {
         size_t collected = CollectLocations(backgroundState->cursor.get(), phrase, prefixLength,
                                             backgroundState->phraseOffset, backgroundState->postingList);
         backgroundState->phraseOffset = phrase.size();
 
         if (collected > 0) {
-            backgroundState->postingList->GetLocations(outContextSamples, limit == 0 ? 0 : missing);
-            if (collected < missing) {
-                inContextSize += collected;
-                missing -= collected;
-            } else{
-
-                inContextSize += missing;
-                missing = 0;
-            }
+            backgroundState->postingList->GetLocations(locations, limit == 0 ? 0 : availability);
 
             if (phrase.size() < prefixLength) {
                 // No need to cache Posting Lists shorter than prefixLength
@@ -104,24 +94,19 @@ void Collector::Extend(const vector<wid_t> &words, size_t limit, vector<sample_t
             delete backgroundState;
             backgroundState = NULL;
         }
-        //cerr << "actual " <<  inContextSize << " samples,  missing " << missing << " samples" << endl;
     }
 
-   // if (missing > 0)
-        //cerr << "there are not enough samples in the training data to reach the limit" << endl;
+    // Retrieve samples
 
     outSamples.clear();
 
-    //merge all outContextSamples into inContextSamples
-    inContextSamples.insert(inContextSamples.end(),outContextSamples.begin(),outContextSamples.end());
+    if (locations.size() > 0) {
+        sort(locations.begin(), locations.end(), [](const location_t &a, const location_t &b) {
+            return a.pointer == b.pointer ? a.offset > b.offset : a.pointer > b.pointer;
+        });
 
-    //sort the samples
-    sort(inContextSamples.begin(), inContextSamples.end(), [](const location_t &a, const location_t &b) {
-        return a.pointer == b.pointer ? a.offset > b.offset : a.pointer > b.pointer;
-    });
-
-    if (inContextSamples.size() > 0)
-        Retrieve(inContextSamples, outSamples);
+        Retrieve(locations, outSamples);
+    }
 }
 
 size_t Collector::CollectLocations(PrefixCursor *cursor, const vector<wid_t> &phrase,
