@@ -133,7 +133,6 @@ void PostingList::GetLocations(vector<location_t> &output, size_t limit, unsigne
     if (empty())
         return;
 
-    output.clear();
     output.reserve(limit == 0 ? size() : limit);
 
     if (limit == 0 || size() <= limit) {
