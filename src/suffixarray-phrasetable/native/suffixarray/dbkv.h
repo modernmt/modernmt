@@ -22,7 +22,7 @@ namespace mmt {
         enum KeyType {
             kGlobalInfoKeyType = 0,
             kSourcePrefixKeyType = 1,
-            kTargetPrefixKeyType = 2
+            kTargetCountKeyType = 2
         };
 
         /* Keys */
@@ -35,11 +35,11 @@ namespace mmt {
         }
 
         static inline string
-        MakePrefixKey(length_t prefixLength, bool isSource, domain_t domain,
+        MakePrefixKey(length_t prefixLength, domain_t domain,
                       const vector<wid_t> &phrase, size_t offset, size_t length) {
             size_t size = 1 + sizeof(domain_t) + prefixLength * sizeof(wid_t);
             char *bytes = new char[size];
-            bytes[0] = isSource ? kSourcePrefixKeyType : kTargetPrefixKeyType;
+            bytes[0] = kSourcePrefixKeyType;
 
             size_t ptr = 1;
 
@@ -49,6 +49,27 @@ namespace mmt {
                 WriteUInt32(bytes, &ptr, 0);
 
             WriteUInt32(bytes, &ptr, domain);
+
+            string key(bytes, size);
+            delete[] bytes;
+
+            return key;
+        }
+
+        static inline string
+        MakeCountKey(length_t prefixLength, const vector<wid_t> &phrase, size_t offset, size_t length) {
+            size_t size = 1 + sizeof(domain_t) + prefixLength * sizeof(wid_t);
+            char *bytes = new char[size];
+            bytes[0] = kTargetCountKeyType;
+
+            size_t ptr = 1;
+
+            for (size_t i = 0; i < length; ++i)
+                WriteUInt32(bytes, &ptr, phrase[offset + i]);
+            for (size_t i = length; i < prefixLength; ++i)
+                WriteUInt32(bytes, &ptr, 0);
+
+            WriteUInt32(bytes, &ptr, 0); // no domain info
 
             string key(bytes, size);
             delete[] bytes;
@@ -97,6 +118,19 @@ namespace mmt {
             return true;
         }
 
+        static inline string SerializeCount(uint64_t count) {
+            char bytes[8];
+            WriteUInt64(bytes, (size_t) 0, count);
+
+            return string(bytes, 8);
+        }
+
+        static inline uint64_t DeserializeCount(const char *data, size_t size) {
+            if (size != 8)
+                return 0;
+
+            return ReadUInt64(data, (size_t) 0);
+        }
     }
 }
 

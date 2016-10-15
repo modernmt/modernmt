@@ -17,10 +17,9 @@ namespace mmt {
         class PrefixCursor {
         public:
 
-            static PrefixCursor *
-            NewDomainCursor(rocksdb::DB *db, length_t prefixLength, bool sourceSide, domain_t domain);
+            static PrefixCursor *NewDomainCursor(rocksdb::DB *db, length_t prefixLength, domain_t domain);
 
-            static PrefixCursor *NewGlobalCursor(rocksdb::DB *db, length_t prefixLength, bool sourceSide,
+            static PrefixCursor *NewGlobalCursor(rocksdb::DB *db, length_t prefixLength,
                                                  const context_t *skipDomains = NULL);
 
             virtual ~PrefixCursor() {};

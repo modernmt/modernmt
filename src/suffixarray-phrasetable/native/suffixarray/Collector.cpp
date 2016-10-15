@@ -19,14 +19,14 @@ Collector::Collector(CorpusStorage *storage, rocksdb::DB *db, length_t prefixLen
 
         for (size_t i = 0; i < context->size(); ++i) {
             inDomainStates[i].cursor.reset(
-                    PrefixCursor::NewDomainCursor(db, prefixLength, true, context->at(i).domain)
+                    PrefixCursor::NewDomainCursor(db, prefixLength, context->at(i).domain)
             );
         }
     }
 
     if (searchInBackground) {
         backgroundState = new state_t();
-        backgroundState->cursor.reset(PrefixCursor::NewGlobalCursor(db, prefixLength, true, context));
+        backgroundState->cursor.reset(PrefixCursor::NewGlobalCursor(db, prefixLength, context));
     }
 }
 

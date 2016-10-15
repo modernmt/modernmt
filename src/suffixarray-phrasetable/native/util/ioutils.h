@@ -51,6 +51,10 @@ static inline void WriteUInt64(char *buffer, size_t *ptr, uint64_t value) {
     WriteInt64(buffer, ptr, value);
 }
 
+static inline void WriteUInt64(char *buffer, size_t ptr, uint64_t value) {
+    WriteInt64(buffer, ptr, value);
+}
+
 static inline uint16_t ReadUInt16(const char *data, size_t *ptr) {
     uint16_t value = (uint16_t) ((data[*ptr] & 0xFFL) +
                                  ((data[*ptr + 1] & 0xFFL) << 8));

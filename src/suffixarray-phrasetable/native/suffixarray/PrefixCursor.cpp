@@ -15,12 +15,12 @@ namespace mmt {
         class DomainCursor : public PrefixCursor {
         public:
 
-            DomainCursor(rocksdb::DB *db, length_t prefixLength, bool sourceSide, domain_t domain)
-                    : db(db), sourceSide(sourceSide), domain(domain), prefixLength(prefixLength) {
+            DomainCursor(rocksdb::DB *db, length_t prefixLength, domain_t domain)
+                    : db(db), domain(domain), prefixLength(prefixLength) {
             }
 
             virtual void Seek(const vector<wid_t> &phrase, size_t offset, size_t length) override {
-                string key = MakePrefixKey(prefixLength, sourceSide, domain, phrase, offset, length);
+                string key = MakePrefixKey(prefixLength, domain, phrase, offset, length);
                 db->Get(ReadOptions(), key, &value);
             }
 
@@ -43,7 +43,6 @@ namespace mmt {
         private:
             rocksdb::DB *db;
 
-            const bool sourceSide;
             const domain_t domain;
             const length_t prefixLength;
 
@@ -52,15 +51,14 @@ namespace mmt {
 
         class GlobalCursor : public PrefixCursor {
         public:
-            GlobalCursor(rocksdb::DB *db, length_t prefixLength, bool sourceSide, unordered_set<domain_t> *_skipList)
-                    : sourceSide(sourceSide), skipDomains(_skipList != NULL), prefixLength(prefixLength),
-                      it(db->NewIterator(ReadOptions())) {
+            GlobalCursor(rocksdb::DB *db, length_t prefixLength, unordered_set<domain_t> *_skipList)
+                    : skipDomains(_skipList != NULL), prefixLength(prefixLength), it(db->NewIterator(ReadOptions())) {
                 if (_skipList)
                     skipList.insert(_skipList->begin(), _skipList->end());
             }
 
             virtual void Seek(const vector<wid_t> &phrase, size_t offset, size_t length) override {
-                key = MakePrefixKey(prefixLength, sourceSide, 0, phrase, offset, length);
+                key = MakePrefixKey(prefixLength, 0, phrase, offset, length);
                 key.resize(key.size() - sizeof(domain_t));
 
                 it->Seek(key);
@@ -102,7 +100,6 @@ namespace mmt {
             }
 
         private:
-            const bool sourceSide;
             const bool skipDomains;
             const length_t prefixLength;
             unordered_set<domain_t> skipList;
@@ -114,17 +111,16 @@ namespace mmt {
     }
 }
 
-PrefixCursor *PrefixCursor::NewDomainCursor(rocksdb::DB *db, length_t prefixLength, bool sourceSide, domain_t domain) {
-    return new DomainCursor(db, prefixLength, sourceSide, domain);
+PrefixCursor *PrefixCursor::NewDomainCursor(rocksdb::DB *db, length_t prefixLength, domain_t domain) {
+    return new DomainCursor(db, prefixLength, domain);
 }
 
-PrefixCursor *PrefixCursor::NewGlobalCursor(rocksdb::DB *db, length_t prefixLength, bool sourceSide,
-                                            const context_t *skipDomains) {
+PrefixCursor *PrefixCursor::NewGlobalCursor(rocksdb::DB *db, length_t prefixLength, const context_t *skipDomains) {
     unordered_set<domain_t> domains;
     if (skipDomains) {
         for (auto score = skipDomains->begin(); score != skipDomains->end(); ++score)
             domains.insert(score->domain);
     }
 
-    return new GlobalCursor(db, prefixLength, sourceSide, skipDomains ? &domains : NULL);
+    return new GlobalCursor(db, prefixLength, skipDomains ? &domains : NULL);
 }

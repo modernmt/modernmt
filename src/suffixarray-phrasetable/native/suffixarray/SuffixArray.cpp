@@ -30,8 +30,10 @@ namespace mmt {
                                Logger *logger) const override {
                 switch (key.data_[0]) {
                     case kSourcePrefixKeyType:
-                    case kTargetPrefixKeyType:
                         MergePositionLists(existing_value, value, new_value);
+                        return true;
+                    case kTargetCountKeyType:
+                        MergeCounts(existing_value, value, new_value);
                         return true;
                     default:
                         return false;
@@ -43,6 +45,14 @@ namespace mmt {
                     *new_value = existing_value->ToString() + value.ToString();
                 else
                     *new_value = value.ToString();
+            }
+
+            inline void MergeCounts(const Slice *existing_value, const Slice &value, string *new_value) const {
+                uint64_t count = DeserializeCount(value.data(), value.size());
+                if (existing_value)
+                    count += DeserializeCount(existing_value->data(), existing_value->size());
+
+                *new_value = SerializeCount(count);
             }
 
             virtual const char *Name() const override {
@@ -129,14 +139,14 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
 
     // Compute prefixes
     unordered_map<string, PostingList> sourcePrefixes;
-    unordered_map<string, PostingList> targetPrefixes;
+    unordered_map<string, uint64_t> targetCounts;
 
     for (auto entry = batch.data.begin(); entry != batch.data.end(); ++entry) {
         domain_t domain = entry->domain;
 
         int64_t offset = storage->Append(entry->source, entry->target, entry->alignment);
-        AddPrefixesToBatch(true, domain, entry->source, offset, sourcePrefixes);
-        AddPrefixesToBatch(false, domain, entry->target, offset, targetPrefixes);
+        AddPrefixesToBatch(domain, entry->source, offset, sourcePrefixes);
+        AddTargetCountsToBatch(entry->target, targetCounts);
     }
 
     int64_t storageSize = storage->Flush();
@@ -146,9 +156,11 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
         string value = prefix->second.Serialize();
         writeBatch.Merge(prefix->first, value);
     }
-    for (auto prefix = targetPrefixes.begin(); prefix != targetPrefixes.end(); ++prefix) {
-        string value = prefix->second.Serialize();
-        writeBatch.Merge(prefix->first, value);
+
+    // Add target counts to write batch
+    for (auto count = targetCounts.begin(); count != targetCounts.end(); ++count) {
+        string value = SerializeCount(count->second);
+        writeBatch.Merge(count->first, value);
     }
 
     // Write global info
@@ -163,7 +175,7 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
     streams = batch.GetStreams();
 }
 
-void SuffixArray::AddPrefixesToBatch(bool isSource, domain_t domain, const vector<wid_t> &sentence,
+void SuffixArray::AddPrefixesToBatch(domain_t domain, const vector<wid_t> &sentence,
                                      int64_t location, unordered_map<string, PostingList> &outBatch) {
     size_t size = sentence.size();
 
@@ -172,8 +184,22 @@ void SuffixArray::AddPrefixesToBatch(bool isSource, domain_t domain, const vecto
             if (start + length > size)
                 break;
 
-            string dkey = MakePrefixKey(prefixLength, isSource, domain, sentence, start, length);
+            string dkey = MakePrefixKey(prefixLength, domain, sentence, start, length);
             outBatch[dkey].Append(domain, location, (length_t) start);
+        }
+    }
+}
+
+void SuffixArray::AddTargetCountsToBatch(const vector<wid_t> &sentence, unordered_map<string, uint64_t> &outBatch) {
+    size_t size = sentence.size();
+
+    for (size_t start = 0; start < size; ++start) {
+        for (size_t length = 1; length <= prefixLength; ++length) {
+            if (start + length > size)
+                break;
+
+            string dkey = MakeCountKey(prefixLength, sentence, start, length);
+            outBatch[dkey]++;;
         }
     }
 }
@@ -183,18 +209,24 @@ void SuffixArray::AddPrefixesToBatch(bool isSource, domain_t domain, const vecto
  */
 
 size_t SuffixArray::CountOccurrences(bool isSource, const vector<wid_t> &phrase) {
-    size_t count = 0;
-    PrefixCursor *cursor = PrefixCursor::NewGlobalCursor(db, prefixLength, isSource);
+    if (phrase.size() > prefixLength)
+        return 1; // Approximate higher order n-grams to singletons
 
-    if (phrase.size() <= prefixLength) {
+    size_t count = 0;
+
+    if (isSource) {
+        PrefixCursor *cursor = PrefixCursor::NewGlobalCursor(db, prefixLength);
         for (cursor->Seek(phrase); cursor->HasNext(); cursor->Next())
             count += cursor->CountValue();
+        delete cursor;
     } else {
-        shared_ptr<PostingList> postingList;
-        count = Collector::CollectLocations(cursor, phrase, prefixLength, 0, postingList);
+        string key = MakeCountKey(prefixLength, phrase, 0, phrase.size());
+        string value;
+
+        db->Get(ReadOptions(), key, &value);
+        count = DeserializeCount(value.data(), value.size());
     }
 
-    delete cursor;
     return count;
 }
 
@@ -207,6 +239,3 @@ void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, ve
 Collector *SuffixArray::NewCollector(const context_t *context, bool searchInBackground) {
     return new Collector(storage, db, prefixLength, context, searchInBackground);
 }
-
-
-

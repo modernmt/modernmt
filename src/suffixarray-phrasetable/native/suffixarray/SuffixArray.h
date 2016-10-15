@@ -64,8 +64,10 @@ namespace mmt {
             CorpusStorage *storage;
             vector<seqid_t> streams;
 
-            void AddPrefixesToBatch(bool isSource, domain_t domain, const vector<wid_t> &sentence,
+            void AddPrefixesToBatch(domain_t domain, const vector<wid_t> &sentence,
                                     int64_t location, unordered_map<string, PostingList> &outBatch);
+
+            void AddTargetCountsToBatch(const vector<wid_t> &sentence, unordered_map<string, uint64_t> &outBatch);
         };
 
     }
