@@ -7,13 +7,14 @@ from cli.mt.lm import LanguageModel, InterpolatedLM
 from cli.mt.moses import Moses
 from cli.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
 from cli.engine import MMTEngine
+from cli.mt.processing import TrainingPreprocessor
 
 __author__ = 'Davide Caroselli'
 
 _global_section = 'global'
 
 injectable_components = [ContextAnalyzer, SuffixArraysPhraseTable, WordAligner, LanguageModel, InterpolatedLM, Moses,
-                         MMTEngine]
+                         MMTEngine, TrainingPreprocessor]
 
 
 def argparse_group(parser, clazz, name=None):

@@ -3,6 +3,7 @@ import os
 import re
 from HTMLParser import HTMLParser
 
+import cli
 from cli import mmt_javamain
 from cli.libs import multithread, fileutils, shell
 from cli.mt import BilingualCorpus
@@ -77,11 +78,16 @@ class Tokenizer:
 
 
 class TMCleaner:
-    def __init__(self):
+    def __init__(self, source_lang, target_lang):
+        self._source_lang = source_lang
+        self._target_lang = target_lang
+
         self._java_mainclass = 'eu.modernmt.cli.CleaningPipelineMain'
 
-    def clean(self, source, target, input_paths, output_path):
-        args = ['-s', source, '-t', target, '--output', output_path, '--input']
+    def clean(self, corpora, output_path):
+        args = ['-s', self._source_lang, '-t', self._target_lang, '--output', output_path, '--input']
+
+        input_paths = set([corpus.get_folder() for corpus in corpora])
 
         for root in input_paths:
             args.append(root)
@@ -89,19 +95,39 @@ class TMCleaner:
         command = mmt_javamain(self._java_mainclass, args)
         shell.execute(command, stdin=shell.DEVNULL, stdout=shell.DEVNULL, stderr=shell.DEVNULL)
 
-        return BilingualCorpus.splitlist(source, target, roots=output_path)[0]
+        return BilingualCorpus.list(output_path)
 
 
 class TrainingPreprocessor:
+    injector_section = 'cleaner'
+    injectable_fields = {
+        'ratio': ('parallel sentence length ratio', float, 3),
+        'min': ('min acceptable number of words per sentence', int, 1),
+        'max': ('max acceptable number of words per sentence', int, 80),
+    }
+
     DEV_FOLDER_NAME = 'dev'
     TEST_FOLDER_NAME = 'test'
 
-    def __init__(self, vocabulary_path):
+    def __init__(self, source_lang, target_lang, vocabulary_path):
+        self._source_lang = source_lang
+        self._target_lang = target_lang
+
+        self._ratio = None  # injected
+        self._min = None  # injected
+        self._max = None  # injected
+
+        # TODO: this can be a python native implementation
+        self._cleaner_script = os.path.join(cli.PYOPT_DIR, 'clean-corpus-n-ratio.perl')
+
         self._java_mainclass = 'eu.modernmt.cli.TrainingPipelineMain'
         self._vocabulary_path = vocabulary_path
 
-    def process(self, source, target, input_paths, output_path, data_path=None):
-        args = ['-s', source, '-t', target, '-v', self._vocabulary_path, '--output', output_path, '--input']
+    def process(self, corpora, output_path, data_path=None):
+        args = ['-s', self._source_lang, '-t', self._target_lang, '-v', self._vocabulary_path, '--output', output_path,
+                '--input']
+
+        input_paths = set([corpus.get_folder() for corpus in corpora])
 
         for root in input_paths:
             args.append(root)
@@ -115,7 +141,24 @@ class TrainingPreprocessor:
         command = mmt_javamain(self._java_mainclass, args)
         shell.execute(command, stdin=shell.DEVNULL, stdout=shell.DEVNULL, stderr=shell.DEVNULL)
 
-        return BilingualCorpus.splitlist(source, target, roots=output_path)
+        return BilingualCorpus.splitlist(self._source_lang, self._target_lang, roots=output_path)
+
+    def clean(self, corpora, dest_folder):
+        langs = (self._source_lang, self._target_lang)
+
+        _pool_exec(self._clean_file, [(corpus, dest_folder, langs) for corpus in corpora])
+        return BilingualCorpus.list(dest_folder)
+
+    def _clean_file(self, source, dest_folder, langs):
+        if not os.path.isdir(dest_folder):
+            fileutils.makedirs(dest_folder, exist_ok=True)
+
+        input_folder = os.path.join(source.get_folder(), source.name)
+        output_folder = os.path.join(dest_folder, source.name)
+
+        command = ['perl', self._cleaner_script, '-ratio', str(self._ratio), input_folder, langs[0], langs[1],
+                   output_folder, str(self._min), str(self._max)]
+        shell.execute(command, stdout=shell.DEVNULL, stderr=shell.DEVNULL)
 
 
 class XMLEncoder:

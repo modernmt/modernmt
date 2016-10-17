@@ -19,21 +19,19 @@ __author__ = 'Davide Caroselli'
 
 
 class _DomainMapBuilder:
-    def __init__(self, model, source_lang):
+    def __init__(self, model, source_lang, target_lang):
         self._model = model
         self._source_lang = source_lang
+        self._target_lang = target_lang
 
         self._java_mainclass = 'eu.modernmt.cli.DomainMapMain'
 
-    def generate(self, corpora, output, log_file=None):
-        source_paths = set()
-
-        for corpus in corpora:
-            source_paths.add(corpus.get_folder())
-
+    def generate(self, bilingual_corpora, monolingual_corpora, output, log_file=None):
         fileutils.makedirs(self._model, exist_ok=True)
 
         args = ['--db', os.path.join(self._model, 'domains.db'), '-l', self._source_lang, '-c']
+
+        source_paths = set([corpus.get_folder() for corpus in bilingual_corpora])
         for source_path in source_paths:
             args.append(source_path)
 
@@ -45,14 +43,35 @@ class _DomainMapBuilder:
             if log_file is not None:
                 log = open(log_file, 'w')
 
-            with open(output, 'w') as stdout:
-                shell.execute(command, stdout=stdout, stderr=log)
+            stdout, _ = shell.execute(command, stderr=log)
+
+            domains = {}
+
+            for domain, name in [line.rstrip('\n').split('\t', 2) for line in stdout.splitlines()]:
+                domains[name] = domain
+
+            return self._make_training_folder(bilingual_corpora, monolingual_corpora, domains, output)
         finally:
             if log_file is not None:
                 log.close()
 
+    def _make_training_folder(self, bilingual_corpora, monolingual_corpora, domains, folder):
+        for corpus in bilingual_corpora:
+            dest_corpus = BilingualCorpus.make_parallel(domains[corpus.name], folder, corpus.langs)
+
+            for lang in corpus.langs:
+                os.symlink(corpus.get_file(lang), dest_corpus.get_file(lang))
+
+        for corpus in monolingual_corpora:
+            dest_corpus = BilingualCorpus.make_parallel(corpus.name, folder, corpus.langs)
+
+            for lang in corpus.langs:
+                os.symlink(corpus.get_file(lang), dest_corpus.get_file(lang))
+
+        return BilingualCorpus.splitlist(self._source_lang, self._target_lang, roots=folder)
+
     @staticmethod
-    def load_map(filepath):
+    def _load_map(filepath):
         domains = {}
 
         for domain, name in [line.rstrip('\n').split('\t', 2) for line in open(filepath)]:
@@ -119,27 +138,6 @@ class _MMTEngineBuilder:
             fileutils.makedirs(path, exist_ok=True)
         return path
 
-    def _link_training_folder(self, domains_map_file, bilingual_corpora, monolingual_corpora):
-        if not os.path.isfile(domains_map_file):
-            raise IllegalStateException('Missing domain-map file: ' + domains_map_file)
-
-        domains = self._engine.db.load_map(domains_map_file)
-        folder = self._get_tempdir('training_corpora')
-
-        for corpus in bilingual_corpora:
-            dest_corpus = BilingualCorpus.make_parallel(domains[corpus.name], folder, corpus.langs)
-
-            for lang in corpus.langs:
-                os.symlink(corpus.get_file(lang), dest_corpus.get_file(lang))
-
-        for corpus in monolingual_corpora:
-            dest_corpus = BilingualCorpus.make_parallel(corpus.name, folder, corpus.langs)
-
-            for lang in corpus.langs:
-                os.symlink(corpus.get_file(lang), dest_corpus.get_file(lang))
-
-        return folder
-
     def build(self, roots, debug=False, steps=None, split_trainingset=True):
         self._temp_dir = self._engine.get_tempdir('training', ensure=True)
 
@@ -184,45 +182,35 @@ class _MMTEngineBuilder:
                       (recommended_disk / self.__GB, free_space_on_disk / self.__GB)
             print
 
-        domains_map_file = os.path.join(self._temp_dir, 'domains.map')
-
         try:
             unprocessed_bicorpora = bilingual_corpora
-            unprocessed_mocorpora = monolingual_corpora
+            unprocessed_monocorpora = monolingual_corpora
 
-            # Create db and rename domains with their ids
-
-            if 'db' in steps:
-                with cmdlogger.step('Building the database') as _:
-                    self._engine.db.generate(unprocessed_bicorpora, domains_map_file)
-
-            corpora_roots = [self._link_training_folder(domains_map_file, unprocessed_bicorpora, unprocessed_mocorpora)]
-
-            # TM cleanup
+            # TM draft-translations cleanup
             if 'tm_cleanup' in steps:
                 with cmdlogger.step('TMs clean-up') as _:
-                    cleaned_output = self._get_tempdir('clean_tms')
-                    self._engine.cleaner.clean(source_lang, target_lang, corpora_roots, cleaned_output)
+                    unprocessed_bicorpora = self._engine.cleaner.clean(
+                        unprocessed_bicorpora, self._get_tempdir('clean_tms')
+                    )
 
-                    for corpus in monolingual_corpora:
-                        cfile = corpus.get_file(target_lang)
-                        link = os.path.join(cleaned_output, os.path.basename(cfile))
-                        os.symlink(cfile, link)
-
-                    corpora_roots = [cleaned_output]
-                    unprocessed_bicorpora, unprocessed_mocorpora = BilingualCorpus.splitlist(source_lang, target_lang,
-                                                                                             roots=corpora_roots)
+            cleaned_bicorpora = unprocessed_bicorpora
+            processed_bicorpora = unprocessed_bicorpora
+            processed_monocorpora = unprocessed_monocorpora
 
             # Preprocessing
-            processed_bicorpora = unprocessed_bicorpora
-            processed_mocorpora = unprocessed_mocorpora
-
             if 'preprocess' in steps:
                 with cmdlogger.step('Corpora preprocessing') as _:
-                    preprocessor_output = self._get_tempdir('preprocessed')
-                    processed_bicorpora, processed_mocorpora = self._engine.training_preprocessor.process(
-                        source_lang, target_lang, corpora_roots, preprocessor_output,
+                    unprocessed_bicorpora, unprocessed_monocorpora = self._engine.db.generate(
+                        unprocessed_bicorpora, unprocessed_monocorpora, self._get_tempdir('training_corpora')
+                    )
+
+                    processed_bicorpora, processed_monocorpora = self._engine.training_preprocessor.process(
+                        unprocessed_bicorpora + unprocessed_monocorpora, self._get_tempdir('preprocessed'),
                         (self._engine.data_path if split_trainingset else None)
+                    )
+
+                    cleaned_bicorpora = self._engine.training_preprocessor.clean(
+                        processed_bicorpora, self._get_tempdir('clean_corpora')
                     )
 
             # Training Context Analyzer
@@ -231,19 +219,28 @@ class _MMTEngineBuilder:
                     log_file = self._engine.get_logfile('training.context')
                     self._engine.analyzer.create_index(unprocessed_bicorpora, source_lang, log_file=log_file)
 
-            # Training Adaptive Language Model (on the target side of all bilingual corpora)
-            if 'lm' in steps:
-                with cmdlogger.step('Language Model training') as _:
-                    working_dir = self._get_tempdir('lm')
-                    log_file = self._engine.get_logfile('training.lm')
-                    self._engine.lm.train(processed_bicorpora + processed_mocorpora, target_lang, working_dir, log_file)
+            # Aligner
+            if 'aligner' in steps:
+                with cmdlogger.step('Aligner training') as _:
+                    log_file = self._engine.get_logfile('training.aligner')
+                    working_dir = self._get_tempdir('aligner')
+
+                    self._engine.aligner.build(cleaned_bicorpora, working_dir, log_file)
 
             # Training Translation Model
             if 'tm' in steps:
                 with cmdlogger.step('Translation Model training') as _:
                     working_dir = self._get_tempdir('tm')
                     log_file = self._engine.get_logfile('training.tm')
-                    self._engine.pt.train(processed_bicorpora, self._engine.aligner, working_dir, log_file)
+                    self._engine.pt.train(cleaned_bicorpora, self._engine.aligner, working_dir, log_file)
+
+            # Training Adaptive Language Model
+            if 'lm' in steps:
+                with cmdlogger.step('Language Model training') as _:
+                    working_dir = self._get_tempdir('lm')
+                    log_file = self._engine.get_logfile('training.lm')
+                    self._engine.lm.train(processed_bicorpora + processed_monocorpora, target_lang,
+                                          working_dir, log_file)
 
             # Writing config file
             with cmdlogger.step('Writing config files') as _:
@@ -263,7 +260,7 @@ class MMTEngine(object):
                          (basestring, WordAligner.available_types), None),
     }
 
-    training_steps = ['db', 'tm_cleanup', 'preprocess', 'context_analyzer', 'lm', 'tm']
+    training_steps = ['tm_cleanup', 'preprocess', 'context_analyzer', 'aligner', 'tm', 'lm']
 
     @staticmethod
     def list():
@@ -287,7 +284,8 @@ class MMTEngine(object):
 
         self._config_file = os.path.join(self.path, 'engine.ini')
         self._vocabulary_model = os.path.join(self.models_path, 'vocabulary')
-        self._pt_model = os.path.join(self.models_path, 'phrase_tables')
+        self._pt_model = os.path.join(self.models_path, 'sapt')
+        self._aligner_model = os.path.join(self.models_path, 'align')
         self._lm_model = os.path.join(self.models_path, 'lm')
         self._context_index = os.path.join(self.models_path, 'context')
         self._moses_ini_file = os.path.join(self.models_path, 'moses.ini')
@@ -320,33 +318,35 @@ class MMTEngine(object):
         if self._aligner_type is None:
             self._aligner_type = WordAligner.available_types[0]
 
-        self.training_preprocessor = TrainingPreprocessor(self._vocabulary_model)
-
         self.analyzer = injector.inject(ContextAnalyzer(self._context_index))
-        self.cleaner = TMCleaner()
+        self.cleaner = TMCleaner(self.source_lang, self.target_lang)
 
         self.pt = injector.inject(SuffixArraysPhraseTable(self._pt_model, (self.source_lang, self.target_lang)))
-        self.aligner = injector.inject(WordAligner.instantiate(self._aligner_type))
+        self.aligner = injector.inject(
+            WordAligner.instantiate(self._aligner_type, self._aligner_model, self.source_lang, self.target_lang)
+        )
         self.lm = injector.inject(LanguageModel.instantiate(self._lm_type, self._lm_model))
+        self.training_preprocessor = injector.inject(
+            TrainingPreprocessor(self.source_lang, self.target_lang, self._vocabulary_model)
+        )
 
-        self.db = _DomainMapBuilder(self._db_path, self.source_lang)
+        self.db = _DomainMapBuilder(self._db_path, self.source_lang, self.target_lang)
 
         self.moses = injector.inject(Moses(self._moses_ini_file))
         self.moses.add_feature(MosesFeature('UnknownWordPenalty'))
         self.moses.add_feature(MosesFeature('WordPenalty'))
         self.moses.add_feature(MosesFeature('Distortion'))
         self.moses.add_feature(MosesFeature('PhrasePenalty'))
-        self.moses.add_feature(self.pt, 'PT0')
-        self.moses.add_feature(LexicalReordering(), 'DM0')
+        self.moses.add_feature(self.pt, 'Sapt')
+        # self.moses.add_feature(LexicalReordering(), 'DM0')
         self.moses.add_feature(self.lm, 'InterpolatedLM')
 
         self._optimal_weights = {
-            'InterpolatedLM': [0.0996981],
-            'DM0': [0.0940416, 0.0324946, 0.0884611, 0.0543363, 0.0258349, 0.107731, 0.102477, 0.0989888],
-            'Distortion0': [8.84199E-4],
-            'WordPenalty0': [-0.118122],
-            'PhrasePenalty0': [6.17961E-4],
-            'PT0': [0.0024974, 0.0102446, 0.0600407, 0.0316664, 0.071863],
+            'InterpolatedLM': [0.261806],
+            'Distortion0': [0.161326],
+            'WordPenalty0': [-0.163892],
+            'PhrasePenalty0': [-0.189044],
+            'Sapt': [0.0632762, 0.105652, 0.00365665, 0.0513473],
         }
 
         if self._config is None:
