@@ -69,7 +69,7 @@ namespace mmt {
 
 SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength,
                          bool prepareForBulkLoad) throw(index_exception, storage_exception) :
-        prefixLength(prefixLength) {
+        openForBulkLoad(prepareForBulkLoad), prefixLength(prefixLength) {
     fs::path modelDir(modelPath);
 
     if (!fs::is_directory(modelDir))
@@ -130,7 +130,16 @@ SuffixArray::~SuffixArray() {
  * SuffixArray - Indexing
  */
 
-void SuffixArray::ForceCompaction() {
+void SuffixArray::ForceCompaction() throw(index_exception) {
+    if (openForBulkLoad) {
+        // Write global info
+        int64_t storageSize = storage->Flush();
+        Status status = db->Put(WriteOptions(), kGlobalInfoKey, SerializeGlobalInfo(streams, storageSize));
+
+        if (!status.ok())
+            throw index_exception("Unable to write to index: " + status.ToString());
+    }
+
     db->CompactRange(CompactRangeOptions(), NULL, NULL);
 }
 
@@ -149,7 +158,7 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
         AddTargetCountsToBatch(entry->target, targetCounts);
     }
 
-    int64_t storageSize = storage->Flush();
+    int64_t storageSize = openForBulkLoad ? -1 : storage->Flush();
 
     // Add prefixes to write batch
     for (auto prefix = sourcePrefixes.begin(); prefix != sourcePrefixes.end(); ++prefix) {

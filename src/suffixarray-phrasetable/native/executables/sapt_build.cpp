@@ -8,7 +8,11 @@
 #include <boost/filesystem.hpp>
 #include <thread>
 #include <util/BilingualCorpus.h>
-#include <sys/time.h>
+#include <util/chrono.h>
+#ifdef _OPENMP
+#include <thread>
+#include <omp.h>
+#endif
 
 using namespace std;
 using namespace mmt;
@@ -69,17 +73,6 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
     return true;
 }
 
-double GetTime() {
-    struct timeval time;
-
-    if (gettimeofday(&time, NULL)) {
-        //  Handle error
-        return 0;
-    }
-
-    return (double) time.tv_sec + ((double) time.tv_usec / 1000000.);
-}
-
 void LoadCorpus(const BilingualCorpus &corpus, SuffixArray &index, size_t buffer_size) {
     domain_t domain = corpus.GetDomain();
 
@@ -106,6 +99,13 @@ void LoadCorpus(const BilingualCorpus &corpus, SuffixArray &index, size_t buffer
 }
 
 int main(int argc, const char *argv[]) {
+#ifdef _OPENMP
+    int threads = std::min((thread::hardware_concurrency() * 2) / 3, 8U);
+
+    omp_set_dynamic(0);
+    omp_set_num_threads(threads);
+#endif
+
     args_t args;
 
     if (!ParseArgs(argc, argv, &args))
@@ -125,11 +125,14 @@ int main(int argc, const char *argv[]) {
     vector<BilingualCorpus> corpora;
     BilingualCorpus::List(args.input_path, args.source_lang, args.target_lang, corpora);
 
-    for (auto corpus = corpora.begin(); corpus != corpora.end(); ++corpus) {
+#pragma omp parallel for schedule(dynamic)
+    for (size_t i = 0; i < corpora.size(); ++i) {
+        BilingualCorpus &corpus = corpora[i];
+
         double begin = GetTime();
-        LoadCorpus(*corpus, index, args.buffer_size);
-        double elapsed = GetTime() - begin;
-        cout << "Corpus " << corpus->GetDomain() << " DONE in " << elapsed << "s" << endl;
+        LoadCorpus(corpus, index, args.buffer_size);
+        double elapsed = GetElapsedTime(begin);
+        cout << "Corpus " << corpus.GetDomain() << " DONE in " << elapsed << "s" << endl;
     }
 
     index.ForceCompaction();

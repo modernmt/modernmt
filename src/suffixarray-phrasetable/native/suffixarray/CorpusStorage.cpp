@@ -79,10 +79,10 @@ CorpusStorage::CorpusStorage(const string &filepath, int64_t size) throw(storage
         throw storage_exception("Cannot open file " + filepath);
 
     if (size < 0) {
+        lseek(fd, 0, SEEK_END);
+    } else {
         if (lseek(fd, size, SEEK_SET) != size)
             throw storage_exception("Invalid file size specified: " + to_string(size));
-    } else {
-        lseek(fd, 0, SEEK_END);
     }
 
     ssize_t mappedSize = MemoryMap();

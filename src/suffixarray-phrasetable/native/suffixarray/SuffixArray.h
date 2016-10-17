@@ -51,13 +51,14 @@ namespace mmt {
 
             void PutBatch(UpdateBatch &batch) throw(index_exception, storage_exception);
 
-            void ForceCompaction();
+            void ForceCompaction() throw(index_exception);
 
             const vector<seqid_t> &GetStreams() const {
                 return streams;
             }
 
         private:
+            const bool openForBulkLoad;
             const uint8_t prefixLength;
 
             rocksdb::DB *db;

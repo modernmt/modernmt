@@ -96,6 +96,12 @@ message(STATUS "Executables will be installed in ${CMAKE_INSTALL_PREFIX}/bin")
 message(STATUS "Libraries will be installed in ${CMAKE_INSTALL_PREFIX}/lib")
 message(STATUS "Include files will be installed in ${CMAKE_INSTALL_PREFIX}/include")
 
-# Test cases
+# OpenMP
+find_package(OpenMP QUIET)
+if (OPENMP_FOUND)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    message(STATUS "OpenMP found")
+endif (OPENMP_FOUND)
 
+# Test cases
 add_subdirectory(test)

@@ -19,13 +19,10 @@ namespace {
     struct args_t {
         string model_path;
         context_t context;
-        size_t sample_limit;
+        size_t sample_limit = 1000;
         bool quiet = false;
     };
 } // namespace
-
-namespace po = boost::program_options;
-namespace fs = boost::filesystem;
 
 bool ParseContext(const string &str, context_t &context) {
     istringstream iss(str);
@@ -46,21 +43,25 @@ bool ParseContext(const string &str, context_t &context) {
     return true;
 }
 
+namespace po = boost::program_options;
+namespace fs = boost::filesystem;
+
 bool ParseArgs(int argc, const char *argv[], args_t *args) {
-    po::options_description desc("Query the SuffixArray Phrase Table");
+    po::options_description desc("Extract and core translation options from SuffixArray Phrase Table");
     desc.add_options()
             ("help,h", "print this help message")
-            ("model,m", po::value<string>()->required(), "input model path")
+            ("model,m", po::value<string>()->required(), "output model path")
             ("context,c", po::value<string>(), "context map in the format <id>:<w>[,<id>:<w>]")
             ("sample,s", po::value<size_t>(), "number of samples (default is 100)")
             ("quiet,q", "prints only number of match");
+
 
     po::variables_map vm;
     try {
         po::store(po::parse_command_line(argc, argv, desc), vm);
 
         if (vm.count("help")) {
-            std::cout << desc << std::endl;
+            cout << desc << endl;
             return false;
         }
 
@@ -80,8 +81,8 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
             args->quiet = true;
 
     } catch (po::error &e) {
-        std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
-        std::cerr << desc << std::endl;
+        cerr << "ERROR: " << e.what() << endl << endl;
+        cerr << desc << endl;
         return false;
     }
 
@@ -97,17 +98,11 @@ static inline void ParseSentenceLine(const string &line, vector<wid_t> &output) 
     while (stream >> word) {
         output.push_back(word);
     }
-}
 
-size_t CountSamples(const vector<sample_t> &samples) {
-    size_t count = 0;
-    for (auto sample = samples.begin(); sample != samples.end(); ++sample) {
-        count += sample->offsets.size();
-    }
-    return count;
 }
 
 int main(int argc, const char *argv[]) {
+
     args_t args;
 
     if (!ParseArgs(argc, argv, &args))
@@ -115,20 +110,19 @@ int main(int argc, const char *argv[]) {
 
     context_t *context = args.context.empty() ? NULL : &args.context;
 
-    size_t sample_limit = args.sample_limit;
+    Options ptOptions;
+    ptOptions.samples = args.sample_limit;
 
-    Options options;
-    SuffixArray index(args.model_path, options.prefix_length);
+    PhraseTable pt(args.model_path, ptOptions);
 
     if (!args.quiet) {
-        std::cerr << "Model loaded" << std::endl;
+        cout << "Model loaded" << endl;
         if (context) {
-            std::cerr << "context->size():" << context->size() << std::endl;
+            cout << "context->size():" << context->size() << endl;
         } else {
-            std::cerr << "context not provided" << std::endl;
+            cout << "context not provided" << endl;
         }
     }
-
 
     string line;
     vector<wid_t> sourcePhrase;
@@ -137,20 +131,19 @@ int main(int argc, const char *argv[]) {
         ParseSentenceLine(line, sourcePhrase);
 
         if (!args.quiet) {
-            std::cerr << "SourcePhrase: ";
-            for (auto w = sourcePhrase.begin(); w != sourcePhrase.end(); ++w) { std::cerr << " " << *w; }
-            std::cerr << std::endl;
+            cout << "SourcePhrase:";
+            for (auto w = sourcePhrase.begin(); w != sourcePhrase.end(); ++w) { cout << *w << " "; }
+            cout << endl;
         }
 
-        vector<sample_t> samples;
-        index.GetRandomSamples(sourcePhrase, sample_limit, samples, context);
+        vector<TranslationOption> options = pt.GetTranslationOptions(sourcePhrase, context);
 
         if (!args.quiet) {
-            for (auto sample = samples.begin(); sample != samples.end(); ++sample)
-                std::cout << sample->ToString() << endl;
+            for (auto option = options.begin(); option != options.end(); ++option) {
+                cout << option->ToString() << endl;
+            }
         }
-
-        cout << "Found " << CountSamples(samples) << " samples in " << samples.size() << " sentence pairs" << endl;
+        cout << "Found " << options.size() << " options" << endl;
     }
 
     return SUCCESS;
