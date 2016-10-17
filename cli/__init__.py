@@ -11,6 +11,7 @@ MMT_ROOT = os.path.abspath(os.path.join(__self_dir, os.pardir))
 ENGINES_DIR = os.path.join(MMT_ROOT, 'engines')
 RUNTIME_DIR = os.path.join(MMT_ROOT, 'runtime')
 BUILD_DIR = os.path.join(MMT_ROOT, 'build')
+VENDOR_DIR = os.path.join(MMT_ROOT, 'vendor')
 
 LIB_DIR = os.path.join(BUILD_DIR, 'lib')
 BIN_DIR = os.path.join(BUILD_DIR, 'bin')

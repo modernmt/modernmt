@@ -3,6 +3,8 @@ import os
 import resource
 import time
 
+import signal
+
 
 def daemonize():
     try:
@@ -65,6 +67,18 @@ def is_running(pid):
             raise
     else:
         return True
+
+
+def kill(pid, timeout=2):
+    if pid == 0:
+        return
+
+    try:
+        os.kill(pid, signal.SIGTERM)
+        wait(pid, timeout)
+    except TimeoutExpired:
+        os.kill(pid, signal.SIGKILL)
+        wait(pid)
 
 
 def wait(pid, timeout=None):

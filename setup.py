@@ -13,7 +13,7 @@ def apache_download(path, outfile):
     r = requests.get('https://www.apache.org/dyn/closer.cgi', params={
         'path': path,
         'as_json': '1',
-    }, timeout=60)
+    }, timeout=60, verify=False)
 
     if r.status_code != requests.codes.ok:
         raise Exception('HTTP request failed with code ' + str(r.status_code) + ': ' + r.url)

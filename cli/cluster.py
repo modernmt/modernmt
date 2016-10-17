@@ -18,7 +18,7 @@ from cli.mt.processing import TrainingPreprocessor, Tokenizer
 __author__ = 'Davide Caroselli'
 
 DEFAULT_MMT_API_PORT = 8045
-DEFAULT_MMT_CLUSTER_PORTS = [5016, 5017]
+DEFAULT_MMT_CLUSTER_PORTS = [5016, 5017, 5018, 5019]
 
 
 class MMTApi:
@@ -158,6 +158,113 @@ class _tuning_logger:
         print 'DONE (in %ds)' % int(self._end_time - self._start_time)
 
 
+class EmbeddedKafka:
+    def __init__(self, engine):
+        self._engine = engine
+        self._log_file = None
+
+        self._data = os.path.join(engine.models_path, 'kafka')
+        self._pidfile = os.path.join(engine.get_runtime_path(), 'kafka.pid')
+
+        self._zookeeper_bin = os.path.join(cli.VENDOR_DIR, 'kafka-0.10.0.1', 'bin', 'zookeeper-server-start.sh')
+        self._kafka_bin = os.path.join(cli.VENDOR_DIR, 'kafka-0.10.0.1', 'bin', 'kafka-server-start.sh')
+
+    def _get_pids(self):
+        kpid, zpid = 0, 0
+        if os.path.isfile(self._pidfile):
+            with open(self._pidfile) as pid_file:
+                _kpid, _zpid = pid_file.read().split(' ', 2)
+                kpid, zpid = int(_kpid), int(_zpid)
+
+        return kpid, zpid
+
+    def _set_pids(self, kpid, zpid):
+        parent_dir = os.path.abspath(os.path.join(self._pidfile, os.pardir))
+        if not os.path.isdir(parent_dir):
+            fileutils.makedirs(parent_dir, exist_ok=True)
+
+        with open(self._pidfile, 'w') as pid_file:
+            pid_file.write(str(kpid) + ' ' + str(zpid))
+
+    def is_running(self):
+        kpid, _ = self._get_pids()
+
+        if kpid == 0:
+            return False
+
+        return daemon.is_running(kpid)
+
+    def stop(self):
+        kpid, zpid = self._get_pids()
+
+        if not self.is_running():
+            raise IllegalStateException('process is not running')
+
+        daemon.kill(kpid, 5)
+        daemon.kill(zpid)
+
+    def start(self):
+        if self.is_running():
+            raise IllegalStateException('process is already running')
+
+        self._log_file = self._engine.get_logfile('embedded-kafka', ensure=True)
+
+        success = False
+
+        log = open(self._log_file, 'w')
+        zpid = self._start_zookeeper(log).pid
+        kpid = self._start_kafka(log).pid
+
+        if zpid > 0 and kpid > 0:
+            self._set_pids(kpid, zpid)
+
+            for _ in range(0, 5):
+                success = self.is_running()
+                if success:
+                    break
+
+                time.sleep(1)
+
+        if not success:
+            daemon.kill(kpid)
+            daemon.kill(zpid)
+            log.close()
+
+            raise Exception('failed to start kafka, check log file for more details: ' + self._log_file)
+
+    def _start_zookeeper(self, log):
+        zdata = os.path.abspath(os.path.join(self._data, 'zdata'))
+        if not os.path.isdir(zdata):
+            fileutils.makedirs(zdata, exist_ok=True)
+
+        config = os.path.join(self._data, 'zookeeper.properties')
+        with open(config, 'w') as cout:
+            cout.write('dataDir={data}\n'.format(data=zdata))
+            cout.write('clientPort=2181\n')
+            cout.write('maxClientCnxns=0\n')
+
+        command = [self._zookeeper_bin, config]
+
+        return subprocess.Popen(command, stdout=log, stderr=log, shell=False)
+
+    def _start_kafka(self, log):
+        kdata = os.path.abspath(os.path.join(self._data, 'kdata'))
+        if not os.path.isdir(kdata):
+            fileutils.makedirs(kdata, exist_ok=True)
+
+        config = os.path.join(self._data, 'kafka.properties')
+        with open(config, 'w') as cout:
+            cout.write('broker.id=0\n')
+            cout.write('log.dirs={data}\n'.format(data=kdata))
+            cout.write('num.partitions=1\n')
+            cout.write('log.retention.hours=8760000\n')
+            cout.write('zookeeper.connect=localhost:2181\n')
+
+        command = [self._kafka_bin, config]
+
+        return subprocess.Popen(command, stdout=log, stderr=log, shell=False)
+
+
 class ClusterNode(object):
     __SIGTERM_TIMEOUT = 10  # after this amount of seconds, there is no excuse for a process to still be there.
     __LOG_FILENAME = 'node'
@@ -171,10 +278,12 @@ class ClusterNode(object):
         'ERROR': 9999,
     }
 
-    def __init__(self, engine, rest=True, host="localhost", api_port=None, cluster_ports=None,
+    def __init__(self, engine, rest=True, api_port=None, cluster_ports=None,
                  sibling=None, verbosity=None):
         self.engine = engine
-        self.api = MMTApi(host=host, port=api_port)
+        self.api = MMTApi(port=api_port)
+
+        self._kafka = EmbeddedKafka(engine) if sibling is None else None
 
         self._pidfile = os.path.join(engine.get_runtime_path(), 'node.pid')
 
@@ -213,9 +322,22 @@ class ClusterNode(object):
 
         return daemon.is_running(pid)
 
+    def stop(self):
+        pid = self._get_pid()
+
+        if not self.is_running():
+            raise IllegalStateException('process is not running')
+
+        daemon.kill(pid, ClusterNode.__SIGTERM_TIMEOUT)
+        if self._kafka:
+            self._kafka.stop()
+
     def start(self):
         if self.is_running():
             raise IllegalStateException('process is already running')
+
+        if self._kafka:
+            self._kafka.start()
 
         success = False
         process = self._start_process()
@@ -232,6 +354,8 @@ class ClusterNode(object):
                 time.sleep(1)
 
         if not success:
+            if self._kafka:
+                self._kafka.stop()
             raise Exception('failed to start node, check log file for more details: ' + self._log_file)
 
     def _start_process(self):
@@ -298,28 +422,6 @@ class ClusterNode(object):
 
         if current == ClusterNode.STATUS['ERROR']:
             raise Exception('failed to start node, check log file for more details: ' + self._log_file)
-
-    def stop(self):
-        pid = self._get_pid()
-
-        if not self.is_running():
-            raise IllegalStateException('process is not running')
-
-        try:
-            os.kill(pid, signal.SIGTERM)
-            daemon.wait(pid, ClusterNode.__SIGTERM_TIMEOUT)
-        except daemon.TimeoutExpired:
-            os.kill(pid, signal.SIGKILL)
-            daemon.wait(pid)
-
-    def restart(self):
-        # ensure engine is stopped
-        if self.is_running():
-            self.stop()
-
-        # start engine again
-        self.start()
-        self.wait('READY')
 
     def tune(self, corpora=None, debug=False, context_enabled=True):
         if corpora is None:
