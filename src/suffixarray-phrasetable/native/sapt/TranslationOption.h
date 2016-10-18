@@ -46,12 +46,8 @@ namespace mmt {
             }
 
             //insert a new alignment for the current options, increased its count by one if required
-            void InsertAlignment(alignment_t &alignment){
-                auto ptr = alignments.find(alignment);
-                if (ptr != alignments.end())
-                    ptr->second = ptr->second + 1;
-                else
-                    alignments[alignment] = 1;
+            void InsertAlignment(alignment_t &a){
+                alignments[a]++;
             }
 
             string ToString() const {

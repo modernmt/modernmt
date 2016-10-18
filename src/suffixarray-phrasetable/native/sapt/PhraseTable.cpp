@@ -99,10 +99,17 @@ static void ExtractPhrasePairs(const vector<wid_t> &sourceSentence, const vector
                 a->second -= ts;
             }
 
-            //insert the (possibly new) alignment into the options
-            option.InsertAlignment(tmp_alignment);
+            auto ptr = outOptions.find(option);
+            if (ptr != outOptions.end()) { //this option is already present, update the alignments
+                ((TranslationOption*) &ptr->first)->InsertAlignment(tmp_alignment);
+                ptr->second = ptr->second + 1;
+            } else {
+                //insert the (possibly new) alignment into the options
+                option.InsertAlignment(tmp_alignment);
 
-            outOptions[option]++;
+                outOptions[option] = 1;
+            }
+            ptr = outOptions.find(option);
 
             te += 1;
             // if fe is in word alignment or out-of-bounds
