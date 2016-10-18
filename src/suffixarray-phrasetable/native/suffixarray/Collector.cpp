@@ -84,7 +84,7 @@ void Collector::Extend(const vector<wid_t> &words, size_t limit, vector<sample_t
         backgroundState->phraseOffset = phrase.size();
 
         if (collected > 0) {
-            backgroundState->postingList->GetLocations(locations, limit == 0 ? 0 : availability);
+            backgroundState->postingList->GetLocations(locations, limit == 0 ? 0 : availability, shuffleSeed);
 
             if (phrase.size() < prefixLength) {
                 // No need to cache Posting Lists shorter than prefixLength
@@ -176,3 +176,4 @@ void Collector::Retrieve(const vector<location_t> &locations, vector<sample_t> &
         }
     }
 }
+
