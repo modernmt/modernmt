@@ -167,8 +167,7 @@ static void GetLexicalScores(Aligner *aligner, const vector<wid_t> &phrase, cons
     size_t tSize = option.targetPhrase.size();
 
     //computes the lexical probabilities on the best alignment only
-    alignment_t alignment = option.GetBestAlignment();
-    for (auto a = alignment.begin(); a != alignment.end(); ++a) {
+    for (auto a = option.alignment.begin(); a != option.alignment.end(); ++a) {
         wid_t sWord = phrase[a->first];
         wid_t tWord = option.targetPhrase[a->second];
         fwdWordProb[a->second].push_back(aligner->GetForwardProbability(sWord, tWord));  //P(tWord | sWord)
@@ -225,6 +224,8 @@ static void ScoreTranslationOptions(SuffixArray *index, Aligner *aligner,
 
     size_t SampleSourceFrequency = 0;
     for (auto entry = options.begin(); entry != options.end(); ++entry) {
+        //set the best alignment for each option
+        ((TranslationOption) entry->first).SetBestAlignment();
         SampleSourceFrequency += entry->second;
     }
 

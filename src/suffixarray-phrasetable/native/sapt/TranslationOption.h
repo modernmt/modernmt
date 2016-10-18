@@ -24,6 +24,7 @@ namespace mmt {
 
         struct TranslationOption {
             vector<wid_t> targetPhrase;
+            alignment_t alignment;
             unordered_map<alignment_t, size_t, alignment_hash> alignments;
             vector<float> scores;
 
@@ -31,7 +32,7 @@ namespace mmt {
                 scores.resize(kTranslationOptionScoreCount, 0.f);
             }
 
-            alignment_t GetBestAlignment() const { //the best alignment has the larger count, and, in case of equality, the first
+            void SetBestAlignment() { //the best alignment has the larger count, and, in case of equality, the first
                 assert (!alignments.empty());
                 auto best_entry = alignments.begin();
                 size_t best_count = 0;
@@ -41,7 +42,7 @@ namespace mmt {
                         best_entry = entry;
                     }
                 }
-                return best_entry->first;
+                alignment = best_entry->first;
             }
 
             //insert a new alignment for the current options, increased its count by one if required
@@ -58,7 +59,6 @@ namespace mmt {
                 for (auto w = targetPhrase.begin(); w != targetPhrase.end(); ++w)
                     repr << *w << " ";
                 repr << " |||";
-                alignment_t alignment = GetBestAlignment();
                 for (auto a = alignment.begin(); a != alignment.end(); ++a)
                     repr << " " << a->first << "-" << a->second;
                 repr << " |||";
