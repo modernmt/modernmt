@@ -92,13 +92,15 @@ static void ExtractPhrasePairs(const vector<wid_t> &sourceSentence, const vector
                                        targetSentence.begin() + ts,
                                        targetSentence.begin() + te + 1);
 
-            option.alignment = currentAlignments;
-
+            alignment_t tmp_alignment = currentAlignments;
             //re-set the word positions within the phrase pair, regardless the sentence context
-            for (auto a = option.alignment.begin(); a != option.alignment.end(); ++a) {
+            for (auto a = tmp_alignment.begin(); a != tmp_alignment.end(); ++a) {
                 a->first -= sourceStart;
                 a->second -= ts;
             }
+
+            //insert the (possibly new) alignment into the options
+            option.InsertAlignment(tmp_alignment);
 
             outOptions[option]++;
 
@@ -164,7 +166,9 @@ static void GetLexicalScores(Aligner *aligner, const vector<wid_t> &phrase, cons
     size_t sSize = phrase.size();
     size_t tSize = option.targetPhrase.size();
 
-    for (auto a = option.alignment.begin(); a != option.alignment.end(); ++a) {
+    //computes the lexical probabilities on the best alignment only
+    alignment_t alignment = option.GetBestAlignment();
+    for (auto a = alignment.begin(); a != alignment.end(); ++a) {
         wid_t sWord = phrase[a->first];
         wid_t tWord = option.targetPhrase[a->second];
         fwdWordProb[a->second].push_back(aligner->GetForwardProbability(sWord, tWord));  //P(tWord | sWord)

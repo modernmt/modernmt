@@ -5,7 +5,9 @@
 #ifndef SAPT_TRANSLATIONOPTION_H
 #define SAPT_TRANSLATIONOPTION_H
 
+#include <cassert>
 #include <vector>
+#include <unordered_map>
 #include <mmt/sentence.h>
 
 using namespace std;
@@ -22,11 +24,33 @@ namespace mmt {
 
         struct TranslationOption {
             vector<wid_t> targetPhrase;
-            alignment_t alignment;
+            unordered_map<alignment_t, size_t, alignment_hash> alignments;
             vector<float> scores;
 
             TranslationOption() {
                 scores.resize(kTranslationOptionScoreCount, 0.f);
+            }
+
+            alignment_t GetBestAlignment() const { //the best alignment has the larger count, and, in case of equality, the first
+                assert (!alignments.empty());
+                auto best_entry = alignments.begin();
+                size_t best_count = 0;
+                for (auto entry = alignments.begin(); entry != alignments.end(); ++entry) {
+                    if (best_count < entry->second) {
+                        best_count = entry->second;
+                        best_entry = entry;
+                    }
+                }
+                return best_entry->first;
+            }
+
+            //insert a new alignment for the current options, increased its count by one if required
+            void InsertAlignment(alignment_t &alignment){
+                auto ptr = alignments.find(alignment);
+                if (ptr != alignments.end())
+                    ptr->second = ptr->second + 1;
+                else
+                    alignments[alignment] = 1;
             }
 
             string ToString() const {
@@ -34,6 +58,7 @@ namespace mmt {
                 for (auto w = targetPhrase.begin(); w != targetPhrase.end(); ++w)
                     repr << *w << " ";
                 repr << " |||";
+                alignment_t alignment = GetBestAlignment();
                 for (auto a = alignment.begin(); a != alignment.end(); ++a)
                     repr << " " << a->first << "-" << a->second;
                 repr << " |||";
@@ -59,6 +84,7 @@ namespace mmt {
                     return h;
                 }
             };
+
 
             bool operator==(const TranslationOption &rhs) const {
                 return targetPhrase == rhs.targetPhrase;
