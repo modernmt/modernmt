@@ -232,7 +232,7 @@ static void ScoreTranslationOptions(SuffixArray *index, Aligner *aligner,
     size_t SampleSourceFrequency = 0;
     for (auto entry = options.begin(); entry != options.end(); ++entry) {
         //set the best alignment for each option
-        ((TranslationOption) entry->first).SetBestAlignment();
+        ((TranslationOption*) &entry->first)->SetBestAlignment();
         SampleSourceFrequency += entry->second;
     }
 
