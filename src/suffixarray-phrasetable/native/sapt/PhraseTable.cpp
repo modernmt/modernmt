@@ -122,21 +122,22 @@ static void MakeTranslationOptions(SuffixArray *index, Aligner *aligner,
 
     static constexpr float confidence = 0.01;
 
-    size_t SampleSourceFrequency = 0;
+    size_t sampleSourceFrequency = 0;
     for (auto entry = builders.begin(); entry != builders.end(); ++entry) {
-        SampleSourceFrequency += entry->GetCount();
+        sampleSourceFrequency += entry->GetCount();
     }
 
-    size_t GlobalSourceFrequency = index->CountOccurrences(true, phrase);
+    size_t globalSourceFrequency = index->CountOccurrences(true, phrase);
 
     for (auto entry = builders.begin(); entry != builders.end(); ++entry) {
         size_t GlobalTargetFrequency = index->CountOccurrences(false, entry->GetPhrase());
 
-        float fwdScore = log(lbop(entry->GetCount(), SampleSourceFrequency, confidence));
+        float fwdScore = log(lbop(entry->GetCount(), sampleSourceFrequency, confidence));
         float bwdScore = log(
-                lbop(entry->GetCount(), std::max((float) entry->GetCount(), (float) SampleSourceFrequency *
-                                                                              GlobalTargetFrequency /
-                                                                              GlobalSourceFrequency), confidence));
+                lbop(entry->GetCount(),
+                     std::max((float) entry->GetCount(),
+                              (float) sampleSourceFrequency * GlobalTargetFrequency / globalSourceFrequency),
+                     confidence));
         float fwdLexScore = 0.f;
         float bwdLexScore = 0.f;
 
