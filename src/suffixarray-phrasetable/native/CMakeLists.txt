@@ -45,7 +45,7 @@ set(SOURCE_FILES
         util/ioutils.h
         util/chrono.h
         util/randutils.h util/randutils.cpp
-        util/BilingualCorpus.cpp util/BilingualCorpus.h)
+        util/BilingualCorpus.cpp util/BilingualCorpus.h sapt/TranslationOptionBuilder.cpp sapt/TranslationOptionBuilder.h)
 
 include_directories(${CMAKE_SOURCE_DIR})
 
