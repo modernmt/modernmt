@@ -117,8 +117,10 @@ static float lbop(float succ, float tries, float confidence) {
 }
 
 static void MakeTranslationOptions(SuffixArray *index, Aligner *aligner,
-                                   const vector<wid_t> &phrase, vector<TranslationOptionBuilder> &builders,
+                                   const vector<wid_t> &phrase, const vector<sample_t> &samples,
                                    vector<TranslationOption> &output) {
+    vector<TranslationOptionBuilder> builders;
+    TranslationOptionBuilder::Extract(phrase, samples, builders);
 
     static constexpr float confidence = 0.01;
 
@@ -137,7 +139,8 @@ static void MakeTranslationOptions(SuffixArray *index, Aligner *aligner,
                 lbop(entry->GetCount(),
                      std::max((float) entry->GetCount(),
                               (float) sampleSourceFrequency * GlobalTargetFrequency / globalSourceFrequency),
-                     confidence));
+                     confidence)
+        );
         float fwdLexScore = 0.f;
         float bwdLexScore = 0.f;
 
@@ -159,21 +162,12 @@ static void MakeTranslationOptions(SuffixArray *index, Aligner *aligner,
 
 /* SAPT methods */
 
-static void MakeOptions(SuffixArray *index, Aligner *aligner,
-                        const vector<wid_t> &phrase, const vector<sample_t> &samples,
-                        vector<TranslationOption> &output) {
-    vector<TranslationOptionBuilder> builders;
-    TranslationOptionBuilder::Extract(phrase, samples, builders);
-
-    MakeTranslationOptions(index, aligner, phrase, builders, output);
-}
-
 vector<TranslationOption> PhraseTable::GetTranslationOptions(const vector<wid_t> &phrase, context_t *context) {
     vector<sample_t> samples;
     self->index->GetRandomSamples(phrase, self->numberOfSamples, samples, context);
 
     vector<TranslationOption> result;
-    MakeOptions(self->index, self->aligner, phrase, samples, result);
+    MakeTranslationOptions(self->index, self->aligner, phrase, samples, result);
 
     return result;
 }
@@ -201,7 +195,7 @@ translation_table_t PhraseTable::GetAllTranslationOptions(const vector<wid_t> &s
                     break;
 
                 vector<TranslationOption> options;
-                MakeOptions(self->index, self->aligner, phrase, samples, options);
+                MakeTranslationOptions(self->index, self->aligner, phrase, samples, options);
 
                 ttable[phrase] = options;
             }
