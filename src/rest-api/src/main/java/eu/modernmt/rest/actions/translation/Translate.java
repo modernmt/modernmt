@@ -6,8 +6,8 @@ import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextScore;
 import eu.modernmt.decoder.TranslationException;
 import eu.modernmt.facade.ModernMT;
-import eu.modernmt.model.Domain;
 import eu.modernmt.persistence.PersistenceException;
+import eu.modernmt.rest.actions.ContextUtils;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
@@ -15,9 +15,7 @@ import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
 import eu.modernmt.rest.model.TranslationResponse;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by davide on 17/12/15.
@@ -43,17 +41,8 @@ public class Translate extends ObjectAction<TranslationResponse> {
             result.translation = ModernMT.decoder.translate(params.query, params.nbest);
         }
 
-        if (result.context != null) {
-            ArrayList<Integer> ids = new ArrayList<>(result.context.size());
-            for (ContextScore score : result.context)
-                ids.add(score.getDomain().getId());
-
-            Map<Integer, Domain> domains = ModernMT.domain.get(ids);
-            for (ContextScore score : result.context) {
-                int id = score.getDomain().getId();
-                score.setDomain(domains.get(id));
-            }
-        }
+        if (result.context != null)
+            ContextUtils.resolve(result.context);
 
         return result;
     }

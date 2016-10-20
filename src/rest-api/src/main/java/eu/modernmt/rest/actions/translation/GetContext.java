@@ -3,6 +3,8 @@ package eu.modernmt.rest.actions.translation;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextScore;
 import eu.modernmt.facade.ModernMT;
+import eu.modernmt.persistence.PersistenceException;
+import eu.modernmt.rest.actions.ContextUtils;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
@@ -16,6 +18,7 @@ import org.eclipse.jetty.io.RuntimeIOException;
 
 import java.io.*;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Created by davide on 15/12/15.
@@ -24,19 +27,23 @@ import java.util.Collection;
 public class GetContext extends CollectionAction<ContextScore> {
 
     @Override
-    protected Collection<ContextScore> execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException {
+    protected Collection<ContextScore> execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, PersistenceException {
         Params params = (Params) _params;
+        List<ContextScore> context;
 
         if (params.file == null) {
-            return ModernMT.context.get(params.context, params.limit);
+            context = ModernMT.context.get(params.context, params.limit);
         } else {
             try {
-                return ModernMT.context.get(params.file, params.limit);
+                context = ModernMT.context.get(params.file, params.limit);
             } finally {
                 if (params.deleteOnExit)
                     FileUtils.deleteQuietly(params.file);
             }
         }
+
+        ContextUtils.resolve(context);
+        return context;
     }
 
     @Override
