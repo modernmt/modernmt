@@ -387,7 +387,9 @@ def main_create(argv):
 
 def main_translate(argv):
     _logconfig()
-    parser = argparse.ArgumentParser(description='Simple translation script to query MMT.')
+    parser = argparse.ArgumentParser(description='Translate text with ModernMT')
+
+    parser.add_argument('text', metavar='TEXT', help='text to be translated (optional)', default=None, nargs='?')
 
     # Context arguments
     parser.add_argument('--context', metavar='CONTEXT', dest='context',
@@ -433,12 +435,15 @@ def main_translate(argv):
                                            nbest_file=args.nbest_file)
 
     try:
-        while 1:
-            line = sys.stdin.readline()
-            if not line:
-                break
+        if args.text is not None:
+            translator.execute(args.text.strip())
+        else:
+            while 1:
+                line = sys.stdin.readline()
+                if not line:
+                    break
+                translator.execute(line.strip())
 
-            translator.execute(line.strip())
         translator.flush()
     except KeyboardInterrupt:
         # exit
@@ -469,6 +474,11 @@ def main():
     parser.add_argument('-h', '--help', dest='help', action='store_true', help='show this help message and exit')
 
     argv = sys.argv[1:]
+
+    if len(argv) == 0:
+        parser.print_help()
+        exit(1)
+
     command = argv[0]
     args = argv[1:]
 
