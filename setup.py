@@ -5,6 +5,7 @@ import tarfile
 import tempfile
 
 import requests
+import sys
 
 __author__ = 'Davide Caroselli'
 
@@ -59,7 +60,8 @@ def untar(filename, destination):
     return os.path.join(destination, folder)
 
 
-def install_apache_lib(path, output):
+def install_apache_lib(path, output, name):
+    print 'Installing ' + name + '...',
     wdir = tempfile.mkdtemp()
 
     try:
@@ -73,7 +75,11 @@ def install_apache_lib(path, output):
     finally:
         shutil.rmtree(wdir, ignore_errors=True)
 
+    print 'DONE'
+
 
 if __name__ == '__main__':
-    install_apache_lib('/cassandra/3.7/apache-cassandra-3.7-bin.tar.gz', 'vendor/cassandra-3.7')
-    install_apache_lib('/kafka/0.10.0.1/kafka_2.11-0.10.0.1.tgz', 'vendor/kafka-0.10.0.1')
+    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # reopen stdout in unbuffered mode
+
+    # install_apache_lib('/cassandra/3.7/apache-cassandra-3.7-bin.tar.gz', 'vendor/cassandra-3.7', name='cassandra-3.7')
+    install_apache_lib('/kafka/0.10.0.1/kafka_2.11-0.10.0.1.tgz', 'vendor/kafka-0.10.0.1', name='kafka-0.10.0.1')
