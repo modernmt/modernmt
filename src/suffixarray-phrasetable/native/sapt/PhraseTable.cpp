@@ -132,13 +132,13 @@ static void MakeTranslationOptions(SuffixArray *index, Aligner *aligner,
     size_t globalSourceFrequency = index->CountOccurrences(true, phrase);
 
     for (auto entry = builders.begin(); entry != builders.end(); ++entry) {
-        size_t GlobalTargetFrequency = index->CountOccurrences(false, entry->GetPhrase());
+        size_t globalTargetFrequency = index->CountOccurrences(false, entry->GetPhrase());
 
         float fwdScore = log(lbop(entry->GetCount(), sampleSourceFrequency, confidence));
         float bwdScore = log(
                 lbop(entry->GetCount(),
                      std::max((float) entry->GetCount(),
-                              (float) sampleSourceFrequency * GlobalTargetFrequency / globalSourceFrequency),
+                              (float) sampleSourceFrequency * globalTargetFrequency / globalSourceFrequency),
                      confidence)
         );
         float fwdLexScore = 0.f;
