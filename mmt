@@ -452,6 +452,36 @@ def main_translate(argv):
         translator.close()
 
 
+def main_add(argv):
+    _logconfig()
+    parser = argparse.ArgumentParser(description='Add contribution to an existent domain')
+
+    parser.add_argument('domain', help='The id or name of the domain you want to add the contribution to')
+    parser.add_argument('source', metavar='SOURCE_SENTENCE', help='The source sentence of the contribution')
+    parser.add_argument('target', metavar='TARGET_SENTENCE', help='The target sentence of the contribution')
+
+    # Mixed arguments
+    parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
+                        default='default')
+    parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
+                        help='the public available REST Api port. (default is {port})'
+                        .format(port=DEFAULT_MMT_API_PORT), default=None, type=int)
+
+    args = parser.parse_args(argv)
+
+    engine = MMTEngine(name=args.engine)
+    if not engine.exists():
+        raise IllegalStateException('engine not found: ' + args.engine)
+
+    node = ClusterNode(engine, api_port=args.api_port)
+    if not node.is_running():
+        raise IllegalStateException('engine not running: ' + args.engine)
+
+    domain = node.append_to_domain(args.domain, args.source, args.target)
+
+    print 'SUCCESS - contribution added to domain "' + domain['name'] + '"'
+
+
 def main():
     actions = {
         'create': main_create,
@@ -462,6 +492,7 @@ def main():
         'tune': main_tune,
         'evaluate': main_evaluate,
         'translate': main_translate,
+        'add': main_add,
     }
 
     # Set unbuffered stdout

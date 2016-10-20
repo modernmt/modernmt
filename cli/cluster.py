@@ -55,24 +55,28 @@ class MMTApi:
         r = requests.delete(url, timeout=MMTApi.DEFAULT_TIMEOUT)
         return self._unpack(r)
 
-    def _put(self, endpoint, json=None):
+    def _put(self, endpoint, json=None, params=None):
         url = self._url_template.format(host=self.host, port=self.port, endpoint=endpoint)
 
         data = headers = None
         if json is not None:
             data = js.dumps(json)
             headers = {'Content-type': 'application/json'}
+        elif params is not None:
+            data = params
 
         r = requests.put(url, data=data, headers=headers, timeout=MMTApi.DEFAULT_TIMEOUT)
         return self._unpack(r)
 
-    def _post(self, endpoint, json=None):
+    def _post(self, endpoint, json=None, params=None):
         url = self._url_template.format(host=self.host, port=self.port, endpoint=endpoint)
 
         data = headers = None
         if json is not None:
             data = js.dumps(json)
             headers = {'Content-type': 'application/json'}
+        elif params is not None:
+            data = params
 
         r = requests.post(url, data=data, headers=headers, timeout=MMTApi.DEFAULT_TIMEOUT)
         return self._unpack(r)
@@ -114,6 +118,20 @@ class MMTApi:
             p['context_array'] = js.dumps(context)
 
         return self._get('translate', params=p)
+
+    def create_domain(self, source_file, target_file, name=None):
+        params = {'source_local_file': source_file, 'target_local_file': target_file}
+        if name is not None:
+            params['name'] = name
+
+        return self._post('domains', params=params)
+
+    def append_to_domain(self, domain, source, target):
+        params = {'source': source, 'target': target}
+        return self._put('domains/' + str(domain), params=params)
+
+    def get_all_domains(self):
+        return self._get('domains')
 
 
 class _tuning_logger:
@@ -518,3 +536,23 @@ class ClusterNode(object):
         finally:
             if not debug:
                 self.engine.clear_tempdir()
+
+    def new_domain(self, source_file, target_file, name=None):
+        return self.api.create_domain(source_file, target_file, name)
+
+    def append_to_domain(self, domain, source, target):
+        try:
+            domain = int(domain)
+        except ValueError:
+            domains = self.api.get_all_domains()
+            ids = [d['id'] for d in domains if d['name'] == domain]
+
+            if len(ids) == 0:
+                raise IllegalArgumentException('unable to find domain "' + domain + '"')
+            elif len(ids) > 1:
+                raise IllegalArgumentException(
+                    'ambiguous domain name "' + domain + '", choose one of the following ids: ' + str(ids))
+            else:
+                domain = ids[0]
+
+        return self.api.append_to_domain(domain, source, target)
