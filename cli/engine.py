@@ -420,8 +420,6 @@ class MMTEngine(object):
     def get_runtime_path(self):
         return self._runtime_path
 
-
-
     def get_tempdir(self, name, ensure=True):
         if ensure and not os.path.isdir(self._temp_path):
             fileutils.makedirs(self._temp_path, exist_ok=True)
