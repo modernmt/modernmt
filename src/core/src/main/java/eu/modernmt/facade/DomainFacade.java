@@ -11,7 +11,9 @@ import eu.modernmt.persistence.PersistenceException;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 
 /**
  * Created by davide on 06/09/16.
@@ -41,6 +43,28 @@ public class DomainFacade {
 
             DomainDAO domainDAO = db.getDomainDAO(connection);
             return domainDAO.retrieveBytId(domainId);
+        } finally {
+            IOUtils.closeQuietly(connection);
+        }
+    }
+
+    public Map<Integer, Domain> get(int[] ids) throws PersistenceException {
+        ArrayList<Integer> list = new ArrayList<>(ids.length);
+        for (int id : ids)
+            list.add(id);
+
+        return get(list);
+    }
+
+    public Map<Integer, Domain> get(Collection<Integer> ids) throws PersistenceException {
+        Connection connection = null;
+        Database db = ModernMT.node.getEngine().getDatabase();
+
+        try {
+            connection = db.getConnection();
+
+            DomainDAO domainDAO = db.getDomainDAO(connection);
+            return domainDAO.retrieveBytIds(ids);
         } finally {
             IOUtils.closeQuietly(connection);
         }

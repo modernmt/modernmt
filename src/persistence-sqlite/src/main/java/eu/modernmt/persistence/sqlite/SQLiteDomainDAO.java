@@ -7,6 +7,8 @@ import eu.modernmt.persistence.PersistenceException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by davide on 21/09/16.
@@ -42,6 +44,44 @@ public class SQLiteDomainDAO implements DomainDAO {
             SQLUtils.closeQuietly(result);
             SQLUtils.closeQuietly(statement);
         }
+    }
+
+    @Override
+    public Map<Integer, Domain> retrieveBytIds(Collection<Integer> ids) throws PersistenceException {
+        Map<Integer, Domain> map = new HashMap<>(ids.size());
+
+        if (ids.isEmpty())
+            return map;
+
+        StringBuilder sql = new StringBuilder("SELECT * FROM domains WHERE \"id\" IN (");
+        for (Integer id : ids) {
+            sql.append(id);
+            sql.append(',');
+        }
+
+        sql.setCharAt(sql.length() - 1, ')');
+
+        Statement statement = null;
+        ResultSet result = null;
+
+        try {
+            statement = connection.createStatement();
+            result = statement.executeQuery(sql.toString());
+
+            while (result.next()) {
+                int id = result.getInt("id");
+                String name = result.getString("name");
+
+                map.put(id, new Domain(id, name));
+            }
+        } catch (SQLException e) {
+            throw new PersistenceException(e);
+        } finally {
+            SQLUtils.closeQuietly(result);
+            SQLUtils.closeQuietly(statement);
+        }
+
+        return map;
     }
 
     @Override
