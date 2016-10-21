@@ -11,6 +11,7 @@
 namespace fs = boost::filesystem;
 
 using namespace std;
+using namespace mmt;
 using namespace mmt::ilm;
 
 namespace mmt {
@@ -202,7 +203,7 @@ void InterpolatedLM::Add(const updateid_t &id, const domain_t domain, const vect
         self->alm->Add(id, domain, source, target, alignment);
 }
 
-vector<mmt::updateid_t> InterpolatedLM::GetLatestUpdatesIdentifier() {
+unordered_map<stream_t, seqid_t> InterpolatedLM::GetLatestUpdatesIdentifier() {
     return self->alm->GetLatestUpdatesIdentifier();
 }
 

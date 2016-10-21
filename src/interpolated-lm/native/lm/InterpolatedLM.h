@@ -45,7 +45,7 @@ namespace mmt {
                              const vector <wid_t> &source, const vector <wid_t> &target,
                              const alignment_t &alignment) override;
 
-            virtual vector <updateid_t> GetLatestUpdatesIdentifier() override;
+            virtual unordered_map<stream_t, seqid_t> GetLatestUpdatesIdentifier() override;
 
             virtual void NormalizeContext(context_t *context);
 

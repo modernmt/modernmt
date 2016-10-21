@@ -83,7 +83,7 @@ void NGramBatch::Reset(const vector<seqid_t> &_streams) {
 
 bool NGramBatch::SetStreamIfValid(stream_t stream, seqid_t sentence) {
     if (streams.size() <= stream)
-        streams.resize(stream + 1, 0);
+        streams.resize(stream + 1, -1);
 
     if (streams[stream] < sentence) {
         streams[stream] = sentence;

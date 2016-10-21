@@ -237,16 +237,15 @@ void AdaptiveLM::Add(const updateid_t &id, domain_t domain, const vector<wid_t> 
     updateManager.Add(id, domain, target);
 }
 
-vector<updateid_t> AdaptiveLM::GetLatestUpdatesIdentifier() {
+unordered_map<stream_t, seqid_t> AdaptiveLM::GetLatestUpdatesIdentifier() {
     const vector<seqid_t> &streams = storage.GetStreamsStatus();
 
-    vector<updateid_t> result;
+    unordered_map<stream_t, seqid_t> result;
     result.reserve(streams.size());
 
     for (size_t i = 0; i < streams.size(); ++i) {
-        if (streams[i] != 0)
-            result.push_back(updateid_t((stream_t) i, streams[i]));
-
+        if (streams[i] >= 0)
+            result[(stream_t) i] = streams[i];
     }
 
     return result;

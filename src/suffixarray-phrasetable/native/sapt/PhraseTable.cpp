@@ -41,16 +41,15 @@ void PhraseTable::Add(const updateid_t &id, const domain_t domain, const std::ve
     self->updates->Add(id, domain, source, target, alignment);
 }
 
-vector<updateid_t> PhraseTable::GetLatestUpdatesIdentifier() {
+unordered_map<stream_t, seqid_t> PhraseTable::GetLatestUpdatesIdentifier() {
     const vector<seqid_t> &streams = self->index->GetStreams();
 
-    vector<updateid_t> result;
+    unordered_map<stream_t, seqid_t> result;
     result.reserve(streams.size());
 
     for (size_t i = 0; i < streams.size(); ++i) {
-        if (streams[i] != 0)
-            result.push_back(updateid_t((stream_t) i, streams[i]));
-
+        if (streams[i] >= 0)
+            result[(stream_t) i] = streams[i];
     }
 
     return result;

@@ -185,7 +185,7 @@ public class MosesDecoder implements Decoder, UpdatesListener {
 
         HashMap<Integer, Long> map = new HashMap<>(ids.length);
         for (int i = 0; i < ids.length; i++) {
-            if (ids[i] != 0)
+            if (ids[i] >= 0)
                 map.put(i, ids[i]);
         }
 
