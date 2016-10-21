@@ -54,16 +54,14 @@ __moses_clean:
 #  MODULE: SAPT (under MMT)
 # ==========================================
 
-SAPT_HOME    := $(MMT_HOME)/src/suffixarray-phrasetable
-
 __sapt_install: __sapt
 	@echo "Installing SAPT..."
-	@cd $(SAPT_HOME); mvn install
+	@cd $(MMT_HOME)/src/; mvn install -pl suffixarray-phrasetable -am
 	@echo "SUCCESS (SAPT)"
 
 __sapt: __rocksdb_install
 	@echo "Building SAPT..."
-	@cd $(SAPT_HOME); mvn verify
+	@cd $(MMT_HOME)/src/; mvn verify -pl suffixarray-phrasetable -am
 	@echo "SUCCESS (SAPT)"
 
 __sapt_clean:
@@ -78,12 +76,12 @@ ILM_HOME	:= $(MMT_HOME)/src/interpolated-lm
 
 __ilm_install: __ilm
 	@echo "Installing InterpolatedLM..."
-	@cd $(ILM_HOME); mvn install
+	@cd $(MMT_HOME)/src/; mvn install -pl interpolated-lm -am
 	@echo "SUCCESS (InterpolatedLM)"
 
 __ilm: __rocksdb_install
 	@echo "Building InterpolatedLM..."
-	@cd $(ILM_HOME); mvn verify
+	@cd $(MMT_HOME)/src/; mvn verify -pl interpolated-lm -am
 	@echo "SUCCESS (InterpolatedLM)"
 
 __ilm_clean:
