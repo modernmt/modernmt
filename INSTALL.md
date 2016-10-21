@@ -77,6 +77,7 @@ Download from here: https://github.com/ModernMT/MMT/releases and then untar the 
 ```
 tar xvfz mmt-0.13-ubuntu14_04.tar.gz
 cd mmt
+./setup.py
 ```
 
 Done! go to [README.md](README.md)
