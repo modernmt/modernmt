@@ -124,6 +124,7 @@ cd ..
 Finally compile your MMT distribution:
 
 ```
+./setup.py
 cd src
 mvn clean install
 ```
