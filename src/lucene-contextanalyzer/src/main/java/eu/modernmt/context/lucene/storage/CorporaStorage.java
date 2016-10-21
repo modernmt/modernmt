@@ -265,19 +265,14 @@ public class CorporaStorage implements UpdatesListener {
                 } else if (update == POISON_PILL) {
                     logger.debug("CorporaStorage background thread KILL");
                     break;
-                } else {
-                    logger.debug("Received update " + update.sentenceId);
+                } else if (index.registerUpdate(update.streamId, update.sentenceId)) {
+                    CorpusBucket bucket = index.getBucket(update.domain);
 
-                    if (index.registerUpdate(update.streamId, update.sentenceId)) {
-                        logger.debug("Adding update to batch " + update.sentenceId);
-                        CorpusBucket bucket = index.getBucket(update.domain);
+                    if (!bucket.isOpen())
+                        bucket.open();
 
-                        if (!bucket.isOpen())
-                            bucket.open();
-
-                        bucket.append(update.originalSourceSentence);
-                        pendingUpdatesBuckets.add(bucket);
-                    }
+                    bucket.append(update.originalSourceSentence);
+                    pendingUpdatesBuckets.add(bucket);
                 }
             }
         }
