@@ -36,7 +36,7 @@ A JSON object containing the following fields:
 
 ```translation``` the translation of the provided sentence
 
-```took``` the decoding time in millisecods
+```decodingTime``` the decoding time in millisecods
 
 ```context``` the context scores used to translate the sentence
 
