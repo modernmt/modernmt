@@ -12,6 +12,154 @@
 using namespace mmt;
 using namespace mmt::sapt;
 
+
+typedef vector<bool> bitvector;
+
+const size_t po_other = mmt::sapt::kTONoneOrientation;
+// check if min and max in the aligmnet vector v are within the
+// bounds LFT and RGT and update the actual bounds L and R; update
+// the total count of alignment links in the underlying phrase
+// pair
+bool
+check(vector<ushort> const& v, // alignment row/column
+      size_t const LFT, size_t const RGT, // hard limits
+      ushort& L, ushort& R, size_t& count) // current bounds, count
+{
+    if (v.size() == 0) return 0;
+    if (L > v.front() && (L=v.front()) < LFT) return false;
+    if (R < v.back()  && (R=v.back())  > RGT) return false;
+    count += v.size();
+    return true;
+}
+
+/// return number of alignment points in box, -1 on failure
+int
+expand_block(vector<vector<ushort> > const& row2col,
+             vector<vector<ushort> > const& col2row,
+             size_t       row, size_t       col, // seed coordinates
+             size_t const TOP, size_t const LFT, // hard limits
+             size_t const BOT, size_t const RGT, // hard limits
+             ushort* top = NULL, ushort* lft = NULL,
+             ushort* bot = NULL, ushort* rgt = NULL) // store results
+{
+    if (row < TOP || row > BOT || col < LFT || col > RGT) return -1;
+    assert(row >= row2col.size());
+    assert(col >= col2row.size());
+
+    // ====================================================
+    // tables grow downwards, so TOP is smaller than BOT!
+    // ====================================================
+
+    ushort T, L, B, R; // box dimensions
+
+    // if we start on an empty cell, search for the first alignment point
+    if (row2col[row].size() == 0 && col2row[col].size() == 0)
+    {
+        if      (row == TOP) while (row < BOT && !row2col[++row].size());
+        else if (row == BOT) while (row > TOP && !row2col[--row].size());
+
+        if      (col == LFT) while (col < RGT && !col2row[++col].size());
+        else if (col == RGT) while (col > RGT && !col2row[--col].size());
+
+        if (row2col[row].size() == 0 && col2row[col].size() == 0)
+            return 0;
+    }
+    if (row2col[row].size() == 0)
+        row = col2row[col].front();
+    if (col2row[col].size() == 0)
+        col = row2col[row].front();
+
+    if ((T = col2row[col].front()) < TOP) return -1;
+    if ((B = col2row[col].back())  > BOT) return -1;
+    if ((L = row2col[row].front()) < LFT) return -1;
+    if ((R = row2col[row].back())  > RGT) return -1;
+
+    if (B == T && R == L) return 1;
+
+    // start/end of row / column coverage:
+    ushort rs = row, re = row, cs = col, ce = col;
+    int ret = row2col[row].size();
+    for (size_t tmp = 1; tmp; ret += tmp)
+    {
+        tmp = 0;;
+        while (rs>T) if (!check(row2col[--rs],LFT,RGT,L,R,tmp)) return -1;
+        while (re<B) if (!check(row2col[++re],LFT,RGT,L,R,tmp)) return -1;
+        while (cs>L) if (!check(col2row[--cs],TOP,BOT,T,B,tmp)) return -1;
+        while (ce<R) if (!check(col2row[++ce],TOP,BOT,T,B,tmp)) return -1;
+    }
+    if (top) *top = T;
+    if (bot) *bot = B;
+    if (lft) *lft = L;
+    if (rgt) *rgt = R;
+    return ret;
+}
+
+ReorderingType
+find_po_fwd(vector<vector<ushort> >& a1,
+            vector<vector<ushort> >& a2,
+            size_t s1, size_t e1,
+            size_t s2, size_t e2)
+{
+    if (e2 == a2.size()) { // end of target sentence
+        return mmt::sapt::kTOMonotonicOrientation;
+    }
+    size_t y = e2, L = e2, R = a2.size()-1; // won't change
+    size_t x = e1, T = e1, B = a1.size()-1;
+    if (e1 < a1.size() && expand_block(a1,a2,x,y,T,L,B,R) >= 0) {
+        return mmt::sapt::kTOMonotonicOrientation;
+    }
+    B = x = s1-1; T = 0;
+    if (s1 && expand_block(a1,a2,x,y,T,L,B,R) >= 0) {
+        return mmt::sapt::kTOSwapOrientation;
+    }
+    while (e2 < a2.size() && a2[e2].size() == 0) ++e2;
+    if (e2 == a2.size()) { // should never happen, actually
+        return mmt::sapt::kTONoneOrientation;
+    }
+    if (a2[e2].back() < s1) {
+        return mmt::sapt::kTODiscontinuousLeftOrientation;
+    }
+    if (a2[e2].front() >= e1) {
+        return mmt::sapt::kTODiscontinuousRightOrientation;
+    }
+    return mmt::sapt::kTONoneOrientation;
+}
+
+ReorderingType
+find_po_bwd(vector<vector<ushort> >& a1,
+            vector<vector<ushort> >& a2,
+            size_t s1, size_t e1,
+            size_t s2, size_t e2)
+{
+    if (s1 == 0 && s2 == 0){
+        return mmt::sapt::kTOMonotonicOrientation;
+    }
+    if (s2 == 0){
+        return mmt::sapt::kTODiscontinuousRightOrientation;
+    }
+    if (s1 == 0){
+        return mmt::sapt::kTODiscontinuousLeftOrientation;
+    }
+    size_t y = s2-1, L = 0, R = s2-1; // won't change
+    size_t x = s1-1, T = 0, B = s1-1;
+    if (expand_block(a1,a2,x,y,T,L,B,R) >= 0) {
+        return mmt::sapt::kTOMonotonicOrientation;
+    }
+    T = x = e1; B = a1.size()-1;
+    if (expand_block(a1,a2,x,y,T,L,B,R) >= 0) {
+        return mmt::sapt::kTOSwapOrientation;
+    }
+    while (s2-- && a2[s2].size() == 0);
+
+    mmt::sapt::ReorderingType ret;
+    ret = (a2[s2].size()  ==  0 ? po_other :
+           a2[s2].back()   < s1 ? mmt::sapt::kTODiscontinuousRightOrientation :
+           a2[s2].front() >= e1 ? mmt::sapt::kTODiscontinuousLeftOrientation :
+           po_other);
+    return ret;
+}
+
+
 struct PhraseTable::pt_private {
     SuffixArray *index;
     UpdateManager *updates;
@@ -59,7 +207,7 @@ vector<updateid_t> PhraseTable::GetLatestUpdatesIdentifier() {
 typedef unordered_map<TranslationOption, size_t, TranslationOption::hash> optionsmap_t;
 
 static void ExtractPhrasePairs(const vector<wid_t> &sourceSentence, const vector<wid_t> &targetSentence,
-                               const alignment_t &alignment, const vector<bool> &targetAligned,
+                               const alignment_t &allAlignment, const alignment_t &inBoundAlignment, const vector<bool> &targetAligned,
                                int sourceStart, int sourceEnd, int targetStart, int targetEnd,
                                optionsmap_t &outOptions) {
     if (targetEnd < 0) // 0-based indexing.
@@ -67,7 +215,7 @@ static void ExtractPhrasePairs(const vector<wid_t> &sourceSentence, const vector
 
     // Check if alignment points are consistent. if yes, copy
     alignment_t currentAlignments;
-    for (auto alignPoint = alignment.begin(); alignPoint != alignment.end(); ++alignPoint) {
+    for (auto alignPoint = inBoundAlignment.begin(); alignPoint != inBoundAlignment.end(); ++alignPoint) {
 
         //checking whether there are other alignment points outside the current phrase pair; if yes, return doing nothing, because the phrase pair is not valid
         if (((alignPoint->first >= sourceStart) && (alignPoint->first <= sourceEnd)) &&
@@ -98,19 +246,93 @@ static void ExtractPhrasePairs(const vector<wid_t> &sourceSentence, const vector
                 a->first -= sourceStart;
                 a->second -= ts;
             }
+/*
+            //compute orientation for this phrase pair
+            ReorderingType forwardOrientation = kTOMonotonicOrientation; //dummy computation
+            ReorderingType backwardOrientation = kTOSwapOrientation; //dummy computation
+            */
+
+
+            //determine fwd and bwd phrase orientation
+            size_t slen1; // length of source sentence in case of forward
+            size_t slen2; // length of target sentence in case of forward
+            bool flip=0;
+            if (flip){
+                slen1 = targetSentence.size();
+                slen2 = sourceSentence.size();
+            } else {
+                slen1 = sourceSentence.size();
+                slen2 = targetSentence.size();
+            }
+
+            size_t start = sourceStart;
+            size_t stop = sourceEnd+1;
+
+            std::vector<std::vector<ushort> > aln1(slen1); //long as the source sentence (or target if flipped)
+            std::vector<std::vector<ushort> > aln2(slen2); //long as the target sentence (or source if flipped)
+            bitvector forbidden(slen2);
+
+            size_t src,trg;
+            size_t lft = forbidden.size();
+            size_t rgt = 0;
+
+            for ( auto align = allAlignment.begin(); align != allAlignment.end(); ++ align){
+
+                if (flip) {
+                    src = align->second;
+                    trg = align->first;
+                } else {
+                    src=align->first;
+                    trg=align->second;
+                }
+
+                assert(src < slen1);
+                assert(trg < slen2);
+
+                if (src < start || src >= stop) {
+                    forbidden.at(trg) = true;
+                } else {
+                    lft = std::min(lft,trg);
+                    rgt = std::max(rgt,trg);
+                }
+                aln1[src].push_back(trg);
+                aln2[trg].push_back(src);
+            }
+
+            bool computeOrientation = true;
+
+            if (lft > rgt) {
+                computeOrientation = false;
+            } else {
+                for (size_t i = lft; i <= rgt; ++i) {
+                    if (forbidden[i]) {
+                        computeOrientation = false;
+                    }
+                }
+            }
+
+            size_t s1, s2 = lft;
+            for (s1 = s2; s1 && !forbidden[s1-1]; --s1) {};
+            size_t e1 = rgt+1, e2;
+            for (e2 = e1; e2 < forbidden.size() && !forbidden[e2]; ++e2) {};
 
             auto ptr = outOptions.find(option);
             if (ptr != outOptions.end()) { //this option is already present, update the alignments
-                ((TranslationOption*) &ptr->first)->InsertAlignment(tmp_alignment);
+                ((TranslationOption&) ptr->first).InsertAlignment(tmp_alignment);
+                if (computeOrientation) {
+                    ((TranslationOption &) ptr->first).UpdateOrientation(find_po_fwd(aln1, aln2, start, stop, s1, e2),
+                                                                         find_po_bwd(aln1,aln2,start,stop,s1,e2));
+                }
                 ptr->second = ptr->second + 1;
             } else {
                 //insert the (possibly new) alignment into the options
                 option.InsertAlignment(tmp_alignment);
-
+                if (computeOrientation) {
+                    option.UpdateOrientation(find_po_fwd(aln1, aln2, start, stop, s1, e2), find_po_bwd(aln1,aln2,start,stop,s1,e2));
+                }
                 outOptions[option] = 1;
             }
             ptr = outOptions.find(option);
-
             te += 1;
             // if fe is in word alignment or out-of-bounds
             if (te == targetSentence.size() || targetAligned[te]) {
@@ -126,8 +348,7 @@ static void ExtractPhrasePairs(const vector<wid_t> &sourceSentence, const vector
     }
 }
 
-static void GetTranslationOptionsFromSample(const vector<wid_t> &sourcePhrase, const sample_t &sample,
-                                            optionsmap_t &outOptions) {
+static void GetTranslationOptionsFromSample(const vector<wid_t> &sourcePhrase, const sample_t &sample, optionsmap_t &outOptions) {
     // keeps a vector to know whether a target word is aligned.
     vector<bool> targetAligned(sample.target.size(), false);
     for (auto alignPoint = sample.alignment.begin(); alignPoint != sample.alignment.end(); ++alignPoint)
@@ -137,8 +358,7 @@ static void GetTranslationOptionsFromSample(const vector<wid_t> &sourcePhrase, c
     for (auto offset = sample.offsets.begin(); offset != sample.offsets.end(); ++offset) {
         // get source position lowerBound  and  upperBound
         int sourceStart = *offset; // lowerBound is always larger than or equal to 0
-        int sourceEnd = sourceStart + sourcePhrase.size() -
-                        1; // upperBound is always larger than or equal to 0, because sourcePhrase.size()>=1
+        int sourceEnd = sourceStart + sourcePhrase.size() - 1; // upperBound is always larger than or equal to 0, because sourcePhrase.size()>=1
 
         // find the minimally matching foreign phrase
         int targetStart = sample.target.size() - 1;
@@ -159,7 +379,7 @@ static void GetTranslationOptionsFromSample(const vector<wid_t> &sourcePhrase, c
             }
         }
 
-        ExtractPhrasePairs(sample.source, sample.target, inBoundsAlignment, targetAligned,
+        ExtractPhrasePairs(sample.source, sample.target, sample.alignment, inBoundsAlignment, targetAligned,
                            sourceStart, sourceEnd, targetStart, targetEnd, outOptions);
     }
 }
@@ -232,7 +452,7 @@ static void ScoreTranslationOptions(SuffixArray *index, Aligner *aligner,
     size_t SampleSourceFrequency = 0;
     for (auto entry = options.begin(); entry != options.end(); ++entry) {
         //set the best alignment for each option
-        ((TranslationOption*) &entry->first)->SetBestAlignment();
+        ((TranslationOption&) entry->first).SetBestAlignment();
         SampleSourceFrequency += entry->second;
     }
 

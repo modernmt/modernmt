@@ -13,6 +13,7 @@
 #include <mmt/aligner/Aligner.h>
 #include "Options.h"
 #include "TranslationOption.h"
+//#include "suffixarray/sample.h"
 
 using namespace std;
 
@@ -47,6 +48,8 @@ namespace mmt {
                              const std::vector<wid_t> &target, const alignment_t &alignment) override;
 
             virtual vector<updateid_t> GetLatestUpdatesIdentifier() override;
+
+            void UpdateDistortionCounts(const TranslationOption& option);
 
         private:
             struct pt_private;
