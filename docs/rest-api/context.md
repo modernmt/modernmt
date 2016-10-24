@@ -28,9 +28,9 @@ Top domains and scores:
 
 **Output:**
 
-A JSON array of objects with ```id``` and ```score````:
+A JSON array of objects with ```domain``` and ```score````:
 
-```id``` is the name of the domain
+```domain``` the domain details (currently name and id)
 
 ```score``` is the cosine similarity between the domain and the given text
 
@@ -42,11 +42,17 @@ A JSON array of objects with ```id``` and ```score````:
 {
     "data": [
         {
-            "id": "europarl",
+            "domain": {
+                "id": 3,
+                "name": "europarl"
+            },
             "score": 0.13375875
         },
         {
-            "id": "ibm",
+            "domain": {
+                "id": 1,
+                "name": "ibm"
+            },
             "score": 0.008800022
         }
     ],
