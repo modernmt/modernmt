@@ -123,4 +123,6 @@ You can select your Google Translate API Key by typing:
 
 If you don't want to use Google Translate just type a random key.
 
+## What's next?
 
+Following this README you have learned the basic usage of ModernMT. Most users would be interested in creating their own engine with their own data, you can find more info in the Wiki [Create an engine from scratch](https://github.com/ModernMT/MMT/wiki/Create-an-engine-from-scratch)
