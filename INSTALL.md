@@ -2,7 +2,6 @@
 
 **Storage**: at least 10 times the corpus size, min 10GB. If your unzipped training data is 10GB, make sure you have at least 100GB on drive.
 
-
 **CPU**: No minimum required. 
   - More cores generally will give you a faster training and translation request throughput. 
   - More clock speed will generally give you a faster translation for the single request.
@@ -75,14 +74,12 @@ sudo pip install -U requests
 Download from here: https://github.com/ModernMT/MMT/releases and then untar the files:
 
 ```
-tar xvfz mmt-0.13-ubuntu14_04.tar.gz
+tar xvfz mmt-0.14_alpha-ubuntu14_04.tar.gz
 cd mmt
 ./setup.py
 ```
 
 Done! go to [README.md](README.md)
-
-
 
 # Installing from source (for contributors)
 
@@ -122,12 +119,17 @@ make
 cd ..
 ```
 
-Finally compile your MMT distribution:
+Compile your MMT distribution:
+
+```
+cd src
+mvn clean install
+```
+
+Finally run the setup:
 
 ```
 ./setup.py
-cd src
-mvn clean install
 ```
 
 You have now a working instance of MMT. Go to [README.md](README.md) to find how to test your installation.
