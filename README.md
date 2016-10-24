@@ -1,4 +1,4 @@
-# MMT 0.13 - Release for Ubuntu 14.04 
+# MMT 0.14-alpha - Release for Ubuntu 14.04 
 
 ## About MMT
 MMT is a context-aware, incremental and distributed general purpose Machine Translation technology.
@@ -11,7 +11,6 @@ MMT is:
 MMT's goal is to deliver the quality of multiple custom engines by adapting on the fly to the provided context.
 
 You can find more information on: http://www.modernmt.eu
-
 
 ## About this Release
 
@@ -26,76 +25,55 @@ Intro video: http://87k.eu/lk9l
 
 Read [INSTALL.md](INSTALL.md)
 
-The distribution includes a small dataset (folder ./examples/data/train) to train and test translations from 
+The distribution includes a small dataset (folder `examples/data/train`) to train and test translations from 
 English to Italian in three domains. 
 
 ### Create an engine
 
 ```bash
-> ./mmt create en it examples/data/train
+$ ./mmt create en it examples/data/train
 ```
 
 ### Start the engine
 
 ```bash
-> ./mmt start
+$ ./mmt start
 ```
-You can stop it with the command **stop**.
+You can stop it with the command `stop`.
 
-### Start translating via API
+### Start translating
 
-Let us query MMT with the word *world* in the context *computer*:
+Let's now use the command-line tool `mmt` to query the engine with the sentence *hello world* and context *computer*:
 ```
-> curl "http://localhost:8045/translate?q=world&context=computer" | python -mjson.tool
+$ ./mmt translate --context computer "hello world"
+
+ModernMT Translate command line
+>> Context: ibm 87%, europarl 13%
+
+>> hello mondo
+```
+Next, we are going to improve the partial translation `hello mondo`.
+
+*Note:* You can query MMT directly via REST API, to learn more on how to do it, visit the [Translate API](https://github.com/ModernMT/MMT/wiki/REST-API#translation-api) page in the project Wiki.
+
+
+### Improve translation quality with new data
+
+Let's now add a contribution to te existing engine, **without** need for retraining, in order to improve the previous translation. We will use again the command-line tool `mmt`:
+```
+./mmt add ibm "hello Mike!" "ciao Mike!"
+```
+And now repeat the previous translation query: the engine has just learned a new word and the result is immediately visible.
+```
+$ ./mmt translate --context computer "hello world"
+
+ModernMT Translate command line
+>> Context: ibm 87%, europarl 13%
+
+>> ciao mondo
 ```
 
-MMT will return a json structure showing the translation and the context similarity scores for each domain: 
-
-```
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100   145  100   145    0     0  14777      0 --:--:-- --:--:-- --:--:-- 16111
-{
-    "data": {
-        "context": [
-            {
-                "id": "ibm",
-                "score": 0.048597444
-            },
-            {
-                "id": "europarl",
-                "score": 0.007114725
-            }
-        ],
-        "decodingTime": 1,
-        "translation": "mondo"
-    },
-    "status": 200
-}
-```
-
-#### Input format
-
-MMT support XML input type for translations. XML tags are extracted from the source text, and re-inserted in the translation in the right position, based on the translation alignments.
-
-During the pre-processing:
-
-* XML Tags are identified and extracted from the text.
-* Pure text is then de-escaped: XML entities are replaced with the actual literal (e.g. **&amp;lt;** is replaced with char **&lt;**).
-
-The text is then translated by the decoder. During the post-processing step:
-
-* Text is then escaped following the XML conventions. Characters **&quot;**, **&apos;**, **&lt;**, **&gt;** and **&amp;** are escaped in **&amp;quot;**, **&amp;apos;**, **&amp;lt;**, **&amp;gt;** and **&amp;amp;**.
-* XML Tags are positioned in the translation based on the alignments. Tag's content is kept untouched.
-
-See the following example:
-
-* **Input**:         ```You&apos;ll see the <div id="example-div">example</div>!```
-* **Preprocessed**:  ```You 'll see the example !```
-* **Translation**:   ```Vedrai l' esempio !```
-* **Postprocessed**: ```Vedrai l&apos;<div id="example-div">esempio</div>!```
-
-### Evaluating Quality
+## Evaluating quality
 
 How is your engine performing vs the commercial state-of-the-art technologies?
 
@@ -103,8 +81,8 @@ Should I use Google Translate or ModernMT given this data?
 
 Evaluate helps you answer these questions.
 
-Before training, MMT has removed sentences corresponding to 1% of the training set and up to 1200.
-During evaluate this sentences are used to compute the BLUE Score and Matecat Post-Editing Score against the MMT and Google Translate.
+Before training, MMT has removed sentences corresponding to 1% of the training set (or up to 1200 lines at most).
+During evaluate these sentences are used to compute the BLUE Score and Matecat Post-Editing Score against the MMT and Google Translate.
 
 With your engine running, just type:
 ```
@@ -128,13 +106,12 @@ Translation Speed:
   
 ```
 
-If you want to test on a different Test Set just type:
+If you want to test on a different test-set just type:
 ```
-./mmt evaluate --path your-folder/your-test-set
+./mmt evaluate --path path/to/your/test-set
 ```
 
-Notes:
-To run Evaluate you need internet connection for Google Translate API and the Matecat Post-Editing Score API.
+*Notes:* To run Evaluate you need internet connection for Google Translate API and the Matecat Post-Editing Score API.
 MMT comes with a limited Google Translate API key. 
 
 Matecat kindly provides unlimited-fair-usage, access to their API to MMT users.
@@ -145,7 +122,6 @@ You can select your Google Translate API Key by typing:
 ```
 
 If you don't want to use Google Translate just type a random key.
-
 
 ## Increasing the quality
 
@@ -209,72 +185,4 @@ Untar the archive and place the unzipped giga-fren.release2.XX corpus in a train
 
 ```bash
 ./mmt create en fr wmt-train-dir
-```
 
-The corpus contains 575,799,111 source tokens and 1,247,735,635 total words.
-
-Training statistics:
-```
-Speed          :  41,791 words/second
-Total time     :  29,159s
-  - Tokenization   :   5,801s
-  - Cleaning       :   1,205s
-  - Context Index  :      95s
-  - Lang Model     :   8,180s
-  - Model (Suffix) :  13,878s
-
-```
-
-### MMT Tuning (Optional)
-
-MMT quality can be increased by tuning the parameters providing unseen translation examples. 
-
-```
-./mmt tune
-```
-
-This dev data used to tune the small engine created with the example data will take around 10 minutes. 
-After the tuning translation requests will use the new parameters. No other action required.
-
-Tuning speed depends on many factors:
- - Translation speed (bigger model, slower translations);
- - Number of sentences as dev set for tuning;
- - Luck. How close the random initial parameters are to the convergence.
-
-Expect a few hours for a 1B words model with 1000 sentences used for tuning.
-
-Tuning and evaluate runs also on a distributed MMT.  
-
-## MMT distributed (Optional)
-
-Translation, Tuning and Evaluate can run on a MMT cluster to drastically reduce the time they take.
-Training cannot run on an MMT cluster.
-
-Let's distribute MMT to a second machine. First, make sure ports 5016, 5017 and 8045 are open on both machines
-
-Login into the new machine and run
-
-```bash 
-./mmt start --join 172.31.40.212
-```
-
-Where *172.31.40.212* is the IP address of the first MMT machine - the one that was already running.
-
-If you're running your experiments on *Amazon*, **you must use your machine's private ip**, not the public one (nor elastic ip if present) otherwise you won't be able to connect the two instances.
-
-You can query the REST API on both machines, the requests are load balanced across the whole cluster:
-
-```
-curl "http://172.31.40.212:8045/translate?q=world&context=computer" | python -mjson.tool
-curl "http://localhost:8045/translate?q=world&context=computer" | python -mjson.tool
-```
-
-### Distributed MMT Notes
-
-The engine files will be synced from one instance to the other and translation requests will be load balanced across the whole cluster.
-
-If you updated the model on a machine, just stop and start the nodes specifying the up-to-date host in the *--join* option and the model data will be rsynced again.
-
-### API documentation
-
-You can find an exhaustive description of all the available APIs in the document [docs/README.md](docs/README.md).
