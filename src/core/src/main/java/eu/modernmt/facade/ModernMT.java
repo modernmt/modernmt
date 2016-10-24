@@ -18,5 +18,6 @@ public class ModernMT {
     public static final TagFacade tags = new TagFacade();
     public static final TrainingFacade training = new TrainingFacade();
     public static final DomainFacade domain = new DomainFacade();
+    public static final EngineFacade engine = new EngineFacade();
 
 }

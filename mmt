@@ -482,6 +482,48 @@ def main_add(argv):
     print 'SUCCESS - contribution added to domain "' + domain['name'] + '"'
 
 
+def main_import(argv):
+    _logconfig()
+    parser = argparse.ArgumentParser(description='Import a new domain given parallel files or TMX')
+
+    parser.add_argument('-d', '--domain', help='The name of the new domain (default is the filename', default=None)
+    parser.add_argument('-s', '--source-file', dest='source', metavar='SOURCE_FILE', help='Source file to import')
+    parser.add_argument('-t', '--target-file', dest='target', metavar='TARGET_FILE', help='Target file to import')
+    parser.add_argument('-x', '--tmx-file', dest='tmx', metavar='TMX_FILE', help='TMX file to import')
+
+    # Mixed arguments
+    parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
+                        default='default')
+    parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
+                        help='the public available REST Api port. (default is {port})'
+                        .format(port=DEFAULT_MMT_API_PORT), default=None, type=int)
+
+    args = parser.parse_args(argv)
+
+    if args.source is None and args.target is None:
+        if args.tmx is None:
+            raise CLIArgsException(parser, 'missing options "-s" and "-t" or "-x"')
+    elif args.source is None or args.target is None:
+        raise CLIArgsException(parser, 'you must specify both "-s" and "-t" options')
+    elif args.tmx is not None:
+        raise CLIArgsException(parser, 'cannot use both "-s", "-t" and "-x" options')
+
+    engine = MMTEngine(name=args.engine)
+    if not engine.exists():
+        raise IllegalStateException('engine not found: ' + args.engine)
+
+    node = ClusterNode(engine, api_port=args.api_port)
+    if not node.is_running():
+        raise IllegalStateException('engine not running: ' + args.engine)
+
+    if args.tmx is not None:
+        domain = node.new_domain_from_tmx(args.tmx, args.domain)
+    else:
+        domain = node.new_domain_from_parallel(args.source, args.target, args.domain)
+
+    print 'SUCCESS - imported domain "' + domain['name'] + '" with id ' + str(domain['id'])
+
+
 def main():
     actions = {
         'create': main_create,
@@ -493,6 +535,7 @@ def main():
         'evaluate': main_evaluate,
         'translate': main_translate,
         'add': main_add,
+        'import': main_import,
     }
 
     # Set unbuffered stdout

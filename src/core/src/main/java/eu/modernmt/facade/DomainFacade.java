@@ -8,6 +8,7 @@ import eu.modernmt.persistence.Connection;
 import eu.modernmt.persistence.Database;
 import eu.modernmt.persistence.DomainDAO;
 import eu.modernmt.persistence.PersistenceException;
+import eu.modernmt.training.CleaningPipeline;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -115,6 +116,8 @@ public class DomainFacade {
     }
 
     public Domain create(String name, BilingualCorpus corpus) throws PersistenceException, IOException, DataStreamException {
+        corpus = CleaningPipeline.getFilteredCorpus(corpus);
+
         Connection connection = null;
         Database db = ModernMT.node.getEngine().getDatabase();
 
