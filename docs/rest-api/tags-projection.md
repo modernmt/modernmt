@@ -35,7 +35,7 @@ Translation with tags:  ```<br>ciao, <b id="1">primo<b id="2"> test<br>.```
 
 ```d```: (optional) if equals to 1 then the source and target tokens and their alignments will be added to the json response.
 
-```symmetrization```: (optional) possible values are `Intersection`, `Union`, `GrowDiagonalFinalAnd` (default option) and `GrowDiagonal`.
+```symmetrization```: (optional) possible values are `intersect`, `union`, `grow_diagonal_final_and` (default option) and `grow_diagonal`.
 
 **Output:**
 
