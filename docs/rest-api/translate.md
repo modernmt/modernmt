@@ -51,15 +51,21 @@ A JSON object containing the following fields:
     "data": {
         "context": [
             {
-                "id": "europarl",
+                "domain": {
+                    "id": 3,
+                    "name": "europarl"
+                },
                 "score": 0.13375875
             },
             {
-                "id": "ibm",
+                "domain": {
+                    "id": 1,
+                    "name": "ibm"
+                },
                 "score": 0.008800022
             }
         ],
-        "decodingTime": 59,
+        "decodingTime": 93,
         "translation": "&quot;Questo \u00e8 un <b>esempio</b>&quot;"
     },
     "status": 200
