@@ -128,6 +128,9 @@ If you don't want to use Google Translate just type a random key.
 #### Create an engine from scratch
 Following this README you have learned the basic usage of ModernMT. Most users would be interested in creating their own engine with their own data, you can find more info in the Wiki [Create an engine from scratch](https://github.com/ModernMT/MMT/wiki/Create-an-engine-from-scratch)
 
+#### See API Documentation
+ModernMT comes with built-in REST API that allows the user to control every single feature of MMT via a simple and powerful interface. You can find the [API Documentation](https://github.com/ModernMT/MMT/wiki/API-Documentation) in the [ModernMT Wiki](https://github.com/ModernMT/MMT/wiki).
+
 #### Run ModernMT cluster
 You can setup a cluster of MMT nodes in order to load balancing translation requests. In fact also tuning and evaluation can be drastically speed-up if runned on an MMT cluster.
 
