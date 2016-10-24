@@ -28,7 +28,7 @@ Top domains and scores:
 
 **Output:**
 
-A JSON array of objects with ```domain``` and ```score````:
+A JSON array of objects with ```domain``` and ```score```:
 
 ```domain``` the domain details (currently name and id)
 
