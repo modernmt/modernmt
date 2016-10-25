@@ -342,11 +342,11 @@ class MMTEngine(object):
         self.moses.add_feature(self.lm, 'InterpolatedLM')
 
         self._optimal_weights = {
-            'InterpolatedLM': [0.261806],
-            'Distortion0': [0.161326],
-            'WordPenalty0': [-0.163892],
-            'PhrasePenalty0': [-0.189044],
-            'Sapt': [0.0632762, 0.105652, 0.00365665, 0.0513473],
+            'InterpolatedLM': [0.24759],
+            'Sapt': [0.118797, 0.172922, 0.0134384, 0.0143003],
+            'Distortion0': [0.197845],
+            'WordPenalty0': [-0.217267],
+            'PhrasePenalty0': [0.0178411],
         }
 
         if self._config is None:
