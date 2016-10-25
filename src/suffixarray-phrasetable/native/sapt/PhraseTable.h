@@ -13,7 +13,6 @@
 #include <mmt/aligner/Aligner.h>
 #include "Options.h"
 #include "TranslationOption.h"
-//#include "suffixarray/sample.h"
 
 using namespace std;
 
@@ -39,6 +38,7 @@ namespace mmt {
             ~PhraseTable();
 
             vector<TranslationOption> GetTranslationOptions(const vector<wid_t> &phrase, context_t *context = NULL);
+            void GetSamples(const vector<wid_t> &phrase, vector<vector<wid_t> > &sourceSentences, vector<vector<wid_t> > &targetSentences, vector<alignment_t > &alignments, context_t *context = NULL);
 
             translation_table_t GetAllTranslationOptions(const vector<wid_t> &sentence, context_t *context = NULL);
 

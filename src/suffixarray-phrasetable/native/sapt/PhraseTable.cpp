@@ -16,7 +16,7 @@ using namespace mmt::sapt;
 typedef vector<bool> bitvector;
 
 const size_t po_other = mmt::sapt::kTONoneOrientation;
-// check if min and max in the aligmnet vector v are within the
+// check if min and max in the alignment vector v are within the
 // bounds LFT and RGT and update the actual bounds L and R; update
 // the total count of alignment links in the underlying phrase
 // pair
@@ -502,6 +502,18 @@ vector<TranslationOption> PhraseTable::GetTranslationOptions(const vector<wid_t>
     MakeOptions(self->index, self->aligner, phrase, samples, result);
 
     return result;
+}
+
+
+
+void PhraseTable::GetSamples(const vector<wid_t> &phrase, vector<vector<wid_t> > &sourceSentences, vector<vector<wid_t> > &targetSentences, vector<alignment_t > &alignments, context_t *context){
+    vector<sample_t> samples;
+    self->index->GetRandomSamples(phrase, self->numberOfSamples, samples, context);
+    for (auto sample = samples.begin(); sample != samples.end(); ++sample){
+        sourceSentences.push_back(sample->source);
+        targetSentences.push_back(sample->target);
+        alignments.push_back(sample->alignment);
+    }
 }
 
 translation_table_t PhraseTable::GetAllTranslationOptions(const vector<wid_t> &sentence, context_t *context) {
