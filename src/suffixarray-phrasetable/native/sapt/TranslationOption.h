@@ -73,11 +73,11 @@ namespace mmt {
                 for (auto w = targetPhrase.begin(); w != targetPhrase.end(); ++w)
                     repr << *w << " ";
                 repr << " |||";
-                for (auto a = alignment.begin(); a != alignment.end(); ++a)
-                    repr << " " << a->first << "-" << a->second;
-                repr << " |||";
                 for (auto o = scores.begin(); o != scores.end(); ++o)
                     repr << " " << *o;
+                repr << " |||";
+                for (auto a = alignment.begin(); a != alignment.end(); ++a)
+                    repr << " " << a->first << "-" << a->second;
 
                 return repr.str();
             }
