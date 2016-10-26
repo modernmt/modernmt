@@ -6,7 +6,6 @@
 #include <suffixarray/SuffixArray.h>
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
-#include <fastalign/FastAligner.h>
 
 using namespace std;
 using namespace mmt;
@@ -19,7 +18,6 @@ namespace {
 
     struct args_t {
         string model_path;
-        string aligner_model_path;
         context_t context;
         size_t sample_limit = 1000;
         bool quiet = false;
@@ -54,7 +52,6 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
             ("help,h", "print this help message")
             ("model,m", po::value<string>()->required(), "output model path")
             ("context,c", po::value<string>(), "context map in the format <id>:<w>[,<id>:<w>]")
-            ("alignerModel,a", po::value<string>(), "path to aligner model")
             ("sample,s", po::value<size_t>(), "number of samples (default is 100)")
             ("quiet,q", "prints only number of match");
 
@@ -66,11 +63,6 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
         if (vm.count("help")) {
             cout << desc << endl;
             return false;
-        }
-
-
-        if (vm.count("alignerModel")) {
-            args->aligner_model_path = vm["alignerModel"].as<string>();
         }
 
         if (vm.count("context")) {
@@ -120,11 +112,8 @@ int main(int argc, const char *argv[]) {
 
     Options ptOptions;
     ptOptions.samples = args.sample_limit;
-    Aligner *aligner =  NULL;
-    if (args.aligner_model_path != ""){
-        aligner = mmt::fastalign::FastAligner::Open(args.aligner_model_path, 1);
-    }
-    PhraseTable pt(args.model_path, ptOptions, aligner);
+
+    PhraseTable pt(args.model_path, ptOptions);
 
     if (!args.quiet) {
         cout << "Model loaded" << endl;
@@ -147,14 +136,35 @@ int main(int argc, const char *argv[]) {
             cout << endl;
         }
 
-        vector<TranslationOption> options = pt.GetTranslationOptions(sourcePhrase, context);
+
+        vector<vector<wid_t> > sourceSentences;
+        vector<vector<wid_t> > targetSentences;
+        vector<alignment_t> alignments;
+
+        pt.GetSamples(sourcePhrase, sourceSentences, targetSentences, alignments, context);
+
+        size_t NumberOfsamples = sourceSentences.size();
+        assert (targetSentences.size() == NumberOfsamples);
+        assert (alignments.size() == NumberOfsamples);
 
         if (!args.quiet) {
-            for (auto option = options.begin(); option != options.end(); ++option) {
-                cout << option->ToString() << endl;
+            for (size_t pos = 0; pos < NumberOfsamples; ++pos) {
+
+                for (auto w = sourceSentences[pos].begin(); w != sourceSentences[pos].end(); ++w){
+                    cout << *w << " ";
+                }
+                cout << "||| ";
+                for (auto w = targetSentences[pos].begin(); w != targetSentences[pos].end(); ++w){
+                    cout << *w << " ";
+                }
+                cout << "||| ";
+                for (auto a = alignments[pos].begin(); a != alignments[pos].end(); ++a){
+                    cout << a->first << "-" << a->second << " ";
+                }
+                cout << endl;
             }
         }
-        cout << "Found " << options.size() << " options" << endl;
+        cout << "Found " << NumberOfsamples << " samples" << endl;
     }
 
     return SUCCESS;
