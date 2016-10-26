@@ -438,6 +438,7 @@ static void GetLexicalScores(Aligner *aligner, const vector<wid_t> &phrase, cons
 }
 
 static float lbop(float succ, float tries, float confidence) {
+    cerr << "computing lbop with succ=" << succ << " tries=" << tries << " confidence=" << confidence << endl;
     if(confidence == 0)
         return succ / tries;
     else
@@ -461,7 +462,11 @@ static void ScoreTranslationOptions(SuffixArray *index, Aligner *aligner,
     for (auto entry = options.begin(); entry != options.end(); ++entry) {
         size_t GlobalTargetFrequency = index->CountOccurrences(false, entry->first.targetPhrase);
 
+        cerr << "calling  fwdScore  lbop with SampleSourceFrequency=" << SampleSourceFrequency << " entry->second=" << entry->second << endl;
         float fwdScore = log(lbop(entry->second, SampleSourceFrequency, confidence));
+
+        cerr << "calling  bwdScore  lbop with SampleSourceFrequency=" << SampleSourceFrequency << " GlobalSourceFrequency=" << GlobalSourceFrequency << " GlobalTargetFrequency=" << GlobalTargetFrequency << " m2=" << (size_t) round((float) SampleSourceFrequency * GlobalTargetFrequency / GlobalSourceFrequency) << " entry->second=" << entry->second << endl;
+
         float bwdScore = log(lbop(entry->second,
                                   std::max(entry->second, (size_t) round((float) SampleSourceFrequency * GlobalTargetFrequency / GlobalSourceFrequency)),
                                   confidence));
