@@ -8,6 +8,7 @@ import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.XMLEditableString;
 import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -28,6 +29,16 @@ public class KuromojiTokenizer extends TextProcessor<XMLEditableString, XMLEdita
     @Override
     public XMLEditableString call(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
         List<Token> tokens = tokenizer.tokenize(text.toString());
+
+        // Remove empty tokens
+        Iterator<Token> iterator = tokens.iterator();
+        while (iterator.hasNext()) {
+            String surface = iterator.next().getSurface();
+
+            if (surface.trim().length() == 0)
+                iterator.remove();
+        }
+
         String[] array = new String[tokens.size()];
 
         for (int i = 0; i < array.length; i++)
