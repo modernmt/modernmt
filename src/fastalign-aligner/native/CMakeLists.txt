@@ -117,3 +117,5 @@ foreach(exefile ${executables})
     install(TARGETS ${exe} RUNTIME DESTINATION bin)
 endforeach()
 
+
+install(FILES fastalign/FastAligner.h fastalign/Model.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/fastalign)
