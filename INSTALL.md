@@ -3,6 +3,9 @@
 ### Storage
 At least 10 times the corpus size, min 10GB. If your unzipped training data is 10GB, make sure you have at least 100GB on drive.
 
+### Platform
+A x86_64 platform is required.
+
 ### CPU
 No minimum required. 
 * More cores generally will give you a faster training and translation request throughput. 
@@ -135,6 +138,7 @@ Compile your MMT distribution:
 ```
 cd src
 mvn clean install
+cd ..
 ```
 
 Finally run the setup:
