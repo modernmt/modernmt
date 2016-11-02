@@ -209,7 +209,10 @@ typedef unordered_map<TranslationOption, size_t, TranslationOption::hash> option
 static void ExtractPhrasePairs(const vector<wid_t> &sourceSentence, const vector<wid_t> &targetSentence,
                                const alignment_t &allAlignment, const alignment_t &inBoundAlignment, const vector<bool> &targetAligned,
                                int sourceStart, int sourceEnd, int targetStart, int targetEnd,
-                               optionsmap_t &outOptions) {
+                               optionsmap_t &outOptions, bool &isValid) {
+
+    isValid = false;
+
     if (targetEnd < 0) // 0-based indexing.
         return;
 
@@ -332,7 +335,8 @@ static void ExtractPhrasePairs(const vector<wid_t> &sourceSentence, const vector
                 }
                 outOptions[option] = 1;
             }
-            ptr = outOptions.find(option);
+            isValid = true;
+
             te += 1;
             // if fe is in word alignment or out-of-bounds
             if (te == targetSentence.size() || targetAligned[te]) {
@@ -348,7 +352,7 @@ static void ExtractPhrasePairs(const vector<wid_t> &sourceSentence, const vector
     }
 }
 
-static void GetTranslationOptionsFromSample(const vector<wid_t> &sourcePhrase, const sample_t &sample, optionsmap_t &outOptions) {
+static void GetTranslationOptionsFromSample(const vector<wid_t> &sourcePhrase, const sample_t &sample, optionsmap_t &outOptions, size_t &validSample) {
     // keeps a vector to know whether a target word is aligned.
     vector<bool> targetAligned(sample.target.size(), false);
     for (auto alignPoint = sample.alignment.begin(); alignPoint != sample.alignment.end(); ++alignPoint)
@@ -379,8 +383,10 @@ static void GetTranslationOptionsFromSample(const vector<wid_t> &sourcePhrase, c
             }
         }
 
+        bool isValid = false;
         ExtractPhrasePairs(sample.source, sample.target, sample.alignment, inBoundsAlignment, targetAligned,
-                           sourceStart, sourceEnd, targetStart, targetEnd, outOptions);
+                           sourceStart, sourceEnd, targetStart, targetEnd, outOptions, isValid);
+        if (isValid) ++validSample;
     }
 }
 
@@ -438,7 +444,6 @@ static void GetLexicalScores(Aligner *aligner, const vector<wid_t> &phrase, cons
 }
 
 static float lbop(float succ, float tries, float confidence) {
-    cerr << "computing lbop with succ=" << succ << " tries=" << tries << " confidence=" << confidence << endl;
     if(confidence == 0)
         return succ / tries;
     else
@@ -446,26 +451,23 @@ static float lbop(float succ, float tries, float confidence) {
 }
 
 static void ScoreTranslationOptions(SuffixArray *index, Aligner *aligner,
-                                    const vector<wid_t> &phrase, optionsmap_t &options) {
+                                    const vector<wid_t> &phrase, optionsmap_t &options, const size_t validSample) {
 
     static constexpr float confidence = 0.01;
 
     size_t SampleSourceFrequency = 0;
     for (auto entry = options.begin(); entry != options.end(); ++entry) {
         //set the best alignment for each option
-        ((TranslationOption&) entry->first).SetBestAlignment();
-        SampleSourceFrequency += entry->second;
+        ((TranslationOption &) entry->first).SetBestAlignment();
     }
+    SampleSourceFrequency = validSample;
 
     size_t GlobalSourceFrequency = index->CountOccurrences(true, phrase);
 
     for (auto entry = options.begin(); entry != options.end(); ++entry) {
         size_t GlobalTargetFrequency = index->CountOccurrences(false, entry->first.targetPhrase);
 
-        cerr << "calling  fwdScore  lbop with SampleSourceFrequency=" << SampleSourceFrequency << " entry->second=" << entry->second << endl;
         float fwdScore = log(lbop(entry->second, SampleSourceFrequency, confidence));
-
-        cerr << "calling  bwdScore  lbop with SampleSourceFrequency=" << SampleSourceFrequency << " GlobalSourceFrequency=" << GlobalSourceFrequency << " GlobalTargetFrequency=" << GlobalTargetFrequency << " m2=" << (size_t) round((float) SampleSourceFrequency * GlobalTargetFrequency / GlobalSourceFrequency) << " entry->second=" << entry->second << endl;
 
         float bwdScore = log(lbop(entry->second,
                                   std::max(entry->second, (size_t) round((float) SampleSourceFrequency * GlobalTargetFrequency / GlobalSourceFrequency)),
@@ -491,10 +493,11 @@ static void MakeOptions(SuffixArray *index, Aligner *aligner,
                         vector<TranslationOption> &output) {
     optionsmap_t options;
 
+    size_t validSample = 0;
     for (auto sample = samples.begin(); sample != samples.end(); ++sample)
-        GetTranslationOptionsFromSample(phrase, *sample, options);
+        GetTranslationOptionsFromSample(phrase, *sample, options, validSample);
 
-    ScoreTranslationOptions(index, aligner, phrase, options);
+    ScoreTranslationOptions(index, aligner, phrase, options, validSample);
 
     for (auto entry = options.begin(); entry != options.end(); ++entry)
         output.push_back(entry->first);
@@ -550,8 +553,7 @@ translation_table_t PhraseTable::GetAllTranslationOptions(const vector<wid_t> &s
                 ttable[phrase] = options;
             }
         }
-
-        delete collector;
+       delete collector;
     }
 
     return ttable;
