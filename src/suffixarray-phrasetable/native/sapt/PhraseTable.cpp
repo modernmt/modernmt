@@ -467,8 +467,9 @@ static void ScoreTranslationOptions(SuffixArray *index, Aligner *aligner,
     for (auto entry = options.begin(); entry != options.end(); ++entry) {
         size_t GlobalTargetFrequency = index->CountOccurrences(false, entry->first.targetPhrase);
 
-        float fwdScore = log(lbop(entry->second, SampleSourceFrequency, confidence));
-
+        float fwdScore = log(lbop(entry->second,
+                                  std::max(entry->second, SampleSourceFrequency),
+                                  confidence));
         float bwdScore = log(lbop(entry->second,
                                   std::max(entry->second, (size_t) round((float) SampleSourceFrequency * GlobalTargetFrequency / GlobalSourceFrequency)),
                                   confidence));
