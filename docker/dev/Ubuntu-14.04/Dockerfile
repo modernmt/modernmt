@@ -23,7 +23,7 @@ RUN git submodule update
 RUN make clean
 RUN make res 
 RUN make -j
-RUN make install
+# RUN make install
 
 WORKDIR /MMT/src
 RUN mvn clean install
@@ -32,5 +32,6 @@ RUN java -version
 # RUN echo 2 |  update-alternatives --config java
 
 WORKDIR /MMT/
-RUN ./mmt create en it examples/data/train -d --no-split
+RUN ./setup.py
+# RUN ./mmt create en it examples/data/train -d --no-split
 
