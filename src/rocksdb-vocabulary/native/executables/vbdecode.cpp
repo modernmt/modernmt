@@ -29,7 +29,7 @@ void WhitespaceTokenize(string &line, vector<wid_t> &output) {
     string word;
 
     while (getline(iss, word, ' ')) {
-        output.push_back((wid_t &&) stoi(word));
+        output.push_back((wid_t &&) stoul(word));
     }
 }
 
