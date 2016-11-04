@@ -233,9 +233,9 @@ def main_start(argv):
                   ' | python -mjson.tool\n'.format(port=args.api_port)
 
         success = True
-    except Exception as e:
+    except Exception:
         print 'FAIL'
-        print 'ERROR: {message}\n'.format(message=e.message)
+        raise
     finally:
         if not success and started and node.is_running():
             node.stop()
