@@ -32,6 +32,10 @@ import java.util.Map;
 public class Engine implements Closeable {
 
     static {
+        initialize();
+    }
+
+    public static void initialize() {
         TextProcessingModels.setPath(FileConst.getResourcePath());
     }
 

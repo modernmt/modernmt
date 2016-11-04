@@ -24,7 +24,7 @@ import java.util.Locale;
 public class TrainingFacade {
 
     static {
-        Engine.class.getClass(); // Load engine class for its static initialization
+        Engine.initialize();
     }
 
     public static final int DEFAULT_PARTITION_SIZE = 1200;
