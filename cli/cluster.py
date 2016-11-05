@@ -55,24 +55,28 @@ class MMTApi:
         r = requests.delete(url, timeout=MMTApi.DEFAULT_TIMEOUT)
         return self._unpack(r)
 
-    def _put(self, endpoint, json=None):
+    def _put(self, endpoint, json=None, params=None):
         url = self._url_template.format(host=self.host, port=self.port, endpoint=endpoint)
 
         data = headers = None
         if json is not None:
             data = js.dumps(json)
             headers = {'Content-type': 'application/json'}
+        elif params is not None:
+            data = params
 
         r = requests.put(url, data=data, headers=headers, timeout=MMTApi.DEFAULT_TIMEOUT)
         return self._unpack(r)
 
-    def _post(self, endpoint, json=None):
+    def _post(self, endpoint, json=None, params=None):
         url = self._url_template.format(host=self.host, port=self.port, endpoint=endpoint)
 
         data = headers = None
         if json is not None:
             data = js.dumps(json)
             headers = {'Content-type': 'application/json'}
+        elif params is not None:
+            data = params
 
         r = requests.post(url, data=data, headers=headers, timeout=MMTApi.DEFAULT_TIMEOUT)
         return self._unpack(r)
@@ -114,6 +118,26 @@ class MMTApi:
             p['context_array'] = js.dumps(context)
 
         return self._get('translate', params=p)
+
+    def create_domain(self, tmx=None, source_file=None, target_file=None, name=None):
+        if source_file is not None and target_file is not None:
+            params = {'source_local_file': source_file, 'target_local_file': target_file}
+        elif tmx is not None:
+            params = {'tmx_local_file': tmx}
+        else:
+            raise IllegalArgumentException('missing corpus for domain')
+
+        if name is not None:
+            params['name'] = name
+
+        return self._post('domains', params=params)
+
+    def append_to_domain(self, domain, source, target):
+        params = {'source': source, 'target': target}
+        return self._put('domains/' + str(domain), params=params)
+
+    def get_all_domains(self):
+        return self._get('domains')
 
 
 class _tuning_logger:
@@ -518,3 +542,26 @@ class ClusterNode(object):
         finally:
             if not debug:
                 self.engine.clear_tempdir()
+
+    def new_domain_from_parallel(self, source_file, target_file, name=None):
+        return self.api.create_domain(source_file=source_file, target_file=target_file, name=name)
+
+    def new_domain_from_tmx(self, tmx, name=None):
+        return self.api.create_domain(tmx=tmx, name=name)
+
+    def append_to_domain(self, domain, source, target):
+        try:
+            domain = int(domain)
+        except ValueError:
+            domains = self.api.get_all_domains()
+            ids = [d['id'] for d in domains if d['name'] == domain]
+
+            if len(ids) == 0:
+                raise IllegalArgumentException('unable to find domain "' + domain + '"')
+            elif len(ids) > 1:
+                raise IllegalArgumentException(
+                    'ambiguous domain name "' + domain + '", choose one of the following ids: ' + str(ids))
+            else:
+                domain = ids[0]
+
+        return self.api.append_to_domain(domain, source, target)

@@ -192,8 +192,6 @@ NGramStorage::NGramStorage(string basepath, uint8_t order, bool prepareForBulkLo
     if (!status.ok())
         throw storage_exception(status.ToString());
 
-    ForceCompaction();
-
     // Read streams
     string raw_streams;
     db->Get(ReadOptions(), StreamsKey, &raw_streams);

@@ -7,6 +7,7 @@ import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Word;
 import eu.modernmt.updating.Update;
 import eu.modernmt.updating.UpdatesListener;
 import eu.modernmt.vocabulary.Vocabulary;
@@ -138,7 +139,11 @@ public class MosesDecoder implements Decoder, UpdatesListener {
     }
 
     private DecoderTranslation translate(Sentence sentence, List<ContextScore> translationContext, TranslationSession session, int nbest) {
-        String text = XUtils.join(sentence.getWords());
+        Word[] sourceWords = sentence.getWords();
+        if (sourceWords.length == 0)
+            return new DecoderTranslation(new Word[0], sentence, null);
+
+        String text = XUtils.join(sourceWords);
 
         long sessionId = session == null ? 0L : getOrComputeSession(session);
         ContextXObject context = ContextXObject.build(translationContext);
@@ -180,7 +185,7 @@ public class MosesDecoder implements Decoder, UpdatesListener {
 
         HashMap<Integer, Long> map = new HashMap<>(ids.length);
         for (int i = 0; i < ids.length; i++) {
-            if (ids[i] != 0)
+            if (ids[i] >= 0)
                 map.put(i, ids[i]);
         }
 

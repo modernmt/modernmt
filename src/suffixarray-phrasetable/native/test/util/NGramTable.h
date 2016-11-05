@@ -14,12 +14,6 @@ namespace mmt {
     namespace sapt {
         namespace test {
 
-            struct phrase_hash {
-                size_t operator()(const vector<wid_t> &x) const {
-                    return (size_t) (words_hash(x));
-                }
-            };
-
             class NGramTable {
             public:
                 NGramTable(uint8_t order);

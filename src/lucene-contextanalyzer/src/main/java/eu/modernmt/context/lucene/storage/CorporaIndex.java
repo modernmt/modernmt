@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,7 +36,7 @@ public class CorporaIndex implements Closeable {
         for (int i = 0; i < length; i++) {
             long id = buffer.getLong();
 
-            if (id > 0)
+            if (id >= 0)
                 streams.put(i, id);
         }
 
@@ -116,6 +117,8 @@ public class CorporaIndex implements Closeable {
         buffer.putInt(streamsArrayLength);
         if (streamsArrayLength > 0) {
             long[] ids = new long[streamsArrayLength];
+            Arrays.fill(ids, -1);
+
             for (Map.Entry<Integer, Long> entry : streams.entrySet()) {
                 ids[entry.getKey()] = entry.getValue();
             }

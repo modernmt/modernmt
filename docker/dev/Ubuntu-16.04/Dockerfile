@@ -19,13 +19,11 @@ RUN git clone http://github.com/modernmt/MMT -b $MMT_CHECKOUT
 WORKDIR /MMT/vendor
 RUN git submodule init
 RUN git submodule update
-# RUN make clean
-# RUN git submodule update
 RUN make res 
 RUN make -j
-RUN make install
 WORKDIR /MMT/src
 RUN mvn clean install
 
 WORKDIR /MMT/
-RUN ./mmt create en it examples/data/train -d --no-split
+RUN ./setup.py
+# RUN ./mmt create en it examples/data/train -d --no-split

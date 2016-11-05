@@ -5,160 +5,17 @@
 #include <algorithm>
 #include <boost/math/distributions/binomial.hpp>
 #include <suffixarray/SuffixArray.h>
+#include <util/hashutils.h>
 
 #include "PhraseTable.h"
 #include "UpdateManager.h"
+#include "TranslationOptionBuilder.h"
 
 using namespace mmt;
 using namespace mmt::sapt;
 
 
 typedef vector<bool> bitvector;
-
-const size_t po_other = mmt::sapt::kTONoneOrientation;
-// check if min and max in the alignment vector v are within the
-// bounds LFT and RGT and update the actual bounds L and R; update
-// the total count of alignment links in the underlying phrase
-// pair
-bool
-check(vector<ushort> const& v, // alignment row/column
-      size_t const LFT, size_t const RGT, // hard limits
-      ushort& L, ushort& R, size_t& count) // current bounds, count
-{
-    if (v.size() == 0) return 0;
-    if (L > v.front() && (L=v.front()) < LFT) return false;
-    if (R < v.back()  && (R=v.back())  > RGT) return false;
-    count += v.size();
-    return true;
-}
-
-/// return number of alignment points in box, -1 on failure
-int
-expand_block(vector<vector<ushort> > const& row2col,
-             vector<vector<ushort> > const& col2row,
-             size_t       row, size_t       col, // seed coordinates
-             size_t const TOP, size_t const LFT, // hard limits
-             size_t const BOT, size_t const RGT, // hard limits
-             ushort* top = NULL, ushort* lft = NULL,
-             ushort* bot = NULL, ushort* rgt = NULL) // store results
-{
-    if (row < TOP || row > BOT || col < LFT || col > RGT) return -1;
-    assert(row >= row2col.size());
-    assert(col >= col2row.size());
-
-    // ====================================================
-    // tables grow downwards, so TOP is smaller than BOT!
-    // ====================================================
-
-    ushort T, L, B, R; // box dimensions
-
-    // if we start on an empty cell, search for the first alignment point
-    if (row2col[row].size() == 0 && col2row[col].size() == 0)
-    {
-        if      (row == TOP) while (row < BOT && !row2col[++row].size());
-        else if (row == BOT) while (row > TOP && !row2col[--row].size());
-
-        if      (col == LFT) while (col < RGT && !col2row[++col].size());
-        else if (col == RGT) while (col > RGT && !col2row[--col].size());
-
-        if (row2col[row].size() == 0 && col2row[col].size() == 0)
-            return 0;
-    }
-    if (row2col[row].size() == 0)
-        row = col2row[col].front();
-    if (col2row[col].size() == 0)
-        col = row2col[row].front();
-
-    if ((T = col2row[col].front()) < TOP) return -1;
-    if ((B = col2row[col].back())  > BOT) return -1;
-    if ((L = row2col[row].front()) < LFT) return -1;
-    if ((R = row2col[row].back())  > RGT) return -1;
-
-    if (B == T && R == L) return 1;
-
-    // start/end of row / column coverage:
-    ushort rs = row, re = row, cs = col, ce = col;
-    int ret = row2col[row].size();
-    for (size_t tmp = 1; tmp; ret += tmp)
-    {
-        tmp = 0;;
-        while (rs>T) if (!check(row2col[--rs],LFT,RGT,L,R,tmp)) return -1;
-        while (re<B) if (!check(row2col[++re],LFT,RGT,L,R,tmp)) return -1;
-        while (cs>L) if (!check(col2row[--cs],TOP,BOT,T,B,tmp)) return -1;
-        while (ce<R) if (!check(col2row[++ce],TOP,BOT,T,B,tmp)) return -1;
-    }
-    if (top) *top = T;
-    if (bot) *bot = B;
-    if (lft) *lft = L;
-    if (rgt) *rgt = R;
-    return ret;
-}
-
-ReorderingType
-find_po_fwd(vector<vector<ushort> >& a1,
-            vector<vector<ushort> >& a2,
-            size_t s1, size_t e1,
-            size_t s2, size_t e2)
-{
-    if (e2 == a2.size()) { // end of target sentence
-        return mmt::sapt::kTOMonotonicOrientation;
-    }
-    size_t y = e2, L = e2, R = a2.size()-1; // won't change
-    size_t x = e1, T = e1, B = a1.size()-1;
-    if (e1 < a1.size() && expand_block(a1,a2,x,y,T,L,B,R) >= 0) {
-        return mmt::sapt::kTOMonotonicOrientation;
-    }
-    B = x = s1-1; T = 0;
-    if (s1 && expand_block(a1,a2,x,y,T,L,B,R) >= 0) {
-        return mmt::sapt::kTOSwapOrientation;
-    }
-    while (e2 < a2.size() && a2[e2].size() == 0) ++e2;
-    if (e2 == a2.size()) { // should never happen, actually
-        return mmt::sapt::kTONoneOrientation;
-    }
-    if (a2[e2].back() < s1) {
-        return mmt::sapt::kTODiscontinuousLeftOrientation;
-    }
-    if (a2[e2].front() >= e1) {
-        return mmt::sapt::kTODiscontinuousRightOrientation;
-    }
-    return mmt::sapt::kTONoneOrientation;
-}
-
-ReorderingType
-find_po_bwd(vector<vector<ushort> >& a1,
-            vector<vector<ushort> >& a2,
-            size_t s1, size_t e1,
-            size_t s2, size_t e2)
-{
-    if (s1 == 0 && s2 == 0){
-        return mmt::sapt::kTOMonotonicOrientation;
-    }
-    if (s2 == 0){
-        return mmt::sapt::kTODiscontinuousRightOrientation;
-    }
-    if (s1 == 0){
-        return mmt::sapt::kTODiscontinuousLeftOrientation;
-    }
-    size_t y = s2-1, L = 0, R = s2-1; // won't change
-    size_t x = s1-1, T = 0, B = s1-1;
-    if (expand_block(a1,a2,x,y,T,L,B,R) >= 0) {
-        return mmt::sapt::kTOMonotonicOrientation;
-    }
-    T = x = e1; B = a1.size()-1;
-    if (expand_block(a1,a2,x,y,T,L,B,R) >= 0) {
-        return mmt::sapt::kTOSwapOrientation;
-    }
-    while (s2-- && a2[s2].size() == 0);
-
-    mmt::sapt::ReorderingType ret;
-    ret = (a2[s2].size()  ==  0 ? po_other :
-           a2[s2].back()   < s1 ? mmt::sapt::kTODiscontinuousRightOrientation :
-           a2[s2].front() >= e1 ? mmt::sapt::kTODiscontinuousLeftOrientation :
-           po_other);
-    return ret;
-}
-
 
 struct PhraseTable::pt_private {
     SuffixArray *index;
@@ -187,16 +44,15 @@ void PhraseTable::Add(const updateid_t &id, const domain_t domain, const std::ve
     self->updates->Add(id, domain, source, target, alignment);
 }
 
-vector<updateid_t> PhraseTable::GetLatestUpdatesIdentifier() {
+unordered_map<stream_t, seqid_t> PhraseTable::GetLatestUpdatesIdentifier() {
     const vector<seqid_t> &streams = self->index->GetStreams();
 
-    vector<updateid_t> result;
+    unordered_map<stream_t, seqid_t> result;
     result.reserve(streams.size());
 
     for (size_t i = 0; i < streams.size(); ++i) {
-        if (streams[i] != 0)
-            result.push_back(updateid_t((stream_t) i, streams[i]));
-
+        if (streams[i] >= 0)
+            result[(stream_t) i] = streams[i];
     }
 
     return result;
@@ -204,8 +60,8 @@ vector<updateid_t> PhraseTable::GetLatestUpdatesIdentifier() {
 
 /* Translation Options extraction */
 
-typedef unordered_map<TranslationOption, size_t, TranslationOption::hash> optionsmap_t;
-
+//typedef unordered_map<TranslationOption, size_t, TranslationOption::hash> optionsmap_t;
+/*
 static void ExtractPhrasePairs(const vector<wid_t> &sourceSentence, const vector<wid_t> &targetSentence,
                                const alignment_t &allAlignment, const alignment_t &inBoundAlignment, const vector<bool> &targetAligned,
                                int sourceStart, int sourceEnd, int targetStart, int targetEnd,
@@ -249,11 +105,14 @@ static void ExtractPhrasePairs(const vector<wid_t> &sourceSentence, const vector
                 a->first -= sourceStart;
                 a->second -= ts;
             }
+*/
 /*
             //compute orientation for this phrase pair
             ReorderingType forwardOrientation = kTOMonotonicOrientation; //dummy computation
             ReorderingType backwardOrientation = kTOSwapOrientation; //dummy computation
             */
+/*
+
 
 
             //determine fwd and bwd phrase orientation
@@ -351,6 +210,8 @@ static void ExtractPhrasePairs(const vector<wid_t> &sourceSentence, const vector
         }
     }
 }
+*/
+/*
 
 static void GetTranslationOptionsFromSample(const vector<wid_t> &sourcePhrase, const sample_t &sample, optionsmap_t &outOptions, size_t &validSample) {
     // keeps a vector to know whether a target word is aligned.
@@ -389,6 +250,7 @@ static void GetTranslationOptionsFromSample(const vector<wid_t> &sourcePhrase, c
         if (isValid) ++validSample;
     }
 }
+*/
 
 /* Translation Options scoring */
 
@@ -444,51 +306,68 @@ static void GetLexicalScores(Aligner *aligner, const vector<wid_t> &phrase, cons
 }
 
 static float lbop(float succ, float tries, float confidence) {
-    if(confidence == 0)
+    if (confidence == 0)
         return succ / tries;
     else
         return (float) boost::math::binomial_distribution<>::find_lower_bound_on_p(tries, succ, confidence);
 }
 
-static void ScoreTranslationOptions(SuffixArray *index, Aligner *aligner,
-                                    const vector<wid_t> &phrase, optionsmap_t &options, const size_t validSample) {
+
+
+static void MakeTranslationOptions(SuffixArray *index, Aligner *aligner,
+                                   const vector<wid_t> &phrase, const vector<sample_t> &samples,
+                                   vector<TranslationOption> &output) {
+
+    size_t validSamples = 0;
+    vector<TranslationOptionBuilder> builders;
+    TranslationOptionBuilder::Extract(phrase, samples, builders, validSamples);
 
     static constexpr float confidence = 0.01;
 
-    size_t SampleSourceFrequency = 0;
-    for (auto entry = options.begin(); entry != options.end(); ++entry) {
-        //set the best alignment for each option
-        ((TranslationOption &) entry->first).SetBestAlignment();
+    /*
+    size_t sampleSourceFrequency = 0;
+    for (auto entry = builders.begin(); entry != builders.end(); ++entry) {
+        sampleSourceFrequency += entry->GetCount();
     }
-    SampleSourceFrequency = validSample;
+    */
 
+    //compute frequency-based and (possibly) lexical-based scores for all options
+    //create the actual Translation option objects, setting the "best" alignment,
+    size_t SampleSourceFrequency = validSamples;
     size_t GlobalSourceFrequency = index->CountOccurrences(true, phrase);
 
-    for (auto entry = options.begin(); entry != options.end(); ++entry) {
-        size_t GlobalTargetFrequency = index->CountOccurrences(false, entry->first.targetPhrase);
+    for (auto entry = builders.begin(); entry != builders.end(); ++entry) {
+        size_t GlobalTargetFrequency = index->CountOccurrences(false, entry->GetPhrase());
 
-        float fwdScore = log(lbop(entry->second,
-                                  std::max(entry->second, SampleSourceFrequency),
+        float fwdScore = log(lbop(entry->GetCount(),
+                                  std::max(entry->GetCount(), SampleSourceFrequency),
                                   confidence));
-        float bwdScore = log(lbop(entry->second,
-                                  std::max(entry->second, (size_t) round((float) SampleSourceFrequency * GlobalTargetFrequency / GlobalSourceFrequency)),
+        float bwdScore = log(lbop(entry->GetCount(),
+                                  std::max(entry->GetCount(), (size_t) round((float) SampleSourceFrequency * GlobalTargetFrequency / GlobalSourceFrequency)),
                                   confidence));
+
         float fwdLexScore = 0.f;
         float bwdLexScore = 0.f;
 
-        if (aligner)
-            GetLexicalScores(aligner, phrase, entry->first, fwdLexScore, bwdLexScore);
+        TranslationOption option;
+        option.alignment = entry->GetBestAlignment();
+        option.targetPhrase = entry->GetPhrase();
+        option.orientationCounts = entry->GetOrientationCounts();
 
-        vector<float> &scores = (vector<float> &) entry->first.scores;
-        scores[kTOForwardProbability] = fwdScore;
-        scores[kTOBackwardProbability] = min(0.f, bwdScore);
-        scores[kTOForwardLexicalProbability] = fwdLexScore;
-        scores[kTOBackwardLexicalProbability] = bwdLexScore;
+        if (aligner)
+            GetLexicalScores(aligner, phrase, option, fwdLexScore, bwdLexScore);
+
+        option.scores[kTOForwardProbability] = fwdScore;
+        option.scores[kTOBackwardProbability] = min(0.f, bwdScore);
+        option.scores[kTOForwardLexicalProbability] = fwdLexScore;
+        option.scores[kTOBackwardLexicalProbability] = bwdLexScore;
+
+        output.push_back(option);
     }
 }
 
 /* SAPT methods */
-
+/*
 static void MakeOptions(SuffixArray *index, Aligner *aligner,
                         const vector<wid_t> &phrase, const vector<sample_t> &samples,
                         vector<TranslationOption> &output) {
@@ -503,13 +382,14 @@ static void MakeOptions(SuffixArray *index, Aligner *aligner,
     for (auto entry = options.begin(); entry != options.end(); ++entry)
         output.push_back(entry->first);
 }
+*/
 
 vector<TranslationOption> PhraseTable::GetTranslationOptions(const vector<wid_t> &phrase, context_t *context) {
     vector<sample_t> samples;
     self->index->GetRandomSamples(phrase, self->numberOfSamples, samples, context);
 
     vector<TranslationOption> result;
-    MakeOptions(self->index, self->aligner, phrase, samples, result);
+    MakeTranslationOptions(self->index, self->aligner, phrase, samples, result);
 
     return result;
 }
@@ -525,6 +405,7 @@ void PhraseTable::GetSamples(const vector<wid_t> &phrase, vector<vector<wid_t> >
         alignments.push_back(sample->alignment);
     }
 }
+
 
 translation_table_t PhraseTable::GetAllTranslationOptions(const vector<wid_t> &sentence, context_t *context) {
     translation_table_t ttable;
@@ -549,7 +430,7 @@ translation_table_t PhraseTable::GetAllTranslationOptions(const vector<wid_t> &s
                     break;
 
                 vector<TranslationOption> options;
-                MakeOptions(self->index, self->aligner, phrase, samples, options);
+                MakeTranslationOptions(self->index, self->aligner, phrase, samples, options);
 
                 ttable[phrase] = options;
             }

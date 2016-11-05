@@ -267,16 +267,16 @@ JNIEXPORT jlongArray JNICALL
 Java_eu_modernmt_decoder_moses_MosesDecoder_getLatestUpdatesIdentifier(JNIEnv *jvm, jobject jself) {
     MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
 
-    vector<mmt::updateid_t> ids = instance->GetLatestUpdatesIdentifier();
+    unordered_map<stream_t, seqid_t> ids = instance->GetLatestUpdatesIdentifier();
 
-    vector<jlong> jidsArray(ids.size());
+    vector<jlong> jidsArray;
     for (auto id = ids.begin(); id != ids.end(); ++id) {
-        mmt::stream_t stream = id->stream_id;
+        mmt::stream_t stream = id->first;
 
         if (stream >= jidsArray.size())
-            jidsArray.resize(stream + 1);
+            jidsArray.resize(((size_t) stream) + 1, -1);
 
-        jidsArray[stream] = (jlong) id->sentence_id;
+        jidsArray[stream] = (jlong) id->second;
     }
 
     jsize size = (jsize) jidsArray.size();

@@ -7,6 +7,7 @@
 #include <moses/StaticData.h>
 #include <moses/FF/StatefulFeatureFunction.h>
 
+using namespace std;
 using namespace mmt;
 using namespace mmt::decoder;
 
@@ -40,7 +41,7 @@ namespace mmt {
             virtual void Add(const updateid_t &id, const domain_t domain, const std::vector<wid_t> &source,
                              const std::vector<wid_t> &target, const alignment_t &alignment) override;
 
-            virtual std::vector<updateid_t> GetLatestUpdatesIdentifier() override;
+            virtual unordered_map<stream_t, seqid_t> GetLatestUpdatesIdentifier() override;
         };
     }
 }
@@ -171,25 +172,33 @@ void MosesDecoderImpl::Add(const updateid_t &id, const domain_t domain, const st
     }
 }
 
-std::vector<updateid_t> MosesDecoderImpl::GetLatestUpdatesIdentifier() {
-    std::unordered_map<stream_t, seqid_t> stream_map;
+unordered_map<stream_t, seqid_t> MosesDecoderImpl::GetLatestUpdatesIdentifier() {
+    vector<unordered_map<stream_t, seqid_t>> maps;
 
+    stream_t maxStreamId = -1;
     for (auto it = m_incrementalModels.begin(); it != m_incrementalModels.end(); ++it) {
-        std::vector<updateid_t> vec = (*it)->GetLatestUpdatesIdentifier();
+        unordered_map<stream_t, seqid_t> map = (*it)->GetLatestUpdatesIdentifier();
+        maps.push_back(map);
 
-        for (auto id = vec.begin(); id != vec.end(); ++id) {
-            auto e = stream_map.emplace(id->stream_id, id->sentence_id);
+        for (auto entry = map.begin(); entry != map.end(); ++entry)
+            maxStreamId = max(maxStreamId, entry->first);
+    }
 
-            if (!e.second)
-                e.first->second = std::min(e.first->second, id->sentence_id);
+    unordered_map<stream_t, seqid_t> result;
+
+    for (auto map = maps.begin(); map != maps.end(); ++map) {
+        for (stream_t streamId = 0; streamId <= maxStreamId; ++streamId) {
+            auto entry = map->find(streamId);
+
+            if (entry == map->end()) {
+                result[streamId] = -1;
+            } else {
+                auto e = result.emplace(streamId, entry->second);
+                if (!e.second)
+                    e.first->second = min(e.first->second, entry->second);
+            }
         }
     }
 
-    std::vector<updateid_t> ret;
-    ret.reserve(stream_map.size());
-    for (auto it = stream_map.begin(); it != stream_map.end(); ++it) {
-        ret.push_back(updateid_t(it->first, it->second));
-    }
-
-    return ret;
+    return result;
 }

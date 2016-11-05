@@ -17,6 +17,10 @@ public class ContextScore implements Serializable, Comparable<ContextScore> {
         this.score = score;
     }
 
+    public void setDomain(Domain domain) {
+        this.domain = domain;
+    }
+
     public Domain getDomain() {
         return domain;
     }

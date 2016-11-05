@@ -36,11 +36,14 @@ public class CleaningPipeline {
         this.targetLanguage = target;
     }
 
-    public void add(BilingualCorpus corpus) {
+    public static FilteredBilingualCorpus getFilteredCorpus(BilingualCorpus corpus) {
         FilteredBilingualCorpus filteredCorpus = new FilteredBilingualCorpus(corpus);
         filteredCorpus.addFilter(new DraftFilter());
+        return filteredCorpus;
+    }
 
-        this.bilingualCorpora.add(filteredCorpus);
+    public void add(BilingualCorpus corpus) {
+        this.bilingualCorpora.add(getFilteredCorpus(corpus));
     }
 
     public Locale getSourceLanguage() {

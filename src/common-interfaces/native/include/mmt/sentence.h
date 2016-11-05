@@ -31,31 +31,7 @@ namespace mmt {
     };
 
     typedef std::vector<cscore_t> context_t;
-
-
-
-    typedef std::pair<length_t, length_t> alignmentPoint_t;
-    typedef std::vector<alignmentPoint_t > alignment_t;
-
-    struct alignment_hash {
-        size_t operator()(const alignment_t &x) const {
-            size_t h = 0;
-            for (size_t i = 0; i < x.size(); ++i) {
-                alignmentPoint_t align = x[i];
-
-                if (i == 0)
-                    h = align.first + 1;
-                else
-                    h = ((h * 8978948897894561157ULL) ^
-                         (static_cast<uint64_t>(1 + align.first) * 17894857484156487943ULL));
-
-                h = ((h * 8978948897894561157ULL) ^
-                     (static_cast<uint64_t>(1 + align.second) * 17894857484156487943ULL));
-            }
-
-            return h;
-        }
-    };
+    typedef std::vector<std::pair<length_t, length_t>> alignment_t;
 
 }
 

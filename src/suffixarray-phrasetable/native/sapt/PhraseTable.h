@@ -47,9 +47,7 @@ namespace mmt {
             virtual void Add(const updateid_t &id, const domain_t domain, const std::vector<wid_t> &source,
                              const std::vector<wid_t> &target, const alignment_t &alignment) override;
 
-            virtual vector<updateid_t> GetLatestUpdatesIdentifier() override;
-
-            void UpdateDistortionCounts(const TranslationOption& option);
+            virtual unordered_map<stream_t, seqid_t> GetLatestUpdatesIdentifier() override;
 
         private:
             struct pt_private;

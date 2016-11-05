@@ -108,8 +108,6 @@ SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength,
     if (!status.ok())
         throw index_exception(status.ToString());
 
-    db->CompactRange(CompactRangeOptions(), NULL, NULL);
-
     // Read streams
     string raw_streams;
     int64_t storageSize = 0;

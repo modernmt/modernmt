@@ -6,6 +6,8 @@ import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextScore;
 import eu.modernmt.decoder.TranslationException;
 import eu.modernmt.facade.ModernMT;
+import eu.modernmt.persistence.PersistenceException;
+import eu.modernmt.rest.actions.ContextUtils;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
@@ -22,7 +24,7 @@ import java.util.List;
 public class Translate extends ObjectAction<TranslationResponse> {
 
     @Override
-    protected TranslationResponse execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, TranslationException {
+    protected TranslationResponse execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, TranslationException, PersistenceException {
         Params params = (Params) _params;
 
         TranslationResponse result = new TranslationResponse();
@@ -38,6 +40,9 @@ public class Translate extends ObjectAction<TranslationResponse> {
         } else {
             result.translation = ModernMT.decoder.translate(params.query, params.nbest);
         }
+
+        if (result.context != null)
+            ContextUtils.resolve(result.context);
 
         return result;
     }

@@ -9,8 +9,8 @@
 
 namespace mmt {
 
-    typedef uint8_t stream_t;
-    typedef uint64_t seqid_t;
+    typedef int8_t stream_t;
+    typedef int64_t seqid_t;
 
     struct updateid_t {
         stream_t stream_id;
@@ -69,7 +69,7 @@ namespace mmt {
          *
          * @return an array of all the latest registered update ids, one for every stream.
          */
-        virtual std::vector<updateid_t> GetLatestUpdatesIdentifier() = 0;
+        virtual std::unordered_map<stream_t, seqid_t> GetLatestUpdatesIdentifier() = 0;
 
     };
 }

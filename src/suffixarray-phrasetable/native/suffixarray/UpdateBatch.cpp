@@ -2,6 +2,7 @@
 // Created by Davide  Caroselli on 27/09/16.
 //
 
+#include <iostream>
 #include "UpdateBatch.h"
 
 using namespace mmt::sapt;
@@ -22,7 +23,7 @@ void UpdateBatch::Reset(const vector<seqid_t> &_streams) {
 
 bool UpdateBatch::SetStreamIfValid(stream_t stream, seqid_t sentence) {
     if (streams.size() <= stream)
-        streams.resize(stream + 1, 0);
+        streams.resize(((size_t) stream) + 1, -1);
 
     if (streams[stream] < sentence) {
         streams[stream] = sentence;
