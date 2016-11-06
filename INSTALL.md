@@ -27,10 +27,10 @@ For customizations and enterprise support: davide.caroselli@translated.net
 docker pull modernmt/master
 ```
 
-To run your istance
+To run your istance and publish the API on port 8045 of your host, execute
 
 ```
-docker run -it modernmt/master bash
+docker run -it --publish 8045:8045 modernmt/master bash
 ```
 
 Done! go to [README.md](README.md) to create your first engine.
