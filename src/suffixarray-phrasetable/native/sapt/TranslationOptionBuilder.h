@@ -67,7 +67,7 @@ namespace mmt {
             static void Extract(const vector<wid_t> &sourcePhrase, const sample_t &sample, int offset,
                          vector<bool> &targetAligned, optionsmap_t &map, size_t &validSamples);
 
-            static void ExtractPhrasePairs(const vector<wid_t> &sourceSentence, const vector<wid_t> &targetSentence,
+            static void ExtractOptions(const vector<wid_t> &sourceSentence, const vector<wid_t> &targetSentence,
                                            const alignment_t &allAlignment, const alignment_t &inBoundAlignment,
                                            const vector<bool> &targetAligned,
                                            int sourceStart, int sourceEnd, int targetStart, int targetEnd,

@@ -27,32 +27,10 @@ static inline int compare_alignments(const mmt::alignment_t &a, const mmt::align
     return 0;
 }
 
-void TranslationOptionBuilder::ExtractPhrasePairs(const vector<wid_t> &sourceSentence, const vector<wid_t> &targetSentence,
+void TranslationOptionBuilder::ExtractOptions(const vector<wid_t> &sourceSentence, const vector<wid_t> &targetSentence,
                                const alignment_t &allAlignment, const alignment_t &inBoundAlignment, const vector<bool> &targetAligned,
                                int sourceStart, int sourceEnd, int targetStart, int targetEnd,
-                               optionsmap_t &map, bool &isValid) {
-    isValid = false;
-
-    if (targetEnd < 0) // 0-based indexing.
-        return;
-
-    // Check if alignment points are consistent. if yes, copy
-    alignment_t currentAlignments;
-    for (auto alignPoint = inBoundAlignment.begin(); alignPoint != inBoundAlignment.end(); ++alignPoint) {
-
-        //checking whether there are other alignment points outside the current phrase pair; if yes, return doing nothing, because the phrase pair is not valid
-        if (((alignPoint->first >= sourceStart) && (alignPoint->first <= sourceEnd)) &&
-            ((alignPoint->second < targetStart) || (alignPoint->second > targetEnd))) {
-            return;
-        }
-        if (((alignPoint->second >= targetStart) && (alignPoint->second <= targetEnd)) &&
-            ((alignPoint->first < sourceStart) || (alignPoint->first > sourceEnd))) {
-            return;
-        }
-
-        currentAlignments.push_back(*alignPoint);
-    }
-
+                               optionsmap_t &map, bool &isValidOption) {
 
     int ts = targetStart;
     while (true) {
@@ -60,7 +38,7 @@ void TranslationOptionBuilder::ExtractPhrasePairs(const vector<wid_t> &sourceSen
         while (true) {
             vector<wid_t> targetPhrase(targetSentence.begin() + ts, targetSentence.begin() + te + 1);
 
-            alignment_t shiftedAlignment = currentAlignments;
+            alignment_t shiftedAlignment = inBoundAlignment;
             //reset the word positions within the phrase pair, regardless the sentence context
             for (auto a = shiftedAlignment.begin(); a != shiftedAlignment.end(); ++a) {
                 a->first -= sourceStart;
@@ -141,7 +119,7 @@ void TranslationOptionBuilder::ExtractPhrasePairs(const vector<wid_t> &sourceSen
             builder.first->second.Add(shiftedAlignment);
             builder.first->second.AddForwardOrientation(fwd);
             builder.first->second.AddBackwardOrientation(bwd);
-            isValid = true;
+            isValidOption = true;
 
             te += 1;
             // if fe is in word alignment or out-of-bounds
@@ -217,21 +195,39 @@ void TranslationOptionBuilder::Extract(const vector<wid_t> &sourcePhrase, const 
     if (targetEnd - targetStart < 0)
         return;
 
-    // Collect alignments within source and target bounds.
-    // A translation option could be invalid if one of its points is outside
-    // the bounds of the source or target phrase.
+    if (targetEnd < 0) // 0-based indexing.
+        return;
+
+    // Collect alignment points within the block (sourceStart,targetStart)-(sourceEnd,targetEnd)
+    // Check whether any alignment point exists outside the block,
+    // but with either the source position within the source inBounds
+    // or tha target position within the target inBounds
+    // In this case do not proceed with the option extraction
+
     alignment_t inBoundsAlignment;
+    bool isValidAlignment = true;
     for (auto alignPoint = sample.alignment.begin(); alignPoint != sample.alignment.end(); ++alignPoint) {
-        if (InRange(sourceStart, alignPoint->first, sourceEnd) ||
-            InRange(targetStart, alignPoint->second, targetEnd)) {
-            inBoundsAlignment.push_back(*alignPoint);
+        bool srcInbound = InRange(sourceStart, alignPoint->first, sourceEnd);
+        bool trgInbound = InRange(targetStart, alignPoint->second, targetEnd);
+
+        if (srcInbound != trgInbound) {
+            isValidAlignment = false;
+            break;
         }
+
+        if (srcInbound)
+            inBoundsAlignment.push_back(*alignPoint);
+
     }
 
-    bool isValidOption = true;
-    // Extract the TranslationOptions
-    TranslationOptionBuilder::ExtractPhrasePairs(sample.source, sample.target, sample.alignment, inBoundsAlignment, targetAligned,
-                       sourceStart, sourceEnd, targetStart, targetEnd, map, isValidOption);
-    if (isValidOption)
-        ++validSamples;
+    if (isValidAlignment) {
+        bool isValidOption = false;
+        // Extract the TranslationOptions
+        TranslationOptionBuilder::ExtractOptions(sample.source, sample.target, sample.alignment, inBoundsAlignment,
+                                                     targetAligned,
+                                                     sourceStart, sourceEnd, targetStart, targetEnd, map,
+                                                     isValidOption);
+        if (isValidOption)
+            ++validSamples;
+    }
 }
