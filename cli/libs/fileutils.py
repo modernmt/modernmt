@@ -1,8 +1,11 @@
 import errno
 import os
 import shutil
+import socket
 import subprocess
 from contextlib import contextmanager
+
+import select
 
 __author__ = 'Davide Caroselli'
 
@@ -100,3 +103,23 @@ def chdir(path):
     os.chdir(path)
     yield
     os.chdir(wd)
+
+
+def netcat(host, port, content, timeout=60, max_size=4096):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((host, int(port)))
+    s.sendall(content.encode())
+    s.shutdown(socket.SHUT_WR)
+
+    result = None
+
+    ready = select.select([s], [], [], timeout)
+    if ready[0]:
+        s.setblocking(False)
+        data = s.recv(max_size)
+        if data:
+            result = str(data)
+
+    s.close()
+
+    return result

@@ -234,29 +234,32 @@ class EmbeddedKafka:
         self._log_file = self._engine.get_logfile('embedded-kafka', ensure=True)
 
         success = False
+        zpid, kpid = 0, 0
 
         log = open(self._log_file, 'w')
-        zpid = self._start_zookeeper(log).pid
-        kpid = self._start_kafka(log).pid
 
-        if zpid > 0 and kpid > 0:
+        try:
+            zpid = self._start_zookeeper(log)
+            if zpid is None:
+                raise IllegalStateException(
+                    'failed to start zookeeper, check log file for more details: ' + self._log_file)
+
+            kpid = self._start_kafka(log)
+            if kpid is None:
+                raise IllegalStateException(
+                    'failed to start kafka, check log file for more details: ' + self._log_file)
+
             self._set_pids(kpid, zpid)
 
-            for _ in range(0, 5):
-                success = self.is_running()
-                if success:
-                    break
+            success = True
+        except:
+            if not success:
+                daemon.kill(kpid)
+                daemon.kill(zpid)
+                log.close()
+            raise
 
-                time.sleep(1)
-
-        if not success:
-            daemon.kill(kpid)
-            daemon.kill(zpid)
-            log.close()
-
-            raise Exception('failed to start kafka, check log file for more details: ' + self._log_file)
-
-    def _start_zookeeper(self, log):
+    def _start_zookeeper(self, log, port=2181):
         zdata = os.path.abspath(os.path.join(self._data, 'zdata'))
         if not os.path.isdir(zdata):
             fileutils.makedirs(zdata, exist_ok=True)
@@ -264,14 +267,27 @@ class EmbeddedKafka:
         config = os.path.join(self._data, 'zookeeper.properties')
         with open(config, 'w') as cout:
             cout.write('dataDir={data}\n'.format(data=zdata))
-            cout.write('clientPort=2181\n')
+            cout.write('clientPort={port}\n'.format(port=port))
             cout.write('maxClientCnxns=0\n')
 
         command = [self._zookeeper_bin, config]
+        zookeeper = subprocess.Popen(command, stdout=log, stderr=log, shell=False).pid
 
-        return subprocess.Popen(command, stdout=log, stderr=log, shell=False)
+        for i in range(1, 5):
+            try:
+                msg = fileutils.netcat('127.0.0.1', port, 'ruok', timeout=2)
+            except:
+                msg = None
 
-    def _start_kafka(self, log):
+            if 'imok' == msg:
+                return zookeeper
+            else:
+                time.sleep(1)
+
+        daemon.kill(zookeeper)
+        return None
+
+    def _start_kafka(self, log, port=9092, zookeeper_port=2181):
         kdata = os.path.abspath(os.path.join(self._data, 'kdata'))
         if not os.path.isdir(kdata):
             fileutils.makedirs(kdata, exist_ok=True)
@@ -279,14 +295,25 @@ class EmbeddedKafka:
         config = os.path.join(self._data, 'kafka.properties')
         with open(config, 'w') as cout:
             cout.write('broker.id=0\n')
+            cout.write('listeners=PLAINTEXT://0.0.0.0:{port}\n'.format(port=port))
             cout.write('log.dirs={data}\n'.format(data=kdata))
             cout.write('num.partitions=1\n')
             cout.write('log.retention.hours=8760000\n')
-            cout.write('zookeeper.connect=localhost:2181\n')
+            cout.write('zookeeper.connect=localhost:{port}\n'.format(port=zookeeper_port))
 
         command = [self._kafka_bin, config]
+        kafka = subprocess.Popen(command, stdout=log, stderr=log, shell=False).pid
 
-        return subprocess.Popen(command, stdout=log, stderr=log, shell=False)
+        for i in range(1, 5):
+            with open(log.name, 'r') as rlog:
+                for line in rlog:
+                    if 'INFO [Kafka Server 0], started (kafka.server.KafkaServer)' in line:
+                        return kafka
+
+            time.sleep(1)
+
+        daemon.kill(kafka)
+        return None
 
 
 class ClusterNode(object):

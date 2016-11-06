@@ -70,7 +70,7 @@ def is_running(pid):
 
 
 def kill(pid, timeout=2):
-    if pid == 0:
+    if pid is None or pid == 0:
         return
 
     try:

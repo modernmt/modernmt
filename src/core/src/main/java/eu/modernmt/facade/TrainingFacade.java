@@ -1,5 +1,6 @@
 package eu.modernmt.facade;
 
+import eu.modernmt.engine.Engine;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
@@ -21,6 +22,10 @@ import java.util.Locale;
  * Created by davide on 17/08/16.
  */
 public class TrainingFacade {
+
+    static {
+        Engine.initialize();
+    }
 
     public static final int DEFAULT_PARTITION_SIZE = 1200;
 

@@ -21,7 +21,21 @@ You can report issues on [GitHub](https://github.com/ModernMT/MMT/issues)
 
 For customizations and enterprise support: davide.caroselli@translated.net
 
-# Setup up the server
+# Option 1 - Using Docker
+
+```
+docker pull modernmt/master
+```
+
+To run your istance
+
+```
+docker run -it modernmt/master bash
+```
+
+Done! go to [README.md](README.md) to create your first engine.
+
+# Option 2 - Install Binaries on Your Server
 
 **MMT currently only works on Ubuntu 14.04**
 
@@ -83,7 +97,7 @@ sudo pip install -U requests
 ```
 
 
-# Install the MMT Binaries
+## Install the MMT Binaries
 
 Download from here: https://github.com/ModernMT/MMT/releases and then untar the files:
 
@@ -95,7 +109,7 @@ cd mmt
 
 Done! go to [README.md](README.md)
 
-# Installing from source (for contributors)
+# Option 3 - Installing from source (for contributors)
 
 Build MMT from source allows you to contribute to this repository. Please note that currently this procedure has been tested only on Ubuntu 14.04, it is highly recommended to use this OS as your development environment.
 
