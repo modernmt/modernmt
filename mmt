@@ -90,6 +90,11 @@ def main_tune(argv):
                                                                                  'to be removed after execution')
     parser.add_argument('--skip-context-analysis', dest='context_enabled', help='if set, context analysis is skipped',
                         default=True, action='store_false')
+    parser.add_argument('--random-seeds', dest='random_seeds', help='if set, uses random seed for tuning',
+                        default=False, action='store_true')
+    parser.add_argument('--max-iterations', dest='max_iterations',
+                        help='set maximum iterations during tuning (default is 25)',
+                        default=25, type=int)
 
     args = parser.parse_args(argv)
     args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
@@ -106,7 +111,8 @@ def main_tune(argv):
     corpora = BilingualCorpus.list(args.corpora_path) if args.corpora_path is not None else None
 
     node = ClusterNode(engine, api_port=args.api_port)
-    node.tune(corpora, debug=args.debug, context_enabled=args.context_enabled)
+    node.tune(corpora, debug=args.debug, context_enabled=args.context_enabled,
+              random_seeds=args.random_seeds, max_iterations=args.max_iterations)
 
 
 def main_evaluate(argv):

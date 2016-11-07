@@ -474,7 +474,7 @@ class ClusterNode(object):
         if current == ClusterNode.STATUS['ERROR']:
             raise Exception('failed to start node, check log file for more details: ' + self._log_file)
 
-    def tune(self, corpora=None, debug=False, context_enabled=True):
+    def tune(self, corpora=None, debug=False, context_enabled=True, random_seeds=False, max_iterations=25):
         if corpora is None:
             corpora = BilingualCorpus.list(os.path.join(self.engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME))
 
@@ -539,6 +539,11 @@ class ClusterNode(object):
                                '--mertargs', '\'--binary --sctype BLEU\'', '--working-dir', mert_wd, '--nbest', '100',
                                '--decoder-flags', '"' + ' '.join(decoder_flags) + '"', '--nonorm', '--closest',
                                '--no-filter-phrase-table']
+
+                    if not random_seeds:
+                        command.append('--predictable-seeds')
+                    if max_iterations > 0:
+                        command.append('--maximum-iterations={num}'.format(num=max_iterations))
 
                     with open(self.engine.get_logfile('mert'), 'wb') as log:
                         shell.execute(' '.join(command), stdout=log, stderr=log)
