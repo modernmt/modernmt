@@ -6,7 +6,6 @@
 #include <suffixarray/SuffixArray.h>
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
-#include <fastalign/FastAligner.h>
 
 using namespace std;
 using namespace mmt;
@@ -54,10 +53,9 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
             ("help,h", "print this help message")
             ("model,m", po::value<string>()->required(), "output model path")
             ("context,c", po::value<string>(), "context map in the format <id>:<w>[,<id>:<w>]")
-            ("alignerModel,a", po::value<string>(), "path to aligner model")
+            ("aligner-model,a", po::value<string>(), "path to aligner model")
             ("sample,s", po::value<size_t>(), "number of samples (default is 100)")
             ("quiet,q", "prints only number of match");
-
 
     po::variables_map vm;
     try {
@@ -121,9 +119,9 @@ int main(int argc, const char *argv[]) {
     Options ptOptions;
     ptOptions.samples = args.sample_limit;
     Aligner *aligner =  NULL;
-    if (args.aligner_model_path != ""){
-        aligner = mmt::fastalign::FastAligner::Open(args.aligner_model_path, 1);
-    }
+//    if (args.aligner_model_path != ""){
+//        aligner = mmt::fastalign::FastAligner::Open(args.aligner_model_path, 1);
+//    }
     PhraseTable pt(args.model_path, ptOptions, aligner);
 
     if (!args.quiet) {

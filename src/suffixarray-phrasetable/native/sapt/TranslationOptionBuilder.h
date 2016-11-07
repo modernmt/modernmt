@@ -7,7 +7,7 @@
 
 #include <mmt/sentence.h>
 #include <suffixarray/sample.h>
-#include "OrientationCounts.h"
+#include "TranslationOption.h"
 
 using namespace std;
 
@@ -15,6 +15,7 @@ namespace mmt {
     namespace sapt {
 
         class TranslationOptionBuilder;
+
         typedef unordered_map<vector<wid_t>, TranslationOptionBuilder, phrase_hash> optionsmap_t;
 
         class TranslationOptionBuilder {
@@ -35,24 +36,8 @@ namespace mmt {
                 return count;
             }
 
-            const OrientationCounts &GetOrientationCounts() const{
-                return orientationCounts;
-            }
-
-            void AddForwardOrientation(size_t fwd){
-                orientationCounts.ForwardOrientationCounts[fwd]++;
-            }
-
-            void AddBackwardOrientation(size_t bwd){
-                orientationCounts.BackwardOrientationCounts[bwd]++;
-            }
-
-            const float GetForwardOrientation(size_t fwd) const {
-                return orientationCounts.ForwardOrientationCounts[fwd];
-            }
-
-            const float GetBackwardOrientation(size_t bwd) const {
-                return orientationCounts.BackwardOrientationCounts[bwd];
+            const TranslationOption::Orientations &GetOrientations() const {
+                return orientations;
             }
 
             void Add(const alignment_t &alignment);
@@ -61,17 +46,17 @@ namespace mmt {
             unordered_map<alignment_t, size_t, alignment_hash> alignments;
             vector<wid_t> phrase;
             size_t count;
-            OrientationCounts orientationCounts;
+            TranslationOption::Orientations orientations;
 
 
             static void Extract(const vector<wid_t> &sourcePhrase, const sample_t &sample, int offset,
-                         vector<bool> &targetAligned, optionsmap_t &map, size_t &validSamples);
+                                vector<bool> &targetAligned, optionsmap_t &map, size_t &validSamples);
 
             static void ExtractOptions(const vector<wid_t> &sourceSentence, const vector<wid_t> &targetSentence,
-                                           const alignment_t &allAlignment, const alignment_t &inBoundAlignment,
-                                           const vector<bool> &targetAligned,
-                                           int sourceStart, int sourceEnd, int targetStart, int targetEnd,
-                                           optionsmap_t &map, bool &isValid);
+                                       const alignment_t &allAlignment, const alignment_t &inBoundAlignment,
+                                       const vector<bool> &targetAligned,
+                                       int sourceStart, int sourceEnd, int targetStart, int targetEnd,
+                                       optionsmap_t &map, bool &isValid);
         };
 
     }

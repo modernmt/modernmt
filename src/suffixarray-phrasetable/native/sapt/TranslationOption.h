@@ -8,24 +8,71 @@
 #include <vector>
 #include <unordered_map>
 #include <mmt/sentence.h>
-#include "OrientationCounts.h"
 
 using namespace std;
 
 namespace mmt {
     namespace sapt {
 
+        const size_t kTranslationOptionDistortionCount = 4;
         const size_t kTranslationOptionScoreCount = 4;
-        const size_t kTOForwardProbability = 0;
-        const size_t kTOBackwardProbability = 1;
-        const size_t kTOForwardLexicalProbability = 2;
-        const size_t kTOBackwardLexicalProbability = 3;
+
+        enum Score {
+            ForwardProbabilityScore = 0,
+            BackwardProbabilityScore = 1,
+            ForwardLexicalScore = 2,
+            BackwardLexicalScore = 3,
+        };
+
+        enum Orientation {
+            MonotonicOrientation = 0,
+            SwapOrientation = 1,
+            DiscontinuousLeftOrientation = 2,
+            DiscontinuousRightOrientation = 3,
+            NoOrientation = 4
+        };
 
         struct TranslationOption {
+
+            struct Orientations {
+                vector<size_t> forward;
+                vector<size_t> backward;
+
+                Orientations() {
+                    forward.resize(kTranslationOptionDistortionCount + 1, 0); // Including NoOrientation
+                    backward.resize(kTranslationOptionDistortionCount + 1, 0); // Including NoOrientation
+                };
+
+                string ToString() const {
+                    ostringstream repr;
+                    repr << "forward: " << OrientationToString(forward) << " ";
+                    repr << "backward: " << OrientationToString(backward);
+                    return repr.str();
+                }
+
+                string OrientationToString(const vector<size_t> &orientation) const {
+                    ostringstream repr;
+                    repr << "M=" << orientation[MonotonicOrientation] << " ";
+                    repr << "S=" << orientation[SwapOrientation] << " ";
+                    repr << "DL=" << orientation[DiscontinuousLeftOrientation] << " ";
+                    repr << "DR=" << orientation[DiscontinuousRightOrientation] << " ";
+                    repr << "N=" << orientation[NoOrientation];
+                    return repr.str();
+                }
+
+                void AddToForward(Orientation orientation, size_t count = 1) {
+                    forward[orientation] += count;
+                }
+
+                void AddToBackward(Orientation orientation, size_t count = 1) {
+                    backward[orientation] += count;
+                }
+            };
+
             vector<wid_t> targetPhrase;
             alignment_t alignment;
+            Orientations orientations;
             vector<float> scores;
-            OrientationCounts orientationCounts;
 
             TranslationOption() {
                 scores.resize(kTranslationOptionScoreCount, 0.f);
@@ -41,12 +88,8 @@ namespace mmt {
                 repr << " |||";
                 for (auto a = alignment.begin(); a != alignment.end(); ++a)
                     repr << " " << a->first << "-" << a->second;
-                repr << " |||";
-                for (size_t i = 0; i < orientationCounts.ForwardOrientationCounts.size(); ++i)
-                    repr << " " << orientationCounts.ForwardOrientationCounts[i];
-                repr << " ";
-                for (size_t i = 0; i < orientationCounts.BackwardOrientationCounts.size(); ++i)
-                    repr << " " << orientationCounts.BackwardOrientationCounts[i];
+
+                repr << " ||| " << orientations.ToString();
 
                 return repr.str();
             }
@@ -59,12 +102,6 @@ namespace mmt {
                 return !(rhs == *this);
             }
 
-            const vector<float>& GetForwardOrientationCounts() const {
-                return orientationCounts.ForwardOrientationCounts;
-            }
-            const vector<float>& GetBackwardOrientationCounts() const {
-                return orientationCounts.BackwardOrientationCounts;
-            }
         };
     }
 }

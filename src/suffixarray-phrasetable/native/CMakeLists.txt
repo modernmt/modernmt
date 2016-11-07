@@ -38,7 +38,6 @@ set(SOURCE_FILES
 
         sapt/Options.h
         sapt/TranslationOption.h
-        sapt/OrientationCounts.h
         sapt/PhraseTable.cpp sapt/PhraseTable.h
         sapt/UpdateManager.cpp sapt/UpdateManager.h
         sapt/TranslationOptionBuilder.cpp sapt/TranslationOptionBuilder.h
@@ -74,7 +73,7 @@ install(TARGETS ${PROJECT_NAME}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
 
-install(FILES sapt/PhraseTable.h sapt/Options.h sapt/TranslationOption.h sapt/OrientationCounts.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/sapt)
+install(FILES sapt/PhraseTable.h sapt/Options.h sapt/TranslationOption.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/sapt)
 
 ## MMT common-interfaces
 find_package(MMTCommons REQUIRED)
@@ -93,15 +92,6 @@ target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 find_package(Rocksdb REQUIRED)
 include_directories(${Rocksdb_INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME} ${Rocksdb_LIBS})
-
-## FastAlign
-find_package(FastAlign REQUIRED)
-include_directories(${FastAlign_INCLUDE_DIR})
-target_link_libraries(${PROJECT_NAME} ${FastAlign_LIBS})
-
-message(STATUS "Executables will be installed in ${CMAKE_INSTALL_PREFIX}/bin")
-message(STATUS "Libraries will be installed in ${CMAKE_INSTALL_PREFIX}/lib")
-message(STATUS "Include files will be installed in ${CMAKE_INSTALL_PREFIX}/include")
 
 # OpenMP
 find_package(OpenMP QUIET)
