@@ -1,6 +1,14 @@
 # Running MMT in a Docker Container
 ## Maintainer: Ulrich Germann (ugermann@inf.ed.ac.uk)
 
+### Running the ready-to-use image
+
+MMT has a Docker image ready-to-use on Docker Hub: **modernmt/master**.
+
+Please see [Install](../INSTALL.md#option-1---using-docker)
+
+### Building your own Images
+
 * Build
 ```bash
 docker build -t <name of your image> dev/Ubuntu-16.04
