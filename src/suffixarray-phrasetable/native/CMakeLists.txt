@@ -40,12 +40,13 @@ set(SOURCE_FILES
         sapt/TranslationOption.h
         sapt/PhraseTable.cpp sapt/PhraseTable.h
         sapt/UpdateManager.cpp sapt/UpdateManager.h
+        sapt/TranslationOptionBuilder.cpp sapt/TranslationOptionBuilder.h
 
         util/hashutils.h
         util/ioutils.h
         util/chrono.h
         util/randutils.h util/randutils.cpp
-        util/BilingualCorpus.cpp util/BilingualCorpus.h sapt/TranslationOptionBuilder.cpp sapt/TranslationOptionBuilder.h)
+        util/BilingualCorpus.cpp util/BilingualCorpus.h)
 
 include_directories(${CMAKE_SOURCE_DIR})
 
@@ -91,10 +92,6 @@ target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 find_package(Rocksdb REQUIRED)
 include_directories(${Rocksdb_INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME} ${Rocksdb_LIBS})
-
-message(STATUS "Executables will be installed in ${CMAKE_INSTALL_PREFIX}/bin")
-message(STATUS "Libraries will be installed in ${CMAKE_INSTALL_PREFIX}/lib")
-message(STATUS "Include files will be installed in ${CMAKE_INSTALL_PREFIX}/include")
 
 # OpenMP
 find_package(OpenMP QUIET)

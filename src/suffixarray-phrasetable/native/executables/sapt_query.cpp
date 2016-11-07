@@ -18,6 +18,7 @@ namespace {
 
     struct args_t {
         string model_path;
+        string aligner_model_path;
         context_t context;
         size_t sample_limit = 1000;
         bool quiet = false;
@@ -52,9 +53,9 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
             ("help,h", "print this help message")
             ("model,m", po::value<string>()->required(), "output model path")
             ("context,c", po::value<string>(), "context map in the format <id>:<w>[,<id>:<w>]")
+            ("aligner-model,a", po::value<string>(), "path to aligner model")
             ("sample,s", po::value<size_t>(), "number of samples (default is 100)")
             ("quiet,q", "prints only number of match");
-
 
     po::variables_map vm;
     try {
@@ -63,6 +64,11 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
         if (vm.count("help")) {
             cout << desc << endl;
             return false;
+        }
+
+
+        if (vm.count("alignerModel")) {
+            args->aligner_model_path = vm["alignerModel"].as<string>();
         }
 
         if (vm.count("context")) {
@@ -112,8 +118,11 @@ int main(int argc, const char *argv[]) {
 
     Options ptOptions;
     ptOptions.samples = args.sample_limit;
-
-    PhraseTable pt(args.model_path, ptOptions);
+    Aligner *aligner =  NULL;
+//    if (args.aligner_model_path != ""){
+//        aligner = mmt::fastalign::FastAligner::Open(args.aligner_model_path, 1);
+//    }
+    PhraseTable pt(args.model_path, ptOptions, aligner);
 
     if (!args.quiet) {
         cout << "Model loaded" << endl;
