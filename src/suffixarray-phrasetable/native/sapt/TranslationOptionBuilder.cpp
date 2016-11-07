@@ -16,6 +16,9 @@ typedef vector<bool> bitvector;
 #define InRange(lowerBound, var, upperBound) (lowerBound <= var && var <= upperBound)
 
 static inline int compare_alignments(const mmt::alignment_t &a, const mmt::alignment_t &b) {
+    //defines an order between two alignments, based on the number of alignment points:
+    //- the alignment with fewer points is lower than that with more points
+    //- in case of equality, the order is defined by the first different source or target position of the alignment points, scanned sequentially
     if (a.size() != b.size())
         return (int) (a.size() - b.size());
 
@@ -144,8 +147,10 @@ const alignment_t &TranslationOptionBuilder::GetBestAlignment() const {
     auto bestEntry = alignments.begin();
 
     for (auto entry = alignments.begin(); entry != alignments.end(); ++entry) {
+        //the best alignment is the one with the highest frequency,
+        //or in case of equal frequency, it is the "highest" alignment(i.e. the more "dense", as explained in function  compare_alignments)
         if (entry->second > bestEntry->second ||
-            (entry->second == bestEntry->second && compare_alignments(entry->first, bestEntry->first) < 0))
+            (entry->second == bestEntry->second && compare_alignments(entry->first, bestEntry->first) > 0))
             bestEntry = entry;
     }
 
