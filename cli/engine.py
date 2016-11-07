@@ -11,8 +11,8 @@ from cli.libs import shell
 from cli.mt import BilingualCorpus
 from cli.mt.contextanalysis import ContextAnalyzer
 from cli.mt.lm import LanguageModel
-from cli.mt.moses import Moses, MosesFeature, LexicalReordering
-from cli.mt.phrasetable import WordAligner, SuffixArraysPhraseTable
+from cli.mt.moses import Moses, MosesFeature
+from cli.mt.phrasetable import WordAligner, SuffixArraysPhraseTable, LexicalReordering
 from cli.mt.processing import TrainingPreprocessor, TMCleaner
 
 __author__ = 'Davide Caroselli'
@@ -338,15 +338,17 @@ class MMTEngine(object):
         self.moses.add_feature(MosesFeature('Distortion'))
         self.moses.add_feature(MosesFeature('PhrasePenalty'))
         self.moses.add_feature(self.pt, 'Sapt')
-        # self.moses.add_feature(LexicalReordering(), 'DM0')
+        self.pt.set_reordering_model('DM0')
+        self.moses.add_feature(LexicalReordering(), 'DM0')
         self.moses.add_feature(self.lm, 'InterpolatedLM')
 
         self._optimal_weights = {
-            'InterpolatedLM': [0.24759],
-            'Sapt': [0.118797, 0.172922, 0.0134384, 0.0143003],
-            'Distortion0': [0.197845],
-            'WordPenalty0': [-0.217267],
-            'PhrasePenalty0': [0.0178411],
+            'InterpolatedLM': [0.0883718],
+            'Sapt': [0.0277399, 0.0391562, 0.00424704, 0.0121731],
+            'DM0': [0.0153337, 0.0181129, 0.0423417, 0.0203163, 0.261833, 0.126704, 0.0670114, 0.0300892],
+            'Distortion0': [0.0335557],
+            'WordPenalty0': [-0.0750738],
+            'PhrasePenalty0': [-0.13794],
         }
 
         if self._config is None:

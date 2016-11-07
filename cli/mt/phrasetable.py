@@ -73,6 +73,14 @@ class FastAlign(WordAligner):
             shell.execute(command, stdout=stdout)
 
 
+class LexicalReordering(MosesFeature):
+    def __init__(self):
+        MosesFeature.__init__(self, 'LexicalReordering')
+
+    def get_iniline(self):
+        return 'input-factor=0 output-factor=0 type=hier-mslr-bidirectional-fe-allff'
+
+
 class SuffixArraysPhraseTable(MosesFeature):
     injector_section = 'sapt'
     injectable_fields = {
@@ -85,6 +93,7 @@ class SuffixArraysPhraseTable(MosesFeature):
         self._sample = None  # Injected
 
         self._model = model
+        self._reordering_model_feature = None
         self._source_lang = langs[0]
         self._target_lang = langs[1]
 
@@ -93,10 +102,18 @@ class SuffixArraysPhraseTable(MosesFeature):
     def _get_model_basename(self):
         return os.path.join(self._model, 'model')
 
+    def set_reordering_model(self, name):
+        self._reordering_model_feature = name
+
     def get_iniline(self):
-        return 'path={model} input-factor=0 output-factor=0 sample-limit={sample}'.format(
+        result = 'path={model} input-factor=0 output-factor=0 sample-limit={sample}'.format(
             model=self.get_relpath(self._model), sample=self._sample
         )
+
+        if self._reordering_model_feature is not None:
+            result += ' lr-func={name}'.format(name=self._reordering_model_feature)
+
+        return result
 
     def train(self, corpora, aligner, working_dir='.', log_file=None):
         if os.path.isdir(self._model) and len(os.listdir(self._model)) > 0:

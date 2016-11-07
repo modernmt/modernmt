@@ -22,14 +22,6 @@ class MosesFeature:
         return None
 
 
-class LexicalReordering(MosesFeature):
-    def __init__(self):
-        MosesFeature.__init__(self, 'LexicalReordering')
-
-    def get_iniline(self):
-        return 'input-factor=0 output-factor=0 type=hier-mslr-bidirectional-fe-allff'
-
-
 class Moses:
     injector_section = 'moses'
     injectable_fields = {
