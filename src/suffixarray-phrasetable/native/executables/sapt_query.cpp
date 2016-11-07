@@ -7,6 +7,10 @@
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 
+#if USING_FASTALIGN
+#include <fastalign/FastAligner.h>
+#endif
+
 using namespace std;
 using namespace mmt;
 using namespace mmt::sapt;
@@ -118,10 +122,16 @@ int main(int argc, const char *argv[]) {
 
     Options ptOptions;
     ptOptions.samples = args.sample_limit;
+
     Aligner *aligner =  NULL;
-//    if (args.aligner_model_path != ""){
-//        aligner = mmt::fastalign::FastAligner::Open(args.aligner_model_path, 1);
-//    }
+    if (args.aligner_model_path != "") {
+#if USING_FASTALIGN
+        aligner = mmt::fastalign::FastAligner::Open(args.aligner_model_path, 1);
+#else
+        // Could not find FastAlign
+#endif
+    }
+
     PhraseTable pt(args.model_path, ptOptions, aligner);
 
     if (!args.quiet) {
