@@ -78,6 +78,15 @@ public class LuceneTokenizer extends TextProcessor<XMLEditableString, XMLEditabl
         }
     }
 
+    private static void whitespaceTokenize(String string, ArrayList<String> tokens) {
+        for (String token : string.trim().split("\\s+")) {
+            token = token.trim();
+
+            if (!token.isEmpty())
+                tokens.add(token);
+        }
+    }
+
     @Override
     public XMLEditableString call(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
         char[] chars = text.toCharArray();
@@ -102,19 +111,11 @@ public class LuceneTokenizer extends TextProcessor<XMLEditableString, XMLEditabl
                 if (startOffset >= chars.length || endOffset >= chars.length)
                     break;
 
-                if (startOffset > maxOffset && maxOffset < chars.length) {
-                    String skippedToken = new String(chars, maxOffset, startOffset - maxOffset).trim();
-
-                    for (String token : skippedToken.split("\\s+")) {
-                        token = token.trim();
-
-                        if (!token.isEmpty())
-                            tokens.add(token);
-                    }
-                }
+                if (startOffset > maxOffset && maxOffset < chars.length)
+                    whitespaceTokenize(new String(chars, maxOffset, startOffset - maxOffset), tokens);
 
                 if (endOffset > startOffset)
-                    tokens.add(new String(chars, startOffset, endOffset - startOffset));
+                    whitespaceTokenize(new String(chars, startOffset, endOffset - startOffset), tokens);
 
                 maxOffset = endOffset;
 
