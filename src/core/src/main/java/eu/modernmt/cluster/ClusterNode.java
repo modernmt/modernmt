@@ -85,7 +85,6 @@ public class ClusterNode {
 
     private final int controlPort;
     private final int dataPort;
-    private final int capacity;
     private Engine engine;
     private String uuid;
 
@@ -97,13 +96,8 @@ public class ClusterNode {
     private ITopic<Map<String, float[]>> decoderWeightsTopic;
 
     public ClusterNode(int controlPort, int dataPort) {
-        this(controlPort, dataPort, ClusterConstants.DEFAULT_TRANSLATION_EXECUTOR_SIZE);
-    }
-
-    public ClusterNode(int controlPort, int dataPort, int capacity) {
         this.controlPort = controlPort;
         this.dataPort = dataPort;
-        this.capacity = capacity;
     }
 
     public Engine getEngine() {
@@ -155,7 +149,7 @@ public class ClusterNode {
 
     public void bootstrap(EngineConfig config) throws BootstrapException {
         logger.info("Starting member bootstrap");
-        engine = new Engine(config, capacity);
+        engine = new Engine(config);
 
         StorageService storage = StorageService.getInstance();
         try {
@@ -181,8 +175,10 @@ public class ClusterNode {
             throw new BootstrapException(e.getCause());
         }
 
+        int executorCapacity = config.getDecoderConfig().getThreads();
+
         executor = new DistributedExecutor(hazelcast, ClusterConstants.TRANSLATION_EXECUTOR_NAME);
-        executorDaemon = new ExecutorDaemon(hazelcast, this, ClusterConstants.TRANSLATION_EXECUTOR_NAME, capacity);
+        executorDaemon = new ExecutorDaemon(hazelcast, this, ClusterConstants.TRANSLATION_EXECUTOR_NAME, executorCapacity);
         sessionManager = new SessionManager(hazelcast, event -> engine.getDecoder().closeSession(event.getOldValue()));
         decoderWeightsTopic = hazelcast.getTopic(ClusterConstants.DECODER_WEIGHTS_TOPIC_NAME);
         decoderWeightsTopic.addMessageListener(this::onDecoderWeightsChanged);

@@ -34,7 +34,8 @@ public class INIEngineConfigBuilder {
 
         engineConfig.setName(name);
         readEngineConfig(engineConfig, getSection(config, "engine"));
-        readDecoderConfig(engineConfig.getDecoderConfig(), getSection(config, "weights", null));
+        readDecoderWeightsConfig(engineConfig.getDecoderConfig(), getSection(config, "weights", null));
+        readDecoderConfig(engineConfig.getDecoderConfig(), getSection(config, "moses"));
 
         return engineConfig;
     }
@@ -64,6 +65,14 @@ public class INIEngineConfigBuilder {
     }
 
     private static void readDecoderConfig(DecoderConfig config, SubnodeConfiguration section) {
+        int threads = section.getInt("threads", -1);
+
+        if (threads > 0)
+            config.setThreads(threads);
+    }
+
+    private static void readDecoderWeightsConfig(DecoderConfig config, SubnodeConfiguration section) {
+        // TODO: we need to move decoder weights directly into moses, it's not a configuration thing
         if (section != null) {
             HashMap<String, float[]> map = new HashMap<>();
             Iterator<String> keys = section.getKeys();

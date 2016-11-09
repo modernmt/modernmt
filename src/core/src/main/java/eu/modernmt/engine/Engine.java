@@ -7,6 +7,7 @@ import eu.modernmt.context.lucene.LuceneAnalyzer;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.moses.MosesDecoder;
 import eu.modernmt.decoder.moses.MosesINI;
+import eu.modernmt.engine.config.DecoderConfig;
 import eu.modernmt.engine.config.EngineConfig;
 import eu.modernmt.io.Paths;
 import eu.modernmt.persistence.Database;
@@ -50,7 +51,6 @@ public class Engine implements Closeable {
     }
 
     private final EngineConfig config;
-    private final int threads;
     private final File root;
     private final File runtime;
     private final String name;
@@ -64,9 +64,8 @@ public class Engine implements Closeable {
     private Vocabulary vocabulary = null;
     private Database database = null;
 
-    public Engine(EngineConfig config, int threads) {
+    public Engine(EngineConfig config) {
         this.config = config;
-        this.threads = threads;
         this.name = config.getName();
         this.root = FileConst.getEngineRoot(name);
         this.runtime = FileConst.getEngineRuntime(name);
@@ -85,14 +84,15 @@ public class Engine implements Closeable {
             synchronized (this) {
                 if (decoder == null) {
                     try {
+                        DecoderConfig decoderConfig = config.getDecoderConfig();
                         File iniTemplate = Paths.join(root, "models", "moses.ini");
                         MosesINI mosesINI = MosesINI.load(iniTemplate, root);
 
-                        Map<String, float[]> featureWeights = config.getDecoderConfig().getWeights();
+                        Map<String, float[]> featureWeights = decoderConfig.getWeights();
                         if (featureWeights != null)
                             mosesINI.setWeights(featureWeights);
 
-                        mosesINI.setThreads(threads);
+                        mosesINI.setThreads(decoderConfig.getThreads());
 
                         File inifile = new File(runtime, "moses.ini");
                         FileUtils.write(inifile, mosesINI.toString(), false);
