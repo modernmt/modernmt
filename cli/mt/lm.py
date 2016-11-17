@@ -158,7 +158,7 @@ class InterpolatedLM(LanguageModel):
             adaptive_lm_model = os.path.join(self._model, 'foreground.alm')
             fileutils.makedirs(adaptive_lm_model, exist_ok=True)
 
-            command = [self._create_alm_bin, '-m', adaptive_lm_model, '-i', alm_train_folder, '-b', '100000000']
+            command = [self._create_alm_bin, '-m', adaptive_lm_model, '-i', alm_train_folder, '-b', '100000']
             shell.execute(command, stdout=log, stderr=log)
         finally:
             if log_file is not None:
