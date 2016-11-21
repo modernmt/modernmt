@@ -120,6 +120,13 @@
             <artifactId>mmt-common-interfaces</artifactId>
             <version>${mmt.version}</version>
         </dependency>
+
+        <!-- Needed only for debug purpose -->
+        <dependency>
+            <groupId>eu.modernmt</groupId>
+            <artifactId>mmt-fastalign-aligner</artifactId>
+            <version>${mmt.version}</version>
+        </dependency>
     </dependencies>
 
 </project>
