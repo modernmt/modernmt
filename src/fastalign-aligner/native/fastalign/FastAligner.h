@@ -6,7 +6,7 @@
 #define FASTALIGN_ALIGNER_H
 
 #include <mmt/aligner/Aligner.h>
-#include "Model.h"
+#include <string>
 
 namespace mmt {
     namespace fastalign {
@@ -17,7 +17,7 @@ namespace mmt {
             static const string kForwardModelFilename;
             static const string kBackwardModelFilename;
 
-            FastAligner(Model *forwardModel, Model *backwardModel, int threads = 0);
+            FastAligner(AlignerModel *forwardModel, AlignerModel *backwardModel, int threads = 0);
 
             static FastAligner *Open(const string &path, int threads = 0);
 
@@ -38,19 +38,27 @@ namespace mmt {
             virtual void GetBackwardAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch,
                                                vector<alignment_t> &outAlignments) override;
 
-            virtual float GetForwardProbability(wid_t source, wid_t target) override; //P(target | source)
+            // P(target | source)
+            virtual float GetForwardProbability(wid_t source, wid_t target) override;
 
-            virtual float GetBackwardProbability(wid_t source, wid_t target) override; //P(source | target)
+            // P(source | target)
+            virtual float GetBackwardProbability(wid_t source, wid_t target) override;
 
-            virtual float GetSourceNullProbability(wid_t source) override { return GetForwardProbability(source, kAlignerNullWord); }; //P(NULL | source)
+            // P(NULL | source)
+            virtual float GetSourceNullProbability(wid_t source) override {
+                return GetForwardProbability(source, kAlignerNullWord);
+            };
 
-            virtual float GetTargetNullProbability(wid_t target) override { return GetForwardProbability(kAlignerNullWord, target); }; //P(NULL | target)
+            // P(NULL | target)
+            virtual float GetTargetNullProbability(wid_t target) override {
+                return GetForwardProbability(kAlignerNullWord, target);
+            };
 
             virtual ~FastAligner() override;
 
         private:
-            Model *forwardModel;
-            Model *backwardModel;
+            AlignerModel *forwardModel;
+            AlignerModel *backwardModel;
 
             int threads;
         };

@@ -5,6 +5,7 @@
 #include <symal/SymAlignment.h>
 #include "FastAligner.h"
 #include <thread>
+#include "Model.h"
 #include <omp.h>
 
 const string kPathSeparator =
@@ -27,8 +28,8 @@ FastAligner *FastAligner::Open(const string &path, int threads) {
     return new FastAligner(forward, backward, threads);
 }
 
-FastAligner::FastAligner(Model *forwardModel, Model *backwardModel, int threads) : forwardModel(forwardModel),
-                                                                                   backwardModel(backwardModel) {
+FastAligner::FastAligner(AlignerModel *forwardModel, AlignerModel *backwardModel, int threads)
+        : forwardModel(forwardModel), backwardModel(backwardModel) {
     this->threads = threads > 0 ? threads : (int) thread::hardware_concurrency();
 
     omp_set_dynamic(0);

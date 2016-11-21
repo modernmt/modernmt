@@ -40,7 +40,7 @@ namespace mmt {
                 ComputeAlignments(batch, NULL, &outAlignments);
             }
 
-            inline double GetProbability(wid_t source, wid_t target) {
+            inline double GetProbability(wid_t source, wid_t target) override {
                 if (translation_table.empty())
                     return kNullProbability;
                 if (source >= translation_table.size())

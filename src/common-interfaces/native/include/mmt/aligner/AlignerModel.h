@@ -18,11 +18,13 @@ namespace mmt {
 
         virtual alignment_t ComputeAlignment(const vector<wid_t> &source, const vector<wid_t> &target) = 0;
 
-        virtual void ComputeAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch, vector<alignment_t> &outAlignments) = 0;
+        virtual void ComputeAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch,
+                                       vector<alignment_t> &outAlignments) = 0;
+
+        virtual double GetProbability(wid_t source, wid_t target) = 0;
 
         virtual ~AlignerModel() {};
 
-        virtual inline wid_t GetNullWord(){ return kAlignerNullWord; };
     };
 }
 
