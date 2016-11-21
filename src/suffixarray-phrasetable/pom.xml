@@ -69,6 +69,7 @@
                             <arguments>
                                 <argument>-DROCKSDB_ROOT=${mmt.vendor.rocksdb}</argument>
                                 <argument>-DCMAKE_INSTALL_PREFIX=${mmt.build}</argument>
+                                <argument>-DCMAKE_BUILD_TYPE=Release</argument>
                                 <argument>${project.nativedir}</argument>
                             </arguments>
                         </configuration>
