@@ -4,7 +4,7 @@
 /vendor/cassandra-*
 /vendor/kafka-*
 
-native/javah/
+javah/
 
 build/
 
