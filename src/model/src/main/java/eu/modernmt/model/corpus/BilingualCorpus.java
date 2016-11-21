@@ -60,9 +60,9 @@ public interface BilingualCorpus {
 
     class StringPair {
 
-        public final String source;
-        public final String target;
-        public final Date timestamp;
+        public String source;
+        public String target;
+        public Date timestamp;
 
         public StringPair(String source, String target) {
             this.source = source;

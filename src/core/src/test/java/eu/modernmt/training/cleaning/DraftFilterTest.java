@@ -1,5 +1,7 @@
 package eu.modernmt.training.cleaning;
 
+import eu.modernmt.cleaning.filters.draft.DraftFilter;
+import eu.modernmt.cleaning.FilteredBilingualCorpus;
 import eu.modernmt.training.MockBilingualCorpus;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import org.junit.Test;

@@ -15,9 +15,8 @@ public class ControlCharsRemover extends TextProcessor<String, String> {
         super(sourceLanguage, targetLanguage);
     }
 
-    @Override
-    public String call(String param, Map<String, Object> metadata) {
-        char[] buffer = param.toCharArray();
+    public static String strip(String string) {
+        char[] buffer = string.toCharArray();
 
         int newSize = 0;
 
@@ -31,6 +30,11 @@ public class ControlCharsRemover extends TextProcessor<String, String> {
         }
 
         return new String(buffer, 0, newSize);
+    }
+
+    @Override
+    public String call(String param, Map<String, Object> metadata) {
+        return strip(param);
     }
 
 }

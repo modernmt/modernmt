@@ -10,14 +10,13 @@ import java.nio.CharBuffer;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import static eu.modernmt.processing.xml.XMLCharacterEntity.EntityPattern;
 
 /**
  * Created by davide on 08/03/16.
  */
 public class XMLStringBuilder extends TextProcessor<String, XMLEditableString> {
-
-    private static final Pattern EntityPattern = Pattern.compile("&((#[0-9]{1,4})|(#x[0-9a-fA-F]{1,4})|([a-zA-Z]+));");
 
     public XMLStringBuilder(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
         super(sourceLanguage, targetLanguage);
@@ -49,6 +48,7 @@ public class XMLStringBuilder extends TextProcessor<String, XMLEditableString> {
         return builder.create();
     }
 
+    //TODO: should use XMLCharacterEntity.unescapeAll
     private static void escapeAndAppend(XMLEditableString.Builder builder, char[] chars, int start, int end) {
         CharSequence sequence = CharBuffer.wrap(chars, start, end - start);
         Matcher m = EntityPattern.matcher(sequence);

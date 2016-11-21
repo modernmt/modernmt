@@ -12,15 +12,20 @@ import javax.xml.stream.events.XMLEvent;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 
 /**
  * Created by davide on 14/03/16.
  */
 class TMXPairReader {
 
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("YYYYMMdd'T'HHmmss'Z'");
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
     private static final String XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace";
     private boolean decodeSegments = true;
+
+    TMXPairReader() {
+        dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+    }
 
     private BilingualCorpus.StringPair wrap(XMLEvent event, String source, String target, Date timestamp) throws XMLStreamException {
         if (source == null)

@@ -1,11 +1,15 @@
 package eu.modernmt.processing.xml;
 
 import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by davide on 08/03/16.
  */
 public class XMLCharacterEntity {
+
+    public static final Pattern EntityPattern = Pattern.compile("&((#[0-9]{1,4})|(#x[0-9a-fA-F]{1,4})|([a-zA-Z]+));");
 
     private static final HashMap<String, Character> NAMED_ENTITIES = new HashMap<>();
 
@@ -269,14 +273,46 @@ public class XMLCharacterEntity {
         if (entity.charAt(1) == '#') {
             if (entity.charAt(2) == 'x') {
                 String content = entity.substring(3, entity.length() - 1);
-                return (char)Integer.parseInt(content, 16);
+                return (char) Integer.parseInt(content, 16);
             } else {
                 String content = entity.substring(2, entity.length() - 1);
-                return (char)Integer.parseInt(content);
+                return (char) Integer.parseInt(content);
             }
         } else {
             String content = entity.substring(1, entity.length() - 1);
             return NAMED_ENTITIES.get(content);
         }
+    }
+
+    public static String unescapeAll(String line) {
+        char[] chars = line.toCharArray();
+
+        StringBuilder builder = new StringBuilder();
+        Matcher m = EntityPattern.matcher(line);
+
+        int stringIndex = 0;
+
+        while (m.find()) {
+            int mstart = m.start();
+            int mend = m.end();
+
+            if (stringIndex < mstart)
+                builder.append(chars, stringIndex, mstart - stringIndex);
+
+            String entity = m.group();
+            Character c = XMLCharacterEntity.unescape(entity);
+            if (c == null) {
+                builder.append(entity);
+            } else {
+                builder.append(c);
+            }
+
+            stringIndex = mend;
+        }
+
+        if (stringIndex < chars.length)
+            builder.append(chars, stringIndex, chars.length - stringIndex);
+
+        return builder.toString();
     }
 }

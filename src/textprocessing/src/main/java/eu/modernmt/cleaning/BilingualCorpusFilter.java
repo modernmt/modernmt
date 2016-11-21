@@ -1,4 +1,4 @@
-package eu.modernmt.training.cleaning;
+package eu.modernmt.cleaning;
 
 import eu.modernmt.model.corpus.BilingualCorpus;
 

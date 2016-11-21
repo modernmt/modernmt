@@ -1,8 +1,7 @@
 package eu.modernmt.training;
 
+import eu.modernmt.cleaning.Cleaner;
 import eu.modernmt.model.corpus.BilingualCorpus;
-import eu.modernmt.training.cleaning.DraftFilter;
-import eu.modernmt.training.cleaning.FilteredBilingualCorpus;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,14 +35,8 @@ public class CleaningPipeline {
         this.targetLanguage = target;
     }
 
-    public static FilteredBilingualCorpus getFilteredCorpus(BilingualCorpus corpus) {
-        FilteredBilingualCorpus filteredCorpus = new FilteredBilingualCorpus(corpus);
-        filteredCorpus.addFilter(new DraftFilter());
-        return filteredCorpus;
-    }
-
     public void add(BilingualCorpus corpus) {
-        this.bilingualCorpora.add(getFilteredCorpus(corpus));
+        this.bilingualCorpora.add(Cleaner.wrap(corpus));
     }
 
     public Locale getSourceLanguage() {

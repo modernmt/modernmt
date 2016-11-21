@@ -1,4 +1,4 @@
-package eu.modernmt.training.cleaning;
+package eu.modernmt.cleaning;
 
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;
@@ -17,12 +17,14 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
     private boolean initialized;
     private int lineCount;
     private ArrayList<BilingualCorpusFilter> filters;
+    private ArrayList<BilingualCorpusNormalizer> normalizers;
 
     public FilteredBilingualCorpus(BilingualCorpus corpus) {
         this.corpus = corpus;
         this.lineCount = -1;
         this.initialized = false;
         this.filters = new ArrayList<>(10);
+        this.normalizers = new ArrayList<>(10);
     }
 
     public void addFilter(BilingualCorpusFilter filter) {
@@ -30,6 +32,13 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
             throw new IllegalStateException("Cannot add new filter after initialization");
 
         this.filters.add(filter);
+    }
+
+    public void addNormalizer(BilingualCorpusNormalizer normalizer) {
+        if (initialized)
+            throw new IllegalStateException("Cannot add new filter after initialization");
+
+        this.normalizers.add(normalizer);
     }
 
     @Override
@@ -65,10 +74,16 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
                 StringPair next;
 
                 while ((next = reader.read()) != null) {
+                    for (BilingualCorpusNormalizer normalizer : normalizers)
+                        normalizer.normalize(next);
+
                     boolean accept = true;
 
                     for (BilingualCorpusFilter filter : filters) {
-                        accept &= filter.accept(next);
+                        if (!filter.accept(next)) {
+                            accept = false;
+                            break;
+                        }
                     }
 
                     if (accept)
@@ -101,6 +116,9 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
 
                 StringPair pair;
                 while ((pair = reader.read()) != null) {
+                    for (BilingualCorpusNormalizer normalizer : normalizers)
+                        normalizer.normalize(pair);
+
                     for (BilingualCorpusFilter.FilterInitializer initializer : initializers)
                         initializer.onPair(corpus, pair);
                 }
