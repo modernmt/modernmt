@@ -61,14 +61,14 @@ static inline bool DeserializeStreams(const char *data, size_t bytes_size, vecto
 
     size_t j = 0;
     for (size_t i = 0; i < size; ++i) {
-        streams[i] = (data[j++] & 0xFFUL) +
-                     ((data[j++] & 0xFFUL) << 8) +
-                     ((data[j++] & 0xFFUL) << 16) +
-                     ((data[j++] & 0xFFUL) << 24) +
-                     ((data[j++] & 0xFFUL) << 32) +
-                     ((data[j++] & 0xFFUL) << 40) +
-                     ((data[j++] & 0xFFUL) << 48) +
-                     ((data[j++] & 0xFFUL) << 56);
+        streams[i] = (data[j++] & 0xFFL) +
+                     ((data[j++] & 0xFFL) << 8) +
+                     ((data[j++] & 0xFFL) << 16) +
+                     ((data[j++] & 0xFFL) << 24) +
+                     ((data[j++] & 0xFFL) << 32) +
+                     ((data[j++] & 0xFFL) << 40) +
+                     ((data[j++] & 0xFFL) << 48) +
+                     ((data[j++] & 0xFFL) << 56);
     }
 
     return true;

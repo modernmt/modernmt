@@ -77,8 +77,7 @@ inline void NGramBatch::AddToBatch(const domain_t domain, const vector<wid_t> &s
 
 void NGramBatch::Reset(const vector<seqid_t> &_streams) {
     streams = _streams;
-    ngrams_map.clear();
-    size = 0;
+    Clear();
 }
 
 bool NGramBatch::SetStreamIfValid(stream_t stream, seqid_t sentence) {

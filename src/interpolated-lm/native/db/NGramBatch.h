@@ -44,8 +44,9 @@ namespace mmt {
 
             void Reset(const vector<seqid_t> &streams);
 
-            void Clear() {
+            inline void Clear() {
                 ngrams_map.clear();
+                size = 0;
             }
 
             bool Add(const domain_t domain, const vector<wid_t> &sentence, const count_t count = 1);
