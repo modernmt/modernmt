@@ -97,12 +97,13 @@ void LoadCorpus(const string &corpus, NGramStorage &storage, uint8_t order, size
 
     CorpusReader reader(corpus);
     NGramBatch batch(order, buffer_size);
-
+    size_t batches=1;
     vector<wid_t> sentence;
     while(reader.Read(sentence)) {
         if (!batch.Add(domain, sentence)) {
             storage.PutBatch(batch);
 
+            ++batches;
             batch.Clear();
             batch.Add(domain, sentence);
         }
@@ -112,6 +113,7 @@ void LoadCorpus(const string &corpus, NGramStorage &storage, uint8_t order, size
         storage.PutBatch(batch);
         batch.Clear();
     }
+    cerr << "loading domain:" << domain << " requires " << batches << " batches" << endl;
 }
 
 int main(int argc, const char *argv[]) {
