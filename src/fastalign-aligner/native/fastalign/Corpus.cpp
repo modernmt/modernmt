@@ -12,10 +12,6 @@ using namespace mmt::fastalign;
 
 namespace fs = boost::filesystem;
 
-const string &Corpus::getCorpusName() const {
-    fs::path path = sourcePath;
-    return path.stem().string();
-}
 void Corpus::List(const string &path, const string &outPath, const string &sourceLang, const string &targetLang,
                            vector<Corpus> &list) {
     fs::recursive_directory_iterator endit;

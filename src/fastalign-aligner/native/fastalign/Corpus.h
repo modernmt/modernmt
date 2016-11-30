@@ -31,8 +31,6 @@ namespace mmt {
                 return outputPath;
             }
 
-            const string &getCorpusName() const;
-
         private:
             const string sourcePath;
             const string targetPath;

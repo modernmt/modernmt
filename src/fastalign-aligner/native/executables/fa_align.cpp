@@ -9,7 +9,6 @@
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include <thread>
-#include <util/chrono.h>
 
 #ifdef _OPENMP
 #include <thread>
@@ -158,11 +157,7 @@ int main(int argc, const char *argv[]) {
     //perform alignment of all corpora sequentially; multithreading is used for each corpus
     for (size_t i = 0; i < corpora.size(); ++i) {
         Corpus &corpus = corpora[i];
-
-        double begin = GetTime();
         AlignCorpus(corpus, args.buffer_size, args.strategy, aligner);
-        double elapsed = GetElapsedTime(begin);
-        cout << "Corpus " << corpus.getCorpusName() << " DONE in " << elapsed << "s" << endl;
     }
 
 
