@@ -21,3 +21,5 @@ docker run -it --name <name of your container> <name of your image> bash
 
 This places you into the root directory of MMT.
 
+Use ***--ulimit*** if you plan to have many thoussands of different domains
+

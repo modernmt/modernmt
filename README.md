@@ -6,7 +6,7 @@ MMT is a context-aware, incremental and distributed general purpose Machine Tran
 MMT is:
 - Simple to use, fast to train, and easy to scale with respect to domains, data, and users.
 - Trained by pooling all available domains/projects/customers data and translation memories in one folder.
-- Queried by providing the sentence to be translated and some context text.
+- Queried by providing the sentence to be translated and optionally some context text.
 
 MMT's goal is to deliver the quality of multiple custom engines by adapting on the fly to the provided context.
 
