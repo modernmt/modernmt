@@ -19,12 +19,22 @@ namespace mmt {
             friend class CorpusReader;
 
         public:
-            Corpus(const string &sourceFilePath, const string &targetFilePath) : sourcePath(sourceFilePath),
-                                                                                 targetPath(targetFilePath) {};
+            Corpus(const string &sourceFilePath, const string &targetFilePath, const string &outputFilePath = "") : sourcePath(sourceFilePath),
+                                                                                 targetPath(targetFilePath),
+                                                                                 outputPath(outputFilePath) {};
+
+
+            static void
+                    List(const string &path, const string &outPath, const string &sourceLang, const string &targetLang, vector<Corpus> &list);
+
+            const string &getOutputPath() const {
+                return outputPath;
+            }
 
         private:
             const string sourcePath;
             const string targetPath;
+            const string outputPath;
         };
 
         class CorpusReader {

@@ -21,6 +21,13 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -O3")
 ## MMT common-interfaces
 find_package(MMTCommons REQUIRED)
 
+## Boost
+set(Boost_USE_STATIC_LIBS OFF)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
+
+find_package(Boost 1.55.0 REQUIRED COMPONENTS filesystem thread system program_options)
+
 ## JNI
 find_package(JNI REQUIRED)
 
@@ -71,6 +78,9 @@ include_directories(${CMAKE_SOURCE_DIR})
 ## MMT common-interfaces
 include_directories(${MMTCommons_INCLUDE_DIR})
 
+## Boost
+include_directories(${Boost_INCLUDE_DIRS})
+
 ## JNI
 include_directories(${JNI_INCLUDE_DIRS})
 
@@ -100,6 +110,9 @@ add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 ## TcMalloc
 target_link_libraries(${PROJECT_NAME} ${Tcmalloc_LIBRARIES})
 
+
+## Boost
+target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 
 #########
 ## Install targets

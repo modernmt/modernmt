@@ -27,7 +27,7 @@ class WordAligner:
     def build(self, corpora, working_dir='.', log_file=None):
         raise NotImplementedError('Abstract method')
 
-    def align(self, corpus, output):
+    def align(self, corpora, output_folder, log=None):
         raise NotImplementedError('Abstract method')
 
 
@@ -66,11 +66,20 @@ class FastAlign(WordAligner):
             if log_file is not None:
                 log.close()
 
-    def align(self, corpus, output):
-        command = [self._align_bin, '-s', corpus.get_file(self._source_lang), '-t', corpus.get_file(self._target_lang),
-                   '-m', self._model, '-a', '1']
-        with open(output, 'w') as stdout:
-            shell.execute(command, stdout=stdout)
+    def align(self, corpora, output_folder, log=None):
+        root = set([corpus.get_folder() for corpus in corpora])
+
+        if len(root) != 1:
+            raise Exception('Aligner corpora must share the same folder: found  ' + str(root))
+
+        root = root.pop()
+
+        command = [self._align_bin, '--model', self._model,
+                   '--input', root, '--output', output_folder,
+                   '--source', self._source_lang, '--target', self._target_lang,
+                   '--strategy', '1']
+
+        shell.execute(command, stderr=log, stdout=log)
 
 
 class LexicalReordering(MosesFeature):
@@ -131,6 +140,8 @@ class SuffixArraysPhraseTable(MosesFeature):
             if log_file is not None:
                 log = open(log_file, 'a')
 
+            train_corpora = []
+
             # Prepare training folder
             for corpus in corpora:
                 dest_corpus = BilingualCorpus.make_parallel(corpus.name, working_dir,
@@ -141,7 +152,10 @@ class SuffixArraysPhraseTable(MosesFeature):
                 os.symlink(source_file, dest_corpus.get_file(self._source_lang))
                 os.symlink(target_file, dest_corpus.get_file(self._target_lang))
 
-                aligner.align(corpus, os.path.join(working_dir, corpus.name + '.align'))
+                train_corpora.append(dest_corpus)
+
+            # Align corpora
+            aligner.align(train_corpora, working_dir, log=log)
 
             # Build models
             command = [self._build_bin, '--input', working_dir, '--model', self._model,
