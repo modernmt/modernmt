@@ -19,8 +19,7 @@ import java.util.TimeZone;
  */
 class TMXPairReader {
 
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
-    private static final String XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace";
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat(TMXCorpus.TMX_DATE_FORMAT);
     private boolean decodeSegments = true;
 
     TMXPairReader() {
@@ -92,7 +91,7 @@ class TMXPairReader {
                     StartElement element = event.asStartElement();
 
                     if ("tuv".equals(XMLUtils.getLocalName(element))) {
-                        String lang = XMLUtils.getAttributeValue(element, XML_NAMESPACE, "lang");
+                        String lang = XMLUtils.getAttributeValue(element, TMXCorpus.XML_NAMESPACE, "lang");
                         if (lang == null)
                             lang = XMLUtils.getAttributeValue(element, null, "lang");
 

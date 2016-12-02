@@ -158,4 +158,7 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
         throw new UnsupportedOperationException();
     }
 
+    public BilingualCorpus getWrappedCorpus() {
+        return corpus;
+    }
 }

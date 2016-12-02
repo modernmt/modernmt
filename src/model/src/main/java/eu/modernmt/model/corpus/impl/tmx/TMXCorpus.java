@@ -12,6 +12,9 @@ import java.util.Locale;
  */
 public class TMXCorpus implements BilingualCorpus {
 
+    static final String TMX_DATE_FORMAT = "yyyyMMdd'T'HHmmss'Z'";
+    static final String XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace";
+
     private final File tmx;
     private final String name;
     private final Locale sourceLanguage;
@@ -31,8 +34,8 @@ public class TMXCorpus implements BilingualCorpus {
         this.name = name;
         this.tmx = tmx;
 
-        this.sourceCorpus = new TMXMonolingualView(tmx, name, sourceLanguage);
-        this.targetCorpus = new TMXMonolingualView(tmx, name, targetLanguage);
+        this.sourceCorpus = new TMXMonolingualView(tmx, name, sourceLanguage, targetLanguage, true);
+        this.targetCorpus = new TMXMonolingualView(tmx, name, sourceLanguage, targetLanguage, false);
     }
 
     @Override
@@ -70,7 +73,7 @@ public class TMXCorpus implements BilingualCorpus {
 
     @Override
     public BilingualLineWriter getContentWriter(boolean append) throws IOException {
-        throw new UnsupportedOperationException();
+        return new TMXBilingualLineWriter(tmx, sourceLanguage, targetLanguage);
     }
 
     @Override

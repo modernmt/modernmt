@@ -1,9 +1,11 @@
 package eu.modernmt.facade;
 
+import eu.modernmt.cleaning.FilteredBilingualCorpus;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
+import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.training.CleaningPipeline;
 import eu.modernmt.training.PreprocessingPipeline;
@@ -44,9 +46,16 @@ public class TrainingFacade {
         final Locale sourceLanguage = sample.getSourceLanguage();
         final Locale targetLanguage = sample.getTargetLanguage();
 
-        CleaningPipeline cleaningPipeline = new CleaningPipeline(corpus ->
-                new ParallelFileCorpus(outputDirectory, corpus.getName(), sourceLanguage, targetLanguage),
-                sourceLanguage, targetLanguage);
+        CleaningPipeline cleaningPipeline = new CleaningPipeline(corpus -> {
+            while (corpus instanceof FilteredBilingualCorpus) {
+                corpus = ((FilteredBilingualCorpus) corpus).getWrappedCorpus();
+            }
+
+            if (corpus instanceof TMXCorpus)
+                return new TMXCorpus(new File(outputDirectory, corpus.getName() + ".tmx"), sourceLanguage, targetLanguage);
+            else
+                return new ParallelFileCorpus(outputDirectory, corpus.getName(), sourceLanguage, targetLanguage);
+        }, sourceLanguage, targetLanguage);
         bilingualCorpora.forEach(cleaningPipeline::add);
 
         FileUtils.deleteDirectory(outputDirectory);

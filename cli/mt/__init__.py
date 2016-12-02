@@ -123,6 +123,9 @@ class BilingualCorpus:
     def copy(self, folder, suffixes=None):
         raise NotImplementedError('Abstract method')
 
+    def symlink(self, folder, name=None):
+        raise NotImplementedError('Abstract method')
+
     def __str__(self):
         return self.name + '(' + ','.join(self.langs) + ')'
 
@@ -161,6 +164,14 @@ class _FileParallelCorpus(BilingualCorpus):
             suffix = suffixes[lang] if suffixes else ''
             shutil.copy(file, os.path.join(folder, os.path.basename(file) + suffix))
 
+    def symlink(self, folder, name=None):
+        link = BilingualCorpus.make_parallel(name if name is not None else self.name, folder, self.langs)
+
+        for lang in self.langs:
+            os.symlink(self.get_file(lang), link.get_file(lang))
+
+        return link
+
 
 class _TMXContentReader(xml.sax.handler.ContentHandler):
     langs = []
@@ -195,8 +206,8 @@ class _TMXCorpus(BilingualCorpus):
 
         return handler.langs
 
-    def __init__(self, name, f):
-        BilingualCorpus.__init__(self, name, self.__get_langs(f))
+    def __init__(self, name, f, langs=None):
+        BilingualCorpus.__init__(self, name, langs if langs is not None else self.__get_langs(f))
         self._tmx_file = f
         self._root = os.path.dirname(f)
 
@@ -212,6 +223,15 @@ class _TMXCorpus(BilingualCorpus):
     def copy(self, folder, suffixes=None):
         suffix = suffixes['tmx'] if suffixes else ''
         shutil.copy(self._tmx_file, os.path.join(folder, os.path.basename(self._tmx_file) + suffix))
+
+    def symlink(self, folder, name=None):
+        if name is None:
+            name = self.name
+
+        link = os.path.join(folder, name + '.tmx')
+        os.symlink(self._tmx_file, link)
+
+        return _TMXCorpus(name, link, langs=self.langs)
 
     def __str__(self):
         return self.name + '[' + ','.join(self.langs) + ']'

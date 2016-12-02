@@ -29,7 +29,7 @@ class _DomainMapBuilder:
     def generate(self, bilingual_corpora, monolingual_corpora, output, log_file=None):
         fileutils.makedirs(self._model, exist_ok=True)
 
-        args = ['--db', os.path.join(self._model, 'domains.db'), '-l', self._source_lang, '-c']
+        args = ['--db', os.path.join(self._model, 'domains.db'), '-s', self._source_lang, '-t', self._target_lang, '-c']
 
         source_paths = set([corpus.get_folder() for corpus in bilingual_corpora])
         for source_path in source_paths:
@@ -50,25 +50,13 @@ class _DomainMapBuilder:
             for domain, name in [line.rstrip('\n').split('\t', 2) for line in stdout.splitlines()]:
                 domains[name] = domain
 
-            return self._make_training_folder(bilingual_corpora, monolingual_corpora, domains, output)
+            bilingual_corpora = [corpus.symlink(output, name=domains[corpus.name]) for corpus in bilingual_corpora]
+            monolingual_corpora = [corpus.symlink(output) for corpus in monolingual_corpora]
+
+            return bilingual_corpora, monolingual_corpora
         finally:
             if log_file is not None:
                 log.close()
-
-    def _make_training_folder(self, bilingual_corpora, monolingual_corpora, domains, folder):
-        for corpus in bilingual_corpora:
-            dest_corpus = BilingualCorpus.make_parallel(domains[corpus.name], folder, corpus.langs)
-
-            for lang in corpus.langs:
-                os.symlink(corpus.get_file(lang), dest_corpus.get_file(lang))
-
-        for corpus in monolingual_corpora:
-            dest_corpus = BilingualCorpus.make_parallel(corpus.name, folder, corpus.langs)
-
-            for lang in corpus.langs:
-                os.symlink(corpus.get_file(lang), dest_corpus.get_file(lang))
-
-        return BilingualCorpus.splitlist(self._source_lang, self._target_lang, roots=folder)
 
     @staticmethod
     def _load_map(filepath):
@@ -217,7 +205,7 @@ class _MMTEngineBuilder:
             if 'context_analyzer' in steps:
                 with cmdlogger.step('Context Analyzer training') as _:
                     log_file = self._engine.get_logfile('training.context')
-                    self._engine.analyzer.create_index(unprocessed_bicorpora, source_lang, log_file=log_file)
+                    self._engine.analyzer.create_index(unprocessed_bicorpora, log_file=log_file)
 
             # Aligner
             if 'aligner' in steps:
@@ -318,7 +306,7 @@ class MMTEngine(object):
         if self._aligner_type is None:
             self._aligner_type = WordAligner.available_types[0]
 
-        self.analyzer = injector.inject(ContextAnalyzer(self._context_index))
+        self.analyzer = injector.inject(ContextAnalyzer(self._context_index, self.source_lang, self.target_lang))
         self.cleaner = TMCleaner(self.source_lang, self.target_lang)
 
         self.pt = injector.inject(SuffixArraysPhraseTable(self._pt_model, (self.source_lang, self.target_lang)))

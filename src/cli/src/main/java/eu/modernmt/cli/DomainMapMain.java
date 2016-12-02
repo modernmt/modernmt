@@ -1,6 +1,7 @@
 package eu.modernmt.cli;
 
 import eu.modernmt.model.Domain;
+import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.persistence.Connection;
@@ -10,6 +11,7 @@ import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Locale;
 
 /**
@@ -24,23 +26,27 @@ public class DomainMapMain {
         static {
             Option dbPath = Option.builder().longOpt("db").hasArg().required().build();
             Option corpora = Option.builder("c").longOpt("corpora").hasArgs().required().build();
-            Option language = Option.builder("l").longOpt("lang").hasArg().required().build();
+            Option source = Option.builder("s").longOpt("source").hasArg().required().build();
+            Option target = Option.builder("t").longOpt("target").hasArg().required().build();
 
             cliOptions = new Options();
             cliOptions.addOption(dbPath);
             cliOptions.addOption(corpora);
-            cliOptions.addOption(language);
+            cliOptions.addOption(source);
+            cliOptions.addOption(target);
         }
 
         public final File dbPath;
         public final File[] corporaRoots;
-        public final Locale language;
+        public final Locale sourceLanguage;
+        public final Locale targetLanguage;
 
         public Args(String[] args) throws ParseException {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
-            language = Locale.forLanguageTag(cli.getOptionValue('l'));
+            sourceLanguage = Locale.forLanguageTag(cli.getOptionValue('s'));
+            targetLanguage = Locale.forLanguageTag(cli.getOptionValue('t'));
             dbPath = new File(cli.getOptionValue("db"));
 
             String[] roots = cli.getOptionValues('c');
@@ -64,7 +70,10 @@ public class DomainMapMain {
 
             DomainDAO dao = db.getDomainDAO(connection);
 
-            for (Corpus corpus : Corpora.list(args.language, args.corporaRoots)) {
+            ArrayList<BilingualCorpus> corpora = new ArrayList<>();
+            Corpora.list(null, false, corpora, args.sourceLanguage, args.targetLanguage, args.corporaRoots);
+
+            for (BilingualCorpus corpus : corpora) {
                 Domain domain = new Domain(0, corpus.getName());
                 domain = dao.put(domain);
 

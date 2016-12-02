@@ -5,12 +5,10 @@ import org.apache.commons.io.input.BOMInputStream;
 
 import javax.xml.XMLConstants;
 import javax.xml.namespace.QName;
-import javax.xml.stream.Location;
-import javax.xml.stream.XMLEventReader;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.*;
 import javax.xml.stream.events.*;
 import java.io.*;
+import java.nio.charset.Charset;
 import java.util.Iterator;
 
 /**
@@ -21,6 +19,13 @@ public class XMLUtils {
     public static XMLEventReader createEventReader(InputStream stream) throws XMLStreamException {
         XMLInputFactory factory = XMLInputFactory.newInstance();
         return factory.createXMLEventReader(new InputStreamReader(new BOMInputStream(stream, false), DefaultCharset.get()));
+    }
+
+    public static XMLStreamWriter createStreamWriter(OutputStream stream) throws XMLStreamException {
+        Charset charset = DefaultCharset.get();
+
+        XMLOutputFactory factory = XMLOutputFactory.newInstance();
+        return new IndentingXMLStreamWriter(factory.createXMLStreamWriter(new OutputStreamWriter(stream, charset)));
     }
 
     public static String getLocalName(StartElement element) {

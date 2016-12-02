@@ -7,11 +7,14 @@ __author__ = 'Davide Caroselli'
 class ContextAnalyzer:
     injector_section = 'context'
 
-    def __init__(self, index):
+    def __init__(self, index, source_lang, target_lang):
         self._index = index
+        self._source_lang = source_lang
+        self._target_lang = target_lang
+
         self._java_mainclass = 'eu.modernmt.cli.ContextAnalyzerMain'
 
-    def create_index(self, corpora, lang, log_file=None):
+    def create_index(self, corpora, log_file=None):
         source_paths = set()
 
         for corpus in corpora:
@@ -19,7 +22,7 @@ class ContextAnalyzer:
 
         fileutils.makedirs(self._index, exist_ok=True)
 
-        args = ['-l', lang, '-i', self._index, '-c']
+        args = ['-s', self._source_lang, '-t', self._target_lang, '-i', self._index, '-c']
         for source_path in source_paths:
             args.append(source_path)
 
