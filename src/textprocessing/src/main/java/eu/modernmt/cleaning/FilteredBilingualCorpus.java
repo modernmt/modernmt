@@ -14,7 +14,6 @@ import java.util.Locale;
 public class FilteredBilingualCorpus implements BilingualCorpus {
 
     private BilingualCorpus corpus;
-    private boolean initialized;
     private int lineCount;
     private ArrayList<BilingualCorpusFilter> filters;
     private ArrayList<BilingualCorpusNormalizer> normalizers;
@@ -22,22 +21,15 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
     public FilteredBilingualCorpus(BilingualCorpus corpus) {
         this.corpus = corpus;
         this.lineCount = -1;
-        this.initialized = false;
         this.filters = new ArrayList<>(10);
         this.normalizers = new ArrayList<>(10);
     }
 
     public void addFilter(BilingualCorpusFilter filter) {
-        if (initialized)
-            throw new IllegalStateException("Cannot add new filter after initialization");
-
         this.filters.add(filter);
     }
 
     public void addNormalizer(BilingualCorpusNormalizer normalizer) {
-        if (initialized)
-            throw new IllegalStateException("Cannot add new filter after initialization");
-
         this.normalizers.add(normalizer);
     }
 
@@ -56,18 +48,18 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
 
     @Override
     public BilingualLineReader getContentReader() throws IOException {
-        if (!initialized) {
-            synchronized (this) {
-                if (!initialized) {
-                    this.initialize();
-                    initialized = true;
-                }
-            }
-        }
+        for (BilingualCorpusFilter filter : filters)
+            filter.onInitStart();
+
+        this.initialize();
+
+        for (BilingualCorpusFilter filter : filters)
+            filter.onInitEnd();
 
         return new BilingualLineReader() {
 
             private final BilingualLineReader reader = corpus.getContentReader();
+            private int index = 0;
 
             @Override
             public StringPair read() throws IOException {
@@ -75,16 +67,18 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
 
                 while ((next = reader.read()) != null) {
                     for (BilingualCorpusNormalizer normalizer : normalizers)
-                        normalizer.normalize(next);
+                        normalizer.normalize(next, index);
 
                     boolean accept = true;
 
                     for (BilingualCorpusFilter filter : filters) {
-                        if (!filter.accept(next)) {
+                        if (!filter.accept(next, index)) {
                             accept = false;
                             break;
                         }
                     }
+
+                    index++;
 
                     if (accept)
                         return next;
@@ -114,13 +108,17 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
             try {
                 reader = corpus.getContentReader();
 
+                int index = 0;
                 StringPair pair;
+
                 while ((pair = reader.read()) != null) {
                     for (BilingualCorpusNormalizer normalizer : normalizers)
-                        normalizer.normalize(pair);
+                        normalizer.normalize(pair, index);
 
                     for (BilingualCorpusFilter.FilterInitializer initializer : initializers)
-                        initializer.onPair(corpus, pair);
+                        initializer.onPair(corpus, pair, index);
+
+                    index++;
                 }
             } finally {
                 IOUtils.closeQuietly(reader);
@@ -161,4 +159,5 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
     public BilingualCorpus getWrappedCorpus() {
         return corpus;
     }
+
 }

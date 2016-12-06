@@ -60,6 +60,12 @@ public interface BilingualCorpus {
 
     class StringPair {
 
+        /**
+         * If true, the pair metadata indicate that the original
+         * source and target languages were inverted.
+         */
+        public boolean inverted = false;
+
         public String source;
         public String target;
         public Date timestamp;
@@ -71,6 +77,13 @@ public interface BilingualCorpus {
         }
 
         public StringPair(String source, String target, Date timestamp) {
+            this.source = source;
+            this.target = target;
+            this.timestamp = timestamp;
+        }
+
+        public StringPair(String source, String target, Date timestamp, boolean inverted) {
+            this.inverted = inverted;
             this.source = source;
             this.target = target;
             this.timestamp = timestamp;

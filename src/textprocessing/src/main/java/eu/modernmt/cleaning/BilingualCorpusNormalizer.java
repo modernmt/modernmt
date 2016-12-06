@@ -7,6 +7,6 @@ import eu.modernmt.model.corpus.BilingualCorpus;
  */
 public interface BilingualCorpusNormalizer {
 
-    void normalize(BilingualCorpus.StringPair pair);
+    void normalize(BilingualCorpus.StringPair pair, int index);
 
 }

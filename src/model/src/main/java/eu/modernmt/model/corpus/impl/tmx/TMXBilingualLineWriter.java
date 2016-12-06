@@ -62,30 +62,33 @@ class TMXBilingualLineWriter implements BilingualCorpus.BilingualLineWriter {
     public void write(BilingualCorpus.StringPair pair) throws IOException {
         try {
             writer.writeStartElement("tu");
-            writer.writeAttribute("srclang", sourceLanguage);
+            writer.writeAttribute("srclang", pair.inverted ? targetLanguage : sourceLanguage);
             writer.writeAttribute("datatype", "plaintext");
 
             if (pair.timestamp != null)
                 writer.writeAttribute("creationdate", dateFormat.format(pair.timestamp));
 
-            writer.writeStartElement("tuv");
-            writer.writeAttribute("xml", TMXCorpus.XML_NAMESPACE, "lang", sourceLanguage);
-            writer.writeStartElement("seg");
-            writer.writeCharacters(pair.source);
-            writer.writeEndElement();
-            writer.writeEndElement();
-
-            writer.writeStartElement("tuv");
-            writer.writeAttribute("xml", TMXCorpus.XML_NAMESPACE, "lang", targetLanguage);
-            writer.writeStartElement("seg");
-            writer.writeCharacters(pair.target);
-            writer.writeEndElement();
-            writer.writeEndElement();
+            if (pair.inverted) {
+                writeTuv(targetLanguage, pair.target);
+                writeTuv(sourceLanguage, pair.source);
+            } else {
+                writeTuv(sourceLanguage, pair.source);
+                writeTuv(targetLanguage, pair.target);
+            }
 
             writer.writeEndElement();
         } catch (XMLStreamException e) {
             throw new IOException("Error while writing XMLStreamWriter", e);
         }
+    }
+
+    private void writeTuv(String lang, String segment) throws XMLStreamException {
+        writer.writeStartElement("tuv");
+        writer.writeAttribute("xml", TMXCorpus.XML_NAMESPACE, "lang", lang);
+        writer.writeStartElement("seg");
+        writer.writeCharacters(segment);
+        writer.writeEndElement();
+        writer.writeEndElement();
     }
 
     @Override

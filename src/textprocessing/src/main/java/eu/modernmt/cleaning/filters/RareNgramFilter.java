@@ -43,7 +43,26 @@ public class RareNgramFilter implements BilingualCorpusFilter {
         return result;
     }
 
-    private void computeStats() {
+    @Override
+    public void onInitStart() {
+        avg = stddev = -1;
+        vocabulary.clear();
+    }
+
+    @Override
+    public FilterInitializer getInitializer() {
+        return (corpus, pair, index) -> {
+            String line = normalize(useSource ? pair.source : pair.target);
+
+            for (String token : tokenize(line)) {
+                Integer count = vocabulary.get(token);
+                vocabulary.put(token, count == null ? 1 : count + 1);
+            }
+        };
+    }
+
+    @Override
+    public void onInitEnd() {
         double sum = 0;
         double sum2 = 0;
 
@@ -59,25 +78,7 @@ public class RareNgramFilter implements BilingualCorpusFilter {
     }
 
     @Override
-    public FilterInitializer getInitializer() {
-        avg = stddev = -1;
-        vocabulary.clear();
-
-        return (corpus, pair) -> {
-            String line = normalize(useSource ? pair.source : pair.target);
-
-            for (String token : tokenize(line)) {
-                Integer count = vocabulary.get(token);
-                vocabulary.put(token, count == null ? 1 : count + 1);
-            }
-        };
-    }
-
-    @Override
-    public boolean accept(BilingualCorpus.StringPair pair) throws IOException {
-        if (avg < 0 || stddev < 0)
-            computeStats();
-
+    public boolean accept(BilingualCorpus.StringPair pair, int index) throws IOException {
         int rare = 0;
         int common = 0;
 

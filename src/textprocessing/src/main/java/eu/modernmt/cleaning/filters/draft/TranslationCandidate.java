@@ -9,29 +9,11 @@ import java.util.Date;
  */
 class TranslationCandidate implements Comparable<TranslationCandidate> {
 
-    static long hash(String string) {
-        int length = string.length();
-
-        String sx, dx;
-
-        if (length > 1) {
-            int hlen = length / 2;
-
-            sx = string.substring(0, hlen);
-            dx = string.substring(hlen, length);
-        } else {
-            sx = string;
-            dx = "";
-        }
-
-        return (long) (sx.hashCode()) << 32 | (dx.hashCode()) & 0xFFFFFFFFL;
-    }
-
-    private final long hash;
+    private final int index;
     private final Date timestamp;
 
-    TranslationCandidate(String target, Date timestamp) {
-        this.hash = hash(target);
+    TranslationCandidate(int index, Date timestamp) {
+        this.index = index;
         this.timestamp = timestamp;
     }
 
@@ -39,8 +21,8 @@ class TranslationCandidate implements Comparable<TranslationCandidate> {
         return timestamp.getTime() - other.timestamp.getTime();
     }
 
-    long getHash() {
-        return hash;
+    int getIndex() {
+        return index;
     }
 
     @Override
@@ -50,13 +32,13 @@ class TranslationCandidate implements Comparable<TranslationCandidate> {
 
         TranslationCandidate that = (TranslationCandidate) o;
 
-        return hash == that.hash;
+        return index == that.index;
 
     }
 
     @Override
     public int hashCode() {
-        return (int) (hash ^ (hash >>> 32));
+        return index;
     }
 
     @Override
@@ -64,4 +46,8 @@ class TranslationCandidate implements Comparable<TranslationCandidate> {
         return timestamp.compareTo(o.timestamp);
     }
 
+    @Override
+    public String toString() {
+        return "{POS:" + index + ", T=" + timestamp + "}";
+    }
 }

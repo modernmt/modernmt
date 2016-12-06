@@ -10,7 +10,7 @@ import eu.modernmt.processing.chars.ControlCharsRemover;
 public class ControlCharsStripper implements BilingualCorpusNormalizer {
 
     @Override
-    public void normalize(BilingualCorpus.StringPair pair) {
+    public void normalize(BilingualCorpus.StringPair pair, int index) {
         pair.source = ControlCharsRemover.strip(pair.source);
         pair.target = ControlCharsRemover.strip(pair.target);
     }

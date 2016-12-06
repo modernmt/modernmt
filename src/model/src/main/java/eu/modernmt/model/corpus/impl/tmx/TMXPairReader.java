@@ -12,6 +12,7 @@ import javax.xml.stream.events.XMLEvent;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.TimeZone;
 
 /**
@@ -21,19 +22,20 @@ class TMXPairReader {
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(TMXCorpus.TMX_DATE_FORMAT);
     private boolean decodeSegments = true;
+    private Locale headerSourceLang = null;
 
     TMXPairReader() {
         dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
     }
 
-    private BilingualCorpus.StringPair wrap(XMLEvent event, String source, String target, Date timestamp) throws XMLStreamException {
+    private BilingualCorpus.StringPair wrap(XMLEvent event, String source, String target, Date timestamp, boolean inverted) throws XMLStreamException {
         if (source == null)
             throw new XMLStreamException(format("Missing source sentence", event));
 
         if (target == null)
             throw new XMLStreamException(format("Missing target sentence", event));
 
-        return new BilingualCorpus.StringPair(source.replace('\n', ' '), target.replace('\n', ' '), timestamp);
+        return new BilingualCorpus.StringPair(source.replace('\n', ' '), target.replace('\n', ' '), timestamp, inverted);
     }
 
     public BilingualCorpus.StringPair read(XMLEventReader reader, String sourceLanguage, String targetLanguage) throws XMLStreamException {
@@ -58,6 +60,11 @@ class TMXPairReader {
     }
 
     private void readHeader(XMLEventReader reader, StartElement header) throws XMLStreamException {
+        String srclang = XMLUtils.getAttributeValue(header, null, "srclang");
+        if (srclang == null)
+            throw new XMLStreamException("Missing 'srclang' in header element");
+        headerSourceLang = Locale.forLanguageTag(srclang);
+
         String datatype = XMLUtils.getAttributeValue(header, null, "datatype");
         datatype = datatype == null ? "unknown" : datatype.toLowerCase();
 
@@ -80,6 +87,11 @@ class TMXPairReader {
             }
         }
 
+        String srclangString = XMLUtils.getAttributeValue(tu, null, "srclang");
+        Locale srclang = srclangString == null ? headerSourceLang : Locale.forLanguageTag(srclangString);
+
+        boolean inverted = !srclang.getLanguage().equals(sourceLanguage);
+
         String source = null;
         String target = null;
 
@@ -100,11 +112,7 @@ class TMXPairReader {
                         if (lang == null)
                             throw new XMLStreamException(format("Missing language for 'tuv'", event));
 
-                        lang = lang.toLowerCase();
-                        int dashIndex = lang.indexOf('-');
-
-                        if (dashIndex > 0)
-                            lang = lang.substring(0, dashIndex);
+                        lang = Locale.forLanguageTag(lang).getLanguage();
 
                         if (lang.equals(sourceLanguage)) {
                             source = text;
@@ -117,7 +125,7 @@ class TMXPairReader {
                     break;
                 case XMLStreamConstants.END_ELEMENT:
                     if ("tu".equals(XMLUtils.getLocalName(event.asEndElement()))) {
-                        return wrap(event, source, target, timestamp);
+                        return wrap(event, source, target, timestamp, inverted);
                     }
                     break;
             }

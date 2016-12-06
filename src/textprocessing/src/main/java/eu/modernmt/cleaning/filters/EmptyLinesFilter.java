@@ -1,6 +1,6 @@
 package eu.modernmt.cleaning.filters;
 
-import eu.modernmt.cleaning.BilingualCorpusFilter;
+import eu.modernmt.cleaning.BilingualCorpusFilterAdapter;
 import eu.modernmt.model.corpus.BilingualCorpus;
 
 import java.io.IOException;
@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 /**
  * Created by davide on 14/03/16.
  */
-public class EmptyLinesFilter implements BilingualCorpusFilter {
+public class EmptyLinesFilter extends BilingualCorpusFilterAdapter {
 
     private static final Pattern WHITESPACE_REMOVER = Pattern.compile("\\s+");
 
@@ -23,7 +23,7 @@ public class EmptyLinesFilter implements BilingualCorpusFilter {
     }
 
     @Override
-    public boolean accept(BilingualCorpus.StringPair pair) throws IOException {
+    public boolean accept(BilingualCorpus.StringPair pair, int index) throws IOException {
         return !(isBlankLine(pair.source) || isBlankLine(pair.target));
     }
 

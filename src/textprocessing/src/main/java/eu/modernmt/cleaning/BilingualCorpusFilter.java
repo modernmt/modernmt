@@ -11,12 +11,16 @@ public interface BilingualCorpusFilter {
 
     interface FilterInitializer {
 
-        void onPair(BilingualCorpus corpus, BilingualCorpus.StringPair pair) throws IOException;
+        void onPair(BilingualCorpus corpus, BilingualCorpus.StringPair pair, int index) throws IOException;
 
     }
 
     FilterInitializer getInitializer();
 
-    boolean accept(BilingualCorpus.StringPair pair) throws IOException;
+    void onInitStart();
+
+    void onInitEnd();
+
+    boolean accept(BilingualCorpus.StringPair pair, int index) throws IOException;
 
 }
