@@ -7,6 +7,8 @@ import tempfile
 import requests
 import sys
 
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
 __author__ = 'Davide Caroselli'
 
 
@@ -80,6 +82,9 @@ def install_apache_lib(path, output, name):
 
 if __name__ == '__main__':
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # reopen stdout in unbuffered mode
+
+    # Suppress InsecureRequestWarning
+    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
     # install_apache_lib('/cassandra/3.7/apache-cassandra-3.7-bin.tar.gz', 'vendor/cassandra-3.7', name='cassandra-3.7')
     install_apache_lib('/kafka/0.10.0.1/kafka_2.11-0.10.0.1.tgz', 'vendor/kafka-0.10.0.1', name='kafka-0.10.0.1')
