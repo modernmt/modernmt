@@ -1,10 +1,8 @@
 package eu.modernmt.cli;
 
-import eu.modernmt.engine.Engine;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.cluster.ClusterNode;
-import eu.modernmt.cluster.storage.DirectorySynchronizer;
-import eu.modernmt.cluster.storage.StorageService;
+import eu.modernmt.engine.Engine;
 import eu.modernmt.engine.config.EngineConfig;
 import eu.modernmt.engine.config.INIEngineConfigBuilder;
 import eu.modernmt.facade.ModernMT;
@@ -17,7 +15,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -106,16 +103,17 @@ public class ClusterNodeMain {
 
             status.onStatusChange(StatusManager.Status.JOINED);
 
-            if (args.member != null) {
-                InetAddress host = InetAddress.getByName(args.member);
-                File localPath = Engine.getRootPath(args.engine);
-
-                StorageService storage = StorageService.getInstance();
-                DirectorySynchronizer synchronizer = storage.getDirectorySynchronizer();
-                synchronizer.synchronize(host, args.dataPort, localPath);
-
-                status.onStatusChange(StatusManager.Status.SYNCHRONIZED);
-            }
+            //TODO: Model r-sync is no more working
+//            if (args.member != null) {
+//                InetAddress host = InetAddress.getByName(args.member);
+//                File localPath = Engine.getRootPath(args.engine);
+//
+//                StorageService storage = StorageService.getInstance();
+//                DirectorySynchronizer synchronizer = storage.getDirectorySynchronizer();
+//                synchronizer.synchronize(host, args.dataPort, localPath);
+//
+//                status.onStatusChange(StatusManager.Status.SYNCHRONIZED);
+//            }
 
             EngineConfig config = new INIEngineConfigBuilder(Engine.getConfigFile(args.engine)).build(args.engine);
             node.bootstrap(config);

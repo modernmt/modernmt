@@ -151,12 +151,13 @@ public class ClusterNode {
         logger.info("Starting member bootstrap");
         engine = new Engine(config);
 
-        StorageService storage = StorageService.getInstance();
-        try {
-            storage.start(this.dataPort, engine);
-        } catch (IOException e) {
-            throw new BootstrapException(e);
-        }
+        //TODO: Model r-sync is no more working
+//        StorageService storage = StorageService.getInstance();
+//        try {
+//            storage.start(this.dataPort, engine);
+//        } catch (IOException e) {
+//            throw new BootstrapException(e);
+//        }
 
         Aligner aligner;
         Decoder decoder;
