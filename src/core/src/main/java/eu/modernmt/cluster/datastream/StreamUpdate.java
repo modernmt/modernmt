@@ -11,23 +11,14 @@ class StreamUpdate {
     private final String sourceSentence;
     private final String targetSentence;
 
-    private boolean last;
-    private boolean first;
-
     public StreamUpdate(int domain, String sourceSentence, String targetSentence) {
-        this(domain, sourceSentence, targetSentence, false, false);
-    }
-
-    public StreamUpdate(int domain, String sourceSentence, String targetSentence, boolean last, boolean first) {
         this.domain = domain;
         this.sourceSentence = sourceSentence;
         this.targetSentence = targetSentence;
-        this.last = last;
-        this.first = first;
     }
 
     public Update toUpdate(int topicId, long sequentialId) {
-        return new Update(topicId, sequentialId, domain, last, first, sourceSentence, targetSentence);
+        return new Update(topicId, sequentialId, domain, sourceSentence, targetSentence);
     }
 
     public int getDomain() {
@@ -40,22 +31,6 @@ class StreamUpdate {
 
     public String getTargetSentence() {
         return targetSentence;
-    }
-
-    public boolean isLast() {
-        return last;
-    }
-
-    public boolean isFirst() {
-        return first;
-    }
-
-    public void setLast(boolean last) {
-        this.last = last;
-    }
-
-    public void setFirst(boolean first) {
-        this.first = first;
     }
 
     @Override

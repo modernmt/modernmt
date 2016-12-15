@@ -7,13 +7,11 @@ import eu.modernmt.updating.Update;
 import eu.modernmt.updating.UpdatesListener;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -24,15 +22,18 @@ class DataStreamPollingThread extends Thread {
 
     private final Logger logger = LogManager.getLogger(DataStreamPollingThread.class);
 
+    private final DataStreamManager manager;
     private final UpdateBatch batch;
+
     private DataStreamException exception;
     private KafkaConsumer<Integer, StreamUpdate> consumer;
     private boolean interrupted;
     private final ArrayList<UpdatesListener> listeners = new ArrayList<>(10);
 
-    public DataStreamPollingThread(Engine engine) {
+    public DataStreamPollingThread(DataStreamManager manager, Engine engine) {
         super("DataStreamPollingThread");
-        batch = new UpdateBatch(engine);
+        this.batch = new UpdateBatch(engine);
+        this.manager = manager;
     }
 
     public void ensureRunning() throws DataStreamException {
@@ -68,23 +69,17 @@ class DataStreamPollingThread extends Thread {
         return !this.isAlive();
     }
 
-    public long[] getCurrentOffsets(TopicPartition[] partitions) {
-        long[] offsets = new long[partitions.length];
-        Arrays.fill(offsets, Long.MAX_VALUE);
+    public long getCurrentOffset() {
+        long offset = Long.MAX_VALUE;
 
         for (UpdatesListener listener : listeners) {
             Map<Integer, Long> map = listener.getLatestSequentialNumbers();
 
-            for (int i = 0; i < offsets.length; i++) {
-                Long seqId = map.get(i);
-                offsets[i] = (seqId == null) ? -1L : Math.min(offsets[i], seqId);
-            }
+            Long seqId = map.get(DataStreamManager.DOMAIN_UPLOAD_STREAM_ID);
+            offset = (seqId == null) ? -1L : Math.min(offset, seqId);
         }
 
-        for (int i = 0; i < offsets.length; i++)
-            offsets[i] = offsets[i] < 0 ? 0 : offsets[i] + 1;
-
-        return offsets;
+        return offset < 0 ? 0 : offset + 1;
     }
 
     @Override
@@ -96,15 +91,18 @@ class DataStreamPollingThread extends Thread {
                     continue;
 
                 batch.load(records);
+                long offset = batch.getCurrentOffset();
 
                 if (logger.isDebugEnabled())
-                    logger.debug("Delivering batch of " + batch.size() + " updates");
+                    logger.debug("Delivering batch #" + offset + " of " + batch.size() + " updates");
 
                 try {
                     deliveryUpdate(batch);
                 } catch (Throwable e) {
                     logger.error("Failed to delivery updates", e);
                 }
+
+                manager.onUpdateReceived(offset);
                 batch.clear();
             } catch (WakeupException e) {
                 // Shutdown request

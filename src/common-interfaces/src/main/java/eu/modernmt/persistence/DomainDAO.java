@@ -10,9 +10,9 @@ import java.util.Map;
  */
 public interface DomainDAO {
 
-    Domain retrieveBytId(int id) throws PersistenceException;
+    Domain retrieveById(int id) throws PersistenceException;
 
-    Map<Integer, Domain> retrieveBytIds(Collection<Integer> ids) throws PersistenceException;
+    Map<Integer, Domain> retrieveByIds(Collection<Integer> ids) throws PersistenceException;
 
     Collection<Domain> retrieveAll() throws PersistenceException;
 

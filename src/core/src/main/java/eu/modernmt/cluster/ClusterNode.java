@@ -3,10 +3,7 @@ package eu.modernmt.cluster;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.config.XmlConfigBuilder;
-import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.ITopic;
-import com.hazelcast.core.Message;
+import com.hazelcast.core.*;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.cluster.datastream.DataStreamManager;
 import eu.modernmt.cluster.datastream.HostUnreachableException;
@@ -29,9 +26,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -154,6 +149,11 @@ public class ClusterNode {
             Status previousStatus = this.status;
             this.status = status;
 
+            if (this.hazelcast != null) {
+                Member localMember = this.hazelcast.getCluster().getLocalMember();
+                localMember.setStringAttribute(NodeInfo.STATUS_ATTRIBUTE, status.name());
+            }
+
             if (logger.isDebugEnabled())
                 logger.debug("Cluster node status changed: " + previousStatus + " -> " + status);
 
@@ -208,6 +208,17 @@ public class ClusterNode {
     public void joinCluster(String address, long interval, TimeUnit unit) throws FailedToJoinClusterException, BootstrapException {
         Config config = getHazelcastConfig(address, interval, unit);
         start(config);
+    }
+
+    public Collection<NodeInfo> getClusterNodes() {
+        Set<Member> members = hazelcast.getCluster().getMembers();
+        ArrayList<NodeInfo> nodes = new ArrayList<>(members.size());
+
+        for (Member member : hazelcast.getCluster().getMembers()) {
+            nodes.add(NodeInfo.fromMember(member));
+        }
+
+        return nodes;
     }
 
     private void start(Config config) throws FailedToJoinClusterException, BootstrapException {
@@ -268,6 +279,10 @@ public class ClusterNode {
         // ========================
 
         dataStreamManager = new DataStreamManager(uuid, engine);
+        dataStreamManager.setDataStreamListener(newOffset -> {
+            Member localMember = hazelcast.getCluster().getLocalMember();
+            localMember.setLongAttribute(NodeInfo.OFFSET_ATTRIBUTE, newOffset);
+        });
 
         Aligner aligner = engine.getAligner();
         Decoder decoder = engine.getDecoder();

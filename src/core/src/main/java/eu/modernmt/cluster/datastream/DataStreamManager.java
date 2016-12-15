@@ -1,12 +1,14 @@
 package eu.modernmt.cluster.datastream;
 
 import eu.modernmt.engine.Engine;
+import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.updating.UpdatesListener;
 import org.apache.commons.io.IOUtils;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
@@ -17,8 +19,10 @@ import org.apache.logging.log4j.Logger;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -26,27 +30,18 @@ import java.util.concurrent.TimeUnit;
  */
 public class DataStreamManager implements Closeable {
 
-    private static final int DOMAIN_UPLOAD_STREAM = 0;
-
-    static final String[] TOPICS = new String[]{
-            "domain-upload-stream",
-    };
+    public static final int DOMAIN_UPLOAD_STREAM_ID = 0;
+    public static final String DOMAIN_UPLOAD_STREAM_TOPIC = "domain-upload-stream";
+    private static final TopicPartition partition = new TopicPartition(DOMAIN_UPLOAD_STREAM_TOPIC, 0);
 
     private final Logger logger = LogManager.getLogger(DataStreamPollingThread.class);
-
-    private static final TopicPartition[] partitions = getPartitions();
-
-    private static TopicPartition[] getPartitions() {
-        TopicPartition[] partitions = new TopicPartition[DataStreamManager.TOPICS.length];
-        for (int i = 0; i < partitions.length; i++)
-            partitions[i] = new TopicPartition(DataStreamManager.TOPICS[i], 0);
-        return partitions;
-    }
 
     private final String uuid;
     private final DataStreamPollingThread pollingThread;
     private KafkaConsumer<Integer, StreamUpdate> consumer;
     private KafkaProducer<Integer, StreamUpdate> producer;
+
+    private DataStreamListener listener;
 
     private static Properties loadProperties(String filename, String host, int port) {
         InputStream stream = null;
@@ -72,7 +67,11 @@ public class DataStreamManager implements Closeable {
 
     public DataStreamManager(String uuid, Engine engine) {
         this.uuid = uuid;
-        this.pollingThread = new DataStreamPollingThread(engine);
+        this.pollingThread = new DataStreamPollingThread(this, engine);
+    }
+
+    public void setDataStreamListener(DataStreamListener listener) {
+        this.listener = listener;
     }
 
     public void addListener(UpdatesListener listener) {
@@ -92,7 +91,7 @@ public class DataStreamManager implements Closeable {
         consumerProperties.put("group.id", uuid);
 
         this.consumer = new KafkaConsumer<>(consumerProperties);
-        this.consumer.assign(Arrays.asList(partitions));
+        this.consumer.assign(Collections.singleton(partition));
 
         ConnectionThread connectThread = new ConnectionThread();
         connectThread.start();
@@ -111,7 +110,7 @@ public class DataStreamManager implements Closeable {
         return connectThread.getQueueHead();
     }
 
-    public int upload(int domainId, BilingualCorpus corpus) throws IOException, DataStreamException {
+    public ImportJob upload(int domainId, BilingualCorpus corpus) throws IOException, DataStreamException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 
@@ -120,36 +119,61 @@ public class DataStreamManager implements Closeable {
         if (logger.isDebugEnabled())
             logger.debug("Uploading domain " + domainId);
 
-        int count = 0;
         BilingualCorpus.BilingualLineReader reader = null;
+
+        long importBegin, importEnd;
 
         try {
             reader = corpus.getContentReader();
 
             BilingualCorpus.StringPair pair = reader.read();
             if (pair == null)
-                return 0;
+                return null;
 
-            StreamUpdate update = new StreamUpdate(domainId, pair.source, pair.target, false, true);
+            importEnd = importBegin = sendUpdate(domainId, pair, true);
 
-            while ((pair = reader.read()) != null) {
-                producer.send(new ProducerRecord<>(TOPICS[DOMAIN_UPLOAD_STREAM], 0, update));
-                count++;
+            pair = reader.read();
 
-                update = new StreamUpdate(domainId, pair.source, pair.target);
+            while (pair != null) {
+                BilingualCorpus.StringPair current = pair;
+                pair = reader.read();
+
+                if (pair == null)
+                    importEnd = sendUpdate(domainId, current, true);
+                else
+                    sendUpdate(domainId, current, false);
             }
-
-            update.setLast(true);
-            producer.send(new ProducerRecord<>(TOPICS[DOMAIN_UPLOAD_STREAM], 0, update));
-            count++;
         } finally {
             IOUtils.closeQuietly(reader);
         }
 
         if (logger.isDebugEnabled())
-            logger.debug("Domain " + domainId + " uploaded: " + count + " lines sent.");
+            logger.debug("Domain " + domainId + " uploaded [" + importBegin + ", " + importEnd + "]");
 
-        return count;
+        ImportJob job = new ImportJob(domainId);
+        job.setBegin(importBegin);
+        job.setEnd(importEnd);
+
+        return job;
+    }
+
+    private long sendUpdate(int domainId, BilingualCorpus.StringPair pair, boolean sync) throws DataStreamException {
+        StreamUpdate update = new StreamUpdate(domainId, pair.source, pair.target);
+        Future<RecordMetadata> future = producer.send(new ProducerRecord<>(DOMAIN_UPLOAD_STREAM_TOPIC, 0, update));
+
+        long offset = -1L;
+
+        if (sync) {
+            try {
+                offset = future.get().offset();
+            } catch (InterruptedException e) {
+                throw new DataStreamException("Could not complete upload for domain " + domainId, e);
+            } catch (ExecutionException e) {
+                throw new DataStreamException("Could not complete upload for domain " + domainId, e.getCause());
+            }
+        }
+
+        return offset;
     }
 
     public void upload(int domainId, String sourceSentence, String targetSentence) throws DataStreamException {
@@ -159,7 +183,7 @@ public class DataStreamManager implements Closeable {
         this.pollingThread.ensureRunning();
 
         StreamUpdate update = new StreamUpdate(domainId, sourceSentence, targetSentence);
-        producer.send(new ProducerRecord<>(TOPICS[DOMAIN_UPLOAD_STREAM], 0, update));
+        producer.send(new ProducerRecord<>(DOMAIN_UPLOAD_STREAM_TOPIC, 0, update));
     }
 
     @Override
@@ -178,13 +202,19 @@ public class DataStreamManager implements Closeable {
 
     public void waitQueuePosition(long position) throws InterruptedException {
         while (true) {
-            long offset = this.pollingThread.getCurrentOffsets(partitions)[0];
+            long offset = this.pollingThread.getCurrentOffset();
 
             if (offset >= position)
                 break;
 
             Thread.sleep(500);
         }
+    }
+
+    // invoked by polling thread every time a new batch has been sent to its listeners
+    void onUpdateReceived(long offset) {
+        if (listener != null)
+            listener.onUpdatesReveiced(offset);
     }
 
     private class ConnectionThread extends Thread {
@@ -198,15 +228,13 @@ public class DataStreamManager implements Closeable {
         @Override
         public void run() {
             try {
-                consumer.seekToEnd(Arrays.asList(partitions));
-                this.queueHead = consumer.position(partitions[0]);
+                consumer.seekToEnd(Collections.singleton(partition));
+                this.queueHead = consumer.position(partition);
 
-                long[] offsets = pollingThread.getCurrentOffsets(partitions);
+                long offset = pollingThread.getCurrentOffset();
 
-                for (int i = 0; i < offsets.length; i++) {
-                    logger.info("Topic " + partitions[i].topic() + " seek to offset " + offsets[i]);
-                    consumer.seek(partitions[i], offsets[i]);
-                }
+                logger.info("Topic " + partition.topic() + " seek to offset " + offset);
+                consumer.seek(partition, offset);
             } catch (WakeupException e) {
                 // Timeout occurred
             }

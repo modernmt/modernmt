@@ -28,7 +28,7 @@ public class CorporaStorage implements UpdatesListener {
 
     private static final int MAX_CONCURRENT_BUCKET_ANALYSIS = 8;
 
-    private static final Update POISON_PILL = new Update(0, 0L, 0, false, false, null, null);
+    private static final Update POISON_PILL = new Update(0, 0L, 0, null, null);
 
     private final Logger logger = LogManager.getLogger(CorporaStorage.class);
 

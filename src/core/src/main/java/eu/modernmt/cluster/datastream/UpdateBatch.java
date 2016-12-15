@@ -28,19 +28,12 @@ class UpdateBatch implements Iterable<Update> {
     private final Preprocessor sourcePreprocessor;
     private final Preprocessor targetPreprocessor;
 
+    private long currentOffset = 0L;
+
     public UpdateBatch(Engine engine) {
         this.aligner = engine.getAligner();
         this.sourcePreprocessor = engine.getSourcePreprocessor();
         this.targetPreprocessor = engine.getTargetPreprocessor();
-    }
-
-    private static int getTopicId(String topic) {
-        for (int i = 0; i < DataStreamManager.TOPICS.length; i++) {
-            if (DataStreamManager.TOPICS[i].equals(topic))
-                return i;
-        }
-
-        throw new IllegalArgumentException("Invalid topic name: " + topic);
     }
 
     public void load(ConsumerRecords<Integer, StreamUpdate> records) throws ProcessingException, AlignerException {
@@ -54,14 +47,20 @@ class UpdateBatch implements Iterable<Update> {
         this.sources.ensureCapacity(size);
         this.targets.ensureCapacity(size);
 
+        long offset = 0L;
+
         for (ConsumerRecord<Integer, StreamUpdate> record : records) {
             StreamUpdate value = record.value();
-            Update update = value.toUpdate(getTopicId(record.topic()), record.offset());
+            offset = record.offset();
+
+            Update update = value.toUpdate(DataStreamManager.DOMAIN_UPLOAD_STREAM_ID, offset);
 
             data.add(update);
             sources.add(value.getSourceSentence());
             targets.add(value.getTargetSentence());
         }
+
+        this.currentOffset = offset;
 
         List<Sentence> sourceSentences = sourcePreprocessor.process(sources, true);
         List<Sentence> targetSentences = targetPreprocessor.process(targets, true);
@@ -77,6 +76,10 @@ class UpdateBatch implements Iterable<Update> {
 
         this.sources.clear();
         this.targets.clear();
+    }
+
+    public long getCurrentOffset() {
+        return currentOffset;
     }
 
     public int size() {

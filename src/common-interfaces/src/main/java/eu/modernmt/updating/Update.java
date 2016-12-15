@@ -9,8 +9,6 @@ import eu.modernmt.model.Sentence;
 public class Update {
 
     public final int domain;
-    public final boolean last;
-    public final boolean first;
     public final int streamId;
     public final long sentenceId;
 
@@ -21,10 +19,8 @@ public class Update {
     public Sentence targetSentence = null;
     public Alignment alignment = null;
 
-    public Update(int streamId, long sentenceId, int domain, boolean last, boolean first, String originalSourceSentence, String originalTargetSentence) {
+    public Update(int streamId, long sentenceId, int domain, String originalSourceSentence, String originalTargetSentence) {
         this.domain = domain;
-        this.last = last;
-        this.first = first;
         this.streamId = streamId;
         this.sentenceId = sentenceId;
         this.originalSourceSentence = originalSourceSentence;

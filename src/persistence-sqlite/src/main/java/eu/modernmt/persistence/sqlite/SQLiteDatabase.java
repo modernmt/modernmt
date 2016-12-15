@@ -1,9 +1,6 @@
 package eu.modernmt.persistence.sqlite;
 
-import eu.modernmt.persistence.Connection;
-import eu.modernmt.persistence.Database;
-import eu.modernmt.persistence.DomainDAO;
-import eu.modernmt.persistence.PersistenceException;
+import eu.modernmt.persistence.*;
 
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -34,6 +31,11 @@ public class SQLiteDatabase extends Database {
     }
 
     @Override
+    public ImportJobDAO getImportJobDAO(Connection connection) {
+        return new SQLiteImportJobDAO((SQLiteConnection) connection);
+    }
+
+    @Override
     public void drop(Connection wconnection) throws PersistenceException {
         java.sql.Connection connection = ((SQLiteConnection) wconnection).connection;
         Statement statement = null;
@@ -41,6 +43,7 @@ public class SQLiteDatabase extends Database {
         try {
             statement = connection.createStatement();
             statement.executeUpdate("DROP TABLE IF EXISTS domains");
+            statement.executeUpdate("DROP TABLE IF EXISTS import_jobs");
         } catch (SQLException e) {
             throw new PersistenceException(e);
         } finally {
@@ -56,6 +59,9 @@ public class SQLiteDatabase extends Database {
         try {
             statement = connection.createStatement();
             statement.executeUpdate("CREATE TABLE domains (\"id\" INTEGER PRIMARY KEY AUTOINCREMENT, \"name\" TEXT NOT NULL)");
+            statement.executeUpdate("CREATE TABLE import_jobs (\"domain\" INTEGER PRIMARY KEY NOT NULL, " +
+                    "\"begin\" INTEGER NOT NULL, " +
+                    "\"end\" INTEGER NOT NULL)");
         } catch (SQLException e) {
             throw new PersistenceException(e);
         } finally {

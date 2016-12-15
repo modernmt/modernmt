@@ -21,8 +21,15 @@ public class SQLiteDomainDAO implements DomainDAO {
         this.connection = connection.connection;
     }
 
+    private static Domain read(ResultSet result) throws SQLException {
+        int id = result.getInt("id");
+        String name = result.getString("name");
+
+        return new Domain(id, name);
+    }
+
     @Override
-    public Domain retrieveBytId(int id) throws PersistenceException {
+    public Domain retrieveById(int id) throws PersistenceException {
         PreparedStatement statement = null;
         ResultSet result = null;
 
@@ -32,12 +39,7 @@ public class SQLiteDomainDAO implements DomainDAO {
 
             result = statement.executeQuery();
 
-            if (result.next()) {
-                String name = result.getString("name");
-                return new Domain(id, name);
-            } else {
-                return null;
-            }
+            return result.next() ? read(result) : null;
         } catch (SQLException e) {
             throw new PersistenceException(e);
         } finally {
@@ -47,7 +49,7 @@ public class SQLiteDomainDAO implements DomainDAO {
     }
 
     @Override
-    public Map<Integer, Domain> retrieveBytIds(Collection<Integer> ids) throws PersistenceException {
+    public Map<Integer, Domain> retrieveByIds(Collection<Integer> ids) throws PersistenceException {
         Map<Integer, Domain> map = new HashMap<>(ids.size());
 
         if (ids.isEmpty())
@@ -69,10 +71,8 @@ public class SQLiteDomainDAO implements DomainDAO {
             result = statement.executeQuery(sql.toString());
 
             while (result.next()) {
-                int id = result.getInt("id");
-                String name = result.getString("name");
-
-                map.put(id, new Domain(id, name));
+                Domain domain = read(result);
+                map.put(domain.getId(), domain);
             }
         } catch (SQLException e) {
             throw new PersistenceException(e);
@@ -95,12 +95,8 @@ public class SQLiteDomainDAO implements DomainDAO {
             statement = connection.createStatement();
             result = statement.executeQuery("SELECT * FROM domains");
 
-            while (result.next()) {
-                int id = result.getInt("id");
-                String name = result.getString("name");
-
-                list.add(new Domain(id, name));
-            }
+            while (result.next())
+                list.add(read(result));
         } catch (SQLException e) {
             throw new PersistenceException(e);
         } finally {
@@ -140,7 +136,19 @@ public class SQLiteDomainDAO implements DomainDAO {
 
     @Override
     public Domain update(Domain domain) throws PersistenceException {
-        throw new UnsupportedOperationException("Not implemented yet");
+        PreparedStatement statement = null;
+
+        try {
+            statement = connection.prepareStatement("UPDATE domains SET \"name\"=? WHERE id = ?");
+            statement.setString(1, domain.getName());
+            statement.setLong(2, domain.getId());
+
+            return statement.executeUpdate() == 1 ? domain : null;
+        } catch (SQLException e) {
+            throw new PersistenceException(e);
+        } finally {
+            SQLUtils.closeQuietly(statement);
+        }
     }
 
 }

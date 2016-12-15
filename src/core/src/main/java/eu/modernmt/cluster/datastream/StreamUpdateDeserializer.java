@@ -26,9 +26,7 @@ public class StreamUpdateDeserializer implements Deserializer<StreamUpdate> {
 
         ByteBuffer buffer = ByteBuffer.wrap(data);
 
-        byte flags = buffer.get();
-        boolean last = (flags & 0x01) > 0;
-        boolean first = (flags & 0x02) > 0;
+        buffer.get(); // flags: reserved for future use
 
         int domain = buffer.getInt();
 
@@ -39,7 +37,7 @@ public class StreamUpdateDeserializer implements Deserializer<StreamUpdate> {
         int targetSentenceLength = buffer.getInt();
         String targetSentence = new String(data, 13 + sourceSentenceLength, targetSentenceLength, charset);
 
-        return new StreamUpdate(domain, sourceSentence, targetSentence, last, first);
+        return new StreamUpdate(domain, sourceSentence, targetSentence);
     }
 
     @Override

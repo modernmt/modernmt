@@ -23,6 +23,8 @@ public abstract class Database {
 
     public abstract DomainDAO getDomainDAO(Connection connection);
 
+    public abstract ImportJobDAO getImportJobDAO(Connection connection);
+
     public abstract void drop(Connection connection) throws PersistenceException;
 
     public abstract void create(Connection connection) throws PersistenceException;

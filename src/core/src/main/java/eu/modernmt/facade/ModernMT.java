@@ -31,6 +31,7 @@ public class ModernMT {
     public static final TrainingFacade training = new TrainingFacade();
     public static final DomainFacade domain = new DomainFacade();
     public static final EngineFacade engine = new EngineFacade();
+    public static final ClusterFacade cluster = new ClusterFacade();
 
     public static class ClusterOptions {
 
