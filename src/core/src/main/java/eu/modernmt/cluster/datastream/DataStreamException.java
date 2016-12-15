@@ -1,4 +1,4 @@
-package eu.modernmt.datastream;
+package eu.modernmt.cluster.datastream;
 
 /**
  * Created by davide on 06/09/16.

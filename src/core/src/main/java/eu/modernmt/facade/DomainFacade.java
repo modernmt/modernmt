@@ -1,8 +1,8 @@
 package eu.modernmt.facade;
 
 import eu.modernmt.cleaning.Cleaner;
-import eu.modernmt.datastream.DataStreamException;
-import eu.modernmt.datastream.DataStreamManager;
+import eu.modernmt.cluster.datastream.DataStreamException;
+import eu.modernmt.cluster.datastream.DataStreamManager;
 import eu.modernmt.model.Domain;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.persistence.Connection;

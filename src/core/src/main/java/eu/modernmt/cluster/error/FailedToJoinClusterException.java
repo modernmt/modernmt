@@ -5,7 +5,17 @@ package eu.modernmt.cluster.error;
  */
 public class FailedToJoinClusterException extends ClusterException {
 
+    private static String getMessage(String address) {
+        StringBuilder message = new StringBuilder("Could not join cluster.");
+        if (address != null) {
+            message.append(" Failed to connect to: ");
+            message.append(address);
+        }
+
+        return message.toString();
+    }
+
     public FailedToJoinClusterException(String address) {
-        super("Could not join cluster. Failed to connect to: " + address);
+        super(getMessage(address));
     }
 }

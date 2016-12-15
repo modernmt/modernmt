@@ -1,4 +1,4 @@
-package eu.modernmt.datastream;
+package eu.modernmt.cluster.datastream;
 
 import eu.modernmt.engine.Engine;
 import eu.modernmt.model.corpus.BilingualCorpus;
@@ -24,11 +24,9 @@ import java.util.concurrent.TimeUnit;
 public class DataStreamManager implements Closeable {
 
     private static final int DOMAIN_UPLOAD_STREAM = 0;
-    private static final int UPDATE_STREAM = 1;
 
     static final String[] TOPICS = new String[]{
             "domain-upload-stream",
-            "update-stream"
     };
 
     private final Logger logger = LogManager.getLogger(DataStreamPollingThread.class);
@@ -82,6 +80,10 @@ public class DataStreamManager implements Closeable {
         this.consumer = new KafkaConsumer<>(consumerProperties);
 
         this.pollingThread.start(this.consumer);
+
+
+        // TODO: continue from here
+        logger.info(this.consumer.metrics());
     }
 
     public int upload(int domainId, BilingualCorpus corpus) throws IOException, DataStreamException {
@@ -132,7 +134,7 @@ public class DataStreamManager implements Closeable {
         this.pollingThread.ensureRunning();
 
         StreamUpdate update = new StreamUpdate(domainId, sourceSentence, targetSentence);
-        producer.send(new ProducerRecord<>(TOPICS[UPDATE_STREAM], 0, update));
+        producer.send(new ProducerRecord<>(TOPICS[DOMAIN_UPLOAD_STREAM], 0, update));
     }
 
     @Override
@@ -149,4 +151,15 @@ public class DataStreamManager implements Closeable {
         }
     }
 
+    public boolean isConnected() {
+        return false;
+    }
+
+    public long getQueueHead() {
+        return 0;
+    }
+
+    public void waitQueuePosition(long position) throws InterruptedException {
+
+    }
 }

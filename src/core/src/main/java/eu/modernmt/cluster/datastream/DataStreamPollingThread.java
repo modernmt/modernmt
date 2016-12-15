@@ -1,4 +1,4 @@
-package eu.modernmt.datastream;
+package eu.modernmt.cluster.datastream;
 
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.engine.Engine;

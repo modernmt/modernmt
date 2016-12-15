@@ -259,4 +259,14 @@ public class Engine implements Closeable {
         IOUtils.closeQuietly(vocabulary);
     }
 
+    public void loadModels() {
+        getVocabulary();
+        getAligner();
+        getDecoder();
+        getContextAnalyzer();
+        getSourcePreprocessor();
+        getTargetPreprocessor();
+        getPostprocessor();
+        getDatabase();
+    }
 }

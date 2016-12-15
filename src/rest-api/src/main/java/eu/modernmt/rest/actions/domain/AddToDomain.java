@@ -1,6 +1,6 @@
 package eu.modernmt.rest.actions.domain;
 
-import eu.modernmt.datastream.DataStreamException;
+import eu.modernmt.cluster.datastream.DataStreamException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.model.Domain;
 import eu.modernmt.persistence.PersistenceException;

@@ -1,4 +1,4 @@
-package eu.modernmt.datastream;
+package eu.modernmt.cluster.datastream;
 
 import eu.modernmt.updating.Update;
 

@@ -9,14 +9,11 @@ import eu.modernmt.facade.ModernMT;
 import eu.modernmt.rest.RESTServer;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by davide on 22/04/16.
@@ -74,104 +71,41 @@ public class ClusterNodeMain {
     }
 
     public static void main(String[] _args) throws Throwable {
-        //TODO: Move this logic inside Facade
-
         Args args = new Args(_args);
         Log4jConfiguration.setup(args.verbosity);
 
-        final Logger mainLogger = LogManager.getLogger(ClusterNodeMain.class);
-        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
-            mainLogger.fatal("Unexpected exception thrown by thread [" + t.getName() + "]", e);
-            e.printStackTrace();
-        });
+        FileStatusListener listener = new FileStatusListener(args);
 
-        StatusManager status = new StatusManager(args);
+        File engineConfigFile = Engine.getConfigFile(args.engine);
+        EngineConfig engineConfig = new INIEngineConfigBuilder(engineConfigFile).build(args.engine);
 
-        RESTServer restServer = null;
-        ClusterNode node = null;
-
-        boolean ready = false;
+        ModernMT.ClusterOptions options = new ModernMT.ClusterOptions();
+        options.controlPort = args.controlPort;
+        options.dataPort = args.dataPort;
+        options.member = args.member;
+        options.statusListener = listener;
 
         try {
-            node = new ClusterNode(args.controlPort, args.dataPort);
-            ModernMT.setLocalNode(node);
-
-            if (args.member != null)
-                node.joinCluster(args.member, 30, TimeUnit.SECONDS);
-            else
-                node.startCluster();
-
-            status.onStatusChange(StatusManager.Status.JOINED);
-
-            //TODO: Model r-sync is no more working
-//            if (args.member != null) {
-//                InetAddress host = InetAddress.getByName(args.member);
-//                File localPath = Engine.getRootPath(args.engine);
-//
-//                StorageService storage = StorageService.getInstance();
-//                DirectorySynchronizer synchronizer = storage.getDirectorySynchronizer();
-//                synchronizer.synchronize(host, args.dataPort, localPath);
-//
-//                status.onStatusChange(StatusManager.Status.SYNCHRONIZED);
-//            }
-
-            EngineConfig config = new INIEngineConfigBuilder(Engine.getConfigFile(args.engine)).build(args.engine);
-            node.bootstrap(config);
-
-            status.onStatusChange(StatusManager.Status.LOADED);
+            ModernMT.start(options, engineConfig);
 
             if (args.apiPort > 0) {
-                restServer = new RESTServer(args.apiPort);
+                RESTServer restServer = new RESTServer(args.apiPort);
                 restServer.start();
             }
 
-            status.onStatusChange(StatusManager.Status.READY);
-
-            ready = true;
+            listener.storeStatus(ClusterNode.Status.READY);
         } catch (Throwable e) {
-            status.onStatusChange(StatusManager.Status.ERROR);
+            listener.onError();
             throw e;
-        } finally {
-            if (ready) {
-                Runtime.getRuntime().addShutdownHook(new ShutdownHook(restServer, node));
-            } else {
-                shutdown(node);
-                shutdown(restServer);
-            }
         }
     }
 
-    public static class ShutdownHook extends Thread {
-
-        private final RESTServer restServer;
-        private final ClusterNode node;
-
-        public ShutdownHook(RESTServer restServer, ClusterNode node) {
-            this.restServer = restServer;
-            this.node = node;
-        }
-
-        @Override
-        public void run() {
-            shutdown(restServer);
-            shutdown(node);
-
-            await(restServer);
-            await(node);
-        }
-
-    }
-
-    private static class StatusManager {
-
-        public enum Status {
-            JOINED, SYNCHRONIZED, LOADED, READY, ERROR
-        }
+    private static class FileStatusListener implements ClusterNode.StatusListener {
 
         private final File file;
         private final Properties status;
 
-        public StatusManager(Args args) {
+        public FileStatusListener(Args args) {
             this.file = args.statusFile;
             this.status = new Properties();
             status.setProperty("control_port", Integer.toString(args.controlPort));
@@ -180,8 +114,24 @@ public class ClusterNodeMain {
                 status.setProperty("api_port", Integer.toString(args.apiPort));
         }
 
-        public void onStatusChange(Status status) {
-            this.status.setProperty("status", status.toString());
+        @Override
+        public void onStatusChanged(ClusterNode node, ClusterNode.Status currentStatus, ClusterNode.Status previousStatus) {
+            if (currentStatus == ClusterNode.Status.READY)
+                return; // Wait for REST Api to be ready
+
+            storeStatus(currentStatus);
+        }
+
+        public void storeStatus(ClusterNode.Status status) {
+            storeStatus(status.toString());
+        }
+
+        public void onError() {
+            storeStatus("ERROR");
+        }
+
+        private void storeStatus(String status) {
+            this.status.setProperty("status", status);
 
             FileOutputStream output = null;
             try {
@@ -192,42 +142,6 @@ public class ClusterNodeMain {
             } finally {
                 IOUtils.closeQuietly(output);
             }
-        }
-    }
-
-    private static void shutdown(RESTServer restServer) {
-        try {
-            if (restServer != null)
-                restServer.stop();
-        } catch (Throwable e) {
-            // Ignore
-        }
-    }
-
-    private static void shutdown(ClusterNode node) {
-        try {
-            if (node != null)
-                node.shutdown();
-        } catch (Throwable e) {
-            // Ignore
-        }
-    }
-
-    private static void await(RESTServer restServer) {
-        try {
-            if (restServer != null)
-                restServer.join();
-        } catch (Throwable e) {
-            // Ignore
-        }
-    }
-
-    private static void await(ClusterNode node) {
-        try {
-            if (node != null)
-                node.awaitTermination(1, TimeUnit.DAYS);
-        } catch (Throwable e) {
-            // Ignore
         }
     }
 

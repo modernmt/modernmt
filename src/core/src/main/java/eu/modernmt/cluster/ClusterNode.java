@@ -13,9 +13,8 @@ import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.cluster.executor.DistributedCallable;
 import eu.modernmt.cluster.executor.DistributedExecutor;
 import eu.modernmt.cluster.executor.ExecutorDaemon;
-import eu.modernmt.cluster.storage.StorageService;
 import eu.modernmt.context.ContextAnalyzer;
-import eu.modernmt.datastream.DataStreamManager;
+import eu.modernmt.cluster.datastream.DataStreamManager;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.engine.Engine;
@@ -23,11 +22,13 @@ import eu.modernmt.engine.LazyLoadException;
 import eu.modernmt.engine.config.EngineConfig;
 import eu.modernmt.engine.config.INIEngineConfigWriter;
 import eu.modernmt.updating.UpdatesListener;
+import eu.modernmt.util.Timer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -38,21 +39,53 @@ import java.util.concurrent.TimeUnit;
  */
 public class ClusterNode {
 
-    private static final int SHUTDOWN_NOT_INVOKED = 0;
-    private static final int SHUTDOWN_INVOKED = 1;
-    private static final int SHUTDOWN_COMPLETED = 2;
+    public enum Status {
+        CREATED,        // Node has just been created
+        JOINING,        // Node is joining the cluster
+        JOINED,         // Node has joined the cluster
+        SYNCHRONIZING,  // Node is downloading latest models snapshot
+        SYNCHRONIZED,   // Node downloaded latest models snapshot
+        LOADING,        // Node is loading the models
+        LOADED,         // Node loaded the models
+        UPDATING,       // Node is updating its models with the latest contributions
+        UPDATED,        // Node updated its models with the latest contributions
+        READY,          // Node is ready and can receive translation requests
+        SHUTDOWN,       // Node is shutting down
+        TERMINATED      // Node is no longer active
+    }
 
-    private int shutdownState = SHUTDOWN_NOT_INVOKED;
+    public interface StatusListener {
+
+        void onStatusChanged(ClusterNode node, Status currentStatus, Status previousStatus);
+
+    }
+
+    private final Logger logger = LogManager.getLogger(ClusterNode.class);
+
+    private final int controlPort;
+    private final int dataPort;
+    private final Engine engine;
+    private String uuid;
+    private Status status;
+    private ArrayList<StatusListener> statusListeners = new ArrayList<>();
+
+    private HazelcastInstance hazelcast;
+    private ExecutorDaemon executorDaemon;
+    private DistributedExecutor executor;
+    private SessionManager sessionManager;
+    private DataStreamManager dataStreamManager;
+    private ITopic<Map<String, float[]>> decoderWeightsTopic;
 
     private final Thread shutdownThread = new Thread() {
         @Override
         public void run() {
-            StorageService storage = StorageService.getInstance();
-            try {
-                storage.close();
-            } catch (IOException e) {
-                // Ignore exception
-            }
+            //TODO: must reintroduce valid model syncing
+//            StorageService storage = StorageService.getInstance();
+//            try {
+//                storage.close();
+//            } catch (IOException e) {
+//                // Ignore exception
+//            }
 
             if (executor != null)
                 executor.shutdown();
@@ -77,27 +110,16 @@ public class ClusterNode {
             // Close engine resources
             engine.close();
 
-            shutdownState = SHUTDOWN_COMPLETED;
+            setStatus(Status.TERMINATED);
         }
     };
 
-    private final Logger logger = LogManager.getLogger(ClusterNode.class);
-
-    private final int controlPort;
-    private final int dataPort;
-    private Engine engine;
-    private String uuid;
-
-    private HazelcastInstance hazelcast;
-    private ExecutorDaemon executorDaemon;
-    private DistributedExecutor executor;
-    private SessionManager sessionManager;
-    private DataStreamManager dataStreamManager;
-    private ITopic<Map<String, float[]>> decoderWeightsTopic;
-
-    public ClusterNode(int controlPort, int dataPort) {
+    public ClusterNode(Engine engine, int controlPort, int dataPort) {
         this.controlPort = controlPort;
         this.dataPort = dataPort;
+        this.engine = engine;
+
+        this.status = Status.CREATED;
     }
 
     public Engine getEngine() {
@@ -106,100 +128,202 @@ public class ClusterNode {
         return engine;
     }
 
-    public void startCluster() {
-        Config config = new XmlConfigBuilder().build();
-        config.getNetworkConfig().setPort(controlPort);
-        config.setProperty("hazelcast.initial.min.cluster.size", "1");
-
-        logger.info("Starting cluster");
-        hazelcast = Hazelcast.newHazelcastInstance(config);
-        uuid = hazelcast.getCluster().getLocalMember().getUuid();
-        logger.info("Cluster successfully started");
+    public DataStreamManager getDataStreamManager() {
+        return dataStreamManager;
     }
 
-    public void joinCluster(String address) throws FailedToJoinClusterException {
-        joinCluster(address, 0L, null);
+    public SessionManager getSessionManager() {
+        return sessionManager;
     }
 
-    public void joinCluster(String address, long interval, TimeUnit unit) throws FailedToJoinClusterException {
+    public void addStatusListener(StatusListener listener) {
+        this.statusListeners.add(listener);
+    }
+
+    public void removeStatusListener(StatusListener listener) {
+        this.statusListeners.remove(listener);
+    }
+
+    private void setStatus(Status status) {
+        setStatus(status, null);
+    }
+
+    private synchronized boolean setStatus(Status status, Status expected) {
+        if (expected == null || this.status == expected) {
+            Status previousStatus = this.status;
+            this.status = status;
+
+            if (logger.isDebugEnabled())
+                logger.debug("Cluster node status changed: " + previousStatus + " -> " + status);
+
+            for (StatusListener listener : statusListeners) {
+                try {
+                    listener.onStatusChanged(this, this.status, previousStatus);
+                } catch (RuntimeException e) {
+                    logger.error("Unexpected exception while updating Node status. Resuming normal operations.", e);
+                }
+            }
+
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public synchronized Status getStatus() {
+        return status;
+    }
+
+    // Cluster startup
+
+    private Config getHazelcastConfig(String member, long interval, TimeUnit unit) {
         Config config = new XmlConfigBuilder().build();
         config.getNetworkConfig().setPort(controlPort);
-        config.setProperty("hazelcast.initial.min.cluster.size", "2");
+
+        config.setProperty("hazelcast.initial.min.cluster.size", member == null ? "1" : "2");
 
         if (unit != null) {
             long seconds = Math.max(unit.toSeconds(interval), 1L);
             config.setProperty("hazelcast.max.join.seconds", Long.toString(seconds));
         }
 
-        TcpIpConfig tcpIpConfig = config.getNetworkConfig().getJoin().getTcpIpConfig();
-        tcpIpConfig.setRequiredMember(address);
-
-        try {
-            logger.info("Joining cluster");
-
-            hazelcast = Hazelcast.newHazelcastInstance(config);
-            uuid = hazelcast.getCluster().getLocalMember().getUuid();
-
-            int members = hazelcast.getCluster().getMembers().size();
-            logger.info("Cluster successfully joined with " + members + "members");
-        } catch (IllegalStateException e) {
-            throw new FailedToJoinClusterException(address);
+        if (member != null) {
+            TcpIpConfig tcpIpConfig = config.getNetworkConfig().getJoin().getTcpIpConfig();
+            tcpIpConfig.setRequiredMember(member);
         }
+
+        return config;
     }
 
-    public void bootstrap(EngineConfig config) throws BootstrapException {
-        logger.info("Starting member bootstrap");
-        engine = new Engine(config);
+    public void startCluster() throws FailedToJoinClusterException, BootstrapException {
+        Config config = getHazelcastConfig(null, 0L, null);
+        start(config);
+    }
 
-        //TODO: Model r-sync is no more working
-//        StorageService storage = StorageService.getInstance();
-//        try {
-//            storage.start(this.dataPort, engine);
-//        } catch (IOException e) {
-//            throw new BootstrapException(e);
+    public void joinCluster(String address) throws FailedToJoinClusterException, BootstrapException {
+        joinCluster(address, 0L, null);
+    }
+
+    public void joinCluster(String address, long interval, TimeUnit unit) throws FailedToJoinClusterException, BootstrapException {
+        Config config = getHazelcastConfig(address, interval, unit);
+        start(config);
+    }
+
+    private void start(Config config) throws FailedToJoinClusterException, BootstrapException {
+        Timer globalTimer = new Timer();
+        Timer timer = new Timer();
+
+        // ========================
+
+        setStatus(Status.JOINING);
+        logger.info("Node is joining the cluster");
+
+        timer.reset();
+        try {
+            hazelcast = Hazelcast.newHazelcastInstance(config);
+            uuid = hazelcast.getCluster().getLocalMember().getUuid();
+        } catch (IllegalStateException e) {
+            TcpIpConfig tcpIpConfig = config.getNetworkConfig().getJoin().getTcpIpConfig();
+            throw new FailedToJoinClusterException(tcpIpConfig.getRequiredMember());
+        }
+
+        setStatus(Status.JOINED);
+        logger.info("Node joined the cluster in " + (timer.time() / 1000.) + "s");
+
+        Runtime.getRuntime().addShutdownHook(new ShutdownHook());
+
+        // ========================
+
+        //TODO: must reintroduce valid model syncing
+        logger.warn("Model syncing not supported in this version!");
+//        if (args.member != null) {
+        //        setStatus(Status.SYNCING);
+//            InetAddress host = InetAddress.getByName(args.member);
+//            File localPath = Engine.getRootPath(args.engine);
+//
+//            StorageService storage = StorageService.getInstance();
+//            DirectorySynchronizer synchronizer = storage.getDirectorySynchronizer();
+//            synchronizer.synchronize(host, args.dataPort, localPath);
+//
+//            status.onStatusChange(StatusManager.Status.SYNCHRONIZED);
+//        setStatus(Status.SYNCED);
 //        }
 
-        Aligner aligner;
-        Decoder decoder;
-        ContextAnalyzer contextAnalyzer;
+        // ========================
 
+        setStatus(Status.LOADING);
+        logger.info("Model loading started");
+
+        timer.reset();
         try {
-            engine.getVocabulary();
-            aligner = engine.getAligner();
-            decoder = engine.getDecoder();
-            contextAnalyzer = engine.getContextAnalyzer();
-            engine.getSourcePreprocessor();
-            engine.getTargetPreprocessor();
-            engine.getPostprocessor();
-            engine.getDatabase();
+            engine.loadModels();
         } catch (LazyLoadException e) {
             throw new BootstrapException(e.getCause());
         }
 
-        int executorCapacity = config.getDecoderConfig().getThreads();
+        setStatus(Status.LOADED);
+        logger.info("Model loaded in " + (timer.time() / 1000.) + "s");
+
+        // ========================
+
+        dataStreamManager = new DataStreamManager(uuid, engine);
+
+        Aligner aligner = engine.getAligner();
+        Decoder decoder = engine.getDecoder();
+        ContextAnalyzer contextAnalyzer = engine.getContextAnalyzer();
+
+        if (aligner instanceof UpdatesListener)
+            dataStreamManager.addListener((UpdatesListener) aligner);
+        if (decoder instanceof UpdatesListener)
+            dataStreamManager.addListener((UpdatesListener) decoder);
+        if (contextAnalyzer instanceof UpdatesListener)
+            dataStreamManager.addListener((UpdatesListener) contextAnalyzer);
+
+        timer.reset();
+        try {
+            logger.info("Starting \"Data Stream Manager\"");
+            dataStreamManager.connect(); // TODO: should read host and ports from config
+            logger.info("\"Data Stream Manager\" ready in " + (timer.time() / 1000.) + "s");
+        } catch (IOException e) {
+            logger.error("Unable to connect to \"Data Stream Manager\"", e);
+        }
+
+        if (dataStreamManager.isConnected()) {
+            setStatus(Status.UPDATING);
+
+            long queueHead = dataStreamManager.getQueueHead();
+
+            timer.reset();
+            try {
+                logger.info("Starting sync from data stream");
+                dataStreamManager.waitQueuePosition(queueHead);
+                logger.info("Data stream sync completed in " + (timer.time() / 1000.) + "s");
+            } catch (InterruptedException e) {
+                throw new BootstrapException("Data stream sync interrupted", e);
+            }
+
+            setStatus(Status.UPDATED);
+        }
+
+        // ========================
+
+        int executorCapacity = engine.getConfig().getDecoderConfig().getThreads();
 
         executor = new DistributedExecutor(hazelcast, ClusterConstants.TRANSLATION_EXECUTOR_NAME);
         executorDaemon = new ExecutorDaemon(hazelcast, this, ClusterConstants.TRANSLATION_EXECUTOR_NAME, executorCapacity);
+
         sessionManager = new SessionManager(hazelcast, event -> engine.getDecoder().closeSession(event.getOldValue()));
+
         decoderWeightsTopic = hazelcast.getTopic(ClusterConstants.DECODER_WEIGHTS_TOPIC_NAME);
         decoderWeightsTopic.addMessageListener(this::onDecoderWeightsChanged);
 
-        try {
-            dataStreamManager = new DataStreamManager(uuid, engine);
+        setStatus(Status.READY);
 
-            if (aligner instanceof UpdatesListener)
-                dataStreamManager.addListener((UpdatesListener) aligner);
-            if (decoder instanceof UpdatesListener)
-                dataStreamManager.addListener((UpdatesListener) decoder);
-            if (contextAnalyzer instanceof UpdatesListener)
-                dataStreamManager.addListener((UpdatesListener) contextAnalyzer);
+        logger.info("Node started in " + (globalTimer.time() / 1000.) + "s");
+    }
 
-            dataStreamManager.connect(); // TODO: should read host and ports from config
-        } catch (IOException e) {
-            throw new BootstrapException(e);
-        }
-
-        logger.info("Node bootstrap completed, all models loaded");
+    public void notifyDecoderWeightsChanged(Map<String, float[]> weights) {
+        this.decoderWeightsTopic.publish(weights);
     }
 
     private void onDecoderWeightsChanged(Message<Map<String, float[]>> message) {
@@ -232,32 +356,38 @@ public class ClusterNode {
         }
     }
 
-    public DataStreamManager getDataStreamManager() {
-        return dataStreamManager;
-    }
-
-    public SessionManager getSessionManager() {
-        return sessionManager;
-    }
-
-    public void notifyDecoderWeightsChanged(Map<String, float[]> weights) {
-        this.decoderWeightsTopic.publish(weights);
-    }
-
     public <V> Future<V> submit(DistributedCallable<V> callable) {
         return executor.submit(callable);
     }
 
     public synchronized void shutdown() {
-        if (shutdownState == SHUTDOWN_NOT_INVOKED) {
-            shutdownState = SHUTDOWN_INVOKED;
+        if (setStatus(Status.SHUTDOWN, Status.READY))
             shutdownThread.start();
-        }
     }
 
     public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
-        if (shutdownState == SHUTDOWN_INVOKED)
+        if (getStatus() == Status.SHUTDOWN)
             unit.timedJoin(shutdownThread, timeout);
+
         return !shutdownThread.isAlive();
     }
+
+    private class ShutdownHook extends Thread {
+
+        @Override
+        public void run() {
+            try {
+                ClusterNode.this.shutdown();
+            } catch (Throwable e) {
+                // Ignore
+            }
+            try {
+                ClusterNode.this.awaitTermination(1, TimeUnit.DAYS);
+            } catch (Throwable e) {
+                // Ignore
+            }
+        }
+
+    }
+
 }

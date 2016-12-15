@@ -43,6 +43,8 @@ public class RESTServer {
 
     public void start() throws Exception {
         jettyServer.start();
+
+        Runtime.getRuntime().addShutdownHook(new ShutdownHook());
     }
 
     public void stop() throws Exception {
@@ -79,6 +81,25 @@ public class RESTServer {
                 IOUtils.closeQuietly(stream);
             }
         }
+    }
+
+    private class ShutdownHook extends Thread {
+
+        @Override
+        public void run() {
+            try {
+                RESTServer.this.stop();
+            } catch (Throwable e) {
+                // Ignore
+            }
+
+            try {
+                RESTServer.this.join();
+            } catch (Throwable e) {
+                // Ignore
+            }
+        }
+
     }
 
 }
