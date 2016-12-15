@@ -19,7 +19,7 @@ public class ContextAnalyzerFacade {
     public List<ContextScore> get(File context, int limit) throws ContextAnalyzerException {
         // Because the file is local to the machine, this method ensures that the
         // local context analyzer is invoked instead of a remote one
-        Engine engine = ModernMT.node.getEngine();
+        Engine engine = ModernMT.getNode().getEngine();
         ContextAnalyzer analyzer = engine.getContextAnalyzer();
 
         return analyzer.getContext(context, limit);
@@ -29,7 +29,7 @@ public class ContextAnalyzerFacade {
         GetContextOperation operation = new GetContextOperation(context, limit);
 
         try {
-            return ModernMT.node.submit(operation).get();
+            return ModernMT.getNode().submit(operation).get();
         } catch (InterruptedException e) {
             throw new SystemShutdownException();
         } catch (ExecutionException e) {

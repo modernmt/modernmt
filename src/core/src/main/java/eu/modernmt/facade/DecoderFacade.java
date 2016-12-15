@@ -27,7 +27,7 @@ public class DecoderFacade {
     public Map<DecoderFeature, float[]> getFeatureWeights() {
         // Invoke on local decoder instance because it's just a matter of
         // properties reading and not a real computation
-        Decoder decoder = ModernMT.node.getEngine().getDecoder();
+        Decoder decoder = ModernMT.getNode().getEngine().getDecoder();
 
         HashMap<DecoderFeature, float[]> result = new HashMap<>();
         for (DecoderFeature feature : decoder.getFeatures()) {
@@ -39,7 +39,7 @@ public class DecoderFacade {
     }
 
     public void setFeatureWeights(Map<String, float[]> weights) {
-        ModernMT.node.notifyDecoderWeightsChanged(weights);
+        ModernMT.getNode().notifyDecoderWeightsChanged(weights);
     }
 
     // =============================
@@ -47,12 +47,12 @@ public class DecoderFacade {
     // =============================
 
     public TranslationSession openSession(List<ContextScore> context) {
-        SessionManager sessionManager = ModernMT.node.getSessionManager();
+        SessionManager sessionManager = ModernMT.getNode().getSessionManager();
         return sessionManager.create(context);
     }
 
     public TranslationSession getSession(long id) {
-        SessionManager sessionManager = ModernMT.node.getSessionManager();
+        SessionManager sessionManager = ModernMT.getNode().getSessionManager();
         return sessionManager.get(id);
     }
 
@@ -98,7 +98,7 @@ public class DecoderFacade {
         DecoderTranslation rootTranslation;
 
         try {
-            rootTranslation = ModernMT.node.submit(operation).get();
+            rootTranslation = ModernMT.getNode().submit(operation).get();
         } catch (InterruptedException e) {
             throw new SystemShutdownException(e);
         } catch (ExecutionException e) {

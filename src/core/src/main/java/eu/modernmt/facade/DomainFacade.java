@@ -23,7 +23,7 @@ public class DomainFacade {
 
     public Collection<Domain> list() throws PersistenceException {
         Connection connection = null;
-        Database db = ModernMT.node.getEngine().getDatabase();
+        Database db = ModernMT.getNode().getEngine().getDatabase();
 
         try {
             connection = db.getConnection();
@@ -37,7 +37,7 @@ public class DomainFacade {
 
     public Domain get(int domainId) throws PersistenceException {
         Connection connection = null;
-        Database db = ModernMT.node.getEngine().getDatabase();
+        Database db = ModernMT.getNode().getEngine().getDatabase();
 
         try {
             connection = db.getConnection();
@@ -59,7 +59,7 @@ public class DomainFacade {
 
     public Map<Integer, Domain> get(Collection<Integer> ids) throws PersistenceException {
         Connection connection = null;
-        Database db = ModernMT.node.getEngine().getDatabase();
+        Database db = ModernMT.getNode().getEngine().getDatabase();
 
         try {
             connection = db.getConnection();
@@ -73,7 +73,7 @@ public class DomainFacade {
 
     public Domain add(int domainId, BilingualCorpus corpus) throws IOException, DataStreamException, PersistenceException {
         Connection connection = null;
-        Database db = ModernMT.node.getEngine().getDatabase();
+        Database db = ModernMT.getNode().getEngine().getDatabase();
 
         try {
             connection = db.getConnection();
@@ -84,7 +84,7 @@ public class DomainFacade {
             if (domain == null)
                 return null;
 
-            DataStreamManager manager = ModernMT.node.getDataStreamManager();
+            DataStreamManager manager = ModernMT.getNode().getDataStreamManager();
             manager.upload(domainId, corpus);
 
             return domain;
@@ -95,7 +95,7 @@ public class DomainFacade {
 
     public Domain add(int domainId, String source, String target) throws DataStreamException, PersistenceException {
         Connection connection = null;
-        Database db = ModernMT.node.getEngine().getDatabase();
+        Database db = ModernMT.getNode().getEngine().getDatabase();
 
         try {
             connection = db.getConnection();
@@ -106,7 +106,7 @@ public class DomainFacade {
             if (domain == null)
                 return null;
 
-            DataStreamManager manager = ModernMT.node.getDataStreamManager();
+            DataStreamManager manager = ModernMT.getNode().getDataStreamManager();
             manager.upload(domainId, source, target);
 
             return domain;
@@ -119,7 +119,7 @@ public class DomainFacade {
         corpus = Cleaner.wrap(corpus);
 
         Connection connection = null;
-        Database db = ModernMT.node.getEngine().getDatabase();
+        Database db = ModernMT.getNode().getEngine().getDatabase();
 
         try {
             connection = db.getConnection();
@@ -129,7 +129,7 @@ public class DomainFacade {
             DomainDAO domainDAO = db.getDomainDAO(connection);
             domain = domainDAO.put(domain);
 
-            DataStreamManager manager = ModernMT.node.getDataStreamManager();
+            DataStreamManager manager = ModernMT.getNode().getDataStreamManager();
             manager.upload(domain.getId(), corpus);
 
             return domain;
@@ -140,7 +140,7 @@ public class DomainFacade {
 
     public Domain create(String name, String source, String target) throws PersistenceException, DataStreamException {
         Connection connection = null;
-        Database db = ModernMT.node.getEngine().getDatabase();
+        Database db = ModernMT.getNode().getEngine().getDatabase();
 
         try {
             connection = db.getConnection();
@@ -150,7 +150,7 @@ public class DomainFacade {
             DomainDAO domainDAO = db.getDomainDAO(connection);
             domain = domainDAO.put(domain);
 
-            DataStreamManager manager = ModernMT.node.getDataStreamManager();
+            DataStreamManager manager = ModernMT.getNode().getDataStreamManager();
             manager.upload(domain.getId(), source, target);
 
             return domain;

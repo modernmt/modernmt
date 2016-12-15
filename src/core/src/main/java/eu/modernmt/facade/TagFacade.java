@@ -26,7 +26,7 @@ public class TagFacade {
         boolean inverted = isLanguagesInverted(sourceLanguage, targetLanguage);
         ProjectTagsOperation operation = new ProjectTagsOperation(sentence, translation, inverted, strategy);
         try {
-            return ModernMT.node.submit(operation).get();
+            return ModernMT.getNode().submit(operation).get();
         } catch (InterruptedException e) {
             throw new SystemShutdownException();
         } catch (ExecutionException e) {
@@ -52,7 +52,7 @@ public class TagFacade {
 
     private static boolean isLanguagesInverted(Locale sourceLanguage, Locale targetLanguage)
             throws LanguagePairNotSupportedException {
-        Engine engine = ModernMT.node.getEngine();
+        Engine engine = ModernMT.getNode().getEngine();
 
         if (Languages.sameLanguage(engine.getSourceLanguage(), sourceLanguage) &&
                 Languages.sameLanguage(engine.getTargetLanguage(), targetLanguage)) {

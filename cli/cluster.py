@@ -322,10 +322,20 @@ class ClusterNode(object):
 
     STATUS = {
         'NONE': 0,
-        'JOINED': 100,
-        'SYNCHRONIZED': 200,
-        'LOADED': 300,
-        'READY': 400,
+
+        'CREATED': 100,
+        'JOINING': 200,
+        'JOINED': 300,
+        'SYNCHRONIZING': 400,
+        'SYNCHRONIZED': 500,
+        'LOADING': 600,
+        'LOADED': 700,
+        'UPDATING': 800,
+        'UPDATED': 900,
+        'READY': 1000,
+        'SHUTDOWN': 1100,
+        'TERMINATED': 1200,
+
         'ERROR': 9999,
     }
 

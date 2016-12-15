@@ -8,11 +8,11 @@ import java.util.Locale;
 public class EngineFacade {
 
     public Locale getSourceLanguage() {
-        return ModernMT.node.getEngine().getSourceLanguage();
+        return ModernMT.getNode().getEngine().getSourceLanguage();
     }
 
     public Locale getTargetLanguage() {
-        return ModernMT.node.getEngine().getTargetLanguage();
+        return ModernMT.getNode().getEngine().getTargetLanguage();
     }
 
 }
