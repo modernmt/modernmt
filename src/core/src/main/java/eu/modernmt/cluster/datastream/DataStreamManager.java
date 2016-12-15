@@ -7,6 +7,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.logging.log4j.LogManager;
@@ -15,6 +17,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -31,13 +34,21 @@ public class DataStreamManager implements Closeable {
 
     private final Logger logger = LogManager.getLogger(DataStreamPollingThread.class);
 
+    private static final TopicPartition[] partitions = getPartitions();
+
+    private static TopicPartition[] getPartitions() {
+        TopicPartition[] partitions = new TopicPartition[DataStreamManager.TOPICS.length];
+        for (int i = 0; i < partitions.length; i++)
+            partitions[i] = new TopicPartition(DataStreamManager.TOPICS[i], 0);
+        return partitions;
+    }
 
     private final String uuid;
     private final DataStreamPollingThread pollingThread;
     private KafkaConsumer<Integer, StreamUpdate> consumer;
     private KafkaProducer<Integer, StreamUpdate> producer;
 
-    private static Properties loadProperties(String filename, String host, int port) throws IOException {
+    private static Properties loadProperties(String filename, String host, int port) {
         InputStream stream = null;
 
         try {
@@ -52,6 +63,8 @@ public class DataStreamManager implements Closeable {
             properties.put("value.deserializer", StreamUpdateDeserializer.class.getName());
 
             return properties;
+        } catch (IOException e) {
+            throw new Error("Unexpected exception", e);
         } finally {
             IOUtils.closeQuietly(stream);
         }
@@ -67,23 +80,35 @@ public class DataStreamManager implements Closeable {
     }
 
     @Deprecated
-    public void connect() throws IOException {
-        connect("localhost", 9092);
+    public long connect(long timeout, TimeUnit unit) throws HostUnreachableException {
+        return connect("localhost", 9092, timeout, unit);
     }
 
-    public void connect(String host, int port) throws IOException {
+    public long connect(String host, int port, long timeout, TimeUnit unit) throws HostUnreachableException {
         Properties producerProperties = loadProperties("kafka-producer.properties", host, port);
         this.producer = new KafkaProducer<>(producerProperties);
 
         Properties consumerProperties = loadProperties("kafka-consumer.properties", host, port);
         consumerProperties.put("group.id", uuid);
+
         this.consumer = new KafkaConsumer<>(consumerProperties);
+        this.consumer.assign(Arrays.asList(partitions));
+
+        ConnectionThread connectThread = new ConnectionThread();
+        connectThread.start();
+
+        try {
+            unit.timedJoin(connectThread, timeout);
+        } catch (InterruptedException e) {
+            // Ignore it
+        }
+
+        if (connectThread.isAlive())
+            throw new HostUnreachableException(host + ':' + port);
 
         this.pollingThread.start(this.consumer);
 
-
-        // TODO: continue from here
-        logger.info(this.consumer.metrics());
+        return connectThread.getQueueHead();
     }
 
     public int upload(int domainId, BilingualCorpus corpus) throws IOException, DataStreamException {
@@ -151,15 +176,40 @@ public class DataStreamManager implements Closeable {
         }
     }
 
-    public boolean isConnected() {
-        return false;
-    }
-
-    public long getQueueHead() {
-        return 0;
-    }
-
     public void waitQueuePosition(long position) throws InterruptedException {
+        while (true) {
+            long offset = this.pollingThread.getCurrentOffsets(partitions)[0];
 
+            if (offset >= position)
+                break;
+
+            Thread.sleep(500);
+        }
+    }
+
+    private class ConnectionThread extends Thread {
+
+        private long queueHead = 0L;
+
+        public long getQueueHead() {
+            return queueHead;
+        }
+
+        @Override
+        public void run() {
+            try {
+                consumer.seekToEnd(Arrays.asList(partitions));
+                this.queueHead = consumer.position(partitions[0]);
+
+                long[] offsets = pollingThread.getCurrentOffsets(partitions);
+
+                for (int i = 0; i < offsets.length; i++) {
+                    logger.info("Topic " + partitions[i].topic() + " seek to offset " + offsets[i]);
+                    consumer.seek(partitions[i], offsets[i]);
+                }
+            } catch (WakeupException e) {
+                // Timeout occurred
+            }
+        }
     }
 }

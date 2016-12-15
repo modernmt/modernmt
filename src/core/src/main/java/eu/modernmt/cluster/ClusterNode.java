@@ -8,13 +8,14 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ITopic;
 import com.hazelcast.core.Message;
 import eu.modernmt.aligner.Aligner;
+import eu.modernmt.cluster.datastream.DataStreamManager;
+import eu.modernmt.cluster.datastream.HostUnreachableException;
 import eu.modernmt.cluster.error.BootstrapException;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.cluster.executor.DistributedCallable;
 import eu.modernmt.cluster.executor.DistributedExecutor;
 import eu.modernmt.cluster.executor.ExecutorDaemon;
 import eu.modernmt.context.ContextAnalyzer;
-import eu.modernmt.cluster.datastream.DataStreamManager;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.engine.Engine;
@@ -279,19 +280,15 @@ public class ClusterNode {
         if (contextAnalyzer instanceof UpdatesListener)
             dataStreamManager.addListener((UpdatesListener) contextAnalyzer);
 
-        timer.reset();
         try {
+            timer.reset();
+
             logger.info("Starting \"Data Stream Manager\"");
-            dataStreamManager.connect(); // TODO: should read host and ports from config
+            // TODO: should read host and ports from config
+            long queueHead = dataStreamManager.connect(10, TimeUnit.SECONDS);
             logger.info("\"Data Stream Manager\" ready in " + (timer.time() / 1000.) + "s");
-        } catch (IOException e) {
-            logger.error("Unable to connect to \"Data Stream Manager\"", e);
-        }
 
-        if (dataStreamManager.isConnected()) {
             setStatus(Status.UPDATING);
-
-            long queueHead = dataStreamManager.getQueueHead();
 
             timer.reset();
             try {
@@ -303,6 +300,9 @@ public class ClusterNode {
             }
 
             setStatus(Status.UPDATED);
+
+        } catch (HostUnreachableException e) {
+            logger.error("Unable to connect to \"Data Stream Manager\"", e);
         }
 
         // ========================

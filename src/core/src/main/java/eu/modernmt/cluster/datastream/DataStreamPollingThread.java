@@ -46,44 +46,9 @@ class DataStreamPollingThread extends Thread {
         this.listeners.add(listener);
     }
 
-    private static TopicPartition[] getPartitions() {
-        TopicPartition[] partitions = new TopicPartition[DataStreamManager.TOPICS.length];
-        for (int i = 0; i < partitions.length; i++)
-            partitions[i] = new TopicPartition(DataStreamManager.TOPICS[i], 0);
-        return partitions;
-    }
-
     public void start(KafkaConsumer<Integer, StreamUpdate> consumer) {
         this.consumer = consumer;
         this.interrupted = false;
-
-        TopicPartition[] partitions = getPartitions();
-
-        this.consumer.assign(Arrays.asList(partitions));
-
-        long[] offsets = new long[partitions.length];
-        Arrays.fill(offsets, Long.MAX_VALUE);
-
-        for (UpdatesListener listener : listeners) {
-            Map<Integer, Long> map = listener.getLatestSequentialNumbers();
-
-            for (int i = 0; i < offsets.length; i++) {
-                Long seqId = map.get(i);
-                offsets[i] = (seqId == null) ? -1L : Math.min(offsets[i], seqId);
-            }
-        }
-
-        for (int i = 0; i < offsets.length; i++) {
-            long offset = offsets[i];
-
-            if (offset < 0)
-                offset = 0;
-            else
-                offset += 1;
-
-            logger.info("Topic " + partitions[i].topic() + " seek to offset " + offset);
-            consumer.seek(partitions[i], offset);
-        }
 
         super.start();
     }
@@ -101,6 +66,25 @@ class DataStreamPollingThread extends Thread {
     public boolean awaitTermination(TimeUnit unit, long timeout) throws InterruptedException {
         unit.timedJoin(this, timeout);
         return !this.isAlive();
+    }
+
+    public long[] getCurrentOffsets(TopicPartition[] partitions) {
+        long[] offsets = new long[partitions.length];
+        Arrays.fill(offsets, Long.MAX_VALUE);
+
+        for (UpdatesListener listener : listeners) {
+            Map<Integer, Long> map = listener.getLatestSequentialNumbers();
+
+            for (int i = 0; i < offsets.length; i++) {
+                Long seqId = map.get(i);
+                offsets[i] = (seqId == null) ? -1L : Math.min(offsets[i], seqId);
+            }
+        }
+
+        for (int i = 0; i < offsets.length; i++)
+            offsets[i] = offsets[i] < 0 ? 0 : offsets[i] + 1;
+
+        return offsets;
     }
 
     @Override
