@@ -4,7 +4,7 @@ import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextScore;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.persistence.PersistenceException;
-import eu.modernmt.rest.actions.ContextUtils;
+import eu.modernmt.rest.actions.util.ContextUtils;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;

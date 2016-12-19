@@ -1,13 +1,11 @@
 package eu.modernmt.rest.actions.translation;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonParseException;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextScore;
 import eu.modernmt.decoder.TranslationException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.persistence.PersistenceException;
-import eu.modernmt.rest.actions.ContextUtils;
+import eu.modernmt.rest.actions.util.ContextUtils;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
@@ -70,14 +68,10 @@ public class Translate extends ObjectAction<TranslationResponse> {
             nbest = getInt("nbest", 0);
 
             if (sessionId == 0) {
-                JsonArray json = getJSONArray("context_array", null);
+                String weights = getString("context_weights", false, null);
 
-                if (json != null) {
-                    try {
-                        context = CreateTranslationSession.parseContext(json);
-                    } catch (JsonParseException e) {
-                        throw new ParameterParsingException("context_array", json.toString(), e);
-                    }
+                if (weights != null) {
+                    context = ContextUtils.parseParameter("context_weights", weights);
                     contextString = null;
                 } else {
                     context = null;
