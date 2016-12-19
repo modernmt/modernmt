@@ -2,7 +2,6 @@ import json as js
 import logging
 import multiprocessing
 import os
-import signal
 import subprocess
 import tempfile
 import time
@@ -81,6 +80,13 @@ class MMTApi:
         r = requests.post(url, data=data, headers=headers, timeout=MMTApi.DEFAULT_TIMEOUT)
         return self._unpack(r)
 
+    @staticmethod
+    def _encode_context(context):
+        return ','.join([('%d:%f' % (
+            el['domain']['id'] if isinstance(el['domain'], dict) else el['domain'],
+            el['score'])
+                          ) for el in context])
+
     def stats(self):
         return self._get('_stat')
 
@@ -103,7 +109,9 @@ class MMTApi:
         return self._get('context', params=params)
 
     def create_session(self, context):
-        return self._post('sessions', json=context)
+        return self._post('sessions', params={
+            'context_weights': self._encode_context(context)
+        })
 
     def close_session(self, session):
         return self._delete('sessions/' + str(session))
@@ -115,7 +123,7 @@ class MMTApi:
         if nbest is not None:
             p['nbest'] = nbest
         if context is not None:
-            p['context_array'] = js.dumps(context)
+            p['context_weights'] = self._encode_context(context)
 
         return self._get('translate', params=p)
 
