@@ -143,7 +143,6 @@ class _FileParallelCorpus(BilingualCorpus):
 
         self._root = os.path.abspath(os.path.join(files[0], os.pardir)) if len(files) > 0 else None
         self._lines_count = -1
-        self._lock = Lock()
 
     def get_file(self, lang):
         return self._lang2file[lang] if lang in self._lang2file else None
@@ -153,9 +152,7 @@ class _FileParallelCorpus(BilingualCorpus):
 
     def count_lines(self):
         if self._lines_count < 0 < len(self.langs):
-            with self._lock:
-                if self._lines_count < 0 < len(self.langs):
-                    self._lines_count = fileutils.linecount(self.get_file(self.langs[0]))
+            self._lines_count = fileutils.linecount(self.get_file(self.langs[0]))
 
         return self._lines_count
 
