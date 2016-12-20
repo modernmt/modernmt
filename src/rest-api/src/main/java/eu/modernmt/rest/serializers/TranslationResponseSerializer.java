@@ -3,6 +3,7 @@ package eu.modernmt.rest.serializers;
 import com.google.gson.*;
 import eu.modernmt.context.ContextScore;
 import eu.modernmt.decoder.TranslationHypothesis;
+import eu.modernmt.model.Sentence;
 import eu.modernmt.rest.model.TranslationResponse;
 
 import java.lang.reflect.Type;
@@ -15,9 +16,16 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
 
     @Override
     public JsonElement serialize(TranslationResponse src, Type typeOfSrc, JsonSerializationContext context) {
+        Sentence source = src.translation.getSource();
+
+        int sourceWordCount = source.getWords().length;
+        int targetWordCount = src.translation.getWords().length;
+
         JsonObject json = new JsonObject();
         json.addProperty("translation", src.translation.toString());
         json.addProperty("decodingTime", src.translation.getElapsedTime());
+        json.addProperty("sourceWordCount", sourceWordCount);
+        json.addProperty("targetWordCount", targetWordCount);
 
         if (src.session > 0L)
             json.addProperty("session", src.session);
