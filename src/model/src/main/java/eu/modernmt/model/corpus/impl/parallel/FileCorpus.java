@@ -18,13 +18,13 @@ public class FileCorpus implements Corpus {
     private static String getNameFromFile(File file) {
         String fullname = file.getName();
         int lastDot = fullname.lastIndexOf('.');
-        return fullname.substring(0, lastDot);
+        return lastDot < 0 ? fullname : fullname.substring(0, lastDot);
     }
 
     private static Locale getLangFromFile(File file) {
         String fullname = file.getName();
         int lastDot = fullname.lastIndexOf('.');
-        return Locale.forLanguageTag(fullname.substring(lastDot + 1));
+        return lastDot < 0 ? Locale.getDefault() : Locale.forLanguageTag(fullname.substring(lastDot + 1));
     }
 
     public FileCorpus(File file) {

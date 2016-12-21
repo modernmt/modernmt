@@ -5,6 +5,7 @@ import eu.modernmt.context.ContextScore;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.actions.util.ContextUtils;
+import eu.modernmt.rest.framework.FileParameter;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
@@ -12,13 +13,12 @@ import eu.modernmt.rest.framework.actions.CollectionAction;
 import eu.modernmt.rest.framework.routing.Route;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.eclipse.jetty.io.RuntimeIOException;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Created by davide on 15/12/15.
@@ -26,19 +26,53 @@ import java.util.List;
 @Route(aliases = "context", method = HttpMethod.GET)
 public class GetContext extends CollectionAction<ContextScore> {
 
+    public enum FileCompression {
+        GZIP
+    }
+
+    private static void copy(FileParameter source, File destination, FileCompression compression) throws IOException {
+        Reader reader = null;
+        Writer writer = null;
+
+        try {
+            InputStream input = source.getInputStream();
+
+            if (compression != null) {
+                switch (compression) {
+                    case GZIP:
+                        input = new GZIPInputStream(input);
+                        break;
+                }
+            }
+
+            reader = new InputStreamReader(input, Charset.defaultCharset());
+            writer = new OutputStreamWriter(new FileOutputStream(destination, false), Charset.defaultCharset());
+
+            IOUtils.copyLarge(reader, writer);
+        } finally {
+            IOUtils.closeQuietly(reader);
+            IOUtils.closeQuietly(writer);
+        }
+    }
+
     @Override
-    protected Collection<ContextScore> execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, PersistenceException {
+    protected Collection<ContextScore> execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, PersistenceException, IOException {
         Params params = (Params) _params;
         List<ContextScore> context;
 
-        if (params.file == null) {
-            context = ModernMT.context.get(params.context, params.limit);
+        if (params.text != null) {
+            context = ModernMT.context.get(params.text, params.limit);
+        } else if (params.localFile != null) {
+            context = ModernMT.context.get(params.localFile, params.limit);
         } else {
+            File file = null;
+
             try {
-                context = ModernMT.context.get(params.file, params.limit);
+                file = File.createTempFile("mmt-context", "txt");
+                copy(params.content, file, params.compression);
+                context = ModernMT.context.get(file, params.limit);
             } finally {
-                if (params.deleteOnExit)
-                    FileUtils.deleteQuietly(params.file);
+                FileUtils.deleteQuietly(file);
             }
         }
 
@@ -53,85 +87,37 @@ public class GetContext extends CollectionAction<ContextScore> {
 
     public static class Params extends Parameters {
 
-        // TODO: File from body should be made more secure (check real stream size and ignore too large files)
-
-        private final Logger logger = LogManager.getLogger(getClass());
-
         public static final int DEFAULT_LIMIT = 10;
-        public static final int MAX_CONTEXT_IN_RAM = 2 * 1024;
 
         public final int limit;
-        public final File file;
-        public final String context;
-        public final boolean deleteOnExit;
+        public final String text;
+        public final File localFile;
+        public final FileParameter content;
+        public final FileCompression compression;
 
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
 
-            limit = getInt("limit", DEFAULT_LIMIT);
+            this.limit = getInt("limit", DEFAULT_LIMIT);
 
-            Reader body;
-            String filename;
+            FileParameter content;
+            String localFile;
 
-            try {
-                body = req.getPlainTextContent();
-            } catch (IOException e) {
-                throw new ParameterParsingException(e);
-            }
-
-            if (body != null) {
-                int length = req.getContentLength();
-
-                if (length < 0 || length > MAX_CONTEXT_IN_RAM) {
-                    FileWriter output = null;
-                    File tempFile = null;
-                    boolean success = false;
-
-                    try {
-                        tempFile = File.createTempFile("mmt_context", ".txt");
-                        tempFile.deleteOnExit();
-
-                        output = new FileWriter(tempFile, false);
-                        long size = IOUtils.copyLarge(req.getPlainTextContent(), output);
-
-                        if (logger.isDebugEnabled())
-                            logger.debug("Read " + size + " bytes for context analyzer document input (declared " + length + ")");
-
-                        success = true;
-                    } catch (IOException e) {
-                        throw new RuntimeIOException(e);
-                    } finally {
-                        IOUtils.closeQuietly(output);
-                        if (!success)
-                            FileUtils.deleteQuietly(tempFile);
-                    }
-
-                    file = tempFile;
-                    context = null;
-                    deleteOnExit = true;
-                } else {
-                    try {
-                        StringWriter writer = new StringWriter();
-                        long size = IOUtils.copyLarge(req.getPlainTextContent(), writer, 0L, length);
-
-                        if (logger.isDebugEnabled())
-                            logger.debug("Read " + size + " bytes for context analyzer document input (declared " + length + ")");
-
-                        file = null;
-                        context = writer.toString();
-                        deleteOnExit = false;
-                    } catch (IOException e) {
-                        throw new RuntimeIOException(e);
-                    }
-                }
-            } else if ((filename = getString("local_file", false, null)) != null) {
-                file = new File(filename);
-                context = null;
-                deleteOnExit = false;
+            if ((content = req.getFile("content")) != null) {
+                this.text = null;
+                this.localFile = null;
+                this.content = content;
+                this.compression = getEnum("content_compression", FileCompression.class, null);
+            } else if ((localFile = getString("local_file", false, null)) != null) {
+                this.text = null;
+                this.localFile = new File(localFile);
+                this.content = null;
+                this.compression = null;
             } else {
-                file = null;
-                context = getString("text", false);
-                deleteOnExit = false;
+                this.text = getString("text", false);
+                this.localFile = null;
+                this.content = null;
+                this.compression = null;
             }
         }
     }

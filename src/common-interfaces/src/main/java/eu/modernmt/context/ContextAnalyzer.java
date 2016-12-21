@@ -5,7 +5,6 @@ import eu.modernmt.model.corpus.Corpus;
 
 import java.io.Closeable;
 import java.io.File;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 

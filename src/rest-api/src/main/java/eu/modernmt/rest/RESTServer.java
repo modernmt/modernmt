@@ -31,14 +31,45 @@ public class RESTServer {
         JSONSerializer.registerCustomSerializer(Alignment.class, new AlignmentSerializer());
     }
 
+    public static class ServerOptions {
+
+        // The network port to bind
+        public int port;
+
+        // Directory used for storing uploaded files
+        public File temporaryDirectory = new File(System.getProperty("java.io.tmpdir"));
+
+        // The maximum size allowed for uploaded files
+        public long maxFileSize = 100L * 1024L * 1024L; // 100mb
+
+        // The maximum size allowed for multipart/form-data requests
+        public long maxRequestSize = 101L * 1024L * 1024L; // 101mb
+
+        // the size threshold after which files will be written to disk
+        public int fileSizeThreshold = 2 * 1024; // 2kb
+
+        public ServerOptions(int port) {
+            this.port = port;
+        }
+    }
+
     private Server jettyServer;
 
     public RESTServer(int port) {
-        this.jettyServer = new Server(port);
+        this(new ServerOptions(port));
+    }
 
-        ServletHandler handler = new ServletHandler();
-        handler.addServletWithMapping(Router.class, "/*");
-        jettyServer.setHandler(handler);
+    public RESTServer(ServerOptions options) {
+        this.jettyServer = new Server(options.port);
+
+        ServletHandler router = new ServletHandler();
+        router.addServletWithMapping(Router.class, "/*");
+
+        MultipartConfigInjectionHandler handlerWrapper = new MultipartConfigInjectionHandler(
+                options.temporaryDirectory, options.maxFileSize, options.maxRequestSize, options.fileSizeThreshold);
+        handlerWrapper.setHandler(router);
+
+        jettyServer.setHandler(handlerWrapper);
     }
 
     public void start() throws Exception {

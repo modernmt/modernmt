@@ -10,11 +10,15 @@ import eu.modernmt.rest.framework.routing.RouteTree;
 import eu.modernmt.rest.framework.routing.TemplateException;
 import org.apache.commons.io.IOUtils;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.Part;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
@@ -31,7 +35,7 @@ public class RESTRequest {
     private RouteTemplate template = null;
     private HttpMethod method = null;
     private String queryString = null;
-    private HashMap<String, String> parameters = null;
+    private HashMap<String, Object> parameters = null;
     private JsonObject jsonObject = null;
     private JsonArray jsonArray = null;
     private String json = null;
@@ -148,32 +152,77 @@ public class RESTRequest {
         return this.json;
     }
 
-    public String getParameter(String name) {
-        if (parameters == null) {
-            this.parameters = new HashMap<>();
-            String encoding = request.getCharacterEncoding();
-            String queryString = this.getQueryString();
+    private void ensureParameters() throws Parameters.ParameterParsingException {
+        this.parameters = new HashMap<>();
+        String encoding = request.getCharacterEncoding();
+        String queryString = this.getQueryString();
 
-            if (!queryString.isEmpty()) {
-                String[] params = queryString.split("&");
+        if (!queryString.isEmpty()) {
+            String[] params = queryString.split("&");
 
-                for (String param : params) {
-                    String[] tokens = param.split("=");
-                    if (tokens.length == 2) {
-                        try {
-                            this.parameters.put(tokens[0], URLDecoder
-                                    .decode(tokens[1], encoding).trim());
-                        } catch (UnsupportedEncodingException e) {
-                            // This should never happen
-                        }
-                    } else {
-                        this.parameters.put(tokens[0], "");
+            for (String param : params) {
+                String[] tokens = param.split("=");
+                if (tokens.length == 2) {
+                    try {
+                        this.parameters.put(tokens[0], URLDecoder
+                                .decode(tokens[1], encoding).trim());
+                    } catch (UnsupportedEncodingException e) {
+                        // This should never happen
                     }
+                } else {
+                    this.parameters.put(tokens[0], "");
+                }
+            }
+        } else if (isContentType("multipart/form-data")) {
+            Collection<Part> parts = null;
+            try {
+                parts = request.getParts();
+            } catch (IOException e) {
+                throw new Parameters.ParameterParsingException("Failed to retrieve multipart/form-data request parts", e);
+            } catch (ServletException e) {
+                // thrown if this request is not of type "multipart/form-data"
+                // ignore it
+            }
+
+            if (parts != null) {
+                for (Part part : parts) {
+                    String contentType = part.getContentType();
+                    String name = part.getName();
+                    String file = part.getSubmittedFileName();
+                    Object value = null;
+
+                    if (contentType == null && file == null) {
+                        // Assume parameter is a string
+                        try {
+                            value = IOUtils.toString(part.getInputStream(), Charset.defaultCharset());
+                        } catch (IOException e) {
+                            throw new Parameters.ParameterParsingException("Unable to read parameter '" + name + "'");
+                        }
+                    } else if ("application/octet-stream".equals(contentType) && file != null) {
+                        value = new FileParameter(part);
+                    }
+
+                    if (value != null)
+                        this.parameters.put(name, value);
                 }
             }
         }
+    }
 
-        return parameters.get(name);
+    public String getParameter(String name) throws Parameters.ParameterParsingException {
+        if (parameters == null)
+            this.ensureParameters();
+
+        Object value = parameters.get(name);
+        return (value == null || !(value instanceof String)) ? null : (String) value;
+    }
+
+    public FileParameter getFile(String name) throws Parameters.ParameterParsingException {
+        if (parameters == null)
+            this.ensureParameters();
+
+        Object value = parameters.get(name);
+        return (value == null || !(value instanceof FileParameter)) ? null : (FileParameter) value;
     }
 
     public String getPathParameter(String varname) throws TemplateException {
