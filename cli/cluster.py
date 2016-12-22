@@ -127,13 +127,11 @@ class MMTApi:
 
         return self._get('translate', params=p)
 
-    def create_domain(self, tmx=None, source_file=None, target_file=None, name=None):
-        if source_file is not None and target_file is not None:
-            params = {'source_local_file': source_file, 'target_local_file': target_file}
-        elif tmx is not None:
-            params = {'tmx_local_file': tmx}
-        else:
-            raise IllegalArgumentException('missing corpus for domain')
+    def create_domain(self, tmx, name=None):
+        params = {
+            'local_file': tmx,
+            'content_type': 'tmx',
+        }
 
         if name is not None:
             params['name'] = name
@@ -592,9 +590,6 @@ class ClusterNode(object):
         finally:
             if not debug:
                 self.engine.clear_tempdir()
-
-    def new_domain_from_parallel(self, source_file, target_file, name=None):
-        return self.api.create_domain(source_file=source_file, target_file=target_file, name=name)
 
     def new_domain_from_tmx(self, tmx, name=None):
         return self.api.create_domain(tmx=tmx, name=name)
