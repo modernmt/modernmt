@@ -118,8 +118,6 @@ class TMXPairReader {
                             source = text;
                         } else if (lang.equals(targetLanguage)) {
                             target = text;
-                        } else {
-                            throw new XMLStreamException("Invalid language code found: " + lang);
                         }
                     }
                     break;
