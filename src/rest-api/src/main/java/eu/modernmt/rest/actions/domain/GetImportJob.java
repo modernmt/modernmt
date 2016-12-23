@@ -13,7 +13,7 @@ import eu.modernmt.rest.framework.routing.TemplateException;
 /**
  * Created by davide on 15/12/15.
  */
-@Route(aliases = "domains/:id/import", method = HttpMethod.GET)
+@Route(aliases = "imports/:id", method = HttpMethod.GET)
 public class GetImportJob extends ObjectAction<ImportJob> {
 
     @Override

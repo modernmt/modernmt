@@ -1,28 +1,25 @@
 package eu.modernmt.rest.actions.domain;
 
-import eu.modernmt.cluster.datastream.DataStreamException;
 import eu.modernmt.facade.ModernMT;
-import eu.modernmt.model.Domain;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
-import eu.modernmt.rest.framework.actions.ObjectAction;
+import eu.modernmt.rest.framework.actions.VoidAction;
 import eu.modernmt.rest.framework.routing.Route;
 import eu.modernmt.rest.framework.routing.TemplateException;
-
-import java.io.IOException;
 
 /**
  * Created by davide on 15/12/15.
  */
-@Route(aliases = "domains", method = HttpMethod.POST)
-public class CreateDomain extends ObjectAction<Domain> {
+@Route(aliases = "domains/:id", method = HttpMethod.DELETE)
+public class DeleteDomain extends VoidAction {
 
     @Override
-    protected Domain execute(RESTRequest req, Parameters _params) throws IOException, DataStreamException, PersistenceException {
+    protected void execute(RESTRequest req, Parameters _params) throws PersistenceException, NotFoundException {
         Params params = (Params) _params;
-        return ModernMT.domain.create(params.name);
+        if (!ModernMT.domain.delete(params.id))
+            throw new NotFoundException();
     }
 
     @Override
@@ -32,12 +29,11 @@ public class CreateDomain extends ObjectAction<Domain> {
 
     public static class Params extends Parameters {
 
-        private final String name;
+        private final int id;
 
         public Params(RESTRequest req) throws ParameterParsingException, TemplateException {
             super(req);
-
-            name = getString("name", false);
+            id = req.getPathParameterAsInt("id");
         }
     }
 

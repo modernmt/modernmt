@@ -122,6 +122,7 @@ public class DataStreamManager implements Closeable {
         BilingualCorpus.BilingualLineReader reader = null;
 
         long importBegin, importEnd;
+        int size = 0;
 
         try {
             reader = corpus.getContentReader();
@@ -131,6 +132,7 @@ public class DataStreamManager implements Closeable {
                 return null;
 
             importEnd = importBegin = sendUpdate(domainId, pair, true);
+            size++;
 
             pair = reader.read();
 
@@ -142,15 +144,18 @@ public class DataStreamManager implements Closeable {
                     importEnd = sendUpdate(domainId, current, true);
                 else
                     sendUpdate(domainId, current, false);
+
+                size++;
             }
         } finally {
             IOUtils.closeQuietly(reader);
         }
 
         if (logger.isDebugEnabled())
-            logger.debug("Domain " + domainId + " uploaded [" + importBegin + ", " + importEnd + "]");
+            logger.debug("Domain " + domainId + " uploaded [" + importBegin + ", " + importEnd + "]: " + size + " pairs");
 
         ImportJob job = new ImportJob(domainId);
+        job.setSize(size);
         job.setBegin(importBegin);
         job.setEnd(importEnd);
 
@@ -183,7 +188,18 @@ public class DataStreamManager implements Closeable {
         this.pollingThread.ensureRunning();
 
         StreamUpdate update = new StreamUpdate(domainId, sourceSentence, targetSentence);
-        producer.send(new ProducerRecord<>(DOMAIN_UPLOAD_STREAM_TOPIC, 0, update));
+        try {
+            producer.send(new ProducerRecord<>(DOMAIN_UPLOAD_STREAM_TOPIC, 0, update))
+                    .get();
+        } catch (InterruptedException e) {
+            throw new DataStreamException("Upload interrupted", e);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof RuntimeException)
+                throw (RuntimeException) cause;
+            else
+                throw new DataStreamException("Unexpected exception while uploading", cause);
+        }
     }
 
     @Override
