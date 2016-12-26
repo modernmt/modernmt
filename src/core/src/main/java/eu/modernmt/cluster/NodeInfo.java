@@ -10,8 +10,8 @@ import java.util.Map;
  */
 public class NodeInfo {
 
-    static final String STATUS_ATTRIBUTE = "NodeInfo.STATUS_ATTRIBUTE";
-    static final String DATA_CHANNELS_ATTRIBUTE = "NodeInfo.DATA_CHANNELS_ATTRIBUTE";
+    private static final String STATUS_ATTRIBUTE = "NodeInfo.STATUS_ATTRIBUTE";
+    private static final String DATA_CHANNELS_ATTRIBUTE = "NodeInfo.DATA_CHANNELS_ATTRIBUTE";
 
     public final String uuid;
     public final ClusterNode.Status status;
@@ -31,8 +31,12 @@ public class NodeInfo {
         return new NodeInfo(uuid, status, positions);
     }
 
+    static void updateStatusInMember(Member member, ClusterNode.Status status) {
+        member.setStringAttribute(STATUS_ATTRIBUTE, status.name());
+    }
+
     static void updateChannelsPositionsInMember(Member member, Map<Short, Long> update) {
-        Map<Short, Long> positions = fromString(member.getStringAttribute(DATA_CHANNELS_ATTRIBUTE));
+        HashMap<Short, Long> positions = fromString(member.getStringAttribute(DATA_CHANNELS_ATTRIBUTE));
         for (Map.Entry<Short, Long> position : update.entrySet()) {
             positions.put(position.getKey(), position.getValue());
         }
@@ -55,9 +59,9 @@ public class NodeInfo {
         return builder.substring(0, builder.length() - 1);
     }
 
-    private static Map<Short, Long> fromString(String encoded) {
+    private static HashMap<Short, Long> fromString(String encoded) {
         if (encoded == null || encoded.isEmpty())
-            return null;
+            return new HashMap<>();
 
         String[] elements = encoded.split(",");
 

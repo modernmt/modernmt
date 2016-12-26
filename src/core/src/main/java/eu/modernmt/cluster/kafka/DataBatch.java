@@ -2,6 +2,7 @@ package eu.modernmt.cluster.kafka;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
+import eu.modernmt.data.DataManager;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.model.Alignment;
@@ -10,6 +11,8 @@ import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
@@ -17,6 +20,8 @@ import java.util.*;
  * Created by davide on 06/09/16.
  */
 class DataBatch implements Iterable<TranslationUnit> {
+
+    private final Logger logger = LogManager.getLogger(KafkaDataManager.class);
 
     private final ArrayList<TranslationUnit> data = new ArrayList<>();
     private final ArrayList<String> rawSources = new ArrayList<>();
@@ -51,6 +56,9 @@ class DataBatch implements Iterable<TranslationUnit> {
             KafkaChannel channel = KafkaDataManager.getChannel(record.topic());
             KafkaElement value = record.value();
             long offset = record.offset();
+
+            if (channel.getId() == DataManager.CONTRIBUTIONS_CHANNEL_ID)
+                logger.info("\n\n========= CONTRIBUTION ========\n\n");
 
             TranslationUnit unit = value.toTranslationUnit(channel.getId(), offset);
 

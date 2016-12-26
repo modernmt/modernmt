@@ -127,20 +127,22 @@ class MMTApi:
 
         return self._get('translate', params=p)
 
-    def create_domain(self, tmx, name=None):
-        params = {
-            'local_file': tmx,
-            'content_type': 'tmx',
-        }
-
-        if name is not None:
-            params['name'] = name
-
+    def create_domain(self, name):
+        params = {'name': name}
         return self._post('domains', params=params)
 
     def append_to_domain(self, domain, source, target):
         params = {'source': source, 'target': target}
         return self._put('domains/' + str(domain), params=params)
+
+    def import_into_domain(self, domain, tmx):
+        params = {
+            'domain': domain,
+            'content_type' : 'tmx',
+            'local_file' : tmx
+        }
+
+        return self._post('imports', params=params)
 
     def get_all_domains(self):
         return self._get('domains')
@@ -592,7 +594,13 @@ class ClusterNode(object):
                 self.engine.clear_tempdir()
 
     def new_domain_from_tmx(self, tmx, name=None):
-        return self.api.create_domain(tmx=tmx, name=name)
+        if name is None:
+            name = os.path.basename(os.path.splitext(tmx)[0])
+
+        domain = self.api.create_domain(name)
+        self.api.import_into_domain(domain['id'], tmx)
+
+        return domain
 
     def append_to_domain(self, domain, source, target):
         try:

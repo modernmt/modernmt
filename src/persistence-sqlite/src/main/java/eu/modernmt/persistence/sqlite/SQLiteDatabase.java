@@ -62,6 +62,7 @@ public class SQLiteDatabase extends Database {
             statement.executeUpdate("CREATE TABLE import_jobs (\"id\" INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     "\"domain\" INTEGER NOT NULL, " +
                     "\"size\" INTEGER, " +
+                    "\"data_channel\" INTEGER, " +
                     "\"begin\" INTEGER NOT NULL, " +
                     "\"end\" INTEGER NOT NULL)");
         } catch (SQLException e) {

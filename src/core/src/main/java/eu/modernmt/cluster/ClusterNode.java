@@ -152,7 +152,7 @@ public class ClusterNode {
 
             if (this.hazelcast != null) {
                 Member localMember = this.hazelcast.getCluster().getLocalMember();
-                localMember.setStringAttribute(NodeInfo.STATUS_ATTRIBUTE, status.name());
+                NodeInfo.updateStatusInMember(localMember, status);
             }
 
             if (logger.isDebugEnabled())
