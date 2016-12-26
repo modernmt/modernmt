@@ -89,10 +89,13 @@ class DataPollingThread extends Thread {
                 if (existentPosition == null)
                     existentPosition = Long.MAX_VALUE;
 
-                long value = (position == null) ? -1L : Math.min(existentPosition, position);
-                result.put(channel, value);
+                result.put(channel, Math.min(existentPosition, position));
             }
         }
+
+        // Adding missing values
+        for (KafkaChannel channel : KafkaDataManager.CHANNELS)
+            result.putIfAbsent(channel.getId(), -1L);
 
         // Normalize result
         for (Map.Entry<Short, Long> entry : result.entrySet()) {

@@ -45,7 +45,7 @@ public class NodeInfo {
 
     private static String toString(Map<Short, Long> positions) {
         if (positions == null || positions.isEmpty())
-            return null;
+            return "";
 
         StringBuilder builder = new StringBuilder();
 

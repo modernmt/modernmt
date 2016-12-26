@@ -30,7 +30,7 @@ public class KafkaDataManager implements DataManager {
 
     private static final Logger logger = LogManager.getLogger(KafkaDataManager.class);
 
-    private static final KafkaChannel[] CHANNELS = new KafkaChannel[]{
+    static final KafkaChannel[] CHANNELS = new KafkaChannel[]{
             new KafkaChannel(DataManager.DOMAIN_UPLOAD_CHANNEL_ID, "domain-upload-stream"),
             new KafkaChannel(DataManager.CONTRIBUTIONS_CHANNEL_ID, "contributions-stream")
     };
