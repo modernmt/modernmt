@@ -280,10 +280,7 @@ public class ClusterNode {
         // ========================
 
         dataManager = new KafkaDataManager(uuid, engine);
-        dataManager.setDataManagerListener(positions -> {
-            Member localMember = hazelcast.getCluster().getLocalMember();
-            NodeInfo.updateChannelsPositionsInMember(localMember, positions);
-        });
+        dataManager.setDataManagerListener(this::updateChannelsPositions);
 
         Aligner aligner = engine.getAligner();
         Decoder decoder = engine.getDecoder();
@@ -295,6 +292,8 @@ public class ClusterNode {
             dataManager.addDataListener((DataListener) decoder);
         if (contextAnalyzer instanceof DataListener)
             dataManager.addDataListener((DataListener) contextAnalyzer);
+
+        updateChannelsPositions(dataManager.getChannelsPositions());
 
         try {
             timer.reset();
@@ -316,7 +315,6 @@ public class ClusterNode {
             }
 
             setStatus(Status.UPDATED);
-
         } catch (HostUnreachableException e) {
             logger.error("Unable to connect to DataManager", e);
         }
@@ -336,6 +334,11 @@ public class ClusterNode {
         setStatus(Status.READY);
 
         logger.info("Node started in " + (globalTimer.time() / 1000.) + "s");
+    }
+
+    private void updateChannelsPositions(Map<Short, Long> positions) {
+        Member localMember = hazelcast.getCluster().getLocalMember();
+        NodeInfo.updateChannelsPositionsInMember(localMember, positions);
     }
 
     public void notifyDecoderWeightsChanged(Map<String, float[]> weights) {

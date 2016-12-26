@@ -40,6 +40,8 @@ public interface DataManager extends Closeable {
 
     DataChannel getDataChannel(short id);
 
+    Map<Short, Long> getChannelsPositions();
+
     void waitChannelPosition(short channel, long position) throws InterruptedException;
 
     void waitChannelPositions(Map<Short, Long> positions) throws InterruptedException;

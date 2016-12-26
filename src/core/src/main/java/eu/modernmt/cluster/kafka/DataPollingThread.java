@@ -31,7 +31,7 @@ class DataPollingThread extends Thread {
     private KafkaConsumer<Integer, KafkaElement> consumer;
     private boolean interrupted;
     private final ArrayList<DataListener> listeners = new ArrayList<>(10);
-    private DataManager.Listener dataManagerListerner = null;
+    private DataManager.Listener dataManagerListener = null;
 
     public DataPollingThread(Engine engine) {
         super("DataPollingThread");
@@ -45,8 +45,8 @@ class DataPollingThread extends Thread {
             throw e;
     }
 
-    public void setDataManagerListerner(DataManager.Listener dataManagerListerner) {
-        this.dataManagerListerner = dataManagerListerner;
+    public void setDataManagerListener(DataManager.Listener dataManagerListerner) {
+        this.dataManagerListener = dataManagerListerner;
     }
 
     public void addListener(DataListener listener) {
@@ -122,8 +122,8 @@ class DataPollingThread extends Thread {
                     logger.error("Failed to delivery updates", e);
                 }
 
-                if (dataManagerListerner != null)
-                    dataManagerListerner.onDataBatchProcessed(batch.getBatchOffset());
+                if (dataManagerListener != null)
+                    dataManagerListener.onDataBatchProcessed(batch.getBatchOffset());
 
                 batch.clear();
             } catch (WakeupException e) {

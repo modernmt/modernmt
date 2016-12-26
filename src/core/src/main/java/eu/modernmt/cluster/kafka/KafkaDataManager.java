@@ -117,7 +117,7 @@ public class KafkaDataManager implements DataManager {
 
     @Override
     public void setDataManagerListener(Listener listener) {
-        pollingThread.setDataManagerListerner(listener);
+        pollingThread.setDataManagerListener(listener);
     }
 
     @Override
@@ -225,6 +225,11 @@ public class KafkaDataManager implements DataManager {
     @Override
     public KafkaChannel getDataChannel(short id) {
         return CHANNELS[id];
+    }
+
+    @Override
+    public Map<Short, Long> getChannelsPositions() {
+        return pollingThread.getCurrentPositions();
     }
 
     @Override
