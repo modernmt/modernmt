@@ -57,9 +57,6 @@ class DataBatch implements Iterable<TranslationUnit> {
             KafkaElement value = record.value();
             long offset = record.offset();
 
-            if (channel.getId() == DataManager.CONTRIBUTIONS_CHANNEL_ID)
-                logger.info("\n\n========= CONTRIBUTION ========\n\n");
-
             TranslationUnit unit = value.toTranslationUnit(channel.getId(), offset);
 
             data.add(unit);

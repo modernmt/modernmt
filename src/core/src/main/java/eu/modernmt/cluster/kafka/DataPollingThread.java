@@ -77,7 +77,6 @@ class DataPollingThread extends Thread {
 
     public Map<Short, Long> getCurrentPositions() {
         HashMap<Short, Long> result = new HashMap<>();
-        long offset = Long.MAX_VALUE;
 
         for (DataListener listener : listeners) {
             Map<Short, Long> latestPositions = listener.getLatestChannelPositions();
@@ -98,7 +97,7 @@ class DataPollingThread extends Thread {
         // Normalize result
         for (Map.Entry<Short, Long> entry : result.entrySet()) {
             long value = entry.getValue();
-            entry.setValue(value < 0 ? 0 : offset + 1);
+            entry.setValue(value < 0 ? 0 : value + 1);
         }
 
         return result;
