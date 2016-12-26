@@ -1,24 +1,24 @@
-package eu.modernmt.cluster.datastream;
+package eu.modernmt.cluster.kafka;
 
-import eu.modernmt.updating.Update;
+import eu.modernmt.data.TranslationUnit;
 
 /**
  * Created by davide on 06/09/16.
  */
-class StreamUpdate {
+class KafkaElement {
 
     private final int domain;
     private final String sourceSentence;
     private final String targetSentence;
 
-    public StreamUpdate(int domain, String sourceSentence, String targetSentence) {
+    public KafkaElement(int domain, String sourceSentence, String targetSentence) {
         this.domain = domain;
         this.sourceSentence = sourceSentence;
         this.targetSentence = targetSentence;
     }
 
-    public Update toUpdate(int topicId, long sequentialId) {
-        return new Update(topicId, sequentialId, domain, sourceSentence, targetSentence);
+    public TranslationUnit toTranslationUnit(short channel, long position) {
+        return new TranslationUnit(channel, position, domain, sourceSentence, targetSentence);
     }
 
     public int getDomain() {

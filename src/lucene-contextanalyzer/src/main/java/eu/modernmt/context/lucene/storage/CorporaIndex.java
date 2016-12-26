@@ -32,12 +32,12 @@ public class CorporaIndex implements Closeable {
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         int length = buffer.getInt();
 
-        HashMap<Integer, Long> streams = new HashMap<>(length);
-        for (int i = 0; i < length; i++) {
+        HashMap<Short, Long> channels = new HashMap<>(length);
+        for (short i = 0; i < length; i++) {
             long id = buffer.getLong();
 
             if (id >= 0)
-                streams.put(i, id);
+                channels.put(i, id);
         }
 
         HashMap<Integer, CorpusBucket> buckets = new HashMap<>();
@@ -46,30 +46,30 @@ public class CorporaIndex implements Closeable {
             buckets.put(bucket.getDomain(), bucket);
         }
 
-        return new CorporaIndex(analysisOptions, bucketsFolder, buckets, streams);
+        return new CorporaIndex(analysisOptions, bucketsFolder, buckets, channels);
     }
 
     private final Options.AnalysisOptions analysisOptions;
     private final File bucketsFolder;
     private final HashMap<Integer, CorpusBucket> buckets;
-    private final HashMap<Integer, Long> streams;
+    private final HashMap<Short, Long> channels;
 
     public CorporaIndex(Options.AnalysisOptions analysisOptions, File bucketsFolder) {
         this(analysisOptions, bucketsFolder, new HashMap<>(), new HashMap<>());
     }
 
-    private CorporaIndex(Options.AnalysisOptions analysisOptions, File bucketsFolder, HashMap<Integer, CorpusBucket> buckets, HashMap<Integer, Long> streams) {
+    private CorporaIndex(Options.AnalysisOptions analysisOptions, File bucketsFolder, HashMap<Integer, CorpusBucket> buckets, HashMap<Short, Long> channels) {
         this.analysisOptions = analysisOptions;
         this.bucketsFolder = bucketsFolder;
         this.buckets = buckets;
-        this.streams = streams;
+        this.channels = channels;
     }
 
-    public boolean registerUpdate(int stream, long id) {
-        Long existent = this.streams.get(stream);
+    public boolean registerData(short channel, long position) {
+        Long existent = this.channels.get(channel);
 
-        if (existent == null || id > existent) {
-            this.streams.put(stream, id);
+        if (existent == null || position > existent) {
+            this.channels.put(channel, position);
             return true;
         } else {
             return false;
@@ -77,49 +77,44 @@ public class CorporaIndex implements Closeable {
     }
 
     public CorpusBucket getBucket(int domain) {
-        CorpusBucket bucket = buckets.get(domain);
-
-        if (bucket == null) {
-            bucket = new CorpusBucket(analysisOptions, bucketsFolder, domain);
-            buckets.put(domain, bucket);
-        }
-
-        return bucket;
+        return buckets.computeIfAbsent(domain,
+                k -> new CorpusBucket(analysisOptions, bucketsFolder, domain)
+        );
     }
 
     public Collection<CorpusBucket> getBuckets() {
         return buckets.values();
     }
 
-    public synchronized HashMap<Integer, Long> getStreams() {
-        return new HashMap<>(streams);
+    public synchronized HashMap<Short, Long> getChannels() {
+        return new HashMap<>(channels);
     }
 
     public void store(File path) throws IOException {
         // Compute length
         int maxStreamId = -1;
 
-        for (int id : streams.keySet()) {
+        for (int id : channels.keySet()) {
             if (id > maxStreamId)
                 maxStreamId = id;
         }
 
         int streamsArrayLength = (maxStreamId < 0 ? 0 : maxStreamId + 1);
 
-        int length = (4 + streamsArrayLength * 8) // streams
+        int length = (4 + streamsArrayLength * 8) // channels
                 + (buckets.size() * CorpusBucket.SERIALIZED_DATA_LENGTH); // buckets
 
         // Allocate buffer
         byte[] content = new byte[length];
         ByteBuffer buffer = ByteBuffer.wrap(content);
 
-        // Write streams map
+        // Write channels map
         buffer.putInt(streamsArrayLength);
         if (streamsArrayLength > 0) {
             long[] ids = new long[streamsArrayLength];
             Arrays.fill(ids, -1);
 
-            for (Map.Entry<Integer, Long> entry : streams.entrySet()) {
+            for (Map.Entry<Short, Long> entry : channels.entrySet()) {
                 ids[entry.getKey()] = entry.getValue();
             }
 

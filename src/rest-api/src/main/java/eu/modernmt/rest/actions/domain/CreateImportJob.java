@@ -1,11 +1,13 @@
 package eu.modernmt.rest.actions.domain;
 
+import eu.modernmt.data.DataManagerException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.io.FileProxy;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.impl.parallel.InlineParallelFileCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
+import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.framework.FileParameter;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
@@ -25,7 +27,7 @@ import java.util.zip.GZIPInputStream;
 public class CreateImportJob extends ObjectAction<ImportJob> {
 
     @Override
-    protected ImportJob execute(RESTRequest req, Parameters _params) throws Throwable {
+    protected ImportJob execute(RESTRequest req, Parameters _params) throws PersistenceException, DataManagerException {
         Params params = (Params) _params;
         return ModernMT.domain.add(params.domain, params.corpus);
     }

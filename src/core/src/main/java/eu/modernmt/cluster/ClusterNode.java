@@ -5,8 +5,9 @@ import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.*;
 import eu.modernmt.aligner.Aligner;
-import eu.modernmt.cluster.datastream.DataStreamManager;
-import eu.modernmt.cluster.datastream.HostUnreachableException;
+import eu.modernmt.cluster.kafka.KafkaDataManager;
+import eu.modernmt.data.DataManager;
+import eu.modernmt.data.HostUnreachableException;
 import eu.modernmt.cluster.error.BootstrapException;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.cluster.executor.DistributedCallable;
@@ -19,7 +20,7 @@ import eu.modernmt.engine.Engine;
 import eu.modernmt.engine.LazyLoadException;
 import eu.modernmt.engine.config.EngineConfig;
 import eu.modernmt.engine.config.INIEngineConfigWriter;
-import eu.modernmt.updating.UpdatesListener;
+import eu.modernmt.data.DataListener;
 import eu.modernmt.util.Timer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -69,7 +70,7 @@ public class ClusterNode {
     private ExecutorDaemon executorDaemon;
     private DistributedExecutor executor;
     private SessionManager sessionManager;
-    private DataStreamManager dataStreamManager;
+    private DataManager dataManager;
     private ITopic<Map<String, float[]>> decoderWeightsTopic;
 
     private final Thread shutdownThread = new Thread() {
@@ -124,8 +125,8 @@ public class ClusterNode {
         return engine;
     }
 
-    public DataStreamManager getDataStreamManager() {
-        return dataStreamManager;
+    public DataManager getDataManager() {
+        return dataManager;
     }
 
     public SessionManager getSessionManager() {
@@ -278,37 +279,37 @@ public class ClusterNode {
 
         // ========================
 
-        dataStreamManager = new DataStreamManager(uuid, engine);
-        dataStreamManager.setDataStreamListener(newOffset -> {
+        dataManager = new KafkaDataManager(uuid, engine);
+        dataManager.setDataManagerListener(positions -> {
             Member localMember = hazelcast.getCluster().getLocalMember();
-            localMember.setLongAttribute(NodeInfo.OFFSET_ATTRIBUTE, newOffset);
+            NodeInfo.updateChannelsPositionsInMember(localMember, positions);
         });
 
         Aligner aligner = engine.getAligner();
         Decoder decoder = engine.getDecoder();
         ContextAnalyzer contextAnalyzer = engine.getContextAnalyzer();
 
-        if (aligner instanceof UpdatesListener)
-            dataStreamManager.addListener((UpdatesListener) aligner);
-        if (decoder instanceof UpdatesListener)
-            dataStreamManager.addListener((UpdatesListener) decoder);
-        if (contextAnalyzer instanceof UpdatesListener)
-            dataStreamManager.addListener((UpdatesListener) contextAnalyzer);
+        if (aligner instanceof DataListener)
+            dataManager.addDataListener((DataListener) aligner);
+        if (decoder instanceof DataListener)
+            dataManager.addDataListener((DataListener) decoder);
+        if (contextAnalyzer instanceof DataListener)
+            dataManager.addDataListener((DataListener) contextAnalyzer);
 
         try {
             timer.reset();
 
-            logger.info("Starting \"Data Stream Manager\"");
+            logger.info("Starting DataManager");
             // TODO: should read host and ports from config
-            long queueHead = dataStreamManager.connect(10, TimeUnit.SECONDS);
-            logger.info("\"Data Stream Manager\" ready in " + (timer.time() / 1000.) + "s");
+            Map<Short, Long> positions = dataManager.connect(10, TimeUnit.SECONDS);
+            logger.info("DataManager ready in " + (timer.time() / 1000.) + "s");
 
             setStatus(Status.UPDATING);
 
             timer.reset();
             try {
                 logger.info("Starting sync from data stream");
-                dataStreamManager.waitQueuePosition(queueHead);
+                dataManager.waitChannelPositions(positions);
                 logger.info("Data stream sync completed in " + (timer.time() / 1000.) + "s");
             } catch (InterruptedException e) {
                 throw new BootstrapException("Data stream sync interrupted", e);
@@ -317,7 +318,7 @@ public class ClusterNode {
             setStatus(Status.UPDATED);
 
         } catch (HostUnreachableException e) {
-            logger.error("Unable to connect to \"Data Stream Manager\"", e);
+            logger.error("Unable to connect to DataManager", e);
         }
 
         // ========================

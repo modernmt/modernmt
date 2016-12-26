@@ -2,15 +2,14 @@ package eu.modernmt.facade;
 
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.NodeInfo;
-import eu.modernmt.cluster.datastream.DataStreamException;
-import eu.modernmt.cluster.datastream.DataStreamManager;
+import eu.modernmt.data.DataManagerException;
+import eu.modernmt.data.DataManager;
 import eu.modernmt.model.Domain;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.persistence.*;
 import org.apache.commons.io.IOUtils;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -104,7 +103,7 @@ public class DomainFacade {
         }
     }
 
-    public Domain add(int domainId, String source, String target) throws DataStreamException, PersistenceException {
+    public Domain add(int domainId, String source, String target) throws DataManagerException, PersistenceException {
         Connection connection = null;
         Database db = ModernMT.getNode().getEngine().getDatabase();
 
@@ -117,8 +116,8 @@ public class DomainFacade {
             if (domain == null)
                 return null;
 
-            DataStreamManager manager = ModernMT.getNode().getDataStreamManager();
-            manager.upload(domainId, source, target);
+            DataManager dataManager = ModernMT.getNode().getDataManager();
+            dataManager.upload(domainId, source, target, DataManager.CONTRIBUTIONS_CHANNEL_ID);
 
             return domain;
         } finally {
@@ -126,7 +125,7 @@ public class DomainFacade {
         }
     }
 
-    public ImportJob add(int domainId, BilingualCorpus corpus) throws PersistenceException, IOException, DataStreamException {
+    public ImportJob add(int domainId, BilingualCorpus corpus) throws PersistenceException, DataManagerException {
         Connection connection = null;
         Database db = ModernMT.getNode().getEngine().getDatabase();
 
@@ -139,8 +138,8 @@ public class DomainFacade {
             if (domain == null)
                 return null;
 
-            DataStreamManager manager = ModernMT.getNode().getDataStreamManager();
-            ImportJob job = manager.upload(domainId, corpus);
+            DataManager dataManager = ModernMT.getNode().getDataManager();
+            ImportJob job = dataManager.upload(domainId, corpus, DataManager.DOMAIN_UPLOAD_CHANNEL_ID);
 
             if (job == null)
                 return null;
@@ -178,12 +177,15 @@ public class DomainFacade {
 
         long begin = job.getBegin();
         long end = job.getEnd();
+        short channel = job.getDataChannel();
 
         long minOffset = Long.MAX_VALUE;
         int completed = 0;
 
         for (NodeInfo node : nodes) {
-            long nodeOffset = node.updatesOffset;
+            Long nodeOffset = node.channelsPositions == null ? 0L : node.channelsPositions.get(channel);
+            if (nodeOffset == null)
+                nodeOffset = 0L;
 
             if (nodeOffset >= end)
                 completed++;

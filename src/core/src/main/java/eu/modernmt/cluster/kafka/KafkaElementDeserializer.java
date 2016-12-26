@@ -1,4 +1,4 @@
-package eu.modernmt.cluster.datastream;
+package eu.modernmt.cluster.kafka;
 
 import eu.modernmt.io.DefaultCharset;
 import org.apache.kafka.common.serialization.Deserializer;
@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * Created by davide on 30/08/16.
  */
-public class StreamUpdateDeserializer implements Deserializer<StreamUpdate> {
+public class KafkaElementDeserializer implements Deserializer<KafkaElement> {
 
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
@@ -18,7 +18,7 @@ public class StreamUpdateDeserializer implements Deserializer<StreamUpdate> {
     }
 
     @Override
-    public StreamUpdate deserialize(String topic, byte[] data) {
+    public KafkaElement deserialize(String topic, byte[] data) {
         if (data == null)
             return null;
 
@@ -37,7 +37,7 @@ public class StreamUpdateDeserializer implements Deserializer<StreamUpdate> {
         int targetSentenceLength = buffer.getInt();
         String targetSentence = new String(data, 13 + sourceSentenceLength, targetSentenceLength, charset);
 
-        return new StreamUpdate(domain, sourceSentence, targetSentence);
+        return new KafkaElement(domain, sourceSentence, targetSentence);
     }
 
     @Override

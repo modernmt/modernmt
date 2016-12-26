@@ -23,11 +23,13 @@ public class SQLiteImportJobDAO implements ImportJobDAO {
         int size = result.getInt("size");
         long begin = result.getLong("begin");
         long end = result.getLong("end");
+        short dataChannel = result.getShort("data_channel");
 
         ImportJob job = new ImportJob(id, domain);
         job.setSize(size);
         job.setBegin(begin);
         job.setEnd(end);
+        job.setDataChannel(dataChannel);
 
         return job;
     }
@@ -38,12 +40,13 @@ public class SQLiteImportJobDAO implements ImportJobDAO {
         ResultSet result = null;
 
         try {
-            statement = connection.prepareStatement("INSERT INTO import_jobs(\"domain\", \"begin\", \"end\", \"size\") VALUES (?, ?, ?, ?)",
+            statement = connection.prepareStatement("INSERT INTO import_jobs(\"domain\", \"begin\", \"end\", \"data_channel\", \"size\") VALUES (?, ?, ?, ?, ?)",
                     Statement.RETURN_GENERATED_KEYS);
             statement.setInt(1, job.getDomain());
             statement.setLong(2, job.getBegin());
             statement.setLong(3, job.getEnd());
-            statement.setLong(4, job.getSize());
+            statement.setShort(4, job.getDataChannel());
+            statement.setLong(5, job.getSize());
 
             statement.executeUpdate();
 

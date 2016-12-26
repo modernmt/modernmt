@@ -1,4 +1,4 @@
-package eu.modernmt.cluster.datastream;
+package eu.modernmt.cluster.kafka;
 
 import eu.modernmt.io.DefaultCharset;
 import org.apache.kafka.common.serialization.Serializer;
@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * Created by davide on 30/08/16.
  */
-public class StreamUpdateSerializer implements Serializer<StreamUpdate> {
+public class KafkaElementSerializer implements Serializer<KafkaElement> {
 
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
@@ -18,7 +18,7 @@ public class StreamUpdateSerializer implements Serializer<StreamUpdate> {
     }
 
     @Override
-    public byte[] serialize(String topic, StreamUpdate data) {
+    public byte[] serialize(String topic, KafkaElement data) {
         if (data == null)
             return null;
 
