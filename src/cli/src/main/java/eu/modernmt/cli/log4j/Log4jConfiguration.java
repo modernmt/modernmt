@@ -1,5 +1,6 @@
 package eu.modernmt.cli.log4j;
 
+import eu.modernmt.logging.NativeLogger;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.appender.ConsoleAppender;
@@ -43,6 +44,8 @@ public class Log4jConfiguration {
                         .add(builder.newAppenderRef("StdErr")).addAttribute("additivity", false))
                 .add(builder.newRootLogger(Level.ERROR).add(builder.newAppenderRef("StdErr")));
         Configurator.initialize(builder.build());
+
+        NativeLogger.initialize();
     }
 
 }

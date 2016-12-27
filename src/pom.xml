@@ -38,19 +38,15 @@
         <mmt.version>0.14</mmt.version>
 
         <!-- Native project definitions -->
-        <project.native.include>${project.basedir}/../common-interfaces/native/include</project.native.include>
         <project.build.native>${project.build.directory}/native</project.build.native>
         <project.nativedir>${project.basedir}/native</project.nativedir>
         <project.nativedir.javah>${project.nativedir}/javah</project.nativedir.javah>
 
         <!-- MMT build directory -->
+        <mmt.root>${project.basedir}/../..</mmt.root>
         <mmt.build>${project.basedir}/../../build</mmt.build>
         <mmt.build.lib>${mmt.build}/lib</mmt.build.lib>
         <mmt.build.bin>${mmt.build}/bin</mmt.build.bin>
-
-        <!-- Vendor directory -->
-        <mmt.vendor>${project.basedir}/../../vendor</mmt.vendor>
-        <mmt.vendor.rocksdb>${mmt.vendor}/rocksdb/</mmt.vendor.rocksdb>
     </properties>
 
     <build>

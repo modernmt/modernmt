@@ -53,9 +53,10 @@
                             <executable>cmake</executable>
                             <workingDirectory>${project.build.native}</workingDirectory>
                             <arguments>
-                                <argument>-DROCKSDB_ROOT=${mmt.vendor.rocksdb}</argument>
-                                <argument>-DCMAKE_INSTALL_PREFIX=${mmt.build}</argument>
+                                <argument>-DCMAKE_MODULE_PATH=${mmt.root}/src/cmake_modules</argument>
                                 <argument>-DCMAKE_BUILD_TYPE=Release</argument>
+                                <argument>-DCMAKE_INSTALL_PREFIX=${mmt.build}</argument>
+
                                 <argument>${project.nativedir}</argument>
                             </arguments>
                         </configuration>

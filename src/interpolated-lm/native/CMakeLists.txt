@@ -39,9 +39,6 @@ IF (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     you want to set it, use cmake -DCMAKE_INSTALL_PREFIX to do so")
 ENDIF (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
-# where to find cmake modules
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules")
-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -fPIC")
 
 include_directories(${CMAKE_SOURCE_DIR})
@@ -57,83 +54,47 @@ set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 
 find_package(Boost 1.55.0 REQUIRED COMPONENTS filesystem thread system program_options)
-
-## RocksDB
-find_package(Rocksdb REQUIRED)
-
-## BZip2, ZLIB and lzma
-find_package(BZip2)
-
-## BZip2, ZLIB and lzma
-find_package(BZip2)
-find_package(ZLIB)
-find_package(lzma)
-
-# OpenMP
-find_package(OpenMP QUIET)
-if (OPENMP_FOUND)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    message(STATUS "OpenMP found")
-endif (OPENMP_FOUND)
-
-# MyOpenMP
-if (MAC_OSX)
-    if (NOT OPENMP_FOUND)
-        message(STATUS "OpenMP not found; looking for the user-defined package MyOpenMP")
-        find_package(MyOpenMP)
-        if (MYOPENMP_FOUND)
-            message(STATUS "CMAKE_EXE_LINKER_FLAGS:${CMAKE_EXE_LINKER_FLAGS}")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MyOpenMP_CXX_FLAGS}")
-            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MyOpenMP_EXE_LINKER_FLAGS}")
-            message(STATUS "MyOpenMP found")
-            message(STATUS "CMAKE_EXE_LINKER_FLAGS:${CMAKE_EXE_LINKER_FLAGS}")
-        else (MYOPENMP_FOUND)
-            message(FATAL "MyOpenMP not found")
-        endif (MYOPENMP_FOUND)
-    endif (NOT OPENMP_FOUND)
-endif (MAC_OSX)
-
-## MMT common-interfaces
-find_package(MMTCommons REQUIRED)
-
-########
-## include and lib directories
-########
-
 include_directories(${Boost_INCLUDE_DIRS})
 
 ## RocksDB
+find_package(Rocksdb REQUIRED)
 include_directories(${Rocksdb_INCLUDE_DIR})
 
 ## BZip2
+find_package(BZip2 QUIET)
 if (BZIP2_FOUND)
     include_directories(${BZIP_INCLUDE_DIRS})
 endif (BZIP2_FOUND)
 
 ## ZLIB
+find_package(ZLIB QUIET)
 if (ZLIB_FOUND)
     include_directories(${ZLIB_INCLUDE_DIRS})
 endif (ZLIB_FOUND)
 
-##lzma
+## lzma
+find_package(lzma QUIET)
 if (lzma_FOUND)
     include_directories(${lzma_INCLUDE_DIRS})
 endif (lzma_FOUND)
 
-## MMT common-interfaces
-include_directories(${MMTCommons_INCLUDE_DIR})
+## OpenMP
+find_package(OpenMP QUIET)
+if (OPENMP_FOUND)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+    include_directories(${OpenMP_INCLUDE_DIR})
 
-# MyOpenMP
-if (MAC_OSX)
-    if (MYOPENMP_FOUND)
-        include_directories(${MyOpenMP_INCLUDE_DIR})
-        link_directories(${MyOpenMP_LIBRARY_DIR})
-        message(STATUS "MyOpenMP_INCLUDE_DIR:${MyOpenMP_INCLUDE_DIR}")
-        message(STATUS "MyOpenMP_LIBRARY_DIR:${MyOpenMP_LIBRARY_DIR}")
-    endif (MYOPENMP_FOUND)
-endif (MAC_OSX)
+    message(STATUS "Compiling with OpenMP")
+endif (OPENMP_FOUND)
 
-# Preparing target, recursively
+## ModernMT
+find_package(ModernMT REQUIRED COMPONENTS common)
+include_directories(${ModernMT_INCLUDE_DIRS})
+
+#########
+## Preparing target, recursively
+#########
 add_definitions(-DKENLM_MAX_ORDER=6)
 
 add_subdirectory(corpus)
@@ -141,10 +102,14 @@ add_subdirectory(lm)
 add_subdirectory(db)
 add_subdirectory(kenlm)
 
-add_library(${PROJECT_NAME} ${TARGET_OBJECTS_kenlm} ${TARGET_OBJECTS_lm} ${TARGET_OBJECTS_db} ${TARGET_OBJECTS_corpus} ${SOURCE_FILES})
 link_directories(build)
 
-# Set third-party libraries
+add_library(${PROJECT_NAME} ${TARGET_OBJECTS_kenlm} ${TARGET_OBJECTS_lm} ${TARGET_OBJECTS_db} ${TARGET_OBJECTS_corpus} ${SOURCE_FILES})
+
+#########
+## Third-party libraries linking
+#########
+
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} ${Rocksdb_LIBS})
 if (BZIP2_FOUND)
@@ -156,12 +121,10 @@ endif (ZLIB_FOUND)
 if (lzma_FOUND)
     target_link_libraries(${PROJECT_NAME} ${lzma_LIBRARIES})
 endif (lzma_FOUND)
-#[[
-if (MYOPENMP_FOUND)
-    link_directories(${MyOpenMP_LIBRARY_DIR})
-endif (MYOPENMP_FOUND)
-]]
-
+if (OPENMP_FOUND)
+    link_directories(${OpenMP_LIBRARY_DIR})
+endif (OPENMP_FOUND)
+target_link_libraries(${PROJECT_NAME} ${ModernMT_LIBS})
 
 #########
 ## Install targets

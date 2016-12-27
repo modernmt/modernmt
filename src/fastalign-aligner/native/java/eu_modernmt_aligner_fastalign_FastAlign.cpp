@@ -5,7 +5,10 @@
 #include "javah/eu_modernmt_aligner_fastalign_FastAlign.h"
 #include "fastalign/FastAligner.h"
 #include <mmt/jniutil.h>
+#ifdef _OPENMP
 #include <omp.h>
+#endif
+
 
 using namespace std;
 using namespace mmt;
@@ -47,8 +50,10 @@ inline jintArray AlignmentToArray(JNIEnv *jvm, alignment_t align) {
  */
 JNIEXPORT jlong JNICALL
 Java_eu_modernmt_aligner_fastalign_FastAlign_instantiate(JNIEnv *jvm, jobject jself, jstring jmodel, jint threads) {
+#ifdef _OPENMP
     omp_set_dynamic(0);
     omp_set_num_threads(threads);
+#endif
 
     string modelPath = jni_jstrtostr(jvm, jmodel);
     return (jlong) FastAligner::Open(modelPath);

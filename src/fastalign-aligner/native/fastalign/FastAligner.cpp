@@ -6,7 +6,9 @@
 #include "FastAligner.h"
 #include <thread>
 #include "Model.h"
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 const string kPathSeparator =
 #ifdef _WIN32
@@ -32,8 +34,10 @@ FastAligner::FastAligner(AlignerModel *forwardModel, AlignerModel *backwardModel
         : forwardModel(forwardModel), backwardModel(backwardModel) {
     this->threads = threads > 0 ? threads : (int) thread::hardware_concurrency();
 
+#ifdef _OPENMP
     omp_set_dynamic(0);
     omp_set_num_threads(this->threads);
+#endif
 }
 
 FastAligner::~FastAligner() {
@@ -81,7 +85,12 @@ FastAligner::GetAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &bat
 
 #pragma omp parallel for schedule(dynamic)
     for (size_t i = 0; i < batch.size(); ++i) {
+#ifdef _OPENMP
         SymAlignment &symal = symals[omp_get_thread_num()];
+#else
+        SymAlignment &symal = symals[0];
+#endif
+
 
         symal.Reset(batch[i].first.size(), batch[i].second.size());
 

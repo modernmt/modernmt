@@ -4,12 +4,14 @@
 #  Rocksdb_LIBS, directory containing rocksdb libraries
 #  Rocksdb_FOUND, whether rocksdb has been found
 
+set(ModernMT_BUILD_DIR "${CMAKE_SOURCE_DIR}/../../../build")
+
 set(Rocksdb_SEARCH_HEADER_PATHS
-        ${ROCKSDB_ROOT}/include $ENV{ROCKSDB_ROOT}/include
+        ${ModernMT_BUILD_DIR}/include ${ROCKSDB_ROOT}/include $ENV{ROCKSDB_ROOT}/include
         )
 
 set(Rocksdb_SEARCH_LIB_PATH
-        ${ROCKSDB_ROOT}/lib $ENV{ROCKSDB_ROOT}/lib
+        ${ModernMT_BUILD_DIR}/lib ${ROCKSDB_ROOT}/lib $ENV{ROCKSDB_ROOT}/lib
         )
 
 find_path(Rocksdb_INCLUDE_DIR rocksdb/db.h PATHS
@@ -43,4 +45,5 @@ endif ()
 mark_as_advanced(
         Rocksdb_INCLUDE_DIR
         Rocksdb_LIBS
+        Rocksdb_FOUND
 )
