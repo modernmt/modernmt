@@ -52,31 +52,31 @@ namespace mmt {
                 return name;
             }
 
-            const inline bool IsLevelEnabled(const Level level) {
+            const inline bool IsLevelEnabled(const Level level) const {
                 return level >= this->level;
             }
 
-            const inline bool IsTraceEnabled() {
+            const inline bool IsTraceEnabled() const {
                 return Level::TRACE >= this->level;
             }
 
-            const inline bool IsDebugEnabled() {
+            const inline bool IsDebugEnabled() const {
                 return Level::DEBUG >= this->level;
             }
 
-            const inline bool IsInfoEnabled() {
+            const inline bool IsInfoEnabled() const {
                 return Level::INFO >= this->level;
             }
 
-            const inline bool IsWarnEnabled() {
+            const inline bool IsWarnEnabled() const {
                 return Level::WARN >= this->level;
             }
 
-            const inline bool IsErrorEnabled() {
+            const inline bool IsErrorEnabled() const {
                 return Level::ERROR >= this->level;
             }
 
-            const inline bool IsFatalEnabled() {
+            const inline bool IsFatalEnabled() const {
                 return Level::FATAL >= this->level;
             }
 
@@ -89,7 +89,7 @@ namespace mmt {
 
             static Level GetLevelForLogger(const string &name);
 
-            inline void _Log(const Level level, const string &message) const {
+            inline void Log(const Level level, const string &message) const {
                 if (level >= this->level)
                     this->WriteLog(level, message);
             }
@@ -108,12 +108,6 @@ namespace mmt {
             const Logger &logger;
             const Level level;
         };
-
-
-#define Log(prio, msg) do {} while(0)
-
-#define Logd(msg) Log(DEBUG, msg)
-#define Logi(msg) Log(INFO, msg)
 
     }
 }

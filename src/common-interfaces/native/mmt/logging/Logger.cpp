@@ -67,5 +67,5 @@ LogStream::LogStream(const Logger &logger, Level level) : basic_ostringstream(),
 }
 
 LogStream::~LogStream() {
-    this->logger._Log(this->level, this->str());
+    this->logger.Log(this->level, this->str());
 }

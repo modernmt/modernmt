@@ -45,6 +45,7 @@ public class Log4jConfiguration {
                 .add(builder.newRootLogger(Level.ERROR).add(builder.newAppenderRef("StdErr")));
         Configurator.initialize(builder.build());
 
+        Configurator.setRootLevel(level); // Important for NativeLogger.getLevel() consistency
         NativeLogger.initialize();
     }
 
