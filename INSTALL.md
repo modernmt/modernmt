@@ -50,8 +50,8 @@ The current version of ModernMT does not limit the maximum number of open files 
 
 In order to avoid this error, in Ubuntu 14.04, you have to set the option `nofile` in `/etc/security/limits.conf` to a high limit and restart the machine, for example:
 ```
-soft nofile 1048576
-hard nofile 1048576
+* soft nofile 1048576
+* hard nofile 1048576
 ```
 
 ## Libraries that MMT requires:
