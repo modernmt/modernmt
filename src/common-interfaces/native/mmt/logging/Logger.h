@@ -14,6 +14,13 @@
 
 using namespace std;
 
+#define LogTrace(logger) mmt::logging::LogStream(logger, mmt::logging::Level::TRACE)
+#define LogDebug(logger) mmt::logging::LogStream(logger, mmt::logging::Level::DEBUG)
+#define LogInfo(logger) mmt::logging::LogStream(logger, mmt::logging::Level::INFO)
+#define LogWarn(logger) mmt::logging::LogStream(logger, mmt::logging::Level::WARN)
+#define LogError(logger) mmt::logging::LogStream(logger, mmt::logging::Level::ERROR)
+#define LogFatal(logger) mmt::logging::LogStream(logger, mmt::logging::Level::FATAL)
+
 namespace mmt {
     namespace logging {
 
@@ -33,11 +40,13 @@ namespace mmt {
         };
 
         class Logger {
+            friend class LogStream;
+
         public:
 
             static void Initialize(JNIEnv *env);
 
-            static Logger *Get(const string &name);
+            Logger(const string &name);
 
             const string &GetName() const {
                 return name;
@@ -71,41 +80,6 @@ namespace mmt {
                 return Level::FATAL >= this->level;
             }
 
-            const inline void _Log(const Level level, const string &message) {
-                if (level >= this->level)
-                    this->WriteLog(level, message);
-            }
-
-            const inline void Trace(const string &message) {
-                if (Level::TRACE >= this->level)
-                    this->WriteLog(Level::TRACE, message);
-            }
-
-            const inline void Debug(const string &message) {
-                if (Level::DEBUG >= this->level)
-                    this->WriteLog(Level::DEBUG, message);
-            }
-
-            const inline void Info(const string &message) {
-                if (Level::INFO >= this->level)
-                    this->WriteLog(Level::INFO, message);
-            }
-
-            const inline void Warning(const string &message) {
-                if (Level::WARN >= this->level)
-                    this->WriteLog(Level::WARN, message);
-            }
-
-            const inline void Error(const string &message) {
-                if (Level::ERROR >= this->level)
-                    this->WriteLog(Level::ERROR, message);
-            }
-
-            const inline void Fatal(const string &message) {
-                if (Level::FATAL >= this->level)
-                    this->WriteLog(Level::FATAL, message);
-            }
-
         private:
             struct jlogger_t;
             static jlogger_t *jlogger;
@@ -113,13 +87,28 @@ namespace mmt {
             const string name;
             const Level level;
 
-            Logger(const string &name, const Level level);
+            static Level GetLevelForLogger(const string &name);
 
-            const void WriteLog(const Level level, const string &message);
+            inline void _Log(const Level level, const string &message) const {
+                if (level >= this->level)
+                    this->WriteLog(level, message);
+            }
+
+            void WriteLog(const Level level, const string &message) const;
 
         };
 
-#define IsLogLevelEnabled(prio) (true)
+        class LogStream : public virtual ostringstream {
+        public:
+            LogStream(const Logger &logger, Level level);
+
+            virtual ~LogStream();
+
+        private:
+            const Logger &logger;
+            const Level level;
+        };
+
 
 #define Log(prio, msg) do {} while(0)
 

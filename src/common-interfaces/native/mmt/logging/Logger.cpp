@@ -27,26 +27,26 @@ void Logger::Initialize(JNIEnv *env) {
     Logger::jlogger = jlogger;
 }
 
-Logger *Logger::Get(const string &name) {
-    if (Logger::jlogger == nullptr)
-        return new Logger(name, Level::OFF);
+Level Logger::GetLevelForLogger(const string &name) {
+    if (jlogger == nullptr)
+        return Level::OFF;
 
     JNIEnv *env;
     jlogger->jvm->AttachCurrentThread((void **) &env, NULL);
 
     jstring jname = env->NewStringUTF(name.c_str());
-    jint level = env->CallIntMethod(nullptr, jlogger->createLoggerMethod, jname);
+    jint level = env->CallStaticIntMethod(jlogger->_class, jlogger->createLoggerMethod, jname);
     env->DeleteLocalRef(jname);
 
     jlogger->jvm->DetachCurrentThread();
 
-    return new Logger(name, (Level) level);
+    return (Level) level;
 }
 
-Logger::Logger(const string &name, const Level level) : name(name), level(level) {
+Logger::Logger(const string &name) : name(name), level(GetLevelForLogger(name)) {
 }
 
-const void Logger::WriteLog(const Level level, const string &message) {
+void Logger::WriteLog(const Level level, const string &message) const {
     if (jlogger) {
         JNIEnv *env;
         jlogger->jvm->AttachCurrentThread((void **) &env, NULL);
@@ -54,11 +54,18 @@ const void Logger::WriteLog(const Level level, const string &message) {
         jstring jname = env->NewStringUTF(name.c_str());
         jstring jmessage = env->NewStringUTF(message.c_str());
 
-        env->CallVoidMethod(nullptr, jlogger->logMethod, jname, (jint) level, jmessage);
+        env->CallStaticVoidMethod(jlogger->_class, jlogger->logMethod, jname, (jint) level, jmessage);
 
         env->DeleteLocalRef(jname);
         env->DeleteLocalRef(jmessage);
 
         jlogger->jvm->DetachCurrentThread();
     }
+}
+
+LogStream::LogStream(const Logger &logger, Level level) : basic_ostringstream(), logger(logger), level(level) {
+}
+
+LogStream::~LogStream() {
+    this->logger._Log(this->level, this->str());
 }
