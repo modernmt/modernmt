@@ -71,7 +71,7 @@ namespace mmt {
                 return Level::FATAL >= this->level;
             }
 
-            const inline void Log(const Level level, const string &message) {
+            const inline void _Log(const Level level, const string &message) {
                 if (level >= this->level)
                     this->WriteLog(level, message);
             }
