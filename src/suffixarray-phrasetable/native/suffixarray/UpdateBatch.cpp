@@ -22,7 +22,7 @@ void UpdateBatch::Reset(const vector<seqid_t> &_streams) {
 }
 
 bool UpdateBatch::SetStreamIfValid(stream_t stream, seqid_t sentence) {
-    if (streams.size() <= stream)
+    if ((int) streams.size() <= stream)
         streams.resize(((size_t) stream) + 1, -1);
 
     if (streams[stream] < sentence) {

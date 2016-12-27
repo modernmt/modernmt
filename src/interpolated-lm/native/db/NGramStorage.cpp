@@ -167,7 +167,7 @@ NGramStorage::NGramStorage(string basepath, uint8_t order, bool prepareForBulkLo
 
     options.max_open_files = -1;
     options.compaction_style = kCompactionStyleLevel;
-    options.memtable_prefix_bloom_bits = 1024 * 1024 * 8;
+    options.memtable_prefix_bloom_size_ratio = 1.;
 
     if (prepareForBulkLoad) {
         options.PrepareForBulkLoad();
