@@ -2,6 +2,7 @@ package eu.modernmt.decoder.moses;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.context.ContextScore;
+import eu.modernmt.data.DataListener;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
@@ -9,7 +10,6 @@ import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
-import eu.modernmt.data.DataListener;
 import eu.modernmt.vocabulary.Vocabulary;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
