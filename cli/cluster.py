@@ -430,10 +430,10 @@ class ClusterNode(object):
     def _start_process(self):
         if not os.path.isdir(self.engine.get_runtime_path()):
             fileutils.makedirs(self.engine.get_runtime_path(), exist_ok=True)
-        self._log_file = self.engine.get_logfile(ClusterNode.__LOG_FILENAME, ensure=True)
+        logs_folder = os.path.abspath(os.path.join(self._log_file, os.pardir))
 
         args = ['-e', self.engine.name, '-p', str(self._cluster_ports[0]), str(self._cluster_ports[1]),
-                '--status-file', self._status_file]
+                '--status-file', self._status_file, '--logs', logs_folder]
 
         if self._start_rest_server:
             args.append('-a')
@@ -447,15 +447,12 @@ class ClusterNode(object):
             args.append('--member')
             args.append(str(self._sibling))
 
-        command = mmt_javamain('eu.modernmt.cli.ClusterNodeMain', args,
-                               hserr_path=os.path.abspath(os.path.join(self._log_file, os.pardir)))
-
-        log = open(self._log_file, 'wa')
+        command = mmt_javamain('eu.modernmt.cli.ClusterNodeMain', args, hserr_path=logs_folder)
 
         if os.path.isfile(self._status_file):
             os.remove(self._status_file)
 
-        return subprocess.Popen(command, stdout=open(os.devnull), stderr=log, shell=False)
+        return subprocess.Popen(command, stdout=open('/home/ubuntu/test.log', 'w'), stderr=subprocess.STDOUT, shell=False)
 
     def get_state(self):
         state = None

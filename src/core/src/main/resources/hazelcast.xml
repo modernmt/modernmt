@@ -8,6 +8,7 @@
     </group>
 
     <properties>
+        <property name="hazelcast.logging.type">log4j2</property>
         <property name="hazelcast.rest.enabled">false</property>
         <property name="hazelcast.shutdownhook.enabled">true</property>
     </properties>

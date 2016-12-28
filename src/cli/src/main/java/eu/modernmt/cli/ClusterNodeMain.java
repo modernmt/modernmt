@@ -29,6 +29,7 @@ public class ClusterNodeMain {
             Option apiPort = Option.builder("a").longOpt("api-port").hasArg().type(Integer.class).required(false).build();
             Option clusterPorts = Option.builder("p").longOpt("cluster-ports").numberOfArgs(2).type(Integer.class).required().build();
             Option statusFile = Option.builder().longOpt("status-file").hasArg().required().build();
+            Option logsFolder = Option.builder().longOpt("logs").hasArg().required().build();
             Option verbosity = Option.builder("v").longOpt("verbosity").hasArg().type(Integer.class).required(false).build();
 
             Option member = Option.builder().longOpt("member").hasArg().required(false).build();
@@ -40,6 +41,7 @@ public class ClusterNodeMain {
             cliOptions.addOption(statusFile);
             cliOptions.addOption(verbosity);
             cliOptions.addOption(member);
+            cliOptions.addOption(logsFolder);
         }
 
         public final String engine;
@@ -47,6 +49,7 @@ public class ClusterNodeMain {
         public final int controlPort;
         public final int dataPort;
         public final File statusFile;
+        public final File logsFolder;
         public final int verbosity;
         public final String member;
 
@@ -59,12 +62,13 @@ public class ClusterNodeMain {
             this.controlPort = Integer.parseInt(ports[0]);
             this.dataPort = Integer.parseInt(ports[1]);
             this.statusFile = new File(cli.getOptionValue("status-file"));
+            this.logsFolder = new File(cli.getOptionValue("logs"));
 
             String apiPort = cli.getOptionValue("api-port");
             this.apiPort = apiPort == null ? -1 : Integer.parseInt(apiPort);
 
             String verbosity = cli.getOptionValue("verbosity");
-            this.verbosity = verbosity == null ? 2 : Integer.parseInt(verbosity);
+            this.verbosity = verbosity == null ? 1 : Integer.parseInt(verbosity);
 
             this.member = cli.getOptionValue("member");
         }
@@ -72,7 +76,7 @@ public class ClusterNodeMain {
 
     public static void main(String[] _args) throws Throwable {
         Args args = new Args(_args);
-        Log4jConfiguration.setup(args.verbosity);
+        Log4jConfiguration.setup(args.verbosity, args.logsFolder);
 
         FileStatusListener listener = new FileStatusListener(args);
 

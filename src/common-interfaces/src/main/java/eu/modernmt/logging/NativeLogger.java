@@ -15,6 +15,7 @@ public class NativeLogger {
         System.loadLibrary("mmtc");
     }
 
+    private static final String NAME_PREFIX = "native.";
     private static final ConcurrentHashMap<String, Logger> loggers = new ConcurrentHashMap<>();
     private static final Level[] LEVELS = new Level[]{
             Level.TRACE, Level.DEBUG, Level.INFO, Level.WARN, Level.ERROR, Level.FATAL, Level.TRACE
@@ -22,7 +23,9 @@ public class NativeLogger {
 
     public static native void initialize();
 
-    protected static int createLogger(String loggerName) {
+    protected static int createLogger(String _loggerName) {
+        final String loggerName = NAME_PREFIX + _loggerName;
+
         Logger logger = loggers.computeIfAbsent(loggerName, name -> LogManager.getLogger(loggerName));
         Level level = logger.getLevel();
 
@@ -35,6 +38,8 @@ public class NativeLogger {
     }
 
     protected static void log(String loggerName, int intLevel, String message) {
+        loggerName = NAME_PREFIX + loggerName;
+
         Logger logger = loggers.get(loggerName);
 
         if (logger == null)
