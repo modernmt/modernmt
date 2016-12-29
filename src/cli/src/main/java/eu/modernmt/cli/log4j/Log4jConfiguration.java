@@ -21,58 +21,45 @@ public class Log4jConfiguration {
             Level.ERROR, Level.INFO, Level.DEBUG, Level.ALL
     };
 
-    public static void setup(int verbosity) {
+    public static void setup(int verbosity) throws IOException {
         setup(verbosity, null);
     }
 
-    public static void setup(int verbosity, File logsFolder) {
+    public static void setup(int verbosity, File logsFolder) throws IOException {
         if (verbosity < 0 || verbosity >= VERBOSITY_LEVELS.length)
             throw new IllegalArgumentException("Invalid verbosity value: " + verbosity);
 
         setup(VERBOSITY_LEVELS[verbosity], logsFolder);
     }
 
-    public static void setup(Level level) {
+    public static void setup(Level level) throws IOException {
         setup(level, null);
     }
 
-    public static void setup(Level level, File logsFolder) {
-        String template = loadTemplate(level, logsFolder);
-        if (template == null)
-            return;
+    public static void setup(Level level, File logsFolder) throws IOException {
+        String config = loadConfig(level, logsFolder);
 
-//        ConfigurationSource source;
-        try {
-            File file = File.createTempFile("mmt_log4j2", "xml");
-            FileUtils.write(file, template, false);
+        File file = File.createTempFile("mmt_log4j2", "xml");
+        file.deleteOnExit();
 
-            System.setProperty("log4j.configurationFile", file.getAbsolutePath());
+        FileUtils.write(file, config, false);
 
-//            source = new ConfigurationSource(new StringInputStream(template));
-        } catch (IOException e) {
-            throw new Error(e); // Impossible
-        }
+        System.setProperty("log4j.configurationFile", file.getAbsolutePath());
 
-//        Configurator.initialize(null, source);
         NativeLogger.initialize();
     }
 
-    private static String loadTemplate(Level level, File logsFolder) {
-        String template = null;
+    private static String loadConfig(Level level, File logsFolder) throws IOException {
+        String template;
         InputStream templateStream = null;
 
         try {
             templateStream = Log4jConfiguration.class.getResourceAsStream(
                     logsFolder == null ? LOG4J_CONSOLE_CONFIG : LOG4J_FILE_CONFIG);
             template = IOUtils.toString(templateStream);
-        } catch (IOException e) {
-            e.printStackTrace();
         } finally {
             IOUtils.closeQuietly(templateStream);
         }
-
-        if (template == null)
-            return null;
 
         template = template.replace("%level", level.name());
         if (logsFolder != null)
