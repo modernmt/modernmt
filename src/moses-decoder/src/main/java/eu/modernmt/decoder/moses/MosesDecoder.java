@@ -2,14 +2,14 @@ package eu.modernmt.decoder.moses;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.context.ContextScore;
+import eu.modernmt.data.DataListener;
+import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
-import eu.modernmt.updating.Update;
-import eu.modernmt.updating.UpdatesListener;
 import eu.modernmt.vocabulary.Vocabulary;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -24,7 +24,7 @@ import java.util.Set;
 /**
  * Created by davide on 26/11/15.
  */
-public class MosesDecoder implements Decoder, UpdatesListener {
+public class MosesDecoder implements Decoder, DataListener {
 
     private static final Logger logger = LogManager.getLogger(MosesDecoder.class);
 
@@ -169,22 +169,22 @@ public class MosesDecoder implements Decoder, UpdatesListener {
     // Updates
 
     @Override
-    public void updateReceived(Update update) throws Exception {
-        int[] sourceSentence = XUtils.encode(update.sourceSentence.getWords());
-        int[] targetSentence = XUtils.encode(update.targetSentence.getWords());
-        int[] alignment = XUtils.encode(update.alignment);
+    public void onDataReceived(TranslationUnit unit) throws Exception {
+        int[] sourceSentence = XUtils.encode(unit.sourceSentence.getWords());
+        int[] targetSentence = XUtils.encode(unit.targetSentence.getWords());
+        int[] alignment = XUtils.encode(unit.alignment);
 
-        updateReceived(update.streamId, update.sentenceId, update.domain, sourceSentence, targetSentence, alignment);
+        updateReceived(unit.channel, unit.channelPosition, unit.domain, sourceSentence, targetSentence, alignment);
     }
 
     private native void updateReceived(int streamId, long sentenceId, int domainId, int[] sourceSentence, int[] targetSentence, int[] alignment);
 
     @Override
-    public Map<Integer, Long> getLatestSequentialNumbers() {
+    public Map<Short, Long> getLatestChannelPositions() {
         long[] ids = getLatestUpdatesIdentifier();
 
-        HashMap<Integer, Long> map = new HashMap<>(ids.length);
-        for (int i = 0; i < ids.length; i++) {
+        HashMap<Short, Long> map = new HashMap<>(ids.length);
+        for (short i = 0; i < ids.length; i++) {
             if (ids[i] >= 0)
                 map.put(i, ids[i]);
         }

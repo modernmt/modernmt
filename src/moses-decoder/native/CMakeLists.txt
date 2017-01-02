@@ -16,7 +16,6 @@ set(SOURCE_FILES
         java/JTranslation.h java/JTranslation.cpp)
 
 include_directories(${CMAKE_SOURCE_DIR})
-include_directories(${MMT_INCLUDE_DIR})
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib)
@@ -38,6 +37,10 @@ set(Boost_USE_STATIC_RUNTIME OFF)
 find_package(Boost 1.55.0 REQUIRED COMPONENTS filesystem thread system program_options iostreams)
 include_directories(${Boost_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
+
+## ModernMT
+find_package(ModernMT REQUIRED COMPONENTS common)
+include_directories(${ModernMT_INCLUDE_DIRS})
 
 ## JNI
 find_package(JNI REQUIRED)

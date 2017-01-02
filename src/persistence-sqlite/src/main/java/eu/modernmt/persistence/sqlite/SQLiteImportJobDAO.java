@@ -4,10 +4,7 @@ import eu.modernmt.model.ImportJob;
 import eu.modernmt.persistence.ImportJobDAO;
 import eu.modernmt.persistence.PersistenceException;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 
 /**
  * Created by davide on 21/09/16.
@@ -21,13 +18,18 @@ public class SQLiteImportJobDAO implements ImportJobDAO {
     }
 
     private static ImportJob read(ResultSet result) throws SQLException {
-        int id = result.getInt("domain");
+        long id = result.getLong("id");
+        int domain = result.getInt("domain");
+        int size = result.getInt("size");
         long begin = result.getLong("begin");
         long end = result.getLong("end");
+        short dataChannel = result.getShort("data_channel");
 
-        ImportJob job = new ImportJob(id);
+        ImportJob job = new ImportJob(id, domain);
+        job.setSize(size);
         job.setBegin(begin);
         job.setEnd(end);
+        job.setDataChannel(dataChannel);
 
         return job;
     }
@@ -35,29 +37,43 @@ public class SQLiteImportJobDAO implements ImportJobDAO {
     @Override
     public ImportJob put(ImportJob job) throws PersistenceException {
         PreparedStatement statement = null;
+        ResultSet result = null;
 
         try {
-            statement = connection.prepareStatement("INSERT INTO import_jobs(\"domain\", \"begin\", \"end\") VALUES (?, ?, ?)");
+            statement = connection.prepareStatement("INSERT INTO import_jobs(\"domain\", \"begin\", \"end\", \"data_channel\", \"size\") VALUES (?, ?, ?, ?, ?)",
+                    Statement.RETURN_GENERATED_KEYS);
             statement.setInt(1, job.getDomain());
             statement.setLong(2, job.getBegin());
             statement.setLong(3, job.getEnd());
+            statement.setShort(4, job.getDataChannel());
+            statement.setLong(5, job.getSize());
 
-            return statement.executeUpdate() == 1 ? job : null;
+            statement.executeUpdate();
+
+            result = statement.getGeneratedKeys();
+
+            if (result.next()) {
+                job.setId(result.getLong(1));
+                return job;
+            } else {
+                return null;
+            }
         } catch (SQLException e) {
             throw new PersistenceException(e);
         } finally {
+            SQLUtils.closeQuietly(result);
             SQLUtils.closeQuietly(statement);
         }
     }
 
     @Override
-    public ImportJob retrieveByDomainId(int domainId) throws PersistenceException {
+    public ImportJob retrieveById(int id) throws PersistenceException {
         PreparedStatement statement = null;
         ResultSet result = null;
 
         try {
-            statement = connection.prepareStatement("SELECT * FROM import_jobs WHERE \"domain\" = ?");
-            statement.setInt(1, domainId);
+            statement = connection.prepareStatement("SELECT * FROM import_jobs WHERE \"id\" = ?");
+            statement.setInt(1, id);
 
             result = statement.executeQuery();
 

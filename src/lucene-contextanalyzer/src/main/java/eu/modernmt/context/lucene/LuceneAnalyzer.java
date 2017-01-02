@@ -5,12 +5,12 @@ import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.ContextScore;
 import eu.modernmt.context.lucene.storage.CorporaStorage;
 import eu.modernmt.context.lucene.storage.Options;
+import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.model.Domain;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.impl.StringCorpus;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
-import eu.modernmt.updating.Update;
-import eu.modernmt.updating.UpdatesListener;
+import eu.modernmt.data.DataListener;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by davide on 09/05/16.
  */
-public class LuceneAnalyzer implements ContextAnalyzer, UpdatesListener {
+public class LuceneAnalyzer implements ContextAnalyzer, DataListener {
 
     private final ContextAnalyzerIndex index;
     private final CorporaStorage storage;
@@ -94,13 +94,13 @@ public class LuceneAnalyzer implements ContextAnalyzer, UpdatesListener {
     // UpdateListener
 
     @Override
-    public void updateReceived(Update update) throws IOException, InterruptedException {
-        storage.updateReceived(update);
+    public void onDataReceived(TranslationUnit update) throws IOException, InterruptedException {
+        storage.onDataReceived(update);
     }
 
     @Override
-    public Map<Integer, Long> getLatestSequentialNumbers() {
-        return storage.getLatestSequentialNumbers();
+    public Map<Short, Long> getLatestChannelPositions() {
+        return storage.getLatestChannelPositions();
     }
 
 }

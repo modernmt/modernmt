@@ -8,6 +8,9 @@ javah/
 
 build/
 
+# CMake
+cmake-build-*
+
 # OSX
 .DS_Store
 .AppleDouble

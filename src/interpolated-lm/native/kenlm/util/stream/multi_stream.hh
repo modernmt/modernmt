@@ -111,10 +111,10 @@ template <class T> class GenericStreams : public util::FixedArray<T> {
     }
 };
 
-template <class T> inline Chains &operator>>(Chains &chains, GenericStreams<T> &streams) {
+template <class T> inline Chains &operator>>(Chains &chains, GenericStreams<T> &channels) {
   ChainPositions positions;
   chains >> positions;
-  streams.Init(positions);
+  channels.Init(positions);
   return chains;
 }
 

@@ -10,7 +10,7 @@
     <artifactId>mmt-persistence-sqlite</artifactId>
     <packaging>jar</packaging>
 
-    <name>mmt-persistence-sqlite</name>
+    <name>SQLite Persistence implementation</name>
     <url>http://maven.apache.org</url>
 
     <properties>

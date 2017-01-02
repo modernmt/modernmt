@@ -59,7 +59,10 @@ public class SQLiteDatabase extends Database {
         try {
             statement = connection.createStatement();
             statement.executeUpdate("CREATE TABLE domains (\"id\" INTEGER PRIMARY KEY AUTOINCREMENT, \"name\" TEXT NOT NULL)");
-            statement.executeUpdate("CREATE TABLE import_jobs (\"domain\" INTEGER PRIMARY KEY NOT NULL, " +
+            statement.executeUpdate("CREATE TABLE import_jobs (\"id\" INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "\"domain\" INTEGER NOT NULL, " +
+                    "\"size\" INTEGER, " +
+                    "\"data_channel\" INTEGER, " +
                     "\"begin\" INTEGER NOT NULL, " +
                     "\"end\" INTEGER NOT NULL)");
         } catch (SQLException e) {

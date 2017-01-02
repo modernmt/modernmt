@@ -1,11 +1,11 @@
 package eu.modernmt.model.corpus.impl.tmx;
 
+import eu.modernmt.io.FileProxy;
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Locale;
@@ -15,13 +15,13 @@ import java.util.Locale;
  */
 class TMXMonolingualView implements Corpus {
 
-    private final File tmx;
+    private final FileProxy tmx;
     private final String name;
     private final Locale sourceLanguage;
     private final Locale targetLanguage;
     private final boolean useSource;
 
-    TMXMonolingualView(File tmx, String name, Locale sourceLanguage, Locale targetLanguage, boolean useSource) {
+    TMXMonolingualView(FileProxy tmx, String name, Locale sourceLanguage, Locale targetLanguage, boolean useSource) {
         this.tmx = tmx;
         this.name = name;
         this.sourceLanguage = sourceLanguage;

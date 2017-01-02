@@ -5,16 +5,35 @@ package eu.modernmt.model;
  */
 public class ImportJob {
 
+    private long id;
     private int domain;
-    private long begin;
-    private long end;
+    private int size;
     private float progress;
 
+    private long begin;
+    private long end;
+    private short dataChannel;
+
     public ImportJob(int domain) {
+        this(0L, domain);
+    }
+
+    public ImportJob(long id, int domain) {
+        this.id = id;
         this.domain = domain;
         this.begin = 0;
         this.end = 0;
+        this.dataChannel = 0;
         this.progress = 0.f;
+        this.size = 0;
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
     }
 
     public float getProgress() {
@@ -47,5 +66,21 @@ public class ImportJob {
 
     public void setEnd(long end) {
         this.end = end;
+    }
+
+    public short getDataChannel() {
+        return dataChannel;
+    }
+
+    public void setDataChannel(short dataChannel) {
+        this.dataChannel = dataChannel;
+    }
+
+    public int getSize() {
+        return size;
+    }
+
+    public void setSize(int size) {
+        this.size = size;
     }
 }

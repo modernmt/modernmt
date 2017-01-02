@@ -1,14 +1,14 @@
 package eu.modernmt.model.corpus.impl.tmx;
 
+import eu.modernmt.io.FileProxy;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.xml.XMLUtils;
 import org.apache.commons.io.IOUtils;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -20,25 +20,25 @@ class TMXBilingualLineWriter implements BilingualCorpus.BilingualLineWriter {
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(TMXCorpus.TMX_DATE_FORMAT);
 
-    private final File tmx;
+    private final FileProxy tmx;
     private final String sourceLanguage;
     private final String targetLanguage;
 
-    private final FileOutputStream stream;
+    private final OutputStream stream;
     private final XMLStreamWriter writer;
 
-    public TMXBilingualLineWriter(File tmx, Locale sourceLanguage, Locale targetLanguage) throws IOException {
+    public TMXBilingualLineWriter(FileProxy tmx, Locale sourceLanguage, Locale targetLanguage) throws IOException {
         dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 
         this.tmx = tmx;
         this.sourceLanguage = sourceLanguage.toLanguageTag();
         this.targetLanguage = targetLanguage.toLanguageTag();
 
-        FileOutputStream stream = null;
+        OutputStream stream = null;
         XMLStreamWriter writer = null;
 
         try {
-            stream = new FileOutputStream(tmx, false);
+            stream = tmx.getOutputStream(false);
             writer = XMLUtils.createStreamWriter(stream);
         } catch (XMLStreamException e) {
             throw new IOException("Error while creating XMLStreamWriter for TMX " + tmx, e);

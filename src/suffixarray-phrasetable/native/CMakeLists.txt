@@ -22,8 +22,6 @@ if (NOT BUILD_STATIC_LIBS AND NOT BUILD_SHARED_LIBS)
  - to enable/disable shared compilation, set -DBUILD_SHARED_LIBS=[ON|OFF] (default is OFF)")
 endif ()
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules")
-
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -O3 -Wall")
 
 set(SOURCE_FILES
@@ -79,9 +77,10 @@ message(STATUS "Executables will be installed in ${CMAKE_INSTALL_PREFIX}/bin")
 message(STATUS "Libraries will be installed in ${CMAKE_INSTALL_PREFIX}/lib")
 message(STATUS "Include files will be installed in ${CMAKE_INSTALL_PREFIX}/include")
 
-## MMT common-interfaces
-find_package(MMTCommons REQUIRED)
-include_directories(${MMTCommons_INCLUDE_DIR})
+## ModernMT
+find_package(ModernMT REQUIRED COMPONENTS common fastalign)
+include_directories(${ModernMT_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} ${ModernMT_LIBS})
 
 ## Boost
 set(Boost_USE_STATIC_LIBS OFF)
@@ -97,19 +96,15 @@ find_package(Rocksdb REQUIRED)
 include_directories(${Rocksdb_INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME} ${Rocksdb_LIBS})
 
-## FastAlign
-find_package(FastAlign QUIET)
-if (FastAlign_FOUND)
-    add_definitions(-DUSING_FASTALIGN=1)
-    include_directories(${FastAlign_INCLUDE_DIR})
-    target_link_libraries(${PROJECT_NAME} ${FastAlign_LIBS})
-endif (FastAlign_FOUND)
-
-# OpenMP
+## OpenMP
 find_package(OpenMP QUIET)
 if (OPENMP_FOUND)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    message(STATUS "OpenMP found")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+    include_directories(${OpenMP_INCLUDE_DIR})
+    link_directories(${OpenMP_LIBRARY_DIR})
+
+    message(STATUS "Compiling with OpenMP")
 endif (OPENMP_FOUND)
 
 # Test cases

@@ -59,7 +59,7 @@ class Thread {
     /**
      * Constructs a new Thread in which the provided Worker is Run().
      *
-     * Position is usually ChainPosition but if there are multiple streams involved, this can be ChainPositions.
+     * Position is usually ChainPosition but if there are multiple channels involved, this can be ChainPositions.
      *
      * After a call to this constructor, the provided worker will be running within a boost thread owned by the newly constructed Thread object.
      */

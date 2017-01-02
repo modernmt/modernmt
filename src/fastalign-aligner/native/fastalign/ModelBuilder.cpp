@@ -5,7 +5,9 @@
 #include <iostream>
 #include <sstream>
 #include <thread>
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 #include "DiagonalAlignment.h"
 #include "ModelBuilder.h"
 
@@ -127,8 +129,10 @@ void ModelBuilder::ClearTTable(ttable_t &table) {
 }
 
 Model *ModelBuilder::Build(const Corpus &corpus, const string &model_filename) {
+#ifdef _OPENMP
     omp_set_dynamic(0);
     omp_set_num_threads(threads);
+#endif
 
     if (listener) listener->Begin();
 

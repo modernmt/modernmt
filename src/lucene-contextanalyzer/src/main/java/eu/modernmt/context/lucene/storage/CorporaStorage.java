@@ -2,10 +2,10 @@ package eu.modernmt.context.lucene.storage;
 
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.lucene.ContextAnalyzerIndex;
+import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.io.LineReader;
 import eu.modernmt.model.corpus.Corpus;
-import eu.modernmt.updating.Update;
-import eu.modernmt.updating.UpdatesListener;
+import eu.modernmt.data.DataListener;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -24,11 +24,11 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 /**
  * Created by davide on 22/09/16.
  */
-public class CorporaStorage implements UpdatesListener {
+public class CorporaStorage implements DataListener {
 
     private static final int MAX_CONCURRENT_BUCKET_ANALYSIS = 8;
 
-    private static final Update POISON_PILL = new Update(0, 0L, 0, null, null);
+    private static final TranslationUnit POISON_PILL = new TranslationUnit((short) 0, 0L, 0, null, null);
 
     private final Logger logger = LogManager.getLogger(CorporaStorage.class);
 
@@ -69,13 +69,13 @@ public class CorporaStorage implements UpdatesListener {
     }
 
     @Override
-    public void updateReceived(Update update) throws InterruptedException, IOException {
-        backgroundTask.add(update);
+    public void onDataReceived(TranslationUnit unit) throws InterruptedException, IOException {
+        backgroundTask.add(unit);
     }
 
     @Override
-    public Map<Integer, Long> getLatestSequentialNumbers() {
-        return index.getStreams();
+    public Map<Short, Long> getLatestChannelPositions() {
+        return index.getChannels();
     }
 
     public synchronized void flushToDisk(boolean skipAnalysis, boolean forceAnalysis) throws IOException {
@@ -214,7 +214,7 @@ public class CorporaStorage implements UpdatesListener {
 
     private class BackgroundTask extends Thread {
 
-        private final BlockingQueue<Update> queue;
+        private final BlockingQueue<TranslationUnit> queue;
         private boolean shuttingDown = false;
         private IOException error = null;
 
@@ -224,12 +224,12 @@ public class CorporaStorage implements UpdatesListener {
             this.queue = new ArrayBlockingQueue<>(queueSize);
         }
 
-        public void add(Update update) throws InterruptedException, IOException {
+        public void add(TranslationUnit unit) throws InterruptedException, IOException {
             if (error != null)
                 throw error;
 
             if (!shuttingDown)
-                queue.put(update);
+                queue.put(unit);
         }
 
         public void shutdown() {
@@ -241,7 +241,7 @@ public class CorporaStorage implements UpdatesListener {
             }
         }
 
-        private Update getUpdate(long timeout) {
+        private TranslationUnit poll(long timeout) {
             if (timeout < 1)
                 return null;
 
@@ -256,22 +256,22 @@ public class CorporaStorage implements UpdatesListener {
             while (true) {
                 long availableTime = options.writeBehindDelay - (System.currentTimeMillis() - lastWriteDate);
 
-                Update update = getUpdate(availableTime);
+                TranslationUnit unit = poll(availableTime);
 
-                if (update == null) {
+                if (unit == null) {
                     // timeout
                     flushToDisk(false, false);
                     lastWriteDate = System.currentTimeMillis();
-                } else if (update == POISON_PILL) {
+                } else if (unit == POISON_PILL) {
                     logger.debug("CorporaStorage background thread KILL");
                     break;
-                } else if (index.registerUpdate(update.streamId, update.sentenceId)) {
-                    CorpusBucket bucket = index.getBucket(update.domain);
+                } else if (index.registerData(unit.channel, unit.channelPosition)) {
+                    CorpusBucket bucket = index.getBucket(unit.domain);
 
                     if (!bucket.isOpen())
                         bucket.open();
 
-                    bucket.append(update.originalSourceSentence);
+                    bucket.append(unit.originalSourceSentence);
                     pendingUpdatesBuckets.add(bucket);
                 }
             }

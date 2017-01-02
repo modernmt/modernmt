@@ -20,4 +20,6 @@ public interface DomainDAO {
 
     Domain update(Domain domain) throws PersistenceException;
 
+    boolean delete(int id) throws PersistenceException;
+
 }

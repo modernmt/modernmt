@@ -127,22 +127,22 @@ class MMTApi:
 
         return self._get('translate', params=p)
 
-    def create_domain(self, tmx=None, source_file=None, target_file=None, name=None):
-        if source_file is not None and target_file is not None:
-            params = {'source_local_file': source_file, 'target_local_file': target_file}
-        elif tmx is not None:
-            params = {'tmx_local_file': tmx}
-        else:
-            raise IllegalArgumentException('missing corpus for domain')
-
-        if name is not None:
-            params['name'] = name
-
+    def create_domain(self, name):
+        params = {'name': name}
         return self._post('domains', params=params)
 
     def append_to_domain(self, domain, source, target):
         params = {'source': source, 'target': target}
         return self._put('domains/' + str(domain), params=params)
+
+    def import_into_domain(self, domain, tmx):
+        params = {
+            'domain': domain,
+            'content_type' : 'tmx',
+            'local_file' : tmx
+        }
+
+        return self._post('imports', params=params)
 
     def get_all_domains(self):
         return self._get('domains')
@@ -430,10 +430,10 @@ class ClusterNode(object):
     def _start_process(self):
         if not os.path.isdir(self.engine.get_runtime_path()):
             fileutils.makedirs(self.engine.get_runtime_path(), exist_ok=True)
-        self._log_file = self.engine.get_logfile(ClusterNode.__LOG_FILENAME, ensure=True)
+        logs_folder = os.path.abspath(os.path.join(self._log_file, os.pardir))
 
         args = ['-e', self.engine.name, '-p', str(self._cluster_ports[0]), str(self._cluster_ports[1]),
-                '--status-file', self._status_file]
+                '--status-file', self._status_file, '--logs', logs_folder]
 
         if self._start_rest_server:
             args.append('-a')
@@ -447,15 +447,12 @@ class ClusterNode(object):
             args.append('--member')
             args.append(str(self._sibling))
 
-        command = mmt_javamain('eu.modernmt.cli.ClusterNodeMain', args,
-                               hserr_path=os.path.abspath(os.path.join(self._log_file, os.pardir)))
-
-        log = open(self._log_file, 'wa')
+        command = mmt_javamain('eu.modernmt.cli.ClusterNodeMain', args, hserr_path=logs_folder)
 
         if os.path.isfile(self._status_file):
             os.remove(self._status_file)
 
-        return subprocess.Popen(command, stdout=open(os.devnull), stderr=log, shell=False)
+        return subprocess.Popen(command, stdout=open('/home/ubuntu/test.log', 'w'), stderr=subprocess.STDOUT, shell=False)
 
     def get_state(self):
         state = None
@@ -593,11 +590,14 @@ class ClusterNode(object):
             if not debug:
                 self.engine.clear_tempdir()
 
-    def new_domain_from_parallel(self, source_file, target_file, name=None):
-        return self.api.create_domain(source_file=source_file, target_file=target_file, name=name)
-
     def new_domain_from_tmx(self, tmx, name=None):
-        return self.api.create_domain(tmx=tmx, name=name)
+        if name is None:
+            name = os.path.basename(os.path.splitext(tmx)[0])
+
+        domain = self.api.create_domain(name)
+        self.api.import_into_domain(domain['id'], tmx)
+
+        return domain
 
     def append_to_domain(self, domain, source, target):
         try:

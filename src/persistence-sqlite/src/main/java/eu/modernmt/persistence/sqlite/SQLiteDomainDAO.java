@@ -151,4 +151,20 @@ public class SQLiteDomainDAO implements DomainDAO {
         }
     }
 
+    @Override
+    public boolean delete(int id) throws PersistenceException {
+        PreparedStatement statement = null;
+
+        try {
+            statement = connection.prepareStatement("DELETE FROM domains WHERE id = ?");
+            statement.setInt(1, id);
+
+            return statement.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new PersistenceException(e);
+        } finally {
+            SQLUtils.closeQuietly(statement);
+        }
+    }
+
 }

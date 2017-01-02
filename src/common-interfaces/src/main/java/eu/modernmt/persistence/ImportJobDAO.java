@@ -7,7 +7,7 @@ import eu.modernmt.model.ImportJob;
  */
 public interface ImportJobDAO {
 
-    ImportJob retrieveByDomainId(int domainId) throws PersistenceException;
+    ImportJob retrieveById(int id) throws PersistenceException;
 
     ImportJob put(ImportJob job) throws PersistenceException;
 
