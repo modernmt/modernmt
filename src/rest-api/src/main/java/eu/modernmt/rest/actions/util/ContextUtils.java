@@ -10,14 +10,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * Created by davide on 20/10/16.
  */
 public class ContextUtils {
-
-    private static final Pattern PARAMETER_REGEX = Pattern.compile("([1-9][0-9]*:0\\.[0-9]*)(,[1-9][0-9]*:0\\.[0-9]*)*");
 
     public static void resolve(Collection<ContextScore> context) throws PersistenceException {
         ArrayList<Integer> ids = new ArrayList<>(context.size());
@@ -32,20 +29,35 @@ public class ContextUtils {
     }
 
     public static List<ContextScore> parseParameter(String name, String value) throws Parameters.ParameterParsingException {
-        if (!PARAMETER_REGEX.matcher(value).matches())
-            throw new Parameters.ParameterParsingException(name, value);
-
         String[] elements = value.split(",");
         List<ContextScore> context = new ArrayList<>(elements.length);
 
         for (String element : elements) {
             String[] keyvalue = element.split(":");
-            Domain domain = new Domain(Integer.parseInt(keyvalue[0]));
-            float score = Float.parseFloat(keyvalue[1]);
 
-            context.add(new ContextScore(domain, score));
+            if (keyvalue.length != 2)
+                throw new Parameters.ParameterParsingException(name, value);
+
+            int domainId;
+            float score;
+
+            try {
+                domainId = Integer.parseInt(keyvalue[0]);
+                score = Float.parseFloat(keyvalue[1]);
+            } catch (NumberFormatException e) {
+                throw new Parameters.ParameterParsingException(name, value);
+            }
+
+            if (domainId < 1)
+                throw new Parameters.ParameterParsingException(name, value);
+
+            if (score < 0.f || score > 1.f)
+                throw new Parameters.ParameterParsingException(name, value);
+
+            context.add(new ContextScore(new Domain(domainId), score));
         }
 
         return context;
     }
+
 }
