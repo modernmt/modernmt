@@ -24,7 +24,7 @@ class WordAligner:
         else:
             raise NameError('Invalid Word Aligner type: ' + str(type_name))
 
-    def build(self, corpora, working_dir='.', log_file=None):
+    def build(self, corpora, working_dir='.', log=None):
         raise NotImplementedError('Abstract method')
 
     def align(self, corpora, output_folder, log=None):
@@ -38,7 +38,10 @@ class FastAlign(WordAligner):
         self._build_bin = os.path.join(cli.BIN_DIR, 'fa_build')
         self._align_bin = os.path.join(cli.BIN_DIR, 'fa_align')
 
-    def build(self, corpora, working_dir='.', log_file=None):
+    def build(self, corpora, working_dir='.', log=None):
+        if log is None:
+            log = shell.DEVNULL
+
         if not os.path.isdir(working_dir):
             fileutils.makedirs(working_dir, exist_ok=True)
         if not os.path.isdir(self._model):
@@ -51,22 +54,15 @@ class FastAlign(WordAligner):
         fileutils.merge([corpus.get_file(self._target_lang) for corpus in corpora],
                         merged_corpus.get_file(self._target_lang))
 
-        log = shell.DEVNULL
-
-        try:
-            if log_file is not None:
-                log = open(log_file, 'a')
-
-            # Train model
-            command = [self._build_bin,
-                       '-s', merged_corpus.get_file(self._source_lang), '-t', merged_corpus.get_file(self._target_lang),
-                       '-m', self._model, '-I', '4']
-            shell.execute(command, stderr=log)
-        finally:
-            if log_file is not None:
-                log.close()
+        command = [self._build_bin,
+                   '-s', merged_corpus.get_file(self._source_lang), '-t', merged_corpus.get_file(self._target_lang),
+                   '-m', self._model, '-I', '4']
+        shell.execute(command, stdout=log, stderr=log)
 
     def align(self, corpora, output_folder, log=None):
+        if log is None:
+            log = shell.DEVNULL
+
         root = set([corpus.get_folder() for corpus in corpora])
 
         if len(root) != 1:
@@ -78,7 +74,6 @@ class FastAlign(WordAligner):
                    '--input', root, '--output', output_folder,
                    '--source', self._source_lang, '--target', self._target_lang,
                    '--strategy', '1']
-
         shell.execute(command, stderr=log, stdout=log)
 
 
@@ -124,7 +119,10 @@ class SuffixArraysPhraseTable(MosesFeature):
 
         return result
 
-    def train(self, corpora, aligner, working_dir='.', log_file=None):
+    def train(self, corpora, aligner, working_dir='.', log=None):
+        if log is None:
+            log = shell.DEVNULL
+
         if os.path.isdir(self._model) and len(os.listdir(self._model)) > 0:
             raise Exception('Model already exists at ' + self._model)
 
@@ -134,33 +132,22 @@ class SuffixArraysPhraseTable(MosesFeature):
         if not os.path.isdir(working_dir):
             fileutils.makedirs(working_dir, exist_ok=True)
 
-        log = shell.DEVNULL
+        train_corpora = []  # Prepare training folder
+        for corpus in corpora:
+            dest_corpus = BilingualCorpus.make_parallel(corpus.name, working_dir,
+                                                        (self._source_lang, self._target_lang))
+            source_file = corpus.get_file(self._source_lang)
+            target_file = corpus.get_file(self._target_lang)
 
-        try:
-            if log_file is not None:
-                log = open(log_file, 'a')
+            os.symlink(source_file, dest_corpus.get_file(self._source_lang))
+            os.symlink(target_file, dest_corpus.get_file(self._target_lang))
 
-            train_corpora = []
+            train_corpora.append(dest_corpus)
 
-            # Prepare training folder
-            for corpus in corpora:
-                dest_corpus = BilingualCorpus.make_parallel(corpus.name, working_dir,
-                                                            (self._source_lang, self._target_lang))
-                source_file = corpus.get_file(self._source_lang)
-                target_file = corpus.get_file(self._target_lang)
+        # Align corpora
+        aligner.align(train_corpora, working_dir, log=log)
 
-                os.symlink(source_file, dest_corpus.get_file(self._source_lang))
-                os.symlink(target_file, dest_corpus.get_file(self._target_lang))
-
-                train_corpora.append(dest_corpus)
-
-            # Align corpora
-            aligner.align(train_corpora, working_dir, log=log)
-
-            # Build models
-            command = [self._build_bin, '--input', working_dir, '--model', self._model,
-                       '-s', self._source_lang, '-t', self._target_lang]
-            shell.execute(command, stdout=log, stderr=log)
-        finally:
-            if log_file is not None:
-                log.close()
+        # Build models
+        command = [self._build_bin, '--input', working_dir, '--model', self._model,
+                   '-s', self._source_lang, '-t', self._target_lang]
+        shell.execute(command, stdout=log, stderr=log)

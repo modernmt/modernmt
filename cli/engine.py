@@ -1,6 +1,6 @@
+import logging
 import os
 import shutil
-import sys
 import time
 from ConfigParser import ConfigParser
 
@@ -26,7 +26,10 @@ class _DomainMapBuilder:
 
         self._java_mainclass = 'eu.modernmt.cli.DomainMapMain'
 
-    def generate(self, bilingual_corpora, monolingual_corpora, output, log_file=None):
+    def generate(self, bilingual_corpora, monolingual_corpora, output, log=None):
+        if log is None:
+            log = shell.DEVNULL
+
         fileutils.makedirs(self._model, exist_ok=True)
 
         args = ['--db', os.path.join(self._model, 'domains.db'), '-s', self._source_lang, '-t', self._target_lang, '-c']
@@ -36,27 +39,17 @@ class _DomainMapBuilder:
             args.append(source_path)
 
         command = cli.mmt_javamain(self._java_mainclass, args)
+        stdout, _ = shell.execute(command, stderr=log)
 
-        log = shell.DEVNULL
+        domains = {}
 
-        try:
-            if log_file is not None:
-                log = open(log_file, 'w')
+        for domain, name in [line.rstrip('\n').split('\t', 2) for line in stdout.splitlines()]:
+            domains[name] = domain
 
-            stdout, _ = shell.execute(command, stderr=log)
+        bilingual_corpora = [corpus.symlink(output, name=domains[corpus.name]) for corpus in bilingual_corpora]
+        monolingual_corpora = [corpus.symlink(output) for corpus in monolingual_corpora]
 
-            domains = {}
-
-            for domain, name in [line.rstrip('\n').split('\t', 2) for line in stdout.splitlines()]:
-                domains[name] = domain
-
-            bilingual_corpora = [corpus.symlink(output, name=domains[corpus.name]) for corpus in bilingual_corpora]
-            monolingual_corpora = [corpus.symlink(output) for corpus in monolingual_corpora]
-
-            return bilingual_corpora, monolingual_corpora
-        finally:
-            if log_file is not None:
-                log.close()
+        return bilingual_corpora, monolingual_corpora
 
     @staticmethod
     def _load_map(filepath):
@@ -69,47 +62,94 @@ class _DomainMapBuilder:
 
 
 class _builder_logger:
-    def __init__(self, count, line_len=70):
-        self.line_len = line_len
-        self.count = count
-        self._current_step = 0
-        self._step = None
+    def __init__(self, steps_count, log_file, line_len=70):
+        self.stream = open(log_file, 'wb')
+
+        logging.basicConfig(format='%(asctime)-15s [%(levelname)s] - %(message)s',
+                            level=logging.DEBUG, stream=self.stream)
+
+        self._logger = logging.getLogger('EngineBuilder')
+        self._line_len = line_len
         self._engine_name = None
 
+        self._steps_count = steps_count
+        self._current_step_num = 0
+        self._current_step_name = None
+
+        self._step_start_time = 0
+        self._start_time = 0
+
     def start(self, engine, bilingual_corpora, monolingual_corpora):
+        self._start_time = time.time()
         self._engine_name = engine.name if engine.name != 'default' else None
+
+        self._logger.log(logging.INFO, 'Training started: engine=%s, bilingual=%d, monolingual=%d, langpair=%s-%s' %
+                         (engine.name, len(bilingual_corpora), len(monolingual_corpora),
+                          engine.source_lang, engine.target_lang))
+
         print '\n=========== TRAINING STARTED ===========\n'
         print 'ENGINE:  %s' % engine.name
         print 'BILINGUAL CORPORA: %d documents' % len(bilingual_corpora)
         print 'MONOLINGUAL CORPORA: %d documents' % len(monolingual_corpora)
         print 'LANGS:   %s > %s' % (engine.source_lang, engine.target_lang)
         print
-        sys.stdout.flush()
 
     def step(self, step):
-        self._step = step
-        self._current_step += 1
+        self._current_step_name = step
+        self._current_step_num += 1
         return self
 
     def completed(self):
+        self._logger.log(logging.INFO,
+                         'Training completed in %s' % self._pretty_print_time(time.time() - self._start_time))
+
         print '\n=========== TRAINING SUCCESS ===========\n'
         print 'You can now start, stop or check the status of the server with command:'
         print '\t./mmt start|stop|status ' + ('' if self._engine_name is None else '-e %s' % self._engine_name)
         print
-        sys.stdout.flush()
+
+    def error(self):
+        self._logger.exception('Unexpected exception')
+
+    def close(self):
+        self.stream.close()
 
     def __enter__(self):
-        message = 'INFO: (%d of %d) %s... ' % (self._current_step, self.count, self._step)
-        print message.ljust(self.line_len),
-        sys.stdout.flush()
+        self._logger.log(logging.INFO, 'Training step "%s" (%d/%d) started' %
+                         (self._current_step_name, self._current_step_num, self._steps_count))
 
-        self._start_time = time.time()
+        message = 'INFO: (%d of %d) %s... ' % (self._current_step_num, self._steps_count, self._current_step_name)
+        print message.ljust(self._line_len),
+
+        self._step_start_time = time.time()
         return self
 
     def __exit__(self, *_):
-        self._end_time = time.time()
-        print 'DONE (in %ds)' % int(self._end_time - self._start_time)
-        sys.stdout.flush()
+        elapsed_time = time.time() - self._step_start_time
+        self._logger.log(logging.INFO, 'Training step "%s" completed in %s' %
+                         (self._current_step_name, self._pretty_print_time(elapsed_time)))
+        print 'DONE (in %s)' % self._pretty_print_time(elapsed_time)
+
+    @staticmethod
+    def _pretty_print_time(elapsed):
+        elapsed = int(elapsed)
+        parts = []
+
+        if elapsed > 86400:  # days
+            d = int(elapsed / 86400)
+            elapsed -= d * 86400
+            parts.append('%dd' % d)
+        if elapsed > 3600:  # hours
+            h = int(elapsed / 3600)
+            elapsed -= h * 3600
+            parts.append('%dh' % h)
+        if elapsed > 60:  # minutes
+            m = int(elapsed / 60)
+            elapsed -= m * 60
+            parts.append('%dm' % m)
+        parts.append('%ds' % elapsed)
+
+        return ' '.join(parts)
 
 
 class _MMTEngineBuilder:
@@ -145,9 +185,6 @@ class _MMTEngineBuilder:
             if len(unknown_steps) > 0:
                 raise IllegalArgumentException('Unknown training steps: ' + str(unknown_steps))
 
-        cmdlogger = _builder_logger(len(steps) + 1)
-        cmdlogger.start(self._engine, bilingual_corpora, monolingual_corpora)
-
         shutil.rmtree(self._engine.path, ignore_errors=True)
         os.makedirs(self._engine.path)
 
@@ -170,16 +207,19 @@ class _MMTEngineBuilder:
                       (recommended_disk / self.__GB, free_space_on_disk / self.__GB)
             print
 
+        logger = _builder_logger(len(steps) + 1, self._engine.get_logfile('training'))
+
         try:
+            logger.start(self._engine, bilingual_corpora, monolingual_corpora)
+
             unprocessed_bicorpora = bilingual_corpora
             unprocessed_monocorpora = monolingual_corpora
 
             # TM draft-translations cleanup
             if 'tm_cleanup' in steps:
-                with cmdlogger.step('TMs clean-up') as _:
+                with logger.step('TMs clean-up') as _:
                     unprocessed_bicorpora = self._engine.cleaner.clean(
-                        unprocessed_bicorpora, self._get_tempdir('clean_tms')
-                    )
+                        unprocessed_bicorpora, self._get_tempdir('clean_tms'), log=logger.stream)
 
             cleaned_bicorpora = unprocessed_bicorpora
             processed_bicorpora = unprocessed_bicorpora
@@ -187,55 +227,52 @@ class _MMTEngineBuilder:
 
             # Preprocessing
             if 'preprocess' in steps:
-                with cmdlogger.step('Corpora preprocessing') as _:
+                with logger.step('Corpora preprocessing') as _:
                     unprocessed_bicorpora, unprocessed_monocorpora = self._engine.db.generate(
-                        unprocessed_bicorpora, unprocessed_monocorpora, self._get_tempdir('training_corpora')
-                    )
+                        unprocessed_bicorpora, unprocessed_monocorpora, self._get_tempdir('training_corpora'),
+                        log=logger.stream)
 
                     processed_bicorpora, processed_monocorpora = self._engine.training_preprocessor.process(
                         unprocessed_bicorpora + unprocessed_monocorpora, self._get_tempdir('preprocessed'),
-                        (self._engine.data_path if split_trainingset else None)
-                    )
+                        (self._engine.data_path if split_trainingset else None), log=logger.stream)
 
                     cleaned_bicorpora = self._engine.training_preprocessor.clean(
-                        processed_bicorpora, self._get_tempdir('clean_corpora')
-                    )
+                        processed_bicorpora, self._get_tempdir('clean_corpora'))
 
             # Training Context Analyzer
             if 'context_analyzer' in steps:
-                with cmdlogger.step('Context Analyzer training') as _:
-                    log_file = self._engine.get_logfile('training.context')
-                    self._engine.analyzer.create_index(unprocessed_bicorpora, log_file=log_file)
+                with logger.step('Context Analyzer training') as _:
+                    self._engine.analyzer.create_index(unprocessed_bicorpora, log=logger.stream)
 
             # Aligner
             if 'aligner' in steps:
-                with cmdlogger.step('Aligner training') as _:
-                    log_file = self._engine.get_logfile('training.aligner')
+                with logger.step('Aligner training') as _:
                     working_dir = self._get_tempdir('aligner')
-
-                    self._engine.aligner.build(cleaned_bicorpora, working_dir, log_file)
+                    self._engine.aligner.build(cleaned_bicorpora, working_dir, log=logger.stream)
 
             # Training Translation Model
             if 'tm' in steps:
-                with cmdlogger.step('Translation Model training') as _:
+                with logger.step('Translation Model training') as _:
                     working_dir = self._get_tempdir('tm')
-                    log_file = self._engine.get_logfile('training.tm')
-                    self._engine.pt.train(cleaned_bicorpora, self._engine.aligner, working_dir, log_file)
+                    self._engine.pt.train(cleaned_bicorpora, self._engine.aligner, working_dir, log=logger.stream)
 
             # Training Adaptive Language Model
             if 'lm' in steps:
-                with cmdlogger.step('Language Model training') as _:
+                with logger.step('Language Model training') as _:
                     working_dir = self._get_tempdir('lm')
-                    log_file = self._engine.get_logfile('training.lm')
                     self._engine.lm.train(processed_bicorpora + processed_monocorpora, target_lang,
-                                          working_dir, log_file)
+                                          working_dir, log=logger.stream)
 
             # Writing config file
-            with cmdlogger.step('Writing config files') as _:
+            with logger.step('Writing config files') as _:
                 self._engine.write_configs()
 
-            cmdlogger.completed()
+            logger.completed()
+        except:
+            logger.error()
+            raise
         finally:
+            logger.close()
             if not debug:
                 self._engine.clear_tempdir('training')
 

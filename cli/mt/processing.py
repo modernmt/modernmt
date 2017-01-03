@@ -84,7 +84,10 @@ class TMCleaner:
 
         self._java_mainclass = 'eu.modernmt.cli.CleaningPipelineMain'
 
-    def clean(self, corpora, output_path):
+    def clean(self, corpora, output_path, log=None):
+        if log is None:
+            log = shell.DEVNULL
+
         args = ['-s', self._source_lang, '-t', self._target_lang, '--output', output_path, '--input']
 
         input_paths = set([corpus.get_folder() for corpus in corpora])
@@ -93,7 +96,7 @@ class TMCleaner:
             args.append(root)
 
         command = mmt_javamain(self._java_mainclass, args)
-        shell.execute(command, stdin=shell.DEVNULL, stdout=shell.DEVNULL, stderr=shell.DEVNULL)
+        shell.execute(command, stdout=log, stderr=log)
 
         return BilingualCorpus.list(output_path)
 
@@ -123,7 +126,10 @@ class TrainingPreprocessor:
         self._java_mainclass = 'eu.modernmt.cli.TrainingPipelineMain'
         self._vocabulary_path = vocabulary_path
 
-    def process(self, corpora, output_path, data_path=None):
+    def process(self, corpora, output_path, data_path=None, log=None):
+        if log is None:
+            log = shell.DEVNULL
+
         args = ['-s', self._source_lang, '-t', self._target_lang, '-v', self._vocabulary_path, '--output', output_path,
                 '--input']
 
@@ -139,7 +145,7 @@ class TrainingPreprocessor:
             args.append(os.path.join(data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
 
         command = mmt_javamain(self._java_mainclass, args)
-        shell.execute(command, stdin=shell.DEVNULL, stdout=shell.DEVNULL, stderr=shell.DEVNULL)
+        shell.execute(command, stdout=log, stderr=log)
 
         return BilingualCorpus.splitlist(self._source_lang, self._target_lang, roots=output_path)
 

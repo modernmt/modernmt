@@ -1,9 +1,11 @@
 package eu.modernmt.cli;
 
+import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpora;
 import org.apache.commons.cli.*;
+import org.apache.logging.log4j.Level;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -54,6 +56,8 @@ public class CleaningPipelineMain {
     }
 
     public static void main(String[] _args) throws Throwable {
+        Log4jConfiguration.setup(Level.INFO);
+
         Args args = new Args(_args);
 
         ArrayList<BilingualCorpus> bilingualCorpora = new ArrayList<>();

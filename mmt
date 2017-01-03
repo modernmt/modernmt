@@ -69,12 +69,6 @@ class CLIArgsException(Exception):
         self.message = error
 
 
-def _logconfig(debug=True):
-    level = logging.DEBUG if debug else logging.INFO
-    _format = '%(asctime)-15s [%(levelname)s] - %(message)s'
-    logging.basicConfig(format=_format, level=level, stream=sys.stderr)
-
-
 def main_tune(argv):
     parser = argparse.ArgumentParser(description='Tune MMT engine')
     parser.prog = 'mmt tune'
@@ -98,8 +92,6 @@ def main_tune(argv):
 
     args = parser.parse_args(argv)
     args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
-
-    _logconfig(args.debug)
 
     engine = MMTEngine(name=args.engine)
     if not engine.exists():
@@ -138,8 +130,6 @@ def main_evaluate(argv):
     args = parser.parse_args(argv)
     args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
 
-    _logconfig(False)
-
     engine = MMTEngine(name=args.engine)
     if not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
@@ -161,8 +151,6 @@ def main_evaluate(argv):
 
 
 def main_start(argv):
-    _logconfig()
-
     parser = argparse.ArgumentParser(description='Start a MMT cluster node')
     parser.prog = 'mmt start'
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
@@ -248,8 +236,6 @@ def main_start(argv):
 
 
 def main_stop(argv):
-    _logconfig()
-
     parser = argparse.ArgumentParser(description='Stop the local instance of MMT engine')
     parser.prog = 'mmt stop'
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
@@ -272,8 +258,6 @@ def main_stop(argv):
 
 
 def main_delete(argv):
-    _logconfig()
-
     parser = argparse.ArgumentParser(description='Deletes an MMT engine')
     parser.prog = 'mmt delete'
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
@@ -319,8 +303,6 @@ def main_delete(argv):
 
 
 def main_status(argv):
-    _logconfig()
-
     parser = argparse.ArgumentParser(description='Show the MMT engines status')
     parser.prog = 'mmt status'
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
@@ -372,7 +354,6 @@ def main_create(argv):
 
     if len(argv) > 0:
         args = parser.parse_args(argv)
-        _logconfig(args.debug)
 
         injector = dependency.Injector()
         injector.read_args(args)
@@ -392,7 +373,6 @@ def main_create(argv):
 
 
 def main_translate(argv):
-    _logconfig()
     parser = argparse.ArgumentParser(description='Translate text with ModernMT')
 
     parser.add_argument('text', metavar='TEXT', help='text to be translated (optional)', default=None, nargs='?')
@@ -459,7 +439,6 @@ def main_translate(argv):
 
 
 def main_add(argv):
-    _logconfig()
     parser = argparse.ArgumentParser(description='Add contribution to an existent domain')
 
     parser.add_argument('domain', help='The id or name of the domain you want to add the contribution to')
@@ -489,7 +468,6 @@ def main_add(argv):
 
 
 def main_import(argv):
-    _logconfig()
     parser = argparse.ArgumentParser(description='Import a new domain given TMX')
 
     parser.add_argument('-d', '--domain', help='The name of the new domain (default is the filename', default=None)
@@ -570,7 +548,7 @@ def main():
         exit(1)
     except Exception as e:
         sys.stderr.write('ERROR Unexpected exception:\n\t{message}\n'.format(message=repr(e)))
-        raise
+        exit(1)
 
 
 if __name__ == '__main__':

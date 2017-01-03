@@ -60,7 +60,7 @@ public class ContextAnalyzerMain {
     }
 
     public static void main(String[] _args) throws Throwable {
-        Log4jConfiguration.setup(Level.DEBUG);
+        Log4jConfiguration.setup(Level.INFO);
 
         Args args = new Args(_args);
 

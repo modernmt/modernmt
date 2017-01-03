@@ -14,7 +14,10 @@ class ContextAnalyzer:
 
         self._java_mainclass = 'eu.modernmt.cli.ContextAnalyzerMain'
 
-    def create_index(self, corpora, log_file=None):
+    def create_index(self, corpora, log=None):
+        if log is None:
+            log = shell.DEVNULL
+
         source_paths = set()
 
         for corpus in corpora:
@@ -27,14 +30,4 @@ class ContextAnalyzer:
             args.append(source_path)
 
         command = mmt_javamain(self._java_mainclass, args)
-
-        log = shell.DEVNULL
-
-        try:
-            if log_file is not None:
-                log = open(log_file, 'w')
-
-            shell.execute(command, stdout=log, stderr=log)
-        finally:
-            if log_file is not None:
-                log.close()
+        shell.execute(command, stdout=log, stderr=log)
