@@ -2,6 +2,7 @@ import json as js
 import logging
 import multiprocessing
 import os
+import shutil
 import subprocess
 import tempfile
 import time
@@ -11,6 +12,7 @@ import requests
 import cli
 from cli import mmt_javamain, IllegalStateException, IllegalArgumentException
 from cli.libs import fileutils, daemon, shell
+from cli.libs import netutils
 from cli.mt import BilingualCorpus
 from cli.mt.processing import TrainingPreprocessor, Tokenizer
 
@@ -191,12 +193,14 @@ class _tuning_logger:
 
 
 class EmbeddedKafka:
-    def __init__(self, engine):
+    def __init__(self, engine, port=9092):
         self._engine = engine
         self._log_file = None
+        self.port = port
 
-        self._data = os.path.join(engine.models_path, 'kafka')
-        self._pidfile = os.path.join(engine.get_runtime_path(), 'kafka.pid')
+        self._model = os.path.join(engine.models_path, 'kafka')
+        self._runtime = os.path.join(engine.runtime_path, 'kafka')
+        self._pidfile = os.path.join(engine.runtime_path, 'kafka.pid')
 
         self._zookeeper_bin = os.path.join(cli.VENDOR_DIR, 'kafka-0.10.0.1', 'bin', 'zookeeper-server-start.sh')
         self._kafka_bin = os.path.join(cli.VENDOR_DIR, 'kafka-0.10.0.1', 'bin', 'kafka-server-start.sh')
@@ -241,18 +245,23 @@ class EmbeddedKafka:
 
         self._log_file = self._engine.get_logfile('embedded-kafka', ensure=True)
 
+        shutil.rmtree(self._runtime, ignore_errors=True)
+        fileutils.makedirs(self._runtime, exist_ok=True)
+
         success = False
         zpid, kpid = 0, 0
 
         log = open(self._log_file, 'w')
 
         try:
-            zpid = self._start_zookeeper(log)
+            zookeeper_port = netutils.get_free_tcp_port()
+
+            zpid = self._start_zookeeper(log, zookeeper_port)
             if zpid is None:
                 raise IllegalStateException(
                     'failed to start zookeeper, check log file for more details: ' + self._log_file)
 
-            kpid = self._start_kafka(log)
+            kpid = self._start_kafka(log, zookeeper_port)
             if kpid is None:
                 raise IllegalStateException(
                     'failed to start kafka, check log file for more details: ' + self._log_file)
@@ -267,14 +276,14 @@ class EmbeddedKafka:
                 log.close()
             raise
 
-    def _start_zookeeper(self, log, port=2181):
-        zdata = os.path.abspath(os.path.join(self._data, 'zdata'))
-        if not os.path.isdir(zdata):
-            fileutils.makedirs(zdata, exist_ok=True)
+    def _start_zookeeper(self, log, port):
+        data = os.path.abspath(os.path.join(self._runtime, 'zookeeper_data'))
+        if not os.path.isdir(data):
+            fileutils.makedirs(data, exist_ok=True)
 
-        config = os.path.join(self._data, 'zookeeper.properties')
+        config = os.path.join(self._runtime, 'zookeeper.properties')
         with open(config, 'w') as cout:
-            cout.write('dataDir={data}\n'.format(data=zdata))
+            cout.write('dataDir={data}\n'.format(data=data))
             cout.write('clientPort={port}\n'.format(port=port))
             cout.write('maxClientCnxns=0\n')
 
@@ -295,16 +304,15 @@ class EmbeddedKafka:
         daemon.kill(zookeeper)
         return None
 
-    def _start_kafka(self, log, port=9092, zookeeper_port=2181):
-        kdata = os.path.abspath(os.path.join(self._data, 'kdata'))
-        if not os.path.isdir(kdata):
-            fileutils.makedirs(kdata, exist_ok=True)
+    def _start_kafka(self, log, zookeeper_port):
+        if not os.path.isdir(self._model):
+            fileutils.makedirs(self._model, exist_ok=True)
 
-        config = os.path.join(self._data, 'kafka.properties')
+        config = os.path.join(self._runtime, 'kafka.properties')
         with open(config, 'w') as cout:
             cout.write('broker.id=0\n')
-            cout.write('listeners=PLAINTEXT://0.0.0.0:{port}\n'.format(port=port))
-            cout.write('log.dirs={data}\n'.format(data=kdata))
+            cout.write('listeners=PLAINTEXT://0.0.0.0:{port}\n'.format(port=self.port))
+            cout.write('log.dirs={data}\n'.format(data=self._model))
             cout.write('num.partitions=1\n')
             cout.write('log.retention.hours=8760000\n')
             cout.write('zookeeper.connect=localhost:{port}\n'.format(port=zookeeper_port))
@@ -354,14 +362,14 @@ class ClusterNode(object):
 
         self._kafka = EmbeddedKafka(engine) if sibling is None else None
 
-        self._pidfile = os.path.join(engine.get_runtime_path(), 'node.pid')
+        self._pidfile = os.path.join(engine.runtime_path, 'node.pid')
 
         self._cluster_ports = cluster_ports if cluster_ports is not None else DEFAULT_MMT_CLUSTER_PORTS
         self._api_port = api_port if api_port is not None else DEFAULT_MMT_API_PORT
         self._start_rest_server = rest
         self._sibling = sibling
         self._verbosity = verbosity
-        self._status_file = os.path.join(engine.get_runtime_path(), 'node.status')
+        self._status_file = os.path.join(engine.runtime_path, 'node.status')
         self._log_file = engine.get_logfile(ClusterNode.__LOG_FILENAME, ensure=False)
 
         self._mert_script = os.path.join(cli.PYOPT_DIR, 'mert-moses.perl')
@@ -428,8 +436,8 @@ class ClusterNode(object):
             raise Exception('failed to start node, check log file for more details: ' + self._log_file)
 
     def _start_process(self):
-        if not os.path.isdir(self.engine.get_runtime_path()):
-            fileutils.makedirs(self.engine.get_runtime_path(), exist_ok=True)
+        if not os.path.isdir(self.engine.runtime_path):
+            fileutils.makedirs(self.engine.runtime_path, exist_ok=True)
         logs_folder = os.path.abspath(os.path.join(self._log_file, os.pardir))
 
         args = ['-e', self.engine.name, '-p', str(self._cluster_ports[0]), str(self._cluster_ports[1]),

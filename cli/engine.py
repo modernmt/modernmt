@@ -269,6 +269,9 @@ class MMTEngine(object):
 
         self.data_path = os.path.join(self.path, 'data')
         self.models_path = os.path.join(self.path, 'models')
+        self.runtime_path = os.path.join(cli.RUNTIME_DIR, self.name)
+        self._logs_path = os.path.join(self.runtime_path, 'logs')
+        self._temp_path = os.path.join(self.runtime_path, 'tmp')
 
         self._config_file = os.path.join(self.path, 'engine.ini')
         self._vocabulary_model = os.path.join(self.models_path, 'vocabulary')
@@ -278,10 +281,6 @@ class MMTEngine(object):
         self._context_index = os.path.join(self.models_path, 'context')
         self._moses_ini_file = os.path.join(self.models_path, 'moses.ini')
         self._db_path = os.path.join(self.models_path, 'db')
-
-        self._runtime_path = os.path.join(cli.RUNTIME_DIR, self.name)
-        self._logs_path = os.path.join(self._runtime_path, 'logs')
-        self._temp_path = os.path.join(self._runtime_path, 'tmp')
 
         self.builder = _MMTEngineBuilder(self)
 
@@ -406,9 +405,6 @@ class MMTEngine(object):
             os.remove(logfile)
 
         return logfile
-
-    def get_runtime_path(self):
-        return self._runtime_path
 
     def get_tempdir(self, name, ensure=True):
         if ensure and not os.path.isdir(self._temp_path):
