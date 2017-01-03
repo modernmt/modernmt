@@ -5,22 +5,22 @@ import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.*;
 import eu.modernmt.aligner.Aligner;
-import eu.modernmt.cluster.kafka.KafkaDataManager;
-import eu.modernmt.data.DataManager;
-import eu.modernmt.data.HostUnreachableException;
 import eu.modernmt.cluster.error.BootstrapException;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.cluster.executor.DistributedCallable;
 import eu.modernmt.cluster.executor.DistributedExecutor;
 import eu.modernmt.cluster.executor.ExecutorDaemon;
+import eu.modernmt.cluster.kafka.KafkaDataManager;
 import eu.modernmt.context.ContextAnalyzer;
+import eu.modernmt.data.DataListener;
+import eu.modernmt.data.DataManager;
+import eu.modernmt.data.HostUnreachableException;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.engine.LazyLoadException;
 import eu.modernmt.engine.config.EngineConfig;
 import eu.modernmt.engine.config.INIEngineConfigWriter;
-import eu.modernmt.data.DataListener;
 import eu.modernmt.util.Timer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -316,7 +316,7 @@ public class ClusterNode {
 
             setStatus(Status.UPDATED);
         } catch (HostUnreachableException e) {
-            logger.error("Unable to connect to DataManager", e);
+            throw new BootstrapException("Unable to connect to DataManager", e);
         }
 
         // ========================
