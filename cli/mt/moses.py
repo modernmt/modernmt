@@ -9,16 +9,15 @@ class MosesFeature:
     def __init__(self, classname):
         self.classname = classname
 
-    def get_relpath(self, path):
+    def get_relpath(self, base_path, path):
         path = os.path.abspath(path)
-        root = os.path.abspath(cli.ENGINES_DIR)
-        path = path.replace(root, '').lstrip(os.sep)
+        base_path = os.path.abspath(base_path)
 
-        path = os.sep.join(path.split(os.sep)[1:])
+        path = path.replace(base_path, '').lstrip(os.sep)
 
-        return '${ENGINE_PATH}' + path
+        return '${DECODER_PATH}' + path
 
-    def get_iniline(self):
+    def get_iniline(self, base_path):
         return None
 
 
@@ -30,12 +29,15 @@ class Moses:
         'distortion_limit': ('distortion limit', int, 6),
     }
 
-    def __init__(self, ini_file):
+    def __init__(self, model_path):
+        self._path = model_path
+
         self._stack_size = None  # Injected
         self._cube_pruning_pop_limit = None  # Injected
         self._distortion_limit = None  # Injected
 
-        self._ini_file = ini_file
+        self._ini_file = os.path.join(self._path, 'moses.ini')
+        self._weights_file = os.path.join(self._path, 'weights.dat')
 
         self._server_process = None
         self._server_port = None
@@ -48,7 +50,7 @@ class Moses:
         self._features.append((feature, name))
 
     def __get_iniline(self, feature, name):
-        custom = feature.get_iniline()
+        custom = feature.get_iniline(self._path)
         line = feature.classname
 
         if name is not None:
@@ -71,3 +73,9 @@ class Moses:
 
         with open(self._ini_file, 'wb') as out:
             out.write('\n'.join(lines))
+
+    def store_default_weights(self, weights):
+        lines = [('%s = %s\n' % (key, ' '.join([str(v) for v in value]))) for key, value in weights.iteritems()]
+
+        with open(self._weights_file, 'wb') as out:
+            out.writelines(lines)

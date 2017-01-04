@@ -310,18 +310,25 @@ class MMTEngine(object):
         self._logs_path = os.path.join(self.runtime_path, 'logs')
         self._temp_path = os.path.join(self.runtime_path, 'tmp')
 
-        self._config_file = os.path.join(self.path, 'engine.ini')
-        self._vocabulary_model = os.path.join(self.models_path, 'vocabulary')
-        self._pt_model = os.path.join(self.models_path, 'sapt')
-        self._aligner_model = os.path.join(self.models_path, 'align')
-        self._lm_model = os.path.join(self.models_path, 'lm')
-        self._context_index = os.path.join(self.models_path, 'context')
-        self._moses_ini_file = os.path.join(self.models_path, 'moses.ini')
+        self._config_file = os.path.join(self.path, 'engine.xconf')
         self._db_path = os.path.join(self.models_path, 'db')
+        self._vocabulary_model = os.path.join(self.models_path, 'vocabulary')
+        self._aligner_model = os.path.join(self.models_path, 'align')
+        self._context_index = os.path.join(self.models_path, 'context')
+        self._moses_path = os.path.join(self.models_path, 'decoder')
+        self._lm_model = os.path.join(self._moses_path, 'lm')
+        self._pt_model = os.path.join(self._moses_path, 'sapt')
 
         self.builder = _MMTEngineBuilder(self)
 
-        self._optimal_weights = None
+        self._optimal_weights = {
+            'InterpolatedLM': [0.0883718],
+            'Sapt': [0.0277399, 0.0391562, 0.00424704, 0.0121731],
+            'DM0': [0.0153337, 0.0181129, 0.0423417, 0.0203163, 0.261833, 0.126704, 0.0670114, 0.0300892],
+            'Distortion0': [0.0335557],
+            'WordPenalty0': [-0.0750738],
+            'PhrasePenalty0': [-0.13794],
+        }
 
     def exists(self):
         return os.path.isfile(self._config_file)
@@ -356,7 +363,7 @@ class MMTEngine(object):
 
         self.db = _DomainMapBuilder(self._db_path, self.source_lang, self.target_lang)
 
-        self.moses = injector.inject(Moses(self._moses_ini_file))
+        self.moses = injector.inject(Moses(self._moses_path))
         self.moses.add_feature(MosesFeature('UnknownWordPenalty'))
         self.moses.add_feature(MosesFeature('WordPenalty'))
         self.moses.add_feature(MosesFeature('Distortion'))
@@ -365,15 +372,6 @@ class MMTEngine(object):
         self.pt.set_reordering_model('DM0')
         self.moses.add_feature(LexicalReordering(), 'DM0')
         self.moses.add_feature(self.lm, 'InterpolatedLM')
-
-        self._optimal_weights = {
-            'InterpolatedLM': [0.0883718],
-            'Sapt': [0.0277399, 0.0391562, 0.00424704, 0.0121731],
-            'DM0': [0.0153337, 0.0181129, 0.0423417, 0.0203163, 0.261833, 0.126704, 0.0670114, 0.0300892],
-            'Distortion0': [0.0335557],
-            'WordPenalty0': [-0.0750738],
-            'PhrasePenalty0': [-0.13794],
-        }
 
         if self._config is None:
             self._config = injector.to_config()
@@ -388,49 +386,13 @@ class MMTEngine(object):
             self._config.read(self._config_file)
         return self._config
 
-    def set_config_option(self, section, option, value=None):
-        """
-        Set engine configuration option in the config dictionary.
-        * use dependency.Injector with read_config() and inject() to affect MoseeFeatures, so an up-to-date 'moses.ini' gets written to disk in write_configs()
-        * call write_configs() to write 'engine.ini' (and 'moses.ini') to disk
-        * call ClusterNode.restart() for values to take effect
-        """
-        assert (MMTEngine.config_option_exists(section, option))
-        # coerce all types to str -- because they are parsed back in "ConfigParser.py", line 663, in _interpolate
-        self.config.set(section, option, str(value))
-
-    @staticmethod
-    def config_option_exists(section, option):
-        """check if section and option indeed exist"""
-        from cli import dependency  # cannot be at the top to avoid circular imports
-        for clazz in dependency.injectable_components:
-            if not hasattr(clazz, 'injectable_fields') or not hasattr(clazz, 'injector_section'):
-                continue
-            if clazz.injector_section == section and option in clazz.injectable_fields:
-                return True
-        return False
-
     def write_configs(self):
-        """write engine.ini and moses.ini"""
+        """write engine.xconf and moses config files"""
         self.moses.create_ini()
-        self.write_engine_config()
-
-    def write_engine_config(self):
-        # set default weights if not already in config
-        if self._optimal_weights is not None and not 'weights' in self._config.sections():
-            self._config.add_section('weights')
-            for name, weights in self._optimal_weights.iteritems():
-                self._config.set('weights', name, ' '.join([str(w) for w in weights]))
-        # end "set default weights"
+        self.moses.store_default_weights(self._optimal_weights)
 
         with open(self._config_file, 'wb') as out:
             self._config.write(out)
-
-    def backup_engine_config(self):
-        shutil.copy(self._config_file, self._config_file + '.bak')
-
-    def restore_engine_config(self):
-        shutil.move(self._config_file + '.bak', self._config_file)
 
     def get_logfile(self, name, ensure=True):
         if ensure and not os.path.isdir(self._logs_path):

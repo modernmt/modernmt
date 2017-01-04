@@ -81,7 +81,7 @@ class LexicalReordering(MosesFeature):
     def __init__(self):
         MosesFeature.__init__(self, 'LexicalReordering')
 
-    def get_iniline(self):
+    def get_iniline(self, base_path):
         return 'input-factor=0 output-factor=0 type=hier-mslr-bidirectional-fe-allff'
 
 
@@ -109,9 +109,9 @@ class SuffixArraysPhraseTable(MosesFeature):
     def set_reordering_model(self, name):
         self._reordering_model_feature = name
 
-    def get_iniline(self):
+    def get_iniline(self, base_path):
         result = 'path={model} input-factor=0 output-factor=0 sample-limit={sample}'.format(
-            model=self.get_relpath(self._model), sample=self._sample
+            model=self.get_relpath(base_path, self._model), sample=self._sample
         )
 
         if self._reordering_model_feature is not None:

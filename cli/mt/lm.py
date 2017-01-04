@@ -89,8 +89,9 @@ class KenLM(LanguageModel):
         available = fileutils.free()
         return int(80.0 * available / total)
 
-    def get_iniline(self):
-        return 'factor=0 order={order} path={model}'.format(order=self._order, model=self.get_relpath(self._model))
+    def get_iniline(self, base_path):
+        return 'factor=0 order={order} path={model}'.format(order=self._order,
+                                                            model=self.get_relpath(base_path, self._model))
 
 
 class InterpolatedLM(LanguageModel):
@@ -152,5 +153,5 @@ class InterpolatedLM(LanguageModel):
         command = [self._create_alm_bin, '-m', adaptive_lm_model, '-i', alm_train_folder, '-b', '50000000']
         shell.execute(command, stdout=log, stderr=log)
 
-    def get_iniline(self):
-        return 'path={model}'.format(model=self.get_relpath(self._model))
+    def get_iniline(self, base_path):
+        return 'path={model}'.format(model=self.get_relpath(base_path, self._model))
