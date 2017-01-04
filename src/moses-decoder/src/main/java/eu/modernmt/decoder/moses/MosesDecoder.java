@@ -8,9 +8,11 @@ import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
+import eu.modernmt.io.Paths;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
 import eu.modernmt.vocabulary.Vocabulary;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -19,7 +21,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by davide on 26/11/15.
@@ -38,12 +39,26 @@ public class MosesDecoder implements Decoder, DataListener {
         }
     }
 
+    private final FeatureWeightsStorage storage;
     private final HashMap<Long, Long> sessions = new HashMap<>();
     private long nativeHandle;
 
-    public MosesDecoder(File iniFile, Aligner aligner, Vocabulary vocabulary) throws IOException {
-        if (!iniFile.isFile())
-            throw new IOException("Invalid INI file: " + iniFile);
+    public MosesDecoder(File path, Aligner aligner, Vocabulary vocabulary, int threads) throws IOException {
+        this.storage = new FeatureWeightsStorage(Paths.join(path, "weights.dat"));
+
+        File iniTemplate = Paths.join(path, "moses.ini");
+        MosesINI mosesINI = MosesINI.load(iniTemplate, path);
+
+        Map<String, float[]> featureWeights = storage.getWeights();
+        if (featureWeights != null)
+            mosesINI.setWeights(featureWeights);
+
+        mosesINI.setThreads(threads);
+
+        File iniFile = File.createTempFile("mmtmoses", "ini");
+        iniFile.deleteOnExit();
+
+        FileUtils.write(iniFile, mosesINI.toString(), false);
 
         this.nativeHandle = instantiate(iniFile.getAbsolutePath(),
                 aligner.getNativeHandle(), vocabulary.getNativeHandle());
@@ -64,20 +79,29 @@ public class MosesDecoder implements Decoder, DataListener {
     private native float[] getFeatureWeightsFromPointer(long ptr);
 
     @Override
-    public void setDefaultFeatureWeights(Map<DecoderFeature, float[]> map) {
-        Set<DecoderFeature> keys = map.keySet();
-        String[] features = new String[keys.size()];
-        float[][] weights = new float[keys.size()][];
+    public void setDefaultFeatureWeights(Map<DecoderFeature, float[]> _map) {
+        HashMap<String, float[]> map = new HashMap<>(_map.size());
+
+        String[] features = new String[_map.size()];
+        float[][] weights = new float[_map.size()][];
 
         int i = 0;
-        for (DecoderFeature feature : keys) {
-            features[i] = feature.getName();
-            weights[i] = map.get(feature);
+        for (Map.Entry<DecoderFeature, float[]> entry : _map.entrySet()) {
+            features[i] = entry.getKey().getName();
+            weights[i] = entry.getValue();
+
+            map.put(features[i], weights[i]);
 
             i++;
         }
 
         this.setFeatureWeights(features, weights);
+
+        try {
+            this.storage.setWeights(map);
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to store feature weights", e);
+        }
     }
 
     private native void setFeatureWeights(String[] features, float[][] weights);

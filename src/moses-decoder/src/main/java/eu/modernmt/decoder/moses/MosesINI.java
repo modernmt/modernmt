@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * Created by davide on 02/12/15.
  */
-public class MosesINI {
+class MosesINI {
 
     public static MosesINI load(File templateFile, File enginePath) throws IOException {
         String template = FileUtils.readFileToString(templateFile, DefaultCharset.get());
@@ -18,7 +18,7 @@ public class MosesINI {
         if (!engine.endsWith(File.separator))
             engine = engine + File.separator;
 
-        return new MosesINI(template.replace("${ENGINE_PATH}", engine));
+        return new MosesINI(template.replace("${DECODER_PATH}", engine));
     }
 
     private String template;

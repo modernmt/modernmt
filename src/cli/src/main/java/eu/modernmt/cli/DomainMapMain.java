@@ -3,7 +3,6 @@ package eu.modernmt.cli;
 import eu.modernmt.model.Domain;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpora;
-import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.persistence.Connection;
 import eu.modernmt.persistence.DomainDAO;
 import eu.modernmt.persistence.sqlite.SQLiteDatabase;
@@ -60,7 +59,7 @@ public class DomainMapMain {
     public static void main(String[] _args) throws Throwable {
         Args args = new Args(_args);
 
-        SQLiteDatabase db = new SQLiteDatabase("jdbc:sqlite:" + args.dbPath, null, null);
+        SQLiteDatabase db = new SQLiteDatabase(args.dbPath);
 
         Connection connection = null;
         try {

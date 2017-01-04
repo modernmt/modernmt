@@ -2,9 +2,9 @@ package eu.modernmt.cli;
 
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.cluster.ClusterNode;
+import eu.modernmt.config.*;
+import eu.modernmt.config.xml.XMLConfigBuilder;
 import eu.modernmt.engine.Engine;
-import eu.modernmt.engine.config.EngineConfig;
-import eu.modernmt.engine.config.INIEngineConfigBuilder;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.rest.RESTServer;
 import org.apache.commons.cli.*;
@@ -26,13 +26,14 @@ public class ClusterNodeMain {
 
         static {
             Option engine = Option.builder("e").longOpt("engine").hasArg().required().build();
-            Option apiPort = Option.builder("a").longOpt("api-port").hasArg().type(Integer.class).required(false).build();
-            Option clusterPorts = Option.builder("p").longOpt("cluster-ports").numberOfArgs(2).type(Integer.class).required().build();
             Option statusFile = Option.builder().longOpt("status-file").hasArg().required().build();
             Option logsFolder = Option.builder().longOpt("logs").hasArg().required().build();
-            Option verbosity = Option.builder("v").longOpt("verbosity").hasArg().type(Integer.class).required(false).build();
 
+            Option apiPort = Option.builder("a").longOpt("api-port").hasArg().type(Integer.class).required(false).build();
+            Option clusterPorts = Option.builder("p").longOpt("cluster-ports").numberOfArgs(2).type(Integer.class).required(false).build();
             Option member = Option.builder().longOpt("member").hasArg().required(false).build();
+
+            Option verbosity = Option.builder("v").longOpt("verbosity").hasArg().type(Integer.class).required(false).build();
 
             cliOptions = new Options();
             cliOptions.addOption(engine);
@@ -45,32 +46,48 @@ public class ClusterNodeMain {
         }
 
         public final String engine;
-        public final int apiPort;
-        public final int controlPort;
-        public final int dataPort;
         public final File statusFile;
         public final File logsFolder;
         public final int verbosity;
-        public final String member;
+        public final NodeConfig config;
 
-        public Args(String[] args) throws ParseException {
+        public Args(String[] args) throws ParseException, ConfigException {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
             this.engine = cli.getOptionValue("engine");
-            String[] ports = cli.getOptionValues("cluster-ports");
-            this.controlPort = Integer.parseInt(ports[0]);
-            this.dataPort = Integer.parseInt(ports[1]);
             this.statusFile = new File(cli.getOptionValue("status-file"));
             this.logsFolder = new File(cli.getOptionValue("logs"));
-
-            String apiPort = cli.getOptionValue("api-port");
-            this.apiPort = apiPort == null ? -1 : Integer.parseInt(apiPort);
 
             String verbosity = cli.getOptionValue("verbosity");
             this.verbosity = verbosity == null ? 1 : Integer.parseInt(verbosity);
 
-            this.member = cli.getOptionValue("member");
+            this.config = XMLConfigBuilder.build(Engine.getConfigFile(this.engine));
+
+            String[] ports = cli.getOptionValues("cluster-ports");
+            if (ports != null && ports.length > 1) {
+                NetworkConfig netConfig = this.config.getNetworkConfig();
+                netConfig.setPort(Integer.parseInt(ports[0]));
+                netConfig.setDataPort(Integer.parseInt(ports[1]));
+            }
+
+            String apiPort = cli.getOptionValue("api-port");
+            if (apiPort != null) {
+                ApiConfig apiConfig = this.config.getNetworkConfig().getApiConfig();
+                apiConfig.setPort(Integer.parseInt(apiPort));
+            }
+
+            String member = cli.getOptionValue("member");
+            if (member != null) {
+                String[] parts = member.split(":");
+
+                JoinConfig joinConfig = this.config.getNetworkConfig().getJoinConfig();
+
+                JoinConfig.Member[] members = new JoinConfig.Member[1];
+                members[0] = new JoinConfig.Member(parts[0], Integer.parseInt(parts[1]), 0);
+
+                joinConfig.setMembers(members);
+            }
         }
     }
 
@@ -78,22 +95,16 @@ public class ClusterNodeMain {
         Args args = new Args(_args);
         Log4jConfiguration.setup(args.verbosity, args.logsFolder);
 
-        FileStatusListener listener = new FileStatusListener(args);
 
-        File engineConfigFile = Engine.getConfigFile(args.engine);
-        EngineConfig engineConfig = new INIEngineConfigBuilder(engineConfigFile).build(args.engine);
-
-        ModernMT.ClusterOptions options = new ModernMT.ClusterOptions();
-        options.controlPort = args.controlPort;
-        options.dataPort = args.dataPort;
-        options.member = args.member;
-        options.statusListener = listener;
+        FileStatusListener listener = new FileStatusListener(args.statusFile, args.config);
 
         try {
-            ModernMT.start(options, engineConfig);
+            ModernMT.start(args.config, listener);
 
-            if (args.apiPort > 0) {
-                RESTServer restServer = new RESTServer(args.apiPort);
+            ApiConfig apiConfig = args.config.getNetworkConfig().getApiConfig();
+
+            if (apiConfig.isEnabled()) {
+                RESTServer restServer = new RESTServer(apiConfig.getPort());
                 restServer.start();
             }
 
@@ -109,13 +120,18 @@ public class ClusterNodeMain {
         private final File file;
         private final Properties status;
 
-        public FileStatusListener(Args args) {
-            this.file = args.statusFile;
+        public FileStatusListener(File file, NodeConfig config) {
+            this.file = file;
+
+            NetworkConfig netConfig = config.getNetworkConfig();
+            ApiConfig apiConfig = netConfig.getApiConfig();
+
             this.status = new Properties();
-            status.setProperty("control_port", Integer.toString(args.controlPort));
-            status.setProperty("data_port", Integer.toString(args.dataPort));
-            if (args.apiPort > 0)
-                status.setProperty("api_port", Integer.toString(args.apiPort));
+            status.setProperty("control_port", Integer.toString(netConfig.getPort()));
+            status.setProperty("data_port", Integer.toString(netConfig.getDataPort()));
+
+            if (apiConfig.isEnabled())
+                status.setProperty("api_port", Integer.toString(apiConfig.getPort()));
         }
 
         @Override

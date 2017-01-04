@@ -2,6 +2,7 @@ package eu.modernmt.persistence.sqlite;
 
 import eu.modernmt.persistence.*;
 
+import java.io.File;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -10,8 +11,8 @@ import java.sql.Statement;
  */
 public class SQLiteDatabase extends Database {
 
-    public SQLiteDatabase(String connectionString, String username, String password) throws PersistenceException {
-        super(connectionString, username, password);
+    public SQLiteDatabase(File database) throws PersistenceException {
+        super("jdbc:sqlite:" + database, null, null);
 
         try {
             Class.forName("org.sqlite.JDBC");

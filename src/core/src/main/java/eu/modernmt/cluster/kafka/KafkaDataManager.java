@@ -18,7 +18,10 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -80,11 +83,6 @@ public class KafkaDataManager implements DataManager {
         } finally {
             IOUtils.closeQuietly(stream);
         }
-    }
-
-    @Override
-    public Map<Short, Long> connect(long timeout, TimeUnit unit) throws HostUnreachableException {
-        return connect("localhost", 9092, timeout, unit);
     }
 
     @Override

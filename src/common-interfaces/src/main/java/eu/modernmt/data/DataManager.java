@@ -21,9 +21,6 @@ public interface DataManager extends Closeable {
 
     }
 
-    @Deprecated
-    Map<Short, Long> connect(long timeout, TimeUnit unit) throws HostUnreachableException;
-
     Map<Short, Long> connect(String host, int port, long timeout, TimeUnit unit) throws HostUnreachableException;
 
     void setDataManagerListener(Listener listener);

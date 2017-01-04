@@ -1,4 +1,4 @@
-package eu.modernmt.engine.config;
+package eu.modernmt.config;
 
 /**
  * Created by davide on 19/04/16.

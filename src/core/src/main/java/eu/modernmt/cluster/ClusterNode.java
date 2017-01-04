@@ -5,28 +5,27 @@ import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.*;
 import eu.modernmt.aligner.Aligner;
-import eu.modernmt.cluster.error.BootstrapException;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.cluster.executor.DistributedCallable;
 import eu.modernmt.cluster.executor.DistributedExecutor;
 import eu.modernmt.cluster.executor.ExecutorDaemon;
 import eu.modernmt.cluster.kafka.KafkaDataManager;
+import eu.modernmt.config.DataStreamConfig;
+import eu.modernmt.config.JoinConfig;
+import eu.modernmt.config.NetworkConfig;
+import eu.modernmt.config.NodeConfig;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataManager;
 import eu.modernmt.data.HostUnreachableException;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
+import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
-import eu.modernmt.engine.LazyLoadException;
-import eu.modernmt.engine.config.EngineConfig;
-import eu.modernmt.engine.config.INIEngineConfigWriter;
 import eu.modernmt.util.Timer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -59,9 +58,8 @@ public class ClusterNode {
 
     private final Logger logger = LogManager.getLogger(ClusterNode.class);
 
-    private final int controlPort;
-    private final int dataPort;
-    private final Engine engine;
+    private Engine engine;
+
     private String uuid;
     private Status status;
     private ArrayList<StatusListener> statusListeners = new ArrayList<>();
@@ -111,11 +109,7 @@ public class ClusterNode {
         }
     };
 
-    public ClusterNode(Engine engine, int controlPort, int dataPort) {
-        this.controlPort = controlPort;
-        this.dataPort = dataPort;
-        this.engine = engine;
-
+    public ClusterNode() {
         this.status = Status.CREATED;
     }
 
@@ -126,6 +120,9 @@ public class ClusterNode {
     }
 
     public DataManager getDataManager() {
+        if (dataManager == null)
+            throw new UnsupportedOperationException("DataStream unavailable");
+
         return dataManager;
     }
 
@@ -178,51 +175,47 @@ public class ClusterNode {
 
     // Cluster startup
 
-    private Config getHazelcastConfig(String member, long interval, TimeUnit unit) {
-        Config config = new XmlConfigBuilder().build();
-        config.getNetworkConfig().setPort(controlPort);
+    private Config getHazelcastConfig(NetworkConfig networkConfig, long interval, TimeUnit unit) {
+        Config hazelcastConfig = new XmlConfigBuilder().build();
 
-        config.setProperty("hazelcast.initial.min.cluster.size", member == null ? "1" : "2");
-
-        if (unit != null) {
+        if (unit != null && interval > 0L) {
             long seconds = Math.max(unit.toSeconds(interval), 1L);
-            config.setProperty("hazelcast.max.join.seconds", Long.toString(seconds));
+            hazelcastConfig.setProperty("hazelcast.max.join.seconds", Long.toString(seconds));
         }
 
-        if (member != null) {
-            TcpIpConfig tcpIpConfig = config.getNetworkConfig().getJoin().getTcpIpConfig();
-            tcpIpConfig.setRequiredMember(member);
+        String listenInterface = networkConfig.getListeningInterface();
+        if (listenInterface != null) {
+            hazelcastConfig.getNetworkConfig().getInterfaces()
+                    .setEnabled(true)
+                    .addInterface(listenInterface);
         }
 
-        return config;
-    }
+        hazelcastConfig.getNetworkConfig()
+                .setPort(networkConfig.getPort());
 
-    public void startCluster() throws FailedToJoinClusterException, BootstrapException {
-        Config config = getHazelcastConfig(null, 0L, null);
-        start(config);
-    }
+        JoinConfig.Member[] members = networkConfig.getJoinConfig().getMembers();
+        if (members != null && members.length > 0) {
+            hazelcastConfig.setProperty("hazelcast.initial.min.cluster.size", "2");
 
-    public void joinCluster(String address) throws FailedToJoinClusterException, BootstrapException {
-        joinCluster(address, 0L, null);
-    }
+            TcpIpConfig tcpIpConfig = hazelcastConfig.getNetworkConfig().getJoin().getTcpIpConfig();
+            tcpIpConfig.setEnabled(true);
 
-    public void joinCluster(String address, long interval, TimeUnit unit) throws FailedToJoinClusterException, BootstrapException {
-        Config config = getHazelcastConfig(address, interval, unit);
-        start(config);
-    }
-
-    public Collection<NodeInfo> getClusterNodes() {
-        Set<Member> members = hazelcast.getCluster().getMembers();
-        ArrayList<NodeInfo> nodes = new ArrayList<>(members.size());
-
-        for (Member member : hazelcast.getCluster().getMembers()) {
-            nodes.add(NodeInfo.fromMember(member));
+            for (JoinConfig.Member member : members)
+                tcpIpConfig.addMember(member.getHost() + ":" + member.getPort());
+        } else {
+            hazelcastConfig.setProperty("hazelcast.initial.min.cluster.size", "1");
         }
 
-        return nodes;
+        return hazelcastConfig;
     }
 
-    private void start(Config config) throws FailedToJoinClusterException, BootstrapException {
+    public void start(NodeConfig nodeConfig) throws FailedToJoinClusterException, BootstrapException {
+        start(nodeConfig, 0L, null);
+    }
+
+    public void start(NodeConfig nodeConfig, long joinTimeoutInterval, TimeUnit joinTimeoutUnit) throws FailedToJoinClusterException, BootstrapException {
+        Config hazelcastConfig = getHazelcastConfig(nodeConfig.getNetworkConfig(), joinTimeoutInterval, joinTimeoutUnit);
+
         Timer globalTimer = new Timer();
         Timer timer = new Timer();
 
@@ -233,10 +226,10 @@ public class ClusterNode {
 
         timer.reset();
         try {
-            hazelcast = Hazelcast.newHazelcastInstance(config);
+            hazelcast = Hazelcast.newHazelcastInstance(hazelcastConfig);
             uuid = hazelcast.getCluster().getLocalMember().getUuid();
         } catch (IllegalStateException e) {
-            TcpIpConfig tcpIpConfig = config.getNetworkConfig().getJoin().getTcpIpConfig();
+            TcpIpConfig tcpIpConfig = hazelcastConfig.getNetworkConfig().getJoin().getTcpIpConfig();
             throw new FailedToJoinClusterException(tcpIpConfig.getRequiredMember());
         }
 
@@ -268,60 +261,57 @@ public class ClusterNode {
         logger.info("Model loading started");
 
         timer.reset();
-        try {
-            engine.loadModels();
-        } catch (LazyLoadException e) {
-            throw new BootstrapException(e.getCause());
-        }
-
+        engine = Engine.load(nodeConfig.getEngineConfig());
         setStatus(Status.LOADED);
         logger.info("Model loaded in " + (timer.time() / 1000.) + "s");
 
         // ========================
 
-        dataManager = new KafkaDataManager(uuid, engine);
-        dataManager.setDataManagerListener(this::updateChannelsPositions);
+        DataStreamConfig dataStreamConfig = nodeConfig.getDataStreamConfig();
+        if (dataStreamConfig.isEnabled()) {
+            dataManager = new KafkaDataManager(uuid, engine);
+            dataManager.setDataManagerListener(this::updateChannelsPositions);
 
-        Aligner aligner = engine.getAligner();
-        Decoder decoder = engine.getDecoder();
-        ContextAnalyzer contextAnalyzer = engine.getContextAnalyzer();
+            Aligner aligner = engine.getAligner();
+            Decoder decoder = engine.getDecoder();
+            ContextAnalyzer contextAnalyzer = engine.getContextAnalyzer();
 
-        if (aligner instanceof DataListener)
-            dataManager.addDataListener((DataListener) aligner);
-        if (decoder instanceof DataListener)
-            dataManager.addDataListener((DataListener) decoder);
-        if (contextAnalyzer instanceof DataListener)
-            dataManager.addDataListener((DataListener) contextAnalyzer);
+            if (aligner != null && aligner instanceof DataListener)
+                dataManager.addDataListener((DataListener) aligner);
+            if (decoder != null && decoder instanceof DataListener)
+                dataManager.addDataListener((DataListener) decoder);
+            if (contextAnalyzer != null && contextAnalyzer instanceof DataListener)
+                dataManager.addDataListener((DataListener) contextAnalyzer);
 
-        updateChannelsPositions(dataManager.getChannelsPositions());
+            updateChannelsPositions(dataManager.getChannelsPositions());
 
-        try {
-            timer.reset();
-
-            logger.info("Starting DataManager");
-            // TODO: should read host and ports from config
-            Map<Short, Long> positions = dataManager.connect(10, TimeUnit.SECONDS);
-            logger.info("DataManager ready in " + (timer.time() / 1000.) + "s");
-
-            setStatus(Status.UPDATING);
-
-            timer.reset();
             try {
-                logger.info("Starting sync from data stream");
-                dataManager.waitChannelPositions(positions);
-                logger.info("Data stream sync completed in " + (timer.time() / 1000.) + "s");
-            } catch (InterruptedException e) {
-                throw new BootstrapException("Data stream sync interrupted", e);
-            }
+                timer.reset();
 
-            setStatus(Status.UPDATED);
-        } catch (HostUnreachableException e) {
-            throw new BootstrapException("Unable to connect to DataManager", e);
+                logger.info("Starting DataManager");
+                Map<Short, Long> positions = dataManager.connect(dataStreamConfig.getHost(), dataStreamConfig.getPort(), 10, TimeUnit.SECONDS);
+                logger.info("DataManager ready in " + (timer.time() / 1000.) + "s");
+
+                setStatus(Status.UPDATING);
+
+                timer.reset();
+                try {
+                    logger.info("Starting sync from data stream");
+                    dataManager.waitChannelPositions(positions);
+                    logger.info("Data stream sync completed in " + (timer.time() / 1000.) + "s");
+                } catch (InterruptedException e) {
+                    throw new BootstrapException("Data stream sync interrupted", e);
+                }
+
+                setStatus(Status.UPDATED);
+            } catch (HostUnreachableException e) {
+                throw new BootstrapException("Unable to connect to DataManager", e);
+            }
         }
 
         // ========================
 
-        int executorCapacity = engine.getConfig().getDecoderConfig().getThreads();
+        int executorCapacity = nodeConfig.getEngineConfig().getDecoderConfig().getThreads();
 
         executor = new DistributedExecutor(hazelcast, ClusterConstants.TRANSLATION_EXECUTOR_NAME);
         executorDaemon = new ExecutorDaemon(hazelcast, this, ClusterConstants.TRANSLATION_EXECUTOR_NAME, executorCapacity);
@@ -360,19 +350,17 @@ public class ClusterNode {
         }
 
         decoder.setDefaultFeatureWeights(map);
+    }
 
-        // Updating engine.ini
-        EngineConfig config = engine.getConfig();
-        config.getDecoderConfig().setWeights(weights);
+    public Collection<NodeInfo> getClusterNodes() {
+        Set<Member> members = hazelcast.getCluster().getMembers();
+        ArrayList<NodeInfo> nodes = new ArrayList<>(members.size());
 
-        File file = Engine.getConfigFile(engine.getName());
-
-        try {
-            new INIEngineConfigWriter(config).write(file);
-            logger.info("Engine's config file successfully written");
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to write config file: " + file, e);
+        for (Member member : hazelcast.getCluster().getMembers()) {
+            nodes.add(NodeInfo.fromMember(member));
         }
+
+        return nodes;
     }
 
     public <V> Future<V> submit(DistributedCallable<V> callable) {

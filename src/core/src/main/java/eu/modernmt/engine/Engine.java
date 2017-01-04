@@ -2,13 +2,12 @@ package eu.modernmt.engine;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.fastalign.FastAlign;
+import eu.modernmt.config.DecoderConfig;
+import eu.modernmt.config.EngineConfig;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.lucene.LuceneAnalyzer;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.moses.MosesDecoder;
-import eu.modernmt.decoder.moses.MosesINI;
-import eu.modernmt.engine.config.DecoderConfig;
-import eu.modernmt.engine.config.EngineConfig;
 import eu.modernmt.io.Paths;
 import eu.modernmt.persistence.Database;
 import eu.modernmt.persistence.PersistenceException;
@@ -25,7 +24,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.Locale;
-import java.util.Map;
 
 /**
  * Created by davide on 19/04/16.
@@ -40,7 +38,7 @@ public class Engine implements Closeable {
         TextProcessingModels.setPath(FileConst.getResourcePath());
     }
 
-    public static final String ENGINE_CONFIG_PATH = "engine.ini";
+    public static final String ENGINE_CONFIG_PATH = "engine.xconf";
 
     public static File getRootPath(String engine) {
         return FileConst.getEngineRoot(engine);
@@ -50,29 +48,51 @@ public class Engine implements Closeable {
         return new File(FileConst.getEngineRoot(engine), ENGINE_CONFIG_PATH);
     }
 
-    private final EngineConfig config;
     private final File root;
     private final File runtime;
     private final String name;
+    private final Locale sourceLanguage;
+    private final Locale targetLanguage;
 
-    private Decoder decoder = null;
-    private Aligner aligner = null;
-    private Preprocessor sourcePreprocessor = null;
-    private Preprocessor targetPreprocessor = null;
-    private Postprocessor postprocessor = null;
-    private ContextAnalyzer contextAnalyzer = null;
-    private Vocabulary vocabulary = null;
-    private Database database = null;
+    private final Decoder decoder;
+    private final Aligner aligner;
+    private final Preprocessor sourcePreprocessor;
+    private final Preprocessor targetPreprocessor;
+    private final Postprocessor postprocessor;
+    private final ContextAnalyzer contextAnalyzer;
+    private final Vocabulary vocabulary;
+    private final Database database;
 
-    public Engine(EngineConfig config) {
-        this.config = config;
-        this.name = config.getName();
-        this.root = FileConst.getEngineRoot(name);
-        this.runtime = FileConst.getEngineRuntime(name);
+    public static Engine load(EngineConfig config) throws BootstrapException {
+        try {
+            return new Engine(config);
+        } catch (Exception e) {
+            throw new BootstrapException(e);
+        }
     }
 
-    public EngineConfig getConfig() {
-        return config;
+    private Engine(EngineConfig config) throws IOException, PersistenceException {
+        this.name = config.getName();
+        this.sourceLanguage = config.getSourceLanguage();
+        this.targetLanguage = config.getTargetLanguage();
+
+        this.root = FileConst.getEngineRoot(name);
+        this.runtime = FileConst.getEngineRuntime(name);
+
+        this.vocabulary = new RocksDBVocabulary(Paths.join(root, "models", "vocabulary"));
+        this.sourcePreprocessor = new Preprocessor(sourceLanguage, targetLanguage, vocabulary);
+        this.targetPreprocessor = new Preprocessor(targetLanguage, sourceLanguage, vocabulary);
+        this.postprocessor = new Postprocessor(sourceLanguage, targetLanguage, vocabulary);
+        this.aligner = new FastAlign(Paths.join(root, "models", "align"));
+        this.contextAnalyzer = new LuceneAnalyzer(Paths.join(root, "models", "context"), sourceLanguage);
+        this.database = new SQLiteDatabase(Paths.join(root, "models", "db", "domains.db"));
+
+        DecoderConfig decoderConfig = config.getDecoderConfig();
+        if (decoderConfig.isEnabled())
+            this.decoder = new MosesDecoder(Paths.join(root, "models", "decoder"), aligner, vocabulary,
+                    decoderConfig.getThreads());
+        else
+            this.decoder = null;
     }
 
     public String getName() {
@@ -80,156 +100,52 @@ public class Engine implements Closeable {
     }
 
     public Decoder getDecoder() {
-        if (decoder == null) {
-            synchronized (this) {
-                if (decoder == null) {
-                    try {
-                        DecoderConfig decoderConfig = config.getDecoderConfig();
-                        File iniTemplate = Paths.join(root, "models", "moses.ini");
-                        MosesINI mosesINI = MosesINI.load(iniTemplate, root);
-
-                        Map<String, float[]> featureWeights = decoderConfig.getWeights();
-                        if (featureWeights != null)
-                            mosesINI.setWeights(featureWeights);
-
-                        mosesINI.setThreads(decoderConfig.getThreads());
-
-                        File inifile = new File(runtime, "moses.ini");
-                        FileUtils.write(inifile, mosesINI.toString(), false);
-                        decoder = new MosesDecoder(inifile, getAligner(), getVocabulary());
-                    } catch (IOException e) {
-                        throw new LazyLoadException(e);
-                    }
-                }
-            }
-        }
+        if (decoder == null)
+            throw new UnsupportedOperationException("Decoder unavailable");
 
         return decoder;
     }
 
     public Aligner getAligner() {
-        if (aligner == null) {
-            synchronized (this) {
-                if (aligner == null) {
-                    try {
-                        File modelDirectory = Paths.join(root, "models", "align");
-                        aligner = new FastAlign(modelDirectory);
-                    } catch (IOException e) {
-                        throw new LazyLoadException(e);
-                    }
-                }
-            }
-        }
+        if (aligner == null)
+            throw new UnsupportedOperationException("Aligner unavailable");
 
         return aligner;
     }
 
-    public Preprocessor getSourcePreprocessor() {
-        if (sourcePreprocessor == null) {
-            synchronized (this) {
-                if (sourcePreprocessor == null) {
-                    try {
-                        sourcePreprocessor = new Preprocessor(getSourceLanguage(), getTargetLanguage(), getVocabulary());
-                    } catch (IOException e) {
-                        throw new LazyLoadException(e);
-                    }
-                }
-            }
-        }
-
-        return sourcePreprocessor;
-    }
-
-    public Preprocessor getTargetPreprocessor() {
-        if (targetPreprocessor == null) {
-            synchronized (this) {
-                if (targetPreprocessor == null) {
-                    try {
-                        targetPreprocessor = new Preprocessor(getTargetLanguage(), getSourceLanguage(), getVocabulary());
-                    } catch (IOException e) {
-                        throw new LazyLoadException(e);
-                    }
-                }
-            }
-        }
-
-        return targetPreprocessor;
-    }
-
-    public Postprocessor getPostprocessor() {
-        if (postprocessor == null) {
-            synchronized (this) {
-                if (postprocessor == null) {
-                    try {
-                        postprocessor = new Postprocessor(getSourceLanguage(), getTargetLanguage(), getVocabulary());
-                    } catch (IOException e) {
-                        throw new LazyLoadException(e);
-                    }
-                }
-            }
-        }
-
-        return postprocessor;
-    }
-
     public ContextAnalyzer getContextAnalyzer() {
-        if (contextAnalyzer == null) {
-            synchronized (this) {
-                if (contextAnalyzer == null) {
-                    try {
-                        File indexPath = Paths.join(root, "models", "context");
-                        this.contextAnalyzer = new LuceneAnalyzer(indexPath, getSourceLanguage());
-                    } catch (IOException e) {
-                        throw new LazyLoadException(e);
-                    }
-                }
-            }
-        }
+        if (contextAnalyzer == null)
+            throw new UnsupportedOperationException("Context Analyzer unavailable");
 
         return contextAnalyzer;
     }
 
-    public Vocabulary getVocabulary() {
-        if (vocabulary == null) {
-            synchronized (this) {
-                if (vocabulary == null) {
-                    try {
-                        File model = Paths.join(this.root, "models", "vocabulary");
-                        vocabulary = new RocksDBVocabulary(model);
-                    } catch (IOException e) {
-                        throw new LazyLoadException(e);
-                    }
-                }
-            }
-        }
+    public Preprocessor getSourcePreprocessor() {
+        return sourcePreprocessor;
+    }
 
+    public Preprocessor getTargetPreprocessor() {
+        return targetPreprocessor;
+    }
+
+    public Postprocessor getPostprocessor() {
+        return postprocessor;
+    }
+
+    public Vocabulary getVocabulary() {
         return vocabulary;
     }
 
     public Database getDatabase() {
-        if (database == null) {
-            synchronized (this) {
-                if (database == null) {
-                    try {
-                        //TODO: hardcoded connection string and password
-                        File model = Paths.join(this.root, "models", "db", "domains.db");
-                        database = new SQLiteDatabase("jdbc:sqlite:" + model, name, "test");
-                    } catch (PersistenceException e) {
-                        throw new LazyLoadException(e);
-                    }
-                }
-            }
-        }
-
         return database;
     }
 
     public Locale getSourceLanguage() {
-        return config.getSourceLanguage();
+        return sourceLanguage;
     }
 
     public Locale getTargetLanguage() {
-        return config.getTargetLanguage();
+        return targetLanguage;
     }
 
     public File getRootPath() {
@@ -259,14 +175,4 @@ public class Engine implements Closeable {
         IOUtils.closeQuietly(vocabulary);
     }
 
-    public void loadModels() {
-        getVocabulary();
-        getAligner();
-        getDecoder();
-        getContextAnalyzer();
-        getSourcePreprocessor();
-        getTargetPreprocessor();
-        getPostprocessor();
-        getDatabase();
-    }
 }
