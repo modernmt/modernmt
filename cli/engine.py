@@ -2,17 +2,17 @@ import logging
 import os
 import shutil
 import time
-from ConfigParser import ConfigParser
+from xml.dom import minidom
 
 import cli
-from cli import IllegalArgumentException, IllegalStateException
+from cli import IllegalArgumentException
 from cli.libs import fileutils
 from cli.libs import shell
 from cli.mt import BilingualCorpus
 from cli.mt.contextanalysis import ContextAnalyzer
-from cli.mt.lm import LanguageModel
+from cli.mt.lm import InterpolatedLM
 from cli.mt.moses import Moses, MosesFeature
-from cli.mt.phrasetable import WordAligner, SuffixArraysPhraseTable, LexicalReordering
+from cli.mt.phrasetable import SuffixArraysPhraseTable, LexicalReordering, FastAlign
 from cli.mt.processing import TrainingPreprocessor, TMCleaner
 
 __author__ = 'Davide Caroselli'
@@ -277,40 +277,72 @@ class _MMTEngineBuilder:
                 self._engine.clear_tempdir('training')
 
 
-class MMTEngine(object):
-    injector_section = 'engine'
-    injectable_fields = {
-        'lm_type': ('LM implementation', (basestring, LanguageModel.available_types), None),
-        'aligner_type': ('Aligner implementation',
-                         (basestring, WordAligner.available_types), None),
-    }
+class _EngineConfig(object):
+    @staticmethod
+    def from_file(file):
+        node_el = minidom.parse(file).documentElement
+        engine_el = node_el.getElementsByTagName('engine')[0]
 
+        name = engine_el.getAttribute('name')
+        source_lang = engine_el.getAttribute('source-language')
+        target_lang = engine_el.getAttribute('target-language')
+
+        return _EngineConfig(name, source_lang, target_lang)
+
+    def __init__(self, name, source_lang, target_lang):
+        self.name = name
+        self.source_lang = source_lang
+        self.target_lang = target_lang
+
+    def store(self, file):
+        xml_template = '''<node xsi:schemaLocation="http://www.modernmt.eu/schema/config mmt-config-1.0.xsd"
+      xmlns="http://www.modernmt.eu/schema/config"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+          <engine name="%s" source-language="%s" target-language="%s" />
+</node>'''
+
+        with open(file, 'wb') as out:
+            out.write(xml_template % (self.name, self.source_lang, self.target_lang))
+
+
+class MMTEngine(object):
     training_steps = ['tm_cleanup', 'preprocess', 'context_analyzer', 'aligner', 'tm', 'lm']
 
     @staticmethod
+    def _get_path(name):
+        return os.path.join(cli.ENGINES_DIR, name)
+
+    @staticmethod
+    def _get_config_path(name):
+        return os.path.join(cli.ENGINES_DIR, name, 'engine.xconf')
+
+    @staticmethod
     def list():
-        return sorted([MMTEngine(name=name) for name in os.listdir(cli.ENGINES_DIR)
-                       if os.path.isdir(os.path.join(cli.ENGINES_DIR, name))], key=lambda x: x.name)
+        return sorted([MMTEngine.load(name) for name in os.listdir(cli.ENGINES_DIR)
+                       if os.path.isfile(MMTEngine._get_config_path(name))], key=lambda x: x.name)
 
-    def __init__(self, langs=None, name=None):
+    @staticmethod
+    def load(name):
+        config = _EngineConfig.from_file(MMTEngine._get_config_path(name))
+        return MMTEngine(config.name, config.source_lang, config.target_lang, config)
+
+    def __init__(self, name, source_lang, target_lang, config=None):
         self.name = name if name is not None else 'default'
-        self.source_lang = langs[0] if langs is not None else None
-        self.target_lang = langs[1] if langs is not None else None
+        self.source_lang = source_lang
+        self.target_lang = target_lang
 
-        self._lm_type = None  # Injected
-        self._aligner_type = None  # Injected
+        self._config_file = self._get_config_path(self.name)
+        self._config = _EngineConfig(name, source_lang, target_lang) if config is None else config
 
-        self._config = None
-
-        self.path = os.path.join(cli.ENGINES_DIR, self.name)
-
+        self.path = self._get_path(self.name)
         self.data_path = os.path.join(self.path, 'data')
         self.models_path = os.path.join(self.path, 'models')
         self.runtime_path = os.path.join(cli.RUNTIME_DIR, self.name)
         self._logs_path = os.path.join(self.runtime_path, 'logs')
         self._temp_path = os.path.join(self.runtime_path, 'tmp')
 
-        self._config_file = os.path.join(self.path, 'engine.xconf')
+        self.builder = _MMTEngineBuilder(self)
+
         self._db_path = os.path.join(self.models_path, 'db')
         self._vocabulary_model = os.path.join(self.models_path, 'vocabulary')
         self._aligner_model = os.path.join(self.models_path, 'align')
@@ -319,80 +351,37 @@ class MMTEngine(object):
         self._lm_model = os.path.join(self._moses_path, 'lm')
         self._pt_model = os.path.join(self._moses_path, 'sapt')
 
-        self.builder = _MMTEngineBuilder(self)
-
-        self._optimal_weights = {
-            'InterpolatedLM': [0.0883718],
-            'Sapt': [0.0277399, 0.0391562, 0.00424704, 0.0121731],
-            'DM0': [0.0153337, 0.0181129, 0.0423417, 0.0203163, 0.261833, 0.126704, 0.0670114, 0.0300892],
-            'Distortion0': [0.0335557],
-            'WordPenalty0': [-0.0750738],
-            'PhrasePenalty0': [-0.13794],
-        }
-
-    def exists(self):
-        return os.path.isfile(self._config_file)
-
-    def _on_fields_injected(self, injector):
-        if self.target_lang is None or self.source_lang is None:
-            config = self.config
-
-            if config is not None:
-                self.target_lang = config.get(self.injector_section, 'target_lang')
-                self.source_lang = config.get(self.injector_section, 'source_lang')
-
-        if self.target_lang is None or self.source_lang is None:
-            raise IllegalStateException('Engine target language or source language must be specified')
-
-        if self._lm_type is None:
-            self._lm_type = LanguageModel.available_types[0]
-        if self._aligner_type is None:
-            self._aligner_type = WordAligner.available_types[0]
-
-        self.analyzer = injector.inject(ContextAnalyzer(self._context_index, self.source_lang, self.target_lang))
+        self.analyzer = ContextAnalyzer(self._context_index, self.source_lang, self.target_lang)
         self.cleaner = TMCleaner(self.source_lang, self.target_lang)
-
-        self.pt = injector.inject(SuffixArraysPhraseTable(self._pt_model, (self.source_lang, self.target_lang)))
-        self.aligner = injector.inject(
-            WordAligner.instantiate(self._aligner_type, self._aligner_model, self.source_lang, self.target_lang)
-        )
-        self.lm = injector.inject(LanguageModel.instantiate(self._lm_type, self._lm_model))
-        self.training_preprocessor = injector.inject(
-            TrainingPreprocessor(self.source_lang, self.target_lang, self._vocabulary_model)
-        )
-
+        self.pt = SuffixArraysPhraseTable(self._pt_model, (self.source_lang, self.target_lang))
+        self.pt.set_reordering_model('DM0')
+        self.aligner = FastAlign(self._aligner_model, self.source_lang, self.target_lang)
+        self.lm = InterpolatedLM(self._lm_model)
+        self.training_preprocessor = TrainingPreprocessor(self.source_lang, self.target_lang, self._vocabulary_model)
         self.db = _DomainMapBuilder(self._db_path, self.source_lang, self.target_lang)
-
-        self.moses = injector.inject(Moses(self._moses_path))
+        self.moses = Moses(self._moses_path)
         self.moses.add_feature(MosesFeature('UnknownWordPenalty'))
         self.moses.add_feature(MosesFeature('WordPenalty'))
         self.moses.add_feature(MosesFeature('Distortion'))
         self.moses.add_feature(MosesFeature('PhrasePenalty'))
         self.moses.add_feature(self.pt, 'Sapt')
-        self.pt.set_reordering_model('DM0')
         self.moses.add_feature(LexicalReordering(), 'DM0')
         self.moses.add_feature(self.lm, 'InterpolatedLM')
 
-        if self._config is None:
-            self._config = injector.to_config()
-            self._config.set(self.injector_section, 'source_lang', self.source_lang)
-            self._config.set(self.injector_section, 'target_lang', self.target_lang)
+    def exists(self):
+        return os.path.isfile(self._config_file)
 
-    @property
-    def config(self):
-        if self._config is None and os.path.isfile(self._config_file):
-            self._config = ConfigParser()
-            self._config.optionxform = str  # make ConfigParser() case sensitive (avoid lowercasing Moses feature weight names in write())
-            self._config.read(self._config_file)
-        return self._config
+    def _on_fields_injected(self, injector):
+        self.analyzer = injector.inject(self.analyzer)
+        self.pt = injector.inject(self.pt)
+        self.aligner = injector.inject(self.aligner)
+        self.lm = injector.inject(self.lm)
+        self.training_preprocessor = injector.inject(self.training_preprocessor)
+        self.moses = injector.inject(self.moses)
 
     def write_configs(self):
-        """write engine.xconf and moses config files"""
-        self.moses.create_ini()
-        self.moses.store_default_weights(self._optimal_weights)
-
-        with open(self._config_file, 'wb') as out:
-            self._config.write(out)
+        self.moses.create_configs()
+        self._config.store(self._config_file)
 
     def get_logfile(self, name, ensure=True):
         if ensure and not os.path.isdir(self._logs_path):

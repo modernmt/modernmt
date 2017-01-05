@@ -1,8 +1,7 @@
-import multiprocessing
 import os
 
 import cli
-from cli.libs import fileutils, shell, multithread
+from cli.libs import fileutils, shell
 from cli.mt import BilingualCorpus
 from moses import MosesFeature
 

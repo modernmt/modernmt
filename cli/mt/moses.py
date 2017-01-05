@@ -1,7 +1,5 @@
 import os
 
-import cli
-
 __author__ = 'Davide Caroselli'
 
 
@@ -46,6 +44,15 @@ class Moses:
 
         self._features = []
 
+        self._optimal_weights = {
+            'InterpolatedLM': [0.0883718],
+            'Sapt': [0.0277399, 0.0391562, 0.00424704, 0.0121731],
+            'DM0': [0.0153337, 0.0181129, 0.0423417, 0.0203163, 0.261833, 0.126704, 0.0670114, 0.0300892],
+            'Distortion0': [0.0335557],
+            'WordPenalty0': [-0.0750738],
+            'PhrasePenalty0': [-0.13794],
+        }
+
     def add_feature(self, feature, name=None):
         self._features.append((feature, name))
 
@@ -61,7 +68,11 @@ class Moses:
 
         return line
 
-    def create_ini(self):
+    def create_configs(self):
+        self.__create_ini()
+        self.__store_default_weights(self._optimal_weights)
+
+    def __create_ini(self):
         lines = ['[input-factors]', '0', '', '[search-algorithm]', '1', '', '[stack]', str(self._stack_size), '',
                  '[cube-pruning-pop-limit]', str(self._cube_pruning_pop_limit), '', '[mapping]', '0 T 0', '',
                  '[distortion-limit]', str(self._distortion_limit), '', '[threads]', '${DECODER_THREADS}', '',
@@ -74,7 +85,7 @@ class Moses:
         with open(self._ini_file, 'wb') as out:
             out.write('\n'.join(lines))
 
-    def store_default_weights(self, weights):
+    def __store_default_weights(self, weights):
         lines = [('%s = %s\n' % (key, ' '.join([str(v) for v in value]))) for key, value in weights.iteritems()]
 
         with open(self._weights_file, 'wb') as out:

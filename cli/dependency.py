@@ -1,6 +1,5 @@
 import inspect
 import re
-from ConfigParser import ConfigParser, NoOptionError, NoSectionError
 
 from cli.mt.contextanalysis import ContextAnalyzer
 from cli.mt.lm import LanguageModel, InterpolatedLM
@@ -79,28 +78,6 @@ class Injector:
                 var = section + '___' + field
                 self._params[section][field] = getattr(args, var, None)
 
-    def read_config(self, config):
-        self._params = {}
-
-        for section, fields in self._definitions.iteritems():
-            self._params[section] = {}
-
-            for field, (desc, ftype, defval) in fields.iteritems():
-                if isinstance(ftype, tuple):
-                    ftype = ftype[0]
-
-                try:
-                    value = config.get(section, field, raw=True)
-
-                    if ftype is bool:
-                        value = (value == 'True')
-                    elif ftype is not basestring:
-                        value = ftype(value)
-                except (NoOptionError, NoSectionError):
-                    value = defval
-
-                self._params[section][field] = value
-
     def _get_actual_param(self, param_name, section=None):
         if section is None:
             section = _global_section
@@ -126,17 +103,3 @@ class Injector:
             _on_fields_injected(self)
 
         return instance
-
-    def to_config(self):
-        config = ConfigParser()
-        config.optionxform = str  # make ConfigParser() case sensitive (avoid lowercasing Moses feature weight names in write())
-
-        for section, fields in self._definitions.iteritems():
-            config.add_section(section)
-
-            for field in fields:
-                value = self._get_actual_param(field, section)
-                if value is not None:
-                    config.set(section, field, value)
-
-        return config

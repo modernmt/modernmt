@@ -1,9 +1,8 @@
 import os
-from multiprocessing import cpu_count
 
 import cli
-from moses import MosesFeature
 from cli.libs import fileutils, shell
+from moses import MosesFeature
 
 __author__ = 'Davide Caroselli'
 

@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 import argparse
-import logging
 import os
 import shutil
 import socket
 import sys
 
-from cli import dependency
+from cli import dependency, IllegalStateException, IllegalArgumentException
 from cli.cluster import ClusterNode, DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORTS
-from cli.engine import IllegalStateException, IllegalArgumentException
 from cli.engine import MMTEngine
 from cli.evaluation import Evaluator
 from cli.libs import shell
@@ -93,12 +91,9 @@ def main_tune(argv):
     args = parser.parse_args(argv)
     args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
 
-    engine = MMTEngine(name=args.engine)
+    engine = MMTEngine.load(args.engine)
     if not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
-    injector = dependency.Injector()
-    injector.read_config(engine.config)
-    engine = injector.inject(engine)
 
     corpora = BilingualCorpus.list(args.corpora_path) if args.corpora_path is not None else None
 
@@ -130,12 +125,9 @@ def main_evaluate(argv):
     args = parser.parse_args(argv)
     args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
 
-    engine = MMTEngine(name=args.engine)
+    engine = MMTEngine.load(args.engine)
     if not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
-    injector = dependency.Injector()
-    injector.read_config(engine.config)
-    engine = injector.inject(engine)
 
     node = ClusterNode(engine, api_port=args.api_port)
     evaluator = Evaluator(node, google_key=args.gt_key, use_sessions=not args.interactive)
@@ -193,7 +185,7 @@ def main_start(argv):
             'port %d is already in use, please specify another port with --cluster-ports' % args.cluster_ports[1])
 
     # Exec command
-    engine = MMTEngine(name=args.engine)
+    engine = MMTEngine.load(args.engine)
     if args.sibling is None and not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
 
@@ -243,7 +235,7 @@ def main_stop(argv):
     args = parser.parse_args(argv)
 
     # Exec command
-    engine = MMTEngine(name=args.engine)
+    engine = MMTEngine.load(args.engine)
     if not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
 
@@ -267,7 +259,7 @@ def main_delete(argv):
     args = parser.parse_args(argv)
 
     # Exec command
-    engine = MMTEngine(name=args.engine)
+    engine = MMTEngine.load(args.engine)
     if not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
 
@@ -312,7 +304,7 @@ def main_status(argv):
     if args.engine is None:
         engines = MMTEngine.list()
     else:
-        engines = [MMTEngine(name=args.engine)]
+        engines = [MMTEngine.load(args.engine)]
         if not engines[0].exists():
             raise IllegalStateException('engine not found: ' + args.engine)
 
@@ -358,7 +350,7 @@ def main_create(argv):
         injector = dependency.Injector()
         injector.read_args(args)
 
-        engine = MMTEngine((args.source_lang, args.target_lang), args.engine)
+        engine = MMTEngine(args.engine, args.source_lang, args.target_lang)
         engine = injector.inject(engine)
 
         node = ClusterNode(engine)
@@ -403,7 +395,7 @@ def main_translate(argv):
 
     args = parser.parse_args(argv)
 
-    engine = MMTEngine(name=args.engine)
+    engine = MMTEngine.load(args.engine)
     if not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
 
@@ -454,7 +446,7 @@ def main_add(argv):
 
     args = parser.parse_args(argv)
 
-    engine = MMTEngine(name=args.engine)
+    engine = MMTEngine.load(args.engine)
     if not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
 
@@ -485,7 +477,7 @@ def main_import(argv):
     if args.tmx is None:
         raise CLIArgsException(parser, 'missing option "-x"')
 
-    engine = MMTEngine(name=args.engine)
+    engine = MMTEngine.load(args.engine)
     if not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
 
@@ -504,8 +496,8 @@ def main():
         'stop': main_stop,
         'status': main_status,
         'delete': main_delete,
-        'tune': main_tune,
         'evaluate': main_evaluate,
+        'tune': main_tune,
         'translate': main_translate,
         'add': main_add,
         'import': main_import,
@@ -548,6 +540,7 @@ def main():
         exit(1)
     except Exception as e:
         sys.stderr.write('ERROR Unexpected exception:\n\t{message}\n'.format(message=repr(e)))
+        raise
         exit(1)
 
 
