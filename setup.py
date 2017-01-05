@@ -79,7 +79,7 @@ def install_apache_lib(path, output, name):
         folder = untar(tardest, wdir)
 
         shutil.rmtree(output, ignore_errors=True)
-        os.rename(folder, output)
+        shutil.move(folder, output)
     finally:
         shutil.rmtree(wdir, ignore_errors=True)
 
