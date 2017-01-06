@@ -332,7 +332,7 @@ class MMTEngine(object):
         self.target_lang = target_lang
 
         self._config_file = self._get_config_path(self.name)
-        self._config = _EngineConfig(name, source_lang, target_lang) if config is None else config
+        self._config = _EngineConfig(self.name, source_lang, target_lang) if config is None else config
 
         self.path = self._get_path(self.name)
         self.data_path = os.path.join(self.path, 'data')
