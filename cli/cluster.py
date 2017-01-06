@@ -460,7 +460,7 @@ class ClusterNode(object):
         if os.path.isfile(self._status_file):
             os.remove(self._status_file)
 
-        return subprocess.Popen(command, stdout=open('/home/ubuntu/test.log', 'w'), stderr=subprocess.STDOUT, shell=False)
+        return subprocess.Popen(command, stdout=shell.DEVNULL, stderr=shell.DEVNULL, shell=False)
 
     def get_state(self):
         state = None
