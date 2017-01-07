@@ -3,9 +3,26 @@
 //
 
 #include "Logger.h"
+#include <jni.h>
 
 using namespace mmt;
 using namespace mmt::logging;
+
+void _logger_default_handler() {
+    Logger logger("terminate");
+
+    exception_ptr eptr = current_exception();
+
+    try {
+        if (eptr)
+            std::rethrow_exception(eptr);
+    } catch (const std::exception &e) {
+        LogFatal(logger) << "Unexpected exception: " << e.what();
+    }
+
+    LogFatal(logger) << "Terminating process with call abort()";
+    abort();
+}
 
 struct Logger::jlogger_t {
     JavaVM *jvm;
@@ -16,7 +33,9 @@ struct Logger::jlogger_t {
 
 Logger::jlogger_t *Logger::jlogger = nullptr;
 
-void Logger::Initialize(JNIEnv *env) {
+void Logger::Initialize(void *_env) {
+    JNIEnv *env = (JNIEnv *)_env;
+
     jlogger_t *jlogger = new jlogger_t();
 
     jlogger->_class = (jclass) env->NewGlobalRef(env->FindClass("eu/modernmt/logging/NativeLogger"));
@@ -25,6 +44,8 @@ void Logger::Initialize(JNIEnv *env) {
     env->GetJavaVM(&jlogger->jvm);
 
     Logger::jlogger = jlogger;
+
+    set_terminate(_logger_default_handler);
 }
 
 Level Logger::GetLevelForLogger(const string &name) {

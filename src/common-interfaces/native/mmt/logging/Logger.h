@@ -9,7 +9,6 @@
 #include <iostream>
 #include <sstream>
 #include <climits>
-#include <jni.h>
 #include <unordered_map>
 
 using namespace std;
@@ -40,11 +39,9 @@ namespace mmt {
         };
 
         class Logger {
-            friend class LogStream;
-
         public:
 
-            static void Initialize(JNIEnv *env);
+            static void Initialize(/* jni::JNIEnv */void *env);
 
             Logger(const string &name);
 
@@ -80,6 +77,11 @@ namespace mmt {
                 return Level::FATAL >= this->level;
             }
 
+            inline void Log(const Level level, const string &message) const {
+                if (level >= this->level)
+                    this->WriteLog(level, message);
+            }
+
         private:
             struct jlogger_t;
             static jlogger_t *jlogger;
@@ -88,11 +90,6 @@ namespace mmt {
             const Level level;
 
             static Level GetLevelForLogger(const string &name);
-
-            inline void Log(const Level level, const string &message) const {
-                if (level >= this->level)
-                    this->WriteLog(level, message);
-            }
 
             void WriteLog(const Level level, const string &message) const;
 
