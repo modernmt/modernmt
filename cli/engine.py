@@ -279,11 +279,10 @@ class _MMTEngineBuilder:
 
 class _EngineConfig(object):
     @staticmethod
-    def from_file(file):
+    def from_file(name, file):
         node_el = minidom.parse(file).documentElement
         engine_el = node_el.getElementsByTagName('engine')[0]
 
-        name = engine_el.getAttribute('name')
         source_lang = engine_el.getAttribute('source-language')
         target_lang = engine_el.getAttribute('target-language')
 
@@ -298,11 +297,11 @@ class _EngineConfig(object):
         xml_template = '''<node xsi:schemaLocation="http://www.modernmt.eu/schema/config mmt-config-1.0.xsd"
       xmlns="http://www.modernmt.eu/schema/config"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-          <engine name="%s" source-language="%s" target-language="%s" />
+          <engine source-language="%s" target-language="%s" />
 </node>'''
 
         with open(file, 'wb') as out:
-            out.write(xml_template % (self.name, self.source_lang, self.target_lang))
+            out.write(xml_template % (self.source_lang, self.target_lang))
 
 
 class MMTEngine(object):
@@ -323,7 +322,7 @@ class MMTEngine(object):
 
     @staticmethod
     def load(name):
-        config = _EngineConfig.from_file(MMTEngine._get_config_path(name))
+        config = _EngineConfig.from_file(name, MMTEngine._get_config_path(name))
         return MMTEngine(config.name, config.source_lang, config.target_lang, config)
 
     def __init__(self, name, source_lang, target_lang, config=None):

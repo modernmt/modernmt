@@ -18,8 +18,6 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
     }
 
     public EngineConfig build(EngineConfig config) throws ConfigException {
-        if (hasAttribute("name"))
-            config.setName(getStringAttribute("name"));
         if (hasAttribute("source-language"))
             config.setSourceLanguage(getLocaleAttribute("source-language"));
         if (hasAttribute("target-language"))

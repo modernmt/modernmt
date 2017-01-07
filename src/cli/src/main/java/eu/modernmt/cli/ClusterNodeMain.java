@@ -63,6 +63,7 @@ public class ClusterNodeMain {
             this.verbosity = verbosity == null ? 1 : Integer.parseInt(verbosity);
 
             this.config = XMLConfigBuilder.build(Engine.getConfigFile(this.engine));
+            this.config.getEngineConfig().setName(this.engine);
 
             String[] ports = cli.getOptionValues("cluster-ports");
             if (ports != null && ports.length > 1) {
