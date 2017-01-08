@@ -19,7 +19,8 @@ from cli.mt.processing import TrainingPreprocessor, Tokenizer
 __author__ = 'Davide Caroselli'
 
 DEFAULT_MMT_API_PORT = 8045
-DEFAULT_MMT_CLUSTER_PORTS = [5016, 5017, 5018, 5019]
+DEFAULT_MMT_CLUSTER_PORTS = [5016, 5017]
+DEFAULT_MMT_DATASTREAM_PORT = 9092
 
 
 class MMTApi:
@@ -140,8 +141,8 @@ class MMTApi:
     def import_into_domain(self, domain, tmx):
         params = {
             'domain': domain,
-            'content_type' : 'tmx',
-            'local_file' : tmx
+            'content_type': 'tmx',
+            'local_file': tmx
         }
 
         return self._post('imports', params=params)
@@ -193,7 +194,7 @@ class _tuning_logger:
 
 
 class EmbeddedKafka:
-    def __init__(self, engine, port=9092):
+    def __init__(self, engine, port):
         self._engine = engine
         self._log_file = None
         self.port = port
@@ -242,6 +243,10 @@ class EmbeddedKafka:
     def start(self):
         if self.is_running():
             raise IllegalStateException('process is already running')
+
+        if not netutils.is_free(self.port):
+            raise IllegalStateException(
+                'port %d is already in use, please specify another port with --datastream-port' % self.port)
 
         self._log_file = self._engine.get_logfile('embedded-kafka', ensure=True)
 
@@ -355,17 +360,16 @@ class ClusterNode(object):
         'ERROR': 9999,
     }
 
-    def __init__(self, engine, rest=True, api_port=None, cluster_ports=None,
+    def __init__(self, engine, rest=True, api_port=None, cluster_ports=None, datastream_port=None,
                  sibling=None, verbosity=None):
         self.engine = engine
         self.api = MMTApi(port=api_port)
-
-        self._kafka = EmbeddedKafka(engine) if sibling is None else None
 
         self._pidfile = os.path.join(engine.runtime_path, 'node.pid')
 
         self._cluster_ports = cluster_ports if cluster_ports is not None else DEFAULT_MMT_CLUSTER_PORTS
         self._api_port = api_port if api_port is not None else DEFAULT_MMT_API_PORT
+        self._datastream_port = datastream_port if datastream_port is not None else DEFAULT_MMT_DATASTREAM_PORT
         self._start_rest_server = rest
         self._sibling = sibling
         self._verbosity = verbosity
@@ -374,6 +378,8 @@ class ClusterNode(object):
 
         self._mert_script = os.path.join(cli.PYOPT_DIR, 'mert-moses.perl')
         self._mert_i_script = os.path.join(cli.PYOPT_DIR, 'mertinterface.py')
+
+        self._kafka = EmbeddedKafka(engine, self._datastream_port) if sibling is None else None
 
     def _get_pid(self):
         pid = 0
@@ -441,7 +447,8 @@ class ClusterNode(object):
         logs_folder = os.path.abspath(os.path.join(self._log_file, os.pardir))
 
         args = ['-e', self.engine.name, '-p', str(self._cluster_ports[0]), str(self._cluster_ports[1]),
-                '--status-file', self._status_file, '--logs', logs_folder]
+                '--datastream-port', str(self._datastream_port), '--status-file', self._status_file,
+                '--logs', logs_folder]
 
         if self._start_rest_server:
             args.append('-a')

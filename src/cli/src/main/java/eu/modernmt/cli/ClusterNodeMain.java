@@ -31,6 +31,7 @@ public class ClusterNodeMain {
 
             Option apiPort = Option.builder("a").longOpt("api-port").hasArg().type(Integer.class).required(false).build();
             Option clusterPorts = Option.builder("p").longOpt("cluster-ports").numberOfArgs(2).type(Integer.class).required(false).build();
+            Option datastreamPort = Option.builder().longOpt("datastream-port").hasArg().required(false).build();
             Option member = Option.builder().longOpt("member").hasArg().required(false).build();
 
             Option verbosity = Option.builder("v").longOpt("verbosity").hasArg().type(Integer.class).required(false).build();
@@ -43,6 +44,7 @@ public class ClusterNodeMain {
             cliOptions.addOption(verbosity);
             cliOptions.addOption(member);
             cliOptions.addOption(logsFolder);
+            cliOptions.addOption(datastreamPort);
         }
 
         public final String engine;
@@ -89,6 +91,10 @@ public class ClusterNodeMain {
 
                 joinConfig.setMembers(members);
             }
+
+            String datastreamPort = cli.getOptionValue("datastream-port");
+            if (datastreamPort != null)
+                this.config.getDataStreamConfig().setPort(Integer.parseInt(datastreamPort));
         }
     }
 

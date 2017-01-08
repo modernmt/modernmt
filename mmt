@@ -6,9 +6,10 @@ import socket
 import sys
 
 from cli import dependency, IllegalStateException, IllegalArgumentException
-from cli.cluster import ClusterNode, DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORTS
+from cli.cluster import ClusterNode, DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORTS, DEFAULT_MMT_DATASTREAM_PORT
 from cli.engine import MMTEngine
 from cli.evaluation import Evaluator
+from cli.libs import netutils
 from cli.libs import shell
 from cli.mt import BilingualCorpus
 from cli.mt.processing import TrainingPreprocessor
@@ -48,17 +49,6 @@ def __check_java():
     except OSError:
         print 'ERROR: Missing Java executable, please check INSTALL.md'
         exit(1)
-
-
-def __is_freeport(port):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    result = s.connect_ex(('127.0.0.1', port))
-
-    if result == 0:
-        return False
-    else:
-        s.close()
-        return True
 
 
 class CLIArgsException(Exception):
@@ -157,6 +147,10 @@ def main_start(argv):
                              'Cluster nodes. (default is {port0} and {port1})'
                         .format(port0=DEFAULT_MMT_CLUSTER_PORTS[0], port1=DEFAULT_MMT_CLUSTER_PORTS[1]),
                         default=None, type=int, nargs=2)
+    parser.add_argument('--datastream-port', dest='datastream_port', metavar='DATASTREAM_PORT',
+                        help='the network port used by Datastream, currently implemented with Kafka '
+                             '(default is {port}'.format(port=DEFAULT_MMT_DATASTREAM_PORT),
+                        default=None, type=int)
     parser.add_argument('--no-rest', action='store_false', dest='has_rest', default=True,
                         help='if no-rest is set, no REST Api will be available on this node')
     parser.add_argument('--join', dest='sibling', metavar='NODE_IP', default=None,
@@ -172,15 +166,16 @@ def main_start(argv):
 
     args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
     args.cluster_ports = args.cluster_ports if args.cluster_ports is not None else DEFAULT_MMT_CLUSTER_PORTS
+    args.datastream_port = args.datastream_port if args.datastream_port is not None else DEFAULT_MMT_DATASTREAM_PORT
 
     # Check ports
-    if args.has_rest and not __is_freeport(args.api_port):
+    if args.has_rest and not netutils.is_free(args.api_port):
         raise IllegalStateException(
             'port %d is already in use, please specify another port with option -p/--api-port' % args.api_port)
-    if not __is_freeport(args.cluster_ports[0]):
+    if not netutils.is_free(args.cluster_ports[0]):
         raise IllegalStateException(
             'port %d is already in use, please specify another port with --cluster-ports' % args.cluster_ports[0])
-    if not __is_freeport(args.cluster_ports[1]):
+    if not netutils.is_free(args.cluster_ports[1]):
         raise IllegalStateException(
             'port %d is already in use, please specify another port with --cluster-ports' % args.cluster_ports[1])
 
@@ -190,7 +185,7 @@ def main_start(argv):
         raise IllegalStateException('engine not found: ' + args.engine)
 
     node = ClusterNode(engine, rest=args.has_rest, api_port=args.api_port, cluster_ports=args.cluster_ports,
-                       sibling=args.sibling, verbosity=args.verbosity)
+                       datastream_port=args.datastream_port, sibling=args.sibling, verbosity=args.verbosity)
 
     started = False
     success = False

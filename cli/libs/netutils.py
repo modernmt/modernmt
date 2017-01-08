@@ -9,3 +9,14 @@ def get_free_tcp_port():
     addr, port = tcp.getsockname()
     tcp.close()
     return port
+
+
+def is_free(port):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    result = s.connect_ex(('127.0.0.1', port))
+
+    if result == 0:
+        return False
+    else:
+        s.close()
+        return True
