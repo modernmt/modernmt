@@ -60,8 +60,9 @@ class _DocumentTranslator:
 
         # tokenize
         translation['translation'] = self._tokenizer.process(translation['translation'])
-        for hyp in translation['nbest']:
-            hyp['translation'] = self._tokenizer.process(hyp['translation'])
+        if 'nbest' in translation:
+            for hyp in translation['nbest']:
+                hyp['translation'] = self._tokenizer.process(hyp['translation'])
 
         return translation
 
@@ -69,23 +70,24 @@ class _DocumentTranslator:
         print translation['translation'].encode('utf-8')
         sys.stdout.flush()
 
-        for hyp in translation['nbest']:
-            scores = []
+        if 'nbest' in translation:
+            for hyp in translation['nbest']:
+                scores = []
 
-            for feature in self._features:
-                if feature in hyp['scores']:
-                    scores.append(feature + '=')
-                    for s in hyp['scores'][feature]:
-                        scores.append(str(s))
+                for feature in self._features:
+                    if feature in hyp['scores']:
+                        scores.append(feature + '=')
+                        for s in hyp['scores'][feature]:
+                            scores.append(str(s))
 
-            nbest_out.write(str(self._line_id))
-            nbest_out.write(' ||| ')
-            nbest_out.write(hyp['translation'].encode('utf-8'))
-            nbest_out.write(' ||| ')
-            nbest_out.write(' '.join(scores))
-            nbest_out.write(' ||| ')
-            nbest_out.write(str(hyp['totalScore']))
-            nbest_out.write('\n')
+                nbest_out.write(str(self._line_id))
+                nbest_out.write(' ||| ')
+                nbest_out.write(hyp['translation'].encode('utf-8'))
+                nbest_out.write(' ||| ')
+                nbest_out.write(' '.join(scores))
+                nbest_out.write(' ||| ')
+                nbest_out.write(str(hyp['totalScore']))
+                nbest_out.write('\n')
 
     def run(self):
         self._line_id = 0
