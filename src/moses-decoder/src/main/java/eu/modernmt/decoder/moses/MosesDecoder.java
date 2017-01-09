@@ -31,10 +31,10 @@ public class MosesDecoder implements Decoder, DataListener {
 
     static {
         try {
-            System.loadLibrary("jnimoses");
-            logger.info("Library jnimoses loaded successfully");
+            System.loadLibrary("mmt-decoder");
+            logger.info("Library mmt-decoder loaded successfully");
         } catch (Throwable e) {
-            logger.error("Unable to load library jnimoses", e);
+            logger.error("Unable to load library mmt-decoder", e);
             throw e;
         }
     }
