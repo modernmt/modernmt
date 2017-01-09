@@ -31,7 +31,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include "moses/FF/UnknownWordPenaltyProducer.h"
 #include "moses/FF/InputFeature.h"
 #include "moses/FF/DynamicCacheBasedLanguageModel.h"
-#include "moses/TranslationModel/PhraseDictionaryDynamicCacheBased.h"
 
 #include "DecodeStepTranslation.h"
 #include "DecodeStepGeneration.h"
@@ -46,7 +45,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include "ScoreComponentCollection.h"
 #include "DecodeGraph.h"
 #include "TranslationModel/PhraseDictionary.h"
-#include "TranslationModel/PhraseDictionaryTreeAdaptor.h"
 
 #ifdef WITH_THREADS
 #include <boost/thread.hpp>
@@ -627,7 +625,7 @@ void StaticData::LoadFeatureFunctions()
     pt->Load(options());
   }
 
-  CheckLEGACYPT();
+  m_useLegacyPT = false;
 }
 
 bool StaticData::CheckWeights() const
@@ -773,19 +771,6 @@ void StaticData::OverrideFeatures()
 
 }
 
-void StaticData::CheckLEGACYPT()
-{
-  const std::vector<PhraseDictionary*> &pts = PhraseDictionary::GetColl();
-  for (size_t i = 0; i < pts.size(); ++i) {
-    const PhraseDictionary *phraseDictionary = pts[i];
-    if (dynamic_cast<const PhraseDictionaryTreeAdaptor*>(phraseDictionary) != NULL) {
-      m_useLegacyPT = true;
-      return;
-    }
-  }
-
-  m_useLegacyPT = false;
-}
 
 
 } // namespace

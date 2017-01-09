@@ -28,7 +28,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include "TranslationOptionCollectionText.h"
 #include "StaticData.h"
 #include "moses/FF/DynamicCacheBasedLanguageModel.h"
-#include "moses/TranslationModel/PhraseDictionaryDynamicCacheBased.h"
 #include "ChartTranslationOptions.h"
 #include "Util.h"
 #include "XmlOption.h"
@@ -111,33 +110,6 @@ aux_interpret_sgml_markup(string& line)
 
 void
 Sentence::
-aux_interpret_dlt(string& line) // whatever DLT means ... --- UG
-{
-  using namespace std;
-  typedef map<string, string> str2str_map;
-  m_dlt_meta = ProcessAndStripDLT(line);
-  // what's happening below is most likely not thread-safe! UG
-  BOOST_FOREACH(str2str_map const& M, m_dlt_meta) {
-    str2str_map::const_iterator i,j;
-    if ((i = M.find("type")) != M.end()) {
-      j = M.find("id");
-      string id = j == M.end() ? "default" : j->second;
-      if (i->second == "cbtm") {
-        PhraseDictionaryDynamicCacheBased* cbtm;
-        cbtm = PhraseDictionaryDynamicCacheBased::InstanceNonConst(id);
-        if (cbtm) cbtm->ExecuteDlt(M);
-      }
-      if (i->second == "cblm") {
-        DynamicCacheBasedLanguageModel* cblm;
-        cblm = DynamicCacheBasedLanguageModel::InstanceNonConst(id);
-        if (cblm) cblm->ExecuteDlt(M);
-      }
-    }
-  }
-}
-
-void
-Sentence::
 aux_interpret_xml(std::string& line, std::vector<size_t> & xmlWalls,
                   std::vector<std::pair<size_t, std::string> >& placeholders)
 {
@@ -166,7 +138,6 @@ init(string line)
 
   line = Trim(line);
   aux_interpret_sgml_markup(line); // for "<seg id=..." markup
-  aux_interpret_dlt(line); // some poorly documented cache-based stuff
 VERBOSE(3,"Sentence::init(string line, std::vector<FactorType> const& factorOrder) line:|" << line << "|" << std::endl);
   // if sentences is specified as "<passthrough tag1=""/>"
   if (m_options->output.PrintPassThrough ||m_options->nbest.include_passthrough) {

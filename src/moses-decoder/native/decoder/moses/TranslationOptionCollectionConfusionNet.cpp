@@ -9,7 +9,6 @@
 #include "DecodeStepGeneration.h"
 #include "FactorCollection.h"
 #include "FF/InputFeature.h"
-#include "TranslationModel/PhraseDictionaryTreeAdaptor.h"
 #include "util/exception.hh"
 #include <boost/foreach.hpp>
 #include "TranslationTask.h"

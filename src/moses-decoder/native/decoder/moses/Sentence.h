@@ -59,9 +59,6 @@ protected:
 
   void ProcessPlaceholders(const std::vector< std::pair<size_t, std::string> > &placeholders);
 
-  // "Document Level Translation" instructions, see aux_interpret_dlt
-  std::vector<std::map<std::string,std::string> > m_dlt_meta;
-
 public:
   Sentence(AllOptions::ptr const& opts);
   Sentence(AllOptions::ptr const& opts, size_t const transId, std::string stext);
@@ -117,23 +114,14 @@ public:
 
   void init(std::string line);
 
-  std::vector<std::map<std::string,std::string> > const&
-  GetDltMeta() const {
-    return m_dlt_meta;
-  }
-
 private:
   // auxliliary functions for Sentence initialization
   // void aux_interpret_sgml_markup(std::string& line);
-  // void aux_interpret_dlt(std::string& line);
   // void aux_interpret_xml (std::string& line, std::vector<size_t> & xmlWalls,
   // 			    std::vector<std::pair<size_t, std::string> >& placeholders);
 
   void
   aux_interpret_sgml_markup(std::string& line);
-
-  void
-  aux_interpret_dlt(std::string& line);
 
   void
   aux_interpret_xml

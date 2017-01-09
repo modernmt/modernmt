@@ -20,8 +20,6 @@ using Moses::TranslationOptionList;
 using Moses::TranslationOption;
 using Moses::TargetPhrase;
 using Moses::FValue;
-using Moses::PhraseDictionaryMultiModel;
-using Moses::FindPhraseDictionary;
 using Moses::Sentence;
 
 boost::shared_ptr<JNITranslationRequest>

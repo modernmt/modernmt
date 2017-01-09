@@ -327,7 +327,6 @@ public:
   /** check whether we should be using the old code to support binary phrase-table.
   ** eventually, we'll stop support the binary phrase-table and delete this legacy code
   **/
-  void CheckLEGACYPT();
   bool GetUseLegacyPT() const {
     return m_useLegacyPT;
   }

@@ -66,7 +66,7 @@ if (USE_SAPT)
 endif (USE_SAPT)
 
 add_definitions(-DHAVE_ZLIB=1)
-add_definitions(-DMAX_NUM_FACTORS=4 -DKENLM_MAX_ORDER=6 -DWITH_THREADS -DBOOST_TEST_DYN_LINK -DPT_UG)
+add_definitions(-DMAX_NUM_FACTORS=4 -DKENLM_MAX_ORDER=6 -DWITH_THREADS -DBOOST_TEST_DYN_LINK)
 # note: MOSES_VERSION_ID is defined in moses/CMakeLists.txt
 
 # "use TRACE_ENABLE to turn off output of any debugging info" (moses/Util.h)
@@ -116,13 +116,13 @@ set(MOSES_SRC
         )
 
 # defines pseudo-libraries (each a group of source files):
-# moses_moses moses_tm_ug
+# moses_moses
 add_subdirectory(moses)
 
 
-add_library(moses SHARED ${MOSES_SRC} $<TARGET_OBJECTS:moses_moses> $<TARGET_OBJECTS:moses_tm_ug> $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_util>)
+add_library(moses SHARED ${MOSES_SRC} $<TARGET_OBJECTS:moses_moses> $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_util>)
 target_link_libraries(moses ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} pthread)
-target_link_libraries(moses ${MMTCommons_LIBRARIES})
+#target_link_libraries(moses ${MMTCommons_LIBRARIES}) # TODO david temp
 
 add_library(mmt-decoder SHARED $<TARGET_OBJECTS:moses_decoder> $<TARGET_OBJECTS:moses_java>)
 #install(TARGETS mmt-decoder LIBRARY DESTINATION lib) # installs to same location we built in -> fail?! -> 'INSTALL cannot find "/home/ubuntu/MMTy/build/lib/libmmt-decoder.so"'
@@ -147,12 +147,5 @@ link_directories(${mosesdecoder_BINARY_DIR}/moses)  # link against libmoses.so
 
 # Mert
 add_subdirectory(mert)
-
-set(MMSAPT_EXECUTABLES ptable-lookup ptable-lookup-corpus check-coverage3)
-
-foreach (exe ${MMSAPT_EXECUTABLES})
-    add_executable(${exe} moses/TranslationModel/UG/${exe}.cc)
-    target_link_libraries(${exe} ${Boost_LIBRARIES} ${GooglePerftools_LIBRARIES} moses)
-endforeach (exe)
 
 link_directories(${mosesdecoder_BINARY_DIR}/moses)  # link against libmoses.so

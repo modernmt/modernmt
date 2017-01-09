@@ -4,7 +4,6 @@
 #include "moses/ScoreComponentCollection.h"
 #include "moses/InputPath.h"
 #include "moses/StaticData.h"
-#include "moses/TranslationModel/PhraseDictionaryTreeAdaptor.h"
 
 using namespace std;
 
@@ -26,10 +25,7 @@ InputFeature::InputFeature(const std::string &line)
 void InputFeature::Load(AllOptions::ptr const& opts)
 {
   m_options = opts;
-  const PhraseDictionary *pt = PhraseDictionary::GetColl()[0];
-  const PhraseDictionaryTreeAdaptor *ptBin = dynamic_cast<const PhraseDictionaryTreeAdaptor*>(pt);
-
-  m_legacy = (ptBin != NULL);
+  m_legacy = false;
 }
 
 void InputFeature::SetParameter(const std::string& key, const std::string& value)

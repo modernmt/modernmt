@@ -15,12 +15,11 @@
 #include "moses/Manager.h"
 #include "moses/StaticData.h"
 #include "moses/ThreadPool.h"
-#include "moses/TranslationModel/PhraseDictionaryMultiModel.h"
 #include "moses/TreeInput.h"
 #include "moses/TranslationTask.h"
 #include <boost/shared_ptr.hpp>
 
-#include "moses/server/Session.h"
+#include "Session.h"
 #include "JNITranslator.h"
 
 namespace MosesServer
