@@ -88,12 +88,14 @@ class BilingualCorpus:
             corpora = BilingualCorpus.list(directory)
 
             for corpus in corpora:
-                if len(corpus.langs) == 1:
-                    if monolingual_lang in corpus.langs:
-                        monolingual_corpora.append(corpus)
+                if isinstance(corpus, _TMXCorpus):
+                    bilingual_corpora.append(corpus)
                 elif len(corpus.langs) > 1:
                     if source_lang in corpus.langs and target_lang in corpus.langs:
                         bilingual_corpora.append(corpus)
+                elif len(corpus.langs) == 1:
+                    if monolingual_lang in corpus.langs:
+                        monolingual_corpora.append(corpus)
 
         return bilingual_corpora, monolingual_corpora
 
@@ -170,41 +172,9 @@ class _FileParallelCorpus(BilingualCorpus):
         return link
 
 
-class _TMXContentReader(xml.sax.handler.ContentHandler):
-    langs = []
-
-    def startElement(self, name, attrs):
-        if name == 'tuv':
-            lang = _parse_lang(str(attrs['xml:lang']) if 'xml:lang' in attrs else None)
-
-            if lang is not None and lang not in self.langs:
-                self.langs.append(lang)
-
-                if len(self.langs) > 1:
-                    raise StopIteration
-
-
 class _TMXCorpus(BilingualCorpus):
-    @staticmethod
-    def __get_langs(tmx_file):
-        handler = _TMXContentReader()
-
-        try:
-            parser = xml.sax.make_parser()
-            parser.setFeature(xml.sax.handler.feature_validation, False)
-            parser.setFeature(xml.sax.handler.feature_external_ges, False)
-            parser.setFeature(xml.sax.handler.feature_external_pes, False)
-            parser.setContentHandler(handler)
-
-            with open(tmx_file) as f:
-                parser.parse(f)
-        except StopIteration:
-            pass
-
-        return handler.langs
-
-    def __init__(self, name, f, langs=None):
-        BilingualCorpus.__init__(self, name, langs if langs is not None else self.__get_langs(f))
+    def __init__(self, name, f):
+        BilingualCorpus.__init__(self, name, None)
         self._tmx_file = f
         self._root = os.path.dirname(f)
 
@@ -228,7 +198,7 @@ class _TMXCorpus(BilingualCorpus):
         link = os.path.join(folder, name + '.tmx')
         os.symlink(self._tmx_file, link)
 
-        return _TMXCorpus(name, link, langs=self.langs)
+        return _TMXCorpus(name, link)
 
     def __str__(self):
         return self.name + '[' + ','.join(self.langs) + ']'
