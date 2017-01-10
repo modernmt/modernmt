@@ -8,6 +8,7 @@ public class ApiConfig {
     private boolean enabled = true;
     private String listeningInterface = null;
     private int port = 8045;
+    private String apiRoot = null;
 
     public boolean isEnabled() {
         return enabled;
@@ -33,11 +34,20 @@ public class ApiConfig {
         this.port = port;
     }
 
+    public String getApiRoot() {
+        return apiRoot;
+    }
+
+    public void setApiRoot(String apiRoot) {
+        this.apiRoot = apiRoot;
+    }
+
     @Override
     public String toString() {
         return "[Api]\n" +
                 "  enabled = " + enabled + "\n" +
                 "  interface = " + listeningInterface + "\n" +
-                "  port = " + port;
+                "  port = " + port + "\n" +
+                "  root = " + apiRoot;
     }
 }

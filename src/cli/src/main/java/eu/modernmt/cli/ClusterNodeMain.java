@@ -111,7 +111,10 @@ public class ClusterNodeMain {
             ApiConfig apiConfig = args.config.getNetworkConfig().getApiConfig();
 
             if (apiConfig.isEnabled()) {
-                RESTServer restServer = new RESTServer(apiConfig.getPort());
+                RESTServer.ServerOptions options = new RESTServer.ServerOptions(apiConfig.getPort());
+                options.contextPath = apiConfig.getApiRoot();
+
+                RESTServer restServer = new RESTServer(options);
                 restServer.start();
             }
 

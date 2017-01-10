@@ -48,6 +48,8 @@ class XMLNetworkConfigBuilder extends XMLAbstractBuilder {
                 config.setListeningInterface(getStringAttribute("interface"));
             if (hasAttribute("port"))
                 config.setPort(getIntAttribute("port"));
+            if (hasAttribute("root"))
+                config.setApiRoot(getStringAttribute("root"));
 
             return config;
         }
