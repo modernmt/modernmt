@@ -120,32 +120,28 @@ set(MOSES_SRC
 add_subdirectory(moses)
 
 
-add_library(moses SHARED ${MOSES_SRC} $<TARGET_OBJECTS:moses_moses> $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_util>)
-target_link_libraries(moses ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} pthread)
-#target_link_libraries(moses ${MMTCommons_LIBRARIES}) # TODO david temp
-
-add_library(mmt-decoder SHARED $<TARGET_OBJECTS:moses_decoder> $<TARGET_OBJECTS:moses_java>)
+add_library(mmt-decoder SHARED ${MOSES_SRC} $<TARGET_OBJECTS:moses_moses> $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_util> $<TARGET_OBJECTS:moses_decoder> $<TARGET_OBJECTS:moses_java>)
 #install(TARGETS mmt-decoder LIBRARY DESTINATION lib) # installs to same location we built in -> fail?! -> 'INSTALL cannot find "/home/ubuntu/MMTy/build/lib/libmmt-decoder.so"'
-target_link_libraries(mmt-decoder moses)
+target_link_libraries(mmt-decoder ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} pthread)
 
 if (USE_IRSTLM)
-    target_link_libraries(moses ${IRSTLM_LIBRARIES})
+    target_link_libraries(mmt-decoder ${IRSTLM_LIBRARIES})
 endif (USE_IRSTLM)
 
 if (USE_MMTILM)
-    target_link_libraries(moses ${ROCKSDB_LIBRARIES} )
-    target_link_libraries(moses ${MMTILM_LIBRARIES} )
+    target_link_libraries(mmt-decoder ${ROCKSDB_LIBRARIES})
+    target_link_libraries(mmt-decoder ${MMTILM_LIBRARIES})
 endif (USE_MMTILM)
 
 if (USE_SAPT)
-    target_link_libraries(moses ${SAPT_LIBRARIES} )
+    target_link_libraries(mmt-decoder ${SAPT_LIBRARIES})
 endif (USE_SAPT)
 
 add_executable(moses-main moses-cmd/Main.cpp)
-target_link_libraries(moses-main ${Boost_LIBRARIES} ${GooglePerftools_LIBRARIES} moses)
-link_directories(${mosesdecoder_BINARY_DIR}/moses)  # link against libmoses.so
+target_link_libraries(moses-main ${Boost_LIBRARIES} ${GooglePerftools_LIBRARIES} mmt-decoder)
+#link_directories(${mosesdecoder_BINARY_DIR}/moses)  # link against libmoses.so
 
 # Mert
 add_subdirectory(mert)
 
-link_directories(${mosesdecoder_BINARY_DIR}/moses)  # link against libmoses.so
+#link_directories(${mosesdecoder_BINARY_DIR}/moses)  # link against libmoses.so
