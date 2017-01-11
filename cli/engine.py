@@ -398,7 +398,7 @@ class MMTEngine(object):
 
     def write_configs(self):
         self.moses.create_configs()
-        self._config.store(self._config_file)
+        self.config.store(self._config_file)
 
     def get_logfile(self, name, ensure=True):
         if ensure and not os.path.isdir(self._logs_path):
