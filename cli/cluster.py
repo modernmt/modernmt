@@ -26,7 +26,7 @@ DEFAULT_MMT_DATASTREAM_PORT = 9092
 class MMTApi:
     DEFAULT_TIMEOUT = 60 * 60  # sec
 
-    def __init__(self, host="localhost", port=None):
+    def __init__(self, host="localhost", port=None, root=None):
         if host[:7] == "http://":
             host = host[7:]
         if host.find(":") != -1:
@@ -34,7 +34,11 @@ class MMTApi:
         port = port if port else DEFAULT_MMT_API_PORT
         self.port = int(port)
         self.host = host
-        self._url_template = 'http://{host}:{port}/{endpoint}'
+
+        if root is None:
+            self._url_template = 'http://{host}:{port}/{endpoint}'
+        else:
+            self._url_template = 'http://{host}:{port}' + root + '/{endpoint}'
 
         logging.getLogger('requests').setLevel(1000)
         logging.getLogger('urllib3').setLevel(1000)
@@ -363,7 +367,10 @@ class ClusterNode(object):
     def __init__(self, engine, rest=True, api_port=None, cluster_ports=None, datastream_port=None,
                  sibling=None, verbosity=None):
         self.engine = engine
-        self.api = MMTApi(port=api_port)
+
+        config = self.engine.config
+
+        self.api = MMTApi(port=api_port, root=config.apiRoot)
 
         self._pidfile = os.path.join(engine.runtime_path, 'node.pid')
 
