@@ -177,22 +177,8 @@ void
 JNITranslationRequest::
 run_chart_decoder()
 {
-  // note: this codepath is untested, but it comes mainly from the original TranslationRequest.cpp
-  // in the mosesserver interface.
-  // This path does not currently provide word alignments. We use phrase-based cube pruning (search algorithm 1) which runs at run_phrase_decoder() instead.
-
-  Moses::TreeInput tinput(m_options);
-  istringstream buf(m_paramList.sourceSent + "\n");
-  tinput.Read(buf);
-  
-  Moses::ChartManager manager(this->self());
-  manager.Decode();
-
-  const Moses::ChartHypothesis *hypo = manager.GetBestHypothesis();
-  ostringstream out;
-  outputChartHypo(out,hypo);
-  m_retData.text = out.str();
-} // end of JNITranslationRequest::run_chart_decoder()
+  UTIL_THROW2("JNITranslationRequest::run_chart_decoder() must not be used anymore.");
+}
 
 void
 JNITranslationRequest::
