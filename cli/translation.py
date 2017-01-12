@@ -1,4 +1,6 @@
 import sys
+from UserString import MutableString
+from xml.etree import ElementTree
 
 import requests
 
@@ -10,7 +12,7 @@ __author__ = 'Davide Caroselli'
 
 class Translator:
     def __init__(self, node, context_string=None, context_file=None, context_weights=None,
-                 print_nbest=False, nbest_file=None):
+                 print_nbest=None, nbest_file=None):
         self._api = node.api
         self._print_nbest = print_nbest
 
@@ -119,6 +121,45 @@ class BatchTranslator(Translator):
                     self._nbest_out.write('\n')
 
             line_id += 1
+
+    def close(self):
+        Translator.close(self)
+        self._pool.terminate()
+
+
+class XLIFFTranslator(Translator):
+    def __init__(self, node, context_string=None, context_file=None, context_weights=None):
+        Translator.__init__(self, node, context_string, context_file, context_weights)
+        self._content = []
+        self._pool = multithread.Pool(100)
+
+        ElementTree.register_namespace('', 'urn:oasis:names:tc:xliff:document:1.2')
+        ElementTree.register_namespace('sdl', 'http://sdl.com/FileTypes/SdlXliff/1.0')
+
+    def execute(self, line):
+        self._content.append(line)
+
+    def _translate_transunit(self, tu, _=None):
+        source_tag = tu.find('{urn:oasis:names:tc:xliff:document:1.2}source')
+        target_tag = tu.find('{urn:oasis:names:tc:xliff:document:1.2}target')
+
+        if source_tag is not None and target_tag is not None:
+            target_tag.text = self._translate(source_tag.text)
+
+        return None
+
+    def flush(self):
+        xliff = ElementTree.fromstring('\n'.join(self._content))
+        jobs = []
+
+        for tu in xliff.findall('.//{urn:oasis:names:tc:xliff:document:1.2}trans-unit'):
+            job = self._pool.apply_async(self._translate_transunit, (tu, None))
+            jobs.append(job)
+
+        for job in jobs:
+            _ = job.get()
+
+        print ElementTree.tostring(xliff, encoding='utf8', method='xml')
 
     def close(self):
         Translator.close(self)
