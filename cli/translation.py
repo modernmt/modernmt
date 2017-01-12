@@ -45,11 +45,11 @@ class Translator:
 
         try:
             for score in text.split(','):
-                name, value = score.split(':', 2)
+                id, value = score.split(':', 2)
                 value = float(value)
 
                 context.append({
-                    'id': name,
+                    'domain': int(id),
                     'score': value
                 })
         except ValueError:
@@ -144,7 +144,8 @@ class XLIFFTranslator(Translator):
         target_tag = tu.find('{urn:oasis:names:tc:xliff:document:1.2}target')
 
         if source_tag is not None and target_tag is not None:
-            target_tag.text = self._translate(source_tag.text)
+            translation = self._translate(source_tag.text)
+            target_tag.text = self._encode_translation(translation)
 
         return None
 
