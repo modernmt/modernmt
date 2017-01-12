@@ -145,7 +145,7 @@ class XLIFFTranslator(Translator):
 
         if source_tag is not None and target_tag is not None:
             translation = self._translate(source_tag.text)
-            target_tag.text = self._encode_translation(translation)
+            target_tag.text = translation['translation']
 
         return None
 
