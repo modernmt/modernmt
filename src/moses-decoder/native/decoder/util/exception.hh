@@ -1,14 +1,11 @@
 #ifndef UTIL_EXCEPTION_H
 #define UTIL_EXCEPTION_H
 
-#include "util/string_stream.hh"
-
 #include <exception>
 #include <limits>
 #include <string>
 #include <stdint.h>
 
-// TODO(hieu): delete this
 #include <sstream>
 
 namespace util {
@@ -18,6 +15,7 @@ template <class Except, class Data> typename Except::template ExceptionTag<Excep
 class Exception : public std::exception {
   public:
     Exception() throw();
+    Exception(const Exception &other) { what_ << other.what_.str(); }
     virtual ~Exception() throw();
 
     const char *what() const throw() { return what_.str().c_str(); }
@@ -38,7 +36,7 @@ class Exception : public std::exception {
       typedef T Identity;
     };
 
-    StringStream what_;
+    std::stringstream what_;
 };
 
 /* This implements the normal operator<< for Exception and all its children.

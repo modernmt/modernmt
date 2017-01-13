@@ -2,6 +2,8 @@
 
 #include "util/exception.hh"
 
+#include "util/tokenize.hh"
+
 #include <fstream>
 #include <ostream>
 #include <sstream>
@@ -155,6 +157,16 @@ uint64_t RSSMax() {
     return 0;
   return static_cast<uint64_t>(usage.ru_maxrss) * 1024;
 #endif
+}
+
+uint64_t RSS() {
+  std::ifstream stat("/proc/self/stat");
+  std::string line;
+  getline(stat, line);
+  std::vector<std::string> toks = tokenize(line);
+  long long rss_pages = std::stoll(toks[24-1]); // (24) rss, see http://man7.org/linux/man-pages/man5/proc.5.html
+  size_t page_size = (size_t) sysconf(_SC_PAGESIZE);
+  return rss_pages * page_size;
 }
 
 void PrintUsage(std::ostream &out) {

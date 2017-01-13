@@ -105,9 +105,7 @@ InputType.cpp
 LatticeMBR.cpp
 LM/Base.cpp
 LM/Implementation.cpp
-#### LM/IRST.cpp
-        LM/MMTInterpolatedLM.cpp
-LM/Ken.cpp
+LM/MMTInterpolatedLM.cpp
 LM/MultiFactor.cpp
 LM/SingleFactor.cpp
 LVoc.cpp

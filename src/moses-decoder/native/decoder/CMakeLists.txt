@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 2.8.8)
 project(mosesdecoder)
 
-# for FindIRSTLM.cmake
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake/")
 
 set(CMAKE_MACOSX_RPATH 1)
@@ -47,11 +46,6 @@ include_directories(${JNI_INCLUDE_DIRS})
 find_package(ZLIB REQUIRED)
 find_package(GooglePerftools)  # for libtcmalloc_minimal
 
-if (USE_IRSTLM)
-    find_package(IRSTLM REQUIRED)
-    add_definitions(-DLM_IRST=true)
-endif (USE_IRSTLM)
-
 if (USE_MMTILM)
     find_package(ROCKSDB REQUIRED)
     find_package(MMTCommons REQUIRED)
@@ -66,7 +60,7 @@ if (USE_SAPT)
 endif (USE_SAPT)
 
 add_definitions(-DHAVE_ZLIB=1)
-add_definitions(-DMAX_NUM_FACTORS=4 -DKENLM_MAX_ORDER=6 -DWITH_THREADS -DBOOST_TEST_DYN_LINK)
+add_definitions(-DMAX_NUM_FACTORS=4 -DWITH_THREADS -DBOOST_TEST_DYN_LINK)
 # note: MOSES_VERSION_ID is defined in moses/CMakeLists.txt
 
 # "use TRACE_ENABLE to turn off output of any debugging info" (moses/Util.h)
@@ -76,9 +70,6 @@ add_definitions(-DTRACE_ENABLE=1)
 include_directories(${Boost_INCLUDE_DIRS} .)
 include_directories(${MMT_INCLUDE_DIR})
 
-if (USE_IRSTLM)
-    include_directories(${IRSTLM_INCLUDE_DIRS})
-endif (USE_IRSTLM)
 
 ## MMT commons
 find_package(MMTCommons REQUIRED)
@@ -97,9 +88,8 @@ if (USE_SAPT)
     include_directories(${SAPT_INCLUDE_DIRS})
 endif (USE_SAPT)
 
-# KenLM
+# KenLM utils, used mostly by MERT
 add_subdirectory(util)
-add_subdirectory(lm)
 
 
 set(MOSES_SRC
@@ -120,13 +110,10 @@ set(MOSES_SRC
 add_subdirectory(moses)
 
 
-add_library(mmt-decoder SHARED ${MOSES_SRC} $<TARGET_OBJECTS:moses_moses> $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_util> $<TARGET_OBJECTS:moses_decoder> $<TARGET_OBJECTS:moses_java>)
+add_library(mmt-decoder SHARED ${MOSES_SRC} $<TARGET_OBJECTS:moses_moses> $<TARGET_OBJECTS:kenlm_util> $<TARGET_OBJECTS:moses_decoder> $<TARGET_OBJECTS:moses_java>)
 #install(TARGETS mmt-decoder LIBRARY DESTINATION lib) # installs to same location we built in -> fail?! -> 'INSTALL cannot find "/home/ubuntu/MMTy/build/lib/libmmt-decoder.so"'
 target_link_libraries(mmt-decoder ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} pthread)
 
-if (USE_IRSTLM)
-    target_link_libraries(mmt-decoder ${IRSTLM_LIBRARIES})
-endif (USE_IRSTLM)
 
 if (USE_MMTILM)
     target_link_libraries(mmt-decoder ${ROCKSDB_LIBRARIES})

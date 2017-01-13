@@ -19,11 +19,6 @@
 #include "moses/Syntax/InputWeightFF.h"
 #include "moses/Syntax/RuleTableFF.h"
 
-#include "moses/LM/Ken.h"
-#ifdef LM_IRST
-#include "moses/LM/IRST.h"
-#endif
-
 #ifdef LM_MMTILM
 #include "moses/LM/MMTInterpolatedLM.h"
 #endif
@@ -98,16 +93,6 @@ public:
 
   void Create(const std::string &line) {
     DefaultSetup(new F(line));
-  }
-};
-
-class KenFactory : public FeatureFactory
-{
-public:
-  KenFactory(FeatureSetup &featureSetup): FeatureFactory(featureSetup) {}
-
-  void Create(const std::string &line) {
-    DefaultSetup(ConstructKenLM(line));
   }
 };
 
@@ -204,13 +189,9 @@ void FeatureRegistry::AddFactories(FeatureSetup& setup)
   MOSES_FNAME(SkeletonStatefulFF);
 //  MOSES_FNAME(SkeletonPT);
 
-#ifdef LM_IRST
-  MOSES_FNAME2("IRSTLM", LanguageModelIRST);
-#endif
 #ifdef LM_MMTILM
   MOSES_FNAME2("MMTILM", MMTInterpolatedLM);
 #endif
-  Add("KENLM", new KenFactory(setup));
 }
 
 FeatureRegistry::~FeatureRegistry()

@@ -23,8 +23,8 @@ void Exception::SetLocation(const char *file, unsigned int line, const char *fun
    * then child classes would have to accept constructor arguments and pass
    * them down.
    */
-  std::string old_text;
-  what_.swap(old_text);
+  std::string old_text = what_.str();
+  what_.clear();
   what_ << file << ':' << line;
   if (func) what_ << " in " << func << " threw ";
   if (child_name) {

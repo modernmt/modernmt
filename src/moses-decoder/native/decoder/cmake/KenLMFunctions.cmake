@@ -24,7 +24,7 @@ function(AddExes)
   endforeach(exe)
 
   # Install the executable files
-  install(TARGETS ${AddExes_EXES} DESTINATION bin)
+  #install(TARGETS ${AddExes_EXES} DESTINATION bin)
 endfunction()
 
 # Adds a single test to the build, depending on the specified dependent

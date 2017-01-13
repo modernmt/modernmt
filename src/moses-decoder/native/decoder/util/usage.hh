@@ -15,6 +15,9 @@ double CPUTime();
 // Resident usage in bytes.
 uint64_t RSSMax();
 
+// Resident usage in bytes.
+uint64_t RSS();
+
 void PrintUsage(std::ostream &to);
 
 // Determine how much physical memory there is.  Return 0 on failure.
