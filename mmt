@@ -400,7 +400,7 @@ def main_translate(argv):
     if not node.is_running():
         raise IllegalStateException('engine not running: ' + args.engine)
 
-    if args.is_xliff is not None:
+    if args.is_xliff:
         translator = XLIFFTranslator(node, context_string=args.context, context_file=args.context_file,
                                      context_weights=args.context_weights)
     elif args.batch:
