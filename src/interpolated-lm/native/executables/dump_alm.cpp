@@ -9,6 +9,11 @@
 #include <fstream>
 #include <db/NGramStorage.h>
 #include <sys/time.h>
+#ifdef _OPENMP
+#include <thread>
+#include <omp.h>
+#endif
+
 
 using namespace std;
 using namespace mmt;
