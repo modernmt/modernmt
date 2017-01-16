@@ -7,7 +7,6 @@
 #include "moses/HypergraphOutput.h"
 #include "moses/IOWrapper.h"
 #include "moses/Manager.h"
-#include "moses/ChartManager.h"
 #include "moses/ContextScope.h"
 
 #include <boost/shared_ptr.hpp>

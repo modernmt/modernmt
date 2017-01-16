@@ -63,29 +63,6 @@ Run()
 
 void
 JNITranslationRequest::
-outputChartHypo(ostream& out, const ChartHypothesis* hypo)
-{
-  Phrase outPhrase(20);
-  hypo->GetOutputPhrase(outPhrase);
-
-  // delete 1st & last
-  assert(outPhrase.GetSize() >= 2);
-  outPhrase.RemoveWord(0);
-  outPhrase.RemoveWord(outPhrase.GetSize() - 1);
-  for (size_t pos = 0 ; pos < outPhrase.GetSize() ; pos++)
-    out << *outPhrase.GetFactor(pos, 0) << " ";
-}
-
-bool
-JNITranslationRequest::
-compareSearchGraphNode(const Moses::SearchGraphNode& a,
-                       const Moses::SearchGraphNode& b)
-{
-  return a.hypo->GetId() < b.hypo->GetId();
-}
-
-void
-JNITranslationRequest::
 outputNBest(const Manager& manager, std::vector<ResponseHypothesis>& nBest)
 {
   TrellisPathList nBestList;

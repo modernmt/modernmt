@@ -35,17 +35,12 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 
-#include "moses/Syntax/KBestExtractor.h"
-#include "moses/Syntax/PVertex.h"
-#include "moses/Syntax/S2T/DerivationWriter.h"
-
 #include "moses/Hypothesis.h"
 #include "moses/TrellisPathList.h"
 #include "moses/StaticData.h"
 #include "moses/InputFileStream.h"
 #include "moses/FF/StatefulFeatureFunction.h"
 #include "moses/TreeInput.h"
-#include "moses/ForestInput.h"
 #include "moses/ConfusionNet.h"
 #include "moses/WordLattice.h"
 #include "moses/ChartManager.h"

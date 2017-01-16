@@ -21,7 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <boost/lexical_cast.hpp>
 
-#include "util/double-conversion/double-conversion.h"
+//#include "util/double-conversion/double-conversion.h"
 #include "util/string_piece.hh"
 #include "util/tokenize_piece.hh"
 
@@ -60,7 +60,7 @@ const Vocab::Entry &Vocab::FindOrAdd(const StringPiece &str)
   return *map_.insert(Entry(copied, map_.size())).first;
 }
 
-double_conversion::StringToDoubleConverter converter(double_conversion::StringToDoubleConverter::NO_FLAGS, NAN, NAN, "inf", "nan");
+//double_conversion::StringToDoubleConverter converter(double_conversion::StringToDoubleConverter::NO_FLAGS, NAN, NAN, "inf", "nan");
 
 
 /**
@@ -97,8 +97,8 @@ static pair<Edge*,size_t> ReadEdge(util::FilePiece &from, Graph &graph)
     UTIL_THROW_IF(equals == fv.npos, HypergraphException, "Failed to parse feature '" << fv << "'");
     StringPiece name = fv.substr(0,equals);
     StringPiece value = fv.substr(equals+1);
-    int processed;
-    float score = converter.StringToFloat(value.data(), value.length(), &processed);
+    //float score = converter.StringToFloat(value.data(), value.length(), &processed);
+    float score = stof(string(value.data(), value.length()));
     UTIL_THROW_IF(isnan(score), HypergraphException, "Failed to parse weight '" << value << "'");
     edge->AddFeature(name,score);
   }

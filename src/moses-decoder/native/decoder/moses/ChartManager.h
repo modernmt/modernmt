@@ -32,7 +32,6 @@
 #include "ChartParser.h"
 #include "ChartKBestExtractor.h"
 #include "BaseManager.h"
-#include "moses/Syntax/KBestExtractor.h"
 
 namespace Moses
 {

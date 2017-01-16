@@ -28,7 +28,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include "ScoreComponentCollection.h"
 #include "AlignmentInfo.h"
 #include "AlignmentInfoCollection.h"
-#include "moses/PP/PhraseProperty.h"
 #include "util/string_piece.hh"
 //#include "moses/TranslationTask.h"
 
@@ -71,9 +70,6 @@ private:
   const AlignmentInfo* m_alignTerm, *m_alignNonTerm;
   const Word *m_lhsTarget;
   mutable Phrase *m_ruleSource; // to be set by the feature function that needs it.
-
-  typedef std::map<std::string, boost::shared_ptr<PhraseProperty> > Properties;
-  Properties m_properties;
 
   const PhraseDictionary *m_container;
 
@@ -214,7 +210,6 @@ public:
 
   void SetProperties(const StringPiece &str);
   void SetProperty(const std::string &key, const std::string &value);
-  const PhraseProperty *GetProperty(const std::string &key) const;
 
   void Merge(const TargetPhrase &copy, const std::vector<FactorType>& factorVec);
 

@@ -16,8 +16,6 @@
 #include "moses/FF/DynamicCacheBasedLanguageModel.h"
 #include "moses/FF/SkeletonStatelessFF.h"
 #include "moses/FF/SkeletonStatefulFF.h"
-#include "moses/Syntax/InputWeightFF.h"
-#include "moses/Syntax/RuleTableFF.h"
 
 #ifdef LM_MMTILM
 #include "moses/LM/MMTInterpolatedLM.h"

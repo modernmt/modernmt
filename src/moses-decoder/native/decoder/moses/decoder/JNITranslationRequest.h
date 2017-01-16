@@ -10,7 +10,6 @@
 #endif
 
 #include "moses/Util.h"
-#include "moses/ChartManager.h"
 #include "moses/Hypothesis.h"
 #include "moses/Manager.h"
 #include "moses/StaticData.h"
@@ -64,20 +63,9 @@ JNITranslationRequest : public virtual Moses::TranslationTask
   void
   pack_hypothesis(const Moses::Manager& manager, Moses::Hypothesis const* h, std::string& dest, std::vector<std::pair<size_t, size_t> > *alignment = NULL);
 
-  void
-  add_phrase_aln_info(Moses::Hypothesis const& h,
-                      std::vector<xmlrpc_c::value>& aInfo) const;
-
-  void
-  outputChartHypo(std::ostream& out, const Moses::ChartHypothesis* hypo);
-
   /** Add absolute (sentence-position) word alignments of a single Hypothesis to 'dest'. */
   void
   outputLocalWordAlignment(std::vector<std::pair<size_t, size_t> > &dest, const Moses::Hypothesis *hypo);
-
-  bool
-  compareSearchGraphNode(const Moses::SearchGraphNode& a,
-                         const Moses::SearchGraphNode& b);
 
   void
   outputNBest(Moses::Manager const& manager,

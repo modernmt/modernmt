@@ -58,9 +58,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "moses/TrellisPathList.h"
 #include "moses/InputFileStream.h"
 #include "moses/InputType.h"
-#include "moses/LatticeMBR.h"
-#include "moses/ChartKBestExtractor.h"
-#include "moses/Syntax/KBestExtractor.h"
 #include "moses/parameters/AllOptions.h"
 
 #include <boost/format.hpp>

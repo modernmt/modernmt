@@ -33,7 +33,6 @@
 #include "InputPath.h"
 #include "TranslationTask.h"
 #include "TranslationModel/PhraseDictionary.h"
-#include "PP/Factory.h"
 #include "ContextScope.h"
 #include <boost/foreach.hpp>
 
@@ -97,7 +96,6 @@ TargetPhrase::TargetPhrase(const TargetPhrase &copy)
   , m_scoreBreakdown(copy.m_scoreBreakdown)
   , m_alignTerm(copy.m_alignTerm)
   , m_alignNonTerm(copy.m_alignNonTerm)
-  , m_properties(copy.m_properties)
   , m_container(copy.m_container)
 {
   if (copy.m_lhsTarget) {
@@ -317,44 +315,12 @@ SetExtraScores(FeatureFunction const* ff,
 
 void TargetPhrase::SetProperties(const StringPiece &str)
 {
-  if (str.size() == 0) {
-    return;
-  }
-
-  vector<string> toks;
-  TokenizeMultiCharSeparator(toks, str.as_string(), "{{");
-  for (size_t i = 0; i < toks.size(); ++i) {
-    string &tok = toks[i];
-    if (tok.empty()) {
-      continue;
-    }
-    size_t endPos = tok.rfind("}");
-
-    tok = tok.substr(0, endPos - 1);
-
-    vector<string> keyValue = TokenizeFirstOnly(tok, " ");
-    UTIL_THROW_IF2(keyValue.size() != 2,
-                   "Incorrect format of property: " << str);
-    SetProperty(keyValue[0], keyValue[1]);
-  }
+  UTIL_THROW2("TargetPhrase::SetProperties() not supported anymore");
 }
 
 void TargetPhrase::SetProperty(const std::string &key, const std::string &value)
 {
-  const StaticData &staticData = StaticData::Instance();
-  const PhrasePropertyFactory& phrasePropertyFactory = staticData.GetPhrasePropertyFactory();
-  m_properties[key] = phrasePropertyFactory.ProduceProperty(key,value);
-}
-
-const PhraseProperty *TargetPhrase::GetProperty(const std::string &key) const
-{
-  std::map<std::string, boost::shared_ptr<PhraseProperty> >::const_iterator iter;
-  iter = m_properties.find(key);
-  if (iter != m_properties.end()) {
-    const boost::shared_ptr<PhraseProperty> &pp = iter->second;
-    return pp.get();
-  }
-  return NULL;
+  UTIL_THROW2("TargetPhrase::SetProperty() not supported anymore");
 }
 
 void TargetPhrase::SetRuleSource(const Phrase &ruleSource) const
@@ -394,19 +360,6 @@ std::ostream& operator<<(std::ostream& os, const TargetPhrase& tp)
   const Phrase *sourcePhrase = tp.GetRuleSource();
   if (sourcePhrase) {
     os << " sourcePhrase=" << *sourcePhrase << flush;
-  }
-
-  if (tp.m_properties.size()) {
-    os << " properties: " << flush;
-
-    TargetPhrase::Properties::const_iterator iter;
-    for (iter = tp.m_properties.begin(); iter != tp.m_properties.end(); ++iter) {
-      const string &key = iter->first;
-      const PhraseProperty *prop = iter->second.get();
-      assert(prop);
-
-      os << key << "=" << *prop << " ";
-    }
   }
 
   return os;

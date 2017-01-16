@@ -125,7 +125,6 @@ protected:
 
   // these are forward declared
   boost::scoped_ptr<FeatureRegistry> m_registry;
-  boost::scoped_ptr<PhrasePropertyFactory> m_phrasePropertyFactory;
 
   StaticData();
 
@@ -318,10 +317,6 @@ public:
 
   const FeatureRegistry &GetFeatureRegistry() const {
     return *m_registry;
-  }
-
-  const PhrasePropertyFactory &GetPhrasePropertyFactory() const {
-    return *m_phrasePropertyFactory;
   }
 
   /** check whether we should be using the old code to support binary phrase-table.

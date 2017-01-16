@@ -14,7 +14,6 @@ ChartCell.cpp
 ChartHypothesisCollection.cpp
 ChartHypothesis.cpp
 ChartKBestExtractor.cpp
-ChartManager.cpp
 ChartParser.cpp
 ChartRuleLookupManager.cpp
 ChartTranslationOption.cpp
@@ -130,16 +129,6 @@ parameters/SyntaxOptions.cpp
 PartialTranslOptColl.cpp
 PCNTools.cpp
 Phrase.cpp
-PP/CountsPhraseProperty.cpp
-PP/Factory.cpp
-PP/NonTermContextProperty.cpp
-PP/OrientationPhraseProperty.cpp
-PP/PhraseProperty.cpp
-PP/SourceLabelsPhraseProperty.cpp
-PP/SpanLengthPhraseProperty.cpp
-PP/TargetConstituentBoundariesLeftPhraseProperty.cpp
-PP/TargetConstituentBoundariesRightAdjacentPhraseProperty.cpp
-PP/TargetPreferencesPhraseProperty.cpp
 PrefixTreeMap.cpp
 Range.cpp
 ReorderingConstraint.cpp

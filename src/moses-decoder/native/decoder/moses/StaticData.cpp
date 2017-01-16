@@ -26,7 +26,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <sstream>
 
 #include "moses/FF/Factory.h"
-#include "moses/PP/Factory.h"
 #include "TypeDef.h"
 #include "moses/FF/WordPenaltyProducer.h"
 #include "moses/FF/UnknownWordPenaltyProducer.h"
@@ -72,7 +71,6 @@ StaticData::StaticData()
   , m_vocabulary(NULL)
   , m_requireSortingAfterSourceContext(false)
   , m_registry(new FeatureRegistry)
-  , m_phrasePropertyFactory(new PhrasePropertyFactory)
   , m_treeStructure(NULL)
 {
   Phrase::InitializeMemPool();
