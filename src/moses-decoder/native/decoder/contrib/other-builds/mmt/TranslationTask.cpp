@@ -8,14 +8,7 @@
 #include "moses/Timer.h"
 #include "moses/InputType.h"
 #include "moses/OutputCollector.h"
-#include "moses/Incremental.h"
 #include "moses/mbr.h"
-
-#include "moses/Syntax/F2S/RuleMatcherCallback.h"
-#include "moses/Syntax/F2S/RuleMatcherHyperTree.h"
-#include "moses/Syntax/S2T/Parsers/RecursiveCYKPlusParser/RecursiveCYKPlusParser.h"
-#include "moses/Syntax/S2T/Parsers/Scope3Parser/Parser.h"
-#include "moses/Syntax/T2S/RuleMatcherSCFG.h"
 
 #include "util/exception.hh"
 
@@ -23,20 +16,6 @@ using namespace std;
 
 namespace Moses
 {
-
-boost::shared_ptr<std::vector<std::string> >
-TranslationTask::
-GetContextWindow() const
-{
-  return m_context;
-}
-
-void
-TranslationTask::
-SetContextWindow(boost::shared_ptr<std::vector<std::string> > const& cw)
-{
-  m_context = cw;
-}
 
 boost::shared_ptr<TranslationTask>
 TranslationTask
@@ -97,45 +76,7 @@ TranslationTask
     return manager;
   }
 
-#define WITHOUT_SYNTAX
-
-#ifndef WITHOUT_SYNTAX
-  if (algo == SyntaxF2S || algo == SyntaxT2S) {
-    // STSG-based tree-to-string / forest-to-string decoding (ask Phil Williams)
-    typedef Syntax::F2S::RuleMatcherCallback Callback;
-    typedef Syntax::F2S::RuleMatcherHyperTree<Callback> RuleMatcher;
-    manager.reset(new Syntax::F2S::Manager<RuleMatcher>(this->self()));
-  }
-
-  else if (algo == SyntaxS2T) {
-    // new-style string-to-tree decoding (ask Phil Williams)
-    S2TParsingAlgorithm algorithm = m_options->syntax.s2t_parsing_algo;
-    if (algorithm == RecursiveCYKPlus) {
-      typedef Syntax::S2T::EagerParserCallback Callback;
-      typedef Syntax::S2T::RecursiveCYKPlusParser<Callback> Parser;
-      manager.reset(new Syntax::S2T::Manager<Parser>(this->self()));
-    } else if (algorithm == Scope3) {
-      typedef Syntax::S2T::StandardParserCallback Callback;
-      typedef Syntax::S2T::Scope3Parser<Callback> Parser;
-      manager.reset(new Syntax::S2T::Manager<Parser>(this->self()));
-    } else UTIL_THROW2("ERROR: unhandled S2T parsing algorithm");
-  }
-
-  else if (algo == SyntaxT2S_SCFG) {
-    // SCFG-based tree-to-string decoding (ask Phil Williams)
-    typedef Syntax::F2S::RuleMatcherCallback Callback;
-    typedef Syntax::T2S::RuleMatcherSCFG<Callback> RuleMatcher;
-    manager.reset(new Syntax::T2S::Manager<RuleMatcher>(this->self()));
-  }
-
-  else if (algo == ChartIncremental) // Ken's incremental decoding
-    manager.reset(new Incremental::Manager(this->self()));
-
-  else // original SCFG manager
-    manager.reset(new ChartManager(this->self()));
-#else
   UTIL_THROW2("ERROR: requested syntax search algorithm, but compiled with WITHOUT_SYNTAX.");
-#endif
 
   return manager;
 }
@@ -146,16 +87,6 @@ options() const
 {
   return m_options;
 }
-
-// TranslationTask const*
-// TranslationTask::
-// current() {
-// #ifdef WITH_THREADS
-//   return s_current.get();
-// #else
-//   return NULL;
-// #endif
-// }
 
 void TranslationTask::Run()
 {
@@ -204,48 +135,6 @@ void TranslationTask::Run()
   Timer additionalReportingTime;
   additionalReportingTime.start();
   boost::shared_ptr<IOWrapper> const& io = m_ioWrapper;
-
-  manager->OutputBest(io->GetSingleBestOutputCollector());
-
-  // output word graph
-  manager->OutputWordGraph(io->GetWordGraphCollector());
-
-  // output search graph
-  manager->OutputSearchGraph(io->GetSearchGraphOutputCollector());
-
-  // ???
-  manager->OutputSearchGraphSLF();
-
-  // Output search graph in hypergraph format for Kenneth Heafield's
-  // lazy hypergraph decoder; writes to stderr
-  if (m_options->output.SearchGraphHG.size()) {
-    size_t transId = manager->GetSource().GetTranslationId();
-    string fname = io->GetHypergraphOutputFileName(transId);
-    manager->OutputSearchGraphAsHypergraph(fname, PRECISION);
-  }
-
-  additionalReportingTime.stop();
-
-  additionalReportingTime.start();
-
-  // output n-best list
-  manager->OutputNBest(io->GetNBestOutputCollector());
-
-  //lattice samples
-  manager->OutputLatticeSamples(io->GetLatticeSamplesCollector());
-
-  // detailed translation reporting
-  ocoll = io->GetDetailedTranslationCollector();
-  manager->OutputDetailedTranslationReport(ocoll);
-
-  ocoll = io->GetDetailTreeFragmentsOutputCollector();
-  manager->OutputDetailedTreeFragmentsTranslationReport(ocoll);
-
-  //list of unknown words
-  manager->OutputUnknowns(io->GetUnknownsCollector());
-
-  manager->OutputAlignment(io->GetAlignmentInfoCollector());
-
   // report additional statistics
   manager->CalcDecoderStatistics();
   VERBOSE(1, "Line " << translationId << ": Additional reporting took "

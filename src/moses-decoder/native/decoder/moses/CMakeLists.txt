@@ -98,7 +98,6 @@ Hypothesis.cpp
 HypothesisStack.cpp
 HypothesisStackCubePruning.cpp
 HypothesisStackNormal.cpp
-Incremental.cpp
 InputFileStream.cpp
 InputPath.cpp
 InputType.cpp
@@ -106,7 +105,6 @@ LatticeMBR.cpp
 LM/Base.cpp
 LM/Implementation.cpp
 LM/MMTInterpolatedLM.cpp
-LM/MultiFactor.cpp
 LM/SingleFactor.cpp
 LVoc.cpp
 Manager.cpp

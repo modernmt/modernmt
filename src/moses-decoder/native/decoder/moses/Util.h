@@ -33,7 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <cstdlib>
 #include <cstring>
 #include "util/exception.hh"
-#include "util/string_stream.hh"
+//#include "util/string_stream.hh"
 #include "TypeDef.h"
 
 namespace Moses
@@ -344,7 +344,7 @@ inline std::vector<std::string> TokenizeFirstOnly(const std::string& str,
 template <typename T>
 std::string Join(const std::string& delimiter, const std::vector<T>& items)
 {
-  util::StringStream outstr;
+  std::stringstream outstr;
   if(items.size() == 0) return "";
   outstr << items[0];
   for(unsigned int i = 1; i < items.size(); i++)
@@ -358,7 +358,7 @@ std::string Join(const std::string& delimiter, const std::vector<T>& items)
 template<typename It>
 std::string Join(const std::string &delim, It begin, It end)
 {
-  util::StringStream outstr;
+  std::stringstream outstr;
   if (begin != end)
     outstr << *begin++;
   for ( ; begin != end; ++begin)

@@ -93,12 +93,6 @@ add_subdirectory(util)
 
 
 set(MOSES_SRC
-        phrase-extract/PhraseOrientation.cpp
-        search/edge_generator.cc
-        search/nbest.cc
-        search/rule.cc
-        search/vertex.cc
-
         # MMT specific: disable syntax decoding, unused phrase tables, unused features
         contrib/other-builds/mmt/FF/Factory.cpp
         contrib/other-builds/mmt/IOWrapper.cpp

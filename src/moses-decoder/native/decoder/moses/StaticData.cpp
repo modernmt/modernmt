@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <string>
 #include <boost/algorithm/string/predicate.hpp>
+#include <sstream>
 
 #include "moses/FF/Factory.h"
 #include "moses/PP/Factory.h"
@@ -401,7 +402,7 @@ LoadDecodeGraphsOld(const vector<string> &mappingVector,
     switch (decodeType) {
     case Translate:
       if(index>=pts.size()) {
-        util::StringStream strme;
+        std::stringstream strme;
         strme << "No phrase dictionary with index "
               << index << " available!";
         UTIL_THROW(util::Exception, strme.str());
@@ -410,7 +411,7 @@ LoadDecodeGraphsOld(const vector<string> &mappingVector,
       break;
     case Generate:
       if(index>=gens.size()) {
-        util::StringStream strme;
+        std::stringstream strme;
         strme << "No generation dictionary with index "
               << index << " available!";
         UTIL_THROW(util::Exception, strme.str());

@@ -125,24 +125,11 @@ public:
     return m_scope;
   }
 
-  boost::shared_ptr<std::vector<std::string> >
-  GetContextWindow() const;
-
-  void
-  SetContextWindow(boost::shared_ptr<std::vector<std::string> > const& cw);
-
   AllOptions::ptr const& options() const;
 
-  static TranslationTask const* current();
-  
 protected:
   boost::shared_ptr<Moses::InputType> m_source;
   boost::shared_ptr<Moses::IOWrapper> m_ioWrapper;
-
-  void interpret_dlt();
-
-
-
 };
 
 

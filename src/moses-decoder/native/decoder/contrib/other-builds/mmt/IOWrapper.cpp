@@ -116,55 +116,10 @@ IOWrapper::IOWrapper(AllOptions const& opts)
   P.SetParameter<std::string>(path, "output-unknowns", "");
   if (path.size()) m_unknownsCollector.reset(new OutputCollector(path));
 
-  P.SetParameter<std::string>(path, "alignment-output-file", "");
-  if (path.size()) m_alignmentInfoCollector.reset(new OutputCollector(path));
-
-  P.SetParameter<string>(path, "translation-details", "");
-  if (path.size()) m_detailedTranslationCollector.reset(new OutputCollector(path));
-
-  P.SetParameter<string>(path, "tree-translation-details", "");
-  if (path.size()) m_detailTreeFragmentsOutputCollector.reset(new OutputCollector(path));
-
-  P.SetParameter<string>(path, "output-word-graph", "");
-  if (path.size()) m_wordGraphCollector.reset(new OutputCollector(path));
-
-  size_t latticeSamplesSize = staticData.options()->output.lattice_sample_size;
-  string latticeSamplesFile = staticData.options()->output.lattice_sample_filepath;
-  if (latticeSamplesSize) {
-    m_latticeSamplesCollector.reset(new OutputCollector(latticeSamplesFile));
-    if (m_latticeSamplesCollector->OutputIsCout()) {
-      m_surpressSingleBestOutput = true;
-    }
-  }
-
   if (!m_surpressSingleBestOutput) {
     m_singleBestOutputCollector.reset(new Moses::OutputCollector(&std::cout));
   }
 
-  // setup file pattern for hypergraph output
-  char const* key = "output-search-graph-hypergraph";
-  PARAM_VEC const* p = staticData.GetParameter().GetParam(key);
-  std::string& fmt = m_hypergraph_output_filepattern;
-  // first, determine the output directory
-  if (p && p->size() > 2) fmt = p->at(2);
-  else if (nBestFilePath.size() && nBestFilePath != "-" &&
-           ! boost::starts_with(nBestFilePath, "/dev/stdout")) {
-    fmt = boost::filesystem::path(nBestFilePath).parent_path().string();
-    if (fmt.empty()) fmt = ".";
-  } else fmt = boost::filesystem::current_path().string() + "/hypergraph";
-  if (*fmt.rbegin() != '/') fmt += "/";
-  std::string extension = (p && p->size() > 1 ? p->at(1) : std::string("txt"));
-  UTIL_THROW_IF2(extension != "txt" && extension != "gz" && extension != "bz2",
-                 "Unknown compression type '" << extension
-                 << "' for hypergraph output!");
-  fmt += string("%d.") + extension;
-
-  // input streams for simulated post-editing
-  if (staticData.GetParameter().GetParam("spe-src")) {
-    spe_src = new ifstream(staticData.GetParameter().GetParam("spe-src")->at(0).c_str());
-    spe_trg = new ifstream(staticData.GetParameter().GetParam("spe-trg")->at(0).c_str());
-    spe_aln = new ifstream(staticData.GetParameter().GetParam("spe-aln")->at(0).c_str());
-  }
 }
 
 IOWrapper::~IOWrapper()
