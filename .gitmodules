@@ -1,7 +1,3 @@
-[submodule "vendor/moses"]
-	path = vendor/moses
-	url = https://github.com/ModernMT/mosesdecoder
-	branch = mmt-official
 [submodule "vendor/rocksdb"]
 	path = vendor/rocksdb
 	url = https://github.com/facebook/rocksdb.git
