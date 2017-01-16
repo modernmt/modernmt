@@ -68,7 +68,7 @@ find_package(ZLIB REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIRS})
 
-add_library(mertc SHARED ${MERT_SRC} ../moses/ThreadPool.cpp $<TARGET_OBJECTS:kenlm_util>)
+add_library(mertc SHARED ${MERT_SRC} ../moses/ThreadPool.cpp $<TARGET_OBJECTS:kenlm_util> $<TARGET_OBJECTS:double-conversion>)  # double-conversion from kenlm util/double-conversion
 target_link_libraries(mertc ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} pthread)
 
 set(MERT_EXECUTABLES evaluator extractor kbmira mert pro)
