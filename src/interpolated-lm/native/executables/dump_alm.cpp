@@ -9,10 +9,6 @@
 #include <fstream>
 #include <db/NGramStorage.h>
 #include <sys/time.h>
-#ifdef _OPENMP
-#include <thread>
-#include <omp.h>
-#endif
 
 
 using namespace std;
@@ -82,13 +78,6 @@ double GetTime() {
 }
 
 int main(int argc, const char *argv[]) {
-#ifdef _OPENMP
-    int threads = std::min((thread::hardware_concurrency() * 2) / 3, 8U);
-
-    omp_set_dynamic(0);
-    omp_set_num_threads(threads);
-#endif
-
     args_t args;
 
     if (!ParseArgs(argc, argv, &args))
