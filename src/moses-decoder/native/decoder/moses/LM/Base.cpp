@@ -23,7 +23,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include "moses/TypeDef.h"
 #include "moses/Util.h"
 #include "moses/Manager.h"
-#include "moses/ChartManager.h"
 #include "moses/FactorCollection.h"
 #include "moses/Phrase.h"
 #include "util/exception.hh"

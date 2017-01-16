@@ -36,14 +36,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/foreach.hpp>
 
 #include "moses/Hypothesis.h"
-#include "moses/TrellisPathList.h"
 #include "moses/StaticData.h"
 #include "moses/InputFileStream.h"
 #include "moses/FF/StatefulFeatureFunction.h"
-#include "moses/TreeInput.h"
-#include "moses/ConfusionNet.h"
-#include "moses/WordLattice.h"
-#include "moses/ChartManager.h"
 
 #include "moses/IOWrapper.h"
 
@@ -153,14 +148,6 @@ GetBufferedInput()
   switch(m_inputType) {
   case SentenceInput:
     return BufferInput<Sentence>();
-  case ConfusionNetworkInput:
-    return BufferInput<ConfusionNet>();
-  case WordLatticeInput:
-    return BufferInput<WordLattice>();
-  case TreeInputType:
-    return BufferInput<TreeInput>();
-  case TabbedSentenceInput:
-    return BufferInput<TabbedSentence>();
   default:
     TRACE_ERR("Unknown input type: " << m_inputType << "\n");
     return boost::shared_ptr<InputType>();

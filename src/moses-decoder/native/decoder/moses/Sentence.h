@@ -35,7 +35,6 @@ class Range;
 class PhraseDictionary;
 class TranslationOption;
 class TranslationOptionCollection;
-class ChartTranslationOptions;
 class TranslationTask;
 struct XmlOption;
 
@@ -91,7 +90,6 @@ public:
   //! populates vector argument with XML force translation options for the specific range passed
   void GetXmlTranslationOptions(std::vector<TranslationOption*> &list) const;
   void GetXmlTranslationOptions(std::vector<TranslationOption*> &list, size_t startPos, size_t endPos) const;
-  std::vector<ChartTranslationOptions*> GetXmlChartTranslationOptions() const;
 
   virtual int
   Read(std::istream& in);

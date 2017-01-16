@@ -9,16 +9,6 @@ BaseManager.cpp
 BitmapContainer.cpp
 Bitmap.cpp
 Bitmaps.cpp
-ChartCellCollection.cpp
-ChartCell.cpp
-ChartHypothesisCollection.cpp
-ChartHypothesis.cpp
-ChartKBestExtractor.cpp
-ChartParser.cpp
-ChartRuleLookupManager.cpp
-ChartTranslationOption.cpp
-ChartTranslationOptionList.cpp
-ChartTranslationOptions.cpp
 ConfusionNet.cpp
 DecodeGraph.cpp
 DecodeStep.cpp
@@ -92,7 +82,6 @@ FF/WordPenaltyProducer.cpp
 File.cpp
 FloydWarshall.cpp
 GenerationDictionary.cpp
-HypergraphOutput.cpp
 Hypothesis.cpp
 HypothesisStack.cpp
 HypothesisStackCubePruning.cpp
@@ -132,9 +121,6 @@ Phrase.cpp
 PrefixTreeMap.cpp
 Range.cpp
 ReorderingConstraint.cpp
-RuleCube.cpp
-RuleCubeItem.cpp
-RuleCubeQueue.cpp
 ScoreComponentCollection.cpp
 Search.cpp
 SearchCubePruning.cpp

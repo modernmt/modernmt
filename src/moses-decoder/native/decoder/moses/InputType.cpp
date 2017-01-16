@@ -23,7 +23,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <cstdlib>
 
 #include "InputType.h"
-#include "ChartTranslationOptions.h"
 #include "StaticData.h"
 
 namespace Moses
@@ -63,13 +62,6 @@ int InputType::ComputeDistortionDistance(const Range& prev, const Range& current
 bool InputType::CanIGetFromAToB(size_t /*start*/, size_t /*end*/) const
 {
   return true;
-}
-
-std::vector <ChartTranslationOptions*> InputType::GetXmlChartTranslationOptions() const
-{
-  // default. return nothing
-  std::vector <ChartTranslationOptions*> ret;
-  return ret;
 }
 
 }

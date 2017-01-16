@@ -4,7 +4,6 @@
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include "moses/ThreadPool.h"
 #include "moses/Manager.h"
-#include "moses/HypergraphOutput.h"
 #include "moses/IOWrapper.h"
 #include "moses/Manager.h"
 #include "moses/ContextScope.h"

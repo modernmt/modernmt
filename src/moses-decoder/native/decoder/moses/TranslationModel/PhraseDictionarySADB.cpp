@@ -1,7 +1,5 @@
 // vim:tabstop=2
 #include "PhraseDictionarySADB.h"
-#include "moses/ChartParser.h"
-#include "moses/ChartCellCollection.h"
 #include "moses/StaticData.h"
 #include "moses/TranslationTask.h"
 

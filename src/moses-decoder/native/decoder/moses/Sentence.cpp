@@ -28,7 +28,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include "TranslationOptionCollectionText.h"
 #include "StaticData.h"
 #include "moses/FF/DynamicCacheBasedLanguageModel.h"
-#include "ChartTranslationOptions.h"
 #include "Util.h"
 #include "XmlOption.h"
 #include "FactorCollection.h"
@@ -271,49 +270,6 @@ void Sentence::GetXmlTranslationOptions(std::vector <TranslationOption*> &list, 
       list.push_back(transOpt);
     }
   }
-}
-
-std::vector <ChartTranslationOptions*>
-Sentence::
-GetXmlChartTranslationOptions() const
-{
-  std::vector <ChartTranslationOptions*> ret;
-
-  // XML Options
-  // this code is a copy of the 1 in Sentence.
-
-  //only fill the vector if we are parsing XML
-  if (m_options->input.xml_policy != XmlPassThrough ) {
-    //TODO: needed to handle exclusive
-    //for (size_t i=0; i<GetSize(); i++) {
-    //  m_xmlCoverageMap.push_back(false);
-    //}
-
-    //iterXMLOpts will be empty for XmlIgnore
-    //look at each column
-    for(std::vector<XmlOption const*>::const_iterator iterXmlOpts = m_xmlOptions.begin();
-        iterXmlOpts != m_xmlOptions.end(); iterXmlOpts++) {
-
-      const XmlOption &xmlOption = **iterXmlOpts;
-      TargetPhrase *targetPhrase = new TargetPhrase(xmlOption.targetPhrase);
-
-      Range *range = new Range(xmlOption.range);
-      StackVec emptyStackVec; // hmmm... maybe dangerous, but it is never consulted
-
-      TargetPhraseCollection *tpc = new TargetPhraseCollection;
-      tpc->Add(targetPhrase);
-
-      ChartTranslationOptions *transOpt = new ChartTranslationOptions(*tpc, emptyStackVec, *range, 0.0f);
-      ret.push_back(transOpt);
-
-      //TODO: needed to handle exclusive
-      //for(size_t j=transOpt->GetSourceWordsRange().GetStartPos(); j<=transOpt->GetSourceWordsRange().GetEndPos(); j++) {
-      //  m_xmlCoverageMap[j]=true;
-      //}
-    }
-  }
-
-  return ret;
 }
 
 void

@@ -25,15 +25,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "moses/FF/FFState.h"
 #include "Implementation.h"
-#include "ChartState.h"
 #include "moses/TypeDef.h"
 #include "moses/Util.h"
 #include "moses/Manager.h"
 #include "moses/FactorCollection.h"
 #include "moses/Phrase.h"
 #include "moses/StaticData.h"
-#include "moses/ChartManager.h"
-#include "moses/ChartHypothesis.h"
 #include "util/exception.hh"
 
 using namespace std;
@@ -227,130 +224,7 @@ VERBOSE(2,"FFState *LanguageModelImplementation::EvaluateWhenApplied(const Hypot
 
 FFState* LanguageModelImplementation::EvaluateWhenApplied(const ChartHypothesis& hypo, int featureID, ScoreComponentCollection* out) const
 {
-VERBOSE(2,"FFState *LanguageModelImplementation::EvaluateWhenApplied(const ChartHypothesis& hypo, int featureID,,...)" << std::endl);
-  LanguageModelChartState *ret = new LanguageModelChartState(hypo, featureID, GetNGramOrder());
-  // data structure for factored context phrase (history and predicted word)
-  vector<const Word*> contextFactor;
-  contextFactor.reserve(GetNGramOrder());
-
-  // initialize language model context state
-  FFState *lmState = NewState( GetNullContextState() );
-
-  // initial language model scores
-  float prefixScore = 0.0;    // not yet final for initial words (lack context)
-  float finalizedScore = 0.0; // finalized, has sufficient context
-
-  // get index map for underlying hypotheses
-  const AlignmentInfo::NonTermIndexMap &nonTermIndexMap =
-    hypo.GetCurrTargetPhrase().GetAlignNonTerm().GetNonTermIndexMap();
-
-  // loop over rule
-  for (size_t phrasePos = 0, wordPos = 0;
-       phrasePos < hypo.GetCurrTargetPhrase().GetSize();
-       phrasePos++) {
-    // consult rule for either word or non-terminal
-    const Word &word = hypo.GetCurrTargetPhrase().GetWord(phrasePos);
-
-    // regular word
-    if (!word.IsNonTerminal()) {
-      ShiftOrPush(contextFactor, word);
-
-      // beginning of sentence symbol <s>? -> just update state
-      if (word == GetSentenceStartWord()) {
-        UTIL_THROW_IF2(phrasePos != 0,
-                       "Sentence start symbol must be at the beginning of sentence");
-        delete lmState;
-        lmState = NewState( GetBeginSentenceState() );
-      }
-      // score a regular word added by the rule
-      else {
-        updateChartScore( &prefixScore, &finalizedScore, GetValueGivenState(contextFactor, *lmState).score, ++wordPos );
-      }
-    }
-
-    // non-terminal, add phrase from underlying hypothesis
-    else {
-      // look up underlying hypothesis
-      size_t nonTermIndex = nonTermIndexMap[phrasePos];
-      const ChartHypothesis *prevHypo = hypo.GetPrevHypo(nonTermIndex);
-
-      const LanguageModelChartState* prevState =
-        static_cast<const LanguageModelChartState*>(prevHypo->GetFFState(featureID));
-
-      size_t subPhraseLength = prevState->GetNumTargetTerminals();
-
-      // special case: rule starts with non-terminal -> copy everything
-      if (phrasePos == 0) {
-
-        // get prefixScore and finalizedScore
-        prefixScore = prevState->GetPrefixScore();
-        finalizedScore = -prefixScore;
-
-        // get language model state
-        delete lmState;
-        lmState = NewState( prevState->GetRightContext() );
-
-        // push suffix
-        int suffixPos = prevState->GetSuffix().GetSize() - (GetNGramOrder()-1);
-        if (suffixPos < 0) suffixPos = 0; // push all words if less than order
-        for(; (size_t)suffixPos < prevState->GetSuffix().GetSize(); suffixPos++) {
-          const Word &word = prevState->GetSuffix().GetWord(suffixPos);
-          ShiftOrPush(contextFactor, word);
-          wordPos++;
-        }
-      }
-
-      // internal non-terminal
-      else {
-        // score its prefix
-        for(size_t prefixPos = 0;
-            prefixPos < GetNGramOrder()-1 // up to LM order window
-            && prefixPos < subPhraseLength; // up to length
-            prefixPos++) {
-          const Word &word = prevState->GetPrefix().GetWord(prefixPos);
-          ShiftOrPush(contextFactor, word);
-          updateChartScore( &prefixScore, &finalizedScore, GetValueGivenState(contextFactor, *lmState).score, ++wordPos );
-        }
-
-        finalizedScore -= prevState->GetPrefixScore();
-
-        // check if we are dealing with a large sub-phrase
-        if (subPhraseLength > GetNGramOrder() - 1) {
-          // copy language model state
-          delete lmState;
-          lmState = NewState( prevState->GetRightContext() );
-
-          // push its suffix
-          size_t remainingWords = subPhraseLength - (GetNGramOrder()-1);
-          if (remainingWords > GetNGramOrder()-1) {
-            // only what is needed for the history window
-            remainingWords = GetNGramOrder()-1;
-          }
-          for(size_t suffixPos = prevState->GetSuffix().GetSize() - remainingWords;
-              suffixPos < prevState->GetSuffix().GetSize();
-              suffixPos++) {
-            const Word &word = prevState->GetSuffix().GetWord(suffixPos);
-            ShiftOrPush(contextFactor, word);
-          }
-          wordPos += subPhraseLength;
-        }
-      }
-    }
-  }
-
-  // add combined score to score breakdown
-  if (OOVFeatureEnabled()) {
-    vector<float> scores(2);
-    scores[0] = prefixScore + finalizedScore - hypo.GetTranslationOption().GetScores().GetScoresForProducer(this)[0];
-    // scores[1] = out->GetScoresForProducer(this)[1];
-    scores[1] = 0;
-    out->PlusEquals(this, scores);
-  } else {
-    out->PlusEquals(this, prefixScore + finalizedScore - hypo.GetTranslationOption().GetScores().GetScoresForProducer(this)[0]);
-  }
-
-  ret->Set(prefixScore, lmState);
-  return ret;
+  UTIL_THROW2("Chart decoding support removed.");
 }
 
 void LanguageModelImplementation::updateChartScore(float *prefixScore, float *finalizedScore, float score, size_t wordPos) const

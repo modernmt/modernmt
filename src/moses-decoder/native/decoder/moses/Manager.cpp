@@ -44,7 +44,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include "moses/TranslationModel/PhraseDictionary.h"
 #include "moses/TranslationAnalysis.h"
 #include "moses/TranslationTask.h"
-#include "moses/HypergraphOutput.h"
 #include "moses/mbr.h"
 #include "moses/LatticeMBR.h"
 #include "moses/SearchNormal.h"

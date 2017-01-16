@@ -21,7 +21,6 @@ namespace TranslationAnalysis
  * os.  Included information: phrase alignment, words dropped, scores
  */
 void PrintTranslationAnalysis(std::ostream &os, const Moses::Hypothesis* hypo);
-void PrintTranslationAnalysis(std::ostream &os, const Moses::ChartHypothesis* hypo);
 
 }
 
