@@ -78,6 +78,7 @@ FF/StatelessFeatureFunction.cpp
 FF/UnknownWordPenaltyProducer.cpp
 FF/WordPenaltyProducer.cpp
 #FF/WordTranslationFeature.cpp
+FF/Factory.cpp
 
 File.cpp
 FloydWarshall.cpp
@@ -89,6 +90,7 @@ HypothesisStackNormal.cpp
 InputFileStream.cpp
 InputPath.cpp
 InputType.cpp
+IOWrapper.cpp
 LatticeMBR.cpp
 LM/Base.cpp
 LM/Implementation.cpp
@@ -143,6 +145,7 @@ TranslationOptionCollectionLattice.cpp
 TranslationOptionCollectionText.cpp
 TranslationOption.cpp
 TranslationOptionList.cpp
+TranslationTask.cpp
 TreeInput.cpp
 TrellisPathCollection.cpp
 TrellisPath.cpp
