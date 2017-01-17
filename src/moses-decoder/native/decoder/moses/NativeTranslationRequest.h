@@ -19,7 +19,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "Session.h"
-#include "JNITranslator.h"
+#include "Translator.h"
 
 namespace MosesServer
 {
@@ -32,7 +32,7 @@ namespace MosesServer
  * @author Ulrich Germann (original TranslationRequest)
  */
 class
-JNITranslationRequest : public virtual Moses::TranslationTask
+NativeTranslationRequest : public virtual Moses::TranslationTask
 {
   boost::condition_variable& m_cond;
   boost::mutex& m_mutex;
@@ -41,7 +41,7 @@ JNITranslationRequest : public virtual Moses::TranslationTask
   TranslationRequest const& m_paramList;
   TranslationResponse m_retData;
 
-  JNITranslator* m_translator;
+  Translator* m_translator;
   uint64_t m_session_id;
 
   std::vector<Moses::FactorType> m_factorOrder;
@@ -72,15 +72,15 @@ JNITranslationRequest : public virtual Moses::TranslationTask
               std::vector<ResponseHypothesis>& nBestListOut);
 
 protected:
-  JNITranslationRequest(TranslationRequest const& paramList,
+  NativeTranslationRequest(TranslationRequest const& paramList,
                      boost::condition_variable& cond,
                      boost::mutex& mut);
 
 public:
 
   static
-  boost::shared_ptr<JNITranslationRequest>
-  create(JNITranslator* translator,
+  boost::shared_ptr<NativeTranslationRequest>
+  create(Translator* translator,
          TranslationRequest const& paramList,
          boost::condition_variable& cond,
          boost::mutex& mut);

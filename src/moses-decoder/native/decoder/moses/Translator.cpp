@@ -4,8 +4,8 @@
  * Licensed under GNU LGPL Version 2.1, see COPYING *
  ****************************************************/
 
-#include "JNITranslator.h"
-#include "JNITranslationRequest.h"
+#include "Translator.h"
+#include "NativeTranslationRequest.h"
 #include "moses/ThreadPool.h"
 
 namespace MosesServer {
@@ -13,20 +13,20 @@ namespace MosesServer {
 using namespace std;
 using namespace Moses;
 
-JNITranslator::
-JNITranslator(uint32_t numThreads)
+Translator::
+Translator(uint32_t numThreads)
     : m_threadPool(new Moses::ThreadPool(numThreads)), m_sessionCache(new SessionCache()) {
 
 }
 
-JNITranslator::
-~JNITranslator() {
+Translator::
+~Translator() {
   delete m_threadPool;
   delete m_sessionCache;
 }
 
 uint64_t
-JNITranslator::
+Translator::
 create_session(const std::map<std::string, float> &contextWeights,
                const std::map<std::string, std::vector<float> > *featureWeights) {
   // insertion of session ID 1 magically creates a new Session entry - see SessionCache::operator[]() impl
@@ -46,19 +46,19 @@ create_session(const std::map<std::string, float> &contextWeights,
 }
 
 Session const &
-JNITranslator::
+Translator::
 get_session(uint64_t session_id) const {
   return m_sessionCache->at((uint32_t) session_id);
 }
 
 void
-JNITranslator::
+Translator::
 delete_session(uint64_t const session_id) {
   return m_sessionCache->erase((uint32_t) session_id);
 }
 
 void
-JNITranslator::
+Translator::
 set_default_feature_weights(const std::map<std::string, std::vector<float>> &featureWeights)
 {
   Session &globalSession = (*m_sessionCache)[0];
@@ -70,13 +70,13 @@ set_default_feature_weights(const std::map<std::string, std::vector<float>> &fea
 }
 
 void
-JNITranslator::
+Translator::
 execute(TranslationRequest const& paramList,
         TranslationResponse *   const  retvalP)
 {
   boost::condition_variable cond;
   boost::mutex mut;
-  boost::shared_ptr<JNITranslationRequest> task;
+  boost::shared_ptr<NativeTranslationRequest> task;
   bool have_session = (paramList.sessionId != 0);
   TranslationRequest request = paramList;
 
@@ -84,7 +84,7 @@ execute(TranslationRequest const& paramList,
   if(!have_session)
     request.sessionId = create_session(request.contextWeights);
 
-  task = JNITranslationRequest::create(this, request, cond, mut);
+  task = NativeTranslationRequest::create(this, request, cond, mut);
   m_threadPool->Submit(task);
   boost::unique_lock<boost::mutex> lock(mut);
   while (!task->IsDone())

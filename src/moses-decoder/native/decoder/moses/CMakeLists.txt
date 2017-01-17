@@ -153,6 +153,12 @@ Util.cpp
 Word.cpp
 WordLattice.cpp
 XmlOption.cpp
+
+        NativeTranslationRequest.cpp
+        NativeTranslationRequest.h
+        Translator.cpp
+        Translator.h
+        MosesDecoder.cpp
 )
 
 execute_process(COMMAND git describe --dirty WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} OUTPUT_VARIABLE MOSES_VERSION_ID OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -167,5 +173,4 @@ set_source_files_properties(Parameter.cpp PROPERTIES COMPILE_FLAGS -DMOSES_VERSI
 #
 add_library(moses_moses OBJECT ${MOSES_MOSES_SRC})
 
-add_subdirectory(decoder)
 

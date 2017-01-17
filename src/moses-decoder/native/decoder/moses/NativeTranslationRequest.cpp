@@ -1,4 +1,4 @@
-#include "JNITranslationRequest.h"
+#include "NativeTranslationRequest.h"
 #include "moses/ContextScope.h"
 #include <boost/foreach.hpp>
 #include "moses/Util.h"
@@ -22,20 +22,20 @@ using Moses::TargetPhrase;
 using Moses::FValue;
 using Moses::Sentence;
 
-boost::shared_ptr<JNITranslationRequest>
-JNITranslationRequest::
-create(JNITranslator* translator, TranslationRequest const& paramList,
+boost::shared_ptr<NativeTranslationRequest>
+NativeTranslationRequest::
+create(Translator* translator, TranslationRequest const& paramList,
        boost::condition_variable& cond, boost::mutex& mut)
 {
-  boost::shared_ptr<JNITranslationRequest> ret;
-  ret.reset(new JNITranslationRequest(paramList, cond, mut));
+  boost::shared_ptr<NativeTranslationRequest> ret;
+  ret.reset(new NativeTranslationRequest(paramList, cond, mut));
   ret->m_self = ret;
   ret->m_translator = translator;
   return ret;
 }
 
 void
-JNITranslationRequest::
+NativeTranslationRequest::
 Run()
 {
   parse_request();
@@ -62,7 +62,7 @@ Run()
 }
 
 void
-JNITranslationRequest::
+NativeTranslationRequest::
 outputNBest(const Manager& manager, std::vector<ResponseHypothesis>& nBest)
 {
   TrellisPathList nBestList;
@@ -100,7 +100,7 @@ outputNBest(const Manager& manager, std::vector<ResponseHypothesis>& nBest)
 }
 
 void
-JNITranslationRequest::
+NativeTranslationRequest::
 outputLocalWordAlignment(std::vector<std::pair<size_t, size_t> > &dest, const Moses::Hypothesis *hypo) {
   using namespace std;
   Range const& src = hypo->GetCurrSourceWordsRange();
@@ -115,8 +115,8 @@ outputLocalWordAlignment(std::vector<std::pair<size_t, size_t> > &dest, const Mo
   }
 }
 
-JNITranslationRequest::
-JNITranslationRequest(TranslationRequest const& paramList,
+NativeTranslationRequest::
+NativeTranslationRequest(TranslationRequest const& paramList,
                    boost::condition_variable& cond, boost::mutex& mut)
   : m_cond(cond), m_mutex(mut), m_done(false), m_paramList(paramList)
   , m_session_id(paramList.sessionId)
@@ -125,7 +125,7 @@ JNITranslationRequest(TranslationRequest const& paramList,
 }
 
 void
-JNITranslationRequest::
+NativeTranslationRequest::
 parse_request()
 {
   Session const& S = m_translator->get_session(m_session_id);
@@ -151,14 +151,14 @@ parse_request()
 
 
 void
-JNITranslationRequest::
+NativeTranslationRequest::
 run_chart_decoder()
 {
-  UTIL_THROW2("JNITranslationRequest::run_chart_decoder() must not be used anymore.");
+  UTIL_THROW2("NativeTranslationRequest::run_chart_decoder() must not be used anymore.");
 }
 
 void
-JNITranslationRequest::
+NativeTranslationRequest::
 pack_hypothesis(const Moses::Manager& manager, 
 		vector<Hypothesis const* > const& edges, std::string& dest, std::vector<std::pair<size_t, size_t> > *alignment)
 {
@@ -181,7 +181,7 @@ pack_hypothesis(const Moses::Manager& manager,
 }
 
 void
-JNITranslationRequest::
+NativeTranslationRequest::
 pack_hypothesis(const Moses::Manager& manager, Hypothesis const* h, std::string& dest, std::vector<std::pair<size_t, size_t> > *alignment)
 {
   using namespace std;
@@ -193,7 +193,7 @@ pack_hypothesis(const Moses::Manager& manager, Hypothesis const* h, std::string&
 
 
 void
-JNITranslationRequest::
+NativeTranslationRequest::
 run_phrase_decoder()
 {
   Manager manager(this->self());

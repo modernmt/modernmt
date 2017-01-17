@@ -20,7 +20,7 @@ include_directories(decoder/include)
 
 # Binaries
 
-add_library(${PROJECT_NAME} SHARED $<TARGET_OBJECTS:moses_moses> $<TARGET_OBJECTS:kenlm_util> $<TARGET_OBJECTS:moses_decoder> $<TARGET_OBJECTS:moses_java>)
+add_library(${PROJECT_NAME} SHARED $<TARGET_OBJECTS:moses_moses> $<TARGET_OBJECTS:kenlm_util> $<TARGET_OBJECTS:moses_java>)
 install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib)
 
 add_executable(moses-main executables/moses-main.cpp)

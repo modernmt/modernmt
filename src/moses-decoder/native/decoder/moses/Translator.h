@@ -56,11 +56,11 @@ class Session;
  * via Moses::StaticData::LoadDataStatic(), including feature functions.
  */
 class
-JNITranslator
+Translator
 {
 public:
-  JNITranslator(uint32_t numThreads = 15);
-  ~JNITranslator();
+  Translator(uint32_t numThreads = 15);
+  ~Translator();
 
   void execute(TranslationRequest const& paramList,
                TranslationResponse *   const  retvalP);

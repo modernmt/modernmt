@@ -3,7 +3,7 @@
 //
 
 #include <decoder/MosesDecoder.h>
-#include "JNITranslator.h"
+#include "Translator.h"
 #include <moses/StaticData.h>
 #include <moses/FF/StatefulFeatureFunction.h>
 
@@ -15,7 +15,7 @@ namespace mmt {
     namespace decoder {
 
         class MosesDecoderImpl : public MosesDecoder {
-            MosesServer::JNITranslator m_translator;
+            MosesServer::Translator m_translator;
             std::vector<feature_t> m_features;
             std::vector<IncrementalModel *> m_incrementalModels;
         public:
