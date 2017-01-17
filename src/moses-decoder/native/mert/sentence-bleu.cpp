@@ -7,7 +7,7 @@
 
 #include "BleuScorer.h"
 #include "Reference.h"
-#include "moses/Util.h"
+#include "decoder/Util.h"
 #include "util/exception.hh"
 
 using namespace std;

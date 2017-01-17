@@ -26,7 +26,7 @@
 #include "Util.h"
 #include "util/random.hh"
 
-#include "moses/ThreadPool.h"
+#include "decoder/ThreadPool.h"
 
 using namespace std;
 using namespace MosesTuning;
