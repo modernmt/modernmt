@@ -26,7 +26,7 @@ namespace {
     struct args_t {
         string model_path;
         string input_path;
-        uint8_t order = 5;
+        uint8_t order = 0x5;
 
         size_t buffer_size = 100000;
     };
@@ -41,7 +41,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
             ("help,h", "print this help message")
             ("model,m", po::value<string>()->required(), "output model path")
             ("input,i", po::value<string>()->required(), "input folder with input corpora")
-            ("order,o", po::value<uint8_t>(), "the language model order (default is 5)")
+            ("order,o", po::value<size_t>(), "the language model order (default is 5)")
             ("buffer,b", po::value<size_t>(), "size of the buffer expressed in number of n-grams");
 
     po::variables_map vm;
@@ -62,7 +62,8 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
             args->buffer_size = vm["buffer"].as<size_t>();
 
         if (vm.count("order"))
-            args->order = vm["order"].as<uint8_t>();
+            args->order = (uint8_t) vm["order"].as<size_t>();
+
     } catch (po::error &e) {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         std::cerr << desc << std::endl;
