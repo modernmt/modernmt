@@ -14,6 +14,7 @@ add_definitions(-DMAX_NUM_FACTORS=1 -DWITH_THREADS -DBOOST_TEST_DYN_LINK -DTRACE
 # for javah/ which is filled with auto-generated header eu_modernmt_decoder_moses_MosesDecoder.h
 include_directories(.)
 include_directories(decoder)
+include_directories(decoder/include)
 
 
 
@@ -71,4 +72,7 @@ target_link_libraries(${PROJECT_NAME} ${GooglePerftools_LIBRARIES})
 
 # Sources
 
-add_subdirectory(decoder)  # note: include_directories() only affects later subdirectories.
+# note: include_directories() only affects later subdirectories.
+
+add_subdirectory(decoder)
+add_subdirectory(java)

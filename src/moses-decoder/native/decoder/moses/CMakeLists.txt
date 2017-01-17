@@ -168,4 +168,4 @@ set_source_files_properties(Parameter.cpp PROPERTIES COMPILE_FLAGS -DMOSES_VERSI
 add_library(moses_moses OBJECT ${MOSES_MOSES_SRC})
 
 add_subdirectory(decoder)
-add_subdirectory(java)
+
