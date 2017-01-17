@@ -13,7 +13,7 @@ from cli.libs import netutils
 from cli.libs import shell
 from cli.mt import BilingualCorpus
 from cli.mt.processing import TrainingPreprocessor
-from cli.translation import BatchTranslator, InteractiveTranslator
+from cli.translation import BatchTranslator, InteractiveTranslator, XLIFFTranslator
 
 __author__ = 'Davide Caroselli'
 __description = '''\
@@ -387,6 +387,8 @@ def main_translate(argv):
     parser.add_argument('--batch', action='store_true', dest='batch', default=False,
                         help='if set, the script will read the whole stdin before send translations to MMT.'
                              'This can be used to execute translation in parallel for a faster translation. ')
+    parser.add_argument('--xliff', dest='is_xliff', action='store_true', default=False,
+                        help='if set, the input is a XLIFF file.')
 
     args = parser.parse_args(argv)
 
@@ -398,7 +400,10 @@ def main_translate(argv):
     if not node.is_running():
         raise IllegalStateException('engine not running: ' + args.engine)
 
-    if args.batch:
+    if args.is_xliff:
+        translator = XLIFFTranslator(node, context_string=args.context, context_file=args.context_file,
+                                     context_weights=args.context_weights)
+    elif args.batch:
         translator = BatchTranslator(node, context_string=args.context, context_file=args.context_file,
                                      context_weights=args.context_weights, print_nbest=args.nbest,
                                      nbest_file=args.nbest_file)

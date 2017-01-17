@@ -11,7 +11,9 @@ import eu.modernmt.rest.serializers.TranslationHypothesisSerializer;
 import eu.modernmt.rest.serializers.TranslationResponseSerializer;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 
 import javax.servlet.ServletException;
@@ -36,6 +38,9 @@ public class RESTServer {
         // The network port to bind
         public int port;
 
+        // the API context path (aka API root path)
+        public String contextPath = null;
+
         // Directory used for storing uploaded files
         public File temporaryDirectory = new File(System.getProperty("java.io.tmpdir"));
 
@@ -55,21 +60,29 @@ public class RESTServer {
 
     private Server jettyServer;
 
-    public RESTServer(int port) {
-        this(new ServerOptions(port));
-    }
-
     public RESTServer(ServerOptions options) {
         this.jettyServer = new Server(options.port);
 
-        ServletHandler router = new ServletHandler();
-        router.addServletWithMapping(Router.class, "/*");
+        Handler rootHandler;
 
-        MultipartConfigInjectionHandler handlerWrapper = new MultipartConfigInjectionHandler(
+        if (options.contextPath == null) {
+            ServletHandler router = new ServletHandler();
+            router.addServletWithMapping(Router.class, "/*");
+
+            rootHandler = router;
+        } else {
+            ServletContextHandler contextHandler = new ServletContextHandler();
+            contextHandler.setContextPath(options.contextPath);
+            contextHandler.addServlet(Router.class, "/*");
+
+            rootHandler = contextHandler;
+        }
+
+        MultipartConfigInjectionHandler multipartWrapper = new MultipartConfigInjectionHandler(
                 options.temporaryDirectory, options.maxFileSize, options.maxRequestSize, options.fileSizeThreshold);
-        handlerWrapper.setHandler(router);
+        multipartWrapper.setHandler(rootHandler);
 
-        jettyServer.setHandler(handlerWrapper);
+        jettyServer.setHandler(multipartWrapper);
     }
 
     public void start() throws Exception {

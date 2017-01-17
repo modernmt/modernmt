@@ -109,5 +109,10 @@ public interface BilingualCorpus {
             result = 31 * result + (timestamp != null ? timestamp.hashCode() : 0);
             return result;
         }
+
+        @Override
+        public String toString() {
+            return '<' + source + ',' + target + '>';
+        }
     }
 }

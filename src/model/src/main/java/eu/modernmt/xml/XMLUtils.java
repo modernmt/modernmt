@@ -18,7 +18,7 @@ public class XMLUtils {
 
     public static XMLEventReader createEventReader(InputStream stream) throws XMLStreamException {
         XMLInputFactory factory = XMLInputFactory.newInstance();
-        return factory.createXMLEventReader(new InputStreamReader(new BOMInputStream(stream, false), DefaultCharset.get()));
+        return factory.createXMLEventReader(new XMLFixInputStreamReader(new BOMInputStream(stream, false), DefaultCharset.get()));
     }
 
     public static XMLStreamWriter createStreamWriter(OutputStream stream) throws XMLStreamException {

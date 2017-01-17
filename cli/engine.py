@@ -277,7 +277,7 @@ class _MMTEngineBuilder:
                 self._engine.clear_tempdir('training')
 
 
-class _EngineConfig(object):
+class EngineConfig(object):
     @staticmethod
     def from_file(name, file):
         node_el = minidom.parse(file).documentElement
@@ -286,12 +286,30 @@ class _EngineConfig(object):
         source_lang = engine_el.getAttribute('source-language')
         target_lang = engine_el.getAttribute('target-language')
 
-        return _EngineConfig(name, source_lang, target_lang)
+        config = EngineConfig(name, source_lang, target_lang)
+
+        network = node_el.getElementsByTagName('network')
+        network = network[0] if len(network) > 0 else None
+
+        if network is None:
+            return config
+
+        api = network.getElementsByTagName('api')
+        api = api[0] if len(api) > 0 else None
+
+        if api is None:
+            return config
+
+        if api.hasAttribute('root'):
+            config.apiRoot = api.getAttribute('root')
+
+        return config
 
     def __init__(self, name, source_lang, target_lang):
         self.name = name
         self.source_lang = source_lang
         self.target_lang = target_lang
+        self.apiRoot = None
 
     def store(self, file):
         xml_template = '''<node xsi:schemaLocation="http://www.modernmt.eu/schema/config mmt-config-1.0.xsd"
@@ -322,7 +340,7 @@ class MMTEngine(object):
 
     @staticmethod
     def load(name):
-        config = _EngineConfig.from_file(name, MMTEngine._get_config_path(name))
+        config = EngineConfig.from_file(name, MMTEngine._get_config_path(name))
         return MMTEngine(config.name, config.source_lang, config.target_lang, config)
 
     def __init__(self, name, source_lang, target_lang, config=None):
@@ -331,7 +349,7 @@ class MMTEngine(object):
         self.target_lang = target_lang
 
         self._config_file = self._get_config_path(self.name)
-        self._config = _EngineConfig(self.name, source_lang, target_lang) if config is None else config
+        self.config = EngineConfig(self.name, source_lang, target_lang) if config is None else config
 
         self.path = self._get_path(self.name)
         self.data_path = os.path.join(self.path, 'data')
@@ -380,7 +398,7 @@ class MMTEngine(object):
 
     def write_configs(self):
         self.moses.create_configs()
-        self._config.store(self._config_file)
+        self.config.store(self._config_file)
 
     def get_logfile(self, name, ensure=True):
         if ensure and not os.path.isdir(self._logs_path):
