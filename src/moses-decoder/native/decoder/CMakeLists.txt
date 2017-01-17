@@ -10,8 +10,5 @@ include_directories(include)
 
 # Sources
 
-add_subdirectory(util)  # KenLM utils, used mostly by MERT
-
 add_subdirectory(moses)
-add_subdirectory(mert)
 

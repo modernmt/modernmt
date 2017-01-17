@@ -76,3 +76,5 @@ target_link_libraries(${PROJECT_NAME} ${GooglePerftools_LIBRARIES})
 
 add_subdirectory(decoder)
 add_subdirectory(java)
+add_subdirectory(util)  # KenLM utils, used mostly by MERT
+add_subdirectory(mert)
