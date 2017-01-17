@@ -2,12 +2,7 @@
 #include "FF/Factory.h"
 #include "StaticData.h"
 
-#ifdef SAPT
-#include "TranslationModel/PhraseDictionarySADB.h"
-#endif
-
 #include "FF/LexicalReordering/LexicalReordering.h"
-
 #include "FF/UnknownWordPenaltyProducer.h"
 #include "FF/DistortionScoreProducer.h"
 #include "FF/WordPenaltyProducer.h"
@@ -17,9 +12,8 @@
 #include "FF/SkeletonStatelessFF.h"
 #include "FF/SkeletonStatefulFF.h"
 
-#ifdef LM_MMTILM
 #include "LM/MMTInterpolatedLM.h"
-#endif
+#include "TranslationModel/PhraseDictionarySADB.h"
 
 #include "util/exception.hh"
 
@@ -134,9 +128,7 @@ void FeatureRegistry::AddFactories(FeatureSetup& setup)
 //  MOSES_FNAME2("SyntaxInputWeight", Syntax::InputWeightFF);
 
 
-#ifdef SAPT
   MOSES_FNAME2("SAPT",PhraseDictionarySADB);
-#endif
 
 //  MOSES_FNAME(GlobalLexicalModel);
   //MOSES_FNAME(GlobalLexicalModelUnlimited); This was commented out in the original
@@ -187,9 +179,7 @@ void FeatureRegistry::AddFactories(FeatureSetup& setup)
   MOSES_FNAME(SkeletonStatefulFF);
 //  MOSES_FNAME(SkeletonPT);
 
-#ifdef LM_MMTILM
   MOSES_FNAME2("MMTILM", MMTInterpolatedLM);
-#endif
 }
 
 FeatureRegistry::~FeatureRegistry()
