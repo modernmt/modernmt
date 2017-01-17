@@ -1,6 +1,5 @@
 #include "util/file_piece.hh"
 
-#include "util/double-conversion/double-conversion.h"
 #include "util/exception.hh"
 #include "util/file.hh"
 #include "util/mmap.hh"
@@ -146,13 +145,6 @@ void FilePiece::Initialize(const char *name, std::ostream *show_progress, std::s
 
 namespace {
 
-static const double_conversion::StringToDoubleConverter kConverter(
-    double_conversion::StringToDoubleConverter::ALLOW_TRAILING_JUNK | double_conversion::StringToDoubleConverter::ALLOW_LEADING_SPACES,
-    std::numeric_limits<double>::quiet_NaN(),
-    std::numeric_limits<double>::quiet_NaN(),
-    "inf",
-    "NaN");
-
 StringPiece FirstToken(StringPiece str) {
   const char *i;
   for (i = str.data(); i != str.data() + str.size(); ++i) {
@@ -162,14 +154,14 @@ StringPiece FirstToken(StringPiece str) {
 }
 
 const char *ParseNumber(StringPiece str, float &out) {
-  int count;
-  out = kConverter.StringToFloat(str.data(), str.size(), &count);
+  size_t count;
+  out = std::stof(std::string(str.data(), str.size()), &count);
   UTIL_THROW_IF_ARG(std::isnan(out) && str != "NaN" && str != "nan", ParseNumberException, (FirstToken(str)), "float");
   return str.data() + count;
 }
 const char *ParseNumber(StringPiece str, double &out) {
-  int count;
-  out = kConverter.StringToDouble(str.data(), str.size(), &count);
+  size_t count;
+  out = std::stof(std::string(str.data(), str.size()), &count);
   UTIL_THROW_IF_ARG(std::isnan(out) && str != "NaN" && str != "nan", ParseNumberException, (FirstToken(str)), "double");
   return str.data() + count;
 }

@@ -9,7 +9,6 @@ cmake_minimum_required(VERSION 2.8.8)
 #
 # see http://www.cmake.org/Wiki/CMake/Tutorials/Object_Library
 
-
 # This CMake file was created by Lane Schwartz <dowobeha@gmail.com>
 
 

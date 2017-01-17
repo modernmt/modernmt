@@ -10,10 +10,6 @@ set(SOURCE_FILES
         javah/eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary.h java/eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary.cpp
         javah/eu_modernmt_vocabulary_rocksdb_RocksDBVocabularyBuilder.h java/eu_modernmt_vocabulary_rocksdb_RocksDBVocabularyBuilder.cpp)
 
-## ModernMT
-find_package(ModernMT REQUIRED COMPONENTS common)
-include_directories(${ModernMT_INCLUDE_DIRS})
-
 include_directories(${CMAKE_SOURCE_DIR})
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
@@ -27,6 +23,10 @@ foreach (exefile ${executables})
 endforeach ()
 
 # External Libraries
+
+## ModernMT
+find_package(ModernMT REQUIRED COMPONENTS common)
+include_directories(${ModernMT_INCLUDE_DIRS})
 
 ## JNI
 find_package(JNI REQUIRED)

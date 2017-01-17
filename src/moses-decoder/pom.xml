@@ -87,15 +87,6 @@
                                 <argument>-DCMAKE_BUILD_TYPE=Release</argument>
                                 <argument>-DCMAKE_INSTALL_PREFIX=${mmt.build}</argument>
 
-                                <!-- TODO: check if any of these necessary. came from Makefile build -->
-                                <argument>-DMMT_ROOT=${mmt.root}</argument>
-                                <argument>-DROCKSDB_ROOT=${mmt.build}</argument>
-                                <argument>-DSAPT_ROOT=${mmt.build}</argument>
-                                <argument>-DMMTILM_ROOT=${mmt.build}</argument>
-                                <argument>-DUSE_SAPT=1</argument>
-                                <argument>-DUSE_MMTILM=1</argument>
-                                <argument>-Wno-dev</argument>
-
                                 <argument>${project.nativedir}</argument>
                             </arguments>
                         </configuration>
