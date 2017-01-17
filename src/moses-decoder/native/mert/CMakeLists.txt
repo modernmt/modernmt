@@ -71,9 +71,10 @@ include_directories(${Boost_INCLUDE_DIRS})
 add_library(mertc SHARED ${MERT_SRC} ../decoder/ThreadPool.cpp $<TARGET_OBJECTS:kenlm_util> $<TARGET_OBJECTS:double-conversion>)  # double-conversion from kenlm util/double-conversion
 target_link_libraries(mertc ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} pthread)
 
-set(MERT_EXECUTABLES evaluator extractor kbmira mert pro)
+set(MERT_EXECUTABLES extractor mert)
 
 foreach (exe ${MERT_EXECUTABLES})
     add_executable(${exe} ${exe}.cpp)
     target_link_libraries(${exe} ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} mertc)
+    install(TARGETS ${exe} RUNTIME DESTINATION bin)
 endforeach (exe)

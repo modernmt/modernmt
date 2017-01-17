@@ -119,14 +119,11 @@
                         </goals>
 
                         <configuration>
-<!--
                             <executable>make</executable>
                             <workingDirectory>${project.build.native}</workingDirectory>
                             <arguments>
                                 <argument>install</argument>
                             </arguments>
--->
-                            <executable>true</executable>
                         </configuration>
                     </execution>
                 </executions>

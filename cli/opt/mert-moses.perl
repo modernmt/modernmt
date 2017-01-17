@@ -372,9 +372,9 @@ my $mert_eval_cmd    = File::Spec->catfile($mertdir, "evaluator");
 
 die "Not executable: $mert_extract_cmd" if ! -x $mert_extract_cmd;
 die "Not executable: $mert_mert_cmd"    if ! -x $mert_mert_cmd;
-die "Not executable: $mert_pro_cmd"     if ! -x $mert_pro_cmd;
-die "Not executable: $mert_mira_cmd"    if ! -x $mert_mira_cmd;
-die "Not executable: $mert_eval_cmd"    if ! -x $mert_eval_cmd;
+die "Not executable: $mert_pro_cmd"     if ($___PAIRWISE_RANKED_OPTIMIZER && ! -x $mert_pro_cmd);
+die "Not executable: $mert_mira_cmd"    if ($___BATCH_MIRA && ! -x $mert_mira_cmd);
+die "Not executable: $mert_eval_cmd"    if ($___RETURN_BEST_DEV && ! -x $mert_eval_cmd);
 
 my $pro_optimizer = File::Spec->catfile($mertdir, "megam_i686.opt");  # or set to your installation
 
