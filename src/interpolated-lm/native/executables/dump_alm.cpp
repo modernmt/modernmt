@@ -23,7 +23,7 @@ namespace {
     struct args_t {
         string model_path;
         string dump_file = "/dev/stdout";
-        uint8_t order = 5;
+        uint8_t order = 0x5;
     };
 } // namespace
 
@@ -37,8 +37,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
     desc.add_options()
             ("help,h", "print this help message")
             ("model,m", po::value<string>()->required(), "output model path")
-            ("dump,d", po::value<string>(), "output file where dump the content of the database (default is /dev/stdout)")
-            ("order,o", po::value<uint8_t>(), "the language model order (default is 5)");
+            ("dump,d", po::value<string>(), "output file where dump the content of the database (default is /dev/stdout)");
 
     po::variables_map vm;
     try {
@@ -55,8 +54,6 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
         if (vm.count("dump"))
             args->dump_file = vm["dump"].as<string>();
 
-        if (vm.count("order"))
-            args->order = vm["order"].as<uint8_t>();
     } catch (po::error &e) {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         std::cerr << desc << std::endl;
