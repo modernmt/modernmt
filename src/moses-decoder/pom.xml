@@ -139,6 +139,16 @@
         </dependency>
         <dependency>
             <groupId>eu.modernmt</groupId>
+            <artifactId>mmt-interpolated-lm</artifactId>
+            <version>${mmt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.modernmt</groupId>
+            <artifactId>mmt-suffixarray-phrasetable</artifactId>
+            <version>${mmt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.modernmt</groupId>
             <artifactId>mmt-model</artifactId>
             <version>${mmt.version}</version>
         </dependency>
