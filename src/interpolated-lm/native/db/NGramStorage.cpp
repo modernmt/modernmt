@@ -9,6 +9,7 @@
 #include <thread>
 
 #include <iostream>
+#include <fstream>
 
 #include "rocksdb/iterator.h"
 
@@ -368,28 +369,34 @@ void NGramStorage::ScanTerminate() {
     delete iterator;
 }
 
-bool NGramStorage::ScanNext(domain_t& domain, dbkey_t& key, float& count, float& successors) {
+bool NGramStorage::ScanNext(domain_t *domain, dbkey_t *key, counts_t *value) {
     if (iterator->Valid()){
+        DeserializeKey(iterator->key().data(), iterator->key().size(), domain, key);
 
-        domain_t d;
-        dbkey_t k;
-        DeserializeKey(iterator->key().data(), iterator->key().size(), &d, &k);
-        domain=d;
-        key=k;
-
-        counts_t val;
-        DeserializeCounts(iterator->value().data(), iterator->value().size(), &val);
-        count=val.count;
-        successors=val.successors;
-
-
-
-        //cout << iterator->key().ToString() << ": " << iterator->value().ToString() << endl;
-
+        DeserializeCounts(iterator->value().data(), iterator->value().size(), value);
 
         iterator->Next();
         assert(iterator->status().ok()); // Check for any errors found during the scan
         return true;
     }
     return false;
+}
+
+void NGramStorage::Dump(string &dump_file) {
+    domain_t domain;
+    dbkey_t key;
+    counts_t val;
+
+    ofstream output(dump_file.c_str());
+
+    //scan to get all keys and values
+    ScanInit();
+    while (ScanNext(&domain, &key, &val)){
+        output << "domain " << domain;
+        output << " key " << key;
+        output << " count " << val.count;
+        output << " successors " << val.successors;
+        output << endl;
+    }
+    ScanTerminate();
 }

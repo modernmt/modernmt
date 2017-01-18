@@ -6,7 +6,6 @@
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include <iostream>
-#include <fstream>
 #include <db/NGramStorage.h>
 #include <sys/time.h>
 
@@ -88,22 +87,9 @@ int main(int argc, const char *argv[]) {
     NGramStorage storage(args.model_path, args.order, true);
     cerr << "Model loaded." << endl;
 
-    float count, successors;
-    domain_t domain;
-    dbkey_t key;
+    storage.Dump(args.dump_file);
 
-    ofstream output(args.dump_file.c_str());
-
-    //scan the lm to get all keys and values
-    storage.ScanInit();
-    while (storage.ScanNext(domain, key, count, successors)){
-        output << "domain:" << domain;
-        output << " key:" << key;
-        output << " count:" << count;
-        output << " successors:" << successors;
-        output << endl;
-    }
-    storage.ScanTerminate();
+    cerr << "Dump ended" << endl;
 
     return SUCCESS;
 }

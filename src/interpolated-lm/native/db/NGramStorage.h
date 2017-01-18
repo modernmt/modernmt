@@ -54,9 +54,7 @@ namespace mmt {
 
             const vector<seqid_t> &GetStreamsStatus() const;
 
-            void ScanInit();
-            void ScanTerminate();
-            bool ScanNext(domain_t& domain, dbkey_t& key, float& count, float& successors);
+            void Dump(string& dump_file);
 
         private:
             const uint8_t order;
@@ -65,6 +63,10 @@ namespace mmt {
             rocksdb::Iterator* iterator;
 
             inline bool PrepareBatch(domain_t domain, ngram_table_t &table, rocksdb::WriteBatch &writeBatch);
+
+            void ScanInit();
+            void ScanTerminate();
+            bool ScanNext(domain_t *domain, dbkey_t *key, counts_t *val);
         };
 
     }
