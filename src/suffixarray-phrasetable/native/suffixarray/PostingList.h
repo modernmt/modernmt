@@ -45,6 +45,8 @@ namespace mmt {
 
             string Serialize() const;
 
+            static void Deserialize(const string& string, vector<location_t> &output);
+
         private:
             size_t entryCount;
             map<domain_t, vector<char>> datamap;
