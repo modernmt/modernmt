@@ -177,12 +177,19 @@ class InteractiveTranslator(Translator):
         if self._context:
             norm = sum([e['score'] for e in self._context])
             print '>> Context:', ', '.join(
-                ['%s %.f%%' % (score['domain']['name'], round(score['score'] * 100 / norm)) for score in self._context]
+                ['%s %.f%%' % (self._domain_to_string(score['domain']), round(score['score'] * 100 / norm)) for score in self._context]
             )
         else:
             print '>> No context provided.'
 
         print
+
+    @staticmethod
+    def _domain_to_string(domain):
+        if isinstance(domain, int):
+            return '[' + str(domain) + ']'
+        else:
+            return domain['name']
 
     def execute(self, line):
         if len(line) == 0:
