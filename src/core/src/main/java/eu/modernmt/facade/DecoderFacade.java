@@ -2,16 +2,15 @@ package eu.modernmt.facade;
 
 import eu.modernmt.cluster.SessionManager;
 import eu.modernmt.cluster.error.SystemShutdownException;
-import eu.modernmt.context.ContextScore;
 import eu.modernmt.decoder.*;
 import eu.modernmt.facade.operations.TranslateOperation;
+import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.MultiOptionsToken;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.ProcessingException;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -46,7 +45,7 @@ public class DecoderFacade {
     //  Translation session
     // =============================
 
-    public TranslationSession openSession(List<ContextScore> context) {
+    public TranslationSession openSession(ContextVector context) {
         SessionManager sessionManager = ModernMT.getNode().getSessionManager();
         return sessionManager.create(context);
     }
@@ -68,7 +67,7 @@ public class DecoderFacade {
         return translate(sentence, null, sessionId, 0);
     }
 
-    public DecoderTranslation translate(String sentence, List<ContextScore> translationContext) throws TranslationException {
+    public DecoderTranslation translate(String sentence, ContextVector translationContext) throws TranslationException {
         return translate(sentence, translationContext, 0L, 0);
     }
 
@@ -80,11 +79,11 @@ public class DecoderFacade {
         return translate(sentence, null, sessionId, nbest);
     }
 
-    public DecoderTranslation translate(String sentence, List<ContextScore> translationContext, int nbest) throws TranslationException {
+    public DecoderTranslation translate(String sentence, ContextVector translationContext, int nbest) throws TranslationException {
         return translate(sentence, translationContext, 0L, nbest);
     }
 
-    private DecoderTranslation translate(String text, List<ContextScore> translationContext, long session, int nbest) throws TranslationException {
+    private DecoderTranslation translate(String text, ContextVector translationContext, long session, int nbest) throws TranslationException {
         TranslateOperation operation;
 
         if (translationContext != null) {

@@ -107,17 +107,17 @@ class MMTApi:
         params = {'local_file': document}
         if limit is not None:
             params['limit'] = limit
-        return self._get('context', params=params)
+        return self._get('context-vector', params=params)
 
     def get_context_s(self, text, limit=None):
         params = {'text': text}
         if limit is not None:
             params['limit'] = limit
-        return self._get('context', params=params)
+        return self._get('context-vector', params=params)
 
     def create_session(self, context):
         return self._post('sessions', params={
-            'context_weights': self._encode_context(context)
+            'context_vector': self._encode_context(context)
         })
 
     def close_session(self, session):
@@ -130,7 +130,7 @@ class MMTApi:
         if nbest is not None:
             p['nbest'] = nbest
         if context is not None:
-            p['context_weights'] = self._encode_context(context)
+            p['context_vector'] = self._encode_context(context)
 
         return self._get('translate', params=p)
 

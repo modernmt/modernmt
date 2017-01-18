@@ -1,17 +1,15 @@
 package eu.modernmt.facade.operations;
 
-import eu.modernmt.engine.Engine;
 import eu.modernmt.cluster.SessionManager;
-import eu.modernmt.context.ContextScore;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
+import eu.modernmt.engine.Engine;
+import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
-
-import java.util.List;
 
 /**
  * Created by davide on 21/04/16.
@@ -19,7 +17,7 @@ import java.util.List;
 public class TranslateOperation extends Operation<DecoderTranslation> {
 
     private String text;
-    private List<ContextScore> translationContext;
+    private ContextVector translationContext;
     private Long session;
     private int nbest;
 
@@ -28,7 +26,7 @@ public class TranslateOperation extends Operation<DecoderTranslation> {
         this.nbest = nbest;
     }
 
-    public TranslateOperation(String text, List<ContextScore> translationContext, int nbest) {
+    public TranslateOperation(String text, ContextVector translationContext, int nbest) {
         this.text = text;
         this.translationContext = translationContext;
         this.nbest = nbest;

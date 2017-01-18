@@ -402,14 +402,14 @@ def main_translate(argv):
 
     if args.is_xliff:
         translator = XLIFFTranslator(node, context_string=args.context, context_file=args.context_file,
-                                     context_weights=args.context_weights)
+                                     context_vector=args.context_weights)
     elif args.batch:
         translator = BatchTranslator(node, context_string=args.context, context_file=args.context_file,
-                                     context_weights=args.context_weights, print_nbest=args.nbest,
+                                     context_vector=args.context_weights, print_nbest=args.nbest,
                                      nbest_file=args.nbest_file)
     else:
         translator = InteractiveTranslator(node, context_string=args.context, context_file=args.context_file,
-                                           context_weights=args.context_weights, print_nbest=args.nbest,
+                                           context_vector=args.context_weights, print_nbest=args.nbest,
                                            nbest_file=args.nbest_file)
 
     try:

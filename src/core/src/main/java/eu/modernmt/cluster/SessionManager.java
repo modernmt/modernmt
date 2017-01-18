@@ -4,12 +4,11 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.IdGenerator;
 import com.hazelcast.map.listener.EntryRemovedListener;
-import eu.modernmt.context.ContextScore;
 import eu.modernmt.decoder.TranslationSession;
+import eu.modernmt.model.ContextVector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -35,9 +34,9 @@ public class SessionManager {
         return session;
     }
 
-    public TranslationSession create(List<ContextScore> context) {
+    public TranslationSession create(ContextVector contextVector) {
         long id = idGenerator.newId() + 1; // starts from 0
-        TranslationSessionImpl session = new TranslationSessionImpl(id, context);
+        TranslationSessionImpl session = new TranslationSessionImpl(id, contextVector);
         session.sessionMap = this.sessions;
         sessions.put(id, session);
         return session;
@@ -47,8 +46,8 @@ public class SessionManager {
 
         transient Map<Long, TranslationSessionImpl> sessionMap;
 
-        private TranslationSessionImpl(long id, List<ContextScore> translationContext) {
-            super(id, translationContext);
+        private TranslationSessionImpl(long id, ContextVector contextVector) {
+            super(id, contextVector);
         }
 
         @Override

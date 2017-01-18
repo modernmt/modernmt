@@ -1,9 +1,8 @@
 package eu.modernmt.context.lucene;
 
 import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.context.ContextScore;
 import eu.modernmt.context.lucene.analysis.CorpusAnalyzer;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -28,7 +27,9 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Locale;
 
 /**
  * Created by davide on 10/07/15.
@@ -169,7 +170,7 @@ public class ContextAnalyzerIndex implements Closeable {
         }
     }
 
-    public List<ContextScore> getSimilarDocuments(Corpus queryDocument, int limit) throws ContextAnalyzerException {
+    public ContextVector getSimilarDocuments(Corpus queryDocument, int limit) throws ContextAnalyzerException {
         IndexReader reader = this.getIndexReader();
         IndexSearcher searcher = new IndexSearcher(reader);
 
@@ -219,7 +220,8 @@ public class ContextAnalyzerIndex implements Closeable {
             throw new ContextAnalyzerException("Unable to read query document", e);
         }
 
-        List<ContextScore> result = new ArrayList<>(topDocs.length);
+        ContextVector.Builder resultBuilder = new ContextVector.Builder(topDocs.length);
+        resultBuilder.setLimit(limit);
 
         ConsineSimilarityCalculator calculator = new ConsineSimilarityCalculator(reader, DocumentBuilder.CONTENT_FIELD, getIDFCache());
         calculator.setAnalyzer(analyzer);
@@ -246,17 +248,10 @@ public class ContextAnalyzerIndex implements Closeable {
                 throw new ContextAnalyzerException("Could not compute cosine similarity for doc " + id, e);
             }
 
-            result.add(new ContextScore(new Domain(id), similarityScore));
+            resultBuilder.add(id, similarityScore);
         }
 
-        // Sort and limit result
-        Collections.sort(result);
-        Collections.reverse(result);
-
-        if (result.size() > limit)
-            result = new ArrayList<>(result.subList(0, limit));
-
-        return result;
+        return resultBuilder.build();
     }
 
     @Override

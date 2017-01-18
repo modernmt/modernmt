@@ -1,5 +1,6 @@
 package eu.modernmt.context;
 
+import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Domain;
 import eu.modernmt.model.corpus.Corpus;
 
@@ -17,10 +18,10 @@ public interface ContextAnalyzer extends Closeable {
 
     void add(Map<Domain, Corpus> corpora) throws ContextAnalyzerException;
 
-    List<ContextScore> getContext(String query, int limit) throws ContextAnalyzerException;
+    ContextVector getContextVector(String query, int limit) throws ContextAnalyzerException;
 
-    List<ContextScore> getContext(File source, int limit) throws ContextAnalyzerException;
+    ContextVector getContextVector(File source, int limit) throws ContextAnalyzerException;
 
-    List<ContextScore> getContext(Corpus query, int limit) throws ContextAnalyzerException;
+    ContextVector getContextVector(Corpus query, int limit) throws ContextAnalyzerException;
 
 }

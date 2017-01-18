@@ -1,8 +1,6 @@
 package eu.modernmt.decoder.moses;
 
-import eu.modernmt.context.ContextScore;
-
-import java.util.List;
+import eu.modernmt.model.ContextVector;
 
 /**
  * Created by davide on 27/04/16.
@@ -12,15 +10,15 @@ class ContextXObject {
     public final int[] keys;
     public final float[] values;
 
-    public static ContextXObject build(List<ContextScore> context) {
-        if (context != null) {
-            int[] keys = new int[context.size()];
-            float[] values = new float[context.size()];
+    public static ContextXObject build(ContextVector vector) {
+        if (vector != null) {
+            int[] keys = new int[vector.size()];
+            float[] values = new float[vector.size()];
 
             int i = 0;
-            for (ContextScore document : context) {
-                keys[i] = document.getDomain().getId();
-                values[i] = document.getScore();
+            for (ContextVector.Entry e : vector) {
+                keys[i] = e.domain.getId();
+                values[i] = e.score;
                 i++;
             }
 
@@ -34,5 +32,5 @@ class ContextXObject {
         this.keys = keys;
         this.values = values;
     }
-    
+
 }

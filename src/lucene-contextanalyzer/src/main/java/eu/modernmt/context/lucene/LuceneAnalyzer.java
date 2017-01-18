@@ -2,20 +2,19 @@ package eu.modernmt.context.lucene;
 
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.context.ContextScore;
 import eu.modernmt.context.lucene.storage.CorporaStorage;
 import eu.modernmt.context.lucene.storage.Options;
+import eu.modernmt.data.DataListener;
 import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Domain;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.impl.StringCorpus;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
-import eu.modernmt.data.DataListener;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -65,17 +64,17 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListener {
     }
 
     @Override
-    public List<ContextScore> getContext(String query, int limit) throws ContextAnalyzerException {
-        return getContext(new StringCorpus(null, null, query), limit);
+    public ContextVector getContextVector(String query, int limit) throws ContextAnalyzerException {
+        return getContextVector(new StringCorpus(null, null, query), limit);
     }
 
     @Override
-    public List<ContextScore> getContext(File source, int limit) throws ContextAnalyzerException {
-        return getContext(new FileCorpus(source, null, null), limit);
+    public ContextVector getContextVector(File source, int limit) throws ContextAnalyzerException {
+        return getContextVector(new FileCorpus(source, null, null), limit);
     }
 
     @Override
-    public List<ContextScore> getContext(Corpus query, int limit) throws ContextAnalyzerException {
+    public ContextVector getContextVector(Corpus query, int limit) throws ContextAnalyzerException {
         return this.index.getSimilarDocuments(query, limit);
     }
 

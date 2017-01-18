@@ -1,11 +1,10 @@
 package eu.modernmt.decoder;
 
-import eu.modernmt.context.ContextScore;
+import eu.modernmt.model.ContextVector;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.List;
 
 /**
  * Created by davide on 02/12/15.
@@ -13,19 +12,19 @@ import java.util.List;
 public class TranslationSession implements Serializable, Closeable {
 
     protected final long id;
-    protected final List<ContextScore> translationContext;
+    protected final ContextVector contextVector;
 
-    public TranslationSession(long id, List<ContextScore> translationContext) {
+    public TranslationSession(long id, ContextVector contextVector) {
         this.id = id;
-        this.translationContext = translationContext;
+        this.contextVector = contextVector;
     }
 
     public long getId() {
         return id;
     }
 
-    public List<ContextScore> getTranslationContext() {
-        return translationContext;
+    public ContextVector getContextVector() {
+        return contextVector;
     }
 
     @Override

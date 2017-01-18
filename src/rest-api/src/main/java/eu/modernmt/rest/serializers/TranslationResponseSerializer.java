@@ -1,8 +1,8 @@
 package eu.modernmt.rest.serializers;
 
 import com.google.gson.*;
-import eu.modernmt.context.ContextScore;
 import eu.modernmt.decoder.TranslationHypothesis;
+import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.rest.model.TranslationResponse;
 
@@ -38,12 +38,8 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
             json.add("nbest", array);
         }
 
-        if (src.context != null) {
-            JsonArray array = new JsonArray();
-            for (ContextScore document : src.context)
-                array.add(context.serialize(document));
-            json.add("context", array);
-        }
+        if (src.context != null)
+            json.add("contextVector", context.serialize(src.context, ContextVector.class));
 
         return json;
     }

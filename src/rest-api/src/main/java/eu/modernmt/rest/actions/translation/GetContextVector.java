@@ -1,30 +1,28 @@
 package eu.modernmt.rest.actions.translation;
 
 import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.context.ContextScore;
 import eu.modernmt.facade.ModernMT;
+import eu.modernmt.model.ContextVector;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.actions.util.ContextUtils;
 import eu.modernmt.rest.framework.FileParameter;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
-import eu.modernmt.rest.framework.actions.CollectionAction;
+import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.nio.charset.Charset;
-import java.util.Collection;
-import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 /**
  * Created by davide on 15/12/15.
  */
-@Route(aliases = "context", method = HttpMethod.GET)
-public class GetContext extends CollectionAction<ContextScore> {
+@Route(aliases = "context-vector", method = HttpMethod.GET)
+public class GetContextVector extends ObjectAction<ContextVector> {
 
     public enum FileCompression {
         GZIP
@@ -56,9 +54,9 @@ public class GetContext extends CollectionAction<ContextScore> {
     }
 
     @Override
-    protected Collection<ContextScore> execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, PersistenceException, IOException {
+    protected ContextVector execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, PersistenceException, IOException {
         Params params = (Params) _params;
-        List<ContextScore> context;
+        ContextVector context;
 
         if (params.text != null) {
             context = ModernMT.context.get(params.text, params.limit);
@@ -76,8 +74,7 @@ public class GetContext extends CollectionAction<ContextScore> {
             }
         }
 
-        ContextUtils.resolve(context);
-        return context;
+        return ContextUtils.resolve(context);
     }
 
     @Override

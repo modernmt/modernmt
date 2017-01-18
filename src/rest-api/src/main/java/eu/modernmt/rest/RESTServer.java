@@ -3,10 +3,12 @@ package eu.modernmt.rest;
 import eu.modernmt.decoder.TranslationHypothesis;
 import eu.modernmt.io.DefaultCharset;
 import eu.modernmt.model.Alignment;
+import eu.modernmt.model.ContextVector;
 import eu.modernmt.rest.framework.JSONSerializer;
 import eu.modernmt.rest.framework.routing.RouterServlet;
 import eu.modernmt.rest.model.TranslationResponse;
 import eu.modernmt.rest.serializers.AlignmentSerializer;
+import eu.modernmt.rest.serializers.ContextVectorSerializer;
 import eu.modernmt.rest.serializers.TranslationHypothesisSerializer;
 import eu.modernmt.rest.serializers.TranslationResponseSerializer;
 import org.apache.commons.io.IOUtils;
@@ -31,6 +33,7 @@ public class RESTServer {
         JSONSerializer.registerCustomSerializer(TranslationResponse.class, new TranslationResponseSerializer());
         JSONSerializer.registerCustomSerializer(TranslationHypothesis.class, new TranslationHypothesisSerializer());
         JSONSerializer.registerCustomSerializer(Alignment.class, new AlignmentSerializer());
+        JSONSerializer.registerCustomSerializer(ContextVector.class, new ContextVectorSerializer());
     }
 
     public static class ServerOptions {

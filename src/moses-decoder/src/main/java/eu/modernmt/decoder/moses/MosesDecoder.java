@@ -1,7 +1,6 @@
 package eu.modernmt.decoder.moses;
 
 import eu.modernmt.aligner.Aligner;
-import eu.modernmt.context.ContextScore;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.Decoder;
@@ -9,6 +8,7 @@ import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.io.Paths;
+import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
 import eu.modernmt.vocabulary.Vocabulary;
@@ -19,7 +19,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -110,7 +109,7 @@ public class MosesDecoder implements Decoder, DataListener {
 
     private long getOrComputeSession(final TranslationSession session) {
         return sessions.computeIfAbsent(session.getId(), key -> {
-            ContextXObject context = ContextXObject.build(session.getTranslationContext());
+            ContextXObject context = ContextXObject.build(session.getContextVector());
             return createSession(context.keys, context.values);
         });
     }
@@ -138,8 +137,8 @@ public class MosesDecoder implements Decoder, DataListener {
     }
 
     @Override
-    public DecoderTranslation translate(Sentence text, List<ContextScore> translationContext) {
-        return translate(text, translationContext, null, 0);
+    public DecoderTranslation translate(Sentence text, ContextVector contextVector) {
+        return translate(text, contextVector, null, 0);
     }
 
     @Override
@@ -153,8 +152,8 @@ public class MosesDecoder implements Decoder, DataListener {
     }
 
     @Override
-    public DecoderTranslation translate(Sentence text, List<ContextScore> translationContext, int nbestListSize) {
-        return translate(text, translationContext, null, nbestListSize);
+    public DecoderTranslation translate(Sentence text, ContextVector contextVector, int nbestListSize) {
+        return translate(text, contextVector, null, nbestListSize);
     }
 
     @Override
@@ -162,7 +161,7 @@ public class MosesDecoder implements Decoder, DataListener {
         return translate(text, null, session, nbestListSize);
     }
 
-    private DecoderTranslation translate(Sentence sentence, List<ContextScore> translationContext, TranslationSession session, int nbest) {
+    private DecoderTranslation translate(Sentence sentence, ContextVector contextVector, TranslationSession session, int nbest) {
         Word[] sourceWords = sentence.getWords();
         if (sourceWords.length == 0)
             return new DecoderTranslation(new Word[0], sentence, null);
@@ -170,7 +169,7 @@ public class MosesDecoder implements Decoder, DataListener {
         String text = XUtils.join(sourceWords);
 
         long sessionId = session == null ? 0L : getOrComputeSession(session);
-        ContextXObject context = ContextXObject.build(translationContext);
+        ContextXObject context = ContextXObject.build(contextVector);
 
         if (logger.isDebugEnabled()) {
             logger.debug("Translating: \"" + text + "\"");

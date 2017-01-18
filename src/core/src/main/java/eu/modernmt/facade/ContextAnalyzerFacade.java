@@ -3,12 +3,11 @@ package eu.modernmt.facade;
 import eu.modernmt.cluster.error.SystemShutdownException;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.context.ContextScore;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.facade.operations.GetContextOperation;
+import eu.modernmt.model.ContextVector;
 
 import java.io.File;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -16,16 +15,16 @@ import java.util.concurrent.ExecutionException;
  */
 public class ContextAnalyzerFacade {
 
-    public List<ContextScore> get(File context, int limit) throws ContextAnalyzerException {
+    public ContextVector get(File context, int limit) throws ContextAnalyzerException {
         // Because the file is local to the machine, this method ensures that the
         // local context analyzer is invoked instead of a remote one
         Engine engine = ModernMT.getNode().getEngine();
         ContextAnalyzer analyzer = engine.getContextAnalyzer();
 
-        return analyzer.getContext(context, limit);
+        return analyzer.getContextVector(context, limit);
     }
 
-    public List<ContextScore> get(String context, int limit) throws ContextAnalyzerException {
+    public ContextVector get(String context, int limit) throws ContextAnalyzerException {
         GetContextOperation operation = new GetContextOperation(context, limit);
 
         try {

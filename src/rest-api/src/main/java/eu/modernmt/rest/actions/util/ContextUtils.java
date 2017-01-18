@@ -1,14 +1,12 @@
 package eu.modernmt.rest.actions.util;
 
-import eu.modernmt.context.ContextScore;
 import eu.modernmt.facade.ModernMT;
+import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Domain;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.framework.Parameters;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -16,21 +14,26 @@ import java.util.Map;
  */
 public class ContextUtils {
 
-    public static void resolve(Collection<ContextScore> context) throws PersistenceException {
+    public static ContextVector resolve(ContextVector context) throws PersistenceException {
         ArrayList<Integer> ids = new ArrayList<>(context.size());
-        for (ContextScore score : context)
-            ids.add(score.getDomain().getId());
+        for (ContextVector.Entry e : context)
+            ids.add(e.domain.getId());
 
         Map<Integer, Domain> domains = ModernMT.domain.get(ids);
-        for (ContextScore score : context) {
-            int id = score.getDomain().getId();
-            score.setDomain(domains.get(id));
+
+        ContextVector.Builder builder = new ContextVector.Builder(context.size());
+        for (ContextVector.Entry e : context) {
+            int id = e.domain.getId();
+            builder.add(domains.get(id), e.score);
         }
+
+        return builder.build();
     }
 
-    public static List<ContextScore> parseParameter(String name, String value) throws Parameters.ParameterParsingException {
+    public static ContextVector parseParameter(String name, String value) throws Parameters.ParameterParsingException {
         String[] elements = value.split(",");
-        List<ContextScore> context = new ArrayList<>(elements.length);
+
+        ContextVector.Builder builder = new ContextVector.Builder(elements.length);
 
         for (String element : elements) {
             String[] keyvalue = element.split(":");
@@ -54,10 +57,10 @@ public class ContextUtils {
             if (score < 0.f || score > 1.f)
                 throw new Parameters.ParameterParsingException(name, value);
 
-            context.add(new ContextScore(new Domain(domainId), score));
+            builder.add(domainId, score);
         }
 
-        return context;
+        return builder.build();
     }
 
 }

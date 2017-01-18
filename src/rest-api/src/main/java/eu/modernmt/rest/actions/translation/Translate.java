@@ -1,9 +1,9 @@
 package eu.modernmt.rest.actions.translation;
 
 import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.context.ContextScore;
 import eu.modernmt.decoder.TranslationException;
 import eu.modernmt.facade.ModernMT;
+import eu.modernmt.model.ContextVector;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.actions.util.ContextUtils;
 import eu.modernmt.rest.framework.HttpMethod;
@@ -12,8 +12,6 @@ import eu.modernmt.rest.framework.RESTRequest;
 import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
 import eu.modernmt.rest.model.TranslationResponse;
-
-import java.util.List;
 
 /**
  * Created by davide on 17/12/15.
@@ -40,7 +38,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
         }
 
         if (result.context != null)
-            ContextUtils.resolve(result.context);
+            result.context = ContextUtils.resolve(result.context);
 
         return result;
     }
@@ -54,7 +52,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
 
         public final String query;
         public final long sessionId;
-        public final List<ContextScore> context;
+        public final ContextVector context;
         public final String contextString;
         public final int contextLimit;
         public final int nbest;
@@ -68,10 +66,10 @@ public class Translate extends ObjectAction<TranslationResponse> {
             nbest = getInt("nbest", 0);
 
             if (sessionId == 0) {
-                String weights = getString("context_weights", false, null);
+                String weights = getString("context_vector", false, null);
 
                 if (weights != null) {
-                    context = ContextUtils.parseParameter("context_weights", weights);
+                    context = ContextUtils.parseParameter("context_vector", weights);
                     contextString = null;
                 } else {
                     context = null;

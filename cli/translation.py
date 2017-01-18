@@ -11,7 +11,7 @@ __author__ = 'Davide Caroselli'
 
 
 class Translator:
-    def __init__(self, node, context_string=None, context_file=None, context_weights=None,
+    def __init__(self, node, context_string=None, context_file=None, context_vector=None,
                  print_nbest=None, nbest_file=None):
         self._api = node.api
         self._print_nbest = print_nbest
@@ -31,8 +31,8 @@ class Translator:
             self._context = self._api.get_context_s(context_string)
         elif context_file is not None:
             self._context = self._api.get_context_f(context_file)
-        elif context_weights is not None:
-            self._context = self.__parse_context_map(context_weights)
+        elif context_vector is not None:
+            self._context = self.__parse_context_vector(context_vector)
 
         if self._context is not None:
             self._session = self._api.create_session(self._context)['id']
@@ -40,7 +40,7 @@ class Translator:
             self._session = None
 
     @staticmethod
-    def __parse_context_map(text):
+    def __parse_context_vector(text):
         context = []
 
         try:
@@ -96,9 +96,9 @@ class Translator:
 
 
 class BatchTranslator(Translator):
-    def __init__(self, node, context_string=None, context_file=None, context_weights=None,
+    def __init__(self, node, context_string=None, context_file=None, context_vector=None,
                  print_nbest=False, nbest_file=None):
-        Translator.__init__(self, node, context_string, context_file, context_weights, print_nbest, nbest_file)
+        Translator.__init__(self, node, context_string, context_file, context_vector, print_nbest, nbest_file)
         self._pool = multithread.Pool(100)
         self._jobs = []
 
@@ -128,8 +128,8 @@ class BatchTranslator(Translator):
 
 
 class XLIFFTranslator(Translator):
-    def __init__(self, node, context_string=None, context_file=None, context_weights=None):
-        Translator.__init__(self, node, context_string, context_file, context_weights)
+    def __init__(self, node, context_string=None, context_file=None, context_vector=None):
+        Translator.__init__(self, node, context_string, context_file, context_vector)
         self._content = []
         self._pool = multithread.Pool(100)
 
@@ -168,9 +168,9 @@ class XLIFFTranslator(Translator):
 
 
 class InteractiveTranslator(Translator):
-    def __init__(self, node, context_string=None, context_file=None, context_weights=None,
+    def __init__(self, node, context_string=None, context_file=None, context_vector=None,
                  print_nbest=False, nbest_file=None):
-        Translator.__init__(self, node, context_string, context_file, context_weights, print_nbest, nbest_file)
+        Translator.__init__(self, node, context_string, context_file, context_vector, print_nbest, nbest_file)
 
         print '\nModernMT Translate command line'
 

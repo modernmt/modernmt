@@ -1,16 +1,14 @@
 package eu.modernmt.rest.actions.translation;
 
-import eu.modernmt.context.ContextScore;
 import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.facade.ModernMT;
+import eu.modernmt.model.ContextVector;
 import eu.modernmt.rest.actions.util.ContextUtils;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
 import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
-
-import java.util.List;
 
 /**
  * Created by davide on 15/12/15.
@@ -31,11 +29,11 @@ public class CreateTranslationSession extends ObjectAction<TranslationSession> {
 
     public static class Params extends Parameters {
 
-        public final List<ContextScore> context;
+        public final ContextVector context;
 
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
-            context = ContextUtils.parseParameter("context_weights", getString("context_weights", false));
+            context = ContextUtils.parseParameter("context_vector", getString("context_vector", false));
         }
 
     }
