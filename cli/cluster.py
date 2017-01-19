@@ -140,16 +140,15 @@ class MMTApi:
 
     def append_to_domain(self, domain, source, target):
         params = {'source': source, 'target': target}
-        return self._put('domains/' + str(domain), params=params)
+        return self._put('domains/' + str(domain) + '/corpus', params=params)
 
     def import_into_domain(self, domain, tmx):
         params = {
-            'domain': domain,
             'content_type': 'tmx',
             'local_file': tmx
         }
 
-        return self._post('imports', params=params)
+        return self._put('domains/' + str(domain) + '/corpus', params=params)
 
     def get_all_domains(self):
         return self._get('domains')

@@ -2,18 +2,15 @@ package eu.modernmt.facade;
 
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.NodeInfo;
-import eu.modernmt.data.DataManagerException;
 import eu.modernmt.data.DataManager;
+import eu.modernmt.data.DataManagerException;
 import eu.modernmt.model.Domain;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.persistence.*;
 import org.apache.commons.io.IOUtils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -103,7 +100,7 @@ public class DomainFacade {
         }
     }
 
-    public Domain add(int domainId, String source, String target) throws DataManagerException, PersistenceException {
+    public ImportJob add(int domainId, String source, String target) throws DataManagerException, PersistenceException {
         Connection connection = null;
         Database db = ModernMT.getNode().getEngine().getDatabase();
 
@@ -117,9 +114,14 @@ public class DomainFacade {
                 return null;
 
             DataManager dataManager = ModernMT.getNode().getDataManager();
-            dataManager.upload(domainId, source, target, DataManager.CONTRIBUTIONS_CHANNEL_ID);
+            ImportJob job = dataManager.upload(domainId, source, target, DataManager.CONTRIBUTIONS_CHANNEL_ID);
 
-            return domain;
+            if (job == null)
+                return null;
+
+            // Don't store ephemeral ImportJob!
+
+            return job;
         } finally {
             IOUtils.closeQuietly(connection);
         }
@@ -153,19 +155,21 @@ public class DomainFacade {
         }
     }
 
-    public ImportJob getImportJob(int id) throws PersistenceException {
-        Connection connection = null;
-        Database db = ModernMT.getNode().getEngine().getDatabase();
+    public ImportJob getImportJob(UUID id) throws PersistenceException {
+        ImportJob job = ImportJob.fromEphemeralUUID(id);
 
-        ImportJob job;
+        if (job == null) {
+            Connection connection = null;
+            Database db = ModernMT.getNode().getEngine().getDatabase();
 
-        try {
-            connection = db.getConnection();
+            try {
+                connection = db.getConnection();
 
-            ImportJobDAO jobDAO = db.getImportJobDAO(connection);
-            job = jobDAO.retrieveById(id);
-        } finally {
-            IOUtils.closeQuietly(connection);
+                ImportJobDAO jobDAO = db.getImportJobDAO(connection);
+                job = jobDAO.retrieveById(id);
+            } finally {
+                IOUtils.closeQuietly(connection);
+            }
         }
 
         if (job == null)
@@ -197,6 +201,8 @@ public class DomainFacade {
 
         if (completed >= quota)
             job.setProgress(1.f);
+        else if (begin == end)
+            job.setProgress(0.f);
         else
             job.setProgress(Math.max(0.f, minOffset - begin) / (float) (end - begin));
 

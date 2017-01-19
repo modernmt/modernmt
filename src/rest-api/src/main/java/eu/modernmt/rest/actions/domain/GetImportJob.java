@@ -10,10 +10,12 @@ import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
 import eu.modernmt.rest.framework.routing.TemplateException;
 
+import java.util.UUID;
+
 /**
  * Created by davide on 15/12/15.
  */
-@Route(aliases = "imports/:id", method = HttpMethod.GET)
+@Route(aliases = "domains/imports/:id", method = HttpMethod.GET)
 public class GetImportJob extends ObjectAction<ImportJob> {
 
     @Override
@@ -29,11 +31,11 @@ public class GetImportJob extends ObjectAction<ImportJob> {
 
     public static class Params extends Parameters {
 
-        private final int id;
+        private final UUID id;
 
         public Params(RESTRequest req) throws ParameterParsingException, TemplateException {
             super(req);
-            id = req.getPathParameterAsInt("id");
+            id = req.getPathParameterAsUUID("id");
         }
     }
 

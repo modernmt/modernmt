@@ -31,9 +31,9 @@ public interface DataManager extends Closeable {
 
     ImportJob upload(int domainId, BilingualCorpus corpus, DataChannel channel) throws DataManagerException;
 
-    void upload(int domainId, String sourceSentence, String targetSentence, short channel) throws DataManagerException;
+    ImportJob upload(int domainId, String sourceSentence, String targetSentence, short channel) throws DataManagerException;
 
-    void upload(int domainId, String sourceSentence, String targetSentence, DataChannel channel) throws DataManagerException;
+    ImportJob upload(int domainId, String sourceSentence, String targetSentence, DataChannel channel) throws DataManagerException;
 
     DataChannel getDataChannel(short id);
 

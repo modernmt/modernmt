@@ -1,39 +1,84 @@
 package eu.modernmt.model;
 
+import java.nio.ByteBuffer;
+import java.util.UUID;
+
 /**
  * Created by davide on 15/12/16.
  */
 public class ImportJob {
 
-    private long id;
+    private static final short EPHEMERAL_JOB_HEADER = (short) 0x8000;
+
+    public static ImportJob createEphemeralJob(int domain, long offset, short dataChannel) {
+        ByteBuffer buffer = ByteBuffer.allocate(16);
+        buffer.putShort(EPHEMERAL_JOB_HEADER)
+                .putShort(dataChannel)
+                .putInt(domain)
+                .putLong(offset)
+                .rewind();
+
+        long msbs = buffer.getLong();
+        long lsbs = buffer.getLong();
+
+        ImportJob job = new ImportJob();
+        job.id = new UUID(msbs, lsbs);
+        job.domain = domain;
+        job.size = 1;
+        job.begin = job.end = offset;
+        job.dataChannel = dataChannel;
+
+        return job;
+    }
+
+    public static ImportJob fromEphemeralUUID(UUID id) {
+        ByteBuffer buffer = ByteBuffer.allocate(16);
+        buffer.putLong(id.getMostSignificantBits())
+                .putLong(id.getLeastSignificantBits())
+                .rewind();
+
+        short header = buffer.getShort();
+        if (header != EPHEMERAL_JOB_HEADER)
+            return null;
+
+        short dataChannel = buffer.getShort();
+        int domain = buffer.getInt();
+        long offset = buffer.getLong();
+
+        ImportJob job = new ImportJob();
+        job.id = id;
+        job.domain = domain;
+        job.size = 1;
+        job.begin = job.end = offset;
+        job.dataChannel = dataChannel;
+
+        return job;
+    }
+
+    public static long getLongId(UUID id) {
+        return id.getLeastSignificantBits();
+    }
+
+    private UUID id;
     private int domain;
     private int size;
-    private float progress;
 
     private long begin;
     private long end;
     private short dataChannel;
 
-    public ImportJob(int domain) {
-        this(0L, domain);
-    }
+    private float progress;
 
-    public ImportJob(long id, int domain) {
-        this.id = id;
-        this.domain = domain;
-        this.begin = 0;
-        this.end = 0;
-        this.dataChannel = 0;
-        this.progress = 0.f;
-        this.size = 0;
-    }
-
-    public long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(UUID id) {
         this.id = id;
+    }
+
+    public void setId(long id) {
+        this.id = new UUID(0L, id);
     }
 
     public float getProgress() {
@@ -83,4 +128,5 @@ public class ImportJob {
     public void setSize(int size) {
         this.size = size;
     }
+
 }

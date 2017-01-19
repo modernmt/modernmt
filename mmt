@@ -454,9 +454,9 @@ def main_add(argv):
     if not node.is_running():
         raise IllegalStateException('engine not running: ' + args.engine)
 
-    domain = node.append_to_domain(args.domain, args.source, args.target)
+    node.append_to_domain(args.domain, args.source, args.target)
 
-    print 'SUCCESS - contribution added to domain "' + domain['name'] + '"'
+    print 'SUCCESS - contribution added to domain "' + args.domain + '"'
 
 
 def main_import(argv):

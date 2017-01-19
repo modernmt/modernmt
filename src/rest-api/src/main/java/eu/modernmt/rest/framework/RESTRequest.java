@@ -21,6 +21,7 @@ import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 public class RESTRequest {
 
@@ -255,6 +256,14 @@ public class RESTRequest {
         try {
             return Integer.parseInt(getPathParameter(varname));
         } catch (NumberFormatException e) {
+            throw new TemplateException(varname);
+        }
+    }
+
+    public UUID getPathParameterAsUUID(String varname) throws TemplateException {
+        try {
+            return UUID.fromString(getPathParameter(varname));
+        } catch (IllegalArgumentException e) {
             throw new TemplateException(varname);
         }
     }

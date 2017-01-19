@@ -5,6 +5,7 @@ import eu.modernmt.persistence.ImportJobDAO;
 import eu.modernmt.persistence.PersistenceException;
 
 import java.sql.*;
+import java.util.UUID;
 
 /**
  * Created by davide on 21/09/16.
@@ -25,7 +26,9 @@ public class SQLiteImportJobDAO implements ImportJobDAO {
         long end = result.getLong("end");
         short dataChannel = result.getShort("data_channel");
 
-        ImportJob job = new ImportJob(id, domain);
+        ImportJob job = new ImportJob();
+        job.setId(id);
+        job.setDomain(domain);
         job.setSize(size);
         job.setBegin(begin);
         job.setEnd(end);
@@ -67,13 +70,13 @@ public class SQLiteImportJobDAO implements ImportJobDAO {
     }
 
     @Override
-    public ImportJob retrieveById(int id) throws PersistenceException {
+    public ImportJob retrieveById(UUID uuid) throws PersistenceException {
         PreparedStatement statement = null;
         ResultSet result = null;
 
         try {
             statement = connection.prepareStatement("SELECT * FROM import_jobs WHERE \"id\" = ?");
-            statement.setInt(1, id);
+            statement.setLong(1, ImportJob.getLongId(uuid));
 
             result = statement.executeQuery();
 

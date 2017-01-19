@@ -173,7 +173,8 @@ public class KafkaDataManager implements DataManager {
         if (logger.isDebugEnabled())
             logger.debug("Domain " + domainId + " uploaded [" + importBegin + ", " + importEnd + "]: " + size + " pairs");
 
-        ImportJob job = new ImportJob(domainId);
+        ImportJob job = new ImportJob();
+        job.setDomain(domainId);
         job.setSize(size);
         job.setDataChannel(channel.getId());
         job.setBegin(importBegin);
@@ -183,16 +184,17 @@ public class KafkaDataManager implements DataManager {
     }
 
     @Override
-    public void upload(int domainId, String sourceSentence, String targetSentence, short channel) throws DataManagerException {
-        upload(domainId, sourceSentence, targetSentence, getDataChannel(channel));
+    public ImportJob upload(int domainId, String sourceSentence, String targetSentence, short channel) throws DataManagerException {
+        return upload(domainId, sourceSentence, targetSentence, getDataChannel(channel));
     }
 
     @Override
-    public void upload(int domainId, String sourceSentence, String targetSentence, DataChannel channel) throws DataManagerException {
+    public ImportJob upload(int domainId, String sourceSentence, String targetSentence, DataChannel channel) throws DataManagerException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 
-        sendUpdate(domainId, sourceSentence, targetSentence, true, channel);
+        long offset = sendUpdate(domainId, sourceSentence, targetSentence, true, channel);
+        return ImportJob.createEphemeralJob(domainId, offset, channel.getId());
     }
 
     private long sendUpdate(int domainId, String source, String target, boolean sync, DataChannel channel) throws DataManagerException {

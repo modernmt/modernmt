@@ -21,15 +21,19 @@ import java.util.Locale;
 import java.util.zip.GZIPInputStream;
 
 /**
- * Created by davide on 23/12/16.
+ * Created by davide on 15/12/15.
  */
-@Route(aliases = "imports", method = HttpMethod.POST)
-public class CreateImportJob extends ObjectAction<ImportJob> {
+@Route(aliases = "domains/:id/corpus", method = HttpMethod.PUT)
+public class AddToDomainCorpus extends ObjectAction<ImportJob> {
 
     @Override
-    protected ImportJob execute(RESTRequest req, Parameters _params) throws PersistenceException, DataManagerException {
+    protected ImportJob execute(RESTRequest req, Parameters _params) throws DataManagerException, PersistenceException {
         Params params = (Params) _params;
-        return ModernMT.domain.add(params.domain, params.corpus);
+
+        if (params.corpus == null)
+            return ModernMT.domain.add(params.domain, params.source, params.target);
+        else
+            return ModernMT.domain.add(params.domain, params.corpus);
     }
 
     @Override
@@ -47,43 +51,57 @@ public class CreateImportJob extends ObjectAction<ImportJob> {
 
     public static class Params extends Parameters {
 
-        public final int domain;
+        private final int domain;
+        private final String source;
+        private final String target;
         private final BilingualCorpus corpus;
 
-        public Params(RESTRequest req) throws ParameterParsingException {
+        public Params(RESTRequest req) throws ParameterParsingException, TemplateException {
             super(req);
 
-            domain = getInt("domain");
+            domain = req.getPathParameterAsInt("id");
 
-            FileType fileType = getEnum("content_type", FileType.class);
-            FileCompression fileCompression = getEnum("content_compression", FileCompression.class, null);
+            source = getString("source", false, null);
+            target = getString("target", false, null);
 
-            boolean gzipped = FileCompression.GZIP.equals(fileCompression);
-            FileProxy fileProxy;
+            if (source == null && target == null) {
+                FileType fileType = getEnum("content_type", FileType.class);
+                FileCompression fileCompression = getEnum("content_compression", FileCompression.class, null);
 
-            FileParameter content;
-            if ((content = req.getFile("content")) != null) {
-                fileProxy = new ParameterFileProxy(content, gzipped);
+                boolean gzipped = FileCompression.GZIP.equals(fileCompression);
+                FileProxy fileProxy;
+
+                FileParameter content;
+                if ((content = req.getFile("content")) != null) {
+                    fileProxy = new ParameterFileProxy(content, gzipped);
+                } else {
+                    File localFile = new File(getString("local_file", false));
+                    if (!localFile.isFile())
+                        throw new ParameterParsingException("local_file", localFile.toString());
+
+                    fileProxy = new LocalFileProxy(localFile, gzipped);
+                }
+
+                Locale sourceLanguage = ModernMT.engine.getSourceLanguage();
+                Locale targetLanguage = ModernMT.engine.getTargetLanguage();
+
+                switch (fileType) {
+                    case INLINE:
+                        corpus = new InlineParallelFileCorpus(sourceLanguage, targetLanguage, fileProxy);
+                        break;
+                    case TMX:
+                        corpus = new TMXCorpus(fileProxy, sourceLanguage, targetLanguage);
+                        break;
+                    default:
+                        throw new ParameterParsingException("content_type");
+                }
             } else {
-                File localFile = new File(getString("local_file", false));
-                if (!localFile.isFile())
-                    throw new ParameterParsingException("local_file", localFile.toString());
+                if (source == null)
+                    throw new ParameterParsingException("source");
+                if (target == null)
+                    throw new ParameterParsingException("target");
 
-                fileProxy = new LocalFileProxy(localFile, gzipped);
-            }
-
-            Locale sourceLanguage = ModernMT.engine.getSourceLanguage();
-            Locale targetLanguage = ModernMT.engine.getTargetLanguage();
-
-            switch (fileType) {
-                case INLINE:
-                    corpus = new InlineParallelFileCorpus(sourceLanguage, targetLanguage, fileProxy);
-                    break;
-                case TMX:
-                    corpus = new TMXCorpus(fileProxy, sourceLanguage, targetLanguage);
-                    break;
-                default:
-                    throw new ParameterParsingException("content_type");
+                corpus = null;
             }
         }
     }
@@ -148,6 +166,5 @@ public class CreateImportJob extends ObjectAction<ImportJob> {
             throw new UnsupportedOperationException();
         }
     }
-
 
 }
