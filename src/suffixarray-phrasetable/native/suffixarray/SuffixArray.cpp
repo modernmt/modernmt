@@ -286,16 +286,14 @@ void SuffixArray::Dump(string& dump_file) {
         if (keyType == kTargetCountKeyType) {
             vector<wid_t> words;
             GetWordsFromKey(key.data(), prefixLength, words);
+
             size_t count = DeserializeCount(value.data(), value.size());
 
-            printf("TARGET");
-
-            printf(" words ");
-            for (auto w = words.begin(); w != words.end(); ++w){ printf("%u,", *w); }
-
-            printf(" count %zu",count);
-
-            printf("\n");
+            output << "TARGET";
+            output << " words ";
+            for (auto w = words.begin(); w != words.end(); ++w) { output << *w << "," ; }
+            output << " count " << count;
+            output << endl;
 
         } else if (keyType == kSourcePrefixKeyType) {
             vector<wid_t> words;
@@ -306,32 +304,22 @@ void SuffixArray::Dump(string& dump_file) {
             vector<location_t> positions;
             PostingList::Deserialize(value, positions);
 
-            printf("SOURCE");
-
-            printf(" domain %d", domain);
-
-            printf(" words ");
-            for (auto w = words.begin(); w != words.end(); ++w){ printf("%u,", *w); }
-
-            printf(" count %zu", positions.size());
-
-            printf(" positions ");
-            for (auto l = positions.begin(); l != positions.end(); ++l){ printf("%lld:%hd,",  l->pointer, l->offset); }
-            printf("\n");
+            output << "SOURCE";
+            output << " domain " << domain;
+            output << " words ";
+            for (auto w = words.begin(); w != words.end(); ++w){ output << *w << "," ; }
+            output << " count " << positions.size();
+            output << " positions ";
+            for (auto l = positions.begin(); l != positions.end(); ++l) { output << l->pointer << ":" << l->offset << "," ; }
+            output << endl;
 
         } else if (keyType == kGlobalInfoKeyType) {
             int64_t size;
             DeserializeGlobalInfo(value.data(), value.size(), &size, &streams);
 
-            printf("GLOBAL");
-
-            printf(" size %lld", size);
-/*
-            printf(" streams ");
-            for (auto s = streams.begin(); s != streams.end(); ++s){ printf(" %lld\n",  *s); }
-            */
-
-            printf("\n");
+            output << "GLOBAL";
+            output << " size " << size;
+            output << endl;
 
 
         } else {
