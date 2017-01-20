@@ -58,6 +58,7 @@ namespace mmt {
             }
 
             void Dump(string& dump_file);
+            void Dump_Corpus(string& dump_file);
 
         private:
             const bool openForBulkLoad;
