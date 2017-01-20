@@ -54,7 +54,7 @@ ModernMT Translate command line
 ```
 Next, we are going to improve the partial translation `hello mondo`.
 
-*Note:* You can query MMT directly via REST API, to learn more on how to do it, visit the [Translate API](https://github.com/ModernMT/MMT/wiki/API-Documentation#translation-api) page in the project Wiki.
+*Note:* You can query MMT directly via REST API, to learn more on how to do it, visit the [Translate API](https://github.com/ModernMT/MMT/wiki/API-Translate) page in the project Wiki.
 
 
 ### Improve translation quality with new data
