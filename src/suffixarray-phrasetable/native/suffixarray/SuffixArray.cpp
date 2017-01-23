@@ -328,3 +328,7 @@ void SuffixArray::Dump(string& dump_file) {
     }
     ScanTerminate();
 }
+
+void SuffixArray::Dump_Corpus(string& dump_file) {
+    storage->Dump(dump_file);
+}
