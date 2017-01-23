@@ -67,7 +67,7 @@ int main(int argc, const char *argv[]) {
     //Options ptOptions;
 
     Options options;
-    SuffixArray index(args.model_path, options.prefix_length, true);
+    SuffixArray index(args.model_path, options.prefix_length);
 
     cerr << "Model loaded" << endl;
 
