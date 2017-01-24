@@ -42,6 +42,7 @@ namespace mmt {
 
             int64_t Flush() throw(storage_exception);
 
+            void Dump(string& dump_file);
         private:
             int fd;
             char *data;

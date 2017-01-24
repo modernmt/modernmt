@@ -8,6 +8,8 @@
 #include <rocksdb/merge_operator.h>
 #include <boost/filesystem.hpp>
 #include <thread>
+#include <fstream>
+#include <iostream>
 
 namespace fs = boost::filesystem;
 
@@ -245,4 +247,88 @@ void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, ve
 
 Collector *SuffixArray::NewCollector(const context_t *context, bool searchInBackground) {
     return new Collector(storage, db, prefixLength, context, searchInBackground);
+}
+
+
+
+void SuffixArray::ScanInit() {
+    iterator = db->NewIterator(rocksdb::ReadOptions());
+    iterator->SeekToFirst();
+}
+
+void SuffixArray::ScanTerminate() {
+    delete iterator;
+}
+
+bool SuffixArray::ScanNext(string& key, string& value) {
+    if (iterator->Valid()){
+        key = iterator->key().ToString();
+        value = iterator->value().ToString();
+        iterator->Next();
+        assert(iterator->status().ok()); // Check for any errors found during the scan
+        return true;
+    }
+    return false;
+
+}
+
+void SuffixArray::Dump(string& dump_file) {
+    ofstream output(dump_file.c_str());
+
+    string key, value;
+
+    char keyType;
+
+    ScanInit();
+    while (ScanNext(key, value)) {
+        keyType = key.data()[0];
+
+        if (keyType == kTargetCountKeyType) {
+            vector<wid_t> words;
+            GetWordsFromKey(key.data(), prefixLength, words);
+
+            size_t count = DeserializeCount(value.data(), value.size());
+
+            output << "TARGET";
+            output << " words ";
+            for (auto w = words.begin(); w != words.end(); ++w) { output << *w << "," ; }
+            output << " count " << count;
+            output << endl;
+
+        } else if (keyType == kSourcePrefixKeyType) {
+            vector<wid_t> words;
+            GetWordsFromKey(key.data(), prefixLength, words);
+
+            domain_t domain = GetDomainFromKey(key.data(), prefixLength);
+
+            vector<location_t> positions;
+            PostingList::Deserialize(value, positions);
+
+            output << "SOURCE";
+            output << " domain " << domain;
+            output << " words ";
+            for (auto w = words.begin(); w != words.end(); ++w){ output << *w << "," ; }
+            output << " count " << positions.size();
+            output << " positions ";
+            for (auto l = positions.begin(); l != positions.end(); ++l) { output << l->pointer << ":" << l->offset << "," ; }
+            output << endl;
+
+        } else if (keyType == kGlobalInfoKeyType) {
+            int64_t size;
+            DeserializeGlobalInfo(value.data(), value.size(), &size, &streams);
+
+            output << "GLOBAL";
+            output << " size " << size;
+            output << endl;
+
+
+        } else {
+            throw index_exception("Dump failed");
+        }
+    }
+    ScanTerminate();
+}
+
+void SuffixArray::Dump_Corpus(string& dump_file) {
+    storage->Dump(dump_file);
 }

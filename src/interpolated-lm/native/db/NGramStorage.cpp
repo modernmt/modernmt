@@ -1,13 +1,18 @@
 //
 // Created by Davide Caroselli on 27/07/16.
 //
-
 #include "NGramStorage.h"
 #include <rocksdb/memtablerep.h>
 #include <rocksdb/table.h>
 #include <rocksdb/slice_transform.h>
 #include <rocksdb/merge_operator.h>
 #include <thread>
+
+#include <iostream>
+#include <fstream>
+
+#include "rocksdb/iterator.h"
+
 
 const string kPathSeparator =
 #ifdef _WIN32
@@ -110,7 +115,7 @@ static inline string SerializeKey(domain_t domain, dbkey_t key) {
     return string(bytes, 12);
 }
 
-static inline bool Deserialize(const char *data, size_t size, counts_t *output) {
+static inline bool DeserializeCounts(const char *data, size_t size, counts_t *output) {
     if (size != 8)
         return false;
 
@@ -127,6 +132,20 @@ static inline bool Deserialize(const char *data, size_t size, counts_t *output) 
     return true;
 }
 
+static inline bool DeserializeKey(const char *data, size_t size, domain_t* domain, dbkey_t* key) {
+    if (size != 12)
+        return false;
+
+    *domain = (data[0] & 0xFFU) +
+             ((data[1] & 0xFFU) << 8) +
+             ((data[2] & 0xFFU) << 16) +
+             ((data[3] & 0xFFU) << 24);
+
+    memcpy(key, data+4, 8);
+
+    return true;
+}
+
 class CountsAddOperator : public AssociativeMergeOperator {
 public:
     virtual bool Merge(const Slice &key, const Slice *existing_value, const Slice &value, std::string *new_value,
@@ -134,10 +153,10 @@ public:
 
         counts_t existing;
         if (existing_value)
-            Deserialize(existing_value->data_, existing_value->size_, &existing);
+            DeserializeCounts(existing_value->data_, existing_value->size_, &existing);
 
         counts_t update;
-        Deserialize(value.data_, value.size_, &update);
+        DeserializeCounts(value.data_, value.size_, &update);
 
         existing.count += update.count;
         existing.successors += update.successors;
@@ -216,7 +235,7 @@ counts_t NGramStorage::GetCounts(const domain_t domain, const dbkey_t key) const
     }
 
     counts_t output;
-    return Deserialize(value.data(), value.size(), &output) ? output : counts_t();
+    return DeserializeCounts(value.data(), value.size(), &output) ? output : counts_t();
 }
 
 void NGramStorage::GetWordCounts(const domain_t domain, count_t *outUniqueWordCount, count_t *outWordCount) const {
@@ -339,4 +358,45 @@ void NGramStorage::ForceCompaction() {
 
 const vector<seqid_t> &NGramStorage::GetStreamsStatus() const {
     return streams;
+}
+
+void NGramStorage::ScanInit() {
+    iterator = db->NewIterator(rocksdb::ReadOptions());
+    iterator->SeekToFirst();
+}
+
+void NGramStorage::ScanTerminate() {
+    delete iterator;
+}
+
+bool NGramStorage::ScanNext(domain_t *domain, dbkey_t *key, counts_t *value) {
+    if (iterator->Valid()){
+        DeserializeKey(iterator->key().data(), iterator->key().size(), domain, key);
+
+        DeserializeCounts(iterator->value().data(), iterator->value().size(), value);
+
+        iterator->Next();
+        assert(iterator->status().ok()); // Check for any errors found during the scan
+        return true;
+    }
+    return false;
+}
+
+void NGramStorage::Dump(string &dump_file) {
+    domain_t domain;
+    dbkey_t key;
+    counts_t val;
+
+    ofstream output(dump_file.c_str());
+
+    //scan to get all keys and values
+    ScanInit();
+    while (ScanNext(&domain, &key, &val)){
+        output << "domain " << domain;
+        output << " key " << key;
+        output << " count " << val.count;
+        output << " successors " << val.successors;
+        output << endl;
+    }
+    ScanTerminate();
 }

@@ -57,11 +57,15 @@ namespace mmt {
                 return streams;
             }
 
+            void Dump(string& dump_file);
+            void Dump_Corpus(string& dump_file);
+
         private:
             const bool openForBulkLoad;
             const uint8_t prefixLength;
 
             rocksdb::DB *db;
+            rocksdb::Iterator* iterator;
             CorpusStorage *storage;
             vector<seqid_t> streams;
 
@@ -69,6 +73,10 @@ namespace mmt {
                                     int64_t location, unordered_map<string, PostingList> &outBatch);
 
             void AddTargetCountsToBatch(const vector<wid_t> &sentence, unordered_map<string, uint64_t> &outBatch);
+
+            void ScanInit();
+            void ScanTerminate();
+            bool ScanNext(string& key, string& value);
         };
 
     }

@@ -82,6 +82,15 @@ namespace mmt {
             return ReadUInt32(data, i);
         }
 
+        static inline void GetWordsFromKey(const char *data, length_t prefixLength, vector<wid_t>& words) {
+            words.clear();
+            size_t offset = 1;
+            for (size_t i = 0; i < prefixLength; ++i){
+                words.push_back(ReadUInt32(data, offset));
+                offset += sizeof(wid_t);
+            }
+        }
+
         /* Values */
 
         static inline string SerializeGlobalInfo(const vector<seqid_t> &streams, int64_t storageSize) {

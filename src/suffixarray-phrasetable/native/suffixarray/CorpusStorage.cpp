@@ -6,8 +6,16 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <iostream>
+#include <fstream>
 #include <util/ioutils.h>
 #include "CorpusStorage.h"
+
+
+namespace {
+    const size_t ERROR_IN_COMMAND_LINE = 1;
+    const size_t GENERIC_ERROR = 2;
+    const size_t SUCCESS = 0;
+} // namespace
 
 using namespace mmt::sapt;
 
@@ -181,3 +189,35 @@ ssize_t CorpusStorage::MemoryMap() {
 }
 
 
+void CorpusStorage::Dump(string& dump_file) {
+    ofstream output(dump_file.c_str());
+
+
+    size_t offset = 0;
+    bool proceed = true;
+    while (proceed){
+        vector<wid_t> sourceSentence;
+        vector<wid_t> targetSentence;
+        alignment_t alignment;
+
+        if (offset >= dataLength)
+            proceed = false;
+
+        if (!ReadSentence(data, dataLength, &offset, &sourceSentence)){
+            exit(GENERIC_ERROR);
+        }
+        if (!ReadSentence(data, dataLength, &offset, &targetSentence)){
+            exit(GENERIC_ERROR);
+        }
+        if (!ReadAlignment(data, dataLength, &offset, &alignment)) {
+            exit(GENERIC_ERROR);
+        }
+
+        for (auto w = sourceSentence.begin(); w!=sourceSentence.end(); ++w) { output << *w << " ";}
+        output << "||| ";
+        for (auto w = targetSentence.begin(); w!=targetSentence.end(); ++w) { output << *w << " ";}
+        output << "||| ";
+        for (auto a = alignment.begin(); a!=alignment.end(); ++a) { output << a->first << "-" << a->second << " ";}
+        output << endl;
+    }
+}

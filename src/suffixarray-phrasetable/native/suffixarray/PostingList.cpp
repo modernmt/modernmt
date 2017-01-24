@@ -129,6 +129,18 @@ string PostingList::Serialize() const {
     return buffer;
 }
 
+void PostingList::Deserialize(const string& string, vector<location_t> &output) {
+    output.clear();
+
+    const char *bytes = string.data();
+    for (size_t i = 0; i < string.size(); i += kEntrySize) {
+        int64_t location = ReadInt64(bytes, i);
+        length_t offset = ReadUInt16(bytes, i + 8);
+
+        output.push_back(location_t(location, offset));
+    }
+}
+
 void PostingList::GetLocations(vector<location_t> &output, size_t limit, unsigned int seed) {
     if (empty())
         return;
