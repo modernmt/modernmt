@@ -8,6 +8,7 @@
 #include <iostream>
 #include <db/NGramStorage.h>
 #include <sys/time.h>
+#include <fstream>
 
 
 using namespace std;
@@ -36,7 +37,8 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
     desc.add_options()
             ("help,h", "print this help message")
             ("model,m", po::value<string>()->required(), "output model path")
-            ("dump,d", po::value<string>(), "output file where dump the content of the database (default is /dev/stdout)");
+            ("dump,d", po::value<string>(),
+             "output file where dump the content of the database (default is /dev/stdout)");
 
     po::variables_map vm;
     try {
@@ -84,10 +86,24 @@ int main(int argc, const char *argv[]) {
         return GENERIC_ERROR;
     }
 
-    NGramStorage storage(args.model_path, args.order, true);
+    NGramStorage storage(args.model_path, args.order);
     cerr << "Model loaded." << endl;
 
-    storage.Dump(args.dump_file);
+    domain_t domain;
+    dbkey_t key;
+    counts_t val;
+
+    ofstream output(args.dump_file.c_str());
+
+    StorageIterator *iterator = storage.NewIterator();
+    while (iterator->Next(&domain, &key, &val)) {
+        output << "domain " << domain
+               << " key " << key
+               << " count " << val.count
+               << " successors " << val.successors
+               << endl;
+    }
+    delete iterator;
 
     cerr << "Dump ended" << endl;
 

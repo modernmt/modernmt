@@ -360,43 +360,35 @@ const vector<seqid_t> &NGramStorage::GetStreamsStatus() const {
     return streams;
 }
 
-void NGramStorage::ScanInit() {
-    iterator = db->NewIterator(rocksdb::ReadOptions());
-    iterator->SeekToFirst();
+StorageIterator *NGramStorage::NewIterator() {
+    return new StorageIterator(db);
 }
 
-void NGramStorage::ScanTerminate() {
-    delete iterator;
+StorageIterator::StorageIterator(rocksdb::DB *db) {
+    it = db->NewIterator(rocksdb::ReadOptions());
+    it->SeekToFirst();
 }
 
-bool NGramStorage::ScanNext(domain_t *domain, dbkey_t *key, counts_t *value) {
-    if (iterator->Valid()){
-        DeserializeKey(iterator->key().data(), iterator->key().size(), domain, key);
+StorageIterator::~StorageIterator() {
+    delete it;
+}
 
-        DeserializeCounts(iterator->value().data(), iterator->value().size(), value);
+bool StorageIterator::Next(domain_t *outDomain, dbkey_t *outKey, counts_t *outValue) {
+    if (it->Valid()){
+        Slice key = it->key();
+        Slice value = it->value();
 
-        iterator->Next();
-        assert(iterator->status().ok()); // Check for any errors found during the scan
+        DeserializeKey(key.data(), key.size(), outDomain, outKey);
+        DeserializeCounts(value.data(), value.size(), outValue);
+
+        it->Next();
+
+        Status status = it->status();
+        if (!status.ok())
+            throw storage_exception(status.ToString());
+
         return true;
+    } else {
+        return false;
     }
-    return false;
-}
-
-void NGramStorage::Dump(string &dump_file) {
-    domain_t domain;
-    dbkey_t key;
-    counts_t val;
-
-    ofstream output(dump_file.c_str());
-
-    //scan to get all keys and values
-    ScanInit();
-    while (ScanNext(&domain, &key, &val)){
-        output << "domain " << domain;
-        output << " key " << key;
-        output << " count " << val.count;
-        output << " successors " << val.successors;
-        output << endl;
-    }
-    ScanTerminate();
 }

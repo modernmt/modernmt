@@ -31,6 +31,19 @@ namespace mmt {
             string message;
         };
 
+        class StorageIterator {
+        friend class NGramStorage;
+
+        public:
+            virtual ~StorageIterator();
+            bool Next(domain_t *outDomain, dbkey_t *outKey, counts_t *outValue);
+
+        private:
+            rocksdb::Iterator* it;
+
+            StorageIterator(rocksdb::DB *db);
+        };
+
         class NGramStorage {
         public:
 
@@ -48,27 +61,21 @@ namespace mmt {
                 return order;
             }
 
+            StorageIterator *NewIterator();
+
             void PutBatch(NGramBatch &batch) throw(storage_exception);
 
             void ForceCompaction();
 
             const vector<seqid_t> &GetStreamsStatus() const;
 
-            void Dump(string& dump_file);
-
         private:
             const uint8_t order;
             vector<seqid_t> streams;
             rocksdb::DB *db;
-            rocksdb::Iterator* iterator;
 
             inline bool PrepareBatch(domain_t domain, ngram_table_t &table, rocksdb::WriteBatch &writeBatch);
-
-            void ScanInit();
-            void ScanTerminate();
-            bool ScanNext(domain_t *domain, dbkey_t *key, counts_t *val);
         };
-
     }
 }
 
