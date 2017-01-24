@@ -35,6 +35,28 @@ namespace mmt {
             string message;
         };
 
+        class IndexIterator {
+            friend class SuffixArray;
+
+        public:
+            struct IndexEntry {
+                bool is_source;
+                domain_t domain;
+                vector<wid_t> words;
+                size_t count;
+                vector<location_t> positions;
+            };
+
+            virtual ~IndexIterator();
+            bool Next(IndexEntry *outEntry);
+
+        private:
+            rocksdb::Iterator *it;
+            const uint8_t prefixLength;
+
+            IndexIterator(rocksdb::DB *db, uint8_t prefixLength);
+        };
+
         class SuffixArray {
         public:
             SuffixArray(const string &path, uint8_t prefixLength,
@@ -57,15 +79,17 @@ namespace mmt {
                 return streams;
             }
 
-            void Dump(string& dump_file);
-            void Dump_Corpus(string& dump_file);
+            const CorpusStorage *GetStorage() const {
+                return storage;
+            }
+
+            IndexIterator *NewIterator() const;
 
         private:
             const bool openForBulkLoad;
             const uint8_t prefixLength;
 
             rocksdb::DB *db;
-            rocksdb::Iterator* iterator;
             CorpusStorage *storage;
             vector<seqid_t> streams;
 
@@ -73,10 +97,6 @@ namespace mmt {
                                     int64_t location, unordered_map<string, PostingList> &outBatch);
 
             void AddTargetCountsToBatch(const vector<wid_t> &sentence, unordered_map<string, uint64_t> &outBatch);
-
-            void ScanInit();
-            void ScanTerminate();
-            bool ScanNext(string& key, string& value);
         };
 
     }

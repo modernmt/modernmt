@@ -6,6 +6,7 @@
 #include <suffixarray/SuffixArray.h>
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
+#include <fstream>
 
 using namespace std;
 using namespace mmt;
@@ -65,13 +66,28 @@ int main(int argc, const char *argv[]) {
         return ERROR_IN_COMMAND_LINE;
 
     Options options;
-    // SuffixArray index(args.model_path, options.prefix_length, true);
     SuffixArray index(args.model_path, options.prefix_length);
-
     cerr << "Model loaded" << endl;
 
-    index.Dump_Corpus(args.dump_file);
+    const CorpusStorage *storage = index.GetStorage();
+    StorageIterator *it = storage->NewIterator();
 
+    ofstream output(args.dump_file.c_str());
+
+    vector<wid_t> sourceSentence;
+    vector<wid_t> targetSentence;
+    alignment_t alignment;
+
+    while (it->Next(&sourceSentence, &targetSentence, &alignment)) {
+        for (auto w = sourceSentence.begin(); w!=sourceSentence.end(); ++w) { output << *w << " ";}
+        output << "||| ";
+        for (auto w = targetSentence.begin(); w!=targetSentence.end(); ++w) { output << *w << " ";}
+        output << "||| ";
+        for (auto a = alignment.begin(); a!=alignment.end(); ++a) { output << a->first << "-" << a->second << " ";}
+        output << endl;
+    }
+
+    delete it;
     cerr << "Dump ended" << endl;
 
     return SUCCESS;

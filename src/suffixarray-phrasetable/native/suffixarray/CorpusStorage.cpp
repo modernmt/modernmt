@@ -6,16 +6,8 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <iostream>
-#include <fstream>
 #include <util/ioutils.h>
 #include "CorpusStorage.h"
-
-
-namespace {
-    const size_t ERROR_IN_COMMAND_LINE = 1;
-    const size_t GENERIC_ERROR = 2;
-    const size_t SUCCESS = 0;
-} // namespace
 
 using namespace mmt::sapt;
 
@@ -188,36 +180,30 @@ ssize_t CorpusStorage::MemoryMap() {
     return size;
 }
 
+StorageIterator *CorpusStorage::NewIterator() const {
+    return new StorageIterator(data, dataLength);
+}
 
-void CorpusStorage::Dump(string& dump_file) {
-    ofstream output(dump_file.c_str());
+StorageIterator::StorageIterator(char *data, size_t dataLength) : data(data), dataLength(dataLength), offset(0) {
+}
 
+bool StorageIterator::Next(vector<wid_t> *outSource, vector<wid_t> *outTarget, alignment_t *outAlignment) {
+    if (offset < dataLength) {
+        outSource->clear();
+        outTarget->clear();
+        outAlignment->clear();
 
-    size_t offset = 0;
-    bool proceed = true;
-    while (proceed){
-        vector<wid_t> sourceSentence;
-        vector<wid_t> targetSentence;
-        alignment_t alignment;
+        if (!ReadSentence(data, dataLength, &offset, outSource))
+            throw storage_exception("Broken corpus file at index " + offset);
 
-        if (offset >= dataLength)
-            proceed = false;
+        if (!ReadSentence(data, dataLength, &offset, outTarget))
+            throw storage_exception("Broken corpus file at index " + offset);
 
-        if (!ReadSentence(data, dataLength, &offset, &sourceSentence)){
-            exit(GENERIC_ERROR);
-        }
-        if (!ReadSentence(data, dataLength, &offset, &targetSentence)){
-            exit(GENERIC_ERROR);
-        }
-        if (!ReadAlignment(data, dataLength, &offset, &alignment)) {
-            exit(GENERIC_ERROR);
-        }
+        if (!ReadAlignment(data, dataLength, &offset, outAlignment))
+            throw storage_exception("Broken corpus file at index " + offset);
 
-        for (auto w = sourceSentence.begin(); w!=sourceSentence.end(); ++w) { output << *w << " ";}
-        output << "||| ";
-        for (auto w = targetSentence.begin(); w!=targetSentence.end(); ++w) { output << *w << " ";}
-        output << "||| ";
-        for (auto a = alignment.begin(); a!=alignment.end(); ++a) { output << a->first << "-" << a->second << " ";}
-        output << endl;
+        return true;
+    } else {
+        return false;
     }
 }

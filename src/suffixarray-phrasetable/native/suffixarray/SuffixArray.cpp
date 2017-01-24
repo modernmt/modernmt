@@ -249,86 +249,64 @@ Collector *SuffixArray::NewCollector(const context_t *context, bool searchInBack
     return new Collector(storage, db, prefixLength, context, searchInBackground);
 }
 
-
-
-void SuffixArray::ScanInit() {
-    iterator = db->NewIterator(rocksdb::ReadOptions());
-    iterator->SeekToFirst();
+IndexIterator *SuffixArray::NewIterator() const {
+    return new IndexIterator(db, prefixLength);
 }
 
-void SuffixArray::ScanTerminate() {
-    delete iterator;
+IndexIterator::IndexIterator(rocksdb::DB *db, uint8_t prefixLength) : prefixLength(prefixLength) {
+    it = db->NewIterator(rocksdb::ReadOptions());
+    it->SeekToFirst();
 }
 
-bool SuffixArray::ScanNext(string& key, string& value) {
-    if (iterator->Valid()){
-        key = iterator->key().ToString();
-        value = iterator->value().ToString();
-        iterator->Next();
-        assert(iterator->status().ok()); // Check for any errors found during the scan
-        return true;
-    }
-    return false;
-
+IndexIterator::~IndexIterator() {
+    delete it;
 }
 
-void SuffixArray::Dump(string& dump_file) {
-    ofstream output(dump_file.c_str());
+bool IndexIterator::Next(IndexIterator::IndexEntry *outEntry) {
+    while (it->Valid()) {
+        Slice key = it->key();
+        Slice value = it->value();
 
-    string key, value;
+        KeyType type = GetKeyTypeFromKey(key.data(), prefixLength);
 
-    char keyType;
+        bool loop = false;
 
-    ScanInit();
-    while (ScanNext(key, value)) {
-        keyType = key.data()[0];
+        switch (type) {
+            case kSourcePrefixKeyType:
+                outEntry->is_source = true;
+                outEntry->domain = GetDomainFromKey(key.data(), prefixLength);
 
-        if (keyType == kTargetCountKeyType) {
-            vector<wid_t> words;
-            GetWordsFromKey(key.data(), prefixLength, words);
+                outEntry->words.clear();
+                GetWordsFromKey(key.data(), prefixLength, outEntry->words);
 
-            size_t count = DeserializeCount(value.data(), value.size());
+                outEntry->positions.clear();
+                PostingList::Deserialize(value.data(), value.size(), outEntry->positions);
 
-            output << "TARGET";
-            output << " words ";
-            for (auto w = words.begin(); w != words.end(); ++w) { output << *w << "," ; }
-            output << " count " << count;
-            output << endl;
+                outEntry->count = outEntry->positions.size();
+                break;
+            case kTargetCountKeyType:
+                outEntry->is_source = false;
+                outEntry->domain = 0;
+                outEntry->positions.clear();
 
-        } else if (keyType == kSourcePrefixKeyType) {
-            vector<wid_t> words;
-            GetWordsFromKey(key.data(), prefixLength, words);
+                outEntry->words.clear();
+                GetWordsFromKey(key.data(), prefixLength, outEntry->words);
 
-            domain_t domain = GetDomainFromKey(key.data(), prefixLength);
-
-            vector<location_t> positions;
-            PostingList::Deserialize(value, positions);
-
-            output << "SOURCE";
-            output << " domain " << domain;
-            output << " words ";
-            for (auto w = words.begin(); w != words.end(); ++w){ output << *w << "," ; }
-            output << " count " << positions.size();
-            output << " positions ";
-            for (auto l = positions.begin(); l != positions.end(); ++l) { output << l->pointer << ":" << l->offset << "," ; }
-            output << endl;
-
-        } else if (keyType == kGlobalInfoKeyType) {
-            int64_t size;
-            DeserializeGlobalInfo(value.data(), value.size(), &size, &streams);
-
-            output << "GLOBAL";
-            output << " size " << size;
-            output << endl;
-
-
-        } else {
-            throw index_exception("Dump failed");
+                outEntry->count = DeserializeCount(value.data(), value.size());
+                break;
+            default:
+                loop = true;
+                break;
         }
-    }
-    ScanTerminate();
-}
 
-void SuffixArray::Dump_Corpus(string& dump_file) {
-    storage->Dump(dump_file);
+        it->Next();
+        Status status = it->status();
+        if (!status.ok())
+            throw index_exception(status.ToString());
+
+        if (!loop)
+            return true;
+    }
+
+    return false;
 }

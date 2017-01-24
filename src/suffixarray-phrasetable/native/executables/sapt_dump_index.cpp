@@ -6,6 +6,7 @@
 #include <suffixarray/SuffixArray.h>
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
+#include <fstream>
 
 using namespace std;
 using namespace mmt;
@@ -30,7 +31,8 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
     desc.add_options()
             ("help,h", "print this help message")
             ("model,m", po::value<string>()->required(), "model path")
-            ("dump,d", po::value<string>(), "output file where dump the content of the database (default is /dev/stdout)");
+            ("dump,d", po::value<string>(),
+             "output file where dump the content of the database (default is /dev/stdout)");
 
     po::variables_map vm;
     try {
@@ -58,21 +60,45 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
 }
 
 int main(int argc, const char *argv[]) {
-
     args_t args;
 
     if (!ParseArgs(argc, argv, &args))
         return ERROR_IN_COMMAND_LINE;
 
-    //Options ptOptions;
-
     Options options;
     SuffixArray index(args.model_path, options.prefix_length);
-
     cerr << "Model loaded" << endl;
 
-    index.Dump(args.dump_file);
+    ofstream output(args.dump_file.c_str());
 
+    output << "GLOBAL size " << index.GetStorage()->GetSize() << endl;
+
+    IndexIterator *iterator = index.NewIterator();
+    IndexIterator::IndexEntry entry;
+
+    while (iterator->Next(&entry)) {
+        if (entry.is_source) {
+            output << "SOURCE";
+            output << " domain " << entry.domain;
+            output << " words ";
+            for (auto w = entry.words.begin(); w != entry.words.end(); ++w) { output << *w << ","; }
+            output << " count " << entry.count;
+            output << " positions ";
+            for (auto l = entry.positions.begin(); l != entry.positions.end(); ++l) {
+                output << l->pointer << ":" << l->offset << ",";
+            }
+            output << endl;
+        } else {
+            output << "TARGET";
+            output << " words ";
+            for (auto w = entry.words.begin(); w != entry.words.end(); ++w) { output << *w << ","; }
+            output << " count " << entry.count;
+            output << endl;
+        }
+    }
+
+
+    delete iterator;
     cerr << "Dump ended" << endl;
 
     return SUCCESS;

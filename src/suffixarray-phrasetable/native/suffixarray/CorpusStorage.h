@@ -28,6 +28,19 @@ namespace mmt {
             string message;
         };
 
+        class StorageIterator {
+            friend class CorpusStorage;
+        public:
+            bool Next(vector<wid_t> *outSource, vector<wid_t> *outTarget, alignment_t *outAlignment);
+
+        private:
+            char *data;
+            size_t dataLength;
+            size_t offset;
+
+            StorageIterator(char *data, size_t dataLength);
+        };
+
         class CorpusStorage {
         public:
             CorpusStorage(const string &filepath, int64_t size = -1) throw(storage_exception);
@@ -42,7 +55,12 @@ namespace mmt {
 
             int64_t Flush() throw(storage_exception);
 
-            void Dump(string& dump_file);
+            StorageIterator *NewIterator() const;
+
+            const size_t GetSize() const {
+                return dataLength;
+            }
+
         private:
             int fd;
             char *data;

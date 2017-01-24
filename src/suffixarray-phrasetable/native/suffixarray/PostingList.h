@@ -45,7 +45,7 @@ namespace mmt {
 
             string Serialize() const;
 
-            static void Deserialize(const string& string, vector<location_t> &output);
+            static void Deserialize(const char *data, size_t length, vector<location_t> &output);
 
         private:
             size_t entryCount;

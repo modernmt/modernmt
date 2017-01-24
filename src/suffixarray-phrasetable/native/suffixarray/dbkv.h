@@ -77,15 +77,18 @@ namespace mmt {
             return key;
         }
 
+        static inline KeyType GetKeyTypeFromKey(const char *data, length_t prefixLength) {
+            return (KeyType) data[0];
+        }
+
         static inline domain_t GetDomainFromKey(const char *data, length_t prefixLength) {
             size_t i = 1 + prefixLength * sizeof(wid_t);
             return ReadUInt32(data, i);
         }
 
-        static inline void GetWordsFromKey(const char *data, length_t prefixLength, vector<wid_t>& words) {
-            words.clear();
+        static inline void GetWordsFromKey(const char *data, length_t prefixLength, vector<wid_t> &words) {
             size_t offset = 1;
-            for (size_t i = 0; i < prefixLength; ++i){
+            for (size_t i = 0; i < prefixLength; ++i) {
                 words.push_back(ReadUInt32(data, offset));
                 offset += sizeof(wid_t);
             }

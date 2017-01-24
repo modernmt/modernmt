@@ -129,13 +129,10 @@ string PostingList::Serialize() const {
     return buffer;
 }
 
-void PostingList::Deserialize(const string& string, vector<location_t> &output) {
-    output.clear();
-
-    const char *bytes = string.data();
-    for (size_t i = 0; i < string.size(); i += kEntrySize) {
-        int64_t location = ReadInt64(bytes, i);
-        length_t offset = ReadUInt16(bytes, i + 8);
+void PostingList::Deserialize(const char *data, size_t length, vector<location_t> &output) {
+    for (size_t i = 0; i < length; i += kEntrySize) {
+        int64_t location = ReadInt64(data, i);
+        length_t offset = ReadUInt16(data, i + 8);
 
         output.push_back(location_t(location, offset));
     }
