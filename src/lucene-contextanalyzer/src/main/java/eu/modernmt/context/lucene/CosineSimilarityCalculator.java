@@ -19,7 +19,7 @@ import java.util.concurrent.*;
 /**
  * Created by davide on 18/09/15.
  */
-public class ConsineSimilarityCalculator {
+public class CosineSimilarityCalculator {
 
     private final IDFTable cache;
 
@@ -33,7 +33,7 @@ public class ConsineSimilarityCalculator {
     private ScoreDoc[] scoreDocs;
     private HashMap<Integer, Future<Float>> results;
 
-    public ConsineSimilarityCalculator(IndexReader indexReader, String fieldName, IDFTable cache) {
+    public CosineSimilarityCalculator(IndexReader indexReader, String fieldName, IDFTable cache) {
         this.indexReader = indexReader;
         this.fieldName = fieldName;
         this.executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());

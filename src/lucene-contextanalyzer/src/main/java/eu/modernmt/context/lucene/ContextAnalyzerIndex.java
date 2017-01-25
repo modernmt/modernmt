@@ -223,7 +223,7 @@ public class ContextAnalyzerIndex implements Closeable {
         ContextVector.Builder resultBuilder = new ContextVector.Builder(topDocs.length);
         resultBuilder.setLimit(limit);
 
-        ConsineSimilarityCalculator calculator = new ConsineSimilarityCalculator(reader, DocumentBuilder.CONTENT_FIELD, getIDFCache());
+        CosineSimilarityCalculator calculator = new CosineSimilarityCalculator(reader, DocumentBuilder.CONTENT_FIELD, getIDFCache());
         calculator.setAnalyzer(analyzer);
         calculator.setBoost(true);
         calculator.setReferenceDocument(referenceDocument);
