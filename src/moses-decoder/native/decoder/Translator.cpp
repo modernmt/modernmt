@@ -71,25 +71,21 @@ set_default_feature_weights(const std::map<std::string, std::vector<float>> &fea
 
 void
 Translator::
-execute(TranslationRequest const& paramList,
-        TranslationResponse *   const  retvalP)
+execute(translation_request_t const& paramList,
+        translation_t *   const  retvalP)
 {
   boost::condition_variable cond;
   boost::mutex mut;
   boost::shared_ptr<NativeTranslationRequest> task;
   bool have_session = (paramList.sessionId != 0);
-  TranslationRequest request = paramList;
+  translation_request_t request = paramList;
 
   // no session? create one on the fly.
   if(!have_session)
     request.sessionId = create_session(request.contextWeights);
 
-  task = NativeTranslationRequest::create(this, request, cond, mut);
+  task = NativeTranslationRequest::create(this, request);
   task->Run();
-//  m_threadPool->Submit(task);
-  boost::unique_lock<boost::mutex> lock(mut);
-  while (!task->IsDone())
-    cond.wait(lock);
 
   *retvalP = task->GetRetData();
 

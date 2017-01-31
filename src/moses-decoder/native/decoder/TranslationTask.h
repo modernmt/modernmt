@@ -39,7 +39,6 @@ class TranslationTask : public Moses::Task
     return *this;
   }
 protected:
-  AllOptions::ptr m_options;
   boost::weak_ptr<TranslationTask> m_self; // weak ptr to myself
   boost::shared_ptr<ContextScope> m_scope; // sores local info
 // #ifdef WITH_THREADS

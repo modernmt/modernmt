@@ -35,6 +35,14 @@ typedef struct {
     std::vector<std::pair<size_t, size_t> > alignment;
 } translation_t;
 
+typedef struct {
+  std::string sourceSent;
+  size_t nBestListSize; //< set to 0 if no n-best list requested
+  uint64_t sessionId; //< 0 means none, 1 means new
+  std::map<std::string, float> contextWeights; //< maps from subcorpus name to weight
+} translation_request_t;
+
+
 namespace mmt {
     namespace decoder {
         class MosesDecoder: public IncrementalModel {

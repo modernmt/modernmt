@@ -63,8 +63,8 @@ public:
   Translator(uint32_t numThreads = 15);
   ~Translator();
 
-  void execute(TranslationRequest const& paramList,
-               TranslationResponse *   const  retvalP);
+  void execute(translation_request_t const& paramList,
+               translation_t *   const  retvalP);
 
   /** Creates a new moses session. Thread-safe. Destroy them with delete_session() after done. */
   uint64_t create_session(const std::map<std::string, float> &contextWeights, const std::map<std::string, std::vector<float>> *featureWeights = NULL);

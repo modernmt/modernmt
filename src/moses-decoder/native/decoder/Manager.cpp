@@ -1671,7 +1671,6 @@ OutputNBest(std::vector<hypothesis_t> &nBest) const
 
   Moses::NBestOptions const& nbo = options()->nbest;
   CalcNBest(nbo.nbest_size, nBestList, nbo.only_distinct);
-  StaticData const& SD = StaticData::Instance();
   OutputNBest(cout, nBestList);
 
   BOOST_FOREACH(Moses::TrellisPath const* path, nBestList) {

@@ -5,10 +5,6 @@
 #include <map>
 #include <vector>
 
-#ifdef WITH_THREADS
-#include <boost/thread.hpp>
-#endif
-
 #include "Util.h"
 #include "Hypothesis.h"
 #include "Manager.h"
@@ -20,6 +16,7 @@
 
 #include "Session.h"
 #include "Translator.h"
+#include "decoder/MosesDecoder.h"
 
 namespace MosesServer
 {
@@ -34,17 +31,13 @@ namespace MosesServer
 class
 NativeTranslationRequest : public virtual Moses::TranslationTask
 {
-  boost::condition_variable& m_cond;
-  boost::mutex& m_mutex;
   bool m_done;
 
-  TranslationRequest const& m_paramList;
-  TranslationResponse m_retData;
+  translation_request_t const& m_paramList;
+  translation_t m_retData;
 
   Translator* m_translator;
   uint64_t m_session_id;
-
-  std::vector<Moses::FactorType> m_factorOrder;
 
   void
   parse_request();
@@ -53,18 +46,14 @@ NativeTranslationRequest : public virtual Moses::TranslationTask
   run_phrase_decoder();
 
 protected:
-  NativeTranslationRequest(TranslationRequest const& paramList,
-                     boost::condition_variable& cond,
-                     boost::mutex& mut);
+  NativeTranslationRequest(translation_request_t const& paramList);
 
 public:
 
   static
   boost::shared_ptr<NativeTranslationRequest>
   create(Translator* translator,
-         TranslationRequest const& paramList,
-         boost::condition_variable& cond,
-         boost::mutex& mut);
+         translation_request_t const& paramList);
 
 
   virtual bool
@@ -77,7 +66,7 @@ public:
     return m_done;
   }
 
-  TranslationResponse const&
+  translation_t const&
   GetRetData() {
     m_retData.session = m_session_id;
     return m_retData;

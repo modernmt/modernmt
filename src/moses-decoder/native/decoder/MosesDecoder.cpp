@@ -134,8 +134,8 @@ translation_t MosesDecoderImpl::translate(const std::string &text, uint64_t sess
                                           size_t nbestListSize) {
     // MosesServer interface request...
 
-    MosesServer::TranslationRequest request;
-    MosesServer::TranslationResponse response;
+    translation_request_t request;
+    translation_t response;
 
     request.sourceSent = text;
     request.nBestListSize = nbestListSize;
@@ -147,22 +147,7 @@ translation_t MosesDecoderImpl::translate(const std::string &text, uint64_t sess
 
     m_translator.execute(request, &response);
 
-    // MosesDecoder JNI interface response.
-
-    // (this split should have allowed us to keep the libjnimoses separate...
-    // But the libmoses interface has never really been a stable, separated API anyways
-    // [e.g. StaticData leaking into everything],
-    // and so libjnimoses always has to be compiled afresh together with moses).
-
-    translation_t translation;
-
-    translation.text = response.text;
-    for (auto h: response.hypotheses)
-        translation.hypotheses.push_back(hypothesis_t{h.text, h.score, h.fvals});
-    translation.session = response.session;
-    translation.alignment = response.alignment;
-
-    return translation;
+    return response;
 }
 
 void MosesDecoderImpl::Add(const updateid_t &id, const domain_t domain, const std::vector<wid_t> &source,

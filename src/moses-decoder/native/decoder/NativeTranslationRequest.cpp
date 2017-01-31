@@ -3,6 +3,7 @@
 #include <boost/foreach.hpp>
 #include "Util.h"
 #include "Hypothesis.h"
+#include "TranslationTask.h"
 
 namespace MosesServer
 {
@@ -21,14 +22,15 @@ using Moses::TranslationOption;
 using Moses::TargetPhrase;
 using Moses::FValue;
 using Moses::Sentence;
+using Moses::TranslationTask;
+using Moses::ContextScope;
 
 boost::shared_ptr<NativeTranslationRequest>
 NativeTranslationRequest::
-create(Translator* translator, TranslationRequest const& paramList,
-       boost::condition_variable& cond, boost::mutex& mut)
+create(Translator* translator, translation_request_t const& paramList)
 {
   boost::shared_ptr<NativeTranslationRequest> ret;
-  ret.reset(new NativeTranslationRequest(paramList, cond, mut));
+  ret.reset(new NativeTranslationRequest(paramList));
   ret->m_self = ret;
   ret->m_translator = translator;
   return ret;
@@ -42,32 +44,19 @@ Run()
   // cerr << "SESSION ID" << ret->m_session_id << endl;
 
 
-  // settings within the *sentence* scope - SetContextWeights() can only override the empty ContextScope if we are not within a session
-  if(m_paramList.contextWeights.size() > 0) {
-    SPTR<std::map<std::string,float> > M(new std::map<std::string, float>(m_paramList.contextWeights));
-    m_scope->SetContextWeights(M);
-  }
-
-  if(Moses::is_syntax(m_options->search.algo))
+  if(Moses::is_syntax(m_source->options()->search.algo))
     UTIL_THROW2("syntax-based decoding is not supported in MMT decoder");
 
   run_phrase_decoder();
 
-  {
-    boost::lock_guard<boost::mutex> lock(m_mutex);
-    m_done = true;
-  }
-  m_cond.notify_one();
 
 }
 
 NativeTranslationRequest::
-NativeTranslationRequest(TranslationRequest const& paramList,
-                   boost::condition_variable& cond, boost::mutex& mut)
-  : m_cond(cond), m_mutex(mut), m_done(false), m_paramList(paramList)
+NativeTranslationRequest(translation_request_t const& paramList) :
+  m_paramList(paramList)
   , m_session_id(paramList.sessionId)
 {
-  m_factorOrder.push_back(0);
 }
 
 void
@@ -77,6 +66,12 @@ parse_request()
   Session const& S = m_translator->get_session(m_session_id);
   m_scope = S.scope;
   m_session_id = S.id;
+
+  // settings within the *sentence* scope - SetContextWeights() can only override the empty ContextScope if we are not within a session
+  if(m_paramList.contextWeights.size() > 0) {
+    SPTR<std::map<std::string,float> > M(new std::map<std::string, float>(m_paramList.contextWeights));
+    m_scope->SetContextWeights(M);
+  }
 
   boost::shared_ptr<Moses::AllOptions> opts(new Moses::AllOptions());
   *opts = *StaticData::Instance().options();
@@ -88,24 +83,28 @@ parse_request()
     opts->nbest.enabled = true;
   }
 
-  m_options = opts;
-
   XVERBOSE(1,"Input: " << m_paramList.sourceSent << endl);
 
-  m_source.reset(new Sentence(m_options, 0, m_paramList.sourceSent));
+  m_source.reset(new Sentence(opts, 0, m_paramList.sourceSent));
 } // end of Translationtask::parse_request()
 
 void
 NativeTranslationRequest::
 run_phrase_decoder()
 {
-  Manager manager(this->self());
+  Session const& S = m_translator->get_session(m_session_id); // << for 'scope'
+
+  boost::shared_ptr<Moses::InputType> source;
+  boost::shared_ptr<Moses::IOWrapper> ioWrapperNone;
+  boost::shared_ptr<ContextScope> scope = S.scope;
+
+  Manager manager(TranslationTask::create(source, ioWrapperNone, scope));
   manager.Decode();
 
   m_retData.text = manager.GetBestTranslation();
   m_retData.alignment = manager.GetWordAlignment();
 
-  if (m_options->nbest.nbest_size)
+  if (manager.GetSource().options()->nbest.nbest_size)
     manager.OutputNBest(m_retData.hypotheses);
 
 }
