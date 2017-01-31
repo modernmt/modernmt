@@ -41,38 +41,6 @@ public class Alignment implements Iterable<int[]>, Serializable {
         return sourceIndexes.length;
     }
 
-    public int[] getWordsAlignedWithSource(int index) {
-        int[] buffer = new int[sourceIndexes.length];
-        int size = 0;
-
-        for (int i = 0; i < sourceIndexes.length; i++) {
-            if (sourceIndexes[i] == index)
-                buffer[size++] = targetIndexes[i];
-        }
-
-        int[] result = new int[size];
-        if (size > 0)
-            System.arraycopy(buffer, 0, result, 0, size);
-
-        return result;
-    }
-
-    public int[] getWordsAlignedWithTarget(int index) {
-        int[] buffer = new int[targetIndexes.length];
-        int size = 0;
-
-        for (int i = 0; i < targetIndexes.length; i++) {
-            if (targetIndexes[i] == index)
-                buffer[size++] = sourceIndexes[i];
-        }
-
-        int[] result = new int[size];
-        if (size > 0)
-            System.arraycopy(buffer, 0, result, 0, size);
-
-        return result;
-    }
-
     public Alignment getInverse() {
         return new Alignment(targetIndexes, sourceIndexes);
     }

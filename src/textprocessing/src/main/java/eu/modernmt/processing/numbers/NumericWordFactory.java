@@ -2,7 +2,6 @@ package eu.modernmt.processing.numbers;
 
 import eu.modernmt.model.Word;
 import eu.modernmt.processing.SentenceBuilder;
-import eu.modernmt.processing.WordTransformationFactory;
 
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -10,23 +9,9 @@ import java.util.regex.Pattern;
 /**
  * Created by davide on 04/04/16.
  */
-public class NumericWordFactory implements SentenceBuilder.WordFactory, WordTransformationFactory.WordTransformer {
+public class NumericWordFactory implements SentenceBuilder.WordFactory {
 
     private static final Pattern PATTERN = Pattern.compile(".*[0-9].*");
-    private static final NumericWordTransformation TRANSFORMATION = new NumericWordTransformation();
-
-    // WordTransformationFactory.WordTransformer
-
-    @Override
-    public boolean match(Word word) {
-        return PATTERN.matcher(word.getPlaceholder()).find();
-    }
-
-    @Override
-    public Word setupTransformation(Word word) {
-        word.setTransformation(TRANSFORMATION);
-        return word;
-    }
 
     // SentenceBuilder.WordFactory
 
@@ -41,10 +26,7 @@ public class NumericWordFactory implements SentenceBuilder.WordFactory, WordTran
 
         replaceDigits(chars, 0);
 
-        Word word = new Word(text, new String(chars), rightSpace);
-        word.setTransformation(TRANSFORMATION);
-
-        return word;
+        return new Word(text, new String(chars), rightSpace);
     }
 
     @Override

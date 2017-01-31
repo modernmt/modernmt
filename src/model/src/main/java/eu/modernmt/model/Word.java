@@ -7,6 +7,11 @@ import java.io.Serializable;
  */
 public class Word extends Token {
 
+    /**
+     * @deprecated Transformation system is too complex to manage and extend
+     * and it's not adequate for our purposes (i.e. NumericWord post-processor).
+     */
+    @Deprecated
     public interface Transformation extends Serializable {
 
         void apply(Word source, Word target);

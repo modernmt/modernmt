@@ -8,7 +8,9 @@ import java.util.Iterator;
  */
 public class Sentence implements Serializable, Iterable<Token> {
 
+    // TODO: should be final, not possible for Transformation
     protected Word[] words;
+    // TODO: should be final, not possible for Transformation
     protected Tag[] tags;
 
     public Sentence(Word[] words) {

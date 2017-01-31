@@ -2,10 +2,9 @@ package eu.modernmt.processing;
 
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
-import eu.modernmt.processing.numbers.NumericWordFactory;
 import eu.modernmt.processing.xmessage.XMessageWordTransformer;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -27,7 +26,7 @@ public class WordTransformationFactory extends TextProcessor<Translation, Transl
         super(sourceLanguage, targetLanguage);
     }
 
-    private static final List<Class<? extends WordTransformer>> TRANSFORMERS = Arrays.asList(NumericWordFactory.class, XMessageWordTransformer.class);
+    private static final List<Class<? extends WordTransformer>> TRANSFORMERS = Collections.singletonList(XMessageWordTransformer.class);
 
     private static WordTransformer[] instantiate(List<Class<? extends WordTransformer>> transformerList) {
         WordTransformer[] instances = new WordTransformer[transformerList.size()];

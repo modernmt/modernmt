@@ -21,6 +21,7 @@
     <processor>eu.modernmt.processing.WordTransformationFactory</processor>
     <processor>eu.modernmt.processing.WordTransformer</processor>
 
+    <processor>eu.modernmt.processing.numbers.NumericWordPostprocessor</processor>
     <processor>eu.modernmt.processing.recaser.SimpleRecaser</processor>
 
     <processor>eu.modernmt.processing.xml.XMLTagProcessor</processor>

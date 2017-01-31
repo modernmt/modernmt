@@ -8,7 +8,8 @@ import static org.junit.Assert.assertEquals;
 public class NumericWordTest {
 
     private static Word createTarget(String placeholder) {
-        return new NumericWordFactory().setupTransformation(new Word(placeholder));
+//        return new NumericWordFactory().setupTransformation(new Word(placeholder));
+        return null;
     }
 
     @Test
