@@ -65,14 +65,19 @@ static void Translate(translation_request_t const& request, boost::shared_ptr<Co
   boost::shared_ptr<Moses::InputType> source(new Sentence(opts, 0, request.sourceSent));
   boost::shared_ptr<Moses::IOWrapper> ioWrapperNone;
 
-  Manager manager(TranslationTask::create(source, ioWrapperNone, scope));
-  manager.Decode();
+  boost::shared_ptr<TranslationTask> ttask = TranslationTask::create(source, ioWrapperNone, scope);
 
-  result.text = manager.GetBestTranslation();
-  result.alignment = manager.GetWordAlignment();
+  // note: ~Manager() must run while we still own TranslationTask (because it only has a weak_ptr)
+  {
+    Manager manager(ttask);
+    manager.Decode();
 
-  if (manager.GetSource().options()->nbest.nbest_size)
-    manager.OutputNBest(result.hypotheses);
+    result.text = manager.GetBestTranslation();
+    result.alignment = manager.GetWordAlignment();
+
+    if (manager.GetSource().options()->nbest.nbest_size)
+      manager.OutputNBest(result.hypotheses);
+  }
 }
 
 void
