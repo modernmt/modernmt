@@ -36,22 +36,6 @@ create(Translator* translator, translation_request_t const& paramList)
   return ret;
 }
 
-void
-NativeTranslationRequest::
-Run()
-{
-  parse_request();
-  // cerr << "SESSION ID" << ret->m_session_id << endl;
-
-
-  if(Moses::is_syntax(m_source->options()->search.algo))
-    UTIL_THROW2("syntax-based decoding is not supported in MMT decoder");
-
-  run_phrase_decoder();
-
-
-}
-
 NativeTranslationRequest::
 NativeTranslationRequest(translation_request_t const& paramList) :
   m_paramList(paramList)
@@ -59,53 +43,55 @@ NativeTranslationRequest(translation_request_t const& paramList) :
 {
 }
 
-void
-NativeTranslationRequest::
-parse_request()
-{
-  Session const& S = m_translator->get_session(m_session_id);
-  m_scope = S.scope;
-  m_session_id = S.id;
+static void Translate(translation_request_t const& request, Session const& S, translation_t &result) {
+  boost::shared_ptr<ContextScope> scope = S.scope;
 
   // settings within the *sentence* scope - SetContextWeights() can only override the empty ContextScope if we are not within a session
-  if(m_paramList.contextWeights.size() > 0) {
-    SPTR<std::map<std::string,float> > M(new std::map<std::string, float>(m_paramList.contextWeights));
-    m_scope->SetContextWeights(M);
+  if(request.contextWeights.size() > 0) {
+    boost::shared_ptr<std::map<std::string,float> > M(new std::map<std::string, float>(request.contextWeights));
+    scope->SetContextWeights(M);
   }
 
   boost::shared_ptr<Moses::AllOptions> opts(new Moses::AllOptions());
   *opts = *StaticData::Instance().options();
 
-  if (m_paramList.nBestListSize > 0) {
+  if (request.nBestListSize > 0) {
     opts->nbest.only_distinct = true;
-    opts->nbest.nbest_size = m_paramList.nBestListSize;
-    opts->nbest.only_distinct = true;
+    opts->nbest.nbest_size = request.nBestListSize;
     opts->nbest.enabled = true;
   }
 
-  XVERBOSE(1,"Input: " << m_paramList.sourceSent << endl);
-
-  m_source.reset(new Sentence(opts, 0, m_paramList.sourceSent));
-} // end of Translationtask::parse_request()
-
-void
-NativeTranslationRequest::
-run_phrase_decoder()
-{
-  Session const& S = m_translator->get_session(m_session_id); // << for 'scope'
-
-  boost::shared_ptr<Moses::InputType> source;
+  boost::shared_ptr<Moses::InputType> source(new Sentence(opts, 0, request.sourceSent));
   boost::shared_ptr<Moses::IOWrapper> ioWrapperNone;
-  boost::shared_ptr<ContextScope> scope = S.scope;
 
   Manager manager(TranslationTask::create(source, ioWrapperNone, scope));
   manager.Decode();
 
-  m_retData.text = manager.GetBestTranslation();
-  m_retData.alignment = manager.GetWordAlignment();
+  result.text = manager.GetBestTranslation();
+  result.alignment = manager.GetWordAlignment();
 
   if (manager.GetSource().options()->nbest.nbest_size)
-    manager.OutputNBest(m_retData.hypotheses);
-
+    manager.OutputNBest(result.hypotheses);
 }
+
+void
+NativeTranslationRequest::
+Run()
+{
+  //parse_request();
+  // cerr << "SESSION ID" << ret->m_session_id << endl;
+
+
+  if(Moses::is_syntax(m_source->options()->search.algo))
+    UTIL_THROW2("syntax-based decoding is not supported in MMT decoder");
+
+  //run_phrase_decoder();
+
+  Session const& S = m_translator->get_session(m_session_id);
+  m_scope = S.scope;
+  m_session_id = S.id;
+
+  Translate(m_paramList, S, m_retData);
+}
+
 } // namespace MosesServer

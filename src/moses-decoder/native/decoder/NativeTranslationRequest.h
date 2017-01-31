@@ -39,12 +39,6 @@ NativeTranslationRequest : public virtual Moses::TranslationTask
   Translator* m_translator;
   uint64_t m_session_id;
 
-  void
-  parse_request();
-
-  virtual void
-  run_phrase_decoder();
-
 protected:
   NativeTranslationRequest(translation_request_t const& paramList);
 
