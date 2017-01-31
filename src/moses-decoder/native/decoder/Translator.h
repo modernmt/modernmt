@@ -12,6 +12,7 @@
 #include <vector>
 #include <string>
 #include <stdint.h>
+#include "decoder/MosesDecoder.h"
 
 namespace Moses {
 class ThreadPool;
@@ -34,7 +35,7 @@ struct ResponseHypothesis {
 struct TranslationResponse {
   std::string text; //< result target sentence
   int64_t session; //< resulting session ID
-  std::vector <ResponseHypothesis> hypotheses; //< n-best list, only filled if requested
+  std::vector<hypothesis_t> hypotheses; //< n-best list, only filled if requested
   std::vector<std::pair<size_t, size_t> > alignment; //< word alignment using test-trg pairs, e.g. [(0,1), (1,0), ...]
 };
 

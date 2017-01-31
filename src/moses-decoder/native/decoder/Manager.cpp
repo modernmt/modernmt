@@ -1661,6 +1661,39 @@ OutputNBest(std::ostream& out, Moses::TrellisPathList const& nBestList) const
   out << std::flush;
 }
 
+void
+Manager::
+OutputNBest(std::vector<hypothesis_t> &nBest) const
+{
+  TrellisPathList nBestList;
+
+  nBest.clear();
+
+  Moses::NBestOptions const& nbo = options()->nbest;
+  CalcNBest(nbo.nbest_size, nBestList, nbo.only_distinct);
+  StaticData const& SD = StaticData::Instance();
+  OutputNBest(cout, nBestList);
+
+  BOOST_FOREACH(Moses::TrellisPath const* path, nBestList) {
+    vector<const Hypothesis *> const& E = path->GetEdges();
+    if (!E.size()) continue;
+    std::string target_string = GetTranslation(E);
+
+    // reported in a more structured manner
+    ostringstream buf;
+    bool with_labels = nbo.include_feature_labels; // default true
+    path->GetScoreBreakdown()->OutputAllFeatureScores(buf, with_labels);
+
+    hypothesis_t hyp;
+    hyp.text = target_string;
+    hyp.fvals = buf.str();
+    // weighted total score
+    hyp.score = path->GetFutureScore();
+
+    nBest.push_back(hyp);
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////
 /***
  * print surface factor only for the given phrase
@@ -1998,6 +2031,60 @@ OutputAlignment(std::ostringstream &out, const TrellisPath &path) const
   // Hypothesis::OutputAlignment(out, path.GetEdges(), waso);
   // Used by --alignment-output-file so requires endl
   out << std::endl;
+}
+
+void
+Manager::
+OutputLocalWordAlignment(std::vector<std::pair<size_t, size_t> > &dest, const Moses::Hypothesis *hypo) const
+{
+  Range const& src = hypo->GetCurrSourceWordsRange();
+  Range const& trg = hypo->GetCurrTargetWordsRange();
+
+  vector<pair<size_t,size_t> const* > a
+                                      = hypo->GetCurrTargetPhrase().GetAlignTerm().GetSortedAlignments(Moses::WordAlignmentSort::NoSort);
+  typedef pair<size_t,size_t> item;
+  BOOST_FOREACH(item const* p, a) {
+    dest.push_back(make_pair(src.GetStartPos() + p->first, trg.GetStartPos() + p->second));
+  }
+}
+
+std::string
+Manager::
+GetTranslation(const std::vector<const Hypothesis *> &edges) const
+{
+  stringstream target;
+  BOOST_REVERSE_FOREACH(Hypothesis const* e, edges)
+    OutputSurface(target, *e);
+  return target.str();
+}
+
+std::vector<std::pair<size_t, size_t>>
+Manager::
+GetWordAlignment() const
+{
+  std::vector<std::pair<size_t, size_t>> aln;
+  BOOST_REVERSE_FOREACH(Hypothesis const* e, GetBestEdges())
+    OutputLocalWordAlignment(aln, e);
+  return aln;
+}
+
+vector<Hypothesis const*>
+Manager::
+GetBestEdges() const
+{
+  Hypothesis const* h = GetBestHypothesis();
+  vector<Hypothesis const*> edges;
+  for (; h; h = h->GetPrevHypo())
+    edges.push_back(h);
+
+  return edges;
+}
+
+std::string
+Manager::
+GetBestTranslation() const
+{
+  return GetTranslation(GetBestEdges());
 }
 
 } // namespace

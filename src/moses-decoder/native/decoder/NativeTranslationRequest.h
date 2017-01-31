@@ -50,26 +50,7 @@ NativeTranslationRequest : public virtual Moses::TranslationTask
   parse_request();
 
   virtual void
-  run_chart_decoder();
-
-  virtual void
   run_phrase_decoder();
-
-  /** Write resulting sentence to 'dest'. Appends the alignment to the passed vector 'alignment', if it is != NULL. */
-  void
-  pack_hypothesis(const Moses::Manager& manager, 
-		              std::vector<Moses::Hypothesis const* > const& edges, std::string& dest, std::vector<std::pair<size_t, size_t> > *alignment = NULL);
-
-  void
-  pack_hypothesis(const Moses::Manager& manager, Moses::Hypothesis const* h, std::string& dest, std::vector<std::pair<size_t, size_t> > *alignment = NULL);
-
-  /** Add absolute (sentence-position) word alignments of a single Hypothesis to 'dest'. */
-  void
-  outputLocalWordAlignment(std::vector<std::pair<size_t, size_t> > &dest, const Moses::Hypothesis *hypo);
-
-  void
-  outputNBest(Moses::Manager const& manager,
-              std::vector<ResponseHypothesis>& nBestListOut);
 
 protected:
   NativeTranslationRequest(TranslationRequest const& paramList,

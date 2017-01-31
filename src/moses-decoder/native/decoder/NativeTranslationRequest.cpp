@@ -49,9 +49,9 @@ Run()
   }
 
   if(Moses::is_syntax(m_options->search.algo))
-    run_chart_decoder();
-  else
-    run_phrase_decoder();
+    UTIL_THROW2("syntax-based decoding is not supported in MMT decoder");
+
+  run_phrase_decoder();
 
   {
     boost::lock_guard<boost::mutex> lock(m_mutex);
@@ -59,60 +59,6 @@ Run()
   }
   m_cond.notify_one();
 
-}
-
-void
-NativeTranslationRequest::
-outputNBest(const Manager& manager, std::vector<ResponseHypothesis>& nBest)
-{
-  TrellisPathList nBestList;
-
-  nBest.clear();
-
-  Moses::NBestOptions const& nbo = m_options->nbest;
-  manager.CalcNBest(nbo.nbest_size, nBestList, nbo.only_distinct);
-  StaticData const& SD = StaticData::Instance();
-  manager.OutputNBest(cout, nBestList);
-
-  //                    m_options->output.factor_order,
-  //                    m_source->GetTranslationId(),
-  //                    m_options->output.ReportSegmentation);
-
-  BOOST_FOREACH(Moses::TrellisPath const* path, nBestList) {
-    vector<const Hypothesis *> const& E = path->GetEdges();
-    if (!E.size()) continue;
-    std::string target_string;
-    pack_hypothesis(manager, E, target_string, NULL);
-
-    // reported in a more structured manner
-    ostringstream buf;
-    bool with_labels = nbo.include_feature_labels;
-    path->GetScoreBreakdown()->OutputAllFeatureScores(buf, with_labels);
-
-    ResponseHypothesis hyp;
-    hyp.text = target_string;
-    hyp.fvals = buf.str();
-    // weighted total score
-    hyp.score = path->GetFutureScore();
-
-    nBest.push_back(hyp);
-  }
-}
-
-void
-NativeTranslationRequest::
-outputLocalWordAlignment(std::vector<std::pair<size_t, size_t> > &dest, const Moses::Hypothesis *hypo) {
-  using namespace std;
-  Range const& src = hypo->GetCurrSourceWordsRange();
-  Range const& trg = hypo->GetCurrTargetWordsRange();
-
-  Moses::WordAlignmentSort waso = m_options->output.WA_SortOrder;
-  vector<pair<size_t,size_t> const* > a
-                                      = hypo->GetCurrTargetPhrase().GetAlignTerm().GetSortedAlignments(waso);
-  typedef pair<size_t,size_t> item;
-  BOOST_FOREACH(item const* p, a) {
-    dest.push_back(make_pair(src.GetStartPos() + p->first, trg.GetStartPos() + p->second));
-  }
 }
 
 NativeTranslationRequest::
@@ -149,58 +95,18 @@ parse_request()
   m_source.reset(new Sentence(m_options, 0, m_paramList.sourceSent));
 } // end of Translationtask::parse_request()
 
-
-void
-NativeTranslationRequest::
-run_chart_decoder()
-{
-  UTIL_THROW2("NativeTranslationRequest::run_chart_decoder() must not be used anymore.");
-}
-
-void
-NativeTranslationRequest::
-pack_hypothesis(const Moses::Manager& manager, 
-		vector<Hypothesis const* > const& edges, std::string& dest, std::vector<std::pair<size_t, size_t> > *alignment)
-{
-  // target string
-  ostringstream target;
-  BOOST_REVERSE_FOREACH(Hypothesis const* e, edges) {
-    manager.OutputSurface(target, *e); 
-  }
-  XVERBOSE(1, "BEST TRANSLATION: " << *(manager.GetBestHypothesis()) 
-	   << std::endl);
-
-  dest = target.str();
-
-  // word alignment info
-  if(alignment != NULL) {
-    std::vector <std::pair<size_t, size_t>> &wordAlignment = *alignment;
-    BOOST_REVERSE_FOREACH(Hypothesis const*e, edges)
-      outputLocalWordAlignment(wordAlignment, e);
-  }
-}
-
-void
-NativeTranslationRequest::
-pack_hypothesis(const Moses::Manager& manager, Hypothesis const* h, std::string& dest, std::vector<std::pair<size_t, size_t> > *alignment)
-{
-  using namespace std;
-  vector<Hypothesis const*> edges;
-  for (; h; h = h->GetPrevHypo())
-    edges.push_back(h);
-  pack_hypothesis(manager, edges, dest, alignment);
-}
-
-
 void
 NativeTranslationRequest::
 run_phrase_decoder()
 {
   Manager manager(this->self());
   manager.Decode();
-  pack_hypothesis(manager, manager.GetBestHypothesis(), m_retData.text, &m_retData.alignment);
 
-  if (m_options->nbest.nbest_size) outputNBest(manager, m_retData.hypotheses);
+  m_retData.text = manager.GetBestTranslation();
+  m_retData.alignment = manager.GetWordAlignment();
+
+  if (m_options->nbest.nbest_size)
+    manager.OutputNBest(m_retData.hypotheses);
 
 }
-}
+} // namespace MosesServer
