@@ -36,7 +36,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include "Search.h"
 #include "SearchCubePruning.h"
 #include "BaseManager.h"
-#include "Translator.h"
 #include "decoder/MosesDecoder.h"
 
 namespace Moses

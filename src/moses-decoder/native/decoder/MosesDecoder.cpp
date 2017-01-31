@@ -2,10 +2,17 @@
 // Created by Davide  Caroselli on 03/12/15.
 //
 
-#include <decoder/MosesDecoder.h>
-#include "Translator.h"
-#include <StaticData.h>
-#include <FF/StatefulFeatureFunction.h>
+#include <mutex>
+#include <unordered_map>
+
+#include "decoder/MosesDecoder.h"
+
+#include "TranslationTask.h"
+#include "StaticData.h"
+#include "ContextScope.h"
+#include "Manager.h"
+#include "IOWrapper.h"
+#include "FF/StatefulFeatureFunction.h"
 
 using namespace std;
 using namespace mmt;
@@ -15,9 +22,13 @@ namespace mmt {
     namespace decoder {
 
         class MosesDecoderImpl : public MosesDecoder {
-            MosesServer::Translator m_translator;
+            std::mutex m_sessionsMutex;
+            unordered_map<uint64_t, boost::shared_ptr<Moses::ContextScope>> m_sessions;
             std::vector<feature_t> m_features;
             std::vector<IncrementalModel *> m_incrementalModels;
+
+            uint64_t createSession(const std::map<std::string, float> *translationContext = NULL,
+                                  const std::map<std::string, std::vector<float>> *featureWeights = NULL);
         public:
 
             MosesDecoderImpl(Moses::Parameter &param);
@@ -117,35 +128,112 @@ std::vector<float> MosesDecoderImpl::getFeatureWeights(feature_t &_feature) {
 }
 
 void MosesDecoderImpl::setDefaultFeatureWeights(const std::map<std::string, std::vector<float>> &featureWeights) {
-    m_translator.set_default_feature_weights(featureWeights);
+    Moses::StaticData::InstanceNonConst().SetAllWeights(Moses::ScoreComponentCollection::FromWeightMap(featureWeights));
 }
 
+
 int64_t MosesDecoderImpl::openSession(const std::map<std::string, float> &translationContext,
-                                      const std::map<std::string, std::vector<float>> *featureWeights) {
-    return m_translator.create_session(translationContext, featureWeights);
+                                      const std::map<std::string, std::vector<float>> *featureWeights)
+{
+    return createSession(&translationContext, featureWeights);
+}
+
+uint64_t MosesDecoderImpl::createSession(const std::map<std::string, float> *translationContext,
+                                         const std::map<std::string, std::vector<float>> *featureWeights)
+{
+    boost::shared_ptr<Moses::ContextScope> scope(new Moses::ContextScope(Moses::StaticData::Instance().GetAllWeightsNew()));
+
+    if(translationContext != NULL) {
+        boost::shared_ptr<std::map<std::string, float> > cw(new std::map<std::string, float>(*translationContext));
+        scope->SetContextWeights(cw);
+    }
+
+    if (featureWeights != NULL) {
+        boost::shared_ptr<std::map<std::string, std::vector<float> > > fw(
+            new std::map<std::string, std::vector<float> >(*featureWeights));
+        scope->SetFeatureWeights(fw);
+    }
+
+    uint64_t session_id;
+    {
+        std::lock_guard<std::mutex> lock(m_sessionsMutex);
+        // start with session ID 1 (when passed to translate(), session ID 0 means 'no session')
+        session_id = m_sessions.size() + 1;
+        m_sessions.insert(std::make_pair(session_id, scope));
+    }
+    return session_id;
 }
 
 void MosesDecoderImpl::closeSession(uint64_t session) {
-    m_translator.delete_session(session);
+    std::lock_guard<std::mutex> lock(m_sessionsMutex);
+    m_sessions.erase(session);
+}
+
+static void DoTranslate(translation_request_t const& request, boost::shared_ptr<Moses::ContextScope> scope, translation_t &result) {
+    boost::shared_ptr<Moses::AllOptions> opts(new Moses::AllOptions());
+    *opts = *Moses::StaticData::Instance().options();
+
+    if (request.nBestListSize > 0) {
+        opts->nbest.only_distinct = true;
+        opts->nbest.nbest_size = request.nBestListSize;
+        opts->nbest.enabled = true;
+    }
+
+    boost::shared_ptr<Moses::InputType> source(new Moses::Sentence(opts, 0, request.sourceSent));
+    boost::shared_ptr<Moses::IOWrapper> ioWrapperNone;
+
+    boost::shared_ptr<Moses::TranslationTask> ttask = Moses::TranslationTask::create(source, ioWrapperNone, scope);
+
+    // note: ~Manager() must run while we still own TranslationTask (because it only has a weak_ptr)
+    {
+        Moses::Manager manager(ttask);
+        manager.Decode();
+
+        result.text = manager.GetBestTranslation();
+        result.alignment = manager.GetWordAlignment();
+
+        if (manager.GetSource().options()->nbest.nbest_size)
+            manager.OutputNBest(result.hypotheses);
+    }
 }
 
 translation_t MosesDecoderImpl::translate(const std::string &text, uint64_t session,
                                           const std::map<std::string, float> *translationContext,
                                           size_t nbestListSize) {
-    // MosesServer interface request...
+
+    // Retrieve the ContextScope of the session, or create a temporary one
+
+    //bool have_session = (session != 0);
+    bool have_session;
+    boost::shared_ptr<Moses::ContextScope> scope;
+    {
+        std::lock_guard<std::mutex> lock(m_sessionsMutex);
+        auto it = m_sessions.find(session);
+        have_session = (it != m_sessions.end());
+        if(have_session)
+            scope = it->second;
+    }
+    if(!have_session) {
+        // note: createSession() uses a lock.
+        session = createSession(translationContext, NULL);
+        {
+            std::lock_guard<std::mutex> lock(m_sessionsMutex);
+            scope = m_sessions.at(session);
+        }
+    }
+
+    // Execute translation request
 
     translation_request_t request;
     translation_t response;
 
     request.sourceSent = text;
     request.nBestListSize = nbestListSize;
-    request.sessionId = session;
-    if (translationContext != nullptr) {
-        assert(session == 0); // setting contextWeights only has an effect if we are not within a session
-        request.contextWeights = *translationContext;
-    }
 
-    m_translator.execute(request, &response);
+    DoTranslate(request, scope, response);
+
+    if(!have_session)
+        closeSession(session);
 
     return response;
 }
