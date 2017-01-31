@@ -210,8 +210,10 @@ translation_t MosesDecoderImpl::translate(const std::string &text, uint64_t sess
         std::lock_guard<std::mutex> lock(m_sessionsMutex);
         auto it = m_sessions.find(session);
         have_session = (it != m_sessions.end());
-        if(have_session)
+        if(have_session) {
+            UTIL_THROW_IF2(translationContext != nullptr, "translate(): you cannot specify both session and translationContext");
             scope = it->second;
+        }
     }
     if(!have_session) {
         // note: createSession() uses a lock.
