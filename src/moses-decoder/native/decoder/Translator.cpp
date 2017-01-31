@@ -85,7 +85,8 @@ execute(TranslationRequest const& paramList,
     request.sessionId = create_session(request.contextWeights);
 
   task = NativeTranslationRequest::create(this, request, cond, mut);
-  m_threadPool->Submit(task);
+  task->Run();
+//  m_threadPool->Submit(task);
   boost::unique_lock<boost::mutex> lock(mut);
   while (!task->IsDone())
     cond.wait(lock);

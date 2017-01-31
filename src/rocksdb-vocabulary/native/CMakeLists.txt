@@ -32,9 +32,11 @@ include_directories(${ModernMT_INCLUDE_DIRS})
 find_package(JNI REQUIRED)
 include_directories(${JNI_INCLUDE_DIRS})
 
-## TcMalloc
-find_package(Tcmalloc REQUIRED)
-target_link_libraries(${PROJECT_NAME} ${Tcmalloc_LIBRARIES})
+## Google perftools: tcmalloc
+find_package(GooglePerftools)  # for libtcmalloc_minimal
+if (GooglePerftools_FOUND)
+    target_link_libraries(${PROJECT_NAME} ${GooglePerftools_LIBRARIES})
+endif(GooglePerftools_FOUND)
 
 ## RocksDB
 find_package(Rocksdb REQUIRED)
