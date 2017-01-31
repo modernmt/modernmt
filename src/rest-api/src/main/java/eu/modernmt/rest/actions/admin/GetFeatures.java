@@ -2,8 +2,8 @@ package eu.modernmt.rest.actions.admin;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import eu.modernmt.facade.ModernMT;
 import eu.modernmt.decoder.DecoderFeature;
+import eu.modernmt.facade.ModernMT;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
@@ -22,7 +22,7 @@ public class GetFeatures extends JSONObjectAction {
     protected JsonObject execute(RESTRequest req, Parameters params) {
         JsonObject result = new JsonObject();
 
-        Map<DecoderFeature, float[]> features = ModernMT.decoder.getFeatureWeights();
+        Map<DecoderFeature, float[]> features = ModernMT.translation.getDecoderWeights();
         for (Map.Entry<DecoderFeature, float[]> entry : features.entrySet()) {
             DecoderFeature feature = entry.getKey();
             JsonArray weights = null;

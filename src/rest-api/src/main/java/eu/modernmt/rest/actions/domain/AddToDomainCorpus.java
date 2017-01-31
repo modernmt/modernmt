@@ -82,8 +82,8 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
                     fileProxy = new LocalFileProxy(localFile, gzipped);
                 }
 
-                Locale sourceLanguage = ModernMT.engine.getSourceLanguage();
-                Locale targetLanguage = ModernMT.engine.getTargetLanguage();
+                Locale sourceLanguage = ModernMT.translation.getSourceLanguage();
+                Locale targetLanguage = ModernMT.translation.getTargetLanguage();
 
                 switch (fileType) {
                     case INLINE:
