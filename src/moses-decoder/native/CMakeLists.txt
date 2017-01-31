@@ -64,12 +64,6 @@ find_package(Rocksdb REQUIRED)
 include_directories(${Rocksdb_INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME} ${Rocksdb_LIBS})
 
-## Google perftools: tcmalloc
-find_package(GooglePerftools)  # for libtcmalloc_minimal
-if (GooglePerftools_FOUND)
-    target_link_libraries(${PROJECT_NAME} ${GooglePerftools_LIBRARIES})
-endif(GooglePerftools_FOUND)
-
 # Sources
 
 # note: include_directories() only affects later subdirectories.
