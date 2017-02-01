@@ -6,8 +6,6 @@ import eu.modernmt.model.Word;
 import eu.modernmt.processing.LanguageNotSupportedException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.Arrays;
 import java.util.Locale;
@@ -17,8 +15,6 @@ import java.util.Map;
  * Created by davide on 08/04/16.
  */
 public class NumericWordPostprocessor extends TextProcessor<Translation, Translation> {
-
-    private final Logger logger = LogManager.getLogger(NumericWordPostprocessor.class);
 
     public NumericWordPostprocessor(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
         super(sourceLanguage, targetLanguage);
@@ -31,8 +27,6 @@ public class NumericWordPostprocessor extends TextProcessor<Translation, Transla
 
             if (nphrase.sourceDigitsCount == 0 && nphrase.targetDigitsCount == 0)
                 continue;
-
-            logger.info(nphrase);
 
             if (nphrase.sourceDigitsCount == nphrase.targetDigitsCount)
                 nphrase.copySourceToTargetDigits();
