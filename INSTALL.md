@@ -122,7 +122,7 @@ sudo add-apt-repository ppa:george-edison55/cmake-3.x
 sudo add-apt-repository ppa:openjdk-r/ppa
 sudo apt-get update
 
-sudo apt-get install libbz2-dev libboost1.55-all-dev libgoogle-perftools-dev libsparsehash-dev cmake openjdk-8-jdk git maven
+sudo apt-get install libbz2-dev libboost1.55-all-dev libsparsehash-dev cmake openjdk-8-jdk git maven
 ```
 
 ## Install MMT
