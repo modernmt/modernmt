@@ -21,7 +21,7 @@ public class CloseTranslationSession extends VoidAction {
     protected void execute(RESTRequest req, Parameters _params) throws NotFoundException, IOException {
         Params params = (Params) _params;
 
-        TranslationSession session = ModernMT.decoder.getSession(params.id);
+        TranslationSession session = ModernMT.translation.getSession(params.id);
         if (session == null)
             throw new NotFoundException();
 

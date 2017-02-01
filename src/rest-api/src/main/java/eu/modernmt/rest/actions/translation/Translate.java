@@ -27,14 +27,14 @@ public class Translate extends ObjectAction<TranslationResponse> {
 
         if (params.sessionId > 0) {
             result.session = params.sessionId;
-            result.translation = ModernMT.decoder.translate(params.query, params.sessionId, params.nbest);
+            result.translation = ModernMT.translation.get(params.query, params.sessionId, params.nbest);
         } else if (params.context != null) {
-            result.translation = ModernMT.decoder.translate(params.query, params.context, params.nbest);
+            result.translation = ModernMT.translation.get(params.query, params.context, params.nbest);
         } else if (params.contextString != null) {
-            result.context = ModernMT.context.get(params.contextString, params.contextLimit);
-            result.translation = ModernMT.decoder.translate(params.query, result.context, params.nbest);
+            result.context = ModernMT.translation.getContextVector(params.contextString, params.contextLimit);
+            result.translation = ModernMT.translation.get(params.query, result.context, params.nbest);
         } else {
-            result.translation = ModernMT.decoder.translate(params.query, params.nbest);
+            result.translation = ModernMT.translation.get(params.query, params.nbest);
         }
 
         if (result.context != null)

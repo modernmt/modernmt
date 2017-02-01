@@ -59,16 +59,16 @@ public class GetContextVector extends ObjectAction<ContextVector> {
         ContextVector context;
 
         if (params.text != null) {
-            context = ModernMT.context.get(params.text, params.limit);
+            context = ModernMT.translation.getContextVector(params.text, params.limit);
         } else if (params.localFile != null) {
-            context = ModernMT.context.get(params.localFile, params.limit);
+            context = ModernMT.translation.getContextVector(params.localFile, params.limit);
         } else {
             File file = null;
 
             try {
                 file = File.createTempFile("mmt-context", "txt");
                 copy(params.content, file, params.compression);
-                context = ModernMT.context.get(file, params.limit);
+                context = ModernMT.translation.getContextVector(file, params.limit);
             } finally {
                 FileUtils.deleteQuietly(file);
             }

@@ -1,5 +1,6 @@
-package eu.modernmt.facade.operations;
+package eu.modernmt.facade;
 
+import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.SessionManager;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderTranslation;
@@ -11,10 +12,13 @@ import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
 
+import java.io.Serializable;
+import java.util.concurrent.Callable;
+
 /**
  * Created by davide on 21/04/16.
  */
-public class TranslateOperation extends Operation<DecoderTranslation> {
+class TranslateOperation implements Callable<DecoderTranslation>, Serializable {
 
     private String text;
     private ContextVector translationContext;
@@ -41,7 +45,9 @@ public class TranslateOperation extends Operation<DecoderTranslation> {
 
     @Override
     public DecoderTranslation call() throws ProcessingException {
-        Engine engine = getEngine();
+        ClusterNode node = ModernMT.getNode();
+
+        Engine engine = node.getEngine();
         Decoder decoder = engine.getDecoder();
         Preprocessor preprocessor = engine.getSourcePreprocessor();
         Postprocessor postprocessor = engine.getPostprocessor();
@@ -50,7 +56,7 @@ public class TranslateOperation extends Operation<DecoderTranslation> {
 
         DecoderTranslation translation;
         if (session != null) {
-            SessionManager sessionManager = getLocalNode().getSessionManager();
+            SessionManager sessionManager = node.getSessionManager();
             TranslationSession session = sessionManager.get(this.session);
 
             if (session == null)
