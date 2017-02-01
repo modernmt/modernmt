@@ -15,13 +15,13 @@ MMT_HOME				:= $(realpath $(VENDOR_DIR)/..)
 MMT_BUILD_DIR			:= $(MMT_HOME)/build
 MMT_INSTALL_RES			:= $(MMT_BUILD_DIR)/res
 
-all: __rocksdb_install __paoding_install
+all: __res __rocksdb_install __paoding_install
 
-clean: __rocksdb_clean
+clean: __res_clean __rocksdb_clean
 
-res: __res_init __paoding_res __opennlp_res
+__res: __res_init __paoding_res __opennlp_res
 
-resclean:
+__res_clean:
 	rm -rf $(MMT_INSTALL_RES)
 
 __res_init:
