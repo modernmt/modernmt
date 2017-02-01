@@ -142,7 +142,6 @@ Compile MMT submodules:
 
 ```
 cd vendor
-make res
 make
 cd ..
 ```
