@@ -157,10 +157,6 @@ Word.cpp
 WordLattice.cpp
 XmlOption.cpp
 
-NativeTranslationRequest.cpp
-NativeTranslationRequest.h
-Translator.cpp
-Translator.h
 MosesDecoder.cpp
 )
 

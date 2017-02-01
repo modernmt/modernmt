@@ -36,6 +36,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include "Search.h"
 #include "SearchCubePruning.h"
 #include "BaseManager.h"
+#include "decoder/MosesDecoder.h"
 
 namespace Moses
 {
@@ -128,12 +129,18 @@ protected:
     std::map< int, bool >* pConnected,
     std::vector< const Hypothesis* >* pConnectedList) const;
 
+  std::vector<Hypothesis const*> GetBestEdges() const;
+  void OutputLocalWordAlignment(std::vector<std::pair<size_t, size_t> > &dest, const Moses::Hypothesis *hypo) const;
+  std::string GetTranslation(const std::vector<const Hypothesis *> &edges) const;
+
   // output
   // nbest
   mutable std::ostringstream m_latticeNBestOut;
   mutable std::ostringstream m_alignmentOut;
 public:
   void OutputNBest(std::ostream& out, const Moses::TrellisPathList &nBestList) const;
+  void OutputNBest(std::vector<hypothesis_t> &nBestList) const;
+
   void OutputSurface(std::ostream &out,
                      Hypothesis const& edge,
                      bool const recursive=false) const;
@@ -149,6 +156,9 @@ public:
   void OutputWordGraph(std::ostream &outputWordGraphStream, const Hypothesis *hypo, size_t &linkId) const;
 
   void OutputAlignment(std::ostringstream &out, const TrellisPath &path) const;
+
+  std::string GetBestTranslation() const;
+  std::vector<std::pair<size_t, size_t>> GetWordAlignment() const;
 
 public:
   // Manager(InputType const& source);

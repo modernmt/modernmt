@@ -6,9 +6,6 @@ import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.*;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
-import eu.modernmt.cluster.executor.DistributedCallable;
-import eu.modernmt.cluster.executor.DistributedExecutor;
-import eu.modernmt.cluster.executor.ExecutorDaemon;
 import eu.modernmt.cluster.kafka.KafkaDataManager;
 import eu.modernmt.config.DataStreamConfig;
 import eu.modernmt.config.JoinConfig;
@@ -27,6 +24,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -65,8 +63,7 @@ public class ClusterNode {
     private ArrayList<StatusListener> statusListeners = new ArrayList<>();
 
     private HazelcastInstance hazelcast;
-    private ExecutorDaemon executorDaemon;
-    private DistributedExecutor executor;
+    private IExecutorService executor;
     private SessionManager sessionManager;
     private DataManager dataManager;
     private ITopic<Map<String, float[]>> decoderWeightsTopic;
@@ -83,21 +80,12 @@ public class ClusterNode {
 //            }
 
             if (executor != null)
-                executor.shutdown();
-            if (executorDaemon != null)
-                executorDaemon.shutdown();
+                executor.shutdownNow();
             hazelcast.shutdown();
 
             try {
                 if (executor != null)
                     executor.awaitTermination(1, TimeUnit.DAYS);
-            } catch (InterruptedException e) {
-                // Ignore exception
-            }
-
-            try {
-                if (executorDaemon != null)
-                    executorDaemon.awaitTermination(1, TimeUnit.DAYS);
             } catch (InterruptedException e) {
                 // Ignore exception
             }
@@ -175,9 +163,10 @@ public class ClusterNode {
 
     // Cluster startup
 
-    private Config getHazelcastConfig(NetworkConfig networkConfig, long interval, TimeUnit unit) {
+    private Config getHazelcastConfig(NodeConfig nodeConfig, long interval, TimeUnit unit) {
         Config hazelcastConfig = new XmlConfigBuilder().build();
 
+        NetworkConfig networkConfig = nodeConfig.getNetworkConfig();
         if (unit != null && interval > 0L) {
             long seconds = Math.max(unit.toSeconds(interval), 1L);
             hazelcastConfig.setProperty("hazelcast.max.join.seconds", Long.toString(seconds));
@@ -206,6 +195,12 @@ public class ClusterNode {
             hazelcastConfig.setProperty("hazelcast.initial.min.cluster.size", "1");
         }
 
+        int executorPoolSize = nodeConfig.getEngineConfig().getDecoderConfig().getThreads();
+
+        hazelcastConfig.getExecutorConfig(ClusterConstants.TRANSLATION_EXECUTOR_NAME)
+                .setPoolSize(executorPoolSize)
+                .setQueueCapacity(0);
+
         return hazelcastConfig;
     }
 
@@ -214,7 +209,7 @@ public class ClusterNode {
     }
 
     public void start(NodeConfig nodeConfig, long joinTimeoutInterval, TimeUnit joinTimeoutUnit) throws FailedToJoinClusterException, BootstrapException {
-        Config hazelcastConfig = getHazelcastConfig(nodeConfig.getNetworkConfig(), joinTimeoutInterval, joinTimeoutUnit);
+        Config hazelcastConfig = getHazelcastConfig(nodeConfig, joinTimeoutInterval, joinTimeoutUnit);
 
         Timer globalTimer = new Timer();
         Timer timer = new Timer();
@@ -311,10 +306,7 @@ public class ClusterNode {
 
         // ========================
 
-        int executorCapacity = nodeConfig.getEngineConfig().getDecoderConfig().getThreads();
-
-        executor = new DistributedExecutor(hazelcast, ClusterConstants.TRANSLATION_EXECUTOR_NAME);
-        executorDaemon = new ExecutorDaemon(hazelcast, this, ClusterConstants.TRANSLATION_EXECUTOR_NAME, executorCapacity);
+        executor = hazelcast.getExecutorService(ClusterConstants.TRANSLATION_EXECUTOR_NAME);
 
         sessionManager = new SessionManager(hazelcast, event -> engine.getDecoder().closeSession(event.getOldValue()));
 
@@ -363,7 +355,7 @@ public class ClusterNode {
         return nodes;
     }
 
-    public <V> Future<V> submit(DistributedCallable<V> callable) {
+    public <V> Future<V> submit(Callable<V> callable) {
         return executor.submit(callable);
     }
 

@@ -32,10 +32,6 @@ include_directories(${ModernMT_INCLUDE_DIRS})
 find_package(JNI REQUIRED)
 include_directories(${JNI_INCLUDE_DIRS})
 
-## TcMalloc
-find_package(Tcmalloc REQUIRED)
-target_link_libraries(${PROJECT_NAME} ${Tcmalloc_LIBRARIES})
-
 ## RocksDB
 find_package(Rocksdb REQUIRED)
 include_directories(${Rocksdb_INCLUDE_DIR})

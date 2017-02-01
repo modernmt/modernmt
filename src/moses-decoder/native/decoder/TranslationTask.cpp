@@ -56,7 +56,6 @@ TranslationTask
                   boost::shared_ptr<IOWrapper> const& ioWrapper)
   : m_source(source) , m_ioWrapper(ioWrapper)
 {
-  m_options = source->options();
 }
 
 TranslationTask::~TranslationTask()
@@ -85,7 +84,7 @@ AllOptions::ptr const&
 TranslationTask::
 options() const
 {
-  return m_options;
+  return m_source->options();
 }
 
 void TranslationTask::Run()
@@ -116,7 +115,7 @@ void TranslationTask::Run()
   Timer initTime;
   initTime.start();
 
-  boost::shared_ptr<BaseManager> manager = SetupManager(m_options->search.algo);
+  boost::shared_ptr<BaseManager> manager = SetupManager(m_source->options()->search.algo);
 
   VERBOSE(1, "Line " << translationId << ": Initialize search took "
           << initTime << " seconds total" << endl);

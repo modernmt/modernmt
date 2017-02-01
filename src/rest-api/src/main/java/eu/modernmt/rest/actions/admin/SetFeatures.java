@@ -4,8 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import eu.modernmt.facade.ModernMT;
 import eu.modernmt.decoder.DecoderFeature;
+import eu.modernmt.facade.ModernMT;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
@@ -24,7 +24,7 @@ public class SetFeatures extends VoidAction {
     @Override
     protected void execute(RESTRequest req, Parameters _params) {
         Params params = (Params) _params;
-        ModernMT.decoder.setFeatureWeights(params.weights);
+        ModernMT.translation.setDecoderWeights(params.weights);
     }
 
     @Override

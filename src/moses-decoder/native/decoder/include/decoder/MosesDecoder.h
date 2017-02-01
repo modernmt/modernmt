@@ -35,6 +35,12 @@ typedef struct {
     std::vector<std::pair<size_t, size_t> > alignment;
 } translation_t;
 
+typedef struct {
+  std::string sourceSent;
+  size_t nBestListSize; //< set to 0 if no n-best list requested
+} translation_request_t;
+
+
 namespace mmt {
     namespace decoder {
         class MosesDecoder: public IncrementalModel {

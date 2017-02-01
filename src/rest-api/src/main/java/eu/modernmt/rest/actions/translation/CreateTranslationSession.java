@@ -19,7 +19,7 @@ public class CreateTranslationSession extends ObjectAction<TranslationSession> {
     @Override
     protected TranslationSession execute(RESTRequest req, Parameters _params) {
         Params params = (Params) _params;
-        return ModernMT.decoder.openSession(params.context);
+        return ModernMT.translation.createSession(params.context);
     }
 
     @Override

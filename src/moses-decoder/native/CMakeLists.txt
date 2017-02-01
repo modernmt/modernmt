@@ -31,7 +31,6 @@ target_link_libraries(moses-main ${Boost_LIBRARIES} ${PROJECT_NAME})
 
 ## ModernMT
 find_package(ModernMT REQUIRED COMPONENTS common ilm sapt)
-message("ModernMT_INCLUDE_DIRS = ${ModernMT_INCLUDE_DIRS}")
 include_directories(${ModernMT_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} ${ModernMT_LIBS})
 
@@ -64,11 +63,6 @@ target_link_libraries(${PROJECT_NAME} ${ZLIB_LIBRARIES})
 find_package(Rocksdb REQUIRED)
 include_directories(${Rocksdb_INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME} ${Rocksdb_LIBS})
-
-## Google perftools: tcmalloc
-find_package(GooglePerftools)  # for libtcmalloc_minimal
-target_link_libraries(${PROJECT_NAME} ${GooglePerftools_LIBRARIES})
-
 
 # Sources
 
