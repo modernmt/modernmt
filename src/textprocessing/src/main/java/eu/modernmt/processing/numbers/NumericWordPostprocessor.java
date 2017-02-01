@@ -6,7 +6,10 @@ import eu.modernmt.model.Word;
 import eu.modernmt.processing.LanguageNotSupportedException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
 
@@ -15,6 +18,8 @@ import java.util.Map;
  */
 public class NumericWordPostprocessor extends TextProcessor<Translation, Translation> {
 
+    private final Logger logger = LogManager.getLogger(NumericWordPostprocessor.class);
+
     public NumericWordPostprocessor(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
         super(sourceLanguage, targetLanguage);
     }
@@ -22,112 +27,139 @@ public class NumericWordPostprocessor extends TextProcessor<Translation, Transla
     @Override
     public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
         for (Phrase phrase : translation.getPhrases()) {
-            Word[] source = phrase.getSource();
-            Word[] target = phrase.getTarget();
+            NumericalPhrase nphrase = new NumericalPhrase(phrase);
 
-            StringBuilder sourceDigits = new StringBuilder();
-            int sourceWordsWithNumbers = extractDigits(source, sourceDigits);
-
-            if (sourceWordsWithNumbers == 0)
+            if (nphrase.sourceDigitsCount == 0 && nphrase.targetDigitsCount == 0)
                 continue;
 
-            int[] counts = count(target);
-            int targetDigits = counts[0];
-            
+            logger.info(nphrase);
+
+            if (nphrase.sourceDigitsCount == nphrase.targetDigitsCount)
+                nphrase.copySourceToTargetDigits();
+            else
+                nphrase.copySourceToTargetWords();
         }
 
         return translation;
     }
 
-    private int extractDigits(Word[] words, StringBuilder output) {
-        int wordCount = 0;
-        for (Word word : words) {
-            boolean hasDigit = false;
+    private static class NumericalPhrase {
 
-            for (char c : word.getPlaceholder().toCharArray()) {
-                if (c >= '0' && c <= '9') {
-                    hasDigit = true;
-                    output.append(c);
-                }
-            }
+        public final Word[] source;
+        public final Word[] target;
+        public final int[] digitsPerSourceWord;
+        public final int[] digitsPerTargetWord;
+        public final StringBuilder sourceDigits;
+        public final int sourceDigitsCount;
+        public final int targetDigitsCount;
 
-            if (hasDigit)
-                wordCount++;
-        }
+        private static int analyze(Word[] words, int[] digitsPerWord, StringBuilder collector, boolean usePlaceholder) {
+            int digits = 0;
 
-        return wordCount;
-    }
+            for (int w = 0; w < words.length; w++) {
+                char[] word = (usePlaceholder ? words[w].getPlaceholder() : words[w].getText()).toCharArray();
 
-    private int[] count(Word[] words) {
-        int digits = 0;
-        int wordCount = 0;
-
-        for (Word word : words) {
-            boolean hasDigit = false;
-
-            for (char c : word.getPlaceholder().toCharArray()) {
-                if (c >= '0' && c <= '9') {
-                    hasDigit = true;
-                    digits++;
-                }
-            }
-
-            if (hasDigit)
-                wordCount++;
-        }
-
-        return new int[]{digits, wordCount};
-    }
-
-    @Override
-    public void apply(Word source, Word target) {
-        if (source == null) {
-            // Default transformation does nothing.
-            return;
-        }
-
-        int sourceDigits = countDigits(source.getPlaceholder().toCharArray());
-        if (sourceDigits == 0) {
-            // If the source is not a Numeric token, skip transformation.
-            return;
-        }
-
-        char[] output = target.getPlaceholder().toCharArray();
-
-        if (countDigits(output) == sourceDigits) {
-            char[] sourceText = source.getText().toCharArray();
-
-            int sourceIndex = 0;
-            for (int i = 0; i < output.length; i++) {
-                char p = output[i];
-
-                if (p >= '0' && p <= '9') {
-                    for (; sourceIndex < sourceText.length; sourceIndex++) {
-                        char s = sourceText[sourceIndex];
-
-                        if (s >= '0' && s <= '9') {
-                            output[i] = s;
-                            sourceIndex++;
-                            break;
+                if (collector == null) {
+                    for (char c : word) {
+                        if (c >= '0' && c <= '9')
+                            digitsPerWord[w]++;
+                    }
+                } else {
+                    for (char c : word) {
+                        if (c >= '0' && c <= '9') {
+                            digitsPerWord[w]++;
+                            collector.append(c);
                         }
                     }
                 }
+
+                digits += digitsPerWord[w];
             }
 
-            target.setText(new String(output));
-        } else {
-            target.setText(source.getText());
-        }
-    }
-
-    private static int countDigits(char[] chars) {
-        int counter = 0;
-        for (char c : chars) {
-            if (c >= '0' && c <= '9')
-                counter++;
+            return digits;
         }
 
-        return counter;
+        public NumericalPhrase(Phrase phrase) {
+            this.source = phrase.getSource();
+            this.target = phrase.getTarget();
+            this.sourceDigits = new StringBuilder();
+            this.digitsPerSourceWord = new int[source.length];
+            this.digitsPerTargetWord = new int[target.length];
+
+            this.sourceDigitsCount = analyze(source, digitsPerSourceWord, sourceDigits, false);
+            this.targetDigitsCount = analyze(target, digitsPerTargetWord, null, true);
+        }
+
+        public void copySourceToTargetDigits() {
+            int sourceDigitIndex = 0;
+
+            for (int w = 0; w < target.length && sourceDigitIndex < sourceDigits.length(); w++) {
+                if (digitsPerTargetWord[w] == 0)
+                    continue;
+
+                char[] text = target[w].getPlaceholder().toCharArray();
+
+                for (int i = 0; i < text.length && sourceDigitIndex < sourceDigits.length(); i++) {
+                    if (text[i] >= '0' && text[i] <= '9')
+                        text[i] = sourceDigits.charAt(sourceDigitIndex++);
+                }
+
+                target[w].setText(new String(text));
+            }
+        }
+
+        public void copySourceToTargetWords() {
+            Word[] sourceWords = getWordsWithDigits(source, digitsPerSourceWord);
+            int index = 0;
+
+            for (int w = 0; w < target.length; w++) {
+                if (digitsPerTargetWord[w] == 0)
+                    continue;
+
+                if (index < sourceWords.length) {
+                    target[w].setText(sourceWords[index++].getText());
+                } else {
+                    char[] text = target[w].getPlaceholder().toCharArray();
+                    for (int i = 0; i < text.length; i++) {
+                        if (text[i] >= '0' && text[i] <= '9')
+                            text[i] = '?';
+                    }
+
+                    target[w].setText(new String(text));
+                }
+            }
+        }
+
+        private Word[] getWordsWithDigits(Word[] words, int[] digitsPerWord) {
+            int length = 0;
+            for (int i = 0; i < words.length; i++) {
+                if (digitsPerWord[i] > 0)
+                    length++;
+            }
+
+            Word[] result = new Word[length];
+            int j = 0;
+
+            for (int i = 0; i < words.length; i++) {
+                if (digitsPerWord[i] > 0)
+                    result[j++] = words[i];
+            }
+
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "NumericalPhrase{" +
+                    "source=" + Arrays.toString(source) +
+                    ", target=" + Arrays.toString(target) +
+                    ", digitsPerSourceWord=" + Arrays.toString(digitsPerSourceWord) +
+                    ", digitsPerTargetWord=" + Arrays.toString(digitsPerTargetWord) +
+                    ", sourceDigits=" + sourceDigits +
+                    ", sourceDigitsCount=" + sourceDigitsCount +
+                    ", targetDigitsCount=" + targetDigitsCount +
+                    '}';
+        }
     }
 
 }
