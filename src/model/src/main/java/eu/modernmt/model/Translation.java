@@ -2,6 +2,7 @@ package eu.modernmt.model;
 
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -49,6 +50,9 @@ public class Translation extends Sentence {
     }
 
     public List<Phrase> getPhrases() {
+        if (!hasAlignment())
+            return Collections.singletonList(new Phrase(0, this.source.getWords(), words));
+
         Word[] sourceWords = source.getWords();
 
         ArrayList<Phrase> phrases = new ArrayList<>();
