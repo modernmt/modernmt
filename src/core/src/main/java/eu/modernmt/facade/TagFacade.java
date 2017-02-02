@@ -16,6 +16,7 @@ import eu.modernmt.processing.xml.XMLTagProjector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.Serializable;
 import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -73,13 +74,13 @@ public class TagFacade {
         throw new LanguagePairNotSupportedException(sourceLanguage, targetLanguage);
     }
 
-    private static class ProjectTagsCallable implements Callable<Translation> {
+    private static class ProjectTagsCallable implements Callable<Translation>, Serializable {
 
         private static final Logger logger = LogManager.getLogger(ProjectTagsCallable.class);
         private static final XMLTagProjector tagProjector = new XMLTagProjector();
 
-        private String sentenceString;
-        private String translationString;
+        private final String sentenceString;
+        private final String translationString;
         private final Aligner.SymmetrizationStrategy strategy;
         private final boolean inverted;
 

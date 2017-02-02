@@ -13,6 +13,7 @@ import eu.modernmt.model.Translation;
 import eu.modernmt.processing.ProcessingException;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -162,16 +163,29 @@ public class TranslationFacade {
     }
 
     public ContextVector getContextVector(String context, int limit) throws ContextAnalyzerException {
-        Callable<ContextVector> callable = () -> ModernMT.getNode().getEngine()
-                .getContextAnalyzer()
-                .getContextVector(context, limit);
-
         try {
-            return ModernMT.getNode().submit(callable).get();
+            return ModernMT.getNode().submit(new GetContextVectorCallable(context, limit)).get();
         } catch (InterruptedException e) {
             throw new SystemShutdownException();
         } catch (ExecutionException e) {
             throw unwrap(e);
+        }
+    }
+
+    private static class GetContextVectorCallable implements Callable<ContextVector>, Serializable {
+
+        private final String context;
+        private final int limit;
+
+        public GetContextVectorCallable(String context, int limit) {
+            this.context = context;
+            this.limit = limit;
+        }
+
+        @Override
+        public ContextVector call() throws ContextAnalyzerException {
+            ContextAnalyzer analyzer = ModernMT.getNode().getEngine().getContextAnalyzer();
+            return analyzer.getContextVector(context, limit);
         }
     }
 
