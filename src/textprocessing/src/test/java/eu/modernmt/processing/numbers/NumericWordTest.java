@@ -28,11 +28,11 @@ public class NumericWordTest {
 
         Word[] sourceWords = new Word[sourceTokens.length];
         for (int i = 0; i < sourceTokens.length; i++)
-            sourceWords[i] = new Word(sourceTokens[i], sourceTokens[i].replaceAll("[0-9]", "0"), null);
+            sourceWords[i] = new Word(sourceTokens[i], sourceTokens[i].replaceAll("[0-9]", "0"), " ");
 
         Word[] targetWords = new Word[targetTokens.length];
         for (int i = 0; i < targetTokens.length; i++)
-            targetWords[i] = new Word(targetTokens[i].replaceAll("[0-9]", "0"));
+            targetWords[i] = new Word(targetTokens[i].replaceAll("[0-9]", "0"), " ");
 
         return new Translation(targetWords, new Sentence(sourceWords), Alignment.fromAlignmentPairs(alignment));
     }
@@ -41,42 +41,42 @@ public class NumericWordTest {
     public void testCurrency_Matching() throws ProcessingException {
         Translation translation = make("1,76$", "$0.00", new int[][]{{0, 0}});
         postprocessor.call(translation, null);
-        assertEquals("$1.76", translation.toString());
+        assertEquals("$1.76", translation.getStrippedString(false));
     }
 
     @Test
     public void testCurrency_NotMatching() throws ProcessingException {
         Translation translation = make("1,76$", "$0.000", new int[][]{{0, 0}});
         postprocessor.call(translation, null);
-        assertEquals("$1.76", translation.toString());
+        assertEquals("1,76$", translation.getStrippedString(false));
     }
 
     @Test
     public void testBigNumber_Matching() throws ProcessingException {
         Translation translation = make("147.530,50", "000000.00", new int[][]{{0, 0}});
         postprocessor.call(translation, null);
-        assertEquals("147530.50", translation.toString());
+        assertEquals("147530.50", translation.getStrippedString(false));
     }
 
     @Test
     public void testBigNumber_NotMatching() throws ProcessingException {
         Translation translation = make("147.530,50", "00/00/00", new int[][]{{0, 0}});
         postprocessor.call(translation, null);
-        assertEquals("147530.50", translation.toString());
+        assertEquals("147.530,50", translation.getStrippedString(false));
     }
 
     @Test
     public void testMultiple_Matching() throws ProcessingException {
         Translation translation = make("147.530", "000 000", new int[][]{{0, 0}, {0, 1}});
         postprocessor.call(translation, null);
-        assertEquals("147 530", translation.toString());
+        assertEquals("147 530", translation.getStrippedString(false));
     }
 
     @Test
     public void testMultiple_NotMatching() throws ProcessingException {
         Translation translation = make("147.530", "000 00", new int[][]{{0, 0}, {0, 1}});
         postprocessor.call(translation, null);
-        assertEquals("147.530 ??", translation.toString());
+        assertEquals("147.530 ??", translation.getStrippedString(false));
     }
 
 }
