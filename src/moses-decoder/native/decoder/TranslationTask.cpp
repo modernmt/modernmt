@@ -134,6 +134,12 @@ void TranslationTask::Run()
   Timer additionalReportingTime;
   additionalReportingTime.start();
   boost::shared_ptr<IOWrapper> const& io = m_ioWrapper;
+
+  if(io) {
+    // only used in command-line version: moses-main
+    manager->OutputBest(io->GetSingleBestOutputCollector());
+  }
+
   // report additional statistics
   manager->CalcDecoderStatistics();
   VERBOSE(1, "Line " << translationId << ": Additional reporting took "
