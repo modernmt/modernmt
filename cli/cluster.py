@@ -298,7 +298,7 @@ class EmbeddedKafka:
         command = [self._zookeeper_bin, config]
         zookeeper = subprocess.Popen(command, stdout=log, stderr=log, shell=False).pid
 
-        for i in range(1, 5):
+        for i in range(1, 20):
             try:
                 msg = fileutils.netcat('127.0.0.1', port, 'ruok', timeout=2)
             except:
@@ -328,7 +328,7 @@ class EmbeddedKafka:
         command = [self._kafka_bin, config]
         kafka = subprocess.Popen(command, stdout=log, stderr=log, shell=False).pid
 
-        for i in range(1, 5):
+        for i in range(1, 20):
             with open(log.name, 'r') as rlog:
                 for line in rlog:
                     if 'INFO [Kafka Server 0], started (kafka.server.KafkaServer)' in line:
