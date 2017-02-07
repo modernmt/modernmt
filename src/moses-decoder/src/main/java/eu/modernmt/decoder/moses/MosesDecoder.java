@@ -2,6 +2,7 @@ package eu.modernmt.decoder.moses;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.data.DataListener;
+import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
@@ -201,6 +202,11 @@ public class MosesDecoder implements Decoder, DataListener {
     }
 
     private native void updateReceived(int streamId, long sentenceId, int domainId, int[] sourceSentence, int[] targetSentence, int[] alignment);
+
+    @Override
+    public void onDelete(Deletion deletion) throws Exception {
+        // TODO: stub implementation
+    }
 
     @Override
     public Map<Short, Long> getLatestChannelPositions() {

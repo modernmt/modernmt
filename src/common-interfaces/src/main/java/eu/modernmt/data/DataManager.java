@@ -35,6 +35,8 @@ public interface DataManager extends Closeable {
 
     ImportJob upload(int domainId, String sourceSentence, String targetSentence, DataChannel channel) throws DataManagerException;
 
+    void delete(int domainId) throws DataManagerException;
+
     DataChannel getDataChannel(short id);
 
     Map<Short, Long> getChannelsPositions();

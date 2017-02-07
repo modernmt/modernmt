@@ -1,10 +1,7 @@
 package eu.modernmt.cluster.kafka;
 
-import eu.modernmt.io.DefaultCharset;
 import org.apache.kafka.common.serialization.Deserializer;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.Map;
 
 /**
@@ -22,27 +19,12 @@ public class KafkaElementDeserializer implements Deserializer<KafkaElement> {
         if (data == null)
             return null;
 
-        Charset charset = DefaultCharset.get();
-
-        ByteBuffer buffer = ByteBuffer.wrap(data);
-
-        buffer.get(); // flags: reserved for future use
-
-        int domain = buffer.getInt();
-
-        int sourceSentenceLength = buffer.getInt();
-        String sourceSentence = new String(data, 9, sourceSentenceLength, charset);
-        buffer.position(9 + sourceSentenceLength);
-
-        int targetSentenceLength = buffer.getInt();
-        String targetSentence = new String(data, 13 + sourceSentenceLength, targetSentenceLength, charset);
-
-        return new KafkaElement(domain, sourceSentence, targetSentence);
+        return KafkaElement.fromBytes(data);
     }
 
     @Override
     public void close() {
-
+        // Nothing to do
     }
 
 }
