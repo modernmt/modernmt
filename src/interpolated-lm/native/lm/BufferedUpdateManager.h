@@ -23,6 +23,8 @@ namespace mmt {
 
             void Add(const updateid_t &id, const domain_t domain, const vector <wid_t> &sentence);
 
+            void Delete(const updateid_t &id, const domain_t domain);
+
         private:
             NGramStorage *storage;
 

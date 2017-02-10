@@ -203,6 +203,11 @@ void InterpolatedLM::Add(const updateid_t &id, const domain_t domain, const vect
         self->alm->Add(id, domain, source, target, alignment);
 }
 
+void InterpolatedLM::Delete(const updateid_t &id, const domain_t domain) {
+    if (self->is_alm_active)
+        self->alm->Delete(id, domain);
+}
+
 unordered_map<stream_t, seqid_t> InterpolatedLM::GetLatestUpdatesIdentifier() {
     return self->alm->GetLatestUpdatesIdentifier();
 }

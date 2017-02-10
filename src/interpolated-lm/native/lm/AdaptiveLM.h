@@ -52,6 +52,8 @@ namespace mmt {
 
             virtual void NormalizeContext(context_t *context);
 
+            void Delete(const updateid_t &id, const domain_t domain) override;
+
         private:
             const uint8_t order;
 

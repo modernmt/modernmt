@@ -13,6 +13,7 @@ import eu.modernmt.config.NetworkConfig;
 import eu.modernmt.config.NodeConfig;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.data.DataListener;
+import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.data.DataManager;
 import eu.modernmt.data.HostUnreachableException;
 import eu.modernmt.decoder.Decoder;
@@ -163,6 +164,18 @@ public class ClusterNode {
 
     // Cluster startup
 
+    private static void addToDataManager(Object object, DataManager manager) {
+        if (object == null)
+            return;
+
+        if (object instanceof DataListener) {
+            manager.addDataListener((DataListener) object);
+        } else if (object instanceof DataListenerProvider) {
+            for (DataListener listener : ((DataListenerProvider) object).getDataListeners())
+                manager.addDataListener(listener);
+        }
+    }
+
     private Config getHazelcastConfig(NodeConfig nodeConfig, long interval, TimeUnit unit) {
         Config hazelcastConfig = new XmlConfigBuilder().build();
 
@@ -271,12 +284,9 @@ public class ClusterNode {
             Decoder decoder = engine.getDecoder();
             ContextAnalyzer contextAnalyzer = engine.getContextAnalyzer();
 
-            if (aligner != null && aligner instanceof DataListener)
-                dataManager.addDataListener((DataListener) aligner);
-            if (decoder != null && decoder instanceof DataListener)
-                dataManager.addDataListener((DataListener) decoder);
-            if (contextAnalyzer != null && contextAnalyzer instanceof DataListener)
-                dataManager.addDataListener((DataListener) contextAnalyzer);
+            addToDataManager(aligner, dataManager);
+            addToDataManager(decoder, dataManager);
+            addToDataManager(contextAnalyzer, dataManager);
 
             updateChannelsPositions(dataManager.getChannelsPositions());
 

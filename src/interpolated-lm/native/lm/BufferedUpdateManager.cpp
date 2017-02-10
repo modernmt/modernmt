@@ -38,6 +38,10 @@ void BufferedUpdateManager::Add(const updateid_t &id, const domain_t domain, con
     }
 }
 
+void BufferedUpdateManager::Delete(const mmt::updateid_t &id, const mmt::domain_t domain) {
+    //TODO not implemented yet
+}
+
 void BufferedUpdateManager::AwakeBackgroundThread(bool wait) {
     awakeCondition.notify_one();
 

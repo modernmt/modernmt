@@ -237,6 +237,10 @@ void AdaptiveLM::Add(const updateid_t &id, domain_t domain, const vector<wid_t> 
     updateManager.Add(id, domain, target);
 }
 
+void AdaptiveLM::Delete(const updateid_t &id, const domain_t domain) {
+    updateManager.Delete(id, domain);
+}
+
 unordered_map<stream_t, seqid_t> AdaptiveLM::GetLatestUpdatesIdentifier() {
     const vector<seqid_t> &streams = storage.GetStreamsStatus();
 
