@@ -104,6 +104,9 @@ def main_evaluate(argv):
                         default=None, type=int)
     parser.add_argument('--gt-key', dest='gt_key', metavar='GT_API_KEY', default=None,
                         help='A custom Google Translate API Key to use during evaluation')
+    parser.add_argument('--gt-nmt', action='store_true', dest='gt_nmt', default=False,
+                        help='Use Neural Google Translate API during evaluation, '
+                             'you have to specify a valid key with --gt-key')
     parser.add_argument('--human-eval', dest='heval_output', metavar='OUTPUT', default=None,
                         help='the output folder for the tab-spaced files needed to setup a Human Evaluation benchmark')
     parser.add_argument('-i', '--interactive', action='store_true', dest='interactive',
@@ -120,7 +123,7 @@ def main_evaluate(argv):
         raise IllegalStateException('engine not found: ' + args.engine)
 
     node = ClusterNode(engine, api_port=args.api_port)
-    evaluator = Evaluator(node, google_key=args.gt_key, use_sessions=not args.interactive)
+    evaluator = Evaluator(node, google_key=args.gt_key, google_nmt=args.gt_nmt, use_sessions=not args.interactive)
 
     corpora = BilingualCorpus.list(args.corpora_path) if args.corpora_path is not None \
         else BilingualCorpus.list(os.path.join(engine.data_path, TrainingPreprocessor.TEST_FOLDER_NAME))

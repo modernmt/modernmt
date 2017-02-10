@@ -110,7 +110,8 @@ class HumanEvaluationFileOutputter:
                     line = line.replace(self.separator, ' ')
                     lid = str(line_id)
                     line_id += 1
-                    out.write(self.separator.join([lid, lang, line]))
+                    line = self.separator.join([lid, lang, line.decode('utf-8')])
+                    out.write(line.encode('utf-8'))
 
 
 class Score:
@@ -190,9 +191,13 @@ class MMTTranslator(Translator):
 
 
 class GoogleTranslate(Translator):
-    def __init__(self, source_lang, target_lang, key=None):
+    def __init__(self, source_lang, target_lang, key=None, nmt=False):
         Translator.__init__(self, source_lang, target_lang, threads=10)
         self._key = key if key is not None else DEFAULT_GOOGLE_KEY
+        self._nmt = nmt
+
+        self._url = 'https://translation.googleapis.com/language/translate/v2' if self._nmt \
+            else 'https://www.googleapis.com/language/translate/v2'
 
     def name(self):
         return 'Google Translate'
@@ -216,8 +221,6 @@ class GoogleTranslate(Translator):
             return TranslateError('Google Translate error (%d): %s' % (request.status_code, json['error']['message']))
 
     def _get_translation(self, line, corpus):
-        url = 'https://www.googleapis.com/language/translate/v2'
-
         data = {
             'source': self.source_lang,
             'target': self.target_lang,
@@ -226,16 +229,21 @@ class GoogleTranslate(Translator):
             'userip': '.'.join(map(str, (random.randint(0, 200) for _ in range(4))))
         }
 
+        if self._nmt:
+            data['model'] = 'nmt'
+
         headers = {
             'X-HTTP-Method-Override': 'GET'
         }
 
         begin = time.time()
-        r = requests.post(url, data=data, headers=headers)
+        r = requests.post(self._url, data=data, headers=headers)
         elapsed = time.time() - begin
 
         if r.status_code != requests.codes.ok:
             raise self._pack_error(r)
+
+        print r.json()
 
         text = r.json()['data']['translations'][0]['translatedText']
         return text, elapsed
@@ -396,14 +404,14 @@ class _EvaluationResult:
 
 
 class Evaluator:
-    def __init__(self, node, google_key=None, use_sessions=True):
+    def __init__(self, node, google_key=None, google_nmt=False, use_sessions=True):
         self._engine = node.engine
         self._node = node
 
         self._heval_outputter = HumanEvaluationFileOutputter()
         self._xmlencoder = XMLEncoder()
         self._translators = [
-            GoogleTranslate(self._engine.source_lang, self._engine.target_lang, key=google_key),
+            GoogleTranslate(self._engine.source_lang, self._engine.target_lang, key=google_key, nmt=google_nmt),
             # BingTranslator(source_lang, target_lang),
             MMTTranslator(self._node, use_sessions)
         ]
@@ -478,7 +486,7 @@ class Evaluator:
             for result in results:
                 if result.error is not None:
                     continue
-                    
+
                 lines = fileutils.linecount(result.merge)
 
                 if lines != reference_lines:
