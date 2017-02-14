@@ -42,7 +42,7 @@ void PhraseTable::Add(const updateid_t &id, const domain_t domain, const std::ve
 }
 
 void PhraseTable::Delete(const updateid_t &id, const domain_t domain) {
-    //TODO: Not implemented yet
+    self->updates->Delete(id, domain);
 }
 
 unordered_map<stream_t, seqid_t> PhraseTable::GetLatestUpdatesIdentifier() {
