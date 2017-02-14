@@ -22,7 +22,8 @@ namespace mmt {
         enum KeyType {
             kGlobalInfoKeyType = 0,
             kSourcePrefixKeyType = 1,
-            kTargetCountKeyType = 2
+            kTargetCountKeyType = 2,
+            kDeletedDomainsType = 3
         };
 
         /* Keys */
@@ -103,7 +104,7 @@ namespace mmt {
 
             WriteInt64(bytes, &i, storageSize);
             for (auto id = streams.begin(); id != streams.end(); ++id)
-                WriteUInt64(bytes, &i, *id);
+                WriteInt64(bytes, &i, *id);
 
             string result = string(bytes, size);
             delete[] bytes;
@@ -142,6 +143,34 @@ namespace mmt {
                 return 0;
 
             return ReadUInt64(data, (size_t) 0);
+        }
+
+        static inline string SerializeDeletedDomains(const std::unordered_set<domain_t> &domains) {
+            size_t size = domains.size() * sizeof(domain_t);
+            char *bytes = new char[size];
+            size_t i = 0;
+
+            for (auto domain = domains.begin(); domain != domains.end(); ++domain)
+                WriteUInt64(bytes, &i, *domain);
+
+            string result = string(bytes, size);
+            delete[] bytes;
+
+            return result;
+        }
+
+        static inline bool
+        DeserializeDeletedDomains(const char *data, size_t bytes_size, unordered_set<domain_t> *outDomains) {
+            if (bytes_size < sizeof(domain_t) || bytes_size % sizeof(domain_t) != 0)
+                return false;
+
+            size_t length = bytes_size / sizeof(domain_t);
+
+            size_t ptr = 0;
+            for (size_t i = 0; i < length; ++i)
+                outDomains->insert(ReadUInt32(data, &ptr));
+
+            return true;
         }
     }
 }

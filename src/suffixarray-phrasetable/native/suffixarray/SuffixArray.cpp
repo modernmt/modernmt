@@ -18,6 +18,7 @@ using namespace mmt;
 using namespace mmt::sapt;
 
 static const string kGlobalInfoKey = MakeEmptyKey(kGlobalInfoKeyType);
+static const string kDeletedDomainsKey = MakeEmptyKey(kDeletedDomainsType);
 
 /*
  * MergePositionOperator
@@ -119,9 +120,18 @@ SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength,
 
     // Load storage
     storage = new CorpusStorage(storageFile.string(), storageSize);
+
+    // Garbage collector
+    string raw_deletedDomains;
+    db->Get(ReadOptions(), kDeletedDomainsKey, &raw_deletedDomains);
+
+    unordered_set<domain_t> deletedDomains;
+    DeserializeDeletedDomains(raw_deletedDomains.data(), raw_deletedDomains.size(), &deletedDomains);
+    garbageCollector = new GarbageCollector(db, deletedDomains);
 }
 
 SuffixArray::~SuffixArray() {
+    delete garbageCollector;
     delete db;
     delete storage;
 }
@@ -172,6 +182,11 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
         writeBatch.Merge(count->first, value);
     }
 
+    // Write deleted domains
+    std::unordered_set<domain_t> deletedDomains = garbageCollector->GetDomainsMarkedForDeletion();
+    deletedDomains.insert(batch.deletions.begin(), batch.deletions.end());
+    writeBatch.Put(kDeletedDomainsKey, SerializeDeletedDomains(deletedDomains));
+
     // Write global info
     writeBatch.Put(kGlobalInfoKey, SerializeGlobalInfo(batch.streams, storageSize));
 
@@ -182,6 +197,7 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
 
     // Reset streams and domains
     streams = batch.GetStreams();
+    garbageCollector->MarkForDeletion(batch.deletions);
 }
 
 void SuffixArray::AddPrefixesToBatch(domain_t domain, const vector<wid_t> &sentence,

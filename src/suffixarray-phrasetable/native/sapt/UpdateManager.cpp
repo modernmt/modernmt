@@ -39,11 +39,9 @@ void UpdateManager::Add(const updateid_t &id, const domain_t domain, const vecto
 }
 
 void UpdateManager::Delete(const mmt::updateid_t &id, const mmt::domain_t domain) {
-    // TODO: not implemented yet
-
-//    UpdateManagerEnqueue(
-//            foregroundBatch->Delete(id, domain)
-//    );
+    UpdateManagerEnqueue(
+            foregroundBatch->Delete(id, domain)
+    );
 }
 
 void UpdateManager::BackgroundThreadRun() {

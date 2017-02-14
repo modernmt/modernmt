@@ -17,6 +17,7 @@
 #include "PrefixCursor.h"
 #include "Collector.h"
 #include "sample.h"
+#include "GarbageCollector.h"
 
 using namespace std;
 
@@ -48,6 +49,7 @@ namespace mmt {
             };
 
             virtual ~IndexIterator();
+
             bool Next(IndexEntry *outEntry);
 
         private:
@@ -92,6 +94,8 @@ namespace mmt {
             rocksdb::DB *db;
             CorpusStorage *storage;
             vector<seqid_t> streams;
+
+            GarbageCollector *garbageCollector;
 
             void AddPrefixesToBatch(domain_t domain, const vector<wid_t> &sentence,
                                     int64_t location, unordered_map<string, PostingList> &outBatch);

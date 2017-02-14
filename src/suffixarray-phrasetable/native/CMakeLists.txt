@@ -33,6 +33,7 @@ set(SOURCE_FILES
         suffixarray/PrefixCursor.cpp suffixarray/PrefixCursor.h
         suffixarray/SuffixArray.cpp suffixarray/SuffixArray.h
         suffixarray/Collector.cpp suffixarray/Collector.h
+        suffixarray/GarbageCollector.cpp suffixarray/GarbageCollector.h
 
         sapt/Options.h
         sapt/TranslationOption.h
