@@ -12,13 +12,16 @@
 #include <boost/thread.hpp>
 #include <util/BackgroundPollingThread.h>
 #include <unordered_set>
+#include <mmt/logging/Logger.h>
+#include "CorpusStorage.h"
 
 namespace mmt {
     namespace sapt {
 
-        class GarbageCollector: public BackgroundPollingThread {
+        class GarbageCollector : public BackgroundPollingThread {
         public:
-            GarbageCollector(rocksdb::DB *db, const std::unordered_set<domain_t> &domains, double timeout = 120.);
+            GarbageCollector(CorpusStorage *storage, rocksdb::DB *db, const std::unordered_set<domain_t> &domains,
+                             size_t batchSize, double timeout);
 
             virtual ~GarbageCollector();
 
@@ -27,12 +30,28 @@ namespace mmt {
             std::unordered_set<domain_t> GetDomainsMarkedForDeletion();
 
         private:
+            mmt::logging::Logger logger;
+
             rocksdb::DB *db;
+            CorpusStorage *storage;
+
+            domain_t pendingDeletionDomain;
+            size_t pendingDeletionOffset;
+            size_t batchSize;
 
             std::mutex queueAccess;
             std::unordered_set<domain_t> queue;
 
+            class interrupted_exception : public exception {
+            public:
+                interrupted_exception() {};
+            };
+
             void BackgroundThreadRun() override;
+
+            void Delete(domain_t domain, size_t offset = 0) throw(interrupted_exception);
+
+            void DeleteStorage(domain_t domain);
         };
 
     }

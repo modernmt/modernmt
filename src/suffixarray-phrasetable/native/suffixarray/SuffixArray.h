@@ -61,7 +61,7 @@ namespace mmt {
 
         class SuffixArray {
         public:
-            SuffixArray(const string &path, uint8_t prefixLength,
+            SuffixArray(const string &path, uint8_t prefixLength, double gcTimeout, size_t gcBatchSize,
                         bool prepareForBulkLoad = false) throw(index_exception, storage_exception);
 
             ~SuffixArray();

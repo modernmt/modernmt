@@ -24,7 +24,7 @@ struct PhraseTable::pt_private {
 
 PhraseTable::PhraseTable(const string &modelPath, const Options &options, Aligner *aligner) {
     self = new pt_private();
-    self->index = new SuffixArray(modelPath, options.prefix_length);
+    self->index = new SuffixArray(modelPath, options.prefix_length, options.gc_timeout, options.gc_buffer_size);
     self->updates = new UpdateManager(self->index, options.update_buffer_size, options.update_max_delay);
     self->aligner = aligner;
     self->numberOfSamples = options.samples;

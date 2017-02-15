@@ -23,7 +23,8 @@ namespace mmt {
             kGlobalInfoKeyType = 0,
             kSourcePrefixKeyType = 1,
             kTargetCountKeyType = 2,
-            kDeletedDomainsType = 3
+            kDeletedDomainsType = 3,
+            kPendingDeletionDataType = 4
         };
 
         /* Keys */
@@ -169,6 +170,29 @@ namespace mmt {
             size_t ptr = 0;
             for (size_t i = 0; i < length; ++i)
                 outDomains->insert(ReadUInt32(data, &ptr));
+
+            return true;
+        }
+
+        static inline string SerializeDeletionData(domain_t domain, size_t offset) {
+            char bytes[12];
+            size_t ptr = 0;
+
+            WriteUInt32(bytes, &ptr, domain);
+            WriteUInt64(bytes, &ptr, (uint64_t) offset);
+
+            string value(bytes, 12);
+            return value;
+        }
+
+        static inline bool
+        DeserializeDeletionData(const char *data, size_t bytes_size, domain_t *outDomain, size_t *outOffset) {
+            if (bytes_size != 12)
+                return false;
+
+            size_t ptr = 0;
+            *outDomain = ReadUInt32(data, &ptr);
+            *outOffset = (size_t) ReadUInt64(data, &ptr);
 
             return true;
         }

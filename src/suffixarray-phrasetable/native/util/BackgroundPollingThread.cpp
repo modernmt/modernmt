@@ -8,8 +8,7 @@ using namespace std;
 using namespace mmt;
 using namespace mmt::sapt;
 
-BackgroundPollingThread::BackgroundPollingThread(double timeout) : waitTimeout(timeout), stop(false) {
-    backgroundThread = new boost::thread(boost::bind(&BackgroundPollingThread::RunInBackground, this));
+BackgroundPollingThread::BackgroundPollingThread(double timeout) : waitTimeout(timeout), running(false) {
 }
 
 void BackgroundPollingThread::AwakeBackgroundThread(bool wait) {
@@ -24,11 +23,11 @@ void BackgroundPollingThread::AwakeBackgroundThread(bool wait) {
 void BackgroundPollingThread::RunInBackground() {
     auto timeout = std::chrono::milliseconds((int64_t) (waitTimeout * 1000.));
 
-    while (!stop) {
+    while (running) {
         unique_lock<mutex> lock(awakeMutex);
         awakeCondition.wait_for(lock, timeout);
 
-        if (!stop)
+        if (running)
             BackgroundThreadRun();
 
         lock.unlock();
@@ -36,10 +35,19 @@ void BackgroundPollingThread::RunInBackground() {
     }
 }
 
-void BackgroundPollingThread::Stop() {
-    stop = true;
-    AwakeBackgroundThread(false);
+void BackgroundPollingThread::Start() {
+    if (!running) {
+        running = true;
+        backgroundThread = new boost::thread(boost::bind(&BackgroundPollingThread::RunInBackground, this));
+    }
+}
 
-    backgroundThread->join();
-    delete backgroundThread;
+void BackgroundPollingThread::Stop() {
+    if (running) {
+        running = false;
+        AwakeBackgroundThread(false);
+
+        backgroundThread->join();
+        delete backgroundThread;
+    }
 }

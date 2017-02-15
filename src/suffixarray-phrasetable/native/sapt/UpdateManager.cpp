@@ -10,6 +10,8 @@ UpdateManager::UpdateManager(SuffixArray *index, size_t bufferSize, double maxDe
         BackgroundPollingThread(maxDelay), index(index) {
     foregroundBatch = new UpdateBatch(bufferSize, index->GetStreams());
     backgroundBatch = new UpdateBatch(bufferSize, index->GetStreams());
+
+    Start();
 }
 
 UpdateManager::~UpdateManager() {

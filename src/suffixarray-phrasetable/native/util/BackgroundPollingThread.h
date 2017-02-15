@@ -21,8 +21,10 @@ namespace mmt {
             virtual void BackgroundThreadRun() = 0;
 
             inline bool IsRunning() {
-                return !stop;
+                return running;
             }
+
+            void Start();
 
             void Stop();
 
@@ -31,7 +33,7 @@ namespace mmt {
             std::mutex awakeMutex;
             std::condition_variable awakeCondition;
             double waitTimeout;
-            bool stop;
+            bool running;
 
             void RunInBackground();
         };

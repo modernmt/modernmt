@@ -70,7 +70,7 @@ namespace mmt {
  * SuffixArray - Initialization
  */
 
-SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength,
+SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength, double gcTimeout, size_t gcBatchSize,
                          bool prepareForBulkLoad) throw(index_exception, storage_exception) :
         openForBulkLoad(prepareForBulkLoad), prefixLength(prefixLength) {
     fs::path modelDir(modelPath);
@@ -127,7 +127,7 @@ SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength,
 
     unordered_set<domain_t> deletedDomains;
     DeserializeDeletedDomains(raw_deletedDomains.data(), raw_deletedDomains.size(), &deletedDomains);
-    garbageCollector = new GarbageCollector(db, deletedDomains);
+    garbageCollector = new GarbageCollector(storage, db, deletedDomains, gcBatchSize, gcTimeout);
 }
 
 SuffixArray::~SuffixArray() {
