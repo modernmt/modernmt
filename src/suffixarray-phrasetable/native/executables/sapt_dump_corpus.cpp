@@ -78,7 +78,7 @@ int main(int argc, const char *argv[]) {
     vector<wid_t> targetSentence;
     alignment_t alignment;
 
-    while (it->Next(&sourceSentence, &targetSentence, &alignment)) {
+    while (it->Next(&sourceSentence, &targetSentence, &alignment) != StorageIterator::eof) {
         for (auto w = sourceSentence.begin(); w!=sourceSentence.end(); ++w) { output << *w << " ";}
         output << "||| ";
         for (auto w = targetSentence.begin(); w!=targetSentence.end(); ++w) { output << *w << " ";}

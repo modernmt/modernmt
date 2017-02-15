@@ -31,14 +31,16 @@ namespace mmt {
         class StorageIterator {
             friend class CorpusStorage;
         public:
-            bool Next(vector<wid_t> *outSource, vector<wid_t> *outTarget, alignment_t *outAlignment);
+            static const size_t eof = 0;
+
+            size_t Next(vector<wid_t> *outSource, vector<wid_t> *outTarget, alignment_t *outAlignment);
 
         private:
             char *data;
             size_t dataLength;
             size_t offset;
 
-            StorageIterator(char *data, size_t dataLength);
+            StorageIterator(char *data, size_t dataLength, size_t initialOffset = 0);
         };
 
         class CorpusStorage {
@@ -55,7 +57,7 @@ namespace mmt {
 
             int64_t Flush() throw(storage_exception);
 
-            StorageIterator *NewIterator() const;
+            StorageIterator *NewIterator(size_t offset = 0) const;
 
             const size_t GetSize() const {
                 return dataLength;

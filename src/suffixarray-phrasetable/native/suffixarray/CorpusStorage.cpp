@@ -180,14 +180,15 @@ ssize_t CorpusStorage::MemoryMap() {
     return size;
 }
 
-StorageIterator *CorpusStorage::NewIterator() const {
+StorageIterator *CorpusStorage::NewIterator(size_t offset) const {
     return new StorageIterator(data, dataLength);
 }
 
-StorageIterator::StorageIterator(char *data, size_t dataLength) : data(data), dataLength(dataLength), offset(0) {
+StorageIterator::StorageIterator(char *data, size_t dataLength, size_t initialOffset)
+        : data(data), dataLength(dataLength), offset(initialOffset) {
 }
 
-bool StorageIterator::Next(vector<wid_t> *outSource, vector<wid_t> *outTarget, alignment_t *outAlignment) {
+size_t StorageIterator::Next(vector<wid_t> *outSource, vector<wid_t> *outTarget, alignment_t *outAlignment) {
     if (offset < dataLength) {
         outSource->clear();
         outTarget->clear();
@@ -202,8 +203,8 @@ bool StorageIterator::Next(vector<wid_t> *outSource, vector<wid_t> *outTarget, a
         if (!ReadAlignment(data, dataLength, &offset, outAlignment))
             throw storage_exception("Broken corpus file at index " + offset);
 
-        return true;
+        return offset;
     } else {
-        return false;
+        return StorageIterator::eof;
     }
 }
