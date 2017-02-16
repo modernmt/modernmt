@@ -14,13 +14,15 @@
 #include <unordered_set>
 #include <mmt/logging/Logger.h>
 #include <suffixarray/storage/CorporaStorage.h>
+#include "index_exception.h"
 
 namespace mmt {
     namespace sapt {
 
         class GarbageCollector : public BackgroundPollingThread {
         public:
-            GarbageCollector(CorporaStorage *storage, rocksdb::DB *db, const std::unordered_set<domain_t> &domains,
+            GarbageCollector(CorporaStorage *storage, rocksdb::DB *db,
+                             uint8_t prefixLength, const std::unordered_set<domain_t> &domains,
                              size_t batchSize, double timeout);
 
             virtual ~GarbageCollector();
@@ -38,6 +40,7 @@ namespace mmt {
             domain_t pendingDeletionDomain;
             size_t pendingDeletionOffset;
             size_t batchSize;
+            uint8_t prefixLength;
 
             std::mutex queueAccess;
             std::unordered_set<domain_t> queue;
@@ -47,11 +50,18 @@ namespace mmt {
                 interrupted_exception() {};
             };
 
-            void BackgroundThreadRun() override;
+            void BackgroundThreadRun() throw(index_exception) override;
 
-            void Delete(domain_t domain, size_t offset = 0) throw(interrupted_exception);
+            void Delete(domain_t domain, size_t offset = 0) throw(interrupted_exception, index_exception);
 
             void DeleteStorage(domain_t domain);
+
+            size_t LoadBatch(domain_t domain, StorageIterator *iterator, std::unordered_set<string> *outPrefixKeys,
+                             std::unordered_map<string, int64_t> *outTargetCounts) throw(interrupted_exception);
+
+            void WriteBatch(domain_t domain, size_t offset, const std::unordered_set<string> &prefixKeys,
+                            const std::unordered_map<string, int64_t> &targetCounts);
+
         };
 
     }

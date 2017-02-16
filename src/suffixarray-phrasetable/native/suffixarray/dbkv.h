@@ -129,18 +129,18 @@ namespace mmt {
             return true;
         }
 
-        static inline string SerializeCount(uint64_t count) {
+        static inline string SerializeCount(int64_t count) {
             char bytes[8];
-            WriteUInt64(bytes, (size_t) 0, count);
+            WriteInt64(bytes, (size_t) 0, count);
 
             return string(bytes, 8);
         }
 
-        static inline uint64_t DeserializeCount(const char *data, size_t size) {
+        static inline int64_t DeserializeCount(const char *data, size_t size) {
             if (size != 8)
                 return 0;
 
-            return ReadUInt64(data, (size_t) 0);
+            return ReadInt64(data, (size_t) 0);
         }
 
         static inline string SerializeDeletedDomains(const std::unordered_set<domain_t> &domains) {

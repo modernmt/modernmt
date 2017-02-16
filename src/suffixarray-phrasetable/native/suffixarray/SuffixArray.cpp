@@ -52,7 +52,7 @@ namespace mmt {
             }
 
             inline void MergeCounts(const Slice *existing_value, const Slice &value, string *new_value) const {
-                uint64_t count = DeserializeCount(value.data(), value.size());
+                int64_t count = DeserializeCount(value.data(), value.size());
                 if (existing_value)
                     count += DeserializeCount(existing_value->data(), existing_value->size());
 
@@ -132,7 +132,7 @@ SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength, double g
 
     unordered_set<domain_t> deletedDomains;
     DeserializeDeletedDomains(raw_deletedDomains.data(), raw_deletedDomains.size(), &deletedDomains);
-    garbageCollector = new GarbageCollector(storage, db, deletedDomains, gcBatchSize, gcTimeout);
+    garbageCollector = new GarbageCollector(storage, db, prefixLength, deletedDomains, gcBatchSize, gcTimeout);
 }
 
 SuffixArray::~SuffixArray() {
@@ -171,7 +171,7 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
 
     // Compute prefixes
     unordered_map<string, PostingList> sourcePrefixes;
-    unordered_map<string, uint64_t> targetCounts;
+    unordered_map<string, int64_t> targetCounts;
 
     for (auto entry = batch.data.begin(); entry != batch.data.end(); ++entry) {
         domain_t domain = entry->domain;
@@ -233,7 +233,7 @@ void SuffixArray::AddPrefixesToBatch(domain_t domain, const vector<wid_t> &sente
     }
 }
 
-void SuffixArray::AddTargetCountsToBatch(const vector<wid_t> &sentence, unordered_map<string, uint64_t> &outBatch) {
+void SuffixArray::AddTargetCountsToBatch(const vector<wid_t> &sentence, unordered_map<string, int64_t> &outBatch) {
     size_t size = sentence.size();
 
     for (size_t start = 0; start < size; ++start) {
@@ -242,7 +242,7 @@ void SuffixArray::AddTargetCountsToBatch(const vector<wid_t> &sentence, unordere
                 break;
 
             string dkey = MakeCountKey(prefixLength, sentence, start, length);
-            outBatch[dkey]++;;
+            outBatch[dkey]++;
         }
     }
 }
@@ -255,7 +255,7 @@ size_t SuffixArray::CountOccurrences(bool isSource, const vector<wid_t> &phrase)
     if (phrase.size() > prefixLength)
         return 1; // Approximate higher order n-grams to singletons
 
-    size_t count = 0;
+    int64_t count = 0;
 
     if (isSource) {
         PrefixCursor *cursor = PrefixCursor::NewGlobalCursor(db, prefixLength);
@@ -270,7 +270,7 @@ size_t SuffixArray::CountOccurrences(bool isSource, const vector<wid_t> &phrase)
         count = DeserializeCount(value.data(), value.size());
     }
 
-    return count;
+    return (size_t) std::max(count, (int64_t) 1);
 }
 
 void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, vector<sample_t> &outSamples,
@@ -316,7 +316,7 @@ bool IndexIterator::Next(IndexIterator::IndexEntry *outEntry) {
                 outEntry->positions.clear();
                 PostingList::Deserialize(value.data(), value.size(), outEntry->positions);
 
-                outEntry->count = outEntry->positions.size();
+                outEntry->count = (int64_t) outEntry->positions.size();
                 break;
             case kTargetCountKeyType:
                 outEntry->is_source = false;

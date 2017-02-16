@@ -23,7 +23,7 @@ size_t StorageIterator::Next(vector<wid_t> *outSource, vector<wid_t> *outTarget,
 
         offset = bucket->Retrieve(offset, outSource, outTarget, outAlignment);
 
-        return IsValidOffset(offset) ? (size_t) offset : eof;
+        return (size_t) offset;
     } else {
         return StorageIterator::eof;
     }
