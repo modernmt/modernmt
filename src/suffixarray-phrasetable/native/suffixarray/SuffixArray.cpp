@@ -19,7 +19,6 @@ using namespace mmt::sapt;
 
 static const string kStreamsKey = MakeEmptyKey(kStreamsKeyType);
 static const string kStorageManifestKey = MakeEmptyKey(kStorageManifestKeyType);
-static const string kDeletedDomainsKey = MakeEmptyKey(kDeletedDomainsKeyType);
 
 /*
  * MergePositionOperator
@@ -127,12 +126,7 @@ SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength, double g
     storage = new CorporaStorage(storageFolder.string(), manifest);
 
     // Garbage collector
-    string raw_deletedDomains;
-    db->Get(ReadOptions(), kDeletedDomainsKey, &raw_deletedDomains);
-
-    unordered_set<domain_t> deletedDomains;
-    DeserializeDeletedDomains(raw_deletedDomains.data(), raw_deletedDomains.size(), &deletedDomains);
-    garbageCollector = new GarbageCollector(storage, db, prefixLength, deletedDomains, gcBatchSize, gcTimeout);
+    garbageCollector = new GarbageCollector(storage, db, prefixLength, gcBatchSize, gcTimeout);
 }
 
 SuffixArray::~SuffixArray() {
@@ -194,9 +188,8 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
     }
 
     // Write deleted domains
-    std::unordered_set<domain_t> deletedDomains = garbageCollector->GetDomainsMarkedForDeletion();
-    deletedDomains.insert(batch.deletions.begin(), batch.deletions.end());
-    writeBatch.Put(kDeletedDomainsKey, SerializeDeletedDomains(deletedDomains));
+    for (auto domain = batch.deletions.begin(); domain != batch.deletions.end(); ++domain)
+        writeBatch.Put(MakeDomainDeletionKey(*domain), "");
 
     // Write streams
     writeBatch.Put(kStreamsKey, SerializeStreams(streams));

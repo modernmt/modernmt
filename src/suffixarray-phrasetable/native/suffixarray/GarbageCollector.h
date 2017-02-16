@@ -22,14 +22,11 @@ namespace mmt {
         class GarbageCollector : public BackgroundPollingThread {
         public:
             GarbageCollector(CorporaStorage *storage, rocksdb::DB *db,
-                             uint8_t prefixLength, const std::unordered_set<domain_t> &domains,
-                             size_t batchSize, double timeout);
+                             uint8_t prefixLength, size_t batchSize, double timeout);
 
             virtual ~GarbageCollector();
 
             void MarkForDeletion(const std::vector<domain_t> &domains);
-
-            std::unordered_set<domain_t> GetDomainsMarkedForDeletion();
 
         private:
             mmt::logging::Logger logger;
@@ -38,7 +35,7 @@ namespace mmt {
             CorporaStorage *storage;
 
             domain_t pendingDeletionDomain;
-            size_t pendingDeletionOffset;
+            int64_t pendingDeletionOffset;
             size_t batchSize;
             uint8_t prefixLength;
 
@@ -52,14 +49,14 @@ namespace mmt {
 
             void BackgroundThreadRun() throw(index_exception) override;
 
-            void Delete(domain_t domain, size_t offset = 0) throw(interrupted_exception, index_exception);
+            void Delete(domain_t domain, int64_t offset = 0) throw(interrupted_exception, index_exception);
 
-            void DeleteStorage(domain_t domain);
+            void DeleteStorage(domain_t domain) throw(index_exception);
 
-            size_t LoadBatch(domain_t domain, StorageIterator *iterator, std::unordered_set<string> *outPrefixKeys,
-                             std::unordered_map<string, int64_t> *outTargetCounts) throw(interrupted_exception);
+            int64_t LoadBatch(domain_t domain, StorageIterator *iterator, std::unordered_set<string> *outPrefixKeys,
+                              std::unordered_map<string, int64_t> *outTargetCounts) throw(interrupted_exception);
 
-            void WriteBatch(domain_t domain, size_t offset, const std::unordered_set<string> &prefixKeys,
+            void WriteBatch(domain_t domain, int64_t offset, const std::unordered_set<string> &prefixKeys,
                             const std::unordered_map<string, int64_t> &targetCounts);
 
         };

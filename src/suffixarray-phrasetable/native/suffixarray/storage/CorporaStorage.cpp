@@ -118,7 +118,7 @@ StorageIterator *CorporaStorage::NewIterator(domain_t domain, size_t offset) {
 
     std::shared_ptr<StorageBucket> bucket = GetBucket(domain);
     if (bucket != nullptr)
-        iterator = new StorageIterator(bucket, offset);
+        iterator = new StorageIterator(bucket, (int64_t) offset);
 
     return iterator;
 }

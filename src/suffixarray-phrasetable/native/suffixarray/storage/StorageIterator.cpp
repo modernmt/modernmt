@@ -10,12 +10,12 @@ using namespace mmt::sapt;
 
 #define IsValidOffset(offset) (0 <= offset && (size_t) offset < dataLength)
 
-StorageIterator::StorageIterator(std::shared_ptr<StorageBucket> bucket, size_t initialOffset)
-        : bucket(bucket), dataLength(bucket->GetSize()), offset((int64_t) initialOffset) {
+StorageIterator::StorageIterator(std::shared_ptr<StorageBucket> bucket, int64_t initialOffset)
+        : bucket(bucket), dataLength(bucket->GetSize()), offset(initialOffset) {
 }
 
-size_t StorageIterator::Next(vector<wid_t> *outSource, vector<wid_t> *outTarget,
-                             alignment_t *outAlignment) throw(storage_exception) {
+bool StorageIterator::Next(std::vector<wid_t> *outSource, std::vector<wid_t> *outTarget, alignment_t *outAlignment,
+                           int64_t *outNextOffset) {
     if (IsValidOffset(offset)) {
         outSource->clear();
         outTarget->clear();
@@ -23,8 +23,14 @@ size_t StorageIterator::Next(vector<wid_t> *outSource, vector<wid_t> *outTarget,
 
         offset = bucket->Retrieve(offset, outSource, outTarget, outAlignment);
 
-        return (size_t) offset;
+        if (outNextOffset)
+            *outNextOffset = offset < 0 ? StorageIterator::eof : offset;
+
+        return true;
     } else {
-        return StorageIterator::eof;
+        if (outNextOffset)
+            *outNextOffset = StorageIterator::eof;
+
+        return false;
     }
 }

@@ -22,7 +22,7 @@ namespace mmt {
         enum KeyType {
             kStreamsKeyType = 0,
             kStorageManifestKeyType = 1,
-            kDeletedDomainsKeyType = 2,
+            kDeletedDomainKeyType = 2,
             kPendingDeletionKeyType = 3,
 
             kSourcePrefixKeyType = 4,
@@ -81,6 +81,16 @@ namespace mmt {
             return key;
         }
 
+        static inline string MakeDomainDeletionKey(domain_t domain) {
+            char bytes[5];
+            bytes[0] = kDeletedDomainKeyType;
+
+            size_t ptr = 1;
+            WriteUInt32(bytes, &ptr, domain);
+
+            return string(bytes, 5);
+        }
+
         static inline KeyType GetKeyTypeFromKey(const char *data, length_t prefixLength) {
             return (KeyType) data[0];
         }
@@ -96,6 +106,10 @@ namespace mmt {
                 words.push_back(ReadUInt32(data, offset));
                 offset += sizeof(wid_t);
             }
+        }
+
+        static inline domain_t GetDomainFromDeletionKey(const char *data) {
+            return ReadUInt32(data, 1);
         }
 
         /* Values */
@@ -143,53 +157,25 @@ namespace mmt {
             return ReadInt64(data, (size_t) 0);
         }
 
-        static inline string SerializeDeletedDomains(const std::unordered_set<domain_t> &domains) {
-            size_t size = domains.size() * sizeof(domain_t);
-            char *bytes = new char[size];
-            size_t i = 0;
-
-            for (auto domain = domains.begin(); domain != domains.end(); ++domain)
-                WriteUInt64(bytes, &i, *domain);
-
-            string result = string(bytes, size);
-            delete[] bytes;
-
-            return result;
-        }
-
-        static inline bool
-        DeserializeDeletedDomains(const char *data, size_t bytes_size, unordered_set<domain_t> *outDomains) {
-            if (bytes_size < sizeof(domain_t) || bytes_size % sizeof(domain_t) != 0)
-                return false;
-
-            size_t length = bytes_size / sizeof(domain_t);
-
-            size_t ptr = 0;
-            for (size_t i = 0; i < length; ++i)
-                outDomains->insert(ReadUInt32(data, &ptr));
-
-            return true;
-        }
-
-        static inline string SerializeDeletionData(domain_t domain, size_t offset) {
+        static inline string SerializePendingDeletionData(domain_t domain, int64_t offset) {
             char bytes[12];
             size_t ptr = 0;
 
             WriteUInt32(bytes, &ptr, domain);
-            WriteUInt64(bytes, &ptr, (uint64_t) offset);
+            WriteInt64(bytes, &ptr, offset);
 
             string value(bytes, 12);
             return value;
         }
 
         static inline bool
-        DeserializeDeletionData(const char *data, size_t bytes_size, domain_t *outDomain, size_t *outOffset) {
+        DeserializePendingDeletionData(const char *data, size_t bytes_size, domain_t *outDomain, int64_t *outOffset) {
             if (bytes_size != 12)
                 return false;
 
             size_t ptr = 0;
             *outDomain = ReadUInt32(data, &ptr);
-            *outOffset = (size_t) ReadUInt64(data, &ptr);
+            *outOffset = ReadInt64(data, &ptr);
 
             return true;
         }

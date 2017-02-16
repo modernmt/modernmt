@@ -13,18 +13,33 @@ using namespace mmt::sapt;
 
 static const string kPendingDeletionKey = MakeEmptyKey(kPendingDeletionKeyType);
 
-GarbageCollector::GarbageCollector(CorporaStorage *storage, rocksdb::DB *db, uint8_t prefixLength,
-                                   const std::unordered_set<domain_t> &domains, size_t batchSize, double timeout)
+GarbageCollector::GarbageCollector(CorporaStorage *storage, rocksdb::DB *db,
+                                   uint8_t prefixLength, size_t batchSize, double timeout)
         : BackgroundPollingThread(timeout), logger("sapt.GarbageCollector"), db(db), storage(storage),
-          batchSize(batchSize), prefixLength(prefixLength), queue(domains) {
+          batchSize(batchSize), prefixLength(prefixLength) {
     // Pending deletion
-    string raw_data;
+    string raw_deletion;
 
-    db->Get(ReadOptions(), kPendingDeletionKey, &raw_data);
-    if (!DeserializeDeletionData(raw_data.data(), raw_data.size(), &pendingDeletionDomain, &pendingDeletionOffset)) {
-        pendingDeletionDomain = 0;
-        pendingDeletionOffset = 0;
+    pendingDeletionDomain = 0;
+    pendingDeletionOffset = StorageIterator::eof;
+
+    db->Get(ReadOptions(), kPendingDeletionKey, &raw_deletion);
+    DeserializePendingDeletionData(raw_deletion.data(), raw_deletion.size(),
+                                   &pendingDeletionDomain, &pendingDeletionOffset);
+
+    // Deleted domains
+    string deletionKeyPrefix = MakeEmptyKey(kDeletedDomainKeyType);
+
+    Iterator *it = db->NewIterator(ReadOptions());
+    it->Seek(deletionKeyPrefix);
+
+    Slice key;
+    while (it->Valid() && (key = it->key()).starts_with(deletionKeyPrefix)) {
+        queue.insert(GetDomainFromDeletionKey(key.data()));
+        it->Next();
     }
+
+    delete it;
 
     // Starting background thread
     Start();
@@ -40,20 +55,12 @@ void GarbageCollector::MarkForDeletion(const std::vector<domain_t> &domains) {
     queueAccess.unlock();
 }
 
-std::unordered_set<domain_t> GarbageCollector::GetDomainsMarkedForDeletion() {
-    unordered_set<domain_t> result;
-
+void GarbageCollector::BackgroundThreadRun() throw(index_exception) {
     queueAccess.lock();
-    result = queue;
+    unordered_set<domain_t> domains = queue;
     queueAccess.unlock();
 
-    return result;
-}
-
-void GarbageCollector::BackgroundThreadRun() throw(index_exception) {
-    unordered_set<domain_t> domains = GetDomainsMarkedForDeletion();
-
-    if (domains.empty() && pendingDeletionDomain == 0)
+    if (domains.empty())
         return;
 
     LogInfo(logger) << "Started cleaning process";
@@ -61,13 +68,13 @@ void GarbageCollector::BackgroundThreadRun() throw(index_exception) {
 
     try {
         if (pendingDeletionDomain != 0) {
-            if (pendingDeletionOffset == 0)
+            if (pendingDeletionOffset == StorageIterator::eof)
                 DeleteStorage(pendingDeletionDomain);
             else
                 Delete(pendingDeletionDomain, pendingDeletionOffset);
 
             pendingDeletionDomain = 0;
-            pendingDeletionOffset = 0;
+            pendingDeletionOffset = StorageIterator::eof;
         }
 
         for (auto domain = domains.begin(); domain != domains.end(); ++domain) {
@@ -80,16 +87,16 @@ void GarbageCollector::BackgroundThreadRun() throw(index_exception) {
     }
 }
 
-void GarbageCollector::Delete(domain_t domain, size_t offset) throw(interrupted_exception, index_exception) {
+void GarbageCollector::Delete(domain_t domain, int64_t offset) throw(interrupted_exception, index_exception) {
     double beginTime = GetTime();
     LogInfo(logger) << (offset == 0 ? "Deleting domain " : "Resuming deletion of domain ") << domain;
 
-    StorageIterator *iterator = storage->NewIterator(domain, offset);
+    StorageIterator *iterator = storage->NewIterator(domain, (size_t) offset);
     if (iterator != nullptr) {
         unordered_set<string> prefixKeys;
         unordered_map<string, int64_t> targetCounts;
 
-        size_t currentOffset;
+        int64_t currentOffset;
         do {
             currentOffset = LoadBatch(domain, iterator, &prefixKeys, &targetCounts);
 
@@ -104,21 +111,28 @@ void GarbageCollector::Delete(domain_t domain, size_t offset) throw(interrupted_
 
     DeleteStorage(domain);
 
-    queueAccess.lock();
-    queue.erase(domain);
-    queueAccess.unlock();
-
     LogInfo(logger) << "Deletion of domain " << domain << " completed in " << GetElapsedTime(beginTime) << "s";
 }
 
-void GarbageCollector::DeleteStorage(domain_t domain) {
+void GarbageCollector::DeleteStorage(domain_t domain) throw(index_exception) {
     storage->Delete(domain);
-    db->Delete(WriteOptions(), kPendingDeletionKey);
+
+    rocksdb::WriteBatch writeBatch;
+    writeBatch.Delete(kPendingDeletionKey);
+    writeBatch.Delete(MakeDomainDeletionKey(domain));
+
+    Status status = db->Write(WriteOptions(), &writeBatch);
+    if (!status.ok())
+        throw index_exception("Unable to write to index: " + status.ToString());
+
+    queueAccess.lock();
+    queue.erase(domain);
+    queueAccess.unlock();
 }
 
-size_t GarbageCollector::LoadBatch(domain_t domain, StorageIterator *iterator,
-                                   unordered_set<string> *outPrefixKeys,
-                                   unordered_map<string, int64_t> *outTargetCounts) throw(interrupted_exception) {
+int64_t GarbageCollector::LoadBatch(domain_t domain, StorageIterator *iterator,
+                                    unordered_set<string> *outPrefixKeys,
+                                    unordered_map<string, int64_t> *outTargetCounts) throw(interrupted_exception) {
     outPrefixKeys->clear();
     outTargetCounts->clear();
 
@@ -128,12 +142,12 @@ size_t GarbageCollector::LoadBatch(domain_t domain, StorageIterator *iterator,
 
     size_t isRunningCheckCount = 0;
 
-    size_t offset = 0;
+    int64_t offset = 0;
     for (size_t i = 0; i < batchSize; ++i) {
         if ((isRunningCheckCount++ % 1000 == 0) && !IsRunning()) // check every 1000 sentences
             throw interrupted_exception();
 
-        if ((offset = iterator->Next(&source, &target, &alignment)) == StorageIterator::eof)
+        if (!iterator->Next(&source, &target, &alignment, &offset))
             break;
 
         // Load source prefixes
@@ -167,7 +181,7 @@ size_t GarbageCollector::LoadBatch(domain_t domain, StorageIterator *iterator,
     return offset;
 }
 
-void GarbageCollector::WriteBatch(domain_t domain, size_t offset, const unordered_set<string> &prefixKeys,
+void GarbageCollector::WriteBatch(domain_t domain, int64_t offset, const unordered_set<string> &prefixKeys,
                                   const unordered_map<string, int64_t> &targetCounts) {
     rocksdb::WriteBatch writeBatch;
 
@@ -183,7 +197,7 @@ void GarbageCollector::WriteBatch(domain_t domain, size_t offset, const unordere
     }
 
     // Write deletion state
-    writeBatch.Put(kPendingDeletionKey, SerializeDeletionData(domain, offset));
+    writeBatch.Put(kPendingDeletionKey, SerializePendingDeletionData(domain, offset));
 
     // Commit write batch
     Status status = db->Write(WriteOptions(), &writeBatch);

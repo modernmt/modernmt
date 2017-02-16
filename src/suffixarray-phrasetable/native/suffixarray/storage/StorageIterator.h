@@ -18,16 +18,18 @@ namespace mmt {
             friend class CorporaStorage;
 
         public:
-            static const size_t eof = 0;
+            static const int64_t eof = -1;
 
-            size_t Next(std::vector<wid_t> *outSource, std::vector<wid_t> *outTarget, alignment_t *outAlignment) throw(storage_exception);
+            bool Next(std::vector<wid_t> *outSource, std::vector<wid_t> *outTarget,
+                      alignment_t *outAlignment, int64_t *outNextOffset);
 
         private:
             std::shared_ptr<StorageBucket> bucket;
             size_t dataLength;
             int64_t offset;
 
-            StorageIterator(std::shared_ptr<StorageBucket> bucket, size_t initialOffset = 0);
+            StorageIterator(std::shared_ptr<StorageBucket> bucket, int64_t initialOffset = 0);
+
         };
 
     }
