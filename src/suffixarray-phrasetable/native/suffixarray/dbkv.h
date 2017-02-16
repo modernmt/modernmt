@@ -20,11 +20,13 @@ namespace mmt {
     namespace sapt {
 
         enum KeyType {
-            kGlobalInfoKeyType = 0,
-            kSourcePrefixKeyType = 1,
-            kTargetCountKeyType = 2,
-            kDeletedDomainsType = 3,
-            kPendingDeletionDataType = 4
+            kStreamsKeyType = 0,
+            kStorageManifestKeyType = 1,
+            kDeletedDomainsKeyType = 2,
+            kPendingDeletionKeyType = 3,
+
+            kSourcePrefixKeyType = 4,
+            kTargetCountKeyType = 5,
         };
 
         /* Keys */
@@ -98,12 +100,11 @@ namespace mmt {
 
         /* Values */
 
-        static inline string SerializeGlobalInfo(const vector<seqid_t> &streams, int64_t storageSize) {
-            size_t size = 8 + streams.size() * sizeof(seqid_t);
+        static inline string SerializeStreams(const vector<seqid_t> &streams) {
+            size_t size = streams.size() * sizeof(seqid_t);
             char *bytes = new char[size];
             size_t i = 0;
 
-            WriteInt64(bytes, &i, storageSize);
             for (auto id = streams.begin(); id != streams.end(); ++id)
                 WriteInt64(bytes, &i, *id);
 
@@ -113,17 +114,13 @@ namespace mmt {
             return result;
         }
 
-        static inline bool
-        DeserializeGlobalInfo(const char *data, size_t bytes_size, int64_t *outStorageSize,
-                              vector<seqid_t> *outStreams) {
-            if (bytes_size < 8 || bytes_size % 8 != 0)
+        static inline bool DeserializeStreams(const char *data, size_t bytes_size, vector<seqid_t> *outStreams) {
+            if (bytes_size % 8 != 0)
                 return false;
 
             size_t ptr = 0;
 
-            *outStorageSize = ReadInt64(data, &ptr);
-
-            size_t size = (bytes_size - 8) / sizeof(seqid_t);
+            size_t size = bytes_size / sizeof(seqid_t);
             outStreams->resize(size, 0);
 
             for (size_t i = 0; i < size; ++i)

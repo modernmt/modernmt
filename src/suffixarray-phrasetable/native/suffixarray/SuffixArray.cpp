@@ -17,8 +17,9 @@ using namespace rocksdb;
 using namespace mmt;
 using namespace mmt::sapt;
 
-static const string kGlobalInfoKey = MakeEmptyKey(kGlobalInfoKeyType);
-static const string kDeletedDomainsKey = MakeEmptyKey(kDeletedDomainsType);
+static const string kStreamsKey = MakeEmptyKey(kStreamsKeyType);
+static const string kStorageManifestKey = MakeEmptyKey(kStorageManifestKeyType);
+static const string kDeletedDomainsKey = MakeEmptyKey(kDeletedDomainsKeyType);
 
 /*
  * MergePositionOperator
@@ -78,7 +79,7 @@ SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength, double g
     if (!fs::is_directory(modelDir))
         throw invalid_argument("Invalid model path: " + modelPath);
 
-    fs::path storageFile = fs::absolute(modelDir / fs::path("corpora.bin"));
+    fs::path storageFolder = fs::absolute(modelDir / fs::path("storage"));
     fs::path indexPath = fs::absolute(modelDir / fs::path("index"));
 
     rocksdb::Options options;
@@ -113,13 +114,17 @@ SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength, double g
 
     // Read streams
     string raw_streams;
-    int64_t storageSize = 0;
 
-    db->Get(ReadOptions(), kGlobalInfoKey, &raw_streams);
-    DeserializeGlobalInfo(raw_streams.data(), raw_streams.size(), &storageSize, &streams);
+    db->Get(ReadOptions(), kStreamsKey, &raw_streams);
+    DeserializeStreams(raw_streams.data(), raw_streams.size(), &streams);
 
     // Load storage
-    storage = new CorpusStorage(storageFile.string(), storageSize);
+    string raw_manifest;
+
+    db->Get(ReadOptions(), kStorageManifestKey, &raw_manifest);
+    StorageManifest *manifest = StorageManifest::Deserialize(raw_manifest.data(), raw_manifest.size());
+
+    storage = new CorporaStorage(storageFolder.string(), manifest);
 
     // Garbage collector
     string raw_deletedDomains;
@@ -142,10 +147,18 @@ SuffixArray::~SuffixArray() {
 
 void SuffixArray::ForceCompaction() throw(index_exception) {
     if (openForBulkLoad) {
-        // Write global info
-        int64_t storageSize = storage->Flush();
-        Status status = db->Put(WriteOptions(), kGlobalInfoKey, SerializeGlobalInfo(streams, storageSize));
+        WriteBatch writeBatch;
 
+        // Write streams
+        writeBatch.Put(kStreamsKey, SerializeStreams(streams));
+
+        // Write storage manifest
+        storage->Flush();
+        string manifest = storage->GetManifest()->Serialize();
+        writeBatch.Put(kStorageManifestKey, manifest);
+
+        // Commit write batch
+        Status status = db->Write(WriteOptions(), &writeBatch);
         if (!status.ok())
             throw index_exception("Unable to write to index: " + status.ToString());
     }
@@ -163,12 +176,10 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
     for (auto entry = batch.data.begin(); entry != batch.data.end(); ++entry) {
         domain_t domain = entry->domain;
 
-        int64_t offset = storage->Append(entry->source, entry->target, entry->alignment);
+        int64_t offset = storage->Append(domain, entry->source, entry->target, entry->alignment);
         AddPrefixesToBatch(domain, entry->source, offset, sourcePrefixes);
         AddTargetCountsToBatch(entry->target, targetCounts);
     }
-
-    int64_t storageSize = openForBulkLoad ? -1 : storage->Flush();
 
     // Add prefixes to write batch
     for (auto prefix = sourcePrefixes.begin(); prefix != sourcePrefixes.end(); ++prefix) {
@@ -187,8 +198,15 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
     deletedDomains.insert(batch.deletions.begin(), batch.deletions.end());
     writeBatch.Put(kDeletedDomainsKey, SerializeDeletedDomains(deletedDomains));
 
-    // Write global info
-    writeBatch.Put(kGlobalInfoKey, SerializeGlobalInfo(batch.streams, storageSize));
+    // Write streams
+    writeBatch.Put(kStreamsKey, SerializeStreams(streams));
+
+    // Write storage manifest
+    if (!openForBulkLoad) {
+        storage->Flush();
+        string manifest = storage->GetManifest()->Serialize();
+        writeBatch.Put(kStorageManifestKey, manifest);
+    }
 
     // Commit write batch
     Status status = db->Write(WriteOptions(), &writeBatch);

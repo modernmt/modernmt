@@ -11,8 +11,8 @@
 #include <unordered_set>
 #include <mutex>
 #include <mmt/sentence.h>
+#include <suffixarray/storage/CorporaStorage.h>
 #include "UpdateBatch.h"
-#include "CorpusStorage.h"
 #include "PostingList.h"
 #include "PrefixCursor.h"
 #include "Collector.h"
@@ -81,7 +81,7 @@ namespace mmt {
                 return streams;
             }
 
-            const CorpusStorage *GetStorage() const {
+            CorporaStorage *GetStorage() const {
                 return storage;
             }
 
@@ -92,7 +92,7 @@ namespace mmt {
             const uint8_t prefixLength;
 
             rocksdb::DB *db;
-            CorpusStorage *storage;
+            CorporaStorage *storage;
             vector<seqid_t> streams;
 
             GarbageCollector *garbageCollector;

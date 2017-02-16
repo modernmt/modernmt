@@ -1,14 +1,16 @@
 //
-// Created by Davide  Caroselli on 27/09/16.
+// Created by Davide  Caroselli on 15/02/17.
 //
 
+#include "StorageBucket.h"
 #include <sys/fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #include <iostream>
 #include <util/ioutils.h>
-#include "CorpusStorage.h"
 
+using namespace std;
+using namespace mmt;
 using namespace mmt::sapt;
 
 static_assert(sizeof(mmt::wid_t) == 4, "Current implementation works only with 32-bit word ids");
@@ -68,10 +70,8 @@ static inline bool ReadAlignment(const char *data, size_t data_length, size_t *p
     return true;
 }
 
-/* CorpusStorage */
-
-CorpusStorage::CorpusStorage(const string &filepath, int64_t size) throw(storage_exception) : data(NULL),
-                                                                                              dataLength(0) {
+StorageBucket::StorageBucket(const std::string &filepath, int64_t size) throw(storage_exception)
+        : filepath(filepath), data(NULL), dataLength(0), deleteOnClose(false) {
     mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
     fd = open(filepath.c_str(), O_RDWR | O_CREAT, mode);
 
@@ -89,29 +89,31 @@ CorpusStorage::CorpusStorage(const string &filepath, int64_t size) throw(storage
     dataLength = mappedSize > 0 ? (size_t) mappedSize : 0;
 }
 
-CorpusStorage::~CorpusStorage() {
+StorageBucket::~StorageBucket() {
     munmap(data, dataLength);
 
     fsync(fd);
     close(fd);
+
+    if (deleteOnClose)
+        remove(filepath.c_str());
 }
 
-bool
-CorpusStorage::Retrieve(int64_t offset, vector<wid_t> *outSourceSentence, vector<wid_t> *outTargetSentence,
-                        mmt::alignment_t *outAlignment) const {
+int64_t StorageBucket::Retrieve(int64_t offset, std::vector<wid_t> *outSourceSentence,
+                                std::vector<wid_t> *outTargetSentence, alignment_t *outAlignment) const {
     size_t ptr = (size_t) offset;
 
     if (ptr >= dataLength)
-        return false;
+        return -1;
 
-    if (!ReadSentence(data, dataLength, &ptr, outSourceSentence)) return false;
-    if (!ReadSentence(data, dataLength, &ptr, outTargetSentence)) return false;
+    if (!ReadSentence(data, dataLength, &ptr, outSourceSentence)) return -1;
+    if (!ReadSentence(data, dataLength, &ptr, outTargetSentence)) return -1;
 
-    return ReadAlignment(data, dataLength, &ptr, outAlignment);
+    return ReadAlignment(data, dataLength, &ptr, outAlignment) ? (int64_t) ptr : -1;
 }
 
-int64_t CorpusStorage::Append(const vector<mmt::wid_t> &sourceSentence, const vector<mmt::wid_t> &targetSentence,
-                              const mmt::alignment_t &alignment) throw(storage_exception) {
+int64_t StorageBucket::Append(const std::vector<wid_t> &sourceSentence, const std::vector<wid_t> &targetSentence,
+                              const alignment_t &alignment) throw(storage_exception) {
     size_t size = SentenceLengthInBytes(sourceSentence) + SentenceLengthInBytes(targetSentence) +
                   AlignmentLengthInBytes(alignment);
 
@@ -133,7 +135,7 @@ int64_t CorpusStorage::Append(const vector<mmt::wid_t> &sourceSentence, const ve
     return ptr;
 }
 
-int64_t CorpusStorage::Flush() throw(storage_exception) {
+int64_t StorageBucket::Flush() throw(storage_exception) {
     int fsyncResult;
     ssize_t mmapSize = -1;
 
@@ -153,7 +155,11 @@ int64_t CorpusStorage::Flush() throw(storage_exception) {
     return (int64_t) mmapSize;
 }
 
-ssize_t CorpusStorage::MemoryMap() {
+void StorageBucket::MarkForDeletion() {
+    deleteOnClose = true;
+}
+
+ssize_t StorageBucket::MemoryMap() {
     size_t size = (size_t) lseek(fd, 0, SEEK_CUR);
 
     if (size == 0)
@@ -178,33 +184,4 @@ ssize_t CorpusStorage::MemoryMap() {
     }
 
     return size;
-}
-
-StorageIterator *CorpusStorage::NewIterator(size_t offset) const {
-    return new StorageIterator(data, dataLength);
-}
-
-StorageIterator::StorageIterator(char *data, size_t dataLength, size_t initialOffset)
-        : data(data), dataLength(dataLength), offset(initialOffset) {
-}
-
-size_t StorageIterator::Next(vector<wid_t> *outSource, vector<wid_t> *outTarget, alignment_t *outAlignment) {
-    if (offset < dataLength) {
-        outSource->clear();
-        outTarget->clear();
-        outAlignment->clear();
-
-        if (!ReadSentence(data, dataLength, &offset, outSource))
-            throw storage_exception("Broken corpus file at index " + offset);
-
-        if (!ReadSentence(data, dataLength, &offset, outTarget))
-            throw storage_exception("Broken corpus file at index " + offset);
-
-        if (!ReadAlignment(data, dataLength, &offset, outAlignment))
-            throw storage_exception("Broken corpus file at index " + offset);
-
-        return offset;
-    } else {
-        return StorageIterator::eof;
-    }
 }

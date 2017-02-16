@@ -10,7 +10,7 @@
 using namespace mmt;
 using namespace mmt::sapt;
 
-Collector::Collector(CorpusStorage *storage, rocksdb::DB *db, length_t prefixLength, const context_t *context,
+Collector::Collector(CorporaStorage *storage, rocksdb::DB *db, length_t prefixLength, const context_t *context,
                      bool searchInBackground) : prefixLength(prefixLength), storage(storage) {
     phrase.reserve(20); // typical max phrase length
 
@@ -161,18 +161,20 @@ void Collector::Retrieve(const vector<location_t> &locations, vector<sample_t> &
     int64_t lastPointer = -1;
 
     for (auto location = locations.begin(); location != locations.end(); ++location) {
-        if (lastSample && lastPointer == location->pointer) {
+        if (lastSample && lastSample->domain == location->domain && lastPointer == location->pointer) {
             lastSample->offsets.push_back(location->offset);
         } else {
             sample_t sample;
             sample.domain = location->domain;
             sample.offsets.push_back(location->offset);
-            storage->Retrieve(location->pointer, &sample.source, &sample.target, &sample.alignment);
 
-            outSamples.push_back(sample);
+            if (storage->Retrieve(location->domain, location->pointer,
+                                  &sample.source, &sample.target, &sample.alignment)) {
+                outSamples.push_back(sample);
 
-            lastPointer = location->pointer;
-            lastSample = &(outSamples[outSamples.size() - 1]);
+                lastPointer = location->pointer;
+                lastSample = &(outSamples[outSamples.size() - 1]);
+            }
         }
     }
 }

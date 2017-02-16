@@ -11,10 +11,10 @@ using namespace std;
 using namespace mmt;
 using namespace mmt::sapt;
 
-static const string kPendingDeletionDataKey = MakeEmptyKey(kPendingDeletionDataType);
+static const string kPendingDeletionDataKey = MakeEmptyKey(kPendingDeletionKeyType);
 
-GarbageCollector::GarbageCollector(CorpusStorage *storage, rocksdb::DB *db, const std::unordered_set<domain_t> &domains,
-                                   size_t batchSize, double timeout)
+GarbageCollector::GarbageCollector(CorporaStorage *storage, rocksdb::DB *db,
+                                   const std::unordered_set<domain_t> &domains, size_t batchSize, double timeout)
         : BackgroundPollingThread(timeout), logger("sapt.GarbageCollector"), db(db), storage(storage),
           batchSize(batchSize), queue(domains) {
     // Pending deletion
@@ -84,8 +84,13 @@ void GarbageCollector::Delete(domain_t domain, size_t offset) throw(interrupted_
     double beginTime = GetTime();
     LogInfo(logger) << (offset == 0 ? "Deleting domain " : "Resuming deletion of domain ") << domain;
 
-    // TODO: iterate over domain and delete entries
-    // check IsRunning at every cycle, if false -> throw interrupted_exception
+    StorageIterator *iterator = storage->NewIterator(domain, offset);
+    if (iterator != nullptr) {
+        // TODO: iterate over domain and delete entries
+        // check IsRunning at every cycle, if false -> throw interrupted_exception
+
+        delete iterator;
+    }
 
     DeleteStorage(domain);
 
@@ -97,7 +102,6 @@ void GarbageCollector::Delete(domain_t domain, size_t offset) throw(interrupted_
 }
 
 void GarbageCollector::DeleteStorage(domain_t domain) {
-    // TODO: delete storage for domain
-
+    storage->Delete(domain);
     db->Delete(WriteOptions(), kPendingDeletionDataKey);
 }

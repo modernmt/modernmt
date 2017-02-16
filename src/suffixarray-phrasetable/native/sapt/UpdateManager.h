@@ -18,7 +18,7 @@ namespace mmt {
         public:
             UpdateManager(SuffixArray *index, size_t bufferSize, double maxDelay);
 
-            ~UpdateManager();
+            virtual ~UpdateManager();
 
             void Add(const updateid_t &id, const domain_t domain, const vector<wid_t> &source,
                      const vector<wid_t> &target, const alignment_t &alignment);

@@ -13,14 +13,14 @@
 #include <util/BackgroundPollingThread.h>
 #include <unordered_set>
 #include <mmt/logging/Logger.h>
-#include "CorpusStorage.h"
+#include <suffixarray/storage/CorporaStorage.h>
 
 namespace mmt {
     namespace sapt {
 
         class GarbageCollector : public BackgroundPollingThread {
         public:
-            GarbageCollector(CorpusStorage *storage, rocksdb::DB *db, const std::unordered_set<domain_t> &domains,
+            GarbageCollector(CorporaStorage *storage, rocksdb::DB *db, const std::unordered_set<domain_t> &domains,
                              size_t batchSize, double timeout);
 
             virtual ~GarbageCollector();
@@ -33,7 +33,7 @@ namespace mmt {
             mmt::logging::Logger logger;
 
             rocksdb::DB *db;
-            CorpusStorage *storage;
+            CorporaStorage *storage;
 
             domain_t pendingDeletionDomain;
             size_t pendingDeletionOffset;

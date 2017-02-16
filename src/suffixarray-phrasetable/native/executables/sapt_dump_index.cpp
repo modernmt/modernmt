@@ -71,8 +71,6 @@ int main(int argc, const char *argv[]) {
 
     ofstream output(args.dump_file.c_str());
 
-    output << "GLOBAL size " << index.GetStorage()->GetSize() << endl;
-
     IndexIterator *iterator = index.NewIterator();
     IndexIterator::IndexEntry entry;
 
