@@ -92,7 +92,7 @@ void LoadCorpus(const BilingualCorpus &corpus, SuffixArray &index, size_t buffer
         }
     }
 
-    if (batch.GetSize() > 0) {
+    if (!batch.IsEmpty()) {
         index.PutBatch(batch);
         batch.Clear();
     }

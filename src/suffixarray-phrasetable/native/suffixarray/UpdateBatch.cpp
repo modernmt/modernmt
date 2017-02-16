@@ -36,7 +36,7 @@ bool UpdateBatch::SetStreamIfValid(stream_t stream, seqid_t sentence) {
 
 bool UpdateBatch::Add(const updateid_t &id, const domain_t domain, const std::vector<wid_t> &source,
                       const std::vector<wid_t> &target, const alignment_t &alignment) {
-    if (GetSize() >= GetMaxSize())
+    if (data.size() >= maxSize)
         return false;
 
     if (!SetStreamIfValid(id.stream_id, id.sentence_id))
@@ -55,7 +55,7 @@ bool UpdateBatch::Add(const updateid_t &id, const domain_t domain, const std::ve
 
 bool UpdateBatch::Add(const domain_t domain, const std::vector<wid_t> &source,
                       const std::vector<wid_t> &target, const alignment_t &alignment) {
-    if (GetSize() >= GetMaxSize())
+    if (data.size() >= maxSize)
         return false;
 
     sentencepair_t pair;
@@ -70,12 +70,13 @@ bool UpdateBatch::Add(const domain_t domain, const std::vector<wid_t> &source,
 }
 
 bool UpdateBatch::Delete(const mmt::updateid_t &id, const mmt::domain_t domain) {
-    if (GetSize() >= GetMaxSize())
-        return false;
-
     if (!SetStreamIfValid(id.stream_id, id.sentence_id))
         return true;
 
     deletions.push_back(domain);
     return true;
+}
+
+bool UpdateBatch::IsEmpty() {
+    return data.empty() && deletions.empty();
 }

@@ -27,13 +27,7 @@ namespace mmt {
 
             bool Delete(const updateid_t &id, const domain_t domain);
 
-            inline size_t GetSize() const {
-                return data.size() + deletions.size();
-            }
-
-            inline size_t GetMaxSize() const {
-                return maxSize;
-            }
+            bool IsEmpty();
 
             void Reset(const vector<seqid_t> &streams);
 

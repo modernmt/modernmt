@@ -57,7 +57,7 @@ void UpdateManager::BackgroundThreadRun() {
     }
     batchAccess.unlock();
 
-    if (backgroundBatch->GetSize() > 0) {
+    if (!backgroundBatch->IsEmpty()) {
         index->PutBatch(*backgroundBatch);
         backgroundBatch->Clear();
     }
