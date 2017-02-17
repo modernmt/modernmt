@@ -43,7 +43,7 @@ namespace mmt {
             /* Garbage Collector */
 
             // Time in seconds between Garbage Collector activations
-            double gc_timeout = 12.; // seconds
+            double gc_timeout = 120.; // seconds
 
             Options() {};
         };
