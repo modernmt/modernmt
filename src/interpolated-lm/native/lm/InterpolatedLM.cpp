@@ -118,7 +118,7 @@ InterpolatedLM::InterpolatedLM(const string &modelPath, const Options &options) 
 
     if (self->is_alm_active)
         self->alm = new AdaptiveLM(almDir.string(), options.order, options.update_buffer_size,
-                                   options.update_max_delay);
+                                   options.update_max_delay, options.gc_timeout);
 
     if (self->is_slm_active)
         self->slm = new StaticLM(slmFile.string());

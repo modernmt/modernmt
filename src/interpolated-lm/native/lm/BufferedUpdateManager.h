@@ -11,11 +11,12 @@
 #include <mutex>
 #include <condition_variable>
 #include <boost/thread.hpp>
+#include <util/BackgroundPollingThread.h>
 
 namespace mmt {
     namespace ilm {
 
-        class BufferedUpdateManager {
+        class BufferedUpdateManager : public BackgroundPollingThread {
         public:
             BufferedUpdateManager(NGramStorage *storage, size_t bufferSize, double maxDelay);
 
@@ -33,15 +34,7 @@ namespace mmt {
 
             mutex batchAccess;
 
-            boost::thread *backgroundThread;
-            mutex awakeMutex;
-            condition_variable awakeCondition;
-            double waitTimeout;
-            bool stop;
-
-            void AwakeBackgroundThread(bool wait);
-
-            void BackgroundThreadRun();
+            virtual void BackgroundThreadRun() override;
         };
 
     }

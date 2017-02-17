@@ -4,13 +4,10 @@
 #    that should be included in the kenlm library,
 #        (this excludes any unit test files)
 #    you should add them to the following list:
-set(DB_SOURCE
-        dbkv.h
-        ngram_hash.h
-        counts.h
-        NGramStorage.cpp NGramStorage.h
-        NGramBatch.cpp NGramBatch.h
-        GarbageCollector.cpp GarbageCollector.h)
+set(UTIL_SOURCE
+        chrono.h
+        ioutils.h
+        BackgroundPollingThread.cpp BackgroundPollingThread.h)
 
 # Group these objects together for later use.
 #
@@ -18,6 +15,6 @@ set(DB_SOURCE
 # refer to these objects as $<TARGET_OBJECTS:foo>
 #
 
-add_library(db OBJECT ${DB_SOURCE})
-set(TARGET_OBJECTS_db $<TARGET_OBJECTS:db> PARENT_SCOPE)
+add_library(util OBJECT ${UTIL_SOURCE})
+set(TARGET_OBJECTS_util $<TARGET_OBJECTS:util> PARENT_SCOPE)
 

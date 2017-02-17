@@ -22,7 +22,8 @@ namespace mmt {
         class AdaptiveLM : public LM, public IncrementalModel {
         public:
 
-            AdaptiveLM(const string &modelPath, uint8_t order, size_t updateBufferSize, double updateMaxDelay);
+            AdaptiveLM(const string &modelPath, uint8_t order, size_t updateBufferSize,
+                       double updateMaxDelay, double gcTimeout);
 
             /* LM */
 
@@ -36,7 +37,7 @@ namespace mmt {
                                      const context_t *context, HistoryKey **outHistoryKey,
                                      AdaptiveLMCache *cache) const;
 
-            virtual HistoryKey *MakeHistoryKey(const vector <wid_t> &phrase) const override;
+            virtual HistoryKey *MakeHistoryKey(const vector<wid_t> &phrase) const override;
 
             virtual HistoryKey *MakeEmptyHistoryKey() const override;
 
@@ -45,7 +46,7 @@ namespace mmt {
             /* Incremental Model */
 
             virtual void
-            Add(const updateid_t &id, domain_t domain, const vector <wid_t> &source, const vector <wid_t> &target,
+            Add(const updateid_t &id, domain_t domain, const vector<wid_t> &source, const vector<wid_t> &target,
                 const alignment_t &alignment) override;
 
             virtual unordered_map<stream_t, seqid_t> GetLatestUpdatesIdentifier() override;
@@ -66,10 +67,10 @@ namespace mmt {
             // it must be larger than or equal to 0 and strictly lower than ngram.size().
             // "end" is the position of the most recent word to be considered;
             // it must be larger than or equal to 0 and strictly lower than ngram.size().
-            cachevalue_t ComputeProbability(const context_t *context, const vector <wid_t> &history, const wid_t word,
+            cachevalue_t ComputeProbability(const context_t *context, const vector<wid_t> &history, const wid_t word,
                                             const size_t start, const size_t end, AdaptiveLMCache *cache) const;
 
-            cachevalue_t ComputeUnigramProbability(const context_t *context, dbkey_t wordKey) const;
+            cachevalue_t ComputeUnigramProbability(const context_t *context, ngram_hash_t wordKey) const;
 
             inline count_t OOVClassFrequency(const count_t dictionarySize) const;
 
