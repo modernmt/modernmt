@@ -46,7 +46,7 @@ namespace mmt {
             }
 
             virtual size_t hash() const override {
-                return words.empty() ? 0 : hash_ngram(words, words.size());
+                return words.empty() ? 0 : make_key(words, words.size());
             }
 
             virtual bool operator==(const HistoryKey &o) const override {
@@ -60,9 +60,8 @@ namespace mmt {
     }
 }
 
-AdaptiveLM::AdaptiveLM(const string &modelPath, uint8_t order, size_t updateBufferSize,
-                       double updateMaxDelay, double gcTimeout) :
-        order(order), storage(modelPath, order, gcTimeout), updateManager(&storage, updateBufferSize, updateMaxDelay) {
+AdaptiveLM::AdaptiveLM(const string &modelPath, uint8_t order, size_t updateBufferSize, double updateMaxDelay) :
+        order(order), storage(modelPath, order), updateManager(&storage, updateBufferSize, updateMaxDelay) {
 }
 
 float AdaptiveLM::ComputeProbability(const wid_t word, const HistoryKey *historyKey, const context_t *context,
@@ -87,15 +86,15 @@ float AdaptiveLM::ComputeProbability(const wid_t word, const HistoryKey *history
 
 cachevalue_t AdaptiveLM::ComputeProbability(const context_t *context, const vector<wid_t> &history, const wid_t word,
                                             const size_t start, const size_t end, AdaptiveLMCache *cache) const {
-    ngram_hash_t historyKey;
-    ngram_hash_t ngramKey;
+    dbkey_t historyKey;
+    dbkey_t ngramKey;
 
     if (start == end) {
         historyKey = 0;
-        ngramKey = hash_ngram(word);
+        ngramKey = make_key(word);
     } else {
-        historyKey = hash_ngram(history, start, end - start);
-        ngramKey = hash_ngram(historyKey, word);
+        historyKey = make_key(history, start, end - start);
+        ngramKey = make_key(historyKey, word);
     }
 
     cachevalue_t result;
@@ -165,7 +164,7 @@ cachevalue_t AdaptiveLM::ComputeProbability(const context_t *context, const vect
 // If a Dictionary Upper Bound (DBU) larger than the actual dictionary size is given
 //  then the OOV_class frequency is set to (DUB - dictionary_size);
 //  otherwise the OOV_class freqeucny is set to actual dictionary size
-cachevalue_t AdaptiveLM::ComputeUnigramProbability(const context_t *context, ngram_hash_t wordKey) const {
+cachevalue_t AdaptiveLM::ComputeUnigramProbability(const context_t *context, dbkey_t wordKey) const {
     bool isOOV = true;
     float interpolatedProbability = 0.f;
 
@@ -222,7 +221,7 @@ inline count_t AdaptiveLM::OOVClassSize(const count_t dictionarySize) const {
 }
 
 bool AdaptiveLM::IsOOV(const context_t *context, const wid_t word) const {
-    ngram_hash_t key = hash_ngram(word);
+    dbkey_t key = make_key(word);
 
     for (context_t::const_iterator it = context->begin(); it != context->end(); ++it) {
         counts_t domainCounts = storage.GetCounts(it->domain, key);
@@ -236,10 +235,6 @@ bool AdaptiveLM::IsOOV(const context_t *context, const wid_t word) const {
 void AdaptiveLM::Add(const updateid_t &id, domain_t domain, const vector<wid_t> &source, const vector<wid_t> &target,
                      const alignment_t &alignment) {
     updateManager.Add(id, domain, target);
-}
-
-void AdaptiveLM::Delete(const updateid_t &id, const domain_t domain) {
-    updateManager.Delete(id, domain);
 }
 
 unordered_map<stream_t, seqid_t> AdaptiveLM::GetLatestUpdatesIdentifier() {

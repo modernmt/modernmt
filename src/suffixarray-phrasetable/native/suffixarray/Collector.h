@@ -6,9 +6,9 @@
 #define SAPT_COLLECTOR_H
 
 #include <mmt/sentence.h>
-#include <suffixarray/storage/CorporaStorage.h>
 #include "PrefixCursor.h"
 #include "sample.h"
+#include "CorpusStorage.h"
 
 namespace mmt {
     namespace sapt {
@@ -36,7 +36,7 @@ namespace mmt {
             }
 
         private:
-            Collector(CorporaStorage *storage, rocksdb::DB *db, length_t prefixLength, const context_t *context,
+            Collector(CorpusStorage *storage, rocksdb::DB *db, length_t prefixLength, const context_t *context,
                       bool searchInBackground);
 
             void Retrieve(const vector<location_t> &locations, vector<sample_t> &outSamples);
@@ -58,7 +58,7 @@ namespace mmt {
             };
 
             const length_t prefixLength;
-            CorporaStorage *storage;
+            const CorpusStorage *storage;
 
             vector<wid_t> phrase;
             vector<state_t> inDomainStates;

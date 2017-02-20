@@ -92,7 +92,7 @@ void LoadCorpus(const BilingualCorpus &corpus, SuffixArray &index, size_t buffer
         }
     }
 
-    if (!batch.IsEmpty()) {
+    if (batch.GetSize() > 0) {
         index.PutBatch(batch);
         batch.Clear();
     }
@@ -120,7 +120,7 @@ int main(int argc, const char *argv[]) {
         fs::create_directories(args.model_path);
 
     Options options;
-    SuffixArray index(args.model_path, options.prefix_length, options.gc_timeout, options.gc_buffer_size, true);
+    SuffixArray index(args.model_path, options.prefix_length, true);
 
     vector<BilingualCorpus> corpora;
     BilingualCorpus::List(args.input_path, args.source_lang, args.target_lang, corpora);

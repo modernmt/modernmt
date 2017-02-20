@@ -97,7 +97,6 @@ include_directories(${ModernMT_INCLUDE_DIRS})
 #########
 add_definitions(-DKENLM_MAX_ORDER=6)
 
-add_subdirectory(util)
 add_subdirectory(corpus)
 add_subdirectory(lm)
 add_subdirectory(db)
@@ -105,7 +104,7 @@ add_subdirectory(kenlm)
 
 link_directories(build)
 
-add_library(${PROJECT_NAME} ${TARGET_OBJECTS_util} ${TARGET_OBJECTS_kenlm} ${TARGET_OBJECTS_lm} ${TARGET_OBJECTS_db} ${TARGET_OBJECTS_corpus} ${SOURCE_FILES})
+add_library(${PROJECT_NAME} ${TARGET_OBJECTS_kenlm} ${TARGET_OBJECTS_lm} ${TARGET_OBJECTS_db} ${TARGET_OBJECTS_corpus} ${SOURCE_FILES})
 
 #########
 ## Third-party libraries linking

@@ -1,9 +1,12 @@
 package eu.modernmt.cluster.kafka;
 
 import eu.modernmt.aligner.AlignerException;
-import eu.modernmt.data.*;
+import eu.modernmt.data.DataManager;
+import eu.modernmt.data.DataManagerException;
+import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.processing.ProcessingException;
+import eu.modernmt.data.DataListener;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.WakeupException;
@@ -145,14 +148,9 @@ class DataPollingThread extends Thread {
             return;
         }
 
-        for (TranslationUnit unit : batch.getTranslationUnits()) {
+        for (TranslationUnit unit : batch) {
             for (DataListener listener : listeners)
                 listener.onDataReceived(unit);
-        }
-
-        for (Deletion deletion : batch.getDeletions()) {
-            for (DataListener listener : listeners)
-                listener.onDelete(deletion);
         }
     }
 

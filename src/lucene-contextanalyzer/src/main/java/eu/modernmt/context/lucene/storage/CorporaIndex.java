@@ -8,14 +8,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
-import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 /**
  * Created by davide on 22/09/16.
@@ -50,23 +46,19 @@ public class CorporaIndex implements Closeable {
             buckets.put(bucket.getDomain(), bucket);
         }
 
-        return new CorporaIndex(indexFile, analysisOptions, bucketsFolder, buckets, channels);
+        return new CorporaIndex(analysisOptions, bucketsFolder, buckets, channels);
     }
 
-    private final File file;
-    private final File swapFile;
     private final Options.AnalysisOptions analysisOptions;
     private final File bucketsFolder;
     private final HashMap<Integer, CorpusBucket> buckets;
     private final HashMap<Short, Long> channels;
 
-    public CorporaIndex(File file, Options.AnalysisOptions analysisOptions, File bucketsFolder) {
-        this(file, analysisOptions, bucketsFolder, new HashMap<>(), new HashMap<>());
+    public CorporaIndex(Options.AnalysisOptions analysisOptions, File bucketsFolder) {
+        this(analysisOptions, bucketsFolder, new HashMap<>(), new HashMap<>());
     }
 
-    private CorporaIndex(File file, Options.AnalysisOptions analysisOptions, File bucketsFolder, HashMap<Integer, CorpusBucket> buckets, HashMap<Short, Long> channels) {
-        this.file = file;
-        this.swapFile = new File(file.getParentFile(), "~" + file.getName());
+    private CorporaIndex(Options.AnalysisOptions analysisOptions, File bucketsFolder, HashMap<Integer, CorpusBucket> buckets, HashMap<Short, Long> channels) {
         this.analysisOptions = analysisOptions;
         this.bucketsFolder = bucketsFolder;
         this.buckets = buckets;
@@ -85,21 +77,9 @@ public class CorporaIndex implements Closeable {
     }
 
     public CorpusBucket getBucket(int domain) {
-        return getBucket(domain, true);
-    }
-
-    public CorpusBucket getBucket(int domain, boolean computeIfAbsent) {
-        if (computeIfAbsent) {
-            return buckets.computeIfAbsent(domain,
-                    k -> new CorpusBucket(analysisOptions, bucketsFolder, domain)
-            );
-        } else {
-            return buckets.get(domain);
-        }
-    }
-
-    public CorpusBucket remove(CorpusBucket bucket) {
-        return buckets.remove(bucket.getDomain());
+        return buckets.computeIfAbsent(domain,
+                k -> new CorpusBucket(analysisOptions, bucketsFolder, domain)
+        );
     }
 
     public Collection<CorpusBucket> getBuckets() {
@@ -110,13 +90,7 @@ public class CorporaIndex implements Closeable {
         return new HashMap<>(channels);
     }
 
-    public void save() throws IOException {
-        this.store(this.swapFile);
-        Files.move(this.swapFile.toPath(), this.file.toPath(), REPLACE_EXISTING, ATOMIC_MOVE);
-        FileUtils.deleteQuietly(this.swapFile);
-    }
-
-    private void store(File path) throws IOException {
+    public void store(File path) throws IOException {
         // Compute length
         int maxStreamId = -1;
 
@@ -159,5 +133,4 @@ public class CorporaIndex implements Closeable {
     public void close() throws IOException {
         buckets.values().forEach(IOUtils::closeQuietly);
     }
-
 }

@@ -7,58 +7,72 @@
 using namespace mmt::sapt;
 
 UpdateManager::UpdateManager(SuffixArray *index, size_t bufferSize, double maxDelay) :
-        BackgroundPollingThread(maxDelay), index(index) {
+        index(index), waitTimeout(maxDelay), stop(false) {
     foregroundBatch = new UpdateBatch(bufferSize, index->GetStreams());
     backgroundBatch = new UpdateBatch(bufferSize, index->GetStreams());
 
-    Start();
+    backgroundThread = new boost::thread(boost::bind(&UpdateManager::BackgroundThreadRun, this));
 }
 
 UpdateManager::~UpdateManager() {
-    Stop();
+    stop = true;
+    AwakeBackgroundThread(false);
 
+    backgroundThread->join();
+
+    delete backgroundThread;
     delete foregroundBatch;
     delete backgroundBatch;
 }
 
-#define UpdateManagerEnqueue(_line) \
-    bool success = false; \
-\
-    while (!success) { \
-        batchAccess.lock(); \
-        success = _line; \
-        batchAccess.unlock(); \
-\
-        if (!success) \
-            AwakeBackgroundThread(true); \
-    }
-
 void UpdateManager::Add(const updateid_t &id, const domain_t domain, const vector<wid_t> &source,
                         const vector<wid_t> &target, const alignment_t &alignment) {
-    UpdateManagerEnqueue(
-            foregroundBatch->Add(id, domain, source, target, alignment)
-    );
+    bool success = false;
+
+    while (!success) {
+        batchAccess.lock();
+        success = foregroundBatch->Add(id, domain, source, target, alignment);
+        batchAccess.unlock();
+
+        if (!success)
+            AwakeBackgroundThread(true);
+    }
 }
 
-void UpdateManager::Delete(const mmt::updateid_t &id, const mmt::domain_t domain) {
-    UpdateManagerEnqueue(
-            foregroundBatch->Delete(id, domain)
-    );
+void UpdateManager::AwakeBackgroundThread(bool wait) {
+    awakeCondition.notify_one();
+
+    if (wait) {
+        unique_lock<mutex> lock(awakeMutex);
+        awakeCondition.wait(lock);
+    }
 }
 
 void UpdateManager::BackgroundThreadRun() {
-    batchAccess.lock();
-    {
-        UpdateBatch *tmp = backgroundBatch;
-        backgroundBatch = foregroundBatch;
-        foregroundBatch = tmp;
+    auto timeout = std::chrono::milliseconds((int64_t) (waitTimeout * 1000.));
 
-        foregroundBatch->Reset(backgroundBatch->GetStreams());
-    }
-    batchAccess.unlock();
+    while (!stop) {
+        unique_lock<mutex> lock(awakeMutex);
+        awakeCondition.wait_for(lock, timeout);
 
-    if (!backgroundBatch->IsEmpty()) {
-        index->PutBatch(*backgroundBatch);
-        backgroundBatch->Clear();
+        if (!stop) {
+            batchAccess.lock();
+            {
+                UpdateBatch *tmp = backgroundBatch;
+                backgroundBatch = foregroundBatch;
+                foregroundBatch = tmp;
+
+                foregroundBatch->Reset(backgroundBatch->GetStreams());
+            }
+            batchAccess.unlock();
+
+            if (backgroundBatch->GetSize() > 0) {
+                index->PutBatch(*backgroundBatch);
+                backgroundBatch->Clear();
+            }
+        }
+
+        lock.unlock();
+        awakeCondition.notify_one();
     }
 }

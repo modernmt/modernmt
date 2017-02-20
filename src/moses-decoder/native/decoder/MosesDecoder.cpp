@@ -49,7 +49,10 @@ namespace mmt {
                                             const std::map<std::string, float> *translationContext,
                                             size_t nbestListSize) override;
 
-            virtual const vector<IncrementalModel *> &GetIncrementalModels() const override;
+            virtual void Add(const updateid_t &id, const domain_t domain, const std::vector<wid_t> &source,
+                             const std::vector<wid_t> &target, const alignment_t &alignment) override;
+
+            virtual unordered_map<stream_t, seqid_t> GetLatestUpdatesIdentifier() override;
         };
     }
 }
@@ -237,6 +240,40 @@ translation_t MosesDecoderImpl::translate(const std::string &text, uint64_t sess
     return response;
 }
 
-const vector<IncrementalModel *> &MosesDecoderImpl::GetIncrementalModels() const {
-    return m_incrementalModels;
+void MosesDecoderImpl::Add(const updateid_t &id, const domain_t domain, const std::vector<wid_t> &source,
+                           const std::vector<wid_t> &target, const alignment_t &alignment) {
+    for (size_t i = 0; i < m_incrementalModels.size(); ++i) {
+        m_incrementalModels[i]->Add(id, domain, source, target, alignment);
+    }
+}
+
+unordered_map<stream_t, seqid_t> MosesDecoderImpl::GetLatestUpdatesIdentifier() {
+    vector<unordered_map<stream_t, seqid_t>> maps;
+
+    stream_t maxStreamId = -1;
+    for (auto it = m_incrementalModels.begin(); it != m_incrementalModels.end(); ++it) {
+        unordered_map<stream_t, seqid_t> map = (*it)->GetLatestUpdatesIdentifier();
+        maps.push_back(map);
+
+        for (auto entry = map.begin(); entry != map.end(); ++entry)
+            maxStreamId = max(maxStreamId, entry->first);
+    }
+
+    unordered_map<stream_t, seqid_t> result;
+
+    for (auto map = maps.begin(); map != maps.end(); ++map) {
+        for (stream_t streamId = 0; streamId <= maxStreamId; ++streamId) {
+            auto entry = map->find(streamId);
+
+            if (entry == map->end()) {
+                result[streamId] = -1;
+            } else {
+                auto e = result.emplace(streamId, entry->second);
+                if (!e.second)
+                    e.first->second = min(e.first->second, entry->second);
+            }
+        }
+    }
+
+    return result;
 }

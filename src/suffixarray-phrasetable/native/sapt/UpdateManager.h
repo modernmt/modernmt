@@ -9,21 +9,18 @@
 #include <condition_variable>
 #include <boost/thread.hpp>
 #include <suffixarray/SuffixArray.h>
-#include <util/BackgroundPollingThread.h>
 
 namespace mmt {
     namespace sapt {
 
-        class UpdateManager : public BackgroundPollingThread {
+        class UpdateManager {
         public:
             UpdateManager(SuffixArray *index, size_t bufferSize, double maxDelay);
 
-            virtual ~UpdateManager();
+            ~UpdateManager();
 
             void Add(const updateid_t &id, const domain_t domain, const vector<wid_t> &source,
                      const vector<wid_t> &target, const alignment_t &alignment);
-
-            void Delete(const updateid_t &id, const domain_t domain);
 
         private:
             SuffixArray *index;
@@ -33,7 +30,15 @@ namespace mmt {
 
             mutex batchAccess;
 
-            virtual void BackgroundThreadRun() override;
+            boost::thread *backgroundThread;
+            mutex awakeMutex;
+            condition_variable awakeCondition;
+            double waitTimeout;
+            bool stop;
+
+            void AwakeBackgroundThread(bool wait);
+
+            void BackgroundThreadRun();
         };
 
     }

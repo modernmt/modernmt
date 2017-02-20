@@ -1,6 +1,5 @@
 package eu.modernmt.rest.actions.domain;
 
-import eu.modernmt.data.DataManagerException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.framework.HttpMethod;
@@ -17,7 +16,7 @@ import eu.modernmt.rest.framework.routing.TemplateException;
 public class DeleteDomain extends VoidAction {
 
     @Override
-    protected void execute(RESTRequest req, Parameters _params) throws PersistenceException, NotFoundException, DataManagerException {
+    protected void execute(RESTRequest req, Parameters _params) throws PersistenceException, NotFoundException {
         Params params = (Params) _params;
         if (!ModernMT.domain.delete(params.id))
             throw new NotFoundException();

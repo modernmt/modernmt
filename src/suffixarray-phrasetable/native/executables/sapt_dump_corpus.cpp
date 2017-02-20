@@ -59,44 +59,35 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
 }
 
 int main(int argc, const char *argv[]) {
+
     args_t args;
 
     if (!ParseArgs(argc, argv, &args))
         return ERROR_IN_COMMAND_LINE;
 
     Options options;
-    SuffixArray index(args.model_path, options.prefix_length, options.gc_timeout, options.gc_buffer_size);
+    SuffixArray index(args.model_path, options.prefix_length);
     cerr << "Model loaded" << endl;
 
-    CorporaStorage *storage = index.GetStorage();
+    const CorpusStorage *storage = index.GetStorage();
+    StorageIterator *it = storage->NewIterator();
 
-    unordered_set<domain_t> domains;
-    storage->GetManifest()->GetDomains(&domains);
+    ofstream output(args.dump_file.c_str());
 
-    for (auto domain = domains.begin(); domain != domains.end(); ++domain) {
-        StorageIterator *it = storage->NewIterator(*domain);
+    vector<wid_t> sourceSentence;
+    vector<wid_t> targetSentence;
+    alignment_t alignment;
 
-        ofstream output(args.dump_file.c_str());
-
-        vector<wid_t> sourceSentence;
-        vector<wid_t> targetSentence;
-        alignment_t alignment;
-
-        while (it->Next(&sourceSentence, &targetSentence, &alignment, nullptr)) {
-            output << *domain << ": ";
-            for (auto w = sourceSentence.begin(); w!=sourceSentence.end(); ++w) { output << *w << " ";}
-            output << "||| ";
-            for (auto w = targetSentence.begin(); w!=targetSentence.end(); ++w) { output << *w << " ";}
-            output << "||| ";
-            for (auto a = alignment.begin(); a!=alignment.end(); ++a) { output << a->first << "-" << a->second << " ";}
-            output << endl;
-        }
-
-        delete it;
+    while (it->Next(&sourceSentence, &targetSentence, &alignment)) {
+        for (auto w = sourceSentence.begin(); w!=sourceSentence.end(); ++w) { output << *w << " ";}
+        output << "||| ";
+        for (auto w = targetSentence.begin(); w!=targetSentence.end(); ++w) { output << *w << " ";}
+        output << "||| ";
+        for (auto a = alignment.begin(); a!=alignment.end(); ++a) { output << a->first << "-" << a->second << " ";}
+        output << endl;
     }
 
-
-
+    delete it;
     cerr << "Dump ended" << endl;
 
     return SUCCESS;

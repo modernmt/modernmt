@@ -66,10 +66,12 @@ int main(int argc, const char *argv[]) {
         return ERROR_IN_COMMAND_LINE;
 
     Options options;
-    SuffixArray index(args.model_path, options.prefix_length, options.gc_timeout, options.gc_buffer_size);
+    SuffixArray index(args.model_path, options.prefix_length);
     cerr << "Model loaded" << endl;
 
     ofstream output(args.dump_file.c_str());
+
+    output << "GLOBAL size " << index.GetStorage()->GetSize() << endl;
 
     IndexIterator *iterator = index.NewIterator();
     IndexIterator::IndexEntry entry;

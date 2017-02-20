@@ -10,9 +10,9 @@
 #include <rocksdb/db.h>
 #include <lm/LM.h>
 #include <mmt/IncrementalModel.h>
+#include "dbkey.h"
 #include "counts.h"
 #include "NGramBatch.h"
-#include "GarbageCollector.h"
 
 using namespace std;
 
@@ -32,15 +32,14 @@ namespace mmt {
         };
 
         class StorageIterator {
-            friend class NGramStorage;
+        friend class NGramStorage;
 
         public:
             virtual ~StorageIterator();
-
-            bool Next(domain_t *outDomain, ngram_hash_t *outKey, counts_t *outValue);
+            bool Next(domain_t *outDomain, dbkey_t *outKey, counts_t *outValue);
 
         private:
-            rocksdb::Iterator *it;
+            rocksdb::Iterator* it;
 
             StorageIterator(rocksdb::DB *db);
         };
@@ -48,12 +47,11 @@ namespace mmt {
         class NGramStorage {
         public:
 
-            NGramStorage(string path, uint8_t order, double gcTimeout,
-                         bool prepareForBulkLoad = false) throw(storage_exception);
+            NGramStorage(string path, uint8_t order, bool prepareForBulkLoad = false) throw(storage_exception);
 
             ~NGramStorage();
 
-            counts_t GetCounts(const domain_t domain, const ngram_hash_t key) const;
+            counts_t GetCounts(const domain_t domain, const dbkey_t key) const;
 
             void GetWordCounts(const domain_t domain, count_t *outUniqueWordCount, count_t *outWordCount) const;
 
@@ -75,8 +73,6 @@ namespace mmt {
             const uint8_t order;
             vector<seqid_t> streams;
             rocksdb::DB *db;
-
-            GarbageCollector *garbageCollector;
 
             inline bool PrepareBatch(domain_t domain, ngram_table_t &table, rocksdb::WriteBatch &writeBatch);
         };

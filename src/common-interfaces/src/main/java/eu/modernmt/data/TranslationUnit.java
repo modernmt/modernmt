@@ -6,9 +6,11 @@ import eu.modernmt.model.Sentence;
 /**
  * Created by davide on 06/09/16.
  */
-public class TranslationUnit extends DataMessage {
+public class TranslationUnit {
 
     public final int domain;
+    public final short channel;
+    public final long channelPosition;
 
     public final String originalSourceSentence;
     public final String originalTargetSentence;
@@ -18,8 +20,9 @@ public class TranslationUnit extends DataMessage {
     public Alignment alignment = null;
 
     public TranslationUnit(short channel, long channelPosition, int domain, String originalSourceSentence, String originalTargetSentence) {
-        super(channel, channelPosition);
         this.domain = domain;
+        this.channel = channel;
+        this.channelPosition = channelPosition;
         this.originalSourceSentence = originalSourceSentence;
         this.originalTargetSentence = originalTargetSentence;
     }

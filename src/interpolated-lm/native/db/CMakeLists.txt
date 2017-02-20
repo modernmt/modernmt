@@ -5,12 +5,10 @@
 #        (this excludes any unit test files)
 #    you should add them to the following list:
 set(DB_SOURCE
-        dbkv.h
-        ngram_hash.h
+        dbkey.h
         counts.h
         NGramStorage.cpp NGramStorage.h
-        NGramBatch.cpp NGramBatch.h
-        GarbageCollector.cpp GarbageCollector.h)
+        NGramBatch.cpp NGramBatch.h)
 
 # Group these objects together for later use.
 #
@@ -19,5 +17,5 @@ set(DB_SOURCE
 #
 
 add_library(db OBJECT ${DB_SOURCE})
-set(TARGET_OBJECTS_db $<TARGET_OBJECTS:db> PARENT_SCOPE)
+set (TARGET_OBJECTS_db $<TARGET_OBJECTS:db> PARENT_SCOPE)
 

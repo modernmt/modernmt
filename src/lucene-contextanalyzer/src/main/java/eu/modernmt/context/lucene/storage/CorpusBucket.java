@@ -1,8 +1,6 @@
 package eu.modernmt.context.lucene.storage;
 
 import eu.modernmt.io.DefaultCharset;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -34,7 +32,6 @@ public class CorpusBucket implements Closeable {
     private final int domain;
     private long analyzerOffset;
     private long currentOffset;
-    private boolean deleted;
 
     private final File path;
     private FileOutputStream stream = null;
@@ -80,15 +77,6 @@ public class CorpusBucket implements Closeable {
         currentOffset = stream.getChannel().position();
     }
 
-    public void delete() throws IOException {
-        IOUtils.closeQuietly(stream);
-        FileUtils.deleteQuietly(path);
-
-        stream = null;
-        analyzerOffset = 0L;
-        currentOffset = 0L;
-    }
-
     public int getDomain() {
         return domain;
     }
@@ -98,9 +86,6 @@ public class CorpusBucket implements Closeable {
     }
 
     public boolean shouldAnalyze() {
-        if (deleted)
-            return false;
-
         if (currentOffset < analysisOptions.minOffset)
             return false;
 
@@ -116,14 +101,6 @@ public class CorpusBucket implements Closeable {
 
     public void onAnalysisCompleted() {
         analyzerOffset = currentOffset;
-    }
-
-    public void markForDeletion() {
-        this.deleted = true;
-    }
-
-    public boolean isDeleted() {
-        return deleted;
     }
 
     @Override

@@ -110,7 +110,7 @@ void LoadCorpus(const string &corpus, NGramStorage &storage, uint8_t order, size
         }
     }
 
-    if (!batch.IsEmpty()) {
+    if (batch.GetSize() > 0) {
         storage.PutBatch(batch);
         batch.Clear();
     }

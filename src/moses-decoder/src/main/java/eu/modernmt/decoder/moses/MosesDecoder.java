@@ -2,7 +2,7 @@ package eu.modernmt.decoder.moses;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.data.DataListener;
-import eu.modernmt.data.DataListenerProvider;
+import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.decoder.DecoderTranslation;
@@ -18,15 +18,13 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Created by davide on 26/11/15.
  */
-public class MosesDecoder implements Decoder, DataListenerProvider {
+public class MosesDecoder implements Decoder, DataListener {
 
     private static final Logger logger = LogManager.getLogger(MosesDecoder.class);
 
@@ -43,8 +41,6 @@ public class MosesDecoder implements Decoder, DataListenerProvider {
     private final FeatureWeightsStorage storage;
     private final HashMap<Long, Long> sessions = new HashMap<>();
     private long nativeHandle;
-
-    private ArrayList<DataListener> dataListeners = null;
 
     public MosesDecoder(File path, Aligner aligner, Vocabulary vocabulary, int threads) throws IOException {
         this.storage = new FeatureWeightsStorage(Paths.join(path, "weights.dat"));
@@ -193,22 +189,33 @@ public class MosesDecoder implements Decoder, DataListenerProvider {
 
     private native TranslationXObject translate(String text, int[] contextKeys, float[] contextValues, long session, int nbest);
 
-    // DataListenerProvider
+    // Updates
 
     @Override
-    public Collection<DataListener> getDataListeners() {
-        if (dataListeners == null) {
-            long[] nativeListeners = getNativeDataListeners();
+    public void onDataReceived(TranslationUnit unit) throws Exception {
+        int[] sourceSentence = XUtils.encode(unit.sourceSentence.getWords());
+        int[] targetSentence = XUtils.encode(unit.targetSentence.getWords());
+        int[] alignment = XUtils.encode(unit.alignment);
 
-            dataListeners = new ArrayList<>(nativeListeners.length);
-            for (long handle : nativeListeners)
-                dataListeners.add(new NativeDataListener(handle));
-        }
-
-        return dataListeners;
+        updateReceived(unit.channel, unit.channelPosition, unit.domain, sourceSentence, targetSentence, alignment);
     }
 
-    private native long[] getNativeDataListeners();
+    private native void updateReceived(int streamId, long sentenceId, int domainId, int[] sourceSentence, int[] targetSentence, int[] alignment);
+
+    @Override
+    public Map<Short, Long> getLatestChannelPositions() {
+        long[] ids = getLatestUpdatesIdentifier();
+
+        HashMap<Short, Long> map = new HashMap<>(ids.length);
+        for (short i = 0; i < ids.length; i++) {
+            if (ids[i] >= 0)
+                map.put(i, ids[i]);
+        }
+
+        return map;
+    }
+
+    private native long[] getLatestUpdatesIdentifier();
 
     // Shutdown
 

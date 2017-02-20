@@ -149,20 +149,7 @@ public class ContextAnalyzerIndex implements Closeable {
         try {
             this.indexWriter.updateDocument(id, document);
         } catch (IOException e) {
-            throw new ContextAnalyzerException("Unable to update corpus " + domain, e);
-        }
-    }
-
-    public void delete(int domain) throws ContextAnalyzerException {
-        BytesRefBuilder builder = new BytesRefBuilder();
-        NumericUtils.intToPrefixCoded(domain, 0, builder);
-
-        Term id = new Term(DocumentBuilder.ID_FIELD, builder.toBytesRef());
-
-        try {
-            this.indexWriter.deleteDocuments(id);
-        } catch (IOException e) {
-            throw new ContextAnalyzerException("Unable to delete domain " + domain, e);
+            throw new ContextAnalyzerException("Unable to update corpus " + domain);
         }
     }
 

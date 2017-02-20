@@ -20,13 +20,9 @@ namespace mmt {
     namespace sapt {
 
         enum KeyType {
-            kStreamsKeyType = 0,
-            kStorageManifestKeyType = 1,
-            kDeletedDomainKeyType = 2,
-            kPendingDeletionKeyType = 3,
-
-            kSourcePrefixKeyType = 4,
-            kTargetCountKeyType = 5,
+            kGlobalInfoKeyType = 0,
+            kSourcePrefixKeyType = 1,
+            kTargetCountKeyType = 2
         };
 
         /* Keys */
@@ -81,16 +77,6 @@ namespace mmt {
             return key;
         }
 
-        static inline string MakeDomainDeletionKey(domain_t domain) {
-            char bytes[5];
-            bytes[0] = kDeletedDomainKeyType;
-
-            size_t ptr = 1;
-            WriteUInt32(bytes, &ptr, domain);
-
-            return string(bytes, 5);
-        }
-
         static inline KeyType GetKeyTypeFromKey(const char *data, length_t prefixLength) {
             return (KeyType) data[0];
         }
@@ -108,19 +94,16 @@ namespace mmt {
             }
         }
 
-        static inline domain_t GetDomainFromDeletionKey(const char *data) {
-            return ReadUInt32(data, 1);
-        }
-
         /* Values */
 
-        static inline string SerializeStreams(const vector<seqid_t> &streams) {
-            size_t size = streams.size() * sizeof(seqid_t);
+        static inline string SerializeGlobalInfo(const vector<seqid_t> &streams, int64_t storageSize) {
+            size_t size = 8 + streams.size() * sizeof(seqid_t);
             char *bytes = new char[size];
             size_t i = 0;
 
+            WriteInt64(bytes, &i, storageSize);
             for (auto id = streams.begin(); id != streams.end(); ++id)
-                WriteInt64(bytes, &i, *id);
+                WriteUInt64(bytes, &i, *id);
 
             string result = string(bytes, size);
             delete[] bytes;
@@ -128,13 +111,17 @@ namespace mmt {
             return result;
         }
 
-        static inline bool DeserializeStreams(const char *data, size_t bytes_size, vector<seqid_t> *outStreams) {
-            if (bytes_size % 8 != 0)
+        static inline bool
+        DeserializeGlobalInfo(const char *data, size_t bytes_size, int64_t *outStorageSize,
+                              vector<seqid_t> *outStreams) {
+            if (bytes_size < 8 || bytes_size % 8 != 0)
                 return false;
 
             size_t ptr = 0;
 
-            size_t size = bytes_size / sizeof(seqid_t);
+            *outStorageSize = ReadInt64(data, &ptr);
+
+            size_t size = (bytes_size - 8) / sizeof(seqid_t);
             outStreams->resize(size, 0);
 
             for (size_t i = 0; i < size; ++i)
@@ -143,41 +130,18 @@ namespace mmt {
             return true;
         }
 
-        static inline string SerializeCount(int64_t count) {
+        static inline string SerializeCount(uint64_t count) {
             char bytes[8];
-            WriteInt64(bytes, (size_t) 0, count);
+            WriteUInt64(bytes, (size_t) 0, count);
 
             return string(bytes, 8);
         }
 
-        static inline int64_t DeserializeCount(const char *data, size_t size) {
+        static inline uint64_t DeserializeCount(const char *data, size_t size) {
             if (size != 8)
                 return 0;
 
-            return ReadInt64(data, (size_t) 0);
-        }
-
-        static inline string SerializePendingDeletionData(domain_t domain, int64_t offset) {
-            char bytes[12];
-            size_t ptr = 0;
-
-            WriteUInt32(bytes, &ptr, domain);
-            WriteInt64(bytes, &ptr, offset);
-
-            string value(bytes, 12);
-            return value;
-        }
-
-        static inline bool
-        DeserializePendingDeletionData(const char *data, size_t bytes_size, domain_t *outDomain, int64_t *outOffset) {
-            if (bytes_size != 12)
-                return false;
-
-            size_t ptr = 0;
-            *outDomain = ReadUInt32(data, &ptr);
-            *outOffset = ReadInt64(data, &ptr);
-
-            return true;
+            return ReadUInt64(data, (size_t) 0);
         }
     }
 }

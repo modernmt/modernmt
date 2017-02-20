@@ -9,8 +9,6 @@ public interface DataListener {
 
     void onDataReceived(TranslationUnit unit) throws Exception;
 
-    void onDelete(Deletion deletion) throws Exception;
-
     Map<Short, Long> getLatestChannelPositions();
 
 }

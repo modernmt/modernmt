@@ -11,20 +11,17 @@
 #include <mutex>
 #include <condition_variable>
 #include <boost/thread.hpp>
-#include <util/BackgroundPollingThread.h>
 
 namespace mmt {
     namespace ilm {
 
-        class BufferedUpdateManager : public BackgroundPollingThread {
+        class BufferedUpdateManager {
         public:
             BufferedUpdateManager(NGramStorage *storage, size_t bufferSize, double maxDelay);
 
             ~BufferedUpdateManager();
 
             void Add(const updateid_t &id, const domain_t domain, const vector <wid_t> &sentence);
-
-            void Delete(const updateid_t &id, const domain_t domain);
 
         private:
             NGramStorage *storage;
@@ -34,7 +31,15 @@ namespace mmt {
 
             mutex batchAccess;
 
-            virtual void BackgroundThreadRun() override;
+            boost::thread *backgroundThread;
+            mutex awakeMutex;
+            condition_variable awakeCondition;
+            double waitTimeout;
+            bool stop;
+
+            void AwakeBackgroundThread(bool wait);
+
+            void BackgroundThreadRun();
         };
 
     }

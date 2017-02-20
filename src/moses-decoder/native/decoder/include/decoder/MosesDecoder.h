@@ -43,7 +43,7 @@ typedef struct {
 
 namespace mmt {
     namespace decoder {
-        class MosesDecoder {
+        class MosesDecoder: public IncrementalModel {
         public:
             static constexpr float UNTUNEABLE_COMPONENT = FLT_MAX;
 
@@ -86,13 +86,6 @@ namespace mmt {
             virtual translation_t translate(const std::string &text, uint64_t session,
                                             const std::map<std::string, float> *translationContext,
                                             size_t nbestListSize) = 0;
-
-            /**
-             * Returns the list of internal incremental models.
-             *
-             * @return the list of internal incremental models
-             */
-            virtual const vector<IncrementalModel *> &GetIncrementalModels() const = 0;
 
             virtual ~MosesDecoder() {}
         };

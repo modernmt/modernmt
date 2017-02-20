@@ -12,7 +12,6 @@
 #include <fstream>
 
 #include "rocksdb/iterator.h"
-#include "dbkv.h"
 
 
 const string kPathSeparator =
@@ -22,13 +21,130 @@ const string kPathSeparator =
         "/";
 #endif
 
+#define WordCountsKey (0)
+#define StreamsKey SerializeKey(0, 0)
+
 using namespace std;
 using namespace rocksdb;
 using namespace mmt;
 using namespace mmt::ilm;
 
-static const ngram_hash_t kWordCountsHash = 0;
-static const string kStreamsKey = MakeNGramKey(0, 0);
+static_assert(sizeof(seqid_t) == 8, "Current version only supports 64-bit seqid_t");
+
+static inline string SerializeStreams(const vector<seqid_t> &streams) {
+    size_t size = streams.size();
+    size_t bytes_size = size * sizeof(seqid_t);
+
+    char *bytes = new char[bytes_size];
+    size_t j = 0;
+
+    for (size_t i = 0; i < size; ++i) {
+        seqid_t value = streams[i];
+
+        bytes[j++] = (char) (value & 0xFF);
+        bytes[j++] = (char) ((value >> 8) & 0xFF);
+        bytes[j++] = (char) ((value >> 16) & 0xFF);
+        bytes[j++] = (char) ((value >> 24) & 0xFF);
+        bytes[j++] = (char) ((value >> 32) & 0xFF);
+        bytes[j++] = (char) ((value >> 40) & 0xFF);
+        bytes[j++] = (char) ((value >> 48) & 0xFF);
+        bytes[j++] = (char) ((value >> 56) & 0xFF);
+    }
+
+    string result = string(bytes, bytes_size);
+    delete[] bytes;
+    return result;
+}
+
+static inline bool DeserializeStreams(const char *data, size_t bytes_size, vector<seqid_t> &streams) {
+    if (bytes_size < 8 || bytes_size % 8 != 0)
+        return false;
+
+    size_t size = bytes_size / sizeof(seqid_t);
+
+    streams.resize(size, 0);
+
+    size_t j = 0;
+    for (size_t i = 0; i < size; ++i) {
+        streams[i] = (data[j++] & 0xFFL) +
+                     ((data[j++] & 0xFFL) << 8) +
+                     ((data[j++] & 0xFFL) << 16) +
+                     ((data[j++] & 0xFFL) << 24) +
+                     ((data[j++] & 0xFFL) << 32) +
+                     ((data[j++] & 0xFFL) << 40) +
+                     ((data[j++] & 0xFFL) << 48) +
+                     ((data[j++] & 0xFFL) << 56);
+    }
+
+    return true;
+}
+
+static inline string SerializeCounts(counts_t counts) {
+    const char bytes[8] = {
+            (char) (counts.count & 0xFF),
+            (char) ((counts.count >> 8) & 0xFF),
+            (char) ((counts.count >> 16) & 0xFF),
+            (char) ((counts.count >> 24) & 0xFF),
+
+            (char) (counts.successors & 0xFF),
+            (char) ((counts.successors >> 8) & 0xFF),
+            (char) ((counts.successors >> 16) & 0xFF),
+            (char) ((counts.successors >> 24) & 0xFF)
+    };
+
+    return string(bytes, 8);
+}
+
+static inline string SerializeKey(domain_t domain, dbkey_t key) {
+    const char bytes[12] = {
+            (char) (domain & 0xFF),
+            (char) ((domain >> 8) & 0xFF),
+            (char) ((domain >> 16) & 0xFF),
+            (char) ((domain >> 24) & 0xFF),
+
+            (char) (key & 0xFF),
+            (char) ((key >> 8) & 0xFF),
+            (char) ((key >> 16) & 0xFF),
+            (char) ((key >> 24) & 0xFF),
+            (char) ((key >> 32) & 0xFF),
+            (char) ((key >> 40) & 0xFF),
+            (char) ((key >> 48) & 0xFF),
+            (char) ((key >> 56) & 0xFF)
+    };
+
+    return string(bytes, 12);
+}
+
+static inline bool DeserializeCounts(const char *data, size_t size, counts_t *output) {
+    if (size != 8)
+        return false;
+
+    output->count = (data[0] & 0xFFU) +
+                    ((data[1] & 0xFFU) << 8) +
+                    ((data[2] & 0xFFU) << 16) +
+                    ((data[3] & 0xFFU) << 24);
+
+    output->successors = (data[4] & 0xFFU) +
+                         ((data[5] & 0xFFU) << 8) +
+                         ((data[6] & 0xFFU) << 16) +
+                         ((data[7] & 0xFFU) << 24);
+
+    return true;
+}
+
+static inline bool DeserializeKey(const char *data, size_t size, domain_t* domain, dbkey_t* key) {
+    if (size != 12)
+        return false;
+
+    *domain = (data[0] & 0xFFU) +
+             ((data[1] & 0xFFU) << 8) +
+             ((data[2] & 0xFFU) << 16) +
+             ((data[3] & 0xFFU) << 24);
+
+    memcpy(key, data+4, 8);
+
+    return true;
+}
 
 class CountsAddOperator : public AssociativeMergeOperator {
 public:
@@ -54,14 +170,14 @@ public:
     }
 };
 
-NGramStorage::NGramStorage(string basepath, uint8_t order, double gcTimeout,
-                           bool prepareForBulkLoad) throw(storage_exception) : order(order) {
+NGramStorage::NGramStorage(string basepath, uint8_t order, bool prepareForBulkLoad) throw(storage_exception) : order(
+        order) {
     rocksdb::Options options;
     options.create_if_missing = true;
     options.merge_operator.reset(new CountsAddOperator);
 
     PlainTableOptions plainTableOptions;
-    plainTableOptions.user_key_len = sizeof(domain_t) + sizeof(ngram_hash_t);
+    plainTableOptions.user_key_len = sizeof(domain_t) + sizeof(dbkey_t);
 
     options.prefix_extractor.reset(NewNoopTransform());
     options.table_factory.reset(NewPlainTableFactory(plainTableOptions));
@@ -97,23 +213,19 @@ NGramStorage::NGramStorage(string basepath, uint8_t order, double gcTimeout,
 
     // Read streams
     string raw_streams;
-    db->Get(ReadOptions(), kStreamsKey, &raw_streams);
-    DeserializeStreams(raw_streams.data(), raw_streams.size(), &streams);
-
-    // Garbage collector
-    garbageCollector = new GarbageCollector(db, gcTimeout);
+    db->Get(ReadOptions(), StreamsKey, &raw_streams);
+    DeserializeStreams(raw_streams.data(), raw_streams.size(), streams);
 }
 
 NGramStorage::~NGramStorage() {
-    delete garbageCollector;
     delete db;
 }
 
-counts_t NGramStorage::GetCounts(const domain_t domain, const ngram_hash_t h) const {
-    string key = MakeNGramKey(domain, h);
-    string value;
+counts_t NGramStorage::GetCounts(const domain_t domain, const dbkey_t key) const {
+    ReadOptions options = ReadOptions(false, true);
 
-    Status status = db->Get(ReadOptions(false, true), key, &value);
+    string value;
+    Status status = db->Get(options, Slice(SerializeKey(domain, key)), &value);
 
     if (!status.ok()) {
         if (status.IsNotFound())
@@ -127,7 +239,7 @@ counts_t NGramStorage::GetCounts(const domain_t domain, const ngram_hash_t h) co
 }
 
 void NGramStorage::GetWordCounts(const domain_t domain, count_t *outUniqueWordCount, count_t *outWordCount) const {
-    counts_t counts = GetCounts(domain, kWordCountsHash);
+    counts_t counts = GetCounts(domain, WordCountsKey);
     if (outWordCount)
         *outWordCount = counts.count;
     if (outUniqueWordCount)
@@ -143,16 +255,14 @@ size_t NGramStorage::GetEstimateSize() const {
 void NGramStorage::PutBatch(NGramBatch &batch) throw(storage_exception) {
     WriteBatch writeBatch;
 
-    for (auto it = batch.ngrams_map.begin(); it != batch.ngrams_map.end(); ++it) {
+    unordered_map<domain_t, ngram_table_t> &ngrams = batch.GetNGrams();
+
+    for (auto it = ngrams.begin(); it != ngrams.end(); ++it) {
         PrepareBatch(it->first, it->second, writeBatch);
     }
 
-    // Write deleted domains
-    for (auto domain = batch.deletions.begin(); domain != batch.deletions.end(); ++domain)
-        writeBatch.Put(MakeDomainDeletionKey(*domain), "");
-
     // Store streams status
-    writeBatch.Put(kStreamsKey, Slice(SerializeStreams(batch.GetStreams())));
+    writeBatch.Put(Slice(StreamsKey), Slice(SerializeStreams(batch.GetStreams())));
 
     Status status = db->Write(WriteOptions(), &writeBatch);
     if (!status.ok())
@@ -160,7 +270,6 @@ void NGramStorage::PutBatch(NGramBatch &batch) throw(storage_exception) {
 
     // Reset streams
     streams = batch.GetStreams();
-    garbageCollector->MarkForDeletion(batch.deletions);
 }
 
 bool NGramStorage::PrepareBatch(domain_t domain, ngram_table_t &table, rocksdb::WriteBatch &writeBatch) {
@@ -180,19 +289,18 @@ bool NGramStorage::PrepareBatch(domain_t domain, ngram_table_t &table, rocksdb::
     count_t wordCount = 0;
 
     for (size_t o = order; o > 0; --o) {
-        unordered_map<ngram_hash_t, ngram_t> &entry = table[o - 1];
+        unordered_map<dbkey_t, ngram_t> &entry = table[o - 1];
 
         for (auto it = entry.begin(); it != entry.end(); ++it) {
-            ngram_hash_t h = it->first;
+            dbkey_t key = it->first;
             ngram_t &ngram = it->second;
 
             if (o == 1)
                 wordCount += ngram.counts.count;
 
             if (!ngram.is_in_db_for_sure) {
-                string key = MakeNGramKey(domain, h);
                 string value;
-                status = db->Get(read_ops, key, &value);
+                status = db->Get(read_ops, Slice(SerializeKey(domain, key)), &value);
 
                 if (!status.ok()) {
                     if (!status.IsNotFound())
@@ -210,7 +318,7 @@ bool NGramStorage::PrepareBatch(domain_t domain, ngram_table_t &table, rocksdb::
                     if (o > 1) {
                         // NGram found in db
                         // set "is_in_db_for_sure" to true for the whole predecessors subtree
-                        ngram_hash_t cursor = ngram.predecessor;
+                        dbkey_t cursor = ngram.predecessor;
                         for (size_t i = o - 2; i > 0; --i) {
                             ngram_t &predecessor = table[i][cursor];
                             predecessor.is_in_db_for_sure = true;
@@ -227,20 +335,19 @@ bool NGramStorage::PrepareBatch(domain_t domain, ngram_table_t &table, rocksdb::
 
     // Update n-grams (down to words)
     for (size_t o = order; o > 0; --o) {
-        unordered_map<ngram_hash_t, ngram_t> &entry = table[o - 1];
+        unordered_map<dbkey_t, ngram_t> &entry = table[o - 1];
 
         for (auto it = entry.begin(); it != entry.end(); ++it) {
-            ngram_hash_t h = it->first;
+            dbkey_t key = it->first;
             ngram_t &ngram = it->second;
 
-            string key = MakeNGramKey(domain, h);
-            writeBatch.Merge(key, SerializeCounts(ngram.counts));
+            writeBatch.Merge(Slice(SerializeKey(domain, key)), Slice(SerializeCounts(ngram.counts)));
         }
     }
 
     // Store word counts
     counts_t wordCounts(wordCount, uniqueWordCount);
-    writeBatch.Merge(MakeNGramKey(domain, kWordCountsHash), SerializeCounts(wordCounts));
+    writeBatch.Merge(Slice(SerializeKey(domain, WordCountsKey)), Slice(SerializeCounts(wordCounts)));
 
     return true;
 }
@@ -266,12 +373,12 @@ StorageIterator::~StorageIterator() {
     delete it;
 }
 
-bool StorageIterator::Next(domain_t *outDomain, ngram_hash_t *outKey, counts_t *outValue) {
-    if (it->Valid()) {
+bool StorageIterator::Next(domain_t *outDomain, dbkey_t *outKey, counts_t *outValue) {
+    if (it->Valid()){
         Slice key = it->key();
         Slice value = it->value();
 
-        GetNGramKeyData(key.data(), key.size(), outDomain, outKey);
+        DeserializeKey(key.data(), key.size(), outDomain, outKey);
         DeserializeCounts(value.data(), value.size(), outValue);
 
         it->Next();

@@ -2,8 +2,7 @@ package eu.modernmt.cluster.kafka;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
-import eu.modernmt.data.DataMessage;
-import eu.modernmt.data.Deletion;
+import eu.modernmt.data.DataManager;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.model.Alignment;
@@ -12,16 +11,19 @@ import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
 /**
  * Created by davide on 06/09/16.
  */
-class DataBatch {
+class DataBatch implements Iterable<TranslationUnit> {
 
-    private final ArrayList<TranslationUnit> translationUnits = new ArrayList<>();
-    private final ArrayList<Deletion> deletions = new ArrayList<>();
+    private final Logger logger = LogManager.getLogger(KafkaDataManager.class);
+
+    private final ArrayList<TranslationUnit> data = new ArrayList<>();
     private final ArrayList<String> rawSources = new ArrayList<>();
     private final ArrayList<String> rawTargets = new ArrayList<>();
 
@@ -38,8 +40,15 @@ class DataBatch {
     }
 
     public void load(ConsumerRecords<Integer, KafkaElement> records) throws ProcessingException, AlignerException {
-        this.clear();
-        this.ensureCapacity(records.count());
+        int size = records.count();
+
+        this.data.clear();
+        this.rawSources.clear();
+        this.rawTargets.clear();
+
+        this.data.ensureCapacity(size);
+        this.rawSources.ensureCapacity(size);
+        this.rawTargets.ensureCapacity(size);
 
         this.currentPositions = new HashMap<>();
 
@@ -48,16 +57,11 @@ class DataBatch {
             KafkaElement value = record.value();
             long offset = record.offset();
 
-            DataMessage message = value.toDataMessage(channel.getId(), offset);
+            TranslationUnit unit = value.toTranslationUnit(channel.getId(), offset);
 
-            if (message instanceof TranslationUnit) {
-                TranslationUnit unit = (TranslationUnit) message;
-                translationUnits.add(unit);
-                rawSources.add(unit.originalSourceSentence);
-                rawTargets.add(unit.originalTargetSentence);
-            } else {
-                deletions.add((Deletion) message);
-            }
+            data.add(unit);
+            rawSources.add(value.getSourceSentence());
+            rawTargets.add(value.getTargetSentence());
 
             this.currentPositions.put(channel.getId(), offset);
         }
@@ -68,7 +72,7 @@ class DataBatch {
         Alignment[] alignments = aligner.getAlignments(sourceSentences, targetSentences);
 
         for (int i = 0; i < alignments.length; i++) {
-            TranslationUnit unit = translationUnits.get(i);
+            TranslationUnit unit = data.get(i);
             unit.sourceSentence = sourceSentences.get(i);
             unit.targetSentence = targetSentences.get(i);
             unit.alignment = alignments[i];
@@ -83,28 +87,16 @@ class DataBatch {
     }
 
     public int size() {
-        return translationUnits.size() + deletions.size();
+        return data.size();
     }
 
     public void clear() {
-        this.translationUnits.clear();
-        this.deletions.clear();
-        this.rawSources.clear();
-        this.rawTargets.clear();
+        this.data.clear();
     }
 
-    public void ensureCapacity(int size) {
-        this.translationUnits.ensureCapacity(size);
-        this.rawSources.ensureCapacity(size);
-        this.rawTargets.ensureCapacity(size);
-    }
-
-    public Collection<TranslationUnit> getTranslationUnits() {
-        return translationUnits;
-    }
-
-    public Collection<Deletion> getDeletions() {
-        return deletions;
+    @Override
+    public Iterator<TranslationUnit> iterator() {
+        return data.iterator();
     }
 
 }

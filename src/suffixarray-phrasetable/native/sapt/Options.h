@@ -40,14 +40,6 @@ namespace mmt {
             // to the user.
             double update_max_delay = 2.; // seconds
 
-            /* Garbage Collector */
-
-            // Time in seconds between Garbage Collector activations
-            double gc_timeout = 120.; // seconds
-
-            // Size of the batch used during deletion of a domain
-            size_t gc_buffer_size = 100000; // number of sentence pairs
-
             Options() {};
         };
 

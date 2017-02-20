@@ -25,9 +25,13 @@ namespace mmt {
             bool Add(const domain_t domain, const std::vector<wid_t> &source,
                      const std::vector<wid_t> &target, const alignment_t &alignment);
 
-            bool Delete(const updateid_t &id, const domain_t domain);
+            inline size_t GetSize() const {
+                return data.size();
+            }
 
-            bool IsEmpty();
+            inline size_t GetMaxSize() const {
+                return maxSize;
+            }
 
             void Reset(const vector<seqid_t> &streams);
 
@@ -52,7 +56,6 @@ namespace mmt {
 
             vector<seqid_t> streams;
             vector<sentencepair_t> data;
-            vector<domain_t> deletions;
 
             bool SetStreamIfValid(stream_t stream, seqid_t sentence);
 

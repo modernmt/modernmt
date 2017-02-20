@@ -14,7 +14,6 @@ UpdateBatch::UpdateBatch(size_t maxSize, const vector<seqid_t> &_streams) : maxS
 
 void UpdateBatch::Clear() {
     data.clear();
-    deletions.clear();
 }
 
 void UpdateBatch::Reset(const vector<seqid_t> &_streams) {
@@ -67,16 +66,4 @@ bool UpdateBatch::Add(const domain_t domain, const std::vector<wid_t> &source,
     data.push_back(pair);
 
     return true;
-}
-
-bool UpdateBatch::Delete(const mmt::updateid_t &id, const mmt::domain_t domain) {
-    if (!SetStreamIfValid(id.stream_id, id.sentence_id))
-        return true;
-
-    deletions.push_back(domain);
-    return true;
-}
-
-bool UpdateBatch::IsEmpty() {
-    return data.empty() && deletions.empty();
 }
