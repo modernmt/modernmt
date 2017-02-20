@@ -7,72 +7,58 @@
 using namespace mmt::sapt;
 
 UpdateManager::UpdateManager(SuffixArray *index, size_t bufferSize, double maxDelay) :
-        index(index), waitTimeout(maxDelay), stop(false) {
+        BackgroundPollingThread(maxDelay), index(index) {
     foregroundBatch = new UpdateBatch(bufferSize, index->GetStreams());
     backgroundBatch = new UpdateBatch(bufferSize, index->GetStreams());
 
-    backgroundThread = new boost::thread(boost::bind(&UpdateManager::BackgroundThreadRun, this));
+    Start();
 }
 
 UpdateManager::~UpdateManager() {
-    stop = true;
-    AwakeBackgroundThread(false);
+    Stop();
 
-    backgroundThread->join();
-
-    delete backgroundThread;
     delete foregroundBatch;
     delete backgroundBatch;
 }
 
+#define UpdateManagerEnqueue(_line) \
+    bool success = false; \
+\
+    while (!success) { \
+        batchAccess.lock(); \
+        success = _line; \
+        batchAccess.unlock(); \
+\
+        if (!success) \
+            AwakeBackgroundThread(true); \
+    }
+
 void UpdateManager::Add(const updateid_t &id, const domain_t domain, const vector<wid_t> &source,
                         const vector<wid_t> &target, const alignment_t &alignment) {
-    bool success = false;
-
-    while (!success) {
-        batchAccess.lock();
-        success = foregroundBatch->Add(id, domain, source, target, alignment);
-        batchAccess.unlock();
-
-        if (!success)
-            AwakeBackgroundThread(true);
-    }
+    UpdateManagerEnqueue(
+            foregroundBatch->Add(id, domain, source, target, alignment)
+    );
 }
 
-void UpdateManager::AwakeBackgroundThread(bool wait) {
-    awakeCondition.notify_one();
-
-    if (wait) {
-        unique_lock<mutex> lock(awakeMutex);
-        awakeCondition.wait(lock);
-    }
+void UpdateManager::Delete(const mmt::updateid_t &id, const mmt::domain_t domain) {
+    UpdateManagerEnqueue(
+            foregroundBatch->Delete(id, domain)
+    );
 }
 
 void UpdateManager::BackgroundThreadRun() {
-    auto timeout = std::chrono::milliseconds((int64_t) (waitTimeout * 1000.));
+    batchAccess.lock();
+    {
+        UpdateBatch *tmp = backgroundBatch;
+        backgroundBatch = foregroundBatch;
+        foregroundBatch = tmp;
 
-    while (!stop) {
-        unique_lock<mutex> lock(awakeMutex);
-        awakeCondition.wait_for(lock, timeout);
+        foregroundBatch->Reset(backgroundBatch->GetStreams());
+    }
+    batchAccess.unlock();
 
-        if (!stop) {
-            batchAccess.lock();
-            {
-                UpdateBatch *tmp = backgroundBatch;
-                backgroundBatch = foregroundBatch;
-                foregroundBatch = tmp;
-
-                foregroundBatch->Reset(backgroundBatch->GetStreams());
-            }
-            batchAccess.unlock();
-
-            if (backgroundBatch->GetSize() > 0) {
-                index->PutBatch(*backgroundBatch);
-                backgroundBatch->Clear();
-            }
-        }
-
-        lock.unlock();
-        awakeCondition.notify_one();
+    if (!backgroundBatch->IsEmpty()) {
+        index->PutBatch(*backgroundBatch);
+        backgroundBatch->Clear();
     }
 }

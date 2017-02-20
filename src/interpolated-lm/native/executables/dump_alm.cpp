@@ -9,6 +9,7 @@
 #include <db/NGramStorage.h>
 #include <sys/time.h>
 #include <fstream>
+#include <lm/Options.h>
 
 
 using namespace std;
@@ -86,11 +87,12 @@ int main(int argc, const char *argv[]) {
         return GENERIC_ERROR;
     }
 
-    NGramStorage storage(args.model_path, args.order);
+    Options options;
+    NGramStorage storage(args.model_path, args.order, options.gc_timeout);
     cerr << "Model loaded." << endl;
 
     domain_t domain;
-    dbkey_t key;
+    ngram_hash_t key;
     counts_t val;
 
     ofstream output(args.dump_file.c_str());

@@ -48,6 +48,8 @@ namespace mmt {
 
             virtual unordered_map<stream_t, seqid_t> GetLatestUpdatesIdentifier() override;
 
+            void Delete(const updateid_t &id, const domain_t domain) override;
+
         private:
             struct pt_private;
             pt_private *self;

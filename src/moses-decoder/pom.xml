@@ -66,6 +66,7 @@
 
                                 <!-- All native classes -->
                                 <argument>eu.modernmt.decoder.moses.MosesDecoder</argument>
+                                <argument>eu.modernmt.decoder.moses.NativeDataListener</argument>
                             </arguments>
                         </configuration>
                     </execution>

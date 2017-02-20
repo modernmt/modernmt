@@ -8,40 +8,10 @@
 #include "JMosesFeature.h"
 #include "JTranslation.h"
 #include <mmt/jniutil.h>
-#include <mmt/aligner/Aligner.h>
-#include <mmt/vocabulary/Vocabulary.h>
 
 using namespace std;
 using namespace mmt;
 using namespace mmt::decoder;
-
-void ParseSentence(JNIEnv *jvm, jintArray jsentence, vector<wid_t> &outSentence) {
-    size_t size = (size_t) jvm->GetArrayLength(jsentence);
-
-    outSentence.resize(size);
-
-    jint *jsentenceArray = jvm->GetIntArrayElements(jsentence, 0);
-    for (size_t i = 0; i < size; ++i)
-        outSentence[i] = (wid_t) jsentenceArray[i];
-
-    jvm->ReleaseIntArrayElements(jsentence, jsentenceArray, 0);
-}
-
-void ParseAlignment(JNIEnv *jvm, jintArray jalignment, alignment_t &outAlignment) {
-    size_t fullsize = (size_t) jvm->GetArrayLength(jalignment);
-    size_t size = fullsize / 2;
-
-    jint *jalignmentArray = jvm->GetIntArrayElements(jalignment, 0);
-
-    outAlignment.resize(size);
-
-    for (size_t i = 0; i < size; ++i) {
-        outAlignment[i].first = (length_t) jalignmentArray[i];
-        outAlignment[i].second = (length_t) jalignmentArray[i + size];
-    }
-
-    jvm->ReleaseIntArrayElements(jalignment, jalignmentArray, 0);
-}
 
 void ParseContext(JNIEnv *jvm, jintArray keys, jfloatArray values, map<string, float> &outContext) {
     int size = jvm->GetArrayLength(values);
@@ -233,56 +203,24 @@ Java_eu_modernmt_decoder_moses_MosesDecoder_translate(JNIEnv *jvm, jobject jself
 
 /*
  * Class:     eu_modernmt_decoder_moses_MosesDecoder
- * Method:    updateReceived
- * Signature: (IJI[I[I[I)V
- */
-JNIEXPORT void JNICALL
-Java_eu_modernmt_decoder_moses_MosesDecoder_updateReceived(JNIEnv *jvm, jobject jself, jint jstreamId,
-                                                           jlong jsentenceId, jint jdomain, jintArray jsource,
-                                                           jintArray jtarget,
-                                                           jintArray jalignment) {
-    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
-
-    updateid_t id((stream_t) jstreamId, (seqid_t) jsentenceId);
-    domain_t domain = (domain_t) jdomain;
-
-    vector<wid_t> source;
-    ParseSentence(jvm, jsource, source);
-
-    vector<wid_t> target;
-    ParseSentence(jvm, jtarget, target);
-
-    alignment_t alignment;
-    ParseAlignment(jvm, jalignment, alignment);
-
-    instance->Add(id, domain, source, target, alignment);
-}
-
-/*
- * Class:     eu_modernmt_decoder_moses_MosesDecoder
- * Method:    getLatestUpdatesIdentifier
+ * Method:    getNativeDataListeners
  * Signature: ()[J
  */
-JNIEXPORT jlongArray JNICALL
-Java_eu_modernmt_decoder_moses_MosesDecoder_getLatestUpdatesIdentifier(JNIEnv *jvm, jobject jself) {
-    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
+JNIEXPORT jlongArray JNICALL Java_eu_modernmt_decoder_moses_MosesDecoder_getNativeDataListeners
+        (JNIEnv *jvm, jobject jself) {
+    const MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
+    const vector<IncrementalModel *> &incrementalModels = instance->GetIncrementalModels();
 
-    unordered_map<stream_t, seqid_t> ids = instance->GetLatestUpdatesIdentifier();
-
-    vector<jlong> jidsArray;
-    for (auto id = ids.begin(); id != ids.end(); ++id) {
-        mmt::stream_t stream = id->first;
-
-        if (stream >= jidsArray.size())
-            jidsArray.resize(((size_t) stream) + 1, -1);
-
-        jidsArray[stream] = (jlong) id->second;
+    vector<jlong> jmodelsVector;
+    for (auto model = incrementalModels.begin(); model != incrementalModels.end(); ++model) {
+        jlong pointer = (jlong) *model;
+        jmodelsVector.push_back(pointer);
     }
 
-    jsize size = (jsize) jidsArray.size();
+    jsize size = (jsize) jmodelsVector.size();
 
     jlongArray jarray = jvm->NewLongArray(size);
-    jvm->SetLongArrayRegion(jarray, 0, size, jidsArray.data());
+    jvm->SetLongArrayRegion(jarray, 0, size, jmodelsVector.data());
 
     return jarray;
 }

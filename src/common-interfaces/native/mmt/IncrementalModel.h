@@ -63,6 +63,18 @@ namespace mmt {
             const alignment_t &alignment) = 0;
 
         /**
+         * Requests the deletion of the specified domain.
+         *
+         * The invocation of this method is always made by exactly one thread at time, so
+         * the implementation of this method does not need to handle exclusive access to resources
+         * or, more in general, worry about multi-thread execution.
+         *
+         * @param id the update unique id.
+         * @param domain the domain id.
+         */
+        virtual void Delete(const updateid_t &id, const domain_t domain) = 0;
+
+        /**
          * Retrieve the latest update ids registered in the system. These values must be updated
          * at every Add() request, however this method will be usually called once at the system
          * startup in order to filter updates with ids less than the ones returned by this method

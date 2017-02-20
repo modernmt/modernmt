@@ -4,13 +4,15 @@ import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.lucene.storage.CorporaStorage;
 import eu.modernmt.context.lucene.storage.Options;
-import eu.modernmt.data.DataListener;
+import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Domain;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.impl.StringCorpus;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,7 +24,9 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by davide on 09/05/16.
  */
-public class LuceneAnalyzer implements ContextAnalyzer, DataListener {
+public class LuceneAnalyzer implements ContextAnalyzer {
+
+    private final Logger logger = LogManager.getLogger(LuceneAnalyzer.class);
 
     private final ContextAnalyzerIndex index;
     private final CorporaStorage storage;
@@ -93,8 +97,39 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListener {
     // UpdateListener
 
     @Override
-    public void onDataReceived(TranslationUnit update) throws IOException, InterruptedException {
-        storage.onDataReceived(update);
+    public void onDataReceived(TranslationUnit update) throws ContextAnalyzerException {
+        try {
+            storage.onDataReceived(update);
+        } catch (InterruptedException | IOException e) {
+            throw new ContextAnalyzerException(e);
+        }
+    }
+
+    @Override
+    public void onDelete(Deletion deletion) throws ContextAnalyzerException {
+        boolean deletedFromIndex = false;
+        boolean deletedFromStorage = false;
+
+        try {
+            storage.onDelete(deletion);
+            deletedFromStorage = true;
+        } catch (InterruptedException | IOException e) {
+            logger.error("Storage delete failed for domain " + deletion.domain, e);
+        }
+
+        try {
+            index.delete(deletion.domain);
+            index.flush();
+
+            deletedFromIndex = true;
+        } catch (ContextAnalyzerException e) {
+            logger.error("Index delete failed for domain " + deletion.domain, e);
+        }
+
+        if (!deletedFromIndex || !deletedFromStorage)
+            throw new ContextAnalyzerException("Failed to delete domain " + deletion.domain);
+
+        logger.info("Deleted domain " + deletion.domain);
     }
 
     @Override

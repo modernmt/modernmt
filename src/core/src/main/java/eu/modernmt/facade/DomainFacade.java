@@ -86,7 +86,7 @@ public class DomainFacade {
         }
     }
 
-    public boolean delete(int id) throws PersistenceException {
+    public boolean delete(int id) throws PersistenceException, DataManagerException {
         Connection connection = null;
         Database db = ModernMT.getNode().getEngine().getDatabase();
 
@@ -94,10 +94,18 @@ public class DomainFacade {
             connection = db.getConnection();
 
             DomainDAO domainDAO = db.getDomainDAO(connection);
-            return domainDAO.delete(id);
+            boolean deleted = domainDAO.delete(id);
+
+            if (!deleted)
+                return false;
         } finally {
             IOUtils.closeQuietly(connection);
         }
+
+        DataManager dataManager = ModernMT.getNode().getDataManager();
+        dataManager.delete(id);
+
+        return true;
     }
 
     public ImportJob add(int domainId, String source, String target) throws DataManagerException, PersistenceException {

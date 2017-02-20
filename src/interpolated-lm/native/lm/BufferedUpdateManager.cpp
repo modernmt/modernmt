@@ -7,71 +7,57 @@
 using namespace mmt::ilm;
 
 BufferedUpdateManager::BufferedUpdateManager(NGramStorage *storage, size_t bufferSize, double maxDelay) :
-        storage(storage), waitTimeout(maxDelay), stop(false) {
+        BackgroundPollingThread(maxDelay), storage(storage) {
     foregroundBatch = new NGramBatch(storage->GetOrder(), bufferSize, storage->GetStreamsStatus());
     backgroundBatch = new NGramBatch(storage->GetOrder(), bufferSize, storage->GetStreamsStatus());
 
-    backgroundThread = new boost::thread(boost::bind(&BufferedUpdateManager::BackgroundThreadRun, this));
+    Start();
 }
 
 BufferedUpdateManager::~BufferedUpdateManager() {
-    stop = true;
-    AwakeBackgroundThread(false);
+    Stop();
 
-    backgroundThread->join();
-
-    delete backgroundThread;
     delete foregroundBatch;
     delete backgroundBatch;
 }
 
-void BufferedUpdateManager::Add(const updateid_t &id, const domain_t domain, const vector<wid_t> &sentence) {
-    bool success = false;
-
-    while (!success) {
-        batchAccess.lock();
-        success = foregroundBatch->Add(id, domain, sentence);
-        batchAccess.unlock();
-
-        if (!success)
-            AwakeBackgroundThread(true);
+#define UpdateManagerEnqueue(_line) \
+    bool success = false; \
+\
+    while (!success) { \
+        batchAccess.lock(); \
+        success = _line; \
+        batchAccess.unlock(); \
+\
+        if (!success) \
+            AwakeBackgroundThread(true); \
     }
+
+void BufferedUpdateManager::Add(const updateid_t &id, const domain_t domain, const vector<wid_t> &sentence) {
+    UpdateManagerEnqueue(
+            foregroundBatch->Add(id, domain, sentence);
+    );
 }
 
-void BufferedUpdateManager::AwakeBackgroundThread(bool wait) {
-    awakeCondition.notify_one();
-
-    if (wait) {
-        unique_lock<mutex> lock(awakeMutex);
-        awakeCondition.wait(lock);
-    }
+void BufferedUpdateManager::Delete(const mmt::updateid_t &id, const mmt::domain_t domain) {
+    UpdateManagerEnqueue(
+            foregroundBatch->Delete(id, domain)
+    );
 }
 
 void BufferedUpdateManager::BackgroundThreadRun() {
-    auto timeout = std::chrono::milliseconds((int64_t) (waitTimeout * 1000.));
+    batchAccess.lock();
+    {
+        NGramBatch *tmp = backgroundBatch;
+        backgroundBatch = foregroundBatch;
+        foregroundBatch = tmp;
 
-    while (!stop) {
-        unique_lock<mutex> lock(awakeMutex);
-        awakeCondition.wait_for(lock, timeout);
+        foregroundBatch->Reset(backgroundBatch->GetStreams());
+    }
+    batchAccess.unlock();
 
-        if (!stop) {
-            batchAccess.lock();
-            {
-                NGramBatch *tmp = backgroundBatch;
-                backgroundBatch = foregroundBatch;
-                foregroundBatch = tmp;
-
-                foregroundBatch->Reset(backgroundBatch->GetStreams());
-            }
-            batchAccess.unlock();
-
-            if (backgroundBatch->GetSize() > 0) {
-                storage->PutBatch(*backgroundBatch);
-                backgroundBatch->Clear();
-            }
-        }
-
-        lock.unlock();
-        awakeCondition.notify_one();
+    if (!backgroundBatch->IsEmpty()) {
+        storage->PutBatch(*backgroundBatch);
+        backgroundBatch->Clear();
     }
 }

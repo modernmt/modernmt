@@ -7,7 +7,7 @@
 
 #include <string>
 #include <unordered_map>
-#include <db/dbkey.h>
+#include <db/ngram_hash.h>
 #include "LM.h"
 
 using namespace std;
@@ -44,13 +44,13 @@ namespace mmt {
             // store in the cache the entry
             //   key(word, state) -> (probability, outStateLength)
             //   if already present, replace the old value with the new value;
-            inline void Put(const dbkey_t key, const cachevalue_t &value) {
+            inline void Put(const ngram_hash_t key, const cachevalue_t &value) {
                 cache[key] = value;
             }
 
             // lookup in the cache the entry key(word, state), if found, fill the given parameters
             // and return true, else return false
-            inline bool Get(const dbkey_t key, cachevalue_t *outValue) {
+            inline bool Get(const ngram_hash_t key, cachevalue_t *outValue) {
                 auto it = cache.find(key);
 
                 if (it == cache.end()) {

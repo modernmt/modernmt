@@ -4,6 +4,7 @@
 
 #include "NGramBatch.h"
 #include <stdlib.h>
+#include <lm/LM.h>
 
 using namespace mmt;
 using namespace mmt::ilm;
@@ -51,14 +52,14 @@ inline void NGramBatch::AddToBatch(const domain_t domain, const vector<wid_t> &s
 
     // Fill table
     for (size_t iword = 0; iword < words_length; ++iword) {
-        dbkey_t key = 0;
+        ngram_hash_t key = 0;
 
         for (size_t iorder = 0; iorder < order; ++iorder) {
             if (iword + iorder >= words_length)
                 break;
 
             wid_t word = words[iword + iorder];
-            dbkey_t current = iorder == 0 ? word : make_key(key, word);
+            ngram_hash_t current = iorder == 0 ? word : hash_ngram(key, word);
 
             auto e = ngrams[iorder].emplace(current, ngram_t());
             ngram_t &ngram = e.first->second;
@@ -75,9 +76,23 @@ inline void NGramBatch::AddToBatch(const domain_t domain, const vector<wid_t> &s
     delete words;
 }
 
+bool NGramBatch::Delete(const updateid_t &id, const domain_t domain) {
+    if (!SetStreamIfValid(id.stream_id, id.sentence_id))
+        return true;
+
+    deletions.push_back(domain);
+    return true;
+}
+
 void NGramBatch::Reset(const vector<seqid_t> &_streams) {
     streams = _streams;
     Clear();
+}
+
+void NGramBatch::Clear() {
+    ngrams_map.clear();
+    deletions.clear();
+    size = 0;
 }
 
 bool NGramBatch::SetStreamIfValid(stream_t stream, seqid_t sentence) {
@@ -96,6 +111,6 @@ const vector<seqid_t> &NGramBatch::GetStreams() const {
     return streams;
 }
 
-unordered_map<domain_t, ngram_table_t> &NGramBatch::GetNGrams() {
-    return ngrams_map;
+bool NGramBatch::IsEmpty() {
+    return size == 0 && deletions.empty();
 }

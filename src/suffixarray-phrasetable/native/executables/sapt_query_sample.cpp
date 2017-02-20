@@ -102,7 +102,6 @@ static inline void ParseSentenceLine(const string &line, vector<wid_t> &output) 
 }
 
 int main(int argc, const char *argv[]) {
-
     args_t args;
 
     if (!ParseArgs(argc, argv, &args))
@@ -110,10 +109,10 @@ int main(int argc, const char *argv[]) {
 
     context_t *context = args.context.empty() ? NULL : &args.context;
 
-    Options ptOptions;
-    ptOptions.samples = args.sample_limit;
+    Options options;
+    options.samples = args.sample_limit;
 
-    SuffixArray sa(args.model_path, Options().prefix_length);
+    SuffixArray sa(args.model_path, options.prefix_length, options.gc_timeout, options.gc_buffer_size);
 
     if (!args.quiet) {
         cout << "Model loaded" << endl;
