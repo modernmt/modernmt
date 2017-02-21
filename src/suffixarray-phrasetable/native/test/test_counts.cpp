@@ -121,7 +121,7 @@ int main(int argc, const char *argv[]) {
     }
 
     Options options;
-    SuffixArray index(args.model_path, options.prefix_length);
+    SuffixArray index(args.model_path, options.prefix_length, options.gc_timeout, options.gc_buffer_size);
 
     NGramTable nGramTable = LoadTable(args);
     for (uint8_t i = 1; i <= args.order; ++i) {

@@ -27,12 +27,19 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -O3 -Wall")
 set(SOURCE_FILES
         suffixarray/dbkv.h
         suffixarray/sample.h
-        suffixarray/CorpusStorage.cpp suffixarray/CorpusStorage.h
+        suffixarray/index_exception.h
         suffixarray/UpdateBatch.cpp suffixarray/UpdateBatch.h
         suffixarray/PostingList.cpp suffixarray/PostingList.h
         suffixarray/PrefixCursor.cpp suffixarray/PrefixCursor.h
         suffixarray/SuffixArray.cpp suffixarray/SuffixArray.h
         suffixarray/Collector.cpp suffixarray/Collector.h
+        suffixarray/GarbageCollector.cpp suffixarray/GarbageCollector.h
+
+        suffixarray/storage/storage_exception.h
+        suffixarray/storage/CorporaStorage.cpp suffixarray/storage/CorporaStorage.h
+        suffixarray/storage/StorageManifest.cpp suffixarray/storage/StorageManifest.h
+        suffixarray/storage/StorageIterator.cpp suffixarray/storage/StorageIterator.h
+        suffixarray/storage/StorageBucket.cpp suffixarray/storage/StorageBucket.h
 
         sapt/Options.h
         sapt/TranslationOption.h
@@ -44,7 +51,8 @@ set(SOURCE_FILES
         util/ioutils.h
         util/chrono.h
         util/randutils.h util/randutils.cpp
-        util/BilingualCorpus.cpp util/BilingualCorpus.h)
+        util/BilingualCorpus.cpp util/BilingualCorpus.h
+        util/BackgroundPollingThread.cpp util/BackgroundPollingThread.h)
 
 include_directories(${CMAKE_SOURCE_DIR})
 

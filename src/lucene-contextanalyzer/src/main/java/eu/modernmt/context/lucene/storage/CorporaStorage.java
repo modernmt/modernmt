@@ -2,10 +2,12 @@ package eu.modernmt.context.lucene.storage;
 
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.lucene.ContextAnalyzerIndex;
+import eu.modernmt.data.DataListener;
+import eu.modernmt.data.DataMessage;
+import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.io.LineReader;
 import eu.modernmt.model.corpus.Corpus;
-import eu.modernmt.data.DataListener;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -13,13 +15,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
-
-import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 /**
  * Created by davide on 22/09/16.
@@ -28,12 +26,8 @@ public class CorporaStorage implements DataListener {
 
     private static final int MAX_CONCURRENT_BUCKET_ANALYSIS = 8;
 
-    private static final TranslationUnit POISON_PILL = new TranslationUnit((short) 0, 0L, 0, null, null);
-
     private final Logger logger = LogManager.getLogger(CorporaStorage.class);
 
-    private final File indexPath;
-    private final File swapIndexPath;
     private final Options options;
     private final BackgroundTask backgroundTask;
     private final ExecutorService analysisExecutor;
@@ -50,13 +44,12 @@ public class CorporaStorage implements DataListener {
 
         FileUtils.forceMkdir(path);
 
-        this.indexPath = new File(path, "index");
-        this.swapIndexPath = new File(path, "~index");
+        File indexPath = new File(path, "index");
 
         if (indexPath.exists())
             this.index = CorporaIndex.load(options.analysisOptions, indexPath, path);
         else
-            this.index = new CorporaIndex(options.analysisOptions, path);
+            this.index = new CorporaIndex(indexPath, options.analysisOptions, path);
 
         try {
             this.analyzeIfNeeded(this.index.getBuckets());
@@ -70,7 +63,12 @@ public class CorporaStorage implements DataListener {
 
     @Override
     public void onDataReceived(TranslationUnit unit) throws InterruptedException, IOException {
-        backgroundTask.add(unit);
+        backgroundTask.enqueue(unit);
+    }
+
+    @Override
+    public void onDelete(Deletion deletion) throws IOException, InterruptedException {
+        backgroundTask.enqueue(deletion);
     }
 
     @Override
@@ -85,7 +83,12 @@ public class CorporaStorage implements DataListener {
         logger.info("Flushing index to disk. Pending updates: " + pendingUpdatesBuckets.size());
 
         for (CorpusBucket bucket : pendingUpdatesBuckets) {
-            bucket.flush();
+            if (bucket.isDeleted()) {
+                bucket.delete();
+                index.remove(bucket);
+            } else {
+                bucket.flush();
+            }
         }
 
         if (!skipAnalysis || forceAnalysis) {
@@ -100,10 +103,7 @@ public class CorporaStorage implements DataListener {
         }
 
         pendingUpdatesBuckets.clear();
-
-        this.index.store(this.swapIndexPath);
-        Files.move(this.swapIndexPath.toPath(), this.indexPath.toPath(), REPLACE_EXISTING, ATOMIC_MOVE);
-        FileUtils.deleteQuietly(this.swapIndexPath);
+        index.save();
 
         logger.debug("CorporaStorage index successfully written to disk");
     }
@@ -155,6 +155,9 @@ public class CorporaStorage implements DataListener {
         ArrayList<Future<Void>> pendingAnalysis = new ArrayList<>(buckets.size());
 
         for (CorpusBucket bucket : buckets) {
+            if (bucket.isDeleted())
+                continue;
+
             AnalysisTask task = new AnalysisTask(contextAnalyzer, bucket);
             try {
                 pendingAnalysis.add(analysisExecutor.submit(task));
@@ -191,30 +194,30 @@ public class CorporaStorage implements DataListener {
     }
 
     public void awaitTermination(TimeUnit unit, long timeout) throws InterruptedException {
-        Thread waitThread = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    backgroundTask.join();
-                } catch (InterruptedException e) {
-                    // Ignore it
-                }
-
-                try {
-                    analysisExecutor.awaitTermination(timeout, unit);
-                } catch (InterruptedException e) {
-                    // Ignore it
-                }
+        Thread waitThread = new Thread(() -> {
+            try {
+                backgroundTask.join();
+            } catch (InterruptedException e) {
+                // Ignore it
             }
-        };
+
+            try {
+                analysisExecutor.awaitTermination(timeout, unit);
+            } catch (InterruptedException e) {
+                // Ignore it
+            }
+        });
         waitThread.start();
 
         unit.timedJoin(waitThread, timeout);
     }
 
+    private static final DataMessage POISON_PILL = new DataMessage((short) 0, 0) {
+    };
+
     private class BackgroundTask extends Thread {
 
-        private final BlockingQueue<TranslationUnit> queue;
+        private final BlockingQueue<DataMessage> queue;
         private boolean shuttingDown = false;
         private IOException error = null;
 
@@ -224,12 +227,12 @@ public class CorporaStorage implements DataListener {
             this.queue = new ArrayBlockingQueue<>(queueSize);
         }
 
-        public void add(TranslationUnit unit) throws InterruptedException, IOException {
+        public void enqueue(DataMessage message) throws InterruptedException, IOException {
             if (error != null)
                 throw error;
 
             if (!shuttingDown)
-                queue.put(unit);
+                queue.put(message);
         }
 
         public void shutdown() {
@@ -241,7 +244,7 @@ public class CorporaStorage implements DataListener {
             }
         }
 
-        private TranslationUnit poll(long timeout) {
+        private DataMessage poll(long timeout) {
             if (timeout < 1)
                 return null;
 
@@ -256,23 +259,36 @@ public class CorporaStorage implements DataListener {
             while (true) {
                 long availableTime = options.writeBehindDelay - (System.currentTimeMillis() - lastWriteDate);
 
-                TranslationUnit unit = poll(availableTime);
+                DataMessage message = poll(availableTime);
 
-                if (unit == null) {
+                if (message == null) {
                     // timeout
                     flushToDisk(false, false);
                     lastWriteDate = System.currentTimeMillis();
-                } else if (unit == POISON_PILL) {
+                } else if (message == POISON_PILL) {
                     logger.debug("CorporaStorage background thread KILL");
                     break;
-                } else if (index.registerData(unit.channel, unit.channelPosition)) {
-                    CorpusBucket bucket = index.getBucket(unit.domain);
+                } else if (index.registerData(message.channel, message.channelPosition)) {
+                    if (message instanceof TranslationUnit) {
+                        TranslationUnit unit = (TranslationUnit) message;
 
-                    if (!bucket.isOpen())
-                        bucket.open();
+                        CorpusBucket bucket = index.getBucket(unit.domain);
 
-                    bucket.append(unit.originalSourceSentence);
-                    pendingUpdatesBuckets.add(bucket);
+                        if (!bucket.isOpen())
+                            bucket.open();
+
+                        bucket.append(unit.originalSourceSentence);
+                        pendingUpdatesBuckets.add(bucket);
+                    } else if (message instanceof Deletion) {
+                        Deletion deletion = (Deletion) message;
+
+                        CorpusBucket bucket = index.getBucket(deletion.domain, false);
+
+                        if (bucket != null) {
+                            bucket.markForDeletion();
+                            pendingUpdatesBuckets.add(bucket);
+                        }
+                    }
                 }
             }
         }

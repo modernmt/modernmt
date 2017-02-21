@@ -148,7 +148,7 @@ public class KafkaDataManager implements DataManager {
             if (pair == null)
                 return null;
 
-            importEnd = importBegin = sendUpdate(domainId, pair.source, pair.target, true, channel);
+            importEnd = importBegin = sendElement(KafkaElement.createUpdate(domainId, pair.source, pair.target), true, channel);
             size++;
 
             pair = reader.read();
@@ -158,9 +158,9 @@ public class KafkaDataManager implements DataManager {
                 pair = reader.read();
 
                 if (pair == null)
-                    importEnd = sendUpdate(domainId, current.source, current.target, true, channel);
+                    importEnd = sendElement(KafkaElement.createUpdate(domainId, current.source, current.target), true, channel);
                 else
-                    sendUpdate(domainId, current.source, current.target, false, channel);
+                    sendElement(KafkaElement.createUpdate(domainId, current.source, current.target), false, channel);
 
                 size++;
             }
@@ -193,15 +193,23 @@ public class KafkaDataManager implements DataManager {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 
-        long offset = sendUpdate(domainId, sourceSentence, targetSentence, true, channel);
+        long offset = sendElement(KafkaElement.createUpdate(domainId, sourceSentence, targetSentence), true, channel);
         return ImportJob.createEphemeralJob(domainId, offset, channel.getId());
     }
 
-    private long sendUpdate(int domainId, String source, String target, boolean sync, DataChannel channel) throws DataManagerException {
+    @Override
+    public void delete(int domainId) throws DataManagerException {
+        if (this.producer == null)
+            throw new IllegalStateException("connect() not called");
+
+        DataChannel channel = getDataChannel(DataManager.DOMAIN_UPLOAD_CHANNEL_ID);
+        sendElement(KafkaElement.createDeletion(domainId), true, channel);
+    }
+
+    private long sendElement(KafkaElement element, boolean sync, DataChannel channel) throws DataManagerException {
         pollingThread.ensureRunning();
 
-        KafkaElement update = new KafkaElement(domainId, source, target);
-        Future<RecordMetadata> future = producer.send(new ProducerRecord<>(channel.getName(), 0, update));
+        Future<RecordMetadata> future = producer.send(new ProducerRecord<>(channel.getName(), 0, element));
 
         long offset = -1L;
 
@@ -209,7 +217,7 @@ public class KafkaDataManager implements DataManager {
             try {
                 offset = future.get().offset();
             } catch (InterruptedException e) {
-                throw new DataManagerException("Interrupted upload for domain " + domainId, e);
+                throw new DataManagerException("Interrupted upload for element " + element, e);
             } catch (ExecutionException e) {
                 Throwable cause = e.getCause();
                 if (cause instanceof RuntimeException)

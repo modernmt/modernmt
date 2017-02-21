@@ -40,6 +40,11 @@ namespace mmt {
             // to the user.
             double update_max_delay = 2.; // seconds
 
+            /* Garbage Collector */
+
+            // Time in seconds between Garbage Collector activations
+            double gc_timeout = 120.; // seconds
+
             Options() {};
         };
 

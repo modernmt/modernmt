@@ -11,29 +11,19 @@
 #include <unordered_set>
 #include <mutex>
 #include <mmt/sentence.h>
+#include <suffixarray/storage/CorporaStorage.h>
 #include "UpdateBatch.h"
-#include "CorpusStorage.h"
 #include "PostingList.h"
 #include "PrefixCursor.h"
 #include "Collector.h"
 #include "sample.h"
+#include "GarbageCollector.h"
+#include "index_exception.h"
 
 using namespace std;
 
 namespace mmt {
     namespace sapt {
-
-        class index_exception : public exception {
-        public:
-            index_exception(const string &msg) : message(msg) {};
-
-            virtual const char *what() const throw() override {
-                return message.c_str();
-            }
-
-        private:
-            string message;
-        };
 
         class IndexIterator {
             friend class SuffixArray;
@@ -43,11 +33,12 @@ namespace mmt {
                 bool is_source;
                 domain_t domain;
                 vector<wid_t> words;
-                size_t count;
+                int64_t count;
                 vector<location_t> positions;
             };
 
             virtual ~IndexIterator();
+
             bool Next(IndexEntry *outEntry);
 
         private:
@@ -59,7 +50,7 @@ namespace mmt {
 
         class SuffixArray {
         public:
-            SuffixArray(const string &path, uint8_t prefixLength,
+            SuffixArray(const string &path, uint8_t prefixLength, double gcTimeout, size_t gcBatchSize,
                         bool prepareForBulkLoad = false) throw(index_exception, storage_exception);
 
             ~SuffixArray();
@@ -79,7 +70,7 @@ namespace mmt {
                 return streams;
             }
 
-            const CorpusStorage *GetStorage() const {
+            CorporaStorage *GetStorage() const {
                 return storage;
             }
 
@@ -90,13 +81,15 @@ namespace mmt {
             const uint8_t prefixLength;
 
             rocksdb::DB *db;
-            CorpusStorage *storage;
+            CorporaStorage *storage;
             vector<seqid_t> streams;
+
+            GarbageCollector *garbageCollector;
 
             void AddPrefixesToBatch(domain_t domain, const vector<wid_t> &sentence,
                                     int64_t location, unordered_map<string, PostingList> &outBatch);
 
-            void AddTargetCountsToBatch(const vector<wid_t> &sentence, unordered_map<string, uint64_t> &outBatch);
+            void AddTargetCountsToBatch(const vector<wid_t> &sentence, unordered_map<string, int64_t> &outBatch);
         };
 
     }

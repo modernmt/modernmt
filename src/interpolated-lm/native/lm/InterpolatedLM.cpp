@@ -118,7 +118,7 @@ InterpolatedLM::InterpolatedLM(const string &modelPath, const Options &options) 
 
     if (self->is_alm_active)
         self->alm = new AdaptiveLM(almDir.string(), options.order, options.update_buffer_size,
-                                   options.update_max_delay);
+                                   options.update_max_delay, options.gc_timeout);
 
     if (self->is_slm_active)
         self->slm = new StaticLM(slmFile.string());
@@ -201,6 +201,11 @@ void InterpolatedLM::Add(const updateid_t &id, const domain_t domain, const vect
                   const alignment_t &alignment) {
     if (self->is_alm_active)
         self->alm->Add(id, domain, source, target, alignment);
+}
+
+void InterpolatedLM::Delete(const updateid_t &id, const domain_t domain) {
+    if (self->is_alm_active)
+        self->alm->Delete(id, domain);
 }
 
 unordered_map<stream_t, seqid_t> InterpolatedLM::GetLatestUpdatesIdentifier() {
