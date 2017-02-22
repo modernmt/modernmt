@@ -135,6 +135,10 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
             throw new UnsupportedOperationException();
         }
 
+        @Override
+        public String toString() {
+            return getFilename();
+        }
     }
 
     private static class ParameterFileProxy implements FileProxy {
@@ -164,6 +168,11 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
         @Override
         public OutputStream getOutputStream(boolean append) throws IOException {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String toString() {
+            return getFilename();
         }
     }
 

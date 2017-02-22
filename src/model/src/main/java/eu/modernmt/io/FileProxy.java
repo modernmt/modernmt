@@ -29,6 +29,11 @@ public interface FileProxy {
             public OutputStream getOutputStream(boolean append) throws IOException {
                 return new FileOutputStream(file, append);
             }
+
+            @Override
+            public String toString() {
+                return file.toString();
+            }
         };
     }
 
