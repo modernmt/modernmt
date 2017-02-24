@@ -23,4 +23,6 @@ public interface BilingualCorpusFilter {
 
     boolean accept(BilingualCorpus.StringPair pair, int index) throws IOException;
 
+    void clear();
+
 }

@@ -90,6 +90,9 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
             @Override
             public void close() throws IOException {
                 reader.close();
+
+                for (BilingualCorpusFilter filter : filters)
+                    filter.clear();
             }
         };
     }

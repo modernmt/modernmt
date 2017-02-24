@@ -105,4 +105,10 @@ public class DraftFilter implements BilingualCorpusFilter {
         HashSet<Integer> targets = filter.get(hash(source));
         return targets != null && targets.contains(index);
     }
+
+    @Override
+    public void clear() {
+        candidatesMap.clear();
+        filter = null;
+    }
 }
