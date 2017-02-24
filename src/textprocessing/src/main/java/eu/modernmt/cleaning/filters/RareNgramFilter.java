@@ -45,8 +45,7 @@ public class RareNgramFilter implements BilingualCorpusFilter {
 
     @Override
     public void onInitStart() {
-        avg = stddev = -1;
-        vocabulary.clear();
+        clear();
     }
 
     @Override
@@ -97,6 +96,12 @@ public class RareNgramFilter implements BilingualCorpusFilter {
         }
 
         return common >= rare;
+    }
+
+    @Override
+    public void clear() {
+        avg = stddev = -1;
+        vocabulary.clear();
     }
 
 }

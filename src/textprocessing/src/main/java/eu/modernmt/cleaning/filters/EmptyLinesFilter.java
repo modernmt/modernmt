@@ -27,4 +27,9 @@ public class EmptyLinesFilter extends BilingualCorpusFilterAdapter {
         return !(isBlankLine(pair.source) || isBlankLine(pair.target));
     }
 
+    @Override
+    public void clear() {
+        // Nothing to do
+    }
+
 }
