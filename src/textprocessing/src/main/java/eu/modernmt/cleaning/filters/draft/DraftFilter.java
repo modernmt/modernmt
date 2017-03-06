@@ -69,7 +69,7 @@ public class DraftFilter implements BilingualCorpusFilter {
             filter.put(entry.getKey(), filtered);
         }
 
-        candidatesMap = null;
+        candidatesMap.clear();
     }
 
     @Override
