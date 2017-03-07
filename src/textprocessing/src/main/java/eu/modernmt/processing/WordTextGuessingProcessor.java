@@ -7,11 +7,12 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Created by davide on 02/03/16.
+ * Created by andrea on 06/03/17.
  */
-public class WordTransformer extends TextProcessor<Translation, Translation> {
+public class WordTextGuessingProcessor extends TextProcessor<Translation, Translation> {
 
-    public WordTransformer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+
+    public WordTextGuessingProcessor(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
         super(sourceLanguage, targetLanguage);
     }
 
@@ -25,16 +26,25 @@ public class WordTransformer extends TextProcessor<Translation, Translation> {
                 Word sourceWord = source[pair[0]];
                 Word targetWord = target[pair[1]];
 
-                targetWord.applyTransformation(sourceWord);
+                guessText(targetWord, sourceWord);
             }
         }
 
         for (Word word : target) {
             if (!word.hasText())
-                word.applyTransformation(null);
+                guessText(word, null);
         }
 
         return translation;
     }
 
+
+    private static void guessText(Word target, Word source) {
+        if (!target.hasText()) {
+            if (source == null || !source.getPlaceholder().equals(target.getPlaceholder()))
+                target.setText(target.getPlaceholder());
+            else
+                target.setText(source.getText());
+        }
+    }
 }
