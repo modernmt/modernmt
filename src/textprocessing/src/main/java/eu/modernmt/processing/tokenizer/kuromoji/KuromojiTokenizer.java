@@ -5,7 +5,7 @@ import eu.modernmt.model.Languages;
 import eu.modernmt.processing.LanguageNotSupportedException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.processing.string.XMLEditableString;
+import eu.modernmt.processing.string.SentenceBuilder;
 import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 
 import java.util.Iterator;
@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * Created by davide on 11/11/15.
  */
-public class KuromojiTokenizer extends TextProcessor<XMLEditableString, XMLEditableString> {
+public class KuromojiTokenizer extends TextProcessor<SentenceBuilder, SentenceBuilder> {
 
     private com.atilika.kuromoji.ipadic.Tokenizer tokenizer = new com.atilika.kuromoji.ipadic.Tokenizer();
 
@@ -27,7 +27,7 @@ public class KuromojiTokenizer extends TextProcessor<XMLEditableString, XMLEdita
     }
 
     @Override
-    public XMLEditableString call(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
+    public SentenceBuilder call(SentenceBuilder text, Map<String, Object> metadata) throws ProcessingException {
         List<Token> tokens = tokenizer.tokenize(text.toString());
 
         // Remove empty tokens

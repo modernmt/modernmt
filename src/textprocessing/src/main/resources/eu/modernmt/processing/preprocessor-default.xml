@@ -1,12 +1,16 @@
 <pipeline>
     <!-- Pre EditableString processors -->
     <processor>eu.modernmt.processing.chars.ControlCharsRemover</processor>
-    <processor>eu.modernmt.processing.xmessage.XMessageParser</processor>
-    <processor>eu.modernmt.processing.xml.XMLStringBuilder</processor>
+    <processor>eu.modernmt.processing.string.SentenceConstructor</processor>
+
+    <!-- XML preprocessors -->
+    <processor>eu.modernmt.processing.xml.XMLTagIdentifier</processor>
+    <processor>eu.modernmt.processing.xml.XMLEntityEscaper</processor>
 
     <!-- String normalization -->
     <processor>eu.modernmt.processing.chars.RareCharsNormalizer</processor>
     <processor>eu.modernmt.processing.chars.WhitespacesNormalizer</processor>
+    <processor>eu.modernmt.processing.numbers.NumericPlaceholderNormalizer</processor>
 
     <!-- Tokenization -->
     <processorGroup>
@@ -36,14 +40,7 @@
         </processor>
     </processorGroup>
 
-    <!-- Tokenization: Language independent -->
-    <processor>
-        eu.modernmt.processing.xmessage.XMessageTokenizer
-    </processor>
-
-    <processor>
-        eu.modernmt.processing.SentenceBuilder
-    </processor>
+    <processor>eu.modernmt.processing.string.SentenceCompiler</processor>
 
     <processor>
         eu.modernmt.processing.vocabulary.VocabularyLookup

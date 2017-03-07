@@ -3,7 +3,7 @@ package eu.modernmt.processing.chars;
 import eu.modernmt.processing.LanguageNotSupportedException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.processing.string.XMLEditableString;
+import eu.modernmt.processing.string.SentenceBuilder;
 
 import java.util.Locale;
 import java.util.Map;
@@ -11,16 +11,16 @@ import java.util.Map;
 /**
  * Created by davide on 19/02/16.
  */
-public class RareCharsNormalizer extends TextProcessor<XMLEditableString, XMLEditableString> {
+public class RareCharsNormalizer extends TextProcessor<SentenceBuilder, SentenceBuilder> {
 
     public RareCharsNormalizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
         super(sourceLanguage, targetLanguage);
     }
 
     @Override
-    public XMLEditableString call(XMLEditableString string, Map<String, Object> metadata) throws ProcessingException {
+    public SentenceBuilder call(SentenceBuilder string, Map<String, Object> metadata) throws ProcessingException {
         char source[] = string.toCharArray();
-        XMLEditableString.Editor editor = string.getEditor();
+        SentenceBuilder.Editor editor = string.edit();
 
         for (int i = 0; i < source.length; i++) {
             char c = source[i];
@@ -30,7 +30,7 @@ public class RareCharsNormalizer extends TextProcessor<XMLEditableString, XMLEdi
                 editor.replace(i, 1, Character.toString(nc));
         }
 
-        return editor.commitChanges();
+        return editor.commit();
     }
 
     private static char normalized(char c) {

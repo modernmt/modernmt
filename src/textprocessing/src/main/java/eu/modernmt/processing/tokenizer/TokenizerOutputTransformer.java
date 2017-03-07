@@ -1,7 +1,7 @@
 package eu.modernmt.processing.tokenizer;
 
 import eu.modernmt.processing.ProcessingException;
-import eu.modernmt.processing.string.XMLEditableString;
+import eu.modernmt.processing.string.SentenceBuilder;
 
 import java.util.List;
 
@@ -12,8 +12,8 @@ import java.util.List;
 public class TokenizerOutputTransformer {
 
     @Deprecated
-    public static XMLEditableString transform(XMLEditableString text, String[] tokens) throws ProcessingException {
-        XMLEditableString.Editor editor = text.getEditor();
+    public static SentenceBuilder transform(SentenceBuilder text, String[] tokens) throws ProcessingException {
+        SentenceBuilder.Editor editor = text.edit();
 
         String string = text.toString();
         int length = string.length();
@@ -30,14 +30,14 @@ public class TokenizerOutputTransformer {
 
             stringIndex = tokenPos + tokenLength;
             if (stringIndex <= length)
-                editor.setWord(tokenPos, tokenLength);
+                editor.setWord(tokenPos, tokenLength, null);
         }
 
-        return editor.commitChanges();
+        return editor.commit();
     }
 
     @Deprecated
-    public static XMLEditableString transform(XMLEditableString string, List<String> tokens) throws ProcessingException {
+    public static SentenceBuilder transform(SentenceBuilder string, List<String> tokens) throws ProcessingException {
         return transform(string, tokens.toArray(new String[tokens.size()]));
     }
 

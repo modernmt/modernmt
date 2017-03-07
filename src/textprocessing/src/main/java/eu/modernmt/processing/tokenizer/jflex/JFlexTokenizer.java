@@ -4,7 +4,7 @@ import eu.modernmt.model.Languages;
 import eu.modernmt.processing.LanguageNotSupportedException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.processing.string.XMLEditableString;
+import eu.modernmt.processing.string.SentenceBuilder;
 import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 import eu.modernmt.processing.tokenizer.jflex.annotators.*;
 
@@ -18,7 +18,7 @@ import java.util.Map;
 /**
  * Created by davide on 29/01/16.
  */
-public class JFlexTokenizer extends TextProcessor<XMLEditableString, XMLEditableString> {
+public class JFlexTokenizer extends TextProcessor<SentenceBuilder, SentenceBuilder> {
 
     private static final Map<Locale, Class<? extends JFlexTokenAnnotator>> ANNOTATORS = new HashMap<>();
 
@@ -65,7 +65,7 @@ public class JFlexTokenizer extends TextProcessor<XMLEditableString, XMLEditable
     }
 
     @Override
-    public XMLEditableString call(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
+    public SentenceBuilder call(SentenceBuilder text, Map<String, Object> metadata) throws ProcessingException {
         TokensAnnotatedString astring = new TokensAnnotatedString(text.toString());
 
         annotator.yyreset(astring.getReader());

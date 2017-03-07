@@ -4,7 +4,7 @@ import eu.modernmt.processing.LanguageNotSupportedException;
 import eu.modernmt.processing.TextProcessingModels;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.processing.string.XMLEditableString;
+import eu.modernmt.processing.string.SentenceBuilder;
 import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.TokenizerModel;
@@ -20,7 +20,7 @@ import java.util.Map;
 /**
  * Created by davide on 27/01/16.
  */
-public class OpenNLPTokenizer extends TextProcessor<XMLEditableString, XMLEditableString> {
+public class OpenNLPTokenizer extends TextProcessor<SentenceBuilder, SentenceBuilder> {
 
     private TokenizerME tokenizer;
 
@@ -47,7 +47,7 @@ public class OpenNLPTokenizer extends TextProcessor<XMLEditableString, XMLEditab
     }
 
     @Override
-    public XMLEditableString call(XMLEditableString text, Map<String, Object> metadata) throws ProcessingException {
+    public SentenceBuilder call(SentenceBuilder text, Map<String, Object> metadata) throws ProcessingException {
         return TokenizerOutputTransformer.transform(text, this.tokenizer.tokenize(text.toString()));
     }
 
