@@ -539,7 +539,6 @@ public class SentenceBuilder {
             return this;
         }
 
-
         /**
          * This method handles a string processing requested to the Editor.
          * It includes the start and end indexes of the target text on the current String,
@@ -600,7 +599,6 @@ public class SentenceBuilder {
          * @param textLength    length of the text to process.
          * @param replacement   string that must substitute the text to edit. It can not be null.
          */
-
         public void replace(int curStartIndex, int textLength, String replacement) {
             if (replacement == null)
                 throw new IllegalArgumentException("when invoking replace, the replacement must not be null");
@@ -613,7 +611,6 @@ public class SentenceBuilder {
         public void delete(int curStartIndex, int textLength) {
             this.setTransformation(curStartIndex, textLength, "", null);
         }
-
 
         /**
          * This method handles the generic request of a Token generation.
@@ -643,7 +640,6 @@ public class SentenceBuilder {
          * @param length      length of the text to edit
          * @param replacement string that must substitute the text to edit.
          */
-
         public void setWord(int startIndex, int length, String replacement) {
             /*create the Transformation, put it in the Editor Transformations list;
              * as a TokenFactory use a WORD_FACTORY*/
@@ -736,7 +732,6 @@ public class SentenceBuilder {
         }
 
         /**
-         * This method just cancels all
          * Since before commit() no replacements are executed
          * and no Transformations are employed,
          * there is no operation to rollback.

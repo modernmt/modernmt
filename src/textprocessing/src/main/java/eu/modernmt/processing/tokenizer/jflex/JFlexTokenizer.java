@@ -17,9 +17,26 @@ import java.util.Map;
 
 /**
  * Created by davide on 29/01/16.
+ * Updated by andrearossi on 01/03/2017
+ * <p>
+ * A JFlexTokenizer is an object that performs word tokenization of a string
+ * based on the JFlexTokenizer tokenization and analysis library.
+ * <p>
+ * It has knowledge of all the JFlex tokenization classes
+ * (that JFlex implements as Annotators),
+ * one for each source language that JFlex supports:
+ * Catalan, Czech, German, Greek, ENglish, Spanish, Finnish, French, Hungarian,
+ * Icelandic, Italian, Latvian, Dutch, Polish, Portuguese, Romanian, Russian,
+ * Slovak, Slovene, Swedish, Tamil.
  */
 public class JFlexTokenizer extends TextProcessor<SentenceBuilder, SentenceBuilder> {
 
+    /*For each language that the JFlex library supports, this map stores a couple
+        <language -> Class of the JFlex annotator for that language>
+
+	The language is a Locale object, obtained as Languages.LANGUAGE_NAME
+	The Annotator class is taken from JFlex library as AnnotatorLanguageName.class.
+	In JFlex, all specific annotators extend a common interface Annotator.*/
     private static final Map<Locale, Class<? extends JFlexTokenAnnotator>> ANNOTATORS = new HashMap<>();
 
     static {
@@ -46,8 +63,21 @@ public class JFlexTokenizer extends TextProcessor<SentenceBuilder, SentenceBuild
         ANNOTATORS.put(Languages.TAMIL, TamilTokenAnnotator.class);
     }
 
+    /*among all annotators for all languages supported by JFlex,
+     * this is the specific annotator for the source language
+     * (the language of the SentenceBuilder string to edit)*/
     private final JFlexTokenAnnotator annotator;
 
+    /**
+     * This constructor initializes che JFlexTokenizer
+     * by setting the source and target language to handle,
+     * and by choosing and trying to instantiate the specific JFLex annotator
+     * that suits the source language of the string to translate.
+     *
+     * @param sourceLanguage the language of the input String
+     * @param targetLanguage the language the input String must be translated to
+     * @throws LanguageNotSupportedException the requested language is not supported by this software
+     */
     public JFlexTokenizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
         super(sourceLanguage, targetLanguage);
 
@@ -64,9 +94,30 @@ public class JFlexTokenizer extends TextProcessor<SentenceBuilder, SentenceBuild
         }
     }
 
+    /**
+     * This method uses the Annotator object for the current source language
+     * to perform word tokenization of the current string in the SentenceBuilder.
+     * <p>
+     * It extracts the string from tne StringBuilder, and uses it to
+     * build a TokensAnnotatedString.
+     * By the interaction between annotator and annotatedString,
+     * the indexes of start and end of each token are found
+     * and stored in the annotatedString.
+     * <p>
+     * In the end, such indexes are used to build an array of token strings,
+     * that is passed to the TokenizerOutputTransformer static object
+     * so that it can transform each token String into an actual WORD Token.*
+     *
+     * @param builder  the SentenceBuilder that holds the current string to tokenize
+     * @param metadata additional information on the current pipe
+     *                 (not used in this specific operation)
+     * @return the SentenceBuilder received as a parameter;
+     * its internal state has been updated by the execution of the call() method
+     * @throws ProcessingException
+     */
     @Override
-    public SentenceBuilder call(SentenceBuilder text, Map<String, Object> metadata) throws ProcessingException {
-        TokensAnnotatedString astring = new TokensAnnotatedString(text.toString());
+    public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) throws ProcessingException {
+        TokensAnnotatedString astring = new TokensAnnotatedString(builder.toString());
 
         annotator.yyreset(astring.getReader());
 
@@ -75,9 +126,18 @@ public class JFlexTokenizer extends TextProcessor<SentenceBuilder, SentenceBuild
             annotator.annotate(astring, type);
         }
 
-        return TokenizerOutputTransformer.transform(text, astring.toTokenArray());
+        return TokenizerOutputTransformer.transform(builder, astring.toTokenArray());
     }
 
+
+    /**
+     * Method that, given an annotator, returns the next token index
+     * in the string the annotator is working on.
+     *
+     * @param annotator the JFlexAnnotator for the string under analysis
+     * @return the index of the next token
+     * @throws ProcessingException
+     */
     private static int next(JFlexTokenAnnotator annotator) throws ProcessingException {
         try {
             return annotator.next();

@@ -7,8 +7,12 @@ import java.io.Serializable;
  */
 public class Token implements Serializable {
 
+    /*the original text in the original string*/
     protected String text;
+    /*the text version that was identified as a token:
+    * It may be partly processed*/
     protected String placeholder;
+    /*the original string between this token and the next one*/
     protected String rightSpace;
 
     public Token(String placeholder) {
