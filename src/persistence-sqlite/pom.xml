@@ -20,7 +20,7 @@
     <dependencies>
         <dependency>
             <groupId>eu.modernmt</groupId>
-            <artifactId>mmt-common-interfaces</artifactId>
+            <artifactId>mmt-commons</artifactId>
             <version>${mmt.version}</version>
         </dependency>
 

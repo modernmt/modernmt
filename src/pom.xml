@@ -7,22 +7,19 @@
     <version>0.14.1</version>
 
     <modules>
-        <module>model</module>
-        <module>common-interfaces</module>
+        <module>commons</module>
 
         <module>textprocessing</module>
-        <module>fastalign-aligner</module>
-        <module>lucene-contextanalyzer</module>
-        <module>moses-decoder</module>
-        <module>rocksdb-vocabulary</module>
+        <module>aligner-fastalign</module>
+        <module>contextanalyzer-lucene</module>
+        <module>decoder-phrasebased</module>
+        <module>vocabulary-rocksdb</module>
         <module>persistence-sqlite</module>
-        <module>interpolated-lm</module>
 
         <module>core</module>
 
-        <module>rest-api</module>
-        <module>cli</module>
-        <module>suffixarray-phrasetable</module>
+        <module>api-rest</module>
+        <module>command-line</module>
     </modules>
 
     <packaging>pom</packaging>
@@ -39,7 +36,7 @@
 
         <!-- Native project definitions -->
         <project.build.native>${project.build.directory}/native</project.build.native>
-        <project.nativedir>${project.basedir}/native</project.nativedir>
+        <project.nativedir>${project.basedir}/src/native</project.nativedir>
         <project.nativedir.javah>${project.nativedir}/javah</project.nativedir.javah>
 
         <!-- MMT build directory -->
