@@ -6,7 +6,9 @@ from xml.dom import minidom
 
 import cli
 from cli import IllegalArgumentException
+from cli.cluster import EmbeddedCassandra
 from cli.libs import fileutils
+from cli.libs import netutils
 from cli.libs import shell
 from cli.mt import BilingualCorpus
 from cli.mt.contextanalysis import ContextAnalyzer
@@ -19,10 +21,10 @@ __author__ = 'Davide Caroselli'
 
 
 class _DomainMapBuilder:
-    def __init__(self, model, source_lang, target_lang):
-        self._model = model
-        self._source_lang = source_lang
-        self._target_lang = target_lang
+    def __init__(self, engine):
+        self._engine = engine
+        self._source_lang = engine.source_lang
+        self._target_lang = engine.target_lang
 
         self._java_mainclass = 'eu.modernmt.cli.DomainMapMain'
 
@@ -30,16 +32,23 @@ class _DomainMapBuilder:
         if log is None:
             log = shell.DEVNULL
 
-        fileutils.makedirs(self._model, exist_ok=True)
+        cassandra = EmbeddedCassandra(self._engine, netutils.get_free_tcp_port())
 
-        args = ['--db', os.path.join(self._model, 'domains.db'), '-s', self._source_lang, '-t', self._target_lang, '-c']
+        args = ['-s', self._source_lang, '-t', self._target_lang, '-p', str(cassandra.port), '-c']
 
         source_paths = set([corpus.get_folder() for corpus in bilingual_corpora])
         for source_path in source_paths:
             args.append(source_path)
 
-        command = cli.mmt_javamain(self._java_mainclass, args)
-        stdout, _ = shell.execute(command, stderr=log)
+
+        try:
+            cassandra.start()
+
+            command = cli.mmt_javamain(self._java_mainclass, args)
+            stdout, _ = shell.execute(command, stderr=log)
+
+        finally:
+            cassandra.stop()
 
         domains = {}
 
@@ -360,7 +369,6 @@ class MMTEngine(object):
 
         self.builder = _MMTEngineBuilder(self)
 
-        self._db_path = os.path.join(self.models_path, 'db')
         self._vocabulary_model = os.path.join(self.models_path, 'vocabulary')
         self._aligner_model = os.path.join(self.models_path, 'align')
         self._context_index = os.path.join(self.models_path, 'context')
@@ -375,7 +383,7 @@ class MMTEngine(object):
         self.aligner = FastAlign(self._aligner_model, self.source_lang, self.target_lang)
         self.lm = InterpolatedLM(self._lm_model)
         self.training_preprocessor = TrainingPreprocessor(self.source_lang, self.target_lang, self._vocabulary_model)
-        self.db = _DomainMapBuilder(self._db_path, self.source_lang, self.target_lang)
+        self.db = _DomainMapBuilder(self)
         self.moses = Moses(self._moses_path)
         self.moses.add_feature(MosesFeature('UnknownWordPenalty'))
         self.moses.add_feature(MosesFeature('WordPenalty'))

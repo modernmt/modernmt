@@ -85,8 +85,11 @@ public class Engine implements Closeable {
         this.postprocessor = new Postprocessor(sourceLanguage, targetLanguage, vocabulary);
         this.aligner = new FastAlign(Paths.join(root, "models", "align"));
         this.contextAnalyzer = new LuceneAnalyzer(Paths.join(root, "models", "context"), sourceLanguage);
-        this.database = new CassandraDatabase("localhost", 9042);
+
         // TODO: IP AND PORT FOR REAL CASSANDRA CLUSTER?
+        this.database = new CassandraDatabase("localhost", 9042);
+
+
         DecoderConfig decoderConfig = config.getDecoderConfig();
         if (decoderConfig.isEnabled())
             this.decoder = new MosesDecoder(Paths.join(root, "models", "decoder"), aligner, vocabulary,

@@ -23,22 +23,23 @@ public class DomainMapMain {
         private static final Options cliOptions;
 
         static {
-            Option dbPath = Option.builder().longOpt("db").hasArg().required().build();
             Option corpora = Option.builder("c").longOpt("corpora").hasArgs().required().build();
             Option source = Option.builder("s").longOpt("source").hasArg().required().build();
             Option target = Option.builder("t").longOpt("target").hasArg().required().build();
+            Option port = Option.builder("p").longOpt("port").hasArgs().required().build();
 
             cliOptions = new Options();
-            cliOptions.addOption(dbPath);
             cliOptions.addOption(corpora);
             cliOptions.addOption(source);
             cliOptions.addOption(target);
+            cliOptions.addOption(port);
+
         }
 
-        public final File dbPath;
         public final File[] corporaRoots;
         public final Locale sourceLanguage;
         public final Locale targetLanguage;
+        public final int port;
 
         public Args(String[] args) throws ParseException {
             CommandLineParser parser = new DefaultParser();
@@ -47,12 +48,12 @@ public class DomainMapMain {
             sourceLanguage = Locale.forLanguageTag(cli.getOptionValue('s'));
             targetLanguage = Locale.forLanguageTag(cli.getOptionValue('t'));
 
-            dbPath = new File(cli.getOptionValue("db"));
-
             String[] roots = cli.getOptionValues('c');
             corporaRoots = new File[roots.length];
             for (int i = 0; i < roots.length; i++)
                 corporaRoots[i] = new File(roots[i]);
+
+            port = Integer.parseInt(cli.getOptionValue('p'));
         }
 
     }
@@ -60,8 +61,7 @@ public class DomainMapMain {
     public static void main(String[] _args) throws Throwable {
         Args args = new Args(_args);
 
-        // TODO: USE LOCALHOST AND PORT FOR REAL CASSANDRA CLUSTER
-        CassandraDatabase db = new CassandraDatabase("localhost", 9042);
+        CassandraDatabase db = new CassandraDatabase("localhost", args.port);
 
         Connection connection = null;
         try {

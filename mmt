@@ -321,6 +321,9 @@ def main_status(argv):
 
 
 def main_create(argv):
+
+
+
     parser = argparse.ArgumentParser(description='Create a new MMT engine from the input corpora')
     parser.prog = 'mmt create'
     parser.add_argument('source_lang', metavar='SOURCE_LANGUAGE', help='the source language (ISO 639-1)')
@@ -343,6 +346,7 @@ def main_create(argv):
         dependency.argparse_group(parser, component)
 
     if len(argv) > 0:
+
         args = parser.parse_args(argv)
 
         injector = dependency.Injector()
@@ -358,6 +362,7 @@ def main_create(argv):
 
         engine.builder.build(args.corpora_paths,
                              debug=args.debug, steps=args.training_steps, split_trainingset=args.split_corpora)
+
     else:
         parser.print_help()
 
@@ -495,8 +500,14 @@ def main_import(argv):
 def main():
     actions = {
         'create': main_create,
+
+
+        #lancia kafka, cassandra, mmt
         'start': main_start,
+
+        #stoppa mmt, cassandra, kafka
         'stop': main_stop,
+
         'status': main_status,
         'delete': main_delete,
         'evaluate': main_evaluate,

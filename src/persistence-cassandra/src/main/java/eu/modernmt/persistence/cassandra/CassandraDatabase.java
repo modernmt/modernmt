@@ -14,7 +14,7 @@ import java.io.IOException;
  * A CassandraDatabase object represents the access point
  * to a Cassandra DB instance.
  * It offers methods for establishing connections with the DB
- * and to get DAO objects.
+ * and to get DAO objects for the entities it stores.
  */
 public class CassandraDatabase extends Database {
     public static final String DEFAULT_KEY_SPACE = "default";
@@ -28,6 +28,13 @@ public class CassandraDatabase extends Database {
     private Cluster cluster;
     /*username? password?*/
 
+    /**
+     * This constructor builds an access point to a Cassandra DB
+     * and, in particular, to one of its keyspaces
+     * @param host the hostname of the machine that is running Cassandra
+     * @param port the port on which the Cassandra machine is listening to
+     * @param keyspace the keyspace in which the target entities are stored in the Cassandra DB
+     */
     public CassandraDatabase(String host, int port, String keyspace) {
         this.host = host;
         this.port = port;
@@ -35,14 +42,35 @@ public class CassandraDatabase extends Database {
         this.cluster = Cluster.builder().withPort(port).addContactPoint(host).build();
     }
 
+    /**
+     * This constructor builds an access point to a Cassandra DB
+     * and. in particular, to its "default" keyspace
+     * @param host the hostname of the machine that is running Cassandra
+     * @param port the port on which the Cassandra machine is listening to
+     */
     public CassandraDatabase(String host, int port) {
         this(host, port, DEFAULT_KEY_SPACE);
     }
 
+    /**
+     * This method provides a connection to a Cassandra DB
+     * @param cached
+     * @return A CassandraConnection object, that
+     * can be used to establish a communication Session with the DB
+     * @throws PersistenceException
+     */
     @Override
     public Connection getConnection(boolean cached) throws PersistenceException {
         return new CassandraConnection(this.cluster, this.keyspace);
     }
+
+    /**
+     * This method creates and returns a DomainDAO ob
+     * @param connection
+     * @return A CassandraConnection object, that
+     * can be used to establish a communication Session with the DB
+     * @throws PersistenceException
+     */
 
     @Override
     public DomainDAO getDomainDAO(Connection connection) {

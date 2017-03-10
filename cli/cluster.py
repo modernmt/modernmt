@@ -339,6 +339,136 @@ class EmbeddedKafka:
         daemon.kill(kafka)
         return None
 
+class EmbeddedCassandra:
+    def __init__(self, engine, port):
+        self._engine = engine
+        self.port = port
+
+        self._model = os.path.join(engine.models_path, 'cassandra')
+        self._runtime = os.path.join(engine.runtime_path, 'cassandra')
+        self._pidfile = os.path.join(engine.runtime_path, 'cassandra.pid')
+        self._default_config = os.path.join(cli.VENDOR_DIR, 'cassandra-3.10', 'conf', 'cassandra.yaml')
+        self._cassandra_bin = os.path.join(cli.VENDOR_DIR, 'cassandra-3.10', 'bin', 'cassandra')
+
+    # read cassandra pid from file cassandra.pid
+    def _get_pid(self):
+        if os.path.isfile(self._pidfile):
+            with open(self._pidfile) as pid_file:
+                return int(pid_file.read())
+        return 0
+
+    # write cassandra pid into file cassandra.pid
+    def _set_pid(self, cpid):
+        parent_dir = os.path.abspath(os.path.join(self._pidfile, os.pardir))
+        if not os.path.isdir(parent_dir):
+            fileutils.makedirs(parent_dir, exist_ok=True)
+
+        with open(self._pidfile, 'w') as pid_file:
+            pid_file.write(str(cpid))
+
+    # returns true if cassandra's pid is different from 0
+    def is_running(self):
+        cpid = self._get_pid()
+        # if cassandra pid is 0, cassandra surely is not running
+        if cpid == 0:
+            return False
+        # else it may be running or not so ask demon
+        return daemon.is_running(cpid)
+
+    # stop cassandra process
+    def stop(self):
+        cpid = self._get_pid()
+
+        if not self.is_running():
+            raise IllegalStateException('process is not running')
+        daemon.kill(cpid, 5)
+
+    def start(self):
+        if self.is_running():
+            raise IllegalStateException('process is already running')
+
+        if not netutils.is_free(self.port):
+            raise IllegalStateException(
+                'port %d is already in use, please specify another port with --db-port' % self.port)
+
+        self._log_file = self._engine.get_logfile('embedded-cassandra', ensure=True)
+
+        shutil.rmtree(self._runtime, ignore_errors=True)
+        fileutils.makedirs(self._runtime, exist_ok=True)
+
+        success = False
+        cpid = 0
+
+        log = open(self._log_file, 'w')
+
+        try:
+            cpid = self._start_cassandra(log)
+            if cpid is None:
+                raise IllegalStateException(
+                    'failed to start Cassandra, check log file for more details: ' + self._log_file)
+
+            self._set_pid(cpid)
+            success = True
+        except:
+            if not success:
+                daemon.kill(cpid)
+                log.close()
+            raise
+
+    # read a yaml file,
+    # extract its keys and values,
+    # put them in a dictionary
+    # and return it
+    def _yaml_transform(self, write_file_path):
+
+        with open(self._default_config) as yaml_read:
+            with open(write_file_path, "wb") as yaml_write:
+                for line in yaml_read:
+
+                    if "native_transport_port:" in line:
+                        line = "native_transport_port: " + str(self.port) + "\n"
+                    if "auto_snapshot:" in line:
+                        line = "auto_snapshot: false\n"
+                    if "commitlog_directory:" in line:
+                        line = "commitlog_directory: " + os.path.join(self._model, "commitlog") + "\n"
+                    if "data_file_directories:" in line:
+                        line = "data_file_directories:\n" + "     - " + os.path.join(self._model, "data") + "\n"
+                    if "saved_caches_directory:" in line:
+                        line = "saved_caches_directory: " + os.path.join(self._model, "saved_caches") + "\n"
+
+                    yaml_write.write(line)
+
+    def _start_cassandra(self, log):
+        if not os.path.isdir(self._model):
+            fileutils.makedirs(self._model, exist_ok=True)
+
+        # create a runtime version of the configuration file
+        config = os.path.join(self._runtime, 'cassandra.yaml')
+
+        self._yaml_transform(config)
+
+        # set configuration details that must differ from the original configuration
+        #configuration["native_transport_port"] = str(self.port)
+        #configuration["auto_snapshot"] = "false"
+        #configuration["commitlog_directory"] = os.path.join(self._model, "commitlog")
+        #configuration["data_file_directories"] = os.path.join(self._model, "data")
+        #configuration["saved_caches_directory"] = os.path.join(self._model, "saved_caches")
+
+        # launch cassandra -d _runtime
+        command = [self._cassandra_bin, '-Dcassandra.config=file:///' + config, "-f"]
+        cassandra = subprocess.Popen(command, stdout=log, stderr=log, shell=False).pid
+
+        for i in range(1, 20):
+            with open(log.name, 'r') as rlog:
+                for line in rlog:
+                    if 'Starting listening for CQL clients' in line:
+                        return cassandra
+
+            time.sleep(1)
+
+        daemon.kill(cassandra)
+        return None
+
 
 class ClusterNode(object):
     __SIGTERM_TIMEOUT = 10  # after this amount of seconds, there is no excuse for a process to still be there.
