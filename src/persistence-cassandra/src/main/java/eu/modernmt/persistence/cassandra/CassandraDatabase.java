@@ -11,6 +11,10 @@ import java.io.IOException;
 
 /**
  * Created by andrearossi on 08/03/17.
+ * A CassandraDatabase object represents the access point
+ * to a Cassandra DB instance.
+ * It offers methods for establishing connections with the DB
+ * and to get DAO objects.
  */
 public class CassandraDatabase extends Database {
     public static final String DEFAULT_KEY_SPACE = "default";

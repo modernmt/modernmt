@@ -17,16 +17,37 @@ import java.util.Map;
 
 /**
  * Created by andrea on 08/03/17.
+ * <p>
+ * A CassandraDomainDao object offers methods
+ * for performing CRUD operations on Domain objects
+ * when connected to a Cassandra Database.
  */
 public class CassandraDomainDAO implements DomainDAO {
     private Session session;
     public final int domainsTableId = 1;
 
+    /**
+     * This method creates a CassandraDomainDao
+     * that will communicate with the Cassandra DB under analysis
+     * using a specific connection
+     *
+     * @param connection the Cassandra Connection that the DAO will employ
+     *                   to deal with the Domain CRUD operations.
+     */
     public CassandraDomainDAO(CassandraConnection connection) {
         this.session = connection.session;
     }
 
 
+    /**
+     * This method retrieves a Domain object in a Cassandra DB
+     * by the ID it was stored with.
+     *
+     * @param id the ID of the Domain object to retrieve
+     * @return the Domain object stored with the passed id, if there is one in the DB;
+     * else, this method returns null
+     * @throws PersistenceException
+     */
     @Override
     public Domain retrieveById(int id) throws PersistenceException {
 
@@ -38,6 +59,15 @@ public class CassandraDomainDAO implements DomainDAO {
         return read(result.one());
     }
 
+    /**
+     * This method reads a row returned by a query
+     * to the domains table in the Cassandra DB
+     * and creates a new Domain object from its fields
+     *
+     * @param row a row retrieved from the domains table
+     * @return the new Domain object obtained by the row
+     * @throws PersistenceException
+     */
     private static Domain read(Row row) throws PersistenceException {
 
         if (row == null) return null;
@@ -53,6 +83,15 @@ public class CassandraDomainDAO implements DomainDAO {
         }
     }
 
+    /**
+     * This method retrieves from the Cassandra DB
+     * all the Domain objects the ids of which
+     * are contained in a given collection
+     *
+     * @param ids the collection of ids of the Domains to retrieve
+     * @return the Domain objects the ids of which are contained in the passed id collection
+     * @throws PersistenceException
+     */
     @Override
     public Map<Integer, Domain> retrieveByIds(Collection<Integer> ids) throws PersistenceException {
 
@@ -82,6 +121,13 @@ public class CassandraDomainDAO implements DomainDAO {
         return map;
     }
 
+    /**
+     * This method retrieves from the Cassandra DB
+     * all the Domain objects stored in the corresponding table
+     *
+     * @return a list with all the Domain objects in the DB
+     * @throws PersistenceException
+     */
     @Override
     public Collection<Domain> retrieveAll() throws PersistenceException {
         ArrayList<Domain> list = new ArrayList<>();
@@ -97,6 +143,14 @@ public class CassandraDomainDAO implements DomainDAO {
         return list;
     }
 
+    /**
+     * This method stores a Domain object in the DB
+     * with a new, sequentially generated ID
+     *
+     * @param domain the Domain object to store in the DB
+     * @return the same Domain object received as a parameter, updated with its new ID
+     * @throws PersistenceException
+     */
     @Override
     public Domain put(Domain domain) throws PersistenceException {
         int id = (int) CassandraIdGenerator.generate(session, domainsTableId);
@@ -111,6 +165,19 @@ public class CassandraDomainDAO implements DomainDAO {
         return domain;
     }
 
+    /**
+     * This method receives a Domain object
+     * and stores it in the DB overwriting an existing row with same ID.
+     * If in the DB there is no row with that ID nothing happens.
+     *
+     * @param domain the Domain object to put in the DB
+     *               in place of an already existing one
+     * @return the same domain object passed as a parameter,
+     * if the overwrite is succesful
+     * (if an object with that ID was already in the DB)
+     * or null if the overwrite was not successful.
+     * @throws PersistenceException
+     */
     @Override
     public Domain update(Domain domain) throws PersistenceException {
 
@@ -127,6 +194,14 @@ public class CassandraDomainDAO implements DomainDAO {
             return null;
     }
 
+    /**
+     * This method deletes a Domain object from the DB
+     *
+     * @param id the id of the Domain object to delete
+     * @return True if the object was successfully deleted;
+     * False if no object with the passed ID could be found.
+     * @throws PersistenceException
+     */
     @Override
     public boolean delete(int id) throws PersistenceException {
 

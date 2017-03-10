@@ -11,11 +11,25 @@ import eu.modernmt.persistence.PersistenceException;
 import java.io.IOException;
 
 /**
- * Created by davide on 21/09/16.
+ * Created by andrea on 09/03/17.
+ * A CassandraConnection object represents a connection
+ * with a Cassandra DataBase.
  */
 public class CassandraConnection implements Connection {
     final Session session;
 
+
+    /**
+     * This constructor builds a CassandraConnection object
+     * to communicate with a specific DB
+     * and, possibly, with a specific keyspace inside it.
+     *
+     * @param cluster  An object that represents an access point
+     *                 for the DB to connect to.
+     *                 It is identified by its hostname and port.
+     * @param keyspace The Cassandra keyspace to interact with.
+     *                 If is allowed to be null too.
+     */
     public CassandraConnection(Cluster cluster, String keyspace) throws PersistenceException {
 
         try {
@@ -41,6 +55,9 @@ public class CassandraConnection implements Connection {
         }
     }
 
+    /**
+     * This method closes the session with the current DB
+     */
     @Override
     public void close() throws IOException {
         this.session.close();
