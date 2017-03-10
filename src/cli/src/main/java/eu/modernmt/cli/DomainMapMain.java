@@ -5,7 +5,7 @@ import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.persistence.Connection;
 import eu.modernmt.persistence.DomainDAO;
-import eu.modernmt.persistence.sqlite.SQLiteDatabase;
+import eu.modernmt.persistence.cassandra.CassandraDatabase;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 
@@ -46,6 +46,7 @@ public class DomainMapMain {
 
             sourceLanguage = Locale.forLanguageTag(cli.getOptionValue('s'));
             targetLanguage = Locale.forLanguageTag(cli.getOptionValue('t'));
+
             dbPath = new File(cli.getOptionValue("db"));
 
             String[] roots = cli.getOptionValues('c');
@@ -59,14 +60,15 @@ public class DomainMapMain {
     public static void main(String[] _args) throws Throwable {
         Args args = new Args(_args);
 
-        SQLiteDatabase db = new SQLiteDatabase(args.dbPath);
+        // TODO: USE LOCALHOST AND PORT FOR REAL CASSANDRA CLUSTER
+        CassandraDatabase db = new CassandraDatabase("localhost", 9042);
 
         Connection connection = null;
         try {
-            connection = db.getConnection();
-            db.drop(connection);
-            db.create(connection);
+            db.drop();
+            db.create();
 
+            connection = db.getConnection();
             DomainDAO dao = db.getDomainDAO(connection);
 
             ArrayList<BilingualCorpus> corpora = new ArrayList<>();
@@ -80,6 +82,7 @@ public class DomainMapMain {
             }
         } finally {
             IOUtils.closeQuietly(connection);
+            IOUtils.closeQuietly(db);
         }
     }
 }

@@ -7,10 +7,10 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>mmt-persistence-sqlite</artifactId>
+    <artifactId>mmt-persistence-cassandra</artifactId>
     <packaging>jar</packaging>
 
-    <name>SQLite Persistence implementation</name>
+    <name>Cassandra persistence implementation</name>
     <url>http://maven.apache.org</url>
 
     <properties>
@@ -25,10 +25,22 @@
         </dependency>
 
         <dependency>
-            <groupId>org.xerial</groupId>
-            <artifactId>sqlite-jdbc</artifactId>
-            <version>3.8.11.2</version>
+            <groupId>com.datastax.cassandra</groupId>
+            <artifactId>cassandra-driver-core</artifactId>
+            <version>3.1.4</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.datastax.cassandra</groupId>
+            <artifactId>cassandra-driver-mapping</artifactId>
+            <version>3.1.4</version>
+        </dependency>
+
+        <!--<dependency>-->
+        <!--<groupId>com.datastax.cassandra</groupId>-->
+        <!--<artifactId>cassandra-driver-extras</artifactId>-->
+        <!--<version>3.1.4</version>-->
+        <!--</dependency>-->
 
         <dependency>
             <groupId>junit</groupId>

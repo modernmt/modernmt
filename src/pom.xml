@@ -15,7 +15,6 @@
         <module>lucene-contextanalyzer</module>
         <module>moses-decoder</module>
         <module>rocksdb-vocabulary</module>
-        <module>persistence-sqlite</module>
         <module>interpolated-lm</module>
 
         <module>core</module>
@@ -23,6 +22,7 @@
         <module>rest-api</module>
         <module>cli</module>
         <module>suffixarray-phrasetable</module>
+        <module>persistence-cassandra</module>
     </modules>
 
     <packaging>pom</packaging>

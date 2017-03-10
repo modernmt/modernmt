@@ -11,7 +11,7 @@ import eu.modernmt.decoder.moses.MosesDecoder;
 import eu.modernmt.io.Paths;
 import eu.modernmt.persistence.Database;
 import eu.modernmt.persistence.PersistenceException;
-import eu.modernmt.persistence.sqlite.SQLiteDatabase;
+import eu.modernmt.persistence.cassandra.CassandraDatabase;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.TextProcessingModels;
@@ -85,8 +85,8 @@ public class Engine implements Closeable {
         this.postprocessor = new Postprocessor(sourceLanguage, targetLanguage, vocabulary);
         this.aligner = new FastAlign(Paths.join(root, "models", "align"));
         this.contextAnalyzer = new LuceneAnalyzer(Paths.join(root, "models", "context"), sourceLanguage);
-        this.database = new SQLiteDatabase(Paths.join(root, "models", "db", "domains.db"));
-
+        this.database = new CassandraDatabase("localhost", 9042);
+        // TODO: IP AND PORT FOR REAL CASSANDRA CLUSTER?
         DecoderConfig decoderConfig = config.getDecoderConfig();
         if (decoderConfig.isEnabled())
             this.decoder = new MosesDecoder(Paths.join(root, "models", "decoder"), aligner, vocabulary,
@@ -173,6 +173,8 @@ public class Engine implements Closeable {
         IOUtils.closeQuietly(aligner);
         IOUtils.closeQuietly(contextAnalyzer);
         IOUtils.closeQuietly(vocabulary);
+        IOUtils.closeQuietly(database);
+
     }
 
 }

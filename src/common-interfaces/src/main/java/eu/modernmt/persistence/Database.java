@@ -1,19 +1,11 @@
 package eu.modernmt.persistence;
 
+import java.io.Closeable;
+
 /**
  * Created by davide on 21/09/16.
  */
-public abstract class Database {
-
-    protected String connectionString;
-    protected String username;
-    protected String password;
-
-    protected Database(String connectionString, String username, String password) throws PersistenceException {
-        this.connectionString = connectionString;
-        this.username = username;
-        this.password = password;
-    }
+public abstract class Database implements Closeable {
 
     public final Connection getConnection() throws PersistenceException {
         return getConnection(true);
@@ -25,8 +17,8 @@ public abstract class Database {
 
     public abstract ImportJobDAO getImportJobDAO(Connection connection);
 
-    public abstract void drop(Connection connection) throws PersistenceException;
+    public abstract void drop() throws PersistenceException;
 
-    public abstract void create(Connection connection) throws PersistenceException;
+    public abstract void create() throws PersistenceException;
 
 }

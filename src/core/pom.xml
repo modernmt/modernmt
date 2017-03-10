@@ -40,7 +40,7 @@
         </dependency>
         <dependency>
             <groupId>eu.modernmt</groupId>
-            <artifactId>mmt-persistence-sqlite</artifactId>
+            <artifactId>mmt-persistence-cassandra</artifactId>
             <version>${mmt.version}</version>
         </dependency>
 

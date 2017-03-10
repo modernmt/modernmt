@@ -51,4 +51,11 @@ public class Domain implements Serializable {
         return id;
     }
 
+    @Override
+    public String toString() {
+        return "Domain{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                '}';
+    }
 }
