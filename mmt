@@ -6,7 +6,8 @@ import socket
 import sys
 
 from cli import dependency, IllegalStateException, IllegalArgumentException
-from cli.cluster import ClusterNode, DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORTS, DEFAULT_MMT_DATASTREAM_PORT
+from cli.cluster import ClusterNode, DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORTS, DEFAULT_MMT_DATASTREAM_PORT, \
+    DEFAULT_MMT_DB_PORT
 from cli.engine import MMTEngine
 from cli.evaluation import Evaluator
 from cli.libs import netutils
@@ -154,6 +155,12 @@ def main_start(argv):
                         help='the network port used by Datastream, currently implemented with Kafka '
                              '(default is {port}'.format(port=DEFAULT_MMT_DATASTREAM_PORT),
                         default=None, type=int)
+
+    parser.add_argument('--db-port', dest='db_port', metavar='DB_PORT',
+                        help='the network port used by the DB, currently implemented with Cassandra '
+                             '(default is {port}'.format(port=DEFAULT_MMT_DB_PORT),
+                        default=None, type=int)
+
     parser.add_argument('--no-rest', action='store_false', dest='has_rest', default=True,
                         help='if no-rest is set, no REST Api will be available on this node')
     parser.add_argument('--join', dest='sibling', metavar='NODE_IP', default=None,
@@ -170,6 +177,7 @@ def main_start(argv):
     args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
     args.cluster_ports = args.cluster_ports if args.cluster_ports is not None else DEFAULT_MMT_CLUSTER_PORTS
     args.datastream_port = args.datastream_port if args.datastream_port is not None else DEFAULT_MMT_DATASTREAM_PORT
+    args.db_port = args.db_port if args.db_port is not None else DEFAULT_MMT_DB_PORT
 
     # Check ports
     if args.has_rest and not netutils.is_free(args.api_port):
@@ -188,7 +196,7 @@ def main_start(argv):
         raise IllegalStateException('engine not found: ' + args.engine)
 
     node = ClusterNode(engine, rest=args.has_rest, api_port=args.api_port, cluster_ports=args.cluster_ports,
-                       datastream_port=args.datastream_port, sibling=args.sibling, verbosity=args.verbosity)
+                       datastream_port=args.datastream_port, db_port=args.db_port, sibling=args.sibling, verbosity=args.verbosity)
 
     started = False
     success = False
@@ -241,6 +249,7 @@ def main_stop(argv):
 
     print
     print 'Stopping MMT engine \'{engine}\'...'.format(engine=engine.name),
+
     if node.is_running():
         node.stop()
     print 'OK'
@@ -321,9 +330,6 @@ def main_status(argv):
 
 
 def main_create(argv):
-
-
-
     parser = argparse.ArgumentParser(description='Create a new MMT engine from the input corpora')
     parser.prog = 'mmt create'
     parser.add_argument('source_lang', metavar='SOURCE_LANGUAGE', help='the source language (ISO 639-1)')

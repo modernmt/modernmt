@@ -31,8 +31,9 @@ public class CassandraDatabase extends Database {
     /**
      * This constructor builds an access point to a Cassandra DB
      * and, in particular, to one of its keyspaces
-     * @param host the hostname of the machine that is running Cassandra
-     * @param port the port on which the Cassandra machine is listening to
+     *
+     * @param host     the hostname of the machine that is running Cassandra
+     * @param port     the port on which the Cassandra machine is listening to
      * @param keyspace the keyspace in which the target entities are stored in the Cassandra DB
      */
     public CassandraDatabase(String host, int port, String keyspace) {
@@ -45,6 +46,7 @@ public class CassandraDatabase extends Database {
     /**
      * This constructor builds an access point to a Cassandra DB
      * and. in particular, to its "default" keyspace
+     *
      * @param host the hostname of the machine that is running Cassandra
      * @param port the port on which the Cassandra machine is listening to
      */
@@ -54,6 +56,7 @@ public class CassandraDatabase extends Database {
 
     /**
      * This method provides a connection to a Cassandra DB
+     *
      * @param cached
      * @return A CassandraConnection object, that
      * can be used to establish a communication Session with the DB
@@ -65,23 +68,36 @@ public class CassandraDatabase extends Database {
     }
 
     /**
-     * This method creates and returns a DomainDAO ob
-     * @param connection
-     * @return A CassandraConnection object, that
-     * can be used to establish a communication Session with the DB
+     * This method creates and returns a DAO for Domain objects
+     *
+     * @param connection a currently active connection to the DB
+     * @return A DomainDao that can perform CRUD operations for Domain objects
      * @throws PersistenceException
      */
-
     @Override
     public DomainDAO getDomainDAO(Connection connection) {
         return new CassandraDomainDAO((CassandraConnection) connection);
     }
 
+    /**
+     * This method creates and returns a DAO for ImportJob objects
+     *
+     * @param connection a currently active connection to the DB
+     * @return An ImportJobDao that can perform CRUD operations for ImportJob objects
+     * @throws PersistenceException
+     */
     @Override
     public ImportJobDAO getImportJobDAO(Connection connection) {
         return new CassandraImportJobDAO((CassandraConnection) connection);
     }
 
+    /**
+     * This method establishes a new connection to the DB
+     * and drops the current keyspace (with all its tables).
+     * If the keyspace has already been dropped, the method does nothing.
+     *
+     * @throws PersistenceException
+     */
     @Override
     public void drop() throws PersistenceException {
         CassandraConnection connection = null;
@@ -95,13 +111,24 @@ public class CassandraDatabase extends Database {
             CassandraUtils.checkedExecute(session, dropKeyspace);
 
         } catch (KeyspaceNotFoundException e) {
-
+            /*ignore*/
         } finally {
             IOUtils.closeQuietly(connection);
         }
 
     }
 
+    /**
+     * This method establishes a new connection to the DB
+     * and uses it to create
+     * - a new "default" keyspace
+     * - a new domains table
+     * - a new importjobs table
+     * - a new table_counters table,
+     * with an entry for domain and another one for importjobs
+     *
+     * @throws PersistenceException
+     */
     @Override
     public void create() throws PersistenceException {
         CassandraConnection connection = null;
@@ -155,6 +182,13 @@ public class CassandraDatabase extends Database {
         }
     }
 
+    /**
+     * This method closes the Cluster,
+     * which is the current access point to the DB
+     * (it DOES NOT kill the DB process!)
+     *
+     * @throws IOException
+     */
     @Override
     public void close() throws IOException {
         this.cluster.close();

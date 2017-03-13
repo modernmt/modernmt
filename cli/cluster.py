@@ -21,6 +21,7 @@ __author__ = 'Davide Caroselli'
 DEFAULT_MMT_API_PORT = 8045
 DEFAULT_MMT_CLUSTER_PORTS = [5016, 5017]
 DEFAULT_MMT_DATASTREAM_PORT = 9092
+DEFAULT_MMT_DB_PORT = 9042
 
 
 class MMTApi:
@@ -235,17 +236,18 @@ class EmbeddedKafka:
         return daemon.is_running(kpid)
 
     def stop(self):
+
         kpid, zpid = self._get_pids()
 
         if not self.is_running():
-            raise IllegalStateException('process is not running')
+            raise IllegalStateException('Cannot stop Kafka process. Kafka process is not running')
 
         daemon.kill(kpid, 5)
         daemon.kill(zpid)
 
     def start(self):
         if self.is_running():
-            raise IllegalStateException('process is already running')
+            raise IllegalStateException('Cannot start Kafka process. Kafka process is already running')
 
         if not netutils.is_free(self.port):
             raise IllegalStateException(
@@ -380,12 +382,12 @@ class EmbeddedCassandra:
         cpid = self._get_pid()
 
         if not self.is_running():
-            raise IllegalStateException('process is not running')
+            raise IllegalStateException('Cannot stop Cassandra process. Cassandra process is not running')
         daemon.kill(cpid, 5)
 
     def start(self):
         if self.is_running():
-            raise IllegalStateException('process is already running')
+            raise IllegalStateException('Cannot start Cassandra process. Cassandra process is already running')
 
         if not netutils.is_free(self.port):
             raise IllegalStateException(
@@ -421,22 +423,40 @@ class EmbeddedCassandra:
     # and return it
     def _yaml_transform(self, write_file_path):
 
+
+        # key = cosa c'e' nella line, value = come fare replace
+        custom_configurations = {}
+
+        custom_configurations["cluster_name:"] = "cluster_name: ModernMT - " + self._engine.name + "\n"
+        # port used for DB communication
+        custom_configurations["native_transport_port:"] = "native_transport_port: " + str(self.port) + "\n"
+        # auto snapshot on drop can cause timeouts
+        custom_configurations["auto_snapshot:"] = "auto_snapshot: false\n"
+
+        # directories to save data into
+        custom_configurations["commitlog_directory:"] = "commitlog_directory: " + os.path.join(self._model, "commitlog") + "\n"
+        custom_configurations["data_file_directories:"] = "data_file_directories:\n" + "     - " + os.path.join(self._model, "data") + "\n"
+        custom_configurations["saved_caches_directory:"] = "saved_caches_directory: " + os.path.join(self._model, "saved_caches") + "\n"
+
+        # ports that we do not use
+        custom_configurations["storage_port:"] = "storage_port: " + str(netutils.get_free_tcp_port()) + "\n"
+        custom_configurations["ssl_storage_port:"] = "ssl_storage_port: " + str(netutils.get_free_tcp_port()) + "\n"
+        custom_configurations["rpc_port:"] = "rpc_port: " + str(netutils.get_free_tcp_port()) + "\n"
+
         with open(self._default_config) as yaml_read:
             with open(write_file_path, "wb") as yaml_write:
                 for line in yaml_read:
 
-                    if "native_transport_port:" in line:
-                        line = "native_transport_port: " + str(self.port) + "\n"
-                    if "auto_snapshot:" in line:
-                        line = "auto_snapshot: false\n"
-                    if "commitlog_directory:" in line:
-                        line = "commitlog_directory: " + os.path.join(self._model, "commitlog") + "\n"
-                    if "data_file_directories:" in line:
-                        line = "data_file_directories:\n" + "     - " + os.path.join(self._model, "data") + "\n"
-                    if "saved_caches_directory:" in line:
-                        line = "saved_caches_directory: " + os.path.join(self._model, "saved_caches") + "\n"
-
+                    for key in custom_configurations.keys():
+                        if key in line:
+                            line = custom_configurations[key]
+                            custom_configurations.pop(key, None)
+                            break
                     yaml_write.write(line)
+
+                # add the remaining lines
+                for key, value in custom_configurations.iteritems():
+                    yaml_write.write(value)
 
     def _start_cassandra(self, log):
         if not os.path.isdir(self._model):
@@ -447,16 +467,10 @@ class EmbeddedCassandra:
 
         self._yaml_transform(config)
 
-        # set configuration details that must differ from the original configuration
-        #configuration["native_transport_port"] = str(self.port)
-        #configuration["auto_snapshot"] = "false"
-        #configuration["commitlog_directory"] = os.path.join(self._model, "commitlog")
-        #configuration["data_file_directories"] = os.path.join(self._model, "data")
-        #configuration["saved_caches_directory"] = os.path.join(self._model, "saved_caches")
-
         # launch cassandra -d _runtime
         command = [self._cassandra_bin, '-Dcassandra.config=file:///' + config, "-f"]
         cassandra = subprocess.Popen(command, stdout=log, stderr=log, shell=False).pid
+
 
         for i in range(1, 20):
             with open(log.name, 'r') as rlog:
@@ -494,7 +508,7 @@ class ClusterNode(object):
     }
 
     def __init__(self, engine, rest=True, api_port=None, cluster_ports=None, datastream_port=None,
-                 sibling=None, verbosity=None):
+                 db_port=None, sibling=None, verbosity=None):
         self.engine = engine
 
         config = self.engine.config
@@ -506,6 +520,8 @@ class ClusterNode(object):
         self._cluster_ports = cluster_ports if cluster_ports is not None else DEFAULT_MMT_CLUSTER_PORTS
         self._api_port = api_port if api_port is not None else DEFAULT_MMT_API_PORT
         self._datastream_port = datastream_port if datastream_port is not None else DEFAULT_MMT_DATASTREAM_PORT
+        self._db_port = db_port if db_port is not None else DEFAULT_MMT_DB_PORT
+
         self._start_rest_server = rest
         self._sibling = sibling
         self._verbosity = verbosity
@@ -516,6 +532,7 @@ class ClusterNode(object):
         self._mert_i_script = os.path.join(cli.PYOPT_DIR, 'mertinterface.py')
 
         self._kafka = EmbeddedKafka(engine, self._datastream_port) if sibling is None else None
+        self._cassandra = EmbeddedCassandra(engine, self._db_port) if sibling is None else None
 
     def _get_pid(self):
         pid = 0
@@ -541,22 +558,28 @@ class ClusterNode(object):
 
         return daemon.is_running(pid)
 
+    #non viene chiamato quando faccio "/.mmt stop"
     def stop(self):
         pid = self._get_pid()
 
         if not self.is_running():
-            raise IllegalStateException('process is not running')
+            raise IllegalStateException('node process is not running')
 
         daemon.kill(pid, ClusterNode.__SIGTERM_TIMEOUT)
         if self._kafka:
             self._kafka.stop()
 
+        if self._cassandra:
+            self._cassandra.stop()
+
     def start(self):
         if self.is_running():
-            raise IllegalStateException('process is already running')
+            raise IllegalStateException('node process is already running')
 
         if self._kafka:
             self._kafka.start()
+        if self._cassandra:
+            self._cassandra.start()
 
         success = False
         process = self._start_process()
@@ -575,6 +598,9 @@ class ClusterNode(object):
         if not success:
             if self._kafka:
                 self._kafka.stop()
+            if self._cassandra:
+                self._cassandra.stop()
+
             raise Exception('failed to start node, check log file for more details: ' + self._log_file)
 
     def _start_process(self):
@@ -582,8 +608,11 @@ class ClusterNode(object):
             fileutils.makedirs(self.engine.runtime_path, exist_ok=True)
         logs_folder = os.path.abspath(os.path.join(self._log_file, os.pardir))
 
-        args = ['-e', self.engine.name, '-p', str(self._cluster_ports[0]), str(self._cluster_ports[1]),
-                '--datastream-port', str(self._datastream_port), '--status-file', self._status_file,
+        args = ['-e', self.engine.name,
+                '-p', str(self._cluster_ports[0]), str(self._cluster_ports[1]),
+                '--datastream-port', str(self._datastream_port),
+                '--db-port', str(self._db_port),
+                '--status-file', self._status_file,
                 '--logs', logs_folder]
 
         if self._start_rest_server:

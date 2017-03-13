@@ -20,7 +20,7 @@ public class DomainFacade {
 
     public Collection<Domain> list() throws PersistenceException {
         Connection connection = null;
-        Database db = ModernMT.getNode().getEngine().getDatabase();
+        Database db = ModernMT.getNode().getDatabase();
 
         try {
             connection = db.getConnection();
@@ -34,7 +34,7 @@ public class DomainFacade {
 
     public Domain get(int domainId) throws PersistenceException {
         Connection connection = null;
-        Database db = ModernMT.getNode().getEngine().getDatabase();
+        Database db = ModernMT.getNode().getDatabase();
 
         try {
             connection = db.getConnection();
@@ -56,7 +56,7 @@ public class DomainFacade {
 
     public Map<Integer, Domain> get(Collection<Integer> ids) throws PersistenceException {
         Connection connection = null;
-        Database db = ModernMT.getNode().getEngine().getDatabase();
+        Database db = ModernMT.getNode().getDatabase();
 
         try {
             connection = db.getConnection();
@@ -70,7 +70,7 @@ public class DomainFacade {
 
     public Domain create(String name) throws PersistenceException {
         Connection connection = null;
-        Database db = ModernMT.getNode().getEngine().getDatabase();
+        Database db = ModernMT.getNode().getDatabase();
 
         try {
             connection = db.getConnection();
@@ -88,7 +88,7 @@ public class DomainFacade {
 
     public boolean delete(int id) throws PersistenceException, DataManagerException {
         Connection connection = null;
-        Database db = ModernMT.getNode().getEngine().getDatabase();
+        Database db = ModernMT.getNode().getDatabase();
 
         try {
             connection = db.getConnection();
@@ -110,7 +110,7 @@ public class DomainFacade {
 
     public ImportJob add(int domainId, String source, String target) throws DataManagerException, PersistenceException {
         Connection connection = null;
-        Database db = ModernMT.getNode().getEngine().getDatabase();
+        Database db = ModernMT.getNode().getDatabase();
 
         try {
             connection = db.getConnection();
@@ -137,7 +137,7 @@ public class DomainFacade {
 
     public ImportJob add(int domainId, BilingualCorpus corpus) throws PersistenceException, DataManagerException {
         Connection connection = null;
-        Database db = ModernMT.getNode().getEngine().getDatabase();
+        Database db = ModernMT.getNode().getDatabase();
 
         try {
             connection = db.getConnection();
@@ -168,7 +168,7 @@ public class DomainFacade {
 
         if (job == null) {
             Connection connection = null;
-            Database db = ModernMT.getNode().getEngine().getDatabase();
+            Database db = ModernMT.getNode().getDatabase();
 
             try {
                 connection = db.getConnection();

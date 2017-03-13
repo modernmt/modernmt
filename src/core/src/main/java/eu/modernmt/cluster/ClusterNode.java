@@ -7,10 +7,7 @@ import com.hazelcast.core.*;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.cluster.kafka.KafkaDataManager;
-import eu.modernmt.config.DataStreamConfig;
-import eu.modernmt.config.JoinConfig;
-import eu.modernmt.config.NetworkConfig;
-import eu.modernmt.config.NodeConfig;
+import eu.modernmt.config.*;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
@@ -20,7 +17,10 @@ import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
+import eu.modernmt.persistence.Database;
+import eu.modernmt.persistence.cassandra.CassandraDatabase;
 import eu.modernmt.util.Timer;
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -67,6 +67,8 @@ public class ClusterNode {
     private IExecutorService executor;
     private SessionManager sessionManager;
     private DataManager dataManager;
+
+    private Database database;
     private ITopic<Map<String, float[]>> decoderWeightsTopic;
 
     private final Thread shutdownThread = new Thread() {
@@ -93,6 +95,7 @@ public class ClusterNode {
 
             // Close engine resources
             engine.close();
+            IOUtils.closeQuietly(ClusterNode.this.database);
 
             setStatus(Status.TERMINATED);
         }
@@ -111,8 +114,14 @@ public class ClusterNode {
     public DataManager getDataManager() {
         if (dataManager == null)
             throw new UnsupportedOperationException("DataStream unavailable");
-
         return dataManager;
+    }
+
+    public Database getDatabase() {
+        if (database == null)
+            throw new IllegalStateException("Database not ready.");
+
+        return database;
     }
 
     public SessionManager getSessionManager() {
@@ -313,6 +322,18 @@ public class ClusterNode {
                 throw new BootstrapException("Unable to connect to DataManager", e);
             }
         }
+
+        // ========================
+
+        DatabaseConfig databaseConfig = nodeConfig.getDatabaseConfig();
+        logger.info("Starting Database");
+
+        this.database = new CassandraDatabase(
+                databaseConfig.getHost(),
+                databaseConfig.getPort(),
+                databaseConfig.getKeyspace());
+
+        logger.info("Database started");
 
         // ========================
 

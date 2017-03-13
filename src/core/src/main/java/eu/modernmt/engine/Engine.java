@@ -61,7 +61,6 @@ public class Engine implements Closeable {
     private final Postprocessor postprocessor;
     private final ContextAnalyzer contextAnalyzer;
     private final Vocabulary vocabulary;
-    private final Database database;
 
     public static Engine load(EngineConfig config) throws BootstrapException {
         try {
@@ -85,10 +84,6 @@ public class Engine implements Closeable {
         this.postprocessor = new Postprocessor(sourceLanguage, targetLanguage, vocabulary);
         this.aligner = new FastAlign(Paths.join(root, "models", "align"));
         this.contextAnalyzer = new LuceneAnalyzer(Paths.join(root, "models", "context"), sourceLanguage);
-
-        // TODO: IP AND PORT FOR REAL CASSANDRA CLUSTER?
-        this.database = new CassandraDatabase("localhost", 9042);
-
 
         DecoderConfig decoderConfig = config.getDecoderConfig();
         if (decoderConfig.isEnabled())
@@ -139,10 +134,6 @@ public class Engine implements Closeable {
         return vocabulary;
     }
 
-    public Database getDatabase() {
-        return database;
-    }
-
     public Locale getSourceLanguage() {
         return sourceLanguage;
     }
@@ -176,8 +167,6 @@ public class Engine implements Closeable {
         IOUtils.closeQuietly(aligner);
         IOUtils.closeQuietly(contextAnalyzer);
         IOUtils.closeQuietly(vocabulary);
-        IOUtils.closeQuietly(database);
-
     }
 
 }

@@ -7,6 +7,7 @@ public class NodeConfig {
 
     private final NetworkConfig networkConfig = new NetworkConfig();
     private final DataStreamConfig dataStreamConfig = new DataStreamConfig();
+    private final DatabaseConfig databaseConfig = new DatabaseConfig();
     private final EngineConfig engineConfig = new EngineConfig();
 
     public NetworkConfig getNetworkConfig() {
@@ -15,6 +16,10 @@ public class NodeConfig {
 
     public DataStreamConfig getDataStreamConfig() {
         return dataStreamConfig;
+    }
+
+    public DatabaseConfig getDatabaseConfig() {
+        return databaseConfig;
     }
 
     public EngineConfig getEngineConfig() {
@@ -26,6 +31,7 @@ public class NodeConfig {
         return "[Node]\n" +
                 "  " + networkConfig.toString().replace("\n", "\n  ") + "\n" +
                 "  " + dataStreamConfig.toString().replace("\n", "\n  ") + "\n" +
+                "  " + databaseConfig.toString().replace("\n", "\n  ") + "\n" +
                 "  " + engineConfig.toString().replace("\n", "\n  ");
     }
 }

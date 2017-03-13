@@ -32,6 +32,8 @@ public class ClusterNodeMain {
             Option apiPort = Option.builder("a").longOpt("api-port").hasArg().type(Integer.class).required(false).build();
             Option clusterPorts = Option.builder("p").longOpt("cluster-ports").numberOfArgs(2).type(Integer.class).required(false).build();
             Option datastreamPort = Option.builder().longOpt("datastream-port").hasArg().required(false).build();
+            Option databasePort = Option.builder().longOpt("db-port").hasArg().required(false).build();
+
             Option member = Option.builder().longOpt("member").hasArg().required(false).build();
 
             Option verbosity = Option.builder("v").longOpt("verbosity").hasArg().type(Integer.class).required(false).build();
@@ -45,6 +47,7 @@ public class ClusterNodeMain {
             cliOptions.addOption(member);
             cliOptions.addOption(logsFolder);
             cliOptions.addOption(datastreamPort);
+            cliOptions.addOption(databasePort);
         }
 
         public final String engine;
@@ -95,13 +98,18 @@ public class ClusterNodeMain {
             String datastreamPort = cli.getOptionValue("datastream-port");
             if (datastreamPort != null)
                 this.config.getDataStreamConfig().setPort(Integer.parseInt(datastreamPort));
+
+            String databasePort = cli.getOptionValue("db-port");
+            if (databasePort != null)
+                this.config.getDatabaseConfig().setPort(Integer.parseInt(databasePort));
         }
+
     }
+
 
     public static void main(String[] _args) throws Throwable {
         Args args = new Args(_args);
         Log4jConfiguration.setup(args.verbosity, args.logsFolder);
-
 
         FileStatusListener listener = new FileStatusListener(args.statusFile, args.config);
 
@@ -174,5 +182,4 @@ public class ClusterNodeMain {
             }
         }
     }
-
 }

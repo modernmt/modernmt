@@ -32,6 +32,7 @@ class _DomainMapBuilder:
         if log is None:
             log = shell.DEVNULL
 
+        #QUANDO FACCIO QUESTO (nella create) DOPO AVERE FATTO UNA START, CHE SUCCEDE?
         cassandra = EmbeddedCassandra(self._engine, netutils.get_free_tcp_port())
 
         args = ['-s', self._source_lang, '-t', self._target_lang, '-p', str(cassandra.port), '-c']
@@ -40,10 +41,8 @@ class _DomainMapBuilder:
         for source_path in source_paths:
             args.append(source_path)
 
-
         try:
             cassandra.start()
-
             command = cli.mmt_javamain(self._java_mainclass, args)
             stdout, _ = shell.execute(command, stderr=log)
 
