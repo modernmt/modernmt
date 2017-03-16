@@ -321,7 +321,7 @@ class EmbeddedKafka:
         config = os.path.join(self._runtime, 'kafka.properties')
         with open(config, 'w') as cout:
             cout.write('broker.id=0\n')
-            cout.write('listeners=PLAINTEXT://0.0.0.0:{port}\n'.format(port=self.port))
+            cout.write('listeners=PLAINTEXT://:{port}\n'.format(port=self.port))
             cout.write('log.dirs={data}\n'.format(data=self._model))
             cout.write('num.partitions=1\n')
             cout.write('log.retention.hours=8760000\n')
@@ -443,6 +443,10 @@ class EmbeddedCassandra:
         custom_configurations["ssl_storage_port:"] = "ssl_storage_port: " + str(netutils.get_free_tcp_port()) + "\n"
         custom_configurations["rpc_port:"] = "rpc_port: " + str(netutils.get_free_tcp_port()) + "\n"
 
+        # accept remote requests
+        custom_configurations["rpc_address:"] = "rpc_address: 0.0.0.0\n"
+        custom_configurations["broadcast_rpc_address:"] = "broadcast_rpc_address: 1.2.3.4\n"
+
         with open(self._default_config) as yaml_read:
             with open(write_file_path, "wb") as yaml_write:
                 for line in yaml_read:
@@ -558,7 +562,6 @@ class ClusterNode(object):
 
         return daemon.is_running(pid)
 
-    #non viene chiamato quando faccio "/.mmt stop"
     def stop(self):
         pid = self._get_pid()
 
@@ -625,9 +628,10 @@ class ClusterNode(object):
 
         if self._sibling is not None:
             args.append('--member')
-            args.append(str(self._sibling))
+            args.append('%s:%d' % (self._sibling, self._cluster_ports[0]))
 
         command = mmt_javamain('eu.modernmt.cli.ClusterNodeMain', args, hserr_path=logs_folder)
+        print ' '.join(command)
 
         if os.path.isfile(self._status_file):
             os.remove(self._status_file)

@@ -18,10 +18,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -87,11 +84,42 @@ public class KafkaDataManager implements DataManager {
 
     @Override
     public Map<Short, Long> connect(String host, int port, long timeout, TimeUnit unit) throws HostUnreachableException {
+        logger.info("sono al connect");
+
         Properties producerProperties = loadProperties("kafka-producer.properties", host, port);
+
+//        Properties producerProperties = new Properties();
+//        producerProperties.put("bootstrap.servers", host + ":" + port);
+//        //Set acknowledgements for producer requests.
+//        producerProperties.put("acks", "all");
+//        //If the request fails, the producer can automatically retry,
+//        producerProperties.put("retries", 0);
+//        //Specify buffer size in config
+//        producerProperties.put("batch.size", 16384);
+//        //Reduce the no of requests less than 0
+//        producerProperties.put("linger.ms", 1);
+//        //The buffer.memory controls the total amount of memory available to the producer for buffering.
+//        producerProperties.put("buffer.memory", 33554432);
+//        producerProperties.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+//        producerProperties.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+
         this.producer = new KafkaProducer<>(producerProperties);
 
         Properties consumerProperties = loadProperties("kafka-consumer.properties", host, port);
-        consumerProperties.put("group.id", uuid);
+
+//        Properties consumerProperties = new Properties();
+//        consumerProperties.put("bootstrap.servers", host + ":" + port);
+//        consumerProperties.put("api_version", 3);
+//        consumerProperties.put("group.id", uuid);
+//        //consumerProperties.put("group.id", "test");
+//        consumerProperties.put("enable.auto.commit", "true");
+//        consumerProperties.put("auto.commit.interval.ms", "1000");
+//        consumerProperties.put("session.timeout.ms", "30000");
+//        consumerProperties.put("key.deserializer",
+//                "org.apache.kafka.common.serialization.StringDeserializer");
+//        consumerProperties.put("value.deserializer",
+//                "org.apache.kafka.common.serialization.StringDeserializer");
+
 
         this.consumer = new KafkaConsumer<>(consumerProperties);
         this.consumer.assign(PARTITIONS);
@@ -102,7 +130,6 @@ public class KafkaDataManager implements DataManager {
         try {
             unit.timedJoin(connectThread, timeout);
         } catch (InterruptedException e) {
-            // Ignore it
         }
 
         if (connectThread.isAlive())
@@ -301,12 +328,19 @@ public class KafkaDataManager implements DataManager {
         @Override
         public void run() {
             try {
+                logger.info("ciao a tutti, sono il connectionThread");
+
                 consumer.seekToEnd(PARTITIONS);
 
-                for (KafkaChannel channel : CHANNELS)
+                for (KafkaChannel channel : CHANNELS) {
                     positions.put(channel.getId(), consumer.position(channel.getTopicPartition()));
+                }
+
+                logger.info("connectionThread: sono uscito dal primo for e ora entro nel secondo");
 
                 for (Map.Entry<Short, Long> entry : pollingThread.getCurrentPositions().entrySet()) {
+                    logger.info("connectionThread: sto per cercare il canale con queste informazioni " + entry.toString());
+
                     KafkaChannel channel = getDataChannel(entry.getKey());
                     long position = entry.getValue();
 
@@ -314,7 +348,6 @@ public class KafkaDataManager implements DataManager {
                     consumer.seek(channel.getTopicPartition(), position);
                 }
             } catch (WakeupException e) {
-                // Timeout occurred
             }
         }
     }

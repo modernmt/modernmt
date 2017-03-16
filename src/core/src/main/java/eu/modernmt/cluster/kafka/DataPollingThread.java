@@ -155,5 +155,4 @@ class DataPollingThread extends Thread {
                 listener.onDelete(deletion);
         }
     }
-
 }

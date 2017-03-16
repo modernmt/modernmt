@@ -32,7 +32,6 @@ class _DomainMapBuilder:
         if log is None:
             log = shell.DEVNULL
 
-        #QUANDO FACCIO QUESTO (nella create) DOPO AVERE FATTO UNA START, CHE SUCCEDE?
         cassandra = EmbeddedCassandra(self._engine, netutils.get_free_tcp_port())
 
         args = ['-s', self._source_lang, '-t', self._target_lang, '-p', str(cassandra.port), '-c']

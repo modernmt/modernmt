@@ -40,7 +40,7 @@ public class CassandraConnection implements Connection {
             }
 
         } catch (NoHostAvailableException e) {
-            throw new PersistenceException("the Cluster has not been initialized yet " +
+            throw new PersistenceException("the Cassandra cluster has not been initialized yet " +
                     " and no host amongst the contact points can be reached, " +
                     " or no host can be contacted to set the keyspace", e);
         } catch (AuthenticationException e) {

@@ -83,7 +83,17 @@ public class ClusterNodeMain {
                 apiConfig.setPort(Integer.parseInt(apiPort));
             }
 
+            String datastreamPort = cli.getOptionValue("datastream-port");
+            if (datastreamPort != null)
+                this.config.getDataStreamConfig().setPort(Integer.parseInt(datastreamPort));
+
+            String databasePort = cli.getOptionValue("db-port");
+            if (databasePort != null)
+                this.config.getDatabaseConfig().setPort(Integer.parseInt(databasePort));
+
             String member = cli.getOptionValue("member");
+
+
             if (member != null) {
                 String[] parts = member.split(":");
 
@@ -93,15 +103,10 @@ public class ClusterNodeMain {
                 members[0] = new JoinConfig.Member(parts[0], Integer.parseInt(parts[1]), 0);
 
                 joinConfig.setMembers(members);
+                this.config.getDataStreamConfig().setHost(parts[0]);
+                this.config.getDatabaseConfig().setHost(parts[0]);
             }
 
-            String datastreamPort = cli.getOptionValue("datastream-port");
-            if (datastreamPort != null)
-                this.config.getDataStreamConfig().setPort(Integer.parseInt(datastreamPort));
-
-            String databasePort = cli.getOptionValue("db-port");
-            if (databasePort != null)
-                this.config.getDatabaseConfig().setPort(Integer.parseInt(databasePort));
         }
 
     }
