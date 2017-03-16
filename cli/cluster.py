@@ -19,7 +19,7 @@ from cli.mt.processing import TrainingPreprocessor, Tokenizer
 __author__ = 'Davide Caroselli'
 
 DEFAULT_MMT_API_PORT = 8045
-DEFAULT_MMT_CLUSTER_PORTS = [5016, 5017]
+DEFAULT_MMT_CLUSTER_PORT = 5016
 DEFAULT_MMT_DATASTREAM_PORT = 9092
 DEFAULT_MMT_DB_PORT = 9042
 
@@ -511,7 +511,7 @@ class ClusterNode(object):
         'ERROR': 9999,
     }
 
-    def __init__(self, engine, rest=True, api_port=None, cluster_ports=None, datastream_port=None,
+    def __init__(self, engine, rest=True, api_port=None, cluster_port=None, datastream_port=None,
                  db_port=None, sibling=None, verbosity=None):
         self.engine = engine
 
@@ -521,7 +521,7 @@ class ClusterNode(object):
 
         self._pidfile = os.path.join(engine.runtime_path, 'node.pid')
 
-        self._cluster_ports = cluster_ports if cluster_ports is not None else DEFAULT_MMT_CLUSTER_PORTS
+        self._cluster_port = cluster_port if cluster_port is not None else DEFAULT_MMT_CLUSTER_PORT
         self._api_port = api_port if api_port is not None else DEFAULT_MMT_API_PORT
         self._datastream_port = datastream_port if datastream_port is not None else DEFAULT_MMT_DATASTREAM_PORT
         self._db_port = db_port if db_port is not None else DEFAULT_MMT_DB_PORT
@@ -612,7 +612,7 @@ class ClusterNode(object):
         logs_folder = os.path.abspath(os.path.join(self._log_file, os.pardir))
 
         args = ['-e', self.engine.name,
-                '-p', str(self._cluster_ports[0]), str(self._cluster_ports[1]),
+                '-p', str(self._cluster_port),
                 '--datastream-port', str(self._datastream_port),
                 '--db-port', str(self._db_port),
                 '--status-file', self._status_file,
@@ -628,10 +628,10 @@ class ClusterNode(object):
 
         if self._sibling is not None:
             args.append('--member')
-            args.append('%s:%d' % (self._sibling, self._cluster_ports[0]))
+            args.append('%s:%d' % (self._sibling, self._cluster_port))
 
         command = mmt_javamain('eu.modernmt.cli.ClusterNodeMain', args, hserr_path=logs_folder)
-        print ' '.join(command)
+        #print ' '.join(command)
 
         if os.path.isfile(self._status_file):
             os.remove(self._status_file)

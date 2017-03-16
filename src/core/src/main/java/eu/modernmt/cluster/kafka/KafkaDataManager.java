@@ -328,18 +328,13 @@ public class KafkaDataManager implements DataManager {
         @Override
         public void run() {
             try {
-                logger.info("ciao a tutti, sono il connectionThread");
-
                 consumer.seekToEnd(PARTITIONS);
 
                 for (KafkaChannel channel : CHANNELS) {
                     positions.put(channel.getId(), consumer.position(channel.getTopicPartition()));
                 }
 
-                logger.info("connectionThread: sono uscito dal primo for e ora entro nel secondo");
-
                 for (Map.Entry<Short, Long> entry : pollingThread.getCurrentPositions().entrySet()) {
-                    logger.info("connectionThread: sto per cercare il canale con queste informazioni " + entry.toString());
 
                     KafkaChannel channel = getDataChannel(entry.getKey());
                     long position = entry.getValue();

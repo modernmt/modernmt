@@ -6,7 +6,7 @@ import socket
 import sys
 
 from cli import dependency, IllegalStateException, IllegalArgumentException
-from cli.cluster import ClusterNode, DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORTS, DEFAULT_MMT_DATASTREAM_PORT, \
+from cli.cluster import ClusterNode, DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORT, DEFAULT_MMT_DATASTREAM_PORT, \
     DEFAULT_MMT_DB_PORT
 from cli.engine import MMTEngine
 from cli.evaluation import Evaluator
@@ -146,11 +146,10 @@ def main_start(argv):
     parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
                         help='the public REST Api port. (default is {port})'
                         .format(port=DEFAULT_MMT_API_PORT), default=None, type=int)
-    parser.add_argument('--cluster-ports', dest='cluster_ports', metavar='CLUSTER_PORT',
-                        help='the network ports used internally by the cluster for data exchange between '
-                             'Cluster nodes. (default is {port0} and {port1})'
-                        .format(port0=DEFAULT_MMT_CLUSTER_PORTS[0], port1=DEFAULT_MMT_CLUSTER_PORTS[1]),
-                        default=None, type=int, nargs=2)
+    parser.add_argument('--cluster-port', dest='cluster_port', metavar='CLUSTER_PORT',
+                        help='the network port used internally by the cluster for communication between '
+                             'Cluster nodes. (default is {port})'.format(port=DEFAULT_MMT_CLUSTER_PORT),
+                        default=None, type=int)
     parser.add_argument('--datastream-port', dest='datastream_port', metavar='DATASTREAM_PORT',
                         help='the network port used by Datastream, currently implemented with Kafka '
                              '(default is {port}'.format(port=DEFAULT_MMT_DATASTREAM_PORT),
@@ -175,7 +174,7 @@ def main_start(argv):
                                        'please remove option "-p/--api-port"')
 
     args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
-    args.cluster_ports = args.cluster_ports if args.cluster_ports is not None else DEFAULT_MMT_CLUSTER_PORTS
+    args.cluster_port = args.cluster_port if args.cluster_port is not None else DEFAULT_MMT_CLUSTER_PORT
     args.datastream_port = args.datastream_port if args.datastream_port is not None else DEFAULT_MMT_DATASTREAM_PORT
     args.db_port = args.db_port if args.db_port is not None else DEFAULT_MMT_DB_PORT
 
@@ -185,19 +184,19 @@ def main_start(argv):
     if args.has_rest and not netutils.is_free(args.api_port):
         raise IllegalStateException(
             'port %d is already in use, please specify another port with option -p/--api-port' % args.api_port)
-    if not netutils.is_free(args.cluster_ports[0]):
+    if not netutils.is_free(args.cluster_port):
         raise IllegalStateException(
-            'port %d is already in use, please specify another port with --cluster-ports' % args.cluster_ports[0])
-    if not netutils.is_free(args.cluster_ports[1]):
-        raise IllegalStateException(
-            'port %d is already in use, please specify another port with --cluster-ports' % args.cluster_ports[1])
+            'port %d is already in use, please specify another port with --cluster-port' % args.cluster_port)
+    # if not netutils.is_free(args.cluster_ports[1]):
+    #     raise IllegalStateException(
+    #         'port %d is already in use, please specify another port with --cluster-ports' % args.cluster_ports[1])
 
     # Exec command
     engine = MMTEngine.load(args.engine)
     if args.sibling is None and not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
 
-    node = ClusterNode(engine, rest=args.has_rest, api_port=args.api_port, cluster_ports=args.cluster_ports,
+    node = ClusterNode(engine, rest=args.has_rest, api_port=args.api_port, cluster_port=args.cluster_port,
                        datastream_port=args.datastream_port, db_port=args.db_port, sibling=args.sibling, verbosity=args.verbosity)
 
     started = False
@@ -324,7 +323,7 @@ def main_status(argv):
         print '-'
         print 'Engine:   ', engine.name
         print 'Node:     ', (
-            'running - ports %s, %s' % (status['control_port'], status['data_port'])
+            'running - port %s' % (status['control_port'])
             if status is not None else 'stopped')
         print 'Rest API: ', (
             'running - http://localhost:%s/translate' % status['api_port']
@@ -509,11 +508,9 @@ def main():
     actions = {
         'create': main_create,
 
-
-        #lancia kafka, cassandra, mmt
+        #launch kafka, cassandra, mmt
         'start': main_start,
-
-        #stoppa mmt, cassandra, kafka
+        #stop mmt, cassandra, kafka
         'stop': main_stop,
 
         'status': main_status,
