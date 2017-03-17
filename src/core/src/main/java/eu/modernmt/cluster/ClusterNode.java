@@ -19,7 +19,6 @@ import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.persistence.Database;
 import eu.modernmt.persistence.cassandra.CassandraDatabase;
-import eu.modernmt.util.Timer;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -416,6 +415,20 @@ public class ClusterNode {
             } catch (Throwable e) {
                 // Ignore
             }
+        }
+
+    }
+
+    private static class Timer {
+
+        private long epoch = System.currentTimeMillis();
+
+        public void reset() {
+            epoch = System.currentTimeMillis();
+        }
+
+        public long time() {
+            return System.currentTimeMillis() - epoch;
         }
 
     }

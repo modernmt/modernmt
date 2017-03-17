@@ -20,22 +20,22 @@
     <dependencies>
         <dependency>
             <groupId>eu.modernmt</groupId>
-            <artifactId>mmt-rocksdb-vocabulary</artifactId>
+            <artifactId>mmt-vocabulary-rocksdb</artifactId>
             <version>${mmt.version}</version>
         </dependency>
         <dependency>
             <groupId>eu.modernmt</groupId>
-            <artifactId>mmt-fastalign-aligner</artifactId>
+            <artifactId>mmt-aligner-fastalign</artifactId>
             <version>${mmt.version}</version>
         </dependency>
         <dependency>
             <groupId>eu.modernmt</groupId>
-            <artifactId>mmt-moses-decoder</artifactId>
+            <artifactId>mmt-decoder-phrasebased</artifactId>
             <version>${mmt.version}</version>
         </dependency>
         <dependency>
             <groupId>eu.modernmt</groupId>
-            <artifactId>mmt-lucene-contextanalyzer</artifactId>
+            <artifactId>mmt-contextanalyzer-lucene</artifactId>
             <version>${mmt.version}</version>
         </dependency>
         <dependency>
@@ -51,12 +51,7 @@
         </dependency>
         <dependency>
             <groupId>eu.modernmt</groupId>
-            <artifactId>mmt-common-interfaces</artifactId>
-            <version>${mmt.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>eu.modernmt</groupId>
-            <artifactId>mmt-model</artifactId>
+            <artifactId>mmt-commons</artifactId>
             <version>${mmt.version}</version>
         </dependency>
 

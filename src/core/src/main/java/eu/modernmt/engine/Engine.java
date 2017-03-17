@@ -7,7 +7,7 @@ import eu.modernmt.config.EngineConfig;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.lucene.LuceneAnalyzer;
 import eu.modernmt.decoder.Decoder;
-import eu.modernmt.decoder.moses.MosesDecoder;
+import eu.modernmt.decoder.phrasebased.MosesDecoder;
 import eu.modernmt.io.Paths;
 import eu.modernmt.persistence.Database;
 import eu.modernmt.persistence.PersistenceException;

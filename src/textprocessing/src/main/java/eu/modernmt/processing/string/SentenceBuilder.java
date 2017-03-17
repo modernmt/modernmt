@@ -309,7 +309,6 @@ public class SentenceBuilder {
 
                 if (hasRightSpace) {
                     /*unescape the rightspace (see comment above to understand why)*/
-                    //rightSpace = XMLCharacterEntity.unescapeAll(originalChars, transformation.end, nextTransformation.start - transformation.end);
                     rightSpace = XMLCharacterEntity.unescapeAll(new String(originalChars, transformation.end, nextTransformation.start - transformation.end));
 
                 }
@@ -372,106 +371,6 @@ public class SentenceBuilder {
         currentString.getChars(0, l, buffer, 0);
 
         return buffer;
-    }
-
-
-    public static void main(String[] args) throws Throwable {
-        String text = "<b>Ciao </b>amico &apos;mio&apos;<br/>`apos strano  \t` {0,<b>ciao<b/>}.<br/>";
-        text = "<b>Ciao </b>amico &apos;mio;`apos strano \t {0,<b>ciao<b/>}.<br/>";
-
-        SentenceBuilder builder = new SentenceBuilder(text);
-        Editor editor;
-        String currentString;
-
-        // XMessage
-        currentString = builder.toString();
-        System.out.println("XMessage: " + currentString);
-
-        editor = builder.edit();
-        editor.setToken(currentString.indexOf("{0,<b>ciao<b/>}"), "{0,<b>ciao<b/>}".length(), " ", TokenFactory.TAG_FACTORY);
-        editor.commit();
-
-        // XML stripper
-        currentString = builder.toString();
-        System.out.println("XML stripper: " + currentString);
-
-        editor = builder.edit();
-        editor.setTag(currentString.indexOf("<b>"), 3, "tagbold");
-        editor.setTag(currentString.indexOf("</b>"), 4, "tagbold");
-
-
-        editor.replace(currentString.indexOf("&apos;"), 6, "'");
-        //editor.replace(currentString.indexOf("&apos;"), 6, "'");
-        editor.setTag(currentString.indexOf("<br/>"), 5, " ");
-        //editor.setTag(currentString.indexOf("<br/>"), 5, " ");
-        editor.commit();
-
-        // RareCharsNormalizer
-        currentString = builder.toString();
-        System.out.println("RareCharsNormalizer: " + currentString);
-
-        editor = builder.edit();
-        editor.replace(currentString.indexOf("`"), 1, "'");
-        //editor.replace(currentString.indexOf("`"), 1, "'");
-        editor.commit();
-
-        // WordTokenizer
-        currentString = builder.toString();
-        System.out.println("WordTokenizer: " + currentString);
-
-        editor = builder.edit();
-        editor.setWord(currentString.indexOf("Ciao"), "Ciao".length(), null);
-        editor.setWord(currentString.indexOf("amico"), "amico".length(), null);
-
-        editor.setWord(currentString.indexOf("'"), "'".length(), null);
-
-
-        editor.setWord(currentString.indexOf("mio"), "mio".length(), null);
-
-        editor.setWord(currentString.indexOf("'"), "'".length(), null);
-
-
-        editor.setWord(currentString.indexOf("'"), "'".length(), null);
-        editor.setWord(currentString.indexOf("apos"), "apos".length(), null);
-        editor.setWord(currentString.indexOf("strano"), "strano".length(), null);
-
-        editor.setWord(currentString.indexOf("'"), "'".length(), null);
-        editor.setWord(currentString.indexOf("."), ".".length(), null);
-        editor.commit();
-
-        // WTF WordTokenizer
-        currentString = builder.toString();
-        System.out.println("WTF WordTokenizer: " + currentString);
-
-        editor = builder.edit();
-        editor.setWord(currentString.indexOf("'apos"), "'apos".length(), null);
-        editor.commit();
-
-        // Compiling
-        System.out.println("  Original string: " + builder.getOriginalString());
-        System.out.println("   Current string: " + builder);
-
-        System.out.println("\n \n \n \n");
-        //System.out.println("<b>Ciao </b>amico &apos;mio;`apos strano  \t {0,<b>ciao<b/>}.<br/>");
-        text = "<b>Ciao </b>amico &apos;mio;`apos strano \t {0,<b>ciao<b/>}.<br/>";
-
-        Sentence sentence = builder.build();
-
-
-        System.out.println("         Sentence: " + sentence);
-        System.out.println("Stripped sentence: " + sentence.getStrippedString(true));
-
-
-        for (Transformation t : builder.sentenceBuilderTransformations) {
-            System.out.println(t.toString());
-            System.out.println("original: " + builder.originalString.substring(t.start, t.end));
-            System.out.println();
-            System.out.println();
-            System.out.println();
-
-        }
-
-
     }
 
 
