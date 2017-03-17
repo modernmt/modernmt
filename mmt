@@ -316,6 +316,10 @@ def main_status(argv):
         if not engines[0].exists():
             raise IllegalStateException('engine not found: ' + args.engine)
 
+    if len(engines) == 0:
+        print 'No engine could be found.'
+        print 'You can create a new engine with the ./mmt create command.'
+
     for engine in engines:
         node = ClusterNode(engine)
         status = node.get_state()

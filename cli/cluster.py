@@ -236,14 +236,10 @@ class EmbeddedKafka:
         return daemon.is_running(kpid)
 
     def stop(self):
-
         kpid, zpid = self._get_pids()
-
-        if not self.is_running():
-            raise IllegalStateException('Cannot stop Kafka process. Kafka process is not running')
-
-        daemon.kill(kpid, 5)
-        daemon.kill(zpid)
+        if self.is_running():
+            daemon.kill(kpid, 5)
+            daemon.kill(zpid)
 
     def start(self):
         if self.is_running():
@@ -379,11 +375,8 @@ class EmbeddedCassandra:
 
     # stop cassandra process
     def stop(self):
-        cpid = self._get_pid()
-
-        if not self.is_running():
-            raise IllegalStateException('Cannot stop Cassandra process. Cassandra process is not running')
-        daemon.kill(cpid, 5)
+        if self.is_running():
+            daemon.kill(self._get_pid(), 5)
 
     def start(self):
         if self.is_running():
@@ -405,10 +398,10 @@ class EmbeddedCassandra:
 
         try:
             cpid = self._start_cassandra(log)
+
             if cpid is None:
                 raise IllegalStateException(
                     'failed to start Cassandra, check log file for more details: ' + self._log_file)
-
             self._set_pid(cpid)
             success = True
         except:
@@ -422,8 +415,6 @@ class EmbeddedCassandra:
     # put them in a dictionary
     # and return it
     def _yaml_transform(self, write_file_path):
-
-
         # key = cosa c'e' nella line, value = come fare replace
         custom_configurations = {}
 
@@ -462,7 +453,9 @@ class EmbeddedCassandra:
                 for key, value in custom_configurations.iteritems():
                     yaml_write.write(value)
 
+    #def _start_cassandra(self, log):
     def _start_cassandra(self, log):
+
         if not os.path.isdir(self._model):
             fileutils.makedirs(self._model, exist_ok=True)
 
@@ -473,18 +466,19 @@ class EmbeddedCassandra:
 
         # launch cassandra -d _runtime
         command = [self._cassandra_bin, '-Dcassandra.config=file:///' + config, "-f"]
+
         cassandra = subprocess.Popen(command, stdout=log, stderr=log, shell=False).pid
 
-
-        for i in range(1, 20):
+        # If Starting listening for CQL clients is not in the rlog
+        # in the first 80 seconds
+        # kill Cassandra and return none?
+        for i in range(1, 100):
             with open(log.name, 'r') as rlog:
                 for line in rlog:
                     if 'Starting listening for CQL clients' in line:
                         return cassandra
 
             time.sleep(1)
-
-        daemon.kill(cassandra)
         return None
 
 
@@ -631,7 +625,6 @@ class ClusterNode(object):
             args.append('%s:%d' % (self._sibling, self._cluster_port))
 
         command = mmt_javamain('eu.modernmt.cli.ClusterNodeMain', args, hserr_path=logs_folder)
-        #print ' '.join(command)
 
         if os.path.isfile(self._status_file):
             os.remove(self._status_file)
