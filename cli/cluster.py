@@ -19,8 +19,9 @@ from cli.mt.processing import TrainingPreprocessor, Tokenizer
 __author__ = 'Davide Caroselli'
 
 DEFAULT_MMT_API_PORT = 8045
-DEFAULT_MMT_CLUSTER_PORTS = [5016, 5017]
+DEFAULT_MMT_CLUSTER_PORT = 5016
 DEFAULT_MMT_DATASTREAM_PORT = 9092
+DEFAULT_MMT_DB_PORT = 9042
 
 
 class MMTApi:
@@ -236,16 +237,13 @@ class EmbeddedKafka:
 
     def stop(self):
         kpid, zpid = self._get_pids()
-
-        if not self.is_running():
-            raise IllegalStateException('process is not running')
-
-        daemon.kill(kpid, 5)
-        daemon.kill(zpid)
+        if self.is_running():
+            daemon.kill(kpid, 5)
+            daemon.kill(zpid)
 
     def start(self):
         if self.is_running():
-            raise IllegalStateException('process is already running')
+            raise IllegalStateException('Cannot start Kafka process. Kafka process is already running')
 
         if not netutils.is_free(self.port):
             raise IllegalStateException(
@@ -319,7 +317,7 @@ class EmbeddedKafka:
         config = os.path.join(self._runtime, 'kafka.properties')
         with open(config, 'w') as cout:
             cout.write('broker.id=0\n')
-            cout.write('listeners=PLAINTEXT://0.0.0.0:{port}\n'.format(port=self.port))
+            cout.write('listeners=PLAINTEXT://:{port}\n'.format(port=self.port))
             cout.write('log.dirs={data}\n'.format(data=self._model))
             cout.write('num.partitions=1\n')
             cout.write('log.retention.hours=8760000\n')
@@ -337,6 +335,150 @@ class EmbeddedKafka:
             time.sleep(1)
 
         daemon.kill(kafka)
+        return None
+
+class EmbeddedCassandra:
+    def __init__(self, engine, port):
+        self._engine = engine
+        self.port = port
+
+        self._model = os.path.join(engine.models_path, 'cassandra')
+        self._runtime = os.path.join(engine.runtime_path, 'cassandra')
+        self._pidfile = os.path.join(engine.runtime_path, 'cassandra.pid')
+        self._default_config = os.path.join(cli.VENDOR_DIR, 'cassandra-3.10', 'conf', 'cassandra.yaml')
+        self._cassandra_bin = os.path.join(cli.VENDOR_DIR, 'cassandra-3.10', 'bin', 'cassandra')
+
+    # read cassandra pid from file cassandra.pid
+    def _get_pid(self):
+        if os.path.isfile(self._pidfile):
+            with open(self._pidfile) as pid_file:
+                return int(pid_file.read())
+        return 0
+
+    # write cassandra pid into file cassandra.pid
+    def _set_pid(self, cpid):
+        parent_dir = os.path.abspath(os.path.join(self._pidfile, os.pardir))
+        if not os.path.isdir(parent_dir):
+            fileutils.makedirs(parent_dir, exist_ok=True)
+
+        with open(self._pidfile, 'w') as pid_file:
+            pid_file.write(str(cpid))
+
+    # returns true if cassandra's pid is different from 0
+    def is_running(self):
+        cpid = self._get_pid()
+        # if cassandra pid is 0, cassandra surely is not running
+        if cpid == 0:
+            return False
+        # else it may be running or not so ask demon
+        return daemon.is_running(cpid)
+
+    # stop cassandra process
+    def stop(self):
+        if self.is_running():
+            daemon.kill(self._get_pid(), 5)
+
+    def start(self):
+        if self.is_running():
+            raise IllegalStateException('Cannot start Cassandra process. Cassandra process is already running')
+
+        if not netutils.is_free(self.port):
+            raise IllegalStateException(
+                'port %d is already in use, please specify another port with --db-port' % self.port)
+
+        self._log_file = self._engine.get_logfile('embedded-cassandra', ensure=True)
+
+        shutil.rmtree(self._runtime, ignore_errors=True)
+        fileutils.makedirs(self._runtime, exist_ok=True)
+
+        success = False
+        cpid = 0
+
+        log = open(self._log_file, 'w')
+
+        try:
+            cpid = self._start_cassandra(log)
+
+            if cpid is None:
+                raise IllegalStateException(
+                    'failed to start Cassandra, check log file for more details: ' + self._log_file)
+            self._set_pid(cpid)
+            success = True
+        except:
+            if not success:
+                daemon.kill(cpid)
+                log.close()
+            raise
+
+    # read a yaml file,
+    # extract its keys and values,
+    # put them in a dictionary
+    # and return it
+    def _yaml_transform(self, write_file_path):
+        # key = cosa c'e' nella line, value = come fare replace
+        custom_configurations = {}
+
+        custom_configurations["cluster_name:"] = "cluster_name: ModernMT - " + self._engine.name + "\n"
+        # port used for DB communication
+        custom_configurations["native_transport_port:"] = "native_transport_port: " + str(self.port) + "\n"
+        # auto snapshot on drop can cause timeouts
+        custom_configurations["auto_snapshot:"] = "auto_snapshot: false\n"
+
+        # directories to save data into
+        custom_configurations["commitlog_directory:"] = "commitlog_directory: " + os.path.join(self._model, "commitlog") + "\n"
+        custom_configurations["data_file_directories:"] = "data_file_directories:\n" + "     - " + os.path.join(self._model, "data") + "\n"
+        custom_configurations["saved_caches_directory:"] = "saved_caches_directory: " + os.path.join(self._model, "saved_caches") + "\n"
+
+        # ports that we do not use
+        custom_configurations["storage_port:"] = "storage_port: " + str(netutils.get_free_tcp_port()) + "\n"
+        custom_configurations["ssl_storage_port:"] = "ssl_storage_port: " + str(netutils.get_free_tcp_port()) + "\n"
+        custom_configurations["rpc_port:"] = "rpc_port: " + str(netutils.get_free_tcp_port()) + "\n"
+
+        # accept remote requests
+        custom_configurations["rpc_address:"] = "rpc_address: 0.0.0.0\n"
+        custom_configurations["broadcast_rpc_address:"] = "broadcast_rpc_address: 1.2.3.4\n"
+
+        with open(self._default_config) as yaml_read:
+            with open(write_file_path, "wb") as yaml_write:
+                for line in yaml_read:
+
+                    for key in custom_configurations.keys():
+                        if key in line:
+                            line = custom_configurations[key]
+                            custom_configurations.pop(key, None)
+                            break
+                    yaml_write.write(line)
+
+                # add the remaining lines
+                for key, value in custom_configurations.iteritems():
+                    yaml_write.write(value)
+
+    #def _start_cassandra(self, log):
+    def _start_cassandra(self, log):
+
+        if not os.path.isdir(self._model):
+            fileutils.makedirs(self._model, exist_ok=True)
+
+        # create a runtime version of the configuration file
+        config = os.path.join(self._runtime, 'cassandra.yaml')
+
+        self._yaml_transform(config)
+
+        # launch cassandra -d _runtime
+        command = [self._cassandra_bin, '-Dcassandra.config=file:///' + config, "-f"]
+
+        cassandra = subprocess.Popen(command, stdout=log, stderr=log, shell=False).pid
+
+        # If Starting listening for CQL clients is not in the rlog
+        # in the first 80 seconds
+        # kill Cassandra and return none?
+        for i in range(1, 100):
+            with open(log.name, 'r') as rlog:
+                for line in rlog:
+                    if 'Starting listening for CQL clients' in line:
+                        return cassandra
+
+            time.sleep(1)
         return None
 
 
@@ -363,8 +505,8 @@ class ClusterNode(object):
         'ERROR': 9999,
     }
 
-    def __init__(self, engine, rest=True, api_port=None, cluster_ports=None, datastream_port=None,
-                 sibling=None, verbosity=None):
+    def __init__(self, engine, rest=True, api_port=None, cluster_port=None, datastream_port=None,
+                 db_port=None, sibling=None, verbosity=None):
         self.engine = engine
 
         config = self.engine.config
@@ -373,9 +515,11 @@ class ClusterNode(object):
 
         self._pidfile = os.path.join(engine.runtime_path, 'node.pid')
 
-        self._cluster_ports = cluster_ports if cluster_ports is not None else DEFAULT_MMT_CLUSTER_PORTS
+        self._cluster_port = cluster_port if cluster_port is not None else DEFAULT_MMT_CLUSTER_PORT
         self._api_port = api_port if api_port is not None else DEFAULT_MMT_API_PORT
         self._datastream_port = datastream_port if datastream_port is not None else DEFAULT_MMT_DATASTREAM_PORT
+        self._db_port = db_port if db_port is not None else DEFAULT_MMT_DB_PORT
+
         self._start_rest_server = rest
         self._sibling = sibling
         self._verbosity = verbosity
@@ -386,6 +530,7 @@ class ClusterNode(object):
         self._mert_i_script = os.path.join(cli.PYOPT_DIR, 'mertinterface.py')
 
         self._kafka = EmbeddedKafka(engine, self._datastream_port) if sibling is None else None
+        self._cassandra = EmbeddedCassandra(engine, self._db_port) if sibling is None else None
 
     def _get_pid(self):
         pid = 0
@@ -415,18 +560,23 @@ class ClusterNode(object):
         pid = self._get_pid()
 
         if not self.is_running():
-            raise IllegalStateException('process is not running')
+            raise IllegalStateException('node process is not running')
 
         daemon.kill(pid, ClusterNode.__SIGTERM_TIMEOUT)
         if self._kafka:
             self._kafka.stop()
 
+        if self._cassandra:
+            self._cassandra.stop()
+
     def start(self):
         if self.is_running():
-            raise IllegalStateException('process is already running')
+            raise IllegalStateException('node process is already running')
 
         if self._kafka:
             self._kafka.start()
+        if self._cassandra:
+            self._cassandra.start()
 
         success = False
         process = self._start_process()
@@ -445,6 +595,9 @@ class ClusterNode(object):
         if not success:
             if self._kafka:
                 self._kafka.stop()
+            if self._cassandra:
+                self._cassandra.stop()
+
             raise Exception('failed to start node, check log file for more details: ' + self._log_file)
 
     def _start_process(self):
@@ -452,8 +605,11 @@ class ClusterNode(object):
             fileutils.makedirs(self.engine.runtime_path, exist_ok=True)
         logs_folder = os.path.abspath(os.path.join(self._log_file, os.pardir))
 
-        args = ['-e', self.engine.name, '-p', str(self._cluster_ports[0]), str(self._cluster_ports[1]),
-                '--datastream-port', str(self._datastream_port), '--status-file', self._status_file,
+        args = ['-e', self.engine.name,
+                '-p', str(self._cluster_port),
+                '--datastream-port', str(self._datastream_port),
+                '--db-port', str(self._db_port),
+                '--status-file', self._status_file,
                 '--logs', logs_folder]
 
         if self._start_rest_server:
@@ -466,7 +622,7 @@ class ClusterNode(object):
 
         if self._sibling is not None:
             args.append('--member')
-            args.append(str(self._sibling))
+            args.append('%s:%d' % (self._sibling, self._cluster_port))
 
         command = mmt_javamain('eu.modernmt.cli.ClusterNodeMain', args, hserr_path=logs_folder)
 

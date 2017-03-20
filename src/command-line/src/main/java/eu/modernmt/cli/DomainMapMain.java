@@ -5,7 +5,7 @@ import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.persistence.Connection;
 import eu.modernmt.persistence.DomainDAO;
-import eu.modernmt.persistence.sqlite.SQLiteDatabase;
+import eu.modernmt.persistence.cassandra.CassandraDatabase;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 
@@ -23,22 +23,23 @@ public class DomainMapMain {
         private static final Options cliOptions;
 
         static {
-            Option dbPath = Option.builder().longOpt("db").hasArg().required().build();
             Option corpora = Option.builder("c").longOpt("corpora").hasArgs().required().build();
             Option source = Option.builder("s").longOpt("source").hasArg().required().build();
             Option target = Option.builder("t").longOpt("target").hasArg().required().build();
+            Option port = Option.builder("p").longOpt("port").hasArgs().required().build();
 
             cliOptions = new Options();
-            cliOptions.addOption(dbPath);
             cliOptions.addOption(corpora);
             cliOptions.addOption(source);
             cliOptions.addOption(target);
+            cliOptions.addOption(port);
+
         }
 
-        public final File dbPath;
         public final File[] corporaRoots;
         public final Locale sourceLanguage;
         public final Locale targetLanguage;
+        public final int port;
 
         public Args(String[] args) throws ParseException {
             CommandLineParser parser = new DefaultParser();
@@ -46,12 +47,13 @@ public class DomainMapMain {
 
             sourceLanguage = Locale.forLanguageTag(cli.getOptionValue('s'));
             targetLanguage = Locale.forLanguageTag(cli.getOptionValue('t'));
-            dbPath = new File(cli.getOptionValue("db"));
 
             String[] roots = cli.getOptionValues('c');
             corporaRoots = new File[roots.length];
             for (int i = 0; i < roots.length; i++)
                 corporaRoots[i] = new File(roots[i]);
+
+            port = Integer.parseInt(cli.getOptionValue('p'));
         }
 
     }
@@ -59,14 +61,14 @@ public class DomainMapMain {
     public static void main(String[] _args) throws Throwable {
         Args args = new Args(_args);
 
-        SQLiteDatabase db = new SQLiteDatabase(args.dbPath);
+        CassandraDatabase db = new CassandraDatabase("localhost", args.port);
 
         Connection connection = null;
         try {
-            connection = db.getConnection();
-            db.drop(connection);
-            db.create(connection);
+            db.drop();
+            db.create();
 
+            connection = db.getConnection();
             DomainDAO dao = db.getDomainDAO(connection);
 
             ArrayList<BilingualCorpus> corpora = new ArrayList<>();
@@ -80,6 +82,7 @@ public class DomainMapMain {
             }
         } finally {
             IOUtils.closeQuietly(connection);
+            IOUtils.closeQuietly(db);
         }
     }
 }

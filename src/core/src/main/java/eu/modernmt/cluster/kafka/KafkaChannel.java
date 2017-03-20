@@ -5,6 +5,8 @@ import org.apache.kafka.common.TopicPartition;
 
 /**
  * Created by davide on 25/12/16.
+ * Wrapper for TopicPartition
+ * It generates a TopicPartition with the given topic name and partition 0
  */
 public class KafkaChannel implements DataChannel {
 

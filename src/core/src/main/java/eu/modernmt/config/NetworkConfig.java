@@ -7,7 +7,6 @@ public class NetworkConfig {
 
     private String listeningInterface = null;
     private int port = 5016;
-    private int dataPort = 5017;
     private final ApiConfig apiConfig = new ApiConfig();
     private final JoinConfig joinConfig = new JoinConfig();
 
@@ -27,14 +26,6 @@ public class NetworkConfig {
         this.port = port;
     }
 
-    public int getDataPort() {
-        return dataPort;
-    }
-
-    public void setDataPort(int dataPort) {
-        this.dataPort = dataPort;
-    }
-
     public ApiConfig getApiConfig() {
         return apiConfig;
     }
@@ -48,7 +39,6 @@ public class NetworkConfig {
         return "[Network]\n" +
                 "  interface = " + listeningInterface + "\n" +
                 "  port = " + port + "\n" +
-                "  data-port = " + dataPort + "\n" +
                 "  " + apiConfig.toString().replace("\n", "\n  ") + "\n" +
                 "  " + joinConfig.toString().replace("\n", "\n  ");
     }

@@ -11,7 +11,7 @@ import eu.modernmt.decoder.phrasebased.MosesDecoder;
 import eu.modernmt.io.Paths;
 import eu.modernmt.persistence.Database;
 import eu.modernmt.persistence.PersistenceException;
-import eu.modernmt.persistence.sqlite.SQLiteDatabase;
+import eu.modernmt.persistence.cassandra.CassandraDatabase;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.TextProcessingModels;
@@ -61,7 +61,6 @@ public class Engine implements Closeable {
     private final Postprocessor postprocessor;
     private final ContextAnalyzer contextAnalyzer;
     private final Vocabulary vocabulary;
-    private final Database database;
 
     public static Engine load(EngineConfig config) throws BootstrapException {
         try {
@@ -85,7 +84,6 @@ public class Engine implements Closeable {
         this.postprocessor = new Postprocessor(sourceLanguage, targetLanguage, vocabulary);
         this.aligner = new FastAlign(Paths.join(root, "models", "align"));
         this.contextAnalyzer = new LuceneAnalyzer(Paths.join(root, "models", "context"), sourceLanguage);
-        this.database = new SQLiteDatabase(Paths.join(root, "models", "db", "domains.db"));
 
         DecoderConfig decoderConfig = config.getDecoderConfig();
         if (decoderConfig.isEnabled())
@@ -134,10 +132,6 @@ public class Engine implements Closeable {
 
     public Vocabulary getVocabulary() {
         return vocabulary;
-    }
-
-    public Database getDatabase() {
-        return database;
     }
 
     public Locale getSourceLanguage() {

@@ -30,8 +30,10 @@ public class ClusterNodeMain {
             Option logsFolder = Option.builder().longOpt("logs").hasArg().required().build();
 
             Option apiPort = Option.builder("a").longOpt("api-port").hasArg().type(Integer.class).required(false).build();
-            Option clusterPorts = Option.builder("p").longOpt("cluster-ports").numberOfArgs(2).type(Integer.class).required(false).build();
+            Option clusterPort = Option.builder("p").longOpt("cluster-port").hasArg().type(Integer.class).required(false).build();
             Option datastreamPort = Option.builder().longOpt("datastream-port").hasArg().required(false).build();
+            Option databasePort = Option.builder().longOpt("db-port").hasArg().required(false).build();
+
             Option member = Option.builder().longOpt("member").hasArg().required(false).build();
 
             Option verbosity = Option.builder("v").longOpt("verbosity").hasArg().type(Integer.class).required(false).build();
@@ -39,12 +41,13 @@ public class ClusterNodeMain {
             cliOptions = new Options();
             cliOptions.addOption(engine);
             cliOptions.addOption(apiPort);
-            cliOptions.addOption(clusterPorts);
+            cliOptions.addOption(clusterPort);
             cliOptions.addOption(statusFile);
             cliOptions.addOption(verbosity);
             cliOptions.addOption(member);
             cliOptions.addOption(logsFolder);
             cliOptions.addOption(datastreamPort);
+            cliOptions.addOption(databasePort);
         }
 
         public final String engine;
@@ -67,11 +70,10 @@ public class ClusterNodeMain {
             this.config = XMLConfigBuilder.build(Engine.getConfigFile(this.engine));
             this.config.getEngineConfig().setName(this.engine);
 
-            String[] ports = cli.getOptionValues("cluster-ports");
-            if (ports != null && ports.length > 1) {
+            String port = cli.getOptionValue("cluster-port");
+            if (port != null) {
                 NetworkConfig netConfig = this.config.getNetworkConfig();
-                netConfig.setPort(Integer.parseInt(ports[0]));
-                netConfig.setDataPort(Integer.parseInt(ports[1]));
+                netConfig.setPort(Integer.parseInt(port));
             }
 
             String apiPort = cli.getOptionValue("api-port");
@@ -80,7 +82,17 @@ public class ClusterNodeMain {
                 apiConfig.setPort(Integer.parseInt(apiPort));
             }
 
+            String datastreamPort = cli.getOptionValue("datastream-port");
+            if (datastreamPort != null)
+                this.config.getDataStreamConfig().setPort(Integer.parseInt(datastreamPort));
+
+            String databasePort = cli.getOptionValue("db-port");
+            if (databasePort != null)
+                this.config.getDatabaseConfig().setPort(Integer.parseInt(databasePort));
+
             String member = cli.getOptionValue("member");
+
+
             if (member != null) {
                 String[] parts = member.split(":");
 
@@ -90,18 +102,18 @@ public class ClusterNodeMain {
                 members[0] = new JoinConfig.Member(parts[0], Integer.parseInt(parts[1]), 0);
 
                 joinConfig.setMembers(members);
+                this.config.getDataStreamConfig().setHost(parts[0]);
+                this.config.getDatabaseConfig().setHost(parts[0]);
             }
 
-            String datastreamPort = cli.getOptionValue("datastream-port");
-            if (datastreamPort != null)
-                this.config.getDataStreamConfig().setPort(Integer.parseInt(datastreamPort));
         }
+
     }
+
 
     public static void main(String[] _args) throws Throwable {
         Args args = new Args(_args);
         Log4jConfiguration.setup(args.verbosity, args.logsFolder);
-
 
         FileStatusListener listener = new FileStatusListener(args.statusFile, args.config);
 
@@ -138,7 +150,6 @@ public class ClusterNodeMain {
 
             this.status = new Properties();
             status.setProperty("control_port", Integer.toString(netConfig.getPort()));
-            status.setProperty("data_port", Integer.toString(netConfig.getDataPort()));
 
             if (apiConfig.isEnabled())
                 status.setProperty("api_port", Integer.toString(apiConfig.getPort()));
@@ -174,5 +185,4 @@ public class ClusterNodeMain {
             }
         }
     }
-
 }
