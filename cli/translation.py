@@ -3,9 +3,11 @@ from UserString import MutableString
 from xml.etree import ElementTree
 
 import requests
-
+import threading
 from cli import IllegalArgumentException, IllegalStateException
 from cli.libs import multithread
+import Queue
+
 
 __author__ = 'Davide Caroselli'
 
@@ -97,32 +99,42 @@ class Translator:
 
 class BatchTranslator(Translator):
     def __init__(self, node, context_string=None, context_file=None, context_vector=None,
-                 print_nbest=False, nbest_file=None):
+                 print_nbest=False, nbest_file=None, pool_size=100):
         Translator.__init__(self, node, context_string, context_file, context_vector, print_nbest, nbest_file)
-        self._pool = multithread.Pool(100)
-        self._jobs = []
+        self._pool = multithread.Pool(pool_size)
+        self._jobs = Queue.Queue(pool_size)
+        self._line_id = 0
+        self._printer_thread = threading.Thread(target=self._threaded_print)
+
+        self._printer_thread.start()
 
     def execute(self, line):
         result = self._pool.apply_async(self._translate, (line, None))
-        self._jobs.append(result)
+        self._jobs.put(result, block=True)
 
     def flush(self):
-        line_id = 0
+        self._jobs.put(None, block=True)
 
-        for job in self._jobs:
+    def _threaded_print(self):
+        while True:
+            job = self._jobs.get(block=True)
+
+            if job is None:
+                break
+
             translation = job.get()
 
             print self._encode_translation(translation)
-
             if self._print_nbest is not None:
                 for nbest in translation['nbest']:
-                    parts = [str(line_id)] + self._encode_nbest(nbest)
+                    parts = [str(self._line_id)] + self._encode_nbest(nbest)
                     self._nbest_out.write((u' ||| '.join(parts)).encode('utf-8'))
                     self._nbest_out.write('\n')
 
-            line_id += 1
+            self._line_id += 1
 
     def close(self):
+        self._printer_thread.join()
         Translator.close(self)
         self._pool.terminate()
 
