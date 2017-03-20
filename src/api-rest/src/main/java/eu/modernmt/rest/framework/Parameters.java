@@ -204,6 +204,10 @@ public class Parameters {
             super("Invalid value for parameter " + param + ": '" + value + "'", cause);
         }
 
-    }
+        public ParameterParsingException(String param, String value, String explanation) {
+            super("Invalid value for parameter " + param + ": '" + value + "' (" + explanation + ")");
 
+        }
+
+    }
 }

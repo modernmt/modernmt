@@ -19,6 +19,8 @@ import eu.modernmt.rest.model.TranslationResponse;
 @Route(aliases = "translate", method = HttpMethod.GET)
 public class Translate extends ObjectAction<TranslationResponse> {
 
+    public static final int MAX_QUERY_LENGTH = 5000;
+
     @Override
     protected TranslationResponse execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, TranslationException, PersistenceException {
         Params params = (Params) _params;
@@ -61,6 +63,11 @@ public class Translate extends ObjectAction<TranslationResponse> {
             super(req);
 
             query = getString("q", true);
+
+            if (query.length() > MAX_QUERY_LENGTH)
+                throw new ParameterParsingException("q", query.substring(0, 10) + "...",
+                        "max query length of " + MAX_QUERY_LENGTH + " exceeded");
+
             sessionId = getLong("session", 0L);
             contextLimit = getInt("context_limit", 10);
             nbest = getInt("nbest", 0);
