@@ -111,7 +111,8 @@ Done! go to [README.md](README.md)
 
 # Option 3 - Installing from source (for contributors)
 
-Build MMT from source allows you to contribute to this repository. Please note that currently this procedure has been tested only on Ubuntu 14.04, it is highly recommended to use this OS as your development environment.
+Build MMT from source allows you to contribute to this repository. 
+The following procedure describes how to build MMT from source in an Ubuntu 14.04 or Ubuntu 16.04 environment.
 
 ## Installing third-party libraries
 
@@ -121,8 +122,19 @@ Open a bash shell and type:
 sudo add-apt-repository ppa:george-edison55/cmake-3.x
 sudo add-apt-repository ppa:openjdk-r/ppa
 sudo apt-get update
+```
 
+If your OS is **Ubuntu 14.04**, then run the following command:
+```
 sudo apt-get install libbz2-dev libboost1.55-all-dev libsparsehash-dev cmake openjdk-8-jdk git maven
+```
+
+Alternatively, if your OS is **Ubuntu 16.04** then run the following commands:
+```
+sudo apt-get install python-pip
+sudo pip install -U requests
+sudo apt-get install g++
+sudo apt-get install zlib1g-dev libbz2-dev libboost-all-dev libsparsehash-dev cmake openjdk-8-jdk git maven
 ```
 
 ## Install MMT
