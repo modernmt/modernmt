@@ -22,9 +22,17 @@ RUN locale-gen "en_US.UTF-8"
 RUN dpkg-reconfigure locales
 RUN update-locale LANG=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LC_ALL=en_US.UTF-8
 
+#create a new user mmtuser and login as mmtuser
+#RUN adduser mmtuser --gecos "" 
+RUN useradd -p $(echo "" | openssl passwd -1 -stdin) mmtuser
+RUN usermod -aG sudo mmtuser
+WORKDIR /home/mmtuser
+RUN chown mmtuser:mmtuser /home/mmtuser
+USER mmtuser
+
 # Download and install MMT
 RUN wget -qO- https://github.com/ModernMT/MMT/releases/download/v0.15/mmt-0.15-ubuntu.tar.gz | tar xvfz - 
-WORKDIR /mmt/
+WORKDIR /home/mmtuser/mmt/
 RUN ./setup.py
 
 # Make MMT example engine
