@@ -4,7 +4,7 @@ __author__ = 'Davide Caroselli'
 
 __self_dir = os.path.dirname(os.path.realpath(__file__))
 
-MMT_VERSION = '0.14.1'
+MMT_VERSION = '0.15'
 
 PYOPT_DIR = os.path.join(__self_dir, 'opt')
 MMT_ROOT = os.path.abspath(os.path.join(__self_dir, os.pardir))
