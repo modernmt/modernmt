@@ -1,4 +1,4 @@
-# MMT 0.14 - Release for Ubuntu 14.04 
+# MMT 0.15 - Release for Ubuntu 14.04 and 16.04
 
 ## About MMT
 MMT is a context-aware, incremental and distributed general purpose Machine Translation technology.
@@ -16,8 +16,9 @@ You can find more information on: http://www.modernmt.eu
 
 This release allows you to create an MT engine, from a collection of line aligned parallel data or TMX files, 
 that can be queried via a [REST API](https://github.com/ModernMT/MMT/wiki/API-Documentation).
+It also allows you to create an MT cluster where machines with identical translation engines cooperate in order to increase the system speed and fault tolerance.
 
-Intro video: http://87k.eu/lk9l
+Intro video (for version 0.11): http://87k.eu/lk9l
 
 ## Your first translation with MMT
 

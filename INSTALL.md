@@ -37,8 +37,6 @@ Done! go to [README.md](README.md) to create your first engine.
 
 # Option 2 - Install Binaries on Your Server
 
-**MMT currently only works on Ubuntu 14.04**
-
 This release was tested on a clean Ubuntu 14.04 server from Amazon AWS.
 AMI: Ubuntu Server 14.04 LTS (HVM), SSD Volume Type -  ami-accff2b1
 
@@ -48,7 +46,7 @@ c3.4xlarge (30GB RAM, 16 core, circa $0.90/hour)
 ## Max open files limit
 The current version of ModernMT does not limit the maximum number of open files for performance reasons. For this reason, if you plan to create an engine with a high number of different domains you could hit the OS limit and MMT will crash.
 
-In order to avoid this error, in Ubuntu 14.04, you have to set the option `nofile` in `/etc/security/limits.conf` to a high limit and restart the machine, for example:
+In order to avoid this error, in Ubuntu 14.04 and 16.04 you have to set the option `nofile` in `/etc/security/limits.conf` to a high limit and restart the machine, for example:
 ```
 * soft nofile 1048576
 * hard nofile 1048576
@@ -102,7 +100,7 @@ sudo pip install -U requests
 Download from here: https://github.com/ModernMT/MMT/releases and then untar the files:
 
 ```
-tar xvfz mmt-0.14-ubuntu14_04.tar.gz
+tar xvfz mmt-0.15-ubuntu.tar.gz
 cd mmt
 ./setup.py
 ```
