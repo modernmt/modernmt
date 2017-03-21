@@ -23,7 +23,7 @@ RUN dpkg-reconfigure locales
 RUN update-locale LANG=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LC_ALL=en_US.UTF-8
 
 # Download and install MMT
-RUN wget -qO- https://github.com/ModernMT/MMT/releases/download/v0.14.1/mmt-0.14.1-ubuntu14_04.tar.gz | tar xvfz - 
+RUN wget -qO- https://github.com/ModernMT/MMT/releases/download/v0.15/mmt-0.15-ubuntu.tar.gz | tar xvfz - 
 WORKDIR /mmt/
 RUN ./setup.py
 
