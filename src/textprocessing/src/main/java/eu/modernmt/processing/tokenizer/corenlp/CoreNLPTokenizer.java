@@ -3,7 +3,7 @@ package eu.modernmt.processing.tokenizer.corenlp;
 import edu.stanford.nlp.international.arabic.process.ArabicTokenizer;
 import edu.stanford.nlp.international.french.process.FrenchTokenizer;
 import edu.stanford.nlp.international.spanish.process.SpanishTokenizer;
-import edu.stanford.nlp.ling.HasWord;
+import edu.stanford.nlp.ling.HasOffset;
 import edu.stanford.nlp.process.PTBTokenizer;
 import edu.stanford.nlp.process.TokenizerFactory;
 import eu.modernmt.model.Languages;
@@ -11,11 +11,9 @@ import eu.modernmt.processing.LanguageNotSupportedException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.SentenceBuilder;
-import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -105,20 +103,21 @@ public class CoreNLPTokenizer extends TextProcessor<SentenceBuilder, SentenceBui
             tokenizer = this.factory.getTokenizer(reader);
         }
 
-        ArrayList<String> result = new ArrayList<>();
+        SentenceBuilder.Editor editor = builder.edit();
 
-        Boolean hasWord = null;
         while (tokenizer.hasNext()) {
             Object token = tokenizer.next();
 
-            if (hasWord == null)
-                hasWord = token instanceof HasWord;
+            if (token instanceof HasOffset) {
+                HasOffset hasOffset = (HasOffset) token;
+                int begin = hasOffset.beginPosition();
+                int end = hasOffset.endPosition();
 
-            String word = hasWord ? ((HasWord) token).word() : token.toString();
-            result.add(word);
+                editor.setWord(begin, end - begin, null);
+            }
         }
 
-        return TokenizerOutputTransformer.transform(builder, result);
+        return editor.commit();
     }
 
 }
