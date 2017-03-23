@@ -18,7 +18,6 @@ import java.util.UUID;
  */
 public class CassandraImportJobDAO implements ImportJobDAO {
     private Session session;
-    public final int importJobsTableId = 2;
 
     /**
      * This method creates a CassandraImportJobDao
@@ -43,7 +42,7 @@ public class CassandraImportJobDAO implements ImportJobDAO {
     @Override
     public ImportJob put(ImportJob job) throws PersistenceException {
 
-        long id = CassandraIdGenerator.generate(session, importJobsTableId);
+        long id = CassandraIdGenerator.generate(session, CassandraDatabase.IMPORT_JOBS_TABLE_ID);
 
         String[] columns = {"id", "domain", "\"begin\"", "end", "data_channel", "size"};
         Object[] values = {id, job.getDomain(), job.getBegin(), job.getEnd(), job.getDataChannel(), job.getSize()};

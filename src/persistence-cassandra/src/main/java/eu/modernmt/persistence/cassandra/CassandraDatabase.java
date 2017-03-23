@@ -22,6 +22,10 @@ public class CassandraDatabase extends Database {
     public static final String IMPORT_JOBS_TABLE = "import_jobs";
     public static final String COUNTERS_TABLE = "table_counters";
 
+    public static final int DOMAINS_TABLE_ID = 1;
+    public static final int IMPORT_JOBS_TABLE_ID = 2;
+    public static final int[] TABLE_IDS = {DOMAINS_TABLE_ID, IMPORT_JOBS_TABLE_ID};
+
     private String keyspace;
     private String host;
     private int port;
@@ -143,19 +147,22 @@ public class CassandraDatabase extends Database {
                     "CREATE KEYSPACE \"" + DEFAULT_KEY_SPACE + "\" WITH replication = " +
                             "{'class':'SimpleStrategy', 'replication_factor':1};";
 
+
+            String useKeySpace = "USE \"" + DEFAULT_KEY_SPACE + "\";";
+
             //CreateKeyspace createKeyspace = SchemaBuilder.createKeyspace(keyspace).ifNotExists();
 
             String createCountersTable =
                     "CREATE TABLE IF NOT EXISTS \"" + DEFAULT_KEY_SPACE + "\"." + COUNTERS_TABLE +
                             " (table_id int PRIMARY KEY, table_counter bigint );";
 
-            String putDomainsTableEntry =
-                    "INSERT INTO \"" + DEFAULT_KEY_SPACE + "\"." + COUNTERS_TABLE +
-                            " (table_id, table_counter) VALUES (1, 0);";
-
-            String putImportJobsTableEntry =
-                    "INSERT INTO \"" + DEFAULT_KEY_SPACE + "\"." + COUNTERS_TABLE +
-                            " (table_id, table_counter) VALUES (2, 0);";
+//            String putDomainsTableEntry =
+//                    "INSERT INTO \"" + DEFAULT_KEY_SPACE + "\"." + COUNTERS_TABLE +
+//                            " (table_id, table_counter) VALUES (" + CassandraIdGenerator.DOMAINS_TABLE_ID + ", 0);";
+//
+//            String putImportJobsTableEntry =
+//                    "INSERT INTO \"" + DEFAULT_KEY_SPACE + "\"." + COUNTERS_TABLE +
+//                            " (table_id, table_counter) VALUES (" + CassandraIdGenerator.IMPORT_JOBS_TABLE_ID + ", 0);";
 
             String createDomainsTable =
                     "CREATE TABLE \"" + DEFAULT_KEY_SPACE + "\"." + DOMAINS_TABLE +
@@ -168,15 +175,16 @@ public class CassandraDatabase extends Database {
 
             if (currentKeyspace == null) {
                 CassandraUtils.checkedExecute(session, createKeyspace);
+                CassandraUtils.checkedExecute(session, useKeySpace);
                 this.keyspace = DEFAULT_KEY_SPACE;
             }
 
             CassandraUtils.checkedExecute(session, createCountersTable);
-            CassandraUtils.checkedExecute(session, putDomainsTableEntry);
-            CassandraUtils.checkedExecute(session, putImportJobsTableEntry);
+//          CassandraUtils.checkedExecute(session, putDomainsTableEntry);
+//          CassandraUtils.checkedExecute(session, putImportJobsTableEntry);
             CassandraUtils.checkedExecute(session, createDomainsTable);
             CassandraUtils.checkedExecute(session, createImportJobsTable);
-
+            CassandraIdGenerator.initializeTableCounter(session, TABLE_IDS);
         } finally {
             IOUtils.closeQuietly(connection);
         }

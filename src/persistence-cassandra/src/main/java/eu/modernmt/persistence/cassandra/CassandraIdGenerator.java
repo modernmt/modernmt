@@ -1,6 +1,7 @@
 package eu.modernmt.persistence.cassandra;
 
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.querybuilder.BuiltStatement;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import eu.modernmt.persistence.PersistenceException;
@@ -64,6 +65,28 @@ public class CassandraIdGenerator {
             * after this thread has read it, so it can use it*/
             if (CassandraUtils.checkedExecute(session, set).wasApplied())
                 return oldCount + 1L;
+        }
+    }
+
+    /**
+     * This method puts in the counters_table a new entry for each table
+     * created during the database initialization
+     *
+     * @param session  the current session in the active CassandraConnection
+     * @param tableIds the IDs of the tables in the DB
+     * @throws PersistenceException
+     */
+    public static void initializeTableCounter(Session session, int[] tableIds) throws PersistenceException {
+
+        for (int table_id : tableIds) {
+            String statement =
+                    "INSERT INTO " + CassandraDatabase.COUNTERS_TABLE +
+                            " (table_id, table_counter) VALUES (" + table_id + ", 0);";
+            try {
+                session.execute(statement);
+            } catch (NoHostAvailableException e) {
+                throw new PersistenceException(e);
+            }
         }
     }
 }
