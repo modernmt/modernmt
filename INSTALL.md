@@ -124,7 +124,7 @@ sudo apt-get update
 
 If your OS is **Ubuntu 14.04**, then run the following command:
 ```
-sudo apt-get install libbz2-dev libboost1.55-all-dev libsparsehash-dev cmake openjdk-8-jdk git maven
+sudo apt-get install libsnappy-dev libbz2-dev libboost1.55-all-dev libsparsehash-dev cmake openjdk-8-jdk git maven
 ```
 
 Alternatively, if your OS is **Ubuntu 16.04** then run the following commands:
@@ -132,7 +132,7 @@ Alternatively, if your OS is **Ubuntu 16.04** then run the following commands:
 sudo apt-get install python-pip
 sudo pip install -U requests
 sudo apt-get install g++
-sudo apt-get install zlib1g-dev libbz2-dev libboost-all-dev libsparsehash-dev cmake openjdk-8-jdk git maven
+sudo apt-get install libsnappy-dev zlib1g-dev libbz2-dev libboost-all-dev libsparsehash-dev cmake openjdk-8-jdk git maven
 ```
 
 ## Install MMT

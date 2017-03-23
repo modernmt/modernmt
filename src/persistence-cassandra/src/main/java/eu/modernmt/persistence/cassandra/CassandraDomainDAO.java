@@ -24,7 +24,6 @@ import java.util.Map;
  */
 public class CassandraDomainDAO implements DomainDAO {
     private Session session;
-    public final int domainsTableId = 1;
 
     /**
      * This method creates a CassandraDomainDao
@@ -153,7 +152,7 @@ public class CassandraDomainDAO implements DomainDAO {
      */
     @Override
     public Domain put(Domain domain) throws PersistenceException {
-        int id = (int) CassandraIdGenerator.generate(session, domainsTableId);
+        int id = (int) CassandraIdGenerator.generate(session, CassandraDatabase.DOMAINS_TABLE_ID);
         String[] columns = {"id", "name"};
         Object[] values = {id, domain.getName()};
 
