@@ -1,6 +1,6 @@
 package eu.modernmt.processing.detokenizer.jflex;
 
-import eu.modernmt.model.Translation;
+import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
 
 import java.io.CharArrayReader;
@@ -15,11 +15,11 @@ public class SpacesAnnotatedString {
     private char[] text;
     private BitSet bits;
 
-    public static SpacesAnnotatedString fromTranslation(Translation translation) {
+    public static SpacesAnnotatedString fromSentence(Sentence sentence) {
         StringBuilder builder = new StringBuilder();
         builder.append(' ');
 
-        for (Word word : translation.getWords()) {
+        for (Word word : sentence.getWords()) {
             builder.append(word.getPlaceholder());
             builder.append(' ');
         }
@@ -69,21 +69,21 @@ public class SpacesAnnotatedString {
         return new CharArrayReader(text);
     }
 
-    public Translation apply(Translation translation) {
+    public <S extends Sentence> S apply(S sentence, ApplyFunction function) {
         int index = 1; // Skip first whitespace
 
-        Word[] words = translation.getWords();
+        Word[] words = sentence.getWords();
 
         for (int i = 0; i < words.length; i++) {
             Word word = words[i];
             String placeholder = word.getPlaceholder();
             index += placeholder.length();
 
-            word.setRightSpace(i == words.length - 1 || bits.get(index) ? null : " ");
+            function.apply(word, !(i == words.length - 1 || bits.get(index)));
             index++;
         }
 
-        return translation;
+        return sentence;
     }
 
     @Override
@@ -91,4 +91,9 @@ public class SpacesAnnotatedString {
         return new String(text);
     }
 
+    public interface ApplyFunction {
+
+        void apply(Word word, boolean hasSpace);
+
+    }
 }
