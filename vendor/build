@@ -1,0 +1,379 @@
+#!/usr/bin/env python
+
+import shutil
+import tarfile
+import tempfile
+
+import requests
+import sys
+
+import subprocess
+import os
+import multiprocessing
+
+vendor_dir = os.path.dirname(os.path.realpath(__file__))
+mmt_home = os.path.join(vendor_dir, os.path.pardir)
+mmt_build_dir = os.path.join(mmt_home, 'build')
+mmt_install_res = os.path.join(mmt_build_dir, 'res')
+
+# paoding_home is downloaded from git as <mmt_folder>/vendor/paoding and already contains
+#   paoding-analysis.jar
+#   paoding-analysis.pom
+#   dictionary.tar.gz
+paoding_home = os.path.join(vendor_dir, 'paoding')
+
+# paoding_home is downloaded from git as <mmt_folder>/vendor/opennlp and already contains
+#   da-token.bin
+#   se-token.bin
+opennlp_home = os.path.join(vendor_dir, 'opennlp')
+
+# rocksdb_home is downloaded from git as <mmt_folder>/vendor/rocksdb
+rocksdb_home = os.path.join(vendor_dir, 'rocksdb')
+
+# cassandra_home must be created as <mmt_folder>/vendor/cassandra
+# when downloading and installing cassandra
+cassandra_home = os.path.join(vendor_dir, 'cassandra-3.10')
+# path where to search for cassandra in apache site
+cassandra_apache_path = '/cassandra/3.10/apache-cassandra-3.10-bin.tar.gz'
+
+# kafka_home must be created as <mmt_folder>/vendor/kafka
+# when downloading and installing kafka
+kafka_home = os.path.join(vendor_dir, 'kafka-0.10.0.1')
+# path where to search for kafka in apache site
+kafka_apache_path = '/kafka/0.10.0.1/kafka_2.11-0.10.0.1.tgz'
+
+try:
+    from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+    # Suppress InsecureRequestWarning
+    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+except ImportError:
+    pass
+
+__author__ = 'Davide Caroselli'
+
+
+# =========================================================================================
+# General utilities
+# =========================================================================================
+
+# this methods extracts the content of the given tar file into the given destination
+def untar(filename, destination):
+    if filename.endswith('.tar.gz') or filename.endswith('.tgz'):
+        tar = tarfile.open(filename, 'r:gz')
+    elif filename.endswith('.tar'):
+        tar = tarfile.open(filename, 'r:')
+    else:
+        raise Exception('Unknown file type (supported .tar.gz or .tar): ' + filename)
+
+    folder = tar.getnames()[0]
+    if '/' in folder:
+        folder = folder[:folder.index('/')]
+
+    tar.extractall(destination)
+    tar.close()
+
+    return os.path.join(destination, folder)
+
+
+# this method starts a new process in background and waits for its end
+def exec_process(command, working_directory=None, working_environment=None):
+    new_process = subprocess.Popen(command, cwd=working_directory, env=working_environment,
+                                   stdout=sys.stdout.fileno(), stderr=sys.stdout.fileno(),
+                                   shell=False)
+    new_process.wait()
+
+    if new_process.returncode != 0:
+        raise Exception("Return code != 0; exiting now...")
+    return
+
+
+# =========================================================================================
+# Apache download utilities
+# =========================================================================================
+
+
+def apache_connect(apache_path):
+    # try to connect to apache server to obtain the mirrors list.
+    # perform 3 attempts; if no answer is received, raise an exception
+    current_attempt = 0
+    attempts_limit = 3
+    while True:
+
+        # try to contact the Apache server
+        try:
+            r = requests.get('https://www.apache.org/dyn/closer.cgi',
+                             params={
+                                 'path': apache_path,
+                                 'as_json': '1',
+                             }, timeout=30, verify=False)
+
+        # if a timeout exception was raised, update the current_attempt number:
+        #   - if the attempts_limit is exceeded, raise an exception
+        #   - else, just try again
+        except requests.exceptions.Timeout:
+            current_attempt += 1
+            if current_attempt >= 3:
+                raise Exception('HTTP request failed with code ' + str(r.status_code) + ': ' + r.url +
+                                '\nTimeout limit exceeded for ' + str(attempts_limit) + 'times')
+
+        # instead, if the apache server answered, break from the attempt block
+        if r.status_code == requests.codes.ok:
+            break
+
+    # if an answer was received but the status code is not "ok". then raise an exception
+    if r.status_code != requests.codes.ok:
+        raise Exception('HTTP request failed with code ' + str(r.status_code) + ': ' + r.url)
+
+    return r
+
+
+# download the file targeted by apache_path in the given destination,
+# after receiving the mirrors list in the apache_response HTTP response
+def apache_download(apache_path, destination_file, apache_response):
+    # read the apache connection response
+    content = apache_response.json()
+    path_info = content['path_info']
+    preferred = content['preferred']
+    mirrors = content['http']
+
+    # handle preferred mirrors (?)
+    if preferred in mirrors:
+        del mirrors[mirrors.index(preferred)]
+    mirrors.insert(0, preferred)
+
+    # request to download the target file from all mirrors in list;
+    # when the first mirror answers, download the target file from it
+    for mirror in mirrors:
+        # try to contact the current mirror
+        try:
+            r = requests.get(mirror + '/' + path_info, timeout=30, stream=True)
+        except requests.exceptions.Timeout:
+            # if the mirror doesn't answer before timeout, do nothing
+            # and move to the next mirror
+            continue
+
+        # if the current mirror answers and its code is "ok", then,
+        # download the file from that mirror
+        if r.status_code == 200:
+            with open(destination_file, 'wb') as f:
+                for chunk in r:
+                    f.write(chunk)
+            return
+
+            # if the current mirror answers and its code is not "ok",
+            # just ignore it and move to the next mirror?
+
+    # if no mirror has answered before the timeout limit raise an exception
+    raise Exception('Failed to download ' + apache_path)
+
+
+def install_apache_lib(path, output):
+    work_directory = tempfile.mkdtemp()
+
+    try:
+        tar_destination = os.path.join(work_directory, os.path.basename(path))
+
+        apache_download(path, tar_destination, apache_connect(path))
+
+        folder = untar(tar_destination, work_directory)
+
+        shutil.rmtree(output, ignore_errors=True)
+        shutil.move(folder, output)
+    finally:
+        shutil.rmtree(work_directory, ignore_errors=True)
+
+
+# =========================================================================================
+# Module: paoding
+# =========================================================================================
+
+# build paoding and untar paoding dictionary in paoding_home
+def install_paoding():
+    print ("Installing Paoding...\n")
+
+    # make sure that paoding_home already exists. If it doesn't something wrong is going on
+    assert os.path.exists(paoding_home)
+
+    # build paoding in another process and wait for its end
+    command = ['mvn',
+               'install:install-file',
+               '-Dfile=' + paoding_home + '/paoding-analysis.jar',
+               '-DpomFile=' + paoding_home + '/paoding-analysis.pom']
+    exec_process(command)
+    print ("Paoding successfully installed\n\n")
+
+
+# extract dictionary.tar.gz in paoding_res
+def initialize_paoding_resources():
+    print ("Initializing Paoding resources...\n")
+
+    # create paoding_res folder as <mmt_folder>/build/res/paoding if necessary
+    paoding_res = os.path.join(mmt_install_res, 'paoding')
+    if not os.path.exists(paoding_res):
+        os.makedirs(paoding_res)
+
+    current_file_path = os.path.join(paoding_home, 'dictionary.tar.gz')
+    untar(current_file_path, paoding_res)
+
+    print ("Paoding resources successfully initialized...\n\n")
+
+
+# =========================================================================================
+# Module: OpenNLP
+# =========================================================================================
+
+# copy opennlp bin files from opennlp_home to opennlp_res
+def initialize_opennlp_resources():
+    # make sure that opennlp_home already exists. If it doesn't something wrong is going on
+    assert os.path.exists(opennlp_home)
+
+    # create opennlp_res folder as <mmt_folder>/build/res/opennlp if necessary
+    opennlp_res = os.path.join(mmt_install_res, 'opennlp')
+    if not os.path.exists(opennlp_res):
+        os.makedirs(opennlp_res)
+
+    # copy all files that end with ".bin" from opennlp_home to opennlp_res
+    for filename in os.listdir(opennlp_home):
+        if filename.endswith(".bin"):
+            shutil.copyfile(os.path.join(opennlp_home, filename), os.path.join(opennlp_res, filename))
+
+
+# =========================================================================================
+# Module: RocksDB
+# =========================================================================================
+
+# install rocksdb in rocksdb_home
+def install_rocksdb():
+    print ("Installing RocksDB...\n")
+
+    # make sure that rocksdb_home already exists. If it doesn't something wrong is going on
+    assert os.path.exists(rocksdb_home)
+
+    # Install rocksdDB in another process,
+    # also specifying the directory to work in and a new environment variable
+    # and wait until the process is over
+    command = ['make', 'install-shared']
+    wenv = os.environ.copy()
+    wenv["INSTALL_PATH"] = mmt_build_dir
+    exec_process(command, working_directory=rocksdb_home, working_environment=wenv)
+
+    print ("RocksDB successfully installed\n\n")
+
+    build_rocksdb()
+
+
+# build rocksdb in rocksdb_home
+def build_rocksdb():
+    print ("Building RocksDB...\n")
+
+    # make sure that rocksdb_home already exists. If it doesn't something wrong is going on
+    assert os.path.exists(rocksdb_home)
+
+    # Build rocksdDB in another process,
+    # also specifying the directory to work in
+    # and wait until the process is over
+    command = ['make', '-j' + str(multiprocessing.cpu_count()), 'shared_lib']
+    exec_process(command, working_directory=rocksdb_home)
+
+    print ("RocksDB successfully built\n\n")
+
+
+def clean_rocksdb():
+    print("Cleaning RocksDB folder...\n")
+
+    # make sure that rocksdb_home already exists. If it doesn't something wrong is going on
+    assert os.path.exists(rocksdb_home)
+
+    # Clean rocksdDB in another process,
+    # also specifying the directory to work in
+    # and wait until the process is over
+    command = ['make', 'clean']
+    exec_process(command, working_directory=rocksdb_home)
+
+    print("RocksDB folder clean\n\n")
+
+
+# =========================================================================================
+# Module: Apache Cassandra
+# =========================================================================================
+
+def install_cassandra():
+    print 'Installing Cassandra 3.10...\n'
+
+    if not os.path.exists(cassandra_home):
+        os.makedirs(cassandra_home)
+
+    install_apache_lib(cassandra_apache_path, cassandra_home)
+
+    print 'Cassandra 3.10 successfully installed\n\n'
+
+
+# =========================================================================================
+# Module: Apache Kafka
+# =========================================================================================
+
+def install_kafka():
+    print 'Installing Kafka 0.10.0.1...\n'
+
+    if not os.path.exists(kafka_home):
+        os.makedirs(kafka_home)
+
+    install_apache_lib(kafka_apache_path, kafka_home)
+
+    print 'Kafka 0.10.0.1 successfully installed\n\n'
+
+
+# =========================================================================================
+# General methods
+# =========================================================================================
+
+# Initialize and populate all resources,
+# then install and build all the software required by MMT
+def run_all():
+    initialize_all_resources()
+    install_rocksdb()
+    install_paoding()
+    install_cassandra()
+    install_kafka()
+
+
+# Initialize and populate all resources folders
+def initialize_all_resources():
+    if not os.path.exists(mmt_install_res):
+        os.makedirs(mmt_install_res)
+
+    initialize_paoding_resources()
+    initialize_opennlp_resources()
+
+
+# delete all the resources folders
+def clean_resources():
+    print("Cleaning all resources...\n")
+    if os.path.exists(mmt_install_res):
+        shutil.rmtree(mmt_install_res)
+    print("Done\n\n")
+
+
+# revert everything back to how it was before running any method of this script
+def clean_all():
+    clean_resources()
+    clean_rocksdb()
+
+
+# print information about the right usage of this script
+def print_help(program_name):
+    sys.stderr.write("Invalid Argument\n\nUsage: " + program_name + " [clean]")
+
+
+if __name__ == '__main__':
+    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # reopen stdout in unbuffered mode
+    args = sys.argv
+
+    if len(sys.argv) == 1:
+        run_all()
+    elif len(sys.argv) == 2 and sys.argv[1] == 'clean':
+        clean_all()
+    else:
+        print_help(sys.argv[0])
+        exit(1)
