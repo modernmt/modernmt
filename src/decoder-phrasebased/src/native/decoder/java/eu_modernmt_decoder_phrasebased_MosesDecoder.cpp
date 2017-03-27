@@ -142,9 +142,9 @@ Java_eu_modernmt_decoder_phrasebased_MosesDecoder_translate(JNIEnv *jvm, jobject
         map<string, float> context;
         ParseContext(jvm, contextKeys, contextValues, context);
 
-        translation = instance->translate(sentence, 0, &context, (size_t) nbest);
+        translation = instance->translate(sentence, &context, (size_t) nbest);
     } else {
-        translation = instance->translate(sentence, 0, NULL, (size_t) nbest);
+        translation = instance->translate(sentence, NULL, (size_t) nbest);
     }
 
     jobjectArray hypothesesArray = NULL;
