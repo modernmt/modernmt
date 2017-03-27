@@ -36,11 +36,6 @@ class Translator:
         elif context_vector is not None:
             self._context = self.__parse_context_vector(context_vector)
 
-        if self._context is not None:
-            # self._session = self._api.create_session(self._context)['id']
-        else:
-            self._session = None
-
     @staticmethod
     def __parse_context_vector(text):
         context = []
@@ -77,7 +72,7 @@ class Translator:
         ]
 
     def _translate(self, line, _=None):
-        return self._api.translate(line, session=self._session, nbest=self._print_nbest)
+        return self._api.translate(line, context=self._context, nbest=self._print_nbest)
 
     def execute(self, line):
         pass
@@ -88,13 +83,6 @@ class Translator:
     def close(self):
         if self._nbest_file is not None:
             self._nbest_file.close()
-
-        try:
-            if self._session is not None:
-                self._api.close_session(self._session)
-        except:
-            # Nothing to do
-            pass
 
 
 class BatchTranslator(Translator):

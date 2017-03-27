@@ -64,7 +64,6 @@ public class ClusterNode {
 
     private HazelcastInstance hazelcast;
     private IExecutorService executor;
-    private SessionManager sessionManager;
     private DataManager dataManager;
 
     private Database database;
@@ -121,10 +120,6 @@ public class ClusterNode {
             throw new IllegalStateException("Database not ready.");
 
         return database;
-    }
-
-    public SessionManager getSessionManager() {
-        return sessionManager;
     }
 
     public void addStatusListener(StatusListener listener) {
@@ -337,8 +332,6 @@ public class ClusterNode {
         // ========================
 
         executor = hazelcast.getExecutorService(ClusterConstants.TRANSLATION_EXECUTOR_NAME);
-
-        sessionManager = new SessionManager(hazelcast, event -> engine.getDecoder().closeSession(event.getOldValue()));
 
         decoderWeightsTopic = hazelcast.getTopic(ClusterConstants.DECODER_WEIGHTS_TOPIC_NAME);
         decoderWeightsTopic.addMessageListener(this::onDecoderWeightsChanged);

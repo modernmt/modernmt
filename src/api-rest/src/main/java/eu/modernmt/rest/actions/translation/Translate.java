@@ -27,10 +27,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
 
         TranslationResponse result = new TranslationResponse();
 
-        if (params.sessionId > 0) {
-            result.session = params.sessionId;
-            result.translation = ModernMT.translation.get(params.query, params.sessionId, params.nbest);
-        } else if (params.context != null) {
+        if (params.context != null) {
             result.translation = ModernMT.translation.get(params.query, params.context, params.nbest);
         } else if (params.contextString != null) {
             result.context = ModernMT.translation.getContextVector(params.contextString, params.contextLimit);
@@ -53,7 +50,6 @@ public class Translate extends ObjectAction<TranslationResponse> {
     public static class Params extends Parameters {
 
         public final String query;
-        public final long sessionId;
         public final ContextVector context;
         public final String contextString;
         public final int contextLimit;
@@ -68,23 +64,17 @@ public class Translate extends ObjectAction<TranslationResponse> {
                 throw new ParameterParsingException("q", query.substring(0, 10) + "...",
                         "max query length of " + MAX_QUERY_LENGTH + " exceeded");
 
-            sessionId = getLong("session", 0L);
             contextLimit = getInt("context_limit", 10);
             nbest = getInt("nbest", 0);
 
-            if (sessionId == 0) {
-                String weights = getString("context_vector", false, null);
+            String weights = getString("context_vector", false, null);
 
-                if (weights != null) {
-                    context = ContextUtils.parseParameter("context_vector", weights);
-                    contextString = null;
-                } else {
-                    context = null;
-                    contextString = getString("context", false, null);
-                }
+            if (weights != null) {
+                context = ContextUtils.parseParameter("context_vector", weights);
+                contextString = null;
             } else {
                 context = null;
-                contextString = null;
+                contextString = getString("context", false, null);
             }
         }
     }

@@ -126,41 +126,14 @@ Java_eu_modernmt_decoder_phrasebased_MosesDecoder_setFeatureWeights(JNIEnv *jvm,
     instance->setDefaultFeatureWeights(featureWeights);
 }
 
-
 /*
- * Class:     eu_modernmt_decoder_moses_MosesDecoder
- * Method:    createSession
- * Signature: ([I[F)J
- */
-JNIEXPORT jlong JNICALL
-Java_eu_modernmt_decoder_phrasebased_MosesDecoder_createSession(JNIEnv *jvm, jobject jself, jintArray contextKeys,
-                                                          jfloatArray contextValues) {
-    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
-
-    map<string, float> context;
-    ParseContext(jvm, contextKeys, contextValues, context);
-
-    return (jlong) instance->openSession(context);
-}
-
-/*
- * Class:     eu_modernmt_decoder_moses_MosesDecoder
- * Method:    destroySession
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_eu_modernmt_decoder_phrasebased_MosesDecoder_destroySession(JNIEnv *jvm, jobject self,
-                                                                                  jlong session) {
-    jni_gethandle<MosesDecoder>(jvm, self)->closeSession((uint64_t) session);
-}
-
-/*
- * Class:     eu_modernmt_decoder_moses_MosesDecoder
+ * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
  * Method:    translate
- * Signature: (Ljava/lang/String;[I[FJI)Leu/modernmt/decoder/moses/TranslationXObject;
+ * Signature: (Ljava/lang/String;[I[FI)Leu/modernmt/decoder/phrasebased/TranslationXObject;
  */
 JNIEXPORT jobject JNICALL
 Java_eu_modernmt_decoder_phrasebased_MosesDecoder_translate(JNIEnv *jvm, jobject jself, jstring text, jintArray contextKeys,
-                                                      jfloatArray contextValues, jlong session, jint nbest) {
+                                                      jfloatArray contextValues, jint nbest) {
     MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
     string sentence = jni_jstrtostr(jvm, text);
 
@@ -169,9 +142,9 @@ Java_eu_modernmt_decoder_phrasebased_MosesDecoder_translate(JNIEnv *jvm, jobject
         map<string, float> context;
         ParseContext(jvm, contextKeys, contextValues, context);
 
-        translation = instance->translate(sentence, (uint64_t) session, &context, (size_t) nbest);
+        translation = instance->translate(sentence, 0, &context, (size_t) nbest);
     } else {
-        translation = instance->translate(sentence, (uint64_t) session, NULL, (size_t) nbest);
+        translation = instance->translate(sentence, 0, NULL, (size_t) nbest);
     }
 
     jobjectArray hypothesesArray = NULL;

@@ -1,6 +1,5 @@
 package eu.modernmt.facade;
 
-import eu.modernmt.cluster.SessionManager;
 import eu.modernmt.cluster.error.SystemShutdownException;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
@@ -48,56 +47,28 @@ public class TranslationFacade {
     }
 
     // =============================
-    //  Translation session
-    // =============================
-
-    public TranslationSession createSession(ContextVector context) {
-        SessionManager sessionManager = ModernMT.getNode().getSessionManager();
-        return sessionManager.create(context);
-    }
-
-    public TranslationSession getSession(long id) {
-        SessionManager sessionManager = ModernMT.getNode().getSessionManager();
-        return sessionManager.get(id);
-    }
-
-    // =============================
     //  Translation
     // =============================
 
     public DecoderTranslation get(String sentence) throws TranslationException {
-        return get(sentence, null, 0L, 0);
-    }
-
-    public DecoderTranslation get(String sentence, long sessionId) throws TranslationException {
-        return get(sentence, null, sessionId, 0);
+        return get(sentence, null, 0);
     }
 
     public DecoderTranslation get(String sentence, ContextVector translationContext) throws TranslationException {
-        return get(sentence, translationContext, 0L, 0);
+        return get(sentence, translationContext, 0);
     }
 
     public DecoderTranslation get(String sentence, int nbest) throws TranslationException {
-        return get(sentence, null, 0L, nbest);
-    }
-
-    public DecoderTranslation get(String sentence, long sessionId, int nbest) throws TranslationException {
-        return get(sentence, null, sessionId, nbest);
+        return get(sentence, null, nbest);
     }
 
     public DecoderTranslation get(String sentence, ContextVector translationContext, int nbest) throws TranslationException {
-        return get(sentence, translationContext, 0L, nbest);
-    }
-
-    private DecoderTranslation get(String text, ContextVector translationContext, long session, int nbest) throws TranslationException {
         TranslateOperation operation;
 
         if (translationContext != null) {
-            operation = new TranslateOperation(text, translationContext, nbest);
-        } else if (session > 0) {
-            operation = new TranslateOperation(text, session, nbest);
+            operation = new TranslateOperation(sentence, translationContext, nbest);
         } else {
-            operation = new TranslateOperation(text, nbest);
+            operation = new TranslateOperation(sentence, nbest);
         }
 
         DecoderTranslation rootTranslation;
@@ -126,7 +97,7 @@ public class TranslationFacade {
                     Translation[] translations = new Translation[options.length];
 
                     for (int i = 0; i < translations.length; i++) {
-                        translations[i] = get(options[i], translationContext, session, 0);
+                        translations[i] = get(options[i], translationContext, 0);
                     }
 
                     mop.setTranslatedOptions(translations);

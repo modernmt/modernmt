@@ -1,10 +1,8 @@
 package eu.modernmt.facade;
 
 import eu.modernmt.cluster.ClusterNode;
-import eu.modernmt.cluster.SessionManager;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderTranslation;
-import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
@@ -22,7 +20,6 @@ class TranslateOperation implements Callable<DecoderTranslation>, Serializable {
 
     private String text;
     private ContextVector translationContext;
-    private Long session;
     private int nbest;
 
     public TranslateOperation(String text, int nbest) {
@@ -33,13 +30,6 @@ class TranslateOperation implements Callable<DecoderTranslation>, Serializable {
     public TranslateOperation(String text, ContextVector translationContext, int nbest) {
         this.text = text;
         this.translationContext = translationContext;
-        this.nbest = nbest;
-    }
-
-    public TranslateOperation(String text, long session, int nbest) {
-        this.text = text;
-        this.session = session;
-        this.translationContext = null;
         this.nbest = nbest;
     }
 
@@ -55,15 +45,8 @@ class TranslateOperation implements Callable<DecoderTranslation>, Serializable {
         Sentence sentence = preprocessor.process(text);
 
         DecoderTranslation translation;
-        if (session != null) {
-            SessionManager sessionManager = node.getSessionManager();
-            TranslationSession session = sessionManager.get(this.session);
 
-            if (session == null)
-                throw new IllegalArgumentException("Session not found: " + this.session);
-
-            translation = nbest > 0 ? decoder.translate(sentence, session, nbest) : decoder.translate(sentence, session);
-        } else if (translationContext != null) {
+        if (translationContext != null) {
             translation = nbest > 0 ? decoder.translate(sentence, translationContext, nbest) : decoder.translate(sentence, translationContext);
         } else {
             translation = nbest > 0 ? decoder.translate(sentence, nbest) : decoder.translate(sentence);
@@ -75,5 +58,4 @@ class TranslateOperation implements Callable<DecoderTranslation>, Serializable {
 
         return translation;
     }
-
 }

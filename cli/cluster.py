@@ -116,18 +116,8 @@ class MMTApi:
             params['limit'] = limit
         return self._get('context-vector', params=params)
 
-    # def create_session(self, context):
-    #     return self._post('sessions',
-    #                       params={'context_vector': self._encode_context(context)}
-    #                       )
-    #
-    # def close_session(self, session):
-    #     return self._delete('sessions/' + str(session))
-
-    def translate(self, source, session=None, context=None, nbest=None):
+    def translate(self, source, context=None, nbest=None):
         p = {'q': source}
-        if session is not None:
-            p['session'] = session
         if nbest is not None:
             p['nbest'] = nbest
         if context is not None:

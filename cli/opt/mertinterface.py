@@ -55,8 +55,8 @@ class _DocumentTranslator:
             else:
                 array.append(float(token))
 
-    def _get_translation(self, line, nbest, session):
-        translation = Api.translate(line, session=session, nbest=nbest)
+    def _get_translation(self, line, nbest, context_vector):
+        translation = Api.translate(line, context=context_vector, nbest=nbest)
 
         # tokenize
         translation['translation'] = self._tokenizer.process(translation['translation'])
@@ -100,23 +100,21 @@ class _DocumentTranslator:
             self._features = _sorted_features_list()
 
             translations = []
-            sessions = []
 
             # Enqueue translations requests
             with open(self.corpus) as source:
                 for line in source:
                     corpus_path = line.strip()
 
-                    session = None
+                    context_vector = None
 
                     if not self.skip_context:
                         context_vector = Api.get_context_f(corpus_path)
-                        # session = Api.create_session(context)['id']
-                        # sessions.append(session)
 
                     with open(corpus_path) as doc:
                         for docline in doc:
-                            translation = self._pool.apply_async(self._get_translation, (docline, self.nbest, session))
+                            translation = self._pool.apply_async(self._get_translation,
+                                                                 (docline, self.nbest, context_vector))
                             translations.append(translation)
 
             # Collection and outputting results
@@ -125,14 +123,6 @@ class _DocumentTranslator:
                     translation = translation_job.get()
                     self._print(translation, nbest_out)
                     self._line_id += 1
-
-            # Closing sessions
-            for session in sessions:
-                try:
-                    Api.close_session(session)
-                except:
-                    # ignore it
-                    pass
         finally:
             self._pool.terminate()
 

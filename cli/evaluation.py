@@ -137,31 +137,19 @@ class BingTranslator(Translator):
 
 
 class MMTTranslator(Translator):
-    def __init__(self, node): #, use_sessions=True):
+    def __init__(self, node):
         Translator.__init__(self, node.engine.source_lang, node.engine.target_lang, threads=100)
         self._api = node.api
-        self._sessions = {}
-        self._contexts = {}  # redundant with the sessions, stored just for the case of _use_sessions=False
-        #self._use_sessions = use_sessions
+        self._contexts = {}
 
     def name(self):
         return 'MMT'
-
-    def translate(self, corpora, output):
-        result = Translator.translate(self, corpora, output)
-
-        for _, session in self._sessions.iteritems():
-            self._api.close_session(session)
-
-        return result
 
     def _before_translate(self, corpus):
         try:
             corpus_file = corpus.get_file(self.source_lang)
             context = self._api.get_context_f(corpus_file)
             self._contexts[corpus_file] = context
-            #if self._use_sessions:
-            #    self._sessions[corpus_file] = self._api.create_session(context)['id']
         except requests.exceptions.ConnectionError:
             raise TranslateError('Unable to connect to MMT. '
                                  'Please check if engine is running on port %d.' % self._api.port)
@@ -172,13 +160,8 @@ class MMTTranslator(Translator):
         corpus_file = corpus.get_file(self.source_lang)
 
         try:
-            # use per-session context (not passed) if _use_sessions
-            # pass context here (and do not pass session) otherwise
-            # sess = self._sessions[corpus_file] if self._use_sessions else None
-            # ctxt = None if self._use_sessions else self._contexts[corpus_file]
-
-            ctxt = self._contexts[corpus_file]
-            translation = self._api.it (line, session=sess, context=ctxt)
+            context_vector = self._contexts[corpus_file]
+            translation = self._api.translate(line, context=context_vector)
         except requests.exceptions.ConnectionError:
             raise TranslateError('Unable to connect to MMT. '
                                  'Please check if engine is running on port %d.' % self._api.port)
@@ -403,7 +386,7 @@ class _EvaluationResult:
 
 
 class Evaluator:
-    def __init__(self, node, google_key=None, google_nmt=False, use_sessions=True):
+    def __init__(self, node, google_key=None, google_nmt=False):
         self._engine = node.engine
         self._node = node
 
@@ -412,7 +395,7 @@ class Evaluator:
         self._translators = [
             GoogleTranslate(self._engine.source_lang, self._engine.target_lang, key=google_key, nmt=google_nmt),
             # BingTranslator(source_lang, target_lang),
-            MMTTranslator(self._node, use_sessions)
+            MMTTranslator(self._node)
         ]
 
     def evaluate(self, corpora, heval_output=None, debug=False):

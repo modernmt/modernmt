@@ -6,7 +6,6 @@ import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.decoder.DecoderTranslation;
-import eu.modernmt.decoder.TranslationSession;
 import eu.modernmt.io.Paths;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
@@ -108,70 +107,31 @@ public class MosesDecoder implements Decoder, DataListenerProvider {
 
     private native void setFeatureWeights(String[] features, float[][] weights);
 
-    // Translation session
-
-    private long getOrComputeSession(final TranslationSession session) {
-        return sessions.computeIfAbsent(session.getId(), key -> {
-            ContextXObject context = ContextXObject.build(session.getContextVector());
-            return createSession(context.keys, context.values);
-        });
-    }
-
-    private native long createSession(int[] contextKeys, float[] contextValues);
-
-    @Override
-    public void closeSession(TranslationSession session) {
-        Long internalId = this.sessions.remove(session.getId());
-        if (internalId != null) {
-            this.destroySession(internalId);
-
-            if (logger.isDebugEnabled())
-                logger.debug(String.format("Session %d(%d) destroyed.", session.getId(), internalId));
-        }
-    }
-
-    private native void destroySession(long internalId);
-
     // Translate
 
     @Override
     public DecoderTranslation translate(Sentence text) {
-        return translate(text, null, null, 0);
+        return translate(text, null, 0);
     }
 
     @Override
     public DecoderTranslation translate(Sentence text, ContextVector contextVector) {
-        return translate(text, contextVector, null, 0);
-    }
-
-    @Override
-    public DecoderTranslation translate(Sentence text, TranslationSession session) {
-        return translate(text, null, session, 0);
+        return translate(text, contextVector, 0);
     }
 
     @Override
     public DecoderTranslation translate(Sentence text, int nbestListSize) {
-        return translate(text, null, null, nbestListSize);
+        return translate(text, null, nbestListSize);
     }
 
     @Override
-    public DecoderTranslation translate(Sentence text, ContextVector contextVector, int nbestListSize) {
-        return translate(text, contextVector, null, nbestListSize);
-    }
-
-    @Override
-    public DecoderTranslation translate(Sentence text, TranslationSession session, int nbestListSize) {
-        return translate(text, null, session, nbestListSize);
-    }
-
-    private DecoderTranslation translate(Sentence sentence, ContextVector contextVector, TranslationSession session, int nbest) {
+    public DecoderTranslation translate(Sentence sentence, ContextVector contextVector, int nbest) {
         Word[] sourceWords = sentence.getWords();
         if (sourceWords.length == 0)
             return new DecoderTranslation(new Word[0], sentence, null);
 
         String text = XUtils.join(sourceWords);
 
-        long sessionId = session == null ? 0L : getOrComputeSession(session);
         ContextXObject context = ContextXObject.build(contextVector);
 
         if (logger.isDebugEnabled()) {
@@ -179,7 +139,11 @@ public class MosesDecoder implements Decoder, DataListenerProvider {
         }
 
         long start = System.currentTimeMillis();
-        TranslationXObject xtranslation = this.translate(text, context == null ? null : context.keys, context == null ? null : context.values, sessionId, nbest);
+        TranslationXObject xtranslation = this.translate(text,
+                context == null ? null : context.keys,
+                context == null ? null : context.values,
+                nbest);
+
         long elapsed = System.currentTimeMillis() - start;
 
         DecoderTranslation translation = xtranslation.getTranslation(sentence);
@@ -190,7 +154,7 @@ public class MosesDecoder implements Decoder, DataListenerProvider {
         return translation;
     }
 
-    private native TranslationXObject translate(String text, int[] contextKeys, float[] contextValues, long session, int nbest);
+    private native TranslationXObject translate(String text, int[] contextKeys, float[] contextValues, int nbest);
 
     // DataListenerProvider
 
@@ -219,10 +183,8 @@ public class MosesDecoder implements Decoder, DataListenerProvider {
 
     @Override
     public void close() {
-        sessions.values().forEach(this::destroySession);
         nativeHandle = dispose(nativeHandle);
     }
 
     private native long dispose(long handle);
-
 }

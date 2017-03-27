@@ -19,22 +19,13 @@ public interface Decoder extends Closeable {
 
     void setDefaultFeatureWeights(Map<DecoderFeature, float[]> weights);
 
-    // Translation session
-
-    void closeSession(TranslationSession session);
-
     // Translate
 
     DecoderTranslation translate(Sentence text);
 
     DecoderTranslation translate(Sentence text, ContextVector contextVector);
 
-    DecoderTranslation translate(Sentence text, TranslationSession session);
-
     DecoderTranslation translate(Sentence text, int nbestListSize);
 
     DecoderTranslation translate(Sentence text, ContextVector contextVector, int nbestListSize);
-
-    DecoderTranslation translate(Sentence text, TranslationSession session, int nbestListSize);
-
 }
