@@ -443,7 +443,6 @@ class EmbeddedCassandra:
                 for key, value in custom_configurations.iteritems():
                     yaml_write.write(value)
 
-    # start cassandra process
     def _start_cassandra(self, log):
 
         if not os.path.isdir(self._model):
@@ -454,9 +453,7 @@ class EmbeddedCassandra:
 
         self._yaml_transform(config)
 
-        # launch cassandra -d _runtime -R
-        command = [self._cassandra_bin, '-Dcassandra.config=file:///' + config, "-f", "-R"]
-
+        command = [self._cassandra_bin, '-R', '-Dcassandra.config=file:///' + config, '-f']
         cassandra = subprocess.Popen(command, stdout=log, stderr=log, shell=False).pid
 
         # If Starting listening for CQL clients is not in the rlog
