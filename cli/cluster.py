@@ -465,7 +465,7 @@ class EmbeddedCassandra:
         self._yaml_transform(config)
 
         # launch cassandra -d _runtime
-        command = [self._cassandra_bin, '-Dcassandra.config=file:///' + config, "-f"]
+        command = [self._cassandra_bin, '-R', '-Dcassandra.config=file:///' + config, "-f"]
 
         cassandra = subprocess.Popen(command, stdout=log, stderr=log, shell=False).pid
 
