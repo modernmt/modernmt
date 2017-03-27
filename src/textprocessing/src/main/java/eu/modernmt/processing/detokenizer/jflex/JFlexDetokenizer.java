@@ -32,24 +32,27 @@ public class JFlexDetokenizer extends Detokenizer {
 
     private final JFlexSpaceAnnotator annotator;
 
-    public JFlexDetokenizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
-        super(sourceLanguage, targetLanguage);
-
-        Class<? extends JFlexSpaceAnnotator> annotatorClass = ANNOTATORS.get(targetLanguage);
+    public static JFlexSpaceAnnotator newAnnotator(Locale language) {
+        Class<? extends JFlexSpaceAnnotator> annotatorClass = ANNOTATORS.get(language);
         if (annotatorClass == null) {
-            this.annotator = new StandardSpaceAnnotator((Reader) null);
+            return new StandardSpaceAnnotator((Reader) null);
         } else {
             try {
-                this.annotator = annotatorClass.getConstructor(Reader.class).newInstance((Reader) null);
+                return annotatorClass.getConstructor(Reader.class).newInstance((Reader) null);
             } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException | InstantiationException e) {
                 throw new Error("Error during class instantiation: " + annotatorClass.getName(), e);
             }
         }
     }
 
+    public JFlexDetokenizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+        super(sourceLanguage, targetLanguage);
+        this.annotator = newAnnotator(targetLanguage);
+    }
+
     @Override
     public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
-        SpacesAnnotatedString text = SpacesAnnotatedString.fromTranslation(translation);
+        SpacesAnnotatedString text = SpacesAnnotatedString.fromSentence(translation);
 
         annotator.reset(text.getReader());
 
@@ -58,7 +61,7 @@ public class JFlexDetokenizer extends Detokenizer {
             annotator.annotate(text, type);
         }
 
-        text.apply(translation);
+        text.apply(translation, (word, hasSpace) -> word.setRightSpace(hasSpace ? " " : null));
         return translation;
     }
 
