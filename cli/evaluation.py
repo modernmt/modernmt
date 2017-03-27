@@ -137,12 +137,12 @@ class BingTranslator(Translator):
 
 
 class MMTTranslator(Translator):
-    def __init__(self, node, use_sessions=True):
+    def __init__(self, node): #, use_sessions=True):
         Translator.__init__(self, node.engine.source_lang, node.engine.target_lang, threads=100)
         self._api = node.api
         self._sessions = {}
         self._contexts = {}  # redundant with the sessions, stored just for the case of _use_sessions=False
-        self._use_sessions = use_sessions
+        #self._use_sessions = use_sessions
 
     def name(self):
         return 'MMT'
@@ -160,8 +160,8 @@ class MMTTranslator(Translator):
             corpus_file = corpus.get_file(self.source_lang)
             context = self._api.get_context_f(corpus_file)
             self._contexts[corpus_file] = context
-            if self._use_sessions:
-                self._sessions[corpus_file] = self._api.create_session(context)['id']
+            #if self._use_sessions:
+            #    self._sessions[corpus_file] = self._api.create_session(context)['id']
         except requests.exceptions.ConnectionError:
             raise TranslateError('Unable to connect to MMT. '
                                  'Please check if engine is running on port %d.' % self._api.port)
@@ -174,10 +174,11 @@ class MMTTranslator(Translator):
         try:
             # use per-session context (not passed) if _use_sessions
             # pass context here (and do not pass session) otherwise
-            sess = self._sessions[corpus_file] if self._use_sessions else None
-            ctxt = None if self._use_sessions else self._contexts[corpus_file]
+            # sess = self._sessions[corpus_file] if self._use_sessions else None
+            # ctxt = None if self._use_sessions else self._contexts[corpus_file]
 
-            translation = self._api.translate(line, session=sess, context=ctxt)
+            ctxt = self._contexts[corpus_file]
+            translation = self._api.it (line, session=sess, context=ctxt)
         except requests.exceptions.ConnectionError:
             raise TranslateError('Unable to connect to MMT. '
                                  'Please check if engine is running on port %d.' % self._api.port)

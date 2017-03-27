@@ -110,9 +110,9 @@ class _DocumentTranslator:
                     session = None
 
                     if not self.skip_context:
-                        context = Api.get_context_f(corpus_path)
-                        session = Api.create_session(context)['id']
-                        sessions.append(session)
+                        context_vector = Api.get_context_f(corpus_path)
+                        # session = Api.create_session(context)['id']
+                        # sessions.append(session)
 
                     with open(corpus_path) as doc:
                         for docline in doc:

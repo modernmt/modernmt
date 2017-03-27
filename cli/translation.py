@@ -37,7 +37,7 @@ class Translator:
             self._context = self.__parse_context_vector(context_vector)
 
         if self._context is not None:
-            self._session = self._api.create_session(self._context)['id']
+            # self._session = self._api.create_session(self._context)['id']
         else:
             self._session = None
 

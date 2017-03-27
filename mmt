@@ -110,8 +110,8 @@ def main_evaluate(argv):
                              'you have to specify a valid key with --gt-key')
     parser.add_argument('--human-eval', dest='heval_output', metavar='OUTPUT', default=None,
                         help='the output folder for the tab-spaced files needed to setup a Human Evaluation benchmark')
-    parser.add_argument('-i', '--interactive', action='store_true', dest='interactive',
-                        help='Test without sessions, as if translating sentence by sentence')
+    # parser.add_argument('-i', '--interactive', action='store_true', dest='interactive',
+    #                     help='Test without sessions, as if translating sentence by sentence')
     parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='if debug is set, it enables verbose '
                                                                                  'logging and prevents temporary files '
                                                                                  'to be removed after execution')
@@ -124,8 +124,9 @@ def main_evaluate(argv):
         raise IllegalStateException('engine not found: ' + args.engine)
 
     node = ClusterNode(engine, api_port=args.api_port)
-    evaluator = Evaluator(node, google_key=args.gt_key, google_nmt=args.gt_nmt, use_sessions=not args.interactive)
-
+    evaluator = Evaluator(node, google_key=args.gt_key, google_nmt=args.gt_nmt)
+                          # use_sessions=not args.interactive)
+    #
     corpora = BilingualCorpus.list(args.corpora_path) if args.corpora_path is not None \
         else BilingualCorpus.list(os.path.join(engine.data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
 
@@ -187,18 +188,16 @@ def main_start(argv):
     if not netutils.is_free(args.cluster_port):
         raise IllegalStateException(
             'port %d is already in use, please specify another port with --cluster-port' % args.cluster_port)
-    # if not netutils.is_free(args.cluster_ports[1]):
-    #     raise IllegalStateException(
-    #         'port %d is already in use, please specify another port with --cluster-ports' % args.cluster_ports[1])
 
     # Exec command
     engine = MMTEngine.load(args.engine)
     if args.sibling is None and not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
 
-    node = ClusterNode(engine, rest=args.has_rest, api_port=args.api_port, cluster_port=args.cluster_port,
-                       datastream_port=args.datastream_port, db_port=args.db_port, sibling=args.sibling, verbosity=args.verbosity)
-
+    node = ClusterNode(engine, rest=args.has_rest,
+                       api_port=args.api_port, cluster_port=args.cluster_port,
+                       datastream_port=args.datastream_port, db_port=args.db_port,
+                       sibling=args.sibling, verbosity=args.verbosity)
     started = False
     success = False
 

@@ -116,13 +116,13 @@ class MMTApi:
             params['limit'] = limit
         return self._get('context-vector', params=params)
 
-    def create_session(self, context):
-        return self._post('sessions', params={
-            'context_vector': self._encode_context(context)
-        })
-
-    def close_session(self, session):
-        return self._delete('sessions/' + str(session))
+    # def create_session(self, context):
+    #     return self._post('sessions',
+    #                       params={'context_vector': self._encode_context(context)}
+    #                       )
+    #
+    # def close_session(self, session):
+    #     return self._delete('sessions/' + str(session))
 
     def translate(self, source, session=None, context=None, nbest=None):
         p = {'q': source}
@@ -453,7 +453,7 @@ class EmbeddedCassandra:
                 for key, value in custom_configurations.iteritems():
                     yaml_write.write(value)
 
-    #def _start_cassandra(self, log):
+    # start cassandra process
     def _start_cassandra(self, log):
 
         if not os.path.isdir(self._model):
@@ -464,8 +464,8 @@ class EmbeddedCassandra:
 
         self._yaml_transform(config)
 
-        # launch cassandra -d _runtime
-        command = [self._cassandra_bin, '-Dcassandra.config=file:///' + config, "-f"]
+        # launch cassandra -d _runtime -R
+        command = [self._cassandra_bin, '-Dcassandra.config=file:///' + config, "-f", "-R"]
 
         cassandra = subprocess.Popen(command, stdout=log, stderr=log, shell=False).pid
 
