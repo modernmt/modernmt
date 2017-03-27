@@ -453,7 +453,6 @@ class EmbeddedCassandra:
                 for key, value in custom_configurations.iteritems():
                     yaml_write.write(value)
 
-    #def _start_cassandra(self, log):
     def _start_cassandra(self, log):
 
         if not os.path.isdir(self._model):
