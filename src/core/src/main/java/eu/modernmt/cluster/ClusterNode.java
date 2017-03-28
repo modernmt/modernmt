@@ -5,6 +5,7 @@ import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.*;
 import eu.modernmt.aligner.Aligner;
+import eu.modernmt.cluster.db.BaselineDomainsCollection;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.cluster.kafka.KafkaDataManager;
 import eu.modernmt.config.*;
@@ -17,12 +18,18 @@ import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
+import eu.modernmt.io.Paths;
+import eu.modernmt.model.Domain;
+import eu.modernmt.persistence.Connection;
 import eu.modernmt.persistence.Database;
+import eu.modernmt.persistence.DomainDAO;
+import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.persistence.cassandra.CassandraDatabase;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -328,6 +335,27 @@ public class ClusterNode {
                 databaseConfig.getKeyspace());
 
         logger.info("Database started");
+
+        Connection connection = null;
+        try {
+            if (!this.database.exists()) {
+                this.database.create();
+
+                File baselineDomains = Paths.join(engine.getModelsPath(), "db", "baseline_models.json");
+                List<Domain> domains = new BaselineDomainsCollection(baselineDomains).load();
+                connection = this.database.getConnection();
+                DomainDAO domainDao = this.database.getDomainDAO(connection);
+                for (Domain domain : domains) {
+                    domainDao.put(domain);
+                }
+                logger.info("Database initialized");
+            }
+        } catch (PersistenceException e) {
+            throw new BootstrapException("Unable to initialize the DB");
+        } finally {
+            IOUtils.closeQuietly(connection);
+        }
+
 
         // ========================
 

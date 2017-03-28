@@ -327,6 +327,7 @@ class EmbeddedKafka:
         daemon.kill(kafka)
         return None
 
+
 class EmbeddedCassandra:
     def __init__(self, engine, port):
         self._engine = engine
@@ -360,7 +361,7 @@ class EmbeddedCassandra:
         # if cassandra pid is 0, cassandra surely is not running
         if cpid == 0:
             return False
-        # else it may be running or not so ask demon
+        # else it may be running or not, so ask the daemon
         return daemon.is_running(cpid)
 
     # stop cassandra process
@@ -368,6 +369,8 @@ class EmbeddedCassandra:
         if self.is_running():
             daemon.kill(self._get_pid(), 5)
 
+    # start a cassandra instance on this machine
+    # (this method is called when performing mmt start if there is no sibling)
     def start(self):
         if self.is_running():
             raise IllegalStateException('Cannot start Cassandra process. Cassandra process is already running')
@@ -387,7 +390,7 @@ class EmbeddedCassandra:
         log = open(self._log_file, 'w')
 
         try:
-            cpid = self._start_cassandra(log)
+            cpid = self._start_cassandra_process(log)
 
             if cpid is None:
                 raise IllegalStateException(
@@ -405,7 +408,7 @@ class EmbeddedCassandra:
     # put them in a dictionary
     # and return it
     def _yaml_transform(self, write_file_path):
-        # key = cosa c'e' nella line, value = come fare replace
+        # key = line content, value = replacement
         custom_configurations = {}
 
         custom_configurations["cluster_name:"] = "cluster_name: ModernMT - " + self._engine.name + "\n"
@@ -443,7 +446,8 @@ class EmbeddedCassandra:
                 for key, value in custom_configurations.iteritems():
                     yaml_write.write(value)
 
-    def _start_cassandra(self, log):
+    # this method starts che Cassandra process in background
+    def _start_cassandra_process(self, log):
 
         if not os.path.isdir(self._model):
             fileutils.makedirs(self._model, exist_ok=True)
@@ -457,7 +461,7 @@ class EmbeddedCassandra:
         cassandra = subprocess.Popen(command, stdout=log, stderr=log, shell=False).pid
 
         # If Starting listening for CQL clients is not in the rlog
-        # in the first 80 seconds
+        # in the first 100 seconds
         # kill Cassandra and return none?
         for i in range(1, 100):
             with open(log.name, 'r') as rlog:
@@ -467,7 +471,6 @@ class EmbeddedCassandra:
 
             time.sleep(1)
         return None
-
 
 class ClusterNode(object):
     __SIGTERM_TIMEOUT = 10  # after this amount of seconds, there is no excuse for a process to still be there.

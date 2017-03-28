@@ -6,57 +6,50 @@ from xml.dom import minidom
 
 import cli
 from cli import IllegalArgumentException
-from cli.cluster import EmbeddedCassandra
 from cli.libs import fileutils
-from cli.libs import netutils
-from cli.libs import shell
 from cli.mt import BilingualCorpus
 from cli.mt.contextanalysis import ContextAnalyzer
 from cli.mt.lm import InterpolatedLM
 from cli.mt.moses import Moses, MosesFeature
 from cli.mt.phrasetable import SuffixArraysPhraseTable, LexicalReordering, FastAlign
 from cli.mt.processing import TrainingPreprocessor, TMCleaner
+import json
 
 __author__ = 'Davide Caroselli'
 
 
-class _DomainMapBuilder:
-    def __init__(self, engine):
-        self._engine = engine
-        self._source_lang = engine.source_lang
-        self._target_lang = engine.target_lang
+# This class manages the Map <domainID - domainName> during the MMT creation.
+# TODO il nome va bene davvero?
+class Database:
+    def __init__(self, db_path):
+        self._db_path = db_path
+        self._json_path = os.path.join(db_path, "baseline_domains.json")
 
-        self._java_mainclass = 'eu.modernmt.cli.DomainMapMain'
-
+    # this method generates the initial domainID-domainName map during MMT Create
     def generate(self, bilingual_corpora, monolingual_corpora, output, log=None):
-        if log is None:
-            log = shell.DEVNULL
+        # create a domains dictionary, reading the domains as the bilingual corpora names
+        domains = []
+        for i in xrange(len(bilingual_corpora)):
+            domain = {}
+            domain_id = i+1
+            domain_name = bilingual_corpora[i].name
+            domain["id"] = domain_id
+            domain["name"] = domain_name
 
-        cassandra = EmbeddedCassandra(self._engine, netutils.get_free_tcp_port())
+        # create the necessary folders if they don't already exist
+        if not os.path.exists(self._db_path):
+            os.makedirs(self._db_path)
 
-        args = ['-s', self._source_lang, '-t', self._target_lang, '-p', str(cassandra.port), '-c']
+        # creates the json file and stores the domains inside it
+        with open(self._json_path, 'w') as json_file:
+            json.dump(domains, json_file)
 
-        source_paths = set([corpus.get_folder() for corpus in bilingual_corpora])
-        for source_path in source_paths:
-            args.append(source_path)
-
-        try:
-            cassandra.start()
-            command = cli.mmt_javamain(self._java_mainclass, args)
-            stdout, _ = shell.execute(command, stderr=log)
-
-        finally:
-            cassandra.stop()
-
-        domains = {}
-
-        for domain, name in [line.rstrip('\n').split('\t', 2) for line in stdout.splitlines()]:
-            domains[name] = domain
-
-        bilingual_corpora = [corpus.symlink(output, name=domains[corpus.name]) for corpus in bilingual_corpora]
+        # ???
+        bilingual_corpora = [corpus.symlink(output, corpus.name) for corpus in bilingual_corpora]
         monolingual_corpora = [corpus.symlink(output) for corpus in monolingual_corpora]
 
         return bilingual_corpora, monolingual_corpora
+
 
     @staticmethod
     def _load_map(filepath):
@@ -236,7 +229,9 @@ class _MMTEngineBuilder:
             if 'preprocess' in steps:
                 with logger.step('Corpora preprocessing') as _:
                     unprocessed_bicorpora, unprocessed_monocorpora = self._engine.db.generate(
-                        unprocessed_bicorpora, unprocessed_monocorpora, self._get_tempdir('training_corpora'),
+                        unprocessed_bicorpora,
+                        unprocessed_monocorpora,
+                        self._get_tempdir('training_corpora'),
                         log=logger.stream)
 
                     processed_bicorpora, processed_monocorpora = self._engine.training_preprocessor.process(
@@ -361,6 +356,7 @@ class MMTEngine(object):
         self.path = self._get_path(self.name)
         self.data_path = os.path.join(self.path, 'data')
         self.models_path = os.path.join(self.path, 'models')
+
         self.runtime_path = os.path.join(cli.RUNTIME_DIR, self.name)
         self._logs_path = os.path.join(self.runtime_path, 'logs')
         self._temp_path = os.path.join(self.runtime_path, 'tmp')
@@ -373,6 +369,7 @@ class MMTEngine(object):
         self._moses_path = os.path.join(self.models_path, 'decoder')
         self._lm_model = os.path.join(self._moses_path, 'lm')
         self._pt_model = os.path.join(self._moses_path, 'sapt')
+        self._db_model = os.path.join(self.models_path, 'db')
 
         self.analyzer = ContextAnalyzer(self._context_index, self.source_lang, self.target_lang)
         self.cleaner = TMCleaner(self.source_lang, self.target_lang)
@@ -381,7 +378,7 @@ class MMTEngine(object):
         self.aligner = FastAlign(self._aligner_model, self.source_lang, self.target_lang)
         self.lm = InterpolatedLM(self._lm_model)
         self.training_preprocessor = TrainingPreprocessor(self.source_lang, self.target_lang, self._vocabulary_model)
-        self.db = _DomainMapBuilder(self)
+        self.db = Database(self._db_model)
         self.moses = Moses(self._moses_path)
         self.moses.add_feature(MosesFeature('UnknownWordPenalty'))
         self.moses.add_feature(MosesFeature('WordPenalty'))

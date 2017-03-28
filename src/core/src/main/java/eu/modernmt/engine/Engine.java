@@ -50,6 +50,8 @@ public class Engine implements Closeable {
 
     private final File root;
     private final File runtime;
+    private final File models;
+
     private final String name;
     private final Locale sourceLanguage;
     private final Locale targetLanguage;
@@ -61,6 +63,7 @@ public class Engine implements Closeable {
     private final Postprocessor postprocessor;
     private final ContextAnalyzer contextAnalyzer;
     private final Vocabulary vocabulary;
+
 
     public static Engine load(EngineConfig config) throws BootstrapException {
         try {
@@ -77,17 +80,18 @@ public class Engine implements Closeable {
 
         this.root = FileConst.getEngineRoot(name);
         this.runtime = FileConst.getEngineRuntime(name);
+        this.models = Paths.join(this.root, "models");
 
-        this.vocabulary = new RocksDBVocabulary(Paths.join(root, "models", "vocabulary"));
+        this.vocabulary = new RocksDBVocabulary(Paths.join(this.models, "vocabulary"));
         this.sourcePreprocessor = new Preprocessor(sourceLanguage, targetLanguage, vocabulary);
         this.targetPreprocessor = new Preprocessor(targetLanguage, sourceLanguage, vocabulary);
         this.postprocessor = new Postprocessor(sourceLanguage, targetLanguage, vocabulary);
-        this.aligner = new FastAlign(Paths.join(root, "models", "align"));
-        this.contextAnalyzer = new LuceneAnalyzer(Paths.join(root, "models", "context"), sourceLanguage);
+        this.aligner = new FastAlign(Paths.join(this.models, "align"));
+        this.contextAnalyzer = new LuceneAnalyzer(Paths.join(this.models, "context"), sourceLanguage);
 
         DecoderConfig decoderConfig = config.getDecoderConfig();
         if (decoderConfig.isEnabled())
-            this.decoder = new MosesDecoder(Paths.join(root, "models", "decoder"), aligner, vocabulary,
+            this.decoder = new MosesDecoder(Paths.join(this.models, "decoder"), aligner, vocabulary,
                     decoderConfig.getThreads());
         else
             this.decoder = null;
@@ -144,6 +148,10 @@ public class Engine implements Closeable {
 
     public File getRootPath() {
         return root;
+    }
+
+    public File getModelsPath() {
+        return models;
     }
 
     public File getRuntimeFolder(String folderName, boolean ensure) throws IOException {

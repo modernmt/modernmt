@@ -17,8 +17,7 @@ public abstract class Database implements Closeable {
 
     public abstract ImportJobDAO getImportJobDAO(Connection connection);
 
-    public abstract void drop() throws PersistenceException;
-
     public abstract void create() throws PersistenceException;
 
+    public abstract boolean exists() throws PersistenceException;
 }

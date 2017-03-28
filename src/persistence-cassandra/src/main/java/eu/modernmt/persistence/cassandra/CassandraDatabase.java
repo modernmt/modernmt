@@ -30,7 +30,6 @@ public class CassandraDatabase extends Database {
     private String host;
     private int port;
     private Cluster cluster;
-    /*username? password?*/
 
     /**
      * This constructor builds an access point to a Cassandra DB
@@ -102,7 +101,6 @@ public class CassandraDatabase extends Database {
      *
      * @throws PersistenceException
      */
-    @Override
     public void drop() throws PersistenceException {
         CassandraConnection connection = null;
 
@@ -133,6 +131,7 @@ public class CassandraDatabase extends Database {
      *
      * @throws PersistenceException
      */
+    /*TODO: make parametric in relation to the keyspace*/
     @Override
     public void create() throws PersistenceException {
         CassandraConnection connection = null;
@@ -150,19 +149,9 @@ public class CassandraDatabase extends Database {
 
             String useKeySpace = "USE \"" + DEFAULT_KEY_SPACE + "\";";
 
-            //CreateKeyspace createKeyspace = SchemaBuilder.createKeyspace(keyspace).ifNotExists();
-
             String createCountersTable =
                     "CREATE TABLE IF NOT EXISTS \"" + DEFAULT_KEY_SPACE + "\"." + COUNTERS_TABLE +
                             " (table_id int PRIMARY KEY, table_counter bigint );";
-
-//            String putDomainsTableEntry =
-//                    "INSERT INTO \"" + DEFAULT_KEY_SPACE + "\"." + COUNTERS_TABLE +
-//                            " (table_id, table_counter) VALUES (" + CassandraIdGenerator.DOMAINS_TABLE_ID + ", 0);";
-//
-//            String putImportJobsTableEntry =
-//                    "INSERT INTO \"" + DEFAULT_KEY_SPACE + "\"." + COUNTERS_TABLE +
-//                            " (table_id, table_counter) VALUES (" + CassandraIdGenerator.IMPORT_JOBS_TABLE_ID + ", 0);";
 
             String createDomainsTable =
                     "CREATE TABLE \"" + DEFAULT_KEY_SPACE + "\"." + DOMAINS_TABLE +
@@ -180,14 +169,23 @@ public class CassandraDatabase extends Database {
             }
 
             CassandraUtils.checkedExecute(session, createCountersTable);
-//          CassandraUtils.checkedExecute(session, putDomainsTableEntry);
-//          CassandraUtils.checkedExecute(session, putImportJobsTableEntry);
             CassandraUtils.checkedExecute(session, createDomainsTable);
             CassandraUtils.checkedExecute(session, createImportJobsTable);
             CassandraIdGenerator.initializeTableCounter(session, TABLE_IDS);
         } finally {
             IOUtils.closeQuietly(connection);
         }
+    }
+
+    /**
+     * This method states if the current keyspace exists or not
+     *
+     * @return True if the current keyspace exists in the DB; else, false
+     * @throws PersistenceException
+     */
+    @Override
+    public boolean exists() throws PersistenceException {
+        return (cluster.getMetadata().getKeyspace(this.keyspace) != null);
     }
 
     /**
