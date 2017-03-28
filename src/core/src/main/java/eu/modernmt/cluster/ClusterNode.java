@@ -341,12 +341,12 @@ public class ClusterNode {
             if (!this.database.exists()) {
                 this.database.create();
 
-                File baselineDomains = Paths.join(engine.getModelsPath(), "db", "baseline_models.json");
+                File baselineDomains = Paths.join(engine.getModelsPath(), "db", "baseline_domains.json");
                 List<Domain> domains = new BaselineDomainsCollection(baselineDomains).load();
                 connection = this.database.getConnection();
                 DomainDAO domainDao = this.database.getDomainDAO(connection);
                 for (Domain domain : domains) {
-                    domainDao.put(domain);
+                    domainDao.put(domain, true);
                 }
                 logger.info("Database initialized");
             }

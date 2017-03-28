@@ -1,20 +1,15 @@
 package eu.modernmt.cluster.db;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import eu.modernmt.io.DefaultCharset;
 import eu.modernmt.model.Domain;
-import eu.modernmt.persistence.Connection;
-import eu.modernmt.persistence.Database;
-import eu.modernmt.persistence.DomainDAO;
-import eu.modernmt.persistence.PersistenceException;
-import eu.modernmt.persistence.cassandra.CassandraDatabase;
 import org.apache.commons.io.IOUtils;
-import org.apache.xalan.xsltc.DOM;
 
 import java.io.*;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.InputMismatchException;
 import java.util.List;
 
 /**
@@ -49,6 +44,8 @@ public class BaselineDomainsCollection {
     public List<Domain> load() {
         Gson gson = new Gson();
         JsonReader jsonReader = null;
+        Type DOMAINS_TYPE = new TypeToken<List<Domain>>() {
+        }.getType();
 
         try {
             jsonReader = new JsonReader(
@@ -57,7 +54,7 @@ public class BaselineDomainsCollection {
                             DefaultCharset.get()
                     )
             );
-            return gson.fromJson(jsonReader, Domain.class);
+            return gson.fromJson(jsonReader, DOMAINS_TYPE);
         } catch (FileNotFoundException e) {
             return new ArrayList<>(0);
         } finally {

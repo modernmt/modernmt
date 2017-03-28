@@ -16,6 +16,8 @@ public interface DomainDAO {
 
     Collection<Domain> retrieveAll() throws PersistenceException;
 
+    Domain put(Domain domain, boolean forceId) throws PersistenceException;
+
     Domain put(Domain domain) throws PersistenceException;
 
     Domain update(Domain domain) throws PersistenceException;

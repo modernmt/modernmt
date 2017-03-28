@@ -333,7 +333,7 @@ class EmbeddedCassandra:
         self._engine = engine
         self.port = port
 
-        self._model = os.path.join(engine.models_path, 'cassandra')
+        self._model = os.path.join(engine.db.path, 'cassandra')
         self._runtime = os.path.join(engine.runtime_path, 'cassandra')
         self._pidfile = os.path.join(engine.runtime_path, 'cassandra.pid')
         self._default_config = os.path.join(cli.VENDOR_DIR, 'cassandra-3.10', 'conf', 'cassandra.yaml')

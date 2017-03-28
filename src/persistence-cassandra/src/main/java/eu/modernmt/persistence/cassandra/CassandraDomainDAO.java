@@ -152,7 +152,31 @@ public class CassandraDomainDAO implements DomainDAO {
      */
     @Override
     public Domain put(Domain domain) throws PersistenceException {
-        int id = (int) CassandraIdGenerator.generate(session, CassandraDatabase.DOMAINS_TABLE_ID);
+        return this.put(domain, false);
+    }
+
+    /**
+     * This method stores a Domain object in the DB
+     *
+     * @param domain  the Domain object to store in the DB
+     * @param forceId if it is true, then this method tries to store domain with its ID.
+     *                Else it uses a new, sequentially generated ID.
+     * @return if the domain was successfully stored, the method returns domain itself
+     * (with its ID update to the new one if forceId was false).
+     * Else, throws an exception.
+     * @throws PersistenceException
+     */
+    @Override
+    public Domain put(Domain domain, boolean forceId) throws PersistenceException {
+        int id;
+
+        if (!forceId) {
+            id = (int) CassandraIdGenerator.generate(session, CassandraDatabase.DOMAINS_TABLE_ID);
+        } else {
+            id = domain.getId();
+            CassandraIdGenerator.advanceDomainsCounter(session, id);
+        }
+
         String[] columns = {"id", "name"};
         Object[] values = {id, domain.getName()};
 
@@ -172,7 +196,7 @@ public class CassandraDomainDAO implements DomainDAO {
      * @param domain the Domain object to put in the DB
      *               in place of an already existing one
      * @return the same domain object passed as a parameter,
-     * if the overwrite is succesful
+     * if the overwrite is successful
      * (if an object with that ID was already in the DB)
      * or null if the overwrite was not successful.
      * @throws PersistenceException

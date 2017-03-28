@@ -19,33 +19,35 @@ __author__ = 'Davide Caroselli'
 
 
 # This class manages the Map <domainID - domainName> during the MMT creation.
-# TODO il nome va bene davvero?
-class Database:
+class BaselineDatabase:
     def __init__(self, db_path):
-        self._db_path = db_path
+        self.path = db_path
         self._json_path = os.path.join(db_path, "baseline_domains.json")
 
     # this method generates the initial domainID-domainName map during MMT Create
     def generate(self, bilingual_corpora, monolingual_corpora, output, log=None):
-        # create a domains dictionary, reading the domains as the bilingual corpora names
+        # create a domains dictionary, reading the domains as the bilingual corpora names;
+        # also create an inverted domains dictionary
         domains = []
+        inverted_domains = {}
         for i in xrange(len(bilingual_corpora)):
             domain = {}
-            domain_id = i+1
+            domain_id = str(i+1)
             domain_name = bilingual_corpora[i].name
             domain["id"] = domain_id
             domain["name"] = domain_name
+            domains.append(domain)
+            inverted_domains[domain_name] = domain_id
 
         # create the necessary folders if they don't already exist
-        if not os.path.exists(self._db_path):
-            os.makedirs(self._db_path)
+        if not os.path.isdir(self.path):
+            os.makedirs(self.path)
 
         # creates the json file and stores the domains inside it
         with open(self._json_path, 'w') as json_file:
             json.dump(domains, json_file)
 
-        # ???
-        bilingual_corpora = [corpus.symlink(output, corpus.name) for corpus in bilingual_corpora]
+        bilingual_corpora = [corpus.symlink(output, name=inverted_domains[corpus.name]) for corpus in bilingual_corpora]
         monolingual_corpora = [corpus.symlink(output) for corpus in monolingual_corpora]
 
         return bilingual_corpora, monolingual_corpora
@@ -378,7 +380,7 @@ class MMTEngine(object):
         self.aligner = FastAlign(self._aligner_model, self.source_lang, self.target_lang)
         self.lm = InterpolatedLM(self._lm_model)
         self.training_preprocessor = TrainingPreprocessor(self.source_lang, self.target_lang, self._vocabulary_model)
-        self.db = Database(self._db_model)
+        self.db = BaselineDatabase(self._db_model)
         self.moses = Moses(self._moses_path)
         self.moses.add_feature(MosesFeature('UnknownWordPenalty'))
         self.moses.add_feature(MosesFeature('WordPenalty'))
