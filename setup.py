@@ -86,8 +86,31 @@ def install_apache_lib(path, output, name):
     print 'DONE'
 
 
+def configure_cassandra(cassandra_home):
+    print 'Configuring cassandra...',
+
+    conf_path = os.path.join(cassandra_home, 'conf')
+    cassandra_env = os.path.join(conf_path, 'cassandra-env.sh')
+    cassandra_env_bak = os.path.join(conf_path, 'cassandra-env.sh.bak')
+
+    shutil.copyfile(cassandra_env, cassandra_env_bak)
+
+    with open(cassandra_env) as f:
+        content = f.read()
+
+    content = content.replace('JMX_PORT="7199"', 'JMX_PORT="7199"\n'
+                                                 'if [ "x$CASSANDRA_JMX_PORT" != "x" ]; then\n'
+                                                 '    JMX_PORT=$CASSANDRA_JMX_PORT;'
+                                                 '\nfi')
+
+    with open(cassandra_env, 'w') as f:
+        f.write(content)
+
+    print 'DONE'
+
 if __name__ == '__main__':
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # reopen stdout in unbuffered mode
 
     install_apache_lib('/cassandra/3.10/apache-cassandra-3.10-bin.tar.gz', 'vendor/cassandra-3.10', name='cassandra-3.10')
+    configure_cassandra('vendor/cassandra-3.10')
     install_apache_lib('/kafka/0.10.0.1/kafka_2.11-0.10.0.1.tgz', 'vendor/kafka-0.10.0.1', name='kafka-0.10.0.1')
