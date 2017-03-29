@@ -195,7 +195,6 @@ def main_start(argv):
                        api_port=args.api_port, cluster_port=args.cluster_port,
                        datastream_port=args.datastream_port, db_port=args.db_port,
                        sibling=args.sibling, verbosity=args.verbosity)
-    started = False
     success = False
 
     try:
@@ -203,7 +202,6 @@ def main_start(argv):
 
         print 'Starting MMT engine \'{engine}\'...'.format(engine=engine.name),
         node.start()
-        started = True
         node.wait('JOINED')
         print 'OK'
 
@@ -226,7 +224,7 @@ def main_start(argv):
         print 'FAIL'
         raise
     finally:
-        if not success and started and node.is_running():
+        if not success:
             node.stop()
 
 

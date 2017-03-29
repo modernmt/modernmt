@@ -306,6 +306,21 @@ def install_cassandra():
 
     install_apache_lib(cassandra_apache_path, cassandra_home)
 
+    # update cassandra-env.sh to make it accept a new JMX_PORT as an environment variable;
+    # this is necessary in order to let separate Cassandra instances run on the same machine
+    conf_path = os.path.join(cassandra_home, 'conf')
+    cassandra_env = os.path.join(conf_path, 'cassandra-env.sh')
+    cassandra_env_bak = os.path.join(conf_path, 'cassandra-env.sh.bak')
+    shutil.copyfile(cassandra_env, cassandra_env_bak)
+    with open(cassandra_env) as f:
+        content = f.read()
+    content = content.replace('JMX_PORT="7199"', 'JMX_PORT="7199"\n'
+                                                 'if [ "x$CASSANDRA_JMX_PORT" != "x" ]; then\n'
+                                                 '    JMX_PORT=$CASSANDRA_JMX_PORT;'
+                                                 '\nfi')
+    with open(cassandra_env, 'w') as f:
+        f.write(content)
+
     print 'Cassandra 3.10 successfully installed\n\n'
 
 

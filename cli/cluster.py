@@ -457,8 +457,9 @@ class EmbeddedCassandra:
 
         self._yaml_transform(config)
 
-        command = [self._cassandra_bin, '-R', '-Dcassandra.config=file:///' + config, '-f']
-        cassandra = subprocess.Popen(command, stdout=log, stderr=log, shell=False).pid
+        env = {"CASSANDRA_JMX_PORT": str(netutils.get_free_tcp_port())}
+        command = [self._cassandra_bin, '-R', '-Dcassandra.config=file:///' + config, "-f"]
+        cassandra = subprocess.Popen(command, stdout=log, stderr=log, shell=False, env=env).pid
 
         # If Starting listening for CQL clients is not in the rlog
         # in the first 100 seconds
@@ -471,6 +472,7 @@ class EmbeddedCassandra:
 
             time.sleep(1)
         return None
+
 
 class ClusterNode(object):
     __SIGTERM_TIMEOUT = 10  # after this amount of seconds, there is no excuse for a process to still be there.
@@ -549,13 +551,10 @@ class ClusterNode(object):
     def stop(self):
         pid = self._get_pid()
 
-        if not self.is_running():
-            raise IllegalStateException('node process is not running')
-
-        daemon.kill(pid, ClusterNode.__SIGTERM_TIMEOUT)
+        if self.is_running():
+            daemon.kill(pid, ClusterNode.__SIGTERM_TIMEOUT)
         if self._kafka:
             self._kafka.stop()
-
         if self._cassandra:
             self._cassandra.stop()
 
