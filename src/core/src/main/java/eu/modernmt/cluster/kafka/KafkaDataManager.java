@@ -35,6 +35,8 @@ public class KafkaDataManager implements DataManager {
             new KafkaChannel(DataManager.CONTRIBUTIONS_CHANNEL_ID, "contributions-stream")
     };
 
+    /*mmt_engineName_src_target_domain-upload-stream*/
+
     private static final ArrayList<TopicPartition> PARTITIONS = new ArrayList<>(CHANNELS.length);
     private static final HashMap<String, KafkaChannel> NAME_TO_CHANNEL = new HashMap<>(CHANNELS.length);
 

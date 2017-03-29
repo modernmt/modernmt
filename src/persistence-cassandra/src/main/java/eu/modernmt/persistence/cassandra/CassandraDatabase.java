@@ -39,7 +39,21 @@ public class CassandraDatabase extends Database {
      */
 
     public static String getDefaultKeyspace(String engineName, Locale sourceLang, Locale targetLang) {
-        return "mmt_" + engineName + "_" + sourceLang.getDisplayName() + "_" + targetLang.getDisplayName();
+        int keyspaceMaxLength = 48;
+        String keyspaceName = "mmt"
+                + "_" + engineName
+                + "_" + sourceLang.toLanguageTag()
+                + "_" + targetLang.toLanguageTag();
+
+        if (keyspaceName.length() > keyspaceMaxLength) {
+
+            int exceedingCharacters = keyspaceName.length() - keyspaceMaxLength;
+            keyspaceName = "mmt"
+                    + "_" + engineName.substring(0, engineName.length() - exceedingCharacters)
+                    + "_" + sourceLang.toLanguageTag()
+                    + "_" + targetLang.toLanguageTag();
+        }
+        return keyspaceName;
     }
 
     /**
