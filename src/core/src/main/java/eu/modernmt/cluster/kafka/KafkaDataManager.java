@@ -326,9 +326,7 @@ public class KafkaDataManager implements DataManager {
         public void run() {
             try {
                 consumer.seekToEnd(partitions);
-
-                System.out.println(name2channel);
-
+                
                 for (KafkaChannel channel : channels) {
                     positions.put(channel.getId(), consumer.position(channel.getTopicPartition()));
                 }
