@@ -176,8 +176,14 @@ def main_start(argv):
     args.datastream_port = args.datastream_port if args.datastream_port is not None else DEFAULT_MMT_DATASTREAM_PORT
     args.db_port = args.db_port if args.db_port is not None else DEFAULT_MMT_DB_PORT
 
-    #TODO: CHECK IF SIBLING IS AN IP
-
+    # Check if sibling is a valid ipv4 address or if it can be resolved to an IP address
+    if not netutils.is_ipv4(args.sibling):
+        ipv4_address = netutils.resolve_ip(args.sibling)
+        if ipv4_address is not None:
+            args.sibling = ipv4_address
+        else:
+            raise IllegalArgumentException(
+                '%s is not a valid host' % args.sibling)
     # Check ports
     if args.has_rest and not netutils.is_free(args.api_port):
         raise IllegalStateException(

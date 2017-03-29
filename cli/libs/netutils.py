@@ -20,3 +20,27 @@ def is_free(port):
     else:
         s.close()
         return True
+
+
+def is_ip(target_format, address):
+    try:
+        socket.inet_pton(target_format, address)
+        return True
+    except socket.error:
+        return False
+
+
+def is_ipv4(address):
+    return is_ip(socket.AF_INET, address)
+
+
+def is_ipv6(address):
+    return is_ip(socket.AF_INET6, address)
+
+
+def resolve_ip(hostname):
+    try:
+        return socket.gethostbyname(hostname)
+    except socket.gaierror:
+        return None
+    d
