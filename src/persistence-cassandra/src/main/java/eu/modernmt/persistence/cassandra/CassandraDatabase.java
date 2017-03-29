@@ -8,6 +8,7 @@ import eu.modernmt.persistence.*;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
+import java.util.Locale;
 
 /**
  * Created by andrearossi on 08/03/17.
@@ -17,7 +18,6 @@ import java.io.IOException;
  * and to get DAO objects for the entities it stores.
  */
 public class CassandraDatabase extends Database {
-    public static final String DEFAULT_KEY_SPACE = "default";
     public static final String DOMAINS_TABLE = "domains";
     public static final String IMPORT_JOBS_TABLE = "import_jobs";
     public static final String COUNTERS_TABLE = "table_counters";
@@ -27,9 +27,20 @@ public class CassandraDatabase extends Database {
     public static final int[] TABLE_IDS = {DOMAINS_TABLE_ID, IMPORT_JOBS_TABLE_ID};
 
     private String keyspace;
-    private String host;
-    private int port;
     private Cluster cluster;
+
+    /**
+     * This method figures the suitable default keyspace name
+     * for the current engine, given its name and configuration
+     *
+     * @param engineName the name of the current translation engine
+     * @param sourceLang the language from which to translate
+     * @param targetLang the languate to which to translate
+     */
+
+    public static String getDefaultKeyspace(String engineName, Locale sourceLang, Locale targetLang) {
+        return "mmt_" + engineName + "_" + sourceLang.getDisplayName() + "_" + targetLang.getDisplayName();
+    }
 
     /**
      * This constructor builds an access point to a Cassandra DB
@@ -40,21 +51,8 @@ public class CassandraDatabase extends Database {
      * @param keyspace the keyspace in which the target entities are stored in the Cassandra DB
      */
     public CassandraDatabase(String host, int port, String keyspace) {
-        this.host = host;
-        this.port = port;
         this.keyspace = keyspace;
         this.cluster = Cluster.builder().withPort(port).addContactPoint(host).build();
-    }
-
-    /**
-     * This constructor builds an access point to a Cassandra DB
-     * and. in particular, to its "default" keyspace
-     *
-     * @param host the hostname of the machine that is running Cassandra
-     * @param port the port on which the Cassandra machine is listening to
-     */
-    public CassandraDatabase(String host, int port) {
-        this(host, port, DEFAULT_KEY_SPACE);
     }
 
     /**
@@ -105,11 +103,11 @@ public class CassandraDatabase extends Database {
         CassandraConnection connection = null;
 
         try {
-            connection = new CassandraConnection(this.cluster, this.keyspace);
+            connection = new CassandraConnection(this.cluster, null);
             Session session = connection.session;
 
-            DropKeyspace dropKeyspace = SchemaBuilder.dropKeyspace("\"" + this.keyspace + "\"").ifExists();
-
+            // DropKeyspace dropKeyspace = SchemaBuilder.dropKeyspace("\"" + this.keyspace + "\"").ifExists();
+            DropKeyspace dropKeyspace = SchemaBuilder.dropKeyspace(this.keyspace).ifExists();
             CassandraUtils.checkedExecute(session, dropKeyspace);
 
         } catch (KeyspaceNotFoundException e) {
@@ -123,7 +121,7 @@ public class CassandraDatabase extends Database {
     /**
      * This method establishes a new connection to the DB
      * and uses it to create
-     * - a new "default" keyspace
+     * - a new keyspace
      * - a new domains table
      * - a new importjobs table
      * - a new table_counters table,
@@ -131,7 +129,6 @@ public class CassandraDatabase extends Database {
      *
      * @throws PersistenceException
      */
-    /*TODO: make parametric in relation to the keyspace*/
     @Override
     public void create() throws PersistenceException {
         CassandraConnection connection = null;
@@ -139,34 +136,30 @@ public class CassandraDatabase extends Database {
         try {
             connection = new CassandraConnection(this.cluster, null);
             Session session = connection.session;
-            String currentKeyspace = session.getLoggedKeyspace();
 
 
             String createKeyspace =
-                    "CREATE KEYSPACE \"" + DEFAULT_KEY_SPACE + "\" WITH replication = " +
+                    "CREATE KEYSPACE " + this.keyspace + " WITH replication = " +
                             "{'class':'SimpleStrategy', 'replication_factor':1};";
 
 
-            String useKeySpace = "USE \"" + DEFAULT_KEY_SPACE + "\";";
+            String useKeySpace = "USE " + this.keyspace + ";";
 
             String createCountersTable =
-                    "CREATE TABLE IF NOT EXISTS \"" + DEFAULT_KEY_SPACE + "\"." + COUNTERS_TABLE +
+                    "CREATE TABLE IF NOT EXISTS " + this.keyspace + "." + COUNTERS_TABLE +
                             " (table_id int PRIMARY KEY, table_counter bigint );";
 
             String createDomainsTable =
-                    "CREATE TABLE \"" + DEFAULT_KEY_SPACE + "\"." + DOMAINS_TABLE +
+                    "CREATE TABLE " + this.keyspace + "." + DOMAINS_TABLE +
                             " (id int PRIMARY KEY, name varchar);";
 
             String createImportJobsTable =
-                    "CREATE TABLE \"" + DEFAULT_KEY_SPACE + "\"." + IMPORT_JOBS_TABLE +
+                    "CREATE TABLE " + this.keyspace + "." + IMPORT_JOBS_TABLE +
                             " (id bigint PRIMARY KEY, domain int, size int, \"begin\" bigint, end bigint, data_channel smallint);";
 
 
-            if (currentKeyspace == null) {
-                CassandraUtils.checkedExecute(session, createKeyspace);
-                CassandraUtils.checkedExecute(session, useKeySpace);
-                this.keyspace = DEFAULT_KEY_SPACE;
-            }
+            CassandraUtils.checkedExecute(session, createKeyspace);
+            CassandraUtils.checkedExecute(session, useKeySpace);
 
             CassandraUtils.checkedExecute(session, createCountersTable);
             CassandraUtils.checkedExecute(session, createDomainsTable);

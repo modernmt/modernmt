@@ -12,7 +12,6 @@ public class DatabaseConfig {
     private Type type = Type.EMBEDDED;
     private String host = "localhost";
     private int port = 9042;
-    private String keyspace = "default";
 
     public Type getType() {
         return type;
@@ -40,20 +39,11 @@ public class DatabaseConfig {
         this.host = host;
     }
 
-    public String getKeyspace() {
-        return keyspace;
-    }
-
-    public void setKeyspace(String keyspace) {
-        this.keyspace = keyspace;
-    }
-
     @Override
     public String toString() {
         return "[Database]\n" +
                 "  type = " + type + "\n" +
                 "  host = " + host + "\n" +
-                "  port = " + port + "\n" +
-                "  keyspace = " + keyspace;
+                "  port = " + port;
     }
 }

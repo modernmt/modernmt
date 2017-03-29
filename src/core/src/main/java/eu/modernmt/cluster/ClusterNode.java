@@ -329,10 +329,12 @@ public class ClusterNode {
         DatabaseConfig databaseConfig = nodeConfig.getDatabaseConfig();
         logger.info("Starting Database");
 
+        String keyspace = CassandraDatabase.getDefaultKeyspace(engine.getName(), engine.getSourceLanguage(), engine.getTargetLanguage());
+
         this.database = new CassandraDatabase(
                 databaseConfig.getHost(),
                 databaseConfig.getPort(),
-                databaseConfig.getKeyspace());
+                keyspace);
 
         logger.info("Database started");
 
@@ -341,10 +343,19 @@ public class ClusterNode {
             if (!this.database.exists()) {
                 this.database.create();
 
+                logger.info("sto creando il DB");
+
                 File baselineDomains = Paths.join(engine.getModelsPath(), "db", "baseline_domains.json");
                 List<Domain> domains = new BaselineDomainsCollection(baselineDomains).load();
+                logger.info("ho letto i domains");
+
+
                 connection = this.database.getConnection();
+                logger.info("ho ottenuto la connessione con il DB");
+
                 DomainDAO domainDao = this.database.getDomainDAO(connection);
+                logger.info("ho ottenuto un DAO");
+
                 for (Domain domain : domains) {
                     domainDao.put(domain, true);
                 }

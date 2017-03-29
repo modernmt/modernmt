@@ -28,9 +28,6 @@ public class CassandraIdGenerator {
     public static long generate(Session session, int tableId) throws PersistenceException {
 
         String keyspace = session.getLoggedKeyspace();
-        if (keyspace == null || keyspace.equals("default")) {
-            keyspace = "\"default\"";
-        }
 
         /*the table COUNTERS_TABLE has a row for each other table in our db;
         each row holds the table id and a counter marking the last ID

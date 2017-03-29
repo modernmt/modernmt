@@ -19,10 +19,7 @@ class XMLDatabaseConfigBuilder extends XMLAbstractBuilder {
             config.setHost(getStringAttribute("host"));
         if (hasAttribute("port"))
             config.setPort(getIntAttribute("port"));
-        if (hasAttribute("keyspace"))
-            config.setPort(getIntAttribute("keyspace"));
 
         return config;
     }
-
 }
