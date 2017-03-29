@@ -25,31 +25,21 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Created by davide on 06/09/16.
+ * Updated by andrea on 29/03/17
+ * <p>
+ * This class manages the Apache Kafka enviromnent:
+ * it handles the Kafka channels, topics and partitions,
+ * it creates the kafka producer and consumer for sending and reading messages,
+ * and starts separate threads
+ * to connect to the Apache Kafka server
+ * to perform polling in order to find the proper positions on the topic
  */
 public class KafkaDataManager implements DataManager {
 
     private static final Logger logger = LogManager.getLogger(KafkaDataManager.class);
 
-    static final KafkaChannel[] CHANNELS = new KafkaChannel[]{
-            new KafkaChannel(DataManager.DOMAIN_UPLOAD_CHANNEL_ID, "domain-upload-stream"),
-            new KafkaChannel(DataManager.CONTRIBUTIONS_CHANNEL_ID, "contributions-stream")
-    };
-
     /*mmt_engineName_src_target_domain-upload-stream*/
 
-    private static final ArrayList<TopicPartition> PARTITIONS = new ArrayList<>(CHANNELS.length);
-    private static final HashMap<String, KafkaChannel> NAME_TO_CHANNEL = new HashMap<>(CHANNELS.length);
-
-    static {
-        for (KafkaChannel channel : CHANNELS) {
-            PARTITIONS.add(channel.getTopicPartition());
-            NAME_TO_CHANNEL.put(channel.getName(), channel);
-        }
-    }
-
-    public static KafkaChannel getChannel(String name) {
-        return NAME_TO_CHANNEL.get(name);
-    }
 
     private final String uuid;
     private final DataPollingThread pollingThread;
@@ -57,9 +47,36 @@ public class KafkaDataManager implements DataManager {
     private KafkaConsumer<Integer, KafkaElement> consumer;
     private KafkaProducer<Integer, KafkaElement> producer;
 
+    private KafkaChannel[] channels;
+    private ArrayList<TopicPartition> partitions;
+    private HashMap<String, KafkaChannel> name2channel;
+
     public KafkaDataManager(String uuid, Engine engine) {
         this.uuid = uuid;
         this.pollingThread = new DataPollingThread(engine);
+
+        // initialize the two required kafkaChannels with proper names
+        // and put them in an array
+        this.channels = new KafkaChannel[2];
+        String topicPrefix = "mmt"
+                + "_" + engine.getName()
+                + "_" + engine.getSourceLanguage().toLanguageTag()
+                + "_" + engine.getTargetLanguage().toLanguageTag()
+                + "_";
+        String domainsTopicName = topicPrefix + "domain-upload-stream";
+        String contributionsTopicName = topicPrefix + "contributions-stream";
+        this.channels[0] = new KafkaChannel(DataManager.DOMAIN_UPLOAD_CHANNEL_ID, domainsTopicName);
+        this.channels[1] = new KafkaChannel(DataManager.CONTRIBUTIONS_CHANNEL_ID, contributionsTopicName);
+
+        /*initialize and populate the partitions list and the name-to-channel map*/
+        this.partitions = new ArrayList<>(channels.length);
+        this.name2channel = new HashMap<>(channels.length);
+        for (KafkaChannel channel : this.channels) {
+            this.partitions.add(channel.getTopicPartition());
+            this.name2channel.put(channel.getName(), channel);
+        }
+
+
     }
 
     private static Properties loadProperties(String filename, String host, int port) {
@@ -86,45 +103,19 @@ public class KafkaDataManager implements DataManager {
 
     @Override
     public Map<Short, Long> connect(String host, int port, long timeout, TimeUnit unit) throws HostUnreachableException {
-        logger.info("sono al connect");
 
+        // load producer properties and
+        // build kafka producer for sending messages to the server
         Properties producerProperties = loadProperties("kafka-producer.properties", host, port);
-
-//        Properties producerProperties = new Properties();
-//        producerProperties.put("bootstrap.servers", host + ":" + port);
-//        //Set acknowledgements for producer requests.
-//        producerProperties.put("acks", "all");
-//        //If the request fails, the producer can automatically retry,
-//        producerProperties.put("retries", 0);
-//        //Specify buffer size in config
-//        producerProperties.put("batch.size", 16384);
-//        //Reduce the no of requests less than 0
-//        producerProperties.put("linger.ms", 1);
-//        //The buffer.memory controls the total amount of memory available to the producer for buffering.
-//        producerProperties.put("buffer.memory", 33554432);
-//        producerProperties.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-//        producerProperties.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-
         this.producer = new KafkaProducer<>(producerProperties);
 
+        // load consumer properties and
+        // build kafka consumer for reading messages from the server
+        // from the given partitions
         Properties consumerProperties = loadProperties("kafka-consumer.properties", host, port);
-
-//        Properties consumerProperties = new Properties();
-//        consumerProperties.put("bootstrap.servers", host + ":" + port);
-//        consumerProperties.put("api_version", 3);
-//        consumerProperties.put("group.id", uuid);
-//        //consumerProperties.put("group.id", "test");
-//        consumerProperties.put("enable.auto.commit", "true");
-//        consumerProperties.put("auto.commit.interval.ms", "1000");
-//        consumerProperties.put("session.timeout.ms", "30000");
-//        consumerProperties.put("key.deserializer",
-//                "org.apache.kafka.common.serialization.StringDeserializer");
-//        consumerProperties.put("value.deserializer",
-//                "org.apache.kafka.common.serialization.StringDeserializer");
-
-
         this.consumer = new KafkaConsumer<>(consumerProperties);
-        this.consumer.assign(PARTITIONS);
+        this.consumer.assign(partitions);
+
 
         ConnectionThread connectThread = new ConnectionThread();
         connectThread.start();
@@ -261,7 +252,7 @@ public class KafkaDataManager implements DataManager {
 
     @Override
     public KafkaChannel getDataChannel(short id) {
-        return CHANNELS[id];
+        return this.channels[id];
     }
 
     @Override
@@ -319,9 +310,13 @@ public class KafkaDataManager implements DataManager {
         }
     }
 
+    public KafkaChannel getChannel(String name) {
+        return name2channel.get(name);
+    }
+
     private class ConnectionThread extends Thread {
 
-        private HashMap<Short, Long> positions = new HashMap<>(CHANNELS.length);
+        private HashMap<Short, Long> positions = new HashMap<>(channels.length);
 
         private HashMap<Short, Long> getLatestPositions() {
             return positions;
@@ -330,9 +325,11 @@ public class KafkaDataManager implements DataManager {
         @Override
         public void run() {
             try {
-                consumer.seekToEnd(PARTITIONS);
+                consumer.seekToEnd(partitions);
 
-                for (KafkaChannel channel : CHANNELS) {
+                System.out.println(name2channel);
+
+                for (KafkaChannel channel : channels) {
                     positions.put(channel.getId(), consumer.position(channel.getTopicPartition()));
                 }
 
