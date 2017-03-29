@@ -560,13 +560,10 @@ class ClusterNode(object):
     def stop(self):
         pid = self._get_pid()
 
-        if not self.is_running():
-            raise IllegalStateException('node process is not running')
-
-        daemon.kill(pid, ClusterNode.__SIGTERM_TIMEOUT)
+        if self.is_running():
+            daemon.kill(pid, ClusterNode.__SIGTERM_TIMEOUT)
         if self._kafka:
             self._kafka.stop()
-
         if self._cassandra:
             self._cassandra.stop()
 
