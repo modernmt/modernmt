@@ -463,10 +463,12 @@ class EmbeddedCassandra:
 
         self._yaml_transform(config)
 
+        env = {"CASSANDRA_JMX_PORT": str(netutils.get_free_tcp_port())}
+
         # launch cassandra -d _runtime
         command = [self._cassandra_bin, '-R', '-Dcassandra.config=file:///' + config, "-f"]
 
-        cassandra = subprocess.Popen(command, stdout=log, stderr=log, shell=False).pid
+        cassandra = subprocess.Popen(command, stdout=log, stderr=log, shell=False, env=env).pid
 
         # If Starting listening for CQL clients is not in the rlog
         # in the first 80 seconds
