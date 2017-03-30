@@ -118,6 +118,7 @@ public class KafkaDataManager implements DataManager {
         try {
             unit.timedJoin(connectThread, timeout);
         } catch (InterruptedException e) {
+            // ignore it
         }
 
         if (connectThread.isAlive())
@@ -341,6 +342,7 @@ public class KafkaDataManager implements DataManager {
                     consumer.seek(channel.getTopicPartition(), position);
                 }
             } catch (WakeupException e) {
+                // Timeout occurred
             }
         }
     }

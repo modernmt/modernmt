@@ -100,7 +100,7 @@ sudo pip install -U requests
 Download from here: https://github.com/ModernMT/MMT/releases and then untar the files:
 
 ```
-tar xvfz mmt-0.15-ubuntu.tar.gz
+tar xvfz mmt-0.15.1-ubuntu.tar.gz
 cd mmt
 ./setup.py
 ```

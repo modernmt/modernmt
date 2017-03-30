@@ -30,9 +30,8 @@ WORKDIR /home/mmtuser
 RUN chown mmtuser:mmtuser /home/mmtuser
 USER mmtuser
 
-# Download and install MMT
-RUN wget -qO- https://github.com/ModernMT/MMT/releases/download/v0.15/mmt-0.15.1-ubuntu.tar.gz | tar xvfz -
-WORKDIR /home/mmtuser/mmt/
+RUN wget -qO- https://github.com/ModernMT/MMT/releases/download/v0.15.1/mmt-0.15.1-ubuntu.tar.gz | tar xvfz -
+
 RUN ./setup.py
 
 # Make MMT example engine
