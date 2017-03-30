@@ -107,6 +107,7 @@ public class KafkaDataManager implements DataManager {
         // build kafka consumer for reading messages from the server
         // from the given partitions
         Properties consumerProperties = loadProperties("kafka-consumer.properties", host, port);
+        consumerProperties.put("group.id", uuid);
         this.consumer = new KafkaConsumer<>(consumerProperties);
         this.consumer.assign(partitions);
 
