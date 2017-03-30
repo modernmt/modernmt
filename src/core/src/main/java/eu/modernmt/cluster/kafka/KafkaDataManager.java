@@ -52,17 +52,13 @@ public class KafkaDataManager implements DataManager {
         this.pollingThread = new DataPollingThread(engine, this);
 
         // initialize the two required kafkaChannels with proper names
-        // and put them in an array
+        // and put them in an array "channels"
         this.channels = new KafkaChannel[2];
-        String topicPrefix = "mmt"
-                + "_" + engine.getName()
-                + "_" + engine.getSourceLanguage().toLanguageTag()
-                + "_" + engine.getTargetLanguage().toLanguageTag()
-                + "_";
-        String domainsTopicName = topicPrefix + "domain-upload-stream";
-        String contributionsTopicName = topicPrefix + "contributions-stream";
-        this.channels[0] = new KafkaChannel(DataManager.DOMAIN_UPLOAD_CHANNEL_ID, domainsTopicName);
-        this.channels[1] = new KafkaChannel(DataManager.CONTRIBUTIONS_CHANNEL_ID, contributionsTopicName);
+        String[] topicNames = getDefaultTopicNames(engine);
+        this.channels[0] = new KafkaChannel(DataManager.DOMAIN_UPLOAD_CHANNEL_ID,
+                topicNames[DataManager.DOMAIN_UPLOAD_CHANNEL_ID]);
+        this.channels[1] = new KafkaChannel(DataManager.CONTRIBUTIONS_CHANNEL_ID,
+                topicNames[DataManager.CONTRIBUTIONS_CHANNEL_ID]);
 
         /*initialize and populate the partitions list and the name-to-channel map*/
         this.partitions = new ArrayList<>(channels.length);
@@ -72,6 +68,55 @@ public class KafkaDataManager implements DataManager {
             this.name2channel.put(channel.getName(), channel);
         }
     }
+
+    /**
+     * This method default kafka-acceptable names for all topics
+     * and puts them in an ordered String array.
+     * The array order is:
+     * 0: domains topic name
+     * 1: contributions topic name
+     * (using an array ensures high access speed)
+     *
+     * @param engine the current engine to launch
+     * @return the array with all topic names (Strings)
+     */
+    private String[] getDefaultTopicNames(Engine engine) {
+
+        //max topic name length supported by Apache Kafka
+        int maxLength = 249;
+
+        //default names for the topics
+        String topicPrefix = "mmt"
+                //kafka only accepts alphanumeric chars and '.', '_', '-'
+                + "_" + engine.getName().replaceAll("[^A-Za-z0-9_\\.\\-]", "")
+                + "_" + engine.getSourceLanguage().toLanguageTag()
+                + "_" + engine.getTargetLanguage().toLanguageTag()
+                + "_";
+        String domainsTopicName = topicPrefix + "domain-upload-stream";
+        String contributionsTopicName = topicPrefix + "contributions-stream";
+
+        /*if even only one of the two names are too long,
+        * cut away a part of the engine name from both of them*/
+        int length = Math.max(domainsTopicName.length(), contributionsTopicName.length());
+        if (length > maxLength) {
+            topicPrefix = "mmt"
+                    + "_" + engine.getName().substring(0, length - maxLength).replaceAll("/[^A-Za-z0-9\\._\\-]/", "")
+                    + "_" + engine.getSourceLanguage().toLanguageTag()
+                    + "_" + engine.getTargetLanguage().toLanguageTag()
+                    + "_";
+            domainsTopicName = topicPrefix + "domain-upload-stream";
+            contributionsTopicName = topicPrefix + "contributions-stream";
+        }
+
+        /*create, populate and return the map*/
+        String[] topicNames = new String[2];
+        // DOMAIN_UPLOAD_CHANNEL_ID vale 0
+        topicNames[DataManager.DOMAIN_UPLOAD_CHANNEL_ID] = domainsTopicName;
+        // CONTRIBUTIONS_CHANNEL_ID vale 1
+        topicNames[DataManager.CONTRIBUTIONS_CHANNEL_ID] = contributionsTopicName;
+        return topicNames;
+    }
+
 
     private static Properties loadProperties(String filename, String host, int port) {
         InputStream stream = null;

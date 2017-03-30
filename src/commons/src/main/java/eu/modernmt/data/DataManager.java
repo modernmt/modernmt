@@ -16,9 +16,7 @@ public interface DataManager extends Closeable {
     short CONTRIBUTIONS_CHANNEL_ID = 1;
 
     interface Listener {
-
         void onDataBatchProcessed(Map<Short, Long> updatedPositions);
-
     }
 
     Map<Short, Long> connect(String host, int port, long timeout, TimeUnit unit) throws HostUnreachableException;
