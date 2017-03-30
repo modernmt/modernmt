@@ -37,10 +37,6 @@ import java.util.concurrent.TimeUnit;
 public class KafkaDataManager implements DataManager {
 
     private static final Logger logger = LogManager.getLogger(KafkaDataManager.class);
-
-    /*mmt_engineName_src_target_domain-upload-stream*/
-
-
     private final String uuid;
     private final DataPollingThread pollingThread;
 
