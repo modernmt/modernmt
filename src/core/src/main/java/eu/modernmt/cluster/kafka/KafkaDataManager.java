@@ -84,42 +84,12 @@ public class KafkaDataManager implements DataManager {
 
     @Override
     public Map<Short, Long> connect(String host, int port, long timeout, TimeUnit unit) throws HostUnreachableException {
-        logger.info("sono al connect");
-
         Properties producerProperties = loadProperties("kafka-producer.properties", host, port);
-
-//        Properties producerProperties = new Properties();
-//        producerProperties.put("bootstrap.servers", host + ":" + port);
-//        //Set acknowledgements for producer requests.
-//        producerProperties.put("acks", "all");
-//        //If the request fails, the producer can automatically retry,
-//        producerProperties.put("retries", 0);
-//        //Specify buffer size in config
-//        producerProperties.put("batch.size", 16384);
-//        //Reduce the no of requests less than 0
-//        producerProperties.put("linger.ms", 1);
-//        //The buffer.memory controls the total amount of memory available to the producer for buffering.
-//        producerProperties.put("buffer.memory", 33554432);
-//        producerProperties.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-//        producerProperties.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-
         this.producer = new KafkaProducer<>(producerProperties);
 
         Properties consumerProperties = loadProperties("kafka-consumer.properties", host, port);
 
-//        Properties consumerProperties = new Properties();
-//        consumerProperties.put("bootstrap.servers", host + ":" + port);
-//        consumerProperties.put("api_version", 3);
-//        consumerProperties.put("group.id", uuid);
-//        //consumerProperties.put("group.id", "test");
-//        consumerProperties.put("enable.auto.commit", "true");
-//        consumerProperties.put("auto.commit.interval.ms", "1000");
-//        consumerProperties.put("session.timeout.ms", "30000");
-//        consumerProperties.put("key.deserializer",
-//                "org.apache.kafka.common.serialization.StringDeserializer");
-//        consumerProperties.put("value.deserializer",
-//                "org.apache.kafka.common.serialization.StringDeserializer");
-
+        consumerProperties.put("group.id", uuid);
 
         this.consumer = new KafkaConsumer<>(consumerProperties);
         this.consumer.assign(PARTITIONS);
@@ -130,6 +100,7 @@ public class KafkaDataManager implements DataManager {
         try {
             unit.timedJoin(connectThread, timeout);
         } catch (InterruptedException e) {
+            // ignore it
         }
 
         if (connectThread.isAlive())
@@ -343,6 +314,7 @@ public class KafkaDataManager implements DataManager {
                     consumer.seek(channel.getTopicPartition(), position);
                 }
             } catch (WakeupException e) {
+                // Timeout occurred
             }
         }
     }
