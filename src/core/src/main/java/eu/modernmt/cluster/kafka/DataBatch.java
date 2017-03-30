@@ -29,12 +29,15 @@ class DataBatch {
     private final Preprocessor sourcePreprocessor;
     private final Preprocessor targetPreprocessor;
 
+    private KafkaDataManager manager;
+
     private HashMap<Short, Long> currentPositions;
 
-    public DataBatch(Engine engine) {
+    public DataBatch(Engine engine, KafkaDataManager manager) {
         this.aligner = engine.getAligner();
         this.sourcePreprocessor = engine.getSourcePreprocessor();
         this.targetPreprocessor = engine.getTargetPreprocessor();
+        this.manager = manager;
     }
 
     public void load(ConsumerRecords<Integer, KafkaElement> records) throws ProcessingException, AlignerException {
@@ -44,7 +47,7 @@ class DataBatch {
         this.currentPositions = new HashMap<>();
 
         for (ConsumerRecord<Integer, KafkaElement> record : records) {
-            KafkaChannel channel = KafkaDataManager.getChannel(record.topic());
+            KafkaChannel channel = this.manager.getChannel(record.topic());
             KafkaElement value = record.value();
             long offset = record.offset();
 

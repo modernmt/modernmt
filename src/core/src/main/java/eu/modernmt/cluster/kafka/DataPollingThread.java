@@ -29,10 +29,12 @@ class DataPollingThread extends Thread {
     private boolean interrupted;
     private final ArrayList<DataListener> listeners = new ArrayList<>(10);
     private DataManager.Listener dataManagerListener = null;
+    private KafkaDataManager manager;
 
-    public DataPollingThread(Engine engine) {
+    public DataPollingThread(Engine engine, KafkaDataManager manager) {
         super("DataPollingThread");
-        this.batch = new DataBatch(engine);
+        this.manager = manager;
+        this.batch = new DataBatch(engine, manager);
     }
 
     public void ensureRunning() throws DataManagerException {
@@ -91,7 +93,7 @@ class DataPollingThread extends Thread {
         }
 
         // Adding missing values
-        for (KafkaChannel channel : KafkaDataManager.CHANNELS)
+        for (KafkaChannel channel : this.manager.getChannels())
             result.putIfAbsent(channel.getId(), -1L);
 
         // Normalize result

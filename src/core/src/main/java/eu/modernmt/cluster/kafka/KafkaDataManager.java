@@ -53,7 +53,7 @@ public class KafkaDataManager implements DataManager {
 
     public KafkaDataManager(String uuid, Engine engine) {
         this.uuid = uuid;
-        this.pollingThread = new DataPollingThread(engine);
+        this.pollingThread = new DataPollingThread(engine, this);
 
         // initialize the two required kafkaChannels with proper names
         // and put them in an array
@@ -75,8 +75,6 @@ public class KafkaDataManager implements DataManager {
             this.partitions.add(channel.getTopicPartition());
             this.name2channel.put(channel.getName(), channel);
         }
-
-
     }
 
     private static Properties loadProperties(String filename, String host, int port) {
@@ -314,6 +312,12 @@ public class KafkaDataManager implements DataManager {
         return name2channel.get(name);
     }
 
+
+    public KafkaChannel[] getChannels() {
+        return channels;
+    }
+
+
     private class ConnectionThread extends Thread {
 
         private HashMap<Short, Long> positions = new HashMap<>(channels.length);
@@ -326,7 +330,7 @@ public class KafkaDataManager implements DataManager {
         public void run() {
             try {
                 consumer.seekToEnd(partitions);
-                
+
                 for (KafkaChannel channel : channels) {
                     positions.put(channel.getId(), consumer.position(channel.getTopicPartition()));
                 }
