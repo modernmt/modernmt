@@ -26,9 +26,6 @@ public class CassandraIdGenerator {
      * @throws PersistenceException
      */
     public static long generate(Session session, int tableId) throws PersistenceException {
-
-        String keyspace = session.getLoggedKeyspace();
-
         /*the table COUNTERS_TABLE has a row for each other table in our db;
         each row holds the table id and a counter marking the last ID
         that has been employed when storing an object in that table.*/
@@ -36,7 +33,7 @@ public class CassandraIdGenerator {
         /*statement for getting the last ID used in the table under analysis
         * from the Counters_table*/
         BuiltStatement get = QueryBuilder.select("table_counter").
-                from(keyspace, CassandraDatabase.COUNTERS_TABLE).
+                from(CassandraDatabase.COUNTERS_TABLE).
                 where(QueryBuilder.eq("table_id", tableId));
 
 
@@ -52,7 +49,7 @@ public class CassandraIdGenerator {
             long oldCount = CassandraUtils.checkedExecute(session, get).one().getLong("table_counter");
 
             /* Statement for updating the last ID only if it is still the same*/
-            BuiltStatement set = QueryBuilder.update(keyspace, CassandraDatabase.COUNTERS_TABLE).
+            BuiltStatement set = QueryBuilder.update(CassandraDatabase.COUNTERS_TABLE).
                     with(QueryBuilder.set("table_counter", (oldCount + 1L))).
                     where(QueryBuilder.eq("table_id", tableId)).
                     onlyIf(QueryBuilder.eq("table_counter", oldCount));
