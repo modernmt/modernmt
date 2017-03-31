@@ -156,7 +156,34 @@ make
 cd ..
 ```
 
-Compile your MMT distribution:
+Check Java version with command:
+
+```
+java -version
+```
+
+If the first line report a version of Java prior 1.8, you need to **update default Java version**. Run command:
+
+```
+sudo update-alternatives --config java
+```
+
+and type the number of the option that contains **java-8-openjdk**, then press ENTER. Here's an example:
+
+```
+$ sudo update-alternatives --config java
+There are 2 choices for the alternative java (providing /usr/bin/java).
+
+  Selection    Path                                            Priority   Status
+------------------------------------------------------------
+* 0            /usr/lib/jvm/java-7-openjdk-amd64/jre/bin/java   1071      auto mode
+  1            /usr/lib/jvm/java-7-openjdk-amd64/jre/bin/java   1071      manual mode
+  2            /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java   1069      manual mode
+
+Press enter to keep the current choice[*], or type selection number: 2
+```
+
+You can now compile your MMT distribution:
 
 ```
 cd src
