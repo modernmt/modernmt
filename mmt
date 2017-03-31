@@ -161,7 +161,7 @@ def main_start(argv):
 
 
     # Al momento mmt fa partire l'engine
-    # e al momento dell'init dell'engine, è l'engine.py stesso a creare la conf
+    # e al momento dell'init dell'engine, e' l'engine.py stesso a creare la conf
     # solo l'engine.py ha una configurazione letta da file, si parla solo di engineconf infatti
     #
     # secondo me dovremmo fare un bel refactoring.
@@ -169,7 +169,7 @@ def main_start(argv):
     # visto che riguarda anche il lancio di kafka e cassandra
     #
     # farla creare al node o addirittura a mmt
-    # è brutto che sia engine.py a crearsi da solo l'engineConf
+    # e' brutto che sia engine.py a crearsi da solo l'engineConf
     # e sarebbe altrettanto brutto se node.py si creasse da solo la nodeConf
     # quindi direi che
     #   nello start la lettura puo' farla mmt e poi passa la configurazione al cluster.py

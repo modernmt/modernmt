@@ -26,8 +26,8 @@ public class CassandraDatabase extends Database {
     public static final int IMPORT_JOBS_TABLE_ID = 2;
     public static final int[] TABLE_IDS = {DOMAINS_TABLE_ID, IMPORT_JOBS_TABLE_ID};
 
-    private String keyspace;
-    private Cluster cluster;
+    private final String keyspace;
+    private final Cluster cluster;
 
     /**
      * This method figures the suitable default keyspace name
@@ -65,9 +65,7 @@ public class CassandraDatabase extends Database {
      * @param keyspace the keyspace in which the target entities are stored in the Cassandra DB
      */
     public CassandraDatabase(String host, int port, String keyspace) {
-        this.keyspace = keyspace;
-        if (this.keyspace == null)
-            this.keyspace = "\"default\"";
+        this.keyspace = keyspace == null ? "\"default\"" : keyspace;
         this.cluster = Cluster.builder().withPort(port).addContactPoint(host).build();
     }
 
