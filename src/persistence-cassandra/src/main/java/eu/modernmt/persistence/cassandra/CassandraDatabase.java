@@ -66,6 +66,8 @@ public class CassandraDatabase extends Database {
      */
     public CassandraDatabase(String host, int port, String keyspace) {
         this.keyspace = keyspace;
+        if (this.keyspace == null)
+            this.keyspace = "\"default\"";
         this.cluster = Cluster.builder().withPort(port).addContactPoint(host).build();
     }
 

@@ -283,13 +283,22 @@ class _MMTEngineBuilder:
 
 class EngineConfig(object):
     @staticmethod
+
+    # read engine.xconf file and import its configuration
     def from_file(name, file):
+        #get "node" element
         node_el = minidom.parse(file).documentElement
+        # get "node" children elements "engine", "kafka", "database"
         engine_el = node_el.getElementsByTagName('engine')[0]
+        kafka_el = node_el.getElementsByTagName('kafka')[0]
+        database_el = node_el.getElementsByTagName('database')[0]
 
         source_lang = engine_el.getAttribute('source-language')
         target_lang = engine_el.getAttribute('target-language')
+        enable_kafka = kafka_el.getAttribute('enable')
+        enable_database = kafka_el.getAttribute('enable')
 
+        #???
         config = EngineConfig(name, source_lang, target_lang)
 
         network = node_el.getElementsByTagName('network')
@@ -320,6 +329,8 @@ class EngineConfig(object):
       xmlns="http://www.modernmt.eu/schema/config"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
           <engine source-language="%s" target-language="%s" />
+          <kafka enable="true" />
+          <database enable="true" />
 </node>'''
 
         with open(file, 'wb') as out:

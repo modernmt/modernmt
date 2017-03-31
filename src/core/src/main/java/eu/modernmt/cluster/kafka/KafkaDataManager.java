@@ -1,5 +1,6 @@
 package eu.modernmt.cluster.kafka;
 
+import eu.modernmt.config.DataStreamConfig;
 import eu.modernmt.data.*;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.model.ImportJob;
@@ -47,14 +48,20 @@ public class KafkaDataManager implements DataManager {
     private ArrayList<TopicPartition> partitions;
     private HashMap<String, KafkaChannel> name2channel;
 
-    public KafkaDataManager(String uuid, Engine engine) {
+    public KafkaDataManager(String uuid, Engine engine, DataStreamConfig config) {
         this.uuid = uuid;
         this.pollingThread = new DataPollingThread(engine, this);
 
         // initialize the two required kafkaChannels with proper names
         // and put them in an array "channels"
         this.channels = new KafkaChannel[2];
-        String[] topicNames = getDefaultTopicNames(engine);
+
+        // if kafka is embedded use OLD name convention; else use new name convention
+        String[] topicNames = {"domain-upload-stream", "contributions-stream"};
+        if (config.getType() != DataStreamConfig.Type.EMBEDDED)
+            topicNames = getDefaultTopicNames(engine);
+
+
         this.channels[0] = new KafkaChannel(DataManager.DOMAIN_UPLOAD_CHANNEL_ID,
                 topicNames[DataManager.DOMAIN_UPLOAD_CHANNEL_ID]);
         this.channels[1] = new KafkaChannel(DataManager.CONTRIBUTIONS_CHANNEL_ID,
@@ -110,9 +117,9 @@ public class KafkaDataManager implements DataManager {
 
         /*create, populate and return the map*/
         String[] topicNames = new String[2];
-        // DOMAIN_UPLOAD_CHANNEL_ID vale 0
+        // DOMAIN_UPLOAD_CHANNEL_ID is 0
         topicNames[DataManager.DOMAIN_UPLOAD_CHANNEL_ID] = domainsTopicName;
-        // CONTRIBUTIONS_CHANNEL_ID vale 1
+        // CONTRIBUTIONS_CHANNEL_ID is 1
         topicNames[DataManager.CONTRIBUTIONS_CHANNEL_ID] = contributionsTopicName;
         return topicNames;
     }
@@ -390,5 +397,10 @@ public class KafkaDataManager implements DataManager {
                 // Timeout occurred
             }
         }
+    }
+
+    public static void main(String[] args) throws Throwable {
+        Properties consumerProperties = loadProperties("kafka-consumer.properties", "localhost", 9042);
+        new KafkaConsumer<>(consumerProperties);
     }
 }

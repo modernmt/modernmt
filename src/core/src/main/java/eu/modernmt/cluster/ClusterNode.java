@@ -287,7 +287,7 @@ public class ClusterNode {
 
         DataStreamConfig dataStreamConfig = nodeConfig.getDataStreamConfig();
         if (dataStreamConfig.isEnabled()) {
-            dataManager = new KafkaDataManager(uuid, engine);
+            dataManager = new KafkaDataManager(uuid, engine, dataStreamConfig);
             dataManager.setDataManagerListener(this::updateChannelsPositions);
 
             Aligner aligner = engine.getAligner();
@@ -329,7 +329,12 @@ public class ClusterNode {
         DatabaseConfig databaseConfig = nodeConfig.getDatabaseConfig();
         logger.info("Starting Database");
 
-        String keyspace = CassandraDatabase.getDefaultKeyspace(engine.getName(), engine.getSourceLanguage(), engine.getTargetLanguage());
+        // if the database is embedded, then use the 0.15x versions name conventions
+        String keyspace = null;
+        // else, use the new name conventions
+        if (databaseConfig.getType() != DatabaseConfig.Type.EMBEDDED) {
+            keyspace = CassandraDatabase.getDefaultKeyspace(engine.getName(), engine.getSourceLanguage(), engine.getTargetLanguage());
+        }
 
         this.database = new CassandraDatabase(
                 databaseConfig.getHost(),
