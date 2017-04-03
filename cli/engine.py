@@ -6,6 +6,7 @@ from xml.dom import minidom
 
 import cli
 from cli import IllegalArgumentException
+from cli import IllegalStateException
 from cli.libs import fileutils
 from cli.mt import BilingualCorpus
 from cli.mt.contextanalysis import ContextAnalyzer
@@ -374,6 +375,10 @@ class MMTEngine(object):
 
     @staticmethod
     def load(name):
+        config_path = MMTEngine._get_config_path(name)
+        if not os.path.isfile(config_path):
+            raise IllegalArgumentException("Engine '%s' not found" % name)
+
         config = EngineConfig.from_file(name, MMTEngine._get_config_path(name))
         return MMTEngine(config.name, config.source_lang, config.target_lang, config)
 

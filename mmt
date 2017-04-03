@@ -159,23 +159,6 @@ def main_start(argv):
         raise IllegalStateException(
             'port %d is already in use, please specify another port with --cluster-port' % args.cluster_port)
 
-
-    # Al momento mmt fa partire l'engine
-    # e al momento dell'init dell'engine, e' l'engine.py stesso a creare la conf
-    # solo l'engine.py ha una configurazione letta da file, si parla solo di engineconf infatti
-    #
-    # secondo me dovremmo fare un bel refactoring.
-    # cambiarle nome e chiamarla nodeconfig,
-    # visto che riguarda anche il lancio di kafka e cassandra
-    #
-    # farla creare al node o addirittura a mmt
-    # e' brutto che sia engine.py a crearsi da solo l'engineConf
-    # e sarebbe altrettanto brutto se node.py si creasse da solo la nodeConf
-    # quindi direi che
-    #   nello start la lettura puo' farla mmt e poi passa la configurazione al cluster.py
-    #   nella create invece creo il nodo con configurazioni di default e scrivo una nodeconfdi default
-
-
     # Exec command
     engine = MMTEngine.load(args.engine)
     if args.sibling is None and not engine.exists():
@@ -579,7 +562,6 @@ def main():
         exit(1)
     except Exception as e:
         sys.stderr.write('ERROR Unexpected exception:\n\t{message}\n'.format(message=repr(e)))
-        raise
         exit(1)
 
 
