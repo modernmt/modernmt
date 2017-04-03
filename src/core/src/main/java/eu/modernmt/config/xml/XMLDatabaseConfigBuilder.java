@@ -43,6 +43,8 @@ class XMLDatabaseConfigBuilder extends XMLAbstractBuilder {
             config.setHost(this.getStringAttribute("host"));
         if (this.hasAttribute("port"))
             config.setPort(this.getIntAttribute("port"));
+        if (this.hasAttribute("name"))
+            config.setName(this.getStringAttribute("name"));
         return config;
     }
 }

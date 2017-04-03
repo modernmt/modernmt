@@ -299,8 +299,8 @@ class EngineConfig(object):
         # Parsing boolean from string values:
         # if the string are None, or "true", or variations of "true" with uppercase chars, then the value is True
         # in any other case it is False
-        datastream_enabled = datastream_enabled.lower() == 'true' if datastream_enabled is not None else True
-        db_enabled = db_enabled.lower() == 'true' if db_enabled is not None else True
+        datastream_enabled = datastream_enabled.lower() == 'true' if datastream_enabled else True
+        db_enabled = db_enabled.lower() == 'true' if db_enabled else True
 
         # all configuration elements are put into an EngineConfig object
         config = EngineConfig(name, source_lang, target_lang, datastream_enabled, db_enabled)

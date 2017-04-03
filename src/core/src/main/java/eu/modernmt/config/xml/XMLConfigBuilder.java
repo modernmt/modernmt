@@ -56,7 +56,6 @@ public class XMLConfigBuilder extends XMLAbstractBuilder {
         networkConfigBuilder.build(config.getNetworkConfig());
         dataStreamConfigBuilder.build(config.getDataStreamConfig());
         databaseConfigBuilder.build(config.getDatabaseConfig());
-
         engineConfigBuilder.build(config.getEngineConfig());
 
         return config;

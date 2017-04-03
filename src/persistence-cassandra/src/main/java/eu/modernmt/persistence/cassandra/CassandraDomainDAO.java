@@ -23,7 +23,7 @@ import java.util.Map;
  * when connected to a Cassandra Database.
  */
 public class CassandraDomainDAO implements DomainDAO {
-    private Session session;
+    private CassandraConnection connection;
 
     /**
      * This method creates a CassandraDomainDao
@@ -34,7 +34,7 @@ public class CassandraDomainDAO implements DomainDAO {
      *                   to deal with the Domain CRUD operations.
      */
     public CassandraDomainDAO(CassandraConnection connection) {
-        this.session = connection.session;
+        this.connection = connection;
     }
 
 
@@ -54,7 +54,7 @@ public class CassandraDomainDAO implements DomainDAO {
                 .from("domains")
                 .where(QueryBuilder.eq("id", id));
 
-        ResultSet result = CassandraUtils.checkedExecute(session, statement);
+        ResultSet result = CassandraUtils.checkedExecute(connection, statement);
         return read(result.one());
     }
 
@@ -109,7 +109,7 @@ public class CassandraDomainDAO implements DomainDAO {
                 where(QueryBuilder.in("id", list));
 
         /*execute the query*/
-        ResultSet result = CassandraUtils.checkedExecute(session, statement);
+        ResultSet result = CassandraUtils.checkedExecute(connection, statement);
 
         /*create the Domain objects from the rows*/
         while (!result.isExhausted()) {
@@ -134,7 +134,7 @@ public class CassandraDomainDAO implements DomainDAO {
         BuiltStatement statement = QueryBuilder.select().
                 from("domains").
                 where();
-        ResultSet result = CassandraUtils.checkedExecute(session, statement);
+        ResultSet result = CassandraUtils.checkedExecute(connection, statement);
 
         for (Row row : result.all()) {
             list.add(read(row));
@@ -171,10 +171,10 @@ public class CassandraDomainDAO implements DomainDAO {
         int id;
 
         if (!forceId) {
-            id = (int) CassandraIdGenerator.generate(session, CassandraDatabase.DOMAINS_TABLE_ID);
+            id = (int) CassandraIdGenerator.generate(connection, CassandraDatabase.DOMAINS_TABLE_ID);
         } else {
             id = domain.getId();
-            CassandraIdGenerator.advanceDomainsCounter(session, id);
+            CassandraIdGenerator.advanceDomainsCounter(connection, id);
         }
 
         String[] columns = {"id", "name"};
@@ -183,7 +183,7 @@ public class CassandraDomainDAO implements DomainDAO {
         BuiltStatement statement = QueryBuilder.insertInto("domains").
                 values(columns, values);
 
-        CassandraUtils.checkedExecute(session, statement);
+        CassandraUtils.checkedExecute(connection, statement);
         domain.setId(id);
         return domain;
     }
@@ -209,7 +209,7 @@ public class CassandraDomainDAO implements DomainDAO {
                 where(QueryBuilder.eq("id", domain.getId())).
                 ifExists();
 
-        ResultSet result = CassandraUtils.checkedExecute(session, built);
+        ResultSet result = CassandraUtils.checkedExecute(connection, built);
 
         if (result.wasApplied())
             return domain;
@@ -233,7 +233,7 @@ public class CassandraDomainDAO implements DomainDAO {
                 where(QueryBuilder.eq("id", id)).
                 ifExists();
 
-        ResultSet result = CassandraUtils.checkedExecute(session, built);
+        ResultSet result = CassandraUtils.checkedExecute(connection, built);
 
         return result.wasApplied();
     }

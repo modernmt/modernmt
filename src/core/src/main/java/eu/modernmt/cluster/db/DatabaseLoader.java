@@ -59,12 +59,21 @@ public class DatabaseLoader {
             logger.info("Starting Database");
             // if the database is embeddedd, use the 0.15x version name convention;
             // else, use the 1x name convention
-            String name;
-            if (config.getType() == DatabaseConfig.Type.EMBEDDED) {
-                name = CassandraDatabase.getDefaultKeyspace();
-            } else {
-                name = CassandraDatabase.getDefaultKeyspace(engine.getName(), engine.getSourceLanguage(), engine.getTargetLanguage());
+
+            String name = config.getName();
+
+            /*if a keyspace name was not passed, then figure a name
+             * with the default nomenclatures, depending
+             * whether the type is EMBEDDED or not;
+             * otherwise, use the passed name*/
+            if (name == null) {
+                if (config.getType() == DatabaseConfig.Type.EMBEDDED) {
+                    name = CassandraDatabase.getDefaultKeyspace();
+                } else {
+                    name = CassandraDatabase.getDefaultKeyspace(engine.getName(), engine.getSourceLanguage(), engine.getTargetLanguage());
+                }
             }
+
             // create the Database object:
             // it's an access point to the db in the running db process
             database = new CassandraDatabase(

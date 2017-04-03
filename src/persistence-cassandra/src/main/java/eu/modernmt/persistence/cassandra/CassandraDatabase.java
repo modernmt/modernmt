@@ -1,7 +1,6 @@
 package eu.modernmt.persistence.cassandra;
 
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Session;
 import com.datastax.driver.core.schemabuilder.DropKeyspace;
 import com.datastax.driver.core.schemabuilder.SchemaBuilder;
 import eu.modernmt.persistence.*;
@@ -66,7 +65,7 @@ public class CassandraDatabase extends Database {
      * @return the keyspace name
      */
     public static String getDefaultKeyspace() {
-        return "\"default\"";
+        return "default";
     }
 
 
@@ -134,18 +133,14 @@ public class CassandraDatabase extends Database {
 
         try {
             connection = new CassandraConnection(this.cluster, null);
-            Session session = connection.session;
-
-            // DropKeyspace dropKeyspace = SchemaBuilder.dropKeyspace("\"" + this.keyspace + "\"").ifExists();
             DropKeyspace dropKeyspace = SchemaBuilder.dropKeyspace(this.keyspace).ifExists();
-            CassandraUtils.checkedExecute(session, dropKeyspace);
+            CassandraUtils.checkedExecute(connection, dropKeyspace);
 
         } catch (KeyspaceNotFoundException e) {
             /*ignore*/
         } finally {
             IOUtils.closeQuietly(connection);
         }
-
     }
 
     /**
@@ -165,36 +160,38 @@ public class CassandraDatabase extends Database {
 
         try {
             connection = new CassandraConnection(this.cluster, null);
-            Session session = connection.session;
-
 
             String createKeyspace =
-                    "CREATE KEYSPACE " + this.keyspace + " WITH replication = " +
+                    "CREATE KEYSPACE \"" + this.keyspace + "\" WITH replication = " +
                             "{'class':'SimpleStrategy', 'replication_factor':1};";
 
+            CassandraUtils.checkedExecute(connection, createKeyspace);
 
-            String useKeySpace = "USE " + this.keyspace + ";";
+        } finally {
+            IOUtils.closeQuietly(connection);
+        }
+
+        connection = null;
+        try {
+            connection = new CassandraConnection(this.cluster, this.keyspace);
 
             String createCountersTable =
-                    "CREATE TABLE IF NOT EXISTS " + this.keyspace + "." + COUNTERS_TABLE +
+                    "CREATE TABLE IF NOT EXISTS " + COUNTERS_TABLE +
                             " (table_id int PRIMARY KEY, table_counter bigint );";
 
             String createDomainsTable =
-                    "CREATE TABLE " + this.keyspace + "." + DOMAINS_TABLE +
+                    "CREATE TABLE " + DOMAINS_TABLE +
                             " (id int PRIMARY KEY, name varchar);";
 
             String createImportJobsTable =
-                    "CREATE TABLE " + this.keyspace + "." + IMPORT_JOBS_TABLE +
+                    "CREATE TABLE " + IMPORT_JOBS_TABLE +
                             " (id bigint PRIMARY KEY, domain int, size int, \"begin\" bigint, end bigint, data_channel smallint);";
 
 
-            CassandraUtils.checkedExecute(session, createKeyspace);
-            CassandraUtils.checkedExecute(session, useKeySpace);
-
-            CassandraUtils.checkedExecute(session, createCountersTable);
-            CassandraUtils.checkedExecute(session, createDomainsTable);
-            CassandraUtils.checkedExecute(session, createImportJobsTable);
-            CassandraIdGenerator.initializeTableCounter(session, TABLE_IDS);
+            CassandraUtils.checkedExecute(connection, createCountersTable);
+            CassandraUtils.checkedExecute(connection, createDomainsTable);
+            CassandraUtils.checkedExecute(connection, createImportJobsTable);
+            CassandraIdGenerator.initializeTableCounter(connection, TABLE_IDS);
         } finally {
             IOUtils.closeQuietly(connection);
         }
@@ -208,7 +205,7 @@ public class CassandraDatabase extends Database {
      */
     @Override
     public boolean exists() throws PersistenceException {
-        return (cluster.getMetadata().getKeyspace(this.keyspace) != null);
+        return (this.cluster.getMetadata().getKeyspace(this.keyspace) != null);
     }
 
     /**

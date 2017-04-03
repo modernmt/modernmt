@@ -20,12 +20,12 @@ public class CassandraIdGenerator {
      * <p>
      * This method is thread-safe.
      *
-     * @param session the current session in the active CassandraConnection
-     * @param tableId the ID of the table in which we want to store a new
+     * @param connection the current connection with the database
+     * @param tableId    the ID of the table in which we want to store a new
      * @return the newly generated ID,
      * @throws PersistenceException
      */
-    public static long generate(Session session, int tableId) throws PersistenceException {
+    public static long generate(CassandraConnection connection, int tableId) throws PersistenceException {
         /*the table COUNTERS_TABLE has a row for each other table in our db;
         each row holds the table id and a counter marking the last ID
         that has been employed when storing an object in that table.*/
@@ -46,7 +46,7 @@ public class CassandraIdGenerator {
         while (true) {
 
             /* Get the the last ID used in the table under analysis*/
-            long oldCount = CassandraUtils.checkedExecute(session, get).one().getLong("table_counter");
+            long oldCount = CassandraUtils.checkedExecute(connection, get).one().getLong("table_counter");
 
             /* Statement for updating the last ID only if it is still the same*/
             BuiltStatement set = QueryBuilder.update(CassandraDatabase.COUNTERS_TABLE).
@@ -57,21 +57,20 @@ public class CassandraIdGenerator {
             /* Try to execute the statement; if it succeeded,
             * then it means that no-one has updated the last ID
             * after this thread has read it, so it can use it*/
-            if (CassandraUtils.checkedExecute(session, set).wasApplied())
+            if (CassandraUtils.checkedExecute(connection, set).wasApplied())
                 return oldCount + 1L;
         }
     }
-
 
     /**
      * This method updates the current domains counter to a given value
      * if it is greater than the current value
      *
-     * @param session    the current session in the active CassandraConnection
+     * @param connection the current connection with the database
      * @param newCounter the new domains counter (if it is greater than the current one)
      * @throws PersistenceException
      */
-    public static void advanceDomainsCounter(Session session, int newCounter) throws PersistenceException {
+    public static void advanceDomainsCounter(CassandraConnection connection, int newCounter) throws PersistenceException {
 
         /* Statement for updating the last ID only if it smaller than the new counter*/
         BuiltStatement built = QueryBuilder.update(CassandraDatabase.COUNTERS_TABLE).
@@ -79,29 +78,28 @@ public class CassandraIdGenerator {
                 where(QueryBuilder.eq("table_id", CassandraDatabase.DOMAINS_TABLE_ID)).
                 onlyIf(QueryBuilder.lte("table_counter", newCounter));
         try {
-            session.execute(built);
+            connection.session.execute(built);
         } catch (NoHostAvailableException e) {
             throw new PersistenceException(e);
         }
     }
 
-
     /**
      * This method puts in the counters_table a new entry for each table
      * created during the database initialization
      *
-     * @param session  the current session in the active CassandraConnection
-     * @param tableIds the IDs of the tables in the DB
+     * @param connection the current connection with the database
+     * @param tableIds   the IDs of the tables in the DB
      * @throws PersistenceException
      */
-    public static void initializeTableCounter(Session session, int[] tableIds) throws PersistenceException {
+    public static void initializeTableCounter(CassandraConnection connection, int[] tableIds) throws PersistenceException {
 
         for (int table_id : tableIds) {
             String statement =
                     "INSERT INTO " + CassandraDatabase.COUNTERS_TABLE +
                             " (table_id, table_counter) VALUES (" + table_id + ", 0);";
             try {
-                session.execute(statement);
+                connection.session.execute(statement);
             } catch (NoHostAvailableException e) {
                 throw new PersistenceException(e);
             }

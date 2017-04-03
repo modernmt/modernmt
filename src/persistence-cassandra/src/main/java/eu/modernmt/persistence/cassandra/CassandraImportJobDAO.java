@@ -17,7 +17,7 @@ import java.util.UUID;
  * when connected to a Cassandra Database.
  */
 public class CassandraImportJobDAO implements ImportJobDAO {
-    private Session session;
+    private CassandraConnection connection;
 
     /**
      * This method creates a CassandraImportJobDao
@@ -28,7 +28,7 @@ public class CassandraImportJobDAO implements ImportJobDAO {
      *                   to deal with the ImportJob CRUD operations.
      */
     public CassandraImportJobDAO(CassandraConnection connection) {
-        this.session = connection.session;
+        this.connection = connection;
     }
 
     /**
@@ -42,7 +42,7 @@ public class CassandraImportJobDAO implements ImportJobDAO {
     @Override
     public ImportJob put(ImportJob job) throws PersistenceException {
 
-        long id = CassandraIdGenerator.generate(session, CassandraDatabase.IMPORT_JOBS_TABLE_ID);
+        long id = CassandraIdGenerator.generate(connection, CassandraDatabase.IMPORT_JOBS_TABLE_ID);
 
         String[] columns = {"id", "domain", "\"begin\"", "end", "data_channel", "size"};
         Object[] values = {id, job.getDomain(), job.getBegin(), job.getEnd(), job.getDataChannel(), job.getSize()};
@@ -50,7 +50,7 @@ public class CassandraImportJobDAO implements ImportJobDAO {
                 insertInto("import_jobs").
                 values(columns, values);
 
-        CassandraUtils.checkedExecute(session, statement);
+        CassandraUtils.checkedExecute(connection, statement);
 
         job.setId(id);
         return job;
@@ -75,7 +75,7 @@ public class CassandraImportJobDAO implements ImportJobDAO {
                 from("import_jobs").
                 where(QueryBuilder.eq("id", id));
 
-        ResultSet result = CassandraUtils.checkedExecute(session, statement);
+        ResultSet result = CassandraUtils.checkedExecute(connection, statement);
         Row row = result.one();
 
         if (row != null) return read(row);
