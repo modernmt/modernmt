@@ -32,12 +32,14 @@ public class CassandraDatabase extends Database {
     /**
      * This method figures the suitable default keyspace name
      * for the current engine, given its name and configuration
+     * following the NEW keyspace naming nomenclature:
+     * "mmt_engName_srcLang_trgLang"
      *
      * @param engineName the name of the current translation engine
      * @param sourceLang the language from which to translate
      * @param targetLang the languate to which to translate
+     * @return the keyspace name
      */
-
     public static String getDefaultKeyspace(String engineName, Locale sourceLang, Locale targetLang) {
         int keyspaceMaxLength = 48;
         String keyspaceName = "mmt"
@@ -57,6 +59,18 @@ public class CassandraDatabase extends Database {
     }
 
     /**
+     * This method returns the default keyspace name
+     * following the OLD keyspace naming nomenclature:
+     * "\"default\""
+     *
+     * @return the keyspace name
+     */
+    public static String getDefaultKeyspace() {
+        return "\"default\"";
+    }
+
+
+    /**
      * This constructor builds an access point to a Cassandra DB
      * and, in particular, to one of its keyspaces
      *
@@ -65,7 +79,9 @@ public class CassandraDatabase extends Database {
      * @param keyspace the keyspace in which the target entities are stored in the Cassandra DB
      */
     public CassandraDatabase(String host, int port, String keyspace) {
-        this.keyspace = keyspace == null ? "\"default\"" : keyspace;
+        if (keyspace == null)
+            throw new NullPointerException("keyspace");
+        this.keyspace = keyspace;
         this.cluster = Cluster.builder().withPort(port).addContactPoint(host).build();
     }
 

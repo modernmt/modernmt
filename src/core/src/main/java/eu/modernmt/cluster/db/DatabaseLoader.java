@@ -57,11 +57,12 @@ public class DatabaseLoader {
         (else, its process hasn't even been started by Python)*/
         if (config.isEnabled()) {
             logger.info("Starting Database");
-            // if the database is embedded,
-            // use the 0.15x version name convention
-            String name = null;
+            // if the database is embeddedd, use the 0.15x version name convention;
             // else, use the 1x name convention
-            if (config.getType() != DatabaseConfig.Type.EMBEDDED) {
+            String name;
+            if (config.getType() == DatabaseConfig.Type.EMBEDDED) {
+                name = CassandraDatabase.getDefaultKeyspace();
+            } else {
                 name = CassandraDatabase.getDefaultKeyspace(engine.getName(), engine.getSourceLanguage(), engine.getTargetLanguage());
             }
             // create the Database object:
@@ -79,7 +80,7 @@ public class DatabaseLoader {
                 if (!database.exists()) {
                     database.create();
                     File baselineDomains = Paths.join(engine.getModelsPath(), "db", "baseline_domains.json");
-                    List<Domain> domains = new BaselineDomainsCollection(baselineDomains).load();
+                    List<Domain> domains = BaselineDomainsCollection.load(baselineDomains);
                     connection = database.getConnection();
                     DomainDAO domainDao = database.getDomainDAO(connection);
                     for (Domain domain : domains) {

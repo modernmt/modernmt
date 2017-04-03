@@ -21,27 +21,13 @@ import java.util.List;
  */
 class BaselineDomainsCollection {
 
-
-    private final File domainsJsonPath;
-
-    /**
-     * This constructor builds a BaselineDomainsCollection
-     * by reading the JSON file with the Domains list
-     * and by parsing its Domain objects
-     *
-     * @param domainsJsonPath the path of the JSON file with the Domains list
-     */
-    public BaselineDomainsCollection(File domainsJsonPath) {
-        this.domainsJsonPath = domainsJsonPath;
-    }
-
     /**
      * This method reads the domains json file and returns
      * the list of domains that it contained
      *
      * @return the list of parsed domains
      */
-    public List<Domain> load() {
+    public static List<Domain> load(File domainsJsonPath) {
         Gson gson = new Gson();
         JsonReader jsonReader = null;
         Type DOMAINS_TYPE = new TypeToken<List<Domain>>() {
@@ -50,7 +36,7 @@ class BaselineDomainsCollection {
         try {
             jsonReader = new JsonReader(
                     new InputStreamReader(
-                            new FileInputStream(this.domainsJsonPath),
+                            new FileInputStream(domainsJsonPath),
                             DefaultCharset.get()
                     )
             );
