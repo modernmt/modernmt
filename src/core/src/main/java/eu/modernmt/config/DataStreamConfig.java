@@ -24,7 +24,7 @@ public class DataStreamConfig {
     }
 
     public Type getType() {
-        return type;
+        return this.type;
     }
 
     public DataStreamConfig setType(Type type) {
@@ -33,7 +33,7 @@ public class DataStreamConfig {
     }
 
     public int getPort() {
-        return port;
+        return this.port;
     }
 
     public DataStreamConfig setPort(int port) {
@@ -42,7 +42,7 @@ public class DataStreamConfig {
     }
 
     public String getHost() {
-        return host;
+        return this.host;
     }
 
     public void setHost(String host) {
@@ -52,9 +52,9 @@ public class DataStreamConfig {
     @Override
     public String toString() {
         return "[DataStream]\n" +
-                "  enabled = " + enabled + "\n" +
-                "  type = " + type + "\n" +
-                "  host = " + host + "\n" +
-                "  port = " + port;
+                "  enabled = " + this.enabled + "\n" +
+                "  type = " + this.type + "\n" +
+                "  host = " + this.host + "\n" +
+                "  port = " + this.port;
     }
 }

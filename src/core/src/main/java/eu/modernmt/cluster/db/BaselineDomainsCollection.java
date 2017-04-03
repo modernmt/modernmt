@@ -19,7 +19,7 @@ import java.util.List;
  * It is only employed when a node is performing mmt start
  * and a DB is being build locally (in the same machine).
  */
-public class BaselineDomainsCollection {
+class BaselineDomainsCollection {
 
 
     private final File domainsJsonPath;

@@ -52,7 +52,6 @@ class BaselineDatabase:
 
         return bilingual_corpora, monolingual_corpora
 
-
     @staticmethod
     def _load_map(filepath):
         domains = {}
@@ -283,23 +282,28 @@ class _MMTEngineBuilder:
 
 class EngineConfig(object):
     @staticmethod
-
     # read engine.xconf file and import its configuration
     def from_file(name, file):
-        #get "node" element
+        # get "node" element
         node_el = minidom.parse(file).documentElement
         # get "node" children elements "engine", "kafka", "database"
-        engine_el = node_el.getElementsByTagName('engine')[0]
-        kafka_el = node_el.getElementsByTagName('kafka')[0]
-        database_el = node_el.getElementsByTagName('database')[0]
+        engine_el = EngineConfig._get_element_if_exists(node_el, 'engine')
+        datastream_el = EngineConfig._get_element_if_exists(node_el, 'datastream')
+        db_el = EngineConfig._get_element_if_exists(node_el, 'db')
 
-        source_lang = engine_el.getAttribute('source-language')
-        target_lang = engine_el.getAttribute('target-language')
-        enable_kafka = kafka_el.getAttribute('enable')
-        enable_database = kafka_el.getAttribute('enable')
+        source_lang = EngineConfig._get_attribute_if_exists(engine_el, 'source-language')
+        target_lang = EngineConfig._get_attribute_if_exists(engine_el, 'target-language')
+        datastream_enabled = EngineConfig._get_attribute_if_exists(datastream_el, 'enabled')
+        db_enabled = EngineConfig._get_attribute_if_exists(db_el, 'enabled')
 
-        #???
-        config = EngineConfig(name, source_lang, target_lang)
+        # Parsing boolean from string values:
+        # if the string are None, or "true", or variations of "true" with uppercase chars, then the value is True
+        # in any other case it is False
+        datastream_enabled = datastream_enabled.lower() == 'true' if datastream_enabled is not None else True
+        db_enabled = db_enabled.lower() == 'true' if db_enabled is not None else True
+
+        # all configuration elements are put into an EngineConfig object
+        config = EngineConfig(name, source_lang, target_lang, datastream_enabled, db_enabled)
 
         network = node_el.getElementsByTagName('network')
         network = network[0] if len(network) > 0 else None
@@ -318,10 +322,27 @@ class EngineConfig(object):
 
         return config
 
-    def __init__(self, name, source_lang, target_lang):
+    @staticmethod
+    def _get_element_if_exists(parent, child_name):
+        children = parent.getElementsByTagName(child_name)
+        if len(children) is 0:
+            return None
+        else:
+            return children[0]
+
+    @staticmethod
+    def _get_attribute_if_exists(node, attribute_name):
+        if node is None:
+            return None
+        else:
+            return node.getAttribute(attribute_name)
+
+    def __init__(self, name, source_lang, target_lang, datastream_enabled=True, db_enabled=True):
         self.name = name
         self.source_lang = source_lang
         self.target_lang = target_lang
+        self.datastream_enabled = datastream_enabled
+        self.db_enabled = db_enabled
         self.apiRoot = None
 
     def store(self, file):
@@ -329,8 +350,6 @@ class EngineConfig(object):
       xmlns="http://www.modernmt.eu/schema/config"
       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
           <engine source-language="%s" target-language="%s" />
-          <kafka enable="true" />
-          <database enable="true" />
 </node>'''
 
         with open(file, 'wb') as out:

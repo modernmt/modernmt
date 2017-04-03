@@ -393,6 +393,7 @@ def main_status(argv):
             'running - http://localhost:%s/translate' % status['api_port']
             if status is not None and 'api_port' in status else 'stopped')
 
+
 def main_translate(argv):
     parser = argparse.ArgumentParser(description='Translate text with ModernMT')
 

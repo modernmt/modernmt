@@ -9,12 +9,13 @@ public class DatabaseConfig {
         EMBEDDED, STANDALONE
     }
 
+    private boolean enabled = true;
     private Type type = Type.EMBEDDED;
     private String host = "localhost";
     private int port = 9042;
 
     public Type getType() {
-        return type;
+        return this.type;
     }
 
     public DatabaseConfig setType(Type type) {
@@ -22,8 +23,17 @@ public class DatabaseConfig {
         return this;
     }
 
+    public boolean isEnabled() {
+        return this.enabled;
+    }
+
+    public DatabaseConfig setEnabled(boolean enabled) {
+        this.enabled = enabled;
+        return this;
+    }
+
     public int getPort() {
-        return port;
+        return this.port;
     }
 
     public DatabaseConfig setPort(int port) {
@@ -32,7 +42,7 @@ public class DatabaseConfig {
     }
 
     public String getHost() {
-        return host;
+        return this.host;
     }
 
     public void setHost(String host) {
@@ -42,8 +52,9 @@ public class DatabaseConfig {
     @Override
     public String toString() {
         return "[Database]\n" +
-                "  type = " + type + "\n" +
-                "  host = " + host + "\n" +
-                "  port = " + port;
+                "  enabled = " + this.enabled + "\n" +
+                "  type = " + this.type + "\n" +
+                "  host = " + this.host + "\n" +
+                "  port = " + this.port;
     }
 }

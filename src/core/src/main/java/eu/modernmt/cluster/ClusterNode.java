@@ -5,7 +5,7 @@ import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.*;
 import eu.modernmt.aligner.Aligner;
-import eu.modernmt.cluster.db.BaselineDomainsCollection;
+import eu.modernmt.cluster.db.DatabaseLoader;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.cluster.kafka.KafkaDataManager;
 import eu.modernmt.config.*;
@@ -18,9 +18,6 @@ import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
-import eu.modernmt.io.Paths;
-import eu.modernmt.model.Domain;
-import eu.modernmt.persistence.Connection;
 import eu.modernmt.persistence.Database;
 import eu.modernmt.persistence.DomainDAO;
 import eu.modernmt.persistence.PersistenceException;
@@ -124,7 +121,7 @@ public class ClusterNode {
 
     public Database getDatabase() {
         if (database == null)
-            throw new IllegalStateException("Database not ready.");
+            throw new IllegalStateException("Database unavailable.");
 
         return database;
     }
@@ -285,6 +282,8 @@ public class ClusterNode {
 
         // ========================
 
+        /* create and populate the DB only if the configuration file
+        does not disable it (else, its process hasn't even been started by Python)*/
         DataStreamConfig dataStreamConfig = nodeConfig.getDataStreamConfig();
         if (dataStreamConfig.isEnabled()) {
             dataManager = new KafkaDataManager(uuid, engine, dataStreamConfig);
@@ -327,41 +326,8 @@ public class ClusterNode {
         // ========================
 
         DatabaseConfig databaseConfig = nodeConfig.getDatabaseConfig();
-        logger.info("Starting Database");
-
-        // if the database is embedded, then use the 0.15x versions name conventions
-        String keyspace = null;
-        // else, use the new name conventions
-        if (databaseConfig.getType() != DatabaseConfig.Type.EMBEDDED) {
-            keyspace = CassandraDatabase.getDefaultKeyspace(engine.getName(), engine.getSourceLanguage(), engine.getTargetLanguage());
-        }
-
-        this.database = new CassandraDatabase(
-                databaseConfig.getHost(),
-                databaseConfig.getPort(),
-                keyspace);
-
-        logger.info("Database started");
-
-        Connection connection = null;
-        try {
-            if (!this.database.exists()) {
-                this.database.create();
-                File baselineDomains = Paths.join(engine.getModelsPath(), "db", "baseline_domains.json");
-                List<Domain> domains = new BaselineDomainsCollection(baselineDomains).load();
-                connection = this.database.getConnection();
-                DomainDAO domainDao = this.database.getDomainDAO(connection);
-                for (Domain domain : domains) {
-                    domainDao.put(domain, true);
-                }
-                logger.info("Database initialized");
-            }
-        } catch (PersistenceException e) {
-            throw new BootstrapException("Unable to initialize the DB");
-        } finally {
-            IOUtils.closeQuietly(connection);
-        }
-
+        this.database = DatabaseLoader.load(engine, databaseConfig);
+        //load may throw a bootstrap exception: just let it pass
 
         // ========================
 
