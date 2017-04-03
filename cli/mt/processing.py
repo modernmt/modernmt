@@ -88,6 +88,12 @@ class TMCleaner:
         if log is None:
             log = shell.DEVNULL
 
+        # read memory size
+        mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')  # e.g. 4015976448
+        mem_mb = mem_bytes / (1024. ** 2)  # e.g. 3.74
+
+        extended_heap_mb = int(mem_mb*90/100)
+
         args = ['-s', self._source_lang, '-t', self._target_lang, '--output', output_path, '--input']
 
         input_paths = set([corpus.get_folder() for corpus in corpora])
@@ -95,7 +101,7 @@ class TMCleaner:
         for root in input_paths:
             args.append(root)
 
-        command = mmt_javamain(self._java_mainclass, args)
+        command = mmt_javamain(self._java_mainclass, args=args, max_heap_mb=extended_heap_mb)
         shell.execute(command, stdout=log, stderr=log)
 
         return BilingualCorpus.list(output_path)
