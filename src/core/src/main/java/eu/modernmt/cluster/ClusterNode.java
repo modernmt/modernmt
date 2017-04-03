@@ -19,14 +19,10 @@ import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.persistence.Database;
-import eu.modernmt.persistence.DomainDAO;
-import eu.modernmt.persistence.PersistenceException;
-import eu.modernmt.persistence.cassandra.CassandraDatabase;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -326,7 +322,14 @@ public class ClusterNode {
         // ========================
 
         DatabaseConfig databaseConfig = nodeConfig.getDatabaseConfig();
-        this.database = DatabaseLoader.load(engine, databaseConfig);
+
+        // if I'm working standalone or if I'm the leader of an Embedded cluster
+        // I am allowed to create a DB if it is missing
+        boolean createIfMissing =
+                isEmpty(nodeConfig.getNetworkConfig().getJoinConfig().getMembers()) ||
+                        databaseConfig.getType() == DatabaseConfig.Type.STANDALONE;
+
+        this.database = DatabaseLoader.load(engine, databaseConfig, createIfMissing);
         //load may throw a bootstrap exception: just let it pass
 
         // ========================
@@ -410,6 +413,11 @@ public class ClusterNode {
             }
         }
 
+    }
+
+
+    private static boolean isEmpty(Object[] array) {
+        return array == null || array.length == 0;
     }
 
     private static class Timer {

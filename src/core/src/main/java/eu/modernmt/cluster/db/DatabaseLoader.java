@@ -48,7 +48,7 @@ public class DatabaseLoader {
      * @return If config enables db usage this method returns
      * the newly instantiated Database object; else, it returns NULL.
      */
-    public static Database load(Engine engine, DatabaseConfig config) throws BootstrapException {
+    public static Database load(Engine engine, DatabaseConfig config, boolean createIfMissing) throws BootstrapException {
 
         Database database = null;
 
@@ -83,21 +83,28 @@ public class DatabaseLoader {
             logger.info("Database started");
 
             // if a db with that name hasn't been created yet in db process,
-            // then create it and populate it
             Connection connection = null;
             try {
                 if (!database.exists()) {
-                    database.create();
-                    File baselineDomains = Paths.join(engine.getModelsPath(), "db", "baseline_domains.json");
-                    List<Domain> domains = BaselineDomainsCollection.load(baselineDomains);
-                    connection = database.getConnection();
-                    DomainDAO domainDao = database.getDomainDAO(connection);
-                    for (Domain domain : domains) {
-                        domainDao.put(domain, true);
+                    // if the db should create a db when it doesn't exist yet,
+                    // then create it and populate it
+                    if (createIfMissing) {
+                        database.create();
+                        File baselineDomains = Paths.join(engine.getModelsPath(), "db", "baseline_domains.json");
+                        List<Domain> domains = BaselineDomainsCollection.load(baselineDomains);
+                        connection = database.getConnection();
+                        DomainDAO domainDao = database.getDomainDAO(connection);
+                        for (Domain domain : domains) {
+                            domainDao.put(domain, true);
+                        }
+                        logger.info("Database initialized");
+                        // else, throw an exception
+                    } else {
+                        throw new BootstrapException("Missing database: " + name);
                     }
-                    logger.info("Database initialized");
+
                 }
-                // else, do nothing: if the db is already there,
+                // if the db is already there, do nothing:
                 // it obviously does not need another initialization
             } catch (PersistenceException e) {
                 throw new BootstrapException("Unable to initialize the DB");
