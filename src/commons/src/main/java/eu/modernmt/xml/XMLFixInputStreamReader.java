@@ -1,11 +1,6 @@
 package eu.modernmt.xml;
 
-import sun.nio.cs.StreamDecoder;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.util.regex.Matcher;
@@ -23,7 +18,7 @@ public class XMLFixInputStreamReader extends Reader {
 
     private static final Pattern CHAR_ENTITY_REGEX = Pattern.compile("&#x[0-9A-Fa-f]+;");
 
-    private final StreamDecoder sd;
+    private final InputStreamReader reader;
 
     private char[] buffer = null;
     private int bufferOffset = 0;
@@ -32,37 +27,28 @@ public class XMLFixInputStreamReader extends Reader {
 
     public XMLFixInputStreamReader(InputStream in) {
         super(in);
-        try {
-            sd = StreamDecoder.forInputStreamReader(in, this, (String) null); // ## check lock object
-        } catch (UnsupportedEncodingException e) {
-            // The default encoding should always be available
-            throw new Error(e);
-        }
+        reader = new InputStreamReader(in);
     }
 
     public XMLFixInputStreamReader(InputStream in, String charsetName)
             throws UnsupportedEncodingException {
         super(in);
-        if (charsetName == null)
-            throw new NullPointerException("charsetName");
-        sd = StreamDecoder.forInputStreamReader(in, this, charsetName);
+        reader = new InputStreamReader(in, charsetName);
     }
 
     public XMLFixInputStreamReader(InputStream in, Charset cs) {
         super(in);
-        if (cs == null)
-            throw new NullPointerException("charset");
-        sd = StreamDecoder.forInputStreamReader(in, this, cs);
+        reader = new InputStreamReader(in, cs);
     }
 
     @Override
     public boolean ready() throws IOException {
-        return sd.ready();
+        return reader.ready();
     }
 
     @Override
     public void close() throws IOException {
-        sd.close();
+        reader.close();
     }
 
     @Override
@@ -89,7 +75,7 @@ public class XMLFixInputStreamReader extends Reader {
         int read = 0;
 
         while (true) {
-            int result = sd.read(buffer, offset + read, length - read);
+            int result = reader.read(buffer, offset + read, length - read);
             if (result == -1)
                 break;
 
