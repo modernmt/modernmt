@@ -3,10 +3,10 @@ import os
 import shutil
 import time
 from xml.dom import minidom
+import json
 
 import cli
 from cli import IllegalArgumentException
-from cli import IllegalStateException
 from cli.libs import fileutils
 from cli.mt import BilingualCorpus
 from cli.mt.contextanalysis import ContextAnalyzer
@@ -14,7 +14,6 @@ from cli.mt.lm import InterpolatedLM
 from cli.mt.moses import Moses, MosesFeature
 from cli.mt.phrasetable import SuffixArraysPhraseTable, LexicalReordering, FastAlign
 from cli.mt.processing import TrainingPreprocessor, TMCleaner
-import json
 
 __author__ = 'Davide Caroselli'
 
@@ -26,14 +25,14 @@ class BaselineDatabase:
         self._json_path = os.path.join(db_path, "baseline_domains.json")
 
     # this method generates the initial domainID-domainName map during MMT Create
-    def generate(self, bilingual_corpora, monolingual_corpora, output, log=None):
+    def generate(self, bilingual_corpora, monolingual_corpora, output):
         # create a domains dictionary, reading the domains as the bilingual corpora names;
         # also create an inverted domains dictionary
         domains = []
         inverted_domains = {}
         for i in xrange(len(bilingual_corpora)):
             domain = {}
-            domain_id = str(i+1)
+            domain_id = str(i + 1)
             domain_name = bilingual_corpora[i].name
             domain["id"] = domain_id
             domain["name"] = domain_name
@@ -158,42 +157,102 @@ class _MMTEngineBuilder:
     __MB = (1024 * 1024)
     __GB = (1024 * 1024 * 1024)
 
-    def __init__(self, engine):
+    def __init__(self, engine, roots, debug=False, steps=None, split_trainingset=True):
         self._engine = engine
-        self._temp_dir = None
-
-    def _get_tempdir(self, name):
-        path = os.path.join(self._temp_dir, name)
-        if not os.path.isdir(path):
-            fileutils.makedirs(path, exist_ok=True)
-        return path
-
-    def build(self, roots, debug=False, steps=None, split_trainingset=True):
-        self._temp_dir = self._engine.get_tempdir('training', ensure=True)
-
-        source_lang = self._engine.source_lang
-        target_lang = self._engine.target_lang
-
-        bilingual_corpora, monolingual_corpora = BilingualCorpus.splitlist(source_lang, target_lang, roots=roots)
-
-        if len(bilingual_corpora) == 0:
-            raise IllegalArgumentException(
-                'you project does not include %s-%s data.' % (source_lang.upper(), target_lang.upper()))
+        self._roots = roots
+        self._debug = debug
+        self._split_trainingset = split_trainingset
 
         if steps is None:
-            steps = self._engine.training_steps
+            self._steps = self._engine.training_steps
         else:
             unknown_steps = [step for step in steps if step not in self._engine.training_steps]
             if len(unknown_steps) > 0:
                 raise IllegalArgumentException('Unknown training steps: ' + str(unknown_steps))
+            self._steps = steps
 
-        shutil.rmtree(self._engine.path, ignore_errors=True)
-        os.makedirs(self._engine.path)
+        self._temp_dir = None
+        self._checkpoint_manager = None
 
+    def _get_tempdir(self, name, delete_if_exists=False):
+        path = os.path.join(self._temp_dir, name)
+        if delete_if_exists:
+            shutil.rmtree(path, ignore_errors=True)
+        if not os.path.isdir(path):
+            fileutils.makedirs(path, exist_ok=True)
+        return path
+
+    def build(self):
+        self._build(resume=False)
+
+    def resume(self):
+        self._build(resume=True)
+
+    def _build(self, resume=False):
+        # Initializing parameters
+        self._temp_dir = self._engine.get_tempdir('training', ensure=(not resume))
+        self._init_checkpoint_manager(resume)
+
+        source_lang = self._engine.source_lang
+        target_lang = self._engine.target_lang
+
+        bilingual_corpora, monolingual_corpora = BilingualCorpus.splitlist(source_lang, target_lang, roots=self._roots)
+        if len(bilingual_corpora) == 0:
+            raise IllegalArgumentException(
+                'you project does not include %s-%s data.' % (source_lang.upper(), target_lang.upper()))
+
+        if not os.path.isdir(self._engine.path) or not resume:
+            shutil.rmtree(self._engine.path, ignore_errors=True)
+            os.makedirs(self._engine.path)
+
+        # Checking constraints
+        self._check_constraints()
+
+        # Start building
+        logger = _builder_logger(len(self._steps) + 1, self._engine.get_logfile('training'))
+
+        try:
+            logger.start(self._engine, bilingual_corpora, monolingual_corpora)
+
+            cleaned_bicorpora = self._run_step('tm_cleanup', self._step_tm_cleanup, logger=logger,
+                                               values=[bilingual_corpora])
+            base_bicorpora, base_monocorpora = self._run_step('__db_map', self._step_init, forced=True,
+                                                              values=[cleaned_bicorpora, monolingual_corpora])
+            processed_bicorpora, processed_monocorpora, cleaned_bicorpora =\
+                self._run_step('preprocess', self._step_preprocess, logger=logger,
+                               values=[base_bicorpora, base_monocorpora, base_bicorpora])
+            _ = self._run_step('context_analyzer', self._step_context_analyzer, logger=logger, values=[base_bicorpora])
+            _ = self._run_step('aligner', self._step_aligner, logger=logger, values=[cleaned_bicorpora])
+            _ = self._run_step('tm', self._step_tm, logger=logger, values=[cleaned_bicorpora])
+            _ = self._run_step('lm', self._step_lm, logger=logger, values=[processed_bicorpora + processed_monocorpora])
+
+            # Writing config file
+            with logger.step('Writing config files') as _:
+                self._engine.write_configs()
+
+            logger.completed()
+
+            if not self._debug:
+                self._engine.clear_tempdir('training')
+        except:
+            logger.error()
+            raise
+        finally:
+            logger.close()
+
+    def _init_checkpoint_manager(self, resume=False):
+        checkpoint_file = os.path.join(self._temp_dir, 'checkpoint.json')
+
+        if resume:
+            self._checkpoint_manager = _CheckpointManager.load_from_file(checkpoint_file)
+        else:
+            self._checkpoint_manager = _CheckpointManager.create_for_engine(checkpoint_file)
+
+    def _check_constraints(self):
         # Check disk space constraints
         free_space_on_disk = fileutils.df(self._engine.path)[2]
         corpus_size_on_disk = 0
-        for root in roots:
+        for root in self._roots:
             corpus_size_on_disk += fileutils.du(root)
         free_memory = fileutils.free()
 
@@ -209,97 +268,143 @@ class _MMTEngineBuilder:
                       (recommended_disk / self.__GB, free_space_on_disk / self.__GB)
             print
 
-        logger = _builder_logger(len(steps) + 1, self._engine.get_logfile('training'))
+    def _run_step(self, step, func, values, logger=None, forced=False):
+        step_description = self._engine.training_steps[step] if step in self._engine.training_steps else None
 
+        if not forced and step not in self._engine.training_steps:
+            return values
+
+        skip = not self._checkpoint_manager.to_be_run(step)
+
+        if logger is None:
+            result = func(*values, skip=skip, logger=logger)
+        else:
+            with logger.step(step_description) as _:
+                result = func(*values, skip=skip, logger=logger)
+
+        if not skip:
+            self._checkpoint_manager.completed(step).save()
+
+        return result
+
+    # Training steps
+
+    def _step_init(self, bilingual_corpora, monolingual_corpora, skip=False, logger=None):
+        training_folder = self._get_tempdir('training_corpora')
+
+        if skip:
+            return BilingualCorpus.splitlist(self._engine.source_lang, self._engine.target_lang, roots=training_folder)
+        else:
+            return self._engine.db.generate(bilingual_corpora, monolingual_corpora, training_folder)
+
+    def _step_tm_cleanup(self, corpora, skip=False, logger=None):
+        folder = self._get_tempdir('clean_tms')
+
+        if skip:
+            return BilingualCorpus.list(folder)
+        else:
+            return self._engine.cleaner.clean(corpora, folder, log=logger.stream)
+
+    def _step_preprocess(self, bilingual_corpora, monolingual_corpora, _, skip=False, logger=None):
+        preprocessed_folder = self._get_tempdir('preprocessed')
+        cleaned_folder = self._get_tempdir('clean_corpora')
+
+        if skip:
+            processed_bicorpora, processed_monocorpora = BilingualCorpus.splitlist(self._engine.source_lang,
+                                                                                   self._engine.target_lang,
+                                                                                   roots=preprocessed_folder)
+            cleaned_bicorpora = BilingualCorpus.list(cleaned_folder)
+        else:
+            processed_bicorpora, processed_monocorpora = self._engine.training_preprocessor.process(
+                bilingual_corpora + monolingual_corpora, preprocessed_folder,
+                (self._engine.data_path if self._split_trainingset else None), log=logger.stream)
+            cleaned_bicorpora = self._engine.training_preprocessor.clean(processed_bicorpora, cleaned_folder)
+
+        return processed_bicorpora, processed_monocorpora, cleaned_bicorpora
+
+    def _step_context_analyzer(self, corpora, skip=False, logger=None):
+        if not skip:
+            self._engine.analyzer.create_index(corpora, log=logger.stream)
+
+    def _step_aligner(self, corpora, skip=False, logger=None):
+        if not skip:
+            working_dir = self._get_tempdir('aligner', delete_if_exists=True)
+            self._engine.aligner.build(corpora, working_dir, log=logger.stream)
+
+    def _step_tm(self, corpora, skip=False, logger=None):
+        if not skip:
+            working_dir = self._get_tempdir('tm', delete_if_exists=True)
+            self._engine.pt.train(corpora, self._engine.aligner, working_dir, log=logger.stream)
+
+    def _step_lm(self, corpora, skip=False, logger=None):
+        if not skip:
+            working_dir = self._get_tempdir('lm', delete_if_exists=True)
+            self._engine.lm.train(corpora, self._engine.target_lang, working_dir, log=logger.stream)
+
+
+# This private class belongs to the MMTEngineBuilder
+# and handles the management of checkpoints that make it possible
+# to resume an engine creation if it was unexpectedly interrupted
+class _CheckpointManager:
+
+    # this method is used to create a checkpointManager when resume is TRUE,
+    # so the checkpointManager is initialized with the path of the checkpoints file to read.
+    # Both options and passed checkpoints are read from such file
+    @staticmethod
+    def load_from_file(file_path):
         try:
-            logger.start(self._engine, bilingual_corpora, monolingual_corpora)
+            with open(file_path) as json_file:
+                passed_steps = json.load(json_file)
+        except IOError:
+            raise cli.IllegalStateException("Engine creation can not be resumed. "
+                                            "Checkpoint file " + file_path + " not found")
 
-            unprocessed_bicorpora = bilingual_corpora
-            unprocessed_monocorpora = monolingual_corpora
+        return _CheckpointManager(file_path, passed_steps)
 
-            # TM draft-translations cleanup
-            if 'tm_cleanup' in steps:
-                with logger.step('TMs clean-up') as _:
-                    unprocessed_bicorpora = self._engine.cleaner.clean(
-                        unprocessed_bicorpora, self._get_tempdir('clean_tms'), log=logger.stream)
+    # this method is used to create a checkpointManager when resume is FALSE,
+    # so the checkpointManager is initialized
+    # with the path of the checkpoints file to create and fill from scratch
+    @staticmethod
+    def create_for_engine(file_path):
+        manager = _CheckpointManager(file_path, [])
+        manager.save()
+        return manager
 
-            cleaned_bicorpora = unprocessed_bicorpora
-            processed_bicorpora = unprocessed_bicorpora
-            processed_monocorpora = unprocessed_monocorpora
+    def __init__(self, file_path, passed_steps):
+        self._file_path = file_path
+        self._passed_steps = passed_steps
 
-            # Preprocessing
-            if 'preprocess' in steps:
-                with logger.step('Corpora preprocessing') as _:
-                    unprocessed_bicorpora, unprocessed_monocorpora = self._engine.db.generate(
-                        unprocessed_bicorpora,
-                        unprocessed_monocorpora,
-                        self._get_tempdir('training_corpora'),
-                        log=logger.stream)
+    # This method stores a new checkpoint in the checkpoints file
+    def save(self):
+        with open(self._file_path, 'w') as json_file:
+            json.dump(self._passed_steps, json_file)
 
-                    processed_bicorpora, processed_monocorpora = self._engine.training_preprocessor.process(
-                        unprocessed_bicorpora + unprocessed_monocorpora, self._get_tempdir('preprocessed'),
-                        (self._engine.data_path if split_trainingset else None), log=logger.stream)
+    # This method stores a new checkpoint in the checkpoints list
+    def completed(self, step):
+        self._passed_steps.append(step)
+        return self
 
-                    cleaned_bicorpora = self._engine.training_preprocessor.clean(
-                        processed_bicorpora, self._get_tempdir('clean_corpora'))
-
-            # Training Context Analyzer
-            if 'context_analyzer' in steps:
-                with logger.step('Context Analyzer training') as _:
-                    self._engine.analyzer.create_index(unprocessed_bicorpora, log=logger.stream)
-
-            # Aligner
-            if 'aligner' in steps:
-                with logger.step('Aligner training') as _:
-                    working_dir = self._get_tempdir('aligner')
-                    self._engine.aligner.build(cleaned_bicorpora, working_dir, log=logger.stream)
-
-            # Training Translation Model
-            if 'tm' in steps:
-                with logger.step('Translation Model training') as _:
-                    working_dir = self._get_tempdir('tm')
-                    self._engine.pt.train(cleaned_bicorpora, self._engine.aligner, working_dir, log=logger.stream)
-
-            # Training Adaptive Language Model
-            if 'lm' in steps:
-                with logger.step('Language Model training') as _:
-                    working_dir = self._get_tempdir('lm')
-                    self._engine.lm.train(processed_bicorpora + processed_monocorpora, target_lang,
-                                          working_dir, log=logger.stream)
-
-            # Writing config file
-            with logger.step('Writing config files') as _:
-                self._engine.write_configs()
-
-            logger.completed()
-        except:
-            logger.error()
-            raise
-        finally:
-            logger.close()
-            if not debug:
-                self._engine.clear_tempdir('training')
+    def to_be_run(self, step):
+        return step not in self._passed_steps
 
 
 class EngineConfig(object):
     @staticmethod
     # read engine.xconf file and import its configuration
     def from_file(name, file):
-        # get "node" element
+        # get "node" element and its children elements "engine", "kafka", "database"
         node_el = minidom.parse(file).documentElement
-        # get "node" children elements "engine", "kafka", "database"
         engine_el = EngineConfig._get_element_if_exists(node_el, 'engine')
         datastream_el = EngineConfig._get_element_if_exists(node_el, 'datastream')
         db_el = EngineConfig._get_element_if_exists(node_el, 'db')
-
+        # get attributes from the various elements
         source_lang = EngineConfig._get_attribute_if_exists(engine_el, 'source-language')
         target_lang = EngineConfig._get_attribute_if_exists(engine_el, 'target-language')
         datastream_enabled = EngineConfig._get_attribute_if_exists(datastream_el, 'enabled')
         db_enabled = EngineConfig._get_attribute_if_exists(db_el, 'enabled')
 
-        # Parsing boolean from string values:
-        # if the string are None, or "true", or variations of "true" with uppercase chars, then the value is True
-        # in any other case it is False
+        # Parsing boolean from string:
+        # if None or "true" (or uppercase variations) then the value is True; else it is False
         datastream_enabled = datastream_enabled.lower() == 'true' if datastream_enabled else True
         db_enabled = db_enabled.lower() == 'true' if db_enabled else True
 
@@ -358,7 +463,14 @@ class EngineConfig(object):
 
 
 class MMTEngine(object):
-    training_steps = ['tm_cleanup', 'preprocess', 'context_analyzer', 'aligner', 'tm', 'lm']
+    training_steps = {
+        'tm_cleanup': 'TMs clean-up',
+        'preprocess': 'Corpora pre-processing',
+        'context_analyzer': 'Context Analyzer training',
+        'aligner': 'Aligner training',
+        'tm': 'Translation Model training',
+        'lm': 'Language Model training'
+    }
 
     @staticmethod
     def _get_path(name):
@@ -397,8 +509,7 @@ class MMTEngine(object):
         self.runtime_path = os.path.join(cli.RUNTIME_DIR, self.name)
         self._logs_path = os.path.join(self.runtime_path, 'logs')
         self._temp_path = os.path.join(self.runtime_path, 'tmp')
-
-        self.builder = _MMTEngineBuilder(self)
+        self._temp_path = os.path.join(self.runtime_path, 'tmp')
 
         self._vocabulary_model = os.path.join(self.models_path, 'vocabulary')
         self._aligner_model = os.path.join(self.models_path, 'align')
@@ -424,6 +535,9 @@ class MMTEngine(object):
         self.moses.add_feature(self.pt, 'Sapt')
         self.moses.add_feature(LexicalReordering(), 'DM0')
         self.moses.add_feature(self.lm, 'InterpolatedLM')
+
+    def builder(self, roots, debug=False, steps=None, split_trainingset=True):
+        return _MMTEngineBuilder(self, roots, debug, steps, split_trainingset)
 
     def exists(self):
         return os.path.isfile(self._config_file)
@@ -462,6 +576,11 @@ class MMTEngine(object):
             os.makedirs(folder)
 
         return folder
+
+    def get_tempfile(self, name, ensure=True):
+        if ensure and not os.path.isdir(self._temp_path):
+            fileutils.makedirs(self._temp_path, exist_ok=True)
+        return os.path.join(self._temp_path, name)
 
     def clear_tempdir(self, subdir=None):
         path = os.path.join(self._temp_path, subdir) if subdir is not None else self._temp_path

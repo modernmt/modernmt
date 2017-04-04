@@ -76,12 +76,13 @@ def main_create(argv):
                              'training corpora')
     parser.add_argument('-s', '--steps', metavar='STEPS', dest='training_steps', choices=MMTEngine.training_steps,
                         nargs='+', help='run only specified training steps {%(choices)s}')
+    parser.add_argument('-r', '--resume', action='store_true', dest='resume', default=False,
+                        help='if resume is set, it restores a previously interrupted process')
 
     for component in dependency.injectable_components:
         dependency.argparse_group(parser, component)
 
     if len(argv) > 0:
-
         args = parser.parse_args(argv)
 
         injector = dependency.Injector()
@@ -95,8 +96,13 @@ def main_create(argv):
         if node.is_running():
             node.stop()
 
-        engine.builder.build(args.corpora_paths,
-                             debug=args.debug, steps=args.training_steps, split_trainingset=args.split_corpora)
+        builder = engine.builder(args.corpora_paths, debug=args.debug, steps=args.training_steps,
+                                 split_trainingset=args.split_corpora)
+
+        if args.resume:
+            builder.resume()
+        else:
+            builder.build()
     else:
         parser.print_help()
 
