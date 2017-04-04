@@ -156,7 +156,9 @@ make
 cd ..
 ```
 
-Compile your MMT distribution:
+Check your Java version and if necessary update it and select the latest jdk, as described in the Option 2 paragraph.
+
+You can now compile your MMT distribution:
 
 ```
 cd src
