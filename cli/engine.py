@@ -555,15 +555,32 @@ class EngineConfig(object):
         source_lang = EngineConfig._get_attribute_if_exists(engine_el, 'source-language')
         target_lang = EngineConfig._get_attribute_if_exists(engine_el, 'target-language')
         datastream_enabled = EngineConfig._get_attribute_if_exists(datastream_el, 'enabled')
+        datastream_type = EngineConfig._get_attribute_if_exists(datastream_el, 'type')
         db_enabled = EngineConfig._get_attribute_if_exists(db_el, 'enabled')
+        db_type = EngineConfig._get_attribute_if_exists(db_el, 'type')
 
-        # Parsing boolean from string:
+        # Parsing bool from string:
         # if None or "true" (or uppercase variations) then the value is True; else it is False
         datastream_enabled = datastream_enabled.lower() == 'true' if datastream_enabled else True
         db_enabled = db_enabled.lower() == 'true' if db_enabled else True
 
+        # Parsing type string:
+        # if no type is given or if it is "embedded" (or uppercase variations): type is "embedded"
+        # else just lowercase it (and Python won't care about it)
+        if datastream_type is None or datastream_type.lower() == "embedded":
+            datastream_type = "embedded"
+        else:
+            datastream_type = datastream_type.lower()
+
+        if db_type is None or db_type.lower() == "embedded":
+            db_type = "embedded"
+        else:
+            db_type = db_type.lower()
+
         # all configuration elements are put into an EngineConfig object
-        config = EngineConfig(name, source_lang, target_lang, datastream_enabled, db_enabled)
+        config = EngineConfig(name, source_lang, target_lang,
+                              datastream_enabled, datastream_type,
+                              db_enabled, db_type)
 
         network = node_el.getElementsByTagName('network')
         network = network[0] if len(network) > 0 else None
@@ -597,12 +614,16 @@ class EngineConfig(object):
         else:
             return node.getAttribute(attribute_name)
 
-    def __init__(self, name, source_lang, target_lang, datastream_enabled=True, db_enabled=True):
+    def __init__(self, name, source_lang, target_lang,
+                 datastream_enabled=True, datastream_type="Embedded",
+                 db_enabled=True, db_type="Embedded"):
         self.name = name
         self.source_lang = source_lang
         self.target_lang = target_lang
         self.datastream_enabled = datastream_enabled
+        self.datastream_type = datastream_type
         self.db_enabled = db_enabled
+        self.db_type = db_type
         self.apiRoot = None
 
     def store(self, file):
@@ -654,6 +675,10 @@ class MMTEngine(object):
         self.target_lang = target_lang
 
         self._config_file = self._get_config_path(self.name)
+
+        # use name, source_lang, target_lang and default configuration parameters
+        # if no configuration is passed;
+        # else, use the passed configuration (e.g. the engineConf.xml parameter)
         self.config = EngineConfig(self.name, source_lang, target_lang) if config is None else config
 
         self.path = self._get_path(self.name)

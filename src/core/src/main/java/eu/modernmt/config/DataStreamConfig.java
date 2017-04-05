@@ -2,6 +2,11 @@ package eu.modernmt.config;
 
 /**
  * Created by davide on 04/01/17.
+ * Updated by andrearossi on 03/04/17
+ * <p>
+ * This class embodies a configuration for a DataStream.
+ * It may be read from a configuration file (e.g. engineConf.xml)
+ * (or obtained in some different way)
  */
 public class DataStreamConfig {
 
@@ -45,8 +50,9 @@ public class DataStreamConfig {
         return this.host;
     }
 
-    public void setHost(String host) {
+    public DataStreamConfig setHost(String host) {
         this.host = host;
+        return this;
     }
 
     @Override

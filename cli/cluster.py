@@ -521,18 +521,18 @@ class ClusterNode(object):
         self._mert_script = os.path.join(cli.PYOPT_DIR, 'mert-moses.perl')
         self._mert_i_script = os.path.join(cli.PYOPT_DIR, 'mertinterface.py')
 
-        # If there is no sibling to join AND the configuration does not disable kafka,
-        # create the EmbeddedKafka object in this clusterNode
-        # TODO: add check "if type is embedded"
-        if sibling is None and config.datastream_enabled:
+        # If there the configuration says that kafka must be used
+        # and that kafka must run with type "embedded" and there is no sibling,
+        # kafka server must run in this node so create an EmbeddedKafka object
+        if config.datastream_enabled and config.datastream_type == "embedded" and sibling is None:
             self._kafka = EmbeddedKafka(engine, self._datastream_port)
         else:
             self._kafka = None
 
-        # If there is no sibling to join AND the configuration does not disable Cassandra,
-        # create the EmbeddedCassandra object in this clusterNode
-        # TODO: add check "if type is embedded"
-        if sibling is None and config.db_enabled:
+        # If there the configuration says that cassandra must be used
+        # and that cassandra must run with type "embedded" and there is no sibling,
+        # the cassandra process must run in this node so create an EmbeddedCassandra object
+        if config.db_enabled and config.db_type == "embedded" and sibling is None:
             self._cassandra = EmbeddedCassandra(engine, self._db_port)
         else:
             self._cassandra = None

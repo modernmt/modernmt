@@ -125,12 +125,10 @@ def main_start(argv):
                         help='the network port used by Datastream, currently implemented with Kafka '
                              '(default is {port}'.format(port=DEFAULT_MMT_DATASTREAM_PORT),
                         default=None, type=int)
-
     parser.add_argument('--db-port', dest='db_port', metavar='DB_PORT',
                         help='the network port used by the DB, currently implemented with Cassandra '
                              '(default is {port}'.format(port=DEFAULT_MMT_DB_PORT),
                         default=None, type=int)
-
     parser.add_argument('--no-rest', action='store_false', dest='has_rest', default=True,
                         help='if no-rest is set, no REST Api will be available on this node')
     parser.add_argument('--join', dest='sibling', metavar='NODE_IP', default=None,
@@ -157,6 +155,7 @@ def main_start(argv):
         else:
             raise IllegalArgumentException(
                 '%s is not a valid host' % args.sibling)
+
     # Check ports
     if args.has_rest and not netutils.is_free(args.api_port):
         raise IllegalStateException(

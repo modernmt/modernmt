@@ -30,42 +30,44 @@ public class DatabaseLoader {
     /**
      * If the configuration enables the database usage,
      * this method generates a Database object to interact
-     * with the running database process (launched by Python).
+     * with the running database process.
      * The database process can run:
      * - in the same machine (type = EMBEDDED, Leader node);
-     * - in another machine also hosting one or more engines
-     * (Type = Embedded, Follower node);
-     * - in another machine only dedicated to the DB
-     * (type =  STANDALONE).
+     * - in another machine in the same MMT cluster
+     * (Type = EMBEDDED, Follower node);
+     * - in a separate, remote machine not belonging to the cluster:
+     * (type = STANDALONE).
      * <p>
      * This method then proceeds to populate the database if necessary.
      * <p>
      * Otherwise, if the configuration disables the database usage,
      * this method does nothing
      *
-     * @param engine the engine that will employ the DB to load
-     * @param config the configuration for the DB to load
+     * @param engine          the engine that will employ the DB to load
+     * @param config          the configuration for the DB to load
+     * @param createIfMissing if true, if in the current db process there is no database
+     *                        with the name we seek, create it from scratch.
+     *                        If false, if in the current db process there is no database
+     *                        with the name we seek, raise an exception.
      * @return If config enables db usage this method returns
      * the newly instantiated Database object; else, it returns NULL.
+     * @throws BootstrapException if createIfMissing is false
+     *                            and no DB with the current name was found
      */
     public static Database load(Engine engine, DatabaseConfig config, boolean createIfMissing) throws BootstrapException {
 
         Database database = null;
 
-        /* create and populate the DB
-        only if the configuration file does not disable it
-        (else, its process hasn't even been started by Python)*/
+        /*create and populate the DB if necessary*/
+
+        /*if the DB usage is enabled*/
         if (config.isEnabled()) {
-            logger.info("Starting Database");
-            // if the database is embeddedd, use the 0.15x version name convention;
-            // else, use the 1x name convention
+            logger.info("Connecting to the database...");
 
+            /*if a keyspace name was passed in the config, use it; else get a default name;
+            employ either the 0.15x name convention if type is embedded
+            or the 1x name convention otherwise*/
             String name = config.getName();
-
-            /*if a keyspace name was not passed, then figure a name
-             * with the default nomenclatures, depending
-             * whether the type is EMBEDDED or not;
-             * otherwise, use the passed name*/
             if (name == null) {
                 if (config.getType() == DatabaseConfig.Type.EMBEDDED) {
                     name = CassandraDatabase.getDefaultKeyspace();
@@ -74,13 +76,12 @@ public class DatabaseLoader {
                 }
             }
 
-            // create the Database object:
-            // it's an access point to the db in the running db process
+            // create the Database object (an access point to the db in the running process)
             database = new CassandraDatabase(
                     config.getHost(),
                     config.getPort(),
                     name);
-            logger.info("Database started");
+            logger.info("Connected to the database");
 
             // if a db with that name hasn't been created yet in db process,
             Connection connection = null;
@@ -98,22 +99,22 @@ public class DatabaseLoader {
                             domainDao.put(domain, true);
                         }
                         logger.info("Database initialized");
-                        // else, throw an exception
-                    } else {
+                    }
+                    // else, throw an exception
+                    else {
                         throw new BootstrapException("Missing database: " + name);
                     }
-
                 }
-                // if the db is already there, do nothing:
-                // it obviously does not need another initialization
+                // if the db is already there, do nothing
+
             } catch (PersistenceException e) {
                 throw new BootstrapException("Unable to initialize the DB");
             } finally {
                 IOUtils.closeQuietly(connection);
             }
         }
-        /*database has been updated only if the configuration enabled it;
-        * else, it is still null*/
+
+        /*the db has been updated if the configuration let it; else it is still null*/
         return database;
     }
 }
