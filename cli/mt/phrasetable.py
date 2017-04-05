@@ -1,5 +1,7 @@
 import os
 
+import shutil
+
 import cli
 from cli.libs import fileutils, shell
 from cli.mt import BilingualCorpus
@@ -41,10 +43,11 @@ class FastAlign(WordAligner):
         if log is None:
             log = shell.DEVNULL
 
+        shutil.rmtree(self._model, ignore_errors=True)
+        fileutils.makedirs(self._model, exist_ok=True)
+
         if not os.path.isdir(working_dir):
             fileutils.makedirs(working_dir, exist_ok=True)
-        if not os.path.isdir(self._model):
-            fileutils.makedirs(self._model, exist_ok=True)
 
         merged_corpus = BilingualCorpus.make_parallel('merge', working_dir, (self._source_lang, self._target_lang))
 
@@ -122,11 +125,8 @@ class SuffixArraysPhraseTable(MosesFeature):
         if log is None:
             log = shell.DEVNULL
 
-        if os.path.isdir(self._model) and len(os.listdir(self._model)) > 0:
-            raise Exception('Model already exists at ' + self._model)
-
-        if not os.path.isdir(self._model):
-            fileutils.makedirs(self._model, exist_ok=True)
+        shutil.rmtree(self._model, ignore_errors=True)
+        fileutils.makedirs(self._model, exist_ok=True)
 
         if not os.path.isdir(working_dir):
             fileutils.makedirs(working_dir, exist_ok=True)

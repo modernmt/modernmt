@@ -74,7 +74,7 @@ def main_create(argv):
     parser.add_argument('--no-split', action='store_false', dest='split_corpora', default=True,
                         help='if no-split is set, MMT will not extract dev and test sets out of the provided '
                              'training corpora')
-    parser.add_argument('-s', '--steps', metavar='STEPS', dest='training_steps', choices=MMTEngine.training_steps,
+    parser.add_argument('-s', '--steps', metavar='STEPS', dest='training_steps', choices=MMTEngine.training_steps.keys(),
                         nargs='+', help='run only specified training steps {%(choices)s}')
     parser.add_argument('-r', '--resume', action='store_true', dest='resume', default=False,
                         help='if resume is set, it restores a previously interrupted process')

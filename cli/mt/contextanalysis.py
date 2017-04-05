@@ -1,3 +1,5 @@
+import shutil
+
 from cli import mmt_javamain
 from cli.libs import fileutils, shell
 
@@ -23,6 +25,7 @@ class ContextAnalyzer:
         for corpus in corpora:
             source_paths.add(corpus.get_folder())
 
+        shutil.rmtree(self._index, ignore_errors=True)
         fileutils.makedirs(self._index, exist_ok=True)
 
         args = ['-s', self._source_lang, '-t', self._target_lang, '-i', self._index, '-c']

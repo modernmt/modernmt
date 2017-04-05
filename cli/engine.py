@@ -22,7 +22,8 @@ __author__ = 'Davide Caroselli'
 class BaselineDatabase:
     def __init__(self, db_path):
         self.path = db_path
-        self._json_path = os.path.join(db_path, "baseline_domains.json")
+        self.file_name = "baseline_domains.json"
+        self._json_path = os.path.join(self.path, self.file_name)
 
     # this method generates the initial domainID-domainName map during MMT Create
     def generate(self, bilingual_corpora, monolingual_corpora, output):
@@ -43,26 +44,39 @@ class BaselineDatabase:
         if not os.path.isdir(self.path):
             os.makedirs(self.path)
 
-        # creates the json file and stores the domains inside it
+        # create the json file and stores the domains inside it
         with open(self._json_path, 'w') as json_file:
             json.dump(domains, json_file)
 
+        # use the inverted domains dictionary to figure bilingual corpora and monolingual corpora
         bilingual_corpora = [corpus.symlink(output, name=inverted_domains[corpus.name]) for corpus in bilingual_corpora]
         monolingual_corpora = [corpus.symlink(output) for corpus in monolingual_corpora]
 
         return bilingual_corpora, monolingual_corpora
 
+    # this static method reads all the baseline domains
+    # from the baseline_domains file (the path of which is passed)
+    # and returns a map domain_name to domain-id
     @staticmethod
     def _load_map(filepath):
         domains = {}
-
         for domain, name in [line.rstrip('\n').split('\t', 2) for line in open(filepath)]:
             domains[name] = domain
-
         return domains
 
 
+################################################################################################
+# This private class manages the logging activities of the engine builder
 class _builder_logger:
+
+    # a new logger for the engine builder is initialized with
+    # - the amount of steps to log data on
+    # - the log filepath,
+    # - the max length of a line
+    # Initialization also creates the log_file
+    # (after destroying the already existing one, if necessary)
+    # and opens with the file a communication stream that won't be closed
+    # until the end of the training process.
     def __init__(self, steps_count, log_file, line_len=70):
         self.stream = open(log_file, 'wb')
 
@@ -80,6 +94,9 @@ class _builder_logger:
         self._step_start_time = 0
         self._start_time = 0
 
+    # this method is typically called when the MMTEngineBuilder starts it build method,
+    # so it starts the training process of an engine.
+    # It mainly writes the training start data on the logfile (an on stdout)
     def start(self, engine, bilingual_corpora, monolingual_corpora):
         self._start_time = time.time()
         self._engine_name = engine.name if engine.name != 'default' else None
@@ -95,11 +112,15 @@ class _builder_logger:
         print 'LANGS:   %s > %s' % (engine.source_lang, engine.target_lang)
         print
 
+    # this method just updates the logger internal information on the current step.
+    # Writing information on a completed step is actually handled by __enter__ method.
     def step(self, step):
         self._current_step_name = step
         self._current_step_num += 1
         return self
 
+    # this method is typically called when the MMTEngineBuilder,
+    # in its build method, completes the whole training process.
     def completed(self):
         self._logger.log(logging.INFO,
                          'Training completed in %s' % self._pretty_print_time(time.time() - self._start_time))
@@ -109,12 +130,19 @@ class _builder_logger:
         print '\t./mmt start|stop|status ' + ('' if self._engine_name is None else '-e %s' % self._engine_name)
         print
 
+    # this method logs unexpected errors or problems
+    # in any phase of the engine building process.
     def error(self):
         self._logger.exception('Unexpected exception')
 
+    # this method closes the stream of the logger with the logfile.
+    # It is mainly used when the builder has completed its build activity,
+    # or in case of unexpected problems.
     def close(self):
         self.stream.close()
 
+    # this method is employed to write on the logfile
+    # that a new training step has been started the building process.
     def __enter__(self):
         self._logger.log(logging.INFO, 'Training step "%s" (%d/%d) started' %
                          (self._current_step_name, self._current_step_num, self._steps_count))
@@ -125,12 +153,15 @@ class _builder_logger:
         self._step_start_time = time.time()
         return self
 
+    # this method is employed to write on the logfile
+    # that a new training step has been completed the building process.
     def __exit__(self, *_):
         elapsed_time = time.time() - self._step_start_time
         self._logger.log(logging.INFO, 'Training step "%s" completed in %s' %
                          (self._current_step_name, self._pretty_print_time(elapsed_time)))
         print 'DONE (in %s)' % self._pretty_print_time(elapsed_time)
 
+    # this private method figures the best way to write time amounts on the log
     @staticmethod
     def _pretty_print_time(elapsed):
         elapsed = int(elapsed)
@@ -153,27 +184,50 @@ class _builder_logger:
         return ' '.join(parts)
 
 
+################################################################################################
+# An _MMTEngineBuilder manages the initialization of a new engine.
+# The builder is created when mmt.py receives a create request from command line.
+# At that point an Engine has **already** been instantiated
+# with some of the command line arguments (name, source language, target language).
+# The builder, on the other hand, handles the whole engine training process.
 class _MMTEngineBuilder:
     __MB = (1024 * 1024)
     __GB = (1024 * 1024 * 1024)
 
+    # an MMTEngineBuilder is initialized with several command line arguments
+    # of the mmt create method:
+    # - the engine name (engine)
+    # - the path where to find the corpora to employ in training (roots)
+    # - the debug boolean flag (debug)
+    # - the steps to perform (steps) (if None, perform all)
+    # - the set splitting boolean flag (split_trainingset): if it is set to false,
+    #   MMT will not extract dev and test sets out of the provided training corpora
     def __init__(self, engine, roots, debug=False, steps=None, split_trainingset=True):
         self._engine = engine
         self._roots = roots
         self._debug = debug
         self._split_trainingset = split_trainingset
 
+        # normalize steps
+        # if no steps are specified, all training steps must be performed.
         if steps is None:
             self._steps = self._engine.training_steps
+        # else, only perform the specified training steps,
+        # but first check that no unknown steps were specified by the user.
         else:
             unknown_steps = [step for step in steps if step not in self._engine.training_steps]
             if len(unknown_steps) > 0:
                 raise IllegalArgumentException('Unknown training steps: ' + str(unknown_steps))
             self._steps = steps
 
+        # initialized with none: they will be updated later
         self._temp_dir = None
         self._checkpoint_manager = None
 
+    # With this method the engine builder creates a temporary directory
+    # where to store temporary training data.
+    # In the end, the temporary directories will be destroyed
+    # unless we are in debug mode or the training process is not successful
     def _get_tempdir(self, name, delete_if_exists=False):
         path = os.path.join(self._temp_dir, name)
         if delete_if_exists:
@@ -182,56 +236,97 @@ class _MMTEngineBuilder:
             fileutils.makedirs(path, exist_ok=True)
         return path
 
+    # This method launches the initialization of a new engine from scratch
     def build(self):
         self._build(resume=False)
 
+    # This method launches the re-activation of a previous,
+    # not successfully terminated engine training process.
+    # It is used instead of the "build" method
+    # when the command line argument "resume" is used.
     def resume(self):
         self._build(resume=True)
 
+    # Depending on the resume value, this method
+    # either trains a new engine from scratch
+    # or resumes a not successfully finished training
     def _build(self, resume=False):
-        # Initializing parameters
+        # tempdir is called "training". The old tempdir must be deleted unless resume is true
         self._temp_dir = self._engine.get_tempdir('training', ensure=(not resume))
+        # initialize the checkpoint manager
         self._init_checkpoint_manager(resume)
 
         source_lang = self._engine.source_lang
         target_lang = self._engine.target_lang
 
+        # separate bilingual and monolingual corpora in separate lists, reading them from roots
         bilingual_corpora, monolingual_corpora = BilingualCorpus.splitlist(source_lang, target_lang, roots=self._roots)
+        # if no bilingual corpora are found, it is not possible to train the translation system
         if len(bilingual_corpora) == 0:
             raise IllegalArgumentException(
                 'you project does not include %s-%s data.' % (source_lang.upper(), target_lang.upper()))
 
+        # if no old engines (i.e. engine folders) can be found, create a new one from scratch
+        # if we are not trying to resume an old one, create from scratch anyway
         if not os.path.isdir(self._engine.path) or not resume:
             shutil.rmtree(self._engine.path, ignore_errors=True)
             os.makedirs(self._engine.path)
 
-        # Checking constraints
+        # Check if all requirements are fulfilled before launching engine training
         self._check_constraints()
 
-        # Start building
+        # Create a new logger for the building activities,
+        # passing it the amount of steps to perform (plus a non user-decidable step)
+        # and the name of the log file to create (that is 'training.log)
         logger = _builder_logger(len(self._steps) + 1, self._engine.get_logfile('training'))
 
+        # Start the engine building (i.e. training) phases
+        # This is the core of the engine initialization.
         try:
+            # tell the logger that the engine training has started
             logger.start(self._engine, bilingual_corpora, monolingual_corpora)
 
+            # ~~~~~~~~~~~~~~~~~~~~~ RUN ALL STEPS ~~~~~~~~~~~~~~~~~~~~~
+            # Note: if resume is true, a step is only run if it was not in the previous attempt
+
+            # run tm_cleanup step on the bilingual_corpora if required.
+            # Obtain cleaned bicorpora
             cleaned_bicorpora = self._run_step('tm_cleanup', self._step_tm_cleanup, logger=logger,
                                                values=[bilingual_corpora])
+
+            # run __db_map step (always: user can't skip it)
+            # on the cleaned bicorpora and the original monocorpora;
+            # obtain base bicorpora and base monocorpora
             base_bicorpora, base_monocorpora = self._run_step('__db_map', self._step_init, forced=True,
                                                               values=[cleaned_bicorpora, monolingual_corpora])
+
+            # run preprocess step if required.
+            # Return processed bi and mono corpora and cleaned bicorpora
+            # TODO: Y CLEANED AGAIN
             processed_bicorpora, processed_monocorpora, cleaned_bicorpora =\
                 self._run_step('preprocess', self._step_preprocess, logger=logger,
                                values=[base_bicorpora, base_monocorpora, base_bicorpora])
+
+            # run context_analyzer step base_bicorpora if required.
             _ = self._run_step('context_analyzer', self._step_context_analyzer, logger=logger, values=[base_bicorpora])
+
+            # run aligner step cleaned_bicorpora if required.
             _ = self._run_step('aligner', self._step_aligner, logger=logger, values=[cleaned_bicorpora])
+
+            # run tm step cleaned_bicorpora if required.
             _ = self._run_step('tm', self._step_tm, logger=logger, values=[cleaned_bicorpora])
+
+            # run lm step on the joint list of processed_bicorpora and processed_monocorpora
             _ = self._run_step('lm', self._step_lm, logger=logger, values=[processed_bicorpora + processed_monocorpora])
 
             # Writing config file
             with logger.step('Writing config files') as _:
                 self._engine.write_configs()
 
+            # tell the logger that the engine training has completed
             logger.completed()
 
+            # if this is not debug mode, then the training temporary folder must be deleted
             if not self._debug:
                 self._engine.clear_tempdir('training')
         except:
@@ -240,16 +335,22 @@ class _MMTEngineBuilder:
         finally:
             logger.close()
 
+    # This method initializes a checkpoint manager.
+    # If resume mode is on, then the checkpoint manager must be initialized
+    # loading data from the checkpoint file in training temporary folder.
+    # Else, it must be created from scratch. It must be passed anyway
+    # the path of the checkpoint file to create and fill during training.
     def _init_checkpoint_manager(self, resume=False):
         checkpoint_file = os.path.join(self._temp_dir, 'checkpoint.json')
-
         if resume:
             self._checkpoint_manager = _CheckpointManager.load_from_file(checkpoint_file)
         else:
             self._checkpoint_manager = _CheckpointManager.create_for_engine(checkpoint_file)
 
+    # This method checks if memory and disk space requirements
+    # for engine initialization are fullfilled.
+    # It is therefore called just before starting the engine training.
     def _check_constraints(self):
-        # Check disk space constraints
         free_space_on_disk = fileutils.df(self._engine.path)[2]
         corpus_size_on_disk = 0
         for root in self._roots:
@@ -268,47 +369,75 @@ class _MMTEngineBuilder:
                       (recommended_disk / self.__GB, free_space_on_disk / self.__GB)
             print
 
-    def _run_step(self, step, func, values, logger=None, forced=False):
-        step_description = self._engine.training_steps[step] if step in self._engine.training_steps else None
+    # This method runs a training step, receiving as parameters:
+    #   - the step name
+    #   - the step function
+    #   - the attributes to pass to the step function
+    # Moreover, it is possible to ask not to log data about this step execution,
+    # and it is possible to force the execution even if the user didn't ask for this step.
+    # (these options are important when running a non user-decidable, "hidden" step)
+    def _run_step(self, step_name, step_function, values, logger=None, forced=False):
+        step_description = self._engine.training_steps[step_name] if step_name in self._engine.training_steps else None
 
-        if not forced and step not in self._engine.training_steps:
+        # if this step is not forced AND if it the user asked not to perform it,
+        # return the passed parameters with no variations
+        if not forced and step_name not in self._steps:
             return values
 
-        skip = not self._checkpoint_manager.to_be_run(step)
+        # else, if the step (even if it is forced) must not be run because
+        # the checkpoint_manager says it is not necessary, skip it.
+        # (This happens if we are in resume mode and if
+        # the step was successfully performed in the training process we are resuming)
+        skip = not self._checkpoint_manager.to_be_run(step_name)
 
+        # Now we can launch the step function.
+        # (Note: if it is launched with skip == true, the function will immediately return)
+
+        # if logger is none, launch the step_function without logging any messages
         if logger is None:
-            result = func(*values, skip=skip, logger=logger)
+            result = step_function(*values, skip=skip, logger=logger)
+        # else, launch the step_function logging the step description
         else:
             with logger.step(step_description) as _:
-                result = func(*values, skip=skip, logger=logger)
+                result = step_function(*values, skip=skip, logger=logger)
 
+        # moreover if skip was false, mark the step as completed in the checkpoint manager!
         if not skip:
-            self._checkpoint_manager.completed(step).save()
+            self._checkpoint_manager.completed(step_name).save()
 
         return result
 
-    # Training steps
+    # ~~~~~~~~~~~~~~~~~~~~~ Training step functions ~~~~~~~~~~~~~~~~~~~~~
 
-    def _step_init(self, bilingual_corpora, monolingual_corpora, skip=False, logger=None):
-        training_folder = self._get_tempdir('training_corpora')
-
-        if skip:
-            return BilingualCorpus.splitlist(self._engine.source_lang, self._engine.target_lang, roots=training_folder)
-        else:
-            return self._engine.db.generate(bilingual_corpora, monolingual_corpora, training_folder)
-
+    # This step function performs cleaning of the translation models
     def _step_tm_cleanup(self, corpora, skip=False, logger=None):
+        # the folder where tm_cleanup results are to be stored
         folder = self._get_tempdir('clean_tms')
 
+        # if skip is true, then we are in resume mode, so return the already existing results
         if skip:
             return BilingualCorpus.list(folder)
+        # else perform the cleaning on the corpora and return the clean corpora
         else:
             return self._engine.cleaner.clean(corpora, folder, log=logger.stream)
 
+    # This step function performs the domain mapping and IT IS NOT USER-DECIDABLE
+    def _step_init(self, bilingual_corpora, monolingual_corpora, skip=False, logger=None):
+        training_folder = self._get_tempdir('training_corpora')
+
+        # if skip is true, then we are in resume mode, so return the already existing results
+        if skip:
+            return BilingualCorpus.splitlist(self._engine.source_lang, self._engine.target_lang, roots=training_folder)
+        # else perform the baseline domains extraction and domain mapping, and return its result
+        else:
+            return self._engine.db.generate(bilingual_corpora, monolingual_corpora, training_folder)
+
+    # This step function performs the preprocessing of the domain-mapped corpora
     def _step_preprocess(self, bilingual_corpora, monolingual_corpora, _, skip=False, logger=None):
         preprocessed_folder = self._get_tempdir('preprocessed')
         cleaned_folder = self._get_tempdir('clean_corpora')
 
+        # if skip is true, then we are in resume mode, so return the already existing results
         if skip:
             processed_bicorpora, processed_monocorpora = BilingualCorpus.splitlist(self._engine.source_lang,
                                                                                    self._engine.target_lang,
@@ -322,34 +451,43 @@ class _MMTEngineBuilder:
 
         return processed_bicorpora, processed_monocorpora, cleaned_bicorpora
 
+    # This step function performs the context analyzer training with the base corpora
     def _step_context_analyzer(self, corpora, skip=False, logger=None):
+        # if skip is true, then there's nothing to do because the models exist already
         if not skip:
             self._engine.analyzer.create_index(corpora, log=logger.stream)
 
+    # This step function performs the aligner training with the cleaned corpora
     def _step_aligner(self, corpora, skip=False, logger=None):
+        # if skip is true, then there's nothing to do because the models exist already
         if not skip:
             working_dir = self._get_tempdir('aligner', delete_if_exists=True)
             self._engine.aligner.build(corpora, working_dir, log=logger.stream)
 
+    # This step function performs the Translation Model training with the cleaned corpora
     def _step_tm(self, corpora, skip=False, logger=None):
+        # if skip is true, then there's nothing to do because the models exist already
         if not skip:
             working_dir = self._get_tempdir('tm', delete_if_exists=True)
             self._engine.pt.train(corpora, self._engine.aligner, working_dir, log=logger.stream)
 
+    # This step function performs the Language Model training with the preprocessed corpora
     def _step_lm(self, corpora, skip=False, logger=None):
+        # if skip is true, then there's nothing to do because the models exist already
         if not skip:
             working_dir = self._get_tempdir('lm', delete_if_exists=True)
             self._engine.lm.train(corpora, self._engine.target_lang, working_dir, log=logger.stream)
 
 
-# This private class belongs to the MMTEngineBuilder
-# and handles the management of checkpoints that make it possible
-# to resume an engine creation if it was unexpectedly interrupted
+##########################################################################################
+# This private class uses checkpoint techniques
+# to that make it possible to resume a past attempt of engine creation
+# if it was unexpectedly interrupted
 class _CheckpointManager:
 
     # this method is used to create a checkpointManager when resume is TRUE,
     # so the checkpointManager is initialized with the path of the checkpoints file to read.
-    # Both options and passed checkpoints are read from such file
+    # Passed steps are read from such file.
     @staticmethod
     def load_from_file(file_path):
         try:
@@ -370,24 +508,40 @@ class _CheckpointManager:
         manager.save()
         return manager
 
+    # this constructor initializes a generic CheckpointManager
+    # with the path to the checkpoint file to read from (if resume mode is on)
+    # or to create from scratch (if resume mode is off)
+    # and the list of already passed steps
+    # (the list is not necessarily empty if resume mode is on,
+    # whereas is it always empty if resume mode is off)
     def __init__(self, file_path, passed_steps):
         self._file_path = file_path
         self._passed_steps = passed_steps
 
-    # This method stores a new checkpoint in the checkpoints file
+    # This method overwrites the checkpoint file
+    # with the actual state of the checkpoint manager.
+    # It is mainly used after completing a step, in order
+    # to remember that that step was passed.
     def save(self):
         with open(self._file_path, 'w') as json_file:
             json.dump(self._passed_steps, json_file)
 
-    # This method stores a new checkpoint in the checkpoints list
+    # This method stores a new passed step in the passed steps list
+    # of the checkpoint manager (without saving it in the checkpoint file).
+    # It is generally followed by save().
     def completed(self, step):
         self._passed_steps.append(step)
         return self
 
-    def to_be_run(self, step):
-        return step not in self._passed_steps
+    # This method checks if a step should be run.
+    # A step should only be run if it is not in the passed steps list,
+    # meaning that either resume mode is OFF or it is ON and the step was not performed
+    # in the previous attempt
+    def to_be_run(self, step_name):
+        return step_name not in self._passed_steps
 
 
+########################################################################################
 class EngineConfig(object):
     @staticmethod
     # read engine.xconf file and import its configuration

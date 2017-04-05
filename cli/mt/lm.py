@@ -1,5 +1,7 @@
 import os
 
+import shutil
+
 import cli
 from cli.libs import fileutils, shell
 from moses import MosesFeature
@@ -31,15 +33,7 @@ class LanguageModel(MosesFeature):
         self._model = model
 
     def train(self, corpora, lang, working_dir='.', log=None):
-        if os.path.isfile(self._model):
-            raise Exception('Model already exists at ' + self._model)
-
-        parent_dir = os.path.abspath(os.path.join(self._model, os.pardir))
-        if not os.path.isdir(parent_dir):
-            fileutils.makedirs(parent_dir, exist_ok=True)
-
-        if not os.path.isdir(working_dir):
-            fileutils.makedirs(working_dir, exist_ok=True)
+        raise NotImplemented
 
 
 class KenLM(LanguageModel):
@@ -54,7 +48,11 @@ class KenLM(LanguageModel):
         if log is None:
             log = shell.DEVNULL
 
-        LanguageModel.train(self, corpora, lang, working_dir, log)
+        shutil.rmtree(self._model, ignore_errors=True)
+        fileutils.makedirs(self._model, exist_ok=True)
+
+        if not os.path.isdir(working_dir):
+            fileutils.makedirs(working_dir, exist_ok=True)
 
         # Collapse all corpora into a single text file
         merged_corpus = os.path.join(working_dir, 'merge')
@@ -110,14 +108,16 @@ class InterpolatedLM(LanguageModel):
         if log is None:
             log = shell.DEVNULL
 
-        LanguageModel.train(self, corpora, lang, working_dir, log)
-
         bicorpora = []
         for corpus in corpora:
             if len(corpus.langs) > 1:
                 bicorpora.append(corpus)
 
+        shutil.rmtree(self._model, ignore_errors=True)
         fileutils.makedirs(self._model, exist_ok=True)
+
+        if not os.path.isdir(working_dir):
+            fileutils.makedirs(working_dir, exist_ok=True)
 
         # Train static LM
         static_lm_model = os.path.join(self._model, 'background.slm')
