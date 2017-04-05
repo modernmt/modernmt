@@ -40,6 +40,8 @@ class XMLDataStreamConfigBuilder extends XMLAbstractBuilder {
             config.setEnabled(this.getBooleanAttribute("enabled"));
         if (this.hasAttribute("type"))
             config.setType(this.getEnumAttribute("type", DataStreamConfig.Type.class));
+        if (this.hasAttribute("host"))
+            config.setHost(this.getStringAttribute("host"));
         if (this.hasAttribute("port"))
             config.setPort(this.getIntAttribute("port"));
 
