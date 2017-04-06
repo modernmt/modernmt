@@ -174,7 +174,7 @@ public class CassandraDomainDAO implements DomainDAO {
             id = (int) CassandraIdGenerator.generate(connection, CassandraDatabase.DOMAINS_TABLE_ID);
         } else {
             id = domain.getId();
-            CassandraIdGenerator.advanceDomainsCounter(connection, id);
+            CassandraIdGenerator.advanceCounter(connection, CassandraDatabase.DOMAINS_TABLE_ID, id);
         }
 
         String[] columns = {"id", "name"};

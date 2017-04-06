@@ -63,22 +63,22 @@ public class CassandraIdGenerator {
     }
 
     /**
-     * This method updates the current domains counter to a given value
-     * if it is greater than the current value
+     * This method updates the current counter for a table to a given value
+     * if it is greater than the current counter for that table
      *
      * @param connection the current connection with the database
      * @param newCounter the new domains counter (if it is greater than the current one)
      * @throws PersistenceException
      */
-    public static void advanceDomainsCounter(CassandraConnection connection, int newCounter) throws PersistenceException {
+    public static void advanceCounter(CassandraConnection connection, int tableID, int newCounter) throws PersistenceException {
 
         /* Statement for updating the last ID only if it smaller than the new counter*/
         BuiltStatement built = QueryBuilder.update(CassandraDatabase.COUNTERS_TABLE).
                 with(QueryBuilder.set("table_counter", newCounter)).
-                where(QueryBuilder.eq("table_id", CassandraDatabase.DOMAINS_TABLE_ID)).
-                onlyIf(QueryBuilder.lte("table_counter", newCounter));
+                where(QueryBuilder.eq("table_id", tableID)).
+                onlyIf(QueryBuilder.lt("table_counter", newCounter));
         try {
-            connection.session.execute(built);
+            CassandraUtils.checkedExecute(connection, built);
         } catch (NoHostAvailableException e) {
             throw new PersistenceException(e);
         }

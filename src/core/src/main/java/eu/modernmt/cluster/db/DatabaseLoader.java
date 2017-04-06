@@ -88,7 +88,6 @@ public class DatabaseLoader {
             try {
                 if (!database.exists()) {
 
-                    logger.info("IL DB " + name + " PER ME NON ESISTE");
                     // if should create a db when it doesn't exist yet,
                     // then create it and populate it
                     if (createIfMissing) {
@@ -96,9 +95,13 @@ public class DatabaseLoader {
                         File baselineDomains = Paths.join(engine.getModelsPath(), "db", "baseline_domains.json");
                         List<Domain> domains = BaselineDomainsCollection.load(baselineDomains);
                         connection = database.getConnection();
+
+                        logger.info("NOME DB: " + database.getName());
+
                         DomainDAO domainDao = database.getDomainDAO(connection);
                         for (Domain domain : domains) {
                             domainDao.put(domain, true);
+
                         }
                         logger.info("Database initialized");
                     }

@@ -206,6 +206,11 @@ public class CassandraDatabase extends Database {
         return (this.cluster.getMetadata().getKeyspace('"' + this.keyspace + '"') != null);
     }
 
+    @Override
+    public String getName() throws PersistenceException {
+        return this.keyspace;
+    }
+
     /**
      * This method closes the Cluster,
      * which is the current access point to the DB
