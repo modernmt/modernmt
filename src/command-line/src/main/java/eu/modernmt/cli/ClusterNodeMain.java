@@ -6,6 +6,7 @@ import eu.modernmt.config.*;
 import eu.modernmt.config.xml.XMLConfigBuilder;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.facade.ModernMT;
+import eu.modernmt.persistence.Database;
 import eu.modernmt.rest.RESTServer;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
@@ -101,13 +102,15 @@ public class ClusterNodeMain {
                 JoinConfig.Member[] members = new JoinConfig.Member[1];
                 members[0] = new JoinConfig.Member(parts[0], Integer.parseInt(parts[1]), 0);
 
+                /* If there are members in hazelcast cluster,
+                *  update configurations accordingly*/
                 joinConfig.setMembers(members);
-                this.config.getDataStreamConfig().setHost(parts[0]);
-                this.config.getDatabaseConfig().setHost(parts[0]);
+                if (config.getDataStreamConfig().getType() == DataStreamConfig.Type.EMBEDDED)
+                    this.config.getDataStreamConfig().setHost(parts[0]);
+                if (config.getDatabaseConfig().getType() == DatabaseConfig.Type.EMBEDDED)
+                    this.config.getDatabaseConfig().setHost(parts[0]);
             }
-
         }
-
     }
 
 

@@ -163,7 +163,6 @@ public class KafkaDataManager implements DataManager {
         this.consumer = new KafkaConsumer<>(consumerProperties);
         this.consumer.assign(partitions);
 
-
         ConnectionThread connectThread = new ConnectionThread();
         connectThread.start();
 
