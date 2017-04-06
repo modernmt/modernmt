@@ -92,6 +92,7 @@ public class DatabaseLoader {
                     // then create it and populate it
                     if (createIfMissing) {
                         database.create();
+
                         File baselineDomains = Paths.join(engine.getModelsPath(), "db", "baseline_domains.json");
                         List<Domain> domains = BaselineDomainsCollection.load(baselineDomains);
                         connection = database.getConnection();
@@ -111,7 +112,7 @@ public class DatabaseLoader {
                 // if the db is already there, do nothing
 
             } catch (PersistenceException e) {
-                throw new BootstrapException("Unable to initialize the DB");
+                throw new BootstrapException("Unable to initialize the DB", e);
             } finally {
                 IOUtils.closeQuietly(connection);
             }

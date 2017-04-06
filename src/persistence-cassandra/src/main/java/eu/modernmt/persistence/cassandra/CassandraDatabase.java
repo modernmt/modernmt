@@ -1,6 +1,11 @@
 package eu.modernmt.persistence.cassandra;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.DataType;
+import com.datastax.driver.core.KeyspaceMetadata;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.datastax.driver.core.schemabuilder.Create;
 import com.datastax.driver.core.schemabuilder.DropKeyspace;
 import com.datastax.driver.core.schemabuilder.SchemaBuilder;
 import eu.modernmt.persistence.*;
@@ -26,7 +31,10 @@ public class CassandraDatabase extends Database {
     public static final int[] TABLE_IDS = {DOMAINS_TABLE_ID, IMPORT_JOBS_TABLE_ID};
 
     private final String keyspace;
-    private final Cluster cluster;
+    private final String host;
+    private final int port;
+
+    private Cluster cluster;
 
     /**
      * This method figures the suitable default keyspace name
@@ -81,6 +89,16 @@ public class CassandraDatabase extends Database {
         if (keyspace == null)
             throw new NullPointerException("keyspace");
         this.keyspace = keyspace;
+        this.host = host;
+        this.port = port;
+
+        initCluster();
+    }
+
+    private void initCluster() {
+        if (this.cluster != null)
+            this.cluster.close();
+
         this.cluster = Cluster.builder().withPort(port).addContactPoint(host).build();
     }
 
@@ -163,8 +181,9 @@ public class CassandraDatabase extends Database {
                     "CREATE KEYSPACE \"" + this.keyspace + "\" WITH replication = " +
                             "{'class':'SimpleStrategy', 'replication_factor':1};";
 
-            CassandraUtils.checkedExecute(connection, createKeyspace);
-
+            ResultSet result = CassandraUtils.checkedExecute(connection, createKeyspace);
+            if (!result.getExecutionInfo().isSchemaInAgreement())
+                throw new PersistenceException("Cassandra schema agreement time out: CREATE KEYSPACE");
         } finally {
             IOUtils.closeQuietly(connection);
         }
@@ -175,7 +194,7 @@ public class CassandraDatabase extends Database {
 
             String createCountersTable =
                     "CREATE TABLE IF NOT EXISTS " + COUNTERS_TABLE +
-                            " (table_id int PRIMARY KEY, table_counter bigint );";
+                            " (table_id int PRIMARY KEY, table_counter bigint);";
 
             String createDomainsTable =
                     "CREATE TABLE IF NOT EXISTS " + DOMAINS_TABLE +
@@ -193,6 +212,13 @@ public class CassandraDatabase extends Database {
         } finally {
             IOUtils.closeQuietly(connection);
         }
+
+
+        /*It is necessary to close and restart the cluster object because this is needed in order to
+        * refresh Cassandra DB internal structures.
+        * Otherwise internal queries might result in random results.
+        * (Issue with counters_table not updated with the correct table_counters: values always at 0)*/
+        initCluster();
     }
 
     /**
@@ -203,12 +229,16 @@ public class CassandraDatabase extends Database {
      */
     @Override
     public boolean exists() throws PersistenceException {
-        return (this.cluster.getMetadata().getKeyspace('"' + this.keyspace + '"') != null);
+        return getKeyspaceMetadata() != null;
     }
 
     @Override
     public String getName() throws PersistenceException {
         return this.keyspace;
+    }
+
+    private KeyspaceMetadata getKeyspaceMetadata() {
+        return this.cluster.getMetadata().getKeyspace('"' + this.keyspace + '"');
     }
 
     /**

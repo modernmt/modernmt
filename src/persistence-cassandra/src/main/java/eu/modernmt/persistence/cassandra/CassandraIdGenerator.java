@@ -70,18 +70,14 @@ public class CassandraIdGenerator {
      * @param newCounter the new domains counter (if it is greater than the current one)
      * @throws PersistenceException
      */
-    public static void advanceCounter(CassandraConnection connection, int tableID, int newCounter) throws PersistenceException {
+    public static boolean advanceCounter(CassandraConnection connection, int tableID, long newCounter) throws PersistenceException {
 
         /* Statement for updating the last ID only if it smaller than the new counter*/
-        BuiltStatement built = QueryBuilder.update(CassandraDatabase.COUNTERS_TABLE).
-                with(QueryBuilder.set("table_counter", newCounter)).
-                where(QueryBuilder.eq("table_id", tableID)).
-                onlyIf(QueryBuilder.lt("table_counter", newCounter));
-        try {
-            CassandraUtils.checkedExecute(connection, built);
-        } catch (NoHostAvailableException e) {
-            throw new PersistenceException(e);
-        }
+        BuiltStatement built = QueryBuilder.update(CassandraDatabase.COUNTERS_TABLE)
+                .with(QueryBuilder.set("table_counter", newCounter))
+                .where(QueryBuilder.eq("table_id", tableID))
+                .onlyIf(QueryBuilder.lt("table_counter", newCounter));
+        return CassandraUtils.checkedExecute(connection, built).wasApplied();
     }
 
     /**
@@ -98,11 +94,7 @@ public class CassandraIdGenerator {
             String statement =
                     "INSERT INTO " + CassandraDatabase.COUNTERS_TABLE +
                             " (table_id, table_counter) VALUES (" + table_id + ", 0);";
-            try {
-                connection.session.execute(statement);
-            } catch (NoHostAvailableException e) {
-                throw new PersistenceException(e);
-            }
+            CassandraUtils.checkedExecute(connection, statement);
         }
     }
 }
