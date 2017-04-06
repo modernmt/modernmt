@@ -174,15 +174,15 @@ public class CassandraDatabase extends Database {
             connection = new CassandraConnection(this.cluster, this.keyspace);
 
             String createCountersTable =
-                    "CREATE TABLE IF NOT EXISTS" + COUNTERS_TABLE +
+                    "CREATE TABLE IF NOT EXISTS " + COUNTERS_TABLE +
                             " (table_id int PRIMARY KEY, table_counter bigint );";
 
             String createDomainsTable =
-                    "CREATE TABLE IF NOT EXISTS" + DOMAINS_TABLE +
+                    "CREATE TABLE IF NOT EXISTS " + DOMAINS_TABLE +
                             " (id int PRIMARY KEY, name varchar);";
 
             String createImportJobsTable =
-                    "CREATE TABLE IF NOT EXISTS" + IMPORT_JOBS_TABLE +
+                    "CREATE TABLE IF NOT EXISTS " + IMPORT_JOBS_TABLE +
                             " (id bigint PRIMARY KEY, domain int, size int, \"begin\" bigint, end bigint, data_channel smallint);";
 
 
