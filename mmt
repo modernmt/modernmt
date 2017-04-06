@@ -88,6 +88,7 @@ def main_create(argv):
         injector = dependency.Injector()
         injector.read_args(args)
 
+        # during create NO configuration files exist yet so launch the engine with default config
         engine = MMTEngine(args.engine, args.source_lang, args.target_lang)
         engine = injector.inject(engine)
 

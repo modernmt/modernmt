@@ -102,7 +102,6 @@ public class CassandraDatabase extends Database {
      *
      * @param connection a currently active connection to the DB
      * @return A DomainDao that can perform CRUD operations for Domain objects
-     * @throws PersistenceException
      */
     @Override
     public DomainDAO getDomainDAO(Connection connection) {
@@ -114,7 +113,6 @@ public class CassandraDatabase extends Database {
      *
      * @param connection a currently active connection to the DB
      * @return An ImportJobDao that can perform CRUD operations for ImportJob objects
-     * @throws PersistenceException
      */
     @Override
     public ImportJobDAO getImportJobDAO(Connection connection) {
@@ -133,7 +131,7 @@ public class CassandraDatabase extends Database {
 
         try {
             connection = new CassandraConnection(this.cluster, null);
-            DropKeyspace dropKeyspace = SchemaBuilder.dropKeyspace(this.keyspace).ifExists();
+            DropKeyspace dropKeyspace = SchemaBuilder.dropKeyspace('"' + this.keyspace + '"').ifExists();
             CassandraUtils.checkedExecute(connection, dropKeyspace);
 
         } catch (KeyspaceNotFoundException e) {
@@ -205,7 +203,7 @@ public class CassandraDatabase extends Database {
      */
     @Override
     public boolean exists() throws PersistenceException {
-        return (this.cluster.getMetadata().getKeyspace(this.keyspace) != null);
+        return (this.cluster.getMetadata().getKeyspace('"' + this.keyspace + '"') != null);
     }
 
     /**

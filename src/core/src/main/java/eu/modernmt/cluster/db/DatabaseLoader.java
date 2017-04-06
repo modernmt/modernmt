@@ -87,7 +87,9 @@ public class DatabaseLoader {
             Connection connection = null;
             try {
                 if (!database.exists()) {
-                    // if the db should create a db when it doesn't exist yet,
+
+                    logger.info("IL DB " + name + " PER ME NON ESISTE");
+                    // if should create a db when it doesn't exist yet,
                     // then create it and populate it
                     if (createIfMissing) {
                         database.create();

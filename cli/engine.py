@@ -302,7 +302,6 @@ class _MMTEngineBuilder:
 
             # run preprocess step if required.
             # Return processed bi and mono corpora and cleaned bicorpora
-            # TODO: Y CLEANED AGAIN
             processed_bicorpora, processed_monocorpora, cleaned_bicorpora =\
                 self._run_step('preprocess', self._step_preprocess, logger=logger,
                                values=[base_bicorpora, base_monocorpora, base_bicorpora])
@@ -660,6 +659,10 @@ class MMTEngine(object):
         return sorted([MMTEngine.load(name) for name in os.listdir(cli.ENGINES_DIR)
                        if os.path.isfile(MMTEngine._get_config_path(name))], key=lambda x: x.name)
 
+    # This method loads an already created engine using its name.
+    # This means that a new Engine object will be created and returned,
+    # using the name, source_language, target_language and all the other parameters
+    # that are written in the engine configuration file
     @staticmethod
     def load(name):
         config_path = MMTEngine._get_config_path(name)
@@ -678,7 +681,7 @@ class MMTEngine(object):
 
         # use name, source_lang, target_lang and default configuration parameters
         # if no configuration is passed;
-        # else, use the passed configuration (e.g. the engineConf.xml parameter)
+        # else, use the passed configuration (e.g. the engineConf.xml file)
         self.config = EngineConfig(self.name, source_lang, target_lang) if config is None else config
 
         self.path = self._get_path(self.name)
