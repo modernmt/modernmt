@@ -96,8 +96,6 @@ public class DatabaseLoader {
                         List<Domain> domains = BaselineDomainsCollection.load(baselineDomains);
                         connection = database.getConnection();
 
-                        logger.info("NOME DB: " + database.getName());
-
                         DomainDAO domainDao = database.getDomainDAO(connection);
                         for (Domain domain : domains) {
                             domainDao.put(domain, true);
