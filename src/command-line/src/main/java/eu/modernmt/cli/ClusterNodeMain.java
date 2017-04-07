@@ -10,6 +10,8 @@ import eu.modernmt.persistence.Database;
 import eu.modernmt.rest.RESTServer;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -105,6 +107,7 @@ public class ClusterNodeMain {
                 /* If there are members in hazelcast cluster,
                 *  update configurations accordingly*/
                 joinConfig.setMembers(members);
+
                 if (config.getDataStreamConfig().getType() == DataStreamConfig.Type.EMBEDDED)
                     this.config.getDataStreamConfig().setHost(parts[0]);
                 if (config.getDatabaseConfig().getType() == DatabaseConfig.Type.EMBEDDED)
@@ -112,7 +115,6 @@ public class ClusterNodeMain {
             }
         }
     }
-
 
     public static void main(String[] _args) throws Throwable {
         Args args = new Args(_args);

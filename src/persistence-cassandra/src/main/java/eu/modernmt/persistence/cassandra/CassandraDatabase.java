@@ -214,7 +214,7 @@ public class CassandraDatabase extends Database {
         }
 
 
-        /*It is necessary to wait 5 seconds, close and restart the cluster object because
+        /*It is necessary to close and restart the cluster object because
         * we need Cassandra to refresh its internal structures.
         * Otherwise internal queries might result in random results.
         * (Issue with counters_table not updated with the correct table_counters: values always at 0)*/

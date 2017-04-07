@@ -150,7 +150,7 @@ public class CassandraDomainDAO implements DomainDAO {
      *
      * @param domain the Domain object to store in the DB
      * @return the same Domain object received as a parameter, updated with its new ID
-     * @throws PersistenceException
+     * @throws PersistenceException if couldn't insert the importjob in the DB
      */
     @Override
     public Domain put(Domain domain) throws PersistenceException {
@@ -166,7 +166,7 @@ public class CassandraDomainDAO implements DomainDAO {
      * @return if the domain was successfully stored, the method returns domain itself
      * (with its ID update to the new one if forceId was false).
      * Else, throws an exception.
-     * @throws PersistenceException
+     * @throws PersistenceException if couldn't insert the importjob in the DB
      */
     @Override
     public Domain put(Domain domain, boolean forceId) throws PersistenceException {

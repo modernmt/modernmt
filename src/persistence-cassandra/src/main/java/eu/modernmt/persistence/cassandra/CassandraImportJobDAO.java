@@ -37,7 +37,7 @@ public class CassandraImportJobDAO implements ImportJobDAO {
      *
      * @param job the ImportJob object to store in the DB
      * @return the same ImportJob object received as a parameter, updated with its new ID
-     * @throws PersistenceException
+     * @throws PersistenceException if couldn't insert the importjob in the DB
      */
     @Override
     public ImportJob put(ImportJob job) throws PersistenceException {

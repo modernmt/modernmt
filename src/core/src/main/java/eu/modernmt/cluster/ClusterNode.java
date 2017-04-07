@@ -278,8 +278,6 @@ public class ClusterNode {
 
         // ========================
 
-        /* create and populate the DB only if the configuration file
-        does not disable it (else, its process hasn't even been started by Python)*/
         DataStreamConfig dataStreamConfig = nodeConfig.getDataStreamConfig();
         if (dataStreamConfig.isEnabled()) {
             dataManager = new KafkaDataManager(uuid, engine, dataStreamConfig);

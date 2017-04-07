@@ -80,10 +80,17 @@ public class CassandraIdGenerator {
                 .where(QueryBuilder.eq("table_id", tableID))
                 .onlyIf(QueryBuilder.lt("table_counter", newCounter));
 
+        /* Statement for retrieving the last ID*/
         BuiltStatement get = QueryBuilder.select("table_counter")
                 .from(CassandraDatabase.COUNTERS_TABLE)
                 .where(QueryBuilder.eq("table_id", tableID));
 
+        /*Try to update the last ID and check if you have succeeded.
+        * If you have not succeeded, try again.
+        * If succeeded OR if the new value you are trying to write is too small
+        * (e.g. a bigger value was written in the meantime,
+        * and the advance is not successful)
+        * return whether you have the advance or not*/
         while (true) {
             boolean wasApplied = CassandraUtils.checkedExecute(connection, update).wasApplied();
             long counter = CassandraUtils.checkedExecute(connection, get).one().getLong("table_counter");
