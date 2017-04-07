@@ -141,6 +141,9 @@ class MMTApi:
 
         return self._put('domains/' + str(domain) + '/corpus', params=params)
 
+    def get_import_job(self, id):
+        return self._get('domains/imports/' + str(id))
+
     def get_all_domains(self):
         return self._get('domains')
 
@@ -769,14 +772,21 @@ class ClusterNode(object):
             if not debug:
                 self.engine.clear_tempdir()
 
-    def new_domain_from_tmx(self, tmx, name=None):
-        if name is None:
-            name = os.path.basename(os.path.splitext(tmx)[0])
+    def new_domain(self, name):
+        return self.api.create_domain(name)
 
-        domain = self.api.create_domain(name)
-        self.api.import_into_domain(domain['id'], tmx)
+    def import_tmx(self, domain_id, tmx, callback=None, refresh_rate_in_seconds=1):
+        job = self.api.import_into_domain(domain_id, tmx)
 
-        return domain
+        if callback is not None:
+            callback(job)
+
+        while job['progress'] != 1.0:
+            time.sleep(refresh_rate_in_seconds)
+            job = self.api.get_import_job(job['id'])
+
+            if callback is not None:
+                callback(job)
 
     def append_to_domain(self, domain, source, target):
         try:
