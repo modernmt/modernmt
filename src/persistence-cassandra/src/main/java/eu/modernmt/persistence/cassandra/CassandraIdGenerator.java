@@ -1,10 +1,13 @@
 package eu.modernmt.persistence.cassandra;
 
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.querybuilder.BuiltStatement;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import eu.modernmt.persistence.PersistenceException;
+
+import java.util.ArrayList;
 
 /**
  * This class provides static methods
@@ -63,29 +66,42 @@ public class CassandraIdGenerator {
     }
 
     /**
-     * This method updates the current domains counter to a given value
-     * if it is greater than the current value
+     * This method updates the current counter for a table to a given value
+     * if it is greater than the current counter for that table
      *
      * @param connection the current connection with the database
      * @param newCounter the new domains counter (if it is greater than the current one)
      * @throws PersistenceException
      */
-    public static void advanceDomainsCounter(CassandraConnection connection, int newCounter) throws PersistenceException {
-
+    public static boolean advanceCounter(CassandraConnection connection, int tableID, long newCounter) throws PersistenceException {
         /* Statement for updating the last ID only if it smaller than the new counter*/
-        BuiltStatement built = QueryBuilder.update(CassandraDatabase.COUNTERS_TABLE).
-                with(QueryBuilder.set("table_counter", newCounter)).
-                where(QueryBuilder.eq("table_id", CassandraDatabase.DOMAINS_TABLE_ID)).
-                onlyIf(QueryBuilder.lte("table_counter", newCounter));
-        try {
-            connection.session.execute(built);
-        } catch (NoHostAvailableException e) {
-            throw new PersistenceException(e);
+        BuiltStatement update = QueryBuilder.update(CassandraDatabase.COUNTERS_TABLE)
+                .with(QueryBuilder.set("table_counter", newCounter))
+                .where(QueryBuilder.eq("table_id", tableID))
+                .onlyIf(QueryBuilder.lt("table_counter", newCounter));
+
+        /* Statement for retrieving the last ID*/
+        BuiltStatement get = QueryBuilder.select("table_counter")
+                .from(CassandraDatabase.COUNTERS_TABLE)
+                .where(QueryBuilder.eq("table_id", tableID));
+
+        /*Try to update the last ID and check if you have succeeded.
+        * If you have not succeeded, try again.
+        * If succeeded OR if the new value you are trying to write is too small
+        * (e.g. a bigger value was written in the meantime,
+        * and the advance is not successful)
+        * return whether you have the advance or not*/
+        while (true) {
+            boolean wasApplied = CassandraUtils.checkedExecute(connection, update).wasApplied();
+            long counter = CassandraUtils.checkedExecute(connection, get).one().getLong("table_counter");
+            if (counter >= newCounter)
+                return wasApplied;
         }
     }
 
     /**
-     * This method puts in the counters_table a new entry for each table
+     * This method creates the necessary statements to put
+     * in the counters_table a new entry for each table
      * created during the database initialization
      *
      * @param connection the current connection with the database
@@ -93,16 +109,15 @@ public class CassandraIdGenerator {
      * @throws PersistenceException
      */
     public static void initializeTableCounter(CassandraConnection connection, int[] tableIds) throws PersistenceException {
-
+        String[] columns = {"table_id", "table_counter"};
         for (int table_id : tableIds) {
-            String statement =
-                    "INSERT INTO " + CassandraDatabase.COUNTERS_TABLE +
-                            " (table_id, table_counter) VALUES (" + table_id + ", 0);";
-            try {
-                connection.session.execute(statement);
-            } catch (NoHostAvailableException e) {
-                throw new PersistenceException(e);
-            }
+            Object[] values = {table_id, 0};
+            BuiltStatement built = QueryBuilder
+                    .insertInto(CassandraDatabase.COUNTERS_TABLE)
+                    .values(columns, values)
+                    .ifNotExists();
+
+            CassandraUtils.checkedExecute(connection, built);
         }
     }
 }

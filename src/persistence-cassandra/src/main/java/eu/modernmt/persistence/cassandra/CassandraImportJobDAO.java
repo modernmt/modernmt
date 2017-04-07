@@ -37,7 +37,7 @@ public class CassandraImportJobDAO implements ImportJobDAO {
      *
      * @param job the ImportJob object to store in the DB
      * @return the same ImportJob object received as a parameter, updated with its new ID
-     * @throws PersistenceException
+     * @throws PersistenceException if couldn't insert the importjob in the DB
      */
     @Override
     public ImportJob put(ImportJob job) throws PersistenceException {
@@ -46,11 +46,15 @@ public class CassandraImportJobDAO implements ImportJobDAO {
 
         String[] columns = {"id", "domain", "\"begin\"", "end", "data_channel", "size"};
         Object[] values = {id, job.getDomain(), job.getBegin(), job.getEnd(), job.getDataChannel(), job.getSize()};
-        BuiltStatement statement = QueryBuilder.
-                insertInto("import_jobs").
-                values(columns, values);
+        BuiltStatement statement = QueryBuilder
+                .insertInto("import_jobs")
+                .values(columns, values)
+                .ifNotExists();
 
-        CassandraUtils.checkedExecute(connection, statement);
+        boolean success = CassandraUtils.checkedExecute(connection, statement).wasApplied();
+
+        if (!success)
+            throw new PersistenceException("Unable to insert import job into Cassandra Database: " + job);
 
         job.setId(id);
         return job;

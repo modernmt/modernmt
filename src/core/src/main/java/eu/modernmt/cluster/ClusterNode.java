@@ -278,8 +278,6 @@ public class ClusterNode {
 
         // ========================
 
-        /* create and populate the DB only if the configuration file
-        does not disable it (else, its process hasn't even been started by Python)*/
         DataStreamConfig dataStreamConfig = nodeConfig.getDataStreamConfig();
         if (dataStreamConfig.isEnabled()) {
             dataManager = new KafkaDataManager(uuid, engine, dataStreamConfig);
@@ -298,9 +296,9 @@ public class ClusterNode {
             try {
                 timer.reset();
 
-                logger.info("Starting DataManager");
+                logger.info("Connecting to dataManager...");
                 Map<Short, Long> positions = dataManager.connect(dataStreamConfig.getHost(), dataStreamConfig.getPort(), 60, TimeUnit.SECONDS);
-                logger.info("DataManager ready in " + (timer.time() / 1000.) + "s");
+                logger.info("Connected to the dataManager in " + (timer.time() / 1000.) + "s");
 
                 setStatus(Status.UPDATING);
 

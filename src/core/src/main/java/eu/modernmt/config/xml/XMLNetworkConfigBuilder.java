@@ -26,9 +26,7 @@ class XMLNetworkConfigBuilder extends XMLAbstractBuilder {
             config.setListeningInterface(getStringAttribute("interface"));
         if (hasAttribute("port"))
             config.setPort(getIntAttribute("port"));
-        if (hasAttribute("data-port"))
-            config.setPort(getIntAttribute("data-port"));
-
+        
         apiConfigBuilder.build(config.getApiConfig());
         joinConfigBuilder.build(config.getJoinConfig());
 

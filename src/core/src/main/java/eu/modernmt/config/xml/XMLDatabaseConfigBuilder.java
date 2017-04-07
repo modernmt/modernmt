@@ -39,6 +39,8 @@ class XMLDatabaseConfigBuilder extends XMLAbstractBuilder {
     public DatabaseConfig build(DatabaseConfig config) throws ConfigException {
         if (this.hasAttribute("enabled"))
             config.setEnabled(this.getBooleanAttribute("enabled"));
+        if (this.hasAttribute("type"))
+            config.setType(this.getEnumAttribute("type", DatabaseConfig.Type.class));
         if (this.hasAttribute("host"))
             config.setHost(this.getStringAttribute("host"));
         if (this.hasAttribute("port"))
