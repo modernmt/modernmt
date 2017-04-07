@@ -1,10 +1,13 @@
 package eu.modernmt.persistence.cassandra;
 
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.querybuilder.BuiltStatement;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import eu.modernmt.persistence.PersistenceException;
+
+import java.util.ArrayList;
 
 /**
  * This class provides static methods
@@ -71,17 +74,27 @@ public class CassandraIdGenerator {
      * @throws PersistenceException
      */
     public static boolean advanceCounter(CassandraConnection connection, int tableID, long newCounter) throws PersistenceException {
-
         /* Statement for updating the last ID only if it smaller than the new counter*/
-        BuiltStatement built = QueryBuilder.update(CassandraDatabase.COUNTERS_TABLE)
+        BuiltStatement update = QueryBuilder.update(CassandraDatabase.COUNTERS_TABLE)
                 .with(QueryBuilder.set("table_counter", newCounter))
                 .where(QueryBuilder.eq("table_id", tableID))
                 .onlyIf(QueryBuilder.lt("table_counter", newCounter));
-        return CassandraUtils.checkedExecute(connection, built).wasApplied();
+
+        BuiltStatement get = QueryBuilder.select("table_counter")
+                .from(CassandraDatabase.COUNTERS_TABLE)
+                .where(QueryBuilder.eq("table_id", tableID));
+
+        while (true) {
+            boolean wasApplied = CassandraUtils.checkedExecute(connection, update).wasApplied();
+            long counter = CassandraUtils.checkedExecute(connection, get).one().getLong("table_counter");
+            if (counter >= newCounter)
+                return wasApplied;
+        }
     }
 
     /**
-     * This method puts in the counters_table a new entry for each table
+     * This method creates the necessary statements to put
+     * in the counters_table a new entry for each table
      * created during the database initialization
      *
      * @param connection the current connection with the database
@@ -89,12 +102,15 @@ public class CassandraIdGenerator {
      * @throws PersistenceException
      */
     public static void initializeTableCounter(CassandraConnection connection, int[] tableIds) throws PersistenceException {
-
+        String[] columns = {"table_id", "table_counter"};
         for (int table_id : tableIds) {
-            String statement =
-                    "INSERT INTO " + CassandraDatabase.COUNTERS_TABLE +
-                            " (table_id, table_counter) VALUES (" + table_id + ", 0);";
-            CassandraUtils.checkedExecute(connection, statement);
+            Object[] values = {table_id, 0};
+            BuiltStatement built = QueryBuilder
+                    .insertInto(CassandraDatabase.COUNTERS_TABLE)
+                    .values(columns, values)
+                    .ifNotExists();
+
+            CassandraUtils.checkedExecute(connection, built);
         }
     }
 }

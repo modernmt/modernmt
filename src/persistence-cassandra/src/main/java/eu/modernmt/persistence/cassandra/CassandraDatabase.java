@@ -1,17 +1,14 @@
 package eu.modernmt.persistence.cassandra;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.schemabuilder.Create;
+import com.datastax.driver.core.*;
 import com.datastax.driver.core.schemabuilder.DropKeyspace;
 import com.datastax.driver.core.schemabuilder.SchemaBuilder;
+import eu.modernmt.model.Domain;
 import eu.modernmt.persistence.*;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Locale;
 
 /**
@@ -67,8 +64,7 @@ public class CassandraDatabase extends Database {
 
     /**
      * This method returns the default keyspace name
-     * following the OLD keyspace naming nomenclature:
-     * "\"default\""
+     * following the OLD keyspace naming nomenclature: "default"
      *
      * @return the keyspace name
      */
@@ -95,10 +91,14 @@ public class CassandraDatabase extends Database {
         initCluster();
     }
 
+    /**
+     * This method creates an access point to the database to work with.
+     * If the current cluster objec is already initialized,
+     * the method closes it and rebuilds it from scratch.
+     */
     private void initCluster() {
         if (this.cluster != null)
             this.cluster.close();
-
         this.cluster = Cluster.builder().withPort(port).addContactPoint(host).build();
     }
 
@@ -192,17 +192,17 @@ public class CassandraDatabase extends Database {
         try {
             connection = new CassandraConnection(this.cluster, this.keyspace);
 
-            String createCountersTable =
+            SimpleStatement createCountersTable = new SimpleStatement(
                     "CREATE TABLE IF NOT EXISTS " + COUNTERS_TABLE +
-                            " (table_id int PRIMARY KEY, table_counter bigint);";
+                            " (table_id int PRIMARY KEY, table_counter bigint);");
 
-            String createDomainsTable =
+            SimpleStatement createDomainsTable = new SimpleStatement(
                     "CREATE TABLE IF NOT EXISTS " + DOMAINS_TABLE +
-                            " (id int PRIMARY KEY, name varchar);";
+                            " (id int PRIMARY KEY, name varchar);");
 
-            String createImportJobsTable =
+            SimpleStatement createImportJobsTable = new SimpleStatement(
                     "CREATE TABLE IF NOT EXISTS " + IMPORT_JOBS_TABLE +
-                            " (id bigint PRIMARY KEY, domain int, size int, \"begin\" bigint, end bigint, data_channel smallint);";
+                            " (id bigint PRIMARY KEY, domain int, size int, \"begin\" bigint, end bigint, data_channel smallint);");
 
 
             CassandraUtils.checkedExecute(connection, createCountersTable);
@@ -214,8 +214,8 @@ public class CassandraDatabase extends Database {
         }
 
 
-        /*It is necessary to close and restart the cluster object because this is needed in order to
-        * refresh Cassandra DB internal structures.
+        /*It is necessary to wait 5 seconds, close and restart the cluster object because
+        * we need Cassandra to refresh its internal structures.
         * Otherwise internal queries might result in random results.
         * (Issue with counters_table not updated with the correct table_counters: values always at 0)*/
         initCluster();

@@ -182,10 +182,16 @@ public class CassandraDomainDAO implements DomainDAO {
         String[] columns = {"id", "name"};
         Object[] values = {id, domain.getName()};
 
-        BuiltStatement statement = QueryBuilder.insertInto(CassandraDatabase.DOMAINS_TABLE).
-                values(columns, values);
+        BuiltStatement statement = QueryBuilder
+                .insertInto(CassandraDatabase.DOMAINS_TABLE)
+                .values(columns, values)
+                .ifNotExists();
 
-        CassandraUtils.checkedExecute(connection, statement);
+        boolean success = CassandraUtils.checkedExecute(connection, statement).wasApplied();
+
+        if (!success)
+            throw new PersistenceException("Unable to insert domain into Cassandra Database: " + domain);
+
         domain.setId(id);
         return domain;
     }
