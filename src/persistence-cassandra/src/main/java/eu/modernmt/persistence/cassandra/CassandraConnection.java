@@ -35,7 +35,7 @@ public class CassandraConnection implements Connection {
             if (keyspace == null) {
                 this.session = cluster.connect();
             } else {
-                this.session = cluster.connect("\"" + keyspace + "\"");
+                this.session = cluster.connect('"' + keyspace + '"');
             }
 
         } catch (NoHostAvailableException e) {

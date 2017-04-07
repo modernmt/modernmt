@@ -298,9 +298,9 @@ public class ClusterNode {
             try {
                 timer.reset();
 
-                logger.info("Starting DataManager");
+                logger.info("Connecting to dataManager...");
                 Map<Short, Long> positions = dataManager.connect(dataStreamConfig.getHost(), dataStreamConfig.getPort(), 60, TimeUnit.SECONDS);
-                logger.info("DataManager ready in " + (timer.time() / 1000.) + "s");
+                logger.info("Connected to the dataManager in " + (timer.time() / 1000.) + "s");
 
                 setStatus(Status.UPDATING);
 

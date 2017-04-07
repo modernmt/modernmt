@@ -1,12 +1,14 @@
 package eu.modernmt.persistence.cassandra;
 
-import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.*;
 import com.datastax.driver.core.schemabuilder.DropKeyspace;
 import com.datastax.driver.core.schemabuilder.SchemaBuilder;
+import eu.modernmt.model.Domain;
 import eu.modernmt.persistence.*;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Locale;
 
 /**
@@ -26,7 +28,10 @@ public class CassandraDatabase extends Database {
     public static final int[] TABLE_IDS = {DOMAINS_TABLE_ID, IMPORT_JOBS_TABLE_ID};
 
     private final String keyspace;
-    private final Cluster cluster;
+    private final String host;
+    private final int port;
+
+    private Cluster cluster;
 
     /**
      * This method figures the suitable default keyspace name
@@ -59,8 +64,7 @@ public class CassandraDatabase extends Database {
 
     /**
      * This method returns the default keyspace name
-     * following the OLD keyspace naming nomenclature:
-     * "\"default\""
+     * following the OLD keyspace naming nomenclature: "default"
      *
      * @return the keyspace name
      */
@@ -81,6 +85,20 @@ public class CassandraDatabase extends Database {
         if (keyspace == null)
             throw new NullPointerException("keyspace");
         this.keyspace = keyspace;
+        this.host = host;
+        this.port = port;
+
+        initCluster();
+    }
+
+    /**
+     * This method creates an access point to the database to work with.
+     * If the current cluster objec is already initialized,
+     * the method closes it and rebuilds it from scratch.
+     */
+    private void initCluster() {
+        if (this.cluster != null)
+            this.cluster.close();
         this.cluster = Cluster.builder().withPort(port).addContactPoint(host).build();
     }
 
@@ -102,7 +120,6 @@ public class CassandraDatabase extends Database {
      *
      * @param connection a currently active connection to the DB
      * @return A DomainDao that can perform CRUD operations for Domain objects
-     * @throws PersistenceException
      */
     @Override
     public DomainDAO getDomainDAO(Connection connection) {
@@ -114,7 +131,6 @@ public class CassandraDatabase extends Database {
      *
      * @param connection a currently active connection to the DB
      * @return An ImportJobDao that can perform CRUD operations for ImportJob objects
-     * @throws PersistenceException
      */
     @Override
     public ImportJobDAO getImportJobDAO(Connection connection) {
@@ -133,7 +149,7 @@ public class CassandraDatabase extends Database {
 
         try {
             connection = new CassandraConnection(this.cluster, null);
-            DropKeyspace dropKeyspace = SchemaBuilder.dropKeyspace(this.keyspace).ifExists();
+            DropKeyspace dropKeyspace = SchemaBuilder.dropKeyspace('"' + this.keyspace + '"').ifExists();
             CassandraUtils.checkedExecute(connection, dropKeyspace);
 
         } catch (KeyspaceNotFoundException e) {
@@ -165,8 +181,9 @@ public class CassandraDatabase extends Database {
                     "CREATE KEYSPACE \"" + this.keyspace + "\" WITH replication = " +
                             "{'class':'SimpleStrategy', 'replication_factor':1};";
 
-            CassandraUtils.checkedExecute(connection, createKeyspace);
-
+            ResultSet result = CassandraUtils.checkedExecute(connection, createKeyspace);
+            if (!result.getExecutionInfo().isSchemaInAgreement())
+                throw new PersistenceException("Cassandra schema agreement time out: CREATE KEYSPACE");
         } finally {
             IOUtils.closeQuietly(connection);
         }
@@ -175,17 +192,17 @@ public class CassandraDatabase extends Database {
         try {
             connection = new CassandraConnection(this.cluster, this.keyspace);
 
-            String createCountersTable =
+            SimpleStatement createCountersTable = new SimpleStatement(
                     "CREATE TABLE IF NOT EXISTS " + COUNTERS_TABLE +
-                            " (table_id int PRIMARY KEY, table_counter bigint );";
+                            " (table_id int PRIMARY KEY, table_counter bigint);");
 
-            String createDomainsTable =
-                    "CREATE TABLE " + DOMAINS_TABLE +
-                            " (id int PRIMARY KEY, name varchar);";
+            SimpleStatement createDomainsTable = new SimpleStatement(
+                    "CREATE TABLE IF NOT EXISTS " + DOMAINS_TABLE +
+                            " (id int PRIMARY KEY, name varchar);");
 
-            String createImportJobsTable =
-                    "CREATE TABLE " + IMPORT_JOBS_TABLE +
-                            " (id bigint PRIMARY KEY, domain int, size int, \"begin\" bigint, end bigint, data_channel smallint);";
+            SimpleStatement createImportJobsTable = new SimpleStatement(
+                    "CREATE TABLE IF NOT EXISTS " + IMPORT_JOBS_TABLE +
+                            " (id bigint PRIMARY KEY, domain int, size int, \"begin\" bigint, end bigint, data_channel smallint);");
 
 
             CassandraUtils.checkedExecute(connection, createCountersTable);
@@ -195,6 +212,13 @@ public class CassandraDatabase extends Database {
         } finally {
             IOUtils.closeQuietly(connection);
         }
+
+
+        /*It is necessary to wait 5 seconds, close and restart the cluster object because
+        * we need Cassandra to refresh its internal structures.
+        * Otherwise internal queries might result in random results.
+        * (Issue with counters_table not updated with the correct table_counters: values always at 0)*/
+        initCluster();
     }
 
     /**
@@ -205,7 +229,16 @@ public class CassandraDatabase extends Database {
      */
     @Override
     public boolean exists() throws PersistenceException {
-        return (this.cluster.getMetadata().getKeyspace(this.keyspace) != null);
+        return getKeyspaceMetadata() != null;
+    }
+
+    @Override
+    public String getName() throws PersistenceException {
+        return this.keyspace;
+    }
+
+    private KeyspaceMetadata getKeyspaceMetadata() {
+        return this.cluster.getMetadata().getKeyspace('"' + this.keyspace + '"');
     }
 
     /**

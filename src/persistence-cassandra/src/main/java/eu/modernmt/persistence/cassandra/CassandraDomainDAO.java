@@ -9,6 +9,8 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import eu.modernmt.model.Domain;
 import eu.modernmt.persistence.DomainDAO;
 import eu.modernmt.persistence.PersistenceException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,7 +53,7 @@ public class CassandraDomainDAO implements DomainDAO {
     public Domain retrieveById(int id) throws PersistenceException {
 
         BuiltStatement statement = QueryBuilder.select()
-                .from("domains")
+                .from(CassandraDatabase.DOMAINS_TABLE)
                 .where(QueryBuilder.eq("id", id));
 
         ResultSet result = CassandraUtils.checkedExecute(connection, statement);
@@ -105,7 +107,7 @@ public class CassandraDomainDAO implements DomainDAO {
         list.addAll(ids);
         BuiltStatement statement = QueryBuilder.
                 select().
-                from("domains").
+                from(CassandraDatabase.DOMAINS_TABLE).
                 where(QueryBuilder.in("id", list));
 
         /*execute the query*/
@@ -132,7 +134,7 @@ public class CassandraDomainDAO implements DomainDAO {
         ArrayList<Domain> list = new ArrayList<>();
 
         BuiltStatement statement = QueryBuilder.select().
-                from("domains").
+                from(CassandraDatabase.DOMAINS_TABLE).
                 where();
         ResultSet result = CassandraUtils.checkedExecute(connection, statement);
 
@@ -174,16 +176,22 @@ public class CassandraDomainDAO implements DomainDAO {
             id = (int) CassandraIdGenerator.generate(connection, CassandraDatabase.DOMAINS_TABLE_ID);
         } else {
             id = domain.getId();
-            CassandraIdGenerator.advanceDomainsCounter(connection, id);
+            CassandraIdGenerator.advanceCounter(connection, CassandraDatabase.DOMAINS_TABLE_ID, id);
         }
 
         String[] columns = {"id", "name"};
         Object[] values = {id, domain.getName()};
 
-        BuiltStatement statement = QueryBuilder.insertInto("domains").
-                values(columns, values);
+        BuiltStatement statement = QueryBuilder
+                .insertInto(CassandraDatabase.DOMAINS_TABLE)
+                .values(columns, values)
+                .ifNotExists();
 
-        CassandraUtils.checkedExecute(connection, statement);
+        boolean success = CassandraUtils.checkedExecute(connection, statement).wasApplied();
+
+        if (!success)
+            throw new PersistenceException("Unable to insert domain into Cassandra Database: " + domain);
+
         domain.setId(id);
         return domain;
     }
@@ -204,7 +212,7 @@ public class CassandraDomainDAO implements DomainDAO {
     @Override
     public Domain update(Domain domain) throws PersistenceException {
 
-        BuiltStatement built = QueryBuilder.update("domains").
+        BuiltStatement built = QueryBuilder.update(CassandraDatabase.DOMAINS_TABLE).
                 with(QueryBuilder.set("name", domain.getName())).
                 where(QueryBuilder.eq("id", domain.getId())).
                 ifExists();
@@ -229,7 +237,7 @@ public class CassandraDomainDAO implements DomainDAO {
     public boolean delete(int id) throws PersistenceException {
 
         BuiltStatement built = QueryBuilder.delete().
-                from("domains").
+                from(CassandraDatabase.DOMAINS_TABLE).
                 where(QueryBuilder.eq("id", id)).
                 ifExists();
 

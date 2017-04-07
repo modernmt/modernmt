@@ -26,14 +26,13 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Created by davide on 06/09/16.
- * Updated by andrea on 29/03/17
+ * Updated by andrearossi on 29/03/17
  * <p>
- * This class manages the Apache Kafka enviromnent:
+ * This class manages the Apache Kafka environment:
  * it handles the Kafka channels, topics and partitions,
  * it creates the kafka producer and consumer for sending and reading messages,
- * and starts separate threads
- * to connect to the Apache Kafka server
- * to perform polling in order to find the proper positions on the topic
+ * and starts separate threads to connect to the Apache Kafka server
+ * to perform polling in order to find the proper positions on the topics
  */
 public class KafkaDataManager implements DataManager {
 
@@ -48,6 +47,7 @@ public class KafkaDataManager implements DataManager {
     private ArrayList<TopicPartition> partitions;
     private HashMap<String, KafkaChannel> name2channel;
 
+
     public KafkaDataManager(String uuid, Engine engine, DataStreamConfig config) {
         this.uuid = uuid;
         this.pollingThread = new DataPollingThread(engine, this);
@@ -56,11 +56,11 @@ public class KafkaDataManager implements DataManager {
         // and put them in an array "channels"
         this.channels = new KafkaChannel[2];
 
-        // if kafka is embedded use OLD name convention; else use new name convention
+        /* for the topic names, employ the 0.15x name convention if type is embedded
+           or the 1x name convention otherwise*/
         String[] topicNames = {"domain-upload-stream", "contributions-stream"};
         if (config.getType() != DataStreamConfig.Type.EMBEDDED)
             topicNames = getDefaultTopicNames(engine);
-
 
         this.channels[0] = new KafkaChannel(DataManager.DOMAIN_UPLOAD_CHANNEL_ID,
                 topicNames[DataManager.DOMAIN_UPLOAD_CHANNEL_ID]);
@@ -77,7 +77,7 @@ public class KafkaDataManager implements DataManager {
     }
 
     /**
-     * This method default kafka-acceptable names for all topics
+     * This method calculates default acceptable names for all kafka topics
      * and puts them in an ordered String array.
      * The array order is:
      * 0: domains topic name
@@ -162,7 +162,6 @@ public class KafkaDataManager implements DataManager {
         consumerProperties.put("group.id", uuid);
         this.consumer = new KafkaConsumer<>(consumerProperties);
         this.consumer.assign(partitions);
-
 
         ConnectionThread connectThread = new ConnectionThread();
         connectThread.start();
