@@ -548,55 +548,11 @@ class EngineConfig(object):
         # get "node" element and its children elements "engine", "kafka", "database"
         node_el = minidom.parse(file).documentElement
         engine_el = EngineConfig._get_element_if_exists(node_el, 'engine')
-        datastream_el = EngineConfig._get_element_if_exists(node_el, 'datastream')
-        db_el = EngineConfig._get_element_if_exists(node_el, 'db')
-        # get attributes from the various elements
         source_lang = EngineConfig._get_attribute_if_exists(engine_el, 'source-language')
         target_lang = EngineConfig._get_attribute_if_exists(engine_el, 'target-language')
-        datastream_enabled = EngineConfig._get_attribute_if_exists(datastream_el, 'enabled')
-        datastream_type = EngineConfig._get_attribute_if_exists(datastream_el, 'type')
-        db_enabled = EngineConfig._get_attribute_if_exists(db_el, 'enabled')
-        db_type = EngineConfig._get_attribute_if_exists(db_el, 'type')
-
-        # Parsing bool from string:
-        # if None or "true" (or uppercase variations) then the value is True; else it is False
-        datastream_enabled = datastream_enabled.lower() == 'true' if datastream_enabled else True
-        db_enabled = db_enabled.lower() == 'true' if db_enabled else True
-
-        # Parsing type string:
-        # if no type is given or if it is "embedded" (or uppercase variations): type is "embedded"
-        # else just lowercase it (and Python won't care about it)
-        if datastream_type is None or datastream_type.lower() == "embedded":
-            datastream_type = "embedded"
-        else:
-            datastream_type = datastream_type.lower()
-
-        if db_type is None or db_type.lower() == "embedded":
-            db_type = "embedded"
-        else:
-            db_type = db_type.lower()
 
         # all configuration elements are put into an EngineConfig object
-        config = EngineConfig(name, source_lang, target_lang,
-                              datastream_enabled, datastream_type,
-                              db_enabled, db_type)
-
-        network = node_el.getElementsByTagName('network')
-        network = network[0] if len(network) > 0 else None
-
-        if network is None:
-            return config
-
-        api = network.getElementsByTagName('api')
-        api = api[0] if len(api) > 0 else None
-
-        if api is None:
-            return config
-
-        if api.hasAttribute('root'):
-            config.apiRoot = api.getAttribute('root')
-
-        return config
+        return EngineConfig(name, source_lang, target_lang)
 
     @staticmethod
     def _get_element_if_exists(parent, child_name):
@@ -613,16 +569,10 @@ class EngineConfig(object):
         else:
             return node.getAttribute(attribute_name)
 
-    def __init__(self, name, source_lang, target_lang,
-                 datastream_enabled=True, datastream_type="Embedded",
-                 db_enabled=True, db_type="Embedded"):
+    def __init__(self, name, source_lang, target_lang):
         self.name = name
         self.source_lang = source_lang
         self.target_lang = target_lang
-        self.datastream_enabled = datastream_enabled
-        self.datastream_type = datastream_type
-        self.db_enabled = db_enabled
-        self.db_type = db_type
         self.apiRoot = None
 
     def store(self, file):

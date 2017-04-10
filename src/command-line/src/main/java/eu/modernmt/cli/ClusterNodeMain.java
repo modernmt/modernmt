@@ -6,12 +6,9 @@ import eu.modernmt.config.*;
 import eu.modernmt.config.xml.XMLConfigBuilder;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.facade.ModernMT;
-import eu.modernmt.persistence.Database;
 import eu.modernmt.rest.RESTServer;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.FileOutputStream;
