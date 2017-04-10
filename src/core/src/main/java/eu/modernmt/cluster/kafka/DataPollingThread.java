@@ -4,6 +4,7 @@ import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.data.*;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.processing.ProcessingException;
+import org.apache.commons.io.IOUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.errors.WakeupException;
@@ -139,6 +140,8 @@ class DataPollingThread extends Thread {
                 break;
             }
         }
+
+        IOUtils.closeQuietly(consumer);
     }
 
     private void deliverBatch(DataBatch batch) throws Exception {

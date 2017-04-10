@@ -19,7 +19,10 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +43,6 @@ public class KafkaDataManager implements DataManager {
     private final String uuid;
     private final DataPollingThread pollingThread;
 
-    private KafkaConsumer<Integer, KafkaElement> consumer;
     private KafkaProducer<Integer, KafkaElement> producer;
 
     private KafkaChannel[] channels;
@@ -160,10 +162,11 @@ public class KafkaDataManager implements DataManager {
         // from the given partitions
         Properties consumerProperties = loadProperties("kafka-consumer.properties", host, port);
         consumerProperties.put("group.id", uuid);
-        this.consumer = new KafkaConsumer<>(consumerProperties);
-        this.consumer.assign(partitions);
 
-        ConnectionThread connectThread = new ConnectionThread();
+        KafkaConsumer<Integer, KafkaElement> consumer = new KafkaConsumer<>(consumerProperties);
+        consumer.assign(partitions);
+
+        ConnectionThread connectThread = new ConnectionThread(consumer);
         connectThread.start();
 
         try {
@@ -175,7 +178,7 @@ public class KafkaDataManager implements DataManager {
         if (connectThread.isAlive())
             throw new HostUnreachableException(host + ':' + port);
 
-        this.pollingThread.start(this.consumer);
+        this.pollingThread.start(consumer);
 
         return connectThread.getLatestPositions();
     }
@@ -345,9 +348,6 @@ public class KafkaDataManager implements DataManager {
 
     @Override
     public void close() throws IOException {
-        IOUtils.closeQuietly(consumer);
-        IOUtils.closeQuietly(producer);
-
         pollingThread.shutdown();
         try {
             if (!pollingThread.awaitTermination(TimeUnit.SECONDS, 2))
@@ -355,6 +355,8 @@ public class KafkaDataManager implements DataManager {
         } catch (InterruptedException e) {
             pollingThread.shutdownNow();
         }
+
+        IOUtils.closeQuietly(producer);
     }
 
     public KafkaChannel getChannel(String name) {
@@ -369,7 +371,12 @@ public class KafkaDataManager implements DataManager {
 
     private class ConnectionThread extends Thread {
 
+        private final KafkaConsumer<Integer, KafkaElement> consumer;
         private HashMap<Short, Long> positions = new HashMap<>(channels.length);
+
+        private ConnectionThread(KafkaConsumer<Integer, KafkaElement> consumer) {
+            this.consumer = consumer;
+        }
 
         private HashMap<Short, Long> getLatestPositions() {
             return positions;
@@ -398,8 +405,4 @@ public class KafkaDataManager implements DataManager {
         }
     }
 
-    public static void main(String[] args) throws Throwable {
-        Properties consumerProperties = loadProperties("kafka-consumer.properties", "localhost", 9042);
-        new KafkaConsumer<>(consumerProperties);
-    }
 }

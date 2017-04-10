@@ -7,7 +7,7 @@ import java.io.File;
 /**
  * Created by davide on 01/09/16.
  */
-class FileConst {
+public class FileConst {
 
     private static final String SYSPROP_MMT_HOME = "mmt.home";
 
@@ -15,6 +15,7 @@ class FileConst {
     private static File _resourcePath = null;
     private static File _enginesPath = null;
     private static File _runtimePath = null;
+    private static File _vendorPath = null;
 
     private static File getHome() {
         if (_home == null) {
@@ -30,6 +31,18 @@ class FileConst {
         }
 
         return _home;
+    }
+
+    public static File getVendorPath() {
+        if (_vendorPath == null) {
+            File vendor = Paths.join(getHome(), "vendor");
+            if (!vendor.isDirectory())
+                throw new IllegalStateException("Invalid path for property '" + SYSPROP_MMT_HOME + "': " + vendor + " must be a valid directory.");
+
+            _vendorPath = vendor;
+        }
+
+        return _vendorPath;
     }
 
     public static File getResourcePath() {

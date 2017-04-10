@@ -9,9 +9,7 @@ import eu.modernmt.context.lucene.LuceneAnalyzer;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.phrasebased.MosesDecoder;
 import eu.modernmt.io.Paths;
-import eu.modernmt.persistence.Database;
 import eu.modernmt.persistence.PersistenceException;
-import eu.modernmt.persistence.cassandra.CassandraDatabase;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.TextProcessingModels;
@@ -51,6 +49,7 @@ public class Engine implements Closeable {
     private final File root;
     private final File runtime;
     private final File models;
+    private final File logs;
 
     private final String name;
     private final Locale sourceLanguage;
@@ -81,6 +80,7 @@ public class Engine implements Closeable {
         this.root = FileConst.getEngineRoot(name);
         this.runtime = FileConst.getEngineRuntime(name);
         this.models = Paths.join(this.root, "models");
+        this.logs = Paths.join(this.runtime, "logs");
 
         this.vocabulary = new RocksDBVocabulary(Paths.join(this.models, "vocabulary"));
         this.sourcePreprocessor = new Preprocessor(sourceLanguage, targetLanguage, vocabulary);
@@ -163,6 +163,10 @@ public class Engine implements Closeable {
         }
 
         return folder;
+    }
+
+    public File getLogFile(String name) {
+        return new File(this.logs, name);
     }
 
     @Override

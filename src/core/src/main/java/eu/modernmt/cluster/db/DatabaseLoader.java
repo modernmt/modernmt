@@ -55,67 +55,60 @@ public class DatabaseLoader {
      *                            and no DB with the current name was found
      */
     public static Database load(Engine engine, DatabaseConfig config, boolean createIfMissing) throws BootstrapException {
-
-        Database database = null;
-
         /*create and populate the DB if necessary*/
-
-        /*if the DB usage is enabled*/
-        if (config.isEnabled()) {
-            logger.info("Connecting to the database...");
+        logger.info("Connecting to the database...");
 
             /*if a keyspace name was passed in the config, use it; else get a default name;
             employ either the 0.15x name convention if type is embedded
             or the 1x name convention otherwise*/
-            String name = config.getName();
-            if (name == null) {
-                if (config.getType() == DatabaseConfig.Type.EMBEDDED) {
-                    name = CassandraDatabase.getDefaultKeyspace();
-                } else {
-                    name = CassandraDatabase.getDefaultKeyspace(engine.getName(), engine.getSourceLanguage(), engine.getTargetLanguage());
+        String name = config.getName();
+        if (name == null) {
+            if (config.getType() == DatabaseConfig.Type.EMBEDDED) {
+                name = CassandraDatabase.getDefaultKeyspace();
+            } else {
+                name = CassandraDatabase.getDefaultKeyspace(engine.getName(), engine.getSourceLanguage(), engine.getTargetLanguage());
+            }
+        }
+
+        // create the Database object (an access point to the db in the running process)
+        CassandraDatabase database = new CassandraDatabase(
+                config.getHost(),
+                config.getPort(),
+                name);
+        logger.info("Connected to the database");
+
+        // if a db with that name hasn't been created yet in db process,
+        Connection connection = null;
+        try {
+            if (!database.exists()) {
+
+                // if should create a db when it doesn't exist yet,
+                // then create it and populate it
+                if (createIfMissing) {
+                    database.create();
+
+                    File baselineDomains = Paths.join(engine.getModelsPath(), "db", "baseline_domains.json");
+                    List<Domain> domains = BaselineDomainsCollection.load(baselineDomains);
+                    connection = database.getConnection();
+
+                    DomainDAO domainDao = database.getDomainDAO(connection);
+                    for (Domain domain : domains) {
+                        domainDao.put(domain, true);
+
+                    }
+                    logger.info("Database initialized");
+                }
+                // else, throw an exception
+                else {
+                    throw new BootstrapException("Missing database: " + name);
                 }
             }
+            // if the db is already there, do nothing
 
-            // create the Database object (an access point to the db in the running process)
-            database = new CassandraDatabase(
-                    config.getHost(),
-                    config.getPort(),
-                    name);
-            logger.info("Connected to the database");
-
-            // if a db with that name hasn't been created yet in db process,
-            Connection connection = null;
-            try {
-                if (!database.exists()) {
-
-                    // if should create a db when it doesn't exist yet,
-                    // then create it and populate it
-                    if (createIfMissing) {
-                        database.create();
-
-                        File baselineDomains = Paths.join(engine.getModelsPath(), "db", "baseline_domains.json");
-                        List<Domain> domains = BaselineDomainsCollection.load(baselineDomains);
-                        connection = database.getConnection();
-
-                        DomainDAO domainDao = database.getDomainDAO(connection);
-                        for (Domain domain : domains) {
-                            domainDao.put(domain, true);
-
-                        }
-                        logger.info("Database initialized");
-                    }
-                    // else, throw an exception
-                    else {
-                        throw new BootstrapException("Missing database: " + name);
-                    }
-                }
-                // if the db is already there, do nothing
-
-            } catch (PersistenceException e) {
-                throw new BootstrapException("Unable to initialize the DB", e);
-            } finally {
-                IOUtils.closeQuietly(connection);
-            }
+        } catch (PersistenceException e) {
+            throw new BootstrapException("Unable to initialize the DB", e);
+        } finally {
+            IOUtils.closeQuietly(connection);
         }
 
         /*the db has been updated if the configuration let it; else it is still null*/

@@ -144,13 +144,12 @@ public class CorpusBucket implements Closeable {
 
     @Override
     public void close() throws IOException {
-        if (stream == null)
-            throw new IllegalStateException("Bucket not open");
+        if (stream != null) {
+            this.flush();
 
-        this.flush();
-
-        stream.close();
-        stream = null;
+            stream.close();
+            stream = null;
+        }
     }
 
 }
