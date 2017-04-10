@@ -185,6 +185,7 @@ class _builder_logger:
 
 
 ################################################################################################
+
 # An _MMTEngineBuilder manages the initialization of a new engine.
 # The builder is created when mmt.py receives a create request from command line.
 # At that point an Engine has **already** been instantiated
@@ -291,32 +292,50 @@ class _MMTEngineBuilder:
 
             # run tm_cleanup step on the bilingual_corpora if required.
             # Obtain cleaned bicorpora
-            cleaned_bicorpora = self._run_step('tm_cleanup', self._step_tm_cleanup, logger=logger,
+            cleaned_bicorpora = self._run_step('tm_cleanup',
+                                               self._step_tm_cleanup,
+                                               logger=logger,
                                                values=[bilingual_corpora])
 
             # run __db_map step (always: user can't skip it)
             # on the cleaned bicorpora and the original monocorpora;
             # obtain base bicorpora and base monocorpora
-            base_bicorpora, base_monocorpora = self._run_step('__db_map', self._step_init, forced=True,
+            base_bicorpora, base_monocorpora = self._run_step('__db_map',
+                                                              self._step_init,
+                                                              forced=True,
                                                               values=[cleaned_bicorpora, monolingual_corpora])
 
             # run preprocess step if required.
             # Return processed bi and mono corpora and cleaned bicorpora
             processed_bicorpora, processed_monocorpora, cleaned_bicorpora =\
-                self._run_step('preprocess', self._step_preprocess, logger=logger,
+                self._run_step('preprocess',
+                               self._step_preprocess,
+                               logger=logger,
                                values=[base_bicorpora, base_monocorpora, base_bicorpora])
 
             # run context_analyzer step base_bicorpora if required.
-            _ = self._run_step('context_analyzer', self._step_context_analyzer, logger=logger, values=[base_bicorpora])
+            _ = self._run_step('context_analyzer',
+                               self._step_context_analyzer,
+                               logger=logger,
+                               values=[base_bicorpora])
 
             # run aligner step cleaned_bicorpora if required.
-            _ = self._run_step('aligner', self._step_aligner, logger=logger, values=[cleaned_bicorpora])
+            _ = self._run_step('aligner',
+                               self._step_aligner,
+                               logger=logger,
+                               values=[cleaned_bicorpora])
 
             # run tm step cleaned_bicorpora if required.
-            _ = self._run_step('tm', self._step_tm, logger=logger, values=[cleaned_bicorpora])
+            _ = self._run_step('tm',
+                               self._step_tm,
+                               logger=logger,
+                               values=[cleaned_bicorpora])
 
             # run lm step on the joint list of processed_bicorpora and processed_monocorpora
-            _ = self._run_step('lm', self._step_lm, logger=logger, values=[processed_bicorpora + processed_monocorpora])
+            _ = self._run_step('lm',
+                               self._step_lm,
+                               logger=logger,
+                               values=[processed_bicorpora + processed_monocorpora])
 
             # Writing config file
             with logger.step('Writing config files') as _:
@@ -444,10 +463,12 @@ class _MMTEngineBuilder:
             cleaned_bicorpora = BilingualCorpus.list(cleaned_folder)
         else:
             processed_bicorpora, processed_monocorpora = self._engine.training_preprocessor.process(
-                bilingual_corpora + monolingual_corpora, preprocessed_folder,
-                (self._engine.data_path if self._split_trainingset else None), log=logger.stream)
-            cleaned_bicorpora = self._engine.training_preprocessor.clean(processed_bicorpora, cleaned_folder)
-
+                bilingual_corpora + monolingual_corpora,
+                preprocessed_folder,
+                (self._engine.data_path if self._split_trainingset else None),
+                log=logger.stream)
+            cleaned_bicorpora = self._engine.training_preprocessor.clean(
+                processed_bicorpora, cleaned_folder)
         return processed_bicorpora, processed_monocorpora, cleaned_bicorpora
 
     # This step function performs the context analyzer training with the base corpora
@@ -481,12 +502,11 @@ class _MMTEngineBuilder:
 ##########################################################################################
 # This private class uses checkpoint techniques
 # to that make it possible to resume a past attempt of engine creation
-# if it was unexpectedly interrupted
 class _CheckpointManager:
 
-    # this method is used to create a checkpointManager when resume is TRUE,
-    # so the checkpointManager is initialized with the path of the checkpoints file to read.
-    # Passed steps are read from such file.
+    # initialize a CheckpointManager with the path of the checkpoints file to read,
+    # and read from it which steps have already been passed in previous initialization attempts.
+    # This method is only called when resume is TRUE.
     @staticmethod
     def load_from_file(file_path):
         try:
@@ -498,44 +518,36 @@ class _CheckpointManager:
 
         return _CheckpointManager(file_path, passed_steps)
 
-    # this method is used to create a checkpointManager when resume is FALSE,
-    # so the checkpointManager is initialized
-    # with the path of the checkpoints file to create and fill from scratch
+    # initialize a CheckpointManager with the path of the checkpoints file to write from scratch.
+    # This method is only called when resume is FALSE.
     @staticmethod
     def create_for_engine(file_path):
         manager = _CheckpointManager(file_path, [])
         manager.save()
         return manager
 
-    # this constructor initializes a generic CheckpointManager
-    # with the path to the checkpoint file to read from (if resume mode is on)
-    # or to create from scratch (if resume mode is off)
-    # and the list of already passed steps
-    # (the list is not necessarily empty if resume mode is on,
-    # whereas is it always empty if resume mode is off)
+    # Initializes a generic CheckpointManager with
+    # the path to the checkpoint file to read from or to create from scratch)
+    # and the list of already passed steps (always empty if resume mode is off)
     def __init__(self, file_path, passed_steps):
         self._file_path = file_path
         self._passed_steps = passed_steps
 
-    # This method overwrites the checkpoint file
-    # with the actual state of the checkpoint manager.
-    # It is mainly used after completing a step, in order
-    # to remember that that step was passed.
+    # Overwrite the checkpoint file with the current state of the checkpoint manager.
+    # Mainly used after completing a step, in order to mark that that step was passed.
     def save(self):
         with open(self._file_path, 'w') as json_file:
             json.dump(self._passed_steps, json_file)
 
-    # This method stores a new passed step in the passed steps list
-    # of the checkpoint manager (without saving it in the checkpoint file).
-    # It is generally followed by save().
+    # Store a new passed step in the local passed steps list without updating the checkpoint file.
+    # The call of this method is generally followed by save() to update the checkpoint file too.
     def completed(self, step):
         self._passed_steps.append(step)
         return self
 
-    # This method checks if a step should be run.
-    # A step should only be run if it is not in the passed steps list,
-    # meaning that either resume mode is OFF or it is ON and the step was not performed
-    # in the previous attempt
+    # Check whether a step should be run or not.
+    # A step should only be run if it is not in the passed steps list.
+    # (this happens if resume is FALSE or if it is TRUE and the step was not performed before)
     def to_be_run(self, step_name):
         return step_name not in self._passed_steps
 
@@ -550,6 +562,7 @@ class EngineConfig(object):
         engine_el = EngineConfig._get_element_if_exists(node_el, 'engine')
         datastream_el = EngineConfig._get_element_if_exists(node_el, 'datastream')
         db_el = EngineConfig._get_element_if_exists(node_el, 'db')
+
         # get attributes from the various elements
         source_lang = EngineConfig._get_attribute_if_exists(engine_el, 'source-language')
         target_lang = EngineConfig._get_attribute_if_exists(engine_el, 'target-language')
