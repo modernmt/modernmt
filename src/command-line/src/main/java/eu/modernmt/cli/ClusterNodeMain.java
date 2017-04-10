@@ -1,19 +1,22 @@
 package eu.modernmt.cli;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.cluster.ClusterNode;
+import eu.modernmt.cluster.EmbeddedService;
 import eu.modernmt.config.*;
 import eu.modernmt.config.xml.XMLConfigBuilder;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.facade.ModernMT;
+import eu.modernmt.io.DefaultCharset;
 import eu.modernmt.rest.RESTServer;
 import org.apache.commons.cli.*;
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.FileUtils;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Properties;
+import java.lang.reflect.Field;
 
 /**
  * Created by davide on 22/04/16.
@@ -142,23 +145,59 @@ public class ClusterNodeMain {
     private static class FileStatusListener implements ClusterNode.StatusListener {
 
         private final File file;
-        private final Properties status;
+        private final JsonObject state;
 
         public FileStatusListener(File file, NodeConfig config) {
             this.file = file;
 
             NetworkConfig netConfig = config.getNetworkConfig();
             ApiConfig apiConfig = netConfig.getApiConfig();
+            DatabaseConfig dbConfig = config.getDatabaseConfig();
+            DataStreamConfig streamConfig = config.getDataStreamConfig();
 
-            this.status = new Properties();
-            status.setProperty("control_port", Integer.toString(netConfig.getPort()));
+            this.state = new JsonObject();
 
-            if (apiConfig.isEnabled())
-                status.setProperty("api_port", Integer.toString(apiConfig.getPort()));
+            if (apiConfig.isEnabled()) {
+                JsonObject api = new JsonObject();
+                api.addProperty("port", apiConfig.getPort());
+                String root = apiConfig.getApiRoot();
+                if (root != null)
+                    api.addProperty("root", root);
+                this.state.add("api", api);
+            }
+
+            if (dbConfig.isEnabled()) {
+                JsonObject db = new JsonObject();
+                db.addProperty("port", dbConfig.getPort());
+                db.addProperty("host", dbConfig.getHost());
+                this.state.add("database", db);
+            }
+
+            if (streamConfig.isEnabled()) {
+                JsonObject stream = new JsonObject();
+                stream.addProperty("port", streamConfig.getPort());
+                stream.addProperty("host", streamConfig.getHost());
+                this.state.add("datastream", stream);
+            }
+
+            this.state.addProperty("cluster_port", netConfig.getPort());
         }
 
         @Override
         public void onStatusChanged(ClusterNode node, ClusterNode.Status currentStatus, ClusterNode.Status previousStatus) {
+            JsonArray array = new JsonArray();
+
+            for (EmbeddedService service : node.getServices()) {
+                for (Process process : service.getSubprocesses()) {
+                    int pid = getPid(process);
+
+                    if (pid > 0)
+                        array.add(pid);
+                }
+            }
+
+            this.state.add("embedded_services", array);
+
             if (currentStatus == ClusterNode.Status.READY)
                 return; // Wait for REST Api to be ready
 
@@ -174,17 +213,24 @@ public class ClusterNodeMain {
         }
 
         private void storeStatus(String status) {
-            this.status.setProperty("status", status);
+            this.state.addProperty("status", status);
 
-            FileOutputStream output = null;
             try {
-                output = new FileOutputStream(file, false);
-                this.status.store(output, null);
+                FileUtils.write(file, this.state.toString(), DefaultCharset.get(), false);
             } catch (IOException e) {
                 // Nothing to do
-            } finally {
-                IOUtils.closeQuietly(output);
             }
         }
     }
+
+    private static int getPid(Process process) {
+        try {
+            Field pid = process.getClass().getDeclaredField("pid");
+            pid.setAccessible(true); // allows access to non-public fields
+            return pid.getInt(process);
+        } catch (Throwable e) {
+            return -1;
+        }
+    }
+
 }
