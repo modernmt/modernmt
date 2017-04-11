@@ -9,12 +9,10 @@ public class JoinConfig {
 
         private final String host;
         private final int port;
-        private final int dataPort;
 
-        public Member(String host, int port, int dataPort) {
+        public Member(String host, int port) {
             this.host = host;
             this.port = port;
-            this.dataPort = dataPort;
         }
 
         public String getHost() {
@@ -25,16 +23,11 @@ public class JoinConfig {
             return port;
         }
 
-        public int getDataPort() {
-            return dataPort;
-        }
-
         @Override
         public String toString() {
             return "[Member]\n" +
                     "  host = " + host + "\n" +
-                    "  port = " + port + "\n" +
-                    "  data-port = " + dataPort;
+                    "  port = " + port;
         }
 
     }
