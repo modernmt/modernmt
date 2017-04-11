@@ -73,45 +73,39 @@ public class ClusterNodeMain {
             this.config = XMLConfigBuilder.build(Engine.getConfigFile(this.engine));
             this.config.getEngineConfig().setName(this.engine);
 
+            NetworkConfig netConfig = this.config.getNetworkConfig();
+            DataStreamConfig streamConfig = this.config.getDataStreamConfig();
+            DatabaseConfig dbConfig = this.config.getDatabaseConfig();
+            ApiConfig apiConfig = netConfig.getApiConfig();
+            JoinConfig joinConfig = netConfig.getJoinConfig();
+
             String port = cli.getOptionValue("cluster-port");
-            if (port != null) {
-                NetworkConfig netConfig = this.config.getNetworkConfig();
+            if (port != null)
                 netConfig.setPort(Integer.parseInt(port));
-            }
 
             String apiPort = cli.getOptionValue("api-port");
-            if (apiPort != null) {
-                ApiConfig apiConfig = this.config.getNetworkConfig().getApiConfig();
+            if (apiPort != null)
                 apiConfig.setPort(Integer.parseInt(apiPort));
-            }
 
             String datastreamPort = cli.getOptionValue("datastream-port");
             if (datastreamPort != null)
-                this.config.getDataStreamConfig().setPort(Integer.parseInt(datastreamPort));
+                streamConfig.setPort(Integer.parseInt(datastreamPort));
 
             String databasePort = cli.getOptionValue("db-port");
             if (databasePort != null)
-                this.config.getDatabaseConfig().setPort(Integer.parseInt(databasePort));
+                dbConfig.setPort(Integer.parseInt(databasePort));
 
             String member = cli.getOptionValue("member");
 
-
             if (member != null) {
-                String[] parts = member.split(":");
-
-                JoinConfig joinConfig = this.config.getNetworkConfig().getJoinConfig();
-
                 JoinConfig.Member[] members = new JoinConfig.Member[1];
-                members[0] = new JoinConfig.Member(parts[0], Integer.parseInt(parts[1]), 0);
-
-                /* If there are members in hazelcast cluster,
-                *  update configurations accordingly*/
+                members[0] = new JoinConfig.Member(member, netConfig.getPort());
                 joinConfig.setMembers(members);
 
                 if (config.getDataStreamConfig().getType() == DataStreamConfig.Type.EMBEDDED)
-                    this.config.getDataStreamConfig().setHost(parts[0]);
+                    this.config.getDataStreamConfig().setHost(member);
                 if (config.getDatabaseConfig().getType() == DatabaseConfig.Type.EMBEDDED)
-                    this.config.getDatabaseConfig().setHost(parts[0]);
+                    this.config.getDatabaseConfig().setHost(member);
             }
         }
     }
@@ -224,11 +218,17 @@ public class ClusterNodeMain {
     }
 
     private static int getPid(Process process) {
+        // Awful, horrible code in order to get PID from a process.
+        // Yes, Java has no public API for that! ...until Java 9
+        Class<?> clazz = process.getClass();
+
         try {
-            Field pid = process.getClass().getDeclaredField("pid");
-            pid.setAccessible(true); // allows access to non-public fields
-            return pid.getInt(process);
+            Field pidField = clazz.getDeclaredField("pid");
+            pidField.setAccessible(true);
+
+            return pidField.getInt(process);
         } catch (Throwable e) {
+            // Not good
             return -1;
         }
     }
