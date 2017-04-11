@@ -500,6 +500,7 @@ class _MMTEngineBuilder:
 
 
 ##########################################################################################
+
 # This private class uses checkpoint techniques
 # to that make it possible to resume a past attempt of engine creation
 class _CheckpointManager:
@@ -551,56 +552,13 @@ class _CheckpointManager:
     def to_be_run(self, step_name):
         return step_name not in self._passed_steps
 
-
-########################################################################################
-class EngineConfig(object):
-    @staticmethod
-    # read engine.xconf file and import its configuration
-    def from_file(name, file):
-        # get "node" element and its children elements "engine", "kafka", "database"
-        node_el = minidom.parse(file).documentElement
-        engine_el = EngineConfig._get_element_if_exists(node_el, 'engine')
-
-        # get attributes from the various elements
-        source_lang = EngineConfig._get_attribute_if_exists(engine_el, 'source-language')
-        target_lang = EngineConfig._get_attribute_if_exists(engine_el, 'target-language')
-
-        # all configuration elements are put into an EngineConfig object
-        return EngineConfig(name, source_lang, target_lang)
-
-    @staticmethod
-    def _get_element_if_exists(parent, child_name):
-        children = parent.getElementsByTagName(child_name)
-        if len(children) is 0:
-            return None
-        else:
-            return children[0]
-
-    @staticmethod
-    def _get_attribute_if_exists(node, attribute_name):
-        if node is None:
-            return None
-        else:
-            return node.getAttribute(attribute_name)
-
-    def __init__(self, name, source_lang, target_lang):
-        self.name = name
-        self.source_lang = source_lang
-        self.target_lang = target_lang
-        self.apiRoot = None
-
-    def store(self, file):
-        xml_template = '''<node xsi:schemaLocation="http://www.modernmt.eu/schema/config mmt-config-1.0.xsd"
-      xmlns="http://www.modernmt.eu/schema/config"
-      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-          <engine source-language="%s" target-language="%s" />
-</node>'''
-
-        with open(file, 'wb') as out:
-            out.write(xml_template % (self.source_lang, self.target_lang))
+#############################################################################
 
 
 class MMTEngine(object):
+
+    # these are the default training steps that each engine
+    # can perform during its creation and training
     training_steps = {
         'tm_cleanup': 'TMs clean-up',
         'preprocess': 'Corpora pre-processing',
@@ -620,43 +578,48 @@ class MMTEngine(object):
 
     @staticmethod
     def list():
-        return sorted([MMTEngine.load(name) for name in os.listdir(cli.ENGINES_DIR)
-                       if os.path.isfile(MMTEngine._get_config_path(name))], key=lambda x: x.name)
+        return sorted([name for name in os.listdir(cli.ENGINES_DIR)
+                       if os.path.isfile(MMTEngine._get_config_path(name))])
 
     # This method loads an already created engine using its name.
-    # This means that a new Engine object will be created and returned,
-    # using the name, source_language, target_language and all the other parameters
-    # that are written in the engine configuration file
+    # The method figures the configuration file path from the engine name,
+    # parses the source language and target language from the configuration file
+    # and creates and return a new engine with that name, source target and language target
     @staticmethod
     def load(name):
+
+        # figure the configuration file path from the engine name
         config_path = MMTEngine._get_config_path(name)
         if not os.path.isfile(config_path):
             raise IllegalArgumentException("Engine '%s' not found" % name)
 
-        config = EngineConfig.from_file(name, MMTEngine._get_config_path(name))
-        return MMTEngine(config.name, config.source_lang, config.target_lang, config)
+        # parse the source language and target language from the configuration file
+        engine_el = minidom.parse(config_path).documentElement.getElementsByTagName("engine")[0]
+        source_lang = engine_el.getAttribute('source-language')
+        target_lang = engine_el.getAttribute('target-language')
 
-    def __init__(self, name, source_lang, target_lang, config=None):
+        # create and return anew engine with that name, source target and language target
+        return MMTEngine(name, source_lang, target_lang)
+
+    # This method instantiates a new Engine object
+    # starting from its name, source language and target language.
+    # It calculates and stores in instance viariables
+    # all the relevant paths that an engine should store,
+    # and creates reference to object that will be used during training,
+    # such as ContextAnalyzer, TMCleaner etc.
+    # It also creates a Moses object and writes its features
+    def __init__(self, name, source_lang, target_lang):
         self.name = name if name is not None else 'default'
         self.source_lang = source_lang
         self.target_lang = target_lang
-
         self._config_file = self._get_config_path(self.name)
-
-        # use name, source_lang, target_lang and default configuration parameters
-        # if no configuration is passed;
-        # else, use the passed configuration (e.g. the engineConf.xml file)
-        self.config = EngineConfig(self.name, source_lang, target_lang) if config is None else config
-
         self.path = self._get_path(self.name)
         self.data_path = os.path.join(self.path, 'data')
         self.models_path = os.path.join(self.path, 'models')
-
         self.runtime_path = os.path.join(cli.RUNTIME_DIR, self.name)
         self._logs_path = os.path.join(self.runtime_path, 'logs')
         self._temp_path = os.path.join(self.runtime_path, 'tmp')
         self._temp_path = os.path.join(self.runtime_path, 'tmp')
-
         self._vocabulary_model = os.path.join(self.models_path, 'vocabulary')
         self._aligner_model = os.path.join(self.models_path, 'align')
         self._context_index = os.path.join(self.models_path, 'context')
@@ -673,6 +636,7 @@ class MMTEngine(object):
         self.lm = InterpolatedLM(self._lm_model)
         self.training_preprocessor = TrainingPreprocessor(self.source_lang, self.target_lang, self._vocabulary_model)
         self.db = BaselineDatabase(self._db_model)
+
         self.moses = Moses(self._moses_path)
         self.moses.add_feature(MosesFeature('UnknownWordPenalty'))
         self.moses.add_feature(MosesFeature('WordPenalty'))
@@ -698,7 +662,14 @@ class MMTEngine(object):
 
     def write_configs(self):
         self.moses.create_configs()
-        self.config.store(self._config_file)
+
+        xml_template = '''<node xsi:schemaLocation="http://www.modernmt.eu/schema/config mmt-config-1.0.xsd"
+      xmlns="http://www.modernmt.eu/schema/config"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <engine source-language="%s" target-language="%s" />
+</node>'''
+        with open(self._config_file, 'wb') as out:
+            out.write(xml_template % (self.source_lang, self.target_lang))
 
     def get_logfile(self, name, ensure=True):
         if ensure and not os.path.isdir(self._logs_path):

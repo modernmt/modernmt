@@ -69,7 +69,7 @@ def is_running(pid):
         return True
 
 
-def kill(pid, timeout=2):
+def kill(pid, timeout=2, ignore_errors=False):
     if pid is None or pid == 0:
         return
 
@@ -79,6 +79,10 @@ def kill(pid, timeout=2):
     except TimeoutExpired:
         os.kill(pid, signal.SIGKILL)
         wait(pid)
+    except OSError:
+        if not ignore_errors:
+            raise
+
 
 
 def wait(pid, timeout=None):

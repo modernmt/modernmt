@@ -2,7 +2,6 @@ import json as js
 import logging
 import multiprocessing
 import os
-import shutil
 import subprocess
 import tempfile
 import time
@@ -11,8 +10,8 @@ import requests
 
 import cli
 from cli import mmt_javamain, IllegalStateException, IllegalArgumentException
+from cli.engine import MMTEngine
 from cli.libs import fileutils, daemon, shell
-from cli.libs import netutils
 from cli.mt import BilingualCorpus
 from cli.mt.processing import TrainingPreprocessor, Tokenizer
 
@@ -27,19 +26,16 @@ DEFAULT_MMT_DB_PORT = 9042
 class MMTApi:
     DEFAULT_TIMEOUT = 60 * 60  # sec
 
-    def __init__(self, host="localhost", port=None, root=None):
-        if host[:7] == "http://":
-            host = host[7:]
-        if host.find(":") != -1:
-            host, port = host.split(":")
-        port = port if port else DEFAULT_MMT_API_PORT
-        self.port = int(port)
-        self.host = host
+    def __init__(self, host=None, port=None, root=None):
+        self.port = port
+        self.host = host if host is not None else "localhost"
 
         if root is None:
-            self._url_template = 'http://{host}:{port}/{endpoint}'
+            self.base_path = 'http://%s:%d' % (self.host, self.port)
         else:
-            self._url_template = 'http://{host}:{port}' + root + '/{endpoint}'
+            self.base_path = 'http://%s:%d/%s' % (self.host, self.port, root)
+
+        self._url_template = self.base_path + "/{endpoint}"
 
         logging.getLogger('requests').setLevel(1000)
         logging.getLogger('urllib3').setLevel(1000)
@@ -53,17 +49,17 @@ class MMTApi:
         return content['data'] if 'data' in content else None
 
     def _get(self, endpoint, params=None):
-        url = self._url_template.format(host=self.host, port=self.port, endpoint=endpoint)
+        url = self._url_template.format(endpoint=endpoint)
         r = requests.get(url, params=params, timeout=MMTApi.DEFAULT_TIMEOUT)
         return self._unpack(r)
 
     def _delete(self, endpoint):
-        url = self._url_template.format(host=self.host, port=self.port, endpoint=endpoint)
+        url = self._url_template.format(endpoint=endpoint)
         r = requests.delete(url, timeout=MMTApi.DEFAULT_TIMEOUT)
         return self._unpack(r)
 
     def _put(self, endpoint, json=None, params=None):
-        url = self._url_template.format(host=self.host, port=self.port, endpoint=endpoint)
+        url = self._url_template.format(endpoint=endpoint)
 
         data = headers = None
         if json is not None:
@@ -76,7 +72,7 @@ class MMTApi:
         return self._unpack(r)
 
     def _post(self, endpoint, json=None, params=None):
-        url = self._url_template.format(host=self.host, port=self.port, endpoint=endpoint)
+        url = self._url_template.format(endpoint=endpoint)
 
         data = headers = None
         if json is not None:
@@ -190,13 +186,15 @@ class _tuning_logger:
         print 'DONE (in %ds)' % int(self._end_time - self._start_time)
 
 
+##############################################################################################
+
+
 class ClusterNode(object):
     __SIGTERM_TIMEOUT = 10  # after this amount of seconds, there is no excuse for a process to still be there.
     __LOG_FILENAME = 'node'
 
     STATUS = {
         'NONE': 0,
-
         'CREATED': 100,
         'JOINING': 200,
         'JOINED': 300,
@@ -209,33 +207,125 @@ class ClusterNode(object):
         'READY': 1000,
         'SHUTDOWN': 1100,
         'TERMINATED': 1200,
-
         'ERROR': 9999,
     }
 
-    def __init__(self, engine, rest=True, api_port=None, cluster_port=None, datastream_port=None,
-                 db_port=None, sibling=None, verbosity=None):
+    # This method creates a new ClusterNode object for an already existing engine
+    # (and therefore with an already existing node.status file)
+    @staticmethod
+    def connect(engine_name):
+        # Load the already created engine
+        engine = MMTEngine.load(engine_name)
+        # create a clusterNode and load its node.status file
+        return ClusterNode(engine)
+
+    def __init__(self, engine):
         self.engine = engine
-
-        config = self.engine.config
-
-        self.api = MMTApi(port=api_port, root=config.apiRoot)
-
+        self._properties = None
+        self._api = None
         self._pidfile = os.path.join(engine.runtime_path, 'node.pid')
-
-        self._cluster_port = cluster_port if cluster_port is not None else DEFAULT_MMT_CLUSTER_PORT
-        self._api_port = api_port if api_port is not None else DEFAULT_MMT_API_PORT
-        self._datastream_port = datastream_port if datastream_port is not None else DEFAULT_MMT_DATASTREAM_PORT
-        self._db_port = db_port if db_port is not None else DEFAULT_MMT_DB_PORT
-
-        self._start_rest_server = rest
-        self._sibling = sibling
-        self._verbosity = verbosity
-        self._status_file = os.path.join(engine.runtime_path, 'node.status')
+        self._status_file = os.path.join(engine.runtime_path, 'node.properties')
         self._log_file = engine.get_logfile(ClusterNode.__LOG_FILENAME, ensure=False)
-
         self._mert_script = os.path.join(cli.PYOPT_DIR, 'mert-moses.perl')
         self._mert_i_script = os.path.join(cli.PYOPT_DIR, 'mertinterface.py')
+        self._update_properties()
+
+    def start(self, api_port=None, cluster_port=None, datastream_port=None,
+              db_port=None, sibling=None, verbosity=None):
+
+        if self.is_running():
+            raise IllegalStateException('node process is already running')
+
+        success = False
+        process = self._start_process(api_port, cluster_port, datastream_port, db_port, sibling, verbosity)
+        pid = process.pid
+
+        if pid > 0:
+            self._set_pid(pid)
+
+            for _ in range(0, 5):
+                success = self.is_running()
+                if success:
+                    break
+
+                time.sleep(1)
+
+        if not success:
+            raise Exception('failed to start node, check log file for more details: ' + self._log_file)
+
+    def _start_process(self, api_port, cluster_port, datastream_port, db_port, sibling, verbosity):
+        if not os.path.isdir(self.engine.runtime_path):
+            fileutils.makedirs(self.engine.runtime_path, exist_ok=True)
+        logs_folder = os.path.abspath(os.path.join(self._log_file, os.pardir))
+
+        args = ['-e', self.engine.name,
+                '--status-file', self._status_file,
+                '--logs', logs_folder]
+
+        if cluster_port is not None:
+            args.append('--cluster-port')
+            args.append(str(cluster_port))
+
+        if api_port is not None:
+            args.append('--api-port')
+            args.append(str(api_port))
+
+        if datastream_port is not None:
+            args.append('--datastream-port')
+            args.append(str(datastream_port))
+
+        if db_port is not None:
+            args.append('--db-port')
+            args.append(str(db_port))
+
+        if verbosity is not None:
+            args.append('-v')
+            args.append(str(verbosity))
+
+        if sibling is not None:
+            args.append('--member')
+            args.append(sibling)
+
+        command = mmt_javamain('eu.modernmt.cli.ClusterNodeMain', args, hserr_path=logs_folder)
+
+        if os.path.isfile(self._status_file):
+            os.remove(self._status_file)
+
+        return subprocess.Popen(command, stdout=shell.DEVNULL, stderr=shell.DEVNULL, shell=False)
+
+    # Lazy Load MMTApi getter:
+    # the api are only initialized when they are needed
+    @property
+    def api(self):
+        if self._api is None:
+            self._update_properties()
+            if self._properties is not None and 'api' in self._properties:
+                api_node = self._properties["api"]
+
+                port = api_node["port"]
+                root = api_node["root"] if "root" in api_node else None
+                self._api = MMTApi(port=port, root=root)
+        return self._api
+
+    @property
+    def cluster_port(self):
+        if self._properties is not None:
+            return self._properties["cluster_port"]
+        return None
+
+    @property
+    def datastream_info(self):
+        if self._properties is not None and "datastream" in self._properties:
+            datastream_node = self._properties["datastream"]
+            return datastream_node["host"], datastream_node["port"]
+        return None
+
+    @property
+    def db_info(self):
+        if self._properties is not None and "database" in self._properties:
+            db_node = self._properties["database"]
+            return db_node["host"], db_node["port"]
+        return None
 
     def _get_pid(self):
         pid = 0
@@ -264,95 +354,47 @@ class ClusterNode(object):
     def stop(self):
         pid = self._get_pid()
 
+        self._update_properties()
+
         if self.is_running():
             daemon.kill(pid, ClusterNode.__SIGTERM_TIMEOUT)
 
-    def start(self):
-        if self.is_running():
-            raise IllegalStateException('node process is already running')
+            if self._properties is not None and "embedded_services" in self._properties:
+                for service_pid in self._properties["embedded_services"]:
+                    daemon.kill(service_pid, ignore_errors=True)
 
-        success = False
-        process = self._start_process()
-        pid = process.pid
+        os.remove(self._status_file)
+        os.remove(self._pidfile)
 
-        if pid > 0:
-            self._set_pid(pid)
-
-            for _ in range(0, 5):
-                success = self.is_running()
-                if success:
-                    break
-
-                time.sleep(1)
-
-        if not success:
-            raise Exception('failed to start node, check log file for more details: ' + self._log_file)
-
-    def _start_process(self):
-        if not os.path.isdir(self.engine.runtime_path):
-            fileutils.makedirs(self.engine.runtime_path, exist_ok=True)
-        logs_folder = os.path.abspath(os.path.join(self._log_file, os.pardir))
-
-        args = ['-e', self.engine.name,
-                '-p', str(self._cluster_port),
-                '--datastream-port', str(self._datastream_port),
-                '--db-port', str(self._db_port),
-                '--status-file', self._status_file,
-                '--logs', logs_folder]
-
-        if self._start_rest_server:
-            args.append('-a')
-            args.append(str(self._api_port))
-
-        if self._verbosity is not None:
-            args.append('-v')
-            args.append(str(self._verbosity))
-
-        if self._sibling is not None:
-            args.append('--member')
-            args.append('%s:%d' % (self._sibling, self._cluster_port))
-
-        command = mmt_javamain('eu.modernmt.cli.ClusterNodeMain', args, hserr_path=logs_folder)
-
-        if os.path.isfile(self._status_file):
-            os.remove(self._status_file)
-
-        return subprocess.Popen(command, stdout=shell.DEVNULL, stderr=shell.DEVNULL, shell=False)
-
-    def get_state(self):
-        state = None
-
+    # PROPERTIES: whole content of the runtime file if it exists
+    def _update_properties(self):
+        properties = None
         if os.path.isfile(self._status_file) and self.is_running():
-            state = {}
-
-            with open(self._status_file) as properties:
-                for line in properties:
-                    line = line.strip()
-
-                    if not line.startswith('#'):
-                        (key, value) = line.split('=', 2)
-                        state[key] = value
-
-        return state
-
-    def _get_status(self):
-        status = 'NONE'
-        state = self.get_state()
-        if state is not None and 'status' in state:
-            status = state['status']
-
-        return ClusterNode.STATUS[status] if status in ClusterNode.STATUS else ClusterNode.STATUS['NONE']
+            with open(self._status_file) as properties_file:
+                properties = js.loads(properties_file.read())
+        self._properties = properties
 
     def wait(self, status):
-        status = ClusterNode.STATUS[status]
-        current = self._get_status()
+        target_code = ClusterNode.STATUS[status]
 
-        while current < status:
-            time.sleep(1)
-            current = self._get_status() if self.is_running() else ClusterNode.STATUS['ERROR']
+        while True:
+            self._update_properties()
 
-        if current == ClusterNode.STATUS['ERROR']:
-            raise Exception('failed to start node, check log file for more details: ' + self._log_file)
+            current_status = 'NONE'
+            if self._properties is not None:
+                current_status = self._properties['status']
+
+                if current_status not in ClusterNode.STATUS:
+                    current_status = 'NONE'
+                elif current_status == 'ERROR':
+                    raise Exception('failed to start node, check log file for more details: ' + self._log_file)
+
+            current_code = ClusterNode.STATUS[current_status]
+
+            if current_code < target_code:
+                time.sleep(1)
+            else:
+                break
 
     def tune(self, corpora=None, debug=False, context_enabled=True, random_seeds=False, max_iterations=25):
         if corpora is None:
