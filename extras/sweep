@@ -75,7 +75,7 @@ class EngineConfigHelper:
         args = parser.parse_args(self.arg_list())
 
         # "do not touch any of these wires":
-        injector = dependency.Injector()
+        injector = dependency.DependencyInjector()
         injector.read_args(args)
 
         engine = MMTEngine((args.source_lang, args.target_lang), self._name)
@@ -143,7 +143,7 @@ def main_sweep(argv):
     #_logconfig(False)
 
     engine = MMTEngine(name=args.engine)
-    injector = dependency.Injector()
+    injector = dependency.DependencyInjector()
     injector.read_config(engine.config)
     engine = injector.inject(engine)
     node = ClusterNode(engine, api_port=DEFAULT_MMT_API_PORT)

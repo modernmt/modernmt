@@ -108,23 +108,16 @@ class TMCleaner:
 
 
 class TrainingPreprocessor:
-    injector_section = 'cleaner'
-    injectable_fields = {
-        'ratio': ('parallel sentence length ratio', float, 3),
-        'min': ('min acceptable number of words per sentence', int, 1),
-        'max': ('max acceptable number of words per sentence', int, 80),
-    }
-
     DEV_FOLDER_NAME = 'dev'
     TEST_FOLDER_NAME = 'test'
 
-    def __init__(self, source_lang, target_lang, vocabulary_path):
+    def __init__(self, source_lang, target_lang, vocabulary_path, clean_ratio=3, clean_min=1, clean_max=80):
         self._source_lang = source_lang
         self._target_lang = target_lang
 
-        self._ratio = None  # injected
-        self._min = None  # injected
-        self._max = None  # injected
+        self._ratio = clean_ratio  # injected
+        self._min = clean_min  # injected
+        self._max = clean_max  # injected
 
         # TODO: this can be a python native implementation
         self._cleaner_script = os.path.join(cli.PYOPT_DIR, 'clean-corpus-n-ratio.perl')

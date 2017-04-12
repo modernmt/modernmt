@@ -17,11 +17,6 @@ from cli.mt.processing import TrainingPreprocessor, Tokenizer
 
 __author__ = 'Davide Caroselli'
 
-DEFAULT_MMT_API_PORT = 8045
-DEFAULT_MMT_CLUSTER_PORT = 5016
-DEFAULT_MMT_DATASTREAM_PORT = 9092
-DEFAULT_MMT_DB_PORT = 9042
-
 
 class MMTApi:
     DEFAULT_TIMEOUT = 60 * 60  # sec
@@ -472,7 +467,10 @@ class ClusterNode(object):
             # Run MERT algorithm
             with cmdlogger.step('Tuning') as _:
                 # Start MERT
-                decoder_flags = ['--port', str(self.api.port), '--root', self.api.root]
+                decoder_flags = ['--port', str(self.api.port)]
+
+                if self.api.root is not None:
+                    decoder_flags += ['--root', self.api.root]
 
                 if not context_enabled:
                     decoder_flags.append('--skip-context-analysis')

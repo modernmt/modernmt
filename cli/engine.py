@@ -1,68 +1,51 @@
+import json
 import logging
 import os
 import shutil
 import time
 from xml.dom import minidom
-import json
 
 import cli
 from cli import IllegalArgumentException
 from cli.libs import fileutils
 from cli.mt import BilingualCorpus
-from cli.mt.contextanalysis import ContextAnalyzer
-from cli.mt.lm import InterpolatedLM
-from cli.mt.moses import Moses, MosesFeature
-from cli.mt.phrasetable import SuffixArraysPhraseTable, LexicalReordering, FastAlign
+from cli.mt.phrasebased import ContextAnalyzer, Moses, FastAlign
 from cli.mt.processing import TrainingPreprocessor, TMCleaner
 
 __author__ = 'Davide Caroselli'
 
 
-# This class manages the Map <domainID - domainName> during the MMT creation.
-class BaselineDatabase:
-    def __init__(self, db_path):
-        self.path = db_path
-        self.file_name = "baseline_domains.json"
-        self._json_path = os.path.join(self.path, self.file_name)
+class _JsonDatabase:
+    class Domain:
+        def __init__(self, _id, name, corpus=None):
+            self.id = _id
+            self.name = name
+            self.corpus = corpus
 
-    # this method generates the initial domainID-domainName map during MMT Create
-    def generate(self, bilingual_corpora, monolingual_corpora, output):
-        # create a domains dictionary, reading the domains as the bilingual corpora names;
-        # also create an inverted domains dictionary
-        domains = []
-        inverted_domains = {}
+        def to_json(self):
+            return {'id': self.id, 'name': self.name}
+
+    def __init__(self, path):
+        self._path = path
+        self._json_file = os.path.join(path, 'baseline_domains.json')
+        self.domains = []
+
+    def insert(self, bilingual_corpora):
         for i in xrange(len(bilingual_corpora)):
-            domain = {}
-            domain_id = str(i + 1)
-            domain_name = bilingual_corpora[i].name
-            domain["id"] = domain_id
-            domain["name"] = domain_name
-            domains.append(domain)
-            inverted_domains[domain_name] = domain_id
+            corpus = bilingual_corpora[i]
+            self.domains.append(
+                _JsonDatabase.Domain((i + 1), name=corpus.name, corpus=corpus)
+            )
 
         # create the necessary folders if they don't already exist
-        if not os.path.isdir(self.path):
-            os.makedirs(self.path)
+        if not os.path.isdir(self._path):
+            os.makedirs(self._path)
 
         # create the json file and stores the domains inside it
-        with open(self._json_path, 'w') as json_file:
-            json.dump(domains, json_file)
+        with open(self._json_file, 'w') as out:
+            json.dump([domain.to_json() for domain in self.domains], out)
 
-        # use the inverted domains dictionary to figure bilingual corpora and monolingual corpora
-        bilingual_corpora = [corpus.symlink(output, name=inverted_domains[corpus.name]) for corpus in bilingual_corpora]
-        monolingual_corpora = [corpus.symlink(output) for corpus in monolingual_corpora]
-
-        return bilingual_corpora, monolingual_corpora
-
-    # this static method reads all the baseline domains
-    # from the baseline_domains file (the path of which is passed)
-    # and returns a map domain_name to domain-id
-    @staticmethod
-    def _load_map(filepath):
-        domains = {}
-        for domain, name in [line.rstrip('\n').split('\t', 2) for line in open(filepath)]:
-            domains[name] = domain
-        return domains
+        return self.domains
 
 
 ################################################################################################
@@ -479,7 +462,12 @@ class MMTEngineBuilder:
             return BilingualCorpus.splitlist(self._engine.source_lang, self._engine.target_lang, roots=training_folder)
         # else perform the baseline domains extraction and domain mapping, and return its result
         else:
-            return self._engine.db.generate(bilingual_corpora, monolingual_corpora, training_folder)
+            domains = self._engine.db.insert(bilingual_corpora)
+
+            bilingual_corpora = [domain.corpus.symlink(training_folder, name=str(domain.id)) for domain in domains]
+            monolingual_corpora = [corpus.symlink(training_folder) for corpus in monolingual_corpora]
+
+            return bilingual_corpora, monolingual_corpora
 
     # This step function performs the preprocessing of the domain-mapped corpora
     def _step_preprocess(self, bilingual_corpora, monolingual_corpora, _, skip=False, logger=None):
@@ -520,14 +508,14 @@ class MMTEngineBuilder:
         # if skip is true, then there's nothing to do because the models exist already
         if not skip:
             working_dir = self._get_tempdir('tm', delete_if_exists=True)
-            self._engine.pt.train(corpora, self._engine.aligner, working_dir, log=logger.stream)
+            self._engine.moses.pt.train(corpora, self._engine.aligner, working_dir, log=logger.stream)
 
     # This step function performs the Language Model training with the preprocessed corpora
     def _step_lm(self, corpora, skip=False, logger=None):
         # if skip is true, then there's nothing to do because the models exist already
         if not skip:
             working_dir = self._get_tempdir('lm', delete_if_exists=True)
-            self._engine.lm.train(corpora, self._engine.target_lang, working_dir, log=logger.stream)
+            self._engine.moses.lm.train(corpora, self._engine.target_lang, working_dir, log=logger.stream)
 
 
 ############################################################################################
@@ -590,27 +578,14 @@ class MMTEngine(object):
         self._aligner_model = os.path.join(self.models_path, 'align')
         self._context_index = os.path.join(self.models_path, 'context')
         self._moses_path = os.path.join(self.models_path, 'decoder')
-        self._lm_model = os.path.join(self._moses_path, 'lm')
-        self._pt_model = os.path.join(self._moses_path, 'sapt')
         self._db_model = os.path.join(self.models_path, 'db')
 
         self.analyzer = ContextAnalyzer(self._context_index, self.source_lang, self.target_lang)
         self.cleaner = TMCleaner(self.source_lang, self.target_lang)
-        self.pt = SuffixArraysPhraseTable(self._pt_model, (self.source_lang, self.target_lang))
-        self.pt.set_reordering_model('DM0')
         self.aligner = FastAlign(self._aligner_model, self.source_lang, self.target_lang)
-        self.lm = InterpolatedLM(self._lm_model)
         self.training_preprocessor = TrainingPreprocessor(self.source_lang, self.target_lang, self._vocabulary_model)
-        self.db = BaselineDatabase(self._db_model)
-
-        self.moses = Moses(self._moses_path)
-        self.moses.add_feature(MosesFeature('UnknownWordPenalty'))
-        self.moses.add_feature(MosesFeature('WordPenalty'))
-        self.moses.add_feature(MosesFeature('Distortion'))
-        self.moses.add_feature(MosesFeature('PhrasePenalty'))
-        self.moses.add_feature(self.pt, 'Sapt')
-        self.moses.add_feature(LexicalReordering(), 'DM0')
-        self.moses.add_feature(self.lm, 'InterpolatedLM')
+        self.db = _JsonDatabase(self._db_model)
+        self.moses = Moses(self._moses_path, self.source_lang, self.target_lang)
 
     def builder(self, roots, debug=False, steps=None, split_trainingset=True):
         return MMTEngineBuilder(self, roots, debug, steps, split_trainingset)

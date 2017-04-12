@@ -43,4 +43,3 @@ def resolve_ip(hostname):
         return socket.gethostbyname(hostname)
     except socket.gaierror:
         return None
-    d
