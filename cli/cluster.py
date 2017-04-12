@@ -29,16 +29,30 @@ class MMTApi:
     def __init__(self, host=None, port=None, root=None):
         self.port = port
         self.host = host if host is not None else "localhost"
+        self.root = self._normalize_root(root)
 
         if root is None:
             self.base_path = 'http://%s:%d' % (self.host, self.port)
         else:
-            self.base_path = 'http://%s:%d/%s' % (self.host, self.port, root)
+            self.base_path = 'http://%s:%d%s' % (self.host, self.port, self.root)
 
         self._url_template = self.base_path + "/{endpoint}"
 
         logging.getLogger('requests').setLevel(1000)
         logging.getLogger('urllib3').setLevel(1000)
+
+    @staticmethod
+    def _normalize_root(root):
+        if root is None or len(root.strip()) == 0:
+            return None
+
+        root = root.strip()
+        if root[0] != '/':
+            root = '/' + root
+        if root[-1] == '/':
+            root = root[:-1]
+
+        return root.strip()
 
     @staticmethod
     def _unpack(r):
@@ -150,11 +164,11 @@ class _tuning_logger:
         self.count = count
         self._current_step = 0
         self._step = None
-        self._api_port = None
+        self._api_base_path = None
 
     def start(self, node, corpora):
         engine = node.engine
-        self._api_port = node.api.port
+        self._api_base_path = node.api.base_path
 
         print '\n============ TUNING STARTED ============\n'
         print 'ENGINE:  %s' % engine.name
@@ -171,7 +185,8 @@ class _tuning_logger:
         print '\n============ TUNING SUCCESS ============\n'
         print '\nFinal BLEU: %.2f\n' % (bleu * 100.)
         print 'You can try the API with:'
-        print '\tcurl "http://localhost:{port}/translate?q=hello+world&context=computer"'.format(port=self._api_port)
+        print '\tcurl "%s/translate?q=hello+world&context=computer"' % self._api_base_path + \
+              ' | python -mjson.tool'
         print
 
     def __enter__(self):
@@ -446,7 +461,7 @@ class ClusterNode(object):
             # Run MERT algorithm
             with cmdlogger.step('Tuning') as _:
                 # Start MERT
-                decoder_flags = ['--port', str(self.api.port)]
+                decoder_flags = ['--port', str(self.api.port), '--root', self.api.root]
 
                 if not context_enabled:
                     decoder_flags.append('--skip-context-analysis')

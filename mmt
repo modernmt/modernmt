@@ -143,6 +143,9 @@ def main_start(argv):
     # create a clusterNode for that engine
     node = ClusterNode.connect(args.engine)
 
+    if node.is_running():
+        raise IllegalArgumentException("node process is already running")
+
     success = False
 
     try:

@@ -26,7 +26,7 @@ class XMLNetworkConfigBuilder extends XMLAbstractBuilder {
             config.setListeningInterface(getStringAttribute("interface"));
         if (hasAttribute("port"))
             config.setPort(getIntAttribute("port"));
-        
+
         apiConfigBuilder.build(config.getApiConfig());
         joinConfigBuilder.build(config.getJoinConfig());
 
@@ -80,9 +80,8 @@ class XMLNetworkConfigBuilder extends XMLAbstractBuilder {
 
             String host = getStringAttribute(element, "host");
             int port = getIntAttribute(element, "port");
-            int dataPort = getIntAttribute(element, "data-port");
 
-            return new JoinConfig.Member(host, port, dataPort);
+            return new JoinConfig.Member(host, port);
         }
 
     }

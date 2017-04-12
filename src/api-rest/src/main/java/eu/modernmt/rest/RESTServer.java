@@ -67,17 +67,15 @@ public class RESTServer {
         this.jettyServer = new Server(options.port);
 
         Handler rootHandler;
-
-        if (options.contextPath == null) {
+        String contextPath = normalizeContextPath(options.contextPath);
+        if (contextPath == null) {
             ServletHandler router = new ServletHandler();
             router.addServletWithMapping(Router.class, "/*");
-
             rootHandler = router;
         } else {
             ServletContextHandler contextHandler = new ServletContextHandler();
-            contextHandler.setContextPath(options.contextPath);
+            contextHandler.setContextPath(contextPath);
             contextHandler.addServlet(Router.class, "/*");
-
             rootHandler = contextHandler;
         }
 
@@ -86,6 +84,18 @@ public class RESTServer {
         multipartWrapper.setHandler(rootHandler);
 
         jettyServer.setHandler(multipartWrapper);
+    }
+
+    private String normalizeContextPath(String contextPath) {
+        if (contextPath == null || contextPath.trim().isEmpty())
+            return null;
+
+        contextPath = contextPath.trim();
+        if (contextPath.charAt(0) != '/')
+            contextPath = '/' + contextPath;
+        if (contextPath.charAt(contextPath.length() - 1) == '/')
+            contextPath = contextPath.substring(0, contextPath.length() - 1);
+        return contextPath;
     }
 
     public void start() throws Exception {
