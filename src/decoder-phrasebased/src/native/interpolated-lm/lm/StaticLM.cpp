@@ -31,19 +31,78 @@ namespace mmt {
                 return state.Length();
             }
         };
+
+        template<class Model>
+        class StaticLMImpl : public StaticLM {
+        public:
+            StaticLMImpl(const string &modelPath, const lm::ngram::Config config);
+
+            ~StaticLMImpl();
+
+            float ComputeProbability(const wid_t word, const HistoryKey *historyKey, const context_t *context,
+                                     HistoryKey **outHistoryKey) const override;
+
+            HistoryKey *MakeHistoryKey(const vector<wid_t> &phrase) const override;
+
+            HistoryKey *MakeEmptyHistoryKey() const override;
+
+            bool IsOOV(const context_t *context, const wid_t word) const override;
+
+        private:
+            Model *model;
+        };
+
     }
 }
 
-StaticLM::StaticLM(const string &modelPath) {
-    const lm::ngram::Config config;
-    model = new lm::ngram::Model(modelPath.c_str(), config);
+StaticLM *StaticLM::LoadFromPath(const string &modelPath, const Options::StaticLM &options) {
+    lm::ngram::Config config;
+
+    bool quantize = false;
+    bool bhiksha = false;
+
+    if (options.quantization_bits > 0) {
+        config.prob_bits = config.backoff_bits = options.quantization_bits;
+        quantize = true;
+    }
+
+    if (options.pointers_compression_bits > 0) {
+        config.pointer_bhiksha_bits = options.pointers_compression_bits;
+        bhiksha = true;
+    }
+
+    switch (options.type) {
+        case Options::StaticLMType::TRIE:
+            if (quantize) {
+                if (bhiksha)
+                    return new StaticLMImpl<lm::ngram::QuantArrayTrieModel>(modelPath, config);
+                else
+                    return new StaticLMImpl<lm::ngram::QuantTrieModel>(modelPath, config);
+            } else {
+                if (bhiksha)
+                    return new StaticLMImpl<lm::ngram::ArrayTrieModel>(modelPath, config);
+                else
+                    return new StaticLMImpl<lm::ngram::TrieModel>(modelPath, config);
+            }
+        case Options::StaticLMType::PROBING:
+            return new StaticLMImpl<lm::ngram::ProbingModel>(modelPath, config);
+    }
+
+    throw invalid_argument("invalid static lm type: " + to_string(options.type));
 }
 
-StaticLM::~StaticLM() {
+template<class Model>
+StaticLMImpl<Model>::StaticLMImpl(const string &modelPath, const lm::ngram::Config config) {
+    model = new Model(modelPath.c_str(), config);
+}
+
+template<class Model>
+StaticLMImpl<Model>::~StaticLMImpl() {
     delete model;
 }
 
-HistoryKey *StaticLM::MakeHistoryKey(const vector<wid_t> &phrase) const {
+template<class Model>
+HistoryKey *StaticLMImpl<Model>::MakeHistoryKey(const vector<wid_t> &phrase) const {
     lm::ngram::State state0 = model->NullContextState();
     lm::ngram::State state1;
 
@@ -63,17 +122,20 @@ HistoryKey *StaticLM::MakeHistoryKey(const vector<wid_t> &phrase) const {
     return new KenLMHistoryKey(state0);
 }
 
-HistoryKey *StaticLM::MakeEmptyHistoryKey() const {
+template<class Model>
+HistoryKey *StaticLMImpl<Model>::MakeEmptyHistoryKey() const {
     return new KenLMHistoryKey(model->NullContextState());
 }
 
-bool StaticLM::IsOOV(const context_t *context, const wid_t word) const {
+template<class Model>
+bool StaticLMImpl<Model>::IsOOV(const context_t *context, const wid_t word) const {
     lm::WordIndex vocab = model->GetVocabulary().Index(std::to_string(word));
     return (vocab == model->GetVocabulary().NotFound());
 }
 
-float StaticLM::ComputeProbability(const wid_t word, const HistoryKey *historyKey, const context_t *context,
-                                   HistoryKey **outHistoryKey) const {
+template<class Model>
+float StaticLMImpl<Model>::ComputeProbability(const wid_t word, const HistoryKey *historyKey,
+                                              const context_t *context, HistoryKey **outHistoryKey) const {
     // get the input state
     const KenLMHistoryKey *inKey = static_cast<const KenLMHistoryKey *> (historyKey);
     assert(inKey != NULL);
@@ -81,7 +143,8 @@ float StaticLM::ComputeProbability(const wid_t word, const HistoryKey *historyKe
     const lm::ngram::State &in_state = inKey->state;
     const lm::base::Vocabulary &vocabulary = model->GetVocabulary();
 
-    const lm::WordIndex wordIndex = (word == kVocabularyEndSymbol) ? vocabulary.EndSentence() : vocabulary.Index(std::to_string(word));
+    const lm::WordIndex wordIndex = (word == kVocabularyEndSymbol) ? vocabulary.EndSentence() : vocabulary.Index(
+            std::to_string(word));
 
     lm::ngram::State state;
     float prob = model->FullScore(in_state, wordIndex, state).prob;

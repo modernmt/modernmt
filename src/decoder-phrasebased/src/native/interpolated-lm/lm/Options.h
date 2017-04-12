@@ -45,6 +45,31 @@ namespace mmt {
             // Time in seconds between Garbage Collector activations
             double gc_timeout = 120.; // seconds
 
+            /* Static LanguageModel options */
+
+            enum StaticLMType {
+                PROBING, // The fastest but uses the most memory
+                TRIE     // Slower but uses the least memory possible
+            };
+
+            struct StaticLM {
+
+                // This is the internal static lm implementation.
+                StaticLMType type = PROBING;
+
+                // If greater than 0, turns probabilities quantization on
+                // and sets the number of bits
+                uint8_t quantization_bits = 0;
+
+                // If greater than 0, it compresses pointers using an array of offsets
+                uint8_t pointers_compression_bits = 0;
+
+                StaticLM() {};
+
+            };
+
+            StaticLM static_lm;
+
             Options() {};
         };
 

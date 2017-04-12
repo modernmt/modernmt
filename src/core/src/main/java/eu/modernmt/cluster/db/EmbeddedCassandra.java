@@ -44,7 +44,7 @@ public class EmbeddedCassandra extends EmbeddedService {
     private Process process;
 
     private EmbeddedCassandra(Engine engine) throws IOException {
-        this.clusterName = "ModernMT-" + engine.getName();
+        this.clusterName = "ModernMT - " + engine.getName();
         this.db = Paths.join(engine.getModelsPath(), "db", "cassandra");
         this.runtime = engine.getRuntimeFolder("cassandra", true);
         this.logFile = engine.getLogFile("embedded-cassandra.log");

@@ -128,9 +128,8 @@ class InterpolatedLM(LanguageModel):
         merged_corpus = os.path.join(working_dir, 'merged_corpus')
         fileutils.merge([corpus.get_file(lang) for corpus in corpora], merged_corpus)
 
-        command = [self._create_slm_bin, '--discount_fallback', '-o', str(self._order),
+        command = [self._create_slm_bin, '--discount-fallback', '-o', str(self._order),
                    '--model', static_lm_model,
-                   '-S', str(KenLM.get_mem_percent()) + '%',
                    '-T', static_lm_wdir]
         if self._order > 2 and self.prune:
             command += ['--prune', '0', '0', '1']
