@@ -158,6 +158,9 @@ class MMTApi:
         return self._get('domains')
 
 
+###########################################################################################
+
+
 class _tuning_logger:
     def __init__(self, count, line_len=70):
         self.line_len = line_len
@@ -228,11 +231,19 @@ class ClusterNode(object):
     # This method creates a new ClusterNode object for an already existing engine
     # (and therefore with an already existing node.status file)
     @staticmethod
-    def connect(engine_name):
-        # Load the already created engine
-        engine = MMTEngine.load(engine_name)
+    def connect(engine_name, silent=False):
+
+        engine = None
+        try:
+            # Load the already created engine
+            engine = MMTEngine.load(engine_name)
+
+        except IllegalArgumentException:
+            if not silent:
+                raise
+
         # create a clusterNode and load its node.status file
-        return ClusterNode(engine)
+        return ClusterNode(engine) if engine is not None else None
 
     def __init__(self, engine):
         self.engine = engine
@@ -308,6 +319,29 @@ class ClusterNode(object):
 
         return subprocess.Popen(command, stdout=shell.DEVNULL, stderr=shell.DEVNULL, shell=False)
 
+    def is_running(self):
+        pid = self._get_pid()
+
+        if pid == 0:
+            return False
+
+        return daemon.is_running(pid)
+
+    def stop(self):
+        pid = self._get_pid()
+
+        self._update_properties()
+
+        if self.is_running():
+            daemon.kill(pid, ClusterNode.__SIGTERM_TIMEOUT)
+
+            if self._properties is not None and "embedded_services" in self._properties:
+                for service_pid in self._properties["embedded_services"]:
+                    daemon.kill(service_pid, ignore_errors=True)
+
+        os.remove(self._status_file)
+        os.remove(self._pidfile)
+
     # Lazy Load MMTApi getter:
     # the api are only initialized when they are needed
     @property
@@ -357,29 +391,6 @@ class ClusterNode(object):
 
         with open(self._pidfile, 'w') as pid_file:
             pid_file.write(str(pid))
-
-    def is_running(self):
-        pid = self._get_pid()
-
-        if pid == 0:
-            return False
-
-        return daemon.is_running(pid)
-
-    def stop(self):
-        pid = self._get_pid()
-
-        self._update_properties()
-
-        if self.is_running():
-            daemon.kill(pid, ClusterNode.__SIGTERM_TIMEOUT)
-
-            if self._properties is not None and "embedded_services" in self._properties:
-                for service_pid in self._properties["embedded_services"]:
-                    daemon.kill(service_pid, ignore_errors=True)
-
-        os.remove(self._status_file)
-        os.remove(self._pidfile)
 
     # PROPERTIES: whole content of the runtime file if it exists
     def _update_properties(self):
