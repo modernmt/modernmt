@@ -121,7 +121,7 @@ InterpolatedLM::InterpolatedLM(const string &modelPath, const Options &options) 
                                    options.update_max_delay, options.gc_timeout);
 
     if (self->is_slm_active)
-        self->slm = new StaticLM(slmFile.string());
+        self->slm = StaticLM::LoadFromPath(slmFile.string(), options.static_lm);
 }
 
 InterpolatedLM::~InterpolatedLM() {

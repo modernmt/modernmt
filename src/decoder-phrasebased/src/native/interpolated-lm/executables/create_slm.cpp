@@ -139,7 +139,6 @@ namespace lm {
                                   "   memory, b for bytes, K for Kilobytes, M for megabytes, then G,T,P,E,Z,Y.  \n"
                                   "   Default unit is K for Kilobytes.\n"
                                   "-q turns quantization on and sets the number of bits (e.g. -q 8).\n"
-                                  "-b sets backoff quantization bits.  Requires -q and defaults to that value.\n"
                                   "-a compresses pointers using an array of offsets.  The parameter is the\n"
                                   "   maximum number of bits encoded by the array.  Memory is minimized subject\n"
                                   "   to the maximum, so pick 255 to minimize memory.\n\n"
@@ -202,7 +201,6 @@ int main(int argc, char *argv[]) {
         const char *default_mem = util::GuessPhysicalMemory() ? "80%" : "1G";
 
         bool quantize = false;
-        bool set_backoff_bits = false;
         bool bhiksha = false;
         bool set_write_method = false;
         bool rest = false;
@@ -342,9 +340,6 @@ int main(int argc, char *argv[]) {
                 ("quantization,q", po::value<unsigned>(),
                  "Turns quantization on and sets the number of bits (e.g. -q 8).")
 //              --------------------------------------------------------------------------------------------------------
-                ("backoff-quantization,b", po::value<unsigned>(),
-                 "Sets backoff quantization bits. Requires -q and defaults to that value.")
-//              --------------------------------------------------------------------------------------------------------
                 ("pointers-compression,a", po::value<unsigned>(),
                  "Compresses pointers using an array of offsets. The parameter is the maximum number of bits "
                          "encoded by the array. Memory is minimized subject to the maximum, "
@@ -428,11 +423,6 @@ int main(int argc, char *argv[]) {
             quantize = true;
         }
 
-        if (vm.count("backoff-quantization")) {
-            config.backoff_bits = (uint8_t) vm["backoff-quantization"].as<unsigned>();
-            set_backoff_bits = true;
-        }
-
         if (vm.count("pointers-compression")) {
             config.pointer_bhiksha_bits = (uint8_t) vm["pointers-compression"].as<unsigned>();
             bhiksha = true;
@@ -470,12 +460,6 @@ int main(int argc, char *argv[]) {
 
         config.write_mmap = model.c_str();
 
-        if (!quantize && set_backoff_bits) {
-            std::cerr << "You specified backoff quantization (-b) but not probability quantization (-q)"
-                      << std::endl;
-            abort();
-        }
-
         if (model_type != "probing" && model_type != "trie")
             Usage(argv[0], default_mem);
 
@@ -504,7 +488,7 @@ int main(int argc, char *argv[]) {
                 std::cerr << "Building model of type: PROBING" << std::endl;
 
                 if (!set_write_method) config.write_method = Config::WRITE_AFTER;
-                if (quantize || set_backoff_bits) ProbingQuantizationUnsupported();
+                if (quantize) ProbingQuantizationUnsupported();
                 if (rest)
                     RestProbingModel(temporary_arpa.c_str(), config);
                 else
