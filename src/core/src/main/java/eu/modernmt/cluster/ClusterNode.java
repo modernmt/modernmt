@@ -6,7 +6,9 @@ import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.*;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.cluster.db.DatabaseLoader;
+import eu.modernmt.cluster.db.EmbeddedCassandra;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
+import eu.modernmt.cluster.kafka.EmbeddedKafka;
 import eu.modernmt.cluster.kafka.KafkaDataManager;
 import eu.modernmt.config.*;
 import eu.modernmt.context.ContextAnalyzer;
@@ -19,12 +21,13 @@ import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.persistence.Database;
-import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.Closeable;
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
@@ -69,6 +72,8 @@ public class ClusterNode {
     private Database database;
     private ITopic<Map<String, float[]>> decoderWeightsTopic;
 
+    private ArrayList<EmbeddedService> services = new ArrayList<>(2);
+
     private final Thread shutdownThread = new Thread() {
         @Override
         public void run() {
@@ -80,24 +85,54 @@ public class ClusterNode {
 //                // Ignore exception
 //            }
 
-            if (executor != null)
-                executor.shutdownNow();
-            hazelcast.shutdown();
-
-            try {
-                if (executor != null)
-                    executor.awaitTermination(1, TimeUnit.DAYS);
-            } catch (InterruptedException e) {
-                // Ignore exception
-            }
+            forcefullyClose(executor);
+            forcefullyClose(hazelcast);
 
             // Close engine resources
-            engine.close();
-            IOUtils.closeQuietly(ClusterNode.this.database);
+            forcefullyClose(engine);
+
+            // Close services
+            forcefullyClose(database);
+            forcefullyClose(dataManager);
+
+            for (EmbeddedService service : services)
+                forcefullyClose(service);
 
             setStatus(Status.TERMINATED);
         }
     };
+
+    private static void forcefullyClose(Closeable closeable) {
+        try {
+            if (closeable != null) closeable.close();
+        } catch (Throwable e) {
+            // Ignore
+        }
+    }
+
+    private static void forcefullyClose(ExecutorService executor) {
+        try {
+            if (executor != null) executor.shutdownNow();
+        } catch (Throwable e) {
+            // Ignore
+        }
+    }
+
+    private static void forcefullyClose(EmbeddedService service) {
+        try {
+            if (service != null) service.shutdown();
+        } catch (Throwable e) {
+            // Ignore
+        }
+    }
+
+    private static void forcefullyClose(HazelcastInstance hazelcast) {
+        try {
+            if (hazelcast != null) hazelcast.shutdown();
+        } catch (Throwable e) {
+            // Ignore
+        }
+    }
 
     public ClusterNode() {
         this.status = Status.CREATED;
@@ -227,6 +262,9 @@ public class ClusterNode {
     public void start(NodeConfig nodeConfig, long joinTimeoutInterval, TimeUnit joinTimeoutUnit) throws FailedToJoinClusterException, BootstrapException {
         Config hazelcastConfig = getHazelcastConfig(nodeConfig, joinTimeoutInterval, joinTimeoutUnit);
 
+        Object[] members = nodeConfig.getNetworkConfig().getJoinConfig().getMembers();
+        boolean isLeader = members == null || members.length == 0;
+
         Timer globalTimer = new Timer();
         Timer timer = new Timer();
 
@@ -247,7 +285,16 @@ public class ClusterNode {
         setStatus(Status.JOINED);
         logger.info("Node joined the cluster in " + (timer.time() / 1000.) + "s");
 
-        Runtime.getRuntime().addShutdownHook(new ShutdownHook());
+        // ========================
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                ClusterNode.this.shutdown();
+                ClusterNode.this.awaitTermination(1, TimeUnit.DAYS);
+            } catch (Throwable e) {
+                // Ignore
+            }
+        }));
 
         // ========================
 
@@ -280,6 +327,12 @@ public class ClusterNode {
 
         DataStreamConfig dataStreamConfig = nodeConfig.getDataStreamConfig();
         if (dataStreamConfig.isEnabled()) {
+            // if Leader node and db type is 'embedded', start an instance of cassandra process
+            if (isLeader && DataStreamConfig.Type.EMBEDDED == dataStreamConfig.getType()) {
+                EmbeddedKafka kafka = EmbeddedKafka.start(engine, dataStreamConfig.getPort());
+                this.services.add(kafka);
+            }
+
             dataManager = new KafkaDataManager(uuid, engine, dataStreamConfig);
             dataManager.setDataManagerListener(this::updateChannelsPositions);
 
@@ -320,15 +373,19 @@ public class ClusterNode {
         // ========================
 
         DatabaseConfig databaseConfig = nodeConfig.getDatabaseConfig();
+        if (databaseConfig.isEnabled()) {
+            // if Leader node and db type is 'embedded', start an instance of cassandra process
+            if (isLeader && DatabaseConfig.Type.EMBEDDED == databaseConfig.getType()) {
+                EmbeddedCassandra cassandra = EmbeddedCassandra.start(engine, databaseConfig.getPort());
+                this.services.add(cassandra);
+            }
 
-        // if I'm working standalone or if I'm the leader of an Embedded cluster
-        // I am allowed to create a DB if it is missing
-        boolean createIfMissing =
-                isEmpty(nodeConfig.getNetworkConfig().getJoinConfig().getMembers()) ||
-                        databaseConfig.getType() == DatabaseConfig.Type.STANDALONE;
-
-        this.database = DatabaseLoader.load(engine, databaseConfig, createIfMissing);
-        //load may throw a bootstrap exception: just let it pass
+            // if I'm working standalone or if I'm the leader of an Embedded cluster
+            // I am allowed to create a DB if it is missing
+            boolean createIfMissing = isLeader || databaseConfig.getType() != DatabaseConfig.Type.EMBEDDED;
+            this.database = DatabaseLoader.load(engine, databaseConfig, createIfMissing);
+            //load may throw a bootstrap exception: just let it pass
+        }
 
         // ========================
 
@@ -340,6 +397,10 @@ public class ClusterNode {
         setStatus(Status.READY);
 
         logger.info("Node started in " + (globalTimer.time() / 1000.) + "s");
+    }
+
+    public List<EmbeddedService> getServices() {
+        return Collections.unmodifiableList(services);
     }
 
     private void updateChannelsPositions(Map<Short, Long> positions) {
@@ -393,29 +454,6 @@ public class ClusterNode {
             unit.timedJoin(shutdownThread, timeout);
 
         return !shutdownThread.isAlive();
-    }
-
-    private class ShutdownHook extends Thread {
-
-        @Override
-        public void run() {
-            try {
-                ClusterNode.this.shutdown();
-            } catch (Throwable e) {
-                // Ignore
-            }
-            try {
-                ClusterNode.this.awaitTermination(1, TimeUnit.DAYS);
-            } catch (Throwable e) {
-                // Ignore
-            }
-        }
-
-    }
-
-
-    private static boolean isEmpty(Object[] array) {
-        return array == null || array.length == 0;
     }
 
     private static class Timer {

@@ -2,24 +2,19 @@
 import argparse
 import os
 import shutil
-import socket
 import sys
-
-import time
-
 from cli import dependency, IllegalStateException, IllegalArgumentException
 from cli.cluster import ClusterNode, DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORT, DEFAULT_MMT_DATASTREAM_PORT, \
     DEFAULT_MMT_DB_PORT
 from cli.engine import MMTEngine
 from cli.evaluation import Evaluator
-from cli.libs import netutils
 from cli.libs import shell
 from cli.libs.progressbar import Progressbar
 from cli.mt import BilingualCorpus
 from cli.mt.processing import TrainingPreprocessor
 from cli.translation import BatchTranslator, InteractiveTranslator, XLIFFTranslator
 
-__author__ = 'Davide Caroselli'
+__author__ = 'Davide Caroselli and Andrea Rossi'
 __description = '''\
   MMT is a context-aware, incremental and general purpose Machine Translation technology.
 
@@ -46,7 +41,6 @@ def __check_java():
                 if '"1.8' in tokens[tokens.index('version') + 1]:
                     ok = True
                     break
-
         if not ok:
             print 'ERROR: Wrong version of Java, required Java 8'
             exit(1)
@@ -87,21 +81,26 @@ def main_create(argv):
         dependency.argparse_group(parser, component)
 
     if len(argv) > 0:
-        args = parser.parse_args(argv)
 
+        # parse args
+        args = parser.parse_args(argv)
         injector = dependency.Injector()
         injector.read_args(args)
 
-        # during create NO configuration files exist yet so launch the engine with default config
+        # during MMT create no configuration files exist yet
+        # so create a new engine from scratch
         engine = MMTEngine(args.engine, args.source_lang, args.target_lang)
         engine = injector.inject(engine)
 
+        # create a new clusterNode for that engine
         node = ClusterNode(engine)
 
         if node.is_running():
             node.stop()
 
-        builder = engine.builder(args.corpora_paths, debug=args.debug, steps=args.training_steps,
+        builder = engine.builder(args.corpora_paths,
+                                 debug=args.debug,
+                                 steps=args.training_steps,
                                  split_trainingset=args.split_corpora)
 
         if args.resume:
@@ -134,8 +133,6 @@ def main_start(argv):
                         help='the network port used by the DB, currently implemented with Cassandra '
                              '(default is {port}'.format(port=DEFAULT_MMT_DB_PORT),
                         default=None, type=int)
-    parser.add_argument('--no-rest', action='store_false', dest='has_rest', default=True,
-                        help='if no-rest is set, no REST Api will be available on this node')
     parser.add_argument('--join', dest='sibling', metavar='NODE_IP', default=None,
                         help='use this option to join this node to an existent cluster. '
                              'NODE is the IP of the remote host to connect to.')
@@ -143,66 +140,42 @@ def main_start(argv):
     # Parse args
     args = parser.parse_args(argv)
 
-    if not args.has_rest and args.api_port is not None:
-        raise CLIArgsException(parser, 'cannot specify api-port while no-rest option is active, '
-                                       'please remove option "-p/--api-port"')
+    # create a clusterNode for that engine
+    node = ClusterNode.connect(args.engine)
 
-    args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
-    args.cluster_port = args.cluster_port if args.cluster_port is not None else DEFAULT_MMT_CLUSTER_PORT
-    args.datastream_port = args.datastream_port if args.datastream_port is not None else DEFAULT_MMT_DATASTREAM_PORT
-    args.db_port = args.db_port if args.db_port is not None else DEFAULT_MMT_DB_PORT
+    if node.is_running():
+        raise IllegalArgumentException("node process is already running")
 
-    # Check if sibling is a valid ipv4 address or if it can be resolved to an IP address
-    if args.sibling is not None and not netutils.is_ipv4(args.sibling):
-        ipv4_address = netutils.resolve_ip(args.sibling)
-        if ipv4_address is not None:
-            args.sibling = ipv4_address
-        else:
-            raise IllegalArgumentException(
-                '%s is not a valid host' % args.sibling)
-
-    # Check ports
-    if args.has_rest and not netutils.is_free(args.api_port):
-        raise IllegalStateException(
-            'port %d is already in use, please specify another port with option -p/--api-port' % args.api_port)
-    if not netutils.is_free(args.cluster_port):
-        raise IllegalStateException(
-            'port %d is already in use, please specify another port with --cluster-port' % args.cluster_port)
-
-    # Exec command
-    engine = MMTEngine.load(args.engine)
-    if args.sibling is None and not engine.exists():
-        raise IllegalStateException('engine not found: ' + args.engine)
-
-    node = ClusterNode(engine, rest=args.has_rest,
-                       api_port=args.api_port, cluster_port=args.cluster_port,
-                       datastream_port=args.datastream_port, db_port=args.db_port,
-                       sibling=args.sibling, verbosity=args.verbosity)
     success = False
 
     try:
-        print
+        # start the ClusterNode
+        print 'Starting MMT engine \'{engine}\'...'.format(engine=args.engine),
+        node.start(api_port=args.api_port,
+                   cluster_port=args.cluster_port,
+                   datastream_port=args.datastream_port,
+                   db_port=args.db_port,
+                   sibling=args.sibling,
+                   verbosity=args.verbosity)
 
-        print 'Starting MMT engine \'{engine}\'...'.format(engine=engine.name),
-        node.start()
+        # wait for the node to start
         node.wait('JOINED')
         print 'OK'
-
-        if args.sibling is not None:
-            print 'Synchronizing models...',
-            node.wait('SYNCHRONIZED')
-            print 'OK'
-
-        print 'Loading models...',
+        # Current version does not synchronize models
+        # if args.sibling is not None:
+        #     print 'Synchronizing models...',
+        #     node.wait('SYNCHRONIZED')
+        #     print 'OK'
+        print 'Loading models...'
         node.wait('READY')
         print 'OK'
 
-        if args.has_rest is not None:
-            print 'You can try the API with:'
-            print '\tcurl "http://localhost:{port}/translate?q=world&context=computer"' \
-                  ' | python -mjson.tool\n'.format(port=args.api_port)
-
+        # the node has started
+        print 'You can try the API with:\n' \
+              '\tcurl "%s/translate?q=world&context=computer"' \
+              ' | python -mjson.tool\n' % node.api.base_path
         success = True
+
     except Exception:
         print 'FAIL'
         raise
@@ -216,22 +189,19 @@ def main_stop(argv):
     parser.prog = 'mmt stop'
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
+
+    # Parse args
     args = parser.parse_args(argv)
-
-    # Exec command
-    engine = MMTEngine.load(args.engine)
-    if not engine.exists():
-        raise IllegalStateException('engine not found: ' + args.engine)
-
-    node = ClusterNode(engine)
+    # connect to the already active cluster node
+    node = ClusterNode.connect(args.engine)
 
     print
-    print 'Stopping MMT engine \'{engine}\'...'.format(engine=engine.name),
+    print 'Stopping MMT engine \'{engine}\'...'.format(engine=node.engine.name),
 
+    #
     if node.is_running():
         node.stop()
-    print 'OK'
-    print
+    print 'OK \n'
 
 
 def main_tune(argv):
@@ -241,9 +211,6 @@ def main_tune(argv):
                         help='the path to the training corpora (default is the automatically splitted sample)')
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
-    parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
-                        help='the MMT API port. (default is {port})'.format(port=DEFAULT_MMT_API_PORT),
-                        default=None, type=int)
     parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='if debug is set, it enables verbose '
                                                                                  'logging and prevents temporary files '
                                                                                  'to be removed after execution')
@@ -255,18 +222,19 @@ def main_tune(argv):
                         help='set maximum iterations during tuning (default is 25)',
                         default=25, type=int)
 
+    # Parse args
     args = parser.parse_args(argv)
-    args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
 
-    engine = MMTEngine.load(args.engine)
-    if not engine.exists():
-        raise IllegalStateException('engine not found: ' + args.engine)
+    # connect to the already active cluster node
+    node = ClusterNode.connect(args.engine)
 
+    # perform tuning
     corpora = BilingualCorpus.list(args.corpora_path) if args.corpora_path is not None else None
-
-    node = ClusterNode(engine, api_port=args.api_port)
-    node.tune(corpora, debug=args.debug, context_enabled=args.context_enabled,
-              random_seeds=args.random_seeds, max_iterations=args.max_iterations)
+    node.tune(corpora,
+              debug=args.debug,
+              context_enabled=args.context_enabled,
+              random_seeds=args.random_seeds,
+              max_iterations=args.max_iterations)
 
 
 def main_evaluate(argv):
@@ -276,9 +244,6 @@ def main_evaluate(argv):
                         help='the path to the test corpora (default is the automatically splitted sample)')
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
-    parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
-                        help='the MMT API port. (default is {port})'.format(port=DEFAULT_MMT_API_PORT),
-                        default=None, type=int)
     parser.add_argument('--gt-key', dest='gt_key', metavar='GT_API_KEY', default=None,
                         help='A custom Google Translate API Key to use during evaluation')
     parser.add_argument('--gt-nmt', action='store_true', dest='gt_nmt', default=False,
@@ -290,19 +255,16 @@ def main_evaluate(argv):
                                                                                  'logging and prevents temporary files '
                                                                                  'to be removed after execution')
 
+    # Parse args
     args = parser.parse_args(argv)
-    args.api_port = args.api_port if args.api_port is not None else DEFAULT_MMT_API_PORT
 
-    engine = MMTEngine.load(args.engine)
-    if not engine.exists():
-        raise IllegalStateException('engine not found: ' + args.engine)
+    # connect to the already active cluster node
+    node = ClusterNode.connect(args.engine)
 
-    node = ClusterNode(engine, api_port=args.api_port)
+    # perform evaluation
     evaluator = Evaluator(node, google_key=args.gt_key, google_nmt=args.gt_nmt)
-
     corpora = BilingualCorpus.list(args.corpora_path) if args.corpora_path is not None \
-        else BilingualCorpus.list(os.path.join(engine.data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
-
+        else BilingualCorpus.list(os.path.join(node.engine.data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
     evaluator.evaluate(corpora=corpora, heval_output=args.heval_output, debug=args.debug)
 
     if args.heval_output is not None:
@@ -317,12 +279,12 @@ def main_delete(argv):
                         default='default')
     parser.add_argument('--yes', action='store_false', dest='ask_confirmation', default=True,
                         help='if "--yes" is set, this command won\'t ask for confirmation')
+
+    # Parse args
     args = parser.parse_args(argv)
 
-    # Exec command
-    engine = MMTEngine.load(args.engine)
-    if not engine.exists():
-        raise IllegalStateException('engine not found: ' + args.engine)
+    # connect to the already active cluster node
+    node = ClusterNode.connect(args.engine)
 
     delete = True
 
@@ -343,14 +305,11 @@ def main_delete(argv):
                 print 'Please respond with "yes" or "no" (or "y" or "n").'
 
     if delete:
-        node = ClusterNode(engine)
-        print
-        print 'Deleting engine "{engine}"...'.format(engine=engine.name),
+        print '\nDeleting engine "{engine}"...'.format(engine=args.engine),
         if node.is_running():
             node.stop()
-        shutil.rmtree(engine.path, ignore_errors=True)
-        print 'OK'
-        print
+        shutil.rmtree(node.engine.path, ignore_errors=True)
+        print 'OK\n'
     else:
         print 'Aborted'
 
@@ -360,31 +319,48 @@ def main_status(argv):
     parser.prog = 'mmt status'
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default=None)
-    args = parser.parse_args(argv)
 
+    # Parse args
+    args = parser.parse_args(argv)
     if args.engine is None:
         engines = MMTEngine.list()
     else:
-        engines = [MMTEngine.load(args.engine)]
-        if not engines[0].exists():
-            raise IllegalStateException('engine not found: ' + args.engine)
-
+        engines = [args.engine]
     if len(engines) == 0:
         print 'No engine could be found.'
         print 'You can create a new engine with the ./mmt create command.'
 
-    for engine in engines:
-        node = ClusterNode(engine)
-        status = node.get_state()
+    # Get engine names and for each engine connect to its clusterNode and print its data
+    for engine_name in engines:
+        node = ClusterNode.connect(engine_name)
+        running = node.is_running()
 
         print '-'
-        print 'Engine:   ', engine.name
-        print 'Node:     ', (
-            'running - port %s' % (status['control_port'])
-            if status is not None else 'stopped')
-        print 'Rest API: ', (
-            'running - http://localhost:%s/translate' % status['api_port']
-            if status is not None and 'api_port' in status else 'stopped')
+        print 'Engine:       ', engine_name
+
+        print 'Rest API:     ', (
+            'running - %s/translate' % node.api.base_path
+            if running and node.api is not None else 'stopped')
+
+        print 'Cluster:      ', ('running - port %d' % node.cluster_port if running else 'stopped')
+
+        datastream_info = node.datastream_info
+        if datastream_info is None and running:
+            print 'Datastream:    disabled'
+        elif running:
+            datastream_host, datastream_port = datastream_info
+            print 'Datastream:   ', ('running - %s:%d' % (datastream_host, datastream_port))
+        else:
+            print 'Datastream:    stopped'
+
+        database_info = node.db_info
+        if database_info is None and running:
+            print 'Database:      disabled'
+        elif running:
+            db_host, db_port = database_info
+            print 'Database:     ', ('running - %s:%d' % (db_host, db_port))
+        else:
+            print 'Database:      stopped'
 
 
 def main_translate(argv):
@@ -409,25 +385,22 @@ def main_translate(argv):
     # Mixed arguments
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
-    parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
-                        help='the public available REST Api port. (default is {port})'
-                        .format(port=DEFAULT_MMT_API_PORT), default=None, type=int)
     parser.add_argument('--batch', action='store_true', dest='batch', default=False,
                         help='if set, the script will read the whole stdin before send translations to MMT.'
                              'This can be used to execute translation in parallel for a faster translation. ')
     parser.add_argument('--xliff', dest='is_xliff', action='store_true', default=False,
                         help='if set, the input is a XLIFF file.')
 
+    # Parse args
     args = parser.parse_args(argv)
 
-    engine = MMTEngine.load(args.engine)
-    if not engine.exists():
-        raise IllegalStateException('engine not found: ' + args.engine)
+    # connect to the already active cluster node
+    node = ClusterNode.connect(args.engine)
 
-    node = ClusterNode(engine, api_port=args.api_port)
     if not node.is_running():
         raise IllegalStateException('engine not running: ' + args.engine)
 
+    # choose the which translator to use, depending on the input format
     if args.is_xliff:
         translator = XLIFFTranslator(node, context_string=args.context, context_file=args.context_file,
                                      context_vector=args.context_vector)
@@ -440,6 +413,7 @@ def main_translate(argv):
                                            context_vector=args.context_vector, print_nbest=args.nbest,
                                            nbest_file=args.nbest_file)
 
+    # translate
     try:
         if args.text is not None:
             translator.execute(args.text.strip())
@@ -468,17 +442,10 @@ def main_add(argv):
     # Mixed arguments
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
-    parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
-                        help='the public available REST Api port. (default is {port})'
-                        .format(port=DEFAULT_MMT_API_PORT), default=None, type=int)
 
     args = parser.parse_args(argv)
 
-    engine = MMTEngine.load(args.engine)
-    if not engine.exists():
-        raise IllegalStateException('engine not found: ' + args.engine)
-
-    node = ClusterNode(engine, api_port=args.api_port)
+    node = ClusterNode.connect(args.engine)
     if not node.is_running():
         raise IllegalStateException('engine not running: ' + args.engine)
 
@@ -496,9 +463,6 @@ def main_import(argv):
     # Mixed arguments
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
-    parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
-                        help='the public available REST Api port. (default is {port})'
-                        .format(port=DEFAULT_MMT_API_PORT), default=None, type=int)
 
     args = parser.parse_args(argv)
 
@@ -508,11 +472,7 @@ def main_import(argv):
     if args.domain is None:
         args.domain = os.path.basename(os.path.splitext(args.tmx)[0])
 
-    engine = MMTEngine.load(args.engine)
-    if not engine.exists():
-        raise IllegalStateException('engine not found: ' + args.engine)
-
-    node = ClusterNode(engine, api_port=args.api_port)
+    node = ClusterNode.connect(args.engine)
     if not node.is_running():
         raise IllegalStateException('engine not running: ' + args.engine)
 

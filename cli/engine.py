@@ -185,6 +185,7 @@ class _builder_logger:
 
 
 ################################################################################################
+
 # An _MMTEngineBuilder manages the initialization of a new engine.
 # The builder is created when mmt.py receives a create request from command line.
 # At that point an Engine has **already** been instantiated
@@ -291,32 +292,50 @@ class _MMTEngineBuilder:
 
             # run tm_cleanup step on the bilingual_corpora if required.
             # Obtain cleaned bicorpora
-            cleaned_bicorpora = self._run_step('tm_cleanup', self._step_tm_cleanup, logger=logger,
+            cleaned_bicorpora = self._run_step('tm_cleanup',
+                                               self._step_tm_cleanup,
+                                               logger=logger,
                                                values=[bilingual_corpora])
 
             # run __db_map step (always: user can't skip it)
             # on the cleaned bicorpora and the original monocorpora;
             # obtain base bicorpora and base monocorpora
-            base_bicorpora, base_monocorpora = self._run_step('__db_map', self._step_init, forced=True,
+            base_bicorpora, base_monocorpora = self._run_step('__db_map',
+                                                              self._step_init,
+                                                              forced=True,
                                                               values=[cleaned_bicorpora, monolingual_corpora])
 
             # run preprocess step if required.
             # Return processed bi and mono corpora and cleaned bicorpora
             processed_bicorpora, processed_monocorpora, cleaned_bicorpora =\
-                self._run_step('preprocess', self._step_preprocess, logger=logger,
+                self._run_step('preprocess',
+                               self._step_preprocess,
+                               logger=logger,
                                values=[base_bicorpora, base_monocorpora, base_bicorpora])
 
             # run context_analyzer step base_bicorpora if required.
-            _ = self._run_step('context_analyzer', self._step_context_analyzer, logger=logger, values=[base_bicorpora])
+            _ = self._run_step('context_analyzer',
+                               self._step_context_analyzer,
+                               logger=logger,
+                               values=[base_bicorpora])
 
             # run aligner step cleaned_bicorpora if required.
-            _ = self._run_step('aligner', self._step_aligner, logger=logger, values=[cleaned_bicorpora])
+            _ = self._run_step('aligner',
+                               self._step_aligner,
+                               logger=logger,
+                               values=[cleaned_bicorpora])
 
             # run tm step cleaned_bicorpora if required.
-            _ = self._run_step('tm', self._step_tm, logger=logger, values=[cleaned_bicorpora])
+            _ = self._run_step('tm',
+                               self._step_tm,
+                               logger=logger,
+                               values=[cleaned_bicorpora])
 
             # run lm step on the joint list of processed_bicorpora and processed_monocorpora
-            _ = self._run_step('lm', self._step_lm, logger=logger, values=[processed_bicorpora + processed_monocorpora])
+            _ = self._run_step('lm',
+                               self._step_lm,
+                               logger=logger,
+                               values=[processed_bicorpora + processed_monocorpora])
 
             # Writing config file
             with logger.step('Writing config files') as _:
@@ -444,10 +463,12 @@ class _MMTEngineBuilder:
             cleaned_bicorpora = BilingualCorpus.list(cleaned_folder)
         else:
             processed_bicorpora, processed_monocorpora = self._engine.training_preprocessor.process(
-                bilingual_corpora + monolingual_corpora, preprocessed_folder,
-                (self._engine.data_path if self._split_trainingset else None), log=logger.stream)
-            cleaned_bicorpora = self._engine.training_preprocessor.clean(processed_bicorpora, cleaned_folder)
-
+                bilingual_corpora + monolingual_corpora,
+                preprocessed_folder,
+                (self._engine.data_path if self._split_trainingset else None),
+                log=logger.stream)
+            cleaned_bicorpora = self._engine.training_preprocessor.clean(
+                processed_bicorpora, cleaned_folder)
         return processed_bicorpora, processed_monocorpora, cleaned_bicorpora
 
     # This step function performs the context analyzer training with the base corpora
@@ -479,14 +500,14 @@ class _MMTEngineBuilder:
 
 
 ##########################################################################################
+
 # This private class uses checkpoint techniques
 # to that make it possible to resume a past attempt of engine creation
-# if it was unexpectedly interrupted
 class _CheckpointManager:
 
-    # this method is used to create a checkpointManager when resume is TRUE,
-    # so the checkpointManager is initialized with the path of the checkpoints file to read.
-    # Passed steps are read from such file.
+    # initialize a CheckpointManager with the path of the checkpoints file to read,
+    # and read from it which steps have already been passed in previous initialization attempts.
+    # This method is only called when resume is TRUE.
     @staticmethod
     def load_from_file(file_path):
         try:
@@ -498,145 +519,46 @@ class _CheckpointManager:
 
         return _CheckpointManager(file_path, passed_steps)
 
-    # this method is used to create a checkpointManager when resume is FALSE,
-    # so the checkpointManager is initialized
-    # with the path of the checkpoints file to create and fill from scratch
+    # initialize a CheckpointManager with the path of the checkpoints file to write from scratch.
+    # This method is only called when resume is FALSE.
     @staticmethod
     def create_for_engine(file_path):
         manager = _CheckpointManager(file_path, [])
         manager.save()
         return manager
 
-    # this constructor initializes a generic CheckpointManager
-    # with the path to the checkpoint file to read from (if resume mode is on)
-    # or to create from scratch (if resume mode is off)
-    # and the list of already passed steps
-    # (the list is not necessarily empty if resume mode is on,
-    # whereas is it always empty if resume mode is off)
+    # Initializes a generic CheckpointManager with
+    # the path to the checkpoint file to read from or to create from scratch)
+    # and the list of already passed steps (always empty if resume mode is off)
     def __init__(self, file_path, passed_steps):
         self._file_path = file_path
         self._passed_steps = passed_steps
 
-    # This method overwrites the checkpoint file
-    # with the actual state of the checkpoint manager.
-    # It is mainly used after completing a step, in order
-    # to remember that that step was passed.
+    # Overwrite the checkpoint file with the current state of the checkpoint manager.
+    # Mainly used after completing a step, in order to mark that that step was passed.
     def save(self):
         with open(self._file_path, 'w') as json_file:
             json.dump(self._passed_steps, json_file)
 
-    # This method stores a new passed step in the passed steps list
-    # of the checkpoint manager (without saving it in the checkpoint file).
-    # It is generally followed by save().
+    # Store a new passed step in the local passed steps list without updating the checkpoint file.
+    # The call of this method is generally followed by save() to update the checkpoint file too.
     def completed(self, step):
         self._passed_steps.append(step)
         return self
 
-    # This method checks if a step should be run.
-    # A step should only be run if it is not in the passed steps list,
-    # meaning that either resume mode is OFF or it is ON and the step was not performed
-    # in the previous attempt
+    # Check whether a step should be run or not.
+    # A step should only be run if it is not in the passed steps list.
+    # (this happens if resume is FALSE or if it is TRUE and the step was not performed before)
     def to_be_run(self, step_name):
         return step_name not in self._passed_steps
 
-
-########################################################################################
-class EngineConfig(object):
-    @staticmethod
-    # read engine.xconf file and import its configuration
-    def from_file(name, file):
-        # get "node" element and its children elements "engine", "kafka", "database"
-        node_el = minidom.parse(file).documentElement
-        engine_el = EngineConfig._get_element_if_exists(node_el, 'engine')
-        datastream_el = EngineConfig._get_element_if_exists(node_el, 'datastream')
-        db_el = EngineConfig._get_element_if_exists(node_el, 'db')
-        # get attributes from the various elements
-        source_lang = EngineConfig._get_attribute_if_exists(engine_el, 'source-language')
-        target_lang = EngineConfig._get_attribute_if_exists(engine_el, 'target-language')
-        datastream_enabled = EngineConfig._get_attribute_if_exists(datastream_el, 'enabled')
-        datastream_type = EngineConfig._get_attribute_if_exists(datastream_el, 'type')
-        db_enabled = EngineConfig._get_attribute_if_exists(db_el, 'enabled')
-        db_type = EngineConfig._get_attribute_if_exists(db_el, 'type')
-
-        # Parsing bool from string:
-        # if None or "true" (or uppercase variations) then the value is True; else it is False
-        datastream_enabled = datastream_enabled.lower() == 'true' if datastream_enabled else True
-        db_enabled = db_enabled.lower() == 'true' if db_enabled else True
-
-        # Parsing type string:
-        # if no type is given or if it is "embedded" (or uppercase variations): type is "embedded"
-        # else just lowercase it (and Python won't care about it)
-        if datastream_type is None or datastream_type.lower() == "embedded":
-            datastream_type = "embedded"
-        else:
-            datastream_type = datastream_type.lower()
-
-        if db_type is None or db_type.lower() == "embedded":
-            db_type = "embedded"
-        else:
-            db_type = db_type.lower()
-
-        # all configuration elements are put into an EngineConfig object
-        config = EngineConfig(name, source_lang, target_lang,
-                              datastream_enabled, datastream_type,
-                              db_enabled, db_type)
-
-        network = node_el.getElementsByTagName('network')
-        network = network[0] if len(network) > 0 else None
-
-        if network is None:
-            return config
-
-        api = network.getElementsByTagName('api')
-        api = api[0] if len(api) > 0 else None
-
-        if api is None:
-            return config
-
-        if api.hasAttribute('root'):
-            config.apiRoot = api.getAttribute('root')
-
-        return config
-
-    @staticmethod
-    def _get_element_if_exists(parent, child_name):
-        children = parent.getElementsByTagName(child_name)
-        if len(children) is 0:
-            return None
-        else:
-            return children[0]
-
-    @staticmethod
-    def _get_attribute_if_exists(node, attribute_name):
-        if node is None:
-            return None
-        else:
-            return node.getAttribute(attribute_name)
-
-    def __init__(self, name, source_lang, target_lang,
-                 datastream_enabled=True, datastream_type="Embedded",
-                 db_enabled=True, db_type="Embedded"):
-        self.name = name
-        self.source_lang = source_lang
-        self.target_lang = target_lang
-        self.datastream_enabled = datastream_enabled
-        self.datastream_type = datastream_type
-        self.db_enabled = db_enabled
-        self.db_type = db_type
-        self.apiRoot = None
-
-    def store(self, file):
-        xml_template = '''<node xsi:schemaLocation="http://www.modernmt.eu/schema/config mmt-config-1.0.xsd"
-      xmlns="http://www.modernmt.eu/schema/config"
-      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-          <engine source-language="%s" target-language="%s" />
-</node>'''
-
-        with open(file, 'wb') as out:
-            out.write(xml_template % (self.source_lang, self.target_lang))
+#############################################################################
 
 
 class MMTEngine(object):
+
+    # these are the default training steps that each engine
+    # can perform during its creation and training
     training_steps = {
         'tm_cleanup': 'TMs clean-up',
         'preprocess': 'Corpora pre-processing',
@@ -656,43 +578,48 @@ class MMTEngine(object):
 
     @staticmethod
     def list():
-        return sorted([MMTEngine.load(name) for name in os.listdir(cli.ENGINES_DIR)
-                       if os.path.isfile(MMTEngine._get_config_path(name))], key=lambda x: x.name)
+        return sorted([name for name in os.listdir(cli.ENGINES_DIR)
+                       if os.path.isfile(MMTEngine._get_config_path(name))])
 
     # This method loads an already created engine using its name.
-    # This means that a new Engine object will be created and returned,
-    # using the name, source_language, target_language and all the other parameters
-    # that are written in the engine configuration file
+    # The method figures the configuration file path from the engine name,
+    # parses the source language and target language from the configuration file
+    # and creates and return a new engine with that name, source target and language target
     @staticmethod
     def load(name):
+
+        # figure the configuration file path from the engine name
         config_path = MMTEngine._get_config_path(name)
         if not os.path.isfile(config_path):
             raise IllegalArgumentException("Engine '%s' not found" % name)
 
-        config = EngineConfig.from_file(name, MMTEngine._get_config_path(name))
-        return MMTEngine(config.name, config.source_lang, config.target_lang, config)
+        # parse the source language and target language from the configuration file
+        engine_el = minidom.parse(config_path).documentElement.getElementsByTagName("engine")[0]
+        source_lang = engine_el.getAttribute('source-language')
+        target_lang = engine_el.getAttribute('target-language')
 
-    def __init__(self, name, source_lang, target_lang, config=None):
+        # create and return anew engine with that name, source target and language target
+        return MMTEngine(name, source_lang, target_lang)
+
+    # This method instantiates a new Engine object
+    # starting from its name, source language and target language.
+    # It calculates and stores in instance viariables
+    # all the relevant paths that an engine should store,
+    # and creates reference to object that will be used during training,
+    # such as ContextAnalyzer, TMCleaner etc.
+    # It also creates a Moses object and writes its features
+    def __init__(self, name, source_lang, target_lang):
         self.name = name if name is not None else 'default'
         self.source_lang = source_lang
         self.target_lang = target_lang
-
         self._config_file = self._get_config_path(self.name)
-
-        # use name, source_lang, target_lang and default configuration parameters
-        # if no configuration is passed;
-        # else, use the passed configuration (e.g. the engineConf.xml file)
-        self.config = EngineConfig(self.name, source_lang, target_lang) if config is None else config
-
         self.path = self._get_path(self.name)
         self.data_path = os.path.join(self.path, 'data')
         self.models_path = os.path.join(self.path, 'models')
-
         self.runtime_path = os.path.join(cli.RUNTIME_DIR, self.name)
         self._logs_path = os.path.join(self.runtime_path, 'logs')
         self._temp_path = os.path.join(self.runtime_path, 'tmp')
         self._temp_path = os.path.join(self.runtime_path, 'tmp')
-
         self._vocabulary_model = os.path.join(self.models_path, 'vocabulary')
         self._aligner_model = os.path.join(self.models_path, 'align')
         self._context_index = os.path.join(self.models_path, 'context')
@@ -709,6 +636,7 @@ class MMTEngine(object):
         self.lm = InterpolatedLM(self._lm_model)
         self.training_preprocessor = TrainingPreprocessor(self.source_lang, self.target_lang, self._vocabulary_model)
         self.db = BaselineDatabase(self._db_model)
+
         self.moses = Moses(self._moses_path)
         self.moses.add_feature(MosesFeature('UnknownWordPenalty'))
         self.moses.add_feature(MosesFeature('WordPenalty'))
@@ -734,7 +662,14 @@ class MMTEngine(object):
 
     def write_configs(self):
         self.moses.create_configs()
-        self.config.store(self._config_file)
+
+        xml_template = '''<node xsi:schemaLocation="http://www.modernmt.eu/schema/config mmt-config-1.0.xsd"
+      xmlns="http://www.modernmt.eu/schema/config"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <engine source-language="%s" target-language="%s" />
+</node>'''
+        with open(self._config_file, 'wb') as out:
+            out.write(xml_template % (self.source_lang, self.target_lang))
 
     def get_logfile(self, name, ensure=True):
         if ensure and not os.path.isdir(self._logs_path):
