@@ -310,7 +310,7 @@ class MMTEngineBuilder:
         # passing it the amount of steps to perform (plus a non user-decidable step)
         # and the name of the log file to create
         logger = _builder_logger(len(self._scheduled_steps) + 1, self._engine.get_logfile('training'))
-
+        delete_on_exit = not self._debug
         # Start the engine building (training) phases
         try:
             # tell the logger that the engine training has started
@@ -324,7 +324,8 @@ class MMTEngineBuilder:
             cleaned_bicorpora = self._run_step('tm_cleanup',
                                                self._step_tm_cleanup,
                                                logger=logger,
-                                               values=[bilingual_corpora])
+                                               values=[bilingual_corpora],
+                                               delete_on_exit=delete_on_exit)
 
             # run __db_map step (always: user can't skip it)
             # on the cleaned bicorpora and the original monocorpora;
@@ -332,40 +333,45 @@ class MMTEngineBuilder:
             base_bicorpora, base_monocorpora = self._run_step('__db_map',
                                                               self._step_init,
                                                               forced=True,
-                                                              values=[cleaned_bicorpora, monolingual_corpora])
+                                                              values=[cleaned_bicorpora, monolingual_corpora],
+                                                              delete_on_exit=delete_on_exit)
 
-            # run preprocess step if required.
             # run preprocess step if required.
             # Return processed bi and mono corpora and cleaned bicorpora
             processed_bicorpora, processed_monocorpora, cleaned_bicorpora = \
                 self._run_step('preprocess',
                                self._step_preprocess,
                                logger=logger,
-                               values=[base_bicorpora, base_monocorpora, base_bicorpora])
+                               values=[base_bicorpora, base_monocorpora, base_bicorpora],
+                               delete_on_exit=delete_on_exit)
 
             # run context_analyzer step base_bicorpora if required.
             _ = self._run_step('context_analyzer',
                                self._step_context_analyzer,
                                logger=logger,
-                               values=[base_bicorpora])
+                               values=[base_bicorpora],
+                               delete_on_exit=delete_on_exit)
 
             # run aligner step cleaned_bicorpora if required.
             _ = self._run_step('aligner',
                                self._step_aligner,
                                logger=logger,
-                               values=[cleaned_bicorpora])
+                               values=[cleaned_bicorpora],
+                               delete_on_exit=delete_on_exit)
 
             # run tm step cleaned_bicorpora if required.
             _ = self._run_step('tm',
                                self._step_tm,
                                logger=logger,
-                               values=[cleaned_bicorpora])
+                               values=[cleaned_bicorpora],
+                               delete_on_exit=delete_on_exit)
 
             # run lm step on the joint list of processed_bicorpora and processed_monocorpora
             _ = self._run_step('lm',
                                self._step_lm,
                                logger=logger,
-                               values=[processed_bicorpora + processed_monocorpora])
+                               values=[processed_bicorpora + processed_monocorpora],
+                               delete_on_exit=delete_on_exit)
 
             # Writing config file
             with logger.step('Writing config files') as _:
@@ -412,7 +418,7 @@ class MMTEngineBuilder:
     # Moreover, it is possible to ask not to log data about this step execution,
     # and it is possible to force the execution even if the user didn't ask for this step.
     # (these options are important when running a non user-decidable, "hidden" step)
-    def _run_step(self, step_name, step_function, values, logger=None, forced=False):
+    def _run_step(self, step_name, step_function, values, logger=None, forced=False, delete_on_exit=True):
         step_description = self.DEFAULT_TRAINING_STEPS[step_name] if step_name in self.DEFAULT_TRAINING_STEPS else None
 
         # if this step is not forced AND if it the user asked not to perform it,
@@ -420,7 +426,8 @@ class MMTEngineBuilder:
         if not forced and step_name not in self._scheduled_steps:
             return values
 
-        # else, if the step (even if it is scheduled) must not be run because
+        # else, if the step (even if it is scheduled) must not be run
+        # because it has already been passed in a previous
         skip = step_name in self._passed_steps
 
         # Now we can launch the step function.
@@ -428,11 +435,11 @@ class MMTEngineBuilder:
 
         # if logger is none, launch the step_function without logging any messages
         if logger is None:
-            result = step_function(*values, skip=skip, logger=logger)
+            result = step_function(*values, skip=skip, logger=logger, delete_on_exit=delete_on_exit)
         # else, launch the step_function logging the step description
         else:
             with logger.step(step_description) as _:
-                result = step_function(*values, skip=skip, logger=logger)
+                result = step_function(*values, skip=skip, logger=logger, delete_on_exit=delete_on_exit)
 
         # moreover if skip was false, mark the step as completed in the checkpoint manager!
         if not skip:
@@ -443,24 +450,26 @@ class MMTEngineBuilder:
     # ~~~~~~~~~~~~~~~~~~~~~ Training step functions ~~~~~~~~~~~~~~~~~~~~~
 
     # This step function performs cleaning of the translation models
-    def _step_tm_cleanup(self, corpora, skip=False, logger=None):
+    def _step_tm_cleanup(self, corpora, skip=False, logger=None, delete_on_exit=True):
         # the folder where tm_cleanup results are to be stored
         folder = self._get_tempdir('clean_tms')
 
-        # if skip is true, then we are in resume mode, so return the already existing results
+        # if skip is true, then we are in resume mode, so use the already existing results
         if skip:
-            return BilingualCorpus.list(folder)
-        # else perform the cleaning on the corpora and return the clean corpora
+            clean_tms = BilingualCorpus.list(folder)
+        # else perform the cleaning on the corpora and use the clean corpora
         else:
-            return self._engine.cleaner.clean(corpora, folder, log=logger.stream)
+            clean_tms = self._engine.cleaner.clean(corpora, folder, log=logger.stream)
+
+        return clean_tms
 
     # This step function performs the domain mapping and IT IS NOT USER-DECIDABLE
-    def _step_init(self, bilingual_corpora, monolingual_corpora, skip=False, logger=None):
+    def _step_init(self, bilingual_corpora, monolingual_corpora, skip=False, logger=None, delete_on_exit=False):
         training_folder = self._get_tempdir('training_corpora')
 
         # if skip is true, then we are in resume mode, so return the already existing results
         if skip:
-            return BilingualCorpus.splitlist(self._engine.source_lang, self._engine.target_lang, roots=training_folder)
+            bilingual_corpora, monolingual_corpora = BilingualCorpus.splitlist(self._engine.source_lang, self._engine.target_lang, roots=training_folder)
         # else perform the baseline domains extraction and domain mapping, and return its result
         else:
             domains = self._engine.db.insert(bilingual_corpora)
@@ -468,10 +477,10 @@ class MMTEngineBuilder:
             bilingual_corpora = [domain.corpus.symlink(training_folder, name=str(domain.id)) for domain in domains]
             monolingual_corpora = [corpus.symlink(training_folder) for corpus in monolingual_corpora]
 
-            return bilingual_corpora, monolingual_corpora
+        return bilingual_corpora, monolingual_corpora
 
     # This step function performs the preprocessing of the domain-mapped corpora
-    def _step_preprocess(self, bilingual_corpora, monolingual_corpora, _, skip=False, logger=None):
+    def _step_preprocess(self, bilingual_corpora, monolingual_corpora, _, skip=False, logger=None, delete_on_exit=False):
         preprocessed_folder = self._get_tempdir('preprocessed')
         cleaned_folder = self._get_tempdir('clean_corpora')
 
@@ -489,34 +498,44 @@ class MMTEngineBuilder:
                 log=logger.stream)
             cleaned_bicorpora = self._engine.training_preprocessor.clean(
                 processed_bicorpora, cleaned_folder)
+
         return processed_bicorpora, processed_monocorpora, cleaned_bicorpora
 
     # This step function performs the context analyzer training with the base corpora
-    def _step_context_analyzer(self, corpora, skip=False, logger=None):
+    def _step_context_analyzer(self, corpora, skip=False, logger=None, delete_on_exit=False):
         # if skip is true, then there's nothing to do because the models exist already
         if not skip:
             self._engine.analyzer.create_index(corpora, log=logger.stream)
 
     # This step function performs the aligner training with the cleaned corpora
-    def _step_aligner(self, corpora, skip=False, logger=None):
+    def _step_aligner(self, corpora, skip=False, logger=None, delete_on_exit=False):
         # if skip is true, then there's nothing to do because the models exist already
         if not skip:
             working_dir = self._get_tempdir('aligner', delete_if_exists=True)
             self._engine.aligner.build(corpora, working_dir, log=logger.stream)
 
+            if delete_on_exit:
+                shutil.rmtree(working_dir, ignore_errors=True)
+
     # This step function performs the Translation Model training with the cleaned corpora
-    def _step_tm(self, corpora, skip=False, logger=None):
+    def _step_tm(self, corpora, skip=False, logger=None, delete_on_exit=False):
         # if skip is true, then there's nothing to do because the models exist already
         if not skip:
             working_dir = self._get_tempdir('tm', delete_if_exists=True)
             self._engine.moses.pt.train(corpora, self._engine.aligner, working_dir, log=logger.stream)
 
+            if delete_on_exit:
+                shutil.rmtree(working_dir, ignore_errors=True)
+
     # This step function performs the Language Model training with the preprocessed corpora
-    def _step_lm(self, corpora, skip=False, logger=None):
+    def _step_lm(self, corpora, skip=False, logger=None, delete_on_exit=False):
         # if skip is true, then there's nothing to do because the models exist already
         if not skip:
             working_dir = self._get_tempdir('lm', delete_if_exists=True)
             self._engine.moses.lm.train(corpora, self._engine.target_lang, working_dir, log=logger.stream)
+
+            if delete_on_exit:
+                shutil.rmtree(working_dir, ignore_errors=True)
 
 
 ############################################################################################

@@ -357,14 +357,12 @@ class ClusterNode(object):
             return self._properties["cluster_port"]
         return None
 
-    @property
     def datastream_info(self):
         if self._properties is not None and "datastream" in self._properties:
             datastream_node = self._properties["datastream"]
             return datastream_node["host"], datastream_node["port"]
         return None
 
-    @property
     def db_info(self):
         if self._properties is not None and "database" in self._properties:
             db_node = self._properties["database"]
@@ -519,7 +517,7 @@ class ClusterNode(object):
             cmdlogger.completed(bleu_score)
         finally:
             if not debug:
-                self.engine.clear_tempdir()
+                self.engine.clear_tempdir("tuning")
 
     def new_domain(self, name):
         return self.api.create_domain(name)

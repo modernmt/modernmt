@@ -337,7 +337,7 @@ def main_status(argv):
         if datastream_info is None and running:
             print 'Datastream:    disabled'
         elif running:
-            datastream_host, datastream_port = datastream_info
+            datastream_host, datastream_port = datastream_info()
             print 'Datastream:   ', ('running - %s:%d' % (datastream_host, datastream_port))
         else:
             print 'Datastream:    stopped'
@@ -346,7 +346,7 @@ def main_status(argv):
         if database_info is None and running:
             print 'Database:      disabled'
         elif running:
-            db_host, db_port = database_info
+            db_host, db_port = database_info()
             print 'Database:     ', ('running - %s:%d' % (db_host, db_port))
         else:
             print 'Database:      stopped'
@@ -530,7 +530,6 @@ def main():
         exit(1)
     except Exception as e:
         sys.stderr.write('ERROR Unexpected exception:\n\t{message}\n'.format(message=repr(e)))
-        raise
         exit(1)
 
 

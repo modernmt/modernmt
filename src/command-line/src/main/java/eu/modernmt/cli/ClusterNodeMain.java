@@ -91,6 +91,7 @@ public class ClusterNodeMain {
             String verbosity = cli.getOptionValue("verbosity");
             this.verbosity = verbosity == null ? 1 : Integer.parseInt(verbosity);
 
+            // read the engine.xconf file
             this.config = XMLConfigBuilder.build(Engine.getConfigFile(this.engine));
             this.config.getEngineConfig().setName(this.engine);
 
@@ -99,6 +100,18 @@ public class ClusterNodeMain {
             DatabaseConfig dbConfig = this.config.getDatabaseConfig();
             ApiConfig apiConfig = netConfig.getApiConfig();
             JoinConfig joinConfig = netConfig.getJoinConfig();
+
+
+            // PORT VALUES MANAGEMENT
+            // if the port is not null, so if it was passed by command line
+            // write it in the suitable config it is the port we are gonna use
+
+            // else, if the port is null, do nothing:
+            // we will just use the the port written in the config.
+            // This is the port parsed from the engine.xconf file, if there was one.
+
+            // If it wasn't defined in the engine.xconf file, we will just keep
+            // the default value used at the config object instantiation.
 
             String port = cli.getOptionValue("cluster-port");
             if (port != null)
@@ -118,11 +131,17 @@ public class ClusterNodeMain {
 
             String member = cli.getOptionValue("member");
 
+            // if there is a sibling to join
             if (member != null) {
+
+                // create a Member array, with the sibling (Leader) as element 0
+                // and assume he is using my same port for the cluster communication;
+                // if it is not, then my configuration is wrong
                 JoinConfig.Member[] members = new JoinConfig.Member[1];
                 members[0] = new JoinConfig.Member(member, netConfig.getPort());
                 joinConfig.setMembers(members);
 
+                // if type is embedded the host is the sibling (Leader)
                 if (config.getDataStreamConfig().getType() == DataStreamConfig.Type.EMBEDDED)
                     this.config.getDataStreamConfig().setHost(member);
                 if (config.getDatabaseConfig().getType() == DatabaseConfig.Type.EMBEDDED)
@@ -131,8 +150,17 @@ public class ClusterNodeMain {
         }
     }
 
+    /**
+     * This main method (usually launched by Python)
+     * is employed to start an already created and trained mmt node
+     *
+     * @param _args the command line args for the node start
+     * @throws Throwable
+     */
     public static void main(String[] _args) throws Throwable {
+        // parse the arguments
         Args args = new Args(_args);
+
         Log4jConfiguration.setup(args.verbosity, args.logsFolder);
 
         FileStatusListener listener = new FileStatusListener(args.statusFile,
@@ -169,14 +197,11 @@ public class ClusterNodeMain {
         private final JsonObject JSONproperties;
 
         /**
-         * This constructor reads the Nodeconfig resulting from
+         * This constructor employs the Nodeconfig resulting from
          * the read of the engine.xconf file.
-         * The main goal is loading the NodeConfig configuration,
-         * using default values if its properties are null,
-         * or update them if there are not null command line values
-         * (that have higher priority)
+         * and uses it to initialize the JSON structures
+         * that will be later written in the node.properties file.
          * <p>
-         * and initializes the basic JSON properties (without storing them):
          * - cluster port
          * - api config (root and port),
          * - database (host and port)
