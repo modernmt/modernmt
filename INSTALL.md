@@ -102,7 +102,6 @@ Download from here: https://github.com/ModernMT/MMT/releases and then untar the 
 ```
 tar xvfz mmt-0.15.1-ubuntu.tar.gz
 cd mmt
-./setup.py
 ```
 
 Done! go to [README.md](README.md)
@@ -115,7 +114,6 @@ The following procedure describes how to build MMT from source in an Ubuntu 14.0
 ## Installing third-party libraries
 
 Open a bash shell and type:
-
 ```
 sudo add-apt-repository ppa:george-edison55/cmake-3.x
 sudo add-apt-repository ppa:openjdk-r/ppa
@@ -148,28 +146,22 @@ git submodule init
 git submodule update
 ```
 
-Compile MMT submodules:
+Download and compile MMT submodules:
 
 ```
 cd vendor
-make
+./compile
 cd ..
 ```
 
 Check your Java version and if necessary update it and select the latest jdk, as described in the Option 2 paragraph.
 
-You can now compile your MMT distribution:
+You can now build your MMT distribution:
 
 ```
 cd src
 mvn clean install
 cd ..
-```
-
-Finally run the setup:
-
-```
-./setup.py
 ```
 
 You have now a working instance of MMT. Go to [README.md](README.md) to find how to test your installation.
