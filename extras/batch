@@ -65,7 +65,7 @@ def main_batch(argv):
     engine = MMTEngine(name=args.engine)
     if not engine.exists():
         raise IllegalStateException('engine not found: ' + args.engine)
-    injector = dependency.Injector()
+    injector = dependency.DependencyInjector()
     injector.read_config(engine.config)
     engine = injector.inject(engine)
 

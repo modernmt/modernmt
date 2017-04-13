@@ -25,7 +25,6 @@ os.environ['LANG'] = 'en_US.UTF-8'
 
 
 def mmt_javamain(main_class, args=None, hserr_path=None, remote_debug=False, max_heap_mb=None):
-
     command = ['java', '-cp', MMT_JAR, '-Dmmt.home=' + MMT_ROOT, '-Djava.library.path=' + LIB_DIR, main_class]
 
     if remote_debug:

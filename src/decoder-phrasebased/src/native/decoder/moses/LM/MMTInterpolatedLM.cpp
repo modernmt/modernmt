@@ -29,6 +29,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include "FF/FFState.h"
 #include "StaticData.h"
 #include "TranslationTask.h"
+#include "../../../interpolated-lm/lm/Options.h"
 
 #define ParseWord(w) (boost::lexical_cast<wid_t>((w)))
 
@@ -361,6 +362,20 @@ void MMTInterpolatedLM::SetParameter(const std::string &key, const std::string &
     } else if (key == "adaptivity-ratio") {
         lm_options.adaptivity_ratio = Scan<float>(value);
         VERBOSE(3, "lm_options.adaptivity_ratio:" << lm_options.adaptivity_ratio << std::endl);
+    } else if (key == "quantization") {
+        lm_options.static_lm.quantization_bits = (uint8_t) Scan<unsigned>(value);
+    } else if (key == "compression") {
+        lm_options.static_lm.pointers_compression_bits = (uint8_t) Scan<unsigned>(value);
+    } else if (key == "static-type") {
+        string type = Scan<string>(value);
+
+        if (type == "trie") {
+            lm_options.static_lm.type = Options::StaticLMType::TRIE;
+        } else if (type == "probing") {
+            lm_options.static_lm.type = Options::StaticLMType::PROBING;
+        } else {
+            UTIL_THROW2(GetScoreProducerDescription() << ": Unknown static lm type '" << type << "'");
+        }
     } else {
         LanguageModelSingleFactor::SetParameter(key, value);
     }

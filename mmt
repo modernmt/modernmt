@@ -3,9 +3,9 @@ import argparse
 import os
 import shutil
 import sys
-from cli import dependency, IllegalStateException, IllegalArgumentException
-from cli.cluster import ClusterNode, DEFAULT_MMT_API_PORT, DEFAULT_MMT_CLUSTER_PORT, DEFAULT_MMT_DATASTREAM_PORT, \
-    DEFAULT_MMT_DB_PORT
+
+from cli import IllegalStateException, IllegalArgumentException
+from cli.cluster import ClusterNode
 from cli.engine import MMTEngine, MMTEngineBuilder
 from cli.evaluation import Evaluator
 from cli.libs import shell
@@ -77,11 +77,7 @@ def main_create(argv):
     parser.add_argument('-r', '--resume', action='store_true', dest='resume', default=False,
                         help='if resume is set, it restores a previously interrupted process')
 
-    for component in dependency.injectable_components:
-        dependency.argparse_group(parser, component)
-
     if len(argv) > 0:
-
         # Parse args
         args = parser.parse_args(argv)
 
@@ -98,10 +94,6 @@ def main_create(argv):
                                    debug=args.debug,
                                    steps=args.training_steps,
                                    split_trainingset=args.split_corpora)
-        # inject additional parameters
-        injector = dependency.Injector()
-        injector.read_args(args)
-        builder = injector.inject(builder)
 
         # build the engine
         if args.resume:
@@ -120,20 +112,16 @@ def main_start(argv):
     parser.add_argument('-v', '--verbosity', dest='verbosity', help='log verbosity (0 = only severe errors, '
                                                                     '3 = finest logging)', default=None)
     parser.add_argument('-p', '--api-port', dest='api_port', metavar='API_PORT',
-                        help='the public REST Api port. (default is {port})'
-                        .format(port=DEFAULT_MMT_API_PORT), default=None, type=int)
+                        help='the public REST Api port. (default is 8045)', default=None, type=int)
     parser.add_argument('--cluster-port', dest='cluster_port', metavar='CLUSTER_PORT',
                         help='the network port used internally by the cluster for communication between '
-                             'Cluster nodes. (default is {port})'.format(port=DEFAULT_MMT_CLUSTER_PORT),
-                        default=None, type=int)
+                             'Cluster nodes. (default is 5016)', default=None, type=int)
     parser.add_argument('--datastream-port', dest='datastream_port', metavar='DATASTREAM_PORT',
                         help='the network port used by Datastream, currently implemented with Kafka '
-                             '(default is {port}'.format(port=DEFAULT_MMT_DATASTREAM_PORT),
-                        default=None, type=int)
+                             '(default is 9092', default=None, type=int)
     parser.add_argument('--db-port', dest='db_port', metavar='DB_PORT',
                         help='the network port used by the DB, currently implemented with Cassandra '
-                             '(default is {port}'.format(port=DEFAULT_MMT_DB_PORT),
-                        default=None, type=int)
+                             '(default is 9042', default=None, type=int)
     parser.add_argument('--join', dest='sibling', metavar='NODE_IP', default=None,
                         help='use this option to join this node to an existent cluster. '
                              'NODE is the IP of the remote host to connect to.')
@@ -542,6 +530,7 @@ def main():
         exit(1)
     except Exception as e:
         sys.stderr.write('ERROR Unexpected exception:\n\t{message}\n'.format(message=repr(e)))
+        raise
         exit(1)
 
 

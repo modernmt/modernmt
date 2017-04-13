@@ -1,13 +1,12 @@
+import Queue
 import sys
-from UserString import MutableString
+import threading
 from xml.etree import ElementTree
 
 import requests
-import threading
+
 from cli import IllegalArgumentException, IllegalStateException
 from cli.libs import multithread
-import Queue
-
 
 __author__ = 'Davide Caroselli'
 
@@ -177,7 +176,8 @@ class InteractiveTranslator(Translator):
         if self._context:
             norm = sum([e['score'] for e in self._context])
             print '>> Context:', ', '.join(
-                ['%s %.f%%' % (self._domain_to_string(score['domain']), round(score['score'] * 100 / norm)) for score in self._context]
+                ['%s %.f%%' % (self._domain_to_string(score['domain']), round(score['score'] * 100 / norm)) for score in
+                 self._context]
             )
         else:
             print '>> No context provided.'

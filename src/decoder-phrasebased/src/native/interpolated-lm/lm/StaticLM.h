@@ -7,6 +7,7 @@
 
 #include <lm/model.hh>
 #include "LM.h"
+#include "Options.h"
 
 namespace mmt {
     namespace ilm {
@@ -14,21 +15,9 @@ namespace mmt {
         class StaticLM : public LM {
         public:
 
-            StaticLM(const string &modelPath);
+            static StaticLM *LoadFromPath(const string &modelPath,
+                                          const Options::StaticLM &options = Options::StaticLM());
 
-            ~StaticLM();
-
-            virtual float ComputeProbability(const wid_t word, const HistoryKey *historyKey,
-                                             const context_t *context, HistoryKey **outHistoryKey) const override;
-
-            virtual HistoryKey *MakeHistoryKey(const vector <wid_t> &phrase) const override;
-
-            virtual HistoryKey *MakeEmptyHistoryKey() const override;
-
-            virtual bool IsOOV(const context_t *context, const wid_t word) const override;
-
-        private:
-            lm::ngram::Model *model;
         };
 
     }

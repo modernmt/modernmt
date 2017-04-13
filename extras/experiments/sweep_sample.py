@@ -24,7 +24,7 @@ def main_sweep(argv):
 
     samples = [int(e) for e in '10 20 50 70 80 90 100 110 120 150 200 350 500 800 1000 2000 5000'.split()]
 
-    injector = dependency.Injector()
+    injector = dependency.DependencyInjector()
     #injector.read_args(args)
     engine = MMTEngine(args.engine)
     injector.inject(engine)
