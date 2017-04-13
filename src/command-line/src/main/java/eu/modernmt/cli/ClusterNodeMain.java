@@ -241,15 +241,30 @@ public class ClusterNodeMain {
                         array.add(pid);
                 }
             }
-
-            this.JSONproperties.add("embedded_services", array);
-
+            this.updateServices(array);
             if (currentStatus == ClusterNode.Status.READY)
                 return; // Wait for REST Api to be ready
-
-            this.JSONproperties.addProperty("status", currentStatus.toString());
-
+            this.updateStatus(currentStatus).store();
         }
+
+        /**
+         * In case of error, the new status must be "ERROR"*
+         */
+        public void onError() {
+            this.updateStatus("ERROR").store();
+        }
+
+        /**
+         * Update the embedded services in local properties
+         *
+         * @param array the new array of embedded services of the ClusterNode
+         * @return this very FileStatusListener
+         */
+        public FileStatusListener updateServices(JsonArray array) {
+            this.JSONproperties.add("embedded_services", array);
+            return this;
+        }
+
 
         /**
          * Update the status in local properties
@@ -274,14 +289,6 @@ public class ClusterNodeMain {
         }
 
         /**
-         * In case of error, the new status must be "ERROR"*
-         */
-        public void onError() {
-            this.updateStatus("ERROR");
-            this.store();
-        }
-
-        /**
          * Overwrite the node.properties file with the local properties
          */
         private void store() {
@@ -293,6 +300,12 @@ public class ClusterNodeMain {
         }
     }
 
+    /**
+     * This method gets the PID of a Process
+     *
+     * @param process the process to get the PID of
+     * @return the obtained pid
+     */
     private static int getPid(Process process) {
         // Awful, horrible code in order to get PID from a process.
         // Yes, Java has no public API for that! ...until Java 9
