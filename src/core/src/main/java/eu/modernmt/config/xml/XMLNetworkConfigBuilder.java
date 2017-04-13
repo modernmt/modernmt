@@ -42,8 +42,6 @@ class XMLNetworkConfigBuilder extends XMLAbstractBuilder {
         public ApiConfig build(ApiConfig config) throws ConfigException {
             if (hasAttribute("enabled"))
                 config.setEnabled(getBooleanAttribute("enabled"));
-            if (hasAttribute("interface"))
-                config.setListeningInterface(getStringAttribute("interface"));
             if (hasAttribute("port"))
                 config.setPort(getIntAttribute("port"));
             if (hasAttribute("root"))

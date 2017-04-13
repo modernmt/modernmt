@@ -18,10 +18,6 @@ public class ApiConfig {
         this.enabled = enabled;
     }
 
-    public String getListeningInterface() {
-        return listeningInterface;
-    }
-
     public void setListeningInterface(String listeningInterface) {
         this.listeningInterface = listeningInterface;
     }
