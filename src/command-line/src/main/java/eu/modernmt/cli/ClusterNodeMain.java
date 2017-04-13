@@ -17,6 +17,7 @@ import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.List;
 
 /**
  * Created by davide on 22/04/16.
@@ -194,7 +195,7 @@ public class ClusterNodeMain {
     private static class FileStatusListener implements ClusterNode.StatusListener {
 
         private final File file;
-        private final JsonObject JSONproperties;
+        private final JsonObject properties;
 
         /**
          * This constructor employs the Nodeconfig resulting from
@@ -219,7 +220,7 @@ public class ClusterNodeMain {
             DatabaseConfig dbConfig = config.getDatabaseConfig();
             DataStreamConfig streamConfig = config.getDataStreamConfig();
 
-            this.JSONproperties = new JsonObject();
+            this.properties = new JsonObject();
 
             if (apiConfig.isEnabled()) {
                 JsonObject api = new JsonObject();
@@ -227,24 +228,24 @@ public class ClusterNodeMain {
                 String root = apiConfig.getApiRoot();
                 if (root != null)
                     api.addProperty("root", root);
-                this.JSONproperties.add("api", api);
+                this.properties.add("api", api);
             }
 
             if (dbConfig.isEnabled()) {
                 JsonObject db = new JsonObject();
                 db.addProperty("port", dbConfig.getPort());
                 db.addProperty("host", dbConfig.getHost());
-                this.JSONproperties.add("database", db);
+                this.properties.add("database", db);
             }
 
             if (streamConfig.isEnabled()) {
                 JsonObject stream = new JsonObject();
                 stream.addProperty("port", streamConfig.getPort());
                 stream.addProperty("host", streamConfig.getHost());
-                this.JSONproperties.add("datastream", stream);
+                this.properties.add("datastream", stream);
             }
 
-            this.JSONproperties.addProperty("cluster_port", netConfig.getPort());
+            this.properties.addProperty("cluster_port", netConfig.getPort());
         }
 
         /**
@@ -257,18 +258,11 @@ public class ClusterNodeMain {
          */
         @Override
         public void onStatusChanged(ClusterNode node, ClusterNode.Status currentStatus, ClusterNode.Status previousStatus) {
-            JsonArray array = new JsonArray();
+            this.updateServices(node.getServices());
 
-            for (EmbeddedService service : node.getServices()) {
-                for (Process process : service.getSubprocesses()) {
-                    int pid = getPid(process);
-                    if (pid > 0)
-                        array.add(pid);
-                }
-            }
-            this.updateServices(array);
             if (currentStatus == ClusterNode.Status.READY)
                 return; // Wait for REST Api to be ready
+
             this.updateStatus(currentStatus).store();
         }
 
@@ -282,11 +276,21 @@ public class ClusterNodeMain {
         /**
          * Update the embedded services in local properties
          *
-         * @param array the new array of embedded services of the ClusterNode
+         * @param services the list of embedded services of the ClusterNode
          * @return this very FileStatusListener
          */
-        public FileStatusListener updateServices(JsonArray array) {
-            this.JSONproperties.add("embedded_services", array);
+        public FileStatusListener updateServices(List<EmbeddedService> services) {
+            JsonArray array = new JsonArray();
+
+            for (EmbeddedService service : services) {
+                for (Process process : service.getSubprocesses()) {
+                    int pid = getPid(process);
+                    if (pid > 0)
+                        array.add(pid);
+                }
+            }
+
+            this.properties.add("embedded_services", array);
             return this;
         }
 
@@ -309,7 +313,7 @@ public class ClusterNodeMain {
          * @return this very FileStatusListener
          */
         private FileStatusListener updateStatus(String status) {
-            this.JSONproperties.addProperty("status", status);
+            this.properties.addProperty("status", status);
             return this;
         }
 
@@ -318,7 +322,7 @@ public class ClusterNodeMain {
          */
         private void store() {
             try {
-                FileUtils.write(file, this.JSONproperties.toString(), DefaultCharset.get(), false);
+                FileUtils.write(file, this.properties.toString(), DefaultCharset.get(), false);
             } catch (IOException e) {
                 // Nothing to do
             }
