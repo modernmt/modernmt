@@ -329,7 +329,12 @@ public class ClusterNode {
         if (dataStreamConfig.isEnabled()) {
             // if Leader node and db type is 'embedded', start an instance of cassandra process
             if (isLeader && DataStreamConfig.Type.EMBEDDED == dataStreamConfig.getType()) {
+                logger.info("Staring embedded Kafka process");
+                timer.reset();
+
                 EmbeddedKafka kafka = EmbeddedKafka.start(engine, dataStreamConfig.getPort());
+                logger.info("Embedded Kafka started in " + (timer.time() / 1000.) + "s");
+
                 this.services.add(kafka);
             }
 
@@ -376,7 +381,12 @@ public class ClusterNode {
         if (databaseConfig.isEnabled()) {
             // if Leader node and db type is 'embedded', start an instance of cassandra process
             if (isLeader && DatabaseConfig.Type.EMBEDDED == databaseConfig.getType()) {
+                logger.info("Staring embedded Cassandra process");
+                timer.reset();
+
                 EmbeddedCassandra cassandra = EmbeddedCassandra.start(engine, databaseConfig.getPort());
+                logger.info("Embedded Cassandra started in " + (timer.time() / 1000.) + "s");
+
                 this.services.add(cassandra);
             }
 
