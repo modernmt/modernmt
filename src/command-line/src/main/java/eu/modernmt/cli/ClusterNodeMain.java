@@ -151,19 +151,41 @@ public class ClusterNodeMain {
                 restServer.start();
             }
 
-            listener.storeStatus(ClusterNode.Status.READY);
+            listener.updateStatus(ClusterNode.Status.READY).store();
+
         } catch (Throwable e) {
             listener.onError();
             throw e;
         }
     }
 
-
+    /**
+     * A FileStatusListener subscribes to a ClusterNode and,
+     * when its properties change, updates the properties file
+     */
     private static class FileStatusListener implements ClusterNode.StatusListener {
 
         private final File file;
-        private final JsonObject state;
+        private final JsonObject JSONproperties;
 
+        /**
+         * This constructor reads the Nodeconfig resulting from
+         * the read of the engine.xconf file.
+         * The main goal is loading the NodeConfig configuration,
+         * using default values if its properties are null,
+         * or update them if there are not null command line values
+         * (that have higher priority)
+         * <p>
+         * and initializes the basic JSON properties (without storing them):
+         * - cluster port
+         * - api config (root and port),
+         * - database (host and port)
+         * - datastream (host and port)
+         *
+         * @param file   the node.properties JSON file
+         *               in which to store the definitive configuration
+         * @param config the configuration read from the engine.xconf file
+         */
         public FileStatusListener(File file, NodeConfig config) {
             this.file = file;
 
@@ -172,7 +194,7 @@ public class ClusterNodeMain {
             DatabaseConfig dbConfig = config.getDatabaseConfig();
             DataStreamConfig streamConfig = config.getDataStreamConfig();
 
-            this.state = new JsonObject();
+            this.JSONproperties = new JsonObject();
 
             if (apiConfig.isEnabled()) {
                 JsonObject api = new JsonObject();
@@ -180,26 +202,34 @@ public class ClusterNodeMain {
                 String root = apiConfig.getApiRoot();
                 if (root != null)
                     api.addProperty("root", root);
-                this.state.add("api", api);
+                this.JSONproperties.add("api", api);
             }
 
             if (dbConfig.isEnabled()) {
                 JsonObject db = new JsonObject();
                 db.addProperty("port", dbConfig.getPort());
                 db.addProperty("host", dbConfig.getHost());
-                this.state.add("database", db);
+                this.JSONproperties.add("database", db);
             }
 
             if (streamConfig.isEnabled()) {
                 JsonObject stream = new JsonObject();
                 stream.addProperty("port", streamConfig.getPort());
                 stream.addProperty("host", streamConfig.getHost());
-                this.state.add("datastream", stream);
+                this.JSONproperties.add("datastream", stream);
             }
 
-            this.state.addProperty("cluster_port", netConfig.getPort());
+            this.JSONproperties.addProperty("cluster_port", netConfig.getPort());
         }
 
+        /**
+         * Subscriber method: when the target ClusterNode changes its status,
+         * the embedded services and the status in the properties file must be updated
+         *
+         * @param node           the clusternode that publishes the update
+         * @param currentStatus  the new status of the clusternode
+         * @param previousStatus the previous status of the clusternode
+         */
         @Override
         public void onStatusChanged(ClusterNode node, ClusterNode.Status currentStatus, ClusterNode.Status previousStatus) {
             JsonArray array = new JsonArray();
@@ -207,33 +237,56 @@ public class ClusterNodeMain {
             for (EmbeddedService service : node.getServices()) {
                 for (Process process : service.getSubprocesses()) {
                     int pid = getPid(process);
-
                     if (pid > 0)
                         array.add(pid);
                 }
             }
 
-            this.state.add("embedded_services", array);
+            this.JSONproperties.add("embedded_services", array);
 
             if (currentStatus == ClusterNode.Status.READY)
                 return; // Wait for REST Api to be ready
 
-            storeStatus(currentStatus);
+            this.JSONproperties.addProperty("status", currentStatus.toString());
+
         }
 
-        public void storeStatus(ClusterNode.Status status) {
-            storeStatus(status.toString());
+        /**
+         * Update the status in local properties
+         *
+         * @param status the new status of the ClusterNode
+         * @return this very FileStatusListener
+         */
+        public FileStatusListener updateStatus(ClusterNode.Status status) {
+            this.updateStatus(status.toString());
+            return this;
         }
 
+        /**
+         * Update the status in local properties
+         *
+         * @param status the new status of the ClusterNode
+         * @return this very FileStatusListener
+         */
+        private FileStatusListener updateStatus(String status) {
+            this.JSONproperties.addProperty("status", status);
+            return this;
+        }
+
+        /**
+         * In case of error, the new status must be "ERROR"*
+         */
         public void onError() {
-            storeStatus("ERROR");
+            this.updateStatus("ERROR");
+            this.store();
         }
 
-        private void storeStatus(String status) {
-            this.state.addProperty("status", status);
-
+        /**
+         * Overwrite the node.properties file with the local properties
+         */
+        private void store() {
             try {
-                FileUtils.write(file, this.state.toString(), DefaultCharset.get(), false);
+                FileUtils.write(file, this.JSONproperties.toString(), DefaultCharset.get(), false);
             } catch (IOException e) {
                 // Nothing to do
             }
