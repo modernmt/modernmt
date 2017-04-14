@@ -103,21 +103,35 @@ namespace mmt {
 
         static inline string SerializeCounts(counts_t counts) {
             char bytes[8];
-
             size_t ptr = 0;
-            WriteUInt32(bytes, &ptr, counts.count);
-            WriteUInt32(bytes, &ptr, counts.successors);
 
-            return string(bytes, 8);
+            size_t length = VBELengthOfUInt32(counts.count) + VBELengthOfUInt32(counts.successors);
+
+            if (length < 8) {
+                VBEWriteUInt32(bytes, &ptr, counts.count);
+                VBEWriteUInt32(bytes, &ptr, counts.successors);
+            } else {
+                WriteUInt32(bytes, &ptr, counts.count);
+                WriteUInt32(bytes, &ptr, counts.successors);
+                length = 8;
+            }
+
+            return string(bytes, length);
         }
 
         static inline bool DeserializeCounts(const char *data, size_t size, counts_t *output) {
-            if (size != 8)
+            if (size > 8)
                 return false;
 
             size_t ptr = 0;
-            output->count = ReadUInt32(data, &ptr);
-            output->successors = ReadUInt32(data, &ptr);
+
+            if (size == 8) {
+                output->count = ReadUInt32(data, &ptr);
+                output->successors = ReadUInt32(data, &ptr);
+            } else {
+                output->count = VBEReadUInt32(data, &ptr);
+                output->successors = VBEReadUInt32(data, &ptr);
+            }
 
             return true;
         }

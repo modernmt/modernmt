@@ -115,4 +115,47 @@ static inline int64_t ReadInt64(const char *data, size_t i) {
     return ReadUInt64(data, i);
 }
 
+// Variable byte encoding
+
+static inline size_t VBEWriteUInt32(char *buffer, size_t *ptr, uint32_t value) {
+    size_t i;
+    for (i = 0; i < 5; ++i) {
+        buffer[(*ptr)++] = (char) (value & 0b1111111);
+        value = value >> 7;
+
+        if (value == 0)
+            break;
+    }
+
+    buffer[*ptr - 1] |= 0b10000000;
+    return i + 1;
+}
+
+static inline uint32_t VBEReadUInt32(const char *buffer, size_t *ptr) {
+    uint32_t result = 0;
+
+    for (size_t i = 0; i < 5; ++i) {
+        char byte = buffer[(*ptr)++];
+        result |= (byte & 0b1111111) << (i * 7);
+
+        if (byte & 0b10000000)
+            break;
+    }
+
+    return result;
+}
+
+static inline size_t VBELengthOfUInt32(uint32_t value) {
+    if (value >= 0x10000000) //    0b10000000000000000000000000000
+        return  5;
+    else if (value >= 0x200000) // 0b1000000000000000000000
+        return 4;
+    else if (value >= 0x4000) //   0b100000000000000
+        return 3;
+    else if (value >= 0x80) //     0b10000000
+        return 2;
+    else
+        return 1;
+}
+
 #endif //SAPT_IOUTILS_H
