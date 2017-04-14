@@ -34,6 +34,8 @@ public class EmbeddedCassandra extends EmbeddedService {
         }
     }
 
+    public static final int MAX_HEAP_SIZE_IN_MB = 1024;
+
     private final String clusterName;
     private final File db;
     private final File runtime;
@@ -55,10 +57,6 @@ public class EmbeddedCassandra extends EmbeddedService {
         this.configTemplate = Paths.join(cassandraHome, "conf", "cassandra.yaml");
     }
 
-    public File getLogFile() {
-        return logFile;
-    }
-
     private void start(int port) throws IOException {
         if (!NetworkUtils.isAvailable(port))
             throw new IOException("Port " + port + " is already in use by another process");
@@ -73,8 +71,12 @@ public class EmbeddedCassandra extends EmbeddedService {
 
         ProcessBuilder builder = new ProcessBuilder(this.bin.getAbsolutePath(),
                 "-R", "-Dcassandra.config=file:///" + config, "-f");
-        builder.environment()
-                .put("CASSANDRA_JMX_PORT", Integer.toString(NetworkUtils.getAvailablePort()));
+
+        Map<String, String> env = builder.environment();
+        env.put("CASSANDRA_JMX_PORT", Integer.toString(NetworkUtils.getAvailablePort()));
+        env.put("MAX_HEAP_SIZE", MAX_HEAP_SIZE_IN_MB + "M");
+        env.put("HEAP_NEWSIZE", getHeapNewSizeInMb() + "M");
+
         builder.redirectError(ProcessBuilder.Redirect.appendTo(this.logFile));
         builder.redirectOutput(ProcessBuilder.Redirect.appendTo(this.logFile));
 
@@ -155,6 +157,11 @@ public class EmbeddedCassandra extends EmbeddedService {
         }
 
         return null;
+    }
+
+    private static int getHeapNewSizeInMb() {
+        int cores = Runtime.getRuntime().availableProcessors();
+        return Math.min(100 * cores, MAX_HEAP_SIZE_IN_MB / 4);
     }
 
     private void waitForStartupCompleted() throws IOException {

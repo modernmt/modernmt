@@ -209,7 +209,7 @@ void InterpolatedLM::Delete(const updateid_t &id, const domain_t domain) {
 }
 
 unordered_map<stream_t, seqid_t> InterpolatedLM::GetLatestUpdatesIdentifier() {
-    return self->alm->GetLatestUpdatesIdentifier();
+    return self->is_alm_active ? self->alm->GetLatestUpdatesIdentifier() : unordered_map<stream_t, seqid_t>();
 }
 
 void InterpolatedLM::NormalizeContext(context_t *context) {
