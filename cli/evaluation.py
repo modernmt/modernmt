@@ -228,6 +228,7 @@ class GoogleTranslate(Translator):
             raise self._pack_error(r)
 
         text = r.json()['data']['translations'][0]['translatedText']
+
         return text, elapsed
 
 

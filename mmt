@@ -131,9 +131,7 @@ def main_start(argv):
 
     # create a clusterNode for that engine
     node = ClusterNode.connect(args.engine)
-
-    if node.is_running():
-        raise IllegalArgumentException("node process is already running")
+    ensure_not_running(node)
 
     success = False
 
@@ -192,7 +190,6 @@ def main_stop(argv):
     print
     print 'Stopping MMT engine \'{engine}\'...'.format(engine=node.engine.name),
 
-    #
     if node.is_running():
         node.stop()
     print 'OK \n'
@@ -221,6 +218,8 @@ def main_tune(argv):
 
     # connect to the already active cluster node
     node = ClusterNode.connect(args.engine)
+    ensure_running(node)
+    ensure_api(node)
 
     # perform tuning
     corpora = BilingualCorpus.list(args.corpora_path) if args.corpora_path is not None else None
@@ -254,6 +253,8 @@ def main_evaluate(argv):
 
     # connect to the already active cluster node
     node = ClusterNode.connect(args.engine)
+    ensure_running(node)
+    ensure_api(node)
 
     # perform evaluation
     evaluator = Evaluator(node, google_key=args.gt_key, google_nmt=args.gt_nmt)
@@ -327,34 +328,42 @@ def main_status(argv):
     # Get engine names and for each engine connect to its clusterNode and print its data
     for engine_name in engines:
         node = ClusterNode.connect(engine_name)
-        running = node.is_running()
+        node_running = node.is_running()
 
-        print '-'
-        print 'Engine:       ', engine_name
+        print '================================================'
+        print 'Engine: \'' + engine_name + '\''
 
-        print 'Rest API:     ', (
-            'running - %s/translate' % node.api.base_path
-            if running and node.api is not None else 'stopped')
-
-        print 'Cluster:      ', ('running - port %d' % node.cluster_port if running else 'stopped')
-
-        datastream_info = node.datastream_info
-        if datastream_info is None and running:
-            print 'Datastream:    disabled'
-        elif running:
-            datastream_host, datastream_port = datastream_info()
-            print 'Datastream:   ', ('running - %s:%d' % (datastream_host, datastream_port))
+        api_info = node.api
+        print '   REST API:\t',
+        if api_info is None and node_running:
+            print 'disabled'
+        elif node_running:
+            print ('running - %s/translate' % api_info.base_path)
         else:
-            print 'Datastream:    stopped'
+            print 'stopped'
 
-        database_info = node.db_info
-        if database_info is None and running:
-            print 'Database:      disabled'
-        elif running:
-            db_host, db_port = database_info()
-            print 'Database:     ', ('running - %s:%d' % (db_host, db_port))
+        # cluster can not be disabled!
+        print '   Cluster:\t', ('running - port %d' % node.cluster_port if node_running else 'stopped')
+
+        datastream_info = node.datastream_info()
+        print '   Datastream:\t',
+        if datastream_info is None and node_running:
+            print 'disabled'
+        elif node_running:
+            datastream_host, datastream_port = datastream_info
+            print ('running - %s:%d' % (datastream_host, datastream_port))
         else:
-            print 'Database:      stopped'
+            print 'stopped'
+
+        database_info = node.db_info()
+        print '   Database:\t',
+        if database_info is None and node_running:
+            print 'disabled'
+        elif node_running:
+            db_host, db_port = database_info
+            print ('running - %s:%d' % (db_host, db_port))
+        else:
+            print 'stopped'
 
 
 def main_translate(argv):
@@ -390,9 +399,8 @@ def main_translate(argv):
 
     # connect to the already active cluster node
     node = ClusterNode.connect(args.engine)
-
-    if not node.is_running():
-        raise IllegalStateException('engine not running: ' + args.engine)
+    ensure_running(node)
+    ensure_api(node)
 
     # choose the which translator to use, depending on the input format
     if args.is_xliff:
@@ -440,8 +448,8 @@ def main_add(argv):
     args = parser.parse_args(argv)
 
     node = ClusterNode.connect(args.engine)
-    if not node.is_running():
-        raise IllegalStateException('engine not running: ' + args.engine)
+    ensure_running(node)
+    ensure_api(node)
 
     node.append_to_domain(args.domain, args.source, args.target)
 
@@ -467,8 +475,8 @@ def main_import(argv):
         args.domain = os.path.basename(os.path.splitext(args.tmx)[0])
 
     node = ClusterNode.connect(args.engine)
-    if not node.is_running():
-        raise IllegalStateException('engine not running: ' + args.engine)
+    ensure_running(node)
+    ensure_api(node)
 
     progressbar = Progressbar(label='Importing TMX')
 
@@ -538,6 +546,34 @@ def main():
         exit(1)
 
 
+# Check that the node is running
+# and throw an IllegalStateException if it is not
+def ensure_running(node):
+    if not node.is_running():
+        raise IllegalStateException('MMT engine \'%s\' is not running.\n'
+                                    'Start it with "./mmt start"\n'
+                                    'You can check the status of your engines with "./mmt status"'
+                                    % node.engine.name)
+
+
+# Check that the node is not running
+# and throw an IllegalStateException if it is
+def ensure_not_running(node):
+    if node.is_running():
+        raise IllegalStateException('MMT engine \'%s\' is already running.\n'
+                                    'You can check the status of your engines with "./mmt status"'
+                                    % node.engine.name)
+
+
+# Check that the REST Server of the engine is running
+# and throw an IllegalStateException if it is not
+def ensure_api(node):
+    if node.api is None:
+        raise IllegalStateException('No MMT REST Server running. Enable it and restart the engine to perform tuning')
+
+
 if __name__ == '__main__':
     __check_java()
     main()
+
+

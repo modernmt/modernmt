@@ -9,7 +9,7 @@ import time
 import requests
 
 import cli
-from cli import mmt_javamain, IllegalStateException, IllegalArgumentException
+from cli import mmt_javamain, IllegalArgumentException
 from cli.engine import MMTEngine
 from cli.libs import fileutils, daemon, shell
 from cli.mt import BilingualCorpus
@@ -232,7 +232,6 @@ class ClusterNode(object):
         try:
             # Load the already created engine
             engine = MMTEngine.load(engine_name)
-
         except IllegalArgumentException:
             if not silent:
                 raise
@@ -253,9 +252,6 @@ class ClusterNode(object):
 
     def start(self, api_port=None, cluster_port=None, datastream_port=None,
               db_port=None, sibling=None, verbosity=None):
-
-        if self.is_running():
-            raise IllegalStateException('node process is already running')
 
         success = False
         process = self._start_process(api_port, cluster_port, datastream_port, db_port, sibling, verbosity)
@@ -421,9 +417,6 @@ class ClusterNode(object):
 
         if len(corpora) == 0:
             raise IllegalArgumentException('empty corpora')
-
-        if not self.is_running():
-            raise IllegalStateException('No MMT Server running, start the engine first')
 
         tokenizer = Tokenizer()
 
