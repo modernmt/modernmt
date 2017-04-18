@@ -391,7 +391,7 @@ public class ClusterNode {
             // if db type is 'embedded' and db host is localhost, start a db process;
             // else do nothing - will connect to a remote db or a local standalone db
             if (embeddedDatabase && localDatabase) {
-                logger.info("Staring embedded Cassandra process");
+                logger.info("Starting embedded Cassandra process");
                 timer.reset();
 
                 EmbeddedCassandra cassandra = EmbeddedCassandra.start(engine, databaseConfig.getPort());

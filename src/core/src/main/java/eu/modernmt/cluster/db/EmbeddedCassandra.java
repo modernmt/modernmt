@@ -128,6 +128,11 @@ public class EmbeddedCassandra extends EmbeddedService {
             Iterator<String> input = FileUtils.lineIterator(this.configTemplate, DefaultCharset.get().name());
             while (input.hasNext()) {
                 String line = input.next();
+
+                if (isComment(line))
+                    continue;
+
+
                 String key = extractKey(line, customConfigurations);
 
                 if (key != null) {
@@ -148,6 +153,12 @@ public class EmbeddedCassandra extends EmbeddedService {
         }
 
         return config;
+    }
+
+
+    private static boolean isComment(String line) {
+        line = line.trim();
+        return (!line.isEmpty() && line.charAt(0) == '#');
     }
 
     private static String extractKey(String line, HashMap<String, String> config) {
