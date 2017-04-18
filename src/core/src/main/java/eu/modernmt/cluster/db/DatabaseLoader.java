@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Created by andrea on 31/03/17.
  * This class handles the generation and population of the DB
- * during the execution of MMT start (et similia),
+ * during the execution of MMT start
  * depending on the configuration chosen by the user.
  */
 public class DatabaseLoader {
@@ -28,20 +28,16 @@ public class DatabaseLoader {
     private final static Logger logger = LogManager.getLogger(DatabaseLoader.class);
 
     /**
-     * If the configuration enables the database usage,
-     * this method generates a Database object to interact
-     * with the running database process.
+     * This method connects to a Database to interact with,
+     * and proceeds to poopulate it with the baseline domains.
+     * <p>
      * The database process can run:
-     * - in the same machine (type = EMBEDDED, Leader node);
-     * - in another machine in the same MMT cluster
-     * (Type = EMBEDDED, Follower node);
-     * - in a separate, remote machine not belonging to the cluster:
-     * (type = STANDALONE).
+     * - in the same machine (host = localhost):
+     * - as an EMBEDDED database process (already launched by the cluster node)
+     * - as a pre-existing, STANDALONE database process
+     * - in another machine (host != localhost):
+     * the db type (embedded or standalone) does not matter to this node
      * <p>
-     * This method then proceeds to populate the database if necessary.
-     * <p>
-     * Otherwise, if the configuration disables the database usage,
-     * this method does nothing
      *
      * @param engine          the engine that will employ the DB to load
      * @param config          the configuration for the DB to load

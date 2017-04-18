@@ -58,11 +58,9 @@ public class KafkaDataManager implements DataManager {
         // and put them in an array "channels"
         this.channels = new KafkaChannel[2];
 
-        /* for the topic names, employ the 0.15x name convention if type is embedded
-           or the 1x name convention otherwise*/
-        String[] topicNames = {"domain-upload-stream", "contributions-stream"};
-        if (config.getType() != DataStreamConfig.Type.EMBEDDED)
-            topicNames = getDefaultTopicNames(engine);
+        /* get the default topic names (nomenclature 1x)
+        * NOTE: nomenclature 0.15x is discontinued*/
+        String[] topicNames = getDefaultTopicNames(engine);
 
         this.channels[0] = new KafkaChannel(DataManager.DOMAIN_UPLOAD_CHANNEL_ID,
                 topicNames[DataManager.DOMAIN_UPLOAD_CHANNEL_ID]);
