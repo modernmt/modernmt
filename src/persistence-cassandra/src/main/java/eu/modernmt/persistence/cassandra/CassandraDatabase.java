@@ -63,17 +63,6 @@ public class CassandraDatabase extends Database {
     }
 
     /**
-     * This method returns the default keyspace name
-     * following the OLD keyspace naming nomenclature: "default"
-     *
-     * @return the keyspace name
-     */
-    public static String getDefaultKeyspace() {
-        return "default";
-    }
-
-
-    /**
      * This constructor builds an access point to a Cassandra DB
      * and, in particular, to one of its keyspaces
      *

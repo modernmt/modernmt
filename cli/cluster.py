@@ -251,10 +251,10 @@ class ClusterNode(object):
         self._update_properties()
 
     def start(self, api_port=None, cluster_port=None, datastream_port=None,
-              db_port=None, sibling=None, verbosity=None):
+              db_port=None, leader=None, verbosity=None):
 
         success = False
-        process = self._start_process(api_port, cluster_port, datastream_port, db_port, sibling, verbosity)
+        process = self._start_process(api_port, cluster_port, datastream_port, db_port, leader, verbosity)
         pid = process.pid
 
         if pid > 0:
@@ -270,7 +270,7 @@ class ClusterNode(object):
         if not success:
             raise Exception('failed to start node, check log file for more details: ' + self._log_file)
 
-    def _start_process(self, api_port, cluster_port, datastream_port, db_port, sibling, verbosity):
+    def _start_process(self, api_port, cluster_port, datastream_port, db_port, leader, verbosity):
         if not os.path.isdir(self.engine.runtime_path):
             fileutils.makedirs(self.engine.runtime_path, exist_ok=True)
         logs_folder = os.path.abspath(os.path.join(self._log_file, os.pardir))
@@ -299,9 +299,9 @@ class ClusterNode(object):
             args.append('-v')
             args.append(str(verbosity))
 
-        if sibling is not None:
-            args.append('--member')
-            args.append(sibling)
+        if leader is not None:
+            args.append('--leader')
+            args.append(leader)
 
         command = mmt_javamain('eu.modernmt.cli.ClusterNodeMain', args, hserr_path=logs_folder)
 

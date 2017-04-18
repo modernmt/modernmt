@@ -21,6 +21,7 @@ import java.util.List;
 
 /**
  * Created by davide on 22/04/16.
+ * Updated by andrearossi on 18/04/16.
  */
 public class ClusterNodeMain {
 
@@ -44,7 +45,7 @@ public class ClusterNodeMain {
             Option datastreamPort = Option.builder().longOpt("datastream-port").hasArg().required(false).build();
             Option databasePort = Option.builder().longOpt("db-port").hasArg().required(false).build();
 
-            Option member = Option.builder().longOpt("member").hasArg().required(false).build();
+            Option leader = Option.builder().longOpt("leader").hasArg().required(false).build();
 
             Option verbosity = Option.builder("v").longOpt("verbosity").hasArg().type(Integer.class).required(false).build();
 
@@ -54,7 +55,7 @@ public class ClusterNodeMain {
             cliOptions.addOption(clusterPort);
             cliOptions.addOption(statusFile);
             cliOptions.addOption(verbosity);
-            cliOptions.addOption(member);
+            cliOptions.addOption(leader);
             cliOptions.addOption(logsFolder);
             cliOptions.addOption(datastreamPort);
             cliOptions.addOption(databasePort);
@@ -96,6 +97,7 @@ public class ClusterNodeMain {
             this.config = XMLConfigBuilder.build(Engine.getConfigFile(this.engine));
             this.config.getEngineConfig().setName(this.engine);
 
+            // Create the config objects based on the engine.xconf file
             NetworkConfig netConfig = this.config.getNetworkConfig();
             DataStreamConfig streamConfig = this.config.getDataStreamConfig();
             DatabaseConfig dbConfig = this.config.getDatabaseConfig();
@@ -103,50 +105,58 @@ public class ClusterNodeMain {
             JoinConfig joinConfig = netConfig.getJoinConfig();
 
 
-            // PORT VALUES MANAGEMENT
-            // if the port is not null, so if it was passed by command line
-            // write it in the suitable config it is the port we are gonna use
-
-            // else, if the port is null, do nothing:
-            // we will just use the the port written in the config.
-            // This is the port parsed from the engine.xconf file, if there was one.
-
-            // If it wasn't defined in the engine.xconf file, we will just keep
-            // the default value used at the config object instantiation.
-
+            // ~~~~~~~~~~~~~~~~ PORTS MANAGEMENT ~~~~~~~~~~~~~~~~~~~
+            // If the port [passed by command line] is not null
+            // write it in the suitable config: it is the port to use.
+            // Else, if it is null use the the port already in the config:
+            // it is the port parsed from the engine.xconf file,
+            // so it is either a manually-chosen port or the default value
+            // (if the user didn't update the engine.xconf file)
             String port = cli.getOptionValue("cluster-port");
             if (port != null)
                 netConfig.setPort(Integer.parseInt(port));
-
             String apiPort = cli.getOptionValue("api-port");
             if (apiPort != null)
                 apiConfig.setPort(Integer.parseInt(apiPort));
-
             String datastreamPort = cli.getOptionValue("datastream-port");
             if (datastreamPort != null)
                 streamConfig.setPort(Integer.parseInt(datastreamPort));
-
             String databasePort = cli.getOptionValue("db-port");
             if (databasePort != null)
                 dbConfig.setPort(Integer.parseInt(databasePort));
 
-            String member = cli.getOptionValue("member");
 
-            // if there is a sibling to join
-            if (member != null) {
+            // ~~~~~~~~~~~~~~~~ MEMBERS MANAGEMENT ~~~~~~~~~~~~~~~~~~~
+            // Members are other nodes in the MMT cluster.
+            // If this node is to join an MMT cluster, it must contact
+            // a member of the cluster as an entry point.
 
-                // create a Member array, with the sibling (Leader) as element 0
-                // and assume he is using my same port for the cluster communication;
-                // if it is not, then my configuration is wrong
+            // If a leader was passed by command line:
+            //  - for the cluster join task, put it in an empty Member array:
+            //    it is the only cluster member that this node will try to join to.
+            //  - since the leader also hosts the database and datastream,
+            //    set the datastreamconfig and databaseconfig host as the leader
+            //
+            // Assume that all the ports that the leader uses
+            // (cluster, datastream and db ports) are the same as this node.
+            // If they are not, then the configuration is wrong.
+
+            // If no leader is passed by command line, do nothing:
+            // this way the config object will use the members list parsed
+            // from the engine.xconf file and try to join those members in order.
+
+            // NOTE: In this case there may or may not be a cluster leader.
+            // so just use the database and datastream hosts and ports
+            // set in the engine.xconf file.
+            String leader = cli.getOptionValue("leader");
+            if (leader != null) {
+
                 JoinConfig.Member[] members = new JoinConfig.Member[1];
-                members[0] = new JoinConfig.Member(member, netConfig.getPort());
+                members[0] = new JoinConfig.Member(leader, netConfig.getPort());
                 joinConfig.setMembers(members);
 
-                // if type is embedded the host is the sibling (Leader)
-                if (config.getDataStreamConfig().getType() == DataStreamConfig.Type.EMBEDDED)
-                    this.config.getDataStreamConfig().setHost(member);
-                if (config.getDatabaseConfig().getType() == DatabaseConfig.Type.EMBEDDED)
-                    this.config.getDatabaseConfig().setHost(member);
+                this.config.getDataStreamConfig().setHost(leader);
+                this.config.getDatabaseConfig().setHost(leader);
             }
         }
     }

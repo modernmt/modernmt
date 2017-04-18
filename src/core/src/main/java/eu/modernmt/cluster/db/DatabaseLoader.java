@@ -58,17 +58,12 @@ public class DatabaseLoader {
         /*create and populate the DB if necessary*/
         logger.info("Connecting to the database...");
 
-            /*if a keyspace name was passed in the config, use it; else get a default name;
-            employ either the 0.15x name convention if type is embedded
-            or the 1x name convention otherwise*/
+        /*if a keyspace name was passed in the config, use it;
+        else get a default name in the 1x nomenclature.
+        NOTE: 0.15x nomenclature is now discontinued.*/
         String name = config.getName();
-        if (name == null) {
-            if (config.getType() == DatabaseConfig.Type.EMBEDDED) {
-                name = CassandraDatabase.getDefaultKeyspace();
-            } else {
-                name = CassandraDatabase.getDefaultKeyspace(engine.getName(), engine.getSourceLanguage(), engine.getTargetLanguage());
-            }
-        }
+        if (name == null)
+            name = CassandraDatabase.getDefaultKeyspace(engine.getName(), engine.getSourceLanguage(), engine.getTargetLanguage());
 
         // create the Database object (an access point to the db in the running process)
         CassandraDatabase database = new CassandraDatabase(
@@ -110,8 +105,6 @@ public class DatabaseLoader {
         } finally {
             IOUtils.closeQuietly(connection);
         }
-
-        /*the db has been updated if the configuration let it; else it is still null*/
         return database;
     }
 }

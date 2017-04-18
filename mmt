@@ -122,7 +122,7 @@ def main_start(argv):
     parser.add_argument('--db-port', dest='db_port', metavar='DB_PORT',
                         help='the network port used by the DB, currently implemented with Cassandra '
                              '(default is 9042', default=None, type=int)
-    parser.add_argument('--join', dest='sibling', metavar='NODE_IP', default=None,
+    parser.add_argument('--join-leader', dest='leader', metavar='NODE_IP', default=None,
                         help='use this option to join this node to an existent cluster. '
                              'NODE is the IP of the remote host to connect to.')
 
@@ -142,7 +142,7 @@ def main_start(argv):
                    cluster_port=args.cluster_port,
                    datastream_port=args.datastream_port,
                    db_port=args.db_port,
-                   sibling=args.sibling,
+                   leader=args.leader,
                    verbosity=args.verbosity)
 
         # wait for the node to start

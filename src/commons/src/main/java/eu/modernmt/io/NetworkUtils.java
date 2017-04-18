@@ -1,11 +1,10 @@
 package eu.modernmt.io;
 
+import com.sun.org.apache.xpath.internal.SourceTree;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
-import java.net.DatagramSocket;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -43,6 +42,29 @@ public class NetworkUtils {
             IOUtils.closeQuietly(ss);
         }
     }
+
+    public static boolean isLocalhost(String host) {
+        InetAddress address;
+
+        // convert the host name or ip string to an InetAddress object
+        // If the address is unknown it is not localhost
+        try {
+            address = InetAddress.getByName(host);
+        } catch (UnknownHostException e) {
+            return false;
+        }
+        // Check if the address is a valid special local or loop back
+        if (address.isAnyLocalAddress() || address.isLoopbackAddress())
+            return true;
+
+        // Check if the address is defined on any interface
+        try {
+            return NetworkInterface.getByInetAddress(address) != null;
+        } catch (SocketException e) {
+            return false;
+        }
+    }
+
 
     public static NetPipe netcat(String host, int port) throws IOException {
         return new NetPipe(host, port);

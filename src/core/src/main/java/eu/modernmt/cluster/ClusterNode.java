@@ -20,6 +20,7 @@ import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
+import eu.modernmt.io.NetworkUtils;
 import eu.modernmt.persistence.Database;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -68,7 +69,6 @@ public class ClusterNode {
     private HazelcastInstance hazelcast;
     private IExecutorService executor;
     private DataManager dataManager;
-
     private Database database;
     private ITopic<Map<String, float[]>> decoderWeightsTopic;
 
@@ -153,7 +153,6 @@ public class ClusterNode {
     public Database getDatabase() {
         if (database == null)
             throw new IllegalStateException("Database unavailable.");
-
         return database;
     }
 
@@ -260,19 +259,15 @@ public class ClusterNode {
     }
 
     public void start(NodeConfig nodeConfig, long joinTimeoutInterval, TimeUnit joinTimeoutUnit) throws FailedToJoinClusterException, BootstrapException {
-        Config hazelcastConfig = getHazelcastConfig(nodeConfig, joinTimeoutInterval, joinTimeoutUnit);
-
-        Object[] members = nodeConfig.getNetworkConfig().getJoinConfig().getMembers();
-        boolean isLeader = members == null || members.length == 0;
 
         Timer globalTimer = new Timer();
         Timer timer = new Timer();
 
-        // ========================
+        // ===========  Join the cluster  =============
 
         setStatus(Status.JOINING);
         logger.info("Node is joining the cluster");
-
+        Config hazelcastConfig = getHazelcastConfig(nodeConfig, joinTimeoutInterval, joinTimeoutUnit);
         timer.reset();
         try {
             hazelcast = Hazelcast.newHazelcastInstance(hazelcastConfig);
@@ -281,11 +276,11 @@ public class ClusterNode {
             TcpIpConfig tcpIpConfig = hazelcastConfig.getNetworkConfig().getJoin().getTcpIpConfig();
             throw new FailedToJoinClusterException(tcpIpConfig.getRequiredMember());
         }
-
         setStatus(Status.JOINED);
         logger.info("Node joined the cluster in " + (timer.time() / 1000.) + "s");
 
-        // ========================
+
+        // ===========  ???  =============
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
@@ -296,7 +291,7 @@ public class ClusterNode {
             }
         }));
 
-        // ========================
+        // ===========  Model syncing - not used  =============
 
         //TODO: must reintroduce valid model syncing
         logger.warn("Model syncing not supported in this version!");
@@ -313,43 +308,52 @@ public class ClusterNode {
 //        setStatus(Status.SYNCED);
 //        }
 
-        // ========================
+
+        // ===========  Model loading  =============
 
         setStatus(Status.LOADING);
         logger.info("Model loading started");
 
         timer.reset();
-        engine = Engine.load(nodeConfig.getEngineConfig());
+        this.engine = Engine.load(nodeConfig.getEngineConfig());
         setStatus(Status.LOADED);
         logger.info("Model loaded in " + (timer.time() / 1000.) + "s");
 
-        // ========================
+
+        // ===========  Data stream bootstrap  =============
 
         DataStreamConfig dataStreamConfig = nodeConfig.getDataStreamConfig();
         if (dataStreamConfig.isEnabled()) {
-            // if Leader node and db type is 'embedded', start an instance of cassandra process
-            if (isLeader && DataStreamConfig.Type.EMBEDDED == dataStreamConfig.getType()) {
+
+            boolean localDatastream = NetworkUtils.isLocalhost(dataStreamConfig.getHost());
+            boolean embeddedDatastream = dataStreamConfig.getType() == DataStreamConfig.Type.EMBEDDED;
+
+            // if datastream is 'embedded' and datastream host is localhost,
+            // start an instance of kafka process
+            // else do nothing - will connect to a remote datastream
+            // or to a local standalone datastream
+            if (embeddedDatastream && localDatastream) {
                 logger.info("Staring embedded Kafka process");
                 timer.reset();
 
-                EmbeddedKafka kafka = EmbeddedKafka.start(engine, dataStreamConfig.getPort());
+                EmbeddedKafka kafka = EmbeddedKafka.start(this.engine, dataStreamConfig.getPort());
                 logger.info("Embedded Kafka started in " + (timer.time() / 1000.) + "s");
 
                 this.services.add(kafka);
             }
 
-            dataManager = new KafkaDataManager(uuid, engine, dataStreamConfig);
-            dataManager.setDataManagerListener(this::updateChannelsPositions);
+            this.dataManager = new KafkaDataManager(uuid, this.engine, dataStreamConfig);
+            this.dataManager.setDataManagerListener(this::updateChannelsPositions);
 
-            Aligner aligner = engine.getAligner();
-            Decoder decoder = engine.getDecoder();
+            Aligner aligner = this.engine.getAligner();
+            Decoder decoder = this.engine.getDecoder();
             ContextAnalyzer contextAnalyzer = engine.getContextAnalyzer();
 
-            addToDataManager(aligner, dataManager);
-            addToDataManager(decoder, dataManager);
-            addToDataManager(contextAnalyzer, dataManager);
+            addToDataManager(aligner, this.dataManager);
+            addToDataManager(decoder, this.dataManager);
+            addToDataManager(contextAnalyzer, this.dataManager);
 
-            updateChannelsPositions(dataManager.getChannelsPositions());
+            updateChannelsPositions(this.dataManager.getChannelsPositions());
 
             try {
                 timer.reset();
@@ -363,7 +367,7 @@ public class ClusterNode {
                 timer.reset();
                 try {
                     logger.info("Starting sync from data stream");
-                    dataManager.waitChannelPositions(positions);
+                    this.dataManager.waitChannelPositions(positions);
                     logger.info("Data stream sync completed in " + (timer.time() / 1000.) + "s");
                 } catch (InterruptedException e) {
                     throw new BootstrapException("Data stream sync interrupted", e);
@@ -375,12 +379,18 @@ public class ClusterNode {
             }
         }
 
-        // ========================
+
+        // ===========  Database bootstrap  =============
 
         DatabaseConfig databaseConfig = nodeConfig.getDatabaseConfig();
         if (databaseConfig.isEnabled()) {
-            // if Leader node and db type is 'embedded', start an instance of cassandra process
-            if (isLeader && DatabaseConfig.Type.EMBEDDED == databaseConfig.getType()) {
+
+            boolean localDatabase = NetworkUtils.isLocalhost(databaseConfig.getHost());
+            boolean embeddedDatabase = databaseConfig.getType() == DatabaseConfig.Type.EMBEDDED;
+
+            // if db type is 'embedded' and db host is localhost, start a db process;
+            // else do nothing - will connect to a remote db or a local standalone db
+            if (embeddedDatabase && localDatabase) {
                 logger.info("Staring embedded Cassandra process");
                 timer.reset();
 
@@ -390,12 +400,12 @@ public class ClusterNode {
                 this.services.add(cassandra);
             }
 
-            // if I'm working standalone or if I'm the leader of an Embedded cluster
-            // I am allowed to create a DB if it is missing
-            boolean createIfMissing = isLeader || databaseConfig.getType() != DatabaseConfig.Type.EMBEDDED;
+            // I am always allowed to create a DB if it is missing
+            boolean createIfMissing = true;
             this.database = DatabaseLoader.load(engine, databaseConfig, createIfMissing);
             //load may throw a bootstrap exception: just let it pass
         }
+
 
         // ========================
 
@@ -479,5 +489,4 @@ public class ClusterNode {
         }
 
     }
-
 }
