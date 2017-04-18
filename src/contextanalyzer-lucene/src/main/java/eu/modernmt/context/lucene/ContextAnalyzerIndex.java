@@ -41,9 +41,10 @@ public class ContextAnalyzerIndex implements Closeable {
     private final Logger logger = LogManager.getLogger(ContextAnalyzerIndex.class);
 
     private IDFTable idfCache;
-    private Directory indexDirectory;
-    private Analyzer analyzer;
-    private IndexWriter indexWriter;
+    private final Directory indexDirectory;
+    private final Analyzer analyzer;
+    private final IndexWriter indexWriter;
+
     private DirectoryReader indexReader;
 
     public ContextAnalyzerIndex(File indexPath, Locale language) throws IOException {
@@ -68,12 +69,15 @@ public class ContextAnalyzerIndex implements Closeable {
         this.indexWriter = new IndexWriter(this.indexDirectory, indexConfig);
     }
 
-    private IDFTable getIDFCache() throws ContextAnalyzerException {
+    public Analyzer getAnalyzer() {
+        return analyzer;
+    }
+
+    public IDFTable getIDFCache() {
         if (idfCache == null) {
             synchronized (this) {
-                if (idfCache == null) {
+                if (idfCache == null)
                     idfCache = new IDFTable(DocumentBuilder.CONTENT_FIELD);
-                }
             }
         }
 
@@ -236,9 +240,8 @@ public class ContextAnalyzerIndex implements Closeable {
         ContextVector.Builder resultBuilder = new ContextVector.Builder(topDocs.length);
         resultBuilder.setLimit(limit);
 
-        CosineSimilarityCalculator calculator = new CosineSimilarityCalculator(reader, DocumentBuilder.CONTENT_FIELD, getIDFCache());
-        calculator.setAnalyzer(analyzer);
-        calculator.setBoost(true);
+        CosineSimilarityCalculator calculator = new CosineSimilarityCalculator(this, reader);
+        calculator.setBoost(false); // Saves lot of RAM for not using the TF-IDF cache and the BLEU score is the same
         calculator.setReferenceDocument(referenceDocument);
         calculator.setScoreDocs(topDocs);
 

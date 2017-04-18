@@ -1,7 +1,6 @@
 package eu.modernmt.context.lucene;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -19,29 +18,27 @@ import java.util.concurrent.*;
 /**
  * Created by davide on 18/09/15.
  */
-public class CosineSimilarityCalculator {
+class CosineSimilarityCalculator {
 
-    private final IDFTable cache;
+    private final ContextAnalyzerIndex index;
+    private final ExecutorService executor;
+    private final IndexReader indexReader;
 
-    private ExecutorService executor;
-    private boolean running = false;
-    private boolean boost = false;
-    private IndexReader indexReader;
-    private Analyzer analyzer;
-    private String fieldName;
+    private boolean running;
+    private boolean boost;
+
     private ReferenceDoc referenceDocument;
     private ScoreDoc[] scoreDocs;
     private HashMap<Integer, Future<Float>> results;
 
-    public CosineSimilarityCalculator(IndexReader indexReader, String fieldName, IDFTable cache) {
-        this.indexReader = indexReader;
-        this.fieldName = fieldName;
-        this.executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        this.cache = cache;
-    }
+    public CosineSimilarityCalculator(ContextAnalyzerIndex index, IndexReader reader) {
+        int cores = Runtime.getRuntime().availableProcessors();
 
-    public void setAnalyzer(Analyzer analyzer) {
-        this.analyzer = analyzer;
+        this.index = index;
+        this.executor = Executors.newFixedThreadPool(cores);
+        this.indexReader = reader;
+        this.running = false;
+        this.boost = false;
     }
 
     public void setReferenceDocument(Document referenceDocument) {
@@ -120,11 +117,11 @@ public class CosineSimilarityCalculator {
     }
 
     protected HashMap<String, Float> getTermFrequencies(IndexReader reader, int docId) throws IOException {
-        Terms vector = reader.getTermVector(docId, fieldName);
+        Terms vector = reader.getTermVector(docId, DocumentBuilder.CONTENT_FIELD);
         TermsEnum termsEnum = vector.iterator(null);
         HashMap<String, Float> frequencies = new HashMap<>();
 
-        IDFTable idfTable = boost ? this.cache : null;
+        IDFTable idfTable = boost ? index.getIDFCache() : null;
         BytesRef text;
         while ((text = termsEnum.next()) != null) {
             String term = text.utf8ToString();
@@ -167,7 +164,7 @@ public class CosineSimilarityCalculator {
                         IndexReader reader = null;
 
                         try {
-                            IndexWriterConfig indexConfig = new IndexWriterConfig(Version.LUCENE_4_10_4, analyzer);
+                            IndexWriterConfig indexConfig = new IndexWriterConfig(Version.LUCENE_4_10_4, index.getAnalyzer());
                             indexConfig.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
                             writer = new IndexWriter(directory, indexConfig);
                             writer.addDocument(document);

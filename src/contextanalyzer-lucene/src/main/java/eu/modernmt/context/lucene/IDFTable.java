@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Created by davide on 22/09/15.
  */
-public class IDFTable {
+class IDFTable {
 
     private ConcurrentHashMap<String, Float> cache;
     private String fieldId;
