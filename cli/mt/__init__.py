@@ -70,7 +70,7 @@ class BilingualCorpus:
 
                     builder.add(lang, filepath)
 
-        return [builder.build() for _, builder in corpus_map.iteritems()]
+        return sorted([builder.build() for _, builder in corpus_map.iteritems()], key=attrgetter('name'))
 
     @staticmethod
     def splitlist(source_lang, target_lang, monolingual_is_target=True, roots=None):
