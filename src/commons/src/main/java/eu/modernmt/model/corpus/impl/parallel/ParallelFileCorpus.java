@@ -143,6 +143,7 @@ public class ParallelFileCorpus implements BilingualCorpus {
 
         private UnixLineReader sourceReader;
         private UnixLineReader targetReader;
+        private int index;
 
         private ParallelFileLineReader(File source, File target) throws FileNotFoundException {
             boolean success = false;
@@ -150,6 +151,7 @@ public class ParallelFileCorpus implements BilingualCorpus {
             try {
                 this.sourceReader = new UnixLineReader(new InputStreamReader(new FileInputStream(source), DefaultCharset.get()));
                 this.targetReader = new UnixLineReader(new InputStreamReader(new FileInputStream(target), DefaultCharset.get()));
+                this.index = 0;
 
                 success = true;
 
@@ -164,10 +166,14 @@ public class ParallelFileCorpus implements BilingualCorpus {
             String source = sourceReader.readLine();
             String target = targetReader.readLine();
 
-            if (source == null || target == null)
+            if (source == null && target == null) {
                 return null;
-
-            return new StringPair(source, target);
+            } else if (source != null && target != null) {
+                this.index++;
+                return new StringPair(source, target);
+            } else {
+                throw new IOException("Invalid parallel corpus: unmatched line at index " + this.index);
+            }
         }
 
         @Override
