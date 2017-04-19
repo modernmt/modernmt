@@ -172,7 +172,7 @@ public class ParallelFileCorpus implements BilingualCorpus {
                 this.index++;
                 return new StringPair(source, target);
             } else {
-                throw new IOException("Invalid parallel corpus: unmatched line at index " + this.index);
+                throw new IOException("Invalid parallel corpus: unmatched line at " + (this.index + 1));
             }
         }
 
