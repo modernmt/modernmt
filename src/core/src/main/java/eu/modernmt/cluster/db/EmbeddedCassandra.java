@@ -98,7 +98,7 @@ public class EmbeddedCassandra extends EmbeddedService {
         File config = new File(this.runtime, "cassandra.yaml");
 
         HashMap<String, String> customConfigurations = new HashMap<>(16);
-        customConfigurations.put("cluster_name", this.clusterName);
+        customConfigurations.put("cluster_name", "mmt-cluster");
 
         // port used for DB communication
         customConfigurations.put("native_transport_port", Integer.toString(port));

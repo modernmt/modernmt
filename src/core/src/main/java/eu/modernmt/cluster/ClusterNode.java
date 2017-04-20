@@ -326,7 +326,7 @@ public class ClusterNode {
         if (dataStreamConfig.isEnabled()) {
 
             boolean localDatastream = NetworkUtils.isLocalhost(dataStreamConfig.getHost());
-            boolean embeddedDatastream = dataStreamConfig.getType() == DataStreamConfig.Type.EMBEDDED;
+            boolean embeddedDatastream = dataStreamConfig.isEmbedded();
 
             // if datastream is 'embedded' and datastream host is localhost,
             // start an instance of kafka process
@@ -341,6 +341,10 @@ public class ClusterNode {
 
                 this.services.add(kafka);
             }
+
+            if (!embeddedDatastream && dataStreamConfig.getName() == null)
+                throw new BootstrapException("Datastream name is compulsory if datastream is not embedded");
+
 
             this.dataManager = new KafkaDataManager(uuid, this.engine, dataStreamConfig);
             this.dataManager.setDataManagerListener(this::updateChannelsPositions);
@@ -386,7 +390,7 @@ public class ClusterNode {
         if (databaseConfig.isEnabled()) {
 
             boolean localDatabase = NetworkUtils.isLocalhost(databaseConfig.getHost());
-            boolean embeddedDatabase = databaseConfig.getType() == DatabaseConfig.Type.EMBEDDED;
+            boolean embeddedDatabase = databaseConfig.isEmbedded();
 
             // if db type is 'embedded' and db host is localhost, start a db process;
             // else do nothing - will connect to a remote db or a local standalone db
@@ -399,6 +403,10 @@ public class ClusterNode {
 
                 this.services.add(cassandra);
             }
+
+            if (!embeddedDatabase && databaseConfig.getName() == null)
+                throw new BootstrapException("Database name is compulsory if database is not embedded");
+
 
             // I am always allowed to create a DB if it is missing
             boolean createIfMissing = true;

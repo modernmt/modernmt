@@ -39,13 +39,14 @@ class XMLDataStreamConfigBuilder extends XMLAbstractBuilder {
     public DataStreamConfig build(DataStreamConfig config) throws ConfigException {
         if (this.hasAttribute("enabled"))
             config.setEnabled(this.getBooleanAttribute("enabled"));
-        if (this.hasAttribute("type"))
-            config.setType(this.getEnumAttribute("type", DataStreamConfig.Type.class));
+        if (this.hasAttribute("embedded"))
+            config.setEmbedded(this.getBooleanAttribute("embedded"));
         if (this.hasAttribute("host"))
             config.setHost(this.getStringAttribute("host"));
         if (this.hasAttribute("port"))
             config.setPort(this.getIntAttribute("port"));
-
+        if (this.hasAttribute("name"))
+            config.setName(this.getStringAttribute("name"));
         return config;
     }
 

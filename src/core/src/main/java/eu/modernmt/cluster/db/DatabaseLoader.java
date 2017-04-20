@@ -59,7 +59,7 @@ public class DatabaseLoader {
         NOTE: 0.15x nomenclature is now discontinued.*/
         String name = config.getName();
         if (name == null)
-            name = CassandraDatabase.getDefaultKeyspace(engine.getName(), engine.getSourceLanguage(), engine.getTargetLanguage());
+            name = CassandraDatabase.getDefaultKeyspace();
 
         // create the Database object (an access point to the db in the running process)
         CassandraDatabase database = new CassandraDatabase(

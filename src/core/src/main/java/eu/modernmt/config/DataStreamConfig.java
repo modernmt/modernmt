@@ -10,14 +10,11 @@ package eu.modernmt.config;
  */
 public class DataStreamConfig {
 
-    public enum Type {
-        EMBEDDED, STANDALONE
-    }
-
     private boolean enabled = true;
-    private Type type = Type.EMBEDDED;
+    private boolean embedded = true;
     private String host = "localhost";
     private int port = 9092;
+    private String name = null;
 
     public boolean isEnabled() {
         return enabled;
@@ -28,12 +25,12 @@ public class DataStreamConfig {
         return this;
     }
 
-    public Type getType() {
-        return this.type;
+    public boolean isEmbedded() {
+        return this.embedded;
     }
 
-    public DataStreamConfig setType(Type type) {
-        this.type = type;
+    public DataStreamConfig setEmbedded(boolean embedded) {
+        this.embedded = embedded;
         return this;
     }
 
@@ -59,8 +56,17 @@ public class DataStreamConfig {
     public String toString() {
         return "[DataStream]\n" +
                 "  enabled = " + this.enabled + "\n" +
-                "  type = " + this.type + "\n" +
+                "  embedded = " + this.embedded + "\n" +
                 "  host = " + this.host + "\n" +
                 "  port = " + this.port;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public DataStreamConfig setName(String name) {
+        this.name = name;
+        return this;
     }
 }

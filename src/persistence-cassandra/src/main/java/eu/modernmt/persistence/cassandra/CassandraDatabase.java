@@ -34,33 +34,31 @@ public class CassandraDatabase extends Database {
     private Cluster cluster;
 
     /**
-     * This method figures the suitable default keyspace name
-     * for the current engine, given its name and configuration
-     * following the NEW keyspace naming nomenclature:
-     * "mmt_engName_srcLang_trgLang"
+     * This method returns the default keyspace name
      *
-     * @param engineName the name of the current translation engine
-     * @param sourceLang the language from which to translate
-     * @param targetLang the languate to which to translate
      * @return the keyspace name
      */
-    public static String getDefaultKeyspace(String engineName, Locale sourceLang, Locale targetLang) {
-        int keyspaceMaxLength = 48;
-        String keyspaceName = "mmt"
-                + "_" + engineName
-                + "_" + sourceLang.toLanguageTag()
-                + "_" + targetLang.toLanguageTag();
-
-        if (keyspaceName.length() > keyspaceMaxLength) {
-
-            int exceedingCharacters = keyspaceName.length() - keyspaceMaxLength;
-            keyspaceName = "mmt"
-                    + "_" + engineName.substring(0, engineName.length() - exceedingCharacters)
-                    + "_" + sourceLang.toLanguageTag()
-                    + "_" + targetLang.toLanguageTag();
-        }
-        return keyspaceName;
+    public static String getDefaultKeyspace() {
+        return "default";
     }
+
+//    public static String getDefaultKeyspace(String engineName, Locale sourceLang, Locale targetLang) {
+//        int keyspaceMaxLength = 48;
+//        String keyspaceName = "mmt"
+//                + "_" + engineName
+//                + "_" + sourceLang.toLanguageTag()
+//                + "_" + targetLang.toLanguageTag();
+//
+//        if (keyspaceName.length() > keyspaceMaxLength) {
+//
+//            int exceedingCharacters = keyspaceName.length() - keyspaceMaxLength;
+//            keyspaceName = "mmt"
+//                    + "_" + engineName.substring(0, engineName.length() - exceedingCharacters)
+//                    + "_" + sourceLang.toLanguageTag()
+//                    + "_" + targetLang.toLanguageTag();
+//        }
+//        return keyspaceName;
+//    }
 
     /**
      * This constructor builds an access point to a Cassandra DB
