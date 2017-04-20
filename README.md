@@ -134,5 +134,9 @@ ModernMT comes with built-in REST API that allows the user to control every sing
 
 #### Run ModernMT cluster
 You can setup a cluster of MMT nodes in order to load balancing translation requests. In fact also tuning and evaluation can be drastically speed-up if runned on an MMT cluster.
-
 You can learn more on the Wiki page [MMT Cluster](https://github.com/ModernMT/MMT/wiki/MMT-Cluster).
+
+#### Use advanced configurations
+If you need to customize the properties and behaviour of your engines, you can specify advanced settings in their configuration files. 
+You can learn how on the Wiki page [Advanced Configurations](https://github.com/ModernMT/MMT/wiki/Advanced-Configurations)
+
