@@ -4,7 +4,7 @@
 
     <groupId>eu.modernmt</groupId>
     <artifactId>mmt-root</artifactId>
-    <version>0.15.1</version>
+    <version>1.0</version>
 
     <modules>
         <module>commons</module>
@@ -32,7 +32,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <lucene.version>4.10.4</lucene.version>
 
-        <mmt.version>0.15.1</mmt.version>
+        <mmt.version>1.0</mmt.version>
 
         <!-- Native project definitions -->
         <project.build.native>${project.build.directory}/native</project.build.native>
