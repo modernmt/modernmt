@@ -21,15 +21,15 @@ public class InlineParallelFileCorpus implements BilingualCorpus {
     private final Locale targetLanguage;
     private final FileProxy file;
 
-    public InlineParallelFileCorpus(Locale sourceLanguage, Locale targetLanguage, FileProxy file) {
-        this(FilenameUtils.removeExtension(file.getFilename()), sourceLanguage, targetLanguage, file);
+    public InlineParallelFileCorpus(FileProxy file, Locale sourceLanguage, Locale targetLanguage) {
+        this(file, FilenameUtils.removeExtension(file.getFilename()), sourceLanguage, targetLanguage);
     }
 
-    public InlineParallelFileCorpus(String name, Locale sourceLanguage, Locale targetLanguage, FileProxy file) {
+    public InlineParallelFileCorpus(FileProxy file, String name, Locale sourceLanguage, Locale targetLanguage) {
+        this.file = file;
         this.name = name;
         this.sourceLanguage = sourceLanguage;
         this.targetLanguage = targetLanguage;
-        this.file = file;
     }
 
     @Override

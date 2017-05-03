@@ -3,7 +3,10 @@ package eu.modernmt.model.corpus.impl.parallel;
 import eu.modernmt.io.*;
 import eu.modernmt.model.corpus.Corpus;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.Locale;
 
 /**
@@ -11,34 +14,44 @@ import java.util.Locale;
  */
 public class FileCorpus implements Corpus {
 
-    private File file;
+    private FileProxy file;
     private String name;
     private Locale language;
 
-    private static String getNameFromFile(File file) {
-        String fullname = file.getName();
-        int lastDot = fullname.lastIndexOf('.');
-        return lastDot < 0 ? fullname : fullname.substring(0, lastDot);
+    private static String getNameFromFilename(String filename) {
+        int lastDot = filename.lastIndexOf('.');
+        return lastDot < 0 ? filename : filename.substring(0, lastDot);
     }
 
-    private static Locale getLangFromFile(File file) {
-        String fullname = file.getName();
-        int lastDot = fullname.lastIndexOf('.');
-        return lastDot < 0 ? Locale.getDefault() : Locale.forLanguageTag(fullname.substring(lastDot + 1));
+    private static Locale getLangFromFilename(String filename) {
+        int lastDot = filename.lastIndexOf('.');
+        return lastDot < 0 ? Locale.getDefault() : Locale.forLanguageTag(filename.substring(lastDot + 1));
     }
 
     public FileCorpus(File file) {
-        this(file, null);
+        this(FileProxy.wrap(file), null, null);
     }
 
     public FileCorpus(File file, String name) {
-        this(file, name, null);
+        this(FileProxy.wrap(file), name, null);
     }
 
     public FileCorpus(File file, String name, Locale language) {
+        this(FileProxy.wrap(file), name, language);
+    }
+
+    public FileCorpus(FileProxy file) {
+        this(file, null);
+    }
+
+    public FileCorpus(FileProxy file, String name) {
+        this(file, name, null);
+    }
+
+    public FileCorpus(FileProxy file, String name, Locale language) {
         this.file = file;
-        this.name = (name == null ? getNameFromFile(file) : name);
-        this.language = (language == null ? getLangFromFile(file) : language);
+        this.name = (name == null ? getNameFromFilename(file.getFilename()) : name);
+        this.language = (language == null ? getLangFromFilename(file.getFilename()) : language);
     }
 
     @Override
@@ -52,18 +65,18 @@ public class FileCorpus implements Corpus {
     }
 
     @Override
-    public LineReader getContentReader() throws FileNotFoundException {
-        return new UnixLineReader(new FileInputStream(file), DefaultCharset.get());
+    public LineReader getContentReader() throws IOException {
+        return new UnixLineReader(file.getInputStream(), DefaultCharset.get());
     }
 
     @Override
     public LineWriter getContentWriter(boolean append) throws IOException {
-        return new UnixLineWriter(new FileOutputStream(file, append), DefaultCharset.get());
+        return new UnixLineWriter(file.getOutputStream(append), DefaultCharset.get());
     }
 
     @Override
     public Reader getRawContentReader() throws IOException {
-        return new InputStreamReader(new FileInputStream(file), DefaultCharset.get());
+        return new InputStreamReader(file.getInputStream(), DefaultCharset.get());
     }
 
     @Override

@@ -1,15 +1,14 @@
 package eu.modernmt.model.corpus.impl.parallel;
 
-import eu.modernmt.io.DefaultCharset;
-import eu.modernmt.io.LineWriter;
-import eu.modernmt.io.UnixLineReader;
-import eu.modernmt.io.UnixLineWriter;
+import eu.modernmt.io.*;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Locale;
 
 /**
@@ -19,8 +18,8 @@ public class ParallelFileCorpus implements BilingualCorpus {
 
     private static final int DEFAULT_BUFFER_SIZE = 4096;
 
-    private final File source;
-    private final File target;
+    private final FileProxy source;
+    private final FileProxy target;
     private final String name;
     private final Locale sourceLanguage;
     private final Locale targetLanguage;
@@ -30,14 +29,23 @@ public class ParallelFileCorpus implements BilingualCorpus {
     private final FileCorpus targetCorpus;
 
     public ParallelFileCorpus(File directory, String name, Locale sourceLanguage, Locale targetLanguage) {
-        this(name, sourceLanguage, new File(directory, name + "." + sourceLanguage.toLanguageTag()), targetLanguage, new File(directory, name + "." + targetLanguage.toLanguageTag()));
+        this(name, sourceLanguage, new File(directory, name + "." + sourceLanguage.toLanguageTag()),
+                targetLanguage, new File(directory, name + "." + targetLanguage.toLanguageTag()));
     }
 
     public ParallelFileCorpus(Locale sourceLanguage, File source, Locale targetLanguage, File target) {
         this(FilenameUtils.removeExtension(source.getName()), sourceLanguage, source, targetLanguage, target);
     }
 
+    public ParallelFileCorpus(Locale sourceLanguage, FileProxy source, Locale targetLanguage, FileProxy target) {
+        this(FilenameUtils.removeExtension(source.getFilename()), sourceLanguage, source, targetLanguage, target);
+    }
+
     public ParallelFileCorpus(String name, Locale sourceLanguage, File source, Locale targetLanguage, File target) {
+        this(name, sourceLanguage, FileProxy.wrap(source), targetLanguage, FileProxy.wrap(target));
+    }
+
+    public ParallelFileCorpus(String name, Locale sourceLanguage, FileProxy source, Locale targetLanguage, FileProxy target) {
         this.name = name;
         this.sourceLanguage = sourceLanguage;
         this.targetLanguage = targetLanguage;
@@ -68,11 +76,11 @@ public class ParallelFileCorpus implements BilingualCorpus {
         if (lineCount < 0) {
             synchronized (this) {
                 if (lineCount < 0) {
-                    FileInputStream stream = null;
+                    InputStream stream = null;
 
                     try {
                         byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
-                        stream = new FileInputStream(this.source);
+                        stream = this.source.getInputStream();
 
                         int count = 0;
                         int size;
@@ -145,12 +153,12 @@ public class ParallelFileCorpus implements BilingualCorpus {
         private UnixLineReader targetReader;
         private int index;
 
-        private ParallelFileLineReader(File source, File target) throws FileNotFoundException {
+        private ParallelFileLineReader(FileProxy source, FileProxy target) throws IOException {
             boolean success = false;
 
             try {
-                this.sourceReader = new UnixLineReader(new InputStreamReader(new FileInputStream(source), DefaultCharset.get()));
-                this.targetReader = new UnixLineReader(new InputStreamReader(new FileInputStream(target), DefaultCharset.get()));
+                this.sourceReader = new UnixLineReader(source.getInputStream(), DefaultCharset.get());
+                this.targetReader = new UnixLineReader(target.getInputStream(), DefaultCharset.get());
                 this.index = 0;
 
                 success = true;
@@ -188,12 +196,12 @@ public class ParallelFileCorpus implements BilingualCorpus {
         private LineWriter sourceWriter;
         private LineWriter targetWriter;
 
-        private ParallelFileLineWriter(boolean append, File source, File target) throws IOException {
+        private ParallelFileLineWriter(boolean append, FileProxy source, FileProxy target) throws IOException {
             boolean success = false;
 
             try {
-                this.sourceWriter = new UnixLineWriter(new FileOutputStream(source, append), DefaultCharset.get());
-                this.targetWriter = new UnixLineWriter(new FileOutputStream(target, append), DefaultCharset.get());
+                this.sourceWriter = new UnixLineWriter(source.getOutputStream(append), DefaultCharset.get());
+                this.targetWriter = new UnixLineWriter(target.getOutputStream(append), DefaultCharset.get());
 
                 success = true;
             } finally {

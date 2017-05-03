@@ -87,7 +87,7 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
 
                 switch (fileType) {
                     case INLINE:
-                        corpus = new InlineParallelFileCorpus(sourceLanguage, targetLanguage, fileProxy);
+                        corpus = new InlineParallelFileCorpus(fileProxy, sourceLanguage, targetLanguage);
                         break;
                     case TMX:
                         corpus = new TMXCorpus(fileProxy, sourceLanguage, targetLanguage);
