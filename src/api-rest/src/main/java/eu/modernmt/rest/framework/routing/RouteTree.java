@@ -29,11 +29,7 @@ public class RouteTree {
 
         String key = isVar ? "*" : token;
 
-        Node child = parent.childs.get(key);
-        if (child == null) {
-            child = new Node();
-            parent.childs.put(key, child);
-        }
+        Node child = parent.childs.computeIfAbsent(key, k -> new Node());
 
         if (template.size() - 1 == depth)
             child.setValue(template);

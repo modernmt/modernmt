@@ -27,9 +27,6 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
         json.addProperty("sourceWordCount", sourceWordCount);
         json.addProperty("targetWordCount", targetWordCount);
 
-        if (src.session > 0L)
-            json.addProperty("session", src.session);
-
         List<TranslationHypothesis> nbest = src.translation.getNbest();
         if (nbest != null) {
             JsonArray array = new JsonArray();

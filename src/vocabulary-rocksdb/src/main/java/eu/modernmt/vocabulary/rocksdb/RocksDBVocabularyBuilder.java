@@ -30,14 +30,7 @@ public class RocksDBVocabularyBuilder implements VocabularyBuilder {
 
     @Override
     public synchronized int add(String word) {
-        Integer id = vocabulary.get(word);
-
-        if (id == null) {
-            id = idCounter++;
-            vocabulary.put(word, id);
-        }
-
-        return id;
+        return vocabulary.computeIfAbsent(word, k -> idCounter++);
     }
 
     @Override
@@ -46,14 +39,7 @@ public class RocksDBVocabularyBuilder implements VocabularyBuilder {
 
         for (int i = 0; i < line.length; i++) {
             String word = line[i];
-            Integer id = vocabulary.get(word);
-
-            if (id == null) {
-                id = idCounter++;
-                vocabulary.put(word, id);
-            }
-
-            result[i] = id;
+            result[i] = vocabulary.computeIfAbsent(word, k -> idCounter++);
         }
 
         return result;

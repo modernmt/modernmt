@@ -10,6 +10,5 @@ public class TranslationResponse {
 
     public DecoderTranslation translation = null;
     public ContextVector context = null;
-    public long session = 0;
 
 }
