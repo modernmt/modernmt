@@ -1,12 +1,12 @@
 package eu.modernmt.cli;
 
+import eu.modernmt.io.IOCorporaUtils;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
 import eu.modernmt.model.corpus.impl.properties.ParallelPropertiesCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
 import eu.modernmt.model.corpus.impl.xliff.XLIFFCorpus;
 import org.apache.commons.cli.*;
-import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.util.HashMap;
@@ -132,22 +132,7 @@ public class ConvertMain {
 
     public static void main(String[] _args) throws Throwable {
         Args args = new Args(_args);
-
-        BilingualCorpus.BilingualLineReader reader = null;
-        BilingualCorpus.BilingualLineWriter writer = null;
-
-        try {
-            reader = args.input.getContentReader();
-            writer = args.output.getContentWriter(false);
-
-            BilingualCorpus.StringPair pair;
-            while ((pair = reader.read()) != null) {
-                writer.write(pair);
-            }
-        } finally {
-            IOUtils.closeQuietly(reader);
-            IOUtils.closeQuietly(writer);
-        }
+        IOCorporaUtils.copy(args.input, args.output);
     }
 
 }
