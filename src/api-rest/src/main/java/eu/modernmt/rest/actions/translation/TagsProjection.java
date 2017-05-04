@@ -72,18 +72,7 @@ public class TagsProjection extends ObjectAction<ProjectedTranslation> {
             this.sentence = getString("s", false);
             this.translation = getString("t", false);
             this.showDetails = getBoolean("d", false);
-
-            String symmetrizationStrategy = getString("symmetrization", false, null);
-            if (symmetrizationStrategy != null) {
-                try {
-                    this.symmetrizationStrategy = Aligner.SymmetrizationStrategy.valueOf(symmetrizationStrategy.toUpperCase());
-                } catch (IllegalArgumentException e) {
-                    throw new ParameterParsingException("symmetrization", symmetrizationStrategy);
-                }
-            } else {
-                this.symmetrizationStrategy = null;
-            }
-
+            this.symmetrizationStrategy = getEnum("symmetrization", Aligner.SymmetrizationStrategy.class, null);
             this.sourceLanguage = Locale.forLanguageTag(getString("sl", false));
             this.targetLanguage = Locale.forLanguageTag(getString("tl", false));
         }
