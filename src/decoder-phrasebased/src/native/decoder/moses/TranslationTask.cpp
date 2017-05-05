@@ -138,6 +138,9 @@ void TranslationTask::Run()
   if(io) {
     // only used in command-line version: moses-main
     manager->OutputBest(io->GetSingleBestOutputCollector());
+
+    if (manager->GetSource().options()->nbest.nbest_size)
+        manager->OutputNBest(io->GetNBestOutputCollector());
   }
 
   // report additional statistics
