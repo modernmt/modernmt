@@ -10,107 +10,11 @@
 using namespace mmt;
 using namespace mmt::fastalign;
 
-Model::Model(const bool is_reverse, const bool use_null, const bool favor_diagonal, const double prob_align_null,
-             double diagonal_tension) : is_reverse(is_reverse), use_null(use_null), favor_diagonal(favor_diagonal),
-                                        prob_align_null(prob_align_null), diagonal_tension(diagonal_tension) {
-}
-
-Model *Model::Open(const string &filename) {
-    bool is_reverse;
-    bool use_null;
-    bool favor_diagonal;
-    double prob_align_null;
-    double diagonal_tension;
-
-    ifstream in(filename, ios::binary | ios::in);
-
-    in.read((char *) &is_reverse, sizeof(bool));
-    in.read((char *) &use_null, sizeof(bool));
-    in.read((char *) &favor_diagonal, sizeof(bool));
-
-    in.read((char *) &prob_align_null, sizeof(double));
-    in.read((char *) &diagonal_tension, sizeof(double));
-
-    Model *model = new Model(is_reverse, use_null, favor_diagonal, prob_align_null, diagonal_tension);
-
-    size_t ttable_size;
-    in.read((char *) &ttable_size, sizeof(size_t));
-
-    model->translation_table.resize(ttable_size);
-
-    while (true) {
-        wid_t sourceWord;
-        in.read((char *) &sourceWord, sizeof(wid_t));
-
-        if (in.eof())
-            break;
-
-        size_t row_size;
-        in.read((char *) &row_size, sizeof(size_t));
-
-        unordered_map<wid_t, double> &row = model->translation_table[sourceWord];
-        row.reserve(row_size);
-
-        for (size_t i = 0; i < row_size; ++i) {
-            wid_t targetWord;
-            double value;
-
-            in.read((char *) &targetWord, sizeof(wid_t));
-            in.read((char *) &value, sizeof(double));
-
-            row[targetWord] = value;
-        }
-    }
-
-    return model;
-}
-
-void Model::Store(const string &filename) {
-    ofstream out(filename, ios::binary | ios::out);
-
-    out.write((const char *) &is_reverse, sizeof(bool));
-    out.write((const char *) &use_null, sizeof(bool));
-    out.write((const char *) &favor_diagonal, sizeof(bool));
-
-    out.write((const char *) &prob_align_null, sizeof(double));
-    out.write((const char *) &diagonal_tension, sizeof(double));
-
-    size_t ttable_size = translation_table.size();
-    out.write((const char *) &ttable_size, sizeof(size_t));
-
-    for (wid_t sourceWord = 0; sourceWord < translation_table.size(); ++sourceWord) {
-        unordered_map<wid_t, double> &row = translation_table[sourceWord];
-        size_t row_size = row.size();
-
-        if (row_size == 0)
-            continue;
-
-        out.write((const char *) &sourceWord, sizeof(wid_t));
-        out.write((const char *) &row_size, sizeof(size_t));
-
-        for (auto it = row.begin(); it != row.end(); ++it) {
-            wid_t targetWord = it->first;
-            double value = it->second;
-
-            out.write((const char *) &targetWord, sizeof(wid_t));
-            out.write((const char *) &value, sizeof(double));
-        }
-    }
-}
-
-void Model::Prune(double threshold) {
-#pragma omp parallel for schedule(dynamic)
-    for (size_t i = 0; i < translation_table.size(); ++i) {
-        unordered_map<wid_t, double> &row = translation_table[i];
-
-        for (auto cell = row.cbegin(); cell != row.cend(); /* no increment */) {
-            if (cell->second <= threshold) {
-                row.erase(cell++);
-            } else {
-                ++cell;
-            }
-        }
-    }
+Model::Model(ttable_t *translation_table, bool is_reverse, bool use_null, bool favor_diagonal, double prob_align_null,
+             double diagonal_tension) : translation_table(translation_table), is_reverse(is_reverse),
+                                        use_null(use_null),
+                                        favor_diagonal(favor_diagonal), prob_align_null(prob_align_null),
+                                        diagonal_tension(diagonal_tension) {
 }
 
 double Model::ComputeAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch, ttable_t *outTable,
@@ -173,19 +77,15 @@ double Model::ComputeAlignment(const vector<wid_t> &source, const vector<wid_t> 
         if (use_null) {
             double count = probs[0] / sum;
 
-            if (outTable) {
-#pragma omp atomic
-                (*outTable)[kAlignerNullWord][f_j] += count;
-            }
+            if (outTable)
+                outTable->increment(kAlignerNullWord, f_j, count);
         }
 
         for (length_t i = 1; i <= src_size; ++i) {
             const double p = probs[i] / sum;
 
-            if (outTable) {
-#pragma omp atomic
-                (*outTable)[src[i - 1]][f_j] += p;
-            }
+            if (outTable)
+                outTable->increment(src[i - 1], f_j, p);
 
             emp_feat += DiagonalAlignment::Feature(j, i, trg_size, src_size) * p;
         }

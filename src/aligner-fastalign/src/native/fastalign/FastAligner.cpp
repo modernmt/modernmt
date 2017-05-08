@@ -5,6 +5,7 @@
 #include <symal/SymAlignment.h>
 #include "FastAligner.h"
 #include <thread>
+#include <fstream>
 #include "Model.h"
 #ifdef _OPENMP
 #include <omp.h>
@@ -23,9 +24,58 @@ using namespace mmt::fastalign;
 const string FastAligner::kForwardModelFilename = "forward.fam";
 const string FastAligner::kBackwardModelFilename = "backward.fam";
 
+Model *OpenModel(const string &path) {
+    bool is_reverse;
+    bool use_null;
+    bool favor_diagonal;
+    double prob_align_null;
+    double diagonal_tension;
+
+    ifstream in(path, ios::binary | ios::in);
+
+    in.read((char *) &is_reverse, sizeof(bool));
+    in.read((char *) &use_null, sizeof(bool));
+    in.read((char *) &favor_diagonal, sizeof(bool));
+
+    in.read((char *) &prob_align_null, sizeof(double));
+    in.read((char *) &diagonal_tension, sizeof(double));
+
+    size_t ttable_size;
+    in.read((char *) &ttable_size, sizeof(size_t));
+
+    builder_ttable_t *table = new builder_ttable_t;
+    table->data.resize(ttable_size);
+
+    while (true) {
+        wid_t sourceWord;
+        in.read((char *) &sourceWord, sizeof(wid_t));
+
+        if (in.eof())
+            break;
+
+        size_t row_size;
+        in.read((char *) &row_size, sizeof(size_t));
+
+        unordered_map<wid_t, pair<double, double>> &row = table->data[sourceWord];
+        row.reserve(row_size);
+
+        for (size_t i = 0; i < row_size; ++i) {
+            wid_t targetWord;
+            double value;
+
+            in.read((char *) &targetWord, sizeof(wid_t));
+            in.read((char *) &value, sizeof(double));
+
+            row[targetWord] = pair<double, double>(value, 0);
+        }
+    }
+
+    return new Model(table, is_reverse, use_null, favor_diagonal, prob_align_null, diagonal_tension);
+}
+
 FastAligner *FastAligner::Open(const string &path, int threads) {
-    Model *forward = Model::Open(path + kPathSeparator + kForwardModelFilename);
-    Model *backward = Model::Open(path + kPathSeparator + kBackwardModelFilename);
+    Model *forward = OpenModel(path + kPathSeparator + kForwardModelFilename);
+    Model *backward = OpenModel(path + kPathSeparator + kBackwardModelFilename);
 
     return new FastAligner(forward, backward, threads);
 }

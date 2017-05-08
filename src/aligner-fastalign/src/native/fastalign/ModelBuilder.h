@@ -82,17 +82,12 @@ namespace mmt {
 
             Model *model;
 
-            void AllocateTTableSpace(ttable_t &table, const unordered_map<wid_t, vector<wid_t>> &values,
+            void AllocateTTableSpace(ttable_t *table, const unordered_map<wid_t, vector<wid_t>> &values,
                                      const wid_t sourceWordMaxValue);
 
-            void SwapTTables(ttable_t &source, ttable_t &destination);
-
-            void ClearTTable(ttable_t &table);
-
-            void InitialPass(const Corpus &corpus, double *n_target_tokens, ttable_t &ttable,
+            void InitialPass(const Corpus &corpus, double *n_target_tokens, ttable_t *table,
                              vector<pair<pair<length_t, length_t>, size_t>> *size_counts);
 
-            void NormalizeTTable(ttable_t &table, double alpha = 0);
         };
 
     }
