@@ -14,7 +14,7 @@
 namespace mmt {
     namespace fastalign {
 
-        typedef std::vector<std::unordered_map<wid_t, std::pair<double, double>>> bitable_t;
+        typedef std::vector<std::unordered_map<wid_t, std::pair<float, float>>> bitable_t;
 
         class BidirectionalModel : public Model {
         public:
@@ -30,7 +30,7 @@ namespace mmt {
                 if (source >= table->size())
                     return kNullProbability;
 
-                std::unordered_map<wid_t, std::pair<double, double>> &row = table->at(source);
+                std::unordered_map<wid_t, std::pair<float, float>> &row = table->at(source);
                 auto ptr = row.find(target);
                 return ptr == row.end() ? kNullProbability : (is_reverse ? ptr->second.second : ptr->second.first);
             }

@@ -135,7 +135,7 @@ void Builder::setListener(Builder::Listener *listener) {
 }
 
 void Builder::AllocateTTableSpace(Model *_model, const unordered_map<wid_t, vector<wid_t>> &values,
-                             const wid_t sourceWordMaxValue) {
+                                  const wid_t sourceWordMaxValue) {
     BuilderModel *model = (BuilderModel *) _model;
     if (model->data.size() <= sourceWordMaxValue)
         model->data.resize(sourceWordMaxValue + 1);
@@ -204,11 +204,18 @@ void Builder::InitialPass(const Corpus &corpus, double *n_target_tokens, Model *
 
 bitable_t *MergeModels(BuilderModel *forward, BuilderModel *backward) {
     bitable_t *table = new bitable_t;
-    *table = forward->data;
+    table->resize(forward->data.size());
 
-    for (auto row = table->begin(); row != table->end(); ++row)
-        for (auto cell = row->begin(); cell != row->end(); ++cell)
-            cell->second.second = kNullProbability;
+    for (wid_t source = 0; source < forward->data.size(); ++source) {
+        table->at(source).reserve(forward->data[source].size());
+
+        for (auto entry = forward->data[source].begin(); entry != forward->data[source].end(); ++entry) {
+            wid_t target = entry->first;
+            double score = entry->second.first;
+
+            table->at(source)[target] = pair<float, float>(score, kNullProbability);
+        }
+    }
 
     for (wid_t target = 0; target < backward->data.size(); ++target) {
         for (auto entry = backward->data[target].begin(); entry != backward->data[target].end(); ++entry) {
@@ -218,9 +225,9 @@ bitable_t *MergeModels(BuilderModel *forward, BuilderModel *backward) {
             if (table->size() <= source)
                 table->resize(source + 1);
 
-            auto cell = table->at(source).emplace(target, pair<double, double>(kNullProbability, kNullProbability));
-            pair<double, double> &el = cell.first->second;
-            el.second = score;
+            auto cell = table->at(source).emplace(target, pair<float, float>(kNullProbability, kNullProbability));
+            pair<float, float> &el = cell.first->second;
+            el.second = (float) score;
         }
     }
 
