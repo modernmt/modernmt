@@ -7,13 +7,14 @@
 
 #define AlignFileExt "align"
 
+using namespace std;
 using namespace mmt;
 using namespace mmt::fastalign;
 
 namespace fs = boost::filesystem;
 
-void Corpus::List(const string &path, const string &outPath, const string &sourceLang, const string &targetLang,
-                           vector<Corpus> &list) {
+void Corpus::List(const string &path, const string &outPath,
+                  const string &sourceLang, const string &targetLang, vector<Corpus> &list) {
     fs::recursive_directory_iterator endit;
 
     for (fs::recursive_directory_iterator it(path); it != endit; ++it) {

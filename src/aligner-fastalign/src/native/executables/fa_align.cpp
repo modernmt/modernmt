@@ -100,16 +100,16 @@ void printAlignment(vector<alignment_t> &alignments, ofstream &out) {
 
 
 
-void AlignCorpus(const Corpus &corpus, size_t buffer_size, SymmetrizationStrategy strategy, FastAligner *aligner) {
+void AlignCorpus(const Corpus &corpus, size_t buffer_size, SymmetrizationStrategy strategy, FastAligner &aligner) {
 
     CorpusReader reader(corpus);
 
     vector<pair<vector<wid_t>, vector<wid_t>>> batch;
     vector<alignment_t> alignments;
 
-    ofstream alignStream(corpus.getOutputPath().c_str());
+    ofstream alignStream(corpus.GetOutputPath().c_str());
     while (reader.Read(batch, buffer_size)) {
-        aligner->GetAlignments(batch, alignments, strategy);
+        aligner.GetAlignments(batch, alignments, strategy);
 
         printAlignment(alignments, alignStream);
 
@@ -152,7 +152,7 @@ int main(int argc, const char *argv[]) {
     if (corpora.empty())
         exit(0);
 
-    FastAligner *aligner = FastAligner::Open(args.model_path, threads);
+    FastAligner aligner(args.model_path, threads);
 
     //perform alignment of all corpora sequentially; multithreading is used for each corpus
     for (size_t i = 0; i < corpora.size(); ++i) {
@@ -160,6 +160,5 @@ int main(int argc, const char *argv[]) {
         AlignCorpus(corpus, args.buffer_size, args.strategy, aligner);
     }
 
-
-    delete aligner;
+    return SUCCESS;
 }

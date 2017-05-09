@@ -5,10 +5,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -O3")
 
 set(SOURCE_FILES
         fastalign/Model.h fastalign/Model.cpp
-        fastalign/ModelBuilder.h fastalign/ModelBuilder.cpp
+        fastalign/Builder.h fastalign/Builder.cpp
         fastalign/Corpus.h fastalign/Corpus.cpp
         fastalign/DiagonalAlignment.h
         fastalign/FastAligner.cpp fastalign/FastAligner.h
+        fastalign/BidirectionalModel.cpp fastalign/BidirectionalModel.h
 
         symal/SymAlignment.cpp symal/SymAlignment.h
 

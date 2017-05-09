@@ -7,17 +7,16 @@
 #include "DiagonalAlignment.h"
 #include "Corpus.h"
 
+using namespace std;
 using namespace mmt;
 using namespace mmt::fastalign;
 
-Model::Model(ttable_t *translation_table, bool is_reverse, bool use_null, bool favor_diagonal, double prob_align_null,
-             double diagonal_tension) : translation_table(translation_table), is_reverse(is_reverse),
-                                        use_null(use_null),
-                                        favor_diagonal(favor_diagonal), prob_align_null(prob_align_null),
-                                        diagonal_tension(diagonal_tension) {
+Model::Model(bool is_reverse, bool use_null, bool favor_diagonal, double prob_align_null, double diagonal_tension)
+        : is_reverse(is_reverse), use_null(use_null), favor_diagonal(favor_diagonal), prob_align_null(prob_align_null),
+          diagonal_tension(diagonal_tension) {
 }
 
-double Model::ComputeAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch, ttable_t *outTable,
+double Model::ComputeAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch, Model *outModel,
                                 vector<alignment_t> *outAlignments) {
     double emp_feat = 0.0;
 
@@ -27,13 +26,13 @@ double Model::ComputeAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>>
 #pragma omp parallel for schedule(dynamic) reduction(+:emp_feat)
     for (size_t i = 0; i < batch.size(); ++i) {
         const pair<vector<wid_t>, vector<wid_t>> &p = batch[i];
-        emp_feat += ComputeAlignment(p.first, p.second, outTable, outAlignments ? &outAlignments->at(i) : NULL);
+        emp_feat += ComputeAlignment(p.first, p.second, outModel, outAlignments ? &outAlignments->at(i) : NULL);
     }
 
     return emp_feat;
 }
 
-double Model::ComputeAlignment(const vector<wid_t> &source, const vector<wid_t> &target, ttable_t *outTable,
+double Model::ComputeAlignment(const vector<wid_t> &source, const vector<wid_t> &target, Model *outModel,
                                alignment_t *outAlignment) {
     double emp_feat = 0.0;
 
@@ -77,15 +76,15 @@ double Model::ComputeAlignment(const vector<wid_t> &source, const vector<wid_t> 
         if (use_null) {
             double count = probs[0] / sum;
 
-            if (outTable)
-                outTable->increment(kAlignerNullWord, f_j, count);
+            if (outModel)
+                outModel->IncrementProbability(kAlignerNullWord, f_j, count);
         }
 
         for (length_t i = 1; i <= src_size; ++i) {
             const double p = probs[i] / sum;
 
-            if (outTable)
-                outTable->increment(src[i - 1], f_j, p);
+            if (outModel)
+                outModel->IncrementProbability(src[i - 1], f_j, p);
 
             emp_feat += DiagonalAlignment::Feature(j, i, trg_size, src_size) * p;
         }

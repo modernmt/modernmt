@@ -14,13 +14,7 @@ namespace mmt {
 
         class FastAligner : public Aligner {
         public:
-
-            static const std::string kForwardModelFilename;
-            static const std::string kBackwardModelFilename;
-
-            FastAligner(Model *forwardModel, Model *backwardModel, int threads = 0);
-
-            static FastAligner *Open(const std::string &path, int threads = 0);
+            FastAligner(const std::string &path, int threads = 0);
 
             virtual alignment_t GetAlignment(const std::vector<wid_t> &source, const std::vector<wid_t> &target,
                                              SymmetrizationStrategy strategy) override;
@@ -30,15 +24,19 @@ namespace mmt {
                           std::vector<alignment_t> &outAlignments,
                           SymmetrizationStrategy strategy) override;
 
-            virtual alignment_t GetForwardAlignment(const vector<wid_t> &source, const vector<wid_t> &target) override;
+            virtual alignment_t
+            GetForwardAlignment(const std::vector<wid_t> &source, const std::vector<wid_t> &target) override;
 
-            virtual void GetForwardAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch,
-                                              vector<alignment_t> &outAlignments) override;
+            virtual void
+            GetForwardAlignments(const std::vector<std::pair<std::vector<wid_t>, std::vector<wid_t>>> &batch,
+                                 std::vector<alignment_t> &outAlignments) override;
 
-            virtual alignment_t GetBackwardAlignment(const vector<wid_t> &source, const vector<wid_t> &target) override;
+            virtual alignment_t
+            GetBackwardAlignment(const std::vector<wid_t> &source, const std::vector<wid_t> &target) override;
 
-            virtual void GetBackwardAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch,
-                                               vector<alignment_t> &outAlignments) override;
+            virtual void
+            GetBackwardAlignments(const std::vector<std::pair<std::vector<wid_t>, std::vector<wid_t>>> &batch,
+                                  std::vector<alignment_t> &outAlignments) override;
 
             // P(target | source)
             virtual float GetForwardProbability(wid_t source, wid_t target) override;
@@ -61,7 +59,6 @@ namespace mmt {
         private:
             Model *forwardModel;
             Model *backwardModel;
-
             int threads;
         };
 

@@ -6,11 +6,10 @@
 #define FASTALIGN_CORPUS_H
 
 #include <string>
+#include <vector>
 #include <fstream>
 #include <sstream>
 #include <mmt/sentence.h>
-
-using namespace std;
 
 namespace mmt {
     namespace fastalign {
@@ -19,39 +18,38 @@ namespace mmt {
             friend class CorpusReader;
 
         public:
-            Corpus(const string &sourceFilePath, const string &targetFilePath, const string &outputFilePath = "") : sourcePath(sourceFilePath),
-                                                                                 targetPath(targetFilePath),
-                                                                                 outputPath(outputFilePath) {};
+            Corpus(const std::string &sourceFilePath, const std::string &targetFilePath,
+                   const std::string &outputFilePath = "") : sourcePath(sourceFilePath), targetPath(targetFilePath),
+                                                             outputPath(outputFilePath) {};
 
+            static void List(const std::string &path, const std::string &outPath,
+                             const std::string &sourceLang, const std::string &targetLang, std::vector<Corpus> &list);
 
-            static void
-                    List(const string &path, const string &outPath, const string &sourceLang, const string &targetLang, vector<Corpus> &list);
-
-            const string &getOutputPath() const {
+            const std::string &GetOutputPath() const {
                 return outputPath;
             }
 
         private:
-            const string sourcePath;
-            const string targetPath;
-            const string outputPath;
+            const std::string sourcePath;
+            const std::string targetPath;
+            const std::string outputPath;
         };
 
         class CorpusReader {
         public:
             CorpusReader(const Corpus &corpus);
 
-            bool Read(vector<wid_t> &outSource, vector<wid_t> &outTarget);
+            bool Read(std::vector<wid_t> &outSource, std::vector<wid_t> &outTarget);
 
-            bool Read(vector<pair<vector<wid_t>, vector<wid_t>>> &outBuffer, size_t limit);
+            bool Read(std::vector<std::pair<std::vector<wid_t>, std::vector<wid_t>>> &outBuffer, size_t limit);
 
         private:
             bool drained;
 
-            ifstream source;
-            ifstream target;
+            std::ifstream source;
+            std::ifstream target;
 
-            static inline void ParseLine(const string &line, vector<wid_t> &output) {
+            static inline void ParseLine(const std::string &line, std::vector <wid_t> &output) {
                 output.clear();
 
                 std::stringstream stream(line);

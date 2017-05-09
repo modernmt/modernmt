@@ -16,16 +16,9 @@
 #include <iostream>
 #include <getopt.h>
 #include <stdlib.h>
-#include <fastalign/ModelBuilder.h>
+#include <fastalign/Builder.h>
 #include <sys/time.h>
 #include <fastalign/FastAligner.h>
-
-const string kPathSeparator =
-#ifdef _WIN32
-        "\\";
-#else
-        "/";
-#endif
 
 using namespace std;
 using namespace mmt;
@@ -35,7 +28,7 @@ string source_input;
 string target_input;
 string model_path;
 
-Options builderOptions(false);
+Options builderOptions;
 
 struct option options[] = {
         {"source",     required_argument, NULL, 0},
@@ -85,17 +78,18 @@ bool InitCommandLine(int argc, char **argv) {
     return !source_input.empty() && !target_input.empty() && !model_path.empty();
 }
 
-class ProcessListener : public ModelBuilder::Listener {
+class ProcessListener : public Builder::Listener {
 public:
-    virtual void Begin() override {
+    virtual void Begin(bool forward) override {
         processBegin = GetTime();
+        cerr << "== " << (forward ? "Forward" : "Backward") << " model training ==" << endl;
     }
 
-    virtual void IterationBegin(int iteration) override {
+    virtual void IterationBegin(bool forward, int iteration) override {
         cerr << "Iteration " << iteration << ":" << endl;
     }
 
-    virtual void Begin(const BuilderStep step, int iteration) override {
+    virtual void Begin(bool forward, const BuilderStep step, int iteration) override {
         if (iteration > 0)
             cerr << "\t";
 
@@ -116,9 +110,6 @@ public:
             case kBuilderStepPruning:
                 str_step = "Pruning model";
                 break;
-            case kBuilderStepStoringModel:
-                str_step = "Storing model";
-                break;
             default:
                 str_step = "Unknown step";
                 break;
@@ -128,17 +119,25 @@ public:
         stepBegin = GetTime();
     }
 
-    virtual void End(const BuilderStep step, int iteration) override {
+    virtual void End(bool forward, const BuilderStep step, int iteration) override {
         cerr << "DONE in " << (GetTime() - stepBegin) << "s" << endl;
     }
 
-    virtual void IterationEnd(int iteration) override {
+    virtual void IterationEnd(bool forward, int iteration) override {
         // Nothing to do
     }
 
-    virtual void End() override {
-        cerr << "\nTraining done in " << (GetTime() - processBegin) << "s" << endl;
+    virtual void End(bool forward) override {
+        cerr << "\nTraining done in " << (GetTime() - processBegin) << "s" << endl << endl;
+    }
 
+    void ModelDumpBegin() override {
+        cerr << "Writing model..." << endl;
+        stepBegin = GetTime();
+    }
+
+    void ModelDumpEnd() override {
+        cerr << "DONE in " << (GetTime() - stepBegin) << "s" << endl;
     }
 
 private:
@@ -157,41 +156,17 @@ private:
     }
 };
 
-Model *train_forward() {
-    ProcessListener listener;
-    Corpus corpus(source_input, target_input);
-
-    builderOptions.is_reverse = false;
-
-    ModelBuilder builder(builderOptions);
-    builder.setListener(&listener);
-
-    return builder.Build(corpus, model_path + kPathSeparator + FastAligner::kForwardModelFilename);
-}
-
-Model *train_backward() {
-    ProcessListener listener;
-    Corpus corpus(source_input, target_input);
-
-    builderOptions.is_reverse = true;
-
-    ModelBuilder builder(builderOptions);
-    builder.setListener(&listener);
-
-    return builder.Build(corpus, model_path + kPathSeparator + FastAligner::kBackwardModelFilename);
-}
-
 int main(int argc, char **argv) {
     if (!InitCommandLine(argc, argv)) {
         help(argv[0]);
         return 1;
     }
 
-    cerr << "== Forward model training ==" << endl;
-    Model *forwardModel = train_forward();
-    delete forwardModel;
+    ProcessListener listener;
+    Corpus corpus(source_input, target_input);
 
-    cerr << "== Backward model training ==" << endl;
-    Model *backwardModel = train_backward();
-    delete backwardModel;
+    Builder builder(builderOptions);
+    builder.setListener(&listener);
+
+    builder.Build(corpus, model_path);
 }

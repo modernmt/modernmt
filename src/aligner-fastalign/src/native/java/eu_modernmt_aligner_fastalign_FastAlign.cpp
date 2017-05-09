@@ -56,7 +56,7 @@ Java_eu_modernmt_aligner_fastalign_FastAlign_instantiate(JNIEnv *jvm, jobject js
 #endif
 
     string modelPath = jni_jstrtostr(jvm, jmodel);
-    return (jlong) FastAligner::Open(modelPath);
+    return (jlong) new FastAligner(modelPath);
 }
 
 
