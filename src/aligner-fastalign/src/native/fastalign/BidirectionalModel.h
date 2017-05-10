@@ -10,6 +10,7 @@
 #include <string>
 
 #include "Model.h"
+#include "Vocabulary.h"
 
 namespace mmt {
     namespace fastalign {
@@ -39,13 +40,15 @@ namespace mmt {
                 // no-op
             }
 
+            void ExportLexicalModel(const std::string &filename, const Vocabulary *vb);
+
             static void Store(const BidirectionalModel *forward, const BidirectionalModel *backward,
                               const std::string &filename);
 
             static void Open(const std::string &filename, Model **outForward, Model **outBackward);
 
         private:
-            std::shared_ptr<bitable_t> table;
+            const std::shared_ptr<bitable_t> table;
         };
     }
 }

@@ -130,6 +130,7 @@ class FastAlign:
 
         self._build_bin = os.path.join(cli.BIN_DIR, 'fa_build')
         self._align_bin = os.path.join(cli.BIN_DIR, 'fa_align')
+        self._export_bin = os.path.join(cli.BIN_DIR, 'fa_export')
 
     def build(self, corpora, working_dir='.', log=None):
         if log is None:
@@ -168,6 +169,13 @@ class FastAlign:
                    '--input', root, '--output', output_folder,
                    '--source', self._source_lang, '--target', self._target_lang,
                    '--strategy', '1']
+        shell.execute(command, stderr=log, stdout=log)
+
+    def export(self, path, log=None):
+        if log is None:
+            log = shell.DEVNULL
+
+        command = [self._export_bin, '--model', self._model, '--output', path]
         shell.execute(command, stderr=log, stdout=log)
 
 
@@ -215,12 +223,15 @@ class SuffixArraysPhraseTable(MosesFeature):
         shutil.rmtree(self._model, ignore_errors=True)
         fileutils.makedirs(self._model, exist_ok=True)
 
-        if not os.path.isdir(working_dir):
-            fileutils.makedirs(working_dir, exist_ok=True)
+        train_corpora_path = os.path.join(working_dir, 'corpora')
+        lex_model_path = os.path.join(working_dir, 'model.tlex')
+
+        if not os.path.isdir(train_corpora_path):
+            fileutils.makedirs(train_corpora_path, exist_ok=True)
 
         train_corpora = []  # Prepare training folder
         for corpus in corpora:
-            dest_corpus = BilingualCorpus.make_parallel(corpus.name, working_dir,
+            dest_corpus = BilingualCorpus.make_parallel(corpus.name, train_corpora_path,
                                                         (self._source_lang, self._target_lang))
             source_file = corpus.get_file(self._source_lang)
             target_file = corpus.get_file(self._target_lang)
@@ -231,10 +242,11 @@ class SuffixArraysPhraseTable(MosesFeature):
             train_corpora.append(dest_corpus)
 
         # Align corpora
-        aligner.align(train_corpora, working_dir, log=log)
+        aligner.align(train_corpora, train_corpora_path, log=log)
+        aligner.export(lex_model_path)
 
         # Build models
-        command = [self._build_bin, '--input', working_dir, '--model', self._model,
+        command = [self._build_bin, '--input', train_corpora_path, '--model', self._model,
                    '-s', self._source_lang, '-t', self._target_lang]
         shell.execute(command, stdout=log, stderr=log)
 

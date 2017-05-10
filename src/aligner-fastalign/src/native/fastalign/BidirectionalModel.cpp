@@ -101,3 +101,30 @@ void BidirectionalModel::Open(const string &filename, Model **outForward, Model 
     *outBackward = new BidirectionalModel(table, false, use_null, favor_diagonal, prob_align_null,
                                           bwd_diagonal_tension);
 }
+
+void BidirectionalModel::ExportLexicalModel(const string &filename, const Vocabulary *vb) {
+    ofstream out(filename, ios::binary | ios::out);
+
+    size_t size = 0;
+    for (auto entry = table->begin(); entry != table->end(); ++entry) {
+        if (entry->size() > 0)
+            size++;
+    }
+
+    out << size << endl;
+
+    for (wid_t sid = 0; sid < table->size(); ++sid) {
+        const unordered_map<wid_t, pair<float, float>> &row = table->at(sid);
+        size_t row_size = row.size();
+
+        if (row_size == 0)
+            continue;
+
+        out << "<" << vb->Get(sid) << "> " << row_size << endl;
+
+        for (auto it = row.begin(); it != row.end(); ++it) {
+            wid_t tid = it->first;
+            out << "  <" << vb->Get(tid) << "> " << it->second.first << " " << it->second.second << endl;
+        }
+    }
+}
