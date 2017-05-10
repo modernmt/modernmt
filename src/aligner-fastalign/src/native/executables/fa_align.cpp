@@ -101,8 +101,7 @@ void printAlignment(vector<alignment_t> &alignments, ofstream &out) {
 
 
 void AlignCorpus(const Corpus &corpus, size_t buffer_size, SymmetrizationStrategy strategy, FastAligner &aligner) {
-
-    CorpusReader reader(corpus);
+    CorpusReader reader(corpus, aligner.vocabulary);
 
     vector<pair<vector<wid_t>, vector<wid_t>>> batch;
     vector<alignment_t> alignments;

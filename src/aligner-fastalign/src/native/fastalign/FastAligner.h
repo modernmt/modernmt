@@ -8,14 +8,18 @@
 #include <mmt/aligner/Aligner.h>
 #include <string>
 #include "Model.h"
+#include "Vocabulary.h"
 
 namespace mmt {
     namespace fastalign {
 
         class FastAligner : public Aligner {
         public:
+            const Vocabulary *vocabulary;
+
             FastAligner(const std::string &path, int threads = 0);
 
+            // TODO: REMOVE ============================================================================================
             virtual alignment_t GetAlignment(const std::vector<wid_t> &source, const std::vector<wid_t> &target,
                                              SymmetrizationStrategy strategy) override;
 
@@ -39,26 +43,41 @@ namespace mmt {
                                   std::vector<alignment_t> &outAlignments) override;
 
             // P(target | source)
-            virtual float GetForwardProbability(wid_t source, wid_t target) override;
+            virtual float GetForwardProbability(wid_t source, wid_t target) override {
+                source = vocabulary->Get(std::to_string(source));
+                target = vocabulary->Get(std::to_string(target));
+
+                return (float) forwardModel->GetProbability(source, target);
+            }
 
             // P(source | target)
-            virtual float GetBackwardProbability(wid_t source, wid_t target) override;
+            virtual float GetBackwardProbability(wid_t source, wid_t target) override {
+                source = vocabulary->Get(std::to_string(source));
+                target = vocabulary->Get(std::to_string(target));
+
+                return (float) backwardModel->GetProbability(target, source);
+            }
 
             // P(NULL | source)
             virtual float GetSourceNullProbability(wid_t source) override {
-                return GetForwardProbability(source, kAlignerNullWord);
+                source = vocabulary->Get(std::to_string(source));
+                return (float) forwardModel->GetProbability(source, kNullWordId);
             };
 
             // P(NULL | target)
             virtual float GetTargetNullProbability(wid_t target) override {
-                return GetForwardProbability(kAlignerNullWord, target);
+                target = vocabulary->Get(std::to_string(target));
+
+                return (float) forwardModel->GetProbability(kNullWordId, target);
             };
+            // TODO: REMOVE ============================================================================================
 
             virtual ~FastAligner() override;
 
         private:
             Model *forwardModel;
             Model *backwardModel;
+
             int threads;
         };
 

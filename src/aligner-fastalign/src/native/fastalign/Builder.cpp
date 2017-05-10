@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <thread>
+#include <unordered_set>
 #include <mmt/aligner/Aligner.h>
 #include <boost/filesystem.hpp>
 #include "DiagonalAlignment.h"
@@ -151,10 +152,10 @@ void Builder::AllocateTTableSpace(Model *_model, const unordered_map<wid_t, vect
     }
 }
 
-void Builder::InitialPass(const Corpus &corpus, double *n_target_tokens, Model *_model,
+void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const Corpus &corpus, double *n_target_tokens,
                           vector<pair<pair<length_t, length_t>, size_t>> *size_counts) {
     BuilderModel *model = (BuilderModel *) _model;
-    CorpusReader reader(corpus);
+    CorpusReader reader(corpus, vocab);
 
     unordered_map<pair<length_t, length_t>, size_t, LengthPairHash> size_counts_;
 
@@ -171,7 +172,7 @@ void Builder::InitialPass(const Corpus &corpus, double *n_target_tokens, Model *
 
         if (use_null) {
             for (size_t idxf = 0; idxf < trg.size(); ++idxf) {
-                buffer[kAlignerNullWord].push_back(trg[idxf]);
+                buffer[kNullWordId].push_back(trg[idxf]);
             }
 
             buffer_items += trg.size();
@@ -222,8 +223,7 @@ bitable_t *MergeModels(BuilderModel *forward, BuilderModel *backward) {
             wid_t source = entry->first;
             double score = entry->second.first;
 
-            if (table->size() <= source)
-                table->resize(source + 1);
+            assert(source < table->size());
 
             auto cell = table->at(source).emplace(target, pair<float, float>(kNullProbability, kNullProbability));
             pair<float, float> &el = cell.first->second;
@@ -235,26 +235,32 @@ bitable_t *MergeModels(BuilderModel *forward, BuilderModel *backward) {
 }
 
 void Builder::Build(const Corpus &corpus, const string &path) {
-    fs::path filename = fs::absolute(fs::path(path) / fs::path("model.dat"));
+    if (listener) listener->VocabularyBuildBegin();
+    const Vocabulary *vocab = Vocabulary::FromCorpus(corpus);
+    if (listener) listener->VocabularyBuildEnd();
 
-    BuilderModel *forward = (BuilderModel *) BuildModel(corpus, true);
-    BuilderModel *backward = (BuilderModel *) BuildModel(corpus, false);
+    BuilderModel *forward = (BuilderModel *) BuildModel(vocab, corpus, true);
+    BuilderModel *backward = (BuilderModel *) BuildModel(vocab, corpus, false);
 
     if (listener) listener->ModelDumpBegin();
 
-    shared_ptr<bitable_t> table(MergeModels(forward, backward));
-    delete forward;
-    delete backward;
+    fs::path vocab_filename = fs::absolute(fs::path(path) / fs::path("model.voc"));
+    fs::path model_filename = fs::absolute(fs::path(path) / fs::path("model.dat"));
 
+    shared_ptr<bitable_t> table(MergeModels(forward, backward));
     BidirectionalModel _forward(table, true, use_null, favor_diagonal, prob_align_null, forward->diagonal_tension);
     BidirectionalModel _backward(table, false, use_null, favor_diagonal, prob_align_null, backward->diagonal_tension);
 
-    BidirectionalModel::Store(&_forward, &_backward, filename.string());
+    delete forward;
+    delete backward;
+
+    BidirectionalModel::Store(&_forward, &_backward, model_filename.string());
+    vocab->Store(vocab_filename.string());
 
     if (listener) listener->ModelDumpEnd();
 }
 
-Model *Builder::BuildModel(const Corpus &corpus, bool forward) {
+Model *Builder::BuildModel(const Vocabulary *vocab, const Corpus &corpus, bool forward) {
     BuilderModel *model = new BuilderModel(!forward, use_null, favor_diagonal, prob_align_null,
                                            initial_diagonal_tension);
 
@@ -264,7 +270,7 @@ Model *Builder::BuildModel(const Corpus &corpus, bool forward) {
     double n_target_tokens = 0;
 
     if (listener) listener->Begin(forward, kBuilderStepSetup, 0);
-    InitialPass(corpus, &n_target_tokens, model, &size_counts);
+    InitialPass(vocab, model, corpus, &n_target_tokens, &size_counts);
     if (listener) listener->End(forward, kBuilderStepSetup, 0);
 
     for (int iter = 0; iter < iterations; ++iter) {
@@ -272,7 +278,7 @@ Model *Builder::BuildModel(const Corpus &corpus, bool forward) {
 
         double emp_feat = 0.0;
 
-        CorpusReader reader(corpus);
+        CorpusReader reader(corpus, vocab);
         vector<pair<vector<wid_t>, vector<wid_t>>> batch;
 
         if (listener) listener->Begin(forward, kBuilderStepAligning, iter + 1);

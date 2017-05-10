@@ -80,6 +80,15 @@ bool InitCommandLine(int argc, char **argv) {
 
 class ProcessListener : public Builder::Listener {
 public:
+    void VocabularyBuildBegin() override {
+        cerr << "Creating vocabulary... ";
+        stepBegin = GetTime();
+    }
+
+    void VocabularyBuildEnd() override {
+        cerr << "DONE in " << (GetTime() - stepBegin) << "s" << endl;
+    }
+
     virtual void Begin(bool forward) override {
         processBegin = GetTime();
         cerr << "== " << (forward ? "Forward" : "Backward") << " model training ==" << endl;
@@ -132,7 +141,7 @@ public:
     }
 
     void ModelDumpBegin() override {
-        cerr << "Writing model..." << endl;
+        cerr << "Writing model...";
         stepBegin = GetTime();
     }
 

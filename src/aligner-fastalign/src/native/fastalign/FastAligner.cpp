@@ -5,7 +5,6 @@
 #include <symal/SymAlignment.h>
 #include "FastAligner.h"
 #include <thread>
-#include <fstream>
 #include <boost/filesystem.hpp>
 #include "BidirectionalModel.h"
 
@@ -19,15 +18,22 @@ using namespace std;
 using namespace mmt;
 using namespace mmt::fastalign;
 
-FastAligner::FastAligner(const string &path, int threads) {
-    fs::path filename = fs::absolute(fs::path(path) / fs::path("model.dat"));
-
+const Vocabulary *LoadVocabulary(const string &path) {
+    fs::path filename = fs::absolute(fs::path(path) / fs::path("model.voc"));
     if (!fs::is_regular(filename))
         throw invalid_argument("File not found: " + filename.string());
 
-    BidirectionalModel::Open(filename.string(), &forwardModel, &backwardModel);
-    this->threads = threads > 0 ? threads : (int) thread::hardware_concurrency();
+    return new Vocabulary(filename.string(), true, false);
+}
 
+FastAligner::FastAligner(const string &path, int threads) : vocabulary(LoadVocabulary(path)) {
+    fs::path model_filename = fs::absolute(fs::path(path) / fs::path("model.dat"));
+    if (!fs::is_regular(model_filename))
+        throw invalid_argument("File not found: " + model_filename.string());
+
+    BidirectionalModel::Open(model_filename.string(), &forwardModel, &backwardModel);
+
+    this->threads = threads > 0 ? threads : (int) thread::hardware_concurrency();
 #ifdef _OPENMP
     omp_set_dynamic(0);
     omp_set_num_threads(this->threads);
@@ -37,6 +43,7 @@ FastAligner::FastAligner(const string &path, int threads) {
 FastAligner::~FastAligner() {
     delete forwardModel;
     delete backwardModel;
+    delete vocabulary;
 }
 
 alignment_t
@@ -126,13 +133,5 @@ alignment_t FastAligner::GetBackwardAlignment(const vector<wid_t> &source, const
 void FastAligner::GetBackwardAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch,
                                         vector<alignment_t> &outAlignments) {
     backwardModel->ComputeAlignments(batch, outAlignments);
-}
-
-float FastAligner::GetForwardProbability(wid_t source, wid_t target) {
-    return (float) forwardModel->GetProbability(source, target);
-}
-
-float FastAligner::GetBackwardProbability(wid_t source, wid_t target) {
-    return (float) backwardModel->GetProbability(target, source);
 }
 

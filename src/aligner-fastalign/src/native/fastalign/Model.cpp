@@ -4,6 +4,7 @@
 
 #include <mmt/aligner/Aligner.h>
 #include "Model.h"
+#include "Vocabulary.h"
 #include "DiagonalAlignment.h"
 #include "Corpus.h"
 
@@ -54,7 +55,7 @@ double Model::ComputeAlignment(const vector<wid_t> &source, const vector<wid_t> 
         if (use_null) {
             if (favor_diagonal)
                 prob_a_i = prob_align_null;
-            probs[0] = GetProbability(kAlignerNullWord, f_j) * prob_a_i;
+            probs[0] = GetProbability(kNullWordId, f_j) * prob_a_i;
             sum += probs[0];
         }
 
@@ -77,7 +78,7 @@ double Model::ComputeAlignment(const vector<wid_t> &source, const vector<wid_t> 
             double count = probs[0] / sum;
 
             if (outModel)
-                outModel->IncrementProbability(kAlignerNullWord, f_j, count);
+                outModel->IncrementProbability(kNullWordId, f_j, count);
         }
 
         for (length_t i = 1; i <= src_size; ++i) {

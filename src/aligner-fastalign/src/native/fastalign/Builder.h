@@ -9,6 +9,7 @@
 #include <vector>
 #include "Model.h"
 #include "Corpus.h"
+#include "Vocabulary.h"
 
 namespace mmt {
     namespace fastalign {
@@ -41,6 +42,10 @@ namespace mmt {
             class Listener {
             public:
                 virtual void Begin(bool forward) = 0;
+
+                virtual void VocabularyBuildBegin() = 0;
+
+                virtual void VocabularyBuildEnd() = 0;
 
                 virtual void IterationBegin(bool forward, int iteration) = 0;
 
@@ -81,10 +86,10 @@ namespace mmt {
             void AllocateTTableSpace(Model *_model, const std::unordered_map<wid_t, std::vector<wid_t>> &values,
                                      const wid_t sourceWordMaxValue);
 
-            void InitialPass(const Corpus &corpus, double *n_target_tokens, Model *model,
+            void InitialPass(const Vocabulary *vocab, Model *model, const Corpus &corpus, double *n_target_tokens,
                              std::vector<std::pair<std::pair<length_t, length_t>, size_t>> *size_counts);
 
-            Model *BuildModel(const Corpus &corpus, bool forward);
+            Model *BuildModel(const Vocabulary *vocab, const Corpus &corpus, bool forward);
 
         };
 

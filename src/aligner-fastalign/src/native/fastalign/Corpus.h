@@ -14,6 +14,8 @@
 namespace mmt {
     namespace fastalign {
 
+        class Vocabulary;
+
         class Corpus {
             friend class CorpusReader;
 
@@ -37,29 +39,25 @@ namespace mmt {
 
         class CorpusReader {
         public:
-            CorpusReader(const Corpus &corpus);
+            CorpusReader(const Corpus &corpus, const Vocabulary *vocabulary = nullptr);
+
+            bool Read(std::vector<std::string> &outSource, std::vector<std::string> &outTarget);
+
+            bool Read(std::vector<std::pair<std::vector<std::string>, std::vector<std::string>>> &outBuffer,
+                      size_t limit);
 
             bool Read(std::vector<wid_t> &outSource, std::vector<wid_t> &outTarget);
 
-            bool Read(std::vector<std::pair<std::vector<wid_t>, std::vector<wid_t>>> &outBuffer, size_t limit);
+            bool Read(std::vector<std::pair<std::vector<wid_t>, std::vector<wid_t>>> &outBuffer,
+                      size_t limit);
 
         private:
             bool drained;
 
+            const Vocabulary *vocabulary;
             std::ifstream source;
             std::ifstream target;
-
-            static inline void ParseLine(const std::string &line, std::vector <wid_t> &output) {
-                output.clear();
-
-                std::stringstream stream(line);
-                wid_t word;
-
-                while (stream >> word)
-                    output.push_back(word);
-            }
         };
-
     }
 }
 
