@@ -1,6 +1,5 @@
 package eu.modernmt.decoder.phrasebased;
 
-import eu.modernmt.aligner.Aligner;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.Decoder;
@@ -10,7 +9,6 @@ import eu.modernmt.io.Paths;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
-import eu.modernmt.vocabulary.Vocabulary;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,20 +29,19 @@ public class MosesDecoder implements Decoder, DataListenerProvider {
 
     static {
         try {
-            System.loadLibrary("mmt_ptdecoder");
+            System.loadLibrary("mmt_pbdecoder");
         } catch (Throwable e) {
-            logger.error("Unable to load library 'mmt_ptdecoder'", e);
+            logger.error("Unable to load library 'mmt_pbdecoder'", e);
             throw e;
         }
     }
 
     private final FeatureWeightsStorage storage;
-    private final HashMap<Long, Long> sessions = new HashMap<>();
     private long nativeHandle;
 
     private ArrayList<DataListener> dataListeners = null;
 
-    public MosesDecoder(File path, Aligner aligner, Vocabulary vocabulary, int threads) throws IOException {
+    public MosesDecoder(File path, int threads) throws IOException {
         this.storage = new FeatureWeightsStorage(Paths.join(path, "weights.dat"));
 
         File iniTemplate = Paths.join(path, "moses.ini");
@@ -61,11 +58,10 @@ public class MosesDecoder implements Decoder, DataListenerProvider {
 
         FileUtils.write(iniFile, mosesINI.toString(), false);
 
-        this.nativeHandle = instantiate(iniFile.getAbsolutePath(),
-                aligner.getNativeHandle(), vocabulary.getNativeHandle());
+        this.nativeHandle = instantiate(iniFile.getAbsolutePath());
     }
 
-    private native long instantiate(String inifile, long aligner, long vocabulary);
+    private native long instantiate(String inifile);
 
     // Features
 

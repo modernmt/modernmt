@@ -27,6 +27,7 @@ set(SOURCE_FILES
         sapt/Options.h
         sapt/TranslationOption.h
         sapt/PhraseTable.cpp sapt/PhraseTable.h
+        sapt/LexicalModel.cpp sapt/LexicalModel.h
         sapt/UpdateManager.cpp sapt/UpdateManager.h
         sapt/TranslationOptionBuilder.cpp sapt/TranslationOptionBuilder.h
 

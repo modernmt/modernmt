@@ -10,6 +10,7 @@
 #include "PhraseTable.h"
 #include "UpdateManager.h"
 #include "TranslationOptionBuilder.h"
+#include "LexicalModel.h"
 
 using namespace mmt;
 using namespace mmt::sapt;
@@ -17,22 +18,23 @@ using namespace mmt::sapt;
 struct PhraseTable::pt_private {
     SuffixArray *index;
     UpdateManager *updates;
-    Aligner *aligner;
+    LexicalModel *lexicalModel;
 
     size_t numberOfSamples;
 };
 
-PhraseTable::PhraseTable(const string &modelPath, const Options &options, Aligner *aligner) {
+PhraseTable::PhraseTable(const string &modelPath, const Options &options) {
     self = new pt_private();
     self->index = new SuffixArray(modelPath, options.prefix_length, options.gc_timeout, options.gc_buffer_size);
     self->updates = new UpdateManager(self->index, options.update_buffer_size, options.update_max_delay);
-    self->aligner = aligner;
+    self->lexicalModel = new LexicalModel(modelPath);
     self->numberOfSamples = options.samples;
 }
 
 PhraseTable::~PhraseTable() {
     delete self->updates;
     delete self->index;
+    delete self->lexicalModel;
     delete self;
 }
 
@@ -61,7 +63,7 @@ unordered_map<stream_t, seqid_t> PhraseTable::GetLatestUpdatesIdentifier() {
 
 /* Translation Options scoring */
 
-static void GetLexicalScores(Aligner *aligner, const vector<wid_t> &phrase, const TranslationOption &option,
+static void GetLexicalScores(LexicalModel *lexicalModel, const vector<wid_t> &phrase, const TranslationOption &option,
                              float &fwdScore, float &bwdScore) {
     vector<vector<float>> fwdWordProb(option.targetPhrase.size());
     vector<vector<float>> bwdWordProb(phrase.size());
@@ -72,8 +74,8 @@ static void GetLexicalScores(Aligner *aligner, const vector<wid_t> &phrase, cons
     for (auto a = option.alignment.begin(); a != option.alignment.end(); ++a) {
         wid_t sWord = phrase[a->first];
         wid_t tWord = option.targetPhrase[a->second];
-        fwdWordProb[a->second].push_back(aligner->GetForwardProbability(sWord, tWord));  // P(tWord | sWord)
-        bwdWordProb[a->first].push_back(aligner->GetBackwardProbability(sWord, tWord));  // P(sWord | tWord)
+        fwdWordProb[a->second].push_back(lexicalModel->GetForwardProbability(sWord, tWord));  // P(tWord | sWord)
+        bwdWordProb[a->first].push_back(lexicalModel->GetBackwardProbability(sWord, tWord));  // P(sWord | tWord)
 
     }
     fwdScore = 0.0;
@@ -87,7 +89,7 @@ static void GetLexicalScores(Aligner *aligner, const vector<wid_t> &phrase, cons
             }
             tmpProb /= tmpSize;
         } else {
-            tmpProb = aligner->GetTargetNullProbability(option.targetPhrase[ti]);
+            tmpProb = lexicalModel->GetTargetNullProbability(option.targetPhrase[ti]);
         }
         // should never happen that tmpProb <= 0
         fwdScore += (tmpProb <= 0.0) ? -9 : log(tmpProb);
@@ -104,7 +106,7 @@ static void GetLexicalScores(Aligner *aligner, const vector<wid_t> &phrase, cons
             }
             tmpProb /= tmpSize;
         } else {
-            tmpProb = aligner->GetSourceNullProbability(phrase[si]);
+            tmpProb = lexicalModel->GetSourceNullProbability(phrase[si]);
         }
 
         // should never happen that tmpProb <= 0
@@ -119,7 +121,7 @@ static float lbop(float succ, float tries, float confidence) {
         return (float) boost::math::binomial_distribution<>::find_lower_bound_on_p(tries, succ, confidence);
 }
 
-static void MakeTranslationOptions(SuffixArray *index, Aligner *aligner,
+static void MakeTranslationOptions(SuffixArray *index, LexicalModel *lexicalModel,
                                    const vector<wid_t> &phrase, const vector<sample_t> &samples,
                                    vector<TranslationOption> &output) {
 
@@ -141,7 +143,9 @@ static void MakeTranslationOptions(SuffixArray *index, Aligner *aligner,
                                   std::max(entry->GetCount(), SampleSourceFrequency),
                                   confidence));
         float bwdScore = log(lbop(entry->GetCount(),
-                                  std::max(entry->GetCount(), (size_t) round((float) SampleSourceFrequency * GlobalTargetFrequency / GlobalSourceFrequency)),
+                                  std::max(entry->GetCount(), (size_t) round(
+                                          (float) SampleSourceFrequency * GlobalTargetFrequency /
+                                          GlobalSourceFrequency)),
                                   confidence));
 
         float fwdLexScore = 0.f;
@@ -152,8 +156,7 @@ static void MakeTranslationOptions(SuffixArray *index, Aligner *aligner,
         option.targetPhrase = entry->GetPhrase();
         option.orientations = entry->GetOrientations();
 
-        if (aligner)
-            GetLexicalScores(aligner, phrase, option, fwdLexScore, bwdLexScore);
+        GetLexicalScores(lexicalModel, phrase, option, fwdLexScore, bwdLexScore);
 
         option.scores[ForwardProbabilityScore] = fwdScore;
         option.scores[BackwardProbabilityScore] = min(0.f, bwdScore);
@@ -171,7 +174,7 @@ vector<TranslationOption> PhraseTable::GetTranslationOptions(const vector<wid_t>
     self->index->GetRandomSamples(phrase, self->numberOfSamples, samples, context);
 
     vector<TranslationOption> result;
-    MakeTranslationOptions(self->index, self->aligner, phrase, samples, result);
+    MakeTranslationOptions(self->index, self->lexicalModel, phrase, samples, result);
 
     return result;
 }
@@ -199,12 +202,12 @@ translation_table_t PhraseTable::GetAllTranslationOptions(const vector<wid_t> &s
                     break;
 
                 vector<TranslationOption> options;
-                MakeTranslationOptions(self->index, self->aligner, phrase, samples, options);
+                MakeTranslationOptions(self->index, self->lexicalModel, phrase, samples, options);
 
                 ttable[phrase] = options;
             }
         }
-       delete collector;
+        delete collector;
     }
 
     return ttable;

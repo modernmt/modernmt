@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
-project(mmt_ptdecoder)
+project(mmt_pbdecoder)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-dev -O3 -fPIC")
 

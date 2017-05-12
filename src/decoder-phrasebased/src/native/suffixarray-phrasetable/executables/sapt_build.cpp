@@ -9,6 +9,8 @@
 #include <thread>
 #include <util/BilingualCorpus.h>
 #include <util/chrono.h>
+#include <sapt/LexicalModel.h>
+
 #ifdef _OPENMP
 #include <thread>
 #include <omp.h>
@@ -25,6 +27,7 @@ namespace {
 
     struct args_t {
         string model_path;
+        string lexmodel_path;
         string input_path;
         string source_lang;
         string target_lang;
@@ -44,6 +47,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
             ("source,s", po::value<string>()->required(), "source language")
             ("target,t", po::value<string>()->required(), "target language")
             ("input,i", po::value<string>()->required(), "input folder with input corpora")
+            ("lex,x", po::value<string>()->required(), "textual lexical model to import")
             ("buffer,b", po::value<size_t>(), "size of the buffer");
 
     po::variables_map vm;
@@ -61,6 +65,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
         args->input_path = vm["input"].as<string>();
         args->source_lang = vm["source"].as<string>();
         args->target_lang = vm["target"].as<string>();
+        args->lexmodel_path = vm["lex"].as<string>();
 
         if (vm.count("buffer"))
             args->buffer_size = vm["buffer"].as<size_t>();
@@ -118,6 +123,10 @@ int main(int argc, const char *argv[]) {
 
     if (!fs::is_directory(args.model_path))
         fs::create_directories(args.model_path);
+
+    LexicalModel *lexicalModel = LexicalModel::Import(args.lexmodel_path);
+    lexicalModel->Store(fs::absolute(fs::path(args.model_path) / fs::path("model.lex")).string());
+    delete lexicalModel;
 
     Options options;
     SuffixArray index(args.model_path, options.prefix_length, options.gc_timeout, options.gc_buffer_size, true);

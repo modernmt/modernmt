@@ -44,9 +44,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include "parameters/AllOptions.h"
 #include "parameters/BookkeepingOptions.h"
 
-#include <mmt/aligner/Aligner.h>
-#include <mmt/vocabulary/Vocabulary.h>
-
 namespace Moses
 {
 
@@ -74,8 +71,6 @@ class StaticData
 private:
   static StaticData s_instance;
 protected:
-    mmt::Aligner *m_aligner;
-    mmt::Vocabulary *m_vocabulary;
   Parameter *m_parameter;
   boost::shared_ptr<AllOptions> m_options;
 
@@ -178,11 +173,7 @@ public:
 
   //! Load data into static instance. This function is required as
   //  LoadData() is not const
-  static bool LoadDataStatic(Parameter *parameter, const std::string &execPath,
-                             mmt::Aligner *aligner = NULL, mmt::Vocabulary *vocabulary = NULL);
-
-  mmt::Aligner *GetAligner() const;
-  mmt::Vocabulary *GetVocabulary() const;
+  static bool LoadDataStatic(Parameter *parameter, const std::string &execPath);
 
   //! Main function to load everything. Also initialize the Parameter object
   bool LoadData(Parameter *parameter);

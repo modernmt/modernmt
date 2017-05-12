@@ -246,7 +246,7 @@ class SuffixArraysPhraseTable(MosesFeature):
         aligner.export(lex_model_path)
 
         # Build models
-        command = [self._build_bin, '--input', train_corpora_path, '--model', self._model,
+        command = [self._build_bin, '--lex', lex_model_path, '--input', train_corpora_path, '--model', self._model,
                    '-s', self._source_lang, '-t', self._target_lang]
         shell.execute(command, stdout=log, stderr=log)
 

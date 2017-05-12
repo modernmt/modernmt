@@ -105,7 +105,7 @@ namespace Moses {
     void PhraseDictionarySADB::Load(AllOptions::ptr const &opts) {
         m_options = opts;
         SetFeaturesToApply();
-        m_pt = new mmt::sapt::PhraseTable(m_modelPath, pt_options, StaticData::Instance().GetAligner());
+        m_pt = new mmt::sapt::PhraseTable(m_modelPath, pt_options);
     }
 
 

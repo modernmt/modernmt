@@ -91,8 +91,7 @@ public class Engine implements Closeable {
 
         DecoderConfig decoderConfig = config.getDecoderConfig();
         if (decoderConfig.isEnabled())
-            this.decoder = new MosesDecoder(Paths.join(this.models, "decoder"), aligner, vocabulary,
-                    decoderConfig.getThreads());
+            this.decoder = new MosesDecoder(Paths.join(this.models, "decoder"), decoderConfig.getThreads());
         else
             this.decoder = null;
     }

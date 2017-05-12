@@ -10,7 +10,6 @@
 #include <map>
 
 #include <mmt/IncrementalModel.h>
-#include <mmt/aligner/Aligner.h>
 #include "Options.h"
 #include "TranslationOption.h"
 
@@ -33,7 +32,7 @@ namespace mmt {
 
         class PhraseTable : public IncrementalModel {
         public:
-            PhraseTable(const string &modelPath, const Options &options = Options(), Aligner *aligner = NULL);
+            PhraseTable(const string &modelPath, const Options &options = Options());
 
             ~PhraseTable();
 

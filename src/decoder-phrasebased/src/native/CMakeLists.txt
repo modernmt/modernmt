@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
-project(mmt_ptdecoder)
+project(mmt_pbdecoder)
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)

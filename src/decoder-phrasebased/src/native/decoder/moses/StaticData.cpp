@@ -67,8 +67,6 @@ StaticData StaticData::s_instance;
 
 StaticData::StaticData()
   : m_options(new AllOptions)
-  , m_aligner(NULL)
-  , m_vocabulary(NULL)
   , m_requireSortingAfterSourceContext(false)
   , m_registry(new FeatureRegistry)
   , m_treeStructure(NULL)
@@ -82,25 +80,10 @@ StaticData::~StaticData()
   Phrase::FinalizeMemPool();
 }
 
-bool StaticData::LoadDataStatic(Parameter *parameter, const std::string &execPath,
-                                mmt::Aligner *aligner, mmt::Vocabulary *vocabulary)
+bool StaticData::LoadDataStatic(Parameter *parameter, const std::string &execPath)
 {
-    s_instance.m_aligner = aligner;
-    s_instance.m_vocabulary = vocabulary;
   s_instance.SetExecPath(execPath);
   return s_instance.LoadData(parameter);
-}
-
-mmt::Aligner *StaticData::GetAligner() const {
-//    if (m_aligner == NULL)
-//        throw runtime_error("StaticData::aligner has not been initialized");
-    return m_aligner;
-}
-
-mmt::Vocabulary *StaticData::GetVocabulary() const {
-    if (m_vocabulary == NULL)
-        throw runtime_error("StaticData::vocabulary has not been initialized");
-    return m_vocabulary;
 }
 
 void

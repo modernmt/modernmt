@@ -105,14 +105,6 @@ void BidirectionalModel::Open(const string &filename, Model **outForward, Model 
 void BidirectionalModel::ExportLexicalModel(const string &filename, const Vocabulary *vb) {
     ofstream out(filename, ios::binary | ios::out);
 
-    size_t size = 0;
-    for (auto entry = table->begin(); entry != table->end(); ++entry) {
-        if (entry->size() > 0)
-            size++;
-    }
-
-    out << size << endl;
-
     for (wid_t sid = 0; sid < table->size(); ++sid) {
         const unordered_map<wid_t, pair<float, float>> &row = table->at(sid);
         size_t row_size = row.size();
