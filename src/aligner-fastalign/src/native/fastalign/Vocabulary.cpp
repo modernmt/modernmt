@@ -29,7 +29,7 @@ const Vocabulary *Vocabulary::FromCorpus(const Corpus &corpus) {
     result->terms.insert(result->terms.end(), src_terms.begin(), src_terms.end());
     result->terms.insert(result->terms.end(), trg_terms.begin(), trg_terms.end());
 
-    for (wid_t id = 0; id < result->terms.size(); ++id)
+    for (word_t id = 0; id < result->terms.size(); ++id)
         result->vocab[result->terms[id]] = (id + 2);
 
     return result;
@@ -38,7 +38,7 @@ const Vocabulary *Vocabulary::FromCorpus(const Corpus &corpus) {
 Vocabulary::Vocabulary(const std::string &filename, bool direct, bool reverse) {
     ifstream input(filename);
 
-    wid_t index = 2;
+    word_t index = 2;
     for (std::string line; getline(input, line); ++index) {
         if (direct)
             vocab[line] = index;

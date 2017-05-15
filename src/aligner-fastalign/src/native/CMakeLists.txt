@@ -4,27 +4,25 @@ project(mmt_fastalign)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -O3")
 
 set(SOURCE_FILES
+        fastalign/alignment.h
         fastalign/Model.h fastalign/Model.cpp
         fastalign/Builder.h fastalign/Builder.cpp
         fastalign/Corpus.h fastalign/Corpus.cpp
         fastalign/DiagonalAlignment.h
         fastalign/FastAligner.cpp fastalign/FastAligner.h
         fastalign/BidirectionalModel.cpp fastalign/BidirectionalModel.h
+        fastalign/Vocabulary.cpp fastalign/Vocabulary.h
 
         symal/SymAlignment.cpp symal/SymAlignment.h
 
-        javah/eu_modernmt_aligner_fastalign_FastAlign.h java/eu_modernmt_aligner_fastalign_FastAlign.cpp fastalign/Vocabulary.cpp fastalign/Vocabulary.h)
+        java/jniutil.h
+        javah/eu_modernmt_aligner_fastalign_FastAlign.h java/eu_modernmt_aligner_fastalign_FastAlign.cpp)
 
 include_directories(${CMAKE_SOURCE_DIR})
 
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
 
 # External libraries
-
-## ModernMT
-find_package(ModernMT REQUIRED COMPONENTS commons)
-include_directories(${ModernMT_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} ${ModernMT_LIBS})
 
 ## Boost
 set(Boost_USE_STATIC_LIBS OFF)

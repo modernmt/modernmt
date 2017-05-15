@@ -86,7 +86,7 @@ wid_t GetWordId(const std::string &word) {
     if (word.size() > 2)
         return (wid_t) std::stoi(word.substr(1, word.size() - 2));
     else
-        return kAlignerNullWord;
+        return LexicalModel::kNullWord;
 }
 
 LexicalModel *LexicalModel::Import(const std::string &path) {

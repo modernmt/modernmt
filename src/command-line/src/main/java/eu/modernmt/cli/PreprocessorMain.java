@@ -5,11 +5,10 @@ import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.PipelineInputStream;
 import eu.modernmt.processing.PipelineOutputStream;
 import eu.modernmt.processing.Preprocessor;
-import eu.modernmt.processing.util.SentenceOutputter;
-import eu.modernmt.processing.util.TokensOutputter;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 
+import java.io.IOException;
 import java.util.Locale;
 
 /**
@@ -59,22 +58,59 @@ public class PreprocessorMain {
         PipelineOutputStream<Sentence> output = null;
 
         LineReader sin = new UnixLineReader(System.in, DefaultCharset.get());
-        LineWriter sout = new UnixLineWriter(System.out, DefaultCharset.get());
 
         try {
             preprocessor = new Preprocessor(args.language);
 
             input = PipelineInputStream.fromLineReader(sin);
             if (args.keepSpaces)
-                output = new SentenceOutputter(sout, args.printTags, args.printPlaceholders);
+                output = new SentenceOutputter(args.printTags, args.printPlaceholders);
             else
-                output = new TokensOutputter(sout, args.printTags, args.printPlaceholders);
+                output = new TokensOutputter(args.printTags, args.printPlaceholders);
 
             preprocessor.process(input, output);
         } finally {
             IOUtils.closeQuietly(preprocessor);
             IOUtils.closeQuietly(input);
             IOUtils.closeQuietly(output);
+        }
+    }
+
+    private static class SentenceOutputter implements PipelineOutputStream<Sentence> {
+
+        private final SentenceOutputStream stream;
+
+        public SentenceOutputter(boolean printTags, boolean printPlaceholders) {
+            stream = new SentenceOutputStream(System.out, printTags, printPlaceholders);
+        }
+
+        @Override
+        public void write(Sentence value) throws IOException {
+            stream.write(value);
+        }
+
+        @Override
+        public void close() throws IOException {
+            stream.close();
+        }
+    }
+
+    private static class TokensOutputter implements PipelineOutputStream<Sentence> {
+
+        private final TokensOutputStream stream;
+
+        public TokensOutputter(boolean printTags, boolean printPlaceholders) {
+            stream = new TokensOutputStream(System.out, printTags, printPlaceholders);
+        }
+
+        @Override
+        public void write(Sentence value) throws IOException {
+            stream.write(value);
+        }
+
+        @Override
+        public void close() throws IOException {
+            stream.close();
         }
     }
 

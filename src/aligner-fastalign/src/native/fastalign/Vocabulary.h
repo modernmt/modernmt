@@ -7,14 +7,14 @@
 
 #include <string>
 #include <unordered_set>
-#include <mmt/sentence.h>
+#include "alignment.h"
 #include "Corpus.h"
 
 namespace mmt {
     namespace fastalign {
 
-        static const wid_t kNullWordId = 0;
-        static const wid_t kUnknownWordId = 1;
+        static const word_t kNullWord = 0;
+        static const word_t kUnknownWord = 1;
 
         static const std::string kEmptyResult = "";
 
@@ -27,20 +27,26 @@ namespace mmt {
 
             void Store(const std::string &filename) const;
 
-            inline const wid_t Get(const std::string &term) const {
+            inline const word_t Get(const std::string &term) const {
                 auto result = vocab.find(term);
-                return result == vocab.end() ? kUnknownWordId : result->second;
+                return result == vocab.end() ? kUnknownWord : result->second;
             }
 
-            inline const std::string &Get(wid_t id) const {
+            inline const std::string &Get(word_t id) const {
                 return (id > 1 && (id - 2) < terms.size()) ? terms[id - 2] : kEmptyResult;
+            }
+
+            inline const void Encode(const sentence_t &sentence, wordvec_t &output) const {
+                output.resize(sentence.size());
+                for (size_t i = 0; i < sentence.size(); ++i)
+                    output[i] = Get(sentence[i]);
             }
 
         private:
             Vocabulary() {};
 
             std::vector<std::string> terms;
-            std::unordered_map<std::string, wid_t> vocab;
+            std::unordered_map<std::string, word_t> vocab;
         };
 
     }

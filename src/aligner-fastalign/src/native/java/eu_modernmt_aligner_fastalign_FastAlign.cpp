@@ -4,7 +4,8 @@
 
 #include "javah/eu_modernmt_aligner_fastalign_FastAlign.h"
 #include "fastalign/FastAligner.h"
-#include <mmt/jniutil.h>
+#include "jniutil.h"
+
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -14,14 +15,16 @@ using namespace std;
 using namespace mmt;
 using namespace mmt::fastalign;
 
-inline void ParseSentence(JNIEnv *jvm, jintArray jarray, vector<wid_t> &outSentence) {
+inline void ParseSentence(JNIEnv *jvm, jobjectArray jarray, vector<string> &output) {
     jsize size = jvm->GetArrayLength(jarray);
-    outSentence.reserve((size_t) size);
+    output.reserve((size_t) size);
 
-    jint *array = jvm->GetIntArrayElements(jarray, NULL);
-    for (jsize i = 0; i < size; i++)
-        outSentence.push_back((wid_t) array[i]);
-    jvm->ReleaseIntArrayElements(jarray, array, 0);
+    for (jsize i = 0; i < size; i++) {
+        jstring jword = (jstring) jvm->GetObjectArrayElement(jarray, i);
+        string word = jni_jstrtostr(jvm, jword);
+
+        output.push_back(word);
+    }
 }
 
 inline jintArray AlignmentToArray(JNIEnv *jvm, alignment_t align) {
@@ -42,7 +45,6 @@ inline jintArray AlignmentToArray(JNIEnv *jvm, alignment_t align) {
     return jarray;
 }
 
-
 /*
  * Class:     eu_modernmt_aligner_fastalign_FastAlign
  * Method:    instantiate
@@ -50,60 +52,52 @@ inline jintArray AlignmentToArray(JNIEnv *jvm, alignment_t align) {
  */
 JNIEXPORT jlong JNICALL
 Java_eu_modernmt_aligner_fastalign_FastAlign_instantiate(JNIEnv *jvm, jobject jself, jstring jmodel, jint threads) {
-#ifdef _OPENMP
-    omp_set_dynamic(0);
-    omp_set_num_threads(threads);
-#endif
-
     string modelPath = jni_jstrtostr(jvm, jmodel);
-    return (jlong) new FastAligner(modelPath);
+    return (jlong) new FastAligner(modelPath, threads);
 }
-
 
 /*
  * Class:     eu_modernmt_aligner_fastalign_FastAlign
  * Method:    align
- * Signature: ([I[II)[I
+ * Signature: ([Ljava/lang/String;[Ljava/lang/String;I)[I
  */
 JNIEXPORT jintArray JNICALL
-Java_eu_modernmt_aligner_fastalign_FastAlign_align___3I_3II(JNIEnv *jvm, jobject jself, jintArray jsource,
-                                                            jintArray jtarget, jint jstrategy) {
+Java_eu_modernmt_aligner_fastalign_FastAlign_align___3Ljava_lang_String_2_3Ljava_lang_String_2I
+        (JNIEnv *jvm, jobject jself, jobjectArray jsource, jobjectArray jtarget, jint jsym) {
     FastAligner *aligner = jni_gethandle<FastAligner>(jvm, jself);
 
-    vector<wid_t> source, target;
+    vector<string> source, target;
     ParseSentence(jvm, jsource, source);
     ParseSentence(jvm, jtarget, target);
 
-    alignment_t align = aligner->GetAlignment(source, target, (SymmetrizationStrategy) jstrategy);
-
+    alignment_t align = aligner->GetAlignment(source, target, (Symmetrization) jsym);
     return AlignmentToArray(jvm, align);
 }
 
 /*
  * Class:     eu_modernmt_aligner_fastalign_FastAlign
  * Method:    align
- * Signature: ([[I[[I[[II)V
+ * Signature: ([[Ljava/lang/String;[[Ljava/lang/String;[[II)V
  */
 JNIEXPORT void JNICALL
-Java_eu_modernmt_aligner_fastalign_FastAlign_align___3_3I_3_3I_3_3II(JNIEnv *jvm, jobject jself, jobjectArray jsources,
-                                                                     jobjectArray jtargets, jobjectArray joutput,
-                                                                     jint jstrategy) {
+Java_eu_modernmt_aligner_fastalign_FastAlign_align___3_3Ljava_lang_String_2_3_3Ljava_lang_String_2_3_3II
+        (JNIEnv *jvm, jobject jself, jobjectArray jsources, jobjectArray jtargets, jobjectArray joutput, jint jsym) {
     FastAligner *aligner = jni_gethandle<FastAligner>(jvm, jself);
     jsize length = jvm->GetArrayLength(jsources);
 
-    vector<pair<vector<wid_t>, vector<wid_t>>> batch;
+    vector<pair<vector<string>, vector<string>>> batch;
     batch.reserve((size_t) length);
 
     for (jsize i = 0; i < length; i++) {
-        vector<wid_t> source, target;
-        ParseSentence(jvm, (jintArray) jvm->GetObjectArrayElement(jsources, i), source);
-        ParseSentence(jvm, (jintArray) jvm->GetObjectArrayElement(jtargets, i), target);
+        vector<string> source, target;
+        ParseSentence(jvm, (jobjectArray) jvm->GetObjectArrayElement(jsources, i), source);
+        ParseSentence(jvm, (jobjectArray) jvm->GetObjectArrayElement(jtargets, i), target);
 
-        batch.push_back(pair<vector<wid_t>, vector<wid_t>>(source, target));
+        batch.push_back(pair<vector<string>, vector<string>>(source, target));
     }
 
     vector<alignment_t> alignments;
-    aligner->GetAlignments(batch, alignments, (SymmetrizationStrategy) jstrategy);
+    aligner->GetAlignments(batch, alignments, (Symmetrization) jsym);
 
     for (jsize i = 0; i < ((jsize) alignments.size()); i++) {
         jintArray alignment = AlignmentToArray(jvm, alignments[i]);

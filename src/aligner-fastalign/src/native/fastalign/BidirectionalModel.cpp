@@ -30,20 +30,20 @@ void BidirectionalModel::Store(const BidirectionalModel *forward, const Bidirect
     size_t ttable_size = table.size();
     out.write((const char *) &ttable_size, sizeof(size_t));
 
-    for (wid_t sourceWord = 0; sourceWord < table.size(); ++sourceWord) {
-        unordered_map<wid_t, pair<float, float>> &row = table[sourceWord];
+    for (word_t sourceWord = 0; sourceWord < table.size(); ++sourceWord) {
+        unordered_map<word_t, pair<float, float>> &row = table[sourceWord];
         size_t row_size = row.size();
 
         if (row_size == 0)
             continue;
 
-        out.write((const char *) &sourceWord, sizeof(wid_t));
+        out.write((const char *) &sourceWord, sizeof(word_t));
         out.write((const char *) &row_size, sizeof(size_t));
 
         for (auto it = row.begin(); it != row.end(); ++it) {
-            wid_t targetWord = it->first;
+            word_t targetWord = it->first;
 
-            out.write((const char *) &targetWord, sizeof(wid_t));
+            out.write((const char *) &targetWord, sizeof(word_t));
             out.write((const char *) &it->second.first, sizeof(float));
             out.write((const char *) &it->second.second, sizeof(float));
         }
@@ -73,8 +73,8 @@ void BidirectionalModel::Open(const string &filename, Model **outForward, Model 
     table->resize(ttable_size);
 
     while (true) {
-        wid_t sourceWord;
-        in.read((char *) &sourceWord, sizeof(wid_t));
+        word_t sourceWord;
+        in.read((char *) &sourceWord, sizeof(word_t));
 
         if (in.eof())
             break;
@@ -82,14 +82,14 @@ void BidirectionalModel::Open(const string &filename, Model **outForward, Model 
         size_t row_size;
         in.read((char *) &row_size, sizeof(size_t));
 
-        unordered_map<wid_t, pair<float, float>> &row = table->at(sourceWord);
+        unordered_map<word_t, pair<float, float>> &row = table->at(sourceWord);
         row.reserve(row_size);
 
         for (size_t i = 0; i < row_size; ++i) {
-            wid_t targetWord;
+            word_t targetWord;
             float first, second;
 
-            in.read((char *) &targetWord, sizeof(wid_t));
+            in.read((char *) &targetWord, sizeof(word_t));
             in.read((char *) &first, sizeof(float));
             in.read((char *) &second, sizeof(float));
 
@@ -105,8 +105,8 @@ void BidirectionalModel::Open(const string &filename, Model **outForward, Model 
 void BidirectionalModel::ExportLexicalModel(const string &filename, const Vocabulary *vb) {
     ofstream out(filename, ios::binary | ios::out);
 
-    for (wid_t sid = 0; sid < table->size(); ++sid) {
-        const unordered_map<wid_t, pair<float, float>> &row = table->at(sid);
+    for (word_t sid = 0; sid < table->size(); ++sid) {
+        const unordered_map<word_t, pair<float, float>> &row = table->at(sid);
         size_t row_size = row.size();
 
         if (row_size == 0)
@@ -115,7 +115,7 @@ void BidirectionalModel::ExportLexicalModel(const string &filename, const Vocabu
         out << "<" << vb->Get(sid) << "> " << row_size << endl;
 
         for (auto it = row.begin(); it != row.end(); ++it) {
-            wid_t tid = it->first;
+            word_t tid = it->first;
             out << "  <" << vb->Get(tid) << "> " << it->second.first << " " << it->second.second << endl;
         }
     }

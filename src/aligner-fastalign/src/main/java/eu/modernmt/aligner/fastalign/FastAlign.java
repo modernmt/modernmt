@@ -4,7 +4,6 @@ import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Word;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -58,10 +57,9 @@ public class FastAlign implements Aligner {
 
     @Override
     public Alignment getAlignment(Sentence source, Sentence target, SymmetrizationStrategy strategy) throws AlignerException {
-        return parse(align(getIds(source), getIds(target), toInt(strategy)));
+        int[] alignment = align(XUtils.toTokensArray(source), XUtils.toTokensArray(target), XUtils.toInt(strategy));
+        return XUtils.parseAlignment(alignment);
     }
-
-    private native int[] align(int[] source, int[] target, int strategy);
 
     @Override
     public Alignment[] getAlignments(List<Sentence> sources, List<Sentence> targets) throws AlignerException {
@@ -70,51 +68,33 @@ public class FastAlign implements Aligner {
 
     @Override
     public Alignment[] getAlignments(List<Sentence> sources, List<Sentence> targets, SymmetrizationStrategy strategy) throws AlignerException {
-        int[][] sourcesIds = new int[sources.size()][];
-        int[][] targetsIds = new int[targets.size()][];
+        String[][] sourceArray = new String[sources.size()][];
+        String[][] targetArray = new String[targets.size()][];
 
         Iterator<Sentence> sourceIterator = sources.iterator();
         Iterator<Sentence> targetIterator = targets.iterator();
 
         int i = 0;
         while (sourceIterator.hasNext() && targetIterator.hasNext()) {
-            sourcesIds[i] = getIds(sourceIterator.next());
-            targetsIds[i] = getIds(targetIterator.next());
+            sourceArray[i] = XUtils.toTokensArray(sourceIterator.next());
+            targetArray[i] = XUtils.toTokensArray(targetIterator.next());
             i++;
         }
 
-        int[][] result = new int[sourcesIds.length][];
-        align(sourcesIds, targetsIds, result, toInt(strategy));
-
+        int[][] result = new int[sourceArray.length][];
         Alignment[] alignments = new Alignment[result.length];
 
+        align(sourceArray, targetArray, result, XUtils.toInt(strategy));
+
         for (int j = 0; j < result.length; j++)
-            alignments[j] = parse(result[j]);
+            alignments[j] = XUtils.parseAlignment(result[j]);
 
         return alignments;
     }
 
-    @Override
-    public long getNativeHandle() {
-        return nativeHandle;
-    }
+    private native int[] align(String[] source, String[] target, int strategy);
 
-    private native void align(int[][] sources, int[][] targets, int[][] result, int strategy);
-
-    private static int toInt(SymmetrizationStrategy strategy) {
-        switch (strategy) {
-            case GROW_DIAGONAL_FINAL_AND:
-                return 1;
-            case GROW_DIAGONAL:
-                return 2;
-            case INTERSECT:
-                return 3;
-            case UNION:
-                return 4;
-        }
-
-        return 0;
-    }
+    private native void align(String[][] sources, String[][] targets, int[][] result, int strategy);
 
     @Override
     protected void finalize() throws Throwable {
@@ -124,35 +104,9 @@ public class FastAlign implements Aligner {
 
     @Override
     public void close() {
-        nativeHandle = dispose(nativeHandle);
+        // Nothing to do
     }
 
     private native long dispose(long handle);
-
-    private static int[] getIds(Sentence sentence) {
-        Word[] words = sentence.getWords();
-        int[] ids = new int[words.length];
-
-        for (int i = 0; i < ids.length; i++) {
-            ids[i] = words[i].getId();
-        }
-
-        return ids;
-    }
-
-    private static Alignment parse(int[] encoded) throws AlignerException {
-        if (encoded.length % 2 == 1)
-            throw new AlignerException("Invalid native result length: " + encoded.length);
-
-        int size = encoded.length / 2;
-
-        int[] source = new int[size];
-        int[] target = new int[size];
-
-        System.arraycopy(encoded, 0, source, 0, size);
-        System.arraycopy(encoded, size, target, 0, size);
-
-        return new Alignment(source, target);
-    }
 
 }

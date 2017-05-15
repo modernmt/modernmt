@@ -11,6 +11,7 @@ public class PlainTextWriter extends CorpusWriter {
 
     @Override
     protected void doWrite(String[][] batch, LineWriter writer) throws IOException {
+        //TODO: use TokensOutputter
         StringBuilder builder = new StringBuilder();
 
         for (String[] line : batch) {

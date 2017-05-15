@@ -44,7 +44,7 @@ void Corpus::List(const string &path, const string &outPath,
     }
 }
 
-static inline void ParseLine(const string &line, vector<string> &output) {
+static inline void ParseLine(const string &line, sentence_t &output) {
     output.clear();
 
     std::stringstream stream(line);
@@ -54,7 +54,7 @@ static inline void ParseLine(const string &line, vector<string> &output) {
         output.push_back(word);
 }
 
-static inline void ParseLine(const Vocabulary *vocab, const string &line, vector<wid_t> &output) {
+static inline void ParseLine(const Vocabulary *vocab, const string &line, wordvec_t &output) {
     output.clear();
 
     std::stringstream stream(line);
@@ -69,7 +69,7 @@ CorpusReader::CorpusReader(const Corpus &corpus, const Vocabulary *vocabulary)
 
 }
 
-bool CorpusReader::Read(vector<string> &outSource, vector<string> &outTarget) {
+bool CorpusReader::Read(sentence_t &outSource, sentence_t &outTarget) {
     if (drained)
         return false;
 
@@ -85,7 +85,7 @@ bool CorpusReader::Read(vector<string> &outSource, vector<string> &outTarget) {
     return true;
 }
 
-bool CorpusReader::Read(vector<pair<vector<string>, vector<string>>> &outBuffer, size_t limit) {
+bool CorpusReader::Read(vector<pair<sentence_t, sentence_t>> &outBuffer, size_t limit) {
     if (drained)
         return false;
 
@@ -113,7 +113,7 @@ bool CorpusReader::Read(vector<pair<vector<string>, vector<string>>> &outBuffer,
     return true;
 }
 
-bool CorpusReader::Read(std::vector<wid_t> &outSource, std::vector<wid_t> &outTarget) {
+bool CorpusReader::Read(wordvec_t &outSource, wordvec_t &outTarget) {
     if (drained)
         return false;
 
@@ -129,7 +129,7 @@ bool CorpusReader::Read(std::vector<wid_t> &outSource, std::vector<wid_t> &outTa
     return true;
 }
 
-bool CorpusReader::Read(std::vector<std::pair<std::vector<wid_t>, std::vector<wid_t>>> &outBuffer, size_t limit) {
+bool CorpusReader::Read(std::vector<std::pair<wordvec_t, wordvec_t>> &outBuffer, size_t limit) {
     if (drained)
         return false;
 

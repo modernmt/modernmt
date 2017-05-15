@@ -8,9 +8,7 @@ import java.util.Iterator;
  */
 public class Sentence implements Serializable, Iterable<Token> {
 
-    // TODO: should be final, not possible for Transformation
-    protected Word[] words;
-    // TODO: should be final, not possible for Transformation
+    protected final Word[] words;
     protected Tag[] tags;
 
     public Sentence(Word[] words) {
@@ -40,10 +38,6 @@ public class Sentence implements Serializable, Iterable<Token> {
 
     public boolean hasWords() {
         return words.length > 0;
-    }
-
-    public void setWords(Word[] words) {
-        this.words = words;
     }
 
     /**

@@ -83,8 +83,8 @@ namespace mmt {
 
             Listener *listener;
 
-            void AllocateTTableSpace(Model *_model, const std::unordered_map<wid_t, std::vector<wid_t>> &values,
-                                     const wid_t sourceWordMaxValue);
+            void AllocateTTableSpace(Model *_model, const std::unordered_map<word_t , wordvec_t> &values,
+                                     const word_t sourceWordMaxValue);
 
             void InitialPass(const Vocabulary *vocab, Model *model, const Corpus &corpus, double *n_target_tokens,
                              std::vector<std::pair<std::pair<length_t, length_t>, size_t>> *size_counts);

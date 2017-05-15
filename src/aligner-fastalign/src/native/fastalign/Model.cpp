@@ -2,7 +2,6 @@
 // Created by Davide  Caroselli on 23/08/16.
 //
 
-#include <mmt/aligner/Aligner.h>
 #include "Model.h"
 #include "Vocabulary.h"
 #include "DiagonalAlignment.h"
@@ -17,7 +16,7 @@ Model::Model(bool is_reverse, bool use_null, bool favor_diagonal, double prob_al
           diagonal_tension(diagonal_tension) {
 }
 
-double Model::ComputeAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch, Model *outModel,
+double Model::ComputeAlignments(const vector<pair<wordvec_t, wordvec_t>> &batch, Model *outModel,
                                 vector<alignment_t> *outAlignments) {
     double emp_feat = 0.0;
 
@@ -26,19 +25,19 @@ double Model::ComputeAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>>
 
 #pragma omp parallel for schedule(dynamic) reduction(+:emp_feat)
     for (size_t i = 0; i < batch.size(); ++i) {
-        const pair<vector<wid_t>, vector<wid_t>> &p = batch[i];
+        const pair<wordvec_t, wordvec_t> &p = batch[i];
         emp_feat += ComputeAlignment(p.first, p.second, outModel, outAlignments ? &outAlignments->at(i) : NULL);
     }
 
     return emp_feat;
 }
 
-double Model::ComputeAlignment(const vector<wid_t> &source, const vector<wid_t> &target, Model *outModel,
+double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target, Model *outModel,
                                alignment_t *outAlignment) {
     double emp_feat = 0.0;
 
-    const vector<wid_t> src = is_reverse ? target : source;
-    const vector<wid_t> trg = is_reverse ? source : target;
+    const wordvec_t src = is_reverse ? target : source;
+    const wordvec_t trg = is_reverse ? source : target;
 
     vector<double> probs(src.size() + 1);
 
@@ -46,7 +45,7 @@ double Model::ComputeAlignment(const vector<wid_t> &source, const vector<wid_t> 
     length_t trg_size = (length_t) trg.size();
 
     for (length_t j = 0; j < trg_size; ++j) {
-        const wid_t &f_j = trg[j];
+        const word_t &f_j = trg[j];
         double sum = 0;
         double prob_a_i = 1.0 / (src_size +
                                  // uniform (model 1), Diagonal Alignment (distortion model)
@@ -55,7 +54,7 @@ double Model::ComputeAlignment(const vector<wid_t> &source, const vector<wid_t> 
         if (use_null) {
             if (favor_diagonal)
                 prob_a_i = prob_align_null;
-            probs[0] = GetProbability(kNullWordId, f_j) * prob_a_i;
+            probs[0] = GetProbability(kNullWord, f_j) * prob_a_i;
             sum += probs[0];
         }
 
@@ -78,7 +77,7 @@ double Model::ComputeAlignment(const vector<wid_t> &source, const vector<wid_t> 
             double count = probs[0] / sum;
 
             if (outModel)
-                outModel->IncrementProbability(kNullWordId, f_j, count);
+                outModel->IncrementProbability(kNullWord, f_j, count);
         }
 
         for (length_t i = 1; i <= src_size; ++i) {
@@ -108,9 +107,9 @@ double Model::ComputeAlignment(const vector<wid_t> &source, const vector<wid_t> 
 
             if (max_index > 0) {
                 if (is_reverse)
-                    outAlignment->push_back(pair<wid_t, wid_t>(j, max_index - 1));
+                    outAlignment->push_back(pair<length_t, length_t>(j, max_index - 1));
                 else
-                    outAlignment->push_back(pair<wid_t, wid_t>(max_index - 1, j));
+                    outAlignment->push_back(pair<length_t, length_t>(max_index - 1, j));
             }
         }
     }

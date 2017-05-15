@@ -5,7 +5,6 @@
 #ifndef FASTALIGN_ALIGNER_H
 #define FASTALIGN_ALIGNER_H
 
-#include <mmt/aligner/Aligner.h>
 #include <string>
 #include "Model.h"
 #include "Vocabulary.h"
@@ -13,66 +12,30 @@
 namespace mmt {
     namespace fastalign {
 
-        class FastAligner : public Aligner {
+        enum Symmetrization {
+            GrowDiagonalFinalAnd = 1,
+            GrowDiagonal = 2,
+            Intersection = 3,
+            Union = 4
+        };
+
+        class FastAligner {
         public:
             const Vocabulary *vocabulary;
 
             FastAligner(const std::string &path, int threads = 0);
 
-            // TODO: REMOVE ============================================================================================
-            virtual alignment_t GetAlignment(const std::vector<wid_t> &source, const std::vector<wid_t> &target,
-                                             SymmetrizationStrategy strategy) override;
+            alignment_t GetAlignment(const sentence_t &source, const sentence_t &target, Symmetrization symmetrization);
 
-            virtual void
-            GetAlignments(const std::vector<std::pair<std::vector<wid_t>, std::vector<wid_t>>> &batch,
-                          std::vector<alignment_t> &outAlignments,
-                          SymmetrizationStrategy strategy) override;
+            alignment_t GetAlignment(const wordvec_t &source, const wordvec_t &target, Symmetrization symmetrization);
 
-            virtual alignment_t
-            GetForwardAlignment(const std::vector<wid_t> &source, const std::vector<wid_t> &target) override;
+            void GetAlignments(const std::vector<std::pair<sentence_t, sentence_t>> &batch,
+                               std::vector<alignment_t> &outAlignments, Symmetrization symmetrization);
 
-            virtual void
-            GetForwardAlignments(const std::vector<std::pair<std::vector<wid_t>, std::vector<wid_t>>> &batch,
-                                 std::vector<alignment_t> &outAlignments) override;
+            void GetAlignments(const std::vector<std::pair<wordvec_t, wordvec_t>> &batch,
+                               std::vector<alignment_t> &outAlignments, Symmetrization symmetrization);
 
-            virtual alignment_t
-            GetBackwardAlignment(const std::vector<wid_t> &source, const std::vector<wid_t> &target) override;
-
-            virtual void
-            GetBackwardAlignments(const std::vector<std::pair<std::vector<wid_t>, std::vector<wid_t>>> &batch,
-                                  std::vector<alignment_t> &outAlignments) override;
-
-            // P(target | source)
-            virtual float GetForwardProbability(wid_t source, wid_t target) override {
-                source = vocabulary->Get(std::to_string(source));
-                target = vocabulary->Get(std::to_string(target));
-
-                return (float) forwardModel->GetProbability(source, target);
-            }
-
-            // P(source | target)
-            virtual float GetBackwardProbability(wid_t source, wid_t target) override {
-                source = vocabulary->Get(std::to_string(source));
-                target = vocabulary->Get(std::to_string(target));
-
-                return (float) backwardModel->GetProbability(target, source);
-            }
-
-            // P(NULL | source)
-            virtual float GetSourceNullProbability(wid_t source) override {
-                source = vocabulary->Get(std::to_string(source));
-                return (float) forwardModel->GetProbability(source, kNullWordId);
-            };
-
-            // P(NULL | target)
-            virtual float GetTargetNullProbability(wid_t target) override {
-                target = vocabulary->Get(std::to_string(target));
-
-                return (float) forwardModel->GetProbability(kNullWordId, target);
-            };
-            // TODO: REMOVE ============================================================================================
-
-            virtual ~FastAligner() override;
+            virtual ~FastAligner();
 
         private:
             Model *forwardModel;

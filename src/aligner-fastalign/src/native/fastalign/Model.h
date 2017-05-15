@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include <mmt/sentence.h>
+#include "alignment.h"
 
 namespace mmt {
     namespace fastalign {
@@ -21,20 +21,20 @@ namespace mmt {
         public:
             Model(bool is_reverse, bool use_null, bool favor_diagonal, double prob_align_null, double diagonal_tension);
 
-            inline alignment_t ComputeAlignment(const std::vector<wid_t> &source, const std::vector<wid_t> &target) {
+            inline alignment_t ComputeAlignment(const wordvec_t &source, const wordvec_t &target) {
                 alignment_t alignment;
                 ComputeAlignment(source, target, NULL, &alignment);
                 return alignment;
             }
 
-            inline void ComputeAlignments(const std::vector<std::pair<std::vector<wid_t>, std::vector<wid_t>>> &batch,
+            inline void ComputeAlignments(const std::vector<std::pair<wordvec_t, wordvec_t>> &batch,
                                           std::vector<alignment_t> &outAlignments) {
                 ComputeAlignments(batch, NULL, &outAlignments);
             }
 
-            virtual double GetProbability(wid_t source, wid_t target) = 0;
+            virtual double GetProbability(word_t source, word_t target) = 0;
 
-            virtual void IncrementProbability(wid_t source, wid_t target, double amount) = 0;
+            virtual void IncrementProbability(word_t source, word_t target, double amount) = 0;
 
             virtual ~Model() {};
 
@@ -46,10 +46,10 @@ namespace mmt {
 
             double diagonal_tension;
 
-            double ComputeAlignment(const std::vector<wid_t> &source, const std::vector<wid_t> &target, Model *outModel,
+            double ComputeAlignment(const wordvec_t &source, const wordvec_t &target, Model *outModel,
                                     alignment_t *outAlignment);
 
-            double ComputeAlignments(const std::vector<std::pair<std::vector<wid_t>, std::vector<wid_t>>> &batch,
+            double ComputeAlignments(const std::vector<std::pair<wordvec_t, wordvec_t>> &batch,
                                      Model *outModel, std::vector<alignment_t> *outAlignments);
         };
 

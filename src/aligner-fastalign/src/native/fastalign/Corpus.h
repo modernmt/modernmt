@@ -9,7 +9,7 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
-#include <mmt/sentence.h>
+#include "alignment.h"
 
 namespace mmt {
     namespace fastalign {
@@ -41,15 +41,13 @@ namespace mmt {
         public:
             CorpusReader(const Corpus &corpus, const Vocabulary *vocabulary = nullptr);
 
-            bool Read(std::vector<std::string> &outSource, std::vector<std::string> &outTarget);
+            bool Read(sentence_t &outSource, sentence_t &outTarget);
 
-            bool Read(std::vector<std::pair<std::vector<std::string>, std::vector<std::string>>> &outBuffer,
-                      size_t limit);
+            bool Read(std::vector<std::pair<sentence_t, sentence_t>> &outBuffer, size_t limit);
 
-            bool Read(std::vector<wid_t> &outSource, std::vector<wid_t> &outTarget);
+            bool Read(wordvec_t &outSource, wordvec_t &outTarget);
 
-            bool Read(std::vector<std::pair<std::vector<wid_t>, std::vector<wid_t>>> &outBuffer,
-                      size_t limit);
+            bool Read(std::vector<std::pair<wordvec_t, wordvec_t>> &outBuffer, size_t limit);
 
         private:
             bool drained;

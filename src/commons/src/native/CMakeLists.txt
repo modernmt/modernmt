@@ -7,8 +7,6 @@ set(SOURCE_FILES
         include/mmt/sentence.h
         include/mmt/jniutil.h
 
-        include/mmt/aligner/Aligner.h
-
         include/mmt/vocabulary/Vocabulary.h
 
         include/mmt/logging/Logger.h logging/Logger.cpp

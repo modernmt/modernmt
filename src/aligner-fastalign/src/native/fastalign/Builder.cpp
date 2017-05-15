@@ -5,7 +5,6 @@
 #include <iostream>
 #include <thread>
 #include <unordered_set>
-#include <mmt/aligner/Aligner.h>
 #include <boost/filesystem.hpp>
 #include "DiagonalAlignment.h"
 #include "Builder.h"
@@ -42,24 +41,24 @@ inline double digamma(double x) {
 
 class BuilderModel : public Model {
 public:
-    vector<unordered_map<wid_t, pair<double, double>>> data;
+    vector<unordered_map<word_t, pair<double, double>>> data;
 
     BuilderModel(bool is_reverse, bool use_null, bool favor_diagonal, double prob_align_null, double diagonal_tension)
             : Model(is_reverse, use_null, favor_diagonal, prob_align_null, diagonal_tension) {
     }
 
-    double GetProbability(wid_t source, wid_t target) override {
+    double GetProbability(word_t source, word_t target) override {
         if (data.empty())
             return kNullProbability;
         if (source >= data.size())
             return kNullProbability;
 
-        unordered_map<wid_t, pair<double, double>> &row = data[source];
+        unordered_map<word_t, pair<double, double>> &row = data[source];
         auto ptr = row.find(target);
         return ptr == row.end() ? kNullProbability : ptr->second.first;
     }
 
-    void IncrementProbability(wid_t source, wid_t target, double amount) override {
+    void IncrementProbability(word_t source, word_t target, double amount) override {
 #pragma omp atomic
         data[source][target].second += amount;
     }
@@ -67,7 +66,7 @@ public:
     void Prune(double threshold = 1e-20) {
 #pragma omp parallel for schedule(dynamic)
         for (size_t i = 0; i < data.size(); ++i) {
-            unordered_map<wid_t, pair<double, double>> &row = data[i];
+            unordered_map<word_t, pair<double, double>> &row = data[i];
 
             for (auto cell = row.cbegin(); cell != row.cend(); /* no increment */) {
                 if (cell->second.first <= threshold)
@@ -80,7 +79,7 @@ public:
 
     void Normalize(double alpha = 0) {
         for (size_t i = 0; i < data.size(); ++i) {
-            unordered_map<wid_t, pair<double, double>> &row = data[i];
+            unordered_map<word_t, pair<double, double>> &row = data[i];
             double row_norm = 0;
 
             for (auto cell = row.begin(); cell != row.end(); ++cell)
@@ -135,8 +134,8 @@ void Builder::setListener(Builder::Listener *listener) {
     Builder::listener = listener;
 }
 
-void Builder::AllocateTTableSpace(Model *_model, const unordered_map<wid_t, vector<wid_t>> &values,
-                                  const wid_t sourceWordMaxValue) {
+void Builder::AllocateTTableSpace(Model *_model, const unordered_map<word_t, wordvec_t> &values,
+                                  const word_t sourceWordMaxValue) {
     BuilderModel *model = (BuilderModel *) _model;
     if (model->data.size() <= sourceWordMaxValue)
         model->data.resize(sourceWordMaxValue + 1);
@@ -144,7 +143,7 @@ void Builder::AllocateTTableSpace(Model *_model, const unordered_map<wid_t, vect
 #pragma omp parallel for schedule(dynamic)
     for (size_t bucket = 0; bucket < values.bucket_count(); ++bucket) {
         for (auto row_ptr = values.begin(bucket); row_ptr != values.end(bucket); ++row_ptr) {
-            wid_t sourceWord = row_ptr->first;
+            word_t sourceWord = row_ptr->first;
 
             for (auto targetWord = row_ptr->second.begin(); targetWord != row_ptr->second.end(); ++targetWord)
                 model->data[sourceWord][*targetWord] = pair<double, double>(kNullProbability, 0);
@@ -159,10 +158,10 @@ void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const Corpus &
 
     unordered_map<pair<length_t, length_t>, size_t, LengthPairHash> size_counts_;
 
-    unordered_map<wid_t, vector<wid_t>> buffer;
-    wid_t maxSourceWord = 0;
+    unordered_map<word_t, wordvec_t> buffer;
+    word_t maxSourceWord = 0;
     size_t buffer_items = 0;
-    vector<wid_t> src, trg;
+    wordvec_t src, trg;
 
     while (reader.Read(src, trg)) {
         if (model->is_reverse)
@@ -172,7 +171,7 @@ void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const Corpus &
 
         if (use_null) {
             for (size_t idxf = 0; idxf < trg.size(); ++idxf) {
-                buffer[kNullWordId].push_back(trg[idxf]);
+                buffer[kNullWord].push_back(trg[idxf]);
             }
 
             buffer_items += trg.size();
@@ -207,20 +206,20 @@ bitable_t *MergeModels(BuilderModel *forward, BuilderModel *backward) {
     bitable_t *table = new bitable_t;
     table->resize(forward->data.size());
 
-    for (wid_t source = 0; source < forward->data.size(); ++source) {
+    for (word_t source = 0; source < forward->data.size(); ++source) {
         table->at(source).reserve(forward->data[source].size());
 
         for (auto entry = forward->data[source].begin(); entry != forward->data[source].end(); ++entry) {
-            wid_t target = entry->first;
+            word_t target = entry->first;
             double score = entry->second.first;
 
             table->at(source)[target] = pair<float, float>(score, kNullProbability);
         }
     }
 
-    for (wid_t target = 0; target < backward->data.size(); ++target) {
+    for (word_t target = 0; target < backward->data.size(); ++target) {
         for (auto entry = backward->data[target].begin(); entry != backward->data[target].end(); ++entry) {
-            wid_t source = entry->first;
+            word_t source = entry->first;
             double score = entry->second.first;
 
             assert(source < table->size());
@@ -279,7 +278,7 @@ Model *Builder::BuildModel(const Vocabulary *vocab, const Corpus &corpus, bool f
         double emp_feat = 0.0;
 
         CorpusReader reader(corpus, vocab);
-        vector<pair<vector<wid_t>, vector<wid_t>>> batch;
+        vector<pair<wordvec_t, wordvec_t>> batch;
 
         if (listener) listener->Begin(forward, kBuilderStepAligning, iter + 1);
         while (reader.Read(batch, buffer_size)) {

@@ -7,14 +7,14 @@
 
 #include <string>
 #include <mmt/sentence.h>
-#include <mmt/aligner/Aligner.h>
 
 namespace mmt {
     namespace sapt {
 
         class LexicalModel {
         public:
-            const double kNullProbability = 1e-9;
+            static constexpr double kNullProbability = 1e-9;
+            static constexpr wid_t kNullWord = 0;
 
             LexicalModel(const std::string &path);
 
@@ -27,11 +27,11 @@ namespace mmt {
             }
 
             inline float GetSourceNullProbability(wid_t source) const {
-                return GetForwardProbability(source, kAlignerNullWord);
+                return GetForwardProbability(source, kNullWord);
             }
 
             float GetTargetNullProbability(wid_t target) const {
-                return GetForwardProbability(kAlignerNullWord, target);
+                return GetForwardProbability(kNullWord, target);
             }
 
             void Store(const std::string &path);

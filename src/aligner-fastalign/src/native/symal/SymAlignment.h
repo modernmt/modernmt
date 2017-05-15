@@ -6,7 +6,7 @@
 #define FASTALIGN_SYMMETRIZER_H
 
 #include <stddef.h>
-#include <mmt/sentence.h>
+#include <fastalign/alignment.h>
 
 namespace mmt {
     namespace fastalign {

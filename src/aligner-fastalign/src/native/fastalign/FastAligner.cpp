@@ -46,24 +46,32 @@ FastAligner::~FastAligner() {
     delete vocabulary;
 }
 
-alignment_t
-FastAligner::GetAlignment(const vector<wid_t> &source, const vector<wid_t> &target, SymmetrizationStrategy strategy) {
+alignment_t FastAligner::GetAlignment(const sentence_t &_source, const sentence_t &_target,
+                                      Symmetrization symmetrization) {
+    wordvec_t source, target;
+    vocabulary->Encode(_source, source);
+    vocabulary->Encode(_target, target);
+
+    return GetAlignment(source, target, symmetrization);
+}
+
+alignment_t FastAligner::GetAlignment(const wordvec_t &source, const wordvec_t &target, Symmetrization symmetrization) {
     alignment_t forward = forwardModel->ComputeAlignment(source, target);
     alignment_t backward = backwardModel->ComputeAlignment(source, target);
 
     SymAlignment symmetrizer(source.size(), target.size());
 
-    switch (strategy) {
-        case GrowDiagonalFinalAndStrategy:
+    switch (symmetrization) {
+        case GrowDiagonalFinalAnd:
             symmetrizer.Grow(forward, backward, true, true);
             break;
-        case GrowDiagonalStrategy:
+        case GrowDiagonal:
             symmetrizer.Grow(forward, backward, true, false);
             break;
-        case IntersectionStrategy:
+        case Intersection:
             symmetrizer.Intersection(forward, backward);
             break;
-        case UnionStrategy:
+        case Union:
             symmetrizer.Union(forward, backward);
             break;
     }
@@ -71,9 +79,22 @@ FastAligner::GetAlignment(const vector<wid_t> &source, const vector<wid_t> &targ
     return symmetrizer.ToAlignment();
 }
 
-void
-FastAligner::GetAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch, vector<alignment_t> &outAlignments,
-                           SymmetrizationStrategy strategy) {
+void FastAligner::GetAlignments(const std::vector<std::pair<sentence_t, sentence_t>> &_batch,
+                                std::vector<alignment_t> &outAlignments, Symmetrization symmetrization) {
+    vector<pair<wordvec_t, wordvec_t>> batch;
+    batch.resize(_batch.size());
+
+#pragma omp parallel for schedule(dynamic)
+    for (size_t i = 0; i < batch.size(); ++i) {
+        vocabulary->Encode(_batch[i].first, batch[i].first);
+        vocabulary->Encode(_batch[i].second, batch[i].second);
+    }
+
+    GetAlignments(batch, outAlignments, symmetrization);
+}
+
+void FastAligner::GetAlignments(const std::vector<std::pair<wordvec_t, wordvec_t>> &batch,
+                                std::vector<alignment_t> &outAlignments, Symmetrization symmetrization) {
     vector<alignment_t> forwards;
     vector<alignment_t> backwards;
 
@@ -98,17 +119,17 @@ FastAligner::GetAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &bat
         alignment_t &forward = forwards[i];
         alignment_t &backward = backwards[i];
 
-        switch (strategy) {
-            case GrowDiagonalFinalAndStrategy:
+        switch (symmetrization) {
+            case GrowDiagonalFinalAnd:
                 symal.Grow(forward, backward, true, true);
                 break;
-            case GrowDiagonalStrategy:
+            case GrowDiagonal:
                 symal.Grow(forward, backward, true, false);
                 break;
-            case IntersectionStrategy:
+            case Intersection:
                 symal.Intersection(forward, backward);
                 break;
-            case UnionStrategy:
+            case Union:
                 symal.Union(forward, backward);
                 break;
         }
@@ -116,22 +137,3 @@ FastAligner::GetAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &bat
         outAlignments[i] = symal.ToAlignment();
     }
 }
-
-alignment_t FastAligner::GetForwardAlignment(const vector<wid_t> &source, const vector<wid_t> &target) {
-    return forwardModel->ComputeAlignment(source, target);
-}
-
-void FastAligner::GetForwardAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch,
-                                       vector<alignment_t> &outAlignments) {
-    forwardModel->ComputeAlignments(batch, outAlignments);
-}
-
-alignment_t FastAligner::GetBackwardAlignment(const vector<wid_t> &source, const vector<wid_t> &target) {
-    return backwardModel->ComputeAlignment(source, target);
-}
-
-void FastAligner::GetBackwardAlignments(const vector<pair<vector<wid_t>, vector<wid_t>>> &batch,
-                                        vector<alignment_t> &outAlignments) {
-    backwardModel->ComputeAlignments(batch, outAlignments);
-}
-

@@ -32,7 +32,7 @@ namespace {
         string source_lang;
         string target_lang;
 
-        SymmetrizationStrategy strategy = GrowDiagonalFinalAndStrategy;
+        Symmetrization strategy = GrowDiagonalFinalAnd;
         size_t buffer_size = 100000;
     };
 } // namespace
@@ -72,7 +72,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
         args->target_lang = vm["target"].as<string>();
 
         if (vm.count("strategy"))
-            args->strategy = (SymmetrizationStrategy) vm["strategy"].as<size_t>();
+            args->strategy = (Symmetrization) vm["strategy"].as<size_t>();
 
         if (vm.count("buffer"))
             args->buffer_size = vm["buffer"].as<size_t>();
@@ -100,10 +100,10 @@ void printAlignment(vector<alignment_t> &alignments, ofstream &out) {
 
 
 
-void AlignCorpus(const Corpus &corpus, size_t buffer_size, SymmetrizationStrategy strategy, FastAligner &aligner) {
+void AlignCorpus(const Corpus &corpus, size_t buffer_size, Symmetrization strategy, FastAligner &aligner) {
     CorpusReader reader(corpus, aligner.vocabulary);
 
-    vector<pair<vector<wid_t>, vector<wid_t>>> batch;
+    vector<pair<wordvec_t, wordvec_t>> batch;
     vector<alignment_t> alignments;
 
     ofstream alignStream(corpus.GetOutputPath().c_str());

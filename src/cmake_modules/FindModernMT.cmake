@@ -5,13 +5,8 @@
 #  ModernMT_FOUND, whether all requested components has been found
 
 set(__MMT_MODULE_commons commons)
-set(__MMT_MODULE_fastalign aligner-fastalign)
-
 set(__MMT_INCLUDE_commons mmt/sentence.h)
-set(__MMT_INCLUDE_fastalign fastalign/FastAligner.h)
-
 set(__MMT_LIB_commons mmt_logging)
-set(__MMT_LIB_fastalign mmt_fastalign)
 
 set(ModernMT_SRC_DIR "${CMAKE_SOURCE_DIR}/../../..")
 set(ModernMT_SEARCH_HEADER_PATHS ${ModernMT_BUILD_DIR}/include)

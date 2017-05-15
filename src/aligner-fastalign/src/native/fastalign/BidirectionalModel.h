@@ -15,14 +15,14 @@
 namespace mmt {
     namespace fastalign {
 
-        typedef std::vector<std::unordered_map<wid_t, std::pair<float, float>>> bitable_t;
+        typedef std::vector<std::unordered_map<word_t, std::pair<float, float>>> bitable_t;
 
         class BidirectionalModel : public Model {
         public:
             BidirectionalModel(std::shared_ptr<bitable_t> table, bool forward, bool use_null,
                                bool favor_diagonal, double prob_align_null, double diagonal_tension);
 
-            inline double GetProbability(wid_t source, wid_t target) override {
+            inline double GetProbability(word_t source, word_t target) override {
                 if (is_reverse)
                     std::swap(source, target);
 
@@ -31,12 +31,12 @@ namespace mmt {
                 if (source >= table->size())
                     return kNullProbability;
 
-                std::unordered_map<wid_t, std::pair<float, float>> &row = table->at(source);
+                std::unordered_map<word_t, std::pair<float, float>> &row = table->at(source);
                 auto ptr = row.find(target);
                 return ptr == row.end() ? kNullProbability : (is_reverse ? ptr->second.second : ptr->second.first);
             }
 
-            inline void IncrementProbability(wid_t source, wid_t target, double amount) override {
+            inline void IncrementProbability(word_t source, word_t target, double amount) override {
                 // no-op
             }
 
