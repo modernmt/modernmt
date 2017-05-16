@@ -32,7 +32,7 @@ USER mmtuser
 
 RUN wget -qO- https://github.com/ModernMT/MMT/releases/download/v1.0/mmt-1.0-ubuntu.tar.gz | tar xvfz -
 
-RUN ./setup.py
+RUN vendor/compile
 
 # Make MMT example engine
 RUN ./mmt create en it examples/data/train
