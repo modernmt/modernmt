@@ -1,7 +1,6 @@
 package eu.modernmt.vocabulary.rocksdb;
 
 import eu.modernmt.vocabulary.Vocabulary;
-import eu.modernmt.vocabulary.VocabularyBuilder;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,14 +24,6 @@ public class RocksDBVocabulary implements Vocabulary {
             logger.error("Unable to load library 'mmt_vocabulary'", e);
             throw e;
         }
-    }
-
-    public static VocabularyBuilder newBuilder(File modelPath) {
-        return new RocksDBVocabularyBuilder(modelPath);
-    }
-
-    public static VocabularyBuilder newBuilder(File modelPath, int initialCapacity) {
-        return new RocksDBVocabularyBuilder(modelPath, initialCapacity);
     }
 
     private long nativeHandle;

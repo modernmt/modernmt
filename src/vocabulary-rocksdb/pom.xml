@@ -66,7 +66,6 @@
 
                                 <!-- All native classes -->
                                 <argument>eu.modernmt.vocabulary.rocksdb.RocksDBVocabulary</argument>
-                                <argument>eu.modernmt.vocabulary.rocksdb.RocksDBVocabularyBuilder</argument>
                             </arguments>
                         </configuration>
                     </execution>
