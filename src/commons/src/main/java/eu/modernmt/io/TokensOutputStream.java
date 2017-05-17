@@ -11,6 +11,14 @@ import java.util.Iterator;
  */
 public class TokensOutputStream implements Closeable {
 
+    public static String escapeWhitespaces(String string) {
+        return string.replace(' ', '\u00A0');
+    }
+
+    public static String deescapeWhitespaces(String string) {
+        return string.replace('\u00A0', ' ');
+    }
+
     public static String[] toTokensArray(Sentence sentence, boolean printTags, boolean printPlaceholders) {
         int size = printTags ? sentence.length() : sentence.getWords().length;
         String[] tokens = new String[size];
@@ -22,7 +30,7 @@ public class TokensOutputStream implements Closeable {
             Token token = iterator.next();
             String text = printPlaceholders ? token.getPlaceholder() : token.toString();
 
-            tokens[i++] = text.replace(' ', '\u00A0');
+            tokens[i++] = escapeWhitespaces(text);
         }
 
         return tokens;
@@ -36,7 +44,7 @@ public class TokensOutputStream implements Closeable {
             Token token = iterator.next();
             String text = printPlaceholders ? token.getPlaceholder() : token.toString();
 
-            builder.append(text.replace(' ', '\u00A0'));
+            builder.append(escapeWhitespaces(text));
 
             if (iterator.hasNext())
                 builder.append(' ');
@@ -45,24 +53,24 @@ public class TokensOutputStream implements Closeable {
         return builder.toString();
     }
 
-    private final UnixLineWriter writer;
+    private final LineWriter writer;
     private final boolean printTags;
     private final boolean printPlaceholders;
 
     public TokensOutputStream(File file, boolean append, boolean printTags, boolean printPlaceholders) throws FileNotFoundException {
-        this.writer = new UnixLineWriter(new FileOutputStream(file, append), DefaultCharset.get());
-        this.printTags = printTags;
-        this.printPlaceholders = printPlaceholders;
+        this(new UnixLineWriter(new FileOutputStream(file, append), DefaultCharset.get()), printTags, printPlaceholders);
     }
 
     public TokensOutputStream(OutputStream stream, boolean printTags, boolean printPlaceholders) {
-        this.writer = new UnixLineWriter(stream, DefaultCharset.get());
-        this.printTags = printTags;
-        this.printPlaceholders = printPlaceholders;
+        this(new UnixLineWriter(stream, DefaultCharset.get()), printTags, printPlaceholders);
     }
 
     public TokensOutputStream(Writer writer, boolean includeTags, boolean usePlaceholders) {
-        this.writer = new UnixLineWriter(writer);
+        this(new UnixLineWriter(writer), includeTags, usePlaceholders);
+    }
+
+    public TokensOutputStream(LineWriter writer, boolean includeTags, boolean usePlaceholders) {
+        this.writer = writer;
         this.printTags = includeTags;
         this.printPlaceholders = usePlaceholders;
     }

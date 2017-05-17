@@ -3,10 +3,12 @@
 //
 
 #include "javah/eu_modernmt_vocabulary_rocksdb_RocksDBVocabularyBuilder.h"
-#include <vocabulary/PersistentVocabulary.h>
+#include <string>
+#include <vector>
+#include <mmt/jniutil.h>
+#include <fstream>
 
-using namespace mmt;
-using namespace mmt::vocabulary;
+using namespace std;
 
 /*
  * Class:     eu_modernmt_vocabulary_rocksdb_RocksDBVocabularyBuilder
@@ -17,26 +19,25 @@ JNIEXPORT void JNICALL
 Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabularyBuilder_flush(JNIEnv *jvm, jobject jself, jobjectArray jkeys,
                                                                    jintArray jvalues,
                                                                    jint nextId, jstring jmodel) {
-    const char *model = jvm->GetStringUTFChars(jmodel, NULL);
-    PersistentVocabulary vocabulary(model, true);
-    jvm->ReleaseStringUTFChars(jmodel, model);
+    string model = jni_jstrtostr(jvm, jmodel);
 
     jsize length = jvm->GetArrayLength(jkeys);
     jint *values = jvm->GetIntArrayElements(jvalues, NULL);
 
+    vector<string> terms((size_t) nextId - 1000);
+
     for (jsize i = 0; i < length; i++) {
-        jstring jword = (jstring) jvm->GetObjectArrayElement(jkeys, i);
-        const char *word_chars = jvm->GetStringUTFChars(jword, NULL);
-        string word = word_chars;
-        jvm->ReleaseStringUTFChars(jword, word_chars);
-
-        wid_t id = (wid_t) values[i];
-
-        vocabulary.Put(word, id);
+        string term = jni_jstrtostr(jvm, (jstring) jvm->GetObjectArrayElement(jkeys, i));
+        terms[values[i] - 1000] = term;
     }
 
     jvm->ReleaseIntArrayElements(jvalues, values, 0);
 
-    vocabulary.ForceCompaction();
-    vocabulary.ResetId((wid_t) nextId);
+
+    int hole_index = 0;
+    ofstream output(model);
+    for (auto term = terms.begin(); term != terms.end(); ++term) {
+        string word = term->empty() ? ("____MISSING_WORD____" + to_string(hole_index++)) : *term;
+        output << word << '\n';
+    }
 }

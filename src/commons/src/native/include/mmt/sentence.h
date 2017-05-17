@@ -21,7 +21,7 @@ namespace mmt {
         word_t(wid_t id) : id(id) {};
     };
 
-    typedef std::vector<word_t> sentence_t;
+    typedef std::vector<wid_t> sentence_t;
 
     struct cscore_t {
         domain_t domain;

@@ -3,7 +3,7 @@
 //
 
 #include <string>
-#include <vocabulary/PersistentVocabulary.h>
+#include <Vocabulary.h>
 #include <mmt/jniutil.h>
 #include "javah/eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary.h"
 
@@ -11,7 +11,6 @@
 
 using namespace std;
 using namespace mmt;
-using namespace mmt::vocabulary;
 
 // Utils
 
@@ -78,7 +77,7 @@ static inline const jintArray EncodeIntLine(JNIEnv *jvm, vector<wid_t> &line) {
 JNIEXPORT jlong JNICALL
 Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_instantiate(JNIEnv *jvm, jobject jself, jstring jpath) {
     string path = jni_jstrtostr(jvm, jpath);
-    PersistentVocabulary *instance = new PersistentVocabulary(path);
+    Vocabulary *instance = new Vocabulary(path);
 
     return (jlong) instance;
 }
@@ -91,7 +90,7 @@ Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_instantiate(JNIEnv *jvm, j
 JNIEXPORT jlong JNICALL
 Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_dispose(JNIEnv *jvm, jobject jself, jlong ptr) {
     if (ptr != 0) {
-        PersistentVocabulary *instance = (PersistentVocabulary *) ptr;
+        Vocabulary *instance = (Vocabulary *) ptr;
         delete instance;
     }
 
@@ -131,7 +130,7 @@ Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_lookupLine(JNIEnv *jvm, jo
     vector<vector<string>> buffer;
     buffer.push_back(line);
 
-    self->Lookup(buffer, &output, putIfAbsent);
+    self->Lookup(buffer, output, putIfAbsent);
 
     return EncodeIntLine(jvm, output[0]);
 }
@@ -160,7 +159,7 @@ Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_lookupLines(JNIEnv *jvm, j
 
     // Lookup
     vector<vector<wid_t>> output;
-    self->Lookup(buffer, &output, putIfAbsent);
+    self->Lookup(buffer, output, putIfAbsent);
 
     // Encode result
     for (jsize i = 0; i < bufferSize; ++i)
@@ -178,7 +177,7 @@ Java_eu_modernmt_vocabulary_rocksdb_RocksDBVocabulary_reverseLookup(JNIEnv *jvm,
 
     string word;
 
-    if (self->ReverseLookup((wid_t) id, &word))
+    if (self->ReverseLookup((wid_t) id, word))
         return word.empty() ? NULL : jvm->NewStringUTF(word.data());
     else
         return NULL;

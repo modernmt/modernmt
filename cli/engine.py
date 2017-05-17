@@ -491,6 +491,12 @@ class MMTEngineBuilder:
                                                                                    roots=preprocessed_folder)
             cleaned_bicorpora = BilingualCorpus.list(cleaned_folder)
         else:
+            # TODO: una volta sola!!!
+            self._engine.training_preprocessor.process(
+                bilingual_corpora + monolingual_corpora,
+                preprocessed_folder,
+                (self._engine.data_path if self._split_trainingset else None),
+                log=logger.stream)
             processed_bicorpora, processed_monocorpora = self._engine.training_preprocessor.process(
                 bilingual_corpora + monolingual_corpora,
                 preprocessed_folder,

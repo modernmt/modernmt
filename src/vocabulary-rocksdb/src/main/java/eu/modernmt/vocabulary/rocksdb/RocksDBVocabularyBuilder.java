@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by davide on 01/09/16.
@@ -17,7 +18,7 @@ public class RocksDBVocabularyBuilder implements VocabularyBuilder {
     private final HashMap<String, Integer> vocabulary;
     private final File model;
 
-    private int idCounter = Vocabulary.VOCABULARY_WORD_ID_START;
+    private AtomicInteger idCounter = new AtomicInteger(Vocabulary.VOCABULARY_WORD_ID_START);
 
     RocksDBVocabularyBuilder(File model) {
         this(model, 1000000);
@@ -30,7 +31,7 @@ public class RocksDBVocabularyBuilder implements VocabularyBuilder {
 
     @Override
     public synchronized int add(String word) {
-        return vocabulary.computeIfAbsent(word, k -> idCounter++);
+        return vocabulary.computeIfAbsent(word, k -> idCounter.incrementAndGet() - 1);
     }
 
     @Override
@@ -39,7 +40,7 @@ public class RocksDBVocabularyBuilder implements VocabularyBuilder {
 
         for (int i = 0; i < line.length; i++) {
             String word = line[i];
-            result[i] = vocabulary.computeIfAbsent(word, k -> idCounter++);
+            result[i] = vocabulary.computeIfAbsent(word, k -> idCounter.incrementAndGet() - 1);
         }
 
         return result;
@@ -58,8 +59,8 @@ public class RocksDBVocabularyBuilder implements VocabularyBuilder {
 
     @Override
     public synchronized Vocabulary build() throws IOException {
-        if (!model.isDirectory())
-            FileUtils.forceMkdir(model);
+        if (!model.exists())
+            FileUtils.touch(model);
 
         String[] words = new String[vocabulary.size()];
         int[] ids = new int[vocabulary.size()];
@@ -73,7 +74,7 @@ public class RocksDBVocabularyBuilder implements VocabularyBuilder {
 
         vocabulary.clear();
 
-        flush(words, ids, idCounter, model.getAbsolutePath());
+        flush(words, ids, idCounter.get(), model.getAbsolutePath());
 
         return new RocksDBVocabulary(model);
     }

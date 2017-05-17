@@ -12,7 +12,7 @@ import eu.modernmt.training.PreprocessingPipeline;
 import eu.modernmt.training.partitioning.FilesCorporaPartition;
 import eu.modernmt.training.preprocessing.CorpusWriter;
 import eu.modernmt.training.preprocessing.PlainTextWriter;
-import eu.modernmt.training.preprocessing.VocabularyEncoderWriter;
+import eu.modernmt.training.preprocessing.TermsCollectorWriter;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -77,7 +77,7 @@ public class TrainingFacade {
         if (options.vocabulary == null)
             writer = new PlainTextWriter();
         else
-            writer = new VocabularyEncoderWriter(options.vocabulary);
+            writer = new TermsCollectorWriter(options.vocabulary);
 
         PreprocessingPipeline pipeline = new PreprocessingPipeline(mainPartition, sourceLanguage, targetLanguage, writer);
 

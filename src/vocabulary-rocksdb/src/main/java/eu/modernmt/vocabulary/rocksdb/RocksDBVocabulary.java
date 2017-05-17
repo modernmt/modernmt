@@ -38,9 +38,8 @@ public class RocksDBVocabulary implements Vocabulary {
     private long nativeHandle;
 
     public RocksDBVocabulary(File model) throws IOException {
-        if (!model.isDirectory())
-            FileUtils.forceMkdir(model);
-
+        if (!model.exists())
+            FileUtils.touch(model);
         this.nativeHandle = instantiate(model.getAbsolutePath());
     }
 
