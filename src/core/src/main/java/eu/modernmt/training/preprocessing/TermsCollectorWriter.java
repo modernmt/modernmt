@@ -10,7 +10,6 @@ import org.apache.commons.io.IOUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -53,7 +52,7 @@ public class TermsCollectorWriter extends CorpusWriter {
 
         String[] words = terms.keySet().toArray(new String[terms.size()]);
         // TODO: not necessary, but there is a bug here -> vocabulary order changes quality
-        Arrays.sort(words);
+        // Arrays.sort(words);
 
         UnixLineWriter writer = null;
 
