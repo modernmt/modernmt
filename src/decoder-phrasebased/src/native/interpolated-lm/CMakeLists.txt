@@ -54,10 +54,6 @@ if (OPENMP_FOUND)
     message(STATUS "Compiling with OpenMP")
 endif (OPENMP_FOUND)
 
-## ModernMT
-find_package(ModernMT REQUIRED COMPONENTS commons)
-include_directories(${ModernMT_INCLUDE_DIRS})
-
 #########
 ## Preparing target, recursively
 #########
@@ -72,14 +68,12 @@ add_subdirectory(kenlm)
 add_library(${PROJECT_NAME} SHARED
         ${TARGET_OBJECTS_util} ${TARGET_OBJECTS_kenlm}
         ${TARGET_OBJECTS_lm} ${TARGET_OBJECTS_db} ${TARGET_OBJECTS_corpus}
+        $<TARGET_OBJECTS:mmt_logging> $<TARGET_OBJECTS:mmt_vocabulary>
         ${SOURCE_FILES})
 
 #########
 ## Third-party libraries linking
 #########
-
-## ModernMT
-target_link_libraries(${PROJECT_NAME} ${ModernMT_LIBS})
 
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 target_link_libraries(${PROJECT_NAME} ${Rocksdb_LIBS})
@@ -95,7 +89,6 @@ endif (lzma_FOUND)
 if (OPENMP_FOUND)
     link_directories(${OpenMP_LIBRARY_DIR})
 endif (OPENMP_FOUND)
-target_link_libraries(${PROJECT_NAME} ${ModernMT_LIBS})
 
 #########
 ## Install targets

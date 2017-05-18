@@ -2,7 +2,7 @@
 // Created by david on 25.11.16.
 //
 
-#include <mmt/logging/Logger.h>
+#include "Logger.h"
 #include <jni.h>
 
 using namespace std;
@@ -39,7 +39,7 @@ void Logger::Initialize(void *_env) {
 
     jlogger_t *jlogger = new jlogger_t();
 
-    jlogger->_class = (jclass) env->NewGlobalRef(env->FindClass("eu/modernmt/logging/NativeLogger"));
+    jlogger->_class = (jclass) env->NewGlobalRef(env->FindClass("eu/modernmt/decoder/phrasebased/NativeLogger"));
     jlogger->createLoggerMethod = env->GetStaticMethodID(jlogger->_class, "createLogger", "(Ljava/lang/String;)I");
     jlogger->logMethod = env->GetStaticMethodID(jlogger->_class, "log", "(Ljava/lang/String;ILjava/lang/String;)V");
     env->GetJavaVM(&jlogger->jvm);

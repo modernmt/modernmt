@@ -40,7 +40,7 @@ set(SOURCE_FILES
 
 include_directories(${CMAKE_SOURCE_DIR}/suffixarray-phrasetable)
 
-add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
+add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES} $<TARGET_OBJECTS:mmt_logging> $<TARGET_OBJECTS:mmt_vocabulary>)
 
 file(GLOB executables executables/*.cpp)
 foreach (exefile ${executables})
@@ -64,11 +64,6 @@ install(TARGETS ${PROJECT_NAME}
 
 message(STATUS "Executables will be installed in ${CMAKE_INSTALL_PREFIX}/bin")
 message(STATUS "Libraries will be installed in ${CMAKE_INSTALL_PREFIX}/lib")
-
-## ModernMT
-find_package(ModernMT REQUIRED COMPONENTS commons)
-include_directories(${ModernMT_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} ${ModernMT_LIBS})
 
 ## Boost
 set(Boost_USE_STATIC_LIBS OFF)

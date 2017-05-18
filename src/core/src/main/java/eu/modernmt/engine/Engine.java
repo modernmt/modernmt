@@ -82,7 +82,7 @@ public class Engine implements Closeable {
         this.models = Paths.join(this.root, "models");
         this.logs = Paths.join(this.runtime, "logs");
 
-        this.vocabulary = new RocksDBVocabulary(Paths.join(this.models, "vocabulary"));
+        this.vocabulary = new RocksDBVocabulary(Paths.join(this.models, "decoder", "vocab.vb"));
         this.sourcePreprocessor = new Preprocessor(sourceLanguage, targetLanguage, vocabulary);
         this.targetPreprocessor = new Preprocessor(targetLanguage, sourceLanguage, vocabulary);
         this.postprocessor = new Postprocessor(sourceLanguage, targetLanguage, vocabulary);

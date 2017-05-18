@@ -1,4 +1,4 @@
-package eu.modernmt.logging;
+package eu.modernmt.decoder.phrasebased;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -9,11 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Created by davide on 27/12/16.
  */
-public class NativeLogger {
-
-    static {
-        System.loadLibrary("mmt_logging");
-    }
+class NativeLogger {
 
     private static final String NAME_PREFIX = "native.";
     private static final ConcurrentHashMap<String, Logger> loggers = new ConcurrentHashMap<>();

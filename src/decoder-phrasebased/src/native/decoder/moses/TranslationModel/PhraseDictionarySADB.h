@@ -7,7 +7,7 @@
 #pragma once
 
 #include "PhraseDictionary.h"
-#include "sapt/PhraseTable.h"
+#include <mmt/sapt/PhraseTable.h>
 #include <mmt/sentence.h>
 #include <mmt/IncrementalModel.h>
 #include "Hypothesis.h"

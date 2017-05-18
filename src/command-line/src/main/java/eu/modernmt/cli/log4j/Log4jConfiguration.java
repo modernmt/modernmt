@@ -1,6 +1,5 @@
 package eu.modernmt.cli.log4j;
 
-import eu.modernmt.logging.NativeLogger;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.Level;
@@ -45,8 +44,6 @@ public class Log4jConfiguration {
         FileUtils.write(file, config, false);
 
         System.setProperty("log4j.configurationFile", file.getAbsolutePath());
-
-        NativeLogger.initialize();
     }
 
     private static String loadConfig(Level level, File logsFolder) throws IOException {

@@ -79,7 +79,7 @@ namespace mmt {
              *
              * @return the list of internal incremental models
              */
-            virtual const vector<IncrementalModel *> &GetIncrementalModels() const = 0;
+            virtual const std::vector<IncrementalModel *> &GetIncrementalModels() const = 0;
 
             virtual ~MosesDecoder() {}
         };

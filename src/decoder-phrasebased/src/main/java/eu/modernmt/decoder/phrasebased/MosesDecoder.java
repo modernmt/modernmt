@@ -34,6 +34,8 @@ public class MosesDecoder implements Decoder, DataListenerProvider {
             logger.error("Unable to load library 'mmt_pbdecoder'", e);
             throw e;
         }
+
+        NativeLogger.initialize();
     }
 
     private final FeatureWeightsStorage storage;

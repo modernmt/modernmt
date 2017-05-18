@@ -25,8 +25,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <string>
 #include <vector>
 
-#include <ilm/InterpolatedLM.h>
-#include <ilm/CachedLM.h>
+#include <mmt/ilm/InterpolatedLM.h>
+#include <mmt/ilm/CachedLM.h>
 #include <mmt/IncrementalModel.h>
 
 #include "LM/SingleFactor.h"

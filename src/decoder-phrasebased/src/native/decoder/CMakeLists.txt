@@ -15,7 +15,9 @@ include_directories(moses)
 
 # Binaries
 
-add_library(${PROJECT_NAME} SHARED $<TARGET_OBJECTS:moses_moses> $<TARGET_OBJECTS:moses_kenlm_util> $<TARGET_OBJECTS:moses_java>)
+add_library(${PROJECT_NAME} SHARED $<TARGET_OBJECTS:moses_moses>
+        $<TARGET_OBJECTS:moses_kenlm_util> $<TARGET_OBJECTS:moses_java>
+        $<TARGET_OBJECTS:mmt_logging> $<TARGET_OBJECTS:mmt_vocabulary>)
 install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION lib)
 
 add_executable(moses-main executables/moses-main.cpp)
@@ -24,11 +26,6 @@ target_link_libraries(${PROJECT_NAME} mmt_ilm mmt_sapt)
 
 
 # External Libraries
-
-## ModernMT
-find_package(ModernMT REQUIRED COMPONENTS commons)
-include_directories(${ModernMT_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} ${ModernMT_LIBS})
 
 ## Boost
 set(Boost_USE_STATIC_LIBS OFF)
