@@ -128,6 +128,12 @@ class BilingualCorpus:
     def symlink(self, folder, name=None):
         raise NotImplementedError('Abstract method')
 
+    def reader(self, langs=None):
+        raise NotImplementedError('Abstract method')
+
+    def writer(self, langs=None):
+        raise NotImplementedError('Abstract method')
+
     def __str__(self):
         return self.name + '(' + ','.join(self.langs) + ')'
 
@@ -171,6 +177,64 @@ class _FileParallelCorpus(BilingualCorpus):
 
         return link
 
+    def writer(self, langs=None):
+        if langs is None:
+            langs = self.langs
+
+        class __w:
+            def __init__(self, files):
+                self._files = [open(f, 'wb') for f in files]
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                for f in self._files:
+                    f.close()
+
+            def writelines(self, *args):
+                for f, line in zip(self._files, args):
+                    f.write(line)
+
+        return __w([self.get_file(l) for l in langs])
+
+    def reader(self, langs=None):
+        if langs is None:
+            langs = self.langs
+
+        class __r:
+            def __init__(self, files):
+                self._files = [open(f, 'rb') for f in files]
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                for f in self._files:
+                    f.close()
+
+            def __iter__(self):
+                return self
+
+            def next(self):
+                lines = [f.readline() for f in self._files]
+
+                empty = True
+                for line in lines:
+                    if line:
+                        empty = False
+                        break
+                if empty:
+                    raise StopIteration
+
+                for line in lines:
+                    if not line:
+                        raise Exception('Files are not parallel')
+
+                return lines
+
+        return __r([self.get_file(l) for l in langs])
+
 
 class _TMXCorpus(BilingualCorpus):
     def __init__(self, name, f):
@@ -186,6 +250,12 @@ class _TMXCorpus(BilingualCorpus):
 
     def count_lines(self):
         raise NotImplementedError('Count lines not supported for TMX')
+
+    def writer(self, langs=None):
+        raise NotImplementedError()
+
+    def reader(self, langs=None):
+        raise NotImplementedError()
 
     def copy(self, folder, suffixes=None):
         suffix = suffixes['tmx'] if suffixes else ''

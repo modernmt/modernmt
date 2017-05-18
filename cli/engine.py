@@ -321,11 +321,11 @@ class MMTEngineBuilder:
 
             # run tm_cleanup step on the bilingual_corpora if required.
             # Obtain cleaned bicorpora
-            cleaned_bicorpora = self._run_step('tm_cleanup',
-                                               self._step_tm_cleanup,
-                                               logger=logger,
-                                               values=[bilingual_corpora],
-                                               delete_on_exit=delete_on_exit)
+            cleaned_tms = self._run_step('tm_cleanup',
+                                         self._step_tm_cleanup,
+                                         logger=logger,
+                                         values=[bilingual_corpora],
+                                         delete_on_exit=delete_on_exit)
 
             # run __db_map step (always: user can't skip it)
             # on the cleaned bicorpora and the original monocorpora;
@@ -333,12 +333,12 @@ class MMTEngineBuilder:
             base_bicorpora, base_monocorpora = self._run_step('__db_map',
                                                               self._step_init,
                                                               forced=True,
-                                                              values=[cleaned_bicorpora, monolingual_corpora],
+                                                              values=[cleaned_tms, monolingual_corpora],
                                                               delete_on_exit=delete_on_exit)
 
             # run preprocess step if required.
-            # Return processed bi and mono corpora and cleaned bicorpora
-            processed_bicorpora, processed_monocorpora, cleaned_bicorpora = \
+            # Return processed bi and mono corpora and filtered bicorpora
+            processed_bicorpora, processed_monocorpora, filtered_bicorpora = \
                 self._run_step('preprocess',
                                self._step_preprocess,
                                logger=logger,
@@ -352,18 +352,18 @@ class MMTEngineBuilder:
                                values=[base_bicorpora],
                                delete_on_exit=delete_on_exit)
 
-            # run aligner step cleaned_bicorpora if required.
+            # run aligner step filtered_bicorpora if required.
             _ = self._run_step('aligner',
                                self._step_aligner,
                                logger=logger,
-                               values=[cleaned_bicorpora],
+                               values=[filtered_bicorpora],
                                delete_on_exit=delete_on_exit)
 
-            # run tm step cleaned_bicorpora if required.
+            # run tm step filtered_bicorpora if required.
             _ = self._run_step('tm',
                                self._step_tm,
                                logger=logger,
-                               values=[cleaned_bicorpora],
+                               values=[filtered_bicorpora],
                                delete_on_exit=delete_on_exit)
 
             # run lm step on the joint list of processed_bicorpora and processed_monocorpora
@@ -469,7 +469,9 @@ class MMTEngineBuilder:
 
         # if skip is true, then we are in resume mode, so return the already existing results
         if skip:
-            bilingual_corpora, monolingual_corpora = BilingualCorpus.splitlist(self._engine.source_lang, self._engine.target_lang, roots=training_folder)
+            bilingual_corpora, monolingual_corpora = BilingualCorpus.splitlist(self._engine.source_lang,
+                                                                               self._engine.target_lang,
+                                                                               roots=training_folder)
         # else perform the baseline domains extraction and domain mapping, and return its result
         else:
             domains = self._engine.db.insert(bilingual_corpora)
@@ -480,18 +482,19 @@ class MMTEngineBuilder:
         return bilingual_corpora, monolingual_corpora
 
     # This step function performs the preprocessing of the domain-mapped corpora
-    def _step_preprocess(self, bilingual_corpora, monolingual_corpora, _, skip=False, logger=None, delete_on_exit=False):
+    def _step_preprocess(self, bilingual_corpora, monolingual_corpora, _, skip=False, logger=None,
+                         delete_on_exit=False):
         # TODO: clean up mess
         _preprocessed_folder = self._get_tempdir('__preprocessed')
         preprocessed_folder = self._get_tempdir('preprocessed')
-        cleaned_folder = self._get_tempdir('clean_corpora')
+        filtered_folder = self._get_tempdir('filtered_corpora')
 
         # if skip is true, then we are in resume mode, so return the already existing results
         if skip:
             processed_bicorpora, processed_monocorpora = BilingualCorpus.splitlist(self._engine.source_lang,
                                                                                    self._engine.target_lang,
                                                                                    roots=preprocessed_folder)
-            cleaned_bicorpora = BilingualCorpus.list(cleaned_folder)
+            filtered_bicorpora = BilingualCorpus.list(filtered_folder)
         else:
             # TODO: clean up mess
             processed_bicorpora, processed_monocorpora = self._engine.training_preprocessor.process(
@@ -500,8 +503,7 @@ class MMTEngineBuilder:
                 (self._engine.data_path if self._split_trainingset else None),
                 log=logger.stream)
 
-            cleaned_bicorpora = self._engine.training_preprocessor.clean(
-                processed_bicorpora, cleaned_folder)
+            filtered_bicorpora = self._engine.training_preprocessor.filter(processed_bicorpora, filtered_folder)
 
             # TODO: clean up mess
             for corpus in (processed_bicorpora + processed_monocorpora):
@@ -516,7 +518,7 @@ class MMTEngineBuilder:
                                                                                    self._engine.target_lang,
                                                                                    roots=preprocessed_folder)
 
-        return processed_bicorpora, processed_monocorpora, cleaned_bicorpora
+        return processed_bicorpora, processed_monocorpora, filtered_bicorpora
 
     # This step function performs the context analyzer training with the base corpora
     def _step_context_analyzer(self, corpora, skip=False, logger=None, delete_on_exit=False):

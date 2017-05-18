@@ -5,24 +5,36 @@ from HTMLParser import HTMLParser
 
 import cli
 from cli import mmt_javamain
-from cli.libs import multithread, fileutils, shell
+from cli.libs import fileutils, shell
 from cli.mt import BilingualCorpus
 
 __author__ = 'Davide Caroselli'
 
 
-def _pool_exec(function, jobs):
-    if len(jobs) < 1:
-        return
+def _TrainingPreprocessor_filter_file(corpus, dest_folder, langs, min_thr, max_thr, ratio_thr):
+    dest_corpus = BilingualCorpus.make_parallel(corpus.name, dest_folder, corpus.langs)
 
-    workers = min(multiprocessing.cpu_count(), len(jobs))
-    pool = multithread.Pool(workers)
+    regex = re.compile('\s+')
 
-    try:
-        aync_jobs = [pool.apply_async(function, job) for job in jobs]
-        return [job.get() for job in aync_jobs]
-    finally:
-        pool.terminate()
+    def _tok(line):
+        return filter(lambda x: x, regex.split(line))
+
+    with corpus.reader(langs) as reader:
+        with dest_corpus.writer(langs) as writer:
+            for source, target in reader:
+                src_length = len(_tok(source))
+                trg_length = len(_tok(target))
+
+                if src_length > max_thr or trg_length > max_thr:
+                    continue
+                if src_length < min_thr or trg_length < min_thr:
+                    continue
+
+                ratio = float(max(src_length, trg_length)) / float(min(src_length, trg_length))
+                if ratio > ratio_thr:
+                    continue
+
+                writer.writelines(source, target)
 
 
 class Tokenizer:
@@ -92,7 +104,7 @@ class TMCleaner:
         mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')  # e.g. 4015976448
         mem_mb = mem_bytes / (1024. ** 2)  # e.g. 3.74
 
-        extended_heap_mb = int(mem_mb*90/100)
+        extended_heap_mb = int(mem_mb * 90 / 100)
 
         args = ['-s', self._source_lang, '-t', self._target_lang, '--output', output_path, '--input']
 
@@ -115,12 +127,9 @@ class TrainingPreprocessor:
         self._source_lang = source_lang
         self._target_lang = target_lang
 
-        self._ratio = clean_ratio  # injected
-        self._min = clean_min  # injected
-        self._max = clean_max  # injected
-
-        # TODO: this can be a python native implementation
-        self._cleaner_script = os.path.join(cli.PYOPT_DIR, 'clean-corpus-n-ratio.perl')
+        self._ratio = clean_ratio
+        self._min = clean_min
+        self._max = clean_max
 
         self._java_mainclass = 'eu.modernmt.cli.TrainingPipelineMain'
         self._vb = vocabulary
@@ -148,22 +157,24 @@ class TrainingPreprocessor:
 
         return BilingualCorpus.splitlist(self._source_lang, self._target_lang, roots=output_path)
 
-    def clean(self, corpora, dest_folder):
-        langs = (self._source_lang, self._target_lang)
-
-        _pool_exec(self._clean_file, [(corpus, dest_folder, langs) for corpus in corpora])
-        return BilingualCorpus.list(dest_folder)
-
-    def _clean_file(self, source, dest_folder, langs):
+    def filter(self, corpora, dest_folder):
         if not os.path.isdir(dest_folder):
             fileutils.makedirs(dest_folder, exist_ok=True)
 
-        input_folder = os.path.join(source.get_folder(), source.name)
-        output_folder = os.path.join(dest_folder, source.name)
+        langs = (self._source_lang, self._target_lang)
 
-        command = ['perl', self._cleaner_script, '-ratio', str(self._ratio), input_folder, langs[0], langs[1],
-                   output_folder, str(self._min), str(self._max)]
-        shell.execute(command, stdout=shell.DEVNULL, stderr=shell.DEVNULL)
+        workers = min(multiprocessing.cpu_count(), len(corpora))
+        pool = multiprocessing.Pool(workers)
+
+        try:
+            jobs = [(corpus, dest_folder, langs, self._min, self._max, self._ratio) for corpus in corpora]
+            aync_jobs = [pool.apply_async(_TrainingPreprocessor_filter_file, job) for job in jobs]
+            for job in aync_jobs:
+                job.get()
+        finally:
+            pool.terminate()
+
+        return BilingualCorpus.list(dest_folder)
 
 
 class XMLEncoder:
