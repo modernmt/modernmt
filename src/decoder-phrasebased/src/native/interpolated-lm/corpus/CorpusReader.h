@@ -9,6 +9,7 @@
 #include <lm/LM.h>
 #include <memory>
 #include <sstream>
+#include <mmt/vocabulary/Vocabulary.h>
 
 using namespace std;
 
@@ -17,25 +18,16 @@ namespace mmt {
 
         class CorpusReader {
         public:
-            CorpusReader(const string &corpus);
+            CorpusReader(Vocabulary &vocabulary, const string &filename);
 
-            CorpusReader(istream *stream);
+            CorpusReader(Vocabulary &vocabulary, istream *stream);
 
-            bool Read(vector <wid_t> &outSentence);
-
-            static inline void ParseLine(const string &line, vector <wid_t> &output) {
-                output.clear();
-
-                std::stringstream stream(line);
-                wid_t word;
-
-                while (stream >> word)
-                    output.push_back(word);
-            }
+            bool Read(vector<wid_t> &outSentence);
 
         private:
             bool drained;
-            shared_ptr <istream> input;
+            shared_ptr<istream> input;
+            Vocabulary &vb;
         };
 
     }

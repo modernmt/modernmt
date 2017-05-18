@@ -26,6 +26,7 @@ namespace {
     struct args_t {
         string model_path;
         string input_path;
+        string vocabulary_path;
         uint8_t order = 0x5;
 
         size_t buffer_size = 100000;
@@ -41,6 +42,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
             ("help,h", "print this help message")
             ("model,m", po::value<string>()->required(), "output model path")
             ("input,i", po::value<string>()->required(), "input folder with input corpora")
+            ("vocabulary,v", po::value<string>()->required(), "vocabulary file")
             ("order,o", po::value<size_t>(), "the language model order (default is 5)")
             ("buffer,b", po::value<size_t>(), "size of the buffer expressed in number of n-grams");
 
@@ -57,6 +59,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
 
         args->model_path = vm["model"].as<string>();
         args->input_path = vm["input"].as<string>();
+        args->vocabulary_path = vm["vocabulary"].as<string>();
 
         if (vm.count("buffer"))
             args->buffer_size = vm["buffer"].as<size_t>();
@@ -93,10 +96,10 @@ double GetTime() {
     return (double) time.tv_sec + ((double) time.tv_usec / 1000000.);
 }
 
-void LoadCorpus(const string &corpus, NGramStorage &storage, uint8_t order, size_t buffer_size) {
+void LoadCorpus(Vocabulary &vb, const string &corpus, NGramStorage &storage, uint8_t order, size_t buffer_size) {
     domain_t domain = (domain_t) stoi(fs::path(corpus).stem().string());
 
-    CorpusReader reader(corpus);
+    CorpusReader reader(vb, corpus);
     NGramBatch batch(order, buffer_size);
     size_t batches=1;
     vector<wid_t> sentence;
@@ -138,6 +141,8 @@ int main(int argc, const char *argv[]) {
     if (!fs::is_directory(args.model_path))
         fs::create_directories(args.model_path);
 
+    Vocabulary vb(args.vocabulary_path, true);
+
     vector<string> corpora;
     ListCorpora(args.input_path, corpora);
 
@@ -147,7 +152,7 @@ int main(int argc, const char *argv[]) {
     for (size_t i = 0; i < corpora.size(); ++i) {
         string &corpus = corpora[i];
         double begin = GetTime();
-        LoadCorpus(corpus, storage, args.order, args.buffer_size);
+        LoadCorpus(vb, corpus, storage, args.order, args.buffer_size);
         double elapsed = GetTime() - begin;
         cout << "Corpus " << corpus << " DONE in " << elapsed << "s" << endl;
     }

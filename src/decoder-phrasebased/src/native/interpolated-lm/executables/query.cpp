@@ -22,6 +22,7 @@ namespace {
         bool slm_only = false;
         context_t context_map;
         string model_path;
+        string vocabulary_path;
         uint8_t order = 5;
     };
 } // namespace
@@ -58,6 +59,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
     options.add_options()
             ("help,h", "print this help message")
             ("model", po::value<string>()->required(), "InterpolatedLM model path")
+            ("vocabulary,v", po::value<string>()->required(), "vocabulary file")
             ("context,c", po::value<string>(), "context map in the format <id>:<w>[,<id>:<w>]")
             ("alm-only", "use AdaptiveLM only")
             ("slm-only", "use StaticLM only")
@@ -83,6 +85,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
         po::notify(vm);
 
         args->model_path = vm["model"].as<string>();
+        args->vocabulary_path = vm["vocabulary"].as<string>();
 
         if (vm.count("context")) {
             if (!ParseContextMap(vm["context"].as<string>(), args->context_map))
@@ -120,10 +123,11 @@ int main(int argc, const char *argv[]) {
     if (args.slm_only)
         options.adaptivity_ratio = 0.f;
 
+    Vocabulary vb(args.vocabulary_path, true);
     InterpolatedLM lm(args.model_path, options);
     cerr << "Model loaded." << endl;
 
-    CorpusReader reader(&cin);
+    CorpusReader reader(vb, &cin);
     vector<wid_t> line;
 
     size_t word_count = 0;

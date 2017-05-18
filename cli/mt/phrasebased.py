@@ -47,14 +47,8 @@ class Vocabulary:
     def model(self):
         return self._model
 
-    def encode_file(self, source, dest):
-        command = [self._encode_bin, '-v', self._model]
-
-        with open(source, 'r') as source_stream:
-            with open(dest, 'wb') as dest_stream:
-                shell.execute(command, stdin=source_stream, stdout=dest_stream)
-    # def get_encode_command(self, input_path):
-    #     return [self._encode_bin, '-v', self._model, '-i', input_path]
+    def get_encode_command(self, input_path):
+        return [self._encode_bin, '-v', self._model, '-i', input_path]
 
 
 class MosesFeature:
@@ -106,21 +100,24 @@ class InterpolatedLM(MosesFeature):
         # Train static LM
         static_lm_model = os.path.join(self._model, 'background.slm')
         static_lm_wdir = os.path.join(working_dir, 'slm.temp')
+        static_lm_corpora = os.path.join(static_lm_wdir, 'corpora')
 
         fileutils.makedirs(static_lm_wdir, exist_ok=True)
+        fileutils.makedirs(static_lm_corpora, exist_ok=True)
 
-        merged_corpus = os.path.join(working_dir, 'merged_corpus')
-        fileutils.merge([corpus.get_file(lang) for corpus in corpora], merged_corpus)
+        for corpus in corpora:
+            f = corpus.get_file(lang)
+            os.symlink(f, os.path.join(static_lm_corpora, corpus.name + '.' + lang))
 
-        command = [self._create_slm_bin, '--discount-fallback', '-o', str(self._order),
-                   '-a', str(self._compression), '-q', str(self._quantization), '--type', 'trie',
-                   '--model', static_lm_model,
-                   '-T', static_lm_wdir]
+        merge_command = self._vb.get_encode_command(static_lm_corpora)
+        slm_command = [self._create_slm_bin, '--discount-fallback', '-o', str(self._order),
+                       '-a', str(self._compression), '-q', str(self._quantization), '--type', 'trie',
+                       '--model', static_lm_model,
+                       '-T', static_lm_wdir]
         if self._order > 2 and self._prune:
-            command += ['--prune', '0', '1', '2']
+            slm_command += ['--prune', '0', '1', '2']
 
-        with open(merged_corpus) as stdin:
-            shell.execute(command, stdin=stdin, stdout=log, stderr=log)
+        shell.execute_pipe([merge_command, slm_command], stdout=log, stderr=log)
 
         # Create AdaptiveLM training folder
         alm_train_folder = os.path.join(working_dir, 'alm_train')
@@ -133,7 +130,8 @@ class InterpolatedLM(MosesFeature):
         adaptive_lm_model = os.path.join(self._model, 'foreground.alm')
         fileutils.makedirs(adaptive_lm_model, exist_ok=True)
 
-        command = [self._create_alm_bin, '-m', adaptive_lm_model, '-i', alm_train_folder, '-b', '50000000']
+        command = [self._create_alm_bin, '-m', adaptive_lm_model, '-i', alm_train_folder,
+                   '-b', '50000000', '-v', self._vb.model]
         shell.execute(command, stdout=log, stderr=log)
 
     def get_iniline(self, base_path):

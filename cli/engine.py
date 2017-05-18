@@ -484,8 +484,6 @@ class MMTEngineBuilder:
     # This step function performs the preprocessing of the domain-mapped corpora
     def _step_preprocess(self, bilingual_corpora, monolingual_corpora, _, skip=False, logger=None,
                          delete_on_exit=False):
-        # TODO: clean up mess
-        _preprocessed_folder = self._get_tempdir('__preprocessed')
         preprocessed_folder = self._get_tempdir('preprocessed')
         filtered_folder = self._get_tempdir('filtered_corpora')
 
@@ -496,27 +494,13 @@ class MMTEngineBuilder:
                                                                                    roots=preprocessed_folder)
             filtered_bicorpora = BilingualCorpus.list(filtered_folder)
         else:
-            # TODO: clean up mess
             processed_bicorpora, processed_monocorpora = self._engine.training_preprocessor.process(
                 bilingual_corpora + monolingual_corpora,
-                _preprocessed_folder,
+                preprocessed_folder,
                 (self._engine.data_path if self._split_trainingset else None),
                 log=logger.stream)
 
             filtered_bicorpora = self._engine.training_preprocessor.filter(processed_bicorpora, filtered_folder)
-
-            # TODO: clean up mess
-            for corpus in (processed_bicorpora + processed_monocorpora):
-                for lang in corpus.langs:
-                    source = corpus.get_file(lang)
-                    dest = os.path.join(preprocessed_folder, corpus.name + '.' + lang)
-
-                    self._engine.moses.vb.encode_file(source, dest)
-
-            # TODO: clean up mess
-            processed_bicorpora, processed_monocorpora = BilingualCorpus.splitlist(self._engine.source_lang,
-                                                                                   self._engine.target_lang,
-                                                                                   roots=preprocessed_folder)
 
         return processed_bicorpora, processed_monocorpora, filtered_bicorpora
 

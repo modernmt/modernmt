@@ -5,17 +5,28 @@
 #include "CorpusReader.h"
 #include <fstream>
 
+using namespace mmt;
 using namespace mmt::ilm;
 
 struct noop {
     void operator()(...) const {}
 };
 
-CorpusReader::CorpusReader(const string &corpus) : drained(false) {
+inline void ParseLine(Vocabulary &vb, const string &line, vector<wid_t> &output) {
+    output.clear();
+
+    std::stringstream stream(line);
+    string word;
+
+    while (stream >> word)
+        output.push_back(vb.Lookup(word, false));
+}
+
+CorpusReader::CorpusReader(Vocabulary &vocabulary, const string &corpus) : drained(false), vb(vocabulary) {
     input.reset(new ifstream(corpus.c_str()));
 }
 
-CorpusReader::CorpusReader(istream *stream) : drained(false) {
+CorpusReader::CorpusReader(Vocabulary &vocabulary, istream *stream) : drained(false), vb(vocabulary) {
     input.reset(stream, noop());
 }
 
@@ -29,7 +40,7 @@ bool CorpusReader::Read(vector<wid_t> &outSentence) {
         return false;
     }
 
-    ParseLine(line, outSentence);
+    ParseLine(vb, line, outSentence);
 
     return true;
 }

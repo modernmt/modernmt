@@ -3,7 +3,6 @@ import os
 import re
 from HTMLParser import HTMLParser
 
-import cli
 from cli import mmt_javamain
 from cli.libs import fileutils, shell
 from cli.mt import BilingualCorpus
