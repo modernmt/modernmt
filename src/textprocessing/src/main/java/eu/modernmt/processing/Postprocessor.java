@@ -3,14 +3,15 @@ package eu.modernmt.processing;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.builder.XMLPipelineBuilder;
 import eu.modernmt.processing.concurrent.PipelineExecutor;
-import eu.modernmt.processing.vocabulary.VocabularyLookup;
-import eu.modernmt.vocabulary.Vocabulary;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -21,54 +22,37 @@ public class Postprocessor implements Closeable {
     private static final int DEFAULT_THREADS = Runtime.getRuntime().availableProcessors();
 
     private final PipelineExecutor<Translation, Void> executor;
-    private final Vocabulary vocabulary;
 
     public Postprocessor(Locale targetLanguage) throws IOException {
-        this(null, targetLanguage, null, DEFAULT_THREADS, null);
+        this(null, targetLanguage, DEFAULT_THREADS, null);
     }
 
     public Postprocessor(Locale sourceLanguage, Locale targetLanguage) throws IOException {
-        this(sourceLanguage, targetLanguage, null, DEFAULT_THREADS, null);
+        this(sourceLanguage, targetLanguage, DEFAULT_THREADS, null);
     }
 
-    public Postprocessor(Locale sourceLanguage, Locale targetLanguage, Vocabulary vocabulary) throws IOException {
-        this(sourceLanguage, targetLanguage, vocabulary, DEFAULT_THREADS, null);
-    }
-
-    public Postprocessor(Locale sourceLanguage, Locale targetLanguage, Vocabulary vocabulary, int threads, XMLPipelineBuilder<Translation, Void> builder) throws IOException {
+    public Postprocessor(Locale sourceLanguage, Locale targetLanguage, int threads, XMLPipelineBuilder<Translation, Void> builder) throws IOException {
         if (builder == null)
             builder = getDefaultBuilder();
 
         this.executor = new PipelineExecutor<>(sourceLanguage, targetLanguage, builder, threads);
-        this.vocabulary = vocabulary;
     }
 
     @SuppressWarnings("unchecked")
     public void process(List<? extends Translation> translations) throws ProcessingException {
-        this.executor.process((Collection<Translation>) translations, getMetadata());
+        this.executor.process((Collection<Translation>) translations, null);
     }
 
     public void process(Translation[] translation) throws ProcessingException {
-        this.executor.process(Arrays.asList(translation), getMetadata());
+        this.executor.process(Arrays.asList(translation), null);
     }
 
     public void process(Translation translation) throws ProcessingException {
-        this.executor.process(translation, getMetadata());
+        this.executor.process(translation, null);
     }
 
     public void process(PipelineInputStream<Translation> input) throws ProcessingException {
-        this.executor.process(input, null, getMetadata());
-    }
-
-    private HashMap<String, Object> getMetadata() {
-        HashMap<String, Object> metadata = null;
-
-        if (vocabulary != null) {
-            metadata = new HashMap<>();
-            metadata.put(VocabularyLookup.KEY_VOCABULARY, vocabulary);
-        }
-
-        return metadata;
+        this.executor.process(input, null, null);
     }
 
     @Override

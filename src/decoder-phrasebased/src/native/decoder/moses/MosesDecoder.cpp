@@ -18,16 +18,102 @@ using namespace std;
 using namespace mmt;
 using namespace mmt::decoder;
 
+inline void Explode(const string &text, vector<string> &output) {
+    output.clear();
+    stringstream inText(text);
+
+    for (string word; inText >> word;)
+        output.push_back(word);
+}
+
+inline void Explode(const string &text, vector<wid_t> &output) {
+    output.clear();
+    stringstream inText(text);
+
+    for (wid_t word; inText >> word;)
+        output.push_back(word);
+}
+
+inline void MapOOVs(vector<wid_t> &sentence, const vector<string> &tokens, unordered_map<wid_t, string> &oovs) {
+    wid_t overflowId = (wid_t) -1;
+
+    for (size_t i = 0; i < sentence.size(); ++i) {
+        if (sentence[i] == kVocabularyUnknownWord) {
+            wid_t id = overflowId--;
+            sentence[i] = id;
+            oovs[id] = tokens[i];
+        }
+    }
+}
+
+inline void RestoreOOVs(const vector<wid_t> &sentence, vector<string> &tokens,
+                        const unordered_map<wid_t, string> &oovs) {
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        if (tokens[i].empty()) {
+            auto oov = oovs.find(sentence[i]);
+
+            if (oov != oovs.end())
+                tokens[i] = oov->second;
+        }
+    }
+}
+
+inline string Join(const vector<string> &sentence) {
+    stringstream outText;
+    for (size_t i = 0; i < sentence.size(); ++i) {
+        if (i > 0)
+            outText << ' ';
+        outText << sentence[i];
+    }
+
+    return outText.str();
+}
+
+inline string Join(const vector<wid_t> &sentence) {
+    stringstream outText;
+    for (size_t i = 0; i < sentence.size(); ++i) {
+        if (i > 0)
+            outText << ' ';
+        outText << sentence[i];
+    }
+
+    return outText.str();
+}
+
+inline string EncodeText(Vocabulary &vb, const string &text, unordered_map<wid_t, string> &oovs) {
+    vector<string> tokens;
+    Explode(text, tokens);
+
+    vector<wid_t> sentence;
+    vb.Lookup(tokens, sentence, false);
+
+    MapOOVs(sentence, tokens, oovs);
+
+    return Join(sentence);
+}
+
+inline string DecodeText(Vocabulary &vb, const string &text, const unordered_map<wid_t, string> &oovs) {
+    vector<wid_t> sentence;
+    Explode(text, sentence);
+
+    vector<string> tokens;
+    vb.ReverseLookup(sentence, tokens);
+
+    RestoreOOVs(sentence, tokens, oovs);
+
+    return Join(tokens);
+}
+
 namespace mmt {
     namespace decoder {
 
         class MosesDecoderImpl : public MosesDecoder {
             std::vector<feature_t> m_features;
             std::vector<IncrementalModel *> m_incrementalModels;
+            Vocabulary vb;
 
         public:
-
-            MosesDecoderImpl(Moses::Parameter &param);
+            MosesDecoderImpl(Moses::Parameter &param, const string &vocabularyPath);
 
             virtual std::vector<feature_t> getFeatures() override;
 
@@ -45,7 +131,8 @@ namespace mmt {
     }
 }
 
-MosesDecoder *MosesDecoder::createInstance(const char *inifile) {
+MosesDecoder *MosesDecoder::createInstance(const std::string &inifilePath, const std::string &vocabularyPath) {
+    const char *inifile = inifilePath.c_str();
     const char *argv[2] = {"-f", inifile};
 
     Moses::Parameter params;
@@ -58,10 +145,10 @@ MosesDecoder *MosesDecoder::createInstance(const char *inifile) {
     if (!Moses::StaticData::LoadDataStatic(&params, "moses"))
         return NULL;
 
-    return new MosesDecoderImpl(params);
+    return new MosesDecoderImpl(params, vocabularyPath);
 }
 
-MosesDecoderImpl::MosesDecoderImpl(Moses::Parameter &param) : m_features() {
+MosesDecoderImpl::MosesDecoderImpl(Moses::Parameter &param, const string &vocabularyPath) : vb(vocabularyPath) {
     const std::vector<const Moses::StatelessFeatureFunction *> &slf = Moses::StatelessFeatureFunction::GetStatelessFeatureFunctions();
     for (size_t i = 0; i < slf.size(); ++i) {
         const Moses::FeatureFunction *feature = slf[i];
@@ -119,8 +206,29 @@ void MosesDecoderImpl::setDefaultFeatureWeights(const std::map<std::string, std:
     Moses::StaticData::InstanceNonConst().SetAllWeights(Moses::ScoreComponentCollection::FromWeightMap(featureWeights));
 }
 
-static void
-DoTranslate(translation_request_t const &request, boost::shared_ptr<Moses::ContextScope> scope, translation_t &result) {
+translation_t MosesDecoderImpl::translate(const std::string &text,
+                                          const std::map<std::string, float> *translationContext,
+                                          size_t nbestListSize) {
+    boost::shared_ptr<Moses::ContextScope> scope(
+            new Moses::ContextScope(Moses::StaticData::Instance().GetAllWeightsNew()));
+
+    if (translationContext != NULL) {
+        boost::shared_ptr<std::map<std::string, float>> cw(new std::map<std::string, float>(*translationContext));
+        scope->SetContextWeights(cw);
+    }
+
+    unordered_map<wid_t, string> oovs;
+
+    // Execute translation request
+
+    translation_request_t request;
+    translation_t response;
+
+    request.sourceSent = EncodeText(vb, text, oovs);
+    request.nBestListSize = nbestListSize;
+
+    // Translate
+
     boost::shared_ptr<Moses::AllOptions> opts(new Moses::AllOptions());
     *opts = *Moses::StaticData::Instance().options();
 
@@ -140,34 +248,28 @@ DoTranslate(translation_request_t const &request, boost::shared_ptr<Moses::Conte
         Moses::Manager manager(ttask);
         manager.Decode();
 
-        result.text = manager.GetBestTranslation();
-        result.alignment = manager.GetWordAlignment();
+        response.text = DecodeText(vb, manager.GetBestTranslation(), oovs);
+        response.alignment = manager.GetWordAlignment();
 
-        if (manager.GetSource().options()->nbest.nbest_size)
-            manager.OutputNBest(result.hypotheses);
+        if (manager.GetSource().options()->nbest.nbest_size) {
+            manager.OutputNBest(response.hypotheses);
+
+            std::vector<hypothesis_t> &hypotheses = response.hypotheses;
+            vector<vector<wid_t>> batch(hypotheses.size());
+
+            for (size_t i = 0; i < hypotheses.size(); ++i)
+                Explode(hypotheses[i].text, batch[i]);
+
+            vector<vector<string>> output;
+            vb.ReverseLookup(batch, output);
+
+            for (size_t i = 0; i < hypotheses.size(); ++i) {
+                RestoreOOVs(batch[i], output[i], oovs);
+                hypotheses[i].text = Join(output[i]);
+            }
+
+        }
     }
-}
-
-translation_t MosesDecoderImpl::translate(const std::string &text,
-                                          const std::map<std::string, float> *translationContext,
-                                          size_t nbestListSize) {
-    boost::shared_ptr<Moses::ContextScope> scope(
-            new Moses::ContextScope(Moses::StaticData::Instance().GetAllWeightsNew()));
-
-    if (translationContext != NULL) {
-        boost::shared_ptr<std::map<std::string, float>> cw(new std::map<std::string, float>(*translationContext));
-        scope->SetContextWeights(cw);
-    }
-
-    // Execute translation request
-
-    translation_request_t request;
-    translation_t response;
-
-    request.sourceSent = text;
-    request.nBestListSize = nbestListSize;
-
-    DoTranslate(request, scope, response);
 
     return response;
 }

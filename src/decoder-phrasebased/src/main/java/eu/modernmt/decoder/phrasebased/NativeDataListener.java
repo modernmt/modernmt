@@ -20,14 +20,14 @@ class NativeDataListener implements DataListener {
 
     @Override
     public void onDataReceived(TranslationUnit unit) throws Exception {
-        int[] sourceSentence = XUtils.encode(unit.sourceSentence.getWords());
-        int[] targetSentence = XUtils.encode(unit.targetSentence.getWords());
-        int[] alignment = XUtils.encode(unit.alignment);
+        String sourceSentence = XUtils.encodeSentence(unit.sourceSentence);
+        String targetSentence = XUtils.encodeSentence(unit.targetSentence);
+        int[] alignment = XUtils.encodeAlignment(unit.alignment);
 
         updateReceived(unit.channel, unit.channelPosition, unit.domain, sourceSentence, targetSentence, alignment);
     }
 
-    private native void updateReceived(short channel, long channelPosition, int domain, int[] sourceSentence, int[] targetSentence, int[] alignment);
+    private native void updateReceived(short channel, long channelPosition, int domain, String sourceSentence, String targetSentence, int[] alignment);
 
     @Override
     public void onDelete(Deletion deletion) throws Exception {

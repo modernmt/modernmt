@@ -65,8 +65,8 @@ class DataBatch {
             this.currentPositions.put(channel.getId(), offset);
         }
 
-        List<Sentence> sourceSentences = sourcePreprocessor.process(rawSources, true);
-        List<Sentence> targetSentences = targetPreprocessor.process(rawTargets, true);
+        List<Sentence> sourceSentences = sourcePreprocessor.process(rawSources);
+        List<Sentence> targetSentences = targetPreprocessor.process(rawTargets);
 
         Alignment[] alignments = aligner.getAlignments(sourceSentences, targetSentences);
 

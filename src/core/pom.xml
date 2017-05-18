@@ -20,11 +20,6 @@
     <dependencies>
         <dependency>
             <groupId>eu.modernmt</groupId>
-            <artifactId>mmt-vocabulary-rocksdb</artifactId>
-            <version>${mmt.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>eu.modernmt</groupId>
             <artifactId>mmt-aligner-fastalign</artifactId>
             <version>${mmt.version}</version>
         </dependency>

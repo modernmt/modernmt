@@ -13,8 +13,6 @@ import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.TextProcessingModels;
-import eu.modernmt.vocabulary.Vocabulary;
-import eu.modernmt.vocabulary.rocksdb.RocksDBVocabulary;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -61,8 +59,6 @@ public class Engine implements Closeable {
     private final Preprocessor targetPreprocessor;
     private final Postprocessor postprocessor;
     private final ContextAnalyzer contextAnalyzer;
-    private final Vocabulary vocabulary;
-
 
     public static Engine load(EngineConfig config) throws BootstrapException {
         try {
@@ -82,10 +78,9 @@ public class Engine implements Closeable {
         this.models = Paths.join(this.root, "models");
         this.logs = Paths.join(this.runtime, "logs");
 
-        this.vocabulary = new RocksDBVocabulary(Paths.join(this.models, "decoder", "vocab.vb"));
-        this.sourcePreprocessor = new Preprocessor(sourceLanguage, targetLanguage, vocabulary);
-        this.targetPreprocessor = new Preprocessor(targetLanguage, sourceLanguage, vocabulary);
-        this.postprocessor = new Postprocessor(sourceLanguage, targetLanguage, vocabulary);
+        this.sourcePreprocessor = new Preprocessor(sourceLanguage, targetLanguage);
+        this.targetPreprocessor = new Preprocessor(targetLanguage, sourceLanguage);
+        this.postprocessor = new Postprocessor(sourceLanguage, targetLanguage);
         this.aligner = new FastAlign(Paths.join(this.models, "align"));
         this.contextAnalyzer = new LuceneAnalyzer(Paths.join(this.models, "context"), sourceLanguage);
 
@@ -133,10 +128,6 @@ public class Engine implements Closeable {
         return postprocessor;
     }
 
-    public Vocabulary getVocabulary() {
-        return vocabulary;
-    }
-
     public Locale getSourceLanguage() {
         return sourceLanguage;
     }
@@ -177,7 +168,6 @@ public class Engine implements Closeable {
         IOUtils.closeQuietly(decoder);
         IOUtils.closeQuietly(aligner);
         IOUtils.closeQuietly(contextAnalyzer);
-        IOUtils.closeQuietly(vocabulary);
     }
 
 }

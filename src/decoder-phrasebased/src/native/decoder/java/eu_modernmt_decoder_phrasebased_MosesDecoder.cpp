@@ -31,15 +31,16 @@ void ParseContext(JNIEnv *jvm, jintArray keys, jfloatArray values, map<string, f
 }
 
 /*
- * Class:     eu_modernmt_decoder_moses_MosesDecoder
+ * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
  * Method:    instantiate
- * Signature: (Ljava/lang/String;)J
+ * Signature: (Ljava/lang/String;Ljava/lang/String;)J
  */
-JNIEXPORT jlong JNICALL Java_eu_modernmt_decoder_phrasebased_MosesDecoder_instantiate(JNIEnv *jvm, jobject jself,
-                                                                                      jstring jinifile) {
+JNIEXPORT jlong JNICALL
+Java_eu_modernmt_decoder_phrasebased_MosesDecoder_instantiate(JNIEnv *jvm, jobject jself, jstring jinifile,
+                                                              jstring jvocabulary) {
     string inifile = jni_jstrtostr(jvm, jinifile);
-    MosesDecoder *instance = MosesDecoder::createInstance(inifile.c_str());
-    return (jlong) instance;
+    string vocabulary = jni_jstrtostr(jvm, jvocabulary);
+    return (jlong) MosesDecoder::createInstance(inifile, vocabulary);
 }
 
 /*

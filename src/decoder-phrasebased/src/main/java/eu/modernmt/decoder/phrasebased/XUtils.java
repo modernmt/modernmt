@@ -1,6 +1,8 @@
 package eu.modernmt.decoder.phrasebased;
 
+import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.model.Alignment;
+import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
 
 /**
@@ -8,14 +10,7 @@ import eu.modernmt.model.Word;
  */
 class XUtils {
 
-    public static int[] encode(Word[] words) {
-        int[] ids = new int[words.length];
-        for (int i = 0; i < ids.length; i++)
-            ids[i] = words[i].getId();
-        return ids;
-    }
-
-    public static int[] encode(Alignment alignment) {
+    public static int[] encodeAlignment(Alignment alignment) {
         int size = alignment.size();
 
         int[] encoded = new int[size * 2];
@@ -25,7 +20,7 @@ class XUtils {
         return encoded;
     }
 
-    public static Alignment decode(int[] encoded) {
+    public static Alignment decodeAlignment(int[] encoded) {
         if (encoded == null || encoded.length == 0)
             return null;
 
@@ -40,17 +35,8 @@ class XUtils {
         return new Alignment(source, target);
     }
 
-    public static String join(Word[] words) {
-        StringBuilder text = new StringBuilder();
-
-        for (int i = 0; i < words.length; i++) {
-            if (i > 0)
-                text.append(' ');
-
-            text.append(Integer.toUnsignedString(words[i].getId()));
-        }
-
-        return text.toString();
+    public static String encodeSentence(Sentence sentence) {
+        return TokensOutputStream.toString(sentence, false, true);
     }
 
     public static Word[] explode(String text) {
@@ -63,8 +49,8 @@ class XUtils {
         for (int i = 0; i < pieces.length; i++) {
             String rightSpace = i < pieces.length - 1 ? " " : null;
 
-            long id = Long.parseLong(pieces[i]);
-            words[i] = new Word((int) (id), rightSpace);
+            String placeholder = TokensOutputStream.deescapeWhitespaces(pieces[i]);
+            words[i] = new Word(placeholder, rightSpace);
         }
 
         return words;

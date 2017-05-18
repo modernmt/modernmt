@@ -1,8 +1,4 @@
 <pipeline class="eu.modernmt.processing.VoidProcessingPipeline">
-
-    <processor>
-        eu.modernmt.processing.vocabulary.VocabularyReverseLookup
-    </processor>
     <processor>
         eu.modernmt.processing.WordTextGuessingProcessor
     </processor>

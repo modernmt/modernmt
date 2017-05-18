@@ -13,7 +13,6 @@
         <module>aligner-fastalign</module>
         <module>contextanalyzer-lucene</module>
         <module>decoder-phrasebased</module>
-        <module>vocabulary-rocksdb</module>
         <module>persistence-cassandra</module>
 
         <module>core</module>

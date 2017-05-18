@@ -34,8 +34,6 @@ public class MosesDecoder implements Decoder, DataListenerProvider {
             logger.error("Unable to load library 'mmt_pbdecoder'", e);
             throw e;
         }
-
-        NativeLogger.initialize();
     }
 
     private final FeatureWeightsStorage storage;
@@ -46,6 +44,7 @@ public class MosesDecoder implements Decoder, DataListenerProvider {
     public MosesDecoder(File path, int threads) throws IOException {
         this.storage = new FeatureWeightsStorage(Paths.join(path, "weights.dat"));
 
+        File vocabulary = Paths.join(path, "vocab.vb");
         File iniTemplate = Paths.join(path, "moses.ini");
         MosesINI mosesINI = MosesINI.load(iniTemplate, path);
 
@@ -60,10 +59,10 @@ public class MosesDecoder implements Decoder, DataListenerProvider {
 
         FileUtils.write(iniFile, mosesINI.toString(), false);
 
-        this.nativeHandle = instantiate(iniFile.getAbsolutePath());
+        this.nativeHandle = instantiate(iniFile.getAbsolutePath(), vocabulary.getAbsolutePath());
     }
 
-    private native long instantiate(String inifile);
+    private native long instantiate(String inifile, String vocabulary);
 
     // Features
 
@@ -124,11 +123,10 @@ public class MosesDecoder implements Decoder, DataListenerProvider {
 
     @Override
     public DecoderTranslation translate(Sentence sentence, ContextVector contextVector, int nbest) {
-        Word[] sourceWords = sentence.getWords();
-        if (sourceWords.length == 0)
+        if (sentence.getWords().length == 0)
             return new DecoderTranslation(new Word[0], sentence, null);
 
-        String text = XUtils.join(sourceWords);
+        String text = XUtils.encodeSentence(sentence);
 
         ContextXObject context = ContextXObject.build(contextVector);
 

@@ -41,9 +41,4 @@
     </processorGroup>
 
     <processor>eu.modernmt.processing.string.SentenceCompiler</processor>
-
-    <processor>
-        eu.modernmt.processing.vocabulary.VocabularyLookup
-    </processor>
-
 </pipeline>

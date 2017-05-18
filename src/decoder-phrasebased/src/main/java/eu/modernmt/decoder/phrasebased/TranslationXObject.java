@@ -68,7 +68,7 @@ class TranslationXObject {
     public DecoderTranslation getTranslation(Sentence source) {
         Word[] words = XUtils.explode(text);
 
-        DecoderTranslation translation = new DecoderTranslation(words, source, XUtils.decode(alignment));
+        DecoderTranslation translation = new DecoderTranslation(words, source, XUtils.decodeAlignment(alignment));
 
         if (nbestList != null && nbestList.length > 0) {
             List<TranslationHypothesis> nbest = new ArrayList<>(nbestList.length);

@@ -46,7 +46,7 @@ namespace mmt {
         public:
             static constexpr float UNTUNEABLE_COMPONENT = FLT_MAX;
 
-            static MosesDecoder *createInstance(const char *inifile);
+            static MosesDecoder *createInstance(const std::string &inifilePath, const std::string &vocabularyPath);
 
             virtual std::vector<feature_t> getFeatures() = 0;
 
@@ -82,6 +82,7 @@ namespace mmt {
             virtual const std::vector<IncrementalModel *> &GetIncrementalModels() const = 0;
 
             virtual ~MosesDecoder() {}
+
         };
     }
 }
