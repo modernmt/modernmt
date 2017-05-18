@@ -7,6 +7,7 @@
 
 #include <mmt/sentence.h>
 #include <fstream>
+#include <mmt/vocabulary/Vocabulary.h>
 
 using namespace std;
 
@@ -36,11 +37,12 @@ namespace mmt {
 
         class CorpusReader {
         public:
-            CorpusReader(const BilingualCorpus &corpus);
+            CorpusReader(Vocabulary &vocabulary, const BilingualCorpus &corpus);
 
             bool Read(vector<wid_t> &outSource, vector<wid_t> &outTarget, alignment_t &outAlignment);
 
         private:
+            Vocabulary &vb;
             bool drained;
             ifstream sourceStream;
             ifstream targetStream;

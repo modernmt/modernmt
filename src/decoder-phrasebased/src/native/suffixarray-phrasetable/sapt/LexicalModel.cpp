@@ -82,14 +82,19 @@ void LexicalModel::Store(const std::string &filename) {
     }
 }
 
-wid_t GetWordId(const std::string &word) {
-    if (word.size() > 2)
-        return (wid_t) std::stoi(word.substr(1, word.size() - 2));
-    else
+inline wid_t GetWordId(Vocabulary &vb, const std::string &word) {
+    if (word.size() > 2) {
+        wid_t id = vb.Lookup(word.substr(1, word.size() - 2), false);
+        if (id == kVocabularyUnknownWord)
+            throw invalid_argument("Unknown word: " + word);
+
+        return id;
+    } else {
         return LexicalModel::kNullWord;
+    }
 }
 
-LexicalModel *LexicalModel::Import(const std::string &path) {
+LexicalModel *LexicalModel::Import(Vocabulary &vb, const std::string &path) {
     LexicalModel *lex = new LexicalModel();
 
     fstream in(path, ios::binary | ios::in);
@@ -104,7 +109,7 @@ LexicalModel *LexicalModel::Import(const std::string &path) {
         if (!(in >> row_size))
             break;
 
-        wid_t sourceWordId = GetWordId(sourceWord);
+        wid_t sourceWordId = GetWordId(vb, sourceWord);
 
         if (sourceWordId >= lex->model.size())
             lex->model.resize(sourceWordId + 1);
@@ -118,7 +123,7 @@ LexicalModel *LexicalModel::Import(const std::string &path) {
 
             in >> targetWord >> forward >> backward;
 
-            row[GetWordId(targetWord)] = pair<float, float>(forward, backward);
+            row[GetWordId(vb, targetWord)] = pair<float, float>(forward, backward);
         }
     }
 

@@ -89,6 +89,3 @@ if (OPENMP_FOUND)
 
     message(STATUS "Compiling with OpenMP")
 endif (OPENMP_FOUND)
-
-# Test cases
-add_subdirectory(test)

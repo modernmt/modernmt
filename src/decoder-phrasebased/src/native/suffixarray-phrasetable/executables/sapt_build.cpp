@@ -31,6 +31,7 @@ namespace {
         string input_path;
         string source_lang;
         string target_lang;
+        string vocabulary_path;
 
         size_t buffer_size = 100000;
     };
@@ -47,6 +48,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
             ("source,s", po::value<string>()->required(), "source language")
             ("target,t", po::value<string>()->required(), "target language")
             ("input,i", po::value<string>()->required(), "input folder with input corpora")
+            ("vocabulary,v", po::value<string>()->required(), "vocabulary file")
             ("lex,x", po::value<string>()->required(), "textual lexical model to import")
             ("buffer,b", po::value<size_t>(), "size of the buffer");
 
@@ -66,6 +68,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
         args->source_lang = vm["source"].as<string>();
         args->target_lang = vm["target"].as<string>();
         args->lexmodel_path = vm["lex"].as<string>();
+        args->vocabulary_path = vm["vocabulary"].as<string>();
 
         if (vm.count("buffer"))
             args->buffer_size = vm["buffer"].as<size_t>();
@@ -78,10 +81,10 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
     return true;
 }
 
-void LoadCorpus(const BilingualCorpus &corpus, SuffixArray &index, size_t buffer_size) {
+void LoadCorpus(Vocabulary &vb, const BilingualCorpus &corpus, SuffixArray &index, size_t buffer_size) {
     domain_t domain = corpus.GetDomain();
 
-    CorpusReader reader(corpus);
+    CorpusReader reader(vb, corpus);
     UpdateBatch batch(buffer_size, vector<seqid_t>());
 
     vector<wid_t> source;
@@ -124,9 +127,14 @@ int main(int argc, const char *argv[]) {
     if (!fs::is_directory(args.model_path))
         fs::create_directories(args.model_path);
 
-    LexicalModel *lexicalModel = LexicalModel::Import(args.lexmodel_path);
+    Vocabulary vb(args.vocabulary_path, true);
+
+    double begin = GetTime();
+    LexicalModel *lexicalModel = LexicalModel::Import(vb, args.lexmodel_path);
     lexicalModel->Store(fs::absolute(fs::path(args.model_path) / fs::path("model.lex")).string());
     delete lexicalModel;
+    double elapsed = GetElapsedTime(begin);
+    cout << "Lexical model import DONE in " << elapsed << "s" << endl;
 
     Options options;
     SuffixArray index(args.model_path, options.prefix_length, options.gc_timeout, options.gc_buffer_size, true);
@@ -139,7 +147,7 @@ int main(int argc, const char *argv[]) {
         BilingualCorpus &corpus = corpora[i];
 
         double begin = GetTime();
-        LoadCorpus(corpus, index, args.buffer_size);
+        LoadCorpus(vb, corpus, index, args.buffer_size);
         double elapsed = GetElapsedTime(begin);
         cout << "Corpus " << corpus.GetDomain() << " DONE in " << elapsed << "s" << endl;
     }

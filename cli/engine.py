@@ -500,6 +500,9 @@ class MMTEngineBuilder:
                 (self._engine.data_path if self._split_trainingset else None),
                 log=logger.stream)
 
+            cleaned_bicorpora = self._engine.training_preprocessor.clean(
+                processed_bicorpora, cleaned_folder)
+
             # TODO: clean up mess
             for corpus in (processed_bicorpora + processed_monocorpora):
                 for lang in corpus.langs:
@@ -512,9 +515,6 @@ class MMTEngineBuilder:
             processed_bicorpora, processed_monocorpora = BilingualCorpus.splitlist(self._engine.source_lang,
                                                                                    self._engine.target_lang,
                                                                                    roots=preprocessed_folder)
-
-            cleaned_bicorpora = self._engine.training_preprocessor.clean(
-                processed_bicorpora, cleaned_folder)
 
         return processed_bicorpora, processed_monocorpora, cleaned_bicorpora
 

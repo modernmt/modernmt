@@ -7,6 +7,7 @@
 
 #include <string>
 #include <mmt/sentence.h>
+#include <mmt/vocabulary/Vocabulary.h>
 
 namespace mmt {
     namespace sapt {
@@ -36,7 +37,7 @@ namespace mmt {
 
             void Store(const std::string &path);
 
-            static LexicalModel *Import(const std::string &path);
+            static LexicalModel *Import(Vocabulary &vb, const std::string &path);
 
         private:
             std::vector<std::unordered_map<wid_t, std::pair<float, float>>> model;

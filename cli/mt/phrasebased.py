@@ -268,7 +268,7 @@ class SuffixArraysPhraseTable(MosesFeature):
 
         # Build models
         command = [self._build_bin, '--lex', lex_model_path, '--input', train_corpora_path, '--model', self._model,
-                   '-s', self._source_lang, '-t', self._target_lang]
+                   '-s', self._source_lang, '-t', self._target_lang, '-v', self._vb.model]
         shell.execute(command, stdout=log, stderr=log)
 
 

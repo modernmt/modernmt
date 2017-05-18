@@ -18,14 +18,14 @@ BilingualCorpus::BilingualCorpus(domain_t domain, const string &sourceFile, cons
         : domain(domain), source(sourceFile), target(targetFile), alignment(alignmentFile) {
 }
 
-static inline void ParseSentenceLine(const string &line, vector<wid_t> &output) {
+static inline void ParseSentenceLine(Vocabulary &vb, const string &line, sentence_t &output) {
     output.clear();
 
     stringstream stream(line);
-    wid_t word;
+    string word;
 
     while (stream >> word) {
-        output.push_back(word);
+        output.push_back(vb.Lookup(word, false));
     }
 
 }
@@ -81,9 +81,9 @@ void BilingualCorpus::List(const string &path, const string &sourceLang, const s
     }
 }
 
-CorpusReader::CorpusReader(const BilingualCorpus &corpus) : drained(false), sourceStream(corpus.source),
-                                                            targetStream(corpus.target),
-                                                            alignmentStream(corpus.alignment) {
+CorpusReader::CorpusReader(Vocabulary &vocabulary, const BilingualCorpus &corpus)
+        : vb(vocabulary), drained(false), sourceStream(corpus.source), targetStream(corpus.target),
+          alignmentStream(corpus.alignment) {
 }
 
 bool CorpusReader::Read(vector<wid_t> &outSource, vector<wid_t> &outTarget, alignment_t &outAlignment) {
@@ -97,8 +97,8 @@ bool CorpusReader::Read(vector<wid_t> &outSource, vector<wid_t> &outTarget, alig
         return false;
     }
 
-    ParseSentenceLine(sourceLine, outSource);
-    ParseSentenceLine(targetLine, outTarget);
+    ParseSentenceLine(vb, sourceLine, outSource);
+    ParseSentenceLine(vb, targetLine, outTarget);
     ParseAlignmentLine(alignmentLine, outAlignment);
 
     return true;
