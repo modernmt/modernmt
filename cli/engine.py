@@ -481,6 +481,8 @@ class MMTEngineBuilder:
 
     # This step function performs the preprocessing of the domain-mapped corpora
     def _step_preprocess(self, bilingual_corpora, monolingual_corpora, _, skip=False, logger=None, delete_on_exit=False):
+        # TODO: clean up mess
+        _preprocessed_folder = self._get_tempdir('__preprocessed')
         preprocessed_folder = self._get_tempdir('preprocessed')
         cleaned_folder = self._get_tempdir('clean_corpora')
 
@@ -491,17 +493,26 @@ class MMTEngineBuilder:
                                                                                    roots=preprocessed_folder)
             cleaned_bicorpora = BilingualCorpus.list(cleaned_folder)
         else:
-            # TODO: una volta sola!!!
-            self._engine.training_preprocessor.process(
-                bilingual_corpora + monolingual_corpora,
-                preprocessed_folder,
-                (self._engine.data_path if self._split_trainingset else None),
-                log=logger.stream)
+            # TODO: clean up mess
             processed_bicorpora, processed_monocorpora = self._engine.training_preprocessor.process(
                 bilingual_corpora + monolingual_corpora,
-                preprocessed_folder,
+                _preprocessed_folder,
                 (self._engine.data_path if self._split_trainingset else None),
                 log=logger.stream)
+
+            # TODO: clean up mess
+            for corpus in (processed_bicorpora + processed_monocorpora):
+                for lang in corpus.langs:
+                    source = corpus.get_file(lang)
+                    dest = os.path.join(preprocessed_folder, corpus.name + '.' + lang)
+
+                    self._engine.moses.vb.encode_file(source, dest)
+
+            # TODO: clean up mess
+            processed_bicorpora, processed_monocorpora = BilingualCorpus.splitlist(self._engine.source_lang,
+                                                                                   self._engine.target_lang,
+                                                                                   roots=preprocessed_folder)
+
             cleaned_bicorpora = self._engine.training_preprocessor.clean(
                 processed_bicorpora, cleaned_folder)
 
@@ -600,7 +611,6 @@ class MMTEngine(object):
         self._logs_path = os.path.join(self.runtime_path, 'logs')
         self._temp_path = os.path.join(self.runtime_path, 'tmp')
         self._temp_path = os.path.join(self.runtime_path, 'tmp')
-        self._vocabulary_model = os.path.join(self.models_path, 'vocabulary')
         self._aligner_model = os.path.join(self.models_path, 'align')
         self._context_index = os.path.join(self.models_path, 'context')
         self._moses_path = os.path.join(self.models_path, 'decoder')
@@ -609,9 +619,9 @@ class MMTEngine(object):
         self.analyzer = ContextAnalyzer(self._context_index, self.source_lang, self.target_lang)
         self.cleaner = TMCleaner(self.source_lang, self.target_lang)
         self.aligner = FastAlign(self._aligner_model, self.source_lang, self.target_lang)
-        self.training_preprocessor = TrainingPreprocessor(self.source_lang, self.target_lang, self._vocabulary_model)
         self.db = _JsonDatabase(self._db_model)
         self.moses = Moses(self._moses_path, self.source_lang, self.target_lang)
+        self.training_preprocessor = TrainingPreprocessor(self.source_lang, self.target_lang, self.moses.vb)
 
     def builder(self, roots, debug=False, steps=None, split_trainingset=True):
         return MMTEngineBuilder(self, roots, debug, steps, split_trainingset)

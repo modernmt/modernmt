@@ -111,7 +111,7 @@ class TrainingPreprocessor:
     DEV_FOLDER_NAME = 'dev'
     TEST_FOLDER_NAME = 'test'
 
-    def __init__(self, source_lang, target_lang, vocabulary_path, clean_ratio=3, clean_min=1, clean_max=80):
+    def __init__(self, source_lang, target_lang, vocabulary, clean_ratio=3, clean_min=1, clean_max=80):
         self._source_lang = source_lang
         self._target_lang = target_lang
 
@@ -123,13 +123,13 @@ class TrainingPreprocessor:
         self._cleaner_script = os.path.join(cli.PYOPT_DIR, 'clean-corpus-n-ratio.perl')
 
         self._java_mainclass = 'eu.modernmt.cli.TrainingPipelineMain'
-        self._vocabulary_path = vocabulary_path
+        self._vb = vocabulary
 
     def process(self, corpora, output_path, data_path=None, log=None):
         if log is None:
             log = shell.DEVNULL
 
-        args = ['-s', self._source_lang, '-t', self._target_lang, '-v', self._vocabulary_path, '--output', output_path,
+        args = ['-s', self._source_lang, '-t', self._target_lang, '-v', self._vb.model, '--output', output_path,
                 '--input']
 
         input_paths = set([corpus.get_folder() for corpus in corpora])

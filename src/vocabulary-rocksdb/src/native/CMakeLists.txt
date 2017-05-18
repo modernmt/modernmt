@@ -31,3 +31,19 @@ set(Boost_USE_STATIC_RUNTIME OFF)
 find_package(Boost 1.55.0 REQUIRED COMPONENTS filesystem system program_options thread)
 include_directories(${Boost_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
+
+file(GLOB executables executables/*.cpp)
+foreach (exefile ${executables})
+    get_filename_component(exe ${exefile} NAME_WE)
+    add_executable(${exe} ${exefile})
+    target_link_libraries(${exe} ${Boost_LIBRARIES})
+    target_link_libraries(${exe} ${PROJECT_NAME})
+endforeach ()
+
+foreach (exefile ${executables})
+    get_filename_component(exe ${exefile} NAME_WE)
+    install(TARGETS ${exe}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+            LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
+endforeach ()

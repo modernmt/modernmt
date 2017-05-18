@@ -38,6 +38,25 @@ class ContextAnalyzer:
         shell.execute(command, stdout=log, stderr=log)
 
 
+class Vocabulary:
+    def __init__(self, model):
+        self._model = model
+        self._encode_bin = os.path.join(cli.BIN_DIR, 'vb_encode')
+
+    @property
+    def model(self):
+        return self._model
+
+    def encode_file(self, source, dest):
+        command = [self._encode_bin, '-v', self._model]
+
+        with open(source, 'r') as source_stream:
+            with open(dest, 'wb') as dest_stream:
+                shell.execute(command, stdin=source_stream, stdout=dest_stream)
+    # def get_encode_command(self, input_path):
+    #     return [self._encode_bin, '-v', self._model, '-i', input_path]
+
+
 class MosesFeature:
     def __init__(self, classname):
         self.classname = classname
@@ -55,12 +74,13 @@ class MosesFeature:
 
 
 class InterpolatedLM(MosesFeature):
-    def __init__(self, model, order=5, prune=True):
+    def __init__(self, model, vocabulary, order=5, prune=True):
         MosesFeature.__init__(self, 'MMTILM')
 
         self._create_alm_bin = os.path.join(cli.BIN_DIR, 'create_alm')
         self._create_slm_bin = os.path.join(cli.BIN_DIR, 'create_slm')
 
+        self._vb = vocabulary
         self._model = model
         self._prune = prune
         self._order = order
@@ -188,11 +208,12 @@ class LexicalReordering(MosesFeature):
 
 
 class SuffixArraysPhraseTable(MosesFeature):
-    def __init__(self, model, source_lang, target_lang, sample=1000):
+    def __init__(self, model, source_lang, target_lang, vocabulary, sample=1000):
         MosesFeature.__init__(self, 'SAPT')
 
         self._sample = sample
 
+        self._vb = vocabulary
         self._model = model
         self._reordering_model_feature = None
         self._source_lang = source_lang
@@ -263,8 +284,9 @@ class Moses:
         self._ini_file = os.path.join(self._path, 'moses.ini')
         self._weights_file = os.path.join(self._path, 'weights.dat')
 
-        self.lm = InterpolatedLM(os.path.join(model_path, 'lm'))
-        self.pt = SuffixArraysPhraseTable(os.path.join(model_path, 'sapt'), source_lang, target_lang)
+        self.vb = Vocabulary(os.path.join(model_path, 'vocab.vb'))
+        self.lm = InterpolatedLM(os.path.join(model_path, 'lm'), self.vb)
+        self.pt = SuffixArraysPhraseTable(os.path.join(model_path, 'sapt'), source_lang, target_lang, self.vb)
         self.pt.set_reordering_model('DM0')
 
         self._features = []
