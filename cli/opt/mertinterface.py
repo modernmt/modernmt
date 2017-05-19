@@ -9,7 +9,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, 
 
 from cli.cluster import MMTApi
 from cli.libs import multithread
-from cli.mt.processing import Tokenizer
 
 __author__ = 'Davide Caroselli'
 
@@ -36,8 +35,6 @@ class _DocumentTranslator:
         self._pool = multithread.Pool(workers)
         self._features = None
 
-        self._tokenizer = Tokenizer()
-
     def set_skipcontext(self, skip_context):
         self.skip_context = skip_context
 
@@ -58,11 +55,10 @@ class _DocumentTranslator:
     def _get_translation(self, line, nbest, context_vector):
         translation = Api.translate(line, context=context_vector, nbest=nbest)
 
-        # tokenize
-        translation['translation'] = self._tokenizer.process(translation['translation'])
-        if 'nbest' in translation:
-            for hyp in translation['nbest']:
-                hyp['translation'] = self._tokenizer.process(hyp['translation'])
+        nbest_list = sorted(translation['nbest'], key=lambda hypo: hypo['totalScore'], reverse=True)
+
+        translation['nbest'] = nbest_list
+        translation['translation'] = nbest_list[0]['translation']
 
         return translation
 

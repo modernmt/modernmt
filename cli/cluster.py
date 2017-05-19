@@ -418,8 +418,6 @@ class ClusterNode(object):
         if len(corpora) == 0:
             raise IllegalArgumentException('empty corpora')
 
-        tokenizer = Tokenizer()
-
         target_lang = self.engine.target_lang
         source_lang = self.engine.source_lang
 
@@ -436,6 +434,7 @@ class ClusterNode(object):
 
         try:
             # Tokenization
+            tokenizer = Tokenizer(target_lang)
             tokenized_output = os.path.join(working_dir, 'reference_corpora')
             fileutils.makedirs(tokenized_output, exist_ok=True)
 
