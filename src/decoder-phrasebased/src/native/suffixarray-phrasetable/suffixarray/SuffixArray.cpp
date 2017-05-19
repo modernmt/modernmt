@@ -192,7 +192,7 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
         writeBatch.Put(MakeDomainDeletionKey(*domain), "");
 
     // Write streams
-    writeBatch.Put(kStreamsKey, SerializeStreams(streams));
+    writeBatch.Put(kStreamsKey, SerializeStreams(batch.GetStreams()));
 
     // Write storage manifest
     if (!openForBulkLoad) {

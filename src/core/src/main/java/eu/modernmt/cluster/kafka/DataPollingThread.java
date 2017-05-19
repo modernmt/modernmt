@@ -76,28 +76,36 @@ class DataPollingThread extends Thread {
     }
 
     public Map<Short, Long> getCurrentPositions() {
-        HashMap<Short, Long> result = new HashMap<>();
+        KafkaChannel[] channels = this.manager.getChannels();
+
+        HashMap<Short, Long> result = null;
 
         for (DataListener listener : listeners) {
-            Map<Short, Long> latestPositions = listener.getLatestChannelPositions();
+            Map<Short, Long> latestPositions = new HashMap<>(listener.getLatestChannelPositions());
 
-            for (Map.Entry<Short, Long> entry : latestPositions.entrySet()) {
-                Short channel = entry.getKey();
-                Long position = entry.getValue();
+            if (result == null) {
+                result = new HashMap<>(latestPositions);
+            } else {
+                for (KafkaChannel channel : channels) {
+                    short channelId = channel.getId();
 
-                Long existentPosition = result.get(channel);
-                if (existentPosition == null)
-                    existentPosition = Long.MAX_VALUE;
+                    Long v0 = result.get(channelId);
+                    Long v1 = latestPositions.get(channelId);
 
-                result.put(channel, Math.min(existentPosition, position));
+                    long value = (v1 == null || v0 == null) ? -1L : Math.min(v0, v1);
+
+                    result.put(channelId, value);
+                }
             }
         }
 
-        // Adding missing values
-        for (KafkaChannel channel : this.manager.getChannels())
-            result.putIfAbsent(channel.getId(), -1L);
+        if (result == null)
+            result = new HashMap<>();
 
         // Normalize result
+        for (KafkaChannel channel : channels)
+            result.putIfAbsent(channel.getId(), -1L);
+
         for (Map.Entry<Short, Long> entry : result.entrySet()) {
             long value = entry.getValue();
             entry.setValue(value < 0 ? 0 : value + 1);
