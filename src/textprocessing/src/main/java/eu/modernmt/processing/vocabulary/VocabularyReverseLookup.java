@@ -57,7 +57,6 @@ public class VocabularyReverseLookup extends TextProcessor<Translation, Translat
                     word.setPlaceholder("");
                 } else {
                     word.setPlaceholder(twin.getPlaceholder());
-                    word.setText(twin.getText());
                 }
             } else {
                 word.setPlaceholder(strings[i]);
