@@ -58,8 +58,6 @@ public class KafkaDataManager implements DataManager {
         // and put them in an array "channels"
         this.channels = new KafkaChannel[2];
 
-        /* get the default topic names (nomenclature 1x)
-        * NOTE: nomenclature 0.15x is discontinued*/
         String[] topicNames = getDefaultTopicNames(config.getName());
 
         this.channels[0] = new KafkaChannel(DataManager.DOMAIN_UPLOAD_CHANNEL_ID,
@@ -114,49 +112,10 @@ public class KafkaDataManager implements DataManager {
 
         /*create, populate and return the topics map*/
         String[] topicNames = new String[2];
-        // DOMAIN_UPLOAD_CHANNEL_ID is 0
         topicNames[DataManager.DOMAIN_UPLOAD_CHANNEL_ID] = domainsTopicName;
-        // CONTRIBUTIONS_CHANNEL_ID is 1
         topicNames[DataManager.CONTRIBUTIONS_CHANNEL_ID] = contributionsTopicName;
         return topicNames;
     }
-
-//    private String[] getDefaultTopicNames(Engine engine) {
-//
-//        //max topic name length supported by Apache Kafka
-//        int maxLength = 249;
-//
-//        //default names for the topics
-//        String topicPrefix = "mmt"
-//                //kafka only accepts alphanumeric chars and '.', '_', '-'
-//                + "_" + engine.getName().replaceAll("[^A-Za-z0-9_\\.\\-]", "")
-//                + "_" + engine.getSourceLanguage().toLanguageTag()
-//                + "_" + engine.getTargetLanguage().toLanguageTag()
-//                + "_";
-//        String domainsTopicName = topicPrefix + "domain-upload-stream";
-//        String contributionsTopicName = topicPrefix + "contributions-stream";
-//
-//        /*if even only one of the two names are too long,
-//        * cut away a part of the engine name from both of them*/
-//        int length = Math.max(domainsTopicName.length(), contributionsTopicName.length());
-//        if (length > maxLength) {
-//            topicPrefix = "mmt"
-//                    + "_" + engine.getName().substring(0, length - maxLength).replaceAll("/[^A-Za-z0-9\\._\\-]/", "")
-//                    + "_" + engine.getSourceLanguage().toLanguageTag()
-//                    + "_" + engine.getTargetLanguage().toLanguageTag()
-//                    + "_";
-//            domainsTopicName = topicPrefix + "domain-upload-stream";
-//            contributionsTopicName = topicPrefix + "contributions-stream";
-//        }
-//
-//        /*create, populate and return the map*/
-//        String[] topicNames = new String[2];
-//        // DOMAIN_UPLOAD_CHANNEL_ID is 0
-//        topicNames[DataManager.DOMAIN_UPLOAD_CHANNEL_ID] = domainsTopicName;
-//        // CONTRIBUTIONS_CHANNEL_ID is 1
-//        topicNames[DataManager.CONTRIBUTIONS_CHANNEL_ID] = contributionsTopicName;
-//        return topicNames;
-//    }
 
     private static Properties loadProperties(String filename, String host, int port) {
         InputStream stream = null;

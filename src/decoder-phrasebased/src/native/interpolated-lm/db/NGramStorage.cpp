@@ -55,7 +55,8 @@ public:
 };
 
 NGramStorage::NGramStorage(string basepath, uint8_t order, double gcTimeout,
-                           bool prepareForBulkLoad) throw(storage_exception) : order(order) {
+                           bool prepareForBulkLoad) throw(storage_exception) : logger("ilm.NGramStorage"),
+                                                                               order(order) {
     rocksdb::Options options;
     options.create_if_missing = true;
     options.merge_operator.reset(new CountsAddOperator);
@@ -141,6 +142,7 @@ size_t NGramStorage::GetEstimateSize() const {
 }
 
 void NGramStorage::PutBatch(NGramBatch &batch) throw(storage_exception) {
+    LogInfo(logger) << "Loading batch of N-Grams";
     WriteBatch writeBatch;
 
     for (auto it = batch.ngrams_map.begin(); it != batch.ngrams_map.end(); ++it) {

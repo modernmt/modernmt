@@ -3,7 +3,6 @@ set(JAVA_SRC
         JMosesFeature.cpp
         JMosesFeature.h
         JTranslation.cpp
-        JTranslation.h
-        eu_modernmt_decoder_phrasebased_NativeDataListener.cpp)
+        JTranslation.h)
 
 add_library(moses_java OBJECT ${JAVA_SRC})

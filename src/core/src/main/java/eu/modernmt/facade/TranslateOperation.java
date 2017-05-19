@@ -53,9 +53,6 @@ class TranslateOperation implements Callable<DecoderTranslation>, Serializable {
         }
 
         postprocessor.process(translation);
-        if (translation.hasNbest())
-            postprocessor.process(translation.getNbest());
-
         return translation;
     }
 }

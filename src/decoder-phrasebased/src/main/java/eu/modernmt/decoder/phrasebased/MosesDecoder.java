@@ -1,7 +1,8 @@
 package eu.modernmt.decoder.phrasebased;
 
 import eu.modernmt.data.DataListener;
-import eu.modernmt.data.DataListenerProvider;
+import eu.modernmt.data.Deletion;
+import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.decoder.DecoderTranslation;
@@ -15,15 +16,13 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Created by davide on 26/11/15.
  */
-public class MosesDecoder implements Decoder, DataListenerProvider {
+public class MosesDecoder implements Decoder, DataListener {
 
     private static final Logger logger = LogManager.getLogger(MosesDecoder.class);
 
@@ -34,12 +33,12 @@ public class MosesDecoder implements Decoder, DataListenerProvider {
             logger.error("Unable to load library 'mmt_pbdecoder'", e);
             throw e;
         }
+
+        NativeLogger.initialize();
     }
 
     private final FeatureWeightsStorage storage;
     private long nativeHandle;
-
-    private ArrayList<DataListener> dataListeners = null;
 
     public MosesDecoder(File path, int threads) throws IOException {
         this.storage = new FeatureWeightsStorage(Paths.join(path, "weights.dat"));
@@ -152,22 +151,42 @@ public class MosesDecoder implements Decoder, DataListenerProvider {
 
     private native TranslationXObject translate(String text, int[] contextKeys, float[] contextValues, int nbest);
 
-    // DataListenerProvider
+    // DataListener
 
     @Override
-    public Collection<DataListener> getDataListeners() {
-        if (dataListeners == null) {
-            long[] nativeListeners = getNativeDataListeners();
+    public void onDataReceived(TranslationUnit unit) throws Exception {
+        String sourceSentence = XUtils.encodeSentence(unit.sourceSentence);
+        String targetSentence = XUtils.encodeSentence(unit.targetSentence);
+        int[] alignment = XUtils.encodeAlignment(unit.alignment);
 
-            dataListeners = new ArrayList<>(nativeListeners.length);
-            for (long handle : nativeListeners)
-                dataListeners.add(new NativeDataListener(handle));
-        }
-
-        return dataListeners;
+        updateReceived(unit.channel, unit.channelPosition, unit.domain, sourceSentence, targetSentence, alignment);
     }
 
-    private native long[] getNativeDataListeners();
+    private native void updateReceived(short channel, long channelPosition, int domain, String sourceSentence, String targetSentence, int[] alignment);
+
+    @Override
+    public void onDelete(Deletion deletion) throws Exception {
+        deleteReceived(deletion.channel, deletion.channelPosition, deletion.domain);
+    }
+
+    private native void deleteReceived(short channel, long channelPosition, int domain);
+
+    @Override
+    public Map<Short, Long> getLatestChannelPositions() {
+        HashMap<Short, Long> result = new HashMap<>();
+
+        long[] encoded = getLatestUpdatesIdentifier();
+        for (int i = 0; i < encoded.length; i += 2) {
+            short channel = (short) encoded[i];
+            long value = encoded[i + 1];
+
+            result.putIfAbsent(channel, value);
+        }
+
+        return result;
+    }
+
+    private native long[] getLatestUpdatesIdentifier();
 
     // Shutdown
 
@@ -183,4 +202,5 @@ public class MosesDecoder implements Decoder, DataListenerProvider {
     }
 
     private native long dispose(long handle);
+
 }

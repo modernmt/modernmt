@@ -72,7 +72,7 @@ namespace mmt {
 
 SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength, double gcTimeout, size_t gcBatchSize,
                          bool prepareForBulkLoad) throw(index_exception, storage_exception) :
-        openForBulkLoad(prepareForBulkLoad), prefixLength(prefixLength) {
+        logger("sapt.SuffixArray"), openForBulkLoad(prepareForBulkLoad), prefixLength(prefixLength) {
     fs::path modelDir(modelPath);
 
     if (!fs::is_directory(modelDir))
@@ -116,6 +116,9 @@ SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength, double g
 
     db->Get(ReadOptions(), kStreamsKey, &raw_streams);
     DeserializeStreams(raw_streams.data(), raw_streams.size(), &streams);
+
+    for (auto el = streams.begin(); el != streams.end(); ++el)
+        LogInfo(logger) << "STREAM: " << *el;
 
     // Load storage
     string raw_manifest;
@@ -161,6 +164,8 @@ void SuffixArray::ForceCompaction() throw(index_exception) {
 }
 
 void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_exception) {
+    LogInfo(logger) << "Loading batch of " << batch.data.size() << " sentence pairs";
+
     WriteBatch writeBatch;
 
     // Compute prefixes
@@ -192,7 +197,7 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
         writeBatch.Put(MakeDomainDeletionKey(*domain), "");
 
     // Write streams
-    writeBatch.Put(kStreamsKey, SerializeStreams(streams));
+    writeBatch.Put(kStreamsKey, SerializeStreams(batch.GetStreams()));
 
     // Write storage manifest
     if (!openForBulkLoad) {

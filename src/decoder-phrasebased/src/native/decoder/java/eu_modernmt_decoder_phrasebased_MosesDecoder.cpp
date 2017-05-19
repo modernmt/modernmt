@@ -30,6 +30,22 @@ void ParseContext(JNIEnv *jvm, jintArray keys, jfloatArray values, map<string, f
     jvm->ReleaseFloatArrayElements(values, valuesArray, 0);
 }
 
+void ParseAlignment(JNIEnv *jvm, jintArray jalignment, alignment_t &outAlignment) {
+    size_t fullsize = (size_t) jvm->GetArrayLength(jalignment);
+    size_t size = fullsize / 2;
+
+    jint *jalignmentArray = jvm->GetIntArrayElements(jalignment, 0);
+
+    outAlignment.resize(size);
+
+    for (size_t i = 0; i < size; ++i) {
+        outAlignment[i].first = (length_t) jalignmentArray[i];
+        outAlignment[i].second = (length_t) jalignmentArray[i + size];
+    }
+
+    jvm->ReleaseIntArrayElements(jalignment, jalignmentArray, 0);
+}
+
 /*
  * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
  * Method:    instantiate
@@ -44,9 +60,9 @@ Java_eu_modernmt_decoder_phrasebased_MosesDecoder_instantiate(JNIEnv *jvm, jobje
 }
 
 /*
- * Class:     eu_modernmt_decoder_moses_MosesDecoder
+ * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
  * Method:    getFeatures
- * Signature: ()[Leu/modernmt/decoder/moses/MosesFeature;
+ * Signature: ()[Leu/modernmt/decoder/phrasebased/MosesFeature;
  */
 JNIEXPORT jobjectArray JNICALL
 Java_eu_modernmt_decoder_phrasebased_MosesDecoder_getFeatures(JNIEnv *jvm, jobject jself) {
@@ -66,9 +82,8 @@ Java_eu_modernmt_decoder_phrasebased_MosesDecoder_getFeatures(JNIEnv *jvm, jobje
     return array;
 }
 
-
 /*
- * Class:     eu_modernmt_decoder_moses_MosesDecoder
+ * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
  * Method:    getFeatureWeightsFromPointer
  * Signature: (J)[F
  */
@@ -96,10 +111,8 @@ Java_eu_modernmt_decoder_phrasebased_MosesDecoder_getFeatureWeightsFromPointer(J
     return array;
 }
 
-#include <iostream>
-
 /*
- * Class:     eu_modernmt_decoder_moses_MosesDecoder
+ * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
  * Method:    setFeatureWeights
  * Signature: ([Ljava/lang/String;[[F)V
  */
@@ -125,6 +138,7 @@ Java_eu_modernmt_decoder_phrasebased_MosesDecoder_setFeatureWeights(JNIEnv *jvm,
 
     instance->setDefaultFeatureWeights(featureWeights);
 }
+
 
 /*
  * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
@@ -176,31 +190,71 @@ Java_eu_modernmt_decoder_phrasebased_MosesDecoder_translate(JNIEnv *jvm, jobject
 }
 
 /*
- * Class:     eu_modernmt_decoder_moses_MosesDecoder
- * Method:    getNativeDataListeners
+ * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
+ * Method:    updateReceived
+ * Signature: (SJILjava/lang/String;Ljava/lang/String;[I)V
+ */
+JNIEXPORT void JNICALL
+Java_eu_modernmt_decoder_phrasebased_MosesDecoder_updateReceived(JNIEnv *jvm, jobject jself, jshort jchannel,
+                                                                 jlong jchannelPosition, jint jdomain, jstring jsource,
+                                                                 jstring jtarget, jintArray jalignment) {
+    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
+
+    updateid_t id((stream_t) jchannel, (seqid_t) jchannelPosition);
+    domain_t domain = (domain_t) jdomain;
+    string source = jni_jstrtostr(jvm, jsource);
+    string target = jni_jstrtostr(jvm, jtarget);
+
+    alignment_t alignment;
+    ParseAlignment(jvm, jalignment, alignment);
+
+    instance->DeliverUpdate(id, domain, source, target, alignment);
+}
+
+/*
+ * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
+ * Method:    deleteReceived
+ * Signature: (SJI)V
+ */
+JNIEXPORT void JNICALL
+Java_eu_modernmt_decoder_phrasebased_MosesDecoder_deleteReceived(JNIEnv *jvm, jobject jself, jshort jchannel,
+                                                                 jlong jchannelPosition, jint jdomain) {
+    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
+
+    updateid_t id((stream_t) jchannel, (seqid_t) jchannelPosition);
+    domain_t domain = (domain_t) jdomain;
+
+    instance->DeliverDeletion(id, domain);
+}
+
+/*
+ * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
+ * Method:    getLatestUpdatesIdentifier
  * Signature: ()[J
  */
-JNIEXPORT jlongArray JNICALL Java_eu_modernmt_decoder_phrasebased_MosesDecoder_getNativeDataListeners
-        (JNIEnv *jvm, jobject jself) {
-    const MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
-    const vector<IncrementalModel *> &incrementalModels = instance->GetIncrementalModels();
+JNIEXPORT jlongArray JNICALL
+Java_eu_modernmt_decoder_phrasebased_MosesDecoder_getLatestUpdatesIdentifier(JNIEnv *jvm, jobject jself) {
+    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
 
-    vector<jlong> jmodelsVector;
-    for (auto model = incrementalModels.begin(); model != incrementalModels.end(); ++model) {
-        jlong pointer = (jlong) *model;
-        jmodelsVector.push_back(pointer);
+    unordered_map<stream_t, seqid_t> ids = instance->GetLatestUpdatesIdentifiers();
+
+    vector<jlong> jidsArray(ids.size() * 2);
+    size_t i = 0;
+    for (auto entry = ids.begin(); entry != ids.end(); ++entry) {
+        jidsArray[i++] = (jlong) entry->first;
+        jidsArray[i++] = (jlong) entry->second;
     }
 
-    jsize size = (jsize) jmodelsVector.size();
+    jsize size = (jsize) jidsArray.size();
 
     jlongArray jarray = jvm->NewLongArray(size);
-    jvm->SetLongArrayRegion(jarray, 0, size, jmodelsVector.data());
+    jvm->SetLongArrayRegion(jarray, 0, size, jidsArray.data());
 
     return jarray;
 }
 
 /*
- * Class:     eu_modernmt_decoder_moses_MosesDecoder
+ * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
  * Method:    dispose
  * Signature: (J)J
  */

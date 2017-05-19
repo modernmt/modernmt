@@ -77,6 +77,7 @@ namespace mmt {
             IndexIterator *NewIterator() const;
 
         private:
+            logging::Logger logger;
             const bool openForBulkLoad;
             const uint8_t prefixLength;
 

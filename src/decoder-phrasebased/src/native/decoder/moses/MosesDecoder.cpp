@@ -126,7 +126,12 @@ namespace mmt {
                                             const std::map<std::string, float> *translationContext,
                                             size_t nbestListSize) override;
 
-            virtual const vector<IncrementalModel *> &GetIncrementalModels() const override;
+            void DeliverUpdate(const updateid_t &id, const domain_t domain, const std::string &source,
+                               const std::string &target, const alignment_t &alignment) override;
+
+            void DeliverDeletion(const updateid_t &id, const domain_t domain) override;
+
+            unordered_map<stream_t, seqid_t> GetLatestUpdatesIdentifiers() override;
         };
     }
 }
@@ -274,6 +279,60 @@ translation_t MosesDecoderImpl::translate(const std::string &text,
     return response;
 }
 
-const vector<IncrementalModel *> &MosesDecoderImpl::GetIncrementalModels() const {
-    return m_incrementalModels;
+void MosesDecoderImpl::DeliverUpdate(const updateid_t &id, const domain_t domain, const string &strSource,
+                                     const string &strTarget, const alignment_t &alignment) {
+    vector<string> _source;
+    vector<string> _target;
+
+    Explode(strSource, _source);
+    Explode(strTarget, _target);
+
+    vector<wid_t> source;
+    vector<wid_t> target;
+
+    vb.Lookup(_source, source, true);
+    vb.Lookup(_target, target, true);
+
+    for (auto it = m_incrementalModels.begin(); it != m_incrementalModels.end(); ++it) {
+        IncrementalModel *model = *it;
+        model->Add(id, domain, source, target, alignment);
+    }
+}
+
+void MosesDecoderImpl::DeliverDeletion(const updateid_t &id, const domain_t domain) {
+    for (auto it = m_incrementalModels.begin(); it != m_incrementalModels.end(); ++it) {
+        IncrementalModel *model = *it;
+        model->Delete(id, domain);
+    }
+}
+
+unordered_map<stream_t, seqid_t> MosesDecoderImpl::GetLatestUpdatesIdentifiers() {
+    unordered_map<stream_t, seqid_t> result;
+
+    if (!m_incrementalModels.empty()) {
+        result = m_incrementalModels[0]->GetLatestUpdatesIdentifier();
+
+        for (size_t i = 1; i < m_incrementalModels.size(); ++i) {
+            IncrementalModel *model = m_incrementalModels[i];
+
+            unordered_map<stream_t, seqid_t> ids = model->GetLatestUpdatesIdentifier();
+            for (auto id = ids.begin(); id != ids.end(); ++id) {
+                auto other = result.find(id->first);
+
+                if (other != result.end())
+                    result[id->first] = std::min(id->second, other->second);
+            }
+
+            for (auto it = result.begin(); it != result.end();) {
+                auto other = ids.find(it->first);
+
+                if (other == ids.end()) {
+                    it = result.erase(it);
+                } else
+                    it++;
+            }
+        }
+    }
+
+    return result;
 }

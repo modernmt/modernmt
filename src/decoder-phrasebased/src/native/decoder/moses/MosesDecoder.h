@@ -74,12 +74,13 @@ namespace mmt {
                                             const std::map<std::string, float> *translationContext,
                                             size_t nbestListSize) = 0;
 
-            /**
-             * Returns the list of internal incremental models.
-             *
-             * @return the list of internal incremental models
-             */
-            virtual const std::vector<IncrementalModel *> &GetIncrementalModels() const = 0;
+            virtual void DeliverUpdate(const updateid_t &id, const domain_t domain,
+                                       const std::string &source, const std::string &target,
+                                       const alignment_t &alignment) = 0;
+
+            virtual void DeliverDeletion(const updateid_t &id, const domain_t domain) = 0;
+
+            virtual std::unordered_map<stream_t, seqid_t> GetLatestUpdatesIdentifiers() = 0;
 
             virtual ~MosesDecoder() {}
 

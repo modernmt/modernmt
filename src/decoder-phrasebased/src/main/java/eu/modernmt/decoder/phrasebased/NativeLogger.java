@@ -17,7 +17,6 @@ class NativeLogger {
             Level.TRACE, Level.DEBUG, Level.INFO, Level.WARN, Level.ERROR, Level.FATAL, Level.TRACE
     };
 
-    // TODO: Where to call this?
     public static native void initialize();
 
     protected static int createLogger(String _loggerName) {
