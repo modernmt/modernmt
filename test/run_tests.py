@@ -4,18 +4,17 @@ from argparse import ArgumentParser
 
 
 class Tester:
-
     TESTS_DIRECTORY_NAME = "tests"
     JSON_DESCRIPTION_FILE_NAME = "info.json"
     ERR_LOG_FILE_NAME = "err.log"
     ROOT_DIR = os.path.dirname(os.path.realpath(__file__))
-    TESTS_PATH = os.path.join( ROOT_DIR, TESTS_DIRECTORY_NAME)
+    TESTS_PATH = os.path.join(ROOT_DIR, TESTS_DIRECTORY_NAME)
 
-    def run_test(self, test_name, verbose = True):
+    def run_test(self, test_name, verbose=True):
         import subprocess
-        test_path = os.path.join(Tester.TESTS_PATH,test_name)
+        test_path = os.path.join(Tester.TESTS_PATH, test_name)
         os.chdir(test_path)
-        process = subprocess.Popen(['./launch.sh'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(['./launch.sh'], stdout=subprocess.PIPE, stderr=sys.stderr)
         out, err = process.communicate()
         os.chdir(Tester.ROOT_DIR)
 
@@ -36,7 +35,7 @@ class Tester:
         failed_tests = []
         available_tests = sorted(self.get_available_tests())
         for (test_name, test_dir) in available_tests:
-            json_file_path = os.path.join(test_dir,Tester.JSON_DESCRIPTION_FILE_NAME)
+            json_file_path = os.path.join(test_dir, Tester.JSON_DESCRIPTION_FILE_NAME)
             if self.check_well_formed_info_json(json_file_path) == True:
                 with open(json_file_path) as data_file:
                     json_information = json.load(data_file)
@@ -64,7 +63,7 @@ class Tester:
             print "No test found."
             return
         for (test_name, test_dir) in available_tests:
-            json_file_path = os.path.join(test_dir,Tester.JSON_DESCRIPTION_FILE_NAME)
+            json_file_path = os.path.join(test_dir, Tester.JSON_DESCRIPTION_FILE_NAME)
             is_json_valid = self.check_well_formed_info_json(json_file_path)
             if is_json_valid == True:
                 with open(json_file_path) as data_file:
@@ -78,7 +77,7 @@ class Tester:
             else:
                 malformed_tests.append((test_name, is_json_valid))
 
-        #Print information
+        # Print information
         print "\n## ENABLED TEST ##"
         print "#%s\t%s\t%s" % ("Test_name", "Enabled", "Description")
         for test in enabled_tests:
@@ -94,8 +93,8 @@ class Tester:
         print "\n"
 
     def change_status_test(self, test_name, status):
-        test_dir = os.path.join(Tester.TESTS_PATH,test_name)
-        json_file_path = os.path.join(test_dir,Tester.JSON_DESCRIPTION_FILE_NAME)
+        test_dir = os.path.join(Tester.TESTS_PATH, test_name)
+        json_file_path = os.path.join(test_dir, Tester.JSON_DESCRIPTION_FILE_NAME)
         is_json_valid = self.check_well_formed_info_json(json_file_path)
         if is_json_valid == True:
             with open(json_file_path) as data_file:
@@ -109,8 +108,8 @@ class Tester:
             print is_json_valid
 
     def print_info(self, test_name):
-        test_dir = os.path.join(Tester.TESTS_PATH,test_name)
-        json_file_path = os.path.join(test_dir,Tester.JSON_DESCRIPTION_FILE_NAME)
+        test_dir = os.path.join(Tester.TESTS_PATH, test_name)
+        json_file_path = os.path.join(test_dir, Tester.JSON_DESCRIPTION_FILE_NAME)
         is_json_valid = self.check_well_formed_info_json(json_file_path)
         if is_json_valid == True:
             with open(json_file_path) as data_file:
@@ -118,8 +117,10 @@ class Tester:
             print json.dumps(json_information, indent=4, separators=(',', ': '))
         else:
             print is_json_valid
+
     def get_available_tests(self):
-        return [(test, os.path.join(Tester.TESTS_PATH,test)) for test in os.listdir(Tester.TESTS_PATH) if os.path.isdir(os.path.join(Tester.TESTS_PATH,test))]
+        return [(test, os.path.join(Tester.TESTS_PATH, test)) for test in os.listdir(Tester.TESTS_PATH) if
+                os.path.isdir(os.path.join(Tester.TESTS_PATH, test))]
 
     def check_well_formed_info_json(self, json_file_path):
         try:
@@ -133,7 +134,7 @@ class Tester:
                 raise ValueError('The value of the key \'enabled\' must be a boolean')
             return True
         except ValueError, e:
-               return str(e)
+            return str(e)
 
 
 if __name__ == "__main__":
@@ -141,17 +142,17 @@ if __name__ == "__main__":
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-a', "-all", dest="all", action='store_true',
-                      help="Run all the enabled tests")
+                       help="Run all the enabled tests")
     group.add_argument('-n', "--name", dest="single", metavar='TEST_NAME',
-                      help="Run the specified test")
+                       help="Run the specified test")
     group.add_argument('-l', "--list", dest="list", action='store_true',
-                      help="List all the available tests")
+                       help="List all the available tests")
     group.add_argument('-e', "--enable", dest="enable", metavar='TEST_NAME',
-                      help="Enable the specified test")
+                       help="Enable the specified test")
     group.add_argument('-d', "--disable", dest="disable", metavar='TEST_NAME',
-                      help="Disable the specified test")
+                       help="Disable the specified test")
     group.add_argument('-i', "--info", dest="info", metavar='TEST_NAME',
-                      help="Print information about the specified test")
+                       help="Print information about the specified test")
     args = parser.parse_args()
 
     tester = Tester()

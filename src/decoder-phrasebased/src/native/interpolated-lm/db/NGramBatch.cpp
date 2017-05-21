@@ -10,7 +10,7 @@ using namespace mmt;
 using namespace mmt::ilm;
 
 NGramBatch::NGramBatch(uint8_t order, size_t maxSize, const vector<seqid_t> &_streams) : order(order), maxSize(maxSize),
-                                                                                         size(0) {
+                                                                                         size(0), sentenceCount(0) {
     streams = _streams;
 }
 
@@ -36,6 +36,8 @@ bool NGramBatch::Add(const updateid_t &id, const domain_t domain, const vector<w
 }
 
 inline void NGramBatch::AddToBatch(const domain_t domain, const vector<wid_t> &sentence, const count_t count) {
+    sentenceCount++;
+
     auto el = ngrams_map.emplace(domain, ngram_table_t());
     ngram_table_t &ngrams = el.first->second;
 
@@ -93,6 +95,7 @@ void NGramBatch::Clear() {
     ngrams_map.clear();
     deletions.clear();
     size = 0;
+    sentenceCount = 0;
 }
 
 bool NGramBatch::SetStreamIfValid(stream_t stream, seqid_t sentence) {
