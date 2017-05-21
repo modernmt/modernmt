@@ -55,8 +55,13 @@ public:
 };
 
 NGramStorage::NGramStorage(string basepath, uint8_t order, double gcTimeout,
+<<<<<<< HEAD
                            bool prepareForBulkLoad) throw(storage_exception) : logger("ilm.NGramStorage"),
                                                                                order(order) {
+=======
+                           bool prepareForBulkLoad) throw(storage_exception) : order(order),
+                                                                               logger("ilm.NGramStorage") {
+>>>>>>> develop
     rocksdb::Options options;
     options.create_if_missing = true;
     options.merge_operator.reset(new CountsAddOperator);
@@ -142,7 +147,7 @@ size_t NGramStorage::GetEstimateSize() const {
 }
 
 void NGramStorage::PutBatch(NGramBatch &batch) throw(storage_exception) {
-    LogInfo(logger) << "Loading batch of N-Grams";
+    LogInfo(logger) << "Importing batch of " << batch.sentenceCount << " sentences.";
     WriteBatch writeBatch;
 
     for (auto it = batch.ngrams_map.begin(); it != batch.ngrams_map.end(); ++it) {
@@ -182,7 +187,7 @@ bool NGramStorage::PrepareBatch(domain_t domain, ngram_table_t &table, rocksdb::
     count_t wordCount = 0;
 
     for (size_t o = order; o > 0; --o) {
-        unordered_map<ngram_hash_t, ngram_t> &entry = table[o - 1];
+        unordered_map <ngram_hash_t, ngram_t> &entry = table[o - 1];
 
         for (auto it = entry.begin(); it != entry.end(); ++it) {
             ngram_hash_t h = it->first;
@@ -229,7 +234,7 @@ bool NGramStorage::PrepareBatch(domain_t domain, ngram_table_t &table, rocksdb::
 
     // Update n-grams (down to words)
     for (size_t o = order; o > 0; --o) {
-        unordered_map<ngram_hash_t, ngram_t> &entry = table[o - 1];
+        unordered_map <ngram_hash_t, ngram_t> &entry = table[o - 1];
 
         for (auto it = entry.begin(); it != entry.end(); ++it) {
             ngram_hash_t h = it->first;
@@ -251,7 +256,7 @@ void NGramStorage::ForceCompaction() {
     db->CompactRange(CompactRangeOptions(), NULL, NULL);
 }
 
-const vector<seqid_t> &NGramStorage::GetStreamsStatus() const {
+const vector <seqid_t> &NGramStorage::GetStreamsStatus() const {
     return streams;
 }
 

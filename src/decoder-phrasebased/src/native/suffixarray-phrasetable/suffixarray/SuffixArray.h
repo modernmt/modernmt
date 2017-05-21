@@ -8,6 +8,7 @@
 #include <string>
 #include <rocksdb/db.h>
 #include <mmt/IncrementalModel.h>
+#include <mmt/logging/Logger.h>
 #include <unordered_set>
 #include <mutex>
 #include <mmt/sentence.h>
@@ -77,7 +78,7 @@ namespace mmt {
             IndexIterator *NewIterator() const;
 
         private:
-            logging::Logger logger;
+            const logging::Logger logger;
             const bool openForBulkLoad;
             const uint8_t prefixLength;
 

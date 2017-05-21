@@ -10,6 +10,7 @@
 #include <rocksdb/db.h>
 #include <lm/LM.h>
 #include <mmt/IncrementalModel.h>
+#include <mmt/logging/Logger.h>
 #include "counts.h"
 #include "NGramBatch.h"
 #include "GarbageCollector.h"
@@ -72,7 +73,7 @@ namespace mmt {
             const vector<seqid_t> &GetStreamsStatus() const;
 
         private:
-            logging::Logger logger;
+            const logging::Logger logger;
             const uint8_t order;
             vector<seqid_t> streams;
             rocksdb::DB *db;
