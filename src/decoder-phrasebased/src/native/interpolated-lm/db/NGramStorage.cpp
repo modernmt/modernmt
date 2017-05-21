@@ -55,13 +55,8 @@ public:
 };
 
 NGramStorage::NGramStorage(string basepath, uint8_t order, double gcTimeout,
-<<<<<<< HEAD
                            bool prepareForBulkLoad) throw(storage_exception) : logger("ilm.NGramStorage"),
                                                                                order(order) {
-=======
-                           bool prepareForBulkLoad) throw(storage_exception) : order(order),
-                                                                               logger("ilm.NGramStorage") {
->>>>>>> develop
     rocksdb::Options options;
     options.create_if_missing = true;
     options.merge_operator.reset(new CountsAddOperator);
