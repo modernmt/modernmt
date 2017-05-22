@@ -76,6 +76,7 @@ class MainController:
                 try:
                     translation = self._decoder.translate(request.source, request.suggestions)
                     response = TranslationResponse(request.id, translation=translation)
+                    print 'def MainController::run HERE response.to_json_string():', response.to_json_string()
                 except BaseException as e:
                     response = TranslationResponse(request.id, exception=e)
 
@@ -158,3 +159,15 @@ def run_main():
 
 if __name__ == '__main__':
     run_main()
+
+
+
+
+
+#############
+##### An example of call
+##### echo '{"id":1, "source":"hello and goodbye", "suggestions":[{"source": "A", "target": "a", "score":"0.1"},{"source": "B", "target": "b", "score":"0.2"}]}'  | python nmt_decoder modelAAA_acc_0.00_ppl_3634.55_e2.pt
+#############
+
+
+
