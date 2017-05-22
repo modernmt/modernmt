@@ -13,13 +13,13 @@
         <module>aligner-fastalign</module>
         <module>contextanalyzer-lucene</module>
         <module>decoder-phrasebased</module>
+        <module>decoder-opennmt</module>
         <module>persistence-cassandra</module>
 
         <module>core</module>
 
         <module>api-rest</module>
         <module>command-line</module>
-        <module>mmt-decoder-opennmt</module>
     </modules>
 
     <packaging>pom</packaging>
