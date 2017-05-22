@@ -6,7 +6,7 @@ class Suggestion:
         self.score = score
 
 
-class Decoder:
+class MMTDecoder:
     def __init__(self, model_path, threads=None):
         """
         Creates a new instance of an NMT decoder
