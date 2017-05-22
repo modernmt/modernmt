@@ -148,8 +148,12 @@ def run_main():
     args = parser.parse_args()
 
     decoder = OpenNMTDecoder(args.model)
-    controller = MainController(decoder)
-    controller.serve_forever()
+
+    try:
+        controller = MainController(decoder)
+        controller.serve_forever()
+    finally:
+        decoder.close()
 
 
 if __name__ == '__main__':
