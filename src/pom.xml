@@ -19,6 +19,7 @@
 
         <module>api-rest</module>
         <module>command-line</module>
+        <module>mmt-decoder-opennmt</module>
     </modules>
 
     <packaging>pom</packaging>
