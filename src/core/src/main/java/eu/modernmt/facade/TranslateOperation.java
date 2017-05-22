@@ -2,6 +2,7 @@ package eu.modernmt.facade;
 
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.decoder.Decoder;
+import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.model.ContextVector;
@@ -34,7 +35,7 @@ class TranslateOperation implements Callable<DecoderTranslation>, Serializable {
     }
 
     @Override
-    public DecoderTranslation call() throws ProcessingException {
+    public DecoderTranslation call() throws ProcessingException, DecoderException {
         ClusterNode node = ModernMT.getNode();
 
         Engine engine = node.getEngine();

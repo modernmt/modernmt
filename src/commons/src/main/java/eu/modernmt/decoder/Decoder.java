@@ -21,11 +21,11 @@ public interface Decoder extends Closeable {
 
     // Translate
 
-    DecoderTranslation translate(Sentence text);
+    DecoderTranslation translate(Sentence text) throws DecoderException;
 
-    DecoderTranslation translate(Sentence text, ContextVector contextVector);
+    DecoderTranslation translate(Sentence text, ContextVector contextVector) throws DecoderException;
 
-    DecoderTranslation translate(Sentence text, int nbestListSize);
+    DecoderTranslation translate(Sentence text, int nbestListSize) throws DecoderException;
 
-    DecoderTranslation translate(Sentence text, ContextVector contextVector, int nbestListSize);
+    DecoderTranslation translate(Sentence text, ContextVector contextVector, int nbestListSize) throws DecoderException;
 }

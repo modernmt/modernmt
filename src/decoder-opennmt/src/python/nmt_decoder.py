@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import Queue
 import argparse
 import json
@@ -132,6 +131,11 @@ class MainController:
             self._close()
 
     def _close(self):
+        with self._in.mutex:
+            self._in.queue.clear()
+        with self._out.mutex:
+            self._out.queue.clear()
+
         for _ in self._workers:
             self._in.put(MainController.POISON_PILL)
         self._out.put(MainController.POISON_PILL)

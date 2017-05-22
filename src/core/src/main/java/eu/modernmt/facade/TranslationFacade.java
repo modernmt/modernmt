@@ -84,6 +84,8 @@ public class TranslationFacade {
                 throw new TranslationException("Problem while processing translation", cause);
             else if (cause instanceof RuntimeException)
                 throw new TranslationException("Unexpected exceptions while translating", cause);
+            else if (cause instanceof DecoderException)
+                throw new TranslationException("Problem while decoding source sentence", cause);
             else
                 throw new Error("Unexpected exception: " + cause.getMessage(), cause);
         }
