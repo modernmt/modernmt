@@ -16,6 +16,7 @@ public class FileConst {
     private static File _enginesPath = null;
     private static File _runtimePath = null;
     private static File _vendorPath = null;
+    private static File _libPath = null;
 
     private static File getHome() {
         if (_home == null) {
@@ -55,6 +56,18 @@ public class FileConst {
         }
 
         return _resourcePath;
+    }
+
+    public static File getLibPath() {
+        if (_libPath == null) {
+            File lib = Paths.join(getHome(), "build", "lib");
+            if (!lib.isDirectory())
+                throw new IllegalStateException("Invalid path for property '" + SYSPROP_MMT_HOME + "': " + lib + " must be a valid directory.");
+
+            _libPath = lib;
+        }
+
+        return _libPath;
     }
 
     public static File getEngineRoot(String engine) {

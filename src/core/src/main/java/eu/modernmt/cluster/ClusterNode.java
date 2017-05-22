@@ -4,14 +4,12 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.*;
-import eu.modernmt.aligner.Aligner;
 import eu.modernmt.cluster.db.DatabaseLoader;
 import eu.modernmt.cluster.db.EmbeddedCassandra;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.cluster.kafka.EmbeddedKafka;
 import eu.modernmt.cluster.kafka.KafkaDataManager;
 import eu.modernmt.config.*;
-import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.data.DataManager;
@@ -201,14 +199,14 @@ public class ClusterNode {
 
     // Cluster startup
 
-    private static void addToDataManager(Object object, DataManager manager) {
-        if (object == null)
-            return;
+    private static void addToDataManager(DataListener listener, DataManager manager) {
+        if (listener != null)
+            manager.addDataListener(listener);
+    }
 
-        if (object instanceof DataListener) {
-            manager.addDataListener((DataListener) object);
-        } else if (object instanceof DataListenerProvider) {
-            for (DataListener listener : ((DataListenerProvider) object).getDataListeners())
+    private static void addToDataManager(DataListenerProvider provider, DataManager manager) {
+        if (provider != null) {
+            for (DataListener listener : provider.getDataListeners())
                 manager.addDataListener(listener);
         }
     }
@@ -349,14 +347,7 @@ public class ClusterNode {
             this.dataManager = new KafkaDataManager(uuid, this.engine, dataStreamConfig);
             this.dataManager.setDataManagerListener(this::updateChannelsPositions);
 
-            Aligner aligner = this.engine.getAligner();
-            Decoder decoder = this.engine.getDecoder();
-            ContextAnalyzer contextAnalyzer = engine.getContextAnalyzer();
-
-            addToDataManager(aligner, this.dataManager);
-            addToDataManager(decoder, this.dataManager);
-            addToDataManager(contextAnalyzer, this.dataManager);
-
+            addToDataManager(this.engine, this.dataManager);
             updateChannelsPositions(this.dataManager.getChannelsPositions());
 
             try {
@@ -407,10 +398,7 @@ public class ClusterNode {
             if (!embeddedDatabase && databaseConfig.getName() == null)
                 throw new BootstrapException("Database name is compulsory if database is not embedded");
 
-
-            // I am always allowed to create a DB if it is missing
-            boolean createIfMissing = true;
-            this.database = DatabaseLoader.load(engine, databaseConfig, createIfMissing);
+            this.database = DatabaseLoader.load(engine, databaseConfig);
             //load may throw a bootstrap exception: just let it pass
         }
 

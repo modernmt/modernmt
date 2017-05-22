@@ -2,12 +2,13 @@ package eu.modernmt.engine;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.fastalign.FastAlign;
-import eu.modernmt.config.DecoderConfig;
 import eu.modernmt.config.EngineConfig;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.lucene.LuceneAnalyzer;
+import eu.modernmt.data.DataListener;
+import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.Decoder;
-import eu.modernmt.decoder.phrasebased.MosesDecoder;
+import eu.modernmt.engine.impl.NeuralEngine;
 import eu.modernmt.io.Paths;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.processing.Postprocessor;
@@ -19,12 +20,14 @@ import org.apache.commons.io.IOUtils;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Locale;
 
 /**
  * Created by davide on 19/04/16.
  */
-public class Engine implements Closeable {
+public abstract class Engine implements Closeable, DataListenerProvider {
 
     static {
         initialize();
@@ -44,31 +47,31 @@ public class Engine implements Closeable {
         return new File(FileConst.getEngineRoot(engine), ENGINE_CONFIG_PATH);
     }
 
-    private final File root;
-    private final File runtime;
-    private final File models;
-    private final File logs;
+    protected final File root;
+    protected final File runtime;
+    protected final File models;
+    protected final File logs;
 
-    private final String name;
-    private final Locale sourceLanguage;
-    private final Locale targetLanguage;
+    protected final String name;
+    protected final Locale sourceLanguage;
+    protected final Locale targetLanguage;
 
-    private final Decoder decoder;
-    private final Aligner aligner;
-    private final Preprocessor sourcePreprocessor;
-    private final Preprocessor targetPreprocessor;
-    private final Postprocessor postprocessor;
-    private final ContextAnalyzer contextAnalyzer;
+    protected final Aligner aligner;
+    protected final Preprocessor sourcePreprocessor;
+    protected final Preprocessor targetPreprocessor;
+    protected final Postprocessor postprocessor;
+    protected final ContextAnalyzer contextAnalyzer;
 
     public static Engine load(EngineConfig config) throws BootstrapException {
         try {
-            return new Engine(config);
+            //TODO: hard-coded, must be read from EngineConfig
+            return new NeuralEngine(config);
         } catch (Exception e) {
             throw new BootstrapException(e);
         }
     }
 
-    private Engine(EngineConfig config) throws IOException, PersistenceException {
+    protected Engine(EngineConfig config) throws IOException, PersistenceException {
         this.name = config.getName();
         this.sourceLanguage = config.getSourceLanguage();
         this.targetLanguage = config.getTargetLanguage();
@@ -83,24 +86,13 @@ public class Engine implements Closeable {
         this.postprocessor = new Postprocessor(sourceLanguage, targetLanguage);
         this.aligner = new FastAlign(Paths.join(this.models, "align"));
         this.contextAnalyzer = new LuceneAnalyzer(Paths.join(this.models, "context"), sourceLanguage);
-
-        DecoderConfig decoderConfig = config.getDecoderConfig();
-        if (decoderConfig.isEnabled())
-            this.decoder = new MosesDecoder(Paths.join(this.models, "decoder"), decoderConfig.getThreads());
-        else
-            this.decoder = null;
     }
 
     public String getName() {
         return name;
     }
 
-    public Decoder getDecoder() {
-        if (decoder == null)
-            throw new UnsupportedOperationException("Decoder unavailable");
-
-        return decoder;
-    }
+    public abstract Decoder getDecoder();
 
     public Aligner getAligner() {
         if (aligner == null)
@@ -155,6 +147,13 @@ public class Engine implements Closeable {
         return folder;
     }
 
+    @Override
+    public Collection<DataListener> getDataListeners() {
+        ArrayList<DataListener> listeners = new ArrayList<>();
+        listeners.add(contextAnalyzer);
+        return listeners;
+    }
+
     public File getLogFile(String name) {
         return new File(this.logs, name);
     }
@@ -164,8 +163,6 @@ public class Engine implements Closeable {
         IOUtils.closeQuietly(sourcePreprocessor);
         IOUtils.closeQuietly(targetPreprocessor);
         IOUtils.closeQuietly(postprocessor);
-
-        IOUtils.closeQuietly(decoder);
         IOUtils.closeQuietly(aligner);
         IOUtils.closeQuietly(contextAnalyzer);
     }

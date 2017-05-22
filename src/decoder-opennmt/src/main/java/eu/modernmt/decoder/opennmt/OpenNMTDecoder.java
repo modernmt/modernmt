@@ -1,13 +1,9 @@
 package eu.modernmt.decoder.opennmt;
 
-import eu.modernmt.data.DataListener;
-import eu.modernmt.data.Deletion;
-import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.opennmt.model.TranslationRequest;
-import eu.modernmt.io.Paths;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 
@@ -18,12 +14,12 @@ import java.util.Map;
 /**
  * Created by davide on 22/05/17.
  */
-public class OpenNMTDecoder implements Decoder, DataListener {
+public class OpenNMTDecoder implements Decoder {
 
     private final ExecutionQueue executor;
 
-    public OpenNMTDecoder(File home, File modelPath) throws IOException {
-        File pythonHome = Paths.join(home, "build", "lib", "opennmt");
+    public OpenNMTDecoder(File libPath, File modelPath) throws IOException {
+        File pythonHome = new File(libPath, "opennmt");
 
         ProcessBuilder builder = new ProcessBuilder("python", "nmt_decoder.py", modelPath.getAbsolutePath());
         builder.directory(pythonHome);
@@ -70,23 +66,6 @@ public class OpenNMTDecoder implements Decoder, DataListener {
 
         TranslationRequest request = new TranslationRequest(text);
         return executor.execute(request).get();
-    }
-
-    // DataListener
-
-    @Override
-    public void onDataReceived(TranslationUnit unit) throws Exception {
-
-    }
-
-    @Override
-    public void onDelete(Deletion deletion) throws Exception {
-
-    }
-
-    @Override
-    public Map<Short, Long> getLatestChannelPositions() {
-        return null;
     }
 
     // Closeable
