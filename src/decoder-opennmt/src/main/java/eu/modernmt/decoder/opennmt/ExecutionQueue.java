@@ -114,6 +114,9 @@ class ExecutionQueue implements Closeable {
                 if (response == POISON_PILL)
                     throw new OpenNMTRejectedExecutionException();
 
+                if (response == null)
+                    throw new OpenNMTTimeoutException();
+
                 if (response.hasException())
                     throw response.getException();
 

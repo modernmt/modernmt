@@ -5,8 +5,7 @@ import threading
 
 import sys
 
-from nmt import Suggestion
-from nmt.opennmt import OpenNMTDecoder
+from nmt import Suggestion, MMTDecoder
 
 
 class TranslationRequest:
@@ -145,13 +144,24 @@ class MainController:
         self._printer.join()
 
 
+class YodaDecoder(MMTDecoder):
+    def __init__(self):
+        MMTDecoder.__init__(self, '')
+
+    def translate(self, text, suggestions=None):
+        return reversed(text)
+
+    def _preferred_threads(self):
+        return 1
+
+
 def run_main():
     parser = argparse.ArgumentParser(description='Run a forever-loop serving translation requests')
     parser.add_argument('model', metavar='MODEL', help='the path to the decoder model')
 
     args = parser.parse_args()
 
-    decoder = OpenNMTDecoder(args.model)
+    decoder = YodaDecoder()
 
     try:
         controller = MainController(decoder)
