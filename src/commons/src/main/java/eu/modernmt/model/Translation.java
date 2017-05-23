@@ -13,6 +13,7 @@ public class Translation extends Sentence {
     protected final Sentence source;
     private Alignment alignment;
     private long elapsedTime;
+    private List<Translation> nbest;
 
     public Translation(Word[] words, Sentence source, Alignment alignment) {
         this(words, null, source, alignment);
@@ -47,6 +48,18 @@ public class Translation extends Sentence {
 
     public boolean hasAlignment() {
         return alignment != null && alignment.size() > 0;
+    }
+
+    public List<Translation> getNbest() {
+        return nbest;
+    }
+
+    public boolean hasNbest() {
+        return nbest != null && nbest.size() > 0;
+    }
+
+    public void setNbest(List<Translation> nbest) {
+        this.nbest = nbest;
     }
 
     public List<Phrase> getPhrases() {

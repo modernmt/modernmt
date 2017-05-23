@@ -5,6 +5,7 @@ import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.decoder.*;
 import eu.modernmt.engine.Engine;
+import eu.modernmt.facade.exceptions.TranslationException;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.MultiOptionsToken;
 import eu.modernmt.model.Token;
@@ -28,10 +29,17 @@ public class TranslationFacade {
     //  Decoder Weights
     // =============================
 
+    private DecoderWithFeatures getDecoderWithFeatures() {
+        Decoder decoder = ModernMT.getNode().getEngine().getDecoder();
+        if (!(decoder instanceof DecoderWithFeatures))
+            throw new UnsupportedOperationException("Decoder '" + decoder.getClass().getSimpleName() + "' does not support features.");
+        return (DecoderWithFeatures) decoder;
+    }
+
     public Map<DecoderFeature, float[]> getDecoderWeights() {
         // Invoke on local decoder instance because it's just a matter of
         // properties reading and not a real computation
-        Decoder decoder = ModernMT.getNode().getEngine().getDecoder();
+        DecoderWithFeatures decoder = getDecoderWithFeatures();
 
         HashMap<DecoderFeature, float[]> result = new HashMap<>();
         for (DecoderFeature feature : decoder.getFeatures()) {
@@ -43,6 +51,7 @@ public class TranslationFacade {
     }
 
     public void setDecoderWeights(Map<String, float[]> weights) {
+        getDecoderWithFeatures(); // Ensure decoder supports features
         ModernMT.getNode().notifyDecoderWeightsChanged(weights);
     }
 
@@ -50,28 +59,32 @@ public class TranslationFacade {
     //  Translation
     // =============================
 
-    public DecoderTranslation get(String sentence) throws TranslationException {
-        return get(sentence, null, 0);
+    private void ensureNBestDecoder() {
+        Decoder decoder = ModernMT.getNode().getEngine().getDecoder();
+        if (!(decoder instanceof DecoderWithNBest))
+            throw new UnsupportedOperationException("Decoder '" + decoder.getClass().getSimpleName() + "' does not support N-best.");
     }
 
-    public DecoderTranslation get(String sentence, ContextVector translationContext) throws TranslationException {
-        return get(sentence, translationContext, 0);
+    public Translation get(String sentence) throws TranslationException {
+        return get(new TranslateOperation(sentence, null, 0));
     }
 
-    public DecoderTranslation get(String sentence, int nbest) throws TranslationException {
-        return get(sentence, null, nbest);
+    public Translation get(String sentence, ContextVector translationContext) throws TranslationException {
+        return get(new TranslateOperation(sentence, translationContext, 0));
     }
 
-    public DecoderTranslation get(String sentence, ContextVector translationContext, int nbest) throws TranslationException {
-        TranslateOperation operation;
+    public Translation get(String sentence, int nbest) throws TranslationException {
+        ensureNBestDecoder();
+        return get(new TranslateOperation(sentence, null, nbest));
+    }
 
-        if (translationContext != null) {
-            operation = new TranslateOperation(sentence, translationContext, nbest);
-        } else {
-            operation = new TranslateOperation(sentence, nbest);
-        }
+    public Translation get(String sentence, ContextVector translationContext, int nbest) throws TranslationException {
+        ensureNBestDecoder();
+        return get(new TranslateOperation(sentence, translationContext, nbest));
+    }
 
-        DecoderTranslation rootTranslation;
+    private Translation get(TranslateOperation operation) throws TranslationException {
+        Translation rootTranslation;
 
         try {
             rootTranslation = ModernMT.getNode().submit(operation).get();
@@ -98,9 +111,8 @@ public class TranslationFacade {
                     String[] options = mop.getSourceOptions();
                     Translation[] translations = new Translation[options.length];
 
-                    for (int i = 0; i < translations.length; i++) {
-                        translations[i] = get(options[i], translationContext, 0);
-                    }
+                    for (int i = 0; i < translations.length; i++)
+                        translations[i] = get(new TranslateOperation(options[i], operation.context, 0));
 
                     mop.setTranslatedOptions(translations);
                 }
@@ -172,4 +184,5 @@ public class TranslationFacade {
         else
             throw new Error("Unexpected exception: " + cause.getMessage(), cause);
     }
+
 }

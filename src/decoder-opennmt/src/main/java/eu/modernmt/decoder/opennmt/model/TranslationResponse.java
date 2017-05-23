@@ -2,10 +2,10 @@ package eu.modernmt.decoder.opennmt.model;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import eu.modernmt.decoder.DecoderTranslation;
 import eu.modernmt.decoder.opennmt.OpenNMTException;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
 
 /**
@@ -78,7 +78,7 @@ public class TranslationResponse {
         return exception;
     }
 
-    public DecoderTranslation getTranslation(Sentence source) {
-        return new DecoderTranslation(translation, source, null);
+    public Translation getTranslation(Sentence source) {
+        return new Translation(translation, source, null);
     }
 }

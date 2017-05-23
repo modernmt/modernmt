@@ -3,6 +3,7 @@ package eu.modernmt.engine.impl;
 import eu.modernmt.config.DecoderConfig;
 import eu.modernmt.config.EngineConfig;
 import eu.modernmt.decoder.Decoder;
+import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.opennmt.OpenNMTDecoder;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.engine.FileConst;
@@ -19,7 +20,7 @@ public class NeuralEngine extends Engine {
 
     private final OpenNMTDecoder decoder;
 
-    public NeuralEngine(EngineConfig config) throws IOException, PersistenceException {
+    public NeuralEngine(EngineConfig config) throws DecoderException, PersistenceException, IOException {
         super(config);
 
         DecoderConfig decoderConfig = config.getDecoderConfig();

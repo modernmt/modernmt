@@ -1,8 +1,8 @@
 package eu.modernmt.decoder.phrasebased;
 
-import eu.modernmt.decoder.DecoderTranslation;
-import eu.modernmt.decoder.TranslationHypothesis;
+import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
 
 import java.util.ArrayList;
@@ -26,12 +26,12 @@ class TranslationXObject {
             this.fvals = fvals;
         }
 
-        public TranslationHypothesis getTranslationHypothesis(Sentence source) {
-            HashMap<String, float[]> scores = new HashMap<>();
+        public TranslationHypothesis getTranslationHypothesis(Sentence source, HashMap<String, DecoderFeature> features) {
+            HashMap<DecoderFeature, float[]> scores = new HashMap<>();
 
             String[] tokens = fvals.trim().split("\\s+");
 
-            String feature = null;
+            DecoderFeature feature = null;
             float[] weights = new float[tokens.length];
             int index = 0;
 
@@ -43,7 +43,7 @@ class TranslationXObject {
                         scores.put(feature, Arrays.copyOf(weights, index));
 
                     if (token != null)
-                        feature = token.substring(0, token.length() - 1);
+                        feature = features.get(token.substring(0, token.length() - 1));
 
                     index = 0;
                 } else {
@@ -65,16 +65,16 @@ class TranslationXObject {
         this.alignment = alignment;
     }
 
-    public DecoderTranslation getTranslation(Sentence source) {
+    public Translation getTranslation(Sentence source, HashMap<String, DecoderFeature> features) {
         Word[] words = XUtils.explode(text);
 
-        DecoderTranslation translation = new DecoderTranslation(words, source, XUtils.decodeAlignment(alignment));
+        Translation translation = new Translation(words, source, XUtils.decodeAlignment(alignment));
 
         if (nbestList != null && nbestList.length > 0) {
-            List<TranslationHypothesis> nbest = new ArrayList<>(nbestList.length);
+            List<Translation> nbest = new ArrayList<>(nbestList.length);
 
             for (Hypothesis hyp : nbestList)
-                nbest.add(hyp.getTranslationHypothesis(source));
+                nbest.add(hyp.getTranslationHypothesis(source, features));
 
             translation.setNbest(nbest);
         }

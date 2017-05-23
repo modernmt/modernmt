@@ -14,8 +14,8 @@ import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.data.DataManager;
 import eu.modernmt.data.HostUnreachableException;
-import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderFeature;
+import eu.modernmt.decoder.DecoderWithFeatures;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.io.NetworkUtils;
@@ -434,7 +434,7 @@ public class ClusterNode {
         Map<String, float[]> weights = message.getMessageObject();
 
         // Updating decoder weights
-        Decoder decoder = engine.getDecoder();
+        DecoderWithFeatures decoder = (DecoderWithFeatures) engine.getDecoder();
         Map<DecoderFeature, float[]> map = new HashMap<>();
 
         for (DecoderFeature feature : decoder.getFeatures()) {

@@ -61,11 +61,11 @@ Java_eu_modernmt_decoder_phrasebased_MosesDecoder_instantiate(JNIEnv *jvm, jobje
 
 /*
  * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
- * Method:    getFeatures
+ * Method:    features
  * Signature: ()[Leu/modernmt/decoder/phrasebased/MosesFeature;
  */
 JNIEXPORT jobjectArray JNICALL
-Java_eu_modernmt_decoder_phrasebased_MosesDecoder_getFeatures(JNIEnv *jvm, jobject jself) {
+Java_eu_modernmt_decoder_phrasebased_MosesDecoder_features(JNIEnv *jvm, jobject jself) {
     MosesDecoder *moses = jni_gethandle<MosesDecoder>(jvm, jself);
     JMosesFeature MosesFeature(jvm);
 

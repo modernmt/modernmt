@@ -3,7 +3,7 @@ package eu.modernmt.decoder;
 import java.io.Serializable;
 
 /**
- * Created by davide on 09/05/16.
+ * Created by davide on 23/05/17.
  */
 public interface DecoderFeature extends Serializable {
 
@@ -12,4 +12,5 @@ public interface DecoderFeature extends Serializable {
     String getName();
 
     boolean isTunable();
+
 }

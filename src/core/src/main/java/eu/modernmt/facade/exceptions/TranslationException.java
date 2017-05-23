@@ -1,7 +1,7 @@
-package eu.modernmt.decoder;
+package eu.modernmt.facade.exceptions;
 
 /**
- * Created by davide on 22/04/16.
+ * Created by davide on 23/05/17.
  */
 public class TranslationException extends Exception {
 

@@ -3,10 +3,11 @@ package eu.modernmt.facade;
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderException;
-import eu.modernmt.decoder.DecoderTranslation;
+import eu.modernmt.decoder.DecoderWithNBest;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Translation;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
@@ -17,25 +18,20 @@ import java.util.concurrent.Callable;
 /**
  * Created by davide on 21/04/16.
  */
-class TranslateOperation implements Callable<DecoderTranslation>, Serializable {
+class TranslateOperation implements Callable<Translation>, Serializable {
 
-    private String text;
-    private ContextVector translationContext;
-    private int nbest;
+    public final String text;
+    public final ContextVector context;
+    public final int nbest;
 
-    public TranslateOperation(String text, int nbest) {
+    public TranslateOperation(String text, ContextVector context, int nbest) {
         this.text = text;
-        this.nbest = nbest;
-    }
-
-    public TranslateOperation(String text, ContextVector translationContext, int nbest) {
-        this.text = text;
-        this.translationContext = translationContext;
+        this.context = context;
         this.nbest = nbest;
     }
 
     @Override
-    public DecoderTranslation call() throws ProcessingException, DecoderException {
+    public Translation call() throws ProcessingException, DecoderException {
         ClusterNode node = ModernMT.getNode();
 
         Engine engine = node.getEngine();
@@ -45,12 +41,13 @@ class TranslateOperation implements Callable<DecoderTranslation>, Serializable {
 
         Sentence sentence = preprocessor.process(text);
 
-        DecoderTranslation translation;
+        Translation translation;
 
-        if (translationContext != null) {
-            translation = nbest > 0 ? decoder.translate(sentence, translationContext, nbest) : decoder.translate(sentence, translationContext);
+        if (nbest > 0) {
+            DecoderWithNBest nBestDecoder = (DecoderWithNBest) decoder;
+            translation = nBestDecoder.translate(sentence, context, nbest);
         } else {
-            translation = nbest > 0 ? decoder.translate(sentence, nbest) : decoder.translate(sentence);
+            translation = decoder.translate(sentence, context);
         }
 
         postprocessor.process(translation);

@@ -66,6 +66,7 @@ public abstract class Engine implements Closeable, DataListenerProvider {
         try {
             //TODO: hard-coded, must be read from EngineConfig
             return new NeuralEngine(config);
+//            return new PhraseBasedEngine(config);
         } catch (Exception e) {
             throw new BootstrapException(e);
         }

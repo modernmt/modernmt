@@ -3,12 +3,11 @@ package eu.modernmt.decoder.phrasebased;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.decoder.Decoder;
-import eu.modernmt.decoder.DecoderFeature;
-import eu.modernmt.decoder.DecoderTranslation;
+import eu.modernmt.decoder.*;
 import eu.modernmt.io.Paths;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -22,7 +21,7 @@ import java.util.Map;
 /**
  * Created by davide on 26/11/15.
  */
-public class MosesDecoder implements Decoder, DataListener {
+public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNBest, DataListener {
 
     private static final Logger logger = LogManager.getLogger(MosesDecoder.class);
 
@@ -38,6 +37,8 @@ public class MosesDecoder implements Decoder, DataListener {
     }
 
     private final FeatureWeightsStorage storage;
+    private final HashMap<String, DecoderFeature> featuresMap;
+    private final MosesFeature[] features;
     private long nativeHandle;
 
     public MosesDecoder(File path, int threads) throws IOException {
@@ -59,14 +60,24 @@ public class MosesDecoder implements Decoder, DataListener {
         FileUtils.write(iniFile, mosesINI.toString(), false);
 
         this.nativeHandle = instantiate(iniFile.getAbsolutePath(), vocabulary.getAbsolutePath());
+        this.features = features();
+        this.featuresMap = new HashMap<>(this.features.length);
+
+        for (MosesFeature feature : features)
+            this.featuresMap.put(feature.getName(), feature);
+
     }
 
     private native long instantiate(String inifile, String vocabulary);
 
-    // Features
+    // DecoderWithFeatures
 
     @Override
-    public native MosesFeature[] getFeatures();
+    public MosesFeature[] getFeatures() {
+        return features;
+    }
+
+    private native MosesFeature[] features();
 
     @Override
     public float[] getFeatureWeights(DecoderFeature feature) {
@@ -103,27 +114,27 @@ public class MosesDecoder implements Decoder, DataListener {
 
     private native void setFeatureWeights(String[] features, float[][] weights);
 
-    // Translate
+    // Decoder
 
     @Override
-    public DecoderTranslation translate(Sentence text) {
+    public Translation translate(Sentence text) throws DecoderException {
         return translate(text, null, 0);
     }
 
     @Override
-    public DecoderTranslation translate(Sentence text, ContextVector contextVector) {
+    public Translation translate(Sentence text, ContextVector contextVector) throws DecoderException {
         return translate(text, contextVector, 0);
     }
 
     @Override
-    public DecoderTranslation translate(Sentence text, int nbestListSize) {
+    public Translation translate(Sentence text, int nbestListSize) throws DecoderException {
         return translate(text, null, nbestListSize);
     }
 
     @Override
-    public DecoderTranslation translate(Sentence sentence, ContextVector contextVector, int nbest) {
+    public Translation translate(Sentence sentence, ContextVector contextVector, int nbestListSize) throws DecoderException {
         if (sentence.getWords().length == 0)
-            return new DecoderTranslation(new Word[0], sentence, null);
+            return new Translation(new Word[0], sentence, null);
 
         String text = XUtils.encodeSentence(sentence);
 
@@ -137,11 +148,11 @@ public class MosesDecoder implements Decoder, DataListener {
         TranslationXObject xtranslation = this.translate(text,
                 context == null ? null : context.keys,
                 context == null ? null : context.values,
-                nbest);
+                nbestListSize);
 
         long elapsed = System.currentTimeMillis() - start;
 
-        DecoderTranslation translation = xtranslation.getTranslation(sentence);
+        Translation translation = xtranslation.getTranslation(sentence, this.featuresMap);
         translation.setElapsedTime(elapsed);
 
         logger.info("Translation of " + sentence.length() + " words took " + (((double) elapsed) / 1000.) + "s");

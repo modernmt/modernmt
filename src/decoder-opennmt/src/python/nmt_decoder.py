@@ -1,8 +1,5 @@
-import Queue
 import argparse
 import json
-import threading
-
 import sys
 
 from nmt import Suggestion, MMTDecoder
@@ -55,93 +52,27 @@ class TranslationResponse:
 
 
 class MainController:
-    POISON_PILL = '__POISON_PILL__'
-
-    class ExecutorThread(threading.Thread):
-        def __init__(self, decoder, in_queue, out_queue):
-            super(MainController.ExecutorThread, self).__init__()
-            self._decoder = decoder
-            self._in = in_queue
-            self._out = out_queue
-
-        def run(self):
-            while True:
-                request = self._in.get()
-
-                if isinstance(request, basestring) and request == MainController.POISON_PILL:
-                    break
-
-                try:
-                    translation = self._decoder.translate(request.source, request.suggestions)
-                    response = TranslationResponse(request.id, translation=translation)
-                except BaseException as e:
-                    response = TranslationResponse(request.id, exception=e)
-
-                self._out.put(response)
-
-    class PrinterThread(threading.Thread):
-        def __init__(self, queue, stdout):
-            super(MainController.PrinterThread, self).__init__()
-            self._q = queue
-            self._stdout = stdout
-
-        def run(self):
-            while True:
-                response = self._q.get()
-
-                if isinstance(response, basestring) and response == MainController.POISON_PILL:
-                    break
-
-                self._stdout.write(response.to_json_string())
-                self._stdout.write('\n')
-                self._stdout.flush()
-
     def __init__(self, decoder):
         self._decoder = decoder
-        self._in = Queue.Queue()
-        self._out = Queue.Queue()
-
+        self._stdin = sys.stdin
         self._stdout = sys.stdout
-
-        sys.stdout = sys.stderr
-
-        self._workers = [MainController.ExecutorThread(self._decoder, self._in, self._out) for _ in
-                         range(decoder.number_of_threads)]
-        self._printer = MainController.PrinterThread(self._out, self._stdout)
 
     def serve_forever(self):
         try:
-            # Start
-            self._printer.start()
-            for worker in self._workers:
-                worker.start()
-
-            # Serve
             while True:
-                line = sys.stdin.readline()
+                line = self._stdin.readline()
                 if not line:
                     break
 
                 request = TranslationRequest.from_json_string(line)
-                self._in.put(request)
+                translation = self._decoder.translate(request.source, request.suggestions)
+                response = TranslationResponse(request.id, translation=translation)
+
+                self._stdout.write(response.to_json_string())
+                self._stdout.write('\n')
+                self._stdout.flush()
         except KeyboardInterrupt:
             pass
-        finally:
-            self._close()
-
-    def _close(self):
-        with self._in.mutex:
-            self._in.queue.clear()
-        with self._out.mutex:
-            self._out.queue.clear()
-
-        for _ in self._workers:
-            self._in.put(MainController.POISON_PILL)
-        self._out.put(MainController.POISON_PILL)
-
-        for worker in self._workers:
-            worker.join()
-        self._printer.join()
 
 
 class YodaDecoder(MMTDecoder):
