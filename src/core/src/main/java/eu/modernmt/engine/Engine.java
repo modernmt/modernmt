@@ -8,7 +8,7 @@ import eu.modernmt.context.lucene.LuceneAnalyzer;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.Decoder;
-import eu.modernmt.engine.impl.PhraseBasedEngine;
+import eu.modernmt.engine.impl.NeuralEngine;
 import eu.modernmt.io.Paths;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.processing.Postprocessor;
@@ -65,8 +65,8 @@ public abstract class Engine implements Closeable, DataListenerProvider {
     public static Engine load(EngineConfig config) throws BootstrapException {
         try {
             //TODO: hard-coded, must be read from EngineConfig
-//            return new NeuralEngine(config);
-            return new PhraseBasedEngine(config);
+            return new NeuralEngine(config);
+//            return new PhraseBasedEngine(config);
         } catch (Exception e) {
             throw new BootstrapException(e);
         }

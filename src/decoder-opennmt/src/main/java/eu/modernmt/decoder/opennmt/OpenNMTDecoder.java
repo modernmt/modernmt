@@ -6,9 +6,8 @@ import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.opennmt.execution.ExecutionQueue;
 import eu.modernmt.decoder.opennmt.model.TranslationRequest;
 import eu.modernmt.decoder.opennmt.storage.StorageException;
-import eu.modernmt.decoder.opennmt.storage.Suggestion;
-import eu.modernmt.decoder.opennmt.storage.SuggestionStorage;
-import eu.modernmt.decoder.opennmt.storage.lucene.LuceneSuggestionStorage;
+import eu.modernmt.decoder.opennmt.storage.TranslationsStorage;
+import eu.modernmt.decoder.opennmt.storage.lucene.LuceneTranslationsStorage;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -18,7 +17,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 /**
  * Created by davide on 22/05/17.
@@ -27,7 +25,7 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
 
     private static final int SUGGESTIONS_LIMIT = 4;
     private final ExecutionQueue executor;
-    private final SuggestionStorage storage;
+    private final TranslationsStorage storage;
 
     public OpenNMTDecoder(File libPath, File modelPath) throws OpenNMTException {
         File pythonHome = new File(libPath, "opennmt");
@@ -40,7 +38,7 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
         this.executor = ExecutionQueue.newSingleThreadExecutionQueue(builder);
 
         try {
-            this.storage = new LuceneSuggestionStorage(storageModelPath);
+            this.storage = new LuceneTranslationsStorage(storageModelPath);
         } catch (StorageException e) {
             throw new OpenNMTException("Failed to initialize storage", e);
         }
@@ -58,15 +56,16 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
         TranslationRequest request = new TranslationRequest(text);
 
         if (contextVector != null) {
-            List<Suggestion> suggestions;
+            TranslationsStorage.SearchResult result;
+
             try {
-                suggestions = storage.getSuggestions(text, contextVector, SUGGESTIONS_LIMIT);
+                result = storage.search(text, contextVector, SUGGESTIONS_LIMIT);
             } catch (StorageException e) {
                 throw new OpenNMTException("Failed to retrieve suggestions from storage", e);
             }
 
-            if (!suggestions.isEmpty())
-                request.setSuggestions(suggestions);
+            if (!result.isEmpty())
+                request.setSuggestions(result);
         }
 
         return executor.execute(request).get();
