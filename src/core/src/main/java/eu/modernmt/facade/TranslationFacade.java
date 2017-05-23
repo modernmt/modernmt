@@ -59,7 +59,7 @@ public class TranslationFacade {
     //  Translation
     // =============================
 
-    private void ensureNBestDecoder() {
+    private void ensureDecoderSupportsNBest() {
         Decoder decoder = ModernMT.getNode().getEngine().getDecoder();
         if (!(decoder instanceof DecoderWithNBest))
             throw new UnsupportedOperationException("Decoder '" + decoder.getClass().getSimpleName() + "' does not support N-best.");
@@ -74,12 +74,14 @@ public class TranslationFacade {
     }
 
     public Translation get(String sentence, int nbest) throws TranslationException {
-        ensureNBestDecoder();
+        if (nbest > 0)
+            ensureDecoderSupportsNBest();
         return get(new TranslateOperation(sentence, null, nbest));
     }
 
     public Translation get(String sentence, ContextVector translationContext, int nbest) throws TranslationException {
-        ensureNBestDecoder();
+        if (nbest > 0)
+            ensureDecoderSupportsNBest();
         return get(new TranslateOperation(sentence, translationContext, nbest));
     }
 
