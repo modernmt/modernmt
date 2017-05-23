@@ -102,7 +102,7 @@ class DataBatch {
         this.rawTargets.ensureCapacity(size);
     }
 
-    public Collection<TranslationUnit> getTranslationUnits() {
+    public List<TranslationUnit> getTranslationUnits() {
         return translationUnits;
     }
 

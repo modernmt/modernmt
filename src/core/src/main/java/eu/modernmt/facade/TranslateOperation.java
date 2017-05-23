@@ -1,10 +1,13 @@
 package eu.modernmt.facade;
 
+import eu.modernmt.aligner.Aligner;
+import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.DecoderWithNBest;
 import eu.modernmt.engine.Engine;
+import eu.modernmt.model.Alignment;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -31,7 +34,7 @@ class TranslateOperation implements Callable<Translation>, Serializable {
     }
 
     @Override
-    public Translation call() throws ProcessingException, DecoderException {
+    public Translation call() throws ProcessingException, DecoderException, AlignerException {
         ClusterNode node = ModernMT.getNode();
 
         Engine engine = node.getEngine();
@@ -50,7 +53,15 @@ class TranslateOperation implements Callable<Translation>, Serializable {
             translation = decoder.translate(sentence, context);
         }
 
+        if (!translation.hasAlignment()) {
+            Aligner aligner = engine.getAligner();
+            Alignment alignment = aligner.getAlignment(sentence, translation);
+
+            translation.setAlignment(alignment);
+        }
+
         postprocessor.process(translation);
+
         return translation;
     }
 }

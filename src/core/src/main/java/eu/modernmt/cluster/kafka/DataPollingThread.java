@@ -1,7 +1,10 @@
 package eu.modernmt.cluster.kafka;
 
 import eu.modernmt.aligner.AlignerException;
-import eu.modernmt.data.*;
+import eu.modernmt.data.DataListener;
+import eu.modernmt.data.DataManager;
+import eu.modernmt.data.DataManagerException;
+import eu.modernmt.data.Deletion;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.processing.ProcessingException;
 import org.apache.commons.io.IOUtils;
@@ -14,7 +17,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Created by davide on 06/09/16.
@@ -32,6 +35,8 @@ class DataPollingThread extends Thread {
     private DataManager.Listener dataManagerListener = null;
     private KafkaDataManager manager;
 
+    private final ExecutorService executor = Executors.newCachedThreadPool();
+
     public DataPollingThread(Engine engine, KafkaDataManager manager) {
         super("DataPollingThread");
         this.manager = manager;
@@ -45,8 +50,8 @@ class DataPollingThread extends Thread {
             throw e;
     }
 
-    public void setDataManagerListener(DataManager.Listener dataManagerListerner) {
-        this.dataManagerListener = dataManagerListerner;
+    public void setDataManagerListener(DataManager.Listener dataManagerListener) {
+        this.dataManagerListener = dataManagerListener;
     }
 
     public void addListener(DataListener listener) {
@@ -158,14 +163,45 @@ class DataPollingThread extends Thread {
             return;
         }
 
-        for (TranslationUnit unit : batch.getTranslationUnits()) {
-            for (DataListener listener : listeners)
-                listener.onDataReceived(unit);
-        }
+        int index = 0;
+        Future[] results = new Future[listeners.size()];
 
-        for (Deletion deletion : batch.getDeletions()) {
-            for (DataListener listener : listeners)
-                listener.onDelete(deletion);
+        for (final DataListener listener : listeners)
+            results[index++] = executor.submit(new DeliveryTask(batch, listener));
+
+        for (Future<?> future : results) {
+            try {
+                future.get();
+            } catch (ExecutionException e) {
+                Throwable cause = e.getCause();
+
+                if (cause instanceof Exception)
+                    throw (Exception) cause;
+                else
+                    throw new Error("Unexpected exception", cause);
+            }
         }
     }
+
+    private static final class DeliveryTask implements Callable<Void> {
+
+        private final DataBatch batch;
+        private final DataListener listener;
+
+        public DeliveryTask(DataBatch batch, DataListener listener) {
+            this.batch = batch;
+            this.listener = listener;
+        }
+
+        @Override
+        public Void call() throws Exception {
+            listener.onDataReceived(batch.getTranslationUnits());
+
+            for (Deletion deletion : batch.getDeletions())
+                listener.onDelete(deletion);
+
+            return null;
+        }
+    }
+
 }

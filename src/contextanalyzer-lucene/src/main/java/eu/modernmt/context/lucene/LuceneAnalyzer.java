@@ -17,6 +17,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -97,9 +98,9 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     // UpdateListener
 
     @Override
-    public void onDataReceived(TranslationUnit update) throws ContextAnalyzerException {
+    public void onDataReceived(List<TranslationUnit> batch) throws ContextAnalyzerException {
         try {
-            storage.onDataReceived(update);
+            storage.onDataReceived(batch);
         } catch (InterruptedException | IOException e) {
             throw new ContextAnalyzerException(e);
         }

@@ -1,5 +1,6 @@
 package eu.modernmt.facade;
 
+import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.cluster.error.SystemShutdownException;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
@@ -101,6 +102,8 @@ public class TranslationFacade {
                 throw new TranslationException("Unexpected exceptions while translating", cause);
             else if (cause instanceof DecoderException)
                 throw new TranslationException("Problem while decoding source sentence", cause);
+            else if (cause instanceof AlignerException)
+                throw new TranslationException("Problem while aligning source sentence to its translation", cause);
             else
                 throw new Error("Unexpected exception: " + cause.getMessage(), cause);
         }

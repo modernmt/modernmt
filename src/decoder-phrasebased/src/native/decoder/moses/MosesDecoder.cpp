@@ -126,8 +126,7 @@ namespace mmt {
                                             const std::map<std::string, float> *translationContext,
                                             size_t nbestListSize) override;
 
-            void DeliverUpdate(const updateid_t &id, const domain_t domain, const std::string &source,
-                               const std::string &target, const alignment_t &alignment) override;
+            void DeliverUpdates(const std::vector<translation_unit_t> &batch) override;
 
             void DeliverDeletion(const updateid_t &id, const domain_t domain) override;
 
@@ -279,23 +278,30 @@ translation_t MosesDecoderImpl::translate(const std::string &text,
     return response;
 }
 
-void MosesDecoderImpl::DeliverUpdate(const updateid_t &id, const domain_t domain, const string &strSource,
-                                     const string &strTarget, const alignment_t &alignment) {
-    vector<string> _source;
-    vector<string> _target;
+void MosesDecoderImpl::DeliverUpdates(const std::vector<translation_unit_t> &batch) {
+    vector<vector<string>> _sources(batch.size());
+    vector<vector<string>> _targets(batch.size());
 
-    Explode(strSource, _source);
-    Explode(strTarget, _target);
+    for (size_t i = 0; i < batch.size(); ++i) {
+        Explode(batch[i].source, _sources[i]);
+        Explode(batch[i].target, _targets[i]);
+    }
 
-    vector<wid_t> source;
-    vector<wid_t> target;
+    vector<vector<wid_t>> sources;
+    vector<vector<wid_t>> targets;
 
-    vb.Lookup(_source, source, true);
-    vb.Lookup(_target, target, true);
+    vb.Lookup(_sources, sources, true);
+    vb.Lookup(_targets, targets, true);
 
-    for (auto it = m_incrementalModels.begin(); it != m_incrementalModels.end(); ++it) {
-        IncrementalModel *model = *it;
-        model->Add(id, domain, source, target, alignment);
+    for (size_t i = 0; i < batch.size(); ++i) {
+        const translation_unit_t &unit = batch[i];
+        vector<wid_t> &source = sources[i];
+        vector<wid_t> &target = targets[i];
+
+        for (auto it = m_incrementalModels.begin(); it != m_incrementalModels.end(); ++it) {
+            IncrementalModel *model = *it;
+            model->Add(unit.id, unit.domain, source, target, unit.alignment);
+        }
     }
 }
 

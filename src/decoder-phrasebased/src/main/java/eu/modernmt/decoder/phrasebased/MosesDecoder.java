@@ -16,6 +16,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -165,15 +166,32 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
     // DataListener
 
     @Override
-    public void onDataReceived(TranslationUnit unit) throws Exception {
-        String sourceSentence = XUtils.encodeSentence(unit.sourceSentence);
-        String targetSentence = XUtils.encodeSentence(unit.targetSentence);
-        int[] alignment = XUtils.encodeAlignment(unit.alignment);
+    public void onDataReceived(List<TranslationUnit> batch) throws Exception {
+        int size = batch.size();
 
-        updateReceived(unit.channel, unit.channelPosition, unit.domain, sourceSentence, targetSentence, alignment);
+        short[] channels = new short[size];
+        long[] channelPositions = new long[size];
+        int[] domains = new int[size];
+        String[] sources = new String[size];
+        String[] targets = new String[size];
+        int[][] alignments = new int[size][];
+
+        int i = 0;
+        for (TranslationUnit unit : batch) {
+            channels[i] = unit.channel;
+            channelPositions[i] = unit.channelPosition;
+            domains[i] = unit.domain;
+            sources[i] = XUtils.encodeSentence(unit.sourceSentence);
+            targets[i] = XUtils.encodeSentence(unit.targetSentence);
+            alignments[i] = XUtils.encodeAlignment(unit.alignment);
+
+            i++;
+        }
+
+        updateReceived(channels, channelPositions, domains, sources, targets, alignments);
     }
 
-    private native void updateReceived(short channel, long channelPosition, int domain, String sourceSentence, String targetSentence, int[] alignment);
+    private native void updateReceived(short[] channels, long[] channelPositions, int[] domains, String[] sources, String[] targets, int[][] alignments);
 
     @Override
     public void onDelete(Deletion deletion) throws Exception {

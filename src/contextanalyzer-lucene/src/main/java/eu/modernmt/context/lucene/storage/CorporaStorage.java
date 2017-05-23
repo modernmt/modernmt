@@ -62,8 +62,9 @@ public class CorporaStorage implements DataListener {
     }
 
     @Override
-    public void onDataReceived(TranslationUnit unit) throws InterruptedException, IOException {
-        backgroundTask.enqueue(unit);
+    public void onDataReceived(List<TranslationUnit> batch) throws InterruptedException, IOException {
+        for (TranslationUnit unit : batch)
+            backgroundTask.enqueue(unit);
     }
 
     @Override

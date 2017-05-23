@@ -39,6 +39,13 @@ typedef struct {
     size_t nBestListSize; //< set to 0 if no n-best list requested
 } translation_request_t;
 
+typedef struct {
+    mmt::updateid_t id;
+    mmt::domain_t domain;
+    std::string source;
+    std::string target;
+    mmt::alignment_t alignment;
+} translation_unit_t;
 
 namespace mmt {
     namespace decoder {
@@ -74,9 +81,7 @@ namespace mmt {
                                             const std::map<std::string, float> *translationContext,
                                             size_t nbestListSize) = 0;
 
-            virtual void DeliverUpdate(const updateid_t &id, const domain_t domain,
-                                       const std::string &source, const std::string &target,
-                                       const alignment_t &alignment) = 0;
+            virtual void DeliverUpdates(const std::vector<translation_unit_t> &batch) = 0;
 
             virtual void DeliverDeletion(const updateid_t &id, const domain_t domain) = 0;
 

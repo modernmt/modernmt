@@ -9,6 +9,7 @@ import eu.modernmt.model.corpus.Corpus;
 
 import java.io.Closeable;
 import java.io.File;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,7 +31,7 @@ public interface ContextAnalyzer extends Closeable, DataListener {
     void onDelete(Deletion deletion) throws ContextAnalyzerException;
 
     @Override
-    void onDataReceived(TranslationUnit unit) throws ContextAnalyzerException;
+    void onDataReceived(List<TranslationUnit> batch) throws ContextAnalyzerException;
 
     @Override
     Map<Short, Long> getLatestChannelPositions();

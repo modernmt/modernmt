@@ -8,6 +8,7 @@
 #include "JMosesFeature.h"
 #include "JTranslation.h"
 #include <mmt/jniutil.h>
+#include <moses/MosesDecoder.h>
 
 using namespace std;
 using namespace mmt;
@@ -30,20 +31,22 @@ void ParseContext(JNIEnv *jvm, jintArray keys, jfloatArray values, map<string, f
     jvm->ReleaseFloatArrayElements(values, valuesArray, 0);
 }
 
-void ParseAlignment(JNIEnv *jvm, jintArray jalignment, alignment_t &outAlignment) {
+alignment_t ParseAlignment(JNIEnv *jvm, jintArray jalignment) {
     size_t fullsize = (size_t) jvm->GetArrayLength(jalignment);
     size_t size = fullsize / 2;
 
     jint *jalignmentArray = jvm->GetIntArrayElements(jalignment, 0);
 
-    outAlignment.resize(size);
+    alignment_t result(size);
 
     for (size_t i = 0; i < size; ++i) {
-        outAlignment[i].first = (length_t) jalignmentArray[i];
-        outAlignment[i].second = (length_t) jalignmentArray[i + size];
+        result[i].first = (length_t) jalignmentArray[i];
+        result[i].second = (length_t) jalignmentArray[i + size];
     }
 
     jvm->ReleaseIntArrayElements(jalignment, jalignmentArray, 0);
+
+    return result;
 }
 
 /*
@@ -192,23 +195,36 @@ Java_eu_modernmt_decoder_phrasebased_MosesDecoder_translate(JNIEnv *jvm, jobject
 /*
  * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
  * Method:    updateReceived
- * Signature: (SJILjava/lang/String;Ljava/lang/String;[I)V
+ * Signature: ([S[J[I[Ljava/lang/String;[Ljava/lang/String;[[I)V
  */
 JNIEXPORT void JNICALL
-Java_eu_modernmt_decoder_phrasebased_MosesDecoder_updateReceived(JNIEnv *jvm, jobject jself, jshort jchannel,
-                                                                 jlong jchannelPosition, jint jdomain, jstring jsource,
-                                                                 jstring jtarget, jintArray jalignment) {
+Java_eu_modernmt_decoder_phrasebased_MosesDecoder_updateReceived(JNIEnv *jvm, jobject jself, jshortArray jchannels,
+                                                                 jlongArray jpositions, jintArray jdomains,
+                                                                 jobjectArray jsources, jobjectArray jtargets,
+                                                                 jobjectArray jalignments) {
     MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
 
-    updateid_t id((stream_t) jchannel, (seqid_t) jchannelPosition);
-    domain_t domain = (domain_t) jdomain;
-    string source = jni_jstrtostr(jvm, jsource);
-    string target = jni_jstrtostr(jvm, jtarget);
+    size_t size = (size_t) jvm->GetArrayLength(jchannels);
+    vector<translation_unit_t> batch(size);
 
-    alignment_t alignment;
-    ParseAlignment(jvm, jalignment, alignment);
+    jshort *jchannelsArray = jvm->GetShortArrayElements(jchannels, 0);
+    jlong *jpositionsArray = jvm->GetLongArrayElements(jpositions, 0);
+    jint *jdomainsArray = jvm->GetIntArrayElements(jdomains, 0);
 
-    instance->DeliverUpdate(id, domain, source, target, alignment);
+    for (size_t i = 0; i < size; ++i) {
+        translation_unit_t &unit = batch[i];
+        unit.id = updateid_t((stream_t) jchannelsArray[i], (seqid_t) jpositionsArray[i]);
+        unit.domain = (domain_t) jdomainsArray[i];
+        unit.source = jni_jstrtostr(jvm, (jstring) jvm->GetObjectArrayElement(jsources, (jsize) i));
+        unit.target = jni_jstrtostr(jvm, (jstring) jvm->GetObjectArrayElement(jtargets, (jsize) i));
+        unit.alignment = ParseAlignment(jvm, (jintArray) jvm->GetObjectArrayElement(jalignments, (jsize) i));
+    }
+
+    jvm->ReleaseShortArrayElements(jchannels, jchannelsArray, 0);
+    jvm->ReleaseLongArrayElements(jpositions, jpositionsArray, 0);
+    jvm->ReleaseIntArrayElements(jdomains, jdomainsArray, 0);
+
+    instance->DeliverUpdates(batch);
 }
 
 /*
