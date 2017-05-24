@@ -5,6 +5,7 @@ import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.opennmt.execution.ExecutionQueue;
 import eu.modernmt.decoder.opennmt.model.TranslationRequest;
+import eu.modernmt.decoder.opennmt.storage.ScoreEntry;
 import eu.modernmt.decoder.opennmt.storage.StorageException;
 import eu.modernmt.decoder.opennmt.storage.TranslationsStorage;
 import eu.modernmt.decoder.opennmt.storage.lucene.LuceneTranslationsStorage;
@@ -56,7 +57,7 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
         TranslationRequest request = new TranslationRequest(text);
 
         if (contextVector != null) {
-            TranslationsStorage.SearchResult result;
+            ScoreEntry[] result;
 
             try {
                 result = storage.search(text, contextVector, SUGGESTIONS_LIMIT);
@@ -64,7 +65,7 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
                 throw new OpenNMTException("Failed to retrieve suggestions from storage", e);
             }
 
-            if (!result.isEmpty())
+            if (result != null && result.length > 0)
                 request.setSuggestions(result);
         }
 

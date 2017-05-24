@@ -1,10 +1,9 @@
 package eu.modernmt.decoder.opennmt.storage.lucene;
 
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.decoder.opennmt.storage.TranslationsStorage;
+import eu.modernmt.decoder.opennmt.storage.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.model.Sentence;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.*;
 import org.apache.lucene.util.BytesRef;
 
@@ -28,14 +27,12 @@ class DocumentBuilder {
     }
 
     public static Document build(int domain, Sentence sentence, Sentence translation) {
-        return build(domain, TokensOutputStream.toTokensArray(sentence, false, true),
-                TokensOutputStream.toTokensArray(translation, false, true));
+        String s = TokensOutputStream.toString(sentence, false, true);
+        String t = TokensOutputStream.toString(translation, false, true);
+        return build(domain, s, t);
     }
 
-    public static Document build(int domain, String[] sentenceTokens, String[] translationTokens) {
-        String sentence = StringUtils.join(sentenceTokens, ' ');
-        String translation = StringUtils.join(translationTokens, ' ');
-
+    public static Document build(int domain, String sentence, String translation) {
         Document document = new Document();
         document.add(new IntField(DOMAIN_ID_FIELD, domain, Field.Store.YES));
         document.add(new TextField(SENTENCE_FIELD, sentence, Field.Store.YES));
@@ -74,11 +71,11 @@ class DocumentBuilder {
         return result;
     }
 
-    public static TranslationsStorage.Entry parseEntry(Document doc) {
+    public static ScoreEntry parseEntry(Document doc) {
         int domain = Integer.parseInt(doc.get(DOMAIN_ID_FIELD));
         String[] sentence = doc.get(SENTENCE_FIELD).split(" ");
         String[] translation = doc.get(TRANSLATION_FIELD).split(" ");
 
-        return new TranslationsStorage.Entry(domain, sentence, translation);
+        return new ScoreEntry(domain, sentence, translation);
     }
 }

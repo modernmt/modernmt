@@ -2,6 +2,7 @@ package eu.modernmt.decoder.opennmt.storage.lucene;
 
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.decoder.opennmt.storage.ScoreEntry;
 import eu.modernmt.decoder.opennmt.storage.StorageException;
 import eu.modernmt.decoder.opennmt.storage.TranslationsStorage;
 import eu.modernmt.model.ContextVector;
@@ -10,15 +11,13 @@ import eu.modernmt.model.Sentence;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Version;
 
 import java.io.File;
@@ -26,17 +25,15 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * Created by davide on 23/05/17.
  */
 public class LuceneTranslationsStorage implements TranslationsStorage {
 
-    private static final Pattern WhitespaceRegex = Pattern.compile("\\s+");
-
     private final Directory indexDirectory;
-    private final Analyzer analyzer;
+    private final SentenceQueryBuilder queries;
+    private final Rescorer rescorer;
     private final IndexWriter indexWriter;
 
     private DirectoryReader indexReader;
@@ -48,24 +45,43 @@ public class LuceneTranslationsStorage implements TranslationsStorage {
                 FileUtils.forceMkdir(indexPath);
 
             this.indexDirectory = FSDirectory.open(indexPath);
-            this.analyzer = new WhitespaceAnalyzer();
+            this.queries = new SentenceQueryBuilder();
+            this.rescorer = new Rescorer();
 
             // Index writer setup
-            IndexWriterConfig indexConfig = new IndexWriterConfig(Version.LUCENE_4_10_4, this.analyzer);
+            IndexWriterConfig indexConfig = new IndexWriterConfig(Version.LUCENE_4_10_4, Analyzers.getTrainAnalyzer());
             indexConfig.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+            indexConfig.setSimilarity(new CustomSimilarity());
 
             this.indexWriter = new IndexWriter(this.indexDirectory, indexConfig);
 
             // Read channels status
             if (DirectoryReader.indexExists(this.indexDirectory)) {
                 IndexReader reader = this.getIndexReader();
-                Document channelsDocument = QueryUtils.getDocumentByField(reader, DocumentBuilder.DOMAIN_ID_FIELD, 0);
 
-                this.channels = channelsDocument == null ? new HashMap<>() : DocumentBuilder.parseChannels(channelsDocument);
+                Term term = newIntTerm(DocumentBuilder.DOMAIN_ID_FIELD, 0);
+                IndexSearcher searcher = new IndexSearcher(reader);
+
+                Query query = new TermQuery(term);
+                TopDocs docs = searcher.search(query, 1);
+
+                if (docs.scoreDocs.length > 0) {
+                    Document channelsDocument = searcher.doc(docs.scoreDocs[0].doc);
+                    this.channels = DocumentBuilder.parseChannels(channelsDocument);
+                } else {
+                    this.channels = new HashMap<>();
+                }
             }
         } catch (IOException e) {
             throw new StorageException(e);
         }
+    }
+
+    public static Term newIntTerm(String field, int value) {
+        BytesRefBuilder builder = new BytesRefBuilder();
+        NumericUtils.intToPrefixCoded(value, 0, builder);
+
+        return new Term(field, builder.toBytesRef());
     }
 
     private synchronized IndexReader getIndexReader() throws StorageException {
@@ -110,8 +126,7 @@ public class LuceneTranslationsStorage implements TranslationsStorage {
 
             BilingualCorpus.StringPair pair;
             while ((pair = reader.read()) != null) {
-                Document document = DocumentBuilder.build(domainId,
-                        WhitespaceRegex.split(pair.source), WhitespaceRegex.split(pair.target));
+                Document document = DocumentBuilder.build(domainId, pair.source, pair.target);
 
                 try {
                     this.indexWriter.addDocument(document);
@@ -149,35 +164,42 @@ public class LuceneTranslationsStorage implements TranslationsStorage {
     }
 
     @Override
-    public SearchResult search(Sentence source, int limit) throws StorageException {
+    public ScoreEntry[] search(Sentence source, int limit) throws StorageException {
         return search(source, null, limit);
     }
 
     @Override
-    public SearchResult search(Sentence source, ContextVector contextVector, int limit) throws StorageException {
-        Query query = QueryUtils.getQuery(this.analyzer, source);
+    public ScoreEntry[] search(Sentence source, ContextVector contextVector, int limit) throws StorageException {
+        Query query = this.queries.build(source);
 
         IndexReader reader = this.getIndexReader();
         IndexSearcher searcher = new IndexSearcher(reader);
+        searcher.setSimilarity(new CustomSimilarity());
 
-        Entry[] entries;
-        float[] scores;
+        ScoreEntry[] entries;
 
         try {
-            ScoreDoc[] docs = searcher.search(query, limit).scoreDocs;
+            int queryLimit = Math.max(10, limit * 2);
+            ScoreDoc[] docs = searcher.search(query, queryLimit).scoreDocs;
 
-            entries = new Entry[docs.length];
-            scores = new float[docs.length];
-
+            entries = new ScoreEntry[docs.length];
             for (int i = 0; i < docs.length; i++) {
                 entries[i] = DocumentBuilder.parseEntry(searcher.doc(docs[i].doc));
-                scores[i] = docs[i].score;
+                entries[i].score = docs[i].score;
             }
         } catch (IOException e) {
             throw new StorageException("Failed to retrieve translations", e);
         }
 
-        return new SearchResult(entries, scores);
+        rescorer.score(source, entries, contextVector);
+
+        if (entries.length > limit) {
+            ScoreEntry[] temp = new ScoreEntry[limit];
+            System.arraycopy(entries, 0, temp, 0, limit);
+            entries = temp;
+        }
+
+        return entries;
     }
 
     // DataListener
@@ -200,7 +222,7 @@ public class LuceneTranslationsStorage implements TranslationsStorage {
                 }
             }
 
-            Term id = QueryUtils.intTerm(DocumentBuilder.DOMAIN_ID_FIELD, 0);
+            Term id = newIntTerm(DocumentBuilder.DOMAIN_ID_FIELD, 0);
             Document channelsDocument = DocumentBuilder.build(newChannels);
             this.indexWriter.updateDocument(id, channelsDocument);
 
@@ -216,12 +238,12 @@ public class LuceneTranslationsStorage implements TranslationsStorage {
 
     @Override
     public void onDelete(Deletion deletion) throws Exception {
-        Term deleteId = QueryUtils.intTerm(DocumentBuilder.DOMAIN_ID_FIELD, deletion.domain);
+        Term deleteId = newIntTerm(DocumentBuilder.DOMAIN_ID_FIELD, deletion.domain);
         this.indexWriter.deleteDocuments(deleteId);
 
         this.channels.put(deletion.channel, deletion.channelPosition);
 
-        Term channelsId = QueryUtils.intTerm(DocumentBuilder.DOMAIN_ID_FIELD, 0);
+        Term channelsId = newIntTerm(DocumentBuilder.DOMAIN_ID_FIELD, 0);
         Document channelsDocument = DocumentBuilder.build(this.channels);
         this.indexWriter.updateDocument(channelsId, channelsDocument);
         this.indexWriter.commit();
