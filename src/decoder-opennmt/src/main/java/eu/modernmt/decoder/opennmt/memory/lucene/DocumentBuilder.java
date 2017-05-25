@@ -1,7 +1,7 @@
-package eu.modernmt.decoder.opennmt.storage.lucene;
+package eu.modernmt.decoder.opennmt.memory.lucene;
 
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.decoder.opennmt.storage.ScoreEntry;
+import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.model.Sentence;
 import org.apache.lucene.document.*;

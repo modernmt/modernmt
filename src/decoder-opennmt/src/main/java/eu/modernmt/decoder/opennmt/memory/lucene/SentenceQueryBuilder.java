@@ -1,4 +1,4 @@
-package eu.modernmt.decoder.opennmt.storage.lucene;
+package eu.modernmt.decoder.opennmt.memory.lucene;
 
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.model.Sentence;

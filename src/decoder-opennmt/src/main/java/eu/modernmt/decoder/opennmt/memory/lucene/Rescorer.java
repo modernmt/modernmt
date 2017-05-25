@@ -1,6 +1,6 @@
-package eu.modernmt.decoder.opennmt.storage.lucene;
+package eu.modernmt.decoder.opennmt.memory.lucene;
 
-import eu.modernmt.decoder.opennmt.storage.ScoreEntry;
+import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;

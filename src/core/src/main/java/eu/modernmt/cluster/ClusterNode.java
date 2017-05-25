@@ -76,9 +76,9 @@ public class ClusterNode {
         @Override
         public void run() {
             //TODO: must reintroduce valid model syncing
-//            StorageService storage = StorageService.getInstance();
+//            StorageService memory = StorageService.getInstance();
 //            try {
-//                storage.close();
+//                memory.close();
 //            } catch (IOException e) {
 //                // Ignore exception
 //            }
@@ -298,8 +298,8 @@ public class ClusterNode {
 //            InetAddress host = InetAddress.getByName(args.member);
 //            File localPath = Engine.getRootPath(args.engine);
 //
-//            StorageService storage = StorageService.getInstance();
-//            DirectorySynchronizer synchronizer = storage.getDirectorySynchronizer();
+//            StorageService memory = StorageService.getInstance();
+//            DirectorySynchronizer synchronizer = memory.getDirectorySynchronizer();
 //            synchronizer.synchronize(host, args.dataPort, localPath);
 //
 //            status.onStatusChange(StatusManager.Status.SYNCHRONIZED);

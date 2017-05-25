@@ -1,4 +1,4 @@
-package eu.modernmt.decoder.opennmt.storage;
+package eu.modernmt.decoder.opennmt.memory;
 
 /**
  * Created by davide on 24/05/17.

@@ -1,16 +1,17 @@
-package eu.modernmt.decoder.opennmt.storage.lucene;
+package eu.modernmt.decoder.opennmt.memory.lucene;
 
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.decoder.opennmt.storage.ScoreEntry;
-import eu.modernmt.decoder.opennmt.storage.StorageException;
-import eu.modernmt.decoder.opennmt.storage.TranslationsStorage;
+import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
+import eu.modernmt.decoder.opennmt.memory.TranslationMemory;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Domain;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
@@ -29,7 +30,9 @@ import java.util.Map;
 /**
  * Created by davide on 23/05/17.
  */
-public class LuceneTranslationsStorage implements TranslationsStorage {
+public class LuceneTranslationMemory implements TranslationMemory {
+
+    private final Logger logger = LogManager.getLogger(LuceneTranslationMemory.class);
 
     private final Directory indexDirectory;
     private final SentenceQueryBuilder queries;
@@ -39,41 +42,37 @@ public class LuceneTranslationsStorage implements TranslationsStorage {
     private DirectoryReader indexReader;
     private Map<Short, Long> channels;
 
-    public LuceneTranslationsStorage(File indexPath) throws StorageException {
-        try {
-            if (!indexPath.isDirectory())
-                FileUtils.forceMkdir(indexPath);
+    public LuceneTranslationMemory(File indexPath) throws IOException {
+        if (!indexPath.isDirectory())
+            FileUtils.forceMkdir(indexPath);
 
-            this.indexDirectory = FSDirectory.open(indexPath);
-            this.queries = new SentenceQueryBuilder();
-            this.rescorer = new Rescorer();
+        this.indexDirectory = FSDirectory.open(indexPath);
+        this.queries = new SentenceQueryBuilder();
+        this.rescorer = new Rescorer();
 
-            // Index writer setup
-            IndexWriterConfig indexConfig = new IndexWriterConfig(Version.LUCENE_4_10_4, Analyzers.getTrainAnalyzer());
-            indexConfig.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-            indexConfig.setSimilarity(new CustomSimilarity());
+        // Index writer setup
+        IndexWriterConfig indexConfig = new IndexWriterConfig(Version.LUCENE_4_10_4, Analyzers.getTrainAnalyzer());
+        indexConfig.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+        indexConfig.setSimilarity(new CustomSimilarity());
 
-            this.indexWriter = new IndexWriter(this.indexDirectory, indexConfig);
+        this.indexWriter = new IndexWriter(this.indexDirectory, indexConfig);
 
-            // Read channels status
-            if (DirectoryReader.indexExists(this.indexDirectory)) {
-                IndexReader reader = this.getIndexReader();
+        // Read channels status
+        if (DirectoryReader.indexExists(this.indexDirectory)) {
+            IndexReader reader = this.getIndexReader();
 
-                Term term = newIntTerm(DocumentBuilder.DOMAIN_ID_FIELD, 0);
-                IndexSearcher searcher = new IndexSearcher(reader);
+            Term term = newIntTerm(DocumentBuilder.DOMAIN_ID_FIELD, 0);
+            IndexSearcher searcher = new IndexSearcher(reader);
 
-                Query query = new TermQuery(term);
-                TopDocs docs = searcher.search(query, 1);
+            Query query = new TermQuery(term);
+            TopDocs docs = searcher.search(query, 1);
 
-                if (docs.scoreDocs.length > 0) {
-                    Document channelsDocument = searcher.doc(docs.scoreDocs[0].doc);
-                    this.channels = DocumentBuilder.parseChannels(channelsDocument);
-                } else {
-                    this.channels = new HashMap<>();
-                }
+            if (docs.scoreDocs.length > 0) {
+                Document channelsDocument = searcher.doc(docs.scoreDocs[0].doc);
+                this.channels = DocumentBuilder.parseChannels(channelsDocument);
+            } else {
+                this.channels = new HashMap<>();
             }
-        } catch (IOException e) {
-            throw new StorageException(e);
         }
     }
 
@@ -84,23 +83,12 @@ public class LuceneTranslationsStorage implements TranslationsStorage {
         return new Term(field, builder.toBytesRef());
     }
 
-    private synchronized IndexReader getIndexReader() throws StorageException {
+    private synchronized IndexReader getIndexReader() throws IOException {
         if (this.indexReader == null) {
-            try {
-                this.indexReader = DirectoryReader.open(this.indexDirectory);
-            } catch (IOException e) {
-                throw new StorageException("Could not open index directory: " + this.indexDirectory, e);
-            }
-
+            this.indexReader = DirectoryReader.open(this.indexDirectory);
             this.indexReader.incRef();
         } else {
-            DirectoryReader reader;
-
-            try {
-                reader = DirectoryReader.openIfChanged(this.indexReader);
-            } catch (IOException e) {
-                throw new StorageException("Could not open index directory: " + this.indexDirectory, e);
-            }
+            DirectoryReader reader = DirectoryReader.openIfChanged(this.indexReader);
 
             if (reader != null) {
                 IOUtils.closeQuietly(this.indexReader);
@@ -115,80 +103,89 @@ public class LuceneTranslationsStorage implements TranslationsStorage {
     // TranslationStorage
 
     @Override
-    public void add(Domain domain, BilingualCorpus corpus) throws StorageException, IOException {
-        int domainId = domain.getId();
-
-        BilingualCorpus.BilingualLineReader reader = null;
+    public void add(Map<Domain, BilingualCorpus> batch) throws IOException {
         boolean success = false;
 
         try {
-            reader = corpus.getContentReader();
+            for (Map.Entry<Domain, BilingualCorpus> entry : batch.entrySet())
+                add(entry.getKey().getId(), entry.getValue());
 
-            BilingualCorpus.StringPair pair;
-            while ((pair = reader.read()) != null) {
-                Document document = DocumentBuilder.build(domainId, pair.source, pair.target);
-
-                try {
-                    this.indexWriter.addDocument(document);
-                } catch (IOException e) {
-                    throw new StorageException(e);
-                }
-            }
-
-            try {
-                this.indexWriter.commit();
-            } catch (IOException e) {
-                throw new StorageException(e);
-            }
+            this.indexWriter.commit();
 
             success = true;
         } finally {
-            IOUtils.closeQuietly(reader);
-
             if (!success)
                 this.indexWriter.rollback();
         }
     }
 
     @Override
-    public void add(Domain domain, Sentence sentence, Sentence translation) throws StorageException {
-        Document document = DocumentBuilder.build(domain.getId(), sentence, translation);
+    public void add(Domain domain, BilingualCorpus corpus) throws IOException {
+        boolean success = false;
 
         try {
-            this.indexWriter.addDocument(document);
-            this.indexWriter.commit();
-        } catch (IOException e) {
-            throw new StorageException(e);
-        }
+            add(domain.getId(), corpus);
 
+            this.indexWriter.commit();
+
+            success = true;
+        } finally {
+            if (!success)
+                this.indexWriter.rollback();
+        }
+    }
+
+    private void add(int domain, BilingualCorpus corpus) throws IOException {
+        BilingualCorpus.BilingualLineReader reader = null;
+
+        try {
+            reader = corpus.getContentReader();
+
+            long begin = System.currentTimeMillis();
+
+            BilingualCorpus.StringPair pair;
+            while ((pair = reader.read()) != null) {
+                Document document = DocumentBuilder.build(domain, pair.source, pair.target);
+                this.indexWriter.addDocument(document);
+            }
+
+            double elapsed = System.currentTimeMillis() - begin;
+            elapsed = (int) (elapsed / 100);
+            elapsed /= 10.;
+
+            logger.info("Domain " + domain + " imported in " + elapsed + "s");
+        } finally {
+            IOUtils.closeQuietly(reader);
+        }
     }
 
     @Override
-    public ScoreEntry[] search(Sentence source, int limit) throws StorageException {
+    public void add(Domain domain, Sentence sentence, Sentence translation) throws IOException {
+        Document document = DocumentBuilder.build(domain.getId(), sentence, translation);
+        this.indexWriter.addDocument(document);
+        this.indexWriter.commit();
+    }
+
+    @Override
+    public ScoreEntry[] search(Sentence source, int limit) throws IOException {
         return search(source, null, limit);
     }
 
     @Override
-    public ScoreEntry[] search(Sentence source, ContextVector contextVector, int limit) throws StorageException {
+    public ScoreEntry[] search(Sentence source, ContextVector contextVector, int limit) throws IOException {
         Query query = this.queries.build(source);
 
         IndexReader reader = this.getIndexReader();
         IndexSearcher searcher = new IndexSearcher(reader);
         searcher.setSimilarity(new CustomSimilarity());
 
-        ScoreEntry[] entries;
+        int queryLimit = Math.max(10, limit * 2);
+        ScoreDoc[] docs = searcher.search(query, queryLimit).scoreDocs;
 
-        try {
-            int queryLimit = Math.max(10, limit * 2);
-            ScoreDoc[] docs = searcher.search(query, queryLimit).scoreDocs;
-
-            entries = new ScoreEntry[docs.length];
-            for (int i = 0; i < docs.length; i++) {
-                entries[i] = DocumentBuilder.parseEntry(searcher.doc(docs[i].doc));
-                entries[i].score = docs[i].score;
-            }
-        } catch (IOException e) {
-            throw new StorageException("Failed to retrieve translations", e);
+        ScoreEntry[] entries = new ScoreEntry[docs.length];
+        for (int i = 0; i < docs.length; i++) {
+            entries[i] = DocumentBuilder.parseEntry(searcher.doc(docs[i].doc));
+            entries[i].score = docs[i].score;
         }
 
         rescorer.score(source, entries, contextVector);
@@ -205,7 +202,7 @@ public class LuceneTranslationsStorage implements TranslationsStorage {
     // DataListener
 
     @Override
-    public void onDataReceived(List<TranslationUnit> batch) throws Exception {
+    public void onDataReceived(List<TranslationUnit> batch) throws IOException {
         boolean success = false;
 
         HashMap<Short, Long> newChannels = new HashMap<>(this.channels);

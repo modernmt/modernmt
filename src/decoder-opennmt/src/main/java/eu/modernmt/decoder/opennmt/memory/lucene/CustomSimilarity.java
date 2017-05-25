@@ -1,4 +1,4 @@
-package eu.modernmt.decoder.opennmt.storage.lucene;
+package eu.modernmt.decoder.opennmt.memory.lucene;
 
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.similarities.DefaultSimilarity;

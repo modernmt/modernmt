@@ -2,7 +2,7 @@ package eu.modernmt.decoder.opennmt.model;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import eu.modernmt.decoder.opennmt.storage.ScoreEntry;
+import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.model.Sentence;
 import org.apache.commons.lang3.StringUtils;
