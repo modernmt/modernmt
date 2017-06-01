@@ -16,13 +16,7 @@ mmt_home = os.path.join(vendor_dir, os.path.pardir)
 mmt_build_dir = os.path.join(mmt_home, 'build')
 mmt_install_res = os.path.join(mmt_build_dir, 'res')
 
-# paoding_home is downloaded from git as <mmt_folder>/vendor/paoding and already contains
-#   paoding-analysis.jar
-#   paoding-analysis.pom
-#   dictionary.tar.gz
-paoding_home = os.path.join(vendor_dir, 'paoding')
-
-# paoding_home is downloaded from git as <mmt_folder>/vendor/opennlp and already contains
+# opennlp_home is downloaded from git as <mmt_folder>/vendor/opennlp and already contains
 #   da-token.bin
 #   se-token.bin
 opennlp_home = os.path.join(vendor_dir, 'opennlp')
@@ -185,41 +179,6 @@ def install_apache_lib(path, output):
 
 
 # =========================================================================================
-# Module: paoding
-# =========================================================================================
-
-# build paoding and untar paoding dictionary in paoding_home
-def install_paoding():
-    print ("Installing Paoding...\n")
-
-    # make sure that paoding_home already exists. If it doesn't something wrong is going on
-    assert os.path.exists(paoding_home)
-
-    # build paoding in another process and wait for its end
-    command = ['mvn',
-               'install:install-file',
-               '-Dfile=' + paoding_home + '/paoding-analysis.jar',
-               '-DpomFile=' + paoding_home + '/paoding-analysis.pom']
-    exec_process(command)
-    print ("Paoding successfully installed\n\n")
-
-
-# extract dictionary.tar.gz in paoding_res
-def initialize_paoding_resources():
-    print ("Initializing Paoding resources...\n")
-
-    # create paoding_res folder as <mmt_folder>/build/res/paoding if necessary
-    paoding_res = os.path.join(mmt_install_res, 'paoding')
-    if not os.path.exists(paoding_res):
-        os.makedirs(paoding_res)
-
-    current_file_path = os.path.join(paoding_home, 'dictionary.tar.gz')
-    untar(current_file_path, paoding_res)
-
-    print ("Paoding resources successfully initialized...\n\n")
-
-
-# =========================================================================================
 # Module: OpenNLP
 # =========================================================================================
 
@@ -348,7 +307,6 @@ def install_kafka():
 def run_all():
     initialize_all_resources()
     install_rocksdb()
-    install_paoding()
     install_cassandra()
     install_kafka()
 
@@ -358,7 +316,6 @@ def initialize_all_resources():
     if not os.path.exists(mmt_install_res):
         os.makedirs(mmt_install_res)
 
-    initialize_paoding_resources()
     initialize_opennlp_resources()
 
 

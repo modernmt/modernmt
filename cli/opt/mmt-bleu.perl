@@ -61,6 +61,9 @@ sub tokenization_international {
   $norm_text =~ s/(\P{N})(\p{P})/$1 $2 /g;
   $norm_text =~ s/(\p{P})(\P{N})/ $1 $2/g;
 
+  # cjk: tokenize any CJK chars
+  $norm_text =~ s/(\p{InCJK_Unified_Ideographs})/ $1 /g;
+
   $norm_text =~ s/(\p{S})/ $1 /g; # tokenize symbols
 
   for ($i = $#tags; $i >= 0; $i--) {

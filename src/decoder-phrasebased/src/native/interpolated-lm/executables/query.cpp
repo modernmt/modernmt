@@ -117,6 +117,9 @@ int main(int argc, const char *argv[]) {
 
     Options options;
 
+    options.static_lm.type = Options::StaticLMType::TRIE;
+    options.static_lm.quantization_bits = (uint8_t) 8;
+    options.static_lm.pointers_compression_bits = (uint8_t) 32;
     options.order = args.order;
     if (args.alm_only)
         options.adaptivity_ratio = 1.f;
