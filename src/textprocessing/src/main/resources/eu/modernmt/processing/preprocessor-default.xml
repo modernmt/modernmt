@@ -15,7 +15,7 @@
     <!-- Tokenization -->
     <processorGroup>
         <!-- Language specific -->
-        <processor source="ca cs de el en es fi fr hu is it lv nl pl pt pt-BR ro ru sk sl sv ta">
+        <processor source="ca cs de el en es fi fr hu is it lv nl pl pt pt-BR ro ru sk sl sv ta zh">
             eu.modernmt.processing.tokenizer.jflex.JFlexTokenizer
         </processor>
         <processor source="ar">
@@ -24,7 +24,7 @@
         <processor source="da se">
             eu.modernmt.processing.tokenizer.opennlp.OpenNLPTokenizer
         </processor>
-        <processor source="fa he hi th bg eu ga hy id no tr zh">
+        <processor source="fa he hi th bg eu ga hy id no tr">
             eu.modernmt.processing.tokenizer.lucene.LuceneTokenizer
         </processor>
         <processor source="br eo km ml uk gl tl">

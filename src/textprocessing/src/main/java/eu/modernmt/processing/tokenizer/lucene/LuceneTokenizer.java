@@ -52,7 +52,6 @@ public class LuceneTokenizer extends TextProcessor<SentenceBuilder, SentenceBuil
         ANALYZERS.put(Languages.HINDI, HindiAnalyzer.class);
         ANALYZERS.put(Languages.THAI, ThaiAnalyzer.class);
         ANALYZERS.put(Languages.HEBREW, HebrewAnalyzer.class);
-        ANALYZERS.put(Languages.CHINESE, PaodingAnalyzer.class);
 
         // Standard analyzer
         ANALYZERS.put(Languages.BULGARIAN, LiteStandardAnalyzer.class);

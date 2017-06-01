@@ -195,14 +195,5 @@
             <artifactId>opennlp-tools</artifactId>
             <version>1.6.0</version>
         </dependency>
-
-        <!-- Paoding -->
-        <!-- https://code.google.com/p/paoding/ -->
-        <!-- http://git.oschina.net/zhzhenqin/paoding-analysis.git -->
-        <dependency>
-            <groupId>net.paoding</groupId>
-            <artifactId>paoding-analysis</artifactId>
-            <version>2.0.4</version>
-        </dependency>
     </dependencies>
 </project>
