@@ -67,6 +67,9 @@ class Trainer(object):
             opt.epochs = epochs
         print opt
 
+        print "def trainModel() model=", hex(id(model))
+        print "def trainModel() optim=", hex(id(optim))
+
         print(model)
         model.train()
 

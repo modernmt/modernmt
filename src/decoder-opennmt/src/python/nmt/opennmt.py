@@ -27,16 +27,12 @@ class OpenNMTDecoder(MMTDecoder):
         ## Assuming that model_path is an actual model (and not is )
         checkpoint_path=model_path
 
-        # parameters = "-train_from_state_dict " + checkpoint_path
-        # parameters += " " + "-gpu " + str(0)
-        # print 'class OpenNMTDecoder(Decoder) parameter:', parameters
-
         ###opt = parser.parse_args(args=parameters)
         opt = parser.parse_args(args="")
         opt.model = checkpoint_path
         opt.batch_size = 1
-        opt.beam_size = 5
-        opt.max_sent_length = 100
+        opt.beam_size = 50
+        opt.max_sent_length = 2
         opt.n_best = 1
         opt.replace_unk = True
         opt.verbose = False
@@ -65,22 +61,23 @@ class OpenNMTDecoder(MMTDecoder):
         ###srcBatch = [ text ]
 
         srcBatch = []
-        srcTokens = text
-        srcBatch += srcTokens
-
+        srcBatch.append(text)
 
         if len(suggestions) == 0:
             predBatch, predScore, goldScore = self.translator.translate(srcBatch, None)
         else:
-            tuningSrcBatch, tuningTgtBatch = [], []
-            for sugg in suggestions:
-                tuningSrcBatch.append(sugg.source)
-                tuningTgtBatch.append(sugg.target)
-
-            tuningBatch = { 'src':tuningSrcBatch, 'tgt':tuningTgtBatch }
-            predBatch, predScore, goldScore = self.translator.translateOnline(srcBatch, None, tuningBatch)
+            # tuningSrcBatch, tuningTgtBatch = [], []
+            # for sugg in suggestions:
+            #     tuningSrcBatch.append(sugg.source)
+            #     tuningTgtBatch.append(sugg.target)
+            #
+            # tuningBatch = { 'src':tuningSrcBatch, 'tgt':tuningTgtBatch }
+            # predBatch, predScore, goldScore = self.translator.translateOnline(srcBatch, None, tuningBatch)
+            predBatch, predScore, goldScore = self.translator.translateOnline(srcBatch, None, suggestions)
 
         output = predBatch[0][0]
+        print "def translate(self, text, suggestions=None) predScore:", predScore[0][0]
+        print "def translate(self, text, suggestions=None) predScore:", repr(predBatch)
         return output
 
     def _preferred_threads(self):

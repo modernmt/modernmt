@@ -11,22 +11,24 @@ import Trainer
 class Translator(object):
     def __init__(self, opt):
         self.opt = opt
+        self.gpus = []
+        if self.opt.gpu > -1:
+            self.gpus = [ self.opt.gpu ]
+
         self.tt = torch.cuda if opt.cuda else torch
 
         checkpoint = torch.load(opt.model)
 
         model_opt = checkpoint['opt']
         self.dicts = checkpoint['dicts']
-        self.src_dict = checkpoint['dicts']['src']
-        self.tgt_dict = checkpoint['dicts']['tgt']
-
-        encoder = onmt.Models.Encoder(model_opt, self.src_dict)
-        decoder = onmt.Models.Decoder(model_opt, self.tgt_dict)
-        model = onmt.Models.NMTModel(encoder, decoder)
         self.optim = checkpoint['optim']
 
+        encoder = onmt.Models.Encoder(model_opt, self.getSourceDict())
+        decoder = onmt.Models.Decoder(model_opt, self.getTargetDict())
+        model = onmt.Models.NMTModel(encoder, decoder)
+
         generator = nn.Sequential(
-            nn.Linear(model_opt.rnn_size, self.tgt_dict.size()),
+            nn.Linear(model_opt.rnn_size, self.dicts['tgt'].size()),
             nn.LogSoftmax())
 
         model.load_state_dict(checkpoint['model'])
@@ -47,11 +49,11 @@ class Translator(object):
         self.trainer = Trainer.Trainer(model_opt)
 
     def buildData(self, srcBatch, goldBatch, volatile=True):
-        srcData = [self.src_dict.convertToIdx(b,
+        srcData = [self.getSourceDict().convertToIdx(b,
                     onmt.Constants.UNK_WORD) for b in srcBatch]
         tgtData = None
         if goldBatch:
-            tgtData = [self.tgt_dict.convertToIdx(b,
+            tgtData = [self.getTargetDict().convertToIdx(b,
                        onmt.Constants.UNK_WORD,
                        onmt.Constants.BOS_WORD,
                        onmt.Constants.EOS_WORD) for b in goldBatch]
@@ -60,7 +62,7 @@ class Translator(object):
             self.opt.batch_size, self.opt.cuda, volatile)
 
     def buildTargetTokens(self, pred, src, attn):
-        tokens = self.tgt_dict.convertToLabels(pred, onmt.Constants.EOS)
+        tokens = self.getTargetDict().convertToLabels(pred, onmt.Constants.EOS)
         tokens = tokens[:-1]  # EOS
         if self.opt.replace_unk:
             for i in range(len(tokens)):
@@ -70,13 +72,15 @@ class Translator(object):
         return tokens
 
     def getSourceDict(self):
-        return self.src_dict
+        return self.dicts['src']
 
     def getTargetDict(self):
-        return self.tgt_dict
+        return self.dicts['tgt']
 
     def translateBatch(self, srcBatch, tgtBatch, model=None):
         if model == None: model = self.model
+        print "def translateBatch() model=", hex(id(model))
+        print "def translateBatch() self.model=", hex(id(self.model))
         batchSize = srcBatch[0].size(1)
         beamSize = self.opt.beam_size
 
@@ -207,6 +211,8 @@ class Translator(object):
         dataset = self.buildData(srcBatch, goldBatch)
         src, tgt, indices = dataset[0]
 
+        print "def translateOnline() src:", src
+
         #  (2) translate
         pred, predScore, attn, goldScore = self.translateBatch(src, tgt)
         pred, predScore, attn, goldScore = list(zip(*sorted(zip(pred, predScore, attn, goldScore, indices), key=lambda x: x[-1])))[:-1]
@@ -222,25 +228,39 @@ class Translator(object):
         return predBatch, predScore, goldScore
 
     ###def translateOnline(self, srcBatch, goldBatch, tuningTrainData):
-    def translateOnline(self, srcBatch, goldBatch, tuningBatch):
-        #  (1) convert words to indexes
+    ### def translateOnline(self, srcBatch, goldBatch, tuningBatch):
+    def translateOnline(self, srcBatch, goldBatch, suggestions):
+
+        #  (1) convert words to indexes [input and reference (if nay)]
         dataset = self.buildData(srcBatch, goldBatch)
         src, tgt, indices = dataset[0]
 
+        print "def translateOnline() src:", src
+
+
+        # (1) convert words to indexes [suggestions]
         indexedTuningSrcBatch, indexedTuningTgtBatch = [], []
-        for b in range(len(tuningBatch['src'])):
-            indexedTuningSrcBatch += [self.getSourceDict().convertToIdx(tuningBatch['src'][b], onmt.Constants.UNK_WORD)]
-            indexedTuningTgtBatch += [self.getTargetDict().convertToIdx(tuningBatch['tgt'][b], onmt.Constants.UNK_WORD, onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD)]
+        for sugg in suggestions:
+
+            indexedTuningSrcBatch += [self.getSourceDict().convertToIdx(sugg.source, onmt.Constants.UNK_WORD)]
+            indexedTuningTgtBatch += [self.getTargetDict().convertToIdx(sugg.target, onmt.Constants.UNK_WORD, onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD)]
+
         # prepare data for training on the tuningBatch
         tuningDataset = { 'train': { 'src':indexedTuningSrcBatch, 'tgt':indexedTuningTgtBatch }, 'dicts':self.dicts }
 
-        if self.opt.gpu == -1 :
-            gpus = []
-        else:
-            gpus = [ self.opt.gpu ]
 
         tuningTrainData = onmt.Dataset(tuningDataset['train']['src'],
-                             tuningDataset['train']['tgt'], self.opt.batch_size, gpus)
+                             tuningDataset['train']['tgt'], self.opt.batch_size, self.gpus)
+
+        # tuningSrcBatch, tuningTgtBatch = [], []
+        # for sugg in suggestions:
+        #     tuningSrcBatch.append(sugg.source)
+        #     tuningTgtBatch.append(sugg.target)
+        #
+        # tuningTrainData = self.buildData(tuningSrcBatch, tuningTgtBatch)
+        # tuningSrcBatch, tuningTgtBatch, indices = tuningTrainData[0]
+        #
+        # tuningDataset = { 'train': { 'src':tuningSrcBatch, 'tgt':tuningTgtBatch }, 'dicts':self.dicts }
 
         ### make a copy of "static" model
         print('copying model... START')
@@ -256,6 +276,10 @@ class Translator(object):
         model_copy.eval()
         print('tuning model... END %.2fs' % (time.time() - start_time))
 
+        print "def translateOnline() model_copy=", hex(id(model_copy))
+        print "def translateOnline() self.model=", hex(id(self.model))
+        print "def translateOnline() optim_copy=", hex(id(optim_copy))
+        print "def translateOnline() self.optim=", hex(id(self.optim))
         #  (2) translate
         pred, predScore, attn, goldScore = self.translateBatch(src, tgt, model=model_copy)
         pred, predScore, attn, goldScore = list(zip(*sorted(zip(pred, predScore, attn, goldScore, indices), key=lambda x: x[-1])))[:-1]
@@ -269,23 +293,6 @@ class Translator(object):
             )
         return predBatch, predScore, goldScore
 
-    def translate_json(self, input):
-        predBatch, predScore, goldScore = self.translate(input['source'], input['reference'])
-        output = { 'translation':[], 'nbest':[], 'score':[] }
-        for b in range(len(input['source'])):
-            output['translation'] += predBatch[b][0]
-            output['score'].append(predScore[b])
-        output['nbest'] = predBatch
-        return output
-
-    def translateOnline_json(self, input):
-        predBatch, predScore, goldScore = self.translateOnline(input['source'], input['reference'], input['tune'])
-        output = { 'translation':[], 'nbest':[], 'score':[] }
-        for b in range(len(input['source'])):
-            output['translation'].append(predBatch[b][0])
-            output['score'].append(predScore[b])
-        output['nbest'] = predBatch
-        return output
 
 
 # Sentence is an array of strings

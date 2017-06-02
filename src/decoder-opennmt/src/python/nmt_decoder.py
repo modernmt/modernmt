@@ -3,7 +3,7 @@ import json
 import sys
 
 from nmt import Suggestion, MMTDecoder
-
+from nmt.opennmt import OpenNMTDecoder
 
 class TranslationRequest:
     def __init__(self, _id, source, suggestions=None):
@@ -92,7 +92,8 @@ def run_main():
 
     args = parser.parse_args()
 
-    decoder = YodaDecoder()
+    ###decoder = YodaDecoder()
+    decoder = OpenNMTDecoder(args.model)
 
     try:
         controller = MainController(decoder)
