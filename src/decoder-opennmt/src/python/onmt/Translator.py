@@ -1,12 +1,13 @@
-import onmt
-import torch.nn as nn
+import copy
+import time
+
 import torch
+import torch.nn as nn
 from torch.autograd import Variable
 
-import time
-import copy
-
 import Trainer
+import onmt
+
 
 class Translator(object):
     def __init__(self, opt):
@@ -48,16 +49,16 @@ class Translator(object):
 
     def buildData(self, srcBatch, goldBatch, volatile=True):
         srcData = [self.src_dict.convertToIdx(b,
-                    onmt.Constants.UNK_WORD) for b in srcBatch]
+                                              onmt.Constants.UNK_WORD) for b in srcBatch]
         tgtData = None
         if goldBatch:
             tgtData = [self.tgt_dict.convertToIdx(b,
-                       onmt.Constants.UNK_WORD,
-                       onmt.Constants.BOS_WORD,
-                       onmt.Constants.EOS_WORD) for b in goldBatch]
+                                                  onmt.Constants.UNK_WORD,
+                                                  onmt.Constants.BOS_WORD,
+                                                  onmt.Constants.EOS_WORD) for b in goldBatch]
 
         return onmt.Dataset(srcData, tgtData,
-            self.opt.batch_size, self.opt.cuda, volatile)
+                            self.opt.batch_size, self.opt.cuda, volatile)
 
     def buildTargetTokens(self, pred, src, attn):
         tokens = self.tgt_dict.convertToLabels(pred, onmt.Constants.EOS)
@@ -82,20 +83,21 @@ class Translator(object):
 
         #  (1) run the encoder on the src
         encStates, context = model.encoder(srcBatch)
-        srcBatch = srcBatch[0] # drop the lengths needed for encoder
+        srcBatch = srcBatch[0]  # drop the lengths needed for encoder
 
         rnnSize = context.size(2)
         encStates = (model._fix_enc_hidden(encStates[0]),
-                      model._fix_enc_hidden(encStates[1]))
+                     model._fix_enc_hidden(encStates[1]))
 
         #  This mask is applied to the attention model inside the decoder
         #  so that the attention ignores source padding
         padMask = srcBatch.data.eq(onmt.Constants.PAD).t()
+
         def applyContextMask(m):
             if isinstance(m, onmt.modules.GlobalAttention):
                 m.applyMask(padMask)
 
-        #  (2) if a target is specified, compute the 'goldScore'
+        # (2) if a target is specified, compute the 'goldScore'
         #  (i.e. log likelihood) of the target under the model
         goldScores = context.data.new(batchSize).zero_()
         if tgtBatch is not None:
@@ -113,7 +115,7 @@ class Translator(object):
                 scores.masked_fill_(tgt_t.eq(onmt.Constants.PAD), 0)
                 goldScores += scores
 
-        #  (3) run the decoder to generate sentences, using beam search
+        # (3) run the decoder to generate sentences, using beam search
 
         # Expand tensors for each beam.
         context = Variable(context.data.repeat(1, beamSize, 1))
@@ -134,7 +136,7 @@ class Translator(object):
 
             # Prepare decoder input.
             input = torch.stack([b.getCurrentState() for b in beam
-                               if not b.done]).t().contiguous().view(1, -1)
+                                 if not b.done]).t().contiguous().view(1, -1)
 
             decOut, decStates, attn = model.decoder(
                 Variable(input, volatile=True), decStates, context, decOut)
@@ -176,7 +178,7 @@ class Translator(object):
                 newSize = list(t.size())
                 newSize[-2] = newSize[-2] * len(activeIdx) // remainingSents
                 return Variable(view.index_select(1, activeIdx) \
-                                    .view(*newSize), volatile=True)
+                                .view(*newSize), volatile=True)
 
             decStates = (updateActive(decStates[0]), updateActive(decStates[1]))
             decOut = updateActive(decOut)
@@ -185,7 +187,7 @@ class Translator(object):
 
             remainingSents = len(active)
 
-        #  (4) package everything up
+        # (4) package everything up
 
         allHyp, allScores, allAttn = [], [], []
         n_best = self.opt.n_best
@@ -209,14 +211,15 @@ class Translator(object):
 
         #  (2) translate
         pred, predScore, attn, goldScore = self.translateBatch(src, tgt)
-        pred, predScore, attn, goldScore = list(zip(*sorted(zip(pred, predScore, attn, goldScore, indices), key=lambda x: x[-1])))[:-1]
+        pred, predScore, attn, goldScore = list(
+            zip(*sorted(zip(pred, predScore, attn, goldScore, indices), key=lambda x: x[-1])))[:-1]
 
         #  (3) convert indexes to words
         predBatch = []
         for b in range(src[0].size(1)):
             predBatch.append(
                 [self.buildTargetTokens(pred[b][n], srcBatch[b], attn[b][n])
-                        for n in range(self.opt.n_best)]
+                 for n in range(self.opt.n_best)]
             )
 
         return predBatch, predScore, goldScore
@@ -230,48 +233,52 @@ class Translator(object):
         indexedTuningSrcBatch, indexedTuningTgtBatch = [], []
         for b in range(len(tuningBatch['src'])):
             indexedTuningSrcBatch += [self.getSourceDict().convertToIdx(tuningBatch['src'][b], onmt.Constants.UNK_WORD)]
-            indexedTuningTgtBatch += [self.getTargetDict().convertToIdx(tuningBatch['tgt'][b], onmt.Constants.UNK_WORD, onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD)]
+            indexedTuningTgtBatch += [self.getTargetDict().convertToIdx(tuningBatch['tgt'][b], onmt.Constants.UNK_WORD,
+                                                                        onmt.Constants.BOS_WORD,
+                                                                        onmt.Constants.EOS_WORD)]
         # prepare data for training on the tuningBatch
-        tuningDataset = { 'train': { 'src':indexedTuningSrcBatch, 'tgt':indexedTuningTgtBatch }, 'dicts':self.dicts }
+        tuningDataset = {'train': {'src': indexedTuningSrcBatch, 'tgt': indexedTuningTgtBatch}, 'dicts': self.dicts}
 
-        if self.opt.gpu == -1 :
+        if self.opt.gpu == -1:
             gpus = []
         else:
-            gpus = [ self.opt.gpu ]
+            gpus = [self.opt.gpu]
 
         tuningTrainData = onmt.Dataset(tuningDataset['train']['src'],
-                             tuningDataset['train']['tgt'], self.opt.batch_size, gpus)
+                                       tuningDataset['train']['tgt'], self.opt.batch_size, gpus)
 
         ### make a copy of "static" model
-        print('copying model... START')
+        # print('copying model... START')
         start_time = time.time()
         model_copy = copy.deepcopy(self.model)
         optim_copy = copy.deepcopy(self.optim)
-        print('copying model... END %.2fs' % (time.time() - start_time))
+        # print('copying model... END %.2fs' % (time.time() - start_time))
 
-        print('tuning model... START')
+        # print('tuning model... START')
         start_time = time.time()
         model_copy.train()
-        self.trainer.trainModel(model_copy, tuningTrainData, None,  tuningDataset, optim_copy, save_all_epochs=False, save_last_epoch=False, epochs=self.opt.tuning_epochs)
+        self.trainer.trainModel(model_copy, tuningTrainData, None, tuningDataset, optim_copy, save_all_epochs=False,
+                                save_last_epoch=False, epochs=self.opt.tuning_epochs)
         model_copy.eval()
-        print('tuning model... END %.2fs' % (time.time() - start_time))
+        # print('tuning model... END %.2fs' % (time.time() - start_time))
 
         #  (2) translate
         pred, predScore, attn, goldScore = self.translateBatch(src, tgt, model=model_copy)
-        pred, predScore, attn, goldScore = list(zip(*sorted(zip(pred, predScore, attn, goldScore, indices), key=lambda x: x[-1])))[:-1]
+        pred, predScore, attn, goldScore = list(
+            zip(*sorted(zip(pred, predScore, attn, goldScore, indices), key=lambda x: x[-1])))[:-1]
 
         #  (3) convert indexes to words
         predBatch = []
         for b in range(src[0].size(1)):
             predBatch.append(
                 [self.buildTargetTokens(pred[b][n], srcBatch[b], attn[b][n])
-                        for n in range(self.opt.n_best)]
+                 for n in range(self.opt.n_best)]
             )
         return predBatch, predScore, goldScore
 
     def translate_json(self, input):
         predBatch, predScore, goldScore = self.translate(input['source'], input['reference'])
-        output = { 'translation':[], 'nbest':[], 'score':[] }
+        output = {'translation': [], 'nbest': [], 'score': []}
         for b in range(len(input['source'])):
             output['translation'] += predBatch[b][0]
             output['score'].append(predScore[b])
@@ -280,13 +287,12 @@ class Translator(object):
 
     def translateOnline_json(self, input):
         predBatch, predScore, goldScore = self.translateOnline(input['source'], input['reference'], input['tune'])
-        output = { 'translation':[], 'nbest':[], 'score':[] }
+        output = {'translation': [], 'nbest': [], 'score': []}
         for b in range(len(input['source'])):
             output['translation'].append(predBatch[b][0])
             output['score'].append(predScore[b])
         output['nbest'] = predBatch
         return output
-
 
 # Sentence is an array of strings
 # Sentence = [ strings ]
@@ -308,4 +314,3 @@ class Translator(object):
 #
 # goldScore is an Array containing the BLEU score of the best hypothesis with respect to the gold standard, if provided
 # goldScore = [ float ]
-

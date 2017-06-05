@@ -1,9 +1,12 @@
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-import onmt.modules
-from torch.nn.utils.rnn import pad_packed_sequence as unpack
 from torch.nn.utils.rnn import pack_padded_sequence as pack
+from torch.nn.utils.rnn import pad_packed_sequence as unpack
+
+import onmt
+import onmt.modules
+
 
 class Encoder(nn.Module):
 
@@ -16,8 +19,8 @@ class Encoder(nn.Module):
 
         super(Encoder, self).__init__()
         self.word_lut = nn.Embedding(dicts.size(),
-                                  opt.word_vec_size,
-                                  padding_idx=onmt.Constants.PAD)
+                                     opt.word_vec_size,
+                                     padding_idx=onmt.Constants.PAD)
         self.rnn = nn.LSTM(input_size, self.hidden_size,
                         num_layers=opt.layers,
                         dropout=opt.dropout,
@@ -79,8 +82,8 @@ class Decoder(nn.Module):
 
         super(Decoder, self).__init__()
         self.word_lut = nn.Embedding(dicts.size(),
-                                  opt.word_vec_size,
-                                  padding_idx=onmt.Constants.PAD)
+                                     opt.word_vec_size,
+                                     padding_idx=onmt.Constants.PAD)
         self.rnn = StackedLSTM(opt.layers, input_size, opt.rnn_size, opt.dropout)
         self.attn = onmt.modules.GlobalAttention(opt.rnn_size)
         self.dropout = nn.Dropout(opt.dropout)

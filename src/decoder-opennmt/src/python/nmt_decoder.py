@@ -2,7 +2,8 @@ import argparse
 import json
 import sys
 
-from nmt import Suggestion, MMTDecoder
+from onmt import Suggestion, MMTDecoder
+from onmt.opennmt import OpenNMTDecoder
 
 
 class TranslationRequest:
@@ -92,7 +93,7 @@ def run_main():
 
     args = parser.parse_args()
 
-    decoder = YodaDecoder()
+    decoder = OpenNMTDecoder(args.model + '/model_acc_80.85_ppl_3.08_e30.pt')
 
     try:
         controller = MainController(decoder)

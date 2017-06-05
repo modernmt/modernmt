@@ -2,6 +2,7 @@ package eu.modernmt.decoder.opennmt.model;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import eu.modernmt.decoder.opennmt.OpenNMTException;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.model.Sentence;
@@ -15,7 +16,7 @@ public class TranslationResponse {
 
     private static final JsonParser parser = new JsonParser();
 
-    public static TranslationResponse fromJSON(String jsonString) {
+    public static TranslationResponse fromJSON(String jsonString) throws JsonSyntaxException {
         JsonObject json = parser.parse(jsonString).getAsJsonObject();
 
         long id = json.get("id").getAsLong();
