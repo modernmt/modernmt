@@ -68,9 +68,9 @@ class Trainer(object):
         if epochs:
             opt.epochs = epochs
 
-        # print opt
+        print opt
 
-        # print(model)
+        print(model)
 
         model.train()
 
@@ -138,15 +138,17 @@ class Trainer(object):
             # print("Actual learning rate to %g" % optim.lr)
             train_loss, train_acc = trainEpoch(epoch)
             train_ppl = math.exp(min(train_loss, 100))
-            # print('Train loss: %g' % train_loss)
-            # print('Train perplexity: %g' % train_ppl)
-            # print('Train accuracy: %g' % (train_acc*100))
+            print('Train loss: %g' % train_loss)
+            print('Train perplexity: %g' % train_ppl)
+            print('Train accuracy: %g' % (train_acc*100))
+
+            print('optim.lr:', repr(optim.lr))
 
             if validData:
                 #  (2) evaluate on the validation set
                 valid_loss, valid_acc = self.eval(model, criterion, validData)
                 valid_ppl = math.exp(min(valid_loss, 100))
-                # print('Validation loss: %g' % valid_loss)
+                print('Validation loss: %g' % valid_loss)
                 # print('Validation perplexity: %g' % valid_ppl)
                 # print('Validation accuracy: %g' % (valid_acc*100))
 
@@ -165,6 +167,8 @@ class Trainer(object):
                 'epoch': epoch,
                 'optim': optim
             }
+            valid_acc = 1.0
+            valid_ppl = 1.0
             if save_all_epochs:
                 torch.save(checkpoint,
                            '%s_acc_%.2f_ppl_%.2f_e%d.pt' % (opt.save_model, 100*valid_acc, valid_ppl, epoch))

@@ -81,7 +81,11 @@ class Translator(object):
     def translateBatch(self, srcBatch, tgtBatch, model=None):
         if model == None: model = self.model
         print "def translateBatch() model=", hex(id(model))
+        print "def translateBatch() model.encoder=", hex(id(model.encoder))
+        print "def translateBatch() model.decoder=", hex(id(model.decoder))
         print "def translateBatch() self.model=", hex(id(self.model))
+        print "def translateBatch() self.model.encoder=", hex(id(self.model.encoder))
+        print "def translateBatch() self.model.decoder=", hex(id(self.model.decoder))
         batchSize = srcBatch[0].size(1)
         beamSize = self.opt.beam_size
 
@@ -213,7 +217,8 @@ class Translator(object):
         dataset = self.buildData(srcBatch, goldBatch)
         src, tgt, indices = dataset[0]
 
-        print "def translateOnline() src:", src
+        print "def translate() src:", src
+        print "def translate() self.opt.n_best:", self.opt.n_best
 
         #  (2) translate
         pred, predScore, attn, goldScore = self.translateBatch(src, tgt)
@@ -222,11 +227,20 @@ class Translator(object):
 
         #  (3) convert indexes to words
         predBatch = []
+        print "def translate() src[0]:", src[0]
         for b in range(src[0].size(1)):
+
+            print "def translate() b:", b, " pred[b]:", repr(pred[b])
+
             predBatch.append(
                 [self.buildTargetTokens(pred[b][n], srcBatch[b], attn[b][n])
-                 for n in range(self.opt.n_best)]
+                 for n in range(len(pred[b]))]
             )
+
+        # print of the nbest for each sentence of the batch
+        for b in range(len(predBatch)):
+            for n in range(len(predBatch[b])):
+                print "def Translator::translate(self, text, suggestions=None) predScore[b][n]:", repr(predScore[b][n]), " predBatch[b][n]:", repr(predBatch[b][n])
 
         return predBatch, predScore, goldScore
 
@@ -244,6 +258,8 @@ class Translator(object):
         # (1) convert words to indexes [suggestions]
         indexedTuningSrcBatch, indexedTuningTgtBatch = [], []
         for sugg in suggestions:
+            print "def translateOnline() sugg.source:", sugg.source
+            print "def translateOnline() sugg.target:", sugg.target
 
             indexedTuningSrcBatch += [self.getSourceDict().convertToIdx(sugg.source, onmt.Constants.UNK_WORD)]
             indexedTuningTgtBatch += [self.getTargetDict().convertToIdx(sugg.target, onmt.Constants.UNK_WORD, onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD)]
@@ -264,29 +280,35 @@ class Translator(object):
         #
         # tuningDataset = { 'train': { 'src':tuningSrcBatch, 'tgt':tuningTgtBatch }, 'dicts':self.dicts }
 
+        print('tuningDataset.train.src:', repr(tuningDataset['train']['src']))
+        print('tuningDataset.train.tgt:', repr(tuningDataset['train']['tgt']))
+
         ### make a copy of "static" model
-        # print('copying model... START')
+        print('copying model... START')
         start_time = time.time()
         model_copy = copy.deepcopy(self.model)
         optim_copy = copy.deepcopy(self.optim)
-        # print('copying model... END %.2fs' % (time.time() - start_time))
+        print('copying model... END %.2fs' % (time.time() - start_time))
 
-        # print('tuning model... START')
+        print('tuning model... START')
         start_time = time.time()
         model_copy.train()
-        self.trainer.trainModel(model_copy, tuningTrainData, None, tuningDataset, optim_copy, save_all_epochs=False,
-                                save_last_epoch=False, epochs=self.opt.tuning_epochs)
+        self.trainer.trainModel(model_copy, tuningTrainData, None, tuningDataset, optim_copy, save_all_epochs=True, save_last_epoch=False, epochs=self.opt.tuning_epochs)
         model_copy.eval()
-        # print('tuning model... END %.2fs' % (time.time() - start_time))
+        print('tuning model... END %.2fs' % (time.time() - start_time))
 
-        # print "def translateOnline() model_copy=", hex(id(model_copy))
-        # print "def translateOnline() self.model=", hex(id(self.model))
-        # print "def translateOnline() optim_copy=", hex(id(optim_copy))
-        # print "def translateOnline() self.optim=", hex(id(self.optim))
+        print "def translateOnline() model_copy=", hex(id(model_copy))
+        print "def translateOnline() model_copy.encoder=", hex(id(model_copy.encoder))
+        print "def translateOnline() model_copy.decoder=", hex(id(model_copy.decoder))
+        print "def translateOnline() optim_copy=", hex(id(optim_copy))
+        print "def translateOnline() self.model=", hex(id(self.model))
+        print "def translateOnline() self.model.encoder=", hex(id(self.model.encoder))
+        print "def translateOnline() self.model.decoder=", hex(id(self.model.decoder))
+        print "def translateOnline() self.optim=", hex(id(self.optim))
+
         #  (2) translate
         pred, predScore, attn, goldScore = self.translateBatch(src, tgt, model=model_copy)
-        pred, predScore, attn, goldScore = list(
-            zip(*sorted(zip(pred, predScore, attn, goldScore, indices), key=lambda x: x[-1])))[:-1]
+        pred, predScore, attn, goldScore = list(zip(*sorted(zip(pred, predScore, attn, goldScore, indices), key=lambda x: x[-1])))[:-1]
 
         #  (3) convert indexes to words
         predBatch = []
@@ -295,6 +317,12 @@ class Translator(object):
                 [self.buildTargetTokens(pred[b][n], srcBatch[b], attn[b][n])
                  for n in range(self.opt.n_best)]
             )
+
+        # print of the nbest for each sentence of the batch
+        for b in range(len(predBatch)):
+            for n in range(len(predBatch[b])):
+                print "def Translator::translate(self, text, suggestions=None) predScore[b][n]:", repr(predScore[b][n]), " predBatch[b][n]:", repr(predBatch[b][n])
+
         return predBatch, predScore, goldScore
 
 

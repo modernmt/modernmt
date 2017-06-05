@@ -220,7 +220,5 @@ def main():
     trainer = Trainer(opt)
     trainer.trainModel(model, trainData, validData,  dataset, optim)
 
-    trainModel(model, trainData, validData, dataset, optim)
-
 if __name__ == "__main__":
     main()

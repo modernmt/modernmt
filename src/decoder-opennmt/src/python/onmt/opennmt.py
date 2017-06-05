@@ -24,15 +24,16 @@ class OpenNMTDecoder(MMTDecoder):
         ###opt = parser.parse_args(args=parameters)
         opt = parser.parse_args(args="")
         opt.model = checkpoint_path
-        opt.batch_size = 1
-        opt.beam_size = 50
-        opt.max_sent_length = 2
-        opt.n_best = 1
+        opt.batch_size = 30
+        opt.beam_size = 5
+        opt.max_sent_length = 5
+        opt.n_best = 3
         opt.replace_unk = True
         opt.verbose = False
-        opt.tuning_epochs = 3
+        opt.tuning_epochs = 5
 
         opt.gpu = -1
+
         if opt.gpu > -1:
             opt.cuda = True
         else:
@@ -71,8 +72,12 @@ class OpenNMTDecoder(MMTDecoder):
 
 
         output = predBatch[0][0]
-        # print "def translate(self, text, suggestions=None) predScore:", predScore[0][0]
-        # print "def translate(self, text, suggestions=None) predScore:", repr(predBatch)
+
+        # print of the nbest for each sentence of the batch
+        for b in range(len(predBatch)):
+            for n in range(len(predBatch[b])):
+                print "def OpenNMTDecoder::translate(self, text, suggestions=None) predScore[b][n]:", repr(predScore[b][n]), " predBatch[b][n]:", repr(predBatch[b][n])
+
         return output
 
     def _preferred_threads(self):
