@@ -1,0 +1,6 @@
+{
+	"enabled": true,
+	"description": "Tests online learning",
+	"full_description": "This test verifies the correct implementation of the online learning feature",
+	"author": "Davide Caroselli"
+}

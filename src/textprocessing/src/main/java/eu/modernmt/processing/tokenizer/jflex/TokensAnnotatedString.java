@@ -19,6 +19,16 @@ public class TokensAnnotatedString {
     private byte[] flags;
     private int length;
 
+    private static boolean isWhitespace(char c) {
+        return ((0x0009 <= c && c <= 0x000D) || c == 0x0020 || c == 0x00A0 || c == 0x1680 ||
+                (0x2000 <= c && c <= 0x200A) || c == 0x202F || c == 0x205F || c == 0x3000);
+    }
+
+    private static boolean isCJK(char c) {
+        return (0x4E00 <= c && c <= 0x62FF) || (0x6300 <= c && c <= 0x77FF) ||
+                (0x7800 <= c && c <= 0x8CFF) || (0x8D00 <= c && c <= 0x9FFF);
+    }
+
     public TokensAnnotatedString(String string) {
         this(string.toCharArray());
     }
@@ -35,10 +45,9 @@ public class TokensAnnotatedString {
         for (char c : source) {
             int type = 0;
 
-            if ((0x0009 <= c && c <= 0x000D) || c == 0x0020 || c == 0x00A0 || c == 0x1680 ||
-                    (0x2000 <= c && c <= 0x200A) || c == 0x202F || c == 0x205F || c == 0x3000) {
+            if (isWhitespace(c)) {
                 type = WHITESPACE;
-            } else if (c != '-' && !Character.isLetterOrDigit(c)) {
+            } else if (isCJK(c) || (c != '-' && !Character.isLetterOrDigit(c))) {
                 type = BREAK;
             }
 

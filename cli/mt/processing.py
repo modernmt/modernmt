@@ -26,10 +26,11 @@ def _pool_exec(function, jobs):
 
 
 class Tokenizer:
-    __wspace = re.compile('\s+')
-
-    def __init__(self):
-        self._xml = XMLEncoder()
+    def __init__(self, lang, print_tags=False, print_placeholders=True):
+        self._lang = lang
+        self._print_tags = print_tags
+        self._print_placeholders = print_placeholders
+        self._java_mainclass = 'eu.modernmt.cli.PreprocessorMain'
 
     def process_corpora(self, corpora, dest_folder):
         fileutils.makedirs(dest_folder, exist_ok=True)
@@ -44,37 +45,17 @@ class Tokenizer:
         return BilingualCorpus.list(dest_folder)
 
     def process_file(self, source, dest, lang):
+        args = ['--lang', self._lang]
+        if not self._print_tags:
+            args.append('--no-tags')
+        if self._print_placeholders:
+            args.append('--print-placeholders')
+
+        command = mmt_javamain(self._java_mainclass, args=args)
+
         with open(source) as input_stream:
             with open(dest.get_file(lang), 'w') as output_stream:
-                for line in input_stream:
-                    output_stream.write(self.process(line.decode('utf-8')).encode('utf-8'))
-                    output_stream.write('\n')
-
-    def process(self, string):
-        string = string.strip()
-        string = self._xml.decode_string(string)
-
-        chars = []
-
-        for i in xrange(0, len(string)):
-            p = None if i == 0 else string[i - 1]
-            c = string[i]
-            s = None if i == (len(string) - 1) else string[i + 1]
-
-            p_is_digit = p is not None and p.isdigit()
-            s_is_digit = s is not None and s.isdigit()
-
-            if not c.isspace() and not c.isalnum() and not p_is_digit and not s_is_digit:
-                chars.append(' ')
-                chars.append(c)
-                chars.append(' ')
-            else:
-                chars.append(c)
-
-        string = ''.join(chars)
-        string = self.__wspace.sub(' ', string)
-
-        return string.strip()
+                shell.execute(command, stdin=input_stream, stdout=output_stream)
 
 
 class TMCleaner:

@@ -72,7 +72,7 @@ namespace mmt {
 
 SuffixArray::SuffixArray(const string &modelPath, uint8_t prefixLength, double gcTimeout, size_t gcBatchSize,
                          bool prepareForBulkLoad) throw(index_exception, storage_exception) :
-        openForBulkLoad(prepareForBulkLoad), prefixLength(prefixLength) {
+        logger("sapt.SuffixArray"), openForBulkLoad(prepareForBulkLoad), prefixLength(prefixLength) {
     fs::path modelDir(modelPath);
 
     if (!fs::is_directory(modelDir))
@@ -161,11 +161,12 @@ void SuffixArray::ForceCompaction() throw(index_exception) {
 }
 
 void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_exception) {
+    LogInfo(logger) << "Importing batch of " << batch.data.size() << " sentence pairs.";
     WriteBatch writeBatch;
 
     // Compute prefixes
-    unordered_map<string, PostingList> sourcePrefixes;
-    unordered_map<string, int64_t> targetCounts;
+    unordered_map <string, PostingList> sourcePrefixes;
+    unordered_map <string, int64_t> targetCounts;
 
     for (auto entry = batch.data.begin(); entry != batch.data.end(); ++entry) {
         domain_t domain = entry->domain;
@@ -192,7 +193,7 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
         writeBatch.Put(MakeDomainDeletionKey(*domain), "");
 
     // Write streams
-    writeBatch.Put(kStreamsKey, SerializeStreams(streams));
+    writeBatch.Put(kStreamsKey, SerializeStreams(batch.GetStreams()));
 
     // Write storage manifest
     if (!openForBulkLoad) {
@@ -211,8 +212,8 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
     garbageCollector->MarkForDeletion(batch.deletions);
 }
 
-void SuffixArray::AddPrefixesToBatch(domain_t domain, const vector<wid_t> &sentence,
-                                     int64_t location, unordered_map<string, PostingList> &outBatch) {
+void SuffixArray::AddPrefixesToBatch(domain_t domain, const vector <wid_t> &sentence,
+                                     int64_t location, unordered_map <string, PostingList> &outBatch) {
     size_t size = sentence.size();
 
     for (size_t start = 0; start < size; ++start) {
@@ -226,7 +227,7 @@ void SuffixArray::AddPrefixesToBatch(domain_t domain, const vector<wid_t> &sente
     }
 }
 
-void SuffixArray::AddTargetCountsToBatch(const vector<wid_t> &sentence, unordered_map<string, int64_t> &outBatch) {
+void SuffixArray::AddTargetCountsToBatch(const vector <wid_t> &sentence, unordered_map <string, int64_t> &outBatch) {
     size_t size = sentence.size();
 
     for (size_t start = 0; start < size; ++start) {
@@ -244,7 +245,7 @@ void SuffixArray::AddTargetCountsToBatch(const vector<wid_t> &sentence, unordere
  * SuffixArray - Query
  */
 
-size_t SuffixArray::CountOccurrences(bool isSource, const vector<wid_t> &phrase) {
+size_t SuffixArray::CountOccurrences(bool isSource, const vector <wid_t> &phrase) {
     if (phrase.size() > prefixLength)
         return 1; // Approximate higher order n-grams to singletons
 
@@ -266,7 +267,7 @@ size_t SuffixArray::CountOccurrences(bool isSource, const vector<wid_t> &phrase)
     return (size_t) std::max(count, (int64_t) 1);
 }
 
-void SuffixArray::GetRandomSamples(const vector<wid_t> &phrase, size_t limit, vector<sample_t> &outSamples,
+void SuffixArray::GetRandomSamples(const vector <wid_t> &phrase, size_t limit, vector <sample_t> &outSamples,
                                    const context_t *context, bool searchInBackground) {
     Collector collector(storage, db, prefixLength, context, searchInBackground);
     collector.Extend(phrase, limit, outSamples);

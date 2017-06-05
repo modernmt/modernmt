@@ -54,6 +54,7 @@ namespace mmt {
             const uint8_t order;
             const size_t maxSize;
             size_t size;
+            size_t sentenceCount;
 
             vector<seqid_t> streams;
             unordered_map<domain_t, ngram_table_t> ngrams_map;

@@ -1,4 +1,4 @@
-CJK        = [\u1100-\u11FF\u2E80-\uA4CF\uA840-\uA87F\uAC00-\uD7AF\uF900-\uFAFF\uFE30-\uFE4F\uFF65-\uFFDC]
+CJK        = [\u4E00-\u62FF\u6300-\u77FF\u7800-\u8CFF\u8D00-\u9FFF]
 _          = " "
 Letter     = !(![:letter:]|{CJK})
 
