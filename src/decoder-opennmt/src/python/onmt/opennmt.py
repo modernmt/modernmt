@@ -1,22 +1,16 @@
-import onmt
-import torch.nn as nn
-import torch
-from torch.autograd import Variable
-
-import time
-import copy
-
-from nmt import MMTDecoder
-from onmt import Trainer, Translator
-from onmt.Models import Encoder, Decoder
-
-
 import argparse
+
+import torch
+
+from onmt import MMTDecoder
+from onmt.Translator import Translator
+
 parser = argparse.ArgumentParser(description='train.py')
 
 parser.add_argument('-train_from_state_dict', default='', type=str,
                     help="""If training from a checkpoint then this is the
                     path to the pretrained model's state_dict.""")
+
 
 class OpenNMTDecoder(MMTDecoder):
     def __init__(self, model_path):
@@ -25,7 +19,7 @@ class OpenNMTDecoder(MMTDecoder):
 
         # TODO: how to create the opt object?
         ## Assuming that model_path is an actual model (and not is )
-        checkpoint_path=model_path
+        checkpoint_path = model_path
 
         ###opt = parser.parse_args(args=parameters)
         opt = parser.parse_args(args="")
@@ -44,10 +38,9 @@ class OpenNMTDecoder(MMTDecoder):
         else:
             opt.cuda = False
 
-
         opt.seed = 1234
-        #Sets the seed for generating random numbers
-        if (opt.seed>=0):
+        # Sets the seed for generating random numbers
+        if (opt.seed >= 0):
             torch.manual_seed(opt.seed)
 
         self.translator = Translator(opt)
@@ -55,12 +48,13 @@ class OpenNMTDecoder(MMTDecoder):
     def translate(self, text, suggestions=None):
         # TODO: stub implementation
 
-        #if (int(time.time()) % 2) == 0:
+        # if (int(time.time()) % 2) == 0:
         #    raise ArithmeticError("fake exception")
 
         ###srcBatch = [ text ]
 
         srcBatch = []
+
         srcBatch.append(text)
 
         if len(suggestions) == 0:
@@ -75,9 +69,10 @@ class OpenNMTDecoder(MMTDecoder):
             # predBatch, predScore, goldScore = self.translator.translateOnline(srcBatch, None, tuningBatch)
             predBatch, predScore, goldScore = self.translator.translateOnline(srcBatch, None, suggestions)
 
+
         output = predBatch[0][0]
-        print "def translate(self, text, suggestions=None) predScore:", predScore[0][0]
-        print "def translate(self, text, suggestions=None) predScore:", repr(predBatch)
+        # print "def translate(self, text, suggestions=None) predScore:", predScore[0][0]
+        # print "def translate(self, text, suggestions=None) predScore:", repr(predBatch)
         return output
 
     def _preferred_threads(self):
@@ -85,7 +80,7 @@ class OpenNMTDecoder(MMTDecoder):
         return 4
 
 
-#########
-#### An example of input for
-#### echo {"id":1, "source":"hello and goodbye", "suggestions":[{"source": "A", "target": "a", "score":"0.1"},{"source": "B", "target": "b", "score":"0.2"}]}
-#########
+        #########
+        #### An example of input for
+        #### echo {"id":1, "source":"hello and goodbye", "suggestions":[{"source": "A", "target1": "a", "score":"0.1"},{"source": "B", "target2": "b", "score":"0.2"}]}
+        #########

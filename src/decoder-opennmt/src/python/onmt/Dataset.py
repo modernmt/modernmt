@@ -1,7 +1,6 @@
 from __future__ import division
 
 import math
-import random
 
 import torch
 from torch.autograd import Variable

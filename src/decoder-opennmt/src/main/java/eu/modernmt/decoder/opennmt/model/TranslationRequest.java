@@ -39,6 +39,7 @@ public class TranslationRequest {
     public String toJSON() {
         String text = TokensOutputStream.toString(sentence, false, true);
 
+        // {"id": 0, "source":"test", "suggestions":[{"source":"test", "target":"testo", "score": 1.0}, {"source":"test", "target":"testo2", "score": 1.0}]}
         JsonObject json = new JsonObject();
         json.addProperty("id", id);
         json.addProperty("source", text);

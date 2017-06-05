@@ -1,10 +1,12 @@
-import onmt
+import math
+import time
+
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
-import math
-import time
+import onmt
+
 
 class Trainer(object):
     def __init__(self, opt):
@@ -65,17 +67,16 @@ class Trainer(object):
         opt=self.opt
         if epochs:
             opt.epochs = epochs
-        print opt
 
-        print "def trainModel() model=", hex(id(model))
-        print "def trainModel() optim=", hex(id(optim))
+        # print opt
 
-        print(model)
+        # print(model)
+
         model.train()
 
         save_last_epoch = save_last_epoch and not save_all_epochs
-        print 'save_all_epochs:%s save_last_epoch:%s' % (save_all_epochs, save_last_epoch)
-        print 'opt.start_epoch:%s opt.epochs:%s' % (opt.start_epoch, opt.epochs)
+        # print 'save_all_epochs:%s save_last_epoch:%s' % (save_all_epochs, save_last_epoch)
+        # print 'opt.start_epoch:%s opt.epochs:%s' % (opt.start_epoch, opt.epochs)
 
         # define criterion of each GPU
         criterion = self.NMTCriterion(dataset['dicts']['tgt'].size())
@@ -117,13 +118,13 @@ class Trainer(object):
                 total_num_correct += num_correct
                 total_words += num_words
                 if i % opt.log_interval == -1 % opt.log_interval:
-                    print("Epoch %2d, %5d/%5d; acc: %6.2f; ppl: %6.2f; %3.0f src tok/s; %3.0f tgt tok/s; %6.0f s elapsed" %
-                          (epoch, i+1, len(trainData),
-                           report_num_correct / report_tgt_words * 100,
-                           math.exp(report_loss / report_tgt_words),
-                           report_src_words/(time.time()-start),
-                           report_tgt_words/(time.time()-start),
-                           time.time()-start_time))
+                    # print("Epoch %2d, %5d/%5d; acc: %6.2f; ppl: %6.2f; %3.0f src tok/s; %3.0f tgt tok/s; %6.0f s elapsed" %
+                    #       (epoch, i+1, len(trainData),
+                    #        report_num_correct / report_tgt_words * 100,
+                    #        math.exp(report_loss / report_tgt_words),
+                    #        report_src_words/(time.time()-start),
+                    #        report_tgt_words/(time.time()-start),
+                    #        time.time()-start_time))
 
                     report_loss = report_tgt_words = report_src_words = report_num_correct = 0
                     start = time.time()
@@ -131,23 +132,23 @@ class Trainer(object):
             return total_loss / total_words, total_num_correct / total_words
 
         for epoch in range(opt.start_epoch, opt.epochs + 1):
-            print('')
+            # print('')
 
             #  (1) train for one epoch on the training set
-            print("Actual learning rate to %g" % optim.lr)
+            # print("Actual learning rate to %g" % optim.lr)
             train_loss, train_acc = trainEpoch(epoch)
             train_ppl = math.exp(min(train_loss, 100))
-            print('Train loss: %g' % train_loss)
-            print('Train perplexity: %g' % train_ppl)
-            print('Train accuracy: %g' % (train_acc*100))
+            # print('Train loss: %g' % train_loss)
+            # print('Train perplexity: %g' % train_ppl)
+            # print('Train accuracy: %g' % (train_acc*100))
 
             if validData:
                 #  (2) evaluate on the validation set
                 valid_loss, valid_acc = self.eval(model, criterion, validData)
                 valid_ppl = math.exp(min(valid_loss, 100))
-                print('Validation loss: %g' % valid_loss)
-                print('Validation perplexity: %g' % valid_ppl)
-                print('Validation accuracy: %g' % (valid_acc*100))
+                # print('Validation loss: %g' % valid_loss)
+                # print('Validation perplexity: %g' % valid_ppl)
+                # print('Validation accuracy: %g' % (valid_acc*100))
 
                 #  (3) update the learning rate
                 optim.updateLearningRate(valid_loss, epoch)

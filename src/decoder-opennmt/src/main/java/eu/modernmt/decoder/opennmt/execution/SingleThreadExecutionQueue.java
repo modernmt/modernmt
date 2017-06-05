@@ -1,5 +1,6 @@
 package eu.modernmt.decoder.opennmt.execution;
 
+import com.google.gson.JsonSyntaxException;
 import eu.modernmt.decoder.opennmt.OpenNMTException;
 import eu.modernmt.decoder.opennmt.OpenNMTRejectedExecutionException;
 import eu.modernmt.decoder.opennmt.model.TranslationRequest;
@@ -52,7 +53,13 @@ public class SingleThreadExecutionQueue implements ExecutionQueue {
             throw new OpenNMTException("Failed to read response from OpenNMT decoder", e);
         }
 
-        final TranslationResponse response = TranslationResponse.fromJSON(line);
+        final TranslationResponse response;
+
+        try {
+            response = TranslationResponse.fromJSON(line);
+        } catch (JsonSyntaxException e) {
+            throw new OpenNMTException("Invalid response from OpenNMT decoder: " + line, e);
+        }
 
         return () -> {
             if (response.hasException())
