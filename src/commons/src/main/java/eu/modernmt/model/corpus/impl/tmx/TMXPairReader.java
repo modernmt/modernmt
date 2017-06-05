@@ -88,9 +88,19 @@ class TMXPairReader {
         }
 
         String srclangString = XMLUtils.getAttributeValue(tu, null, "srclang");
-        Locale srclang = srclangString == null ? headerSourceLang : Locale.forLanguageTag(srclangString);
+        Locale srcLocale = srclangString == null ? headerSourceLang : Locale.forLanguageTag(srclangString);
 
-        boolean inverted = !srclang.getLanguage().equals(sourceLanguage);
+        String srcLang = srcLocale.getLanguage();
+
+        boolean inverted;
+        if (srcLang.equals(sourceLanguage)) {
+            inverted = false;
+        } else if (srcLang.equals(targetLanguage)) {
+            inverted = true;
+        } else {
+            // default assume not inverted
+            inverted = false;
+        }
 
         String source = null;
         String target = null;
