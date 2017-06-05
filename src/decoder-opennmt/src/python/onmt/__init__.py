@@ -17,27 +17,13 @@ class Suggestion:
 
 
 class MMTDecoder:
-    def __init__(self, model_path, threads=None):
+    def __init__(self, model_path):
         """
         Creates a new instance of an NMT decoder
         :param model_path: path to the decoder model file/folder
         :type model_path: basestring
         """
         self._model_path = model_path
-        self._number_of_threads = threads if threads is not None else None
-
-    @property
-    def number_of_threads(self):
-        if self._number_of_threads is None:
-            self._number_of_threads = self._preferred_threads()
-
-        return self._number_of_threads
-
-    def _preferred_threads(self):
-        """
-        :return: the number of preferred threads
-        """
-        raise NotImplementedError('abstract method')
 
     def translate(self, text, suggestions=None):
         """
@@ -57,4 +43,4 @@ class MMTDecoder:
         Called before destroying this object.
         The decoder should release any resource acquired during execution.
         """
-        pass
+        raise NotImplementedError('abstract method')

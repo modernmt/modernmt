@@ -2,13 +2,14 @@ import argparse
 import json
 import sys
 
+import logging
+
 from onmt import Suggestion, MMTDecoder
 from onmt.opennmt import OpenNMTDecoder
 
 
 class TranslationRequest:
-    def __init__(self, _id, source, suggestions=None):
-        self.id = _id
+    def __init__(self, source, suggestions=None):
         self.source = source
         self.suggestions = suggestions if suggestions is not None else []
 
@@ -16,7 +17,6 @@ class TranslationRequest:
     def from_json_string(json_string):
         obj = json.loads(json_string)
 
-        _id = int(obj['id'])
         source = obj['source'].split(' ')
         suggestions = []
 
@@ -28,18 +28,17 @@ class TranslationRequest:
 
                 suggestions.append(Suggestion(suggestion_source, suggestion_target, suggestion_score))
 
-        return TranslationRequest(_id, source, suggestions)
+        return TranslationRequest(source, suggestions)
 
 
 class TranslationResponse:
-    def __init__(self, _id, translation=None, exception=None):
-        self.id = _id
+    def __init__(self, translation=None, exception=None):
         self.translation = translation
         self.error_type = type(exception).__name__ if exception is not None else None
         self.error_message = str(exception) if exception is not None and str(exception) else None
 
     def to_json_string(self):
-        jobj = {'id': self.id}
+        jobj = {}
 
         if self.translation is not None:
             jobj['translation'] = ' '.join(self.translation)
@@ -58,6 +57,10 @@ class MainController:
         self._stdin = sys.stdin
         self._stdout = sys.stdout
 
+        sys.stdout = sys.stderr
+
+        self._logger = logging.getLogger('onmt.mainloop')
+
     def serve_forever(self):
         try:
             while True:
@@ -65,15 +68,22 @@ class MainController:
                 if not line:
                     break
 
-                request = TranslationRequest.from_json_string(line)
-                translation = self._decoder.translate(request.source, request.suggestions)
-                response = TranslationResponse(request.id, translation=translation)
+                response = self.process(line)
 
                 self._stdout.write(response.to_json_string())
                 self._stdout.write('\n')
                 self._stdout.flush()
         except KeyboardInterrupt:
             pass
+
+    def process(self, line):
+        try:
+            request = TranslationRequest.from_json_string(line)
+            translation = self._decoder.translate(request.source, request.suggestions)
+            return TranslationResponse(translation=translation)
+        except BaseException as e:
+            self._logger.exception('Failed to process request "' + line + '"')
+            return TranslationResponse(exception=e)
 
 
 class YodaDecoder(MMTDecoder):
@@ -83,17 +93,19 @@ class YodaDecoder(MMTDecoder):
     def translate(self, text, suggestions=None):
         return reversed(text)
 
-    def _preferred_threads(self):
-        return 1
+    def close(self):
+        pass
 
 
 def run_main():
     parser = argparse.ArgumentParser(description='Run a forever-loop serving translation requests')
     parser.add_argument('model', metavar='MODEL', help='the path to the decoder model')
+    parser.add_argument('-g', '--gpu-index', dest='gpu', metavar='GPU_INDEX', help='the index of the GPU to use',
+                        default=-1)
 
     args = parser.parse_args()
 
-    decoder = OpenNMTDecoder(args.model + '/model_acc_80.85_ppl_3.08_e30.pt')
+    decoder = OpenNMTDecoder(args.model, gpu_index=args.gpu)
 
     try:
         controller = MainController(decoder)
