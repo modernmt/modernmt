@@ -25,19 +25,17 @@ class NativeProcess implements Closeable {
 
         private final File home;
         private final File model;
-        private int gpu;
 
         public Builder(File home, File model) {
             this.home = home;
             this.model = model;
-            this.gpu = -1;
-        }
-
-        public void setGpu(int gpu) {
-            this.gpu = gpu;
         }
 
         public NativeProcess start() throws IOException {
+            return start(-1);
+        }
+
+        public NativeProcess start(int gpu) throws IOException {
             ArrayList<String> command = new ArrayList<>(5);
             command.add("python");
             command.add("nmt_decoder.py");
@@ -45,7 +43,7 @@ class NativeProcess implements Closeable {
 
             if (gpu >= 0) {
                 command.add("--gpu-index");
-                command.add(Integer.toString(gpu));
+                command.add(Integer.toString(gpu + 1));
             }
 
             ProcessBuilder builder = new ProcessBuilder(command);

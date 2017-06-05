@@ -53,7 +53,7 @@ class MultiGPUsExecutionQueue implements ExecutionQueue {
         boolean success = false;
         try {
             for (int i = 0; i < gpus; i++) {
-                NativeProcess process = builder.start();
+                NativeProcess process = builder.start(i);
                 this.processes[i] = process;
                 this.queue.offer(process);
             }
