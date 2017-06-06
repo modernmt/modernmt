@@ -48,9 +48,14 @@ parser.add_argument('-seed',       type=int, default=3435,
 
 
 def reportScore(name, scoreTotal, wordsTotal):
-    print("%s AVG SCORE: %.4f, %s PPL: %.4f" % (
-        name, scoreTotal / wordsTotal,
-        name, math.exp(-scoreTotal/wordsTotal)))
+    if wordsTotal != 0:
+        print("%s AVG SCORE: %.4f, %s PPL: %.4f" % (
+            name, scoreTotal / wordsTotal,
+            name, math.exp(-scoreTotal/wordsTotal)))
+    else:
+        print("%s AVG SCORE: %s, %s PPL: %s" % (
+            name, 'undef',
+            name, 'undef'))
 
 def addone(f):
     for line in f:

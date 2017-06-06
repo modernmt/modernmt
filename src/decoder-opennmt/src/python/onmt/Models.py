@@ -23,8 +23,12 @@ class Encoder(nn.Module):
                                      padding_idx=onmt.Constants.PAD)
         self.rnn = nn.LSTM(input_size, self.hidden_size,
                         num_layers=opt.layers,
-                        dropout=opt.dropout,
+                        dropout=0.0,
                         bidirectional=opt.brnn)
+        # self.rnn = nn.LSTM(input_size, self.hidden_size,
+        #                 num_layers=opt.layers,
+        #                 dropout=opt.dropout,
+        #                 bidirectional=opt.brnn)
 
     def load_pretrained_vectors(self, opt):
         if opt.pre_word_vecs_enc is not None:

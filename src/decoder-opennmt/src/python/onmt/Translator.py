@@ -26,14 +26,12 @@ class Translator(object):
 
         encoder = onmt.Models.Encoder(model_opt, self.getSourceDict())
         decoder = onmt.Models.Decoder(model_opt, self.getTargetDict())
+        generator = nn.Sequential(nn.Linear(model_opt.rnn_size, self.getTargetDict().size()),nn.LogSoftmax())
+        generator.load_state_dict(checkpoint['generator'])
+
         model = onmt.Models.NMTModel(encoder, decoder)
 
-        generator = nn.Sequential(
-            nn.Linear(model_opt.rnn_size, self.dicts['tgt'].size()),
-            nn.LogSoftmax())
-
         model.load_state_dict(checkpoint['model'])
-        generator.load_state_dict(checkpoint['generator'])
 
         if opt.cuda:
             model.cuda()
@@ -97,9 +95,14 @@ class Translator(object):
         encStates = (model._fix_enc_hidden(encStates[0]),
                      model._fix_enc_hidden(encStates[1]))
 
+        print "def translateBatch() srcBatch=", repr(srcBatch)
+        print "def translateBatch() tgtBatch=", repr(tgtBatch)
+        print "def translateBatch() encStates=", repr(encStates)
+
         #  This mask is applied to the attention model inside the decoder
         #  so that the attention ignores source padding
         padMask = srcBatch.data.eq(onmt.Constants.PAD).t()
+        print "def translateBatch() padMask=", repr(padMask)
 
         def applyContextMask(m):
             if isinstance(m, onmt.modules.GlobalAttention):
@@ -109,10 +112,15 @@ class Translator(object):
         #  (i.e. log likelihood) of the target under the model
         goldScores = context.data.new(batchSize).zero_()
         if tgtBatch is not None:
+            print "def translateBatch() tgtBatch=", repr(tgtBatch)
             decStates = encStates
             decOut = model.make_init_decoder_output(context)
+            print "def translateBatch() decOut=", repr(decOut)
+
             model.decoder.apply(applyContextMask)
             initOutput = model.make_init_decoder_output(context)
+
+            print "def translateBatch() initOutput=", repr(initOutput)
 
             decOut, decStates, attn = model.decoder(
                 tgtBatch[:-1], decStates, context, initOutput)
@@ -130,14 +138,18 @@ class Translator(object):
         decStates = (Variable(encStates[0].data.repeat(1, beamSize, 1)),
                      Variable(encStates[1].data.repeat(1, beamSize, 1)))
 
+        print "def translateBatch() context=", repr(context)
+        print "def translateBatch() decStates=", repr(decStates)
         beam = [onmt.Beam(beamSize, self.opt.cuda) for k in range(batchSize)]
 
         decOut = model.make_init_decoder_output(context)
+        print "def translateBatch() decOut=", repr(decOut)
 
         padMask = srcBatch.data.eq(onmt.Constants.PAD).t().unsqueeze(0).repeat(beamSize, 1, 1)
 
         batchIdx = list(range(batchSize))
         remainingSents = batchSize
+        print "def translateBatch() self.opt.max_sent_length=", repr(self.opt.max_sent_length)
         for i in range(self.opt.max_sent_length):
 
             model.decoder.apply(applyContextMask)
@@ -148,6 +160,7 @@ class Translator(object):
 
             decOut, decStates, attn = model.decoder(
                 Variable(input, volatile=True), decStates, context, decOut)
+            print "def translateBatch() decOut=", repr(decOut)
             # decOut: 1 x (beam*batch) x numWords
             decOut = decOut.squeeze(0)
             out = model.generator.forward(decOut)
@@ -293,7 +306,13 @@ class Translator(object):
         print('tuning model... START')
         start_time = time.time()
         model_copy.train()
-        self.trainer.trainModel(model_copy, tuningTrainData, None, tuningDataset, optim_copy, save_all_epochs=True, save_last_epoch=False, epochs=self.opt.tuning_epochs)
+####        self.trainer.trainModel(model_copy, tuningTrainData, None, tuningDataset, optim_copy, save_all_epochs=False, save_last_epoch=False, epochs=self.opt.tuning_epochs)
+        self.trainer.trainModel(self.model, tuningTrainData, None, tuningDataset, self.optim, save_all_epochs=False, save_last_epoch=False, epochs=self.opt.tuning_epochs)
+
+        train_ppl = math.exp(min(train_loss, 100))
+        # print('Train loss: %g' % train_loss)
+        # print('Train perplexity: %g' % train_ppl)
+        # print('Train accuracy: %g' % (train_acc*100))
         model_copy.eval()
         print('tuning model... END %.2fs' % (time.time() - start_time))
 

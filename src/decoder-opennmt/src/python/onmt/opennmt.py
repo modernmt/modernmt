@@ -24,13 +24,13 @@ class OpenNMTDecoder(MMTDecoder):
         ###opt = parser.parse_args(args=parameters)
         opt = parser.parse_args(args="")
         opt.model = checkpoint_path
-        opt.batch_size = 30
+        opt.batch_size = 10
         opt.beam_size = 5
-        opt.max_sent_length = 5
-        opt.n_best = 3
+        opt.max_sent_length = 2
+        opt.n_best = 1
         opt.replace_unk = True
         opt.verbose = False
-        opt.tuning_epochs = 5
+        opt.tuning_epochs = 50
 
         opt.gpu = -1
 

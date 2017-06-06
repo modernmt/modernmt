@@ -157,27 +157,45 @@ def main():
 
     encoder = onmt.Models.Encoder(opt, dicts['src'])
     decoder = onmt.Models.Decoder(opt, dicts['tgt'])
-
-    generator = nn.Sequential(
-        nn.Linear(opt.rnn_size, dicts['tgt'].size()),
-        nn.LogSoftmax())
+    generator = nn.Sequential(nn.Linear(opt.rnn_size, dicts['tgt'].size()),nn.LogSoftmax())
 
     model = onmt.Models.NMTModel(encoder, decoder)
 
     if opt.train_from:
-        print('Loading model from checkpoint at %s' % opt.train_from)
+        print('Loading model from checkpoint (opt.train_from) at %s' % opt.train_from)
+        print('checkpoint: %s' % repr(checkpoint))
+
         chk_model = checkpoint['model']
-        generator_state_dict = chk_model.generator.state_dict()
-        model_state_dict = {k: v for k, v in chk_model.state_dict().items() if 'generator' not in k}
-        model.load_state_dict(model_state_dict)
-        generator.load_state_dict(generator_state_dict)
+        print('Loading model END 0')
+        print('chk_model: %s' % repr(chk_model))
+        print('Loading model END 0a')
+        #generator_state_dict = chk_generator.state_dict()
+        print('Loading model END 1')
+        for k, v in sorted(chk_model.items()):
+            print 'Loading model k:', k
+
+        model.load_state_dict(checkpoint['model'])
+        # model_state_dict = {k: v for k, v in chk_model.state_dict().items() if 'generator' not in k}
+        # print('Loading model END 2')
+        # model.load_state_dict(model_state_dict)
+        print('Loading model END 3')
+        generator.load_state_dict(checkpoint['generator'])
+        #generator.load_state_dict(generator_state_dict)
+        print('Loading model END 4')
         opt.start_epoch = checkpoint['epoch'] + 1
 
     if opt.train_from_state_dict:
-        print('Loading model from checkpoint at %s' % opt.train_from_state_dict)
+        print('Loading model from checkpoint (opt.train_from_state_dict) at %s' % opt.train_from_state_dict)
+        print('checkpoint: %s' % repr(checkpoint))
+        for k, v in sorted(checkpoint['model'].items()):
+            print 'Loading model k:', k
         model.load_state_dict(checkpoint['model'])
+        print('Loading model END 1')
         generator.load_state_dict(checkpoint['generator'])
+        print('Loading model END 2')
         opt.start_epoch = checkpoint['epoch'] + 1
+
+    print('Loading model END')
 
     if len(opt.gpus) >= 1:
         model.cuda()
@@ -191,6 +209,7 @@ def main():
         generator = nn.DataParallel(generator, device_ids=opt.gpus, dim=0)
 
     model.generator = generator
+    print('def main() model.generator:%s' % repr(model.generator))
 
     if not opt.train_from_state_dict and not opt.train_from:
         for p in model.parameters():
