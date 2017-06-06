@@ -38,7 +38,7 @@ public class LuceneAnalyzer implements ContextAnalyzer {
 
     public LuceneAnalyzer(File indexPath, Locale language, Options options) throws IOException {
         this.index = new ContextAnalyzerIndex(new File(indexPath, "index"), language);
-        this.storage = new CorporaStorage(new File(indexPath, "memory"), options, this.index);
+        this.storage = new CorporaStorage(new File(indexPath, "storage"), options, this.index);
     }
 
     @Override
