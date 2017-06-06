@@ -5,13 +5,14 @@ import shutil
 import sys
 
 from cli import IllegalStateException, IllegalArgumentException
-from cli.cluster import ClusterNode
-from cli.engine import MMTEngine, MMTEngineBuilder
 from cli.evaluation import Evaluator
 from cli.libs import shell
 from cli.libs.progressbar import Progressbar
-from cli.mt import BilingualCorpus
-from cli.mt.processing import TrainingPreprocessor
+from cli.mmt import BilingualCorpus
+from cli.mmt.engine import Engine
+from cli.mmt.cluster import ClusterNode
+from cli.mmt.processing import TrainingPreprocessor
+from cli.training import Training, Tuning
 from cli.translation import BatchTranslator, InteractiveTranslator, XLIFFTranslator
 
 __author__ = 'Davide Caroselli and Andrea Rossi'
@@ -72,10 +73,12 @@ def main_create(argv):
                         help='if no-split is set, MMT will not extract dev and test sets out of the provided '
                              'training corpora')
     parser.add_argument('-s', '--steps', metavar='STEPS', dest='training_steps',
-                        choices=MMTEngineBuilder.DEFAULT_TRAINING_STEPS.keys(),
-                        nargs='+', help='run only specified training steps {%(choices)s}')
+                        nargs='+', help='run only specified training steps')
     parser.add_argument('-r', '--resume', action='store_true', dest='resume', default=False,
                         help='if resume is set, it restores a previously interrupted process')
+
+    parser.add_argument('--neural', action='store_true', dest='neural', default=False,
+                        help='if neural is set, the process will train a neural engine (default is phrase-based)')
 
     if len(argv) > 0:
         # Parse args
@@ -87,19 +90,28 @@ def main_create(argv):
             node.stop()
 
         # initialize a builder to create and train a new engine
-        builder = MMTEngineBuilder(name=args.engine,
-                                   source_lang=args.source_lang,
-                                   target_lang=args.target_lang,
-                                   roots=args.corpora_paths,
-                                   debug=args.debug,
-                                   steps=args.training_steps,
-                                   split_trainingset=args.split_corpora)
+        if args.neural:
+            training = Training.neural(name=args.engine,
+                                       source_lang=args.source_lang,
+                                       target_lang=args.target_lang,
+                                       roots=args.corpora_paths,
+                                       debug=args.debug,
+                                       steps=args.training_steps,
+                                       split_trainingset=args.split_corpora)
+        else:
+            training = Training.phrase_based(name=args.engine,
+                                             source_lang=args.source_lang,
+                                             target_lang=args.target_lang,
+                                             roots=args.corpora_paths,
+                                             debug=args.debug,
+                                             steps=args.training_steps,
+                                             split_trainingset=args.split_corpora)
 
         # build the engine
         if args.resume:
-            builder.resume()
+            training.resume()
         else:
-            builder.build()
+            training.start()
     else:
         parser.print_help()
 
@@ -223,11 +235,13 @@ def main_tune(argv):
 
     # perform tuning
     corpora = BilingualCorpus.list(args.corpora_path) if args.corpora_path is not None else None
-    node.tune(corpora,
-              debug=args.debug,
-              context_enabled=args.context_enabled,
-              random_seeds=args.random_seeds,
-              max_iterations=args.max_iterations)
+
+    tuning = Tuning(debug=args.debug,
+                    context_enabled=args.context_enabled,
+                    random_seeds=args.random_seeds,
+                    max_iterations=args.max_iterations)
+
+    tuning.start(node, corpora)
 
 
 def main_evaluate(argv):
@@ -318,7 +332,7 @@ def main_status(argv):
     # Parse args
     args = parser.parse_args(argv)
     if args.engine is None:
-        engines = MMTEngine.list()
+        engines = Engine.list()
     else:
         engines = [args.engine]
     if len(engines) == 0:
@@ -575,5 +589,3 @@ def ensure_api(node):
 if __name__ == '__main__':
     __check_java()
     main()
-
-

@@ -22,6 +22,8 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
             config.setSourceLanguage(getLocaleAttribute("source-language"));
         if (hasAttribute("target-language"))
             config.setTargetLanguage(getLocaleAttribute("target-language"));
+        if (hasAttribute("type"))
+            config.setType(getEnumAttribute("type", EngineConfig.Type.class));
 
         decoderConfigBuilder.build(config.getDecoderConfig());
 

@@ -3,7 +3,7 @@ import os
 from cli import IllegalArgumentException
 from cli.evaluation import MMTTranslator, _EvaluationResult, TranslateError, BLEUScore
 from cli.libs import fileutils
-from cli.mt.processing import XMLEncoder
+from cli.mmt.processing import XMLEncoder
 
 
 # similar to class Evaluator above. Alternatively we could have added a flag there, to call corpus.copy(dest_path)

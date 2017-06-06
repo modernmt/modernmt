@@ -9,6 +9,7 @@ import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.engine.impl.NeuralEngine;
+import eu.modernmt.engine.impl.PhraseBasedEngine;
 import eu.modernmt.io.Paths;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.processing.Postprocessor;
@@ -64,9 +65,14 @@ public abstract class Engine implements Closeable, DataListenerProvider {
 
     public static Engine load(EngineConfig config) throws BootstrapException {
         try {
-            //TODO: hard-coded, must be read from EngineConfig
-            return new NeuralEngine(config);
-//            return new PhraseBasedEngine(config);
+            EngineConfig.Type type = config.getType();
+
+            if (type == EngineConfig.Type.NEURAL)
+                return new NeuralEngine(config);
+            else if (type == EngineConfig.Type.PHRASE_BASED)
+                return new PhraseBasedEngine(config);
+            else
+                throw new BootstrapException("Missing engine type (neural|phrase-based)");
         } catch (Exception e) {
             throw new BootstrapException(e);
         }

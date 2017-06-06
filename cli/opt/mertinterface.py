@@ -7,7 +7,7 @@ import time
 
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, os.pardir)))
 
-from cli.cluster import MMTApi
+from cli.mmt.cluster import ClusterNode
 from cli.libs import multithread
 
 __author__ = 'Davide Caroselli'
@@ -136,7 +136,6 @@ def show_weighs():
 
 
 if __name__ == '__main__':
-
     parser = argparse.ArgumentParser(description='MMT Server wrapper script for \'mert-moses.pl\' script.')
     parser.add_argument('--port', '-p', dest='port', type=int, help='MMT engine port')
 
@@ -163,7 +162,7 @@ if __name__ == '__main__':
         parser.print_help()
         exit(1)
 
-    Api = MMTApi(port=args.port, root=args.root)
+    Api = ClusterNode.Api(port=args.port, root=args.root)
 
     if args.show_weights:
         # Show weights
