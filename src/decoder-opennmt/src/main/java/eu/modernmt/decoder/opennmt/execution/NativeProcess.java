@@ -32,7 +32,7 @@ class NativeProcess implements Closeable {
         }
 
         public NativeProcess start() throws IOException {
-            return start(-1);
+            return start(0);
         }
 
         public NativeProcess start(int gpu) throws IOException {
@@ -40,11 +40,8 @@ class NativeProcess implements Closeable {
             command.add("python");
             command.add("nmt_decoder.py");
             command.add(model.getAbsolutePath());
-
-            if (gpu >= 0) {
-                command.add("--gpu-index");
-                command.add(Integer.toString(gpu + 1));
-            }
+            command.add("--gpu-index");
+            command.add(Integer.toString(gpu));
 
             ProcessBuilder builder = new ProcessBuilder(command);
             builder.directory(home);
