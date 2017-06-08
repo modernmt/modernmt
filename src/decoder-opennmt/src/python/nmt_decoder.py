@@ -19,13 +19,13 @@ class TranslationRequest:
         source = obj['source'].split(' ')
         suggestions = []
 
-        if 'suggestions' in obj:
-            for sobj in obj['suggestions']:
-                suggestion_source = sobj['source'].split(' ')
-                suggestion_target = sobj['target'].split(' ')
-                suggestion_score = float(sobj['score']) if 'score' in sobj else 0
-
-                suggestions.append(Suggestion(suggestion_source, suggestion_target, suggestion_score))
+        # if 'suggestions' in obj:
+        #     for sobj in obj['suggestions']:
+        #         suggestion_source = sobj['source'].split(' ')
+        #         suggestion_target = sobj['target'].split(' ')
+        #         suggestion_score = float(sobj['score']) if 'score' in sobj else 0
+        #
+        #         suggestions.append(Suggestion(suggestion_source, suggestion_target, suggestion_score))
 
         return TranslationRequest(source, suggestions)
 
@@ -56,7 +56,7 @@ class MainController:
         self._stdin = sys.stdin
         self._stdout = sys.stdout
 
-        sys.stdout = sys.stderr
+        sys.stdout = open('/dev/null', 'r')
 
         self._logger = logging.getLogger('onmt.mainloop')
 

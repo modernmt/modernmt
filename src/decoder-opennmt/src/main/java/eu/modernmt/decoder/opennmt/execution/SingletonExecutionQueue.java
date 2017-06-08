@@ -24,13 +24,13 @@ class SingletonExecutionQueue implements ExecutionQueue {
     }
 
     @Override
-    public Translation execute(Sentence sentence) throws OpenNMTException {
+    public synchronized Translation execute(Sentence sentence) throws OpenNMTException {
         Word[] translation = decoder.translate(sentence);
         return new Translation(translation, sentence, null);
     }
 
     @Override
-    public Translation execute(Sentence sentence, ScoreEntry[] suggestions) throws OpenNMTException {
+    public synchronized Translation execute(Sentence sentence, ScoreEntry[] suggestions) throws OpenNMTException {
         Word[] translation = decoder.translate(sentence, suggestions);
         return new Translation(translation, sentence, null);
     }

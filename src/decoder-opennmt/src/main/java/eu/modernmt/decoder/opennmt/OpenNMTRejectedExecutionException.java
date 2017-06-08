@@ -9,7 +9,7 @@ public class OpenNMTRejectedExecutionException extends OpenNMTException {
         super("Execution rejected: decoder has been closed");
     }
 
-    public OpenNMTRejectedExecutionException(Throwable cause) {
-        super("Execution rejected: decoder has been closed", cause);
+    public OpenNMTRejectedExecutionException(String message) {
+        super("Execution rejected: decoder has been closed, cause:\n" + message);
     }
 }
