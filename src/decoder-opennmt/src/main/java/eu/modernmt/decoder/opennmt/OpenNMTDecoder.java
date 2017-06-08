@@ -7,7 +7,6 @@ import eu.modernmt.decoder.opennmt.execution.ExecutionQueue;
 import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
 import eu.modernmt.decoder.opennmt.memory.TranslationMemory;
 import eu.modernmt.decoder.opennmt.memory.lucene.LuceneTranslationMemory;
-import eu.modernmt.decoder.opennmt.model.TranslationRequest;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -29,13 +28,10 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
 
     public OpenNMTDecoder(File libPath, File modelPath) throws OpenNMTException {
         File pythonHome = new File(libPath, "opennmt");
-        File decoderModelPath = new File(modelPath, "model");
+        File decoderModelPath = new File(modelPath, "model.pt");
         File storageModelPath = new File(modelPath, "memory");
 
-        ProcessBuilder builder = new ProcessBuilder("python", "nmt_decoder.py", decoderModelPath.getAbsolutePath());
-        builder.directory(pythonHome);
-
-        this.executor = ExecutionQueue.newSingleThreadExecutionQueue(builder);
+        this.executor = ExecutionQueue.newInstance(pythonHome, decoderModelPath);
 
         try {
             this.memory = new LuceneTranslationMemory(storageModelPath);
@@ -53,20 +49,18 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
 
     @Override
     public Translation translate(Sentence text, ContextVector contextVector) throws OpenNMTException {
-        ScoreEntry[] result;
+        ScoreEntry[] suggestions;
 
         try {
-            result = memory.search(text, contextVector, SUGGESTIONS_LIMIT);
+            suggestions = memory.search(text, contextVector, SUGGESTIONS_LIMIT);
         } catch (IOException e) {
             throw new OpenNMTException("Failed to retrieve suggestions from memory", e);
         }
 
-        TranslationRequest request = new TranslationRequest(text);
-
-        if (result != null && result.length > 0)
-            request.setSuggestions(result);
-
-        return executor.execute(request).get();
+        if (suggestions != null && suggestions.length > 0)
+            return executor.execute(text, suggestions);
+        else
+            return executor.execute(text);
     }
 
     // DataListenerProvider

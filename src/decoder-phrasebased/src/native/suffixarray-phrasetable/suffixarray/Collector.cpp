@@ -32,7 +32,7 @@ Collector::Collector(CorporaStorage *storage, rocksdb::DB *db, length_t prefixLe
 
 void Collector::Extend(const vector<wid_t> &words, size_t limit, vector<sample_t> &outSamples) {
     phrase.insert(phrase.end(), words.begin(), words.end());
-    unsigned int shuffleSeed = max(1U, words_hash(phrase));
+    unsigned int shuffleSeed = max(1U, 3854084962U ^ (static_cast<unsigned int>(1 + phrase.size()) * 2380592019U));
 
     vector<location_t> locations;
     size_t availability = limit;

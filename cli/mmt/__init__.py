@@ -1,7 +1,5 @@
 import os
 import shutil
-import xml.sax
-from multiprocessing import Lock
 from operator import attrgetter
 
 from cli.libs import fileutils
@@ -165,9 +163,9 @@ class _FileParallelCorpus(BilingualCorpus):
         return self._lines_count
 
     def copy(self, folder, suffixes=None):
-        for lang, file in self._lang2file.iteritems():
+        for lang, f in self._lang2file.iteritems():
             suffix = suffixes[lang] if suffixes else ''
-            shutil.copy(file, os.path.join(folder, os.path.basename(file) + suffix))
+            shutil.copy(f, os.path.join(folder, os.path.basename(f) + suffix))
 
     def symlink(self, folder, name=None):
         link = BilingualCorpus.make_parallel(name if name is not None else self.name, folder, self.langs)

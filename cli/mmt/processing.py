@@ -5,7 +5,7 @@ from HTMLParser import HTMLParser
 
 from cli import mmt_javamain
 from cli.libs import fileutils, shell
-from cli.mt import BilingualCorpus
+from cli.mmt import BilingualCorpus
 
 __author__ = 'Davide Caroselli'
 
@@ -103,7 +103,7 @@ class TrainingPreprocessor:
     DEV_FOLDER_NAME = 'dev'
     TEST_FOLDER_NAME = 'test'
 
-    def __init__(self, source_lang, target_lang, vocabulary, clean_ratio=3, clean_min=1, clean_max=80):
+    def __init__(self, source_lang, target_lang, clean_ratio=3, clean_min=1, clean_max=80):
         self._source_lang = source_lang
         self._target_lang = target_lang
 
@@ -112,15 +112,17 @@ class TrainingPreprocessor:
         self._max = clean_max
 
         self._java_mainclass = 'eu.modernmt.cli.TrainingPipelineMain'
-        self._vb = vocabulary
 
-    def process(self, corpora, output_path, data_path=None, log=None):
+    def process(self, corpora, output_path, data_path=None, log=None, vb_path=None):
         if log is None:
             log = shell.DEVNULL
 
-        args = ['-s', self._source_lang, '-t', self._target_lang, '-v', self._vb.model, '--output', output_path,
-                '--input']
+        args = ['-s', self._source_lang, '-t', self._target_lang, '--output', output_path]
+        if vb_path:
+            args.append('-v')
+            args.append(vb_path)
 
+        args.append('--input')
         input_paths = set([corpus.get_folder() for corpus in corpora])
 
         for root in input_paths:

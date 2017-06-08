@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 
-import sys
 import os
+import sys
 from os.path import dirname, realpath
+
 sys.path.append(dirname(dirname(dirname(realpath(__file__)))))
 
 from cli import dependency
-from cli.cluster import ClusterNode, DEFAULT_MMT_API_PORT
-from cli.engine import MMTEngine
+from cli.mmt.cluster import ClusterNode, DEFAULT_MMT_API_PORT
+from cli.training import MMTEngine
 from cli.evaluation import Evaluator
-from cli.mt import BilingualCorpus
-from cli.mt.processing import TrainingPreprocessor
+from cli.mmt import BilingualCorpus
+from cli.mmt.processing import TrainingPreprocessor
 import argparse
 
 
