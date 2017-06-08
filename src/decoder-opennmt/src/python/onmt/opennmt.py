@@ -60,9 +60,9 @@ class OpenNMTDecoder(MMTDecoder):
         output = predBatch[0][0]
 
         # print of the nbest for each sentence of the batch
-        for b in range(len(predBatch)):
-            for n in range(len(predBatch[b])):
-                print "def OpenNMTDecoder::translate(self, text, suggestions=None) predScore[b][n]:", repr(predScore[b][n]), " predBatch[b][n]:", repr(predBatch[b][n])
+#        for b in range(len(predBatch)):
+#            for n in range(len(predBatch[b])):
+#                print "def OpenNMTDecoder::translate(self, text, suggestions=None) predScore[b][n]:", repr(predScore[b][n]), " predBatch[b][n]:", repr(predBatch[b][n])
 
         return output
 
