@@ -13,7 +13,7 @@ parser.add_argument('-train_from_state_dict', default='', type=str,
 
 
 class OpenNMTDecoder(MMTDecoder):
-    def __init__(self, model_path):
+    def __init__(self, model_path, gpu_index=-1):
         MMTDecoder.__init__(self, model_path)
         # TODO: stub implementation
 
@@ -32,7 +32,7 @@ class OpenNMTDecoder(MMTDecoder):
         opt.verbose = False
         opt.tuning_epochs = 3
 
-        opt.gpu = -1
+        opt.gpu = gpu_index
         if opt.gpu > -1:
             opt.cuda = True
         else:
@@ -75,12 +75,5 @@ class OpenNMTDecoder(MMTDecoder):
         # print "def translate(self, text, suggestions=None) predScore:", repr(predBatch)
         return output
 
-    def _preferred_threads(self):
-        # TODO: stub implementation (should be number of GPUs)
-        return 4
-
-
-        #########
-        #### An example of input for
-        #### echo {"id":1, "source":"hello and goodbye", "suggestions":[{"source": "A", "target1": "a", "score":"0.1"},{"source": "B", "target2": "b", "score":"0.2"}]}
-        #########
+    def close(self):
+        pass

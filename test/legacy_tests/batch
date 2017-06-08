@@ -7,11 +7,11 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
 
 from cli import dependency
-from cli.cluster import ClusterNode, DEFAULT_MMT_API_PORT
-from cli.engine import MMTEngine
-from cli.engine import IllegalStateException
-from cli.mt import BilingualCorpus
-from cli.mt.processing import TrainingPreprocessor
+from cli.mmt.cluster import ClusterNode, DEFAULT_MMT_API_PORT
+from cli.training import MMTEngine
+from cli.training import IllegalStateException
+from cli.mmt import BilingualCorpus
+from cli.mmt.processing import TrainingPreprocessor
 from translator import BatchTranslator
 
 

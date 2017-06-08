@@ -7,9 +7,14 @@ import java.util.Locale;
  */
 public class EngineConfig {
 
+    public enum Type {
+        PHRASE_BASED, NEURAL
+    }
+
     private String name = "default";
     private Locale sourceLanguage = null;
     private Locale targetLanguage = null;
+    private Type type = Type.PHRASE_BASED;
     private final DecoderConfig decoderConfig = new DecoderConfig();
 
     public String getName() {
@@ -19,6 +24,14 @@ public class EngineConfig {
     public EngineConfig setName(String name) {
         this.name = name;
         return this;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public void setType(Type type) {
+        this.type = type;
     }
 
     public Locale getSourceLanguage() {
@@ -47,6 +60,7 @@ public class EngineConfig {
     public String toString() {
         return "[Engine]\n" +
                 "  name = " + name + "\n" +
+                "  type = " + type + "\n" +
                 "  source-language = " + sourceLanguage.toLanguageTag() + "\n" +
                 "  target-language = " + targetLanguage.toLanguageTag() + "\n" +
                 "  " + decoderConfig.toString().replace("\n", "\n  ");

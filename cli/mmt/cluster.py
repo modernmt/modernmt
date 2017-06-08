@@ -9,200 +9,182 @@ import time
 import requests
 
 import cli
-from cli import mmt_javamain, IllegalArgumentException
-from cli.engine import MMTEngine
+from cli import mmt_javamain, IllegalArgumentException, IllegalStateException
 from cli.libs import fileutils, daemon, shell
-from cli.mt import BilingualCorpus
-from cli.mt.processing import TrainingPreprocessor, Tokenizer
+from cli.mmt import BilingualCorpus
+from cli.mmt.engine import Engine
+from cli.mmt.processing import TrainingPreprocessor, Tokenizer
 
 __author__ = 'Davide Caroselli'
 
 
-class MMTApi:
-    DEFAULT_TIMEOUT = 60 * 60  # sec
-
-    def __init__(self, host=None, port=None, root=None):
-        self.port = port
-        self.host = host if host is not None else "localhost"
-        self.root = self._normalize_root(root)
-
-        if root is None:
-            self.base_path = 'http://%s:%d' % (self.host, self.port)
-        else:
-            self.base_path = 'http://%s:%d%s' % (self.host, self.port, self.root)
-
-        self._url_template = self.base_path + "/{endpoint}"
-
-        logging.getLogger('requests').setLevel(1000)
-        logging.getLogger('urllib3').setLevel(1000)
-
-    @staticmethod
-    def _normalize_root(root):
-        if root is None or len(root.strip()) == 0:
-            return None
-
-        root = root.strip()
-        if root[0] != '/':
-            root = '/' + root
-        if root[-1] == '/':
-            root = root[:-1]
-
-        return root.strip()
-
-    @staticmethod
-    def _unpack(r):
-        if r.status_code != requests.codes.ok:
-            raise Exception('HTTP request failed with code ' + str(r.status_code) + ': ' + r.url)
-        content = r.json()
-
-        return content['data'] if 'data' in content else None
-
-    def _get(self, endpoint, params=None):
-        url = self._url_template.format(endpoint=endpoint)
-        r = requests.get(url, params=params, timeout=MMTApi.DEFAULT_TIMEOUT)
-        return self._unpack(r)
-
-    def _delete(self, endpoint):
-        url = self._url_template.format(endpoint=endpoint)
-        r = requests.delete(url, timeout=MMTApi.DEFAULT_TIMEOUT)
-        return self._unpack(r)
-
-    def _put(self, endpoint, json=None, params=None):
-        url = self._url_template.format(endpoint=endpoint)
-
-        data = headers = None
-        if json is not None:
-            data = js.dumps(json)
-            headers = {'Content-type': 'application/json'}
-        elif params is not None:
-            data = params
-
-        r = requests.put(url, data=data, headers=headers, timeout=MMTApi.DEFAULT_TIMEOUT)
-        return self._unpack(r)
-
-    def _post(self, endpoint, json=None, params=None):
-        url = self._url_template.format(endpoint=endpoint)
-
-        data = headers = None
-        if json is not None:
-            data = js.dumps(json)
-            headers = {'Content-type': 'application/json'}
-        elif params is not None:
-            data = params
-
-        r = requests.post(url, data=data, headers=headers, timeout=MMTApi.DEFAULT_TIMEOUT)
-        return self._unpack(r)
-
-    @staticmethod
-    def _encode_context(context):
-        return ','.join([('%d:%f' % (
-            el['domain']['id'] if isinstance(el['domain'], dict) else el['domain'],
-            el['score'])
-                          ) for el in context])
-
-    def stats(self):
-        return self._get('_stat')
-
-    def update_features(self, features):
-        return self._put('decoder/features', json=features)
-
-    def get_features(self):
-        return self._get('decoder/features')
-
-    def get_context_f(self, document, limit=None):
-        params = {'local_file': document}
-        if limit is not None:
-            params['limit'] = limit
-        return self._get('context-vector', params=params)
-
-    def get_context_s(self, text, limit=None):
-        params = {'text': text}
-        if limit is not None:
-            params['limit'] = limit
-        return self._get('context-vector', params=params)
-
-    def translate(self, source, context=None, nbest=None):
-        p = {'q': source}
-        if nbest is not None:
-            p['nbest'] = nbest
-        if context is not None:
-            p['context_vector'] = self._encode_context(context)
-
-        return self._get('translate', params=p)
-
-    def create_domain(self, name):
-        params = {'name': name}
-        return self._post('domains', params=params)
-
-    def append_to_domain(self, domain, source, target):
-        params = {'source': source, 'target': target}
-        return self._put('domains/' + str(domain) + '/corpus', params=params)
-
-    def import_into_domain(self, domain, tmx):
-        params = {
-            'content_type': 'tmx',
-            'local_file': tmx
-        }
-
-        return self._put('domains/' + str(domain) + '/corpus', params=params)
-
-    def get_import_job(self, id):
-        return self._get('domains/imports/' + str(id))
-
-    def get_all_domains(self):
-        return self._get('domains')
-
-
-###########################################################################################
-
-
-class _tuning_logger:
-    def __init__(self, count, line_len=70):
-        self.line_len = line_len
-        self.count = count
-        self._current_step = 0
-        self._step = None
-        self._api_base_path = None
-
-    def start(self, node, corpora):
-        engine = node.engine
-        self._api_base_path = node.api.base_path
-
-        print '\n============ TUNING STARTED ============\n'
-        print 'ENGINE:  %s' % engine.name
-        print 'CORPORA: %s (%d documents)' % (corpora[0].get_folder(), len(corpora))
-        print 'LANGS:   %s > %s' % (engine.source_lang, engine.target_lang)
-        print
-
-    def step(self, step):
-        self._step = step
-        self._current_step += 1
-        return self
-
-    def completed(self, bleu):
-        print '\n============ TUNING SUCCESS ============\n'
-        print '\nFinal BLEU: %.2f\n' % (bleu * 100.)
-        print 'You can try the API with:'
-        print '\tcurl "%s/translate?q=hello+world&context=computer"' % self._api_base_path + \
-              ' | python -mjson.tool'
-        print
-
-    def __enter__(self):
-        message = 'INFO: (%d of %d) %s... ' % (self._current_step, self.count, self._step)
-        print message.ljust(self.line_len),
-
-        self._start_time = time.time()
-        return self
-
-    def __exit__(self, *_):
-        self._end_time = time.time()
-        print 'DONE (in %ds)' % int(self._end_time - self._start_time)
-
-
-##############################################################################################
-
-
 class ClusterNode(object):
+    class TuneListener:
+        def __init__(self):
+            pass
+
+        def step(self, step):
+            class _:
+                def __init__(self, listener, _step):
+                    self._l = listener
+                    self._step = _step
+
+                def __enter__(self):
+                    self._l.on_step_begin(self._step)
+                    return self
+
+                def __exit__(self, *_):
+                    self._l.on_step_end(self._step)
+                    return self
+
+            return _(self, step)
+
+        def on_tuning_begin(self, corpora, node, steps_count):
+            pass
+
+        def on_step_begin(self, step):
+            pass
+
+        def on_step_end(self, step):
+            pass
+
+        def on_tuning_end(self, node, final_bleu):
+            pass
+
+    class Api:
+        DEFAULT_TIMEOUT = 60 * 60  # sec
+
+        def __init__(self, host=None, port=None, root=None):
+            self.port = port
+            self.host = host if host is not None else "localhost"
+            self.root = self._normalize_root(root)
+
+            if root is None:
+                self.base_path = 'http://%s:%d' % (self.host, self.port)
+            else:
+                self.base_path = 'http://%s:%d%s' % (self.host, self.port, self.root)
+
+            self._url_template = self.base_path + "/{endpoint}"
+
+            logging.getLogger('requests').setLevel(1000)
+            logging.getLogger('urllib3').setLevel(1000)
+
+        @staticmethod
+        def _normalize_root(root):
+            if root is None or len(root.strip()) == 0:
+                return None
+
+            root = root.strip()
+            if root[0] != '/':
+                root = '/' + root
+            if root[-1] == '/':
+                root = root[:-1]
+
+            return root.strip()
+
+        @staticmethod
+        def _unpack(r):
+            if r.status_code != requests.codes.ok:
+                raise Exception('HTTP request failed with code ' + str(r.status_code) + ': ' + r.url)
+            content = r.json()
+
+            return content['data'] if 'data' in content else None
+
+        def _get(self, endpoint, params=None):
+            url = self._url_template.format(endpoint=endpoint)
+            r = requests.get(url, params=params, timeout=self.DEFAULT_TIMEOUT)
+            return self._unpack(r)
+
+        def _delete(self, endpoint):
+            url = self._url_template.format(endpoint=endpoint)
+            r = requests.delete(url, timeout=self.DEFAULT_TIMEOUT)
+            return self._unpack(r)
+
+        def _put(self, endpoint, json=None, params=None):
+            url = self._url_template.format(endpoint=endpoint)
+
+            data = headers = None
+            if json is not None:
+                data = js.dumps(json)
+                headers = {'Content-type': 'application/json'}
+            elif params is not None:
+                data = params
+
+            r = requests.put(url, data=data, headers=headers, timeout=self.DEFAULT_TIMEOUT)
+            return self._unpack(r)
+
+        def _post(self, endpoint, json=None, params=None):
+            url = self._url_template.format(endpoint=endpoint)
+
+            data = headers = None
+            if json is not None:
+                data = js.dumps(json)
+                headers = {'Content-type': 'application/json'}
+            elif params is not None:
+                data = params
+
+            r = requests.post(url, data=data, headers=headers, timeout=self.DEFAULT_TIMEOUT)
+            return self._unpack(r)
+
+        @staticmethod
+        def _encode_context(context):
+            return ','.join([('%d:%f' % (
+                el['domain']['id'] if isinstance(el['domain'], dict) else el['domain'],
+                el['score'])
+                              ) for el in context])
+
+        def stats(self):
+            return self._get('_stat')
+
+        def update_features(self, features):
+            return self._put('decoder/features', json=features)
+
+        def get_features(self):
+            return self._get('decoder/features')
+
+        def get_context_f(self, document, limit=None):
+            params = {'local_file': document}
+            if limit is not None:
+                params['limit'] = limit
+            return self._get('context-vector', params=params)
+
+        def get_context_s(self, text, limit=None):
+            params = {'text': text}
+            if limit is not None:
+                params['limit'] = limit
+            return self._get('context-vector', params=params)
+
+        def translate(self, source, context=None, nbest=None):
+            p = {'q': source}
+            if nbest is not None:
+                p['nbest'] = nbest
+            if context is not None:
+                p['context_vector'] = self._encode_context(context)
+
+            return self._get('translate', params=p)
+
+        def create_domain(self, name):
+            params = {'name': name}
+            return self._post('domains', params=params)
+
+        def append_to_domain(self, domain, source, target):
+            params = {'source': source, 'target': target}
+            return self._put('domains/' + str(domain) + '/corpus', params=params)
+
+        def import_into_domain(self, domain, tmx):
+            params = {
+                'content_type': 'tmx',
+                'local_file': tmx
+            }
+
+            return self._put('domains/' + str(domain) + '/corpus', params=params)
+
+        def get_import_job(self, id):
+            return self._get('domains/imports/' + str(id))
+
+        def get_all_domains(self):
+            return self._get('domains')
+
     __SIGTERM_TIMEOUT = 10  # after this amount of seconds, there is no excuse for a process to still be there.
     __LOG_FILENAME = 'node'
 
@@ -227,11 +209,11 @@ class ClusterNode(object):
     # (and therefore with an already existing node.status file)
     @staticmethod
     def connect(engine_name, silent=False):
-
         engine = None
+
         try:
             # Load the already created engine
-            engine = MMTEngine.load(engine_name)
+            engine = Engine.load(engine_name)
         except IllegalArgumentException:
             if not silent:
                 raise
@@ -333,7 +315,7 @@ class ClusterNode(object):
         os.remove(self._status_file)
         os.remove(self._pidfile)
 
-    # Lazy Load MMTApi getter:
+    # Lazy Load Api getter:
     # the api are only initialized when they are needed
     @property
     def api(self):
@@ -344,7 +326,7 @@ class ClusterNode(object):
 
                 port = api_node["port"]
                 root = api_node["root"] if "root" in api_node else None
-                self._api = MMTApi(port=port, root=root)
+                self._api = self.Api(port=port, root=root)
         return self._api
 
     @property
@@ -411,7 +393,11 @@ class ClusterNode(object):
             else:
                 break
 
-    def tune(self, corpora=None, debug=False, context_enabled=True, random_seeds=False, max_iterations=25):
+    def tune(self, corpora=None, debug=False, context_enabled=True, random_seeds=False, max_iterations=25,
+             listener=None):
+        if not self.engine.is_tuning_supported():
+            raise IllegalStateException('Engine implementation does not support tuning')
+
         if corpora is None:
             corpora = BilingualCorpus.list(os.path.join(self.engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME))
 
@@ -426,8 +412,10 @@ class ClusterNode(object):
         reference_corpora = [BilingualCorpus.make_parallel(corpus.name, corpus.get_folder(), [target_lang])
                              for corpus in corpora]
 
-        cmdlogger = _tuning_logger(4)
-        cmdlogger.start(self, corpora)
+        if listener is None:
+            listener = self.TuneListener()
+
+        listener.on_tuning_begin(corpora, self, 4)
 
         working_dir = self.engine.get_tempdir('tuning')
         mert_wd = os.path.join(working_dir, 'mert')
@@ -438,11 +426,11 @@ class ClusterNode(object):
             tokenized_output = os.path.join(working_dir, 'reference_corpora')
             fileutils.makedirs(tokenized_output, exist_ok=True)
 
-            with cmdlogger.step('Corpora tokenization') as _:
+            with listener.step('Corpora tokenization') as _:
                 reference_corpora = tokenizer.process_corpora(reference_corpora, tokenized_output)
 
             # Create merged corpus
-            with cmdlogger.step('Merging corpus') as _:
+            with listener.step('Merging corpus') as _:
                 # source
                 source_merged_corpus = os.path.join(working_dir, 'corpus.' + source_lang)
 
@@ -455,7 +443,7 @@ class ClusterNode(object):
                 fileutils.merge([corpus.get_file(target_lang) for corpus in reference_corpora], target_merged_corpus)
 
             # Run MERT algorithm
-            with cmdlogger.step('Tuning') as _:
+            with listener.step('Tuning') as _:
                 # Start MERT
                 decoder_flags = ['--port', str(self.api.port)]
 
@@ -485,7 +473,7 @@ class ClusterNode(object):
                         shell.execute(' '.join(command), stdout=log, stderr=log)
 
             # Read optimized configuration
-            with cmdlogger.step('Applying changes') as _:
+            with listener.step('Applying changes') as _:
                 bleu_score = 0
                 weights = {}
                 found_weights = False
@@ -506,7 +494,7 @@ class ClusterNode(object):
 
                 _ = self.api.update_features(weights)
 
-            cmdlogger.completed(bleu_score)
+            listener.on_tuning_end(self, bleu_score)
         finally:
             if not debug:
                 self.engine.clear_tempdir("tuning")

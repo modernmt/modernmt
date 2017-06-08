@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-import sys, os, time
-import requests
+import os
+import sys
 import threading
+import time
 from argparse import ArgumentParser
-from multiprocessing import Pool
 
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
-from cli.cluster import MMTApi
+from cli.mmt.cluster import MMTApi
 
 server = None
 

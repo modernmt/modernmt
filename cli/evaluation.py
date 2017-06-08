@@ -9,8 +9,8 @@ import requests
 import cli
 from cli import IllegalArgumentException
 from cli.libs import multithread, shell, fileutils
-from cli.mt import BilingualCorpus
-from cli.mt.processing import XMLEncoder
+from cli.mmt import BilingualCorpus
+from cli.mmt.processing import XMLEncoder
 
 DEFAULT_GOOGLE_KEY = 'AIzaSyBl9WAoivTkEfRdBBSCs4CruwnGL_aV74c'
 

@@ -2,40 +2,10 @@ import os
 import shutil
 
 import cli
-from cli import mmt_javamain
 from cli.libs import fileutils
 from cli.libs import shell
-from cli.mt import BilingualCorpus
-
-__author__ = 'Davide Caroselli'
-
-
-class ContextAnalyzer:
-    def __init__(self, index, source_lang, target_lang):
-        self._index = index
-        self._source_lang = source_lang
-        self._target_lang = target_lang
-
-        self._java_mainclass = 'eu.modernmt.cli.ContextAnalyzerMain'
-
-    def create_index(self, corpora, log=None):
-        if log is None:
-            log = shell.DEVNULL
-
-        source_paths = set()
-
-        for corpus in corpora:
-            source_paths.add(corpus.get_folder())
-
-        shutil.rmtree(self._index, ignore_errors=True)
-        fileutils.makedirs(self._index, exist_ok=True)
-
-        args = ['-s', self._source_lang, '-t', self._target_lang, '-i', self._index, '-c']
-        for source_path in source_paths:
-            args.append(source_path)
-
-        command = mmt_javamain(self._java_mainclass, args)
-        shell.execute(command, stdout=log, stderr=log)
+from cli.mmt import BilingualCorpus
+from cli.mmt.engine import Engine, EngineBuilder
 
 
 class Vocabulary:
@@ -138,63 +108,6 @@ class InterpolatedLM(MosesFeature):
         return 'path={model} static-type=trie quantization={q} compression={c}'.format(
             model=self.get_relpath(base_path, self._model), q=self._quantization, c=self._compression
         )
-
-
-class FastAlign:
-    def __init__(self, model, source_lang, target_lang):
-        self._model = model
-        self._source_lang = source_lang
-        self._target_lang = target_lang
-
-        self._build_bin = os.path.join(cli.BIN_DIR, 'fa_build')
-        self._align_bin = os.path.join(cli.BIN_DIR, 'fa_align')
-        self._export_bin = os.path.join(cli.BIN_DIR, 'fa_export')
-
-    def build(self, corpora, working_dir='.', log=None):
-        if log is None:
-            log = shell.DEVNULL
-
-        shutil.rmtree(self._model, ignore_errors=True)
-        fileutils.makedirs(self._model, exist_ok=True)
-
-        if not os.path.isdir(working_dir):
-            fileutils.makedirs(working_dir, exist_ok=True)
-
-        merged_corpus = BilingualCorpus.make_parallel('merge', working_dir, (self._source_lang, self._target_lang))
-
-        fileutils.merge([corpus.get_file(self._source_lang) for corpus in corpora],
-                        merged_corpus.get_file(self._source_lang))
-        fileutils.merge([corpus.get_file(self._target_lang) for corpus in corpora],
-                        merged_corpus.get_file(self._target_lang))
-
-        command = [self._build_bin,
-                   '-s', merged_corpus.get_file(self._source_lang), '-t', merged_corpus.get_file(self._target_lang),
-                   '-m', self._model, '-I', '4']
-        shell.execute(command, stdout=log, stderr=log)
-
-    def align(self, corpora, output_folder, log=None):
-        if log is None:
-            log = shell.DEVNULL
-
-        root = set([corpus.get_folder() for corpus in corpora])
-
-        if len(root) != 1:
-            raise Exception('Aligner corpora must share the same folder: found  ' + str(root))
-
-        root = root.pop()
-
-        command = [self._align_bin, '--model', self._model,
-                   '--input', root, '--output', output_folder,
-                   '--source', self._source_lang, '--target', self._target_lang,
-                   '--strategy', '1']
-        shell.execute(command, stderr=log, stdout=log)
-
-    def export(self, path, log=None):
-        if log is None:
-            log = shell.DEVNULL
-
-        command = [self._export_bin, '--model', self._model, '--output', path]
-        shell.execute(command, stderr=log, stdout=log)
 
 
 class LexicalReordering(MosesFeature):
@@ -342,3 +255,84 @@ class Moses:
 
         with open(self._weights_file, 'wb') as out:
             out.writelines(lines)
+
+
+class PhraseBasedEngine(Engine):
+    def __init__(self, name, source_lang, target_lang):
+        Engine.__init__(self, name, source_lang, target_lang)
+
+        # Phrase-based specific models
+        self.moses = Moses(os.path.join(self.models_path, 'decoder'), self.source_lang, self.target_lang)
+        self.vocabulary_path = self.moses.vb.model
+
+    def is_tuning_supported(self):
+        return True
+
+    def type(self):
+        return 'phrase_based'
+
+
+class PhraseBasedEngineBuilder(EngineBuilder):
+    __MB = (1024 * 1024)
+    __GB = (1024 * 1024 * 1024)
+
+    def __init__(self, name, source_lang, target_lang, roots, debug=False, steps=None, split_trainingset=True):
+        EngineBuilder.__init__(self, PhraseBasedEngine(name, source_lang, target_lang),
+                               roots, debug, steps, split_trainingset)
+
+    def _build_schedule(self):
+        return EngineBuilder._build_schedule(self) + [self._train_tm, self._train_lm, self._write_moses_config]
+
+    def _check_constraints(self):
+        free_space_on_disk = fileutils.df(self._engine.path)[2]
+        corpus_size_on_disk = 0
+        for root in self._roots:
+            corpus_size_on_disk += fileutils.du(root)
+        free_memory = fileutils.free()
+
+        recommended_mem = self.__GB * corpus_size_on_disk / (350 * self.__MB)  # 1G RAM every 350M on disk
+        recommended_disk = 10 * corpus_size_on_disk
+
+        if free_memory < recommended_mem or free_space_on_disk < recommended_disk:
+            if free_memory < recommended_mem:
+                raise EngineBuilder.HWConstraintViolated(
+                    'more than %.fG of RAM recommended, only %.fG available' %
+                    (recommended_mem / self.__GB, free_memory / self.__GB)
+                )
+            if free_space_on_disk < recommended_disk:
+                raise EngineBuilder.HWConstraintViolated(
+                    'more than %.fG of storage recommended, only %.fG available' %
+                    (recommended_disk / self.__GB, free_space_on_disk / self.__GB)
+                )
+
+    # ~~~~~~~~~~~~~~~~~~~~~ Training step functions ~~~~~~~~~~~~~~~~~~~~~
+
+    @EngineBuilder.Step('Translation Model training')
+    def _train_tm(self, args, skip=False, log=None, delete_on_exit=False):
+        if not skip:
+            corpora = filter(None, [args.filtered_bilingual_corpora, args.processed_bilingual_corpora,
+                                    args.bilingual_corpora])[0]
+
+            working_dir = self._get_tempdir('tm', delete_if_exists=True)
+            self._engine.moses.pt.train(corpora, self._engine.aligner, working_dir, log=log)
+
+            if delete_on_exit:
+                shutil.rmtree(working_dir, ignore_errors=True)
+
+    @EngineBuilder.Step('Language Model training')
+    def _train_lm(self, args, skip=False, log=None, delete_on_exit=False):
+        if not skip:
+            bicorpora = filter(None, [args.processed_bilingual_corpora, args.bilingual_corpora])[0]
+            monocorpora = filter(None, [args.processed_monolingual_corpora, args.monolingual_corpora])
+            if len(monocorpora) > 0:
+                monocorpora = monocorpora[0]
+
+            working_dir = self._get_tempdir('lm', delete_if_exists=True)
+            self._engine.moses.lm.train(bicorpora + monocorpora, self._engine.target_lang, working_dir, log=log)
+
+            if delete_on_exit:
+                shutil.rmtree(working_dir, ignore_errors=True)
+
+    @EngineBuilder.Step('Writing Moses config', optional=False, hidden=True)
+    def _write_moses_config(self, _):
+        self._engine.moses.create_configs()
