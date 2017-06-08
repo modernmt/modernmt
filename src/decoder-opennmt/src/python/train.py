@@ -1,17 +1,19 @@
 from __future__ import division
 
 import onmt
+import onmt.Markdown
+import onmt.modules
 import argparse
 import torch
 import torch.nn as nn
 from torch import cuda
 from torch.autograd import Variable
-import math
 import time
 
 from onmt.Trainer import Trainer
 
 parser = argparse.ArgumentParser(description='train.py')
+onmt.Markdown.add_md_help_argument(parser)
 
 ## Data options
 
@@ -50,6 +52,8 @@ parser.add_argument('-brnn_merge', default='concat',
 
 ## Optimization options
 
+parser.add_argument('-encoder_type', default='text',
+                    help="Type of encoder to use. Options are [text|img].")
 parser.add_argument('-batch_size', type=int, default=64,
                     help='Maximum batch size')
 parser.add_argument('-max_generator_batches', type=int, default=32,
@@ -122,7 +126,7 @@ def main():
     if (opt.seed>=0):
         torch.manual_seed(opt.seed)
 
-    print(opt)
+    # print(opt)
 
     if torch.cuda.is_available() and not opt.gpus:
         print("WARNING: You have a CUDA device, so you should probably run with -gpus 0")
@@ -153,49 +157,40 @@ def main():
           len(dataset['train']['src']))
     print(' * maximum batch size. %d' % opt.batch_size)
 
-    print('Building model...')
+    print('Building model... START')
+    start_time = time.time()
 
-    encoder = onmt.Models.Encoder(opt, dicts['src'])
+    if opt.encoder_type == "text":
+        encoder = onmt.Models.Encoder(opt, dicts['src'])
+    elif opt.encoder_type == "img":
+        encoder = onmt.modules.ImageEncoder(opt)
+        assert("type" not in dataset or dataset["type"] == "img")
+    else:
+        print("Unsupported encoder type %s" % (opt.encoder_type))
+
     decoder = onmt.Models.Decoder(opt, dicts['tgt'])
+
     generator = nn.Sequential(nn.Linear(opt.rnn_size, dicts['tgt'].size()),nn.LogSoftmax())
 
     model = onmt.Models.NMTModel(encoder, decoder)
 
     if opt.train_from:
         print('Loading model from checkpoint (opt.train_from) at %s' % opt.train_from)
-        print('checkpoint: %s' % repr(checkpoint))
+        #print('checkpoint: %s' % repr(checkpoint))
 
         chk_model = checkpoint['model']
-        print('Loading model END 0')
-        print('chk_model: %s' % repr(chk_model))
-        print('Loading model END 0a')
-        #generator_state_dict = chk_generator.state_dict()
-        print('Loading model END 1')
-        for k, v in sorted(chk_model.items()):
-            print 'Loading model k:', k
-
-        model.load_state_dict(checkpoint['model'])
-        # model_state_dict = {k: v for k, v in chk_model.state_dict().items() if 'generator' not in k}
-        # print('Loading model END 2')
-        # model.load_state_dict(model_state_dict)
-        print('Loading model END 3')
-        generator.load_state_dict(checkpoint['generator'])
-        #generator.load_state_dict(generator_state_dict)
-        print('Loading model END 4')
+        generator_state_dict = chk_model.generator.state_dict()
+        model_state_dict = {k: v for k, v in chk_model.state_dict().items() if 'generator' not in k}
+        model.load_state_dict(model_state_dict)
+        generator.load_state_dict(generator_state_dict)
         opt.start_epoch = checkpoint['epoch'] + 1
 
     if opt.train_from_state_dict:
         print('Loading model from checkpoint (opt.train_from_state_dict) at %s' % opt.train_from_state_dict)
-        print('checkpoint: %s' % repr(checkpoint))
-        for k, v in sorted(checkpoint['model'].items()):
-            print 'Loading model k:', k
+        #print('checkpoint: %s' % repr(checkpoint))
         model.load_state_dict(checkpoint['model'])
-        print('Loading model END 1')
         generator.load_state_dict(checkpoint['generator'])
-        print('Loading model END 2')
         opt.start_epoch = checkpoint['epoch'] + 1
-
-    print('Loading model END')
 
     if len(opt.gpus) >= 1:
         model.cuda()
@@ -209,7 +204,6 @@ def main():
         generator = nn.DataParallel(generator, device_ids=opt.gpus, dim=0)
 
     model.generator = generator
-    print('def main() model.generator:%s' % repr(model.generator))
 
     if not opt.train_from_state_dict and not opt.train_from:
         for p in model.parameters():
@@ -236,8 +230,15 @@ def main():
     nParams = sum([p.nelement() for p in model.parameters()])
     print('* number of parameters: %d' % nParams)
 
+    print('Building model... END %.2fs' % (time.time() - start_time))
+
+
+    print('Training model... START')
+    start_time = time.time()
     trainer = Trainer(opt)
     trainer.trainModel(model, trainData, validData,  dataset, optim)
+
+    print('Training model... END %.2fs' % (time.time() - start_time))
 
 if __name__ == "__main__":
     main()

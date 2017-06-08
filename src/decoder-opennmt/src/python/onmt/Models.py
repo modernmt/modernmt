@@ -1,11 +1,15 @@
+import copy
+
 import torch
 import torch.nn as nn
+
+# import onmt
+import onmt.modules
+
 from torch.autograd import Variable
 from torch.nn.utils.rnn import pack_padded_sequence as pack
 from torch.nn.utils.rnn import pad_packed_sequence as unpack
 
-import onmt
-import onmt.modules
 
 
 class Encoder(nn.Module):
@@ -23,12 +27,8 @@ class Encoder(nn.Module):
                                      padding_idx=onmt.Constants.PAD)
         self.rnn = nn.LSTM(input_size, self.hidden_size,
                         num_layers=opt.layers,
-                        dropout=0.0,
+                        dropout=opt.dropout,
                         bidirectional=opt.brnn)
-        # self.rnn = nn.LSTM(input_size, self.hidden_size,
-        #                 num_layers=opt.layers,
-        #                 dropout=opt.dropout,
-        #                 bidirectional=opt.brnn)
 
     def load_pretrained_vectors(self, opt):
         if opt.pre_word_vecs_enc is not None:
@@ -127,6 +127,7 @@ class NMTModel(nn.Module):
         super(NMTModel, self).__init__()
         self.encoder = encoder
         self.decoder = decoder
+        self.pippo =  [ 0, 1]
 
     def make_init_decoder_output(self, context):
         batch_size = context.size(1)

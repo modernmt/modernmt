@@ -7,9 +7,9 @@ from onmt.Translator import Translator
 
 parser = argparse.ArgumentParser(description='train.py')
 
-parser.add_argument('-train_from_state_dict', default='', type=str,
-                    help="""If training from a checkpoint then this is the
-                    path to the pretrained model's state_dict.""")
+# parser.add_argument('-train_from_state_dict', default='', type=str,
+#                     help="""If training from a checkpoint then this is the
+#                     path to the pretrained model's state_dict.""")
 
 
 class OpenNMTDecoder(MMTDecoder):
@@ -24,13 +24,13 @@ class OpenNMTDecoder(MMTDecoder):
         ###opt = parser.parse_args(args=parameters)
         opt = parser.parse_args(args="")
         opt.model = checkpoint_path
-        opt.batch_size = 10
-        opt.beam_size = 5
-        opt.max_sent_length = 2
-        opt.n_best = 1
-        opt.replace_unk = True
+        opt.batch_size = 1
+        opt.beam_size = 3
+        opt.max_sent_length = 5
+        opt.n_best = 3
+        opt.replace_unk = False
         opt.verbose = False
-        opt.tuning_epochs = 50
+        opt.tuning_epochs = 30
 
         opt.gpu = -1
 
@@ -39,7 +39,7 @@ class OpenNMTDecoder(MMTDecoder):
         else:
             opt.cuda = False
 
-        opt.seed = 1234
+        opt.seed = 3435
         # Sets the seed for generating random numbers
         if (opt.seed >= 0):
             torch.manual_seed(opt.seed)
@@ -49,11 +49,6 @@ class OpenNMTDecoder(MMTDecoder):
     def translate(self, text, suggestions=None):
         # TODO: stub implementation
 
-        # if (int(time.time()) % 2) == 0:
-        #    raise ArithmeticError("fake exception")
-
-        ###srcBatch = [ text ]
-
         srcBatch = []
 
         srcBatch.append(text)
@@ -61,15 +56,7 @@ class OpenNMTDecoder(MMTDecoder):
         if len(suggestions) == 0:
             predBatch, predScore, goldScore = self.translator.translate(srcBatch, None)
         else:
-            # tuningSrcBatch, tuningTgtBatch = [], []
-            # for sugg in suggestions:
-            #     tuningSrcBatch.append(sugg.source)
-            #     tuningTgtBatch.append(sugg.target)
-            #
-            # tuningBatch = { 'src':tuningSrcBatch, 'tgt':tuningTgtBatch }
-            # predBatch, predScore, goldScore = self.translator.translateOnline(srcBatch, None, tuningBatch)
-            predBatch, predScore, goldScore = self.translator.translateOnline(srcBatch, None, suggestions)
-
+            predBatch, predScore, goldScore = self.translator.translateWithAdaptation(srcBatch, None, suggestions)
 
         output = predBatch[0][0]
 

@@ -1,15 +1,29 @@
 import onmt
+import onmt.Markdown
 
 import argparse
 import torch
 
+
+def loadImageLibs():
+    "Conditional import of torch image libs."
+    global Image, transforms
+    from PIL import Image
+    from torchvision import transforms
+
 parser = argparse.ArgumentParser(description='preprocess.py')
+onmt.Markdown.add_md_help_argument(parser)
 
 ##
 ## **Preprocess Options**
 ##
 
 parser.add_argument('-config',    help="Read options from this file")
+
+parser.add_argument('-src_type', default="text",
+                    help="Type of the source input. Options are [text|img].")
+parser.add_argument('-src_img_dir', default=".",
+                    help="Location of source images")
 
 parser.add_argument('-train_src', required=True,
                     help="Path to the training source data")
