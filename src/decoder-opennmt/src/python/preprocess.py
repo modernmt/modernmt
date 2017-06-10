@@ -5,6 +5,10 @@ import argparse
 import torch
 
 
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('opennmt.preprocess')
+
 def loadImageLibs():
     "Conditional import of torch image libs."
     global Image, transforms
@@ -74,8 +78,7 @@ def makeVocabulary(filename, size):
 
     originalSize = vocab.size()
     vocab = vocab.prune(size)
-    print('Created dictionary of size %d (pruned from %d)' %
-          (vocab.size(), originalSize))
+    logger.info('Created dictionary of size %d (pruned from %d)' % (vocab.size(), originalSize))
 
     return vocab
 
@@ -85,24 +88,24 @@ def initVocabulary(name, dataFile, vocabFile, vocabSize):
     vocab = None
     if vocabFile is not None:
         # If given, load existing word dictionary.
-        print('Reading ' + name + ' vocabulary from \'' + vocabFile + '\'...')
+        logger.info('Reading ' + name + ' vocabulary from \'' + vocabFile + '\'...')
         vocab = onmt.Dict()
         vocab.loadFile(vocabFile)
-        print('Loaded ' + str(vocab.size()) + ' ' + name + ' words')
+        logger.info('Loaded ' + str(vocab.size()) + ' ' + name + ' words')
 
     if vocab is None:
         # If a dictionary is still missing, generate it.
-        print('Building ' + name + ' vocabulary...')
+        logger.info('Building ' + name + ' vocabulary...')
         genWordVocab = makeVocabulary(dataFile, vocabSize)
 
         vocab = genWordVocab
 
-    print()
+    logger.info('')
     return vocab
 
 
 def saveVocabulary(name, vocab, file):
-    print('Saving ' + name + ' vocabulary to \'' + file + '\'...')
+    logger.info('Saving ' + name + ' vocabulary to \'' + file + '\'...')
     vocab.writeFile(file)
 
 
@@ -111,7 +114,7 @@ def makeData(srcFile, tgtFile, srcDicts, tgtDicts):
     sizes = []
     count, ignored = 0, 0
 
-    print('Processing %s & %s ...' % (srcFile, tgtFile))
+    logger.info('Processing %s & %s ...' % (srcFile, tgtFile))
     srcF = open(srcFile)
     tgtF = open(tgtFile)
 
@@ -125,7 +128,7 @@ def makeData(srcFile, tgtFile, srcDicts, tgtDicts):
 
         # source or target does not have same number of lines
         if sline == "" or tline == "":
-            print('WARNING: source and target do not have the same number of sentences')
+            logger.warn('WARNING: source and target do not have the same number of sentences')
             break
 
         sline = sline.strip()
@@ -133,7 +136,7 @@ def makeData(srcFile, tgtFile, srcDicts, tgtDicts):
 
         # source and/or target are empty
         if sline == "" or tline == "":
-            print('WARNING: ignoring an empty line ('+str(count+1)+')')
+            logger.warn('WARNING: ignoring an empty line ('+str(count+1)+')')
             continue
 
         srcWords = sline.split()
@@ -159,24 +162,24 @@ def makeData(srcFile, tgtFile, srcDicts, tgtDicts):
         count += 1
 
         if count % opt.report_every == 0:
-            print('... %d sentences prepared' % count)
+            logger.info('... %d sentences prepared' % count)
 
     srcF.close()
     tgtF.close()
 
     if opt.shuffle == 1:
-        print('... shuffling sentences')
+        logger.info('... shuffling sentences')
         perm = torch.randperm(len(src))
         src = [src[idx] for idx in perm]
         tgt = [tgt[idx] for idx in perm]
         sizes = [sizes[idx] for idx in perm]
 
-    print('... sorting sentences by size')
+    logger.info('... sorting sentences by size')
     _, perm = torch.sort(torch.Tensor(sizes))
     src = [src[idx] for idx in perm]
     tgt = [tgt[idx] for idx in perm]
 
-    print('Prepared %d sentences (%d ignored due to length == 0 or > %d)' %
+    logger.info('Prepared %d sentences (%d ignored due to length == 0 or > %d)' %
           (len(src), ignored, opt.seq_length))
 
     return src, tgt
@@ -190,12 +193,12 @@ def main():
     dicts['tgt'] = initVocabulary('target', opt.train_tgt, opt.tgt_vocab,
                                   opt.tgt_vocab_size)
 
-    print('Preparing training ...')
+    logger.info('Preparing training ...')
     train = {}
     train['src'], train['tgt'] = makeData(opt.train_src, opt.train_tgt,
                                           dicts['src'], dicts['tgt'])
 
-    print('Preparing validation ...')
+    logger.info('Preparing validation ...')
     valid = {}
     valid['src'], valid['tgt'] = makeData(opt.valid_src, opt.valid_tgt,
                                     dicts['src'], dicts['tgt'])
@@ -206,7 +209,7 @@ def main():
         saveVocabulary('target', dicts['tgt'], opt.save_data + '.tgt.dict')
 
 
-    print('Saving data to \'' + opt.save_data + '.train.pt\'...')
+    logger.info('Saving data to \'' + opt.save_data + '.train.pt\'...')
     save_data = {'dicts': dicts,
                  'train': train,
                  'valid': valid}

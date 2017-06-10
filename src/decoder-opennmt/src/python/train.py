@@ -12,6 +12,10 @@ import time
 
 from onmt.Trainer import Trainer
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('opennmt.train')
+
 parser = argparse.ArgumentParser(description='train.py')
 onmt.Markdown.add_md_help_argument(parser)
 
@@ -126,38 +130,45 @@ def main():
     if (opt.seed>=0):
         torch.manual_seed(opt.seed)
 
-    # print(opt)
-
     if torch.cuda.is_available() and not opt.gpus:
-        print("WARNING: You have a CUDA device, so you should probably run with -gpus 0")
+        logger.warn("WARNING: You have a CUDA device, so you should probably run with -gpus 0")
 
     if opt.gpus:
         cuda.set_device(opt.gpus[0])
 
-    print("Loading data from '%s'" % opt.data)
 
+    logger.info('Options:%s' % repr(opt))
+
+    logger.info("Loading data... START from '%s'" % opt.data)
+    start_time = time.time()
     dataset = torch.load(opt.data)
+    logger.info("Loading data... END %.2fs" % (time.time() - start_time))
+
+
 
     dict_checkpoint = opt.train_from if opt.train_from else opt.train_from_state_dict
     if dict_checkpoint:
-        print('Loading dicts from checkpoint at %s' % dict_checkpoint)
+        logger.info("Loading checkpoint... START from '%s'" % dict_checkpoint)
+        start_time = time.time()
         checkpoint = torch.load(dict_checkpoint)
         dataset['dicts'] = checkpoint['dicts']
+        logger.info("Loading checkpoint... END %.2fs" % (time.time() - start_time))
 
+    logger.info("Creating Data... START")
+    start_time = time.time()
     trainData = onmt.Dataset(dataset['train']['src'],
                              dataset['train']['tgt'], opt.batch_size, opt.gpus)
     validData = onmt.Dataset(dataset['valid']['src'],
                              dataset['valid']['tgt'], opt.batch_size, opt.gpus,
                              volatile=True)
+    logger.info("Creating Data... END %.2fs" % (time.time() - start_time))
 
     dicts = dataset['dicts']
-    print(' * vocabulary size. source = %d; target = %d' %
-          (dicts['src'].size(), dicts['tgt'].size()))
-    print(' * number of training sentences. %d' %
-          len(dataset['train']['src']))
-    print(' * maximum batch size. %d' % opt.batch_size)
+    logger.info(' Vocabulary size. source = %d; target = %d' % (dicts['src'].size(), dicts['tgt'].size()))
+    logger.info(' Number of training sentences. %d' % len(dataset['train']['src']))
+    logger.info(' Maximum batch size. %d' % opt.batch_size)
 
-    print('Building model... START')
+    logger.info('Building model... START')
     start_time = time.time()
 
     if opt.encoder_type == "text":
@@ -166,7 +177,7 @@ def main():
         encoder = onmt.modules.ImageEncoder(opt)
         assert("type" not in dataset or dataset["type"] == "img")
     else:
-        print("Unsupported encoder type %s" % (opt.encoder_type))
+        logger.warn("Unsupported encoder type %s" % (opt.encoder_type))
 
     decoder = onmt.Models.Decoder(opt, dicts['tgt'])
 
@@ -175,8 +186,9 @@ def main():
     model = onmt.Models.NMTModel(encoder, decoder)
 
     if opt.train_from:
-        print('Loading model from checkpoint (opt.train_from) at %s' % opt.train_from)
-        #print('checkpoint: %s' % repr(checkpoint))
+        logger.info('Loading model... START from checkpoint (opt.train_from) at %s' % opt.train_from)
+        start_time = time.time()
+        logger.debug('checkpoint: %s' % repr(checkpoint))
 
         chk_model = checkpoint['model']
         generator_state_dict = chk_model.generator.state_dict()
@@ -184,13 +196,16 @@ def main():
         model.load_state_dict(model_state_dict)
         generator.load_state_dict(generator_state_dict)
         opt.start_epoch = checkpoint['epoch'] + 1
+        logger.info("Loading model... END %.2fs" % (time.time() - start_time2))
 
     if opt.train_from_state_dict:
-        print('Loading model from checkpoint (opt.train_from_state_dict) at %s' % opt.train_from_state_dict)
-        #print('checkpoint: %s' % repr(checkpoint))
+        logger.info('Loading model... START from checkpoint (opt.train_from_state_dict) at %s' % opt.train_from_state_dict)
+        start_time2 = time.time()
+        logger.debug('checkpoint: %s' % repr(checkpoint))
         model.load_state_dict(checkpoint['model'])
         generator.load_state_dict(checkpoint['generator'])
         opt.start_epoch = checkpoint['epoch'] + 1
+        logger.info("Loading model... END %.2fs" % (time.time() - start_time2))
 
     if len(opt.gpus) >= 1:
         model.cuda()
@@ -206,21 +221,31 @@ def main():
     model.generator = generator
 
     if not opt.train_from_state_dict and not opt.train_from:
+        logger.info('Initializing model... START')
+        start_time2 = time.time()
         for p in model.parameters():
             p.data.uniform_(-opt.param_init, opt.param_init)
 
         encoder.load_pretrained_vectors(opt)
         decoder.load_pretrained_vectors(opt)
+        logger.info("Initializing model... END %.2fs" % (time.time() - start_time2))
 
+        logger.info('Initializing optimizer... START')
+        start_time2 = time.time()
         optim = onmt.Optim(
             opt.optim, opt.learning_rate, opt.max_grad_norm,
             lr_decay=opt.learning_rate_decay,
             start_decay_at=opt.start_decay_at
         )
+        logger.info("Initializing optimizer... END %.2fs" % (time.time() - start_time2))
     else:
-        print('Loading optimizer from checkpoint:')
+        logger.info('Loading optimizer from checkpoint... START')
+        start_time2 = time.time()
         optim = checkpoint['optim']
-        print(optim)
+        logger.info(optim)
+        logger.info("Loading optimizer... END %.2fs" % (time.time() - start_time2))
+
+    logger.info("Building model... END %.2fs" % (time.time() - start_time))
 
     optim.set_parameters(model.parameters())
 
@@ -228,17 +253,16 @@ def main():
         optim.optimizer.load_state_dict(checkpoint['optim'].optimizer.state_dict())
 
     nParams = sum([p.nelement() for p in model.parameters()])
-    print('* number of parameters: %d' % nParams)
+    logger.info(' Number of parameters: %d' % nParams)
 
-    print('Building model... END %.2fs' % (time.time() - start_time))
+    logger.info('Building model... END %.2fs' % (time.time() - start_time))
 
 
-    print('Training model... START')
+    logger.info('Training model... START')
     start_time = time.time()
     trainer = Trainer(opt)
     trainer.trainModel(model, trainData, validData,  dataset, optim)
-
-    print('Training model... END %.2fs' % (time.time() - start_time))
+    logger.info('Training model... END %.2fs' % (time.time() - start_time))
 
 if __name__ == "__main__":
     main()

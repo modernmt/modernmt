@@ -9,6 +9,7 @@ import Trainer
 import onmt
 import onmt.modules
 
+import logging
 
 def loadImageLibs():
     "Conditional import of torch image libs."
@@ -20,55 +21,70 @@ def loadImageLibs():
 class Translator(object):
     def __init__(self, opt):
         self.opt = opt
+        self.seed = opt.seed
 
-        # print "def Translator::Translator() opt:", repr(opt)
+        self._logger = logging.getLogger('opennmt.onmt.translator')
 
-        self.gpus = []
+        self._logger.info("Options:" + repr(self.opt))
+
+        self.opt.gpus = []
         if self.opt.gpu > -1:
-            self.gpus = [ self.opt.gpu ]
+            self.opt.gpus = [ self.opt.gpu ]
 
         self.tt = torch.cuda if opt.cuda else torch
         self.beam_accum = None
 
-        checkpoint = torch.load(opt.model)
-        # print('checkpoint: %s' % repr(checkpoint))
+        self._logger.info("Loading checkpoint... START")
+        start_time = time.time()
+        self.checkpoint = torch.load(opt.model)
+        self._logger.info("Loading checkpoint... END %.2fs" % (time.time() - start_time))
+
+        self.dicts, self.model, self.optim = self.create(self.checkpoint)
+
+        generator_state_dict = self.model.generator.module.state_dict() if len(self.opt.gpus) > 1 else self.model.generator.state_dict()
+        self._logger.debug('__init__ generator_state_dict: %s' % (generator_state_dict))
+
+        self._logger.info("Building trainer... START")
+        start_time = time.time()
+        self.trainer = Trainer.Trainer(self.model_opt)
+        self._logger.info("Building trainer... END %.2fs" % (time.time() - start_time))
+
+
+    def create(self, checkpoint):
+
+        torch.manual_seed(self.opt.seed)
 
         self.model_opt = checkpoint['opt']
-        # print "def Translator::Translator() model_opt:", repr(model_opt)
+        self._logger.info("Model Options:" + repr(self.model_opt))
 
-        self.dicts = checkpoint['dicts']
+        self._logger.info("Building model... START")
+        start_time = time.time()
 
-        # print(' * vocabulary size. source = %d; target = %d' %
-        #   (self.getSourceDict().size(), self.getTargetDict().size()))
-        # print(' * maximum batch size. %d' % opt.batch_size)
+        dicts = checkpoint['dicts']
 
-        # print('Building model...')
+        self._logger.info(' Vocabulary size. source = %d; target = %d' % (dicts['src'].size(), dicts['tgt'].size()))
+        self._logger.info(' Maximum batch size. %d' % self.opt.batch_size)
+
 
         self._type = self.model_opt.encoder_type \
             if "encoder_type" in self.model_opt else "text"
 
         if self._type == "text":
-            encoder = onmt.Models.Encoder(self.model_opt, self.getSourceDict())
+            encoder = onmt.Models.Encoder(self.model_opt, dicts['src'])
         elif self._type == "img":
             loadImageLibs()
             encoder = onmt.modules.ImageEncoder(self.model_opt)
 
-        decoder = onmt.Models.Decoder(self.model_opt, self.getTargetDict())
+        decoder = onmt.Models.Decoder(self.model_opt, dicts['tgt'])
 
         model = onmt.Models.NMTModel(encoder, decoder)
         model.load_state_dict(checkpoint['model'])
 
-        generator = nn.Sequential(nn.Linear(self.model_opt.rnn_size, self.getTargetDict().size()),nn.LogSoftmax())
+        generator = nn.Sequential(nn.Linear(self.model_opt.rnn_size, dicts['tgt'].size()),nn.LogSoftmax())
         generator.load_state_dict(checkpoint['generator'])
 
-        # generator_state_dict = super(nn.Sequential, generator).state_dict()
-        # print 'def Translator::Translator generator:', repr(generator)
-        # for name, param in sorted(generator_state_dict.items()):
-        #         print ('def Translator::Translator generator_state_dict name',name)
-        #         print ('def Translator::Translator generator_state_dict own_state[name]',generator_state_dict[name])
 
-
-        if opt.cuda:
+        if self.opt.cuda:
             model.cuda()
             generator.cuda()
         else:
@@ -77,17 +93,23 @@ class Translator(object):
 
         model.generator = generator
 
-        self.optim = checkpoint['optim']
+        model.eval()
 
-        self.optim.set_parameters(model.parameters())
-        self.optim.optimizer.load_state_dict(checkpoint['optim'].optimizer.state_dict())
+        self._logger.info("Building model... END %.2fs" % (time.time() - start_time))
+
+        self._logger.info("Building optimizer... START")
+        start_time = time.time()
+        optim = checkpoint['optim']
+        optim.set_parameters(model.parameters())
+        optim.optimizer.load_state_dict(checkpoint['optim'].optimizer.state_dict())
+        self._logger.info("Building optimizer... END %.2fs" % (time.time() - start_time))
 
 
-        self.model = model
-        self.model.eval()
+        # self._logger.debug('Inside create Checkpoint.generator: %s' % (checkpoint['generator']))
+        generator_state_dict = model.generator.module.state_dict() if len(self.opt.gpus) > 1 else model.generator.state_dict()
+        self._logger.debug('create returning generator_state_dict: %s' % (repr(generator_state_dict)))
 
-        self.trainer = Trainer.Trainer(self.model_opt)
-
+        return dicts, model, optim
 
     def initBeamAccum(self):
         self.beam_accum = {
@@ -143,6 +165,10 @@ class Translator(object):
     def translateBatch(self, srcBatch, tgtBatch, model=None):
 
         if model == None: model = self.model
+
+
+        generator_state_dict = model.generator.module.state_dict() if len(self.opt.gpus) > 1 else model.generator.state_dict()
+        self._logger.debug('translateBatch begin generator_state_dict: %s' % (generator_state_dict))
 
         batchSize = srcBatch[0].size(1)
         beamSize = self.opt.beam_size
@@ -295,12 +321,12 @@ class Translator(object):
         return allHyp, allScores, allAttn, goldScores
 
     def translate(self, srcBatch, goldBatch):
+        self._logger.info('translating without tuning')
         #  (1) convert words to indexes
         dataset = self.buildData(srcBatch, goldBatch)
         src, tgt, indices = dataset[0]
 
         #  (2) translate
-        # pred, predScore, attn, goldScore = self.translateBatch(src, tgt, model=self.model)
         pred, predScore, attn, goldScore = self.translateBatch(src, tgt)
         pred, predScore, attn, goldScore = list(
             zip(*sorted(zip(pred, predScore, attn, goldScore, indices), key=lambda x: x[-1])))[:-1]
@@ -316,6 +342,7 @@ class Translator(object):
         return predBatch, predScore, goldScore
 
     def translateWithAdaptation(self, srcBatch, goldBatch, suggestions):
+        self._logger.info('translating with tuning')
 
         #  (1) convert words to indexes [input and reference (if nay)]
         dataset = self.buildData(srcBatch, goldBatch)
@@ -331,72 +358,31 @@ class Translator(object):
         tuningDataset = {'train': {'src': indexedTuningSrcBatch, 'tgt': indexedTuningTgtBatch}, 'dicts': self.dicts}
 
         tuningTrainData = onmt.Dataset(tuningDataset['train']['src'],
-                             tuningDataset['train']['tgt'], self.opt.batch_size, self.gpus)
+                             tuningDataset['train']['tgt'], self.opt.batch_size, self.opt.gpus)
 
 
-        #
-        ## make a copy of "static" model
-        # print('copying model... START')
-        # start_time = time.time()
-        # model_copy = copy.deepcopy(self.model)
-        # optim_copy = copy.deepcopy(self.optim)
-        # print('copying model... END %.2fs' % (time.time() - start_time))
-
-        # print('tuning model... START')
-
-        # print 'def Translator:translateWithAdaptation id(self.model):', repr(id(self.model))
-        # print 'def Translator:translateWithAdaptation id(self.model.encoder):', repr(id(self.model.encoder))
-        # print 'def Translator:translateWithAdaptation id(self.optim):', repr(id(self.optim))
-        # # print 'def Translator:translateWithAdaptation id(model_copy):', repr(id(model_copy))
-        # print 'def Translator:translateWithAdaptation id(model_copy.encoder):', repr(id(model_copy.encoder))
-        # print 'def Translator:translateWithAdaptation id(optim_copy):', repr(id(optim_copy))
-
+        self._logger.info('copying model... START')
         start_time = time.time()
+        checkpoint_copy = copy.deepcopy(self.checkpoint)
 
-        # model_state_dict = super(onmt.Models.NMTModel, self.model).state_dict()
-        # print 'def Translator::translateWithAdaptation before  model_state_dict:', repr(model_state_dict)
-        # for name, param in sorted(model_state_dict.items()):
-        #         print ('def Translator::translateWithAdaptation before model_state_dict name',name)
-        #         print ('def Translator::translateWithAdaptation before model_state_dict own_state[name]',model_state_dict[name])
-        #
-        #
-        # print('tuning model... START')
-        # model_copy = self.trainer.trainModel(self.model, tuningTrainData, None, tuningDataset, self.optim, save_all_epochs=False, save_last_epoch=False, epochs=self.opt.tuning_epochs, clone=True)
-        # model_copy.eval()
-        # print('tuning model... END %.2fs' % (time.time() - start_time))
-        #
-        # model_state_dict = super(onmt.Models.NMTModel, model_copy).state_dict()
-        # print 'def Translator::translateWithAdaptation after  model_state_dict:', repr(model_state_dict)
-        # for name, param in sorted(model_state_dict.items()):
-        #         print ('def Translator::translateWithAdaptation after model_state_dict name',name)
-        #         print ('def Translator::translateWithAdaptation after model_state_dict own_state[name]',model_state_dict[name])
+        dicts_copy, model_copy, optim_copy = self.create(checkpoint_copy)
 
+        generator_copy_state_dict = model_copy.generator.module.state_dict() if len(self.opt.gpus) > 1 else model_copy.generator.state_dict()
 
+        self._logger.info('copying model... END %.2fs' % (time.time() - start_time))
 
-        # model_state_dict = super(onmt.Models.NMTModel, self.model).state_dict()
-        # print 'def Translator::translateWithAdaptation before  model_state_dict:', repr(model_state_dict)
-        # for name, param in sorted(model_state_dict.items()):
-        #         print ('def Translator::translateWithAdaptation before model_state_dict name',name)
-        #         print ('def Translator::translateWithAdaptation before model_state_dict own_state[name]',model_state_dict[name])
+        self._logger.debug('before tuning generator_copy_state_dict: %s' % (generator_copy_state_dict))
+        self._logger.info('tuning model... START')
+        start_time = time.time()
+        self.trainer.trainModel(model_copy, tuningTrainData, None, tuningDataset, optim_copy, save_all_epochs=False, save_last_epoch=False, epochs=self.opt.tuning_epochs, clone=False)
+        self._logger.info('tuning model... END %.2fs' % (time.time() - start_time))
 
-        self.model = self.trainer.trainModel(self.model, tuningTrainData, None, tuningDataset, self.optim, save_all_epochs=False, save_last_epoch=False, epochs=self.opt.tuning_epochs, clone=False)
-
-
-        # model_state_dict = super(onmt.Models.NMTModel, self.model).state_dict()
-        # print 'def Translator::translateWithAdaptation after  model_state_dict:', repr(model_state_dict)
-        # for name, param in sorted(model_state_dict.items()):
-        #         print ('def Translator::translateWithAdaptation after model_state_dict name',name)
-        #         print ('def Translator::translateWithAdaptation after model_state_dict own_state[name]',model_state_dict[name])
-
-        # print('tuning model... END %.2fs' % (time.time() - start_time))
-
-
-
+        generator_copy_state_dict = model_copy.generator.module.state_dict() if len(self.opt.gpus) > 1 else model_copy.generator.state_dict()
+        self._logger.debug('after tuning generator_copy_state_dict: %s' % (generator_copy_state_dict))
 
         #  (2) translate
         start_time = time.time()
-        ###pred, predScore, attn, goldScore = self.translateBatch(src, tgt, model=model_copy)
-        pred, predScore, attn, goldScore = self.translateBatch(src, tgt)
+        pred, predScore, attn, goldScore = self.translateBatch(src, tgt, model=model_copy)
         pred, predScore, attn, goldScore = list(zip(*sorted(zip(pred, predScore, attn, goldScore, indices), key=lambda x: x[-1])))[:-1]
 
         #  (3) convert indexes to words

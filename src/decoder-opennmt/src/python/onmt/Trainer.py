@@ -7,12 +7,16 @@ import torch.nn as nn
 from torch.autograd import Variable
 
 import onmt
+import logging
 
 
 class Trainer(object):
     def __init__(self, opt):
         self.opt = opt
         # print 'Trainer::Trainer opt:', repr(opt)
+
+        self._logger = logging.getLogger('opennmt.onmt.trainer')
+        self._logger.info('Options:%s' % repr(self.opt))
 
     def NMTCriterion(self,vocabSize):
         opt=self.opt
@@ -67,15 +71,18 @@ class Trainer(object):
         return total_loss / total_words, float(total_num_correct) / total_words
 
     def trainModel(self, model_ori, trainData, validData, dataset, optim_ori, save_all_epochs=True, save_last_epoch=False, epochs=None, clone=False):
+
+
         opt=self.opt
 
         if epochs:
             opt.epochs = epochs
 
-        # print 'def Trainer:trainModel id(model_ori):', repr(id(model_ori))
-
         model = model_ori
         optim = optim_ori
+
+        generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
+        self._logger.debug('trainModel begin generator_state_dict: %s' % (generator_state_dict))
 
         model.decoder.attn.applyMask(None) #set the mask to None; required when the same model is trained after a translation
 
@@ -88,7 +95,6 @@ class Trainer(object):
 
         start_time = time.time()
         def trainEpoch(epoch):
-
             if opt.extra_shuffle and epoch > opt.curriculum:
                 trainData.shuffle()
 
@@ -122,59 +128,44 @@ class Trainer(object):
                 total_loss += loss
                 total_num_correct += num_correct
                 total_words += num_words
-                # print("def Trainer::trainEpoch epoch %2d, %5d/%5d; acc: %6.2f; ppl: %6.2f; %3.0f src tok/s; %3.0f tgt tok/s; %6.0f s elapsed" %
-                #           (epoch, i+1, len(trainData),
-                #            (float(report_num_correct) / report_tgt_words) * 100,
-                #            math.exp(report_loss / report_tgt_words),
-                #            report_src_words/(time.time()-start),
-                #            report_tgt_words/(time.time()-start),
-                #            time.time()-start_time))
-                # print("def Trainer::trainEpoch epoch %2d, %5d/%5d; num_corr: %6.2f; %3.0f src tok; %3.0f tgt tok; %6.0f s elapsed" %
-                #           (epoch, i+1, len(trainData),
-                #            report_num_correct,
-                #            report_src_words,
-                #            report_tgt_words,
-                #            time.time()-start_time))
                 if i % opt.log_interval == -1 % opt.log_interval:
-                    # print("def Trainer::trainEpoch epoch %2d, %5d/%5d; acc: %6.2f; ppl: %6.2f; %3.0f src tok/s; %3.0f tgt tok/s; %6.0f s elapsed" %
-                    #       (epoch, i+1, len(trainData),
-                    #        report_num_correct / report_tgt_words * 100,
-                    #        math.exp(report_loss / report_tgt_words),
-                    #        report_src_words/(time.time()-start),
-                    #        report_tgt_words/(time.time()-start),
-                    #        time.time()-start_time))
+                    self._logger.info("trainEpoch epoch %2d, %5d/%5d; num_corr: %6.2f; %3.0f src tok; %3.0f tgt tok; acc: %6.2f; ppl: %6.2f; %3.0f src tok/s; %3.0f tgt tok/s; %6.0f s elapsed" %
+                          (epoch, i+1, len(trainData),
+                           report_num_correct,
+                           report_src_words,
+                           report_tgt_words,
+                           (float(report_num_correct) / report_tgt_words) * 100,
+                           math.exp(report_loss / report_tgt_words),
+                           report_src_words/(time.time()-start),
+                           report_tgt_words/(time.time()-start),
+                           time.time()-start_time))
 
                     report_loss = report_tgt_words = report_src_words = report_num_correct = 0
                     start = time.time()
-
-            model_state_dict = model.state_dict()
 
             return total_loss / total_words, float(total_num_correct) / total_words
 
         valid_acc, valid_ppl = None, None
         for epoch in range(opt.start_epoch, opt.epochs + 1):
 
+            self._logger.info('Training epoch %g... START' % epoch)
+            start_time_epoch = time.time()
+
             #  (1) train for one epoch on the training set
-            # print('')
-            # print('Train epoch %g'  % epoch)
-            # print("Actual learning rate to %g" % optim.lr)
             train_loss, train_acc = trainEpoch(epoch)
             train_ppl = math.exp(min(train_loss, 100))
-            # print('Train loss: %g' % train_loss)
-            # print('Train perplexity: %g' % train_ppl)
-            # print('Train accuracy: %g' % (float(train_acc)*100))
+            self._logger.info('trainEpoch Epoch %g Train loss: %g perplexity: %g accuracy: %g' % (epoch, train_loss,train_ppl,(float(train_acc)*100)))
 
             if validData:
                 #  (2) evaluate on the validation set
                 valid_loss, valid_acc = self.eval(model, criterion, validData)
                 valid_ppl = math.exp(min(valid_loss, 100))
-                # print('Validation loss: %g' % valid_loss)
-                # print('Validation perplexity: %g' % valid_ppl)
-                # print('Validation accuracy: %g' % (valid_acc*100))
+                self._logger.info('trainModel Epoch %g Validation loss: %g perplexity: %g accuracy: %g' % (epoch, valid_loss,valid_ppl,(float(valid_acc)*100)))
 
                 #  (3) update the learning rate
                 optim.updateLearningRate(valid_loss, epoch)
 
+                self._logger.info("trainModel Epoch %g Decaying learning rate to %g" % (epoch, optim.lr))
 
             # model_state_dict = model.module.state_dict() if len(opt.gpus) > 1 else model.state_dict()
             # model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
@@ -190,20 +181,6 @@ class Trainer(object):
             #     'optim': optim
             # }
 
-            # generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
-            # print 'def Trainer::trainModel END epoch', epoch, ' id(model:', repr(id(model)), ' generator:', repr(model.generator)
-            # for name, param in sorted(generator_state_dict.items()):
-            #     print ('def Trainer::trainModel END epoch', epoch, ' id(model):', repr(id(model)), ' generator_state_dict name',name)
-            #     print ('def Trainer::trainModel END epoch', epoch, ' id(model):', repr(id(model)), ' generator_state_dict own_state[name]',generator_state_dict[name])
-            #
-            # model_state_dict = model.module.state_dict() if len(opt.gpus) > 1 else model.state_dict()
-            # model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
-            #
-            # for name, param in sorted(model_state_dict.items()):
-            #     print ('def Trainer::trainModel END epoch', epoch, ' id(model):', repr(id(model)), ' model_state_dict name',name)
-            #     print ('def Trainer::trainModel END epoch', epoch, ' id(model):', repr(id(model)), ' model_state_dict own_state[name]',model_state_dict[name])
-            #
-            # print 'def Trainer::trainModel epoch', epoch, ' id(model):', repr(id(model)), ' optim:', repr(optim)
 
             if save_all_epochs or save_last_epoch:
                 model_state_dict = model.module.state_dict() if len(opt.gpus) > 1 else model.state_dict()
@@ -219,11 +196,18 @@ class Trainer(object):
                     'epoch': epoch,
                     'optim': optim
                 }
+
+                generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
+                # self._logger.debug('trainModel Epoch:%g checkpoint.generator: %s' % (epoch, repr(checkpoint['generator'])))
+                # self._logger.debug('trainModel Epoch:%g generator_state_dict: %s' % (epoch, generator_state_dict))
+
                 if valid_acc is not None:
                     torch.save(checkpoint,'%s_acc_%.2f_ppl_%.2f_e%d.pt' % (opt.save_model, 100*valid_acc, valid_ppl, epoch))
                 else:
                     torch.save(checkpoint,'%s_acc_NA_ppl_NA_e%d.pt' % (opt.save_model, epoch))
 
+
+            self._logger.info('Training epoch %g... END %.2fs' % (epoch, time.time() - start_time_epoch))
 
         #
         # print 'def Trainer::trainModel END generator:', repr(generator_state_dict)
@@ -236,4 +220,21 @@ class Trainer(object):
         #         print ('def Trainer::trainModel END model_state_dict name',name)
         #         print ('def Trainer::trainModel END model_state_dict own_state[name]',model_state_dict[name])
 
-        return model
+
+        model_state_dict = model.module.state_dict() if len(opt.gpus) > 1 else model.state_dict()
+        model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
+        generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
+
+        #  (4) drop a checkpoint
+        checkpoint = {
+                    'model': model_state_dict,
+                    'generator': generator_state_dict,
+                    'dicts': dataset['dicts'],
+                    'opt': opt,
+                    'epoch': epoch,
+                    'optim': optim
+                }
+
+        # self._logger.debug('trainModel returning checkpoint.generator: %s' % (repr(checkpoint['generator'])))
+        self._logger.debug('trainModel returning generator_state_dict: %s' % (repr(generator_state_dict)))
+

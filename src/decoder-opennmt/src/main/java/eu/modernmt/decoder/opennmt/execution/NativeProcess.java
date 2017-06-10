@@ -41,7 +41,7 @@ class NativeProcess implements Closeable {
 
         public NativeProcess start(int gpu) throws IOException {
             String[] command = new String[]{
-                    "python", "nmt_decoder.py", model.getAbsolutePath(), "--gpu-index", Integer.toString(gpu)
+                    "python", "nmt_decoder.py", "-model", model.getAbsolutePath(), "-gpu", Integer.toString(gpu)
             };
 
             ProcessBuilder builder = new ProcessBuilder(command);
