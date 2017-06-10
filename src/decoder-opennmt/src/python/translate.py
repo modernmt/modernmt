@@ -7,6 +7,10 @@ import argparse
 import math
 import time
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('opennmt.translate')
+
 parser = argparse.ArgumentParser(description='translate.py')
 onmt.Markdown.add_md_help_argument(parser)
 
@@ -57,13 +61,9 @@ parser.add_argument('-seed',       type=int, default=3435,
 
 def reportScore(name, scoreTotal, wordsTotal):
     if wordsTotal != 0:
-        print("%s AVG SCORE: %.4f, %s PPL: %.4f" % (
-            name, scoreTotal / wordsTotal,
-            name, math.exp(-scoreTotal/wordsTotal)))
+        logger.info("%s AVG SCORE: %.4f, %s PPL: %.4f" % (name, scoreTotal / wordsTotal,name, math.exp(-scoreTotal/wordsTotal)))
     else:
-        print("%s AVG SCORE: %s, %s PPL: %s" % (
-            name, 'undef',
-            name, 'undef'))
+        logger.info("%s AVG SCORE: %s, %s PPL: %s" % (name, 'undef',name, 'undef'))
 
 def addone(f):
     for line in f:
@@ -98,9 +98,10 @@ def main():
         translator.initBeamAccum()
 
 
-    print('Translation... START')
+    logger.info('Translation... START')
     start_time = time.time()
     for line in addone(open(opt.src)):
+        logger.info('translating: %s' % line)
         
         if line is not None:
             srcTokens = line.split()
@@ -121,12 +122,11 @@ def main():
         # print of the nbest for each sentence of the batch
         for b in range(len(predBatch)):
             for n in range(len(predBatch[b])):
-                print "def OpenNMTDecoder::translate(self, text, suggestions=None) predScore[b][n]:", repr(predScore[b][n]), " predBatch[b][n]:", repr(predBatch[b][n])
-
-        # print "def translate::main() srcBatch", repr(srcBatch)
-        # print "def translate::main() tgtBatch", repr(tgtBatch)
-        # print "def translate::main() predBatch", repr(predBatch)
-        # print "def translate::main() predScore", repr(predScore)
+                logger.info("b:%d n:%d predScore[b][n]:%g predBatch[b][n]:%s" % (b,n,predScore[b][n], repr(predBatch[b][n])))
+        # logger.info("def translate::main() srcBatch" + repr(srcBatch))
+        # logger.info("def translate::main() tgtBatch" + repr(tgtBatch))
+        # logger.info("def translate::main() predBatch" + repr(predBatch))
+        # logger.info("def translate::main() predScore" + repr(predScore))
 
         predScoreTotal += sum(score[0] for score in predScore)
         predWordsTotal += sum(len(x[0]) for x in predBatch)
@@ -143,23 +143,21 @@ def main():
                 srcSent = ' '.join(srcBatch[b])
                 if translator.getTargetDict().lower:
                     srcSent = srcSent.lower()
-                print('SENT %d: %s' % (count, srcSent))
-                print('PRED %d: %s' % (count, " ".join(predBatch[b][0])))
-                print("PRED SCORE: %.4f" % predScore[b][0])
+                logger.info('SENT %d: %s' % (count, srcSent))
+                logger.info('PRED %d: SCORE: %.4f TRANSLATION:%s' % (count, predScore[b][0], " ".join(predBatch[b][0])))
 
                 if tgtF is not None:
                     tgtSent = ' '.join(tgtBatch[b])
                     if translator.getTargetDict().lower:
                         tgtSent = tgtSent.lower()
-                    print('GOLD %d: %s ' % (count, tgtSent))
-                    print("GOLD SCORE: %.4f" % goldScore[b])
+                    logger.info('GOLD %d: SCORE: %.4f TRANSLATION:%s ' % (count, goldScore[b], tgtSent))
 
                 if opt.n_best > 1:
-                    print('\nBEST HYP:')
+                    logger.info('BEST HYP:')
                     for n in range(len(predBatch[b])):
-                        print("[%.4f] %s" % (predScore[b][n], " ".join(predBatch[b][n])))
+                        logger.info("b:%g n:%g [%.4f] %s" % (b, n, predScore[b][n], " ".join(predBatch[b][n])))
 
-                print('')
+                logger.info('')
 
         srcBatch, tgtBatch = [], []
 
@@ -173,7 +171,8 @@ def main():
     if opt.dump_beam:
         json.dump(translator.beam_accum, open(opt.dump_beam, 'w'))
 
-    print('Translation... END %.2fs' % (time.time() - start_time))
+    logger.info('Translation... END %.2fs' % (time.time() - start_time))
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     main()

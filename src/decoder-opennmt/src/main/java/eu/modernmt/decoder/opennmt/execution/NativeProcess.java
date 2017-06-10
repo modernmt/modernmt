@@ -10,16 +10,20 @@ import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.*;
-import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Created by davide on 05/06/17.
  */
 class NativeProcess implements Closeable {
+
+    private static final Logger logger = LogManager.getLogger(NativeProcess.class);
 
     public static class Builder {
 
@@ -36,15 +40,15 @@ class NativeProcess implements Closeable {
         }
 
         public NativeProcess start(int gpu) throws IOException {
-            ArrayList<String> command = new ArrayList<>(5);
-            command.add("python");
-            command.add("nmt_decoder.py");
-            command.add(model.getAbsolutePath());
-            command.add("--gpu-index");
-            command.add(Integer.toString(gpu));
+            String[] command = new String[]{
+                    "python", "nmt_decoder.py", "-model", model.getAbsolutePath(), "-gpu", Integer.toString(gpu)
+            };
 
             ProcessBuilder builder = new ProcessBuilder(command);
             builder.directory(home);
+
+            if (logger.isDebugEnabled())
+                logger.debug("Starting process from \"" + home + "\": " + StringUtils.join(command, ' '));
 
             return new NativeProcess(builder.start());
         }
@@ -68,8 +72,14 @@ class NativeProcess implements Closeable {
     }
 
     public Word[] translate(Sentence sentence, ScoreEntry[] suggestions) throws OpenNMTException {
-        if (!decoder.isAlive())
-            throw new OpenNMTRejectedExecutionException();
+        if (!decoder.isAlive()) {
+            try {
+                String message = IOUtils.toString(decoder.getErrorStream());
+                throw new OpenNMTRejectedExecutionException(message);
+            } catch (IOException e) {
+                throw new OpenNMTRejectedExecutionException();
+            }
+        }
 
         String payload = serialize(sentence, suggestions);
 
