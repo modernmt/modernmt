@@ -22,6 +22,8 @@ class Translator(object):
     def __init__(self, opt):
         self.opt = opt
         self.seed = opt.seed
+        self.tunable = opt.tunable
+        self.reset_after_tuning = self.tunable and opt.reset
 
         self._logger = logging.getLogger('opennmt.onmt.translator')
 
@@ -40,6 +42,13 @@ class Translator(object):
         self._logger.info("Loading checkpoint... END %.2fs" % (time.time() - start_time))
 
         self.dicts, self.model, self.optim = self.create(self.checkpoint)
+
+        self.checkpoint_copy = {}
+        if self.reset_after_tuning == True:
+            self._logger.info('Deepcopying checkpoint... START')
+            start_time = time.time()
+            self.checkpoint_copy = copy.deepcopy(self.checkpoint)
+            self._logger.info('Deepcopying checkpoint... END %.2fs' % (time.time() - start_time))
 
         generator_state_dict = self.model.generator.module.state_dict() if len(self.opt.gpus) > 1 else self.model.generator.state_dict()
         self._logger.debug('__init__ generator_state_dict: %s' % (generator_state_dict))
@@ -64,7 +73,6 @@ class Translator(object):
 
         self._logger.info(' Vocabulary size. source = %d; target = %d' % (dicts['src'].size(), dicts['tgt'].size()))
         self._logger.info(' Maximum batch size. %d' % self.opt.batch_size)
-
 
         self._type = self.model_opt.encoder_type \
             if "encoder_type" in self.model_opt else "text"
@@ -361,17 +369,31 @@ class Translator(object):
                              tuningDataset['train']['tgt'], self.opt.batch_size, self.opt.gpus)
 
 
-        self._logger.info('copying model... START')
-        start_time = time.time()
-        checkpoint_copy = copy.deepcopy(self.checkpoint)
+        if self.reset_after_tuning == True:
+            self._logger.info('copying model... START')
+            start_time = time.time()
 
-        dicts_copy, model_copy, optim_copy = self.create(checkpoint_copy)
+            # self._logger.info('deepcopy of checkpoint... START')
+            # start_time2 = time.time()
+            # checkpoint_copy = copy.deepcopy(self.checkpoint)
+            # self._logger.info('deepcopy of checkpoint... END %.2fs' % (time.time() - start_time2))
+
+            self._logger.info('creating copy... START')
+            start_time2 = time.time()
+            # dicts_copy, model_copy, optim_copy = self.create(checkpoint_copy)
+            dicts_copy, model_copy, optim_copy = self.create(self.checkpoint_copy)
+            self._logger.info('creating copy... END %.2fs' % (time.time() - start_time2))
+
+            self._logger.info('copying model... END %.2fs' % (time.time() - start_time))
+
+        else:
+            dicts_copy = self.dicts
+            model_copy = self.model
+            optim_copy = self.optim
 
         generator_copy_state_dict = model_copy.generator.module.state_dict() if len(self.opt.gpus) > 1 else model_copy.generator.state_dict()
-
-        self._logger.info('copying model... END %.2fs' % (time.time() - start_time))
-
         self._logger.debug('before tuning generator_copy_state_dict: %s' % (generator_copy_state_dict))
+
         self._logger.info('tuning model... START')
         start_time = time.time()
         self.trainer.trainModel(model_copy, tuningTrainData, None, tuningDataset, optim_copy, save_all_epochs=False, save_last_epoch=False, epochs=self.opt.tuning_epochs, clone=False)
@@ -379,6 +401,7 @@ class Translator(object):
 
         generator_copy_state_dict = model_copy.generator.module.state_dict() if len(self.opt.gpus) > 1 else model_copy.generator.state_dict()
         self._logger.debug('after tuning generator_copy_state_dict: %s' % (generator_copy_state_dict))
+
 
         #  (2) translate
         start_time = time.time()

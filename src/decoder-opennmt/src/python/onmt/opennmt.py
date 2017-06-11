@@ -16,7 +16,6 @@ parser = argparse.ArgumentParser(description='train.py')
 
 
 class OpenNMTDecoder(MMTDecoder):
-    # def __init__(self, model_path, gpu_index=-1):
     def __init__(self, opt):
 
         self._logger = logging.getLogger('opennmt.onmt.opennmtdecoder')
@@ -63,7 +62,7 @@ class OpenNMTDecoder(MMTDecoder):
 
         srcBatch.append(text)
 
-        if len(suggestions) == 0:
+        if len(suggestions) == 0 or self.translator.tunable == False:
             predBatch, predScore, goldScore = self.translator.translate(srcBatch, None)
         else:
             predBatch, predScore, goldScore = self.translator.translateWithAdaptation(srcBatch, None, suggestions)

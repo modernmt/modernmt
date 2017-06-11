@@ -187,7 +187,7 @@ def main():
 
     if opt.train_from:
         logger.info('Loading model... START from checkpoint (opt.train_from) at %s' % opt.train_from)
-        start_time = time.time()
+        start_time2 = time.time()
         logger.debug('checkpoint: %s' % repr(checkpoint))
 
         chk_model = checkpoint['model']
@@ -237,26 +237,22 @@ def main():
             lr_decay=opt.learning_rate_decay,
             start_decay_at=opt.start_decay_at
         )
+        optim.set_parameters(model.parameters())
         logger.info("Initializing optimizer... END %.2fs" % (time.time() - start_time2))
     else:
         logger.info('Loading optimizer from checkpoint... START')
         start_time2 = time.time()
         optim = checkpoint['optim']
+        optim.set_parameters(model.parameters())
         logger.info(optim)
+
+        optim.optimizer.load_state_dict(checkpoint['optim'].optimizer.state_dict())
         logger.info("Loading optimizer... END %.2fs" % (time.time() - start_time2))
 
     logger.info("Building model... END %.2fs" % (time.time() - start_time))
 
-    optim.set_parameters(model.parameters())
-
-    if opt.train_from or opt.train_from_state_dict:
-        optim.optimizer.load_state_dict(checkpoint['optim'].optimizer.state_dict())
-
     nParams = sum([p.nelement() for p in model.parameters()])
     logger.info(' Number of parameters: %d' % nParams)
-
-    logger.info('Building model... END %.2fs' % (time.time() - start_time))
-
 
     logger.info('Training model... START')
     start_time = time.time()

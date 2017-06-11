@@ -129,6 +129,11 @@ def run_main():
     parser.add_argument('-seed',       type=int, default=3435,
                     help="Random seed for generating random numbers (-1 for un-defined the seed; default is 3435); ")
 
+    parser.add_argument('-tunable', action="store_true",
+                    help='Enable fine tuning')
+    parser.add_argument('-reset', action="store_true",
+                    help='Reset model to the original model after each translation')
+
     args = parser.parse_args()
 
     # decoder = OpenNMTDecoder(args.model, gpu_index=args.gpu)
