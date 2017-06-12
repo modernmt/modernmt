@@ -10,12 +10,13 @@ import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
+import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -60,11 +61,15 @@ class NativeProcess implements Closeable {
     private final Process decoder;
     private final OutputStream stdin;
     private final BufferedReader stdout;
+    private final LogThread logThread;
 
     private NativeProcess(Process decoder) {
         this.decoder = decoder;
         this.stdin = decoder.getOutputStream();
         this.stdout = new BufferedReader(new InputStreamReader(decoder.getInputStream()));
+        this.logThread = new LogThread(decoder.getErrorStream());
+
+        this.logThread.start();
     }
 
     public Word[] translate(Sentence sentence) throws OpenNMTException {
@@ -72,14 +77,8 @@ class NativeProcess implements Closeable {
     }
 
     public Word[] translate(Sentence sentence, ScoreEntry[] suggestions) throws OpenNMTException {
-        if (!decoder.isAlive()) {
-            try {
-                String message = IOUtils.toString(decoder.getErrorStream());
-                throw new OpenNMTRejectedExecutionException(message);
-            } catch (IOException e) {
-                throw new OpenNMTRejectedExecutionException();
-            }
-        }
+        if (!decoder.isAlive())
+            throw new OpenNMTRejectedExecutionException();
 
         String payload = serialize(sentence, suggestions);
 
@@ -185,6 +184,53 @@ class NativeProcess implements Closeable {
         } catch (InterruptedException e) {
             // Nothing to do
         }
+
+        this.logThread.interrupt();
+    }
+
+    private static class LogThread extends Thread {
+
+        private static final HashMap<String, Level> LOG_LEVELS = new HashMap<>(5);
+
+        static {
+            LOG_LEVELS.put("CRITICAL", Level.FATAL);
+            LOG_LEVELS.put("ERROR", Level.ERROR);
+            LOG_LEVELS.put("WARNING", Level.WARN);
+            LOG_LEVELS.put("INFO", Level.INFO);
+            LOG_LEVELS.put("DEBUG", Level.DEBUG);
+        }
+
+        private final BufferedReader reader;
+
+        private LogThread(InputStream stream) {
+            this.reader = new BufferedReader(new InputStreamReader(stream));
+        }
+
+        @Override
+        public void run() {
+            String line;
+
+            try {
+                while ((line = reader.readLine()) != null) {
+                    JsonObject json;
+                    try {
+                        json = parser.parse(line).getAsJsonObject();
+
+                        String strLevel = json.get("level").getAsString();
+                        String message = json.get("message").getAsString();
+                        String loggerName = json.get("logger").getAsString();
+
+                        Level level = LOG_LEVELS.getOrDefault(strLevel, Level.DEBUG);
+                        logger.log(level, "(" + loggerName + ") " + message);
+                    } catch (JsonSyntaxException e) {
+                        logger.warn("Unable to parse python log entry: " + line);
+                    }
+                }
+            } catch (IOException e) {
+                logger.info("Closing log thread for OpenNMT process");
+            }
+        }
+
     }
 
 }

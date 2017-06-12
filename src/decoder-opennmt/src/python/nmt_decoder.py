@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import sys
 
 from onmt import Suggestion, MMTDecoder
@@ -48,14 +49,14 @@ class TranslationResponse:
                 error['message'] = self.error_message
             jobj['error'] = error
 
-        return json.dumps(jobj)
+        return json.dumps(jobj).replace('\n', ' ')
 
 
 class MainController:
-    def __init__(self, decoder):
+    def __init__(self, decoder, stdout):
         self._decoder = decoder
         self._stdin = sys.stdin
-        self._stdout = sys.stdout
+        self._stdout = stdout
 
         self._logger = logging.getLogger('opennmt.mainloop')
 
@@ -66,7 +67,6 @@ class MainController:
                 if not line:
                     break
 
-                self._logger.info("Input:" + line)
                 response = self.process(line)
 
                 self._stdout.write(response.to_json_string())
@@ -85,6 +85,19 @@ class MainController:
             return TranslationResponse(exception=e)
 
 
+class JSONLogFormatter(logging.Formatter):
+    def __init__(self):
+        super(JSONLogFormatter, self).__init__('%(message)s')
+
+    def format(self, record):
+        message = super(JSONLogFormatter, self).format(record)
+        return json.dumps({
+            'level': record.levelname,
+            'message': message,
+            'logger': record.name
+        }).replace('\n', ' ')
+
+
 class YodaDecoder(MMTDecoder):
     def __init__(self):
         MMTDecoder.__init__(self, '')
@@ -97,11 +110,14 @@ class YodaDecoder(MMTDecoder):
 
 
 def run_main():
+    # Args parse
+    # ------------------------------------------------------------------------------------------------------------------
     parser = argparse.ArgumentParser(description='Run a forever-loop serving translation requests')
+    parser.add_argument('-l', '--log-level', dest='log_level', metavar='LEVEL', help='select the log level',
+                        choices=['critical', 'error', 'warning', 'info', 'debug'], default='info')
     parser.add_argument('-model', metavar='MODEL', help='the path to the decoder model')
     parser.add_argument('-g', '-gpu', dest='gpu', metavar='GPU', help='the index of the GPU to use',
                         default=-1)
-
     parser.add_argument('-beam_size', type=int, default=5,
                         help='Beam size')
     parser.add_argument('-batch_size', type=int, default=30,
@@ -124,11 +140,8 @@ def run_main():
                     decoded sentences""")
     parser.add_argument('-tuning_epochs', type=int, default=5,
                         help='Number of tuning epochs')
-
-    # seed for generating random numbers
     parser.add_argument('-seed', type=int, default=3435,
                         help="Random seed for generating random numbers (-1 for un-defined the seed; default is 3435); ")
-
     parser.add_argument('-tunable', action="store_true",
                         help='Enable fine tuning')
     parser.add_argument('-reset', action="store_true",
@@ -136,14 +149,45 @@ def run_main():
 
     args = parser.parse_args()
 
-    # decoder = OpenNMTDecoder(args.model, gpu_index=args.gpu)
-    decoder = OpenNMTDecoder(args)
+    # Redirect default stderr and stdout to /dev/null
+    # ------------------------------------------------------------------------------------------------------------------
+    stderr = sys.stderr
+    stdout = sys.stdout
+
+    devnull_stream = open(os.devnull, 'w')
+
+    # DO NOT REMOVE
+    sys.stderr = devnull_stream
+    sys.stdout = devnull_stream
+
+    # Setting up logging
+    # ------------------------------------------------------------------------------------------------------------------
+    handler = logging.StreamHandler(stderr)
+    handler.setFormatter(JSONLogFormatter())
+
+    logger = logging.getLogger()
+    logger.setLevel(logging.getLevelName(args.log_level.upper()))
+    logger.addHandler(handler)
+
+    # Main loop
+    # ------------------------------------------------------------------------------------------------------------------
+    decoder = None
 
     try:
-        controller = MainController(decoder)
+        decoder = OpenNMTDecoder(args)
+
+        controller = MainController(decoder, stdout)
         controller.serve_forever()
+    except KeyboardInterrupt:
+        pass  # ignore and exit
+    except BaseException as e:
+        logger.exception(e)
     finally:
-        decoder.close()
+        if decoder is not None:
+            try:
+                decoder.close()
+            except:
+                pass
 
 
 if __name__ == '__main__':

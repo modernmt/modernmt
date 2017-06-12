@@ -77,4 +77,5 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
         IOUtils.closeQuietly(this.executor);
         IOUtils.closeQuietly(this.memory);
     }
+
 }
