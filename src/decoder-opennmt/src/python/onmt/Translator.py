@@ -11,6 +11,8 @@ import onmt.modules
 
 import logging
 
+global_time = time.time()
+
 def loadImageLibs():
     "Conditional import of torch image libs."
     global Image, transforms
@@ -50,8 +52,11 @@ class Translator(object):
             self.checkpoint_copy = copy.deepcopy(self.checkpoint)
             self._logger.info('Deepcopying checkpoint... END %.2fs' % (time.time() - start_time))
 
-        generator_state_dict = self.model.generator.module.state_dict() if len(self.opt.gpus) > 1 else self.model.generator.state_dict()
-        self._logger.debug('__init__ generator_state_dict: %s' % (generator_state_dict))
+#        self._logger.info("printing generator... START")
+#        start_time = time.time()
+#	generator_state_dict = self.model.generator.module.state_dict() if len(self.opt.gpus) > 1 else self.model.generator.state_dict()
+#        self._logger.debug('__init__ generator_state_dict: %s' % (generator_state_dict))
+#        self._logger.info("printing generator... END %.2fs" % (time.time() - start_time))
 
         self._logger.info("Building trainer... START")
         start_time = time.time()
@@ -114,8 +119,8 @@ class Translator(object):
 
 
         # self._logger.debug('Inside create Checkpoint.generator: %s' % (checkpoint['generator']))
-        generator_state_dict = model.generator.module.state_dict() if len(self.opt.gpus) > 1 else model.generator.state_dict()
-        self._logger.debug('create returning generator_state_dict: %s' % (repr(generator_state_dict)))
+#        generator_state_dict = model.generator.module.state_dict() if len(self.opt.gpus) > 1 else model.generator.state_dict()
+#        self._logger.debug('create returning generator_state_dict: %s' % (repr(generator_state_dict)))
 
         return dicts, model, optim
 
@@ -175,8 +180,8 @@ class Translator(object):
         if model == None: model = self.model
 
 
-        generator_state_dict = model.generator.module.state_dict() if len(self.opt.gpus) > 1 else model.generator.state_dict()
-        self._logger.debug('translateBatch begin generator_state_dict: %s' % (generator_state_dict))
+#        generator_state_dict = model.generator.module.state_dict() if len(self.opt.gpus) > 1 else model.generator.state_dict()
+#        self._logger.debug('translateBatch begin generator_state_dict: %s' % (generator_state_dict))
 
         batchSize = srcBatch[0].size(1)
         beamSize = self.opt.beam_size
@@ -391,16 +396,16 @@ class Translator(object):
             model_copy = self.model
             optim_copy = self.optim
 
-        generator_copy_state_dict = model_copy.generator.module.state_dict() if len(self.opt.gpus) > 1 else model_copy.generator.state_dict()
-        self._logger.debug('before tuning generator_copy_state_dict: %s' % (generator_copy_state_dict))
+#        generator_copy_state_dict = model_copy.generator.module.state_dict() if len(self.opt.gpus) > 1 else model_copy.generator.state_dict()
+#        self._logger.debug('before tuning generator_copy_state_dict: %s' % (generator_copy_state_dict))
 
         self._logger.info('tuning model... START')
         start_time = time.time()
         self.trainer.trainModel(model_copy, tuningTrainData, None, tuningDataset, optim_copy, save_all_epochs=False, save_last_epoch=False, epochs=self.opt.tuning_epochs, clone=False)
         self._logger.info('tuning model... END %.2fs' % (time.time() - start_time))
 
-        generator_copy_state_dict = model_copy.generator.module.state_dict() if len(self.opt.gpus) > 1 else model_copy.generator.state_dict()
-        self._logger.debug('after tuning generator_copy_state_dict: %s' % (generator_copy_state_dict))
+#        generator_copy_state_dict = model_copy.generator.module.state_dict() if len(self.opt.gpus) > 1 else model_copy.generator.state_dict()
+#        self._logger.debug('after tuning generator_copy_state_dict: %s' % (generator_copy_state_dict))
 
 
         #  (2) translate

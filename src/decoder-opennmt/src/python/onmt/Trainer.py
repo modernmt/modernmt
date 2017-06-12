@@ -81,8 +81,8 @@ class Trainer(object):
         model = model_ori
         optim = optim_ori
 
-        generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
-        self._logger.debug('trainModel begin generator_state_dict: %s' % (generator_state_dict))
+#NIK: TOCHECK        generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
+#        self._logger.debug('trainModel begin generator_state_dict: %s' % (generator_state_dict))
 
         model.decoder.attn.applyMask(None) #set the mask to None; required when the same model is trained after a translation
 
@@ -221,20 +221,20 @@ class Trainer(object):
         #         print ('def Trainer::trainModel END model_state_dict own_state[name]',model_state_dict[name])
 
 
-        model_state_dict = model.module.state_dict() if len(opt.gpus) > 1 else model.state_dict()
-        model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
-        generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
+#        model_state_dict = model.module.state_dict() if len(opt.gpus) > 1 else model.state_dict()
+#        model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
+#        generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
 
         #  (4) drop a checkpoint
-        checkpoint = {
-                    'model': model_state_dict,
-                    'generator': generator_state_dict,
-                    'dicts': dataset['dicts'],
-                    'opt': opt,
-                    'epoch': epoch,
-                    'optim': optim
-                }
+#        checkpoint = {
+#                    'model': model_state_dict,
+#                    'generator': generator_state_dict,
+#                    'dicts': dataset['dicts'],
+#                    'opt': opt,
+#                    'epoch': epoch,
+#                    'optim': optim
+#                }
 
         # self._logger.debug('trainModel returning checkpoint.generator: %s' % (repr(checkpoint['generator'])))
-        self._logger.debug('trainModel returning generator_state_dict: %s' % (repr(generator_state_dict)))
+#        self._logger.debug('trainModel returning generator_state_dict: %s' % (repr(generator_state_dict)))
 
