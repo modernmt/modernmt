@@ -27,7 +27,7 @@ class Translator(object):
         self.tunable = opt.tunable
         self.reset_after_tuning = self.tunable and opt.reset
 
-        self._logger = logging.getLogger('opennmt.onmt.translator')
+        self._logger = logging.getLogger('onmt.Translator')
 
         self._logger.info("Options:" + repr(self.opt))
 

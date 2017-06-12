@@ -6,7 +6,6 @@ from onmt import MMTDecoder
 from onmt.Translator import Translator
 
 import logging
-logging.basicConfig(level=logging.DEBUG)
 
 parser = argparse.ArgumentParser(description='train.py')
 
@@ -18,7 +17,7 @@ parser = argparse.ArgumentParser(description='train.py')
 class OpenNMTDecoder(MMTDecoder):
     def __init__(self, opt):
 
-        self._logger = logging.getLogger('opennmt.onmt.opennmtdecoder')
+        self._logger = logging.getLogger('onmt.OpenNMTDecoder')
 
         self._logger.info('args: %s' % repr(opt))
 

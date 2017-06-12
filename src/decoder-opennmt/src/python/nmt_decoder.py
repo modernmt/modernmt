@@ -58,7 +58,7 @@ class MainController:
         self._stdin = sys.stdin
         self._stdout = stdout
 
-        self._logger = logging.getLogger('opennmt.mainloop')
+        self._logger = logging.getLogger('mainloop')
 
     def serve_forever(self):
         try:
@@ -141,7 +141,7 @@ def run_main():
     parser.add_argument('-tuning_epochs', type=int, default=5,
                         help='Number of tuning epochs')
     parser.add_argument('-seed', type=int, default=3435,
-                        help="Random seed for generating random numbers (-1 for un-defined the seed; default is 3435); ")
+                        help="Random seed for generating random numbers (-1 for un-defined the seed; default is 3435);")
     parser.add_argument('-tunable', action="store_true",
                         help='Enable fine tuning')
     parser.add_argument('-reset', action="store_true",
@@ -184,6 +184,7 @@ def run_main():
         logger.exception(e)
     finally:
         if decoder is not None:
+            # noinspection PyBroadException
             try:
                 decoder.close()
             except:
