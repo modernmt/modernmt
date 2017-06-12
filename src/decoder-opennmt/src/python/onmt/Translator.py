@@ -74,7 +74,13 @@ class Translator(object):
         self._logger.info("Building model... START")
         start_time = time.time()
 
+
+
+        self._logger.info("getting dicts from checkpoint... START")
+        start_time2 = time.time()
         dicts = checkpoint['dicts']
+        self._logger.info("getting dicts from checkpoint... END %.2fs" % (time.time() - start_time2))
+
 
         self._logger.info(' Vocabulary size. source = %d; target = %d' % (dicts['src'].size(), dicts['tgt'].size()))
         self._logger.info(' Maximum batch size. %d' % self.opt.batch_size)
@@ -83,18 +89,38 @@ class Translator(object):
             if "encoder_type" in self.model_opt else "text"
 
         if self._type == "text":
+            self._logger.info("getting encoder from checkpoint... START")
+            start_time2 = time.time()
             encoder = onmt.Models.Encoder(self.model_opt, dicts['src'])
+            self._logger.info("getting encoder from checkpoint... END %.2fs" % (time.time() - start_time2))
         elif self._type == "img":
             loadImageLibs()
             encoder = onmt.modules.ImageEncoder(self.model_opt)
 
+        self._logger.info("getting decoder from checkpoint... START")
+        start_time2 = time.time()
         decoder = onmt.Models.Decoder(self.model_opt, dicts['tgt'])
+        self._logger.info("getting decoder from checkpoint... END %.2fs" % (time.time() - start_time2))
 
+        self._logger.info("constructing model from encoder and decoder... START")
+        start_time2 = time.time()
         model = onmt.Models.NMTModel(encoder, decoder)
-        model.load_state_dict(checkpoint['model'])
+        self._logger.info("constructing model from encoder and decoder... END %.2fs" % (time.time() - start_time2))
 
+        self._logger.info("getting model from checkpoint... START")
+        start_time2 = time.time()
+        model.load_state_dict(checkpoint['model'])
+        self._logger.info("getting model from checkpoint... END %.2fs" % (time.time() - start_time2))
+
+        self._logger.info("constructing generator... START")
+        start_time2 = time.time()
         generator = nn.Sequential(nn.Linear(self.model_opt.rnn_size, dicts['tgt'].size()),nn.LogSoftmax())
+        self._logger.info("constructing generator... END %.2fs" % (time.time() - start_time2))
+
+        self._logger.info("getting generator from checkpoint... START")
+        start_time2 = time.time()
         generator.load_state_dict(checkpoint['generator'])
+        self._logger.info("getting generator from checkpoint... END %.2fs" % (time.time() - start_time2))
 
 
         if self.opt.cuda:
@@ -104,7 +130,10 @@ class Translator(object):
             model.cpu()
             generator.cpu()
 
+        self._logger.info("setting generator for model... START")
+        start_time2 = time.time()
         model.generator = generator
+        self._logger.info("setting generator for model... END %.2fs" % (time.time() - start_time2))
 
         model.eval()
 
