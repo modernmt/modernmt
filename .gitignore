@@ -8,6 +8,9 @@ javah/
 
 build/
 
+# Bash vim
+*.swp
+
 # CMake
 cmake-build-*
 
