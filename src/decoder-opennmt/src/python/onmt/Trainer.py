@@ -15,7 +15,7 @@ class Trainer(object):
         self.opt = opt
         # print 'Trainer::Trainer opt:', repr(opt)
 
-        self._logger = logging.getLogger('opennmt.onmt.trainer')
+        self._logger = logging.getLogger('onmt.Trainer')
         self._logger.info('Options:%s' % repr(self.opt))
 
     def NMTCriterion(self,vocabSize):
