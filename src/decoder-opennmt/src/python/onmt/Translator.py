@@ -43,7 +43,10 @@ class Translator(object):
         self.checkpoint = torch.load(opt.model)
         self._logger.info("Loading checkpoint... END %.2fs" % (time.time() - start_time))
 
+        self._logger.info("Creating dicts, model, and optimizer from checkpoint... START")
+        start_time = time.time()
         self.dicts, self.model, self.optim = self.create(self.checkpoint)
+        self._logger.info('Creating dicts, model, and optimizer from checkpoint... END %.2fs' % (time.time() - start_time))
 
         self.checkpoint_copy = {}
         if self.reset_after_tuning == True:
@@ -51,6 +54,11 @@ class Translator(object):
             start_time = time.time()
             self.checkpoint_copy = copy.deepcopy(self.checkpoint)
             self._logger.info('Deepcopying checkpoint... END %.2fs' % (time.time() - start_time))
+
+            self._logger.info("Creating dicts_copy, model_copy, and optimizer_copy from checkpoint... START")
+            start_time = time.time()
+            self.dicts_copy, self.model_copy, self.optim_copy = self.create(self.checkpoint)
+            self._logger.info('Creating dicts_copy, model_copy, and optimizer_copy from checkpoint... END %.2fs' % (time.time() - start_time))
 
 #        self._logger.info("printing generator... START")
 #        start_time = time.time()
@@ -152,6 +160,45 @@ class Translator(object):
 #        self._logger.debug('create returning generator_state_dict: %s' % (repr(generator_state_dict)))
 
         return dicts, model, optim
+
+    def load(self, checkpoint, model, optim):
+
+        self._logger.info("self.opt.seed:%g" % self.opt.seed)
+        torch.manual_seed(self.opt.seed)
+
+        self._logger.info("Loading model... START")
+        start_time = time.time()
+
+        self._logger.info("getting model from checkpoint... START")
+        start_time2 = time.time()
+        # model.encoder.load_state_dict(checkpoint['model'].encoder)
+
+        # self._logger.info("model: %s" % repr(model))
+        # self._logger.info("model.encoder: %s" % repr(model.encoder))
+        # self._logger.info("model.decoder: %s" % repr(model.decoder))
+        # self._logger.info("model.generator: %s" % repr(model.generator))
+        # chk_model = checkpoint['model']
+        # self._logger.info("type of checkpoint %s" % type(checkpoint))
+        # self._logger.info("type of chk_model %s" % type(chk_model))
+
+        model_state_dict = {k: v for k, v in sorted(checkpoint['model'].items()) if 'generator' not in k}
+        model_state_dict.update({"generator."+k: v for k, v in sorted(checkpoint['generator'].items())})
+        model.load_state_dict(model_state_dict)
+
+        self._logger.info("getting model from checkpoint... END %.2fs" % (time.time() - start_time2))
+
+        # self._logger.info("getting generator from checkpoint... START")
+        # start_time2 = time.time()
+        # model.generator.load_state_dict(checkpoint['generator'])
+        # self._logger.info("getting generator from checkpoint... END %.2fs" % (time.time() - start_time2))
+
+        self._logger.info("Loading model... END %.2fs" % (time.time() - start_time))
+
+        self._logger.info("Building optimizer... START")
+        start_time = time.time()
+        optim.set_parameters(model.parameters())
+        optim.optimizer.load_state_dict(checkpoint['optim'].optimizer.state_dict())
+        self._logger.info("Building optimizer... END %.2fs" % (time.time() - start_time))
 
     def initBeamAccum(self):
         self.beam_accum = {
@@ -392,6 +439,7 @@ class Translator(object):
 
         # (1) convert words to indexes [suggestions]
         indexedTuningSrcBatch, indexedTuningTgtBatch = [], []
+
         for sugg in suggestions:
             indexedTuningSrcBatch += [self.getSourceDict().convertToIdx(sugg.source, onmt.Constants.UNK_WORD)]
             indexedTuningTgtBatch += [self.getTargetDict().convertToIdx(sugg.target, onmt.Constants.UNK_WORD, onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD)]
@@ -415,22 +463,27 @@ class Translator(object):
             self._logger.info('creating copy... START')
             start_time2 = time.time()
             # dicts_copy, model_copy, optim_copy = self.create(checkpoint_copy)
-            dicts_copy, model_copy, optim_copy = self.create(self.checkpoint_copy)
+            # dicts_copy, model_copy, optim_copy = self.load(self.checkpoint_copy)
+            self.load(self.checkpoint_copy, self.model_copy, self.optim_copy)
             self._logger.info('creating copy... END %.2fs' % (time.time() - start_time2))
 
             self._logger.info('copying model... END %.2fs' % (time.time() - start_time))
 
         else:
-            dicts_copy = self.dicts
-            model_copy = self.model
-            optim_copy = self.optim
+            self.dicts_copy = self.dicts
+            self.model_copy = self.model
+            self.optim_copy = self.optim
+            # dicts_copy = self.dicts
+            # model_copy = self.model
+            # optim_copy = self.optim
 
 #        generator_copy_state_dict = model_copy.generator.module.state_dict() if len(self.opt.gpus) > 1 else model_copy.generator.state_dict()
 #        self._logger.debug('before tuning generator_copy_state_dict: %s' % (generator_copy_state_dict))
 
         self._logger.info('tuning model... START')
         start_time = time.time()
-        self.trainer.trainModel(model_copy, tuningTrainData, None, tuningDataset, optim_copy, save_all_epochs=False, save_last_epoch=False, epochs=self.opt.tuning_epochs, clone=False)
+        # self.trainer.trainModel(model_copy, tuningTrainData, None, tuningDataset, optim_copy, save_all_epochs=False, save_last_epoch=False, epochs=self.opt.tuning_epochs, clone=False)
+        self.trainer.trainModel(self.model_copy, tuningTrainData, None, tuningDataset, self.optim_copy, save_all_epochs=False, save_last_epoch=False, epochs=self.opt.tuning_epochs, clone=False)
         self._logger.info('tuning model... END %.2fs' % (time.time() - start_time))
 
 #        generator_copy_state_dict = model_copy.generator.module.state_dict() if len(self.opt.gpus) > 1 else model_copy.generator.state_dict()
@@ -439,7 +492,8 @@ class Translator(object):
 
         #  (2) translate
         start_time = time.time()
-        pred, predScore, attn, goldScore = self.translateBatch(src, tgt, model=model_copy)
+        pred, predScore, attn, goldScore = self.translateBatch(src, tgt, model=self.model_copy)
+        # pred, predScore, attn, goldScore = self.translateBatch(src, tgt, model=model_copy)
         pred, predScore, attn, goldScore = list(zip(*sorted(zip(pred, predScore, attn, goldScore, indices), key=lambda x: x[-1])))[:-1]
 
         #  (3) convert indexes to words

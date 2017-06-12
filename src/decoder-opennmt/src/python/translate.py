@@ -7,6 +7,8 @@ import argparse
 import math
 import time
 
+from onmt import Suggestion
+
 import logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('opennmt.translate')
@@ -55,6 +57,8 @@ parser.add_argument('-tunable', action="store_true",
                     help='Enable fine tuning')
 parser.add_argument('-reset', action="store_true",
                     help='Reset model to the original model after each translation')
+parser.add_argument('-tuning_epochs', type=int, default=5,
+                        help='Number of tuning epochs')
 
 def reportScore(name, scoreTotal, wordsTotal):
     if wordsTotal != 0:
@@ -116,6 +120,16 @@ def main():
 
         predBatch, predScore, goldScore = translator.translate(srcBatch, tgtBatch)
 
+        # suggestions = []
+        # suggestion_source = "b".split(' ')
+        # suggestion_target = "B".split(' ')
+        # suggestion_score = 1.1
+        #
+        # suggestions.append(Suggestion(suggestion_source, suggestion_target, suggestion_score))
+        #
+        # logger.info("suggestions:%s" % repr(suggestions))
+        # predBatch, predScore, goldScore = translator.translateWithAdaptation(srcBatch, tgtBatch, suggestions)
+
         # print of the nbest for each sentence of the batch
         for b in range(len(predBatch)):
             for n in range(len(predBatch[b])):
@@ -171,5 +185,4 @@ def main():
     logger.info('Translation... END %.2fs' % (time.time() - start_time))
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
     main()

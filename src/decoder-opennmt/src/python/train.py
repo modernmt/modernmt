@@ -191,9 +191,9 @@ def main():
         logger.debug('checkpoint: %s' % repr(checkpoint))
 
         chk_model = checkpoint['model']
-        generator_state_dict = chk_model.generator.state_dict()
         model_state_dict = {k: v for k, v in chk_model.state_dict().items() if 'generator' not in k}
         model.load_state_dict(model_state_dict)
+        generator_state_dict = chk_model.generator.state_dict()
         generator.load_state_dict(generator_state_dict)
         opt.start_epoch = checkpoint['epoch'] + 1
         logger.info("Loading model... END %.2fs" % (time.time() - start_time2))
