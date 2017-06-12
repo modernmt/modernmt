@@ -21,6 +21,15 @@ public class XMLUtils {
         return factory.createXMLEventReader(new XMLFixInputStreamReader(new BOMInputStream(stream, false), DefaultCharset.get()));
     }
 
+    public static void closeQuietly(XMLEventReader reader) {
+        if (reader != null)
+            try {
+                reader.close();
+            } catch (XMLStreamException e) {
+                // Ignore
+            }
+    }
+
     public static XMLStreamWriter createStreamWriter(OutputStream stream) throws XMLStreamException {
         Charset charset = DefaultCharset.get();
 

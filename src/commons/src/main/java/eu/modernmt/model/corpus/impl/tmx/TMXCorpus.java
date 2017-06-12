@@ -13,8 +13,8 @@ import java.util.Locale;
  */
 public class TMXCorpus implements BilingualCorpus {
 
-    static final String TMX_DATE_FORMAT = "yyyyMMdd'T'HHmmss'Z'";
-    static final String XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace";
+    public static final String TMX_DATE_FORMAT = "yyyyMMdd'T'HHmmss'Z'";
+    public static final String XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace";
 
     private final FileProxy tmx;
     private final String name;
