@@ -46,6 +46,8 @@ class Encoder(nn.Module):
             outputs = unpack(outputs)[0]
         return hidden_t, outputs
 
+    def setDropout(self,dropout):
+        self.rnn.dropout = dropout
 
 class StackedLSTM(nn.Module):
     def __init__(self, num_layers, input_size, rnn_size, dropout):
@@ -74,6 +76,8 @@ class StackedLSTM(nn.Module):
 
         return input, (h_1, c_1)
 
+    def setDropout(self,dropout):
+        self.dropout = nn.Dropout(dropout)
 
 class Decoder(nn.Module):
 
@@ -120,6 +124,9 @@ class Decoder(nn.Module):
         outputs = torch.stack(outputs)
         return outputs, hidden, attn
 
+    def setDropout(self,dropout):
+        self.dropout = nn.Dropout(dropout)
+        self.rnn.setDropout(dropout)
 
 class NMTModel(nn.Module):
 
@@ -156,3 +163,7 @@ class NMTModel(nn.Module):
         out, dec_hidden, _attn = self.decoder(tgt, enc_hidden, context, init_output)
 
         return out
+
+    def setDropout(self,dropout):
+        self.encoder.setDropout(dropout)
+        self.decoder.setDropout(dropout)

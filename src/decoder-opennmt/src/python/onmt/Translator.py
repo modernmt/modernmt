@@ -1,6 +1,8 @@
 import copy
 import time
 
+import torch.cuda.random as random
+
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
@@ -60,12 +62,6 @@ class Translator(object):
             self.dicts_copy, self.model_copy, self.optim_copy = self.create(self.checkpoint)
             self._logger.info('Creating dicts_copy, model_copy, and optimizer_copy from checkpoint... END %.2fs' % (time.time() - start_time))
 
-#        self._logger.info("printing generator... START")
-#        start_time = time.time()
-#	generator_state_dict = self.model.generator.module.state_dict() if len(self.opt.gpus) > 1 else self.model.generator.state_dict()
-#        self._logger.debug('__init__ generator_state_dict: %s' % (generator_state_dict))
-#        self._logger.info("printing generator... END %.2fs" % (time.time() - start_time))
-
         self._logger.info("Building trainer... START")
         start_time = time.time()
         self.trainer = Trainer.Trainer(self.model_opt)
@@ -73,8 +69,8 @@ class Translator(object):
 
 
     def create(self, checkpoint):
-
         torch.manual_seed(self.opt.seed)
+        random.manual_seed_all(self.opt.seed)
 
         self.model_opt = checkpoint['opt']
         self._logger.info("Model Options:" + repr(self.model_opt))
@@ -155,35 +151,28 @@ class Translator(object):
         self._logger.info("Building optimizer... END %.2fs" % (time.time() - start_time))
 
 
-        # self._logger.debug('Inside create Checkpoint.generator: %s' % (checkpoint['generator']))
+#        self._logger.debug('Inside create Checkpoint.generator: %s' % (checkpoint['generator']))
 #        generator_state_dict = model.generator.module.state_dict() if len(self.opt.gpus) > 1 else model.generator.state_dict()
 #        self._logger.debug('create returning generator_state_dict: %s' % (repr(generator_state_dict)))
 
         return dicts, model, optim
 
     def load(self, checkpoint, model, optim):
-
-        self._logger.info("self.opt.seed:%g" % self.opt.seed)
-        torch.manual_seed(self.opt.seed)
+	torch.manual_seed(self.opt.seed)
+        random.manual_seed_all(self.opt.seed)
 
         self._logger.info("Loading model... START")
         start_time = time.time()
 
         self._logger.info("getting model from checkpoint... START")
         start_time2 = time.time()
-        # model.encoder.load_state_dict(checkpoint['model'].encoder)
-
-        # self._logger.info("model: %s" % repr(model))
-        # self._logger.info("model.encoder: %s" % repr(model.encoder))
-        # self._logger.info("model.decoder: %s" % repr(model.decoder))
-        # self._logger.info("model.generator: %s" % repr(model.generator))
-        # chk_model = checkpoint['model']
-        # self._logger.info("type of checkpoint %s" % type(checkpoint))
-        # self._logger.info("type of chk_model %s" % type(chk_model))
 
         model_state_dict = {k: v for k, v in sorted(checkpoint['model'].items()) if 'generator' not in k}
         model_state_dict.update({"generator."+k: v for k, v in sorted(checkpoint['generator'].items())})
         model.load_state_dict(model_state_dict)
+
+        model.encoder.setDropout(0.0)
+        model.decoder.setDropout(0.0)
 
         self._logger.info("getting model from checkpoint... END %.2fs" % (time.time() - start_time2))
 
@@ -252,6 +241,7 @@ class Translator(object):
         return self.dicts['tgt']
 
     def translateBatch(self, srcBatch, tgtBatch, model=None):
+        self._logger.info('def Translator::translateBatch translating srcBatch:%s' % repr(srcBatch))
 
         if model == None: model = self.model
 
@@ -410,7 +400,7 @@ class Translator(object):
         return allHyp, allScores, allAttn, goldScores
 
     def translate(self, srcBatch, goldBatch):
-        self._logger.info('translating without tuning')
+        self._logger.info('def Translator::translate translating without tuning')
         #  (1) convert words to indexes
         dataset = self.buildData(srcBatch, goldBatch)
         src, tgt, indices = dataset[0]
@@ -431,7 +421,7 @@ class Translator(object):
         return predBatch, predScore, goldScore
 
     def translateWithAdaptation(self, srcBatch, goldBatch, suggestions):
-        self._logger.info('translating with tuning')
+        self._logger.info('def Translator::translateWithAdaptation translating with tuning')
 
         #  (1) convert words to indexes [input and reference (if nay)]
         dataset = self.buildData(srcBatch, goldBatch)
