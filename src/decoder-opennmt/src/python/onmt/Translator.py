@@ -241,8 +241,6 @@ class Translator(object):
         return self.dicts['tgt']
 
     def translateBatch(self, srcBatch, tgtBatch, model=None):
-        self._logger.info('def Translator::translateBatch translating srcBatch:%s' % repr(srcBatch))
-
         if model == None: model = self.model
 
 
