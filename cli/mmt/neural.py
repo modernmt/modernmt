@@ -271,7 +271,7 @@ class OpenNMTDecoder:
             filename = os.path.splitext(os.path.basename(checkpoint))[0]
             epoch = filename.split('_')[-1]
             if not epoch.startswith('e'):
-                raise NameError('Invalid checkpoint file "%s"' % checkpoint)
+                raise Exception('Invalid checkpoint file "%s"' % checkpoint)
 
             epoch = int(epoch[1:])
             all_checkpoints.append([epoch, checkpoint])
