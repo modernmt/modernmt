@@ -215,7 +215,7 @@ class _FileParallelCorpus(BilingualCorpus):
                 return self
 
             def next(self):
-                lines = [f.readline().rstrip() for f in self._files]
+                lines = [f.readline() for f in self._files]
 
                 empty = True
                 for line in lines:

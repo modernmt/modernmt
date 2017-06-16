@@ -84,9 +84,9 @@ class OpenNMTPreprocessor:
         for corpus in corpora:
             with corpus.reader([self._source_lang, self._target_lang]) as reader:
                 for source, target in reader:
-                    for word in source.split():
+                    for word in source.strip().split():
                         src_vocab.add(word)
-                    for word in target.split():
+                    for word in target.strip().split():
                         trg_vocab.add(word)
 
         if 0 < self._vocab_size < src_vocab.size():
@@ -107,7 +107,7 @@ class OpenNMTPreprocessor:
         for corpus in corpora:
             with corpus.reader([self._source_lang, self._target_lang]) as reader:
                 for source, target in reader:
-                    src_words, trg_words = source.split(), target.split()
+                    src_words, trg_words = source.strip().split(), target.strip().split()
 
                     if 0 < len(src_words) <= self._max_line_length and 0 < len(trg_words) <= self._max_line_length:
                         src.append(src_vocab.convertToIdx(src_words,
