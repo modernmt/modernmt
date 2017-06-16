@@ -247,6 +247,7 @@ class ClusterNode(object):
         self._status_file = os.path.join(engine.runtime_path, 'node.properties')
         self._log_file = engine.get_logfile(ClusterNode.__LOG_FILENAME, ensure=False)
         self._mert_script = os.path.join(cli.PYOPT_DIR, 'mert-moses.perl')
+        self._scorer_script = os.path.join(cli.PYOPT_DIR, 'mmt-bleu.perl')
         self._mert_i_script = os.path.join(cli.PYOPT_DIR, 'mertinterface.py')
         self._update_properties()
 
@@ -411,7 +412,8 @@ class ClusterNode(object):
             else:
                 break
 
-    def tune(self, corpora=None, debug=False, context_enabled=True, random_seeds=False, max_iterations=25):
+    def tune(self, corpora=None, debug=False, context_enabled=True, random_seeds=False, max_iterations=25,
+             early_stopping_value=None):
         if corpora is None:
             corpora = BilingualCorpus.list(os.path.join(self.engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME))
 
@@ -475,6 +477,10 @@ class ClusterNode(object):
                                '--mertargs', '\'--binary --sctype BLEU\'', '--working-dir', mert_wd, '--nbest', '100',
                                '--decoder-flags', '"' + ' '.join(decoder_flags) + '"', '--nonorm', '--closest',
                                '--no-filter-phrase-table']
+
+                    if early_stopping_value is not None:
+                        command += ['--bleuscorer', self._scorer_script,
+                                    '--bleuscorer-flags "-nt" --early-stopping-value %d' % early_stopping_value]
 
                     if not random_seeds:
                         command.append('--predictable-seeds')

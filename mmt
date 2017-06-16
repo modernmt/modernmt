@@ -212,9 +212,21 @@ def main_tune(argv):
     parser.add_argument('--max-iterations', dest='max_iterations',
                         help='set maximum iterations during tuning (default is 25)',
                         default=25, type=int)
+    parser.add_argument('--accuracy', dest='accuracy', choices=['default', 'fast', 'best'], default='default',
+                        help='accuracy value set the trade-off between quality and speed, possible values are: '
+                             '"default" - for good trade-off between translation quality and tuning process duration, '
+                             '"best" - for best translation quality and slower tuning process, '
+                             '"fast" - for fastest tuning process at the expense of translation quality.')
 
     # Parse args
     args = parser.parse_args(argv)
+
+    if args.accuracy == 'fast':
+        args.accuracy = 10
+    elif args.accuracy == 'best':
+        args.accuracy = None
+    else:
+        args.accuracy = 1
 
     # connect to the already active cluster node
     node = ClusterNode.connect(args.engine)
@@ -227,7 +239,8 @@ def main_tune(argv):
               debug=args.debug,
               context_enabled=args.context_enabled,
               random_seeds=args.random_seeds,
-              max_iterations=args.max_iterations)
+              max_iterations=args.max_iterations,
+              early_stopping_value=args.accuracy)
 
 
 def main_evaluate(argv):
