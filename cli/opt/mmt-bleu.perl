@@ -6,15 +6,21 @@ binmode STDIN, ":utf8";
 binmode STDOUT, ":utf8";
 binmode STDERR, ":utf8";
 
-my $lowercase = 0;
-if ($ARGV[0] eq "-lc") {
-  $lowercase = 1;
-  shift;
+my $lowercase = 0; # by default, the casing of hyp and refs is kept as it is
+my $tokenization = 1; # by default, hyp and refs are tokenized
+my $stem = ();
+my $HELP = 0;
+
+while (@ARGV) {
+        $_ = shift;
+        /^[^-]/   && ($stem=$_, last);            # file of references
+        /^-lc$/   && ($lowercase = 1, next);      # lowercasing hyp and refs
+        /^-nt$/   && ($tokenization = 0, next);   # hyp and refs are not tokenized
+        /^-h/     && ($HELP = 1, last);
 }
 
-my $stem = $ARGV[0];
-if (!defined $stem) {
-  print STDERR "usage: multi-bleu.pl [-lc] reference < hypothesis\n";
+if (!defined $stem || $HELP) {
+  print STDERR "usage: mmt-bleu.pl [-lc] [-nt] reference < hypothesis\n";
   print STDERR "Reads the references from reference or reference0, reference1, ...\n";
   exit(1);
 }
@@ -86,9 +92,10 @@ sub add_to_ref {
 	open(REF,$file) or die "Can't read $file";
     }
     binmode REF, ":utf8";
-    while(<REF>) {
-	chop;
-	push @{$$REF[$s++]}, &tokenization_international($_);
+    while(my $ref = <REF>) {
+	chop $ref;
+	$ref = &tokenization_international($ref) if $tokenization;
+	push @{$$REF[$s++]}, $ref;
     }
     close(REF);
 }
@@ -98,14 +105,14 @@ my $s=0;
 while(<STDIN>) {
     chop;
     $_ = lc if $lowercase;
-    $_ = &tokenization_international($_);
+    $_ = &tokenization_international($_) if $tokenization;
     my @WORD = split;
     my %REF_NGRAM = ();
     my $length_translation_this_sentence = scalar(@WORD);
     my ($closest_diff,$closest_length) = (9999,9999);
     foreach my $reference (@{$REF[$s]}) {
-#      print "$s $_ <=> $reference\n";
-  $reference = lc($reference) if $lowercase;
+#   print "$s $_ <=> $reference\n";
+    $reference = lc($reference) if $lowercase;
 	my @WORD = split(' ',$reference);
 	my $length = scalar(@WORD);
         my $diff = abs($length_translation_this_sentence-$length);

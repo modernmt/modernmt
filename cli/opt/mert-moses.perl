@@ -66,6 +66,17 @@ $SCRIPTS_ROOTDIR = $ENV{"SCRIPTS_ROOTDIR"} if defined($ENV{"SCRIPTS_ROOTDIR"});
 my $minimum_required_change_in_weights = 0.00001;
     # stop if no lambda changes more than this
 
+my $minimum_required_increase_in_bleu = 1;
+my $devBleuStop = 0;
+    # Early stopping criterion activated only if a BLEU scorer is passed (i.e. if $___BLEUSCORER is defined)
+    # Stop if BLEU on dev set does not improve more than this (percentage)
+    # see &checkBleuTrend() for the detailed implementation of the comparison "current BLEU vs. previous BLEUs"
+    # Examples:
+    # minimum_required_increase_in_bleu=0    -> stop MERT if current BLEU is not better than previous BLEUs
+    # minimum_required_increase_in_bleu=-10  -> stop MERT if current BLEU is degradated by at least 10% wrt previous BLEUs 
+    # minimum_required_increase_in_bleu=5    -> stop MERT if current BLEU is at most better by 5% wrt previous BLEUs 
+
+
 my $verbose = 0;
 my $usage = 0; # request for --help
 
@@ -74,6 +85,7 @@ my $usage = 0; # request for --help
 my $___WORKING_DIR = File::Spec->catfile(Cwd::getcwd(), "mert-work");
 my $___DEV_F = undef; # required, input text to decode
 my $___DEV_E = undef; # required, basename of files with references
+my $___BLEUSCORER = undef; # optional, pathname to the BLEU scorer for early stopping on dev
 my $___DECODER = undef; # required, pathname to the decoder executable
 my $___CONFIG = undef; # required, pathname to startup ini file
 my $___N_BEST_LIST_SIZE = 100;
@@ -82,6 +94,7 @@ my $queue_flags = "-hard";  # extra parameters for parallelizer
       # the -l ws0ssmt was relevant only to JHU 2006 workshop
 my $___JOBS = undef; # if parallel, number of jobs to use (undef or <= 0 -> serial)
 my $___CACHE_MODEL = undef; # if models need to be copied to local disk from NFS
+my $___BLEUSCORER_FLAGS = ""; # additional parameters to pass to the bleuscorer
 my $___DECODER_FLAGS = ""; # additional parametrs to pass to the decoder
 my $continue = 0; # should we try to continue from the last saved step?
 my $skip_decoder = 0; # and should we skip the first decoder run (assuming we got interrupted during mert)
@@ -182,6 +195,7 @@ GetOptions(
   "input=s" => \$___DEV_F,
   "inputtype=i" => \$___INPUTTYPE,
   "refs=s" => \$___DEV_E,
+  "bleuscorer=s" => \$___BLEUSCORER,
   "decoder=s" => \$___DECODER,
   "config=s" => \$___CONFIG,
   "nbest=i" => \$___N_BEST_LIST_SIZE,
@@ -189,6 +203,11 @@ GetOptions(
   "queue-flags=s" => \$queue_flags,
   "jobs=i" => \$___JOBS,
   "cache-model=s" => \$___CACHE_MODEL,
+  "bleuscorer-flags=s" => \$___BLEUSCORER_FLAGS,
+  "early-stopping-value=f" => \$minimum_required_increase_in_bleu, 
+    # threshold for early stopping (default 1, that is 1%); set it to
+    # 5/10 for aggressive early stopping; to 0/-5 for relaxing early
+    # stopping; (see &checkBleuTrend())
   "decoder-flags=s" => \$___DECODER_FLAGS,
   "continue" => \$continue,
   "skip-decoder" => \$skip_decoder,
@@ -311,6 +330,9 @@ Options:
                                      N means this and N previous iterations
 
   --maximum-iterations=ITERS ... Maximum number of iterations. Default: $maximum_iterations
+  --bleuscorer               ... path to multi-bleu.perl/mmt-bleu.perl; if passed, early stopping is activated
+  --bleuscorer-flags=STRING  ... extra parameters for the bleuscorer (e.g. for mmt-bleu.perl: '-nt')
+  --early-stopping-value=REAL... value for setting the aggressivity of early stopping (default 1; 5/10: more aggressive; -5/0: less aggressive)
   --return-best-dev          ... Return the weights according to dev bleu, instead of returning
                                  the last iteration
   --random-directions               ... search only in random directions
@@ -543,6 +565,18 @@ my $prev_feature_file = undef;
 my $prev_score_file = undef;
 my $prev_init_file = undef;
 my @allnbests;
+
+# make a copy of clean references for early stopping criterion based on the BLEU score of the dev set
+if (defined $___BLEUSCORER) {
+    safesystem("mkdir -p refs") or die "not able to create 'refs' directory";
+    my $refN=0;
+    foreach my $reffn (@references) {
+	safesystem("cat $reffn | perl -pe 's/[ \t]+/ /g; s/^ | \$//g' > refs/ref.$refN") or die "not able to clean reference files";
+	$refN++;
+    }
+}
+my @bleuDev=();
+
 
 # If we're doing promix training, need to make sure the appropriate
 # tables are in place
@@ -1087,13 +1121,28 @@ while (1) {
       last;
     }
   }
-
-  &save_finished_step($finished_step_file, $run);
-
   if ($shouldstop) {
     print STDERR "None of the weights changed more than $minimum_required_change_in_weights. Stopping.\n";
     last;
   }
+
+  ## additional stopping criterion: BLEU score on dev set
+  if (defined $___BLEUSCORER) {
+      my $cmd="cat run${run}.out | perl $___BLEUSCORER $___BLEUSCORER_FLAGS refs/*";
+      open FH, "$cmd|"   or die "Couldn't execute: $cmd!";
+      my $bleuondev = <FH>; chop ($bleuondev);
+      close FH;
+      $bleuondev=~s/BLEU = ([0-9\.]+),.*$/$1/;
+      $bleuDev[$run-1]=$bleuondev;
+      $devBleuStop = &checkBleuTrend($run, @bleuDev);
+      if ($devBleuStop) {
+	  print STDERR "BLEU score on dev set did not increase by more than $minimum_required_increase_in_bleu\%. Stopping.\n";
+	  last;
+      }
+  }
+
+  &save_finished_step($finished_step_file, $run);
+
 
   my $firstrun;
   if ($prev_aggregate_nbl_size == -1) {
@@ -1175,8 +1224,21 @@ if($___RETURN_BEST_DEV) {
   $best_featlist->{"skippeduntuneablecomponents"} = $featlist->{"skippeduntuneablecomponents"};
   create_config($___CONFIG_ORIG, "./moses.ini", $best_featlist,
                 $bestit, $bestbleu, $best_sparse_file);
-}
-else {
+
+} elsif ($devBleuStop) {
+    # early stopping via the criterion on Dev Set Bleu score
+    # return the weights of the last but one iteration performed
+    # NOT IMPLEMENTED YET: IS IT REALLY WORTH?
+
+  my $bestit=$run-1; # it is assumed that if early stopping happens,
+		     # it is safer to pickup the last but one
+		     # iteration than the last one
+
+  print STDERR "Generating as final weights those at iteration $bestit.\n";
+  my $cmd = "cp run$bestit.moses.ini ./moses.ini";
+  safesystem("$cmd > STDOUT 2> STDERR") or die "ERROR: Failed to run '$cmd'.";
+
+} else {
   create_config($___CONFIG_ORIG, "./moses.ini", $featlist, $run, $devbleu, $sparse_weights_file);
 }
 
@@ -1795,4 +1857,26 @@ sub setup_case_config {
 
 sub is_mac_osx {
   return ($^O eq "darwin") ? 1 : 0;
+}
+
+sub checkBleuTrend {
+    my ($n, @bleus) = @_;
+    my $histLen = 3;
+    for (my $i=0; $i<$n; $i++) {
+	printf "BLEU on DEV at run %d: <%s>\n", $i+1, $bleus[$i];
+    }
+    my $avgHist=0.0; my $actualHistLen = 0;
+    for (my $i=($n-1-$histLen>=0)?$n-1-$histLen:0; $i<$n-1; $i++) {
+	$avgHist+=$bleus[$i]; $actualHistLen++;
+    }
+    if ($actualHistLen>=$histLen) {
+	$avgHist/=$actualHistLen ;
+	printf "average on last %d values: avg = %f\n", $actualHistLen, $avgHist;
+	printf "comparison %f vs. %f\n", $bleus[$n-1], (1+$minimum_required_increase_in_bleu/100)*$avgHist;
+	return ($bleus[$n-1]<=(1+$minimum_required_increase_in_bleu/100)*$avgHist);
+    } else {
+	printf "not enough history\n";
+	return 0;
+    }
+    return 0;
 }
