@@ -37,7 +37,7 @@ public class SimpleRecaser extends TextProcessor<Translation, Translation> {
                 boolean isTargetLowerCase = Character.isLowerCase(targetChar);
 
                 if ((isSourceUpperCase || isSourceLowerCase) && (isTargetUpperCase || isTargetLowerCase)
-                        && isSourceUpperCase != isTargetUpperCase) {
+                        && (isSourceUpperCase != isTargetUpperCase)) {
                     targetText = (isSourceUpperCase ? Character.toUpperCase(targetChar) : Character.toLowerCase(targetChar)) + targetText.substring(1);
                     target[0].setText(targetText);
                 }
