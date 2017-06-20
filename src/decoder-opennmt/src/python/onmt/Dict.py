@@ -38,7 +38,11 @@ class Dict(object):
         file.close()
 
     def lookup(self, key, default=None):
+        # transform from unicode to str in case key is unicode
+        key = key.encode('utf8') if isinstance(key, (unicode)) else key
+
         key = key.lower() if self.lower else key
+
         try:
             return self.labelToIdx[key]
         except KeyError:

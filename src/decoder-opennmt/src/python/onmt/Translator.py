@@ -155,7 +155,7 @@ class Translator(object):
 
     def load(self, checkpoint, model, optim):
 	torch.manual_seed(self.opt.seed)
-        random.manual_seed_all(self.opt.seed)
+	random.manual_seed_all(self.opt.seed)
 
         self._logger.info("loading model from checkpoint... START")
         start_time2 = time.time()
@@ -419,8 +419,6 @@ class Translator(object):
         indexedTuningSrcBatch, indexedTuningTgtBatch = [], []
 
         for sugg in suggestions:
-            #self._logger.info('def Translator::translateWithAdaptation sugg.source:%s' % repr(sugg.source))
-            #self._logger.info('def Translator::translateWithAdaptation sugg.target:%s' % repr(sugg.target))
             indexedTuningSrcBatch += [self.getSourceDict().convertToIdx(sugg.source, onmt.Constants.UNK_WORD)]
             indexedTuningTgtBatch += [self.getTargetDict().convertToIdx(sugg.target, onmt.Constants.UNK_WORD, onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD)]
 
