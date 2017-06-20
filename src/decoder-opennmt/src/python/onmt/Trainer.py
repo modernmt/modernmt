@@ -72,6 +72,7 @@ class Trainer(object):
 
     def trainModel(self, model_ori, trainData, validData, dataset, optim_ori, save_all_epochs=True, save_last_epoch=False, epochs=None, clone=False):
 
+#        self._logger.info('def Trainer::trainModel trainData:%s' % repr(trainData))
 
         opt=self.opt
 
@@ -108,6 +109,8 @@ class Trainer(object):
 
                 batchIdx = batchOrder[i] if epoch > opt.curriculum else i
                 batch = trainData[batchIdx][:-1] # exclude original indices
+        
+#                self._logger.info('def Trainer::trainEpoch batch:%s' % repr(batch))
 
                 model.zero_grad()
                 outputs = model(batch)

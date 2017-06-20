@@ -96,13 +96,14 @@ class Training(EngineBuilder.Listener):
 
 
 class Tuning(ClusterNode.TuneListener):
-    def __init__(self, debug, context_enabled, random_seeds, max_iterations, line_len=70):
+    def __init__(self, debug, context_enabled, random_seeds, max_iterations, accuracy, line_len=70):
         ClusterNode.TuneListener.__init__(self)
 
         self._debug = debug
         self._context_enabled = context_enabled
         self._random_seeds = random_seeds
         self._max_iterations = max_iterations
+        self._accuracy = accuracy
 
         self.line_len = line_len
         self._steps_count = 0
@@ -113,7 +114,7 @@ class Tuning(ClusterNode.TuneListener):
 
     def start(self, node, corpora):
         node.tune(corpora, debug=self._debug, context_enabled=self._context_enabled, random_seeds=self._random_seeds,
-                  max_iterations=self._max_iterations, listener=self)
+                  max_iterations=self._max_iterations, early_stopping_value=self._accuracy, listener=self)
 
     def on_tuning_begin(self, corpora, node, steps_count):
         self._steps_count = steps_count

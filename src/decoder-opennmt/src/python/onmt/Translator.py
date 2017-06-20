@@ -78,13 +78,10 @@ class Translator(object):
         self._logger.info("Building model... START")
         start_time = time.time()
 
-
-
         self._logger.info("getting dicts from checkpoint... START")
         start_time2 = time.time()
         dicts = checkpoint['dicts']
         self._logger.info("getting dicts from checkpoint... END %.2fs" % (time.time() - start_time2))
-
 
         self._logger.info(' Vocabulary size. source = %d; target = %d' % (dicts['src'].size(), dicts['tgt'].size()))
         self._logger.info(' Maximum batch size. %d' % self.opt.batch_size)
@@ -93,39 +90,38 @@ class Translator(object):
             if "encoder_type" in self.model_opt else "text"
 
         if self._type == "text":
-            self._logger.info("getting encoder from checkpoint... START")
+            self._logger.info("constructing encoder... START")
             start_time2 = time.time()
             encoder = onmt.Models.Encoder(self.model_opt, dicts['src'])
-            self._logger.info("getting encoder from checkpoint... END %.2fs" % (time.time() - start_time2))
+            self._logger.info("constructing encoder... END %.2fs" % (time.time() - start_time2))
         elif self._type == "img":
             loadImageLibs()
             encoder = onmt.modules.ImageEncoder(self.model_opt)
 
-        self._logger.info("getting decoder from checkpoint... START")
+        self._logger.info("constructing decoder... START")
         start_time2 = time.time()
         decoder = onmt.Models.Decoder(self.model_opt, dicts['tgt'])
-        self._logger.info("getting decoder from checkpoint... END %.2fs" % (time.time() - start_time2))
+        self._logger.info("constructing decoder... END %.2fs" % (time.time() - start_time2))
 
         self._logger.info("constructing model from encoder and decoder... START")
         start_time2 = time.time()
         model = onmt.Models.NMTModel(encoder, decoder)
         self._logger.info("constructing model from encoder and decoder... END %.2fs" % (time.time() - start_time2))
 
-        self._logger.info("getting model from checkpoint... START")
+        self._logger.info("loading model from checkpoint... START")
         start_time2 = time.time()
         model.load_state_dict(checkpoint['model'])
-        self._logger.info("getting model from checkpoint... END %.2fs" % (time.time() - start_time2))
+        self._logger.info("loading model from checkpoint... END %.2fs" % (time.time() - start_time2))
 
         self._logger.info("constructing generator... START")
         start_time2 = time.time()
         generator = nn.Sequential(nn.Linear(self.model_opt.rnn_size, dicts['tgt'].size()),nn.LogSoftmax())
         self._logger.info("constructing generator... END %.2fs" % (time.time() - start_time2))
 
-        self._logger.info("getting generator from checkpoint... START")
+        self._logger.info("loading generator from checkpoint... START")
         start_time2 = time.time()
         generator.load_state_dict(checkpoint['generator'])
-        self._logger.info("getting generator from checkpoint... END %.2fs" % (time.time() - start_time2))
-
+        self._logger.info("loading generator from checkpoint... END %.2fs" % (time.time() - start_time2))
 
         if self.opt.cuda:
             model.cuda()
@@ -143,12 +139,12 @@ class Translator(object):
 
         self._logger.info("Building model... END %.2fs" % (time.time() - start_time))
 
-        self._logger.info("Building optimizer... START")
+        self._logger.info("loading optimizer from checkpoint... START")
         start_time = time.time()
         optim = checkpoint['optim']
         optim.set_parameters(model.parameters())
         optim.optimizer.load_state_dict(checkpoint['optim'].optimizer.state_dict())
-        self._logger.info("Building optimizer... END %.2fs" % (time.time() - start_time))
+        self._logger.info("loading optimizer from checkpoint... END %.2fs" % (time.time() - start_time))
 
 
 #        self._logger.debug('Inside create Checkpoint.generator: %s' % (checkpoint['generator']))
@@ -159,35 +155,26 @@ class Translator(object):
 
     def load(self, checkpoint, model, optim):
 	torch.manual_seed(self.opt.seed)
-        random.manual_seed_all(self.opt.seed)
+	random.manual_seed_all(self.opt.seed)
 
-        self._logger.info("Loading model... START")
-        start_time = time.time()
-
-        self._logger.info("getting model from checkpoint... START")
+        self._logger.info("loading model from checkpoint... START")
         start_time2 = time.time()
 
         model_state_dict = {k: v for k, v in sorted(checkpoint['model'].items()) if 'generator' not in k}
         model_state_dict.update({"generator."+k: v for k, v in sorted(checkpoint['generator'].items())})
         model.load_state_dict(model_state_dict)
 
+        self._logger.info("disabling dropout")
         model.encoder.setDropout(0.0)
         model.decoder.setDropout(0.0)
 
-        self._logger.info("getting model from checkpoint... END %.2fs" % (time.time() - start_time2))
+        self._logger.info("loading model from checkpoint... END %.2fs" % (time.time() - start_time2))
 
-        # self._logger.info("getting generator from checkpoint... START")
-        # start_time2 = time.time()
-        # model.generator.load_state_dict(checkpoint['generator'])
-        # self._logger.info("getting generator from checkpoint... END %.2fs" % (time.time() - start_time2))
-
-        self._logger.info("Loading model... END %.2fs" % (time.time() - start_time))
-
-        self._logger.info("Building optimizer... START")
+        self._logger.info("loading optimizer from checkpoint... START")
         start_time = time.time()
         optim.set_parameters(model.parameters())
         optim.optimizer.load_state_dict(checkpoint['optim'].optimizer.state_dict())
-        self._logger.info("Building optimizer... END %.2fs" % (time.time() - start_time))
+        self._logger.info("loading optimizer from checkpoint... END %.2fs" % (time.time() - start_time))
 
     def initBeamAccum(self):
         self.beam_accum = {
@@ -253,6 +240,9 @@ class Translator(object):
         #  (1) run the encoder on the src
         encStates, context = model.encoder(srcBatch)
         srcBatch = srcBatch[0]  # drop the lengths needed for encoder
+
+#	self._logger.info('def Translator::translateBatch srcBatch:%s' % repr(srcBatch))
+
 
         rnnSize = context.size(2)
         encStates = (model._fix_enc_hidden(encStates[0]),
