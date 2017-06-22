@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * Created by davide on 03/03/16.
  */
-public class SimpleRecaser extends TextProcessor<Translation,Translation> {
+public class SimpleRecaser extends TextProcessor<Translation, Translation> {
 
     public SimpleRecaser(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
         super(sourceLanguage, targetLanguage);
@@ -27,11 +27,20 @@ public class SimpleRecaser extends TextProcessor<Translation,Translation> {
             String targetText = target[0].getText();
 
             if (sourceText.length() > 0 && targetText.length() > 0) {
-                boolean sourceIsUpper = Character.isUpperCase(sourceText.charAt(0));
+                char sourceChar = sourceText.charAt(0);
                 char targetChar = targetText.charAt(0);
 
-                targetText = (sourceIsUpper ? Character.toUpperCase(targetChar) : Character.toLowerCase(targetChar)) + targetText.substring(1);
-                target[0].setText(targetText);
+                boolean isSourceUpperCase = Character.isUpperCase(sourceChar);
+                boolean isSourceLowerCase = Character.isLowerCase(sourceChar);
+
+                boolean isTargetUpperCase = Character.isUpperCase(targetChar);
+                boolean isTargetLowerCase = Character.isLowerCase(targetChar);
+
+                if ((isSourceUpperCase || isSourceLowerCase) && (isTargetUpperCase || isTargetLowerCase)
+                        && (isSourceUpperCase != isTargetUpperCase)) {
+                    targetText = (isSourceUpperCase ? Character.toUpperCase(targetChar) : Character.toLowerCase(targetChar)) + targetText.substring(1);
+                    target[0].setText(targetText);
+                }
             }
         }
 
