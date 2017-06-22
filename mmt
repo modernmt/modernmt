@@ -79,6 +79,8 @@ def main_create(argv):
 
     parser.add_argument('--neural', action='store_true', dest='neural', default=False,
                         help='if neural is set, the process will train a neural engine (default is phrase-based)')
+    parser.add_argument('--validation-corpora', dest='validation_corpora',
+                        help='if neural is set, the pathis to the validation corpora')
 
     if len(argv) > 0:
         # Parse args
@@ -97,7 +99,8 @@ def main_create(argv):
                                        roots=args.corpora_paths,
                                        debug=args.debug,
                                        steps=args.training_steps,
-                                       split_trainingset=args.split_corpora)
+                                       split_trainingset=args.split_corpora,
+				       validation_corpora=args.validation_corpora)
         else:
             training = Training.phrase_based(name=args.engine,
                                              source_lang=args.source_lang,
