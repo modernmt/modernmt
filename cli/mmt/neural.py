@@ -131,45 +131,8 @@ class OpenNMTPreprocessor:
 
 
 class OpenNMTDecoder:
-    class Options:
-        def __init__(self):
-            self.save_model = None  # Set by train
-
-            self.seed = 3435
-            self.gpus = range(torch.cuda.device_count()) if torch.cuda.is_available() else 0
-            self.log_interval = 50
-
-            # Model options --------------------------------------------------------------------------------------------
-
-            self.layers = 2  # Number of layers in the LSTM encoder/decoder
-            self.rnn_size = 500  # Size of LSTM hidden states
-            self.word_vec_size = 500  # Word embedding sizes
-            self.input_feed = 1  # Feed the context vector at each time step as additional input to the decoder
-            self.brnn = True  # Use a bidirectional encoder
-            self.brnn_merge = 'sum'  # Merge action for the bidirectional hidden states: [concat|sum]
-
-            # Optimization options -------------------------------------------------------------------------------------
-            self.batch_size = 64  # Maximum batch size
-            self.max_generator_batches = 32  # Maximum batches of words in a seq to run the generator on in parallel.
-            self.epochs = 30  # Number of training epochs
-            self.start_epoch = 1  # The epoch from which to start
-            self.param_init = 0.1  # Parameters are initialized over uniform distribution with support
-            self.optim = 'sgd'  # Optimization method. [sgd|adagrad|adadelta|adam]
-            self.max_grad_norm = 5  # If norm(gradient vector) > max_grad_norm, re-normalize
-            self.dropout = 0.3  # Dropout probability; applied between LSTM stacks.
-            self.curriculum = False
-            self.extra_shuffle = False  # Shuffle and re-assign mini-batches
-
-            # Learning rate --------------------------------------------------------------------------------------------
-            self.learning_rate = 1.0
-            self.learning_rate_decay = 0.9
-            self.start_decay_at = 10
-
-            # Pre-trained word vectors ---------------------------------------------------------------------------------
-            self.pre_word_vecs_enc = None
-            self.pre_word_vecs_dec = None
-
-    def __init__(self, model, source_lang, target_lang, opts=Options()):
+ 
+    def __init__(self, model, source_lang, target_lang, opts=onmt.Options()):
         self._model = model
         self._source_lang = source_lang
         self._target_lang = target_lang
@@ -177,7 +140,9 @@ class OpenNMTDecoder:
 
     def train(self, data_path, working_dir):
         logger = logging.getLogger('mmt.train.OpenNMTDecoder')
+
         logger.info('Training started with options: %s' % repr(self._opts))
+        logger.info('Training started with options: data_path:%s' % repr(data_path))
 
         self._opts.save_model = os.path.join(working_dir, 'train_model')
 
@@ -199,7 +164,7 @@ class OpenNMTDecoder:
         train_data = onmt.Dataset(data_set['train']['src'], data_set['train']['tgt'],
                                   self._opts.batch_size, self._opts.gpus)
         valid_data = onmt.Dataset(data_set['valid']['src'], data_set['valid']['tgt'],
-                                  self._opts, volatile=True)
+                                  self._opts.batch_size, self._opts.gpus, volatile=True)
         src_dict, trg_dict = data_set['dicts']['src'], data_set['dicts']['tgt']
         logger.info('Creating Data... END %.2fs' % (time.time() - start_time))
 
@@ -316,7 +281,7 @@ class NeuralEngineBuilder(EngineBuilder):
 
     def _build_schedule(self):
         return EngineBuilder._build_schedule(self) + \
-               [self._build_memory, self._train_decoder, self._prepare_training_data]
+               [self._build_memory, self._prepare_training_data, self._train_decoder]
 
     def _check_constraints(self):
         pass

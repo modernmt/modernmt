@@ -294,7 +294,7 @@ class EngineBuilder:
 
             return _(_args[0], self._name, self._optional, self._hidden)
 
-    class __Args:
+    class __Args(object):
         def __init__(self):
             pass
 

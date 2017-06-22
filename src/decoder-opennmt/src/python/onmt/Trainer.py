@@ -13,10 +13,9 @@ import logging
 class Trainer(object):
     def __init__(self, opt):
         self.opt = opt
-        # print 'Trainer::Trainer opt:', repr(opt)
 
         self._logger = logging.getLogger('onmt.Trainer')
-        self._logger.info('Options:%s' % repr(self.opt))
+        self._logger.info('Training Options:%s' % self.opt)
 
     def NMTCriterion(self,vocabSize):
         opt=self.opt
@@ -89,7 +88,7 @@ class Trainer(object):
 
         model.train()
 
-        save_last_epoch = save_last_epoch and not save_all_epochs
+	save_last_epoch = save_last_epoch and not save_all_epochs
 
         # define criterion of each GPU
         criterion = self.NMTCriterion(dataset['dicts']['tgt'].size())
@@ -189,13 +188,14 @@ class Trainer(object):
                 model_state_dict = model.module.state_dict() if len(opt.gpus) > 1 else model.state_dict()
                 model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
                 generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
+		opt_state_dict = opt.state_dict()
 
                 #  (4) drop a checkpoint
                 checkpoint = {
                     'model': model_state_dict,
                     'generator': generator_state_dict,
                     'dicts': dataset['dicts'],
-                    'opt': opt,
+                    'opt': opt_state_dict,
                     'epoch': epoch,
                     'optim': optim
                 }

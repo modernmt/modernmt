@@ -8,6 +8,8 @@ import torch.nn as nn
 from torch.autograd import Variable
 
 import Trainer
+import Options
+
 import onmt
 import onmt.modules
 
@@ -30,8 +32,7 @@ class Translator(object):
         self.reset_after_tuning = self.tunable and opt.reset
 
         self._logger = logging.getLogger('onmt.Translator')
-
-        self._logger.info("Options:" + repr(self.opt))
+        self._logger.info("Translator options:%s" % repr(self.opt))
 
         self.opt.gpus = []
         if self.opt.gpu > -1:
@@ -64,6 +65,7 @@ class Translator(object):
 
         self._logger.info("Building trainer... START")
         start_time = time.time()
+
         self.trainer = Trainer.Trainer(self.model_opt)
         self._logger.info("Building trainer... END %.2fs" % (time.time() - start_time))
 
@@ -72,8 +74,12 @@ class Translator(object):
         torch.manual_seed(self.opt.seed)
         random.manual_seed_all(self.opt.seed)
 
-        self.model_opt = checkpoint['opt']
-        self._logger.info("Model Options:" + repr(self.model_opt))
+        self._logger.info("loading model options from checkpoint... START")
+        start_time2 = time.time()
+        self.model_opt = Options.Options()
+        self.model_opt.load_state_dict(checkpoint['opt'])
+        self._logger.info("loadin model options from checkpoint... END %.2fs" % (time.time() - start_time2))
+        self._logger.info("Model Options: %s" % repr(self.model_opt))
 
         self._logger.info("Building model... START")
         start_time = time.time()
@@ -86,8 +92,7 @@ class Translator(object):
         self._logger.info(' Vocabulary size. source = %d; target = %d' % (dicts['src'].size(), dicts['tgt'].size()))
         self._logger.info(' Maximum batch size. %d' % self.opt.batch_size)
 
-        self._type = self.model_opt.encoder_type \
-            if "encoder_type" in self.model_opt else "text"
+        self._type = self.model_opt.encoder_type
 
         if self._type == "text":
             self._logger.info("constructing encoder... START")
@@ -145,11 +150,6 @@ class Translator(object):
         optim.set_parameters(model.parameters())
         optim.optimizer.load_state_dict(checkpoint['optim'].optimizer.state_dict())
         self._logger.info("loading optimizer from checkpoint... END %.2fs" % (time.time() - start_time))
-
-
-#        self._logger.debug('Inside create Checkpoint.generator: %s' % (checkpoint['generator']))
-#        generator_state_dict = model.generator.module.state_dict() if len(self.opt.gpus) > 1 else model.generator.state_dict()
-#        self._logger.debug('create returning generator_state_dict: %s' % (repr(generator_state_dict)))
 
         return dicts, model, optim
 

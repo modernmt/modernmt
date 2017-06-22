@@ -3,14 +3,11 @@ import copy
 import torch
 import torch.nn as nn
 
-# import onmt
 import onmt.modules
 
 from torch.autograd import Variable
 from torch.nn.utils.rnn import pack_padded_sequence as pack
 from torch.nn.utils.rnn import pad_packed_sequence as unpack
-
-
 
 class Encoder(nn.Module):
 
