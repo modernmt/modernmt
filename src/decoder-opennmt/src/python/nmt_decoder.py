@@ -62,12 +62,11 @@ class YodaDecoder(MMTDecoder):
 
 
 class OpenNMTDecoder(MMTDecoder):
-    def __init__(self, model, opt):
+    def __init__(self, model, gpu=-1):
         MMTDecoder.__init__(self, model)
 
-        # Sets the seed for generating random numbers
-        if opt.seed >= 0:
-            torch.manual_seed(opt.seed)
+        opt = Translator.Options()
+        opt.gpu = gpu
 
         self._logger = logging.getLogger('onmt.OpenNMTDecoder')
         self._translator = Translator(os.path.join(model, 'model.pt'), opt)
@@ -201,39 +200,10 @@ def run_main():
     # ------------------------------------------------------------------------------------------------------------------
     parser = argparse.ArgumentParser(description='Run a forever-loop serving translation requests')
     parser.add_argument('model', metavar='MODEL', help='the path to the decoder model')
-
     parser.add_argument('-l', '--log-level', dest='log_level', metavar='LEVEL', help='select the log level',
                         choices=['critical', 'error', 'warning', 'info', 'debug'], default='info')
     parser.add_argument('-g', '-gpu', dest='gpu', metavar='GPU', help='the index of the GPU to use',
                         default=-1)
-    parser.add_argument('-beam_size', type=int, default=5,
-                        help='Beam size')
-    parser.add_argument('-batch_size', type=int, default=30,
-                        help='Batch size')
-    parser.add_argument('-max_sent_length', type=int, default=100,
-                        help='Maximum sentence length.')
-    parser.add_argument('-replace_unk', action="store_true",
-                        help="""Replace the generated UNK tokens with the source
-                    token that had the highest attention weight. If phrase_table
-                    is provided, it will lookup the identified source token and
-                    give the corresponding target token. If it is not provided
-                    (or the identified source token does not exist in the
-                    table) then it will copy the source token""")
-    parser.add_argument('-verbose', action="store_true",
-                        help='Print scores and predictions for each sentence')
-    parser.add_argument('-dump_beam', type=str, default="",
-                        help='File to dump beam information to.')
-    parser.add_argument('-n_best', type=int, default=1,
-                        help="""If verbose is set, will output the n_best
-                    decoded sentences""")
-    parser.add_argument('-tuning_epochs', type=int, default=5,
-                        help='Number of tuning epochs')
-    parser.add_argument('-seed', type=int, default=3435,
-                        help="Random seed for generating random numbers (-1 for un-defined the seed; default is 3435);")
-    parser.add_argument('-tunable', action="store_true",
-                        help='Enable fine tuning')
-    parser.add_argument('-reset', action="store_true",
-                        help='Reset model to the original model after each translation')
 
     args = parser.parse_args()
 
@@ -262,7 +232,7 @@ def run_main():
     decoder = None
 
     try:
-        decoder = OpenNMTDecoder(args)
+        decoder = OpenNMTDecoder(args.model, gpu=args.gpu)
 
         controller = MainController(decoder, stdout)
         controller.serve_forever()

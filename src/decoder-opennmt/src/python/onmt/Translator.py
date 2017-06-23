@@ -33,6 +33,10 @@ class Translator(object):
 
     def __init__(self, model, opt):
         self.opt = opt
+
+        if self.opt.seed >= 0:
+            torch.manual_seed(self.opt.seed)
+
         self._reset_after_tuning = self.opt.tunable and self.opt.reset
         self._gpus = [self.opt.gpu] if self.opt.gpu > -1 else []
 

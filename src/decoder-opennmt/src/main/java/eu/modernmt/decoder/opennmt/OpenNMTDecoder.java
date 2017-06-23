@@ -28,7 +28,7 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
 
     public OpenNMTDecoder(File libPath, File modelPath) throws OpenNMTException {
         File pythonHome = new File(libPath, "opennmt");
-        File decoderModelPath = new File(modelPath, "model.pt");
+        File decoderModelPath = modelPath;
         File storageModelPath = new File(modelPath, "memory");
 
         this.executor = ExecutionQueue.newInstance(pythonHome, decoderModelPath);
