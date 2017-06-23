@@ -49,7 +49,7 @@ class TranslationMemory:
 
 
 class OpenNMTPreprocessor:
-    def __init__(self, source_lang, target_lang, bpe_model, vocab_size=50000, max_line_length=50):
+    def __init__(self, source_lang, target_lang, bpe_model, vocab_size=50000, max_line_length=80):
         self._source_lang = source_lang
         self._target_lang = target_lang
         self._vocab_size = vocab_size
@@ -139,7 +139,7 @@ class OpenNMTPreprocessor:
 
 
 class OpenNMTDecoder:
-    def __init__(self, model, source_lang, target_lang, opts=onmt.Options()):
+    def __init__(self, model, source_lang, target_lang, opts=onmt.Trainer.Options()):
         self._model = model
         self._source_lang = source_lang
         self._target_lang = target_lang

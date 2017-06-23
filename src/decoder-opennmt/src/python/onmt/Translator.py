@@ -1,58 +1,60 @@
 import copy
+import logging
 import time
 
-import torch.cuda.random as random
-
 import torch
+import torch.cuda.random as random
 import torch.nn as nn
 from torch.autograd import Variable
 
-import Trainer
-import Options
-
 import onmt
 import onmt.modules
-
-import logging
-
-global_time = time.time()
-
-def loadImageLibs():
-    "Conditional import of torch image libs."
-    global Image, transforms
-    from PIL import Image
-    from torchvision import transforms
+from onmt import Trainer
 
 
 class Translator(object):
-    def __init__(self, opt):
+    class Options:
+        def __init__(self):
+            self.gpu = -1  # the index of the GPU to use
+            self.beam_size = 5
+            self.batch_size = 30
+            self.max_sent_length = 160
+            self.replace_unk = False
+            self.dump_beam = None  # File to dump beam information to
+            self.n_best = 1
+            self.tuning_epochs = 5
+            self.seed = 3435
+            self.tunable = True  # Enable fine tuning
+            self.reset = True  # Reset model to the original model after each translation
+
+        @property
+        def cuda(self):
+            return self.gpu > -1
+
+    def __init__(self, model, opt):
         self.opt = opt
-        self.seed = opt.seed
-        self.tunable = opt.tunable
-        self.reset_after_tuning = self.tunable and opt.reset
+        self._reset_after_tuning = self.opt.tunable and self.opt.reset
+        self._gpus = [self.opt.gpu] if self.opt.gpu > -1 else []
 
         self._logger = logging.getLogger('onmt.Translator')
         self._logger.info("Translator options:%s" % repr(self.opt))
-
-        self.opt.gpus = []
-        if self.opt.gpu > -1:
-            self.opt.gpus = [ self.opt.gpu ]
 
         self.tt = torch.cuda if opt.cuda else torch
         self.beam_accum = None
 
         self._logger.info("Loading checkpoint... START")
         start_time = time.time()
-        self.checkpoint = torch.load(opt.model)
+        self.checkpoint = torch.load(model)
         self._logger.info("Loading checkpoint... END %.2fs" % (time.time() - start_time))
 
         self._logger.info("Creating dicts, model, and optimizer from checkpoint... S\TART")
         start_time = time.time()
         self.dicts, self.model, self.optim = self.create(self.checkpoint)
-        self._logger.info('Creating dicts, model, and optimizer from checkpoint... END %.2fs' % (time.time() - start_time))
+        self._logger.info(
+            'Creating dicts, model, and optimizer from checkpoint... END %.2fs' % (time.time() - start_time))
 
         self.checkpoint_copy = {}
-        if self.reset_after_tuning == True:
+        if self._reset_after_tuning:
             self._logger.info('Deepcopying checkpoint... START')
             start_time = time.time()
             self.checkpoint_copy = copy.deepcopy(self.checkpoint)
@@ -61,14 +63,14 @@ class Translator(object):
             self._logger.info("Creating dicts_copy, model_copy, and optimizer_copy from checkpoint... START")
             start_time = time.time()
             self.dicts_copy, self.model_copy, self.optim_copy = self.create(self.checkpoint)
-            self._logger.info('Creating dicts_copy, model_copy, and optimizer_copy from checkpoint... END %.2fs' % (time.time() - start_time))
+            self._logger.info('Creating dicts_copy, model_copy, and optimizer_copy from checkpoint... END %.2fs' % (
+                time.time() - start_time))
 
         self._logger.info("Building trainer... START")
         start_time = time.time()
 
-        self.trainer = Trainer.Trainer(self.model_opt)
+        self.trainer = Trainer(self.model_opt)
         self._logger.info("Building trainer... END %.2fs" % (time.time() - start_time))
-
 
     def create(self, checkpoint):
         torch.manual_seed(self.opt.seed)
@@ -76,7 +78,7 @@ class Translator(object):
 
         self._logger.info("loading model options from checkpoint... START")
         start_time2 = time.time()
-        self.model_opt = Options.Options()
+        self.model_opt = Trainer.Options()
         self.model_opt.load_state_dict(checkpoint['opt'])
         self._logger.info("loadin model options from checkpoint... END %.2fs" % (time.time() - start_time2))
         self._logger.info("Model Options: %s" % repr(self.model_opt))
@@ -100,8 +102,7 @@ class Translator(object):
             encoder = onmt.Models.Encoder(self.model_opt, dicts['src'])
             self._logger.info("constructing encoder... END %.2fs" % (time.time() - start_time2))
         elif self._type == "img":
-            loadImageLibs()
-            encoder = onmt.modules.ImageEncoder(self.model_opt)
+            raise NotImplementedError
 
         self._logger.info("constructing decoder... START")
         start_time2 = time.time()
@@ -120,7 +121,7 @@ class Translator(object):
 
         self._logger.info("constructing generator... START")
         start_time2 = time.time()
-        generator = nn.Sequential(nn.Linear(self.model_opt.rnn_size, dicts['tgt'].size()),nn.LogSoftmax())
+        generator = nn.Sequential(nn.Linear(self.model_opt.rnn_size, dicts['tgt'].size()), nn.LogSoftmax())
         self._logger.info("constructing generator... END %.2fs" % (time.time() - start_time2))
 
         self._logger.info("loading generator from checkpoint... START")
@@ -161,7 +162,7 @@ class Translator(object):
         start_time2 = time.time()
 
         model_state_dict = {k: v for k, v in sorted(checkpoint['model'].items()) if 'generator' not in k}
-        model_state_dict.update({"generator."+k: v for k, v in sorted(checkpoint['generator'].items())})
+        model_state_dict.update({"generator." + k: v for k, v in sorted(checkpoint['generator'].items())})
         model.load_state_dict(model_state_dict)
 
         self._logger.info("disabling dropout")
@@ -193,19 +194,17 @@ class Translator(object):
         # This needs to be the same as preprocess.py.
         if self._type == "text":
             srcData = [self.getSourceDict().convertToIdx(b,
-                                                  onmt.Constants.UNK_WORD)
+                                                         onmt.Constants.UNK_WORD)
                        for b in srcBatch]
         elif self._type == "img":
-            srcData = [transforms.ToTensor()(
-                Image.open(self.opt.src_img_dir + "/" + b[0]))
-                       for b in srcBatch]
+            raise NotImplementedError
 
         tgtData = None
         if goldBatch:
             tgtData = [self.getTargetDict().convertToIdx(b,
-                       onmt.Constants.UNK_WORD,
-                       onmt.Constants.BOS_WORD,
-                       onmt.Constants.EOS_WORD) for b in goldBatch]
+                                                         onmt.Constants.UNK_WORD,
+                                                         onmt.Constants.BOS_WORD,
+                                                         onmt.Constants.EOS_WORD) for b in goldBatch]
 
         return onmt.Dataset(srcData, tgtData,
                             self.opt.batch_size, self.opt.cuda, volatile,
@@ -288,8 +287,8 @@ class Translator(object):
         if useMasking:
             padMask = srcBatch.data.eq(
                 onmt.Constants.PAD).t() \
-                                   .unsqueeze(0) \
-                                   .repeat(beamSize, 1, 1)
+                .unsqueeze(0) \
+                .repeat(beamSize, 1, 1)
 
         batchIdx = list(range(batchSize))
         remainingSents = batchSize
@@ -371,8 +370,8 @@ class Translator(object):
                     [t.tolist()
                      for t in beam[b].prevKs])
                 self.beam_accum["scores"].append([
-                    ["%4f" % s for s in t.tolist()]
-                    for t in beam[b].allScores][1:])
+                                                     ["%4f" % s for s in t.tolist()]
+                                                     for t in beam[b].allScores][1:])
                 self.beam_accum["predicted_ids"].append(
                     [[self.tgt_dict.getLabel(id)
                       for id in t.tolist()]
@@ -413,16 +412,17 @@ class Translator(object):
 
         for sugg in suggestions:
             indexedTuningSrcBatch += [self.getSourceDict().convertToIdx(sugg.source, onmt.Constants.UNK_WORD)]
-            indexedTuningTgtBatch += [self.getTargetDict().convertToIdx(sugg.target, onmt.Constants.UNK_WORD, onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD)]
+            indexedTuningTgtBatch += [
+                self.getTargetDict().convertToIdx(sugg.target, onmt.Constants.UNK_WORD, onmt.Constants.BOS_WORD,
+                                                  onmt.Constants.EOS_WORD)]
 
         # prepare data for training on the tuningBatch
         tuningDataset = {'train': {'src': indexedTuningSrcBatch, 'tgt': indexedTuningTgtBatch}, 'dicts': self.dicts}
 
         tuningTrainData = onmt.Dataset(tuningDataset['train']['src'],
-                             tuningDataset['train']['tgt'], self.opt.batch_size, self.opt.gpus)
+                                       tuningDataset['train']['tgt'], self.opt.batch_size, self._gpus)
 
-
-        if self.reset_after_tuning == True:
+        if self._reset_after_tuning:
             self._logger.info('copying model... START')
             start_time = time.time()
 
@@ -440,14 +440,17 @@ class Translator(object):
 
         self._logger.info('tuning model... START')
         start_time = time.time()
-        self.trainer.trainModel(self.model_copy, tuningTrainData, None, tuningDataset, self.optim_copy, save_all_epochs=False, save_last_epoch=False, epochs=self.opt.tuning_epochs, clone=False)
+        self.trainer.trainModel(self.model_copy, tuningTrainData, None, tuningDataset, self.optim_copy,
+                                save_all_epochs=False, save_last_epoch=False, epochs=self.opt.tuning_epochs,
+                                clone=False)
         self._logger.info('tuning model... END %.2fs' % (time.time() - start_time))
 
         #  (2) translate
         self._logger.info('translation... START')
         start_time = time.time()
         pred, predScore, attn, goldScore = self.translateBatch(src, tgt, model=self.model_copy)
-        pred, predScore, attn, goldScore = list(zip(*sorted(zip(pred, predScore, attn, goldScore, indices), key=lambda x: x[-1])))[:-1]
+        pred, predScore, attn, goldScore = list(
+            zip(*sorted(zip(pred, predScore, attn, goldScore, indices), key=lambda x: x[-1])))[:-1]
         self._logger.info('translation... END %.2fs' % (time.time() - start_time))
 
         #  (3) convert indexes to words
@@ -458,9 +461,7 @@ class Translator(object):
                  for n in range(self.opt.n_best)]
             )
 
-
         return predBatch, predScore, goldScore
-
 
 # Sentence is an array of strings
 # Sentence = [ strings ]

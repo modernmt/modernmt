@@ -3,6 +3,7 @@ import json
 import os
 import sys
 
+from bpe import BPEEncoder
 from onmt import Translator
 import torch
 
@@ -61,25 +62,28 @@ class YodaDecoder(MMTDecoder):
 
 
 class OpenNMTDecoder(MMTDecoder):
-    def __init__(self, opt):
-        MMTDecoder.__init__(self, opt.model)
-
-        opt.cuda = (opt.gpu > -1)
+    def __init__(self, model, opt):
+        MMTDecoder.__init__(self, model)
 
         # Sets the seed for generating random numbers
         if opt.seed >= 0:
             torch.manual_seed(opt.seed)
 
         self._logger = logging.getLogger('onmt.OpenNMTDecoder')
-        self.translator = Translator(opt)
+        self._translator = Translator(os.path.join(model, 'model.pt'), opt)
+        self._bpe_encoder = BPEEncoder(os.path.join(model, 'vocabulary.bpe'))
 
     def translate(self, text, suggestions=None):
-        src_batch = [text]
+        src_batch = [self._bpe_encoder.encode_line(text)]
 
-        if len(suggestions) == 0 or not self.translator.tunable:
-            pred_batch, pred_score, gold_score = self.translator.translate(src_batch, None)
+        if len(suggestions) == 0 or not self._translator.opt.tunable:
+            pred_batch, pred_score, gold_score = self._translator.translate(src_batch, None)
         else:
-            pred_batch, pred_score, gold_score = self.translator.translateWithAdaptation(src_batch, None, suggestions)
+            for suggestion in suggestions:
+                suggestion.source = self._bpe_encoder.encode_line(suggestion.source)
+                suggestion.target = self._bpe_encoder.encode_line(suggestion.target)
+
+            pred_batch, pred_score, gold_score = self._translator.translateWithAdaptation(src_batch, None, suggestions)
 
         output = pred_batch[0][0]
 
@@ -108,13 +112,13 @@ class TranslationRequest:
     def from_json_string(json_string):
         obj = json.loads(json_string)
 
-        source = obj['source'].split(' ')
+        source = obj['source']
         suggestions = []
 
         if 'suggestions' in obj:
             for sobj in obj['suggestions']:
-                suggestion_source = sobj['source'].split(' ')
-                suggestion_target = sobj['target'].split(' ')
+                suggestion_source = sobj['source']
+                suggestion_target = sobj['target']
                 suggestion_score = float(sobj['score']) if 'score' in sobj else 0
 
                 suggestions.append(Suggestion(suggestion_source, suggestion_target, suggestion_score))
@@ -196,9 +200,10 @@ def run_main():
     # Args parse
     # ------------------------------------------------------------------------------------------------------------------
     parser = argparse.ArgumentParser(description='Run a forever-loop serving translation requests')
+    parser.add_argument('model', metavar='MODEL', help='the path to the decoder model')
+
     parser.add_argument('-l', '--log-level', dest='log_level', metavar='LEVEL', help='select the log level',
                         choices=['critical', 'error', 'warning', 'info', 'debug'], default='info')
-    parser.add_argument('-model', metavar='MODEL', help='the path to the decoder model')
     parser.add_argument('-g', '-gpu', dest='gpu', metavar='GPU', help='the index of the GPU to use',
                         default=-1)
     parser.add_argument('-beam_size', type=int, default=5,

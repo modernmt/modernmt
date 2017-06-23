@@ -7,4 +7,3 @@ from Dict import Dict
 from Optim import Optim
 from Trainer import Trainer
 from Translator import Translator
-from Options import Options
