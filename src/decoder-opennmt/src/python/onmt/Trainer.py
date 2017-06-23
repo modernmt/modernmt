@@ -72,8 +72,6 @@ class Trainer(object):
     def trainModel(self, model_ori, trainData, validData, dataset, optim_ori, save_all_epochs=True,
                    save_last_epoch=False, epochs=None, clone=False):
 
-        #        self._logger.info('def Trainer::trainModel trainData:%s' % repr(trainData))
-
         opt = self.opt
 
         if epochs:
@@ -82,11 +80,7 @@ class Trainer(object):
         model = model_ori
         optim = optim_ori
 
-        # NIK: TOCHECK        generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
-        #        self._logger.debug('trainModel begin generator_state_dict: %s' % (generator_state_dict))
-
-        model.decoder.attn.applyMask(
-            None)  # set the mask to None; required when the same model is trained after a translation
+        model.decoder.attn.applyMask(None)  # set the mask to None; required when the same model is trained after a translation
 
         model.train()
 
@@ -111,8 +105,6 @@ class Trainer(object):
 
                 batchIdx = batchOrder[i] if epoch > opt.curriculum else i
                 batch = trainData[batchIdx][:-1]  # exclude original indices
-
-                #                self._logger.info('def Trainer::trainEpoch batch:%s' % repr(batch))
 
                 model.zero_grad()
                 outputs = model(batch)
@@ -175,20 +167,6 @@ class Trainer(object):
 
                 self._logger.info("trainModel Epoch %g Decaying learning rate to %g" % (epoch, optim.lr))
 
-            # model_state_dict = model.module.state_dict() if len(opt.gpus) > 1 else model.state_dict()
-            # model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
-            # generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
-            #
-            # #  (4) drop a checkpoint
-            # checkpoint = {
-            #     'model': model_state_dict,
-            #     'generator': generator_state_dict,
-            #     'dicts': dataset['dicts'],
-            #     'opt': opt,
-            #     'epoch': epoch,
-            #     'optim': optim
-            # }
-
             if save_all_epochs or save_last_epoch:
                 model_state_dict = model.module.state_dict() if len(opt.gpus) > 1 else model.state_dict()
                 model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
@@ -206,10 +184,6 @@ class Trainer(object):
                     'optim': optim
                 }
 
-                generator_state_dict = model.generator.module.state_dict() if len(
-                    opt.gpus) > 1 else model.generator.state_dict()
-                # self._logger.debug('trainModel Epoch:%g checkpoint.generator: %s' % (epoch, repr(checkpoint['generator'])))
-                # self._logger.debug('trainModel Epoch:%g generator_state_dict: %s' % (epoch, generator_state_dict))
 
                 if valid_acc is not None:
                     torch.save(checkpoint,
@@ -219,32 +193,3 @@ class Trainer(object):
 
             self._logger.info('Training epoch %g... END %.2fs' % (epoch, time.time() - start_time_epoch))
 
-            #
-            # print 'def Trainer::trainModel END generator:', repr(generator_state_dict)
-            # for name, param in sorted(generator_state_dict.items()):
-            #         print ('def Trainer::trainModel END generator_state_dict name',name)
-            #         print ('def Trainer::trainModel END generator_state_dict own_state[name]',generator_state_dict[name])
-            #
-            # print 'def Trainer::trainModel END model_state_dict:', repr(model_state_dict)
-            # for name, param in sorted(model_state_dict.items()):
-            #         print ('def Trainer::trainModel END model_state_dict name',name)
-            #         print ('def Trainer::trainModel END model_state_dict own_state[name]',model_state_dict[name])
-
-
-            #        model_state_dict = model.module.state_dict() if len(opt.gpus) > 1 else model.state_dict()
-            #        model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
-            #        generator_state_dict = model.generator.module.state_dict() if len(opt.gpus) > 1 else model.generator.state_dict()
-
-            #  (4) drop a checkpoint
-            #        checkpoint = {
-            #                    'model': model_state_dict,
-            #                    'generator': generator_state_dict,
-            #                    'dicts': dataset['dicts'],
-            #                    'opt': opt,
-            #                    'epoch': epoch,
-            #                    'optim': optim
-            #                }
-
-            # self._logger.debug('trainModel returning checkpoint.generator: %s' % (repr(checkpoint['generator'])))
-
-# self._logger.debug('trainModel returning generator_state_dict: %s' % (repr(generator_state_dict)))

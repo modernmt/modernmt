@@ -154,8 +154,8 @@ class Translator(object):
         return dicts, model, optim
 
     def load(self, checkpoint, model, optim):
-	torch.manual_seed(self.opt.seed)
-	random.manual_seed_all(self.opt.seed)
+        torch.manual_seed(self.opt.seed)
+        random.manual_seed_all(self.opt.seed)
 
         self._logger.info("loading model from checkpoint... START")
         start_time2 = time.time()
@@ -230,19 +230,12 @@ class Translator(object):
     def translateBatch(self, srcBatch, tgtBatch, model=None):
         if model == None: model = self.model
 
-
-#        generator_state_dict = model.generator.module.state_dict() if len(self.opt.gpus) > 1 else model.generator.state_dict()
-#        self._logger.debug('translateBatch begin generator_state_dict: %s' % (generator_state_dict))
-
         batchSize = srcBatch[0].size(1)
         beamSize = self.opt.beam_size
 
         #  (1) run the encoder on the src
         encStates, context = model.encoder(srcBatch)
         srcBatch = srcBatch[0]  # drop the lengths needed for encoder
-
-#	self._logger.info('def Translator::translateBatch srcBatch:%s' % repr(srcBatch))
-
 
         rnnSize = context.size(2)
         encStates = (model._fix_enc_hidden(encStates[0]),
@@ -433,15 +426,8 @@ class Translator(object):
             self._logger.info('copying model... START')
             start_time = time.time()
 
-            # self._logger.info('deepcopy of checkpoint... START')
-            # start_time2 = time.time()
-            # checkpoint_copy = copy.deepcopy(self.checkpoint)
-            # self._logger.info('deepcopy of checkpoint... END %.2fs' % (time.time() - start_time2))
-
             self._logger.info('creating copy... START')
             start_time2 = time.time()
-            # dicts_copy, model_copy, optim_copy = self.create(checkpoint_copy)
-            # dicts_copy, model_copy, optim_copy = self.load(self.checkpoint_copy)
             self.load(self.checkpoint_copy, self.model_copy, self.optim_copy)
             self._logger.info('creating copy... END %.2fs' % (time.time() - start_time2))
 
@@ -451,28 +437,18 @@ class Translator(object):
             self.dicts_copy = self.dicts
             self.model_copy = self.model
             self.optim_copy = self.optim
-            # dicts_copy = self.dicts
-            # model_copy = self.model
-            # optim_copy = self.optim
-
-#        generator_copy_state_dict = model_copy.generator.module.state_dict() if len(self.opt.gpus) > 1 else model_copy.generator.state_dict()
-#        self._logger.debug('before tuning generator_copy_state_dict: %s' % (generator_copy_state_dict))
 
         self._logger.info('tuning model... START')
         start_time = time.time()
-        # self.trainer.trainModel(model_copy, tuningTrainData, None, tuningDataset, optim_copy, save_all_epochs=False, save_last_epoch=False, epochs=self.opt.tuning_epochs, clone=False)
         self.trainer.trainModel(self.model_copy, tuningTrainData, None, tuningDataset, self.optim_copy, save_all_epochs=False, save_last_epoch=False, epochs=self.opt.tuning_epochs, clone=False)
         self._logger.info('tuning model... END %.2fs' % (time.time() - start_time))
 
-#        generator_copy_state_dict = model_copy.generator.module.state_dict() if len(self.opt.gpus) > 1 else model_copy.generator.state_dict()
-#        self._logger.debug('after tuning generator_copy_state_dict: %s' % (generator_copy_state_dict))
-
-
         #  (2) translate
+        self._logger.info('translation... START')
         start_time = time.time()
         pred, predScore, attn, goldScore = self.translateBatch(src, tgt, model=self.model_copy)
-        # pred, predScore, attn, goldScore = self.translateBatch(src, tgt, model=model_copy)
         pred, predScore, attn, goldScore = list(zip(*sorted(zip(pred, predScore, attn, goldScore, indices), key=lambda x: x[-1])))[:-1]
+        self._logger.info('translation... END %.2fs' % (time.time() - start_time))
 
         #  (3) convert indexes to words
         predBatch = []
