@@ -52,7 +52,7 @@ class BPEEncoderBuilder:
         (until we the most frequent pair is less frequent than a pair we previously pruned)
         big_stats keeps full statistics for when we need to access pruned items
         """
-        for item, freq in stats.iteritems():
+        for item, freq in stats.items():
             if freq < threshold:
                 del stats[item]
                 if freq < 0:
@@ -145,7 +145,7 @@ class BPEEncoderBuilder:
                 i += 1
 
     def learn(self, vocab, symbols=50000, min_frequency=2):
-        with open(self.model, 'wb') as outfile:
+        with codecs.open(self.model, 'w', 'utf-8') as outfile:
             # version 0.2 changes the handling of the end-of-word token ('</w>');
             # version numbering allows backward compatibility
             outfile.write('#version: 0.2\n')
@@ -174,7 +174,7 @@ class BPEEncoderBuilder:
                     # No pair has frequency >= min_frequency. Stopping
                     break
 
-                outfile.write('{0} {1}\n'.format(*most_frequent))
+                outfile.write(u'{0} {1}\n'.format(*most_frequent))
                 changes = self._replace_pair(most_frequent, sorted_vocab, indices)
                 self._update_pair_statistics(most_frequent, changes, stats, indices)
                 stats[most_frequent] = 0
