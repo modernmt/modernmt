@@ -80,7 +80,8 @@ def main_create(argv):
     parser.add_argument('--neural', action='store_true', dest='neural', default=False,
                         help='if neural is set, the process will train a neural engine (default is phrase-based)')
     parser.add_argument('--validation-corpora', dest='validation_corpora',
-                        help='if neural is set, the pathis to the validation corpora')
+                        help='if neural is set, you can provide a custom validation corpora with this option '
+                             '(dev set used by default).', default=None)
 
     if len(argv) > 0:
         # Parse args
@@ -93,6 +94,10 @@ def main_create(argv):
 
         # initialize a builder to create and train a new engine
         if args.neural:
+            if not args.split_corpora and args.validation_corpora is None:
+                raise CLIArgsException(parser, 'you must specify a validation set (remove --no-split option or use '
+                                               '--validation-corpora option)')
+
             training = Training.neural(name=args.engine,
                                        source_lang=args.source_lang,
                                        target_lang=args.target_lang,
@@ -100,7 +105,7 @@ def main_create(argv):
                                        debug=args.debug,
                                        steps=args.training_steps,
                                        split_trainingset=args.split_corpora,
-				       validation_corpora=args.validation_corpora)
+                                       validation_corpora=args.validation_corpora)
         else:
             training = Training.phrase_based(name=args.engine,
                                              source_lang=args.source_lang,

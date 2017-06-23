@@ -141,8 +141,7 @@ class OpenNMTDecoder:
     def train(self, data_path, working_dir):
         logger = logging.getLogger('mmt.train.OpenNMTDecoder')
 
-        logger.info('Training started with options: %s' % repr(self._opts))
-        logger.info('Training started with options: data_path:%s' % repr(data_path))
+        logger.info('Training started for data "%s", with options: %s' % (data_path, repr(self._opts)))
 
         self._opts.save_model = os.path.join(working_dir, 'train_model')
 
@@ -273,10 +272,10 @@ class NeuralEngine(Engine):
 
 class NeuralEngineBuilder(EngineBuilder):
     def __init__(self, name, source_lang, target_lang, roots, debug=False, steps=None, split_trainingset=True,
-                 validation_copora=None):
+                 validation_corpora=None):
         EngineBuilder.__init__(self, NeuralEngine(name, source_lang, target_lang), roots, debug, steps,
                                split_trainingset)
-        self._valid_corpora_path = validation_copora if validation_copora is not None \
+        self._valid_corpora_path = validation_corpora if validation_corpora is not None \
             else os.path.join(self._engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME)
 
     def _build_schedule(self):
