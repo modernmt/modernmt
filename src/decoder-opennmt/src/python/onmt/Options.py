@@ -1,5 +1,6 @@
 import torch
 
+
 class Options(object):
     def __init__(self):
         self.save_model = None  # Set by train
@@ -9,7 +10,7 @@ class Options(object):
         self.log_interval = 50
 
         # Model options --------------------------------------------------------------------------------------------
-        self.encoder_type = "text" # type fo encoder (either "text" or "img"
+        self.encoder_type = "text"  # type fo encoder (either "text" or "img"
         self.layers = 2  # Number of layers in the LSTM encoder/decoder
         self.rnn_size = 500  # Size of LSTM hidden states
         self.word_vec_size = 500  # Word embedding sizes
@@ -42,10 +43,10 @@ class Options(object):
         return self.__dict__
 
     def load_state_dict(self, d):
-       self.__dict__ = d
-       # we force the encoder type to "text";
-       # this trick makes the models build with an old version of the software compatible with the new version
-       self.encoder_type = "text" # type fo encoder (either "text" or "img"
+        self.__dict__ = d
+        # we force the encoder type to "text";
+        # this trick makes the models build with an old version of the software compatible with the new version
+        self.encoder_type = "text"  # type fo encoder (either "text" or "img"
 
     def __repr__(self):
         return repr(self.__dict__)

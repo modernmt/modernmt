@@ -46,7 +46,7 @@ class Translator(object):
         self.checkpoint = torch.load(opt.model)
         self._logger.info("Loading checkpoint... END %.2fs" % (time.time() - start_time))
 
-        self._logger.info("Creating dicts, model, and optimizer from checkpoint... START")
+        self._logger.info("Creating dicts, model, and optimizer from checkpoint... S\TART")
         start_time = time.time()
         self.dicts, self.model, self.optim = self.create(self.checkpoint)
         self._logger.info('Creating dicts, model, and optimizer from checkpoint... END %.2fs' % (time.time() - start_time))
