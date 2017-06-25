@@ -81,10 +81,10 @@ class OpenNMTPreprocessor:
         }, output_file)
 
         self._logger.info('Storing OpenNMT preprocessed source dictionary "%s"' % src_dict_file)
-        dicts['tgt'].writeFile(tgt_dict_file)
+        src_vocab.writeFile(tgt_dict_file)
 
         self._logger.info('Storing OpenNMT preprocessed target dictionary "%s"' % tgt_dict_file)
-        dicts['tgt'].writeFile(tgt_dict_file)
+        tgt_vocab.writeFile(tgt_dict_file)
 
     def _create_vb_encoder(self, corpora):
         vb_builder = BPEEncoderBuilder.VocabularyBuilder()
