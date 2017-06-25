@@ -59,7 +59,7 @@ class OpenNMTPreprocessor:
         self._bpe_trainer = BPEEncoderBuilder(bpe_model)
         self._preprocessor = TrainingPreprocessor(source_lang, target_lang)
 
-    def process(self, corpora, validation_corpora, output_file, working_dir='.'):
+    def process(self, corpora, validation_corpora, output_file, src_dict_file, tgt_dict_file, working_dir='.'):
         self._logger.info('Creating VBE vocabulary')
         bpe_encoder = self._create_vb_encoder(corpora)
 
@@ -79,6 +79,12 @@ class OpenNMTPreprocessor:
             'train': {'src': src_train, 'tgt': trg_train},
             'valid': {'src': src_valid, 'tgt': trg_valid},
         }, output_file)
+
+        self._logger.info('Storing OpenNMT preprocessed source dictionary "%s"' % src_dict_file)
+        dicts['tgt'].writeFile(tgt_dict_file)
+
+        self._logger.info('Storing OpenNMT preprocessed target dictionary "%s"' % tgt_dict_file)
+        dicts['tgt'].writeFile(tgt_dict_file)
 
     def _create_vb_encoder(self, corpora):
         vb_builder = BPEEncoderBuilder.VocabularyBuilder()
@@ -307,13 +313,15 @@ class NeuralEngineBuilder(EngineBuilder):
     def _prepare_training_data(self, args, skip=False):
         working_dir = self._get_tempdir('onmt_training')
         args.onmt_training_file = os.path.join(working_dir, 'train_processed.train.pt')
+        args.onmt_src_dict_file = os.path.join(working_dir, 'train_processed.src.dict')
+        args.onmt_tgt_dict_file = os.path.join(working_dir, 'train_processed.tgt.dict')
 
         if not skip:
             validation_corpora = BilingualCorpus.list(self._valid_corpora_path)
             corpora = filter(None, [args.filtered_bilingual_corpora, args.processed_bilingual_corpora,
                                     args.bilingual_corpora])[0]
 
-            self._engine.onmt_preprocessor.process(corpora, validation_corpora, args.onmt_training_file)
+            self._engine.onmt_preprocessor.process(corpora, validation_corpora, args.onmt_training_file, args.onmt_src_dict_file, args.onmt_tgt_dict_file)
 
     @EngineBuilder.Step('Neural decoder training')
     def _train_decoder(self, args, skip=False, delete_on_exit=False):
