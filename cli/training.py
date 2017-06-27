@@ -36,9 +36,9 @@ class Training(EngineBuilder.Listener):
         return Training(builder)
 
     @staticmethod
-    def neural(name, source_lang, target_lang, roots, debug, steps, split_trainingset, validation_corpora):
+    def neural(name, source_lang, target_lang, roots, debug, steps, split_trainingset, validation_corpora, bpe_symbols):
         builder = NeuralEngineBuilder(name, source_lang, target_lang, roots, debug, steps, split_trainingset,
-                                      validation_corpora)
+                                      validation_corpora, bpe_symbols)
         return Training(builder)
 
     def __init__(self, builder, line_len=70):

@@ -69,7 +69,7 @@ class OpenNMTDecoder(MMTDecoder):
 
         self._logger = logging.getLogger('onmt.OpenNMTDecoder')
         self._translator = Translator(os.path.join(model, 'model.pt'), opt)
-        self._bpe_encoder = BPEEncoder(os.path.join(model, 'vocabulary.bpe'))
+        self._bpe_encoder = BPEEncoder(os.path.join(model, 'codes.bpe'))
 
     def translate(self, text, suggestions=None):
         src_batch = [self._bpe_encoder.encode_line(text)]

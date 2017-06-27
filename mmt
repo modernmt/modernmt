@@ -77,11 +77,15 @@ def main_create(argv):
     parser.add_argument('-r', '--resume', action='store_true', dest='resume', default=False,
                         help='if resume is set, it restores a previously interrupted process')
 
+    # Neural args
     parser.add_argument('--neural', action='store_true', dest='neural', default=False,
                         help='if neural is set, the process will train a neural engine (default is phrase-based)')
     parser.add_argument('--validation-corpora', dest='validation_corpora',
                         help='if neural is set, you can provide a custom validation corpora with this option '
                              '(dev set used by default).', default=None)
+    parser.add_argument('--bpe-symbols', dest='bpe_symbols',
+                        help='if neural is set, this is the number of symbols of the BPE encoder '
+                             '(default value is 90000).', default=90000)
 
     if len(argv) > 0:
         # Parse args
@@ -105,7 +109,8 @@ def main_create(argv):
                                        debug=args.debug,
                                        steps=args.training_steps,
                                        split_trainingset=args.split_corpora,
-                                       validation_corpora=args.validation_corpora)
+                                       validation_corpora=args.validation_corpora,
+                                       bpe_symbols=args.bpe_symbols)
         else:
             training = Training.phrase_based(name=args.engine,
                                              source_lang=args.source_lang,

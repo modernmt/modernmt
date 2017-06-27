@@ -49,19 +49,18 @@ class TranslationMemory:
 
 
 class OpenNMTPreprocessor:
-    def __init__(self, source_lang, target_lang, bpe_model, vocab_size=50000, max_line_length=80):
+    def __init__(self, source_lang, target_lang, bpe_model, max_line_length=80):
         self._source_lang = source_lang
         self._target_lang = target_lang
-        self._vocab_size = vocab_size
         self._max_line_length = max_line_length
         self._logger = logging.getLogger('mmt.train.OpenNMTPreprocessor')
 
         self._bpe_trainer = BPEEncoderBuilder(bpe_model)
         self._preprocessor = TrainingPreprocessor(source_lang, target_lang)
 
-    def process(self, corpora, validation_corpora, output_file, working_dir='.', dump_dicts=False):
+    def process(self, corpora, validation_corpora, output_file, bpe_symbols, working_dir='.', dump_dicts=False):
         self._logger.info('Creating VBE vocabulary')
-        bpe_encoder = self._create_vb_encoder(corpora)
+        bpe_encoder = self._create_vb_encoder(corpora, bpe_symbols)
 
         self._logger.info('Creating vocabularies')
         src_vocab, trg_vocab = self._create_vocabs(bpe_encoder, corpora)
@@ -90,7 +89,7 @@ class OpenNMTPreprocessor:
             self._logger.info('Storing OpenNMT preprocessed target dictionary "%s"' % trg_dict_file)
             trg_vocab.writeFile(trg_dict_file)
 
-    def _create_vb_encoder(self, corpora):
+    def _create_vb_encoder(self, corpora, bpe_symbols):
         vb_builder = BPEEncoderBuilder.VocabularyBuilder()
 
         for corpus in corpora:
@@ -99,7 +98,7 @@ class OpenNMTPreprocessor:
                     vb_builder.add_line(source)
                     vb_builder.add_line(target)
 
-        return self._bpe_trainer.learn(vb_builder.build(), symbols=self._vocab_size)
+        return self._bpe_trainer.learn(vb_builder.build(), bpe_symbols)
 
     def _create_vocabs(self, bpe_encoder, corpora):
         src_vocab = onmt.Dict([onmt.Constants.PAD_WORD, onmt.Constants.UNK_WORD,
@@ -279,7 +278,7 @@ class NeuralEngine(Engine):
         self.memory = TranslationMemory(os.path.join(decoder_path, 'memory'), self.source_lang, self.target_lang)
         self.decoder = OpenNMTDecoder(os.path.join(decoder_path, 'model.pt'), self.source_lang, self.target_lang)
         self.onmt_preprocessor = OpenNMTPreprocessor(self.source_lang, self.target_lang,
-                                                     os.path.join(decoder_path, 'vocabulary.bpe'))
+                                                     os.path.join(decoder_path, 'codes.bpe'))
 
     def is_tuning_supported(self):
         return False
@@ -290,9 +289,10 @@ class NeuralEngine(Engine):
 
 class NeuralEngineBuilder(EngineBuilder):
     def __init__(self, name, source_lang, target_lang, roots, debug=False, steps=None, split_trainingset=True,
-                 validation_corpora=None):
+                 validation_corpora=None, bpe_symbols=90000):
         EngineBuilder.__init__(self, NeuralEngine(name, source_lang, target_lang), roots, debug, steps,
                                split_trainingset)
+        self._bpe_symbols = bpe_symbols
         self._valid_corpora_path = validation_corpora if validation_corpora is not None \
             else os.path.join(self._engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME)
 
@@ -324,7 +324,7 @@ class NeuralEngineBuilder(EngineBuilder):
                                     args.bilingual_corpora])[0]
 
             self._engine.onmt_preprocessor.process(corpora, validation_corpora, args.onmt_training_file,
-                                                   working_dir=working_dir, dump_dicts=True)
+                                                   self._bpe_symbols, working_dir=working_dir, dump_dicts=True)
 
     @EngineBuilder.Step('Neural decoder training')
     def _train_decoder(self, args, skip=False, delete_on_exit=False):
