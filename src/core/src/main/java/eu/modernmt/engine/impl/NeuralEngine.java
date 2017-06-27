@@ -7,11 +7,10 @@ import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.opennmt.OpenNMTDecoder;
 import eu.modernmt.engine.Engine;
-import eu.modernmt.engine.FileConst;
-import eu.modernmt.io.Paths;
 import eu.modernmt.persistence.PersistenceException;
 import org.apache.commons.io.IOUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 
@@ -27,7 +26,7 @@ public class NeuralEngine extends Engine {
 
         DecoderConfig decoderConfig = config.getDecoderConfig();
         if (decoderConfig.isEnabled())
-            this.decoder = new OpenNMTDecoder(FileConst.getLibPath(), Paths.join(this.models, "decoder"));
+            this.decoder = new OpenNMTDecoder(new File(this.models, "decoder"));
         else
             this.decoder = null;
     }

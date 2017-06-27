@@ -5,7 +5,6 @@ import sys
 
 from bpe import BPEEncoder
 from onmt import Translator
-import torch
 
 import logging
 
@@ -93,7 +92,7 @@ class OpenNMTDecoder(MMTDecoder):
                     "b:%d n:%d predScore[b][n]:%g predBatch[b][n]:%s" % (
                         b, n, pred_score[b][n], repr(pred_batch[b][n])))
 
-        return output
+        return self._bpe_encoder.decode_line(output)
 
     def close(self):
         pass
@@ -135,7 +134,7 @@ class TranslationResponse:
         jobj = {}
 
         if self.translation is not None:
-            jobj['translation'] = ' '.join(self.translation)
+            jobj['translation'] = self.translation
         else:
             error = {'type': self.error_type}
             if self.error_message is not None:
@@ -202,7 +201,7 @@ def run_main():
     parser.add_argument('model', metavar='MODEL', help='the path to the decoder model')
     parser.add_argument('-l', '--log-level', dest='log_level', metavar='LEVEL', help='select the log level',
                         choices=['critical', 'error', 'warning', 'info', 'debug'], default='info')
-    parser.add_argument('-g', '-gpu', dest='gpu', metavar='GPU', help='the index of the GPU to use',
+    parser.add_argument('-g', '--gpu', dest='gpu', metavar='GPU', help='the index of the GPU to use',
                         default=-1)
 
     args = parser.parse_args()

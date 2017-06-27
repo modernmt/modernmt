@@ -35,6 +35,9 @@
                             <directory>${mmt.build.lib}</directory>
                             <includes>
                                 <include>*mmt_pbdecoder.*</include>
+                                <include>*mertc.*</include>
+                                <include>*mmt_ilm.*</include>
+                                <include>*mmt_sapt.*</include>
                             </includes>
                             <followSymlinks>false</followSymlinks>
                         </fileset>

@@ -13,7 +13,7 @@ from cli.mmt import BilingualCorpus
 from cli.mmt.engine import Engine, EngineBuilder
 from cli.mmt.processing import TrainingPreprocessor
 
-sys.path.insert(0, os.path.abspath(os.path.join(LIB_DIR, 'opennmt')))
+sys.path.insert(0, os.path.abspath(os.path.join(LIB_DIR, 'pynmt')))
 
 import onmt
 from bpe import BPEEncoderBuilder

@@ -7,6 +7,7 @@ import eu.modernmt.decoder.opennmt.execution.ExecutionQueue;
 import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
 import eu.modernmt.decoder.opennmt.memory.TranslationMemory;
 import eu.modernmt.decoder.opennmt.memory.lucene.LuceneTranslationMemory;
+import eu.modernmt.io.FileConst;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -26,12 +27,11 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
     private final ExecutionQueue executor;
     private final TranslationMemory memory;
 
-    public OpenNMTDecoder(File libPath, File modelPath) throws OpenNMTException {
-        File pythonHome = new File(libPath, "opennmt");
-        File decoderModelPath = modelPath;
+    public OpenNMTDecoder(File modelPath) throws OpenNMTException {
+        File pythonHome = new File(FileConst.getLibPath(), "pynmt");
         File storageModelPath = new File(modelPath, "memory");
 
-        this.executor = ExecutionQueue.newInstance(pythonHome, decoderModelPath);
+        this.executor = ExecutionQueue.newInstance(pythonHome, modelPath);
 
         try {
             this.memory = new LuceneTranslationMemory(storageModelPath);

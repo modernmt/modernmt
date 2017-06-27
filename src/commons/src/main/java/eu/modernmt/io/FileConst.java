@@ -1,6 +1,4 @@
-package eu.modernmt.engine;
-
-import eu.modernmt.io.Paths;
+package eu.modernmt.io;
 
 import java.io.File;
 
