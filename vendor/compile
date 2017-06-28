@@ -11,6 +11,10 @@ import subprocess
 import os
 import multiprocessing
 
+CASSANDRA_VERSION = '3.11.0'
+KAFKA_VERSION = '0.10.2.1'
+KAFKA_SCALA_VERSION = '2.12'
+
 vendor_dir = os.path.dirname(os.path.realpath(__file__))
 mmt_home = os.path.join(vendor_dir, os.path.pardir)
 mmt_build_dir = os.path.join(mmt_home, 'build')
@@ -26,15 +30,15 @@ rocksdb_home = os.path.join(vendor_dir, 'rocksdb')
 
 # cassandra_home must be created as <mmt_folder>/vendor/cassandra
 # when downloading and installing cassandra
-cassandra_home = os.path.join(vendor_dir, 'cassandra-3.10')
+cassandra_home = os.path.join(vendor_dir, 'cassandra-' + CASSANDRA_VERSION)
 # path where to search for cassandra in apache site
-cassandra_apache_path = '/cassandra/3.10/apache-cassandra-3.10-bin.tar.gz'
+cassandra_apache_path = '/cassandra/' + CASSANDRA_VERSION + '/apache-cassandra-' + CASSANDRA_VERSION + '-bin.tar.gz'
 
 # kafka_home must be created as <mmt_folder>/vendor/kafka
 # when downloading and installing kafka
-kafka_home = os.path.join(vendor_dir, 'kafka-0.10.0.1')
+kafka_home = os.path.join(vendor_dir, 'kafka-' + KAFKA_VERSION)
 # path where to search for kafka in apache site
-kafka_apache_path = '/kafka/0.10.0.1/kafka_2.11-0.10.0.1.tgz'
+kafka_apache_path = '/kafka/' + KAFKA_VERSION + '/kafka_' + KAFKA_SCALA_VERSION + '-' + KAFKA_VERSION + '.tgz'
 
 try:
     from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -258,7 +262,7 @@ def clean_rocksdb():
 # =========================================================================================
 
 def install_cassandra():
-    print 'Installing Cassandra 3.10...\n'
+    print 'Installing Cassandra %s...\n' % CASSANDRA_VERSION
 
     if not os.path.exists(cassandra_home):
         os.makedirs(cassandra_home)
@@ -280,7 +284,7 @@ def install_cassandra():
     with open(cassandra_env, 'w') as f:
         f.write(content)
 
-    print 'Cassandra 3.10 successfully installed\n\n'
+    print 'Cassandra %s successfully installed\n\n' % CASSANDRA_VERSION
 
 
 # =========================================================================================
@@ -288,14 +292,14 @@ def install_cassandra():
 # =========================================================================================
 
 def install_kafka():
-    print 'Installing Kafka 0.10.0.1...\n'
+    print 'Installing Kafka %s...\n' % KAFKA_VERSION
 
     if not os.path.exists(kafka_home):
         os.makedirs(kafka_home)
 
     install_apache_lib(kafka_apache_path, kafka_home)
 
-    print 'Kafka 0.10.0.1 successfully installed\n\n'
+    print 'Kafka %s successfully installed\n\n' % KAFKA_VERSION
 
 
 # =========================================================================================

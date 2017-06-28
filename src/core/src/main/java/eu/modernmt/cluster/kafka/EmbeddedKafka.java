@@ -1,5 +1,6 @@
 package eu.modernmt.cluster.kafka;
 
+import eu.modernmt.Pom;
 import eu.modernmt.cluster.EmbeddedService;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
@@ -23,6 +24,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class EmbeddedKafka extends EmbeddedService {
 
+    public static final String VERSION = Pom.getProperty("kafka.version");
+
     public static EmbeddedKafka start(Engine engine, int port) throws BootstrapException {
         try {
             EmbeddedKafka instance = new EmbeddedKafka(engine);
@@ -45,7 +48,7 @@ public class EmbeddedKafka extends EmbeddedService {
         this.runtime = engine.getRuntimeFolder("kafka", true);
         this.logFile = engine.getLogFile("embedded-kafka.log");
 
-        File kafkaHome = Paths.join(FileConst.getVendorPath(), "kafka-0.10.0.1");
+        File kafkaHome = Paths.join(FileConst.getVendorPath(), "kafka-" + VERSION);
 
         this.kafkaBin = Paths.join(kafkaHome, "bin", "kafka-server-start.sh");
         this.zookeeperBin = Paths.join(kafkaHome, "bin", "zookeeper-server-start.sh");
