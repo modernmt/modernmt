@@ -1,29 +1,86 @@
 import codecs
-import copy
+from collections import Counter
+from collections import defaultdict
+
+from math import sqrt
+
 import re
-from collections import Counter, defaultdict
+
+import copy
 
 
-class BPEEncoderBuilder:
-    class VocabularyBuilder:
-        def __init__(self):
-            self.counter = Counter()
+def _cosine_similarity(a, b):
+    dot_product = 0
+    for key in set(a.keys() + b.keys()):
+        a_value = a[key] if key in a else 0
+        b_value = b[key] if key in b else 0
 
-        def add_line(self, line):
-            if isinstance(line, str):
-                line = line.decode('utf-8')
+        dot_product += a_value * b_value
 
-            if isinstance(line, unicode):
-                line = line.strip().split()
+    a_magnitude = 0
+    for _, value in a.iteritems():
+        a_magnitude += value * value
+    a_magnitude = sqrt(a_magnitude)
 
-            for word in line:
-                self.counter[word] += 1
+    b_magnitude = 0
+    for _, value in b.iteritems():
+        b_magnitude += value * value
+    b_magnitude = sqrt(b_magnitude)
 
-        def build(self):
-            return self.counter
+    return dot_product / (a_magnitude * b_magnitude)
 
-    def __init__(self, model):
-        self.model = model
+
+class _BPE:
+    def __init__(self, codes, separator):
+        self.separator = separator
+        self.bpe_codes = codes
+
+        self._cache = {}
+        self._bpe_codes_reverse = dict([(pair[0] + pair[1], pair) for pair, _ in self.bpe_codes.iteritems()])
+
+    # Learning
+    # ------------------------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def learn_from_terms(terms, symbols, min_frequency, separator):
+        codes = []
+
+        vocab = dict([(tuple(a[:-1]) + (a[-1] + '</w>',), b) for (a, b) in terms.items()])
+        sorted_vocab = sorted(vocab.items(), key=lambda x: x[1], reverse=True)
+
+        stats, indices = _BPE._get_pair_statistics(sorted_vocab)
+        big_stats = copy.deepcopy(stats)
+        # threshold is inspired by Zipfian assumption, but should only affect speed
+        threshold = max(stats.values()) / 10
+        for i in xrange(symbols):
+            if stats:
+                most_frequent = max(stats, key=lambda x: (stats[x], x))
+
+            # we probably missed the best pair because of pruning; go back to full statistics
+            if not stats or (i and stats[most_frequent] < threshold):
+                _BPE._prune_stats(stats, big_stats, threshold)
+                stats = copy.deepcopy(big_stats)
+                most_frequent = max(stats, key=lambda x: (stats[x], x))
+                # threshold is inspired by Zipfian assumption, but should only affect speed
+                threshold = stats[most_frequent] * i / (i + 10000.0)
+                _BPE._prune_stats(stats, big_stats, threshold)
+
+            if stats[most_frequent] < min_frequency:
+                # No pair has frequency >= min_frequency. Stopping
+                break
+
+            codes.append(most_frequent)
+            changes = _BPE._replace_pair(most_frequent, sorted_vocab, indices)
+            _BPE._update_pair_statistics(most_frequent, changes, stats, indices)
+            stats[most_frequent] = 0
+
+            if not i % 100:
+                _BPE._prune_stats(stats, big_stats, threshold)
+
+        # some hacking to deal with duplicates (only consider first instance)
+        codes = dict([(code, i) for (i, code) in reversed(list(enumerate(codes)))])
+
+        return _BPE(codes, separator=separator)
 
     @staticmethod
     def _get_pair_statistics(vocab):
@@ -144,77 +201,13 @@ class BPEEncoderBuilder:
                     indices[nex][j] += 1
                 i += 1
 
-    def learn(self, vocab, symbols=50000, min_frequency=2):
-        with codecs.open(self.model, 'w', 'utf-8') as outfile:
-            # version 0.2 changes the handling of the end-of-word token ('</w>');
-            # version numbering allows backward compatibility
-            outfile.write('#version: 0.2\n')
+    # Applying
+    # ------------------------------------------------------------------------------------------------------------------
 
-            vocab = dict([(tuple(a[:-1]) + (a[-1] + '</w>',), b) for (a, b) in vocab.items()])
-            sorted_vocab = sorted(vocab.items(), key=lambda x: x[1], reverse=True)
-
-            stats, indices = self._get_pair_statistics(sorted_vocab)
-            big_stats = copy.deepcopy(stats)
-            # threshold is inspired by Zipfian assumption, but should only affect speed
-            threshold = max(stats.values()) / 10
-            for i in range(symbols):
-                if stats:
-                    most_frequent = max(stats, key=lambda x: (stats[x], x))
-
-                # we probably missed the best pair because of pruning; go back to full statistics
-                if not stats or (i and stats[most_frequent] < threshold):
-                    self._prune_stats(stats, big_stats, threshold)
-                    stats = copy.deepcopy(big_stats)
-                    most_frequent = max(stats, key=lambda x: (stats[x], x))
-                    # threshold is inspired by Zipfian assumption, but should only affect speed
-                    threshold = stats[most_frequent] * i / (i + 10000.0)
-                    self._prune_stats(stats, big_stats, threshold)
-
-                if stats[most_frequent] < min_frequency:
-                    # No pair has frequency >= min_frequency. Stopping
-                    break
-
-                outfile.write(u'{0} {1}\n'.format(*most_frequent))
-                changes = self._replace_pair(most_frequent, sorted_vocab, indices)
-                self._update_pair_statistics(most_frequent, changes, stats, indices)
-                stats[most_frequent] = 0
-
-                if not i % 100:
-                    self._prune_stats(stats, big_stats, threshold)
-
-        return BPEEncoder(self.model)
-
-
-class BPEEncoder:
-    def __init__(self, model, separator='@@'):
-        self.separator = separator
-        self._cache = {}
-
-        with codecs.open(model, encoding='utf-8') as codes:
-            # check version information
-            first_line = codes.readline()
-            if first_line.startswith('#version:'):
-                self._version = tuple([int(x) for x in re.sub(r'(\.0+)*$', '', first_line.split()[-1]).split('.')])
-            else:
-                self._version = (0, 1)
-                codes.seek(0)
-
-            self._bpe_codes = [tuple(item.split()) for item in codes]
-            # some hacking to deal with duplicates (only consider first instance)
-            self._bpe_codes = dict([(code, i) for (i, code) in reversed(list(enumerate(self._bpe_codes)))])
-
-            self._bpe_codes_reverse = dict([(pair[0] + pair[1], pair) for pair, i in self._bpe_codes.items()])
-
-    def encode_line(self, line):
-        if isinstance(line, str):
-            line = line.decode('utf-8')
-
-        if isinstance(line, unicode):
-            line = line.strip().split()
-
+    def apply(self, tokens, vocabulary=None):
         output = []
-        for word in line:
-            new_word = [out for out in self._encode(word)]
+        for word in tokens:
+            new_word = [out for out in self._encode(word, vocabulary)]
 
             for item in new_word[:-1]:
                 output.append(item + self.separator)
@@ -222,28 +215,20 @@ class BPEEncoder:
 
         return output
 
-    def decode_line(self, tokens):
-        return ' '.join(tokens).replace(self.separator + ' ', '')
+    def _encode(self, _word, vocabulary=None):
+        if _word in self._cache:
+            return self._cache[_word]
 
-    def _encode(self, orig):
-        if orig in self._cache:
-            return self._cache[orig]
-
-        if self._version == (0, 1):
-            word = tuple(orig) + ('</w>',)
-        elif self._version == (0, 2):  # more consistent handling of word-final segments
-            word = tuple(orig[:-1]) + (orig[-1] + '</w>',)
-        else:
-            raise NotImplementedError
+        word = tuple(_word[:-1]) + (_word[-1] + '</w>',)
 
         pairs = self._get_pairs(word)
 
         if not pairs:
-            return orig
+            return _word
 
         while True:
-            bigram = min(pairs, key=lambda pair: self._bpe_codes.get(pair, float('inf')))
-            if bigram not in self._bpe_codes:
+            bigram = min(pairs, key=lambda pair: self.bpe_codes.get(pair, float('inf')))
+            if bigram not in self.bpe_codes:
                 break
             first, second = bigram
             new_word = []
@@ -276,8 +261,10 @@ class BPEEncoder:
         elif word[-1].endswith('</w>'):
             word = word[:-1] + (word[-1].replace('</w>', ''),)
 
-        self._cache[orig] = word
+        if vocabulary is not None:
+            word = self._check_vocab_and_split(word, vocabulary)
 
+        self._cache[_word] = word
         return word
 
     @staticmethod
@@ -291,5 +278,222 @@ class BPEEncoder:
         for char in word[1:]:
             pairs.add((prev_char, char))
             prev_char = char
-
         return pairs
+
+    def _check_vocab_and_split(self, orig, vocabulary):
+        """Check for each segment in word if it is in-vocabulary,
+        and segment OOV segments into smaller units by reversing the BPE merge operations"""
+
+        out = []
+
+        for segment in orig[:-1]:
+            if segment + self.separator in vocabulary:
+                out.append(segment)
+            else:
+                for item in self._recursive_split(segment, vocabulary, False):
+                    out.append(item)
+
+        segment = orig[-1]
+        if segment in vocabulary:
+            out.append(segment)
+        else:
+            for item in self._recursive_split(segment, vocabulary, True):
+                out.append(item)
+
+        return out
+
+    def _recursive_split(self, segment, vocabulary, final=False):
+        """Recursively split segment into smaller units (by reversing BPE merges)
+        until all units are either in-vocabulary, or cannot be split futher."""
+
+        try:
+            if final:
+                left, right = self._bpe_codes_reverse[segment + '</w>']
+                right = right[:-4]
+            else:
+                left, right = self._bpe_codes_reverse[segment]
+        except:
+            yield segment
+            return
+
+        if left + self.separator in vocabulary:
+            yield left
+        else:
+            for item in self._recursive_split(left, vocabulary, False):
+                yield item
+
+        if (final and right in vocabulary) or (not final and right + self.separator in vocabulary):
+            yield right
+        else:
+            for item in self._recursive_split(right, vocabulary, final):
+                yield item
+
+
+class BPEProcessor:
+    @staticmethod
+    def load_from_file(path):
+        with codecs.open(path, mode='r', encoding='utf-8') as inp:
+            separator = inp.readline().rstrip('\n')
+
+            source_codes = dict()
+            for i in xrange(int(inp.readline().rstrip('\n'))):
+                left, right, i = inp.readline().rstrip('\n').split()
+                source_codes[(left, right)] = int(i)
+
+            source_terms = set()
+            for i in xrange(int(inp.readline().rstrip('\n'))):
+                source_terms.add(inp.readline().rstrip('\n'))
+
+            target_codes = dict()
+            for i in xrange(int(inp.readline().rstrip('\n'))):
+                left, right, i = inp.readline().rstrip('\n').split()
+                target_codes[(left, right)] = int(i)
+
+            target_terms = set()
+            for i in xrange(int(inp.readline().rstrip('\n'))):
+                target_terms.add(inp.readline().rstrip('\n'))
+
+            return BPEProcessor(source_codes=source_codes, source_terms=source_terms,
+                                target_codes=(target_codes if len(target_codes) > 0 else None),
+                                target_terms=target_terms, separator=separator)
+
+    def __init__(self, source_codes, source_terms, target_codes, target_terms, separator):
+        self._separator = separator
+        self._source_bpe = _BPE(source_codes, separator)
+        self._source_terms = source_terms
+        self._target_bpe = _BPE(target_codes, separator) if target_codes is not None else None
+        self._target_terms = target_terms
+
+    def save_to_file(self, path):
+        source_codes = self._source_bpe.bpe_codes
+        target_codes = self._target_bpe.bpe_codes if self._target_bpe is not None else dict()
+
+        with codecs.open(path, mode='w', encoding='utf-8') as out:
+            out.write(u'%s\n' % self._separator)
+
+            out.write(u'%d\n' % len(source_codes))
+            for (left, right), i in source_codes.iteritems():
+                out.write(u'%s %s %d\n' % (left, right, i))
+
+            out.write(u'%d\n' % len(self._source_terms))
+            for term in self._source_terms:
+                out.write(u'%s\n' % term)
+
+            out.write(u'%d\n' % len(target_codes))
+            for (left, right), i in target_codes.iteritems():
+                out.write(u'%s %s %d\n' % (left, right, i))
+
+            out.write(u'%d\n' % len(self._target_terms))
+            for term in self._target_terms:
+                out.write(u'%s\n' % term)
+
+    def encode_line(self, line, is_source=True):
+        if isinstance(line, str):
+            line = line.decode('utf-8')
+
+        if isinstance(line, unicode):
+            line = line.strip().split()
+
+        bpe = self._source_bpe if is_source or (self._target_bpe is None) else self._target_bpe
+        return bpe.apply(line, vocabulary=self._source_terms if is_source else self._target_terms)
+
+    def decode_tokens(self, tokens):
+        return u' '.join(tokens).replace(self._separator + u' ', u'')
+
+    class Builder:
+        def __init__(self, symbols=90000, max_vocabulary_size=None, min_frequency=2,
+                     similarity_threshold=.5, separator='@@'):
+            self._symbols = symbols
+            self._max_vocabulary_size = max_vocabulary_size
+            self._min_frequency = min_frequency
+            self._similarity_threshold = similarity_threshold
+            self._separator = separator
+
+            self._dictionaries = (Counter(), Counter())
+            self._alphabets = (Counter(), Counter())
+
+        def build(self, data_source):
+            """
+            It builds a new processor from a data source.
+            A data source object must support __enter__ and __exit__ method to open and close the data stream.
+            The data source object myst also be iterable returning a pair of strings: source and target.
+
+            :param data_source: the data source object
+            :return: and instance of Dictionary
+            """
+
+            # Create dictionaries and alphabets
+            with data_source as stream:
+                for source, target in stream:
+                    self._add_line(source, is_source=True)
+                    self._add_line(target, is_source=False)
+
+            # Learns BPE
+            if _cosine_similarity(*self._alphabets) > self._similarity_threshold:
+                source_bpe = _BPE.learn_from_terms(self._dictionaries[0] + self._dictionaries[1], symbols=self._symbols,
+                                                   min_frequency=self._min_frequency, separator=self._separator)
+                target_bpe = None
+            else:
+                source_bpe = _BPE.learn_from_terms(self._dictionaries[0], symbols=self._symbols,
+                                                   min_frequency=self._min_frequency, separator=self._separator)
+                target_bpe = _BPE.learn_from_terms(self._dictionaries[1], symbols=self._symbols,
+                                                   min_frequency=self._min_frequency, separator=self._separator)
+
+            # Create vocabularies
+            source_terms, target_terms = self._collect_terms(
+                data_source, source_bpe, target_bpe if target_bpe is not None else source_bpe
+            )
+
+            # Cleanup
+            for counter in self._alphabets + self._dictionaries:
+                counter.clear()
+
+            source_codes = source_bpe.bpe_codes
+            target_codes = target_bpe.bpe_codes if target_bpe is not None else None
+
+            return BPEProcessor(source_codes, source_terms, target_codes, target_terms, self._separator)
+
+        def _add_line(self, line, is_source=True):
+            if isinstance(line, str):
+                line = line.decode('utf-8')
+
+            if isinstance(line, unicode):
+                line = line.strip().split()
+
+            dictionary = self._dictionaries[0 if is_source else 1]
+            alphabet = self._alphabets[0 if is_source else 1]
+
+            for word in line:
+                dictionary[word] += 1
+
+                for c in word:
+                    alphabet[c] += 1
+
+        def _collect_terms(self, data_source, source_bpe, target_bpe):
+            source_voc, target_voc = Counter(), Counter()
+
+            with data_source as stream:
+                for source, target in stream:
+                    source = source.decode('utf-8').strip().split()
+                    target = target.decode('utf-8').strip().split()
+
+                    for word in source_bpe.apply(source):
+                        source_voc[word] += 1
+                    for word in target_bpe.apply(target):
+                        target_voc[word] += 1
+
+            if self._max_vocabulary_size is not None and len(source_voc) > self._max_vocabulary_size:
+                source_voc = self._prune_counter(source_voc)
+            else:
+                source_voc = set(source_voc.keys())
+
+            if self._max_vocabulary_size is not None and len(target_voc) > self._max_vocabulary_size:
+                target_voc = self._prune_counter(target_voc)
+            else:
+                target_voc = set(target_voc.keys())
+
+            return source_voc, target_voc
+
+        def _prune_counter(self, c):
+            entries = c.most_common()[:self._max_vocabulary_size]
+            return set(x for x, _ in entries)
