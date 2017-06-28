@@ -15,11 +15,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.build.timestamp.format>yyyyMMddHHmm</maven.build.timestamp.format>
-
         <resourcesOutput>${project.build.directory}/generated-resources</resourcesOutput>
-        <version>${project.parent.version}</version>
-        <build>${maven.build.timestamp}</build>
     </properties>
 
     <build>
@@ -51,23 +47,6 @@
                                 <argument>-name</argument>
                                 <argument>*.java</argument>
                             </arguments>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>properties-maven-plugin</artifactId>
-                <version>1.0.0</version>
-                <executions>
-                    <execution>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>write-project-properties</goal>
-                        </goals>
-                        <configuration>
-                            <outputFile>${resourcesOutput}/pom-root.properties</outputFile>
                         </configuration>
                     </execution>
                 </executions>

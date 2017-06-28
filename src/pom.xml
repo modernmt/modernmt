@@ -30,9 +30,14 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.build.timestamp.format>yyyyMMddHHmm</maven.build.timestamp.format>
+
         <lucene.version>4.10.4</lucene.version>
+        <kafka.version>0.10.2.1</kafka.version>
+        <cassandra.version>3.11.0</cassandra.version>
 
         <mmt.version>1.0.1</mmt.version>
+        <mmt.build.number>${maven.build.timestamp}</mmt.build.number>
 
         <!-- Native project definitions -->
         <project.build.native>${project.build.directory}/native</project.build.native>

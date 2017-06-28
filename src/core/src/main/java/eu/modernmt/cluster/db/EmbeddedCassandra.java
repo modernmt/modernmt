@@ -1,5 +1,6 @@
 package eu.modernmt.cluster.db;
 
+import eu.modernmt.Pom;
 import eu.modernmt.cluster.EmbeddedService;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
@@ -22,6 +23,8 @@ import java.util.concurrent.TimeUnit;
  * Created by davide on 07/04/17.
  */
 public class EmbeddedCassandra extends EmbeddedService {
+
+    public static final String VERSION = Pom.getProperty("cassandra.version");
 
     public static EmbeddedCassandra start(Engine engine, int port) throws BootstrapException {
         try {
@@ -51,7 +54,7 @@ public class EmbeddedCassandra extends EmbeddedService {
         this.runtime = engine.getRuntimeFolder("cassandra", true);
         this.logFile = engine.getLogFile("embedded-cassandra.log");
 
-        File cassandraHome = Paths.join(FileConst.getVendorPath(), "cassandra-3.10");
+        File cassandraHome = Paths.join(FileConst.getVendorPath(), "cassandra-" + VERSION);
 
         this.bin = Paths.join(cassandraHome, "bin", "cassandra");
         this.configTemplate = Paths.join(cassandraHome, "conf", "cassandra.yaml");
