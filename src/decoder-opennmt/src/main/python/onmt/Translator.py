@@ -82,8 +82,12 @@ class Translator(object):
 
         self._logger.info("loading model options from checkpoint... START")
         start_time2 = time.time()
+
         self.model_opt = Trainer.Options()
         self.model_opt.load_state_dict(checkpoint['opt'])
+        self.model_opt.min_epochs = self.model_opt.max_epochs = self.opt.tuning_epochs
+        self.model_opt.min_perplexity_decrement = -1.
+
         self._logger.info("loadin model options from checkpoint... END %.2fs" % (time.time() - start_time2))
         self._logger.info("Model Options: %s" % repr(self.model_opt))
 
@@ -444,9 +448,7 @@ class Translator(object):
 
         self._logger.info('tuning model... START')
         start_time = time.time()
-        self.trainer.trainModel(self.model_copy, tuningTrainData, None, tuningDataset, self.optim_copy,
-                                save_all_epochs=False, save_last_epoch=False, epochs=self.opt.tuning_epochs,
-                                clone=False)
+        self.trainer.train_model(self.model_copy, tuningTrainData, None, tuningDataset, self.optim_copy, save_epochs=0)
         self._logger.info('tuning model... END %.2fs' % (time.time() - start_time))
 
         #  (2) translate

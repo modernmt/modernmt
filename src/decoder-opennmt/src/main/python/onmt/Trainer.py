@@ -1,6 +1,6 @@
 import math
+import os
 import time
-import copy
 
 import torch
 import torch.nn as nn
@@ -8,6 +8,12 @@ from torch.autograd import Variable
 
 import onmt
 import logging
+
+
+class TrainingInterrupt(Exception):
+    def __init__(self, checkpoint):
+        super(TrainingInterrupt, self).__init__()
+        self.checkpoint = checkpoint
 
 
 class Trainer(object):
@@ -31,8 +37,10 @@ class Trainer(object):
             # Optimization options -------------------------------------------------------------------------------------
             self.batch_size = 64  # Maximum batch size
             self.max_generator_batches = 32  # Maximum batches of words in a seq to run the generator on in parallel.
-            self.epochs = 30  # Number of training epochs
+            self.max_epochs = 40  # Maximum number of training epochs
+            self.min_epochs = 8  # Minimum number of training epochs
             self.start_epoch = 1  # The epoch from which to start
+            self.min_perplexity_decrement = .03  # If perplexity decrement is lower than this percentage, stop training
             self.param_init = 0.1  # Parameters are initialized over uniform distribution with support
             self.optim = 'sgd'  # Optimization method. [sgd|adagrad|adadelta|adam]
             self.max_grad_norm = 5  # If norm(gradient vector) > max_grad_norm, re-normalize
@@ -119,126 +127,158 @@ class Trainer(object):
         model.train()
         return total_loss / total_words, float(total_num_correct) / total_words
 
-    def trainModel(self, model_ori, trainData, validData, dataset, optim_ori, save_all_epochs=True,
-                   save_last_epoch=False, epochs=None, clone=False):
-
-        opt = self.opt
-
-        if epochs:
-            opt.epochs = epochs
-
+    def train_model(self, model_ori, train_data, valid_data, dataset, optim_ori, save_epochs=5):
         model = model_ori
         optim = optim_ori
 
-        model.decoder.attn.applyMask(None)  # set the mask to None; required when the same model is trained after a translation
-
+        # set the mask to None; required when the same model is trained after a translation
+        model.decoder.attn.applyMask(None)
         model.train()
-
-        save_last_epoch = save_last_epoch and not save_all_epochs
 
         # define criterion of each GPU
         criterion = self.NMTCriterion(dataset['dicts']['tgt'].size())
 
-        start_time = time.time()
-
-        def trainEpoch(epoch):
-            if opt.extra_shuffle and epoch > opt.curriculum:
-                trainData.shuffle()
-
-            # shuffle mini batch order
-            batchOrder = torch.randperm(len(trainData))
-
-            total_loss, total_words, total_num_correct = 0, 0, 0
-            report_loss, report_tgt_words, report_src_words, report_num_correct = 0, 0, 0, 0
-            start = time.time()
-            for i in range(len(trainData)):
-
-                batchIdx = batchOrder[i] if epoch > opt.curriculum else i
-                batch = trainData[batchIdx][:-1]  # exclude original indices
-
-                model.zero_grad()
-                outputs = model(batch)
-                targets = batch[1][1:]  # exclude <s> from targets
-                loss, gradOutput, num_correct = self.memoryEfficientLoss(
-                    outputs, targets, model.generator, criterion)
-
-                outputs.backward(gradOutput)
-
-                # update the parameters
-                optim.step()
-
-                num_words = targets.data.ne(onmt.Constants.PAD).sum()
-                report_loss += loss
-                report_num_correct += num_correct
-                report_tgt_words += num_words
-                report_src_words += batch[0][1].data.sum()
-                total_loss += loss
-                total_num_correct += num_correct
-                total_words += num_words
-                if i % opt.log_interval == -1 % opt.log_interval:
-                    self._logger.info(
-                        "trainEpoch epoch %2d, %5d/%5d; num_corr: %6.2f; %3.0f src tok; %3.0f tgt tok; acc: %6.2f; ppl: %6.2f; %3.0f src tok/s; %3.0f tgt tok/s; %6.0f s elapsed" %
-                        (epoch, i + 1, len(trainData),
-                         report_num_correct,
-                         report_src_words,
-                         report_tgt_words,
-                         (float(report_num_correct) / report_tgt_words) * 100,
-                         math.exp(report_loss / report_tgt_words),
-                         report_src_words / (time.time() - start),
-                         report_tgt_words / (time.time() - start),
-                         time.time() - start_time))
-
-                    report_loss = report_tgt_words = report_src_words = report_num_correct = 0
-                    start = time.time()
-
-            return total_loss / total_words, float(total_num_correct) / total_words
-
+        perplexity_history = []
+        checkpoint_files = []
         valid_acc, valid_ppl = None, None
-        for epoch in range(opt.start_epoch, opt.epochs + 1):
 
-            self._logger.info('Training epoch %g... START' % epoch)
-            start_time_epoch = time.time()
+        try:
+            for epoch in range(self.opt.start_epoch, self.opt.max_epochs + 1):
+                self._logger.info('Training epoch %g... START' % epoch)
+                start_time_epoch = time.time()
 
-            #  (1) train for one epoch on the training set
-            train_loss, train_acc = trainEpoch(epoch)
-            train_ppl = math.exp(min(train_loss, 100))
-            self._logger.info('trainEpoch Epoch %g Train loss: %g perplexity: %g accuracy: %g' % (
-                epoch, train_loss, train_ppl, (float(train_acc) * 100)))
+                #  (1) train for one epoch on the training set
+                train_loss, train_acc = self._train_epoch(epoch, train_data, model, criterion, optim)
+                train_ppl = math.exp(min(train_loss, 100))
+                self._logger.info('trainEpoch Epoch %g Train loss: %g perplexity: %g accuracy: %g' % (
+                    epoch, train_loss, train_ppl, (float(train_acc) * 100)))
 
-            if validData:
-                #  (2) evaluate on the validation set
-                valid_loss, valid_acc = self.eval(model, criterion, validData)
-                valid_ppl = math.exp(min(valid_loss, 100))
-                self._logger.info('trainModel Epoch %g Validation loss: %g perplexity: %g accuracy: %g' % (
-                    epoch, valid_loss, valid_ppl, (float(valid_acc) * 100)))
+                force_termination = False
 
-                #  (3) update the learning rate
-                optim.updateLearningRate(valid_loss, epoch)
+                if self.opt.min_perplexity_decrement > 0.:
+                    perplexity_history.append(train_ppl)
+                    force_termination = self._should_terminate(perplexity_history)
 
-                self._logger.info("trainModel Epoch %g Decaying learning rate to %g" % (epoch, optim.lr))
+                if valid_data:
+                    #  (2) evaluate on the validation set
+                    valid_loss, valid_acc = self.eval(model, criterion, valid_data)
+                    valid_ppl = math.exp(min(valid_loss, 100))
+                    self._logger.info('trainModel Epoch %g Validation loss: %g perplexity: %g accuracy: %g' % (
+                        epoch, valid_loss, valid_ppl, (float(valid_acc) * 100)))
 
-            if save_all_epochs or save_last_epoch:
-                model_state_dict = model.module.state_dict() if len(opt.gpus) > 1 else model.state_dict()
-                model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
-                generator_state_dict = model.generator.module.state_dict() if len(
-                    opt.gpus) > 1 else model.generator.state_dict()
-                opt_state_dict = opt.state_dict()
+                    # (3) update the learning rate
+                    optim.updateLearningRate(valid_loss, epoch)
 
-                #  (4) drop a checkpoint
-                checkpoint = {
-                    'model': model_state_dict,
-                    'generator': generator_state_dict,
-                    'dicts': dataset['dicts'],
-                    'opt': opt_state_dict,
-                    'epoch': epoch,
-                    'optim': optim
-                }
+                    self._logger.info("trainModel Epoch %g Decaying learning rate to %g" % (epoch, optim.lr))
 
-                if valid_acc is not None:
-                    torch.save(checkpoint,
-                               '%s_acc_%.2f_ppl_%.2f_e%d.pt' % (opt.save_model, 100 * valid_acc, valid_ppl, epoch))
-                else:
-                    torch.save(checkpoint, '%s_acc_NA_ppl_NA_e%d.pt' % (opt.save_model, epoch))
+                if save_epochs > 0:
+                    if len(checkpoint_files) > 0 and len(checkpoint_files) > save_epochs - 1:
+                        os.remove(checkpoint_files.pop(0))
 
-            self._logger.info('Training epoch %g... END %.2fs' % (epoch, time.time() - start_time_epoch))
+                    model_state_dict = model.module.state_dict() if len(self.opt.gpus) > 1 else model.state_dict()
+                    model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
+                    generator_state_dict = model.generator.module.state_dict() if len(
+                        self.opt.gpus) > 1 else model.generator.state_dict()
+                    opt_state_dict = self.opt.state_dict()
 
+                    #  (4) drop a checkpoint
+                    checkpoint = {
+                        'model': model_state_dict,
+                        'generator': generator_state_dict,
+                        'dicts': dataset['dicts'],
+                        'opt': opt_state_dict,
+                        'epoch': epoch,
+                        'optim': optim
+                    }
+
+                    if valid_acc is not None:
+                        checkpoint_file = \
+                            '%s_acc_%.2f_ppl_%.2f_e%d.pt' % (self.opt.save_model, 100 * valid_acc, valid_ppl, epoch)
+                    else:
+                        checkpoint_file = '%s_acc_NA_ppl_NA_e%d.pt' % (self.opt.save_model, epoch)
+
+                    torch.save(checkpoint, checkpoint_file)
+                    checkpoint_files.append(checkpoint_file)
+                    self._logger.info("Checkpoint for epoch %d saved to file %s" % (epoch, checkpoint_file))
+
+                if force_termination:
+                    break
+
+                self._logger.info('Training epoch %g... END %.2fs' % (epoch, time.time() - start_time_epoch))
+        except KeyboardInterrupt:
+            raise TrainingInterrupt(checkpoint=checkpoint_files[-1] if len(checkpoint_files) > 0 else None)
+
+        return checkpoint_files[-1] if len(checkpoint_files) > 0 else None
+
+    def _train_epoch(self, epoch, train_data, model, criterion, optim):
+        if self.opt.extra_shuffle and epoch > self.opt.curriculum:
+            train_data.shuffle()
+
+        # shuffle mini batch order
+        batchOrder = torch.randperm(len(train_data))
+
+        total_loss, total_words, total_num_correct = 0, 0, 0
+        report_loss, report_tgt_words, report_src_words, report_num_correct = 0, 0, 0, 0
+        start = time.time()
+        for i in range(len(train_data)):
+
+            batchIdx = batchOrder[i] if epoch > self.opt.curriculum else i
+            batch = train_data[batchIdx][:-1]  # exclude original indices
+
+            model.zero_grad()
+            outputs = model(batch)
+            targets = batch[1][1:]  # exclude <s> from targets
+            loss, gradOutput, num_correct = self.memoryEfficientLoss(
+                outputs, targets, model.generator, criterion)
+
+            outputs.backward(gradOutput)
+
+            # update the parameters
+            optim.step()
+
+            num_words = targets.data.ne(onmt.Constants.PAD).sum()
+            report_loss += loss
+            report_num_correct += num_correct
+            report_tgt_words += num_words
+            report_src_words += batch[0][1].data.sum()
+            total_loss += loss
+            total_num_correct += num_correct
+            total_words += num_words
+
+            if i % self.opt.log_interval == -1 % self.opt.log_interval:
+                self._logger.info(
+                    "trainEpoch epoch %2d, %5d/%5d; num_corr: %6.2f; %3.0f src tok; "
+                    "%3.0f tgt tok; acc: %6.2f; ppl: %6.2f; %3.0f src tok/s; %3.0f tgt tok/s;" %
+                    (epoch, i + 1, len(train_data),
+                     report_num_correct,
+                     report_src_words,
+                     report_tgt_words,
+                     (float(report_num_correct) / report_tgt_words) * 100,
+                     math.exp(report_loss / report_tgt_words),
+                     report_src_words / (time.time() - start),
+                     report_tgt_words / (time.time() - start)))
+
+                report_loss = report_tgt_words = report_src_words = report_num_correct = 0
+                start = time.time()
+
+        return total_loss / total_words, float(total_num_correct) / total_words
+
+    def _should_terminate(self, history):
+        if len(history) <= self.opt.min_epochs:
+            return False
+
+        current_value = history[-1]
+        previous_value = history[-2]
+
+        decrement = (previous_value - current_value) / previous_value
+
+        if 0 < decrement < self.opt.min_perplexity_decrement:
+            self._logger.info('Terminating training for perplexity threshold reached: '
+                              'new perplexity is %f, while previous was %f (-%.1f%%)'
+                              % (current_value, previous_value, decrement * 100))
+            return True
+        else:
+            self._logger.info('Continuing training: '
+                              'new perplexity is %f, while previous was %f (-%.1f%%)'
+                              % (current_value, previous_value, decrement * 100))
+            return False

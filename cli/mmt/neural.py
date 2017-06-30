@@ -235,32 +235,18 @@ class OpenNMTDecoder:
         try:
             start_time = time.time()
             trainer = onmt.Trainer(self._opts)
-            trainer.trainModel(model, train_data, valid_data, data_set, optim)
+            checkpoint = trainer.train_model(model, train_data, valid_data, data_set, optim)
             logger.info('Training model... END %.2fs' % (time.time() - start_time))
-        except KeyboardInterrupt:
+        except onmt.TrainingInterrupt as e:
+            checkpoint = e.checkpoint
             logger.info('Training model... INTERRUPTED %.2fs' % (time.time() - start_time))
 
         # Saving last checkpoint ---------------------------------------------------------------------------------------
-
-        all_checkpoints = []
-        for checkpoint in glob.glob(self._opts.save_model + '_*.pt'):
-            filename = os.path.splitext(os.path.basename(checkpoint))[0]
-            epoch = filename.split('_')[-1]
-            if not epoch.startswith('e'):
-                raise Exception('Invalid checkpoint file "%s"' % checkpoint)
-
-            epoch = int(epoch[1:])
-            all_checkpoints.append([epoch, checkpoint])
-
-        if len(all_checkpoints) == 0:
-            raise Exception('Unable to find checkpoint files in "%s"' % working_dir)
-
-        _, checkpoint = sorted(all_checkpoints, key=lambda x: x[0], reverse=True)[0]
-
         model_folder = os.path.abspath(os.path.join(self._model, os.path.pardir))
         if not os.path.isdir(model_folder):
             os.mkdir(model_folder)
 
+        logger.info('Storing model "%s" to %s' % (checkpoint, self._model))
         os.rename(checkpoint, self._model)
 
 
