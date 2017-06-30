@@ -234,7 +234,6 @@ class Trainer(object):
                     'optim': optim
                 }
 
-
                 if valid_acc is not None:
                     torch.save(checkpoint,
                                '%s_acc_%.2f_ppl_%.2f_e%d.pt' % (opt.save_model, 100 * valid_acc, valid_ppl, epoch))

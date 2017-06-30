@@ -364,6 +364,12 @@ class BPEProcessor:
         self._target_bpe = _BPE(target_codes, separator) if target_codes is not None else None
         self._target_terms = target_terms
 
+    def get_source_terms(self):
+        return list(self._source_terms)
+
+    def get_target_terms(self):
+        return list(self._target_terms)
+
     def save_to_file(self, path):
         source_codes = self._source_bpe.bpe_codes
         target_codes = self._target_bpe.bpe_codes if self._target_bpe is not None else dict()
@@ -387,7 +393,7 @@ class BPEProcessor:
             for term in self._target_terms:
                 out.write(u'%s\n' % term)
 
-    def encode_line(self, line, is_source=True):
+    def encode_line(self, line, is_source):
         if isinstance(line, str):
             line = line.decode('utf-8')
 
@@ -412,21 +418,22 @@ class BPEProcessor:
             self._dictionaries = (Counter(), Counter())
             self._alphabets = (Counter(), Counter())
 
-        def build(self, data_source):
+        def build(self, data_sources):
             """
-            It builds a new processor from a data source.
+            It builds a new processor from a collection of data sources.
             A data source object must support __enter__ and __exit__ method to open and close the data stream.
             The data source object myst also be iterable returning a pair of strings: source and target.
 
-            :param data_source: the data source object
+            :param data_sources: a collection of data source objects
             :return: and instance of Dictionary
             """
 
             # Create dictionaries and alphabets
-            with data_source as stream:
-                for source, target in stream:
-                    self._add_line(source, is_source=True)
-                    self._add_line(target, is_source=False)
+            for data_source in data_sources:
+                with data_source as stream:
+                    for source, target in stream:
+                        self._add_line(source, is_source=True)
+                        self._add_line(target, is_source=False)
 
             # Learns BPE
             if _cosine_similarity(*self._alphabets) > self._similarity_threshold:
@@ -441,7 +448,7 @@ class BPEProcessor:
 
             # Create vocabularies
             source_terms, target_terms = self._collect_terms(
-                data_source, source_bpe, target_bpe if target_bpe is not None else source_bpe
+                data_sources, source_bpe, target_bpe if target_bpe is not None else source_bpe
             )
 
             # Cleanup
@@ -469,18 +476,19 @@ class BPEProcessor:
                 for c in word:
                     alphabet[c] += 1
 
-        def _collect_terms(self, data_source, source_bpe, target_bpe):
+        def _collect_terms(self, data_sources, source_bpe, target_bpe):
             source_voc, target_voc = Counter(), Counter()
 
-            with data_source as stream:
-                for source, target in stream:
-                    source = source.decode('utf-8').strip().split()
-                    target = target.decode('utf-8').strip().split()
+            for data_source in data_sources:
+                with data_source as stream:
+                    for source, target in stream:
+                        source = source.decode('utf-8').strip().split()
+                        target = target.decode('utf-8').strip().split()
 
-                    for word in source_bpe.apply(source):
-                        source_voc[word] += 1
-                    for word in target_bpe.apply(target):
-                        target_voc[word] += 1
+                        for word in source_bpe.apply(source):
+                            source_voc[word] += 1
+                        for word in target_bpe.apply(target):
+                            target_voc[word] += 1
 
             if self._max_vocabulary_size is not None and len(source_voc) > self._max_vocabulary_size:
                 source_voc = self._prune_counter(source_voc)

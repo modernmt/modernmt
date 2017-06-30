@@ -201,10 +201,12 @@ class _FileParallelCorpus(BilingualCorpus):
             langs = self.langs
 
         class __r:
-            def __init__(self, files):
-                self._files = [open(f, 'rb') for f in files]
+            def __init__(self, filenames):
+                self._filenames = filenames
+                self._files = None
 
             def __enter__(self):
+                self._files = [open(f, 'rb') for f in self._filenames]
                 return self
 
             def __exit__(self, exc_type, exc_val, exc_tb):

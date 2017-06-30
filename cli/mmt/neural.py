@@ -16,7 +16,7 @@ from cli.mmt.processing import TrainingPreprocessor
 sys.path.insert(0, os.path.abspath(os.path.join(LIB_DIR, 'pynmt')))
 
 import onmt
-from bpe import BPEEncoderBuilder
+from bpe import BPEProcessor
 import torch
 
 
@@ -49,28 +49,50 @@ class TranslationMemory:
 
 
 class OpenNMTPreprocessor:
-    def __init__(self, source_lang, target_lang, bpe_model, max_line_length=80):
+    def __init__(self, source_lang, target_lang, bpe_model):
         self._source_lang = source_lang
         self._target_lang = target_lang
-        self._max_line_length = max_line_length
+        self._bpe_model = bpe_model
+
         self._logger = logging.getLogger('mmt.train.OpenNMTPreprocessor')
 
-        self._bpe_trainer = BPEEncoderBuilder(bpe_model)
-        self._preprocessor = TrainingPreprocessor(source_lang, target_lang)
+    def process(self, corpora, valid_corpora, output_file, bpe_symbols, max_vocab_size, max_line_len,
+                working_dir='.', dump_dicts=False):
+        class _ReaderWrapper:
+            def __init__(self, _corpus, _langs):
+                self.corpus = _corpus
+                self.langs = _langs
+                self._reader = None
 
-    def process(self, corpora, validation_corpora, output_file, bpe_symbols, working_dir='.', dump_dicts=False):
+            def __enter__(self):
+                self._reader = self.corpus.reader(self.langs).__enter__()
+                return self._reader
+
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                self._reader.__exit__(exc_type, exc_val, exc_tb)
+                return self._reader
+
         self._logger.info('Creating VBE vocabulary')
-        bpe_encoder = self._create_vb_encoder(corpora, bpe_symbols)
+        vb_builder = BPEProcessor.Builder(symbols=bpe_symbols, max_vocabulary_size=max_vocab_size)
+        bpe_encoder = vb_builder.build([_ReaderWrapper(c, [self._source_lang, self._target_lang]) for c in corpora])
+        bpe_encoder.save_to_file(self._bpe_model)
 
         self._logger.info('Creating vocabularies')
-        src_vocab, trg_vocab = self._create_vocabs(bpe_encoder, corpora)
+        src_vocab = onmt.Dict([onmt.Constants.PAD_WORD, onmt.Constants.UNK_WORD,
+                               onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD], lower=False)
+        trg_vocab = onmt.Dict([onmt.Constants.PAD_WORD, onmt.Constants.UNK_WORD,
+                               onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD], lower=False)
+
+        for word in bpe_encoder.get_source_terms():
+            src_vocab.add(word)
+        for word in bpe_encoder.get_target_terms():
+            trg_vocab.add(word)
 
         self._logger.info('Preparing training corpora')
-        src_train, trg_train = self._prepare_corpora(corpora, bpe_encoder, src_vocab, trg_vocab)
+        src_train, trg_train = self._prepare_corpora(corpora, bpe_encoder, src_vocab, trg_vocab, max_line_len)
 
         self._logger.info('Preparing validation corpora')
-        validation_corpora, _ = self._preprocessor.process(validation_corpora, os.path.join(working_dir, 'valid_set'))
-        src_valid, trg_valid = self._prepare_corpora(validation_corpora, bpe_encoder, src_vocab, trg_vocab)
+        src_valid, trg_valid = self._prepare_corpora(valid_corpora, bpe_encoder, src_vocab, trg_vocab, max_line_len)
 
         self._logger.info('Storing OpenNMT preprocessed data to "%s"' % output_file)
         torch.save({
@@ -89,34 +111,7 @@ class OpenNMTPreprocessor:
             self._logger.info('Storing OpenNMT preprocessed target dictionary "%s"' % trg_dict_file)
             trg_vocab.writeFile(trg_dict_file)
 
-    def _create_vb_encoder(self, corpora, bpe_symbols):
-        vb_builder = BPEEncoderBuilder.VocabularyBuilder()
-
-        for corpus in corpora:
-            with corpus.reader([self._source_lang, self._target_lang]) as reader:
-                for source, target in reader:
-                    vb_builder.add_line(source)
-                    vb_builder.add_line(target)
-
-        return self._bpe_trainer.learn(vb_builder.build(), bpe_symbols)
-
-    def _create_vocabs(self, bpe_encoder, corpora):
-        src_vocab = onmt.Dict([onmt.Constants.PAD_WORD, onmt.Constants.UNK_WORD,
-                               onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD], lower=False)
-        trg_vocab = onmt.Dict([onmt.Constants.PAD_WORD, onmt.Constants.UNK_WORD,
-                               onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD], lower=False)
-
-        for corpus in corpora:
-            with corpus.reader([self._source_lang, self._target_lang]) as reader:
-                for source, target in reader:
-                    for word in bpe_encoder.encode_line(source):
-                        src_vocab.add(word)
-                    for word in bpe_encoder.encode_line(target):
-                        trg_vocab.add(word)
-
-        return src_vocab, trg_vocab
-
-    def _prepare_corpora(self, corpora, bpe_encoder, src_vocab, trg_vocab):
+    def _prepare_corpora(self, corpora, bpe_encoder, src_vocab, trg_vocab, max_line_length):
         src, trg = [], []
         sizes = []
         count, ignored = 0, 0
@@ -124,9 +119,10 @@ class OpenNMTPreprocessor:
         for corpus in corpora:
             with corpus.reader([self._source_lang, self._target_lang]) as reader:
                 for source, target in reader:
-                    src_words, trg_words = bpe_encoder.encode_line(source), bpe_encoder.encode_line(target)
+                    src_words = bpe_encoder.encode_line(source, is_source=True)
+                    trg_words = bpe_encoder.encode_line(target, is_source=False)
 
-                    if 0 < len(src_words) <= self._max_line_length and 0 < len(trg_words) <= self._max_line_length:
+                    if 0 < len(src_words) <= max_line_length and 0 < len(trg_words) <= max_line_length:
                         src.append(src_vocab.convertToIdx(src_words,
                                                           onmt.Constants.UNK_WORD))
                         trg.append(trg_vocab.convertToIdx(trg_words,
@@ -142,7 +138,7 @@ class OpenNMTPreprocessor:
                         self._logger.info(' %d sentences prepared' % count)
 
         self._logger.info('Prepared %d sentences (%d ignored due to length == 0 or > %d)' %
-                          (len(src), ignored, self._max_line_length))
+                          (len(src), ignored, max_line_length))
 
         return src, trg
 
@@ -278,7 +274,7 @@ class NeuralEngine(Engine):
         self.memory = TranslationMemory(os.path.join(decoder_path, 'memory'), self.source_lang, self.target_lang)
         self.decoder = OpenNMTDecoder(os.path.join(decoder_path, 'model.pt'), self.source_lang, self.target_lang)
         self.onmt_preprocessor = OpenNMTPreprocessor(self.source_lang, self.target_lang,
-                                                     os.path.join(decoder_path, 'codes.bpe'))
+                                                     os.path.join(decoder_path, 'model.bpe'))
 
     def is_tuning_supported(self):
         return False
@@ -289,10 +285,11 @@ class NeuralEngine(Engine):
 
 class NeuralEngineBuilder(EngineBuilder):
     def __init__(self, name, source_lang, target_lang, roots, debug=False, steps=None, split_trainingset=True,
-                 validation_corpora=None, bpe_symbols=90000):
+                 validation_corpora=None, bpe_symbols=90000, max_vocab_size=None):
         EngineBuilder.__init__(self, NeuralEngine(name, source_lang, target_lang), roots, debug, steps,
                                split_trainingset)
         self._bpe_symbols = bpe_symbols
+        self._max_vocab_size = max_vocab_size
         self._valid_corpora_path = validation_corpora if validation_corpora is not None \
             else os.path.join(self._engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME)
 
@@ -320,11 +317,15 @@ class NeuralEngineBuilder(EngineBuilder):
 
         if not skip:
             validation_corpora = BilingualCorpus.list(self._valid_corpora_path)
+            validation_corpora, _ = self._engine.training_preprocessor.process(validation_corpora,
+                                                                               os.path.join(working_dir, 'valid_set'))
+
             corpora = filter(None, [args.filtered_bilingual_corpora, args.processed_bilingual_corpora,
                                     args.bilingual_corpora])[0]
 
             self._engine.onmt_preprocessor.process(corpora, validation_corpora, args.onmt_training_file,
-                                                   self._bpe_symbols, working_dir=working_dir, dump_dicts=True)
+                                                   bpe_symbols=self._bpe_symbols, max_vocab_size=self._max_vocab_size,
+                                                   max_line_len=80, working_dir=working_dir, dump_dicts=True)
 
     @EngineBuilder.Step('Neural decoder training')
     def _train_decoder(self, args, skip=False, delete_on_exit=False):

@@ -86,6 +86,9 @@ def main_create(argv):
     parser.add_argument('--bpe-symbols', dest='bpe_symbols',
                         help='if neural is set, this is the number of symbols of the BPE encoder '
                              '(default value is 90000).', default=90000)
+    parser.add_argument('--max-vocabulary-size', dest='max_vocab_size',
+                        help='if neural is set, this is the maximum size of the vocabulary '
+                             '(default value is unbound).', default=None)
 
     if len(argv) > 0:
         # Parse args
@@ -110,7 +113,8 @@ def main_create(argv):
                                        steps=args.training_steps,
                                        split_trainingset=args.split_corpora,
                                        validation_corpora=args.validation_corpora,
-                                       bpe_symbols=args.bpe_symbols)
+                                       bpe_symbols=args.bpe_symbols,
+                                       max_vocab_size=args.max_vocab_size)
         else:
             training = Training.phrase_based(name=args.engine,
                                              source_lang=args.source_lang,

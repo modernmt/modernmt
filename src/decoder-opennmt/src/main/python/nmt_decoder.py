@@ -3,7 +3,7 @@ import json
 import os
 import sys
 
-from bpe import BPEEncoder
+from bpe import BPEProcessor
 from onmt import Translator
 
 import logging
@@ -69,17 +69,17 @@ class OpenNMTDecoder(MMTDecoder):
 
         self._logger = logging.getLogger('onmt.OpenNMTDecoder')
         self._translator = Translator(os.path.join(model, 'model.pt'), opt)
-        self._bpe_encoder = BPEEncoder(os.path.join(model, 'codes.bpe'))
+        self._bpe_encoder = BPEProcessor.load_from_file(os.path.join(model, 'model.bpe'))
 
     def translate(self, text, suggestions=None):
-        src_batch = [self._bpe_encoder.encode_line(text)]
+        src_batch = [self._bpe_encoder.encode_line(text, is_source=True)]
 
         if len(suggestions) == 0 or not self._translator.opt.tunable:
             pred_batch, pred_score, gold_score = self._translator.translate(src_batch, None)
         else:
             for suggestion in suggestions:
-                suggestion.source = self._bpe_encoder.encode_line(suggestion.source)
-                suggestion.target = self._bpe_encoder.encode_line(suggestion.target)
+                suggestion.source = self._bpe_encoder.encode_line(suggestion.source, is_source=True)
+                suggestion.target = self._bpe_encoder.encode_line(suggestion.target, is_source=False)
 
             pred_batch, pred_score, gold_score = self._translator.translateWithAdaptation(src_batch, None, suggestions)
 
@@ -92,7 +92,7 @@ class OpenNMTDecoder(MMTDecoder):
                     "b:%d n:%d predScore[b][n]:%g predBatch[b][n]:%s" % (
                         b, n, pred_score[b][n], repr(pred_batch[b][n])))
 
-        return self._bpe_encoder.decode_line(output)
+        return self._bpe_encoder.decode_tokens(output)
 
     def close(self):
         pass
