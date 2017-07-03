@@ -201,7 +201,7 @@ def run_main():
     parser.add_argument('model', metavar='MODEL', help='the path to the decoder model')
     parser.add_argument('-l', '--log-level', dest='log_level', metavar='LEVEL', help='select the log level',
                         choices=['critical', 'error', 'warning', 'info', 'debug'], default='info')
-    parser.add_argument('-g', '--gpu', dest='gpu', metavar='GPU', help='the index of the GPU to use',
+    parser.add_argument('-g', '--gpu', type=int, dest='gpu', metavar='GPU', help='the index of the GPU to use',
                         default=-1)
 
     args = parser.parse_args()

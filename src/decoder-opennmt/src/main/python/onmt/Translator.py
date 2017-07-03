@@ -31,6 +31,9 @@ class Translator(object):
         def cuda(self):
             return self.gpu > -1
 
+        def __repr__(self):
+            return repr(self.__dict__)
+
     def __init__(self, model, opt):
         self.opt = opt
 
@@ -39,6 +42,8 @@ class Translator(object):
 
         self._reset_after_tuning = self.opt.tunable and self.opt.reset
         self._gpus = [self.opt.gpu] if self.opt.gpu > -1 else []
+        if self.opt.cuda:
+            torch.cuda.set_device(self.opt.gpu)
 
         self._logger = logging.getLogger('onmt.Translator')
         self._logger.info("Translator options:%s" % repr(self.opt))
@@ -48,10 +53,11 @@ class Translator(object):
 
         self._logger.info("Loading checkpoint... START")
         start_time = time.time()
-        self.checkpoint = torch.load(model)
+        self.checkpoint = torch.load(model, map_location=lambda storage, loc: storage)
+
         self._logger.info("Loading checkpoint... END %.2fs" % (time.time() - start_time))
 
-        self._logger.info("Creating dicts, model, and optimizer from checkpoint... S\TART")
+        self._logger.info("Creating dicts, model, and optimizer from checkpoint... START")
         start_time = time.time()
         self.dicts, self.model, self.optim = self.create(self.checkpoint)
         self._logger.info(
