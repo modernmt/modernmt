@@ -38,9 +38,9 @@ class Trainer(object):
             self.batch_size = 64  # Maximum batch size
             self.max_generator_batches = 32  # Maximum batches of words in a seq to run the generator on in parallel.
             self.max_epochs = 40  # Maximum number of training epochs
-            self.min_epochs = 8  # Minimum number of training epochs
+            self.min_epochs = 10  # Minimum number of training epochs
             self.start_epoch = 1  # The epoch from which to start
-            self.min_perplexity_decrement = .03  # If perplexity decrement is lower than this percentage, stop training
+            self.min_perplexity_decrement = .02  # If perplexity decrement is lower than this percentage, stop training
             self.param_init = 0.1  # Parameters are initialized over uniform distribution with support
             self.optim = 'sgd'  # Optimization method. [sgd|adagrad|adadelta|adam]
             self.max_grad_norm = 5  # If norm(gradient vector) > max_grad_norm, re-normalize
