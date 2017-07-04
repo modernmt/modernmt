@@ -1,5 +1,5 @@
-import Models
 import Constants
+import Models
 
 from Dataset import Dataset
 from Beam import Beam

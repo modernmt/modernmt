@@ -1,16 +1,16 @@
-import copy
-import logging
-import time
-
-import torch
-import torch.cuda.random as random
-import torch.nn as nn
-from torch.autograd import Variable
-
 import onmt
+import onmt.Models
 import onmt.modules
 from onmt import Trainer
 
+import torch
+import torch.nn as nn
+from torch.autograd import Variable
+
+import torch.cuda.random as random
+import copy
+import logging
+import time
 
 class Translator(object):
     class Options:
@@ -53,7 +53,8 @@ class Translator(object):
 
         self._logger.info("Loading checkpoint... START")
         start_time = time.time()
-        self.checkpoint = torch.load(model, map_location=lambda storage, loc: storage)
+        self.checkpoint = torch.load(model,
+                                     map_location=lambda storage, loc: storage)
 
         self._logger.info("Loading checkpoint... END %.2fs" % (time.time() - start_time))
 
@@ -73,8 +74,7 @@ class Translator(object):
             self._logger.info("Creating dicts_copy, model_copy, and optimizer_copy from checkpoint... START")
             start_time = time.time()
             self.dicts_copy, self.model_copy, self.optim_copy = self.create(self.checkpoint)
-            self._logger.info('Creating dicts_copy, model_copy, and optimizer_copy from checkpoint... END %.2fs' % (
-                time.time() - start_time))
+            self._logger.info('Creating dicts_copy, model_copy, and optimizer_copy from checkpoint... END %.2fs' % (time.time() - start_time))
 
         self._logger.info("Building trainer... START")
         start_time = time.time()
@@ -220,8 +220,8 @@ class Translator(object):
                                                          onmt.Constants.BOS_WORD,
                                                          onmt.Constants.EOS_WORD) for b in goldBatch]
 
-        return onmt.Dataset(srcData, tgtData,
-                            self.opt.batch_size, self.opt.cuda, volatile,
+        return onmt.Dataset(srcData, tgtData, self.opt.batch_size,
+                            self.opt.cuda, volatile,
                             data_type=self._type)
 
     def buildTargetTokens(self, pred, src, attn):
@@ -243,12 +243,14 @@ class Translator(object):
     def translateBatch(self, srcBatch, tgtBatch, model=None):
         if model == None: model = self.model
 
-        batchSize = srcBatch[0].size(1)
         beamSize = self.opt.beam_size
 
         #  (1) run the encoder on the src
         encStates, context = model.encoder(srcBatch)
+
+        # Drop the lengths needed for encoder.
         srcBatch = srcBatch[0]  # drop the lengths needed for encoder
+        batchSize = self._getBatchSize(srcBatch)
 
         rnnSize = context.size(2)
         encStates = (model._fix_enc_hidden(encStates[0]),
@@ -291,6 +293,7 @@ class Translator(object):
 
         # Expand tensors for each beam.
         context = Variable(context.data.repeat(1, beamSize, 1))
+
         decStates = (Variable(encStates[0].data.repeat(1, beamSize, 1)),
                      Variable(encStates[1].data.repeat(1, beamSize, 1)))
 
@@ -301,8 +304,8 @@ class Translator(object):
         if useMasking:
             padMask = srcBatch.data.eq(
                 onmt.Constants.PAD).t() \
-                .unsqueeze(0) \
-                .repeat(beamSize, 1, 1)
+                                    .unsqueeze(0) \
+                                    .repeat(beamSize, 1, 1)
 
         batchIdx = list(range(batchSize))
         remainingSents = batchSize
@@ -321,8 +324,10 @@ class Translator(object):
             out = model.generator.forward(decOut)
 
             # batch x beam x numWords
-            wordLk = out.view(beamSize, remainingSents, -1).transpose(0, 1).contiguous()
-            attn = attn.view(beamSize, remainingSents, -1).transpose(0, 1).contiguous()
+            wordLk = out.view(beamSize, remainingSents, -1) \
+                        .transpose(0, 1).contiguous()
+            attn = attn.view(beamSize, remainingSents, -1) \
+                       .transpose(0, 1).contiguous()
 
             active = []
             for b in range(batchSize):
@@ -335,10 +340,12 @@ class Translator(object):
 
                 for decState in decStates:  # iterate over h, c
                     # layers x beam*sent x dim
-                    sentStates = decState.view(
-                        -1, beamSize, remainingSents, decState.size(2))[:, :, idx]
+                    sentStates = decState.view(-1, beamSize,
+                                               remainingSents,
+                                               decState.size(2))[:, :, idx]
                     sentStates.data.copy_(
-                        sentStates.data.index_select(1, beam[b].getCurrentOrigin()))
+                        sentStates.data.index_select(
+                            1, beam[b].getCurrentOrigin()))
 
             if not active:
                 break
@@ -353,9 +360,11 @@ class Translator(object):
                 view = t.data.view(-1, remainingSents, rnnSize)
                 newSize = list(t.size())
                 newSize[-2] = newSize[-2] * len(activeIdx) // remainingSents
-                return Variable(view.index_select(1, activeIdx).view(*newSize), volatile=True)
+                return Variable(view.index_select(1, activeIdx)
+                                .view(*newSize), volatile=True)
 
-            decStates = (updateActive(decStates[0]), updateActive(decStates[1]))
+            decStates = (updateActive(decStates[0]),
+                         updateActive(decStates[1]))
             decOut = updateActive(decOut)
             context = updateActive(context)
             if useMasking:
@@ -375,7 +384,8 @@ class Translator(object):
             hyps, attn = zip(*[beam[b].getHyp(k) for k in ks[:n_best]])
             allHyp += [hyps]
             if useMasking:
-                valid_attn = srcBatch.data[:, b].ne(onmt.Constants.PAD).nonzero().squeeze(1)
+                valid_attn = srcBatch.data[:, b].ne(onmt.Constants.PAD) \
+                                                .nonzero().squeeze(1)
                 attn = [a.index_select(1, valid_attn) for a in attn]
             allAttn += [attn]
 
@@ -384,8 +394,8 @@ class Translator(object):
                     [t.tolist()
                      for t in beam[b].prevKs])
                 self.beam_accum["scores"].append([
-                                                     ["%4f" % s for s in t.tolist()]
-                                                     for t in beam[b].allScores][1:])
+                     ["%4f" % s for s in t.tolist()]
+                     for t in beam[b].allScores][1:])
                 self.beam_accum["predicted_ids"].append(
                     [[self.tgt_dict.getLabel(id)
                       for id in t.tolist()]
@@ -398,6 +408,7 @@ class Translator(object):
         #  (1) convert words to indexes
         dataset = self.buildData(srcBatch, goldBatch)
         src, tgt, indices = dataset[0]
+        batchSize = self._getBatchSize(src[0])
 
         #  (2) translate
         pred, predScore, attn, goldScore = self.translateBatch(src, tgt)
@@ -406,7 +417,7 @@ class Translator(object):
 
         #  (3) convert indexes to words
         predBatch = []
-        for b in range(src[0].size(1)):
+        for b in range(batchSize):
             predBatch.append(
                 [self.buildTargetTokens(pred[b][n], srcBatch[b], attn[b][n])
                  for n in range(len(pred[b]))]
@@ -420,6 +431,7 @@ class Translator(object):
         #  (1) convert words to indexes [input and reference (if nay)]
         dataset = self.buildData(srcBatch, goldBatch)
         src, tgt, indices = dataset[0]
+        batchSize = self._getBatchSize(src[0])
 
         # (1) convert words to indexes [suggestions]
         indexedTuningSrcBatch, indexedTuningTgtBatch = [], []
@@ -467,7 +479,7 @@ class Translator(object):
 
         #  (3) convert indexes to words
         predBatch = []
-        for b in range(src[0].size(1)):
+        for b in range(batchSize):
             predBatch.append(
                 [self.buildTargetTokens(pred[b][n], srcBatch[b], attn[b][n])
                  for n in range(self.opt.n_best)]

@@ -23,19 +23,24 @@ class Trainer(object):
 
             self.seed = 3435
             self.gpus = range(torch.cuda.device_count()) if torch.cuda.is_available() else 0
+#            self.gpus = [0,1]
+
             self.log_interval = 50
 
             # Model options --------------------------------------------------------------------------------------------
             self.encoder_type = "text"  # type fo encoder (either "text" or "img"
             self.layers = 2  # Number of layers in the LSTM encoder/decoder
-            self.rnn_size = 500  # Size of LSTM hidden states
+            self.rnn_size = 500  # Size of hidden states
+            self.rnn_type = "LSTM"  # The gate type used in the RNNs
             self.word_vec_size = 500  # Word embedding sizes
             self.input_feed = 1  # Feed the context vector at each time step as additional input to the decoder
             self.brnn = True  # Use a bidirectional encoder
             self.brnn_merge = 'sum'  # Merge action for the bidirectional hidden states: [concat|sum]
+            self.context_gate = None #Type of context gate to use [source|target|both]. Do not select for no context gate.
 
             # Optimization options -------------------------------------------------------------------------------------
-            self.batch_size = 64  # Maximum batch size
+            self.gpu_batch_size = 64  # Maximum batch size for each gpu
+            self.batch_size = self.gpu_batch_size * len(self.gpus)  # Maximum batch size
             self.max_generator_batches = 32  # Maximum batches of words in a seq to run the generator on in parallel.
             self.max_epochs = 40  # Maximum number of training epochs
             self.min_epochs = 10  # Minimum number of training epochs
@@ -99,7 +104,10 @@ class Trainer(object):
             scores_t = generator(out_t)
             loss_t = crit(scores_t, targ_t.view(-1))
             pred_t = scores_t.max(1)[1]
-            num_correct_t = pred_t.data.eq(targ_t.data).masked_select(targ_t.ne(onmt.Constants.PAD).data).sum()
+            num_correct_t = pred_t.data.eq(targ_t.data) \
+                                       .masked_select(
+                                           targ_t.ne(onmt.Constants.PAD).data) \
+                                       .sum()
             num_correct += num_correct_t
             loss += loss_t.data[0]
             if not eval:
@@ -115,9 +123,11 @@ class Trainer(object):
 
         model.eval()
         for i in range(len(data)):
-            batch = data[i][:-1]  # exclude original indices
+            # exclude original indices
+            batch = data[i][:-1]
             outputs = model(batch)
-            targets = batch[1][1:]  # exclude <s> from targets
+            # exclude <s> from targets
+            targets = batch[1][1:]
             loss, _, num_correct = self.memoryEfficientLoss(
                 outputs, targets, model.generator, criterion, eval=True)
             total_loss += loss
@@ -132,7 +142,12 @@ class Trainer(object):
         optim = optim_ori
 
         # set the mask to None; required when the same model is trained after a translation
-        model.decoder.attn.applyMask(None)
+        if len(self.opt.gpus) > 1:
+            decoder = model.module.decoder
+        else:
+            decoder = model.decoder
+        attentionLayer = decoder.attn
+        attentionLayer.applyMask(None)
         model.train()
 
         # define criterion of each GPU
