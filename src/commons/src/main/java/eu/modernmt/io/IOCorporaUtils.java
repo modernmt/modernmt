@@ -11,20 +11,17 @@ import java.io.IOException;
  */
 public class IOCorporaUtils {
 
-    public static void copy(Corpus source, Corpus destination) throws IOException {
-        copy(source, destination, false);
-    }
-
-    public static void copy(Corpus source, Corpus destination, boolean append) throws IOException {
+    // Monolingual corpus copy
+    public static void copy(Corpus source, Corpus destination, long linesLimit, boolean append) throws IOException {
         LineReader reader = null;
         LineWriter writer = null;
 
         try {
             reader = source.getContentReader();
             writer = destination.getContentWriter(append);
-
             String line;
-            while ((line = reader.readLine()) != null)
+            long lines = 0;
+            while ((line = reader.readLine()) != null && lines++ < linesLimit)
                 writer.writeLine(line);
         } finally {
             IOUtils.closeQuietly(reader);
@@ -32,11 +29,20 @@ public class IOCorporaUtils {
         }
     }
 
-    public static void copy(BilingualCorpus source, BilingualCorpus destination) throws IOException {
-        copy(source, destination, false);
+    public static void copy(Corpus source, Corpus destination, long linesLimit) throws IOException {
+        copy(source, destination, linesLimit, false);
     }
 
-    public static void copy(BilingualCorpus source, BilingualCorpus destination, boolean append) throws IOException {
+    public static void copy(Corpus source, Corpus destination, boolean append) throws IOException {
+        copy(source, destination, Long.MAX_VALUE, append);
+    }
+
+    public static void copy(Corpus source, Corpus destination) throws IOException {
+        copy(source, destination, Long.MAX_VALUE);
+    }
+
+    // Bilingual corpus copy
+    public static void copy(BilingualCorpus source, BilingualCorpus destination, long pairsLimit, boolean append) throws IOException {
         BilingualCorpus.BilingualLineReader reader = null;
         BilingualCorpus.BilingualLineWriter writer = null;
 
@@ -45,12 +51,25 @@ public class IOCorporaUtils {
             writer = destination.getContentWriter(append);
 
             BilingualCorpus.StringPair pair;
-            while ((pair = reader.read()) != null)
+            long pairs = 0;
+            while ((pair = reader.read()) != null && pairs++ < pairsLimit)
                 writer.write(pair);
         } finally {
             IOUtils.closeQuietly(reader);
             IOUtils.closeQuietly(writer);
         }
+    }
+
+    public static void copy(BilingualCorpus source, BilingualCorpus destination, long linesLimit) throws IOException {
+        copy(source, destination, linesLimit, false);
+    }
+
+    public static void copy(BilingualCorpus source, BilingualCorpus destination, boolean append) throws IOException {
+        copy(source, destination, Long.MAX_VALUE, append);
+    }
+
+    public static void copy(BilingualCorpus source, BilingualCorpus destination) throws IOException {
+        copy(source, destination, Long.MAX_VALUE);
     }
 
 }
