@@ -256,7 +256,7 @@ class OpenNMTDecoder:
 
 class NeuralEngine(Engine):
     def __init__(self, name, source_lang, target_lang, gpus):
-        Engine.__init__(self, name, source_lang, target_lang, gpus)
+        Engine.__init__(self, name, source_lang, target_lang)
 
         decoder_path = os.path.join(self.models_path, 'decoder')
 

@@ -89,7 +89,7 @@ def main_create(argv):
     parser.add_argument('--max-vocabulary-size', dest='max_vocab_size',
                         help='if neural is set, this is the maximum size of the vocabulary '
                              '(default value is unbound).', default=None)
-    parser.add_argument('--gpus', dest='gpus', nargs='+',
+    parser.add_argument('--gpus', dest='gpus', nargs='+', type=int,
                         help='if neural is set, you can specify the list of GPUs used during training'
                              '(default value is all available GPUs). Specify the value -1 to not use any GPU.', default=None)
 
