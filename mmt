@@ -83,10 +83,10 @@ def main_create(argv):
     parser.add_argument('--validation-corpora', dest='validation_corpora',
                         help='if neural is set, you can provide a custom validation corpora with this option '
                              '(dev set used by default).', default=None)
-    parser.add_argument('--bpe-symbols', dest='bpe_symbols',
+    parser.add_argument('--bpe-symbols', dest='bpe_symbols', type=int,
                         help='if neural is set, this is the number of symbols of the BPE encoder '
                              '(default value is 90000).', default=90000)
-    parser.add_argument('--max-vocabulary-size', dest='max_vocab_size',
+    parser.add_argument('--max-vocabulary-size', dest='max_vocab_size', type=int,
                         help='if neural is set, this is the maximum size of the vocabulary '
                              '(default value is unbound).', default=None)
     parser.add_argument('--gpus', dest='gpus', nargs='+', type=int,
