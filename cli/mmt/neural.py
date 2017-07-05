@@ -150,6 +150,10 @@ class OpenNMTDecoder:
         self._target_lang = target_lang
         self._opts = opts
 
+        # if gpus contains only the value '-1', do not use GPUs
+        if len(self._opts.gpus) == 1 and self._opts.gpus[0] == -1:
+            self._opts.gpus = []
+
     def train(self, data_path, working_dir):
         logger = logging.getLogger('mmt.train.OpenNMTDecoder')
 
@@ -160,7 +164,7 @@ class OpenNMTDecoder:
         if self._opts.seed >= 0:
             torch.manual_seed(self._opts.seed)  # Sets the seed for generating random numbers
 
-        if self._opts.gpus:
+        if len(self._opts.gpus) > 0:
             torch.cuda.set_device(self._opts.gpus[0])
 
         # Loading training data ----------------------------------------------------------------------------------------
@@ -251,14 +255,20 @@ class OpenNMTDecoder:
 
 
 class NeuralEngine(Engine):
-    def __init__(self, name, source_lang, target_lang):
-        Engine.__init__(self, name, source_lang, target_lang)
+    def __init__(self, name, source_lang, target_lang, gpus):
+        Engine.__init__(self, name, source_lang, target_lang, gpus)
 
         decoder_path = os.path.join(self.models_path, 'decoder')
 
+        opts = onmt.Trainer.Options()
+
+        # if gpus is specified, overwrite the default list of gpus
+        if gpus is not None:
+            opts.gpus = gpus
+
         # Neural specific models
         self.memory = TranslationMemory(os.path.join(decoder_path, 'memory'), self.source_lang, self.target_lang)
-        self.decoder = OpenNMTDecoder(os.path.join(decoder_path, 'model.pt'), self.source_lang, self.target_lang)
+        self.decoder = OpenNMTDecoder(os.path.join(decoder_path, 'model.pt'), self.source_lang, self.target_lang, opts)
         self.onmt_preprocessor = OpenNMTPreprocessor(self.source_lang, self.target_lang,
                                                      os.path.join(decoder_path, 'model.bpe'))
 
@@ -271,8 +281,8 @@ class NeuralEngine(Engine):
 
 class NeuralEngineBuilder(EngineBuilder):
     def __init__(self, name, source_lang, target_lang, roots, debug=False, steps=None, split_trainingset=True,
-                 validation_corpora=None, bpe_symbols=90000, max_vocab_size=None):
-        EngineBuilder.__init__(self, NeuralEngine(name, source_lang, target_lang), roots, debug, steps,
+                 validation_corpora=None, bpe_symbols=90000, max_vocab_size=None,gpus=None):
+        EngineBuilder.__init__(self, NeuralEngine(name, source_lang, target_lang, gpus), roots, debug, steps,
                                split_trainingset)
         self._bpe_symbols = bpe_symbols
         self._max_vocab_size = max_vocab_size

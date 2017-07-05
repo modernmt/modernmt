@@ -22,8 +22,7 @@ class Trainer(object):
             self.save_model = None  # Set by train
 
             self.seed = 3435
-            self.gpus = range(torch.cuda.device_count()) if torch.cuda.is_available() else 0
-#            self.gpus = [0,1]
+            self.gpus = range(torch.cuda.device_count()) if torch.cuda.is_available() else []
 
             self.log_interval = 50
 
