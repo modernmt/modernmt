@@ -39,7 +39,6 @@ class Trainer(object):
 
             # Optimization options -------------------------------------------------------------------------------------
             self.gpu_batch_size = 64  # Maximum batch size for each gpu
-            self.batch_size = self.gpu_batch_size * len(self.gpus)  # Maximum batch size
             self.max_generator_batches = 32  # Maximum batches of words in a seq to run the generator on in parallel.
             self.max_epochs = 40  # Maximum number of training epochs
             self.min_epochs = 10  # Minimum number of training epochs
