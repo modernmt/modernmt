@@ -16,8 +16,7 @@ from cli.mmt.processing import TrainingPreprocessor
 sys.path.insert(0, os.path.abspath(os.path.join(LIB_DIR, 'pynmt')))
 
 import onmt
-from onmt.Trainer import Trainer
-from bpe import BPEProcessor
+from nmmt import NMTEngineTrainer, SubwordTextProcessor, TrainingInterrupt
 import torch
 
 
@@ -74,7 +73,7 @@ class OpenNMTPreprocessor:
                 return self._reader
 
         self._logger.info('Creating VBE vocabulary')
-        vb_builder = BPEProcessor.Builder(symbols=bpe_symbols, max_vocabulary_size=max_vocab_size)
+        vb_builder = SubwordTextProcessor.Builder(symbols=bpe_symbols, max_vocabulary_size=max_vocab_size)
         bpe_encoder = vb_builder.build([_ReaderWrapper(c, [self._source_lang, self._target_lang]) for c in corpora])
         bpe_encoder.save_to_file(self._bpe_model)
 
@@ -145,104 +144,55 @@ class OpenNMTPreprocessor:
 
 
 class OpenNMTDecoder:
-    def __init__(self, model, source_lang, target_lang, opts=Trainer.Options()):
+    def __init__(self, model, source_lang, target_lang, gpus):
         self._model = model
         self._source_lang = source_lang
         self._target_lang = target_lang
-        self._opts = opts
-
-        # if gpus contains only the value '-1', do not use GPUs
-        if len(self._opts.gpus) == 1 and self._opts.gpus[0] == -1:
-            self._opts.gpus = []
+        self._gpus = gpus
 
     def train(self, data_path, working_dir):
         logger = logging.getLogger('mmt.train.OpenNMTDecoder')
+        logger.info('Training started for data "%s"' % data_path)
 
-        logger.info('Training started for data "%s", with options: %s' % (data_path, repr(self._opts)))
-
-        self._opts.save_model = os.path.join(working_dir, 'train_model')
-
-        if self._opts.seed >= 0:
-            torch.manual_seed(self._opts.seed)  # Sets the seed for generating random numbers
-
-        if len(self._opts.gpus) > 0:
-            torch.cuda.set_device(self._opts.gpus[0])
+        save_model = os.path.join(working_dir, 'train_model')
 
         # Loading training data ----------------------------------------------------------------------------------------
-
         logger.info('Loading data from "%s"... START' % data_path)
         start_time = time.time()
         data_set = torch.load(data_path)
         logger.info('Loading data... END %.2fs' % (time.time() - start_time))
 
+        src_dict, trg_dict = data_set['dicts']['src'], data_set['dicts']['tgt']
+        src_train, trg_train = data_set['train']['src'], data_set['train']['tgt']
+        src_valid, trg_valid = data_set['valid']['src'], data_set['valid']['tgt']
+
+        # Creating trainer ---------------------------------------------------------------------------------------------
+
+        logger.info('Building model... START')
+        start_time = time.time()
+        trainer = NMTEngineTrainer.new_instance(src_dict, trg_dict, random_seed=3435, gpu_ids=self._gpus)
+        logger.info('Building model... END %.2fs' % (time.time() - start_time))
+
+        # Creating data sets -------------------------------------------------------------------------------------------
+
         logger.info('Creating Data... START')
         start_time = time.time()
-        train_data = onmt.Dataset(data_set['train']['src'], data_set['train']['tgt'],
-                                  self._opts.batch_size, self._opts.gpus)
-        valid_data = onmt.Dataset(data_set['valid']['src'], data_set['valid']['tgt'],
-                                  self._opts.batch_size, self._opts.gpus, volatile=True)
-        src_dict, trg_dict = data_set['dicts']['src'], data_set['dicts']['tgt']
+        train_data = onmt.Dataset(src_train, trg_train, trainer.batch_size, self._gpus)
+        valid_data = onmt.Dataset(src_valid, trg_valid, trainer.batch_size, self._gpus, volatile=True)
         logger.info('Creating Data... END %.2fs' % (time.time() - start_time))
 
         logger.info(' Vocabulary size. source = %d; target = %d' % (src_dict.size(), trg_dict.size()))
         logger.info(' Number of training sentences. %d' % len(data_set['train']['src']))
-        logger.info(' Maximum batch size. %d' % self._opts.batch_size)
-
-        # Building model -----------------------------------------------------------------------------------------------
-
-        logger.info('Building model... START')
-        start_time = time.time()
-
-        encoder = onmt.Models.Encoder(self._opts, src_dict)
-        decoder = onmt.Models.Decoder(self._opts, trg_dict)
-        generator = torch.nn.Sequential(torch.nn.Linear(self._opts.rnn_size, trg_dict.size()), torch.nn.LogSoftmax())
-
-        model = onmt.Models.NMTModel(encoder, decoder)
-
-        if len(self._opts.gpus) > 0:
-            model.cuda()
-            generator.cuda()
-        else:
-            model.cpu()
-            generator.cpu()
-
-        if len(self._opts.gpus) > 1:
-            model = torch.nn.DataParallel(model, device_ids=self._opts.gpus, dim=1)
-            generator = torch.nn.DataParallel(generator, device_ids=self._opts.gpus, dim=0)
-
-        model.generator = generator
-
-        logger.info('Initializing model... START')
-        start_time2 = time.time()
-        for p in model.parameters():
-            p.data.uniform_(-self._opts.param_init, self._opts.param_init)
-        encoder.load_pretrained_vectors(self._opts)
-        decoder.load_pretrained_vectors(self._opts)
-        logger.info('Initializing model... END %.2fs' % (time.time() - start_time2))
-
-        logger.info('Initializing optimizer... START')
-        start_time2 = time.time()
-        optim = onmt.Optim(
-            self._opts.optim, self._opts.learning_rate, self._opts.max_grad_norm,
-            lr_decay=self._opts.learning_rate_decay, start_decay_at=self._opts.start_decay_at
-        )
-        optim.set_parameters(model.parameters())
-        logger.info('Initializing optimizer... END %.2fs' % (time.time() - start_time2))
-
-        logger.info('Building model... END %.2fs' % (time.time() - start_time))
+        logger.info(' Maximum batch size. %d' % trainer.batch_size)
 
         # Training model -----------------------------------------------------------------------------------------------
-
-        num_params = sum([p.nelement() for p in model.parameters()])
-        logger.info(' Number of parameters: %d' % num_params)
 
         logger.info('Training model... START')
         try:
             start_time = time.time()
-            trainer = Trainer(self._opts)
-            checkpoint = trainer.train_model(model, train_data, valid_data, data_set, optim)
+            checkpoint = trainer.train_model(train_data, valid_data=valid_data, save_path=save_model)
             logger.info('Training model... END %.2fs' % (time.time() - start_time))
-        except onmt.TrainingInterrupt as e:
+        except TrainingInterrupt as e:
             checkpoint = e.checkpoint
             logger.info('Training model... INTERRUPTED %.2fs' % (time.time() - start_time))
 
@@ -259,17 +209,14 @@ class NeuralEngine(Engine):
     def __init__(self, name, source_lang, target_lang, gpus=None):
         Engine.__init__(self, name, source_lang, target_lang)
 
+        if gpus is None:
+            gpus = range(torch.cuda.device_count()) if torch.cuda.is_available() else None
+
         decoder_path = os.path.join(self.models_path, 'decoder')
-
-        opts = Trainer.Options()
-
-        # if gpus is specified, overwrite the default list of gpus
-        if gpus is not None:
-            opts.gpus = gpus
 
         # Neural specific models
         self.memory = TranslationMemory(os.path.join(decoder_path, 'memory'), self.source_lang, self.target_lang)
-        self.decoder = OpenNMTDecoder(os.path.join(decoder_path, 'model.pt'), self.source_lang, self.target_lang, opts)
+        self.decoder = OpenNMTDecoder(os.path.join(decoder_path, 'model.pt'), self.source_lang, self.target_lang, gpus)
         self.onmt_preprocessor = OpenNMTPreprocessor(self.source_lang, self.target_lang,
                                                      os.path.join(decoder_path, 'model.bpe'))
 
@@ -282,7 +229,7 @@ class NeuralEngine(Engine):
 
 class NeuralEngineBuilder(EngineBuilder):
     def __init__(self, name, source_lang, target_lang, roots, debug=False, steps=None, split_trainingset=True,
-                 validation_corpora=None, bpe_symbols=90000, max_vocab_size=None,gpus=None):
+                 validation_corpora=None, bpe_symbols=90000, max_vocab_size=None, gpus=None):
         EngineBuilder.__init__(self, NeuralEngine(name, source_lang, target_lang, gpus), roots, debug, steps,
                                split_trainingset)
         self._bpe_symbols = bpe_symbols
@@ -322,7 +269,7 @@ class NeuralEngineBuilder(EngineBuilder):
 
             self._engine.onmt_preprocessor.process(corpora, validation_corpora, args.onmt_training_file,
                                                    bpe_symbols=self._bpe_symbols, max_vocab_size=self._max_vocab_size,
-                                                   max_line_len=80, working_dir=working_dir, dump_dicts=True)
+                                                   max_line_len=80, working_dir=working_dir)
 
     @EngineBuilder.Step('Neural decoder training')
     def _train_decoder(self, args, skip=False, delete_on_exit=False):

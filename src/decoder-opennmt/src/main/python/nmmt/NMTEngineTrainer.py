@@ -21,7 +21,11 @@ class TrainingInterrupt(Exception):
 
 class NMTEngineTrainer:
     @staticmethod
-    def new_instance(model_params, src_dict, trg_dict, random_seed=None, gpu_ids=None, init_value=0.1):
+    def new_instance(src_dict, trg_dict, model_params=None, random_seed=None, gpu_ids=None, init_value=0.1):
+        if model_params is None:
+            from nmmt import NMTEngine
+            model_params = NMTEngine.Parameters()
+
         encoder = Models.Encoder(model_params, src_dict)
         decoder = Models.Decoder(model_params, trg_dict)
         generator = nn.Sequential(nn.Linear(model_params.rnn_size, trg_dict.size()), nn.LogSoftmax())
@@ -31,6 +35,8 @@ class NMTEngineTrainer:
         if gpu_ids is not None and len(gpu_ids) > 0:
             model.cuda()
             generator.cuda()
+
+            torch.cuda.set_device(gpu_ids[0])
 
             if len(gpu_ids) > 1:
                 model = nn.DataParallel(model, device_ids=gpu_ids, dim=1)
