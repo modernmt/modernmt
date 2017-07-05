@@ -181,9 +181,9 @@ class OpenNMTDecoder:
         logger.info('Creating Data... START')
         start_time = time.time()
         train_data = onmt.Dataset(data_set['train']['src'], data_set['train']['tgt'],
-                                  self._opts.batch_size, self._opts.gpus)
+                                  self._opts.gpu_batch_size * len(self._opts.gpus), self._opts.gpus)
         valid_data = onmt.Dataset(data_set['valid']['src'], data_set['valid']['tgt'],
-                                  self._opts.batch_size, self._opts.gpus, volatile=True)
+                                  self._opts.gpu_batch_size * len(self._opts.gpus), self._opts.gpus)
         src_dict, trg_dict = data_set['dicts']['src'], data_set['dicts']['tgt']
         logger.info('Creating Data... END %.2fs' % (time.time() - start_time))
 
