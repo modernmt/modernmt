@@ -590,6 +590,7 @@ def main():
         sys.stderr.write('ERROR Illegal State: {message}\n'.format(message=e.message))
         exit(1)
     except Exception as e:
+        raise
         sys.stderr.write('ERROR Unexpected exception:\n\t{message}\n'.format(message=repr(e)))
         exit(1)
 
