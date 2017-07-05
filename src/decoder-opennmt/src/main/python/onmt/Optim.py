@@ -46,6 +46,7 @@ class Optim(object):
 
         if self.start_decay:
             self.lr = self.lr * self.lr_decay
+            print("Decaying learning rate to %g" % self.lr)
 
         self.last_ppl = ppl
         self.optimizer.param_groups[0]['lr'] = self.lr

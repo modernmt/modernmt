@@ -16,6 +16,7 @@ from cli.mmt.processing import TrainingPreprocessor
 sys.path.insert(0, os.path.abspath(os.path.join(LIB_DIR, 'pynmt')))
 
 import onmt
+from onmt.Trainer import Trainer
 from bpe import BPEProcessor
 import torch
 
@@ -144,7 +145,7 @@ class OpenNMTPreprocessor:
 
 
 class OpenNMTDecoder:
-    def __init__(self, model, source_lang, target_lang, opts=onmt.Trainer.Options()):
+    def __init__(self, model, source_lang, target_lang, opts=Trainer.Options()):
         self._model = model
         self._source_lang = source_lang
         self._target_lang = target_lang
@@ -238,7 +239,7 @@ class OpenNMTDecoder:
         logger.info('Training model... START')
         try:
             start_time = time.time()
-            trainer = onmt.Trainer(self._opts)
+            trainer = Trainer(self._opts)
             checkpoint = trainer.train_model(model, train_data, valid_data, data_set, optim)
             logger.info('Training model... END %.2fs' % (time.time() - start_time))
         except onmt.TrainingInterrupt as e:
@@ -260,7 +261,7 @@ class NeuralEngine(Engine):
 
         decoder_path = os.path.join(self.models_path, 'decoder')
 
-        opts = onmt.Trainer.Options()
+        opts = Trainer.Options()
 
         # if gpus is specified, overwrite the default list of gpus
         if gpus is not None:

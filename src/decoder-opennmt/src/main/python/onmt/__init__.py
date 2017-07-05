@@ -1,9 +1,10 @@
-import Constants
-import Models
+import onmt.Constants
+import onmt.Models
+from onmt.Translator import Translator
+from onmt.Dataset import Dataset
+from onmt.Optim import Optim
+from onmt.Dict import Dict
+from onmt.Beam import Beam
 
-from Dataset import Dataset
-from Beam import Beam
-from Dict import Dict
-from Optim import Optim
-from Trainer import Trainer, TrainingInterrupt
-from Translator import Translator
+# For flake8 compatibility.
+__all__ = [onmt.Constants, onmt.Models, Translator, Dataset, Optim, Dict, Beam]

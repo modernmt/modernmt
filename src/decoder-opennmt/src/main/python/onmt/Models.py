@@ -1,14 +1,11 @@
-import copy
-
 import torch
 import torch.nn as nn
-
-import onmt.modules
-from onmt.modules.Gate import ContextGateFactory
-
 from torch.autograd import Variable
-from torch.nn.utils.rnn import pack_padded_sequence as pack
+import onmt
+from onmt.modules.Gate import ContextGateFactory
 from torch.nn.utils.rnn import pad_packed_sequence as unpack
+from torch.nn.utils.rnn import pack_padded_sequence as pack
+
 
 class Encoder(nn.Module):
 
@@ -24,10 +21,10 @@ class Encoder(nn.Module):
                                      opt.word_vec_size,
                                      padding_idx=onmt.Constants.PAD)
         self.rnn = getattr(nn, opt.rnn_type)(
-                        input_size, self.hidden_size,
-                        num_layers=opt.layers,
-                        dropout=opt.dropout,
-                        bidirectional=opt.brnn)
+             input_size, self.hidden_size,
+             num_layers=opt.layers,
+             dropout=opt.dropout,
+             bidirectional=opt.brnn)
 
     def load_pretrained_vectors(self, opt):
         if opt.pre_word_vecs_enc is not None:
@@ -36,8 +33,8 @@ class Encoder(nn.Module):
 
     def forward(self, input, hidden=None):
         if isinstance(input, tuple):
-            # lengths data is wrapped inside a Variable
-            lengths = input[1].data.view(-1).tolist() 
+            # Lengths data is wrapped inside a Variable.
+            lengths = input[1].data.view(-1).tolist()
             emb = pack(self.word_lut(input[0]), lengths)
         else:
             emb = self.word_lut(input)
@@ -46,10 +43,9 @@ class Encoder(nn.Module):
             outputs = unpack(outputs)[0]
         return hidden_t, outputs
 
-    def setDropout(self,dropout):
-        self.rnn.dropout = dropout
 
 class StackedLSTM(nn.Module):
+
     def __init__(self, num_layers, input_size, rnn_size, dropout):
         super(StackedLSTM, self).__init__()
         self.dropout = nn.Dropout(dropout)
@@ -76,8 +72,6 @@ class StackedLSTM(nn.Module):
 
         return input, (h_1, c_1)
 
-    def setDropout(self,dropout):
-        self.dropout = nn.Dropout(dropout)
 
 class StackedGRU(nn.Module):
 
@@ -104,8 +98,6 @@ class StackedGRU(nn.Module):
 
         return input, h_1
 
-    def setDropout(self,dropout):
-        self.dropout = nn.Dropout(dropout)
 
 class Decoder(nn.Module):
 
@@ -167,9 +159,6 @@ class Decoder(nn.Module):
         outputs = torch.stack(outputs)
         return outputs, hidden, attn
 
-    def setDropout(self,dropout):
-        self.dropout = nn.Dropout(dropout)
-        self.rnn.setDropout(dropout)
 
 class NMTModel(nn.Module):
 
@@ -209,7 +198,3 @@ class NMTModel(nn.Module):
                                               context, init_output)
 
         return out
-
-    def setDropout(self,dropout):
-        self.encoder.setDropout(dropout)
-        self.decoder.setDropout(dropout)

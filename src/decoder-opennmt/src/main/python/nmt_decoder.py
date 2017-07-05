@@ -3,99 +3,18 @@ import json
 import os
 import sys
 
-from bpe import BPEProcessor
-from onmt import Translator
+from nmmt import NMTDecoder
 
 import logging
 
 
 # Base models and Decoder definitions
 # ======================================================================================================================
-
 class Suggestion:
     def __init__(self, source, target, score):
         self.source = source
         self.target = target
         self.score = score
-
-
-class MMTDecoder:
-    def __init__(self, model_path):
-        """
-        Creates a new instance of an NMT decoder
-        :param model_path: path to the decoder model file/folder
-        :type model_path: basestring
-        """
-        self._model_path = model_path
-
-    def translate(self, text, suggestions=None):
-        """
-        Returns a translation for the given Translation Request
-        :param text: the tokenized text to be translated
-        :type text: list
-
-        :param suggestions: a collection of suggestions in order to adapt the translation
-        :type suggestions: list
-
-        :return: the best translation as a list of tokens
-        """
-        raise NotImplementedError('abstract method')
-
-    def close(self):
-        """
-        Called before destroying this object.
-        The decoder should release any resource acquired during execution.
-        """
-        raise NotImplementedError('abstract method')
-
-
-class YodaDecoder(MMTDecoder):
-    def __init__(self):
-        MMTDecoder.__init__(self, '')
-
-    def translate(self, text, suggestions=None):
-        return reversed(text)
-
-    def close(self):
-        pass
-
-
-class OpenNMTDecoder(MMTDecoder):
-    def __init__(self, model, gpu=-1):
-        MMTDecoder.__init__(self, model)
-
-        opt = Translator.Options()
-        opt.gpu = gpu
-
-        self._logger = logging.getLogger('onmt.OpenNMTDecoder')
-        self._translator = Translator(os.path.join(model, 'model.pt'), opt)
-        self._bpe_encoder = BPEProcessor.load_from_file(os.path.join(model, 'model.bpe'))
-
-    def translate(self, text, suggestions=None):
-        src_batch = [self._bpe_encoder.encode_line(text, is_source=True)]
-
-        if len(suggestions) == 0 or not self._translator.opt.tunable:
-            pred_batch, pred_score, gold_score = self._translator.translate(src_batch, None)
-        else:
-            for suggestion in suggestions:
-                suggestion.source = self._bpe_encoder.encode_line(suggestion.source, is_source=True)
-                suggestion.target = self._bpe_encoder.encode_line(suggestion.target, is_source=False)
-
-            pred_batch, pred_score, gold_score = self._translator.translateWithAdaptation(src_batch, None, suggestions)
-
-        output = pred_batch[0][0]
-
-        # print of the nbest for each sentence of the batch
-        for b in range(len(pred_batch)):
-            for n in range(len(pred_batch[b])):
-                self._logger.info(
-                    "b:%d n:%d predScore[b][n]:%g predBatch[b][n]:%s" % (
-                        b, n, pred_score[b][n], repr(pred_batch[b][n])))
-
-        return self._bpe_encoder.decode_tokens(output)
-
-    def close(self):
-        pass
 
 
 # I/O definitions
@@ -202,7 +121,7 @@ def run_main():
     parser.add_argument('-l', '--log-level', dest='log_level', metavar='LEVEL', help='select the log level',
                         choices=['critical', 'error', 'warning', 'info', 'debug'], default='info')
     parser.add_argument('-g', '--gpu', type=int, dest='gpu', metavar='GPU', help='the index of the GPU to use',
-                        default=-1)
+                        default=None)
 
     args = parser.parse_args()
 
@@ -228,10 +147,8 @@ def run_main():
 
     # Main loop
     # ------------------------------------------------------------------------------------------------------------------
-    decoder = None
-
     try:
-        decoder = OpenNMTDecoder(args.model, gpu=args.gpu)
+        decoder = NMTDecoder(args.model, gpu_id=args.gpu, random_seed=3435)
 
         controller = MainController(decoder, stdout)
         controller.serve_forever()
@@ -239,13 +156,6 @@ def run_main():
         pass  # ignore and exit
     except BaseException as e:
         logger.exception(e)
-    finally:
-        if decoder is not None:
-            # noinspection PyBroadException
-            try:
-                decoder.close()
-            except:
-                pass
 
 
 if __name__ == '__main__':

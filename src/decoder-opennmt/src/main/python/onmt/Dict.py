@@ -1,5 +1,3 @@
-import codecs
-
 import torch
 
 
@@ -32,16 +30,15 @@ class Dict(object):
 
     def writeFile(self, filename):
         "Write entries to a file."
-        with codecs.open(filename, 'w', 'utf-8') as file:
+        with open(filename, 'w') as file:
             for i in range(self.size()):
                 label = self.idxToLabel[i]
-                file.write(u'%s %d\n' % (label, i))
+                file.write('%s %d\n' % (label, i))
 
         file.close()
 
     def lookup(self, key, default=None):
         key = key.lower() if self.lower else key
-
         try:
             return self.labelToIdx[key]
         except KeyError:
