@@ -154,6 +154,10 @@ class OpenNMTDecoder:
         if len(self._opts.gpus) == 1 and self._opts.gpus[0] == -1:
             self._opts.gpus = []
 
+        # remove indexes of GPUs which are not valid, because larger than the number of available GPU or smaller than 0
+        if torch.cuda.is_available():
+            self._opts.gpus = [x for x in self._opts.gpus if x < torch.cuda.device_count() or x < 0]
+
     def train(self, data_path, working_dir):
         logger = logging.getLogger('mmt.train.OpenNMTDecoder')
 
