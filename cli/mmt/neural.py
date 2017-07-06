@@ -211,6 +211,10 @@ class NeuralEngine(Engine):
 
         if gpus is None:
             gpus = range(torch.cuda.device_count()) if torch.cuda.is_available() else None
+        elif torch.cuda.is_available():
+            # remove indexes of GPUs which are not valid,
+            # because larger than the number of available GPU or smaller than 0
+            gpus = [x for x in gpus if x < torch.cuda.device_count() or x < 0]
 
         decoder_path = os.path.join(self.models_path, 'decoder')
 
