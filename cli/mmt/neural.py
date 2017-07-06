@@ -209,12 +209,17 @@ class NeuralEngine(Engine):
     def __init__(self, name, source_lang, target_lang, gpus=None):
         Engine.__init__(self, name, source_lang, target_lang)
 
-        if gpus is None:
-            gpus = range(torch.cuda.device_count()) if torch.cuda.is_available() else None
-        elif torch.cuda.is_available():
-            # remove indexes of GPUs which are not valid,
-            # because larger than the number of available GPU or smaller than 0
-            gpus = [x for x in gpus if x < torch.cuda.device_count() or x < 0]
+        if torch.cuda.is_available():
+            if gpus is None:
+                gpus = range(torch.cuda.device_count()) if torch.cuda.is_available() else None
+            else:
+                # remove indexes of GPUs which are not valid,
+                # because larger than the number of available GPU or smaller than 0
+                gpus = [x for x in gpus if x < torch.cuda.device_count() or x < 0]
+                if len(gpus) == 0:
+                    gpus = None
+        else:
+            gpus = None
 
         decoder_path = os.path.join(self.models_path, 'decoder')
 

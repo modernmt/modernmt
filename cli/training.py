@@ -2,8 +2,6 @@ import time
 
 from cli.mmt.cluster import ClusterNode
 from cli.mmt.engine import EngineBuilder
-from cli.mmt.neural import NeuralEngineBuilder
-from cli.mmt.phrasebased import PhraseBasedEngineBuilder
 
 __author__ = 'Davide Caroselli'
 
@@ -32,12 +30,14 @@ def _pretty_print_time(elapsed):
 class Training(EngineBuilder.Listener):
     @staticmethod
     def phrase_based(name, source_lang, target_lang, roots, debug, steps, split_trainingset):
+        from cli.mmt.phrasebased import PhraseBasedEngineBuilder
         builder = PhraseBasedEngineBuilder(name, source_lang, target_lang, roots, debug, steps, split_trainingset)
         return Training(builder)
 
     @staticmethod
     def neural(name, source_lang, target_lang, roots, debug, steps, split_trainingset, validation_corpora, bpe_symbols,
                max_vocab_size, gpus):
+        from cli.mmt.neural import NeuralEngineBuilder
         builder = NeuralEngineBuilder(name, source_lang, target_lang, roots, debug, steps, split_trainingset,
                                       validation_corpora, bpe_symbols, max_vocab_size, gpus)
         return Training(builder)
