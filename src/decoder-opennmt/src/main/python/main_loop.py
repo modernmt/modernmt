@@ -88,7 +88,6 @@ class MainController:
 
     def process(self, line):
         try:
-            self._logger.info('processing "' + line + '"')
             request = TranslationRequest.from_json_string(line)
             translation = self._decoder.translate(request.source, request.suggestions)
             return TranslationResponse(translation=translation)

@@ -59,6 +59,7 @@ class NMTEngineTrainer:
 
     def __init__(self, model, optim, src_dict, trg_dict, model_params=None, gpu_ids=None, random_seed=None):
         self._logger = logging.getLogger('nmmt.NMTEngineTrainer')
+        self._log_level = logging.INFO
 
         self._model = model
         self._optim = optim
@@ -79,6 +80,9 @@ class NMTEngineTrainer:
         self.min_epochs = 10  # Minimum number of training epochs
         self.start_epoch = 1  # The epoch from which to start
         self.min_perplexity_decrement = .02  # If perplexity decrement is lower than this percentage, stop training
+
+    def set_log_level(self, level):
+        self._log_level = level
 
     def _new_nmt_criterion(self, vocab_size):
         weight = torch.ones(vocab_size)
@@ -152,13 +156,13 @@ class NMTEngineTrainer:
 
         try:
             for epoch in range(self.start_epoch, self.max_epochs + 1):
-                self._logger.info('Training epoch %g... START' % epoch)
+                self._logger.log(self._log_level, 'Training epoch %g... START' % epoch)
                 start_time_epoch = time.time()
 
                 #  (1) train for one epoch on the training set
                 train_loss, train_acc = self._train_epoch(epoch, train_data, self._model, criterion, self._optim)
                 train_ppl = math.exp(min(train_loss, 100))
-                self._logger.info('trainEpoch Epoch %g Train loss: %g perplexity: %g accuracy: %g' % (
+                self._logger.log(self._log_level, 'trainEpoch Epoch %g Train loss: %g perplexity: %g accuracy: %g' % (
                     epoch, train_loss, train_ppl, (float(train_acc) * 100)))
 
                 force_termination = False
@@ -171,13 +175,15 @@ class NMTEngineTrainer:
                     #  (2) evaluate on the validation set
                     valid_loss, valid_acc = self._evaluate(criterion, valid_data)
                     valid_ppl = math.exp(min(valid_loss, 100))
-                    self._logger.info('trainModel Epoch %g Validation loss: %g perplexity: %g accuracy: %g' % (
-                        epoch, valid_loss, valid_ppl, (float(valid_acc) * 100)))
+                    self._logger.log(self._log_level,
+                                     'trainModel Epoch %g Validation loss: %g perplexity: %g accuracy: %g' % (
+                                         epoch, valid_loss, valid_ppl, (float(valid_acc) * 100)))
 
                     # (3) update the learning rate
                     self._optim.updateLearningRate(valid_loss, epoch)
 
-                    self._logger.info("trainModel Epoch %g Decaying learning rate to %g" % (epoch, self._optim.lr))
+                    self._logger.log(self._log_level,
+                                     "trainModel Epoch %g Decaying learning rate to %g" % (epoch, self._optim.lr))
 
                 if save_path is not None and save_epochs > 0:
                     if len(checkpoint_files) > 0 and len(checkpoint_files) > save_epochs - 1:
@@ -206,12 +212,14 @@ class NMTEngineTrainer:
 
                     torch.save(checkpoint, checkpoint_file)
                     checkpoint_files.append(checkpoint_file)
-                    self._logger.info("Checkpoint for epoch %d saved to file %s" % (epoch, checkpoint_file))
+                    self._logger.log(self._log_level,
+                                     "Checkpoint for epoch %d saved to file %s" % (epoch, checkpoint_file))
 
                 if force_termination:
                     break
 
-                self._logger.info('Training epoch %g... END %.2fs' % (epoch, time.time() - start_time_epoch))
+                self._logger.log(self._log_level,
+                                 'Training epoch %g... END %.2fs' % (epoch, time.time() - start_time_epoch))
         except KeyboardInterrupt:
             raise TrainingInterrupt(checkpoint=checkpoint_files[-1] if len(checkpoint_files) > 0 else None)
 
@@ -246,17 +254,17 @@ class NMTEngineTrainer:
             total_words += num_words
 
             if i % self.log_interval == -1 % self.log_interval:
-                self._logger.info(
-                    "trainEpoch epoch %2d, %5d/%5d; num_corr: %6.2f; %3.0f src tok; "
-                    "%3.0f tgt tok; acc: %6.2f; ppl: %6.2f; %3.0f src tok/s; %3.0f tgt tok/s;" %
-                    (epoch, i + 1, len(train_data),
-                     report_num_correct,
-                     report_src_words,
-                     report_tgt_words,
-                     (float(report_num_correct) / report_tgt_words) * 100,
-                     math.exp(report_loss / report_tgt_words),
-                     report_src_words / (time.time() - start),
-                     report_tgt_words / (time.time() - start)))
+                self._logger.log(self._log_level,
+                                 "trainEpoch epoch %2d, %5d/%5d; num_corr: %6.2f; %3.0f src tok; "
+                                 "%3.0f tgt tok; acc: %6.2f; ppl: %6.2f; %3.0f src tok/s; %3.0f tgt tok/s;" %
+                                 (epoch, i + 1, len(train_data),
+                                  report_num_correct,
+                                  report_src_words,
+                                  report_tgt_words,
+                                  (float(report_num_correct) / report_tgt_words) * 100,
+                                  math.exp(report_loss / report_tgt_words),
+                                  report_src_words / (time.time() - start),
+                                  report_tgt_words / (time.time() - start)))
 
                 report_loss = report_tgt_words = report_src_words = report_num_correct = 0
                 start = time.time()
@@ -273,12 +281,12 @@ class NMTEngineTrainer:
         decrement = (previous_value - current_value) / previous_value
 
         if 0 < decrement < self.min_perplexity_decrement:
-            self._logger.info('Terminating training for perplexity threshold reached: '
-                              'new perplexity is %f, while previous was %f (-%.1f%%)'
-                              % (current_value, previous_value, decrement * 100))
+            self._logger.log(self._log_level, 'Terminating training for perplexity threshold reached: '
+                                              'new perplexity is %f, while previous was %f (-%.1f%%)'
+                             % (current_value, previous_value, decrement * 100))
             return True
         else:
-            self._logger.info('Continuing training: '
-                              'new perplexity is %f, while previous was %f (-%.1f%%)'
-                              % (current_value, previous_value, decrement * 100))
+            self._logger.log(self._log_level, 'Continuing training: '
+                                              'new perplexity is %f, while previous was %f (-%.1f%%)'
+                             % (current_value, previous_value, decrement * 100))
             return False

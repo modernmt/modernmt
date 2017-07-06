@@ -1,3 +1,4 @@
+import logging
 import torch
 import torch.nn as nn
 
@@ -114,6 +115,7 @@ class NMTEngine:
             self._tuner = NMTEngineTrainer(self._model, self._optim, self._src_dict, self._trg_dict,
                                            model_params=self._model_params, gpu_ids=([0] if self._using_cuda else None))
             self._tuner.min_perplexity_decrement = -1.
+            self._tuner.set_log_level(logging.NOTSET)
 
         self._tuner.min_epochs = self._tuner.max_epochs = epochs
 

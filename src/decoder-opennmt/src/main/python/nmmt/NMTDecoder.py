@@ -45,7 +45,9 @@ class NMTDecoder:
 
         # (2) Tune engine if suggestions provided
         if processed_suggestions is not None:
-            with log_timed_action(self._logger, 'Tuning engine'):
+            msg = 'Tuning engine on %d suggestions (%d epochs)' % (len(processed_suggestions[0]), self.tuning_epochs)
+
+            with log_timed_action(self._logger, msg, log_start=False):
                 self._engine.tune(*processed_suggestions, epochs=self.tuning_epochs)
 
         # (3) Translate
@@ -56,7 +58,7 @@ class NMTDecoder:
 
         # (4) Reset engine if needed
         if processed_suggestions is not None:
-            with log_timed_action(self._logger, 'Restoring model initial state'):
+            with log_timed_action(self._logger, 'Restoring model initial state', log_start=False):
                 self._engine.reset_model()
 
         return self._text_processor.decode_tokens(pred_batch[0])

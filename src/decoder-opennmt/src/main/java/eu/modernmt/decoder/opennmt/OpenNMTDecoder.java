@@ -12,6 +12,8 @@ import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,6 +24,8 @@ import java.util.Collections;
  * Created by davide on 22/05/17.
  */
 public class OpenNMTDecoder implements Decoder, DataListenerProvider {
+
+    private static final Logger logger = LogManager.getLogger(OpenNMTDecoder.class);
 
     private static final int SUGGESTIONS_LIMIT = 4;
     private final ExecutionQueue executor;
@@ -49,6 +53,8 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
 
     @Override
     public Translation translate(Sentence text, ContextVector contextVector) throws OpenNMTException {
+        long start = System.currentTimeMillis();
+
         ScoreEntry[] suggestions;
 
         try {
@@ -57,10 +63,17 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
             throw new OpenNMTException("Failed to retrieve suggestions from memory", e);
         }
 
+        Translation translation;
+
         if (suggestions != null && suggestions.length > 0)
-            return executor.execute(text, suggestions);
+            translation = executor.execute(text, suggestions);
         else
-            return executor.execute(text);
+            translation = executor.execute(text);
+
+        long elapsed = System.currentTimeMillis() - start;
+        logger.info("Translation of " + text.length() + " words took " + (((double) elapsed) / 1000.) + "s");
+
+        return translation;
     }
 
     // DataListenerProvider
