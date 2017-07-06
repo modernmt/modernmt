@@ -71,6 +71,8 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
             translation = executor.execute(text);
 
         long elapsed = System.currentTimeMillis() - start;
+        translation.setElapsedTime(elapsed);
+        
         logger.info("Translation of " + text.length() + " words took " + (((double) elapsed) / 1000.) + "s");
 
         return translation;
