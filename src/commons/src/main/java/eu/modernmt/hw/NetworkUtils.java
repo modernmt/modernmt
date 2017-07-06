@@ -1,6 +1,7 @@
-package eu.modernmt.io;
+package eu.modernmt.hw;
 
 import com.sun.org.apache.xpath.internal.SourceTree;
+import eu.modernmt.io.DefaultCharset;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;

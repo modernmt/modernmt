@@ -1,7 +1,7 @@
 package eu.modernmt.engine.impl;
 
-import eu.modernmt.config.DecoderConfig;
 import eu.modernmt.config.EngineConfig;
+import eu.modernmt.config.PhraseBasedDecoderConfig;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.phrasebased.MosesDecoder;
@@ -23,7 +23,7 @@ public class PhraseBasedEngine extends Engine {
     public PhraseBasedEngine(EngineConfig config) throws IOException, PersistenceException {
         super(config);
 
-        DecoderConfig decoderConfig = config.getDecoderConfig();
+        PhraseBasedDecoderConfig decoderConfig = (PhraseBasedDecoderConfig) config.getDecoderConfig();
         if (decoderConfig.isEnabled())
             this.decoder = new MosesDecoder(Paths.join(this.models, "decoder"), decoderConfig.getThreads());
         else

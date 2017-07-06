@@ -116,4 +116,25 @@ abstract class XMLAbstractBuilder {
     protected Locale getLocaleAttribute(String attr) {
         return getLocaleAttribute(element, attr);
     }
+
+    protected static int[] getIntArrayAttribute(Element element, String attr) {
+        String value = getStringAttribute(element, attr);
+        if (value == null)
+            return null;
+
+        String[] parts = value.split("[,\\s]+");
+        if (parts.length == 0)
+            return null;
+
+        int[] array = new int[parts.length];
+
+        for (int i = 0; i < array.length; i++)
+            array[i] = Integer.parseInt(parts[i]);
+
+        return array;
+    }
+
+    protected int[] getIntArrayAttribute(String attr) {
+        return getIntArrayAttribute(element, attr);
+    }
 }

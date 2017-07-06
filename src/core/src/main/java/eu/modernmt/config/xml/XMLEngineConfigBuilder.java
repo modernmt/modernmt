@@ -1,8 +1,6 @@
 package eu.modernmt.config.xml;
 
-import eu.modernmt.config.ConfigException;
-import eu.modernmt.config.DecoderConfig;
-import eu.modernmt.config.EngineConfig;
+import eu.modernmt.config.*;
 import org.w3c.dom.Element;
 
 /**
@@ -39,10 +37,32 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
         public DecoderConfig build(DecoderConfig config) throws ConfigException {
             if (hasAttribute("enabled"))
                 config.setEnabled(getBooleanAttribute("enabled"));
+
+            // Phrase-based decoder config
             if (hasAttribute("threads"))
-                config.setThreads(getIntAttribute("threads"));
+                pbConfig(config).setThreads(getIntAttribute("threads"));
+
+            // Neural decoder config
+            if (hasAttribute("gpus"))
+                nConfig(config).setGPUs(getIntArrayAttribute("gpus"));
 
             return config;
+        }
+
+        private static PhraseBasedDecoderConfig pbConfig(DecoderConfig config) throws ConfigException {
+            try {
+                return (PhraseBasedDecoderConfig) config;
+            } catch (ClassCastException e) {
+                throw new ConfigException("Decoder is not phrase-based");
+            }
+        }
+
+        private static NeuralDecoderConfig nConfig(DecoderConfig config) throws ConfigException {
+            try {
+                return (NeuralDecoderConfig) config;
+            } catch (ClassCastException e) {
+                throw new ConfigException("Decoder is not neural");
+            }
         }
     }
 }

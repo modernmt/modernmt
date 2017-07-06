@@ -16,6 +16,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -36,14 +37,24 @@ class NativeProcess implements Closeable {
             this.model = model;
         }
 
-        public NativeProcess start() throws IOException {
-            return start(0);
+        public NativeProcess startOnCPU() throws IOException {
+            return start(-1);
         }
 
-        public NativeProcess start(int gpu) throws IOException {
-            String[] command = new String[]{
-                    "python", "nmt_decoder.py", model.getAbsolutePath(), "--gpu", Integer.toString(gpu)
-            };
+        public NativeProcess startOnGPU(int gpu) throws IOException {
+            return start(gpu);
+        }
+
+        private NativeProcess start(int gpu) throws IOException {
+            ArrayList<String> command = new ArrayList<>(5);
+            command.add("python");
+            command.add("main_loop.py");
+            command.add(model.getAbsolutePath());
+
+            if (gpu >= 0) {
+                command.add("--gpu");
+                command.add(Integer.toString(gpu));
+            }
 
             ProcessBuilder builder = new ProcessBuilder(command);
             builder.directory(home);

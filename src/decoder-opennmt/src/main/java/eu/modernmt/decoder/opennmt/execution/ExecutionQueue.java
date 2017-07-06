@@ -9,7 +9,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.IOException;
 
 /**
  * Created by davide on 22/05/17.
@@ -18,27 +17,22 @@ public interface ExecutionQueue extends Closeable {
 
     Logger logger = LogManager.getLogger(ExecutionQueue.class);
 
-    static ExecutionQueue newInstance(File home, File model) throws OpenNMTException {
-        try {
-            int gpus = MultiGPUsExecutionQueue.getNumberOfGPUs();
-
-            if (gpus < 1)
-                logger.warn("Unable to retrieve number of GPUs, result is " + gpus);
-
-            return newInstance(home, model, gpus);
-        } catch (IOException e) {
-            logger.error("Unable to retrieve number of GPUs, failed to execute command. Falling back to SingletonExecutionQueue", e);
-            return newInstance(home, model, 1);
-        }
-    }
-
-    static ExecutionQueue newInstance(File home, File model, int gpus) throws OpenNMTException {
+    static ExecutionQueue newInstance(File home, File model, int[] gpus) throws OpenNMTException {
         NativeProcess.Builder builder = new NativeProcess.Builder(home, model);
 
-        if (gpus > 1)
-            return new MultiGPUsExecutionQueue(builder, gpus);
-        else
-            return new SingletonExecutionQueue(builder);
+        if (gpus == null || gpus.length == 0) {
+            int cpus = Runtime.getRuntime().availableProcessors();
+
+            if (cpus > 1)
+                return ParallelExecutionQueue.forCPUs(builder, cpus);
+            else
+                return SingletonExecutionQueue.forCPU(builder);
+        } else {
+            if (gpus.length > 1)
+                return ParallelExecutionQueue.forGPUs(builder, gpus);
+            else
+                return SingletonExecutionQueue.forGPU(builder, gpus[0]);
+        }
     }
 
     Translation execute(Sentence sentence) throws OpenNMTException;

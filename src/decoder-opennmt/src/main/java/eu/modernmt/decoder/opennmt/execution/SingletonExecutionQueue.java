@@ -15,12 +15,24 @@ class SingletonExecutionQueue implements ExecutionQueue {
 
     private final NativeProcess decoder;
 
-    public SingletonExecutionQueue(NativeProcess.Builder builder) throws OpenNMTException {
+    public static SingletonExecutionQueue forCPU(NativeProcess.Builder builder) throws OpenNMTException {
         try {
-            this.decoder = builder.start();
+            return new SingletonExecutionQueue(builder.startOnCPU());
         } catch (IOException e) {
             throw new OpenNMTException("Unable to start OpenNMT process", e);
         }
+    }
+
+    public static SingletonExecutionQueue forGPU(NativeProcess.Builder builder, int gpu) throws OpenNMTException {
+        try {
+            return new SingletonExecutionQueue(builder.startOnGPU(gpu));
+        } catch (IOException e) {
+            throw new OpenNMTException("Unable to start OpenNMT process", e);
+        }
+    }
+
+    private SingletonExecutionQueue(NativeProcess decoder) {
+        this.decoder = decoder;
     }
 
     @Override

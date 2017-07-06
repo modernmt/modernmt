@@ -6,7 +6,7 @@ import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.io.FileConst;
 import eu.modernmt.io.DefaultCharset;
-import eu.modernmt.io.NetworkUtils;
+import eu.modernmt.hw.NetworkUtils;
 import eu.modernmt.io.Paths;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;

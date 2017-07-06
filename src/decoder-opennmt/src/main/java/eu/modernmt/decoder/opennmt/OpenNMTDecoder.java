@@ -27,11 +27,11 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
     private final ExecutionQueue executor;
     private final TranslationMemory memory;
 
-    public OpenNMTDecoder(File modelPath) throws OpenNMTException {
+    public OpenNMTDecoder(File modelPath, int[] gpus) throws OpenNMTException {
         File pythonHome = new File(FileConst.getLibPath(), "pynmt");
         File storageModelPath = new File(modelPath, "memory");
 
-        this.executor = ExecutionQueue.newInstance(pythonHome, modelPath);
+        this.executor = ExecutionQueue.newInstance(pythonHome, modelPath, gpus);
 
         try {
             this.memory = new LuceneTranslationMemory(storageModelPath);

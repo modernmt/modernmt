@@ -18,7 +18,7 @@ import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.decoder.DecoderWithFeatures;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
-import eu.modernmt.io.NetworkUtils;
+import eu.modernmt.hw.NetworkUtils;
 import eu.modernmt.persistence.Database;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -243,7 +243,7 @@ public class ClusterNode {
             hazelcastConfig.setProperty("hazelcast.initial.min.cluster.size", "1");
         }
 
-        int executorPoolSize = nodeConfig.getEngineConfig().getDecoderConfig().getThreads();
+        int executorPoolSize = nodeConfig.getEngineConfig().getDecoderConfig().getParallelismDegree();
 
         hazelcastConfig.getExecutorConfig(ClusterConstants.TRANSLATION_EXECUTOR_NAME)
                 .setPoolSize(executorPoolSize)
@@ -278,7 +278,7 @@ public class ClusterNode {
         logger.info("Node joined the cluster in " + (timer.time() / 1000.) + "s");
 
 
-        // ===========  ???  =============
+        // ===========  Adding shutdown hook for closing the cluster  =============
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {

@@ -15,7 +15,7 @@ public class EngineConfig {
     private Locale sourceLanguage = null;
     private Locale targetLanguage = null;
     private Type type = Type.PHRASE_BASED;
-    private final DecoderConfig decoderConfig = new DecoderConfig();
+    private DecoderConfig decoderConfig = new PhraseBasedDecoderConfig();
 
     public String getName() {
         return name;
@@ -31,7 +31,11 @@ public class EngineConfig {
     }
 
     public void setType(Type type) {
+        if (type == this.type)
+            return;
+
         this.type = type;
+        this.decoderConfig = type == Type.PHRASE_BASED ? new PhraseBasedDecoderConfig() : new NeuralDecoderConfig();
     }
 
     public Locale getSourceLanguage() {
