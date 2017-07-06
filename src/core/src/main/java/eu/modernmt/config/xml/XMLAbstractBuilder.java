@@ -122,6 +122,9 @@ abstract class XMLAbstractBuilder {
         if (value == null)
             return null;
 
+        if (value.trim().equalsIgnoreCase("none"))
+            return null;
+
         String[] parts = value.split("[,\\s]+");
         if (parts.length == 0)
             return null;
