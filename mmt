@@ -576,10 +576,16 @@ def main_download(argv):
 
     print "File datahub_collection_" + collection["name"] + ".zip will be saved in folder " + args.destination
     progressbar = UndefinedProgressbar(label='Downloading Collection')
-    progressbar.start()
-    statuscode = datahub.download_collection(collection, args.destination)
-    progressbar.complete()
-    print "Request completed with code " + str(statuscode)
+    statuscode = 0
+    try:
+        progressbar.start()
+        statuscode = datahub.download_collection(collection, args.destination)
+        progressbar.complete()
+        print "Request completed with code " + str(statuscode) + " "
+    except Exception:
+        progressbar.cancel()
+        print "Request could not be completed. "
+
     print "Success.\n" if statuscode == 200 else "Request was not successful.\n"
 
 

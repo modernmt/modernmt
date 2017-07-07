@@ -57,12 +57,14 @@ class UndefinedProgressbar(Progressbar):
         Progressbar.__init__(self, label, bar_length, refresh_time_in_seconds)
         self._paddle_length = paddle_length
 
-    def _update(self, newline=False, complete=False):
+    def _update(self, newline=False, complete=False, error=False):
         elapsed = time.time() - self._start_time
         self._progress = int((self._progress+1) % self._bar_length)
         prefix = self.label + '... ' if self.label is not None else ''
 
-        if complete:
+        if error:
+            bar = " " * self._bar_length
+        elif complete:
             bar = "=" * self._bar_length
         else:
             bar = list(' ' * self._bar_length)
@@ -77,7 +79,11 @@ class UndefinedProgressbar(Progressbar):
             sys.stdout.write('\n')
         sys.stdout.flush()
 
+    def cancel(self):
+        self._update(newline=True, complete=False, error=True)
+        Progressbar.cancel(self)
+
     def complete(self):
         self._background_thread.cancel()
         self._progress = 1.0
-        self._update(newline=True, complete=True)
+        self._update(newline=True, complete=True, error=False)
