@@ -515,7 +515,7 @@ def main_download(argv):
     parser.add_argument('source', help='The source language of the resources to download')
     parser.add_argument('target', help='The target language of the resources to download')
     parser.add_argument('srcWords', help='The amount of words in source language to download '
-                                            '(source words from bilingual resources)')
+                                         '(source words from bilingual resources)')
     parser.add_argument('trgWords', nargs='?',
                         help='The amount of words in target language to download '
                              '(both target words from bilingual resources and words from monolingual resources)',
@@ -526,10 +526,9 @@ def main_download(argv):
 
     parser.add_argument('-u', '--username', dest='username', help='your DataHub username')
     parser.add_argument('-p', action='store_true')
-
     parser.add_argument('-A', '--authentication', dest='access_token', help='your access token')
+
     parser.add_argument('-H', '--host', dest='host', help='the DataHub server host')
-    parser.add_argument('-P', '--port', dest='port', help='the DataHub server port')
     parser.add_argument('-y', action='store_true')
 
     args = parser.parse_args(argv)
@@ -553,12 +552,33 @@ def main_download(argv):
     elif args.access_token is None and (args.username is None or args.p is False):
         raise CLIArgsException(parser, "Invalid credentials: username and password, or access token, are mandatory \n")
 
-    datahub = DataHub(args.host, args.port)
+    if ':' in args.host:
+        host = args.host.split(':')[0]
+        port = args.host.split(':')[1]
+        datahub = DataHub(host, port)
+    else:
+        datahub = DataHub(args.host)
 
     if args.access_token is not None:
         datahub.validate_auth(args.access_token)
     else:
         datahub.authenticate(args.username, password)
+
+    if args.destination is None:
+        destination_folder = current_folder
+        destination_filename = None
+    elif os.path.isdir(args.destination):
+        destination_folder = args.destination
+        destination_filename = None
+    elif os.path.isfile(args.destination):
+        destination_folder, destination_filename = os.path.split(args.destination)
+        os.remove(args.destination)
+    elif args.destination.endswith('/'):
+        os.mkdir(args.destination)
+        destination_folder = args.destination
+        destination_filename = None
+    else:
+        destination_folder, destination_filename = os.path.split(args.destination)
 
     collection = datahub.generate_collection(args.source, args.target, src_words, trg_words)
     print "Obtained collection: " + collection["name"]
@@ -570,23 +590,20 @@ def main_download(argv):
 
     if not args.y:
         var = raw_input("Do you want to download it? [y/n] ")
-        if var != 'y' and var != 'yes':
+        if var.lower() != 'y' and var.lower() != 'yes':
             print("Bye.\n")
             exit()
 
-    print "File datahub_collection_" + collection["name"] + ".zip will be saved in folder " + args.destination
     progressbar = UndefinedProgressbar(label='Downloading Collection')
-    statuscode = 0
     try:
         progressbar.start()
-        statuscode = datahub.download_collection(collection, args.destination)
+        local_filepath = datahub.download_collection(collection, destination_folder, destination_filename)
         progressbar.complete()
-        print "Request completed with code " + str(statuscode) + " "
-    except Exception:
+        print "File downloaded in path: " + local_filepath
+        print "Success.\n"
+    except:
         progressbar.cancel()
-        print "Request could not be completed. "
-
-    print "Success.\n" if statuscode == 200 else "Request was not successful.\n"
+        raise
 
 
 def main():
