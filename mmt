@@ -3,11 +3,13 @@ import argparse
 import os
 import shutil
 import sys
+import getpass
 
 from cli import IllegalStateException, IllegalArgumentException
 from cli.evaluation import Evaluator
 from cli.libs import shell
-from cli.libs.progressbar import Progressbar
+from cli.libs.datahub import DataHub
+from cli.libs.progressbar import Progressbar, UndefinedProgressbar
 from cli.mmt import BilingualCorpus
 from cli.mmt.engine import Engine
 from cli.mmt.cluster import ClusterNode
@@ -540,6 +542,105 @@ def main_import(argv):
     print 'SUCCESS - imported domain "' + domain['name'] + '" with id ' + str(domain['id'])
 
 
+def main_download(argv):
+    current_folder = os.path.abspath(os.path.join(__file__, os.path.pardir))
+
+    parser = argparse.ArgumentParser(description='Generate and download a new collection of resources from DataHub')
+
+    parser.add_argument('source', help='The source language of the resources to download')
+    parser.add_argument('target', help='The target language of the resources to download')
+    parser.add_argument('srcWords', help='The amount of words in source language to download '
+                                         '(source words from bilingual resources)')
+    parser.add_argument('trgWords', nargs='?',
+                        help='The amount of words in target language to download '
+                             '(both target words from bilingual resources and words from monolingual resources)',
+                        default=None)
+
+    parser.add_argument('-O', '--destination', dest='destination',
+                        help='the destination for the downloaded file', default=current_folder)
+
+    parser.add_argument('-u', '--username', dest='username', help='your DataHub username')
+    parser.add_argument('-p', action='store_true')
+    parser.add_argument('-A', '--authentication', dest='access_token', help='your access token')
+
+    parser.add_argument('-H', '--host', dest='host', help='the DataHub server host')
+    parser.add_argument('-y', action='store_true')
+
+    args = parser.parse_args(argv)
+
+    def __parse_number(num_string):
+        magnitude = {'k': 1000, 'm': 1000000, 'b': 1000000000}
+        last_char = num_string[-1].lower()
+        try:
+            return int(num_string[:-1]) * magnitude[last_char] if last_char in magnitude.keys() else int(num_string)
+        except Exception:
+            raise Exception("Could not interpretate number " + num_string + ". "
+                            "Allowed numbers examples: 100000, 25k, 104m, 1b.\n ")
+
+    src_words = __parse_number(args.srcWords)
+    trg_words = None if args.trgWords is None else __parse_number(args.trgWords)
+
+    password = None
+    if args.access_token is None and args.username is not None and args.p is True:
+        print "Write password for user " + args.username + ":"
+        password = getpass.getpass()
+    elif args.access_token is None and (args.username is None or args.p is False):
+        raise CLIArgsException(parser, "Invalid credentials: username and password, or access token, are mandatory \n")
+
+    if ':' in args.host:
+        host = args.host.split(':')[0]
+        port = args.host.split(':')[1]
+        datahub = DataHub(host, port)
+    else:
+        datahub = DataHub(args.host)
+
+    if args.access_token is not None:
+        datahub.validate_auth(args.access_token)
+    else:
+        datahub.authenticate(args.username, password)
+
+    if args.destination is None:
+        destination_folder = current_folder
+        destination_filename = None
+    elif os.path.isdir(args.destination):
+        destination_folder = args.destination
+        destination_filename = None
+    elif os.path.isfile(args.destination):
+        destination_folder, destination_filename = os.path.split(args.destination)
+        os.remove(args.destination)
+    elif args.destination.endswith('/'):
+        os.mkdir(args.destination)
+        destination_folder = args.destination
+        destination_filename = None
+    else:
+        destination_folder, destination_filename = os.path.split(args.destination)
+
+    collection = datahub.generate_collection(args.source, args.target, src_words, trg_words)
+    print "Obtained collection: " + collection["name"]
+    print "Id: " + str(collection["id"])
+    print "Source Language: " + collection["source"]
+    print "Target Language: " + collection["target"]
+    print "Approximate source words: " + str(collection["approxSourceWords"])
+    print "Approximate target words: " + str(collection["approxTargetWords"])
+
+    if not args.y:
+        var = raw_input("Do you want to download it? [y/n] ")
+        if var.lower() != 'y' and var.lower() != 'yes':
+            print("Bye.\n")
+            exit()
+
+    progressbar = UndefinedProgressbar(label='Downloading Collection')
+    try:
+        progressbar.start()
+        local_filepath = datahub.download_collection(collection, destination_folder, destination_filename)
+        progressbar.complete()
+        print "File downloaded in path: " + local_filepath
+        print "Success.\n"
+    except:
+        progressbar.cancel()
+        raise
+
+
 def main():
     actions = {
         'create': main_create,
@@ -552,6 +653,7 @@ def main():
         'translate': main_translate,
         'add': main_add,
         'import': main_import,
+        'download': main_download,
     }
 
     # Set unbuffered stdout

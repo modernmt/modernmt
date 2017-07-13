@@ -49,3 +49,41 @@ class Progressbar:
         self._background_thread.cancel()
         self._progress = 1.0
         self._update(newline=True)
+
+
+class UndefinedProgressbar(Progressbar):
+
+    def __init__(self, label=None, bar_length=40, paddle_length=15, refresh_time_in_seconds=0.05):
+        Progressbar.__init__(self, label, bar_length, refresh_time_in_seconds)
+        self._paddle_length = paddle_length
+
+    def _update(self, newline=False, complete=False, error=False):
+        elapsed = time.time() - self._start_time
+        self._progress = int((self._progress+1) % self._bar_length)
+        prefix = self.label + '... ' if self.label is not None else ''
+
+        if error:
+            bar = " " * self._bar_length
+        elif complete:
+            bar = "=" * self._bar_length
+        else:
+            bar = list(' ' * self._bar_length)
+            for i in range(self._progress, self._progress+self._paddle_length):
+                bar[i % self._bar_length] = "="
+            bar = "".join(bar)
+
+        elapsed_text = '%02d:%02d' % (int(elapsed / 60), elapsed % 60)
+
+        sys.stdout.write('%s[%s] %s\r' % (prefix, bar, elapsed_text))
+        if newline:
+            sys.stdout.write('\n')
+        sys.stdout.flush()
+
+    def cancel(self):
+        self._update(newline=True, complete=False, error=True)
+        Progressbar.cancel(self)
+
+    def complete(self):
+        self._background_thread.cancel()
+        self._progress = 1.0
+        self._update(newline=True, complete=True, error=False)
