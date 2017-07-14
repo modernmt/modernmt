@@ -56,8 +56,8 @@ class OpenNMTPreprocessor:
 
         self._logger = logging.getLogger('mmt.train.OpenNMTPreprocessor')
 
-    def process(self, corpora, valid_corpora, output_file, bpe_symbols, max_vocab_size, max_line_len,
-                working_dir='.', dump_dicts=False):
+    def process(self, corpora, valid_corpora, output_file, bpe_symbols, max_vocab_size, working_dir='.',
+                dump_dicts=False):
         class _ReaderWrapper:
             def __init__(self, _corpus, _langs):
                 self.corpus = _corpus
@@ -89,10 +89,10 @@ class OpenNMTPreprocessor:
             trg_vocab.add(word)
 
         self._logger.info('Preparing training corpora')
-        src_train, trg_train = self._prepare_corpora(corpora, bpe_encoder, src_vocab, trg_vocab, max_line_len)
+        src_train, trg_train = self._prepare_corpora(corpora, bpe_encoder, src_vocab, trg_vocab)
 
         self._logger.info('Preparing validation corpora')
-        src_valid, trg_valid = self._prepare_corpora(valid_corpora, bpe_encoder, src_vocab, trg_vocab, max_line_len)
+        src_valid, trg_valid = self._prepare_corpora(valid_corpora, bpe_encoder, src_vocab, trg_vocab)
 
         self._logger.info('Storing OpenNMT preprocessed data to "%s"' % output_file)
         torch.save({
@@ -111,7 +111,7 @@ class OpenNMTPreprocessor:
             self._logger.info('Storing OpenNMT preprocessed target dictionary "%s"' % trg_dict_file)
             trg_vocab.writeFile(trg_dict_file)
 
-    def _prepare_corpora(self, corpora, bpe_encoder, src_vocab, trg_vocab, max_line_length):
+    def _prepare_corpora(self, corpora, bpe_encoder, src_vocab, trg_vocab):
         src, trg = [], []
         sizes = []
         count, ignored = 0, 0
@@ -122,7 +122,7 @@ class OpenNMTPreprocessor:
                     src_words = bpe_encoder.encode_line(source, is_source=True)
                     trg_words = bpe_encoder.encode_line(target, is_source=False)
 
-                    if 0 < len(src_words) <= max_line_length and 0 < len(trg_words) <= max_line_length:
+                    if len(src_words) > 0 and len(trg_words) > 0:
                         src.append(src_vocab.convertToIdx(src_words,
                                                           onmt.Constants.UNK_WORD))
                         trg.append(trg_vocab.convertToIdx(trg_words,
@@ -137,8 +137,18 @@ class OpenNMTPreprocessor:
                     if count % 100000 == 0:
                         self._logger.info(' %d sentences prepared' % count)
 
-        self._logger.info('Prepared %d sentences (%d ignored due to length == 0 or > %d)' %
-                          (len(src), ignored, max_line_length))
+        self._logger.info('Prepared %d sentences (%d ignored due to length == 0)' % (len(src), ignored))
+
+        self._logger.info('Shuffling sentences')
+        perm = torch.randperm(len(src))
+        src = [src[idx] for idx in perm]
+        trg = [trg[idx] for idx in perm]
+        sizes = [sizes[idx] for idx in perm]
+
+        self._logger.info('Sorting sentences by size')
+        _, perm = torch.sort(torch.Tensor(sizes))
+        src = [src[idx] for idx in perm]
+        trg = [trg[idx] for idx in perm]
 
         return src, trg
 
@@ -278,7 +288,7 @@ class NeuralEngineBuilder(EngineBuilder):
 
             self._engine.onmt_preprocessor.process(corpora, validation_corpora, args.onmt_training_file,
                                                    bpe_symbols=self._bpe_symbols, max_vocab_size=self._max_vocab_size,
-                                                   max_line_len=80, working_dir=working_dir)
+                                                   working_dir=working_dir)
 
     @EngineBuilder.Step('Neural decoder training')
     def _train_decoder(self, args, skip=False, delete_on_exit=False):

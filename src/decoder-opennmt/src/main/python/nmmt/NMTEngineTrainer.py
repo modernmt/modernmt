@@ -230,8 +230,11 @@ class NMTEngineTrainer:
         report_loss, report_tgt_words, report_src_words, report_num_correct = 0, 0, 0, 0
         start = time.time()
 
+        # Shuffle mini batch order.
+        batch_order = torch.randperm(len(train_data))
+
         for i in range(len(train_data)):
-            batch = train_data[i][:-1]  # exclude original indices
+            batch = train_data[batch_order[i]][:-1]  # exclude original indices
 
             model.zero_grad()
             outputs = model(batch)
