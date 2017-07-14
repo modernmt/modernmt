@@ -137,8 +137,6 @@ class OpenNMTPreprocessor:
                     if count % 100000 == 0:
                         self._logger.info(' %d sentences prepared' % count)
 
-        self._logger.info('Prepared %d sentences (%d ignored due to length == 0)' % (len(src), ignored))
-
         self._logger.info('Shuffling sentences')
         perm = torch.randperm(len(src))
         src = [src[idx] for idx in perm]
@@ -149,6 +147,8 @@ class OpenNMTPreprocessor:
         _, perm = torch.sort(torch.Tensor(sizes))
         src = [src[idx] for idx in perm]
         trg = [trg[idx] for idx in perm]
+
+        self._logger.info('Prepared %d sentences (%d ignored due to length == 0)' % (len(src), ignored))
 
         return src, trg
 
