@@ -26,6 +26,9 @@ class NMTEngineTrainer:
             from nmmt import NMTEngine
             model_params = NMTEngine.Parameters()
 
+        if gpu_ids is not None and len(gpu_ids) > 0:
+            torch.cuda.set_device(gpu_ids[0])
+
         encoder = Models.Encoder(model_params, src_dict)
         decoder = Models.Decoder(model_params, trg_dict)
         generator = nn.Sequential(nn.Linear(model_params.rnn_size, trg_dict.size()), nn.LogSoftmax())
@@ -35,8 +38,6 @@ class NMTEngineTrainer:
         if gpu_ids is not None and len(gpu_ids) > 0:
             model.cuda()
             generator.cuda()
-
-            torch.cuda.set_device(gpu_ids[0])
 
             if len(gpu_ids) > 1:
                 model = nn.DataParallel(model, device_ids=gpu_ids, dim=1)
