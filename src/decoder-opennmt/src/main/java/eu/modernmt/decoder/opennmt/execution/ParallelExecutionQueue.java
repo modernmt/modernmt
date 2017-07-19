@@ -80,7 +80,7 @@ class ParallelExecutionQueue implements ExecutionQueue {
         try {
             decoder = this.queue.take();
 
-            Word[] translation = decoder.translate(sentence);
+	    Word[] translation = decoder.translate(sentence, suggestions);
             return new Translation(translation, sentence, null);
         } catch (InterruptedException e) {
             throw new OpenNMTException("No OpenNMT processes available", e);
