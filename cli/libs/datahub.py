@@ -21,7 +21,7 @@ __description = '''\
 
 #
 class DataHub:
-    def __init__(self, host='datahub.rocks.mmt', port=80):
+    def __init__(self, host='datahub.mmt.rocks', port=80):
         self.api = Api(host, port)
         self.auth = None
 
