@@ -23,7 +23,7 @@ public class NeuralDecoderConfig extends DecoderConfig {
 
     @Override
     public int getParallelismDegree() {
-        return gpus == null ? Runtime.getRuntime().availableProcessors() : gpus.length;
+        return gpus == null || gpus.length == 0 ? Runtime.getRuntime().availableProcessors() : gpus.length;
     }
 
     @Override

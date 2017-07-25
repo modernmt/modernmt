@@ -42,7 +42,7 @@ class DocumentBuilder {
     }
 
     public static Document build(Map<Short, Long> channels) {
-        ByteBuffer buffer = ByteBuffer.allocate(12 * channels.size());
+        ByteBuffer buffer = ByteBuffer.allocate(10 * channels.size());
         for (Map.Entry<Short, Long> entry : channels.entrySet()) {
             buffer.putShort(entry.getKey());
             buffer.putLong(entry.getValue());
@@ -64,7 +64,6 @@ class DocumentBuilder {
         while (buffer.hasRemaining()) {
             short channel = buffer.getShort();
             long position = buffer.getLong();
-
             result.put(channel, position);
         }
 

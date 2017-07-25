@@ -8,8 +8,6 @@ import eu.modernmt.decoder.*;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.facade.exceptions.TranslationException;
 import eu.modernmt.model.ContextVector;
-import eu.modernmt.model.MultiOptionsToken;
-import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.ProcessingException;
 
@@ -87,10 +85,10 @@ public class TranslationFacade {
     }
 
     private Translation get(TranslateOperation operation) throws TranslationException {
-        Translation rootTranslation;
+        Translation translation;
 
         try {
-            rootTranslation = ModernMT.getNode().submit(operation).get();
+            translation = ModernMT.getNode().submit(operation).get();
         } catch (InterruptedException e) {
             throw new SystemShutdownException(e);
         } catch (ExecutionException e) {
@@ -108,23 +106,7 @@ public class TranslationFacade {
                 throw new Error("Unexpected exception: " + cause.getMessage(), cause);
         }
 
-        for (Token token : rootTranslation) {
-            if (token instanceof MultiOptionsToken) {
-                MultiOptionsToken mop = (MultiOptionsToken) token;
-
-                if (!mop.hasTranslatedOptions()) {
-                    String[] options = mop.getSourceOptions();
-                    Translation[] translations = new Translation[options.length];
-
-                    for (int i = 0; i < translations.length; i++)
-                        translations[i] = get(new TranslateOperation(options[i], operation.context, 0));
-
-                    mop.setTranslatedOptions(translations);
-                }
-            }
-        }
-
-        return rootTranslation;
+        return translation;
     }
 
     // =============================
