@@ -13,10 +13,10 @@ os.environ['LD_LIBRARY_PATH'] = os.path.join(MMT_HOME, 'build', 'lib')
 os.environ['LC_ALL'] = 'en_US.UTF-8'
 os.environ['LANG'] = 'en_US.UTF-8'
 
-from cli.mmt.cluster import MMTApi
+from cli.mmt.cluster import ClusterNode
 from cli.libs.shell import ShellError
 
-_api = MMTApi(port=8045)
+_api = ClusterNode.Api(port=8045)
 
 
 def _log(message, nl=True):
