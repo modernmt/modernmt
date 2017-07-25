@@ -52,7 +52,7 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     @Override
     public void add(Map<Domain, Corpus> corpora) throws ContextAnalyzerException {
         for (Map.Entry<Domain, Corpus> entry : corpora.entrySet()) {
-            int id = entry.getKey().getId();
+            long id = entry.getKey().getId();
 
             try {
                 this.storage.bulkInsert(id, entry.getValue());

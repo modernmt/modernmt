@@ -132,7 +132,7 @@ public class ContextAnalyzerIndex implements Closeable {
 
     public void add(Collection<Document> documents) throws ContextAnalyzerException {
         for (Document document : documents) {
-            int id = DocumentBuilder.getId(document);
+            long id = DocumentBuilder.getId(document);
 
             logger.info("Adding to index document " + id);
 
@@ -144,9 +144,9 @@ public class ContextAnalyzerIndex implements Closeable {
         }
     }
 
-    public void update(int domain, Document document) throws ContextAnalyzerException {
+    public void update(long domain, Document document) throws ContextAnalyzerException {
         BytesRefBuilder builder = new BytesRefBuilder();
-        NumericUtils.intToPrefixCoded(domain, 0, builder);
+        NumericUtils.longToPrefixCoded(domain, 0, builder);
 
         Term id = new Term(DocumentBuilder.ID_FIELD, builder.toBytesRef());
 
@@ -157,9 +157,9 @@ public class ContextAnalyzerIndex implements Closeable {
         }
     }
 
-    public void delete(int domain) throws ContextAnalyzerException {
+    public void delete(long domain) throws ContextAnalyzerException {
         BytesRefBuilder builder = new BytesRefBuilder();
-        NumericUtils.intToPrefixCoded(domain, 0, builder);
+        NumericUtils.longToPrefixCoded(domain, 0, builder);
 
         Term id = new Term(DocumentBuilder.ID_FIELD, builder.toBytesRef());
 
@@ -255,7 +255,7 @@ public class ContextAnalyzerIndex implements Closeable {
                 throw new ContextAnalyzerException("Could not resolve document " + topDocRef.doc + " in index", e);
             }
 
-            int id = DocumentBuilder.getId(topDoc);
+            long id = DocumentBuilder.getId(topDoc);
 
             float similarityScore;
             try {

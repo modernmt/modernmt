@@ -10,9 +10,9 @@ import java.util.Map;
  */
 public interface DomainDAO {
 
-    Domain retrieveById(int id) throws PersistenceException;
+    Domain retrieveById(long id) throws PersistenceException;
 
-    Map<Integer, Domain> retrieveByIds(Collection<Integer> ids) throws PersistenceException;
+    Map<Long, Domain> retrieveByIds(Collection<Long> ids) throws PersistenceException;
 
     Collection<Domain> retrieveAll() throws PersistenceException;
 
@@ -22,6 +22,6 @@ public interface DomainDAO {
 
     Domain update(Domain domain) throws PersistenceException;
 
-    boolean delete(int id) throws PersistenceException;
+    boolean delete(long id) throws PersistenceException;
 
 }

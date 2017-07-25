@@ -1,15 +1,15 @@
 package eu.modernmt.persistence.cassandra;
 
-import com.datastax.driver.core.*;
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.KeyspaceMetadata;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.SimpleStatement;
 import com.datastax.driver.core.schemabuilder.DropKeyspace;
 import com.datastax.driver.core.schemabuilder.SchemaBuilder;
-import eu.modernmt.model.Domain;
 import eu.modernmt.persistence.*;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Locale;
 
 /**
  * Created by andrearossi on 08/03/17.
@@ -19,6 +19,7 @@ import java.util.Locale;
  * and to get DAO objects for the entities it stores.
  */
 public class CassandraDatabase extends Database {
+
     public static final String DOMAINS_TABLE = "domains";
     public static final String IMPORT_JOBS_TABLE = "import_jobs";
     public static final String COUNTERS_TABLE = "table_counters";
@@ -41,24 +42,6 @@ public class CassandraDatabase extends Database {
     public static String getDefaultKeyspace() {
         return "default";
     }
-
-//    public static String getDefaultKeyspace(String engineName, Locale sourceLang, Locale targetLang) {
-//        int keyspaceMaxLength = 48;
-//        String keyspaceName = "mmt"
-//                + "_" + engineName
-//                + "_" + sourceLang.toLanguageTag()
-//                + "_" + targetLang.toLanguageTag();
-//
-//        if (keyspaceName.length() > keyspaceMaxLength) {
-//
-//            int exceedingCharacters = keyspaceName.length() - keyspaceMaxLength;
-//            keyspaceName = "mmt"
-//                    + "_" + engineName.substring(0, engineName.length() - exceedingCharacters)
-//                    + "_" + sourceLang.toLanguageTag()
-//                    + "_" + targetLang.toLanguageTag();
-//        }
-//        return keyspaceName;
-//    }
 
     /**
      * This constructor builds an access point to a Cassandra DB
@@ -185,11 +168,11 @@ public class CassandraDatabase extends Database {
 
             SimpleStatement createDomainsTable = new SimpleStatement(
                     "CREATE TABLE IF NOT EXISTS " + DOMAINS_TABLE +
-                            " (id int PRIMARY KEY, name varchar);");
+                            " (id bigint PRIMARY KEY, name varchar);");
 
             SimpleStatement createImportJobsTable = new SimpleStatement(
                     "CREATE TABLE IF NOT EXISTS " + IMPORT_JOBS_TABLE +
-                            " (id bigint PRIMARY KEY, domain int, size int, \"begin\" bigint, end bigint, data_channel smallint);");
+                            " (id bigint PRIMARY KEY, domain bigint, size int, \"begin\" bigint, end bigint, data_channel smallint);");
 
 
             CassandraUtils.checkedExecute(connection, createCountersTable);

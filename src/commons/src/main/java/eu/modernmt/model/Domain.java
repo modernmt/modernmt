@@ -7,23 +7,23 @@ import java.io.Serializable;
  */
 public class Domain implements Serializable {
 
-    private int id;
+    private long id;
     private String name;
 
-    public Domain(int id) {
+    public Domain(long id) {
         this(id, null);
     }
 
-    public Domain(int id, String name) {
+    public Domain(long id, String name) {
         this.id = id;
         this.name = name;
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 
@@ -48,7 +48,7 @@ public class Domain implements Serializable {
 
     @Override
     public int hashCode() {
-        return id;
+        return Long.hashCode(id);
     }
 
     @Override

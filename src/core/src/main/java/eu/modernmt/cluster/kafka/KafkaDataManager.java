@@ -184,12 +184,12 @@ public class KafkaDataManager implements DataManager {
     }
 
     @Override
-    public ImportJob upload(int domainId, BilingualCorpus corpus, short channel) throws DataManagerException {
+    public ImportJob upload(long domainId, BilingualCorpus corpus, short channel) throws DataManagerException {
         return upload(domainId, corpus, getDataChannel(channel));
     }
 
     @Override
-    public ImportJob upload(int domainId, BilingualCorpus corpus, DataChannel channel) throws DataManagerException {
+    public ImportJob upload(long domainId, BilingualCorpus corpus, DataChannel channel) throws DataManagerException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 
@@ -244,21 +244,21 @@ public class KafkaDataManager implements DataManager {
     }
 
     @Override
-    public ImportJob upload(int domainId, String sourceSentence, String targetSentence, short channel) throws DataManagerException {
+    public ImportJob upload(long domainId, String sourceSentence, String targetSentence, short channel) throws DataManagerException {
         return upload(domainId, sourceSentence, targetSentence, getDataChannel(channel));
     }
 
     @Override
-    public ImportJob upload(int domainId, String sourceSentence, String targetSentence, DataChannel channel) throws DataManagerException {
+    public ImportJob upload(long domainId, String sourceSentence, String targetSentence, DataChannel channel) throws DataManagerException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 
         long offset = sendElement(KafkaElement.createUpdate(domainId, sourceSentence, targetSentence), true, channel);
-        return ImportJob.createEphemeralJob(domainId, offset, channel.getId());
+        return ImportJob.createEphemeralJob(offset, channel.getId());
     }
 
     @Override
-    public void delete(int domainId) throws DataManagerException {
+    public void delete(long domainId) throws DataManagerException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 

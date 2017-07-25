@@ -161,7 +161,7 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
         return translation;
     }
 
-    private native TranslationXObject translate(String text, int[] contextKeys, float[] contextValues, int nbest);
+    private native TranslationXObject translate(String text, long[] contextKeys, float[] contextValues, int nbest);
 
     // DataListener
 
@@ -171,7 +171,7 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
 
         short[] channels = new short[size];
         long[] channelPositions = new long[size];
-        int[] domains = new int[size];
+        long[] domains = new long[size];
         String[] sources = new String[size];
         String[] targets = new String[size];
         int[][] alignments = new int[size][];
@@ -191,14 +191,14 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
         updateReceived(channels, channelPositions, domains, sources, targets, alignments);
     }
 
-    private native void updateReceived(short[] channels, long[] channelPositions, int[] domains, String[] sources, String[] targets, int[][] alignments);
+    private native void updateReceived(short[] channels, long[] channelPositions, long[] domains, String[] sources, String[] targets, int[][] alignments);
 
     @Override
     public void onDelete(Deletion deletion) throws Exception {
         deleteReceived(deletion.channel, deletion.channelPosition, deletion.domain);
     }
 
-    private native void deleteReceived(short channel, long channelPosition, int domain);
+    private native void deleteReceived(short channel, long channelPosition, long domain);
 
     @Override
     public Map<Short, Long> getLatestChannelPositions() {

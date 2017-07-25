@@ -14,20 +14,20 @@ using namespace std;
 using namespace mmt;
 using namespace mmt::decoder;
 
-void ParseContext(JNIEnv *jvm, jintArray keys, jfloatArray values, map<string, float> &outContext) {
+void ParseContext(JNIEnv *jvm, jlongArray keys, jfloatArray values, map<string, float> &outContext) {
     int size = jvm->GetArrayLength(values);
 
-    jint *keysArray = jvm->GetIntArrayElements(keys, 0);
+    jlong *keysArray = jvm->GetLongArrayElements(keys, 0);
     jfloat *valuesArray = jvm->GetFloatArrayElements(values, 0);
 
     for (int i = 0; i < size; i++) {
-        string key = std::to_string((uint32_t) keysArray[i]);
+        string key = std::to_string((domain_t) keysArray[i]);
         float value = valuesArray[i];
 
         outContext[key] = value;
     }
 
-    jvm->ReleaseIntArrayElements(keys, keysArray, 0);
+    jvm->ReleaseLongArrayElements(keys, keysArray, 0);
     jvm->ReleaseFloatArrayElements(values, valuesArray, 0);
 }
 
@@ -146,11 +146,11 @@ Java_eu_modernmt_decoder_phrasebased_MosesDecoder_setFeatureWeights(JNIEnv *jvm,
 /*
  * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
  * Method:    translate
- * Signature: (Ljava/lang/String;[I[FI)Leu/modernmt/decoder/phrasebased/TranslationXObject;
+ * Signature: (Ljava/lang/String;[J[FI)Leu/modernmt/decoder/phrasebased/TranslationXObject;
  */
 JNIEXPORT jobject JNICALL
 Java_eu_modernmt_decoder_phrasebased_MosesDecoder_translate(JNIEnv *jvm, jobject jself, jstring text,
-                                                            jintArray contextKeys,
+                                                            jlongArray contextKeys,
                                                             jfloatArray contextValues, jint nbest) {
     MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
     string sentence = jni_jstrtostr(jvm, text);
@@ -195,11 +195,11 @@ Java_eu_modernmt_decoder_phrasebased_MosesDecoder_translate(JNIEnv *jvm, jobject
 /*
  * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
  * Method:    updateReceived
- * Signature: ([S[J[I[Ljava/lang/String;[Ljava/lang/String;[[I)V
+ * Signature: ([S[J[J[Ljava/lang/String;[Ljava/lang/String;[[I)V
  */
 JNIEXPORT void JNICALL
 Java_eu_modernmt_decoder_phrasebased_MosesDecoder_updateReceived(JNIEnv *jvm, jobject jself, jshortArray jchannels,
-                                                                 jlongArray jpositions, jintArray jdomains,
+                                                                 jlongArray jpositions, jlongArray jdomains,
                                                                  jobjectArray jsources, jobjectArray jtargets,
                                                                  jobjectArray jalignments) {
     MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
@@ -209,7 +209,7 @@ Java_eu_modernmt_decoder_phrasebased_MosesDecoder_updateReceived(JNIEnv *jvm, jo
 
     jshort *jchannelsArray = jvm->GetShortArrayElements(jchannels, 0);
     jlong *jpositionsArray = jvm->GetLongArrayElements(jpositions, 0);
-    jint *jdomainsArray = jvm->GetIntArrayElements(jdomains, 0);
+    jlong *jdomainsArray = jvm->GetLongArrayElements(jdomains, 0);
 
     for (size_t i = 0; i < size; ++i) {
         translation_unit_t &unit = batch[i];
@@ -222,7 +222,7 @@ Java_eu_modernmt_decoder_phrasebased_MosesDecoder_updateReceived(JNIEnv *jvm, jo
 
     jvm->ReleaseShortArrayElements(jchannels, jchannelsArray, 0);
     jvm->ReleaseLongArrayElements(jpositions, jpositionsArray, 0);
-    jvm->ReleaseIntArrayElements(jdomains, jdomainsArray, 0);
+    jvm->ReleaseLongArrayElements(jdomains, jdomainsArray, 0);
 
     instance->DeliverUpdates(batch);
 }
@@ -230,11 +230,11 @@ Java_eu_modernmt_decoder_phrasebased_MosesDecoder_updateReceived(JNIEnv *jvm, jo
 /*
  * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
  * Method:    deleteReceived
- * Signature: (SJI)V
+ * Signature: (SJJ)V
  */
 JNIEXPORT void JNICALL
 Java_eu_modernmt_decoder_phrasebased_MosesDecoder_deleteReceived(JNIEnv *jvm, jobject jself, jshort jchannel,
-                                                                 jlong jchannelPosition, jint jdomain) {
+                                                                 jlong jchannelPosition, jlong jdomain) {
     MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
 
     updateid_t id((stream_t) jchannel, (seqid_t) jchannelPosition);

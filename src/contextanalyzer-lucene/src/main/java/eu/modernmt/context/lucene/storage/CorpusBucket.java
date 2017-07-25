@@ -13,16 +13,16 @@ import java.nio.channels.FileChannel;
  */
 public class CorpusBucket implements Closeable {
 
-    public static final int SERIALIZED_DATA_LENGTH = 20;
+    public static final int SERIALIZED_DATA_LENGTH = 24;
 
     public static void serialize(CorpusBucket bucket, ByteBuffer buffer) {
-        buffer.putInt(bucket.domain);
+        buffer.putLong(bucket.domain);
         buffer.putLong(bucket.analyzerOffset);
         buffer.putLong(bucket.currentOffset);
     }
 
     public static CorpusBucket deserialize(Options.AnalysisOptions analysisOptions, File folder, ByteBuffer buffer) {
-        int domain = buffer.getInt();
+        long domain = buffer.getLong();
         long analyzerOffset = buffer.getLong();
         long currentOffset = buffer.getLong();
 
@@ -31,7 +31,7 @@ public class CorpusBucket implements Closeable {
 
     private final Options.AnalysisOptions analysisOptions;
 
-    private final int domain;
+    private final long domain;
     private long analyzerOffset;
     private long currentOffset;
     private boolean deleted;
@@ -39,11 +39,11 @@ public class CorpusBucket implements Closeable {
     private final File path;
     private FileOutputStream stream = null;
 
-    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, int domain) {
+    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, long domain) {
         this(analysisOptions, folder, domain, 0L, 0L);
     }
 
-    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, int domain, long analyzerOffset, long currentOffset) {
+    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, long domain, long analyzerOffset, long currentOffset) {
         this.domain = domain;
         this.path = new File(folder, "_" + domain);
         this.analysisOptions = analysisOptions;
@@ -89,7 +89,7 @@ public class CorpusBucket implements Closeable {
         currentOffset = 0L;
     }
 
-    public int getDomain() {
+    public long getDomain() {
         return domain;
     }
 
@@ -139,7 +139,7 @@ public class CorpusBucket implements Closeable {
 
     @Override
     public int hashCode() {
-        return domain;
+        return Long.hashCode(domain);
     }
 
     @Override

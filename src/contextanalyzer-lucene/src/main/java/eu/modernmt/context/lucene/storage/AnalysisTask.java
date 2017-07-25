@@ -30,7 +30,7 @@ class AnalysisTask implements Callable<Void> {
 
     @Override
     public Void call() throws ContextAnalyzerException {
-        int domain = bucket.getDomain();
+        long domain = bucket.getDomain();
 
         logger.info("Indexing bucket " + domain);
 

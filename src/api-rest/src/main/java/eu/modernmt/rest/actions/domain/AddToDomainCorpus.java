@@ -51,7 +51,7 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
 
     public static class Params extends Parameters {
 
-        private final int domain;
+        private final long domain;
         private final String source;
         private final String target;
         private final BilingualCorpus corpus;
@@ -59,7 +59,7 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
         public Params(RESTRequest req) throws ParameterParsingException, TemplateException {
             super(req);
 
-            domain = req.getPathParameterAsInt("id");
+            domain = req.getPathParameterAsLong("id");
 
             source = getString("source", false, null);
             target = getString("target", false, null);

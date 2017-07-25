@@ -1,6 +1,7 @@
 package eu.modernmt.persistence.cassandra;
 
-import com.datastax.driver.core.*;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.querybuilder.BuiltStatement;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import eu.modernmt.model.ImportJob;
@@ -17,6 +18,7 @@ import java.util.UUID;
  * when connected to a Cassandra Database.
  */
 public class CassandraImportJobDAO implements ImportJobDAO {
+
     private CassandraConnection connection;
 
     /**
@@ -41,7 +43,6 @@ public class CassandraImportJobDAO implements ImportJobDAO {
      */
     @Override
     public ImportJob put(ImportJob job) throws PersistenceException {
-
         long id = CassandraIdGenerator.generate(connection, CassandraDatabase.IMPORT_JOBS_TABLE_ID);
 
         String[] columns = {"id", "domain", "\"begin\"", "end", "data_channel", "size"};
@@ -93,11 +94,10 @@ public class CassandraImportJobDAO implements ImportJobDAO {
      *
      * @param row a row retrieved from the importjobs table
      * @return the new ImportJob object obtained by the row
-     * @throws PersistenceException
      */
     private static ImportJob read(Row row) {
         long id = row.getLong("id");
-        int domain = row.getInt("domain");
+        long domain = row.getLong("domain");
         int size = row.getInt("size");
         long begin = row.getLong("begin");
         long end = row.getLong("end");

@@ -30,11 +30,11 @@ public class DeleteDomain extends VoidAction {
 
     public static class Params extends Parameters {
 
-        private final int id;
+        private final long id;
 
         public Params(RESTRequest req) throws ParameterParsingException, TemplateException {
             super(req);
-            id = req.getPathParameterAsInt("id");
+            id = req.getPathParameterAsLong("id");
         }
     }
 

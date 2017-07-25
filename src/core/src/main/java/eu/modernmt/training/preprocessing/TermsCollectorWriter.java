@@ -51,8 +51,6 @@ public class TermsCollectorWriter extends CorpusWriter {
             FileUtils.forceMkdir(parent);
 
         String[] words = terms.keySet().toArray(new String[terms.size()]);
-        // TODO: not necessary, but there is a bug here -> vocabulary order changes quality
-        // Arrays.sort(words);
 
         UnixLineWriter writer = null;
 

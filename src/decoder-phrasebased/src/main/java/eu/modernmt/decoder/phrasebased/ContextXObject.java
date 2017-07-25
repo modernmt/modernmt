@@ -7,12 +7,12 @@ import eu.modernmt.model.ContextVector;
  */
 class ContextXObject {
 
-    public final int[] keys;
+    public final long[] keys;
     public final float[] values;
 
     public static ContextXObject build(ContextVector vector) {
         if (vector != null) {
-            int[] keys = new int[vector.size()];
+            long[] keys = new long[vector.size()];
             float[] values = new float[vector.size()];
 
             int i = 0;
@@ -28,7 +28,7 @@ class ContextXObject {
         }
     }
 
-    private ContextXObject(int[] keys, float[] values) {
+    private ContextXObject(long[] keys, float[] values) {
         this.keys = keys;
         this.values = values;
     }

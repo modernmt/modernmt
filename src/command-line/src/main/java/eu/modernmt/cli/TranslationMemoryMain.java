@@ -67,7 +67,7 @@ public class TranslationMemoryMain {
 
         HashMap<Domain, BilingualCorpus> domain2corpus = new HashMap<>();
         for (BilingualCorpus corpus : corpora) {
-            int id = Integer.parseUnsignedInt(corpus.getName());
+            long id = Long.parseLong(corpus.getName());
 
             Domain domain = new Domain(id);
             domain2corpus.put(domain, corpus);

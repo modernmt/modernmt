@@ -44,7 +44,7 @@ public class CorporaIndex implements Closeable {
                 channels.put(i, id);
         }
 
-        HashMap<Integer, CorpusBucket> buckets = new HashMap<>();
+        HashMap<Long, CorpusBucket> buckets = new HashMap<>();
         while (buffer.hasRemaining()) {
             CorpusBucket bucket = CorpusBucket.deserialize(analysisOptions, bucketsFolder, buffer);
             buckets.put(bucket.getDomain(), bucket);
@@ -57,14 +57,14 @@ public class CorporaIndex implements Closeable {
     private final File swapFile;
     private final Options.AnalysisOptions analysisOptions;
     private final File bucketsFolder;
-    private final HashMap<Integer, CorpusBucket> buckets;
+    private final HashMap<Long, CorpusBucket> buckets;
     private final HashMap<Short, Long> channels;
 
     public CorporaIndex(File file, Options.AnalysisOptions analysisOptions, File bucketsFolder) {
         this(file, analysisOptions, bucketsFolder, new HashMap<>(), new HashMap<>());
     }
 
-    private CorporaIndex(File file, Options.AnalysisOptions analysisOptions, File bucketsFolder, HashMap<Integer, CorpusBucket> buckets, HashMap<Short, Long> channels) {
+    private CorporaIndex(File file, Options.AnalysisOptions analysisOptions, File bucketsFolder, HashMap<Long, CorpusBucket> buckets, HashMap<Short, Long> channels) {
         this.file = file;
         this.swapFile = new File(file.getParentFile(), "~" + file.getName());
         this.analysisOptions = analysisOptions;
@@ -84,11 +84,11 @@ public class CorporaIndex implements Closeable {
         }
     }
 
-    public CorpusBucket getBucket(int domain) {
+    public CorpusBucket getBucket(long domain) {
         return getBucket(domain, true);
     }
 
-    public CorpusBucket getBucket(int domain, boolean computeIfAbsent) {
+    public CorpusBucket getBucket(long domain, boolean computeIfAbsent) {
         if (computeIfAbsent) {
             return buckets.computeIfAbsent(domain,
                     k -> new CorpusBucket(analysisOptions, bucketsFolder, domain)

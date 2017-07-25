@@ -25,7 +25,7 @@ public class ContextVector implements Iterable<ContextVector.Entry>, Serializabl
             this.limit = limit;
         }
 
-        public void add(int domain, float score) {
+        public void add(long domain, float score) {
             this.add(new Domain(domain), score);
         }
 

@@ -25,7 +25,7 @@ class Rescorer {
             entry.score = 1.f - getLevenshteinDistance(words, entry.sentence);
 
         if (context != null && context.size() > 0) {
-            HashMap<Integer, Float> contextScores = new HashMap<>(context.size());
+            HashMap<Long, Float> contextScores = new HashMap<>(context.size());
             for (ContextVector.Entry ce : context)
                 contextScores.put(ce.domain.getId(), ce.score);
 

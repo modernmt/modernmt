@@ -18,6 +18,7 @@ class ProcessorBuilder extends AbstractBuilder {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <P, R> TextProcessor<P, R> create(Locale sourceLanguage, Locale targetLanguage) throws ProcessingException {
         try {
             return (TextProcessor<P, R>) Class.forName(className)

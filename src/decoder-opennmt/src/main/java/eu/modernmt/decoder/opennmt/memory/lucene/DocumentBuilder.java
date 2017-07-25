@@ -26,15 +26,15 @@ class DocumentBuilder {
         return build(unit.domain, unit.sourceSentence, unit.targetSentence);
     }
 
-    public static Document build(int domain, Sentence sentence, Sentence translation) {
+    public static Document build(long domain, Sentence sentence, Sentence translation) {
         String s = TokensOutputStream.toString(sentence, false, true);
         String t = TokensOutputStream.toString(translation, false, true);
         return build(domain, s, t);
     }
 
-    public static Document build(int domain, String sentence, String translation) {
+    public static Document build(long domain, String sentence, String translation) {
         Document document = new Document();
-        document.add(new IntField(DOMAIN_ID_FIELD, domain, Field.Store.YES));
+        document.add(new LongField(DOMAIN_ID_FIELD, domain, Field.Store.YES));
         document.add(new TextField(SENTENCE_FIELD, sentence, Field.Store.YES));
         document.add(new StoredField(TRANSLATION_FIELD, translation));
 
@@ -49,7 +49,7 @@ class DocumentBuilder {
         }
 
         Document document = new Document();
-        document.add(new IntField(DOMAIN_ID_FIELD, 0, Field.Store.YES));
+        document.add(new LongField(DOMAIN_ID_FIELD, 0, Field.Store.YES));
         document.add(new StoredField(CHANNELS_FIELD, buffer.array()));
 
         return document;
@@ -71,7 +71,7 @@ class DocumentBuilder {
     }
 
     public static ScoreEntry parseEntry(Document doc) {
-        int domain = Integer.parseInt(doc.get(DOMAIN_ID_FIELD));
+        long domain = Long.parseLong(doc.get(DOMAIN_ID_FIELD));
         String[] sentence = doc.get(SENTENCE_FIELD).split(" ");
         String[] translation = doc.get(TRANSLATION_FIELD).split(" ");
 

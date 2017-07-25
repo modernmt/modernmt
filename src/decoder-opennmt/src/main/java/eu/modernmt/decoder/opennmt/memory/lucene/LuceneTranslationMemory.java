@@ -61,7 +61,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         if (DirectoryReader.indexExists(this.indexDirectory)) {
             IndexReader reader = this.getIndexReader();
 
-            Term term = newIntTerm(DocumentBuilder.DOMAIN_ID_FIELD, 0);
+            Term term = newLongTerm(DocumentBuilder.DOMAIN_ID_FIELD, 0);
             IndexSearcher searcher = new IndexSearcher(reader);
 
             Query query = new TermQuery(term);
@@ -76,9 +76,9 @@ public class LuceneTranslationMemory implements TranslationMemory {
         }
     }
 
-    public static Term newIntTerm(String field, int value) {
+    private static Term newLongTerm(String field, long value) {
         BytesRefBuilder builder = new BytesRefBuilder();
-        NumericUtils.intToPrefixCoded(value, 0, builder);
+        NumericUtils.longToPrefixCoded(value, 0, builder);
 
         return new Term(field, builder.toBytesRef());
     }
@@ -135,7 +135,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         }
     }
 
-    private void add(int domain, BilingualCorpus corpus) throws IOException {
+    private void add(long domain, BilingualCorpus corpus) throws IOException {
         BilingualCorpus.BilingualLineReader reader = null;
 
         try {
@@ -219,7 +219,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
                 }
             }
 
-            Term id = newIntTerm(DocumentBuilder.DOMAIN_ID_FIELD, 0);
+            Term id = newLongTerm(DocumentBuilder.DOMAIN_ID_FIELD, 0);
             Document channelsDocument = DocumentBuilder.build(newChannels);
             this.indexWriter.updateDocument(id, channelsDocument);
 
@@ -235,12 +235,12 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
     @Override
     public void onDelete(Deletion deletion) throws Exception {
-        Term deleteId = newIntTerm(DocumentBuilder.DOMAIN_ID_FIELD, deletion.domain);
+        Term deleteId = newLongTerm(DocumentBuilder.DOMAIN_ID_FIELD, deletion.domain);
         this.indexWriter.deleteDocuments(deleteId);
 
         this.channels.put(deletion.channel, deletion.channelPosition);
 
-        Term channelsId = newIntTerm(DocumentBuilder.DOMAIN_ID_FIELD, 0);
+        Term channelsId = newLongTerm(DocumentBuilder.DOMAIN_ID_FIELD, 0);
         Document channelsDocument = DocumentBuilder.build(this.channels);
         this.indexWriter.updateDocument(channelsId, channelsDocument);
         this.indexWriter.commit();

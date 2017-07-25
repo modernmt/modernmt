@@ -109,7 +109,7 @@ public class CorporaStorage implements DataListener {
         logger.debug("CorporaStorage index successfully written to disk");
     }
 
-    public void bulkInsert(int domain, Corpus corpus) throws IOException {
+    public void bulkInsert(long domain, Corpus corpus) throws IOException {
         LineReader reader = null;
 
         try {

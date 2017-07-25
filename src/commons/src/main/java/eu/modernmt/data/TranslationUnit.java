@@ -8,7 +8,7 @@ import eu.modernmt.model.Sentence;
  */
 public class TranslationUnit extends DataMessage {
 
-    public final int domain;
+    public final long domain;
 
     public final String originalSourceSentence;
     public final String originalTargetSentence;
@@ -17,7 +17,7 @@ public class TranslationUnit extends DataMessage {
     public Sentence targetSentence = null;
     public Alignment alignment = null;
 
-    public TranslationUnit(short channel, long channelPosition, int domain, String originalSourceSentence, String originalTargetSentence) {
+    public TranslationUnit(short channel, long channelPosition, long domain, String originalSourceSentence, String originalTargetSentence) {
         super(channel, channelPosition);
         this.domain = domain;
         this.originalSourceSentence = originalSourceSentence;

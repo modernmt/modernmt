@@ -10,11 +10,11 @@ public class ImportJob {
 
     private static final short EPHEMERAL_JOB_HEADER = (short) 0x8000;
 
-    public static ImportJob createEphemeralJob(int domain, long offset, short dataChannel) {
+    public static ImportJob createEphemeralJob(long offset, short dataChannel) {
         ByteBuffer buffer = ByteBuffer.allocate(16);
         buffer.putShort(EPHEMERAL_JOB_HEADER)
                 .putShort(dataChannel)
-                .putInt(domain)
+                .putInt(0) // padding
                 .putLong(offset)
                 .rewind();
 
@@ -23,7 +23,7 @@ public class ImportJob {
 
         ImportJob job = new ImportJob();
         job.id = new UUID(msbs, lsbs);
-        job.domain = domain;
+        job.domain = 0; // no domain for ephemeral job
         job.size = 1;
         job.begin = job.end = offset;
         job.dataChannel = dataChannel;
@@ -42,12 +42,12 @@ public class ImportJob {
             return null;
 
         short dataChannel = buffer.getShort();
-        int domain = buffer.getInt();
+        buffer.getInt(); // padding
         long offset = buffer.getLong();
 
         ImportJob job = new ImportJob();
         job.id = id;
-        job.domain = domain;
+        job.domain = 0; // no domain for ephemeral job
         job.size = 1;
         job.begin = job.end = offset;
         job.dataChannel = dataChannel;
@@ -60,7 +60,7 @@ public class ImportJob {
     }
 
     private UUID id;
-    private int domain;
+    private long domain;
     private int size;
 
     private long begin;
@@ -89,11 +89,11 @@ public class ImportJob {
         this.progress = progress;
     }
 
-    public int getDomain() {
+    public long getDomain() {
         return domain;
     }
 
-    public void setDomain(int domain) {
+    public void setDomain(long domain) {
         this.domain = domain;
     }
 

@@ -14,15 +14,15 @@ import java.nio.charset.Charset;
 class KafkaElement {
 
     private final byte flags;
-    private final int domain;
+    private final long domain;
     private final String sourceSentence;
     private final String targetSentence;
 
-    public static KafkaElement createUpdate(int domain, String sourceSentence, String targetSentence) {
+    public static KafkaElement createUpdate(long domain, String sourceSentence, String targetSentence) {
         return new KafkaElement((byte) 0, domain, sourceSentence, targetSentence);
     }
 
-    public static KafkaElement createDeletion(int domain) {
+    public static KafkaElement createDeletion(long domain) {
         return new KafkaElement((byte) 1, domain, null, null);
     }
 
@@ -30,17 +30,17 @@ class KafkaElement {
         ByteBuffer buffer = ByteBuffer.wrap(data);
         byte flags = buffer.get(); // flags: reserved for future use
 
-        int domain = buffer.getInt();
+        long domain = buffer.getLong();
 
         if (flags == 0) { // update
             Charset charset = DefaultCharset.get();
 
             int sourceSentenceLength = buffer.getInt();
-            String sourceSentence = new String(data, 9, sourceSentenceLength, charset);
-            buffer.position(9 + sourceSentenceLength);
+            String sourceSentence = new String(data, 13, sourceSentenceLength, charset);
+            buffer.position(13 + sourceSentenceLength);
 
             int targetSentenceLength = buffer.getInt();
-            String targetSentence = new String(data, 13 + sourceSentenceLength, targetSentenceLength, charset);
+            String targetSentence = new String(data, 17 + sourceSentenceLength, targetSentenceLength, charset);
 
             return new KafkaElement(flags, domain, sourceSentence, targetSentence);
         } else { // deletion
@@ -48,7 +48,7 @@ class KafkaElement {
         }
     }
 
-    private KafkaElement(byte flags, int domain, String sourceSentence, String targetSentence) {
+    private KafkaElement(byte flags, long domain, String sourceSentence, String targetSentence) {
         this.flags = flags;
         this.domain = domain;
         this.sourceSentence = sourceSentence;
@@ -71,17 +71,17 @@ class KafkaElement {
             byte[] sourceSentenceBytes = sourceSentence.getBytes(charset);
             byte[] targetSentenceBytes = targetSentence.getBytes(charset);
 
-            buffer = ByteBuffer.allocate(13 + sourceSentenceBytes.length + targetSentenceBytes.length);
+            buffer = ByteBuffer.allocate(17 + sourceSentenceBytes.length + targetSentenceBytes.length);
             buffer.put(flags);
-            buffer.putInt(domain);
+            buffer.putLong(domain);
             buffer.putInt(sourceSentenceBytes.length);
             buffer.put(sourceSentenceBytes);
             buffer.putInt(targetSentenceBytes.length);
             buffer.put(targetSentenceBytes);
         } else { // deletion
-            buffer = ByteBuffer.allocate(5);
+            buffer = ByteBuffer.allocate(9);
             buffer.put(flags);
-            buffer.putInt(domain);
+            buffer.putLong(domain);
         }
 
         return buffer.array();

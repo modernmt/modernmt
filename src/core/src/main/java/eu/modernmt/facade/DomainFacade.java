@@ -32,7 +32,7 @@ public class DomainFacade {
         }
     }
 
-    public Domain get(int domainId) throws PersistenceException {
+    public Domain get(long domainId) throws PersistenceException {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
@@ -46,15 +46,15 @@ public class DomainFacade {
         }
     }
 
-    public Map<Integer, Domain> get(int[] ids) throws PersistenceException {
-        ArrayList<Integer> list = new ArrayList<>(ids.length);
-        for (int id : ids)
+    public Map<Long, Domain> get(long[] ids) throws PersistenceException {
+        ArrayList<Long> list = new ArrayList<>(ids.length);
+        for (long id : ids)
             list.add(id);
 
         return get(list);
     }
 
-    public Map<Integer, Domain> get(Collection<Integer> ids) throws PersistenceException {
+    public Map<Long, Domain> get(Collection<Long> ids) throws PersistenceException {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
@@ -75,7 +75,7 @@ public class DomainFacade {
         try {
             connection = db.getConnection();
 
-            Domain domain = new Domain(0, name);
+            Domain domain = new Domain(0L, name);
 
             DomainDAO domainDAO = db.getDomainDAO(connection);
             domain = domainDAO.put(domain);
@@ -86,7 +86,7 @@ public class DomainFacade {
         }
     }
 
-    public boolean delete(int id) throws PersistenceException, DataManagerException {
+    public boolean delete(long id) throws PersistenceException, DataManagerException {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
@@ -108,7 +108,7 @@ public class DomainFacade {
         return true;
     }
 
-    public ImportJob add(int domainId, String source, String target) throws DataManagerException, PersistenceException {
+    public ImportJob add(long domainId, String source, String target) throws DataManagerException, PersistenceException {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
@@ -135,7 +135,7 @@ public class DomainFacade {
         }
     }
 
-    public ImportJob add(int domainId, BilingualCorpus corpus) throws PersistenceException, DataManagerException {
+    public ImportJob add(long domainId, BilingualCorpus corpus) throws PersistenceException, DataManagerException {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 

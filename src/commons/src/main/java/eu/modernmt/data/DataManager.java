@@ -25,15 +25,15 @@ public interface DataManager extends Closeable {
 
     void addDataListener(DataListener listener);
 
-    ImportJob upload(int domainId, BilingualCorpus corpus, short channel) throws DataManagerException;
+    ImportJob upload(long domainId, BilingualCorpus corpus, short channel) throws DataManagerException;
 
-    ImportJob upload(int domainId, BilingualCorpus corpus, DataChannel channel) throws DataManagerException;
+    ImportJob upload(long domainId, BilingualCorpus corpus, DataChannel channel) throws DataManagerException;
 
-    ImportJob upload(int domainId, String sourceSentence, String targetSentence, short channel) throws DataManagerException;
+    ImportJob upload(long domainId, String sourceSentence, String targetSentence, short channel) throws DataManagerException;
 
-    ImportJob upload(int domainId, String sourceSentence, String targetSentence, DataChannel channel) throws DataManagerException;
+    ImportJob upload(long domainId, String sourceSentence, String targetSentence, DataChannel channel) throws DataManagerException;
 
-    void delete(int domainId) throws DataManagerException;
+    void delete(long domainId) throws DataManagerException;
 
     DataChannel getDataChannel(short id);
 

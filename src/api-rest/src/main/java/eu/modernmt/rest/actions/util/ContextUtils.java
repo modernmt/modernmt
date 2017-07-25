@@ -15,15 +15,15 @@ import java.util.Map;
 public class ContextUtils {
 
     public static ContextVector resolve(ContextVector context) throws PersistenceException {
-        ArrayList<Integer> ids = new ArrayList<>(context.size());
+        ArrayList<Long> ids = new ArrayList<>(context.size());
         for (ContextVector.Entry e : context)
             ids.add(e.domain.getId());
 
-        Map<Integer, Domain> domains = ModernMT.domain.get(ids);
+        Map<Long, Domain> domains = ModernMT.domain.get(ids);
 
         ContextVector.Builder builder = new ContextVector.Builder(context.size());
         for (ContextVector.Entry e : context) {
-            int id = e.domain.getId();
+            long id = e.domain.getId();
             builder.add(domains.get(id), e.score);
         }
 
@@ -41,11 +41,11 @@ public class ContextUtils {
             if (keyvalue.length != 2)
                 throw new Parameters.ParameterParsingException(name, value);
 
-            int domainId;
+            long domainId;
             float score;
 
             try {
-                domainId = Integer.parseInt(keyvalue[0]);
+                domainId = Long.parseLong(keyvalue[0]);
                 score = Float.parseFloat(keyvalue[1]);
             } catch (NumberFormatException e) {
                 throw new Parameters.ParameterParsingException(name, value);
