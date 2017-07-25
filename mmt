@@ -587,12 +587,15 @@ def main_download(argv):
     elif args.access_token is None and (args.username is None or args.p is False):
         raise CLIArgsException(parser, "Invalid credentials: username and password, or access token, are mandatory \n")
 
-    if ':' in args.host:
-        host = args.host.split(':')[0]
-        port = args.host.split(':')[1]
-        datahub = DataHub(host, port)
+    if args.host is not None:
+        if ':' in args.host:
+            host = args.host.split(':')[0]
+            port = args.host.split(':')[1]
+            datahub = DataHub(host, port)
+        else:
+            datahub = DataHub(args.host)
     else:
-        datahub = DataHub(args.host)
+        datahub = DataHub()
 
     if args.access_token is not None:
         datahub.validate_auth(args.access_token)
