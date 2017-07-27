@@ -1,18 +1,12 @@
 package eu.modernmt.context.lucene.storage;
 
+import eu.modernmt.model.LanguagePair;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.io.*;
 import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -23,54 +17,69 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 public class CorporaIndex implements Closeable {
 
     public static CorporaIndex load(Options.AnalysisOptions analysisOptions, File indexFile, File bucketsFolder) throws IOException {
-        FileInputStream stream = null;
-        byte[] bytes;
+        BufferedReader reader = null;
 
         try {
-            stream = new FileInputStream(indexFile);
-            bytes = IOUtils.toByteArray(stream);
+            reader = new BufferedReader(new FileReader(indexFile));
+
+            // Reading channels
+
+            int length = Integer.parseInt(reader.readLine());
+            HashMap<Short, Long> channels = new HashMap<>(length);
+
+            for (int i = 0; i < length; i++) {
+                String[] parts = reader.readLine().split(":");
+                channels.put(Short.parseShort(parts[0]), Long.parseLong(parts[1]));
+            }
+
+            // Reading buckets
+
+            length = Integer.parseInt(reader.readLine());
+            ArrayList<CorpusBucket> buckets = new ArrayList<>(length);
+
+            for (int i = 0; i < length; i++) {
+                CorpusBucket bucket = CorpusBucket.deserialize(analysisOptions, bucketsFolder, reader);
+                buckets.add(bucket);
+            }
+
+            // Creating result
+
+            return new CorporaIndex(indexFile, analysisOptions, bucketsFolder, buckets, channels);
+        } catch (RuntimeException e) {
+            throw new IOException("Invalid index file at " + indexFile, e);
         } finally {
-            IOUtils.closeQuietly(stream);
+            IOUtils.closeQuietly(reader);
         }
-
-        ByteBuffer buffer = ByteBuffer.wrap(bytes);
-        int length = buffer.getInt();
-
-        HashMap<Short, Long> channels = new HashMap<>(length);
-        for (short i = 0; i < length; i++) {
-            long id = buffer.getLong();
-
-            if (id >= 0)
-                channels.put(i, id);
-        }
-
-        HashMap<Long, CorpusBucket> buckets = new HashMap<>();
-        while (buffer.hasRemaining()) {
-            CorpusBucket bucket = CorpusBucket.deserialize(analysisOptions, bucketsFolder, buffer);
-            buckets.put(bucket.getDomain(), bucket);
-        }
-
-        return new CorporaIndex(indexFile, analysisOptions, bucketsFolder, buckets, channels);
     }
 
     private final File file;
     private final File swapFile;
     private final Options.AnalysisOptions analysisOptions;
     private final File bucketsFolder;
-    private final HashMap<Long, CorpusBucket> buckets;
+    private final HashMap<BucketKey, CorpusBucket> bucketByKey;
+    private final HashMap<Long, HashSet<CorpusBucket>> bucketsByDomain;
     private final HashMap<Short, Long> channels;
 
     public CorporaIndex(File file, Options.AnalysisOptions analysisOptions, File bucketsFolder) {
-        this(file, analysisOptions, bucketsFolder, new HashMap<>(), new HashMap<>());
+        this(file, analysisOptions, bucketsFolder, Collections.emptyList(), new HashMap<>());
     }
 
-    private CorporaIndex(File file, Options.AnalysisOptions analysisOptions, File bucketsFolder, HashMap<Long, CorpusBucket> buckets, HashMap<Short, Long> channels) {
+    private CorporaIndex(File file, Options.AnalysisOptions analysisOptions, File bucketsFolder, Collection<CorpusBucket> buckets, HashMap<Short, Long> channels) {
         this.file = file;
         this.swapFile = new File(file.getParentFile(), "~" + file.getName());
         this.analysisOptions = analysisOptions;
         this.bucketsFolder = bucketsFolder;
-        this.buckets = buckets;
         this.channels = channels;
+
+        this.bucketByKey = new HashMap<>(buckets.size());
+        this.bucketsByDomain = new HashMap<>(buckets.size());
+
+        for (CorpusBucket bucket : buckets) {
+            BucketKey key = BucketKey.forBucket(bucket);
+            this.bucketByKey.put(key, bucket);
+            this.bucketsByDomain.computeIfAbsent(bucket.getDomain(), k -> new HashSet<>()).add(bucket);
+        }
+
     }
 
     public boolean registerData(short channel, long position) {
@@ -84,26 +93,42 @@ public class CorporaIndex implements Closeable {
         }
     }
 
-    public CorpusBucket getBucket(long domain) {
-        return getBucket(domain, true);
+    public CorpusBucket getBucket(LanguagePair direction, long domain) {
+        BucketKey key = new BucketKey(direction, domain);
+
+        CorpusBucket bucket = bucketByKey.get(key);
+
+        if (bucket == null) {
+            bucket = new CorpusBucket(analysisOptions, bucketsFolder, direction, domain);
+
+            this.bucketByKey.put(key, bucket);
+            this.bucketsByDomain.computeIfAbsent(domain, k -> new HashSet<>()).add(bucket);
+        }
+
+        return bucket;
     }
 
-    public CorpusBucket getBucket(long domain, boolean computeIfAbsent) {
-        if (computeIfAbsent) {
-            return buckets.computeIfAbsent(domain,
-                    k -> new CorpusBucket(analysisOptions, bucketsFolder, domain)
-            );
-        } else {
-            return buckets.get(domain);
+    public Collection<CorpusBucket> getBucketsByDomain(long domain) {
+        return this.bucketsByDomain.get(domain);
+    }
+
+    public void remove(CorpusBucket bucket) {
+        Long domain = bucket.getDomain();
+        BucketKey key = BucketKey.forBucket(bucket);
+
+        bucketByKey.remove(key);
+        HashSet<CorpusBucket> buckets = bucketsByDomain.get(domain);
+
+        if (buckets != null) {
+            buckets.remove(bucket);
+
+            if (buckets.isEmpty())
+                bucketsByDomain.remove(domain);
         }
     }
 
-    public CorpusBucket remove(CorpusBucket bucket) {
-        return buckets.remove(bucket.getDomain());
-    }
-
     public Collection<CorpusBucket> getBuckets() {
-        return buckets.values();
+        return bucketByKey.values();
     }
 
     public synchronized HashMap<Short, Long> getChannels() {
@@ -117,47 +142,70 @@ public class CorporaIndex implements Closeable {
     }
 
     private void store(File path) throws IOException {
-        // Compute length
-        int maxStreamId = -1;
+        Writer writer = null;
 
-        for (int id : channels.keySet()) {
-            if (id > maxStreamId)
-                maxStreamId = id;
-        }
+        try {
+            writer = new BufferedWriter(new FileWriter(path, false));
 
-        int streamsArrayLength = (maxStreamId < 0 ? 0 : maxStreamId + 1);
+            // Writing channels
 
-        int length = (4 + streamsArrayLength * 8) // channels
-                + (buckets.size() * CorpusBucket.SERIALIZED_DATA_LENGTH); // buckets
+            writer.append(Integer.toString(channels.size()));
+            writer.append('\n');
 
-        // Allocate buffer
-        byte[] content = new byte[length];
-        ByteBuffer buffer = ByteBuffer.wrap(content);
-
-        // Write channels map
-        buffer.putInt(streamsArrayLength);
-        if (streamsArrayLength > 0) {
-            long[] ids = new long[streamsArrayLength];
-            Arrays.fill(ids, -1);
-
-            for (Map.Entry<Short, Long> entry : channels.entrySet()) {
-                ids[entry.getKey()] = entry.getValue();
+            for (Map.Entry<Short, Long> channel : channels.entrySet()) {
+                writer.append(Short.toString(channel.getKey()));
+                writer.append(':');
+                writer.append(Long.toString(channel.getValue()));
+                writer.append('\n');
             }
 
-            for (long id : ids) buffer.putLong(id);
+            // Writing buckets
+
+            writer.append(Integer.toString(bucketByKey.size()));
+            writer.append('\n');
+
+            for (CorpusBucket bucket : bucketByKey.values())
+                CorpusBucket.serialize(bucket, writer);
+        } finally {
+            IOUtils.closeQuietly(writer);
         }
-
-        // Write buckets
-        for (CorpusBucket bucket : buckets.values())
-            CorpusBucket.serialize(bucket, buffer);
-
-        // Write to file
-        FileUtils.writeByteArrayToFile(path, content, false);
     }
 
     @Override
     public void close() throws IOException {
-        buckets.values().forEach(IOUtils::closeQuietly);
+        bucketByKey.values().forEach(IOUtils::closeQuietly);
     }
 
+    private static final class BucketKey {
+
+        private final LanguagePair direction;
+        private final long domain;
+
+        public static BucketKey forBucket(CorpusBucket bucket) {
+            return new BucketKey(bucket.getLanguageDirection(), bucket.getDomain());
+        }
+
+        public BucketKey(LanguagePair direction, long domain) {
+            this.direction = direction;
+            this.domain = domain;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            BucketKey bucketKey = (BucketKey) o;
+
+            if (domain != bucketKey.domain) return false;
+            return direction.equals(bucketKey.direction);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = direction.hashCode();
+            result = 31 * result + (int) (domain ^ (domain >>> 32));
+            return result;
+        }
+    }
 }

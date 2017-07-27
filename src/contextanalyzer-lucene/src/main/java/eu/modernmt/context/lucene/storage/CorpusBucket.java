@@ -1,37 +1,57 @@
 package eu.modernmt.context.lucene.storage;
 
 import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.model.LanguagePair;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Locale;
 
 /**
  * Created by davide on 22/09/16.
  */
 public class CorpusBucket implements Closeable {
 
-    public static final int SERIALIZED_DATA_LENGTH = 24;
-
-    public static void serialize(CorpusBucket bucket, ByteBuffer buffer) {
-        buffer.putLong(bucket.domain);
-        buffer.putLong(bucket.analyzerOffset);
-        buffer.putLong(bucket.currentOffset);
+    public static void serialize(CorpusBucket bucket, Writer writer) throws IOException {
+        writer.append(Long.toString(bucket.domain));
+        writer.append(',');
+        writer.append(bucket.direction.source.toLanguageTag());
+        writer.append(',');
+        writer.append(bucket.direction.target.toLanguageTag());
+        writer.append(',');
+        writer.append(Long.toHexString(bucket.analyzerOffset));
+        writer.append(',');
+        writer.append(Long.toHexString(bucket.currentOffset));
+        writer.append('\n');
     }
 
-    public static CorpusBucket deserialize(Options.AnalysisOptions analysisOptions, File folder, ByteBuffer buffer) {
-        long domain = buffer.getLong();
-        long analyzerOffset = buffer.getLong();
-        long currentOffset = buffer.getLong();
+    public static CorpusBucket deserialize(Options.AnalysisOptions analysisOptions, File folder, BufferedReader reader) throws IOException {
+        String line = reader.readLine();
 
-        return new CorpusBucket(analysisOptions, folder, domain, analyzerOffset, currentOffset);
+        try {
+            String[] parts = line.split(",");
+
+            long domain = Long.parseLong(parts[0]);
+            Locale source = Locale.forLanguageTag(parts[1]);
+            Locale target = Locale.forLanguageTag(parts[2]);
+            long analyzerOffset = Long.parseUnsignedLong(parts[3], 16);
+            long currentOffset = Long.parseUnsignedLong(parts[4], 16);
+
+            LanguagePair direction = new LanguagePair(source, target);
+
+            return new CorpusBucket(analysisOptions, folder, direction, domain, analyzerOffset, currentOffset);
+        } catch (RuntimeException e) {
+            throw new IOException("Unexpected CorpusBucket serialized data: " + line, e);
+        }
     }
 
     private final Options.AnalysisOptions analysisOptions;
 
     private final long domain;
+    private final LanguagePair direction;
+
     private long analyzerOffset;
     private long currentOffset;
     private boolean deleted;
@@ -39,11 +59,12 @@ public class CorpusBucket implements Closeable {
     private final File path;
     private FileOutputStream stream = null;
 
-    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, long domain) {
-        this(analysisOptions, folder, domain, 0L, 0L);
+    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, LanguagePair direction, long domain) {
+        this(analysisOptions, folder, direction, domain, 0L, 0L);
     }
 
-    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, long domain, long analyzerOffset, long currentOffset) {
+    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, LanguagePair direction, long domain, long analyzerOffset, long currentOffset) {
+        this.direction = direction;
         this.domain = domain;
         this.path = new File(folder, "_" + domain);
         this.analysisOptions = analysisOptions;
@@ -93,6 +114,10 @@ public class CorpusBucket implements Closeable {
         return domain;
     }
 
+    public LanguagePair getLanguageDirection() {
+        return direction;
+    }
+
     public boolean hasUnanalyzedContent() {
         return analyzerOffset < currentOffset;
     }
@@ -133,13 +158,23 @@ public class CorpusBucket implements Closeable {
 
         CorpusBucket that = (CorpusBucket) o;
 
-        return domain == that.domain;
-
+        if (domain != that.domain) return false;
+        return direction.equals(that.direction);
     }
 
     @Override
     public int hashCode() {
-        return Long.hashCode(domain);
+        int result = (int) (domain ^ (domain >>> 32));
+        result = 31 * result + direction.hashCode();
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "CorpusBucket{" +
+                "domain=" + domain +
+                ", direction=" + direction +
+                '}';
     }
 
     @Override

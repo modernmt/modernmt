@@ -2,7 +2,7 @@ package eu.modernmt.processing.tokenizer.kuromoji;
 
 import com.atilika.kuromoji.ipadic.Token;
 import eu.modernmt.model.Languages;
-import eu.modernmt.processing.LanguageNotSupportedException;
+import eu.modernmt.model.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.SentenceBuilder;
@@ -38,12 +38,12 @@ public class KuromojiTokenizer extends TextProcessor<SentenceBuilder, SentenceBu
      *
      * @param sourceLanguage the initial language of the text to translate
      * @param targetLanguage the language that the test must be translated to
-     * @throws LanguageNotSupportedException if the sourceLanguage is not Japanese
+     * @throws UnsupportedLanguageException if the sourceLanguage is not Japanese
      */
-    public KuromojiTokenizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+    public KuromojiTokenizer(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
         if (!Languages.sameLanguage(Languages.JAPANESE, sourceLanguage))
-            throw new LanguageNotSupportedException(sourceLanguage);
+            throw new UnsupportedLanguageException(sourceLanguage);
     }
 
     /**

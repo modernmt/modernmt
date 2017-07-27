@@ -2,9 +2,9 @@ package eu.modernmt.processing.chars;
 
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
-import eu.modernmt.processing.LanguageNotSupportedException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
+import eu.modernmt.model.UnsupportedLanguageException;
 
 import java.util.Locale;
 import java.util.Map;
@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public class GuillemetsToQuotesProcessor extends TextProcessor<Translation, Translation> {
 
-    public GuillemetsToQuotesProcessor(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+    public GuillemetsToQuotesProcessor(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
     }
 

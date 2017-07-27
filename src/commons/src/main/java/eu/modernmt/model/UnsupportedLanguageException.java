@@ -1,11 +1,11 @@
-package eu.modernmt.processing;
+package eu.modernmt.model;
 
 import java.util.Locale;
 
 /**
- * Created by davide on 31/05/16.
+ * Created by davide on 27/07/17.
  */
-public class LanguageNotSupportedException extends ProcessingException {
+public class UnsupportedLanguageException extends RuntimeException {
 
     private static String toString(Locale language) {
         return language == null ? "[null]" : language.toLanguageTag();
@@ -18,11 +18,16 @@ public class LanguageNotSupportedException extends ProcessingException {
             return "Language not supported: " + toString(source == null ? target : source);
     }
 
-    public LanguageNotSupportedException(Locale language) {
+    public UnsupportedLanguageException(Locale language) {
         this(language, null);
     }
 
-    public LanguageNotSupportedException(Locale source, Locale target) {
+    public UnsupportedLanguageException(LanguagePair direction) {
+        this(direction.source, direction.target);
+    }
+
+    public UnsupportedLanguageException(Locale source, Locale target) {
         super(makeMessage(source, target));
     }
+
 }

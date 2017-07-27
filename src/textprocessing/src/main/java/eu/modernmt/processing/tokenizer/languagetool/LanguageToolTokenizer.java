@@ -1,7 +1,7 @@
 package eu.modernmt.processing.tokenizer.languagetool;
 
 import eu.modernmt.model.Languages;
-import eu.modernmt.processing.LanguageNotSupportedException;
+import eu.modernmt.model.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.SentenceBuilder;
@@ -73,14 +73,14 @@ public class LanguageToolTokenizer extends TextProcessor<SentenceBuilder, Senten
      *
      * @param sourceLanguage the language of the input String
      * @param targetLanguage the language the input String must be translated to
-     * @throws LanguageNotSupportedException the requested language is not supported by this software
+     * @throws UnsupportedLanguageException the requested language is not supported by this software
      */
-    public LanguageToolTokenizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+    public LanguageToolTokenizer(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
         Class<? extends org.languagetool.tokenizers.Tokenizer> tokenizerClass = TOKENIZERS.get(sourceLanguage);
         if (tokenizerClass == null)
-            throw new LanguageNotSupportedException(sourceLanguage);
+            throw new UnsupportedLanguageException(sourceLanguage);
 
         try {
             this.tokenizer = tokenizerClass.newInstance();

@@ -1,9 +1,9 @@
 package eu.modernmt.processing.tokenizer.opennlp;
 
-import eu.modernmt.processing.LanguageNotSupportedException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessingModels;
 import eu.modernmt.processing.TextProcessor;
+import eu.modernmt.model.UnsupportedLanguageException;
 import eu.modernmt.processing.string.SentenceBuilder;
 import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 import opennlp.tools.tokenize.TokenizerME;
@@ -36,9 +36,9 @@ public class OpenNLPTokenizer extends TextProcessor<SentenceBuilder, SentenceBui
      *
      * @param sourceLanguage the initial language of the string that must be translated
      * @param targetLanguage the language that string must be translated to
-     * @throws LanguageNotSupportedException if a not supported language is involved
+     * @throws UnsupportedLanguageException if a not supported language is involved
      */
-    public OpenNLPTokenizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+    public OpenNLPTokenizer(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
         /*new file for...*/
@@ -49,7 +49,7 @@ public class OpenNLPTokenizer extends TextProcessor<SentenceBuilder, SentenceBui
                 /*if there is no file on the path specified by modelFile,
         * it means that the sourceLanguage is not supported*/
         if (!modelFile.isFile())
-            throw new LanguageNotSupportedException(sourceLanguage);
+            throw new UnsupportedLanguageException(sourceLanguage);
 
         InputStream modelResource = null;
 

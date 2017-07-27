@@ -1,6 +1,7 @@
 package eu.modernmt.data;
 
 import eu.modernmt.model.ImportJob;
+import eu.modernmt.model.LanguagePair;
 import eu.modernmt.model.corpus.BilingualCorpus;
 
 import java.io.Closeable;
@@ -29,9 +30,9 @@ public interface DataManager extends Closeable {
 
     ImportJob upload(long domainId, BilingualCorpus corpus, DataChannel channel) throws DataManagerException;
 
-    ImportJob upload(long domainId, String sourceSentence, String targetSentence, short channel) throws DataManagerException;
+    ImportJob upload(LanguagePair direction, long domainId, String sourceSentence, String targetSentence, short channel) throws DataManagerException;
 
-    ImportJob upload(long domainId, String sourceSentence, String targetSentence, DataChannel channel) throws DataManagerException;
+    ImportJob upload(LanguagePair direction, long domainId, String sourceSentence, String targetSentence, DataChannel channel) throws DataManagerException;
 
     void delete(long domainId) throws DataManagerException;
 

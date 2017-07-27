@@ -1,10 +1,6 @@
 package eu.modernmt.processing.numbers;
 
-import eu.modernmt.model.Alignment;
-import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Translation;
-import eu.modernmt.model.Word;
-import eu.modernmt.processing.LanguageNotSupportedException;
+import eu.modernmt.model.*;
 import eu.modernmt.processing.ProcessingException;
 import org.junit.Test;
 
@@ -17,7 +13,7 @@ public class NumericWordTest {
     public NumericWordTest() {
         try {
             postprocessor = new NumericWordPostprocessor(null, null);
-        } catch (LanguageNotSupportedException e) {
+        } catch (UnsupportedLanguageException e) {
             throw new Error(e);
         }
     }

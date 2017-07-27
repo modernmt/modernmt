@@ -5,10 +5,7 @@ import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.*;
 import eu.modernmt.io.Paths;
-import eu.modernmt.model.ContextVector;
-import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Translation;
-import eu.modernmt.model.Word;
+import eu.modernmt.model.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,12 +34,14 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
         NativeLogger.initialize();
     }
 
+    private final LanguagePair direction;
     private final FeatureWeightsStorage storage;
     private final HashMap<String, DecoderFeature> featuresMap;
     private final MosesFeature[] features;
     private long nativeHandle;
 
-    public MosesDecoder(File path, int threads) throws IOException {
+    public MosesDecoder(LanguagePair direction, File path, int threads) throws IOException {
+        this.direction = direction;
         this.storage = new FeatureWeightsStorage(Paths.join(path, "weights.dat"));
 
         File vocabulary = Paths.join(path, "vocab.vb");
@@ -118,22 +117,25 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
     // Decoder
 
     @Override
-    public Translation translate(Sentence text) throws DecoderException {
-        return translate(text, null, 0);
+    public Translation translate(LanguagePair direction, Sentence text) throws DecoderException {
+        return translate(direction, text, null, 0);
     }
 
     @Override
-    public Translation translate(Sentence text, ContextVector contextVector) throws DecoderException {
-        return translate(text, contextVector, 0);
+    public Translation translate(LanguagePair direction, Sentence text, ContextVector contextVector) throws DecoderException {
+        return translate(direction, text, contextVector, 0);
     }
 
     @Override
-    public Translation translate(Sentence text, int nbestListSize) throws DecoderException {
-        return translate(text, null, nbestListSize);
+    public Translation translate(LanguagePair direction, Sentence text, int nbestListSize) throws DecoderException {
+        return translate(direction, text, null, nbestListSize);
     }
 
     @Override
-    public Translation translate(Sentence sentence, ContextVector contextVector, int nbestListSize) throws DecoderException {
+    public Translation translate(LanguagePair direction, Sentence sentence, ContextVector contextVector, int nbestListSize) throws DecoderException {
+        if (!this.direction.equals(direction))
+            throw new UnsupportedLanguageException(direction);
+
         if (sentence.getWords().length == 0)
             return new Translation(new Word[0], sentence, null);
 
@@ -167,7 +169,11 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
 
     @Override
     public void onDataReceived(List<TranslationUnit> batch) throws Exception {
-        int size = batch.size();
+        int size = 0;
+        for (TranslationUnit unit : batch) {
+            if (this.direction.equals(unit.direction))
+                size++;
+        }
 
         short[] channels = new short[size];
         long[] channelPositions = new long[size];
@@ -178,6 +184,9 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
 
         int i = 0;
         for (TranslationUnit unit : batch) {
+            if (!this.direction.equals(unit.direction))
+                continue;
+
             channels[i] = unit.channel;
             channelPositions[i] = unit.channelPosition;
             domains[i] = unit.domain;

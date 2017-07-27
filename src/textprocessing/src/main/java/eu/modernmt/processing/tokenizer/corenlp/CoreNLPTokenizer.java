@@ -7,9 +7,9 @@ import edu.stanford.nlp.ling.HasOffset;
 import edu.stanford.nlp.process.PTBTokenizer;
 import edu.stanford.nlp.process.TokenizerFactory;
 import eu.modernmt.model.Languages;
-import eu.modernmt.processing.LanguageNotSupportedException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
+import eu.modernmt.model.UnsupportedLanguageException;
 import eu.modernmt.processing.string.SentenceBuilder;
 
 import java.io.Reader;
@@ -59,14 +59,14 @@ public class CoreNLPTokenizer extends TextProcessor<SentenceBuilder, SentenceBui
      *
      * @param sourceLanguage the language of the input String
      * @param targetLanguage the language the input String must be translated to
-     * @throws LanguageNotSupportedException the requested language is not supported by this software
+     * @throws UnsupportedLanguageException the requested language is not supported by this software
      */
-    public CoreNLPTokenizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+    public CoreNLPTokenizer(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
         this.factory = FACTORIES.get(sourceLanguage);
         if (this.factory == null)
-            throw new LanguageNotSupportedException(sourceLanguage);
+            throw new UnsupportedLanguageException(sourceLanguage);
 
         /*sets special options if source language is English*/
         if (Languages.sameLanguage(Languages.ENGLISH, sourceLanguage))

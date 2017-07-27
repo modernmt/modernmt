@@ -3,6 +3,7 @@ package eu.modernmt.decoder.opennmt.memory;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Domain;
+import eu.modernmt.model.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.corpus.BilingualCorpus;
 
@@ -19,10 +20,10 @@ public interface TranslationMemory extends Closeable, DataListener {
 
     void add(Domain domain, BilingualCorpus corpus) throws IOException;
 
-    void add(Domain domain, Sentence sentence, Sentence translation) throws IOException;
+    void add(LanguagePair direction, Domain domain, Sentence sentence, Sentence translation) throws IOException;
 
-    ScoreEntry[] search(Sentence source, int limit) throws IOException;
+    ScoreEntry[] search(LanguagePair direction, Sentence source, int limit) throws IOException;
 
-    ScoreEntry[] search(Sentence source, ContextVector contextVector, int limit) throws IOException;
+    ScoreEntry[] search(LanguagePair direction, Sentence source, ContextVector contextVector, int limit) throws IOException;
 
 }

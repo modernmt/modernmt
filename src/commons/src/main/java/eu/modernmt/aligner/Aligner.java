@@ -1,6 +1,7 @@
 package eu.modernmt.aligner;
 
 import eu.modernmt.model.Alignment;
+import eu.modernmt.model.LanguagePair;
 import eu.modernmt.model.Sentence;
 
 import java.io.Closeable;
@@ -22,12 +23,12 @@ public interface Aligner extends Closeable {
 
     SymmetrizationStrategy getDefaultSymmetrizationStrategy();
 
-    Alignment getAlignment(Sentence source, Sentence target) throws AlignerException;
+    Alignment getAlignment(LanguagePair direction, Sentence source, Sentence target) throws AlignerException;
 
-    Alignment[] getAlignments(List<Sentence> sources, List<Sentence> targets) throws AlignerException;
+    Alignment[] getAlignments(LanguagePair direction, List<Sentence> sources, List<Sentence> targets) throws AlignerException;
 
-    Alignment getAlignment(Sentence source, Sentence target, SymmetrizationStrategy strategy) throws AlignerException;
+    Alignment getAlignment(LanguagePair direction, Sentence source, Sentence target, SymmetrizationStrategy strategy) throws AlignerException;
 
-    Alignment[] getAlignments(List<Sentence> sources, List<Sentence> targets, SymmetrizationStrategy strategy) throws AlignerException;
+    Alignment[] getAlignments(LanguagePair direction, List<Sentence> sources, List<Sentence> targets, SymmetrizationStrategy strategy) throws AlignerException;
 
 }

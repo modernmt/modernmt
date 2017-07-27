@@ -2,6 +2,7 @@ package eu.modernmt.decoder.opennmt.execution;
 
 import eu.modernmt.decoder.opennmt.OpenNMTException;
 import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
+import eu.modernmt.model.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
@@ -69,18 +70,18 @@ class ParallelExecutionQueue implements ExecutionQueue {
     }
 
     @Override
-    public Translation execute(Sentence sentence) throws OpenNMTException {
-        return execute(sentence, null);
+    public Translation execute(LanguagePair direction, Sentence sentence) throws OpenNMTException {
+        return execute(direction, sentence, null);
     }
 
     @Override
-    public Translation execute(Sentence sentence, ScoreEntry[] suggestions) throws OpenNMTException {
+    public Translation execute(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions) throws OpenNMTException {
         NativeProcess decoder = null;
 
         try {
             decoder = this.queue.take();
 
-            Word[] translation = decoder.translate(sentence, suggestions);
+            Word[] translation = decoder.translate(direction, sentence, suggestions);
             return new Translation(translation, sentence, null);
         } catch (InterruptedException e) {
             throw new OpenNMTException("No OpenNMT processes available", e);

@@ -1,8 +1,8 @@
 package eu.modernmt.processing.chars;
 
-import eu.modernmt.processing.LanguageNotSupportedException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
+import eu.modernmt.model.UnsupportedLanguageException;
 import eu.modernmt.processing.string.SentenceBuilder;
 
 import java.util.Locale;
@@ -24,9 +24,9 @@ public class RareCharsNormalizer extends TextProcessor<SentenceBuilder, Sentence
      *
      * @param sourceLanguage the language of the input String
      * @param targetLanguage the language the input String must be translated to
-     * @throws LanguageNotSupportedException the requested language is not supported by this software
+     * @throws UnsupportedLanguageException the requested language is not supported by this software
      */
-    public RareCharsNormalizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+    public RareCharsNormalizer(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
     }
 

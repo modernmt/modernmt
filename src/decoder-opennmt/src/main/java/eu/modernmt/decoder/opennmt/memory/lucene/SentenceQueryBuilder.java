@@ -1,6 +1,7 @@
 package eu.modernmt.decoder.opennmt.memory.lucene;
 
 import eu.modernmt.io.TokensOutputStream;
+import eu.modernmt.model.LanguagePair;
 import eu.modernmt.model.Sentence;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -18,7 +19,8 @@ import java.io.IOException;
  */
 class SentenceQueryBuilder {
 
-    public Query build(Sentence sentence) {
+    public Query build(LanguagePair direction, Sentence sentence) {
+        // Terms query
         int length = sentence.getWords().length;
         boolean isLongQuery = length > 4;
 
@@ -28,7 +30,20 @@ class SentenceQueryBuilder {
         int minMatches = isLongQuery ? Math.max(1, (int) (length * .33)) : 1;
         termsQuery.setMinimumNumberShouldMatch(minMatches);
 
-        return termsQuery;
+        // Language query
+        TermQuery langQuery = getLanguageQuery(direction);
+
+        // Main query
+        BooleanQuery query = new BooleanQuery();
+        query.add(langQuery, BooleanClause.Occur.MUST);
+        query.add(termsQuery, BooleanClause.Occur.MUST);
+
+        return query;
+    }
+
+    private static TermQuery getLanguageQuery(LanguagePair direction) {
+        Term term = new Term(DocumentBuilder.LANGUAGE_FIELD, DocumentBuilder.serialize(direction));
+        return new TermQuery(term);
     }
 
     private static void loadTerms(Sentence sentence, Analyzer analyzer, BooleanQuery output) {

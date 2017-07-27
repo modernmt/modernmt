@@ -6,6 +6,7 @@ import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
 import eu.modernmt.decoder.opennmt.memory.TranslationMemory;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Domain;
+import eu.modernmt.model.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import org.apache.commons.io.FileUtils;
@@ -136,6 +137,8 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     private void add(long domain, BilingualCorpus corpus) throws IOException {
+        LanguagePair direction = new LanguagePair(corpus.getSourceLanguage(), corpus.getTargetLanguage());
+
         BilingualCorpus.BilingualLineReader reader = null;
 
         try {
@@ -145,7 +148,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
             BilingualCorpus.StringPair pair;
             while ((pair = reader.read()) != null) {
-                Document document = DocumentBuilder.build(domain, pair.source, pair.target);
+                Document document = DocumentBuilder.build(direction, domain, pair.source, pair.target);
                 this.indexWriter.addDocument(document);
             }
 
@@ -160,20 +163,20 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     @Override
-    public void add(Domain domain, Sentence sentence, Sentence translation) throws IOException {
-        Document document = DocumentBuilder.build(domain.getId(), sentence, translation);
+    public void add(LanguagePair direction, Domain domain, Sentence sentence, Sentence translation) throws IOException {
+        Document document = DocumentBuilder.build(direction, domain.getId(), sentence, translation);
         this.indexWriter.addDocument(document);
         this.indexWriter.commit();
     }
 
     @Override
-    public ScoreEntry[] search(Sentence source, int limit) throws IOException {
-        return search(source, null, limit);
+    public ScoreEntry[] search(LanguagePair direction, Sentence source, int limit) throws IOException {
+        return search(direction, source, null, limit);
     }
 
     @Override
-    public ScoreEntry[] search(Sentence source, ContextVector contextVector, int limit) throws IOException {
-        Query query = this.queries.build(source);
+    public ScoreEntry[] search(LanguagePair direction, Sentence source, ContextVector contextVector, int limit) throws IOException {
+        Query query = this.queries.build(direction, source);
 
         IndexReader reader = this.getIndexReader();
         IndexSearcher searcher = new IndexSearcher(reader);

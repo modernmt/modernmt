@@ -1,7 +1,7 @@
 package eu.modernmt.processing.xmessage;
 
-import eu.modernmt.processing.LanguageNotSupportedException;
 import eu.modernmt.processing.TextProcessor;
+import eu.modernmt.model.UnsupportedLanguageException;
 
 import java.util.Locale;
 import java.util.Map;
@@ -13,7 +13,7 @@ public class XMessageParser extends TextProcessor<String, String> {
 
     public static final String FORMATS_KEY = "XMessageParser.formats";
 
-    public XMessageParser(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+    public XMessageParser(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
     }
 

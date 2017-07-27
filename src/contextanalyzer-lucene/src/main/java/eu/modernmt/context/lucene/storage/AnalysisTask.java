@@ -2,8 +2,9 @@ package eu.modernmt.context.lucene.storage;
 
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.lucene.ContextAnalyzerIndex;
-import eu.modernmt.context.lucene.DocumentBuilder;
+import eu.modernmt.context.lucene.analysis.DocumentBuilder;
 import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.model.LanguagePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.document.Document;
@@ -31,14 +32,15 @@ class AnalysisTask implements Callable<Void> {
     @Override
     public Void call() throws ContextAnalyzerException {
         long domain = bucket.getDomain();
+        LanguagePair direction = bucket.getLanguageDirection();
 
-        logger.info("Indexing bucket " + domain);
+        logger.info("Indexing bucket " + bucket);
 
         try {
             Reader reader = new InputStreamReader(bucket.getContentStream(), DefaultCharset.get());
 
-            Document document = DocumentBuilder.createDocument(domain, reader);
-            index.update(domain, document);
+            Document document = DocumentBuilder.createDocument(direction, domain, reader);
+            index.update(direction, domain, document);
 
             bucket.onAnalysisCompleted();
         } catch (FileNotFoundException e) {

@@ -2,6 +2,7 @@ package eu.modernmt.decoder.opennmt.execution;
 
 import eu.modernmt.decoder.opennmt.OpenNMTException;
 import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
+import eu.modernmt.model.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import org.apache.logging.log4j.LogManager;
@@ -35,8 +36,8 @@ public interface ExecutionQueue extends Closeable {
         }
     }
 
-    Translation execute(Sentence sentence) throws OpenNMTException;
+    Translation execute(LanguagePair direction, Sentence sentence) throws OpenNMTException;
 
-    Translation execute(Sentence sentence, ScoreEntry[] suggestions) throws OpenNMTException;
+    Translation execute(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions) throws OpenNMTException;
 
 }

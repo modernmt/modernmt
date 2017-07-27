@@ -2,6 +2,7 @@ package eu.modernmt.decoder.opennmt.execution;
 
 import eu.modernmt.decoder.opennmt.OpenNMTException;
 import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
+import eu.modernmt.model.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
@@ -36,14 +37,14 @@ class SingletonExecutionQueue implements ExecutionQueue {
     }
 
     @Override
-    public synchronized Translation execute(Sentence sentence) throws OpenNMTException {
-        Word[] translation = decoder.translate(sentence);
+    public synchronized Translation execute(LanguagePair direction, Sentence sentence) throws OpenNMTException {
+        Word[] translation = decoder.translate(direction, sentence);
         return new Translation(translation, sentence, null);
     }
 
     @Override
-    public synchronized Translation execute(Sentence sentence, ScoreEntry[] suggestions) throws OpenNMTException {
-        Word[] translation = decoder.translate(sentence, suggestions);
+    public synchronized Translation execute(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions) throws OpenNMTException {
+        Word[] translation = decoder.translate(direction, sentence, suggestions);
         return new Translation(translation, sentence, null);
     }
 

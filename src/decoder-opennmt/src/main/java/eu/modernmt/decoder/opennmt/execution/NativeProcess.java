@@ -8,6 +8,7 @@ import eu.modernmt.decoder.opennmt.OpenNMTException;
 import eu.modernmt.decoder.opennmt.OpenNMTRejectedExecutionException;
 import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
+import eu.modernmt.model.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
 import org.apache.commons.lang3.StringUtils;
@@ -83,15 +84,15 @@ class NativeProcess implements Closeable {
         this.logThread.start();
     }
 
-    public Word[] translate(Sentence sentence) throws OpenNMTException {
-        return translate(sentence, null);
+    public Word[] translate(LanguagePair direction, Sentence sentence) throws OpenNMTException {
+        return translate(direction, sentence, null);
     }
 
-    public Word[] translate(Sentence sentence, ScoreEntry[] suggestions) throws OpenNMTException {
+    public Word[] translate(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions) throws OpenNMTException {
         if (!decoder.isAlive())
             throw new OpenNMTRejectedExecutionException();
 
-        String payload = serialize(sentence, suggestions);
+        String payload = serialize(direction, sentence, suggestions);
 
         try {
             this.stdin.write(payload.getBytes("UTF-8"));
@@ -114,11 +115,13 @@ class NativeProcess implements Closeable {
         return deserialize(line);
     }
 
-    private static String serialize(Sentence sentence, ScoreEntry[] suggestions) {
+    private static String serialize(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions) {
         String text = TokensOutputStream.toString(sentence, false, true);
 
         JsonObject json = new JsonObject();
         json.addProperty("source", text);
+        json.addProperty("source_language", direction.source.toLanguageTag());
+        json.addProperty("target_language", direction.target.toLanguageTag());
 
         if (suggestions != null && suggestions.length > 0) {
             JsonArray array = new JsonArray();

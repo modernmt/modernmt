@@ -2,7 +2,10 @@ package eu.modernmt.context.lucene;
 
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.lucene.analysis.CorpusAnalyzer;
+import eu.modernmt.context.lucene.analysis.CosineSimilarityCalculator;
+import eu.modernmt.context.lucene.analysis.DocumentBuilder;
 import eu.modernmt.model.ContextVector;
+import eu.modernmt.model.LanguagePair;
 import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -19,17 +22,12 @@ import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Version;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Locale;
 
 /**
  * Created by davide on 10/07/15.
@@ -40,19 +38,18 @@ public class ContextAnalyzerIndex implements Closeable {
 
     private final Logger logger = LogManager.getLogger(ContextAnalyzerIndex.class);
 
-    private IDFTable idfCache;
     private final Directory indexDirectory;
     private final Analyzer analyzer;
     private final IndexWriter indexWriter;
 
     private DirectoryReader indexReader;
 
-    public ContextAnalyzerIndex(File indexPath, Locale language) throws IOException {
+    public ContextAnalyzerIndex(File indexPath) throws IOException {
         if (!indexPath.isDirectory())
             FileUtils.forceMkdir(indexPath);
 
         this.indexDirectory = FSDirectory.open(indexPath);
-        this.analyzer = new CorpusAnalyzer(language);
+        this.analyzer = new CorpusAnalyzer();
 
         // Index writer setup
         IndexWriterConfig indexConfig = new IndexWriterConfig(Version.LUCENE_4_10_4, this.analyzer);
@@ -67,30 +64,6 @@ public class ContextAnalyzerIndex implements Closeable {
         });
 
         this.indexWriter = new IndexWriter(this.indexDirectory, indexConfig);
-    }
-
-    public Analyzer getAnalyzer() {
-        return analyzer;
-    }
-
-    public IDFTable getIDFCache() {
-        if (idfCache == null) {
-            synchronized (this) {
-                if (idfCache == null)
-                    idfCache = new IDFTable(DocumentBuilder.CONTENT_FIELD);
-            }
-        }
-
-        return idfCache;
-    }
-
-    public void invalidateCache() {
-        if (idfCache != null) {
-            idfCache.invalidate();
-
-            if (logger.isDebugEnabled())
-                logger.debug("IDF cache invalidated");
-        }
     }
 
     private synchronized IndexReader getIndexReader() throws ContextAnalyzerException {
@@ -126,29 +99,12 @@ public class ContextAnalyzerIndex implements Closeable {
         return this.indexReader;
     }
 
-    public void add(Document document) throws ContextAnalyzerException {
-        this.add(Collections.singleton(document));
+    public void invalidateCache() {
+        // Do nothing.
     }
 
-    public void add(Collection<Document> documents) throws ContextAnalyzerException {
-        for (Document document : documents) {
-            long id = DocumentBuilder.getId(document);
-
-            logger.info("Adding to index document " + id);
-
-            try {
-                this.indexWriter.addDocument(document);
-            } catch (IOException e) {
-                throw new ContextAnalyzerException("Failed to add document " + id + " to index", e);
-            }
-        }
-    }
-
-    public void update(long domain, Document document) throws ContextAnalyzerException {
-        BytesRefBuilder builder = new BytesRefBuilder();
-        NumericUtils.longToPrefixCoded(domain, 0, builder);
-
-        Term id = new Term(DocumentBuilder.ID_FIELD, builder.toBytesRef());
+    public void update(LanguagePair direction, long domain, Document document) throws ContextAnalyzerException {
+        Term id = DocumentBuilder.makeDocumentIdTerm(direction, domain);
 
         try {
             this.indexWriter.updateDocument(id, document);
@@ -158,13 +114,10 @@ public class ContextAnalyzerIndex implements Closeable {
     }
 
     public void delete(long domain) throws ContextAnalyzerException {
-        BytesRefBuilder builder = new BytesRefBuilder();
-        NumericUtils.longToPrefixCoded(domain, 0, builder);
-
-        Term id = new Term(DocumentBuilder.ID_FIELD, builder.toBytesRef());
+        Term domainTerm = DocumentBuilder.makeDomainTerm(domain);
 
         try {
-            this.indexWriter.deleteDocuments(id);
+            this.indexWriter.deleteDocuments(domainTerm);
         } catch (IOException e) {
             throw new ContextAnalyzerException("Unable to delete domain " + domain, e);
         }
@@ -187,7 +140,9 @@ public class ContextAnalyzerIndex implements Closeable {
         }
     }
 
-    public ContextVector getSimilarDocuments(Corpus queryDocument, int limit) throws ContextAnalyzerException {
+    public ContextVector getSimilarDocuments(LanguagePair direction, Corpus queryDocument, int limit) throws ContextAnalyzerException {
+        String contentFieldName = DocumentBuilder.getContentFieldName(direction);
+
         IndexReader reader = this.getIndexReader();
         IndexSearcher searcher = new IndexSearcher(reader);
 
@@ -196,7 +151,7 @@ public class ContextAnalyzerIndex implements Closeable {
         int rawLimit = limit < MIN_RESULT_BATCH ? MIN_RESULT_BATCH : limit;
 
         MoreLikeThis mlt = new MoreLikeThis(reader);
-        mlt.setFieldNames(new String[]{DocumentBuilder.CONTENT_FIELD});
+        mlt.setFieldNames(new String[]{contentFieldName});
         mlt.setMinDocFreq(0);
         mlt.setMinTermFreq(1);
         mlt.setMinWordLen(2);
@@ -213,7 +168,7 @@ public class ContextAnalyzerIndex implements Closeable {
         }
 
         try {
-            Query query = mlt.like(DocumentBuilder.CONTENT_FIELD, queryDocumentReader);
+            Query query = mlt.like(contentFieldName, queryDocumentReader);
             searcher.search(query, collector);
         } catch (IOException e) {
             throw new ContextAnalyzerException("Failed to execute MoreLikeThis query", e);
@@ -232,7 +187,7 @@ public class ContextAnalyzerIndex implements Closeable {
         Document referenceDocument;
 
         try {
-            referenceDocument = DocumentBuilder.createDocument(queryDocument);
+            referenceDocument = DocumentBuilder.createDocument(direction, queryDocument);
         } catch (IOException e) {
             throw new ContextAnalyzerException("Unable to read query document", e);
         }
@@ -240,8 +195,7 @@ public class ContextAnalyzerIndex implements Closeable {
         ContextVector.Builder resultBuilder = new ContextVector.Builder(topDocs.length);
         resultBuilder.setLimit(limit);
 
-        CosineSimilarityCalculator calculator = new CosineSimilarityCalculator(this, reader);
-        calculator.setBoost(false); // Saves lot of RAM for not using the TF-IDF cache and the BLEU score is the same
+        CosineSimilarityCalculator calculator = new CosineSimilarityCalculator(contentFieldName, this.analyzer, reader);
         calculator.setReferenceDocument(referenceDocument);
         calculator.setScoreDocs(topDocs);
 
@@ -255,16 +209,16 @@ public class ContextAnalyzerIndex implements Closeable {
                 throw new ContextAnalyzerException("Could not resolve document " + topDocRef.doc + " in index", e);
             }
 
-            long id = DocumentBuilder.getId(topDoc);
+            long domain = DocumentBuilder.getDomain(topDoc);
 
             float similarityScore;
             try {
                 similarityScore = calculator.getSimilarity(topDocRef.doc);
             } catch (IOException e) {
-                throw new ContextAnalyzerException("Could not compute cosine similarity for doc " + id, e);
+                throw new ContextAnalyzerException("Could not compute cosine similarity for doc " + topDocRef.doc, e);
             }
 
-            resultBuilder.add(id, similarityScore);
+            resultBuilder.add(domain, similarityScore);
         }
 
         return resultBuilder.build();

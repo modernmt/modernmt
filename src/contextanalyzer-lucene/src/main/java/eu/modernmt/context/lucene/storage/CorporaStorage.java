@@ -7,6 +7,7 @@ import eu.modernmt.data.DataMessage;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.io.LineReader;
+import eu.modernmt.model.LanguagePair;
 import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -109,13 +110,13 @@ public class CorporaStorage implements DataListener {
         logger.debug("CorporaStorage index successfully written to disk");
     }
 
-    public void bulkInsert(long domain, Corpus corpus) throws IOException {
+    public void bulkInsert(LanguagePair direction, long domain, Corpus corpus) throws IOException {
         LineReader reader = null;
 
         try {
             reader = corpus.getContentReader();
 
-            CorpusBucket bucket = index.getBucket(domain);
+            CorpusBucket bucket = index.getBucket(direction, domain);
 
             if (!bucket.isOpen())
                 bucket.open();
@@ -273,7 +274,7 @@ public class CorporaStorage implements DataListener {
                     if (message instanceof TranslationUnit) {
                         TranslationUnit unit = (TranslationUnit) message;
 
-                        CorpusBucket bucket = index.getBucket(unit.domain);
+                        CorpusBucket bucket = index.getBucket(unit.direction, unit.domain);
 
                         if (!bucket.isOpen())
                             bucket.open();
@@ -283,9 +284,7 @@ public class CorporaStorage implements DataListener {
                     } else if (message instanceof Deletion) {
                         Deletion deletion = (Deletion) message;
 
-                        CorpusBucket bucket = index.getBucket(deletion.domain, false);
-
-                        if (bucket != null) {
+                        for (CorpusBucket bucket : index.getBucketsByDomain(deletion.domain)) {
                             bucket.markForDeletion();
                             pendingUpdatesBuckets.add(bucket);
                         }
