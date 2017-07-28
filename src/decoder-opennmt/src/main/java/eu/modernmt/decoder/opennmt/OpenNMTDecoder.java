@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 
 /**
  * Created by davide on 22/05/17.
@@ -32,7 +31,7 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
     private final TranslationMemory memory;
     private final HashSet<LanguagePair> directions;
 
-    public OpenNMTDecoder(List<LanguagePair> directions, File modelPath, int[] gpus) throws OpenNMTException {
+    public OpenNMTDecoder(Collection<LanguagePair> directions, File modelPath, int[] gpus) throws OpenNMTException {
         this.directions = new HashSet<>(directions);
 
         File pythonHome = new File(FileConst.getLibPath(), "pynmt");

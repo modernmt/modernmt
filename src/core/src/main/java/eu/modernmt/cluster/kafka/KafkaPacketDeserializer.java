@@ -7,7 +7,7 @@ import java.util.Map;
 /**
  * Created by davide on 30/08/16.
  */
-public class KafkaElementDeserializer implements Deserializer<KafkaElement> {
+public class KafkaPacketDeserializer implements Deserializer<KafkaPacket> {
 
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
@@ -15,11 +15,11 @@ public class KafkaElementDeserializer implements Deserializer<KafkaElement> {
     }
 
     @Override
-    public KafkaElement deserialize(String topic, byte[] data) {
+    public KafkaPacket deserialize(String topic, byte[] data) {
         if (data == null)
             return null;
 
-        return KafkaElement.fromBytes(data);
+        return KafkaPacket.fromBytes(data);
     }
 
     @Override

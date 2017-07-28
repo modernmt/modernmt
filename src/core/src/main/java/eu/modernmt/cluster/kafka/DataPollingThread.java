@@ -29,7 +29,7 @@ class DataPollingThread extends Thread {
     private final DataBatch batch;
 
     private DataManagerException exception;
-    private KafkaConsumer<Integer, KafkaElement> consumer;
+    private KafkaConsumer<Integer, KafkaPacket> consumer;
     private boolean interrupted;
     private final ArrayList<DataListener> listeners = new ArrayList<>(10);
     private DataManager.Listener dataManagerListener = null;
@@ -58,7 +58,7 @@ class DataPollingThread extends Thread {
         this.listeners.add(listener);
     }
 
-    public void start(KafkaConsumer<Integer, KafkaElement> consumer) {
+    public void start(KafkaConsumer<Integer, KafkaPacket> consumer) {
         this.consumer = consumer;
         this.interrupted = false;
 
@@ -123,7 +123,7 @@ class DataPollingThread extends Thread {
     public void run() {
         while (!interrupted) {
             try {
-                ConsumerRecords<Integer, KafkaElement> records = consumer.poll(Long.MAX_VALUE);
+                ConsumerRecords<Integer, KafkaPacket> records = consumer.poll(Long.MAX_VALUE);
                 if (records.isEmpty())
                     continue;
 

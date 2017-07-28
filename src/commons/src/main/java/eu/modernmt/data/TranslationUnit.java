@@ -19,7 +19,7 @@ public class TranslationUnit extends DataMessage {
     public Sentence targetSentence = null;
     public Alignment alignment = null;
 
-    public TranslationUnit(short channel, long channelPosition, long domain, LanguagePair direction, String originalSourceSentence, String originalTargetSentence) {
+    public TranslationUnit(short channel, long channelPosition, LanguagePair direction, long domain, String originalSourceSentence, String originalTargetSentence) {
         super(channel, channelPosition);
         this.domain = domain;
         this.direction = direction;

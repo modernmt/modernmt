@@ -1,6 +1,9 @@
 package eu.modernmt.config;
 
-import java.util.Locale;
+import eu.modernmt.model.LanguagePair;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by davide on 04/01/17.
@@ -12,8 +15,7 @@ public class EngineConfig {
     }
 
     private String name = "default";
-    private Locale sourceLanguage = null;
-    private Locale targetLanguage = null;
+    private Set<LanguagePair> languagePairs = null;
     private Type type = Type.PHRASE_BASED;
     private DecoderConfig decoderConfig = new PhraseBasedDecoderConfig();
 
@@ -38,22 +40,18 @@ public class EngineConfig {
         this.decoderConfig = type == Type.PHRASE_BASED ? new PhraseBasedDecoderConfig() : new NeuralDecoderConfig();
     }
 
-    public Locale getSourceLanguage() {
-        return sourceLanguage;
+    public Set<LanguagePair> getLanguagePairs() {
+        return languagePairs;
     }
 
-    public EngineConfig setSourceLanguage(Locale sourceLanguage) {
-        this.sourceLanguage = sourceLanguage;
-        return this;
+    public void setLanguagePairs(Set<LanguagePair> languagePairs) {
+        this.languagePairs = new HashSet<>(languagePairs);
     }
 
-    public Locale getTargetLanguage() {
-        return targetLanguage;
-    }
-
-    public EngineConfig setTargetLanguage(Locale targetLanguage) {
-        this.targetLanguage = targetLanguage;
-        return this;
+    public void addLanguagePair(LanguagePair pair) {
+        if (this.languagePairs == null)
+            this.languagePairs = new HashSet<>();
+        this.languagePairs.add(pair);
     }
 
     public DecoderConfig getDecoderConfig() {
@@ -65,8 +63,7 @@ public class EngineConfig {
         return "[Engine]\n" +
                 "  name = " + name + "\n" +
                 "  type = " + type + "\n" +
-                "  source-language = " + sourceLanguage.toLanguageTag() + "\n" +
-                "  target-language = " + targetLanguage.toLanguageTag() + "\n" +
+                "  languages = " + languagePairs + "\n" +
                 "  " + decoderConfig.toString().replace("\n", "\n  ");
     }
 }

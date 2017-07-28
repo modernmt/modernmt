@@ -1,11 +1,12 @@
 package eu.modernmt.model;
 
+import java.io.Serializable;
 import java.util.Locale;
 
 /**
  * Created by davide on 27/07/17.
  */
-public class LanguagePair {
+public class LanguagePair implements Serializable {
 
     public final Locale source;
     public final Locale target;
@@ -13,6 +14,10 @@ public class LanguagePair {
     public LanguagePair(Locale source, Locale target) {
         this.source = source;
         this.target = target;
+    }
+
+    public LanguagePair reversed() {
+        return new LanguagePair(target, source);
     }
 
     public boolean equalsIgnoreDirection(LanguagePair o) {

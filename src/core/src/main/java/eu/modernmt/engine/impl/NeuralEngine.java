@@ -4,14 +4,13 @@ import eu.modernmt.config.EngineConfig;
 import eu.modernmt.config.NeuralDecoderConfig;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.decoder.Decoder;
-import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.opennmt.OpenNMTDecoder;
+import eu.modernmt.decoder.opennmt.OpenNMTException;
+import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
-import eu.modernmt.persistence.PersistenceException;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 
 /**
@@ -21,14 +20,23 @@ public class NeuralEngine extends Engine {
 
     private final OpenNMTDecoder decoder;
 
-    public NeuralEngine(EngineConfig config) throws DecoderException, PersistenceException, IOException {
+    public NeuralEngine(EngineConfig config) throws BootstrapException {
         super(config);
 
-        NeuralDecoderConfig decoderConfig = (NeuralDecoderConfig) config.getDecoderConfig();
-        if (decoderConfig.isEnabled())
-            this.decoder = new OpenNMTDecoder(new File(this.models, "decoder"), decoderConfig.getGPUs());
-        else
-            this.decoder = null;
+        try {
+            NeuralDecoderConfig decoderConfig = (NeuralDecoderConfig) config.getDecoderConfig();
+            if (decoderConfig.isEnabled())
+                this.decoder = new OpenNMTDecoder(this.languagePairs, new File(this.models, "decoder"), decoderConfig.getGPUs());
+            else
+                this.decoder = null;
+        } catch (OpenNMTException e) {
+            throw new BootstrapException("Failed to instantiate OpenNMT decoder", e);
+        }
+    }
+
+    @Override
+    protected boolean isMultilingual() {
+        return true;
     }
 
     @Override

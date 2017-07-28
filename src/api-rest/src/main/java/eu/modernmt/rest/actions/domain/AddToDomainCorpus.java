@@ -4,6 +4,7 @@ import eu.modernmt.data.DataManagerException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.io.FileProxy;
 import eu.modernmt.model.ImportJob;
+import eu.modernmt.model.LanguagePair;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.impl.parallel.InlineParallelFileCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
@@ -31,7 +32,7 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
         Params params = (Params) _params;
 
         if (params.corpus == null)
-            return ModernMT.domain.add(params.domain, params.source, params.target);
+            return ModernMT.domain.add(params.direction, params.domain, params.source, params.target);
         else
             return ModernMT.domain.add(params.domain, params.corpus);
     }
@@ -51,6 +52,7 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
 
     public static class Params extends Parameters {
 
+        private final LanguagePair direction;
         private final long domain;
         private final String source;
         private final String target;
@@ -61,8 +63,12 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
 
             domain = req.getPathParameterAsLong("id");
 
-            source = getString("source", false, null);
-            target = getString("target", false, null);
+            Locale sourceLanguage = getLocale("source");
+            Locale targetLanguage = getLocale("target");
+            direction = new LanguagePair(sourceLanguage, targetLanguage);
+
+            source = getString("text", false, null);
+            target = getString("translation", false, null);
 
             if (source == null && target == null) {
                 FileType fileType = getEnum("content_type", FileType.class);
@@ -82,9 +88,6 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
                     fileProxy = new LocalFileProxy(localFile, gzipped);
                 }
 
-                Locale sourceLanguage = ModernMT.translation.getSourceLanguage();
-                Locale targetLanguage = ModernMT.translation.getTargetLanguage();
-
                 switch (fileType) {
                     case INLINE:
                         corpus = new InlineParallelFileCorpus(fileProxy, sourceLanguage, targetLanguage);
@@ -97,9 +100,9 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
                 }
             } else {
                 if (source == null)
-                    throw new ParameterParsingException("source");
+                    throw new ParameterParsingException("text");
                 if (target == null)
-                    throw new ParameterParsingException("target");
+                    throw new ParameterParsingException("translation");
 
                 corpus = null;
             }

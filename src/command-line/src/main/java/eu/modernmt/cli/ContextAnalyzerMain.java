@@ -4,6 +4,7 @@ import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.lucene.LuceneAnalyzer;
 import eu.modernmt.model.Domain;
+import eu.modernmt.model.LanguagePair;
 import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
@@ -77,8 +78,8 @@ public class ContextAnalyzerMain {
 
         ContextAnalyzer contextAnalyzer = null;
         try {
-            contextAnalyzer = new LuceneAnalyzer(args.indexPath, args.sourceLanguage, eu.modernmt.context.lucene.storage.Options.prepareForBulkLoad());
-            contextAnalyzer.add(domain2corpus);
+            contextAnalyzer = new LuceneAnalyzer(args.indexPath, eu.modernmt.context.lucene.storage.Options.prepareForBulkLoad());
+            contextAnalyzer.add(new LanguagePair(args.sourceLanguage, args.targetLanguage), domain2corpus);
         } finally {
             IOUtils.closeQuietly(contextAnalyzer);
         }

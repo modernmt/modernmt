@@ -7,6 +7,8 @@ import java.util.Locale;
  */
 public class UnsupportedLanguageException extends RuntimeException {
 
+    private final LanguagePair languagePair;
+
     private static String toString(Locale language) {
         return language == null ? "[null]" : language.toLanguageTag();
     }
@@ -22,12 +24,17 @@ public class UnsupportedLanguageException extends RuntimeException {
         this(language, null);
     }
 
-    public UnsupportedLanguageException(LanguagePair direction) {
-        this(direction.source, direction.target);
+    public UnsupportedLanguageException(Locale source, Locale target) {
+        this(new LanguagePair(source, target));
     }
 
-    public UnsupportedLanguageException(Locale source, Locale target) {
-        super(makeMessage(source, target));
+    public UnsupportedLanguageException(LanguagePair direction) {
+        super(makeMessage(direction.source, direction.target));
+        this.languagePair = direction;
+    }
+
+    public LanguagePair getLanguagePair() {
+        return languagePair;
     }
 
 }

@@ -6,6 +6,8 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import eu.modernmt.rest.framework.routing.RouteTemplate;
 
+import java.util.Locale;
+
 public class Parameters {
 
     protected final RouteTemplate template;
@@ -176,6 +178,15 @@ public class Parameters {
         } catch (IllegalArgumentException e) {
             throw new ParameterParsingException(name, value);
         }
+    }
+
+    public Locale getLocale(String name) throws ParameterParsingException {
+        return Locale.forLanguageTag(getString(name, false));
+    }
+
+    public Locale getLocale(String name, Locale def) throws ParameterParsingException {
+        String tag = getString(name, false, null);
+        return tag == null ? def : Locale.forLanguageTag(tag);
     }
 
     public static class ParameterParsingException extends Exception {

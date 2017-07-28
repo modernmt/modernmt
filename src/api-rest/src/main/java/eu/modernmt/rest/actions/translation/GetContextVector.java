@@ -3,6 +3,7 @@ package eu.modernmt.rest.actions.translation;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.model.ContextVector;
+import eu.modernmt.model.LanguagePair;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.actions.util.ContextUtils;
 import eu.modernmt.rest.framework.FileParameter;
@@ -16,6 +17,7 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.util.Locale;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -59,16 +61,16 @@ public class GetContextVector extends ObjectAction<ContextVector> {
         ContextVector context;
 
         if (params.text != null) {
-            context = ModernMT.translation.getContextVector(params.text, params.limit);
+            context = ModernMT.translation.getContextVector(params.direction, params.text, params.limit);
         } else if (params.localFile != null) {
-            context = ModernMT.translation.getContextVector(params.localFile, params.limit);
+            context = ModernMT.translation.getContextVector(params.direction, params.localFile, params.limit);
         } else {
             File file = null;
 
             try {
                 file = File.createTempFile("mmt-context", "txt");
                 copy(params.content, file, params.compression);
-                context = ModernMT.translation.getContextVector(file, params.limit);
+                context = ModernMT.translation.getContextVector(params.direction, file, params.limit);
             } finally {
                 FileUtils.deleteQuietly(file);
             }
@@ -86,6 +88,7 @@ public class GetContextVector extends ObjectAction<ContextVector> {
 
         public static final int DEFAULT_LIMIT = 10;
 
+        public final LanguagePair direction;
         public final int limit;
         public final String text;
         public final File localFile;
@@ -96,6 +99,10 @@ public class GetContextVector extends ObjectAction<ContextVector> {
             super(req);
 
             this.limit = getInt("limit", DEFAULT_LIMIT);
+
+            Locale sourceLanguage = getLocale("source");
+            Locale targetLanguage = getLocale("target");
+            direction = new LanguagePair(sourceLanguage, targetLanguage);
 
             FileParameter content;
             String localFile;
