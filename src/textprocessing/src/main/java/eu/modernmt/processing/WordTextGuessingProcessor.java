@@ -1,7 +1,7 @@
 package eu.modernmt.processing;
 
 import eu.modernmt.model.Translation;
-import eu.modernmt.model.UnsupportedLanguageException;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Word;
 
 import java.util.Locale;

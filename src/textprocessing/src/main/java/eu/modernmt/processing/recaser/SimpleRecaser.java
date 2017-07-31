@@ -3,7 +3,7 @@ package eu.modernmt.processing.recaser;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.model.UnsupportedLanguageException;
+import eu.modernmt.lang.UnsupportedLanguageException;
 
 import java.util.Locale;
 import java.util.Map;

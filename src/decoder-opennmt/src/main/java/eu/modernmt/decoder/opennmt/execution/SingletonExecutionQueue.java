@@ -2,7 +2,7 @@ package eu.modernmt.decoder.opennmt.execution;
 
 import eu.modernmt.decoder.opennmt.OpenNMTException;
 import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
-import eu.modernmt.model.LanguagePair;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;

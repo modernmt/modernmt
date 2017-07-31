@@ -1,11 +1,10 @@
 package eu.modernmt.training;
 
 import eu.modernmt.cleaning.Cleaner;
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Locale;
 import java.util.concurrent.*;
 
 /**
@@ -15,36 +14,24 @@ public class CleaningPipeline {
 
     public interface OutputCorpusFactory {
 
-        BilingualCorpus getOutput(BilingualCorpus corpus);
+        MultilingualCorpus getOutput(MultilingualCorpus corpus);
 
     }
 
     private static final int MAX_IO_THREADS = 10;
 
-    private ArrayList<BilingualCorpus> bilingualCorpora = new ArrayList<>();
+    private ArrayList<MultilingualCorpus> bilingualCorpora = new ArrayList<>();
 
     private final OutputCorpusFactory outputFactory;
-    private final Locale sourceLanguage;
-    private final Locale targetLanguage;
 
     private int ioThreads = MAX_IO_THREADS;
 
-    public CleaningPipeline(OutputCorpusFactory outputFactory, Locale source, Locale target) {
+    public CleaningPipeline(OutputCorpusFactory outputFactory) {
         this.outputFactory = outputFactory;
-        this.sourceLanguage = source;
-        this.targetLanguage = target;
     }
 
-    public void add(BilingualCorpus corpus) {
+    public void add(MultilingualCorpus corpus) {
         this.bilingualCorpora.add(Cleaner.wrap(corpus));
-    }
-
-    public Locale getSourceLanguage() {
-        return sourceLanguage;
-    }
-
-    public Locale getTargetLanguage() {
-        return targetLanguage;
     }
 
     public int getIoThreads() {
@@ -68,7 +55,7 @@ public class CleaningPipeline {
         int pendingTasks = 0;
 
         // Enqueue bilingual corpora tasks
-        for (BilingualCorpus corpus : bilingualCorpora) {
+        for (MultilingualCorpus corpus : bilingualCorpora) {
             CleaningTask task = new CleaningTask(corpus, outputFactory.getOutput(corpus));
             ecs.submit(task);
             pendingTasks++;

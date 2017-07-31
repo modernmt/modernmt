@@ -1,9 +1,9 @@
 package eu.modernmt.training.cleaning;
 
 import eu.modernmt.cleaning.filters.draft.DraftFilter;
-import eu.modernmt.cleaning.FilteredBilingualCorpus;
-import eu.modernmt.training.MockBilingualCorpus;
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.cleaning.FilteredMultilingualCorpus;
+import eu.modernmt.training.MockMultilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -17,145 +17,145 @@ public class DraftFilterTest {
 
     @Test
     public void testAllUniqueWithoutDate() throws IOException {
-        MockBilingualCorpus corpus = new MockBilingualCorpus(new String[][]{
+        MockMultilingualCorpus corpus = new MockMultilingualCorpus(new String[][]{
                 {"A", "a"}, {"B", "b"}, {"C", "c"}, {"D", "d"},
         });
 
-        FilteredBilingualCorpus filteredCorpus = new FilteredBilingualCorpus(corpus);
+        FilteredMultilingualCorpus filteredCorpus = new FilteredMultilingualCorpus(corpus);
         filteredCorpus.addFilter(new DraftFilter());
 
-        MockBilingualCorpus output = MockBilingualCorpus.drain(filteredCorpus.getContentReader());
+        MockMultilingualCorpus output = MockMultilingualCorpus.drain(filteredCorpus.getContentReader());
 
         assertEquals(corpus, output);
     }
 
     @Test
     public void testSequentialDraftsWithoutDate() throws IOException {
-        MockBilingualCorpus corpus = new MockBilingualCorpus(new String[][]{
+        MockMultilingualCorpus corpus = new MockMultilingualCorpus(new String[][]{
                 {"A", "z"}, {"A", "a"}, {"B", "b"}, {"C", "c"}, {"D", "d"},
         });
-        MockBilingualCorpus expected = new MockBilingualCorpus(new String[][]{
+        MockMultilingualCorpus expected = new MockMultilingualCorpus(new String[][]{
                 {"A", "a"}, {"B", "b"}, {"C", "c"}, {"D", "d"},
         });
 
-        FilteredBilingualCorpus filteredCorpus = new FilteredBilingualCorpus(corpus);
+        FilteredMultilingualCorpus filteredCorpus = new FilteredMultilingualCorpus(corpus);
         filteredCorpus.addFilter(new DraftFilter());
 
-        MockBilingualCorpus output = MockBilingualCorpus.drain(filteredCorpus.getContentReader());
+        MockMultilingualCorpus output = MockMultilingualCorpus.drain(filteredCorpus.getContentReader());
 
         assertEquals(expected, output);
     }
 
     @Test
     public void testMixedDraftsWithoutDate() throws IOException {
-        MockBilingualCorpus corpus = new MockBilingualCorpus(new String[][]{
+        MockMultilingualCorpus corpus = new MockMultilingualCorpus(new String[][]{
                 {"A", "z"}, {"A", "a"}, {"B", "z"}, {"C", "z"}, {"D", "d"}, {"C", "c"}, {"B", "b"},
         });
-        MockBilingualCorpus expected = new MockBilingualCorpus(new String[][]{
+        MockMultilingualCorpus expected = new MockMultilingualCorpus(new String[][]{
                 {"A", "a"}, {"D", "d"}, {"C", "c"}, {"B", "b"}
         });
 
-        FilteredBilingualCorpus filteredCorpus = new FilteredBilingualCorpus(corpus);
+        FilteredMultilingualCorpus filteredCorpus = new FilteredMultilingualCorpus(corpus);
         filteredCorpus.addFilter(new DraftFilter());
 
-        MockBilingualCorpus output = MockBilingualCorpus.drain(filteredCorpus.getContentReader());
+        MockMultilingualCorpus output = MockMultilingualCorpus.drain(filteredCorpus.getContentReader());
 
         assertEquals(expected, output);
     }
 
     @Test
     public void testAllUniqueSortedByDate() throws IOException {
-        MockBilingualCorpus corpus = new MockBilingualCorpus(new BilingualCorpus.StringPair[]{
-                MockBilingualCorpus.pair("A", "a", 0),
-                MockBilingualCorpus.pair("B", "b", 1),
-                MockBilingualCorpus.pair("C", "c", 2),
-                MockBilingualCorpus.pair("D", "d", 3),
+        MockMultilingualCorpus corpus = new MockMultilingualCorpus(new MultilingualCorpus.StringPair[]{
+                MockMultilingualCorpus.pair("A", "a", 0),
+                MockMultilingualCorpus.pair("B", "b", 1),
+                MockMultilingualCorpus.pair("C", "c", 2),
+                MockMultilingualCorpus.pair("D", "d", 3),
         });
 
-        FilteredBilingualCorpus filteredCorpus = new FilteredBilingualCorpus(corpus);
+        FilteredMultilingualCorpus filteredCorpus = new FilteredMultilingualCorpus(corpus);
         filteredCorpus.addFilter(new DraftFilter());
 
-        MockBilingualCorpus output = MockBilingualCorpus.drain(filteredCorpus.getContentReader());
+        MockMultilingualCorpus output = MockMultilingualCorpus.drain(filteredCorpus.getContentReader());
 
         assertEquals(corpus, output);
     }
 
     @Test
     public void testDraftsSortedByDate() throws IOException {
-        MockBilingualCorpus corpus = new MockBilingualCorpus(new BilingualCorpus.StringPair[]{
-                MockBilingualCorpus.pair("A", "z", 0),
-                MockBilingualCorpus.pair("A", "a", 1),
-                MockBilingualCorpus.pair("B", "z", 2),
-                MockBilingualCorpus.pair("C", "z", 3),
-                MockBilingualCorpus.pair("D", "d", 4),
-                MockBilingualCorpus.pair("C", "c", 5),
-                MockBilingualCorpus.pair("B", "b", 6),
+        MockMultilingualCorpus corpus = new MockMultilingualCorpus(new MultilingualCorpus.StringPair[]{
+                MockMultilingualCorpus.pair("A", "z", 0),
+                MockMultilingualCorpus.pair("A", "a", 1),
+                MockMultilingualCorpus.pair("B", "z", 2),
+                MockMultilingualCorpus.pair("C", "z", 3),
+                MockMultilingualCorpus.pair("D", "d", 4),
+                MockMultilingualCorpus.pair("C", "c", 5),
+                MockMultilingualCorpus.pair("B", "b", 6),
         });
 
-        MockBilingualCorpus expected = new MockBilingualCorpus(new BilingualCorpus.StringPair[]{
-                MockBilingualCorpus.pair("A", "a", 1),
-                MockBilingualCorpus.pair("D", "d", 4),
-                MockBilingualCorpus.pair("C", "c", 5),
-                MockBilingualCorpus.pair("B", "b", 6),
+        MockMultilingualCorpus expected = new MockMultilingualCorpus(new MultilingualCorpus.StringPair[]{
+                MockMultilingualCorpus.pair("A", "a", 1),
+                MockMultilingualCorpus.pair("D", "d", 4),
+                MockMultilingualCorpus.pair("C", "c", 5),
+                MockMultilingualCorpus.pair("B", "b", 6),
         });
 
-        FilteredBilingualCorpus filteredCorpus = new FilteredBilingualCorpus(corpus);
+        FilteredMultilingualCorpus filteredCorpus = new FilteredMultilingualCorpus(corpus);
         filteredCorpus.addFilter(new DraftFilter());
 
-        MockBilingualCorpus output = MockBilingualCorpus.drain(filteredCorpus.getContentReader());
+        MockMultilingualCorpus output = MockMultilingualCorpus.drain(filteredCorpus.getContentReader());
 
         assertEquals(expected, output);
     }
 
     @Test
     public void testMixedDraftsWithShuffledDates() throws IOException {
-        MockBilingualCorpus corpus = new MockBilingualCorpus(new BilingualCorpus.StringPair[]{
-                MockBilingualCorpus.pair("A", "z", 1),
-                MockBilingualCorpus.pair("A", "a", 0),
-                MockBilingualCorpus.pair("B", "z", 2),
-                MockBilingualCorpus.pair("C", "z", 5),
-                MockBilingualCorpus.pair("D", "d", 4),
-                MockBilingualCorpus.pair("C", "c", 3),
-                MockBilingualCorpus.pair("B", "b", 6),
+        MockMultilingualCorpus corpus = new MockMultilingualCorpus(new MultilingualCorpus.StringPair[]{
+                MockMultilingualCorpus.pair("A", "z", 1),
+                MockMultilingualCorpus.pair("A", "a", 0),
+                MockMultilingualCorpus.pair("B", "z", 2),
+                MockMultilingualCorpus.pair("C", "z", 5),
+                MockMultilingualCorpus.pair("D", "d", 4),
+                MockMultilingualCorpus.pair("C", "c", 3),
+                MockMultilingualCorpus.pair("B", "b", 6),
         });
 
-        MockBilingualCorpus expected = new MockBilingualCorpus(new BilingualCorpus.StringPair[]{
-                MockBilingualCorpus.pair("A", "z", 1),
-                MockBilingualCorpus.pair("C", "z", 5),
-                MockBilingualCorpus.pair("D", "d", 4),
-                MockBilingualCorpus.pair("B", "b", 6),
+        MockMultilingualCorpus expected = new MockMultilingualCorpus(new MultilingualCorpus.StringPair[]{
+                MockMultilingualCorpus.pair("A", "z", 1),
+                MockMultilingualCorpus.pair("C", "z", 5),
+                MockMultilingualCorpus.pair("D", "d", 4),
+                MockMultilingualCorpus.pair("B", "b", 6),
         });
 
-        FilteredBilingualCorpus filteredCorpus = new FilteredBilingualCorpus(corpus);
+        FilteredMultilingualCorpus filteredCorpus = new FilteredMultilingualCorpus(corpus);
         filteredCorpus.addFilter(new DraftFilter());
 
-        MockBilingualCorpus output = MockBilingualCorpus.drain(filteredCorpus.getContentReader());
+        MockMultilingualCorpus output = MockMultilingualCorpus.drain(filteredCorpus.getContentReader());
 
         assertEquals(expected, output);
     }
 
     @Test
     public void testDraftsWithSameDate() throws IOException {
-        MockBilingualCorpus corpus = new MockBilingualCorpus(new BilingualCorpus.StringPair[]{
-                MockBilingualCorpus.pair("A", "z", 0),
-                MockBilingualCorpus.pair("B", "b", 1),
-                MockBilingualCorpus.pair("A", "a", 0),
-                MockBilingualCorpus.pair("C", "c", 2),
-                MockBilingualCorpus.pair("D", "d", 3),
+        MockMultilingualCorpus corpus = new MockMultilingualCorpus(new MultilingualCorpus.StringPair[]{
+                MockMultilingualCorpus.pair("A", "z", 0),
+                MockMultilingualCorpus.pair("B", "b", 1),
+                MockMultilingualCorpus.pair("A", "a", 0),
+                MockMultilingualCorpus.pair("C", "c", 2),
+                MockMultilingualCorpus.pair("D", "d", 3),
         });
 
-        MockBilingualCorpus expected = new MockBilingualCorpus(new BilingualCorpus.StringPair[]{
-                MockBilingualCorpus.pair("B", "b", 1),
-                MockBilingualCorpus.pair("A", "a", 0),
-                MockBilingualCorpus.pair("C", "c", 2),
-                MockBilingualCorpus.pair("D", "d", 3),
+        MockMultilingualCorpus expected = new MockMultilingualCorpus(new MultilingualCorpus.StringPair[]{
+                MockMultilingualCorpus.pair("B", "b", 1),
+                MockMultilingualCorpus.pair("A", "a", 0),
+                MockMultilingualCorpus.pair("C", "c", 2),
+                MockMultilingualCorpus.pair("D", "d", 3),
 
         });
 
-        FilteredBilingualCorpus filteredCorpus = new FilteredBilingualCorpus(corpus);
+        FilteredMultilingualCorpus filteredCorpus = new FilteredMultilingualCorpus(corpus);
         filteredCorpus.addFilter(new DraftFilter());
 
-        MockBilingualCorpus output = MockBilingualCorpus.drain(filteredCorpus.getContentReader());
+        MockMultilingualCorpus output = MockMultilingualCorpus.drain(filteredCorpus.getContentReader());
 
         assertEquals(expected, output);
     }

@@ -1,7 +1,7 @@
 package eu.modernmt.processing.xmessage;
 
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.model.UnsupportedLanguageException;
+import eu.modernmt.lang.UnsupportedLanguageException;
 
 import java.util.Locale;
 import java.util.Map;

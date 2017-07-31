@@ -5,6 +5,8 @@ import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.*;
 import eu.modernmt.io.Paths;
+import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;

@@ -9,6 +9,9 @@ import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.decoder.*;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.facade.exceptions.TranslationException;
+import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.*;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
@@ -160,8 +163,8 @@ public class TranslationFacade {
     }
 
     private void ensureLanguagePairIsSupported(LanguagePair pair) {
-        Engine engine = ModernMT.getNode().getEngine();
-        if (!engine.isLanguagePairSupported(pair))
+        LanguageIndex languages = ModernMT.getNode().getEngine().getLanguages();
+        if (!languages.isLanguageSupported(pair))
             throw new UnsupportedLanguageException(pair);
     }
 

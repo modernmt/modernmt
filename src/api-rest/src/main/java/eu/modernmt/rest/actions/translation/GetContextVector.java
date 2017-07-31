@@ -3,7 +3,7 @@ package eu.modernmt.rest.actions.translation;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.model.ContextVector;
-import eu.modernmt.model.LanguagePair;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.actions.util.ContextUtils;
 import eu.modernmt.rest.framework.FileParameter;

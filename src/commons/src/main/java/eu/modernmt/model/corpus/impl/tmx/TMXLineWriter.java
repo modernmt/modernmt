@@ -1,7 +1,7 @@
 package eu.modernmt.model.corpus.impl.tmx;
 
 import eu.modernmt.io.FileProxy;
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.xml.XMLUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -16,23 +16,19 @@ import java.util.TimeZone;
 /**
  * Created by davide on 01/12/16.
  */
-class TMXBilingualLineWriter implements BilingualCorpus.BilingualLineWriter {
+class TMXLineWriter implements MultilingualCorpus.MultilingualLineWriter {
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(TMXCorpus.TMX_DATE_FORMAT);
-
     private final FileProxy tmx;
-    private final String sourceLanguage;
-    private final String targetLanguage;
+
+    private boolean headerWritten = false;
 
     private final OutputStream stream;
     private final XMLStreamWriter writer;
 
-    public TMXBilingualLineWriter(FileProxy tmx, Locale sourceLanguage, Locale targetLanguage) throws IOException {
-        dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-
+    public TMXLineWriter(FileProxy tmx) throws IOException {
+        this.dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
         this.tmx = tmx;
-        this.sourceLanguage = sourceLanguage.toLanguageTag();
-        this.targetLanguage = targetLanguage.toLanguageTag();
 
         OutputStream stream = null;
         XMLStreamWriter writer = null;
@@ -49,32 +45,25 @@ class TMXBilingualLineWriter implements BilingualCorpus.BilingualLineWriter {
 
         this.stream = stream;
         this.writer = writer;
-
-        this.writeHeader();
     }
 
     @Override
-    public void write(String source, String target) throws IOException {
-        write(new BilingualCorpus.StringPair(source, target));
-    }
+    public void write(MultilingualCorpus.StringPair pair) throws IOException {
+        if (!headerWritten) {
+            this.writeHeader(pair.language.source);
+            headerWritten = true;
+        }
 
-    @Override
-    public void write(BilingualCorpus.StringPair pair) throws IOException {
         try {
             writer.writeStartElement("tu");
-            writer.writeAttribute("srclang", pair.inverted ? targetLanguage : sourceLanguage);
+            writer.writeAttribute("srclang", pair.language.source.toLanguageTag());
             writer.writeAttribute("datatype", "plaintext");
 
             if (pair.timestamp != null)
                 writer.writeAttribute("creationdate", dateFormat.format(pair.timestamp));
 
-            if (pair.inverted) {
-                writeTuv(targetLanguage, pair.target);
-                writeTuv(sourceLanguage, pair.source);
-            } else {
-                writeTuv(sourceLanguage, pair.source);
-                writeTuv(targetLanguage, pair.target);
-            }
+            writeTuv(pair.language.source, pair.source);
+            writeTuv(pair.language.target, pair.target);
 
             writer.writeEndElement();
         } catch (XMLStreamException e) {
@@ -82,9 +71,9 @@ class TMXBilingualLineWriter implements BilingualCorpus.BilingualLineWriter {
         }
     }
 
-    private void writeTuv(String lang, String segment) throws XMLStreamException {
+    private void writeTuv(Locale lang, String segment) throws XMLStreamException {
         writer.writeStartElement("tuv");
-        writer.writeAttribute("xml", TMXCorpus.XML_NAMESPACE, "lang", lang);
+        writer.writeAttribute("xml", TMXCorpus.XML_NAMESPACE, "lang", lang.toLanguageTag());
         writer.writeStartElement("seg");
         writer.writeCharacters(segment);
         writer.writeEndElement();
@@ -103,7 +92,7 @@ class TMXBilingualLineWriter implements BilingualCorpus.BilingualLineWriter {
         }
     }
 
-    private void writeHeader() throws IOException {
+    private void writeHeader(Locale sourceLanguage) throws IOException {
         try {
             writer.writeStartDocument("UTF-8", "1.0");
             writer.writeStartElement("tmx");
@@ -116,7 +105,7 @@ class TMXBilingualLineWriter implements BilingualCorpus.BilingualLineWriter {
             writer.writeAttribute("o-tmf", "ModernMT");
             writer.writeAttribute("segtype", "sentence");
             writer.writeAttribute("adminlang", "en-us");
-            writer.writeAttribute("srclang", sourceLanguage);
+            writer.writeAttribute("srclang", sourceLanguage.toLanguageTag());
 
             writer.writeStartElement("body");
         } catch (XMLStreamException e) {

@@ -1,6 +1,6 @@
 package eu.modernmt.processing;
 
-import eu.modernmt.model.UnsupportedLanguageException;
+import eu.modernmt.lang.UnsupportedLanguageException;
 
 import java.util.Locale;
 import java.util.Map;

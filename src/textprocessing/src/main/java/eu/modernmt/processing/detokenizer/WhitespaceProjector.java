@@ -6,7 +6,7 @@ import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.model.UnsupportedLanguageException;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.detokenizer.jflex.JFlexDetokenizer;
 import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
 import eu.modernmt.processing.detokenizer.jflex.SpacesAnnotatedString;

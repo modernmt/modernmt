@@ -1,7 +1,7 @@
 package eu.modernmt.processing.tokenizer.languagetool;
 
-import eu.modernmt.model.Languages;
-import eu.modernmt.model.UnsupportedLanguageException;
+import eu.modernmt.lang.Languages;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.SentenceBuilder;

@@ -1,26 +1,23 @@
 package eu.modernmt.cleaning;
 
-import eu.modernmt.model.corpus.BilingualCorpus;
-import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.impl.BaseMultilingualCorpus;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Locale;
 
 /**
  * Created by davide on 14/03/16.
  */
-public class FilteredBilingualCorpus implements BilingualCorpus {
+public class FilteredMultilingualCorpus extends BaseMultilingualCorpus {
 
-    private BilingualCorpus corpus;
-    private int lineCount;
+    private MultilingualCorpus corpus;
     private ArrayList<BilingualCorpusFilter> filters;
     private ArrayList<BilingualCorpusNormalizer> normalizers;
 
-    public FilteredBilingualCorpus(BilingualCorpus corpus) {
+    public FilteredMultilingualCorpus(MultilingualCorpus corpus) {
         this.corpus = corpus;
-        this.lineCount = -1;
         this.filters = new ArrayList<>(10);
         this.normalizers = new ArrayList<>(10);
     }
@@ -34,20 +31,7 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
     }
 
     @Override
-    public int getLineCount() throws IOException {
-        if (lineCount < 0) {
-            synchronized (this) {
-                if (lineCount < 0) {
-                    this.lineCount = BilingualCorpus.getLineCount(this);
-                }
-            }
-        }
-
-        return this.lineCount;
-    }
-
-    @Override
-    public BilingualLineReader getContentReader() throws IOException {
+    public MultilingualLineReader getContentReader() throws IOException {
         for (BilingualCorpusFilter filter : filters)
             filter.onInitStart();
 
@@ -56,9 +40,9 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
         for (BilingualCorpusFilter filter : filters)
             filter.onInitEnd();
 
-        return new BilingualLineReader() {
+        return new MultilingualLineReader() {
 
-            private final BilingualLineReader reader = corpus.getContentReader();
+            private final MultilingualLineReader reader = corpus.getContentReader();
             private int index = 0;
 
             @Override
@@ -106,7 +90,7 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
         }
 
         if (initializers.size() > 0) {
-            BilingualLineReader reader = null;
+            MultilingualLineReader reader = null;
 
             try {
                 reader = corpus.getContentReader();
@@ -135,31 +119,11 @@ public class FilteredBilingualCorpus implements BilingualCorpus {
     }
 
     @Override
-    public Locale getSourceLanguage() {
-        return corpus.getSourceLanguage();
-    }
-
-    @Override
-    public Locale getTargetLanguage() {
-        return corpus.getTargetLanguage();
-    }
-
-    @Override
-    public BilingualLineWriter getContentWriter(boolean append) throws IOException {
+    public MultilingualLineWriter getContentWriter(boolean append) throws IOException {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public Corpus getSourceCorpus() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Corpus getTargetCorpus() {
-        throw new UnsupportedOperationException();
-    }
-
-    public BilingualCorpus getWrappedCorpus() {
+    public MultilingualCorpus getWrappedCorpus() {
         return corpus;
     }
 

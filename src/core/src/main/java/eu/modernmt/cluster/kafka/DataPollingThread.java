@@ -86,7 +86,10 @@ class DataPollingThread extends Thread {
         HashMap<Short, Long> result = null;
 
         for (DataListener listener : listeners) {
-            Map<Short, Long> latestPositions = new HashMap<>(listener.getLatestChannelPositions());
+            Map<Short, Long> latestPositions = listener.getLatestChannelPositions();
+
+            if (latestPositions == null || latestPositions.isEmpty())
+                continue;
 
             if (result == null) {
                 result = new HashMap<>(latestPositions);

@@ -4,7 +4,7 @@ import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.lucene.ContextAnalyzerIndex;
 import eu.modernmt.context.lucene.analysis.DocumentBuilder;
 import eu.modernmt.io.DefaultCharset;
-import eu.modernmt.model.LanguagePair;
+import eu.modernmt.lang.LanguagePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.document.Document;

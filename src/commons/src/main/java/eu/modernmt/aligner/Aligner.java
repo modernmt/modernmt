@@ -1,7 +1,7 @@
 package eu.modernmt.aligner;
 
 import eu.modernmt.model.Alignment;
-import eu.modernmt.model.LanguagePair;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Sentence;
 
 import java.io.Closeable;

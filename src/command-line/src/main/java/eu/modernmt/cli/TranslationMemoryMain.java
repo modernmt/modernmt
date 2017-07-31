@@ -3,7 +3,7 @@ package eu.modernmt.cli;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.decoder.opennmt.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.model.Domain;
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.Corpora;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
@@ -62,11 +62,11 @@ public class TranslationMemoryMain {
 
         Args args = new Args(_args);
 
-        ArrayList<BilingualCorpus> corpora = new ArrayList<>();
+        ArrayList<MultilingualCorpus> corpora = new ArrayList<>();
         Corpora.list(null, false, corpora, args.sourceLanguage, args.targetLanguage, args.corporaRoots);
 
-        HashMap<Domain, BilingualCorpus> domain2corpus = new HashMap<>();
-        for (BilingualCorpus corpus : corpora) {
+        HashMap<Domain, MultilingualCorpus> domain2corpus = new HashMap<>();
+        for (MultilingualCorpus corpus : corpora) {
             long id = Long.parseLong(corpus.getName());
 
             Domain domain = new Domain(id);

@@ -1,7 +1,7 @@
 package eu.modernmt.model.corpus.impl.tmx;
 
 import eu.modernmt.io.FileProxy;
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.xml.XMLUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -9,25 +9,24 @@ import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLStreamException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Locale;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Created by davide on 14/03/16.
  */
-class TMXBilingualLineReader implements BilingualCorpus.BilingualLineReader {
+class TMXLineReader implements MultilingualCorpus.MultilingualLineReader {
 
     private final TMXPairReader tmxPairReader = new TMXPairReader();
 
     private final FileProxy tmx;
     private final InputStream stream;
     private final XMLEventReader reader;
-    private final String sourceLanguage;
-    private final String targetLanguage;
 
-    TMXBilingualLineReader(FileProxy tmx, Locale sourceLanguage, Locale targetLanguage) throws IOException {
+    private List<MultilingualCorpus.StringPair> cachedPairs = Collections.emptyList();
+
+    TMXLineReader(FileProxy tmx) throws IOException {
         this.tmx = tmx;
-        this.sourceLanguage = sourceLanguage.getLanguage();
-        this.targetLanguage = targetLanguage.getLanguage();
 
         InputStream stream = null;
         XMLEventReader reader = null;
@@ -47,9 +46,12 @@ class TMXBilingualLineReader implements BilingualCorpus.BilingualLineReader {
     }
 
     @Override
-    public BilingualCorpus.StringPair read() throws IOException {
+    public MultilingualCorpus.StringPair read() throws IOException {
         try {
-            return tmxPairReader.read(reader, sourceLanguage, targetLanguage);
+            if (cachedPairs.isEmpty())
+                cachedPairs = tmxPairReader.read(reader);
+
+            return cachedPairs.isEmpty() ? null : cachedPairs.remove(0);
         } catch (XMLStreamException e) {
             throw new IOException("Invalid TMX " + tmx, e);
         }

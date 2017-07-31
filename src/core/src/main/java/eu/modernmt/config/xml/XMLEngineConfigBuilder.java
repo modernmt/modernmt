@@ -1,7 +1,7 @@
 package eu.modernmt.config.xml;
 
 import eu.modernmt.config.*;
-import eu.modernmt.model.LanguagePair;
+import eu.modernmt.lang.LanguagePair;
 import org.w3c.dom.Element;
 
 import java.util.Locale;

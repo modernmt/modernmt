@@ -4,12 +4,12 @@ import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.NodeInfo;
 import eu.modernmt.data.DataManager;
 import eu.modernmt.data.DataManagerException;
-import eu.modernmt.engine.Engine;
+import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Domain;
 import eu.modernmt.model.ImportJob;
-import eu.modernmt.model.LanguagePair;
-import eu.modernmt.model.UnsupportedLanguageException;
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.persistence.*;
 import org.apache.commons.io.IOUtils;
 
@@ -112,9 +112,9 @@ public class DomainFacade {
     }
 
     public ImportJob add(LanguagePair direction, long domainId, String source, String target) throws DataManagerException, PersistenceException {
-        Engine engine = ModernMT.getNode().getEngine();
+        LanguageIndex languages = ModernMT.getNode().getEngine().getLanguages();
 
-        if (!engine.isLanguagePairSupported(direction))
+        if (languages.map(direction) == null)
             throw new UnsupportedLanguageException(direction);
 
         Connection connection = null;
@@ -143,13 +143,7 @@ public class DomainFacade {
         }
     }
 
-    public ImportJob add(long domainId, BilingualCorpus corpus) throws PersistenceException, DataManagerException {
-        Engine engine = ModernMT.getNode().getEngine();
-
-        LanguagePair direction = new LanguagePair(corpus.getSourceLanguage(), corpus.getTargetLanguage());
-        if (!engine.isLanguagePairSupported(direction))
-            throw new UnsupportedLanguageException(direction);
-
+    public ImportJob add(long domainId, MultilingualCorpus corpus) throws PersistenceException, DataManagerException {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 

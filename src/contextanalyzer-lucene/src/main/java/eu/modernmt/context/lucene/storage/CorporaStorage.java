@@ -6,9 +6,9 @@ import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataMessage;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.io.LineReader;
-import eu.modernmt.model.LanguagePair;
-import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -35,9 +35,11 @@ public class CorporaStorage implements DataListener {
 
     private final ContextAnalyzerIndex contextAnalyzer;
     private final CorporaIndex index;
+    private final LanguageIndex languages;
     private HashSet<CorpusBucket> pendingUpdatesBuckets = new HashSet<>();
 
-    public CorporaStorage(File path, Options options, ContextAnalyzerIndex contextAnalyzer) throws IOException {
+    public CorporaStorage(File path, Options options, ContextAnalyzerIndex contextAnalyzer, LanguageIndex languages) throws IOException {
+        this.languages = languages;
         this.analysisExecutor = Executors.newFixedThreadPool(options.analysisThreads);
 
         this.options = options;
@@ -110,22 +112,25 @@ public class CorporaStorage implements DataListener {
         logger.debug("CorporaStorage index successfully written to disk");
     }
 
-    public void bulkInsert(LanguagePair direction, long domain, Corpus corpus) throws IOException {
-        LineReader reader = null;
+    public void bulkInsert(long domain, MultilingualCorpus corpus) throws IOException {
+        MultilingualCorpus.MultilingualLineReader reader = null;
+
+        HashMap<LanguagePair, CorpusBucket> buckets = new HashMap<>();
 
         try {
             reader = corpus.getContentReader();
 
-            CorpusBucket bucket = index.getBucket(direction, domain);
+            MultilingualCorpus.StringPair pair;
+            while ((pair = reader.read()) != null) {
+                CorpusBucket bucket = buckets.computeIfAbsent(pair.language, direction -> index.getBucket(direction, domain));
 
-            if (!bucket.isOpen())
-                bucket.open();
+                if (!bucket.isOpen())
+                    bucket.open();
 
-            String line;
-            while ((line = reader.readLine()) != null)
-                bucket.append(line);
+                bucket.append(pair.source);
+            }
 
-            pendingUpdatesBuckets.add(bucket);
+            pendingUpdatesBuckets.addAll(buckets.values());
         } finally {
             IOUtils.closeQuietly(reader);
         }

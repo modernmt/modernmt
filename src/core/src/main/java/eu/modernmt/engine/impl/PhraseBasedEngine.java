@@ -8,7 +8,7 @@ import eu.modernmt.decoder.phrasebased.MosesDecoder;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.io.Paths;
-import eu.modernmt.model.LanguagePair;
+import eu.modernmt.lang.LanguagePair;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -25,7 +25,7 @@ public class PhraseBasedEngine extends Engine {
         super(config);
 
         try {
-            LanguagePair direction = this.languagePairs.iterator().next();
+            LanguagePair direction = this.languages.iterator().next();
             PhraseBasedDecoderConfig decoderConfig = (PhraseBasedDecoderConfig) config.getDecoderConfig();
 
             if (decoderConfig.isEnabled())

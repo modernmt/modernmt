@@ -3,7 +3,7 @@ package eu.modernmt.cli;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.facade.TrainingFacade;
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.cli.*;
@@ -76,7 +76,7 @@ public class TrainingPipelineMain {
         Args args = new Args(_args);
 
         ArrayList<Corpus> monolingualCorpora = new ArrayList<>();
-        ArrayList<BilingualCorpus> bilingualCorpora = new ArrayList<>();
+        ArrayList<MultilingualCorpus> bilingualCorpora = new ArrayList<>();
 
         Corpora.list(monolingualCorpora, true, bilingualCorpora, args.sourceLanguage, args.targetLanguage, args.inputRoots);
 

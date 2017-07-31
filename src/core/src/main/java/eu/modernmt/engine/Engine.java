@@ -12,8 +12,9 @@ import eu.modernmt.engine.impl.NeuralEngine;
 import eu.modernmt.engine.impl.PhraseBasedEngine;
 import eu.modernmt.io.FileConst;
 import eu.modernmt.io.Paths;
-import eu.modernmt.model.LanguagePair;
-import eu.modernmt.model.UnsupportedLanguageException;
+import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.TextProcessingModels;
@@ -23,7 +24,10 @@ import org.apache.commons.io.IOUtils;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Set;
 
 /**
  * Created by davide on 19/04/16.
@@ -54,7 +58,7 @@ public abstract class Engine implements Closeable, DataListenerProvider {
     protected final File logs;
 
     protected final String name;
-    protected final Set<LanguagePair> languagePairs;
+    protected final LanguageIndex languages;
 
     protected final Aligner aligner;
     protected final HashMap<LanguagePair, Processors> processors;
@@ -73,9 +77,9 @@ public abstract class Engine implements Closeable, DataListenerProvider {
 
     protected Engine(EngineConfig config) throws BootstrapException {
         this.name = config.getName();
-        this.languagePairs = Collections.unmodifiableSet(config.getLanguagePairs());
+        this.languages = new LanguageIndex(config.getLanguagePairs());
 
-        if (this.languagePairs.size() > 1 && !isMultilingual())
+        if (this.languages.size() > 1 && !isMultilingual())
             throw new BootstrapException("Engine implementation does not support multiple translation directions.");
 
         this.root = FileConst.getEngineRoot(name);
@@ -84,7 +88,7 @@ public abstract class Engine implements Closeable, DataListenerProvider {
         this.logs = Paths.join(this.runtime, "logs");
 
         this.processors = new HashMap<>();
-        for (LanguagePair pair : this.languagePairs) {
+        for (LanguagePair pair : this.languages) {
             LanguagePair reversed = pair.reversed();
 
             try {
@@ -102,7 +106,7 @@ public abstract class Engine implements Closeable, DataListenerProvider {
         }
 
         try {
-            this.contextAnalyzer = new LuceneAnalyzer(Paths.join(this.models, "context"));
+            this.contextAnalyzer = new LuceneAnalyzer(this.languages, Paths.join(this.models, "context"));
         } catch (IOException e) {
             throw new BootstrapException("Failed to instantiate context analyzer", e);
         }
@@ -146,12 +150,12 @@ public abstract class Engine implements Closeable, DataListenerProvider {
         return entry.postprocessor;
     }
 
-    public Set<LanguagePair> getAvailableLanguagePairs() {
-        return this.languagePairs;
+    public LanguageIndex getLanguages() {
+        return this.languages;
     }
 
-    public boolean isLanguagePairSupported(LanguagePair pair) {
-        return this.languagePairs.contains(pair);
+    public Set<LanguagePair> getAvailableLanguagePairs() {
+        return this.languages.getLanguages();
     }
 
     public File getRootPath() {

@@ -1,9 +1,11 @@
 package eu.modernmt.model.corpus;
 
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.FalseFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
@@ -18,6 +20,44 @@ import java.util.stream.Collectors;
 public class Corpora {
 
     public static final String TMX_EXTENSION = "tmx";
+
+    public static MultilingualCorpus rename(MultilingualCorpus corpus, File folder, String name) {
+        if (corpus instanceof TMXCorpus) {
+            return new TMXCorpus(new File(folder, name + ".tmx"));
+        } else if (corpus instanceof ParallelFileCorpus) {
+            LanguagePair language = ((ParallelFileCorpus) corpus).getLanguage();
+            return new ParallelFileCorpus(folder, name, language);
+        } else {
+            throw new IllegalArgumentException("Unknown multilingual corpus: " + corpus.getClass().getSimpleName());
+        }
+    }
+
+    public static Map<LanguagePair, Integer> countLines(MultilingualCorpus corpus) throws IOException {
+        Map<LanguagePair, Counter> counts = new HashMap<>();
+
+        MultilingualCorpus.MultilingualLineReader reader = null;
+
+        try {
+            reader = corpus.getContentReader();
+
+            MultilingualCorpus.StringPair line;
+            while ((line = reader.read()) != null) {
+                counts.computeIfAbsent(line.language, k -> new Counter()).count++;
+            }
+        } finally {
+            IOUtils.closeQuietly(reader);
+        }
+
+        Map<LanguagePair, Integer> result = new HashMap<>(counts.size());
+        for (Map.Entry<LanguagePair, Counter> entry : counts.entrySet())
+            result.put(entry.getKey(), entry.getValue().count);
+
+        return result;
+    }
+
+    private static final class Counter {
+        public int count = 0;
+    }
 
     public static List<Corpus> list(Locale language, File... roots) throws IOException {
         String tag = language.toLanguageTag();
@@ -35,7 +75,7 @@ public class Corpora {
         return corpora;
     }
 
-    public static void list(Collection<Corpus> monolingualOutput, boolean monolingualIsTarget, Collection<BilingualCorpus> bilingualOutput, Locale sourceLanguage, Locale targetLanguage, File... roots) throws IOException {
+    public static void list(Collection<Corpus> monolingualOutput, boolean monolingualIsTarget, Collection<MultilingualCorpus> bilingualOutput, Locale sourceLanguage, Locale targetLanguage, File... roots) throws IOException {
         for (File directory : roots) {
             HashMap<String, CorpusBuilder> builders = new HashMap<>();
 
@@ -101,23 +141,18 @@ public class Corpora {
     private static class CorpusBuilder {
 
         private final String name;
-        private final Locale sourceLanguage;
-        private final Locale targetLanguage;
+        private final LanguagePair language;
 
         private File sourceFile = null;
         private File targetFile = null;
         private final File tmxFile;
 
         CorpusBuilder(String name, Locale sourceLanguage, Locale targetLanguage) {
-            this.sourceLanguage = sourceLanguage;
-            this.targetLanguage = targetLanguage;
-            this.tmxFile = null;
-            this.name = name;
+            this(name, sourceLanguage, targetLanguage, null);
         }
 
         CorpusBuilder(String name, Locale sourceLanguage, Locale targetLanguage, File tmxFile) {
-            this.sourceLanguage = sourceLanguage;
-            this.targetLanguage = targetLanguage;
+            this.language = new LanguagePair(sourceLanguage, targetLanguage);
             this.tmxFile = tmxFile;
             this.name = name;
         }
@@ -142,19 +177,19 @@ public class Corpora {
             return targetFile != null;
         }
 
-        BilingualCorpus buildBilingual() {
+        MultilingualCorpus buildBilingual() {
             if (tmxFile == null) {
-                return new ParallelFileCorpus(this.name, this.sourceLanguage, this.sourceFile, this.targetLanguage, this.targetFile);
+                return new ParallelFileCorpus(this.name, this.language, this.sourceFile, this.targetFile);
             } else {
-                return new TMXCorpus(this.name, this.tmxFile, this.sourceLanguage, this.targetLanguage);
+                return new TMXCorpus(this.name, this.tmxFile);
             }
         }
 
         Corpus buildMonolingual() {
             if (sourceFile != null)
-                return new FileCorpus(this.sourceFile, this.name, this.sourceLanguage);
+                return new FileCorpus(this.sourceFile, this.name, this.language.source);
             else
-                return new FileCorpus(this.targetFile, this.name, this.targetLanguage);
+                return new FileCorpus(this.targetFile, this.name, this.language.target);
         }
     }
 

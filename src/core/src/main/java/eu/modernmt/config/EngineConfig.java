@@ -1,6 +1,6 @@
 package eu.modernmt.config;
 
-import eu.modernmt.model.LanguagePair;
+import eu.modernmt.lang.LanguagePair;
 
 import java.util.HashSet;
 import java.util.Set;

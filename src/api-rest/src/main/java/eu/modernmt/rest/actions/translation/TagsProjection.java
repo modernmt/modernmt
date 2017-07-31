@@ -3,7 +3,7 @@ package eu.modernmt.rest.actions.translation;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.facade.ModernMT;
-import eu.modernmt.model.LanguagePair;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
 import eu.modernmt.rest.framework.HttpMethod;

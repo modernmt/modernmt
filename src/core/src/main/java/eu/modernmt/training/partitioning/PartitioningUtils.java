@@ -1,6 +1,6 @@
 package eu.modernmt.training.partitioning;
 
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,7 +14,7 @@ public class PartitioningUtils {
 
     private static final double MAX_CORPUS_PARTITION_RATIO = 0.01;
 
-    public static double getAdjustedWeight(BilingualCorpus corpus, long extraPartitionsLines, long corporaLines) {
+    public static double getAdjustedWeight(MultilingualCorpus corpus, long extraPartitionsLines, long corporaLines) {
         int corpusLines;
         try {
             corpusLines = corpus.getLineCount();
@@ -42,14 +42,14 @@ public class PartitioningUtils {
         return count;
     }
 
-    public static long countTotalCorporaLines(Collection<BilingualCorpus> corpora, int threads) throws IOException {
+    public static long countTotalCorporaLines(Collection<MultilingualCorpus> corpora, int threads) throws IOException {
         ExecutorService executor = null;
 
         try {
             executor = threads > 1 ? Executors.newFixedThreadPool(threads) : Executors.newSingleThreadExecutor();
 
             ArrayList<Future<Long>> counts = new ArrayList<>(corpora.size());
-            for (BilingualCorpus corpus : corpora) {
+            for (MultilingualCorpus corpus : corpora) {
                 counts.add(executor.submit(() -> (long) corpus.getLineCount()));
             }
 

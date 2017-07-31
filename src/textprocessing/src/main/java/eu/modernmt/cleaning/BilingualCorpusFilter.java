@@ -1,6 +1,6 @@
 package eu.modernmt.cleaning;
 
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.io.IOException;
 
@@ -11,7 +11,7 @@ public interface BilingualCorpusFilter {
 
     interface FilterInitializer {
 
-        void onPair(BilingualCorpus corpus, BilingualCorpus.StringPair pair, int index) throws IOException;
+        void onPair(MultilingualCorpus corpus, MultilingualCorpus.StringPair pair, int index) throws IOException;
 
     }
 
@@ -21,7 +21,7 @@ public interface BilingualCorpusFilter {
 
     void onInitEnd();
 
-    boolean accept(BilingualCorpus.StringPair pair, int index) throws IOException;
+    boolean accept(MultilingualCorpus.StringPair pair, int index) throws IOException;
 
     void clear();
 

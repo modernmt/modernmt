@@ -1,7 +1,7 @@
 package eu.modernmt.cleaning.filters;
 
 import eu.modernmt.cleaning.BilingualCorpusFilter;
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -77,7 +77,7 @@ public class RareNgramFilter implements BilingualCorpusFilter {
     }
 
     @Override
-    public boolean accept(BilingualCorpus.StringPair pair, int index) throws IOException {
+    public boolean accept(MultilingualCorpus.StringPair pair, int index) throws IOException {
         int rare = 0;
         int common = 0;
 

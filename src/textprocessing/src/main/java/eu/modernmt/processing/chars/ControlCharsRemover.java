@@ -1,6 +1,6 @@
 package eu.modernmt.processing.chars;
 
-import eu.modernmt.model.UnsupportedLanguageException;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.TextProcessor;
 
 import java.util.Locale;

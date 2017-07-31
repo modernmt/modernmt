@@ -4,8 +4,8 @@ import eu.modernmt.data.DataManagerException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.io.FileProxy;
 import eu.modernmt.model.ImportJob;
-import eu.modernmt.model.LanguagePair;
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.impl.parallel.InlineParallelFileCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
 import eu.modernmt.persistence.PersistenceException;
@@ -56,7 +56,7 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
         private final long domain;
         private final String source;
         private final String target;
-        private final BilingualCorpus corpus;
+        private final MultilingualCorpus corpus;
 
         public Params(RESTRequest req) throws ParameterParsingException, TemplateException {
             super(req);

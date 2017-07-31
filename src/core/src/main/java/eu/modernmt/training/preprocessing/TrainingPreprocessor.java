@@ -1,5 +1,6 @@
 package eu.modernmt.training.preprocessing;
 
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
 import eu.modernmt.processing.Preprocessor;
@@ -8,7 +9,6 @@ import eu.modernmt.processing.ProcessingPipeline;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Locale;
 import java.util.concurrent.*;
 
 /**
@@ -17,15 +17,17 @@ import java.util.concurrent.*;
 public class TrainingPreprocessor implements Closeable {
 
     private final int threads;
-    private final Locale language;
+    private final LanguagePair language;
 
     private final ExecutorService executor;
+    private final ArrayBlockingQueue<ProcessingPipeline<String, Sentence>> pipelines;
 
-    public TrainingPreprocessor(int threads, Locale language) {
+    public TrainingPreprocessor(int threads, LanguagePair language) {
         this.threads = threads;
         this.language = language;
 
         this.executor = Executors.newFixedThreadPool(threads);
+        this.pipelines = new ArrayBlockingQueue<>(threads);
     }
 
     public String[][] process(String[] batch) throws ProcessingException {
@@ -96,28 +98,40 @@ public class TrainingPreprocessor implements Closeable {
             this.length = length;
         }
 
+        private ProcessingPipeline<String, Sentence> getPipeline() throws ProcessingException {
+            ProcessingPipeline<String, Sentence> pipeline = pipelines.poll();
+
+            if (pipeline == null) {
+                try {
+                    pipeline = Preprocessor.createPipeline(language);
+                } catch (IOException e) {
+                    throw new ProcessingException("Unable to load pipeline", e);
+                }
+            }
+
+            return pipeline;
+        }
+
         @Override
         public Void call() throws ProcessingException {
-            ProcessingPipeline<String, Sentence> pipeline;
+            ProcessingPipeline<String, Sentence> pipeline = getPipeline();
 
             try {
-                pipeline = Preprocessor.createPipeline(language);
-            } catch (IOException e) {
-                throw new ProcessingException("Unable to load pipeline", e);
+                for (int i = 0; i < length; i++) {
+                    Word[] words = pipeline.call(batch[offset + i]).getWords();
+                    batch[offset + i] = null; // free memory
+
+                    String[] array = new String[words.length];
+                    for (int j = 0; j < array.length; j++)
+                        array[j] = words[j].getPlaceholder();
+
+                    output[offset + i] = array;
+                }
+
+                return null;
+            } finally {
+                pipelines.offer(pipeline);
             }
-
-            for (int i = 0; i < length; i++) {
-                Word[] words = pipeline.call(batch[offset + i]).getWords();
-                batch[offset + i] = null; // free memory
-
-                String[] array = new String[words.length];
-                for (int j = 0; j < array.length; j++)
-                    array[j] = words[j].getPlaceholder();
-
-                output[offset + i] = array;
-            }
-
-            return null;
         }
     }
 

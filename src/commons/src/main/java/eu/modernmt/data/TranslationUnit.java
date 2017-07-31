@@ -1,7 +1,7 @@
 package eu.modernmt.data;
 
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Alignment;
-import eu.modernmt.model.LanguagePair;
 import eu.modernmt.model.Sentence;
 
 /**
@@ -11,10 +11,10 @@ public class TranslationUnit extends DataMessage {
 
     public final long domain;
 
-    public final LanguagePair direction;
     public final String originalSourceSentence;
     public final String originalTargetSentence;
 
+    public LanguagePair direction;
     public Sentence sourceSentence = null;
     public Sentence targetSentence = null;
     public Alignment alignment = null;

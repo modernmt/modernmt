@@ -3,7 +3,7 @@ package eu.modernmt.processing.tokenizer.opennlp;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessingModels;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.model.UnsupportedLanguageException;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.string.SentenceBuilder;
 import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 import opennlp.tools.tokenize.TokenizerME;

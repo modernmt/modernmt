@@ -3,7 +3,7 @@ package eu.modernmt.decoder.opennmt.memory.lucene;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
-import eu.modernmt.model.LanguagePair;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Sentence;
 import org.apache.lucene.document.*;
 import org.apache.lucene.util.BytesRef;

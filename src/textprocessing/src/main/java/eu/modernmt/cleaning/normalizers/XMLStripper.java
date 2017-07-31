@@ -2,7 +2,7 @@ package eu.modernmt.cleaning.normalizers;
 
 import eu.modernmt.cleaning.BilingualCorpusNormalizer;
 import eu.modernmt.model.Tag;
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.util.regex.Matcher;
 
@@ -37,7 +37,7 @@ public class XMLStripper implements BilingualCorpusNormalizer {
     }
 
     @Override
-    public void normalize(BilingualCorpus.StringPair pair, int index) {
+    public void normalize(MultilingualCorpus.StringPair pair, int index) {
         pair.source = stripXML(pair.source).trim();
         pair.target = stripXML(pair.target).trim();
     }

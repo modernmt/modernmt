@@ -1,5 +1,6 @@
 package eu.modernmt.processing;
 
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.builder.XMLPipelineBuilder;
 import eu.modernmt.processing.concurrent.PipelineExecutor;
@@ -18,8 +19,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class Preprocessor implements Closeable {
 
-    public static ProcessingPipeline<String, Sentence> createPipeline(Locale sourceLanguage) throws ProcessingException, IOException {
-        return getDefaultBuilder().newPipeline(sourceLanguage, null);
+    public static ProcessingPipeline<String, Sentence> createPipeline(LanguagePair language) throws ProcessingException, IOException {
+        return createPipeline(language.source, language.target);
     }
 
     public static ProcessingPipeline<String, Sentence> createPipeline(Locale sourceLanguage, Locale targetLanguage) throws ProcessingException, IOException {

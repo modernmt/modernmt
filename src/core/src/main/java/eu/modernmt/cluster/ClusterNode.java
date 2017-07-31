@@ -344,7 +344,7 @@ public class ClusterNode {
                 throw new BootstrapException("Datastream name is compulsory if datastream is not embedded");
 
 
-            this.dataManager = new KafkaDataManager(uuid, this.engine, dataStreamConfig);
+            this.dataManager = new KafkaDataManager(this.engine, uuid, dataStreamConfig);
             this.dataManager.setDataManagerListener(this::updateChannelsPositions);
 
             addToDataManager(this.engine, this.dataManager);

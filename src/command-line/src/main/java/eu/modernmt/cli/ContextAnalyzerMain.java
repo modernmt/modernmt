@@ -4,8 +4,8 @@ import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.lucene.LuceneAnalyzer;
 import eu.modernmt.model.Domain;
-import eu.modernmt.model.LanguagePair;
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.cli.*;
@@ -65,11 +65,11 @@ public class ContextAnalyzerMain {
 
         Args args = new Args(_args);
 
-        ArrayList<BilingualCorpus> corpora = new ArrayList<>();
+        ArrayList<MultilingualCorpus> corpora = new ArrayList<>();
         Corpora.list(null, false, corpora, args.sourceLanguage, args.targetLanguage, args.corporaRoots);
 
         HashMap<Domain, Corpus> domain2corpus = new HashMap<>();
-        for (BilingualCorpus corpus : corpora) {
+        for (MultilingualCorpus corpus : corpora) {
             long id = Long.parseLong(corpus.getName());
 
             Domain domain = new Domain(id);

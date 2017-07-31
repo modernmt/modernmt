@@ -5,7 +5,12 @@ import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.error.SystemShutdownException;
 import eu.modernmt.engine.Engine;
-import eu.modernmt.model.*;
+import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.UnsupportedLanguageException;
+import eu.modernmt.model.Alignment;
+import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Translation;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.xml.XMLTagProjector;
@@ -24,7 +29,15 @@ public class TagFacade {
     }
 
     public Translation project(LanguagePair direction, String sentence, String translation, Aligner.SymmetrizationStrategy strategy) throws AlignerException {
-        ensureLanguagePairIsSupported(direction);
+        LanguageIndex languages = ModernMT.getNode().getEngine().getLanguages();
+
+        LanguagePair actualDirection = languages.map(direction);
+        if (actualDirection == null)
+            actualDirection = languages.map(direction.reversed());
+
+        // Aligner is always bi-directional even if the engine does not support it
+        if (actualDirection == null)
+            throw new UnsupportedLanguageException(direction);
 
         ProjectTagsCallable operation = new ProjectTagsCallable(direction, sentence, translation, strategy);
 
@@ -44,14 +57,6 @@ public class TagFacade {
             else
                 throw new Error("Unexpected exception: " + cause.getMessage(), cause);
         }
-    }
-
-    private void ensureLanguagePairIsSupported(LanguagePair pair) {
-        Engine engine = ModernMT.getNode().getEngine();
-
-        // Aligner is always bi-directional even if the engine does not support it
-        if (!engine.isLanguagePairSupported(pair) && !engine.isLanguagePairSupported(pair))
-            throw new UnsupportedLanguageException(pair);
     }
 
     private static class ProjectTagsCallable implements Callable<Translation>, Serializable {

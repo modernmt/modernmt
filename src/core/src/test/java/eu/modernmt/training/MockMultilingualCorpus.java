@@ -1,6 +1,6 @@
 package eu.modernmt.training;
 
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;
 
 import java.io.IOException;
@@ -12,7 +12,7 @@ import java.util.Locale;
 /**
  * Created by davide on 14/03/16.
  */
-public class MockBilingualCorpus implements BilingualCorpus {
+public class MockMultilingualCorpus implements MultilingualCorpus {
 
     private static final long MOCK_EPOCH = new Date().getTime();
 
@@ -33,19 +33,19 @@ public class MockBilingualCorpus implements BilingualCorpus {
         return result;
     }
 
-    public MockBilingualCorpus(String[][] lines) {
+    public MockMultilingualCorpus(String[][] lines) {
         this(parse(lines));
     }
 
-    public MockBilingualCorpus(StringPair[] lines) {
+    public MockMultilingualCorpus(StringPair[] lines) {
         this("None", Locale.ENGLISH, Locale.ITALIAN, lines);
     }
 
-    public MockBilingualCorpus(String name, Locale source, Locale target, String[][] lines) {
+    public MockMultilingualCorpus(String name, Locale source, Locale target, String[][] lines) {
         this(name, source, target, parse(lines));
     }
 
-    public MockBilingualCorpus(String name, Locale source, Locale target, StringPair[] lines) {
+    public MockMultilingualCorpus(String name, Locale source, Locale target, StringPair[] lines) {
         this.name = name;
         this.source = source;
         this.target = target;
@@ -73,8 +73,8 @@ public class MockBilingualCorpus implements BilingualCorpus {
     }
 
     @Override
-    public BilingualLineReader getContentReader() throws IOException {
-        return new BilingualLineReader() {
+    public MultilingualLineReader getContentReader() throws IOException {
+        return new MultilingualLineReader() {
 
             private int i = 0;
 
@@ -91,7 +91,7 @@ public class MockBilingualCorpus implements BilingualCorpus {
     }
 
     @Override
-    public BilingualLineWriter getContentWriter(boolean append) throws IOException {
+    public MultilingualLineWriter getContentWriter(boolean append) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -105,7 +105,7 @@ public class MockBilingualCorpus implements BilingualCorpus {
         throw new UnsupportedOperationException();
     }
 
-    public static MockBilingualCorpus drain(BilingualLineReader reader) throws IOException {
+    public static MockMultilingualCorpus drain(MultilingualLineReader reader) throws IOException {
         ArrayList<StringPair> pairs = new ArrayList<>();
 
         StringPair pair;
@@ -113,7 +113,7 @@ public class MockBilingualCorpus implements BilingualCorpus {
             pairs.add(pair);
         }
 
-        return new MockBilingualCorpus(pairs.toArray(new StringPair[pairs.size()]));
+        return new MockMultilingualCorpus(pairs.toArray(new StringPair[pairs.size()]));
     }
 
     @Override
@@ -121,7 +121,7 @@ public class MockBilingualCorpus implements BilingualCorpus {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        MockBilingualCorpus corpus = (MockBilingualCorpus) o;
+        MockMultilingualCorpus corpus = (MockMultilingualCorpus) o;
 
         return Arrays.equals(lines, corpus.lines);
     }

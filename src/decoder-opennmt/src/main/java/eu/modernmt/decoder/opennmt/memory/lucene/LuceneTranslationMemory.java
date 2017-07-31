@@ -4,11 +4,12 @@ import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
 import eu.modernmt.decoder.opennmt.memory.TranslationMemory;
+import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Domain;
-import eu.modernmt.model.LanguagePair;
 import eu.modernmt.model.Sentence;
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -39,17 +40,19 @@ public class LuceneTranslationMemory implements TranslationMemory {
     private final SentenceQueryBuilder queries;
     private final Rescorer rescorer;
     private final IndexWriter indexWriter;
+    private final LanguageIndex languages;
 
     private DirectoryReader indexReader;
     private Map<Short, Long> channels;
 
-    public LuceneTranslationMemory(File indexPath) throws IOException {
+    public LuceneTranslationMemory(LanguageIndex languages, File indexPath) throws IOException {
         if (!indexPath.isDirectory())
             FileUtils.forceMkdir(indexPath);
 
         this.indexDirectory = FSDirectory.open(indexPath);
         this.queries = new SentenceQueryBuilder();
         this.rescorer = new Rescorer();
+        this.languages = languages;
 
         // Index writer setup
         IndexWriterConfig indexConfig = new IndexWriterConfig(Version.LUCENE_4_10_4, Analyzers.getTrainAnalyzer());
@@ -101,14 +104,14 @@ public class LuceneTranslationMemory implements TranslationMemory {
         return this.indexReader;
     }
 
-    // TranslationStorage
+    // TranslationMemory
 
     @Override
-    public void add(Map<Domain, BilingualCorpus> batch) throws IOException {
+    public void add(Map<Domain, MultilingualCorpus> batch) throws IOException {
         boolean success = false;
 
         try {
-            for (Map.Entry<Domain, BilingualCorpus> entry : batch.entrySet())
+            for (Map.Entry<Domain, MultilingualCorpus> entry : batch.entrySet())
                 add(entry.getKey().getId(), entry.getValue());
 
             this.indexWriter.commit();
@@ -121,7 +124,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     @Override
-    public void add(Domain domain, BilingualCorpus corpus) throws IOException {
+    public void add(Domain domain, MultilingualCorpus corpus) throws IOException {
         boolean success = false;
 
         try {
@@ -136,18 +139,18 @@ public class LuceneTranslationMemory implements TranslationMemory {
         }
     }
 
-    private void add(long domain, BilingualCorpus corpus) throws IOException {
-        LanguagePair direction = new LanguagePair(corpus.getSourceLanguage(), corpus.getTargetLanguage());
-
-        BilingualCorpus.BilingualLineReader reader = null;
+    private void add(long domain, MultilingualCorpus corpus) throws IOException {
+        MultilingualCorpus.MultilingualLineReader reader = null;
 
         try {
             reader = corpus.getContentReader();
 
             long begin = System.currentTimeMillis();
 
-            BilingualCorpus.StringPair pair;
+            MultilingualCorpus.StringPair pair;
             while ((pair = reader.read()) != null) {
+                LanguagePair direction = languages.map(pair.language);
+
                 Document document = DocumentBuilder.build(direction, domain, pair.source, pair.target);
                 this.indexWriter.addDocument(document);
             }

@@ -1,4 +1,4 @@
-package eu.modernmt.model;
+package eu.modernmt.lang;
 
 import java.io.Serializable;
 import java.util.Locale;
@@ -6,7 +6,7 @@ import java.util.Locale;
 /**
  * Created by davide on 27/07/17.
  */
-public class LanguagePair implements Serializable {
+public final class LanguagePair implements Serializable {
 
     public final Locale source;
     public final Locale target;

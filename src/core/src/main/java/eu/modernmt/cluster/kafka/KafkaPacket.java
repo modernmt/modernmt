@@ -4,7 +4,7 @@ import eu.modernmt.data.DataMessage;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.io.DefaultCharset;
-import eu.modernmt.model.LanguagePair;
+import eu.modernmt.lang.LanguagePair;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;

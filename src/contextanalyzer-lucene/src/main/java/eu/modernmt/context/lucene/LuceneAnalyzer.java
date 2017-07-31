@@ -6,10 +6,12 @@ import eu.modernmt.context.lucene.storage.CorporaStorage;
 import eu.modernmt.context.lucene.storage.Options;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Domain;
-import eu.modernmt.model.LanguagePair;
 import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.impl.StringCorpus;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
 import org.apache.logging.log4j.LogManager;
@@ -32,30 +34,30 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     private final ContextAnalyzerIndex index;
     private final CorporaStorage storage;
 
-    public LuceneAnalyzer(File indexPath) throws IOException {
-        this(indexPath, new Options());
+    public LuceneAnalyzer(LanguageIndex languages, File indexPath) throws IOException {
+        this(languages, indexPath, new Options());
     }
 
-    public LuceneAnalyzer(File indexPath, Options options) throws IOException {
+    public LuceneAnalyzer(LanguageIndex languages, File indexPath, Options options) throws IOException {
         this.index = new ContextAnalyzerIndex(new File(indexPath, "index"));
-        this.storage = new CorporaStorage(new File(indexPath, "storage"), options, this.index);
+        this.storage = new CorporaStorage(new File(indexPath, "storage"), options, this.index, languages);
     }
 
     @Override
-    public void add(LanguagePair direction, Domain domain, Corpus corpus) throws ContextAnalyzerException {
-        HashMap<Domain, Corpus> map = new HashMap<>(1);
+    public void add(Domain domain, MultilingualCorpus corpus) throws ContextAnalyzerException {
+        HashMap<Domain, MultilingualCorpus> map = new HashMap<>(1);
         map.put(domain, corpus);
 
-        this.add(direction, map);
+        this.add(map);
     }
 
     @Override
-    public void add(LanguagePair direction, Map<Domain, Corpus> corpora) throws ContextAnalyzerException {
-        for (Map.Entry<Domain, Corpus> entry : corpora.entrySet()) {
+    public void add(Map<Domain, MultilingualCorpus> corpora) throws ContextAnalyzerException {
+        for (Map.Entry<Domain, MultilingualCorpus> entry : corpora.entrySet()) {
             long id = entry.getKey().getId();
 
             try {
-                this.storage.bulkInsert(direction, id, entry.getValue());
+                this.storage.bulkInsert(id, entry.getValue());
             } catch (IOException e) {
                 throw new ContextAnalyzerException("Unable to add domain " + id, e);
             }

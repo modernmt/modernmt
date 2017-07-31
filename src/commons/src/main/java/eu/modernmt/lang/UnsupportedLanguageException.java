@@ -1,4 +1,4 @@
-package eu.modernmt.model;
+package eu.modernmt.lang;
 
 import java.util.Locale;
 

@@ -2,10 +2,10 @@ package eu.modernmt.aligner.fastalign;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
+import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Alignment;
-import eu.modernmt.model.LanguagePair;
 import eu.modernmt.model.Sentence;
-import eu.modernmt.model.UnsupportedLanguageException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

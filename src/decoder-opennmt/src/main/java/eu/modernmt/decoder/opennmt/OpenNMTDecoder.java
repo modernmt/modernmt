@@ -8,7 +8,12 @@ import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
 import eu.modernmt.decoder.opennmt.memory.TranslationMemory;
 import eu.modernmt.decoder.opennmt.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.io.FileConst;
-import eu.modernmt.model.*;
+import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.UnsupportedLanguageException;
+import eu.modernmt.model.ContextVector;
+import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Translation;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,7 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by davide on 22/05/17.
@@ -29,10 +34,10 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
     private static final int SUGGESTIONS_LIMIT = 4;
     private final ExecutionQueue executor;
     private final TranslationMemory memory;
-    private final HashSet<LanguagePair> directions;
+    private final Set<LanguagePair> directions;
 
-    public OpenNMTDecoder(Collection<LanguagePair> directions, File modelPath, int[] gpus) throws OpenNMTException {
-        this.directions = new HashSet<>(directions);
+    public OpenNMTDecoder(LanguageIndex languages, File modelPath, int[] gpus) throws OpenNMTException {
+        this.directions = languages.getLanguages();
 
         File pythonHome = new File(FileConst.getLibPath(), "pynmt");
         File storageModelPath = new File(modelPath, "memory");
@@ -40,7 +45,7 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
         this.executor = ExecutionQueue.newInstance(pythonHome, modelPath, gpus);
 
         try {
-            this.memory = new LuceneTranslationMemory(storageModelPath);
+            this.memory = new LuceneTranslationMemory(languages, storageModelPath);
         } catch (IOException e) {
             throw new OpenNMTException("Failed to initialize memory", e);
         }

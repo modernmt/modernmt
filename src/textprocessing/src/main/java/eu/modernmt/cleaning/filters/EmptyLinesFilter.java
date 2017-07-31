@@ -1,7 +1,7 @@
 package eu.modernmt.cleaning.filters;
 
 import eu.modernmt.cleaning.BilingualCorpusFilterAdapter;
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.io.IOException;
 import java.util.regex.Pattern;
@@ -23,7 +23,7 @@ public class EmptyLinesFilter extends BilingualCorpusFilterAdapter {
     }
 
     @Override
-    public boolean accept(BilingualCorpus.StringPair pair, int index) throws IOException {
+    public boolean accept(MultilingualCorpus.StringPair pair, int index) throws IOException {
         return !(isBlankLine(pair.source) || isBlankLine(pair.target));
     }
 

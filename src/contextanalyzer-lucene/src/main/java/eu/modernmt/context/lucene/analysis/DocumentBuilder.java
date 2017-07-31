@@ -1,6 +1,6 @@
 package eu.modernmt.context.lucene.analysis;
 
-import eu.modernmt.model.LanguagePair;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.Corpus;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;

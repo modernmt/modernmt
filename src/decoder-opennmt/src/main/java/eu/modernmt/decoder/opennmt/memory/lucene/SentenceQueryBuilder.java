@@ -1,7 +1,7 @@
 package eu.modernmt.decoder.opennmt.memory.lucene;
 
 import eu.modernmt.io.TokensOutputStream;
-import eu.modernmt.model.LanguagePair;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Sentence;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;

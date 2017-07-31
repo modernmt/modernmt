@@ -6,8 +6,9 @@ import eu.modernmt.data.DataMessage;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.engine.Engine;
+import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Alignment;
-import eu.modernmt.model.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
@@ -54,6 +55,8 @@ class DataBatch {
     }
 
     public void load(ConsumerRecords<Integer, KafkaPacket> records) throws ProcessingException, AlignerException {
+        LanguageIndex languages = engine.getLanguages();
+
         this.clear();
 
         int size = records.count();
@@ -71,9 +74,10 @@ class DataBatch {
             if (message instanceof TranslationUnit) {
                 TranslationUnit unit = (TranslationUnit) message;
 
-                if (engine.isLanguagePairSupported(unit.direction)) {
-                    cachedDataSet
-                            .computeIfAbsent(unit.direction, key -> getDataPartition(size))
+                LanguagePair direction = languages.map(unit.direction);
+                if (direction != null) {
+                    unit.direction = direction;
+                    cachedDataSet.computeIfAbsent(unit.direction, key -> getDataPartition(size))
                             .add(unit);
                 }
             } else {

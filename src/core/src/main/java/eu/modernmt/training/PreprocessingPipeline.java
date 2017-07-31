@@ -1,7 +1,7 @@
 package eu.modernmt.training;
 
-import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.training.partitioning.CorporaPartition;
 import eu.modernmt.training.partitioning.PartitioningUtils;
@@ -12,7 +12,6 @@ import org.apache.commons.io.IOUtils;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Locale;
 
 /**
  * Created by davide on 22/08/16.
@@ -21,21 +20,17 @@ public class PreprocessingPipeline {
 
     private final int threads;
     private final CorporaPartition mainPartition;
-    private final Locale sourceLanguage;
-    private final Locale targetLanguage;
     private final CorpusWriter corpusWriter;
 
     private ArrayList<CorporaPartition> extraPartitions = new ArrayList<>();
 
-    public PreprocessingPipeline(CorporaPartition mainPartition, Locale source, Locale target, CorpusWriter writer) {
-        this(mainPartition, source, target, writer, Runtime.getRuntime().availableProcessors());
+    public PreprocessingPipeline(CorporaPartition mainPartition, CorpusWriter writer) {
+        this(mainPartition, writer, Runtime.getRuntime().availableProcessors());
     }
 
-    public PreprocessingPipeline(CorporaPartition mainPartition, Locale source, Locale target, CorpusWriter writer, int threads) {
+    public PreprocessingPipeline(CorporaPartition mainPartition, CorpusWriter writer, int threads) {
         this.threads = threads;
         this.mainPartition = mainPartition;
-        this.sourceLanguage = source;
-        this.targetLanguage = target;
         this.corpusWriter = writer;
     }
 
@@ -43,7 +38,7 @@ public class PreprocessingPipeline {
         this.extraPartitions.add(partition);
     }
 
-    public void process(Collection<BilingualCorpus> bilingualCorpora, Collection<Corpus> monolingualCorpora) throws ProcessingException, IOException {
+    public void process(Collection<MultilingualCorpus> bilingualCorpora, Collection<Corpus> monolingualCorpora) throws ProcessingException, IOException {
         TrainingPreprocessor sourcePreprocessor = new TrainingPreprocessor(threads, sourceLanguage);
         TrainingPreprocessor targetPreprocessor = new TrainingPreprocessor(threads, targetLanguage);
 
@@ -51,7 +46,7 @@ public class PreprocessingPipeline {
             long bilingualCorporaLines = PartitioningUtils.countTotalCorporaLines(bilingualCorpora, threads);
             long extraPartitionsLines = PartitioningUtils.countTotalPartitionsLines(extraPartitions);
 
-            for (BilingualCorpus corpus : bilingualCorpora) {
+            for (MultilingualCorpus corpus : bilingualCorpora) {
                 double weight = PartitioningUtils.getAdjustedWeight(corpus, extraPartitionsLines, bilingualCorporaLines);
                 int lineCount = corpus.getLineCount();
 

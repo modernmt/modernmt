@@ -8,7 +8,7 @@ import eu.modernmt.decoder.opennmt.OpenNMTException;
 import eu.modernmt.decoder.opennmt.OpenNMTRejectedExecutionException;
 import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
-import eu.modernmt.model.LanguagePair;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
 import org.apache.commons.lang3.StringUtils;

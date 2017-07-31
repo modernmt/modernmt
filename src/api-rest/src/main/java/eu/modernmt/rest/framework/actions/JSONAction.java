@@ -3,7 +3,7 @@ package eu.modernmt.rest.framework.actions;
 import com.google.gson.JsonElement;
 import eu.modernmt.cluster.error.SystemShutdownException;
 import eu.modernmt.facade.exceptions.AuthenticationException;
-import eu.modernmt.model.UnsupportedLanguageException;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
 import eu.modernmt.rest.framework.RESTResponse;
