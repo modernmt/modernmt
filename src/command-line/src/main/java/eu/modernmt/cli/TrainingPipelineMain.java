@@ -3,9 +3,9 @@ package eu.modernmt.cli;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.facade.TrainingFacade;
-import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.Level;
 
@@ -94,7 +94,7 @@ public class TrainingPipelineMain {
         if (args.vocabulary != null)
             options.vocabulary = args.vocabulary;
 
-        ModernMT.training.preprocess(bilingualCorpora, monolingualCorpora, args.sourceLanguage, args.targetLanguage, args.outputRoot, options);
+        ModernMT.training.preprocess(bilingualCorpora, monolingualCorpora, args.outputRoot, options);
     }
 
 }

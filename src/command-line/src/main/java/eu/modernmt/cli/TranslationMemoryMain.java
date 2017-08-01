@@ -2,15 +2,18 @@ package eu.modernmt.cli;
 
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.decoder.opennmt.memory.lucene.LuceneTranslationMemory;
+import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Domain;
-import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.Corpora;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.Level;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 
@@ -73,9 +76,12 @@ public class TranslationMemoryMain {
             domain2corpus.put(domain, corpus);
         }
 
+        LanguagePair direction = new LanguagePair(args.sourceLanguage, args.targetLanguage);
+        LanguageIndex languages = new LanguageIndex(Collections.singleton(direction));
+
         LuceneTranslationMemory memory = null;
         try {
-            memory = new LuceneTranslationMemory(args.modelPath);
+            memory = new LuceneTranslationMemory(languages, args.modelPath);
             memory.add(domain2corpus);
         } finally {
             IOUtils.closeQuietly(memory);

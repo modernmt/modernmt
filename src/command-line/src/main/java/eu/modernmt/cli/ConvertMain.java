@@ -1,11 +1,10 @@
 package eu.modernmt.cli;
 
 import eu.modernmt.io.IOCorporaUtils;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
-import eu.modernmt.model.corpus.impl.properties.ParallelPropertiesCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
-import eu.modernmt.model.corpus.impl.xliff.XLIFFCorpus;
 import org.apache.commons.cli.*;
 
 import java.io.File;
@@ -23,8 +22,6 @@ public class ConvertMain {
         FORMATS = new HashMap<>();
         FORMATS.put("tmx", new TMXInputFormat());
         FORMATS.put("parallel", new ParallelFileInputFormat());
-        FORMATS.put("properties", new ParallelPropertiesInputFormat());
-        FORMATS.put("xliff", new XLIFFInputFormat());
     }
 
     private interface InputFormat {
@@ -39,7 +36,7 @@ public class ConvertMain {
         public MultilingualCorpus parse(Locale sourceLanguage, Locale targetLanguage, File[] files) throws ParseException {
             if (files.length != 1)
                 throw new ParseException("Invalid number of arguments: expected 1 file");
-            return new TMXCorpus(files[0], sourceLanguage, targetLanguage);
+            return new TMXCorpus(files[0]);
         }
 
     }
@@ -50,29 +47,7 @@ public class ConvertMain {
         public MultilingualCorpus parse(Locale sourceLanguage, Locale targetLanguage, File[] files) throws ParseException {
             if (files.length != 2)
                 throw new ParseException("Invalid number of arguments: expected 2 files");
-            return new ParallelFileCorpus(sourceLanguage, files[0], targetLanguage, files[1]);
-        }
-
-    }
-
-    private static class ParallelPropertiesInputFormat implements InputFormat {
-
-        @Override
-        public MultilingualCorpus parse(Locale sourceLanguage, Locale targetLanguage, File[] files) throws ParseException {
-            if (files.length != 2)
-                throw new ParseException("Invalid number of arguments: expected 2 files");
-            return new ParallelPropertiesCorpus(sourceLanguage, files[0], targetLanguage, files[1]);
-        }
-
-    }
-
-    private static class XLIFFInputFormat implements InputFormat {
-
-        @Override
-        public MultilingualCorpus parse(Locale sourceLanguage, Locale targetLanguage, File[] files) throws ParseException {
-            if (files.length != 1)
-                throw new ParseException("Invalid number of arguments: expected 1 file");
-            return new XLIFFCorpus(files[0], sourceLanguage, targetLanguage);
+            return new ParallelFileCorpus(new LanguagePair(sourceLanguage, targetLanguage), files[0], files[1]);
         }
 
     }

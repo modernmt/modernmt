@@ -1,7 +1,7 @@
 package eu.modernmt.training;
 
-import eu.modernmt.model.corpus.MultilingualCorpus;
-import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.model.corpus.impl.BaseMultilingualCorpus;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -12,23 +12,22 @@ import java.util.Locale;
 /**
  * Created by davide on 14/03/16.
  */
-public class MockMultilingualCorpus implements MultilingualCorpus {
+public class MockMultilingualCorpus extends BaseMultilingualCorpus {
 
     private static final long MOCK_EPOCH = new Date().getTime();
+    private static final LanguagePair MOCK_LANGUAGE = new LanguagePair(Locale.ENGLISH, Locale.ITALIAN);
 
     private final String name;
-    private final Locale source;
-    private final Locale target;
     private final StringPair[] lines;
 
     public static StringPair pair(String source, String target, long date) {
-        return new StringPair(source, target, new Date(MOCK_EPOCH + (date * 60L * 1000L)));
+        return new StringPair(MOCK_LANGUAGE, source, target, new Date(MOCK_EPOCH + (date * 60L * 1000L)));
     }
 
     private static StringPair[] parse(String[][] lines) {
         StringPair[] result = new StringPair[lines.length];
         for (int i = 0; i < lines.length; i++)
-            result[i] = new StringPair(lines[i][0], lines[i][1]);
+            result[i] = new StringPair(MOCK_LANGUAGE, lines[i][0], lines[i][1]);
 
         return result;
     }
@@ -38,38 +37,21 @@ public class MockMultilingualCorpus implements MultilingualCorpus {
     }
 
     public MockMultilingualCorpus(StringPair[] lines) {
-        this("None", Locale.ENGLISH, Locale.ITALIAN, lines);
+        this("None", lines);
     }
 
-    public MockMultilingualCorpus(String name, Locale source, Locale target, String[][] lines) {
-        this(name, source, target, parse(lines));
+    public MockMultilingualCorpus(String name, String[][] lines) {
+        this(name, parse(lines));
     }
 
-    public MockMultilingualCorpus(String name, Locale source, Locale target, StringPair[] lines) {
+    public MockMultilingualCorpus(String name, StringPair[] lines) {
         this.name = name;
-        this.source = source;
-        this.target = target;
         this.lines = lines;
     }
 
     @Override
     public String getName() {
         return name;
-    }
-
-    @Override
-    public Locale getSourceLanguage() {
-        return source;
-    }
-
-    @Override
-    public Locale getTargetLanguage() {
-        return target;
-    }
-
-    @Override
-    public int getLineCount() throws IOException {
-        return lines.length;
     }
 
     @Override
@@ -92,16 +74,6 @@ public class MockMultilingualCorpus implements MultilingualCorpus {
 
     @Override
     public MultilingualLineWriter getContentWriter(boolean append) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Corpus getSourceCorpus() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Corpus getTargetCorpus() {
         throw new UnsupportedOperationException();
     }
 

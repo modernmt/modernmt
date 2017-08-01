@@ -22,6 +22,8 @@ public interface MultilingualCorpus {
 
     MultilingualLineWriter getContentWriter(boolean append) throws IOException;
 
+    Corpus getCorpus(LanguagePair language, boolean source);
+
     interface MultilingualLineReader extends Closeable {
 
         StringPair read() throws IOException;

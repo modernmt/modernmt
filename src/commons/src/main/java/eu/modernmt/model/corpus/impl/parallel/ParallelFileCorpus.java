@@ -2,6 +2,8 @@ package eu.modernmt.model.corpus.impl.parallel;
 
 import eu.modernmt.io.*;
 import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.UnsupportedLanguageException;
+import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.impl.BaseMultilingualCorpus;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -45,6 +47,14 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
 
     public LanguagePair getLanguage() {
         return language;
+    }
+
+    @Override
+    public Corpus getCorpus(LanguagePair language, boolean source) {
+        if (this.language.equals(language))
+            return new FileCorpus(source ? this.source : this.target, name, source ? language.source : language.target);
+        else
+            throw new UnsupportedLanguageException(language);
     }
 
     @Override

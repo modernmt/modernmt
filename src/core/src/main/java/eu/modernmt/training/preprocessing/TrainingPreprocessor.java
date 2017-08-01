@@ -17,25 +17,21 @@ import java.util.concurrent.*;
 public class TrainingPreprocessor implements Closeable {
 
     private final int threads;
-    private final LanguagePair language;
-
     private final ExecutorService executor;
-    private final ArrayBlockingQueue<ProcessingPipeline<String, Sentence>> pipelines;
+    private final PipelineQueue pipelines;
 
-    public TrainingPreprocessor(int threads, LanguagePair language) {
+    public TrainingPreprocessor(int threads) {
         this.threads = threads;
-        this.language = language;
-
         this.executor = Executors.newFixedThreadPool(threads);
-        this.pipelines = new ArrayBlockingQueue<>(threads);
+        this.pipelines = new PipelineQueue();
     }
 
-    public String[][] process(String[] batch) throws ProcessingException {
+    public String[][] process(LanguagePair language, String[] batch) throws ProcessingException {
         String[][] output = new String[batch.length][];
         Future<?>[] locks = new Future<?>[threads];
 
         if (batch.length < threads) {
-            locks[0] = executor.submit(new FragmentProcessor(batch, output, 0, batch.length));
+            locks[0] = executor.submit(new FragmentProcessor(language, batch, output, 0, batch.length));
         } else {
             int fragmentSize = batch.length / threads;
 
@@ -46,7 +42,7 @@ public class TrainingPreprocessor implements Closeable {
                 if (i == threads - 1)
                     length = batch.length - offset;
 
-                locks[i] = executor.submit(new FragmentProcessor(batch, output, offset, length));
+                locks[i] = executor.submit(new FragmentProcessor(language, batch, output, offset, length));
             }
         }
 
@@ -84,22 +80,14 @@ public class TrainingPreprocessor implements Closeable {
         }
     }
 
-    private class FragmentProcessor implements Callable<Void> {
+    private static class PipelineQueue {
 
-        private final String[] batch;
-        private final String[][] output;
-        private final int offset;
-        private final int length;
+        private final ConcurrentHashMap<LanguagePair, ConcurrentLinkedQueue<ProcessingPipeline<String, Sentence>>> pipelines = new ConcurrentHashMap<>();
 
-        public FragmentProcessor(String[] batch, String[][] output, int offset, int length) {
-            this.batch = batch;
-            this.output = output;
-            this.offset = offset;
-            this.length = length;
-        }
-
-        private ProcessingPipeline<String, Sentence> getPipeline() throws ProcessingException {
-            ProcessingPipeline<String, Sentence> pipeline = pipelines.poll();
+        private ProcessingPipeline<String, Sentence> get(LanguagePair language) throws ProcessingException {
+            ProcessingPipeline<String, Sentence> pipeline = pipelines
+                    .computeIfAbsent(language, k -> new ConcurrentLinkedQueue<>())
+                    .poll();
 
             if (pipeline == null) {
                 try {
@@ -112,9 +100,31 @@ public class TrainingPreprocessor implements Closeable {
             return pipeline;
         }
 
+        private void release(LanguagePair language, ProcessingPipeline<String, Sentence> pipeline) {
+            pipelines.computeIfAbsent(language, k -> new ConcurrentLinkedQueue<>())
+                    .offer(pipeline);
+        }
+    }
+
+    private class FragmentProcessor implements Callable<Void> {
+
+        private final LanguagePair language;
+        private final String[] batch;
+        private final String[][] output;
+        private final int offset;
+        private final int length;
+
+        public FragmentProcessor(LanguagePair language, String[] batch, String[][] output, int offset, int length) {
+            this.language = language;
+            this.batch = batch;
+            this.output = output;
+            this.offset = offset;
+            this.length = length;
+        }
+
         @Override
         public Void call() throws ProcessingException {
-            ProcessingPipeline<String, Sentence> pipeline = getPipeline();
+            ProcessingPipeline<String, Sentence> pipeline = pipelines.get(language);
 
             try {
                 for (int i = 0; i < length; i++) {
@@ -130,7 +140,7 @@ public class TrainingPreprocessor implements Closeable {
 
                 return null;
             } finally {
-                pipelines.offer(pipeline);
+                pipelines.release(language, pipeline);
             }
         }
     }
