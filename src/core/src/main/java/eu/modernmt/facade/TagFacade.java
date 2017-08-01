@@ -81,11 +81,10 @@ public class TagFacade {
             Engine engine = node.getEngine();
             Aligner aligner = engine.getAligner();
 
-            Preprocessor sourcePreprocessor = engine.getPreprocessor(direction);
-            Preprocessor targetPreprocessor = engine.getPreprocessor(direction.reversed());
+            Preprocessor preprocessor = engine.getPreprocessor();
 
-            Sentence sentence = sourcePreprocessor.process(sentenceString);
-            Sentence translation = targetPreprocessor.process(translationString);
+            Sentence sentence = preprocessor.process(direction, sentenceString);
+            Sentence translation = preprocessor.process(direction.reversed(), translationString);
 
             Alignment alignment;
 

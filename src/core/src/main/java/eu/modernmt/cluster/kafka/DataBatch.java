@@ -147,12 +147,11 @@ class DataBatch {
 
             LanguagePair direction = units.get(0).direction;
 
-            Preprocessor sourcePreprocessor = engine.getPreprocessor(direction);
-            Preprocessor targetPreprocessor = engine.getPreprocessor(direction.reversed());
+            Preprocessor preprocessor = engine.getPreprocessor();
             Aligner aligner = engine.getAligner();
 
-            List<Sentence> sourceSentences = sourcePreprocessor.process(sources);
-            List<Sentence> targetSentences = targetPreprocessor.process(targets);
+            List<Sentence> sourceSentences = preprocessor.process(direction, sources);
+            List<Sentence> targetSentences = preprocessor.process(direction.reversed(), targets);
             Alignment[] alignments = aligner.getAlignments(direction, sourceSentences, targetSentences);
 
             for (int i = 0; i < alignments.length; i++) {

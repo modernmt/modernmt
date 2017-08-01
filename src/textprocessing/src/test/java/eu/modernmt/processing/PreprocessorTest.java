@@ -1,5 +1,6 @@
 package eu.modernmt.processing;
 
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Tag;
 import eu.modernmt.model.Word;
@@ -13,12 +14,14 @@ import static org.junit.Assert.*;
 
 public class PreprocessorTest {
 
+    private static final LanguagePair language = new LanguagePair(Locale.ENGLISH, Locale.ITALIAN);
+
     private static Sentence process(String text) throws ProcessingException {
         Preprocessor preprocessor = null;
 
         try {
-            preprocessor = new Preprocessor(Locale.ENGLISH);
-            return preprocessor.process(text);
+            preprocessor = new Preprocessor();
+            return preprocessor.process(language, text);
         } catch (IOException e) {
             throw new ProcessingException(e);
         } finally {

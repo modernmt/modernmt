@@ -1,12 +1,12 @@
 package eu.modernmt.processing.concurrent;
 
-import eu.modernmt.processing.PipelineInputStream;
-import eu.modernmt.processing.PipelineOutputStream;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.ProcessingPipeline;
 import eu.modernmt.processing.builder.PipelineBuilder;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.*;
 
 /**
@@ -14,128 +14,118 @@ import java.util.concurrent.*;
  */
 public class PipelineExecutor<P, R> {
 
+    private final PipelineQueue<P, R> pipelines;
     private final ExecutorService executor;
-    private final Queue<ProcessingPipeline<P, R>> pipelineBuffer;
-
-    private final Locale source;
-    private final Locale target;
-    private final PipelineBuilder<P, R> builder;
     private final int threads;
 
-    public PipelineExecutor(Locale source, Locale target, PipelineBuilder<P, R> builder, int threads) {
-        this.executor = Executors.newFixedThreadPool(threads);
-        this.pipelineBuffer = new ConcurrentLinkedQueue<>();
-
-        this.source = source;
-        this.target = target;
-        this.builder = builder;
+    public PipelineExecutor(PipelineBuilder<P, R> builder, int threads) {
+        this.pipelines = new PipelineQueue<>(builder);
+        this.executor = threads > 1 ? Executors.newFixedThreadPool(threads) : Executors.newSingleThreadExecutor();
         this.threads = threads;
     }
 
-    public void shutdownNow() {
-        executor.shutdownNow();
+    public R process(LanguagePair language, P input) throws ProcessingException {
+        return pipelines.get(language).call(input);
+    }
+
+
+    @SuppressWarnings("unchecked")
+    public List<R> processBatch(LanguagePair language, List<P> batch) throws ProcessingException {
+        P[] array = (P[]) batch.toArray();
+        R[] result = processBatch(language, array);
+
+        return Arrays.asList(result);
+    }
+
+    @SuppressWarnings("unchecked")
+    public R[] processBatch(LanguagePair language, P[] batch) throws ProcessingException {
+        R[] output = (R[]) new Object[batch.length];
+
+        Future<?>[] locks = new Future<?>[threads];
+
+        if (batch.length < threads) {
+            locks[0] = executor.submit(new FragmentTask(language, batch, output, 0, batch.length));
+        } else {
+            int fragmentSize = batch.length / threads;
+
+            for (int i = 0; i < threads; i++) {
+                int offset = i * fragmentSize;
+                int length = fragmentSize;
+
+                if (i == threads - 1)
+                    length = batch.length - offset;
+
+                locks[i] = executor.submit(new FragmentTask(language, batch, output, offset, length));
+            }
+        }
+
+        for (Future<?> lock : locks) {
+            if (lock == null)
+                break;
+
+            try {
+                lock.get();
+            } catch (InterruptedException e) {
+                throw new ProcessingException("Execution interrupted", e);
+            } catch (ExecutionException e) {
+                Throwable cause = e.getCause();
+
+                if (cause instanceof ProcessingException)
+                    throw (ProcessingException) cause;
+                else if (cause instanceof RuntimeException)
+                    throw (RuntimeException) cause;
+                else
+                    throw new Error("Unexpected exception", cause);
+            }
+        }
+
+        return output;
     }
 
     public void shutdown() {
         executor.shutdown();
     }
 
-    public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+    public boolean awaitTermination(int timeout, TimeUnit unit) throws InterruptedException {
         return executor.awaitTermination(timeout, unit);
     }
 
-    public int getThreads() {
-        return threads;
+    public void shutdownNow() {
+        executor.shutdownNow();
     }
 
-    public R process(P value) throws ProcessingException {
-        return process(value, null);
-    }
+    public class FragmentTask implements Callable<Void> {
 
-    public R process(P value, Map<String, Object> metadata) throws ProcessingException {
-        try {
-            return submit(value, metadata).get();
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
+        private final LanguagePair language;
+        private final P[] batch;
+        private final Object[] output;
+        private final int offset;
+        private final int length;
 
-            if (cause instanceof RuntimeException)
-                throw (RuntimeException) cause;
-            else if (cause instanceof ProcessingException)
-                throw (ProcessingException) cause;
-            else
-                throw new RuntimeException("Unexpected exception", cause);
-        } catch (InterruptedException e) {
-            return null;
-        }
-    }
-
-    public List<R> process(Collection<P> input) throws ProcessingException {
-        return process(input, null);
-    }
-
-    public List<R> process(Collection<P> input, Map<String, Object> metadata) throws ProcessingException {
-        BatchTask<P, R> task = new BatchTask<>(input);
-        process(task, task, metadata);
-        return task.getOutput();
-    }
-
-    public void process(PipelineInputStream<P> input, PipelineOutputStream<R> output) throws ProcessingException {
-        process(input, output, null);
-    }
-
-    public void process(PipelineInputStream<P> input, PipelineOutputStream<R> output, Map<String, Object> metadata) throws ProcessingException {
-        ProcessingJob<P, R> job = new ProcessingJob<>(this, input, output);
-
-        if (metadata != null)
-            job.setMetadata(metadata);
-
-        job.start();
-
-        try {
-            job.join();
-        } catch (InterruptedException e) {
-            // Ignore it
-        }
-    }
-
-    Future<R> submit(P param, Map<String, Object> metadata) {
-        return this.executor.submit(new Task(param, metadata));
-    }
-
-    private ProcessingPipeline<P, R> getPipeline() throws ProcessingException {
-        ProcessingPipeline<P, R> instance = pipelineBuffer.poll();
-
-        if (instance == null)
-            instance = builder.newPipeline(source, target);
-
-        return instance;
-    }
-
-    private void releasePipeline(ProcessingPipeline<P, R> pipeline) {
-        pipelineBuffer.add(pipeline);
-    }
-
-    private class Task implements Callable<R> {
-
-        private final P param;
-        private final Map<String, Object> metadata;
-
-        private Task(P param, Map<String, Object> metadata) {
-            this.param = param;
-            this.metadata = metadata;
+        public FragmentTask(LanguagePair language, P[] batch, R[] output, int offset, int length) {
+            this.language = language;
+            this.batch = batch;
+            this.output = output;
+            this.offset = offset;
+            this.length = length;
         }
 
         @Override
-        @SuppressWarnings("unchecked")
-        public R call() throws ProcessingException {
-            Map<String, Object> metadata = (this.metadata == null) ? new HashMap<>() : new HashMap<>(this.metadata);
-            ProcessingPipeline<P, R> pipeline = getPipeline();
+        public Void call() throws ProcessingException {
+            ProcessingPipeline<P, R> pipeline = pipelines.get(language);
 
             try {
-                return pipeline.call(param, metadata);
+                for (int i = 0; i < length; i++) {
+                    output[offset + i] = pipeline.call(batch[offset + i]);
+                    batch[offset + i] = null; // free memory
+                }
+
+                return null;
             } finally {
-                releasePipeline(pipeline);
+                pipelines.release(language, pipeline);
             }
         }
     }
+
+
 }

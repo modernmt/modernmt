@@ -3,13 +3,14 @@ package eu.modernmt.training;
 import eu.modernmt.io.BufferedLineReader;
 import eu.modernmt.io.LineReader;
 import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.model.Sentence;
 import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.training.partitioning.CorporaPartition;
 import eu.modernmt.training.partitioning.PartitionWriter;
 import eu.modernmt.training.partitioning.PartitionedLineReader;
 import eu.modernmt.training.preprocessing.CorpusWriter;
-import eu.modernmt.training.preprocessing.TrainingPreprocessor;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -28,14 +29,14 @@ class PreprocessingTask {
     private final CorporaPartition mainPartition;
     private final List<PartitionWriter> extraPartitions = new ArrayList<>();
 
-    private final TrainingPreprocessor preprocessor;
+    private final Preprocessor preprocessor;
     private final CorpusWriter corpusWriter;
 
-    public PreprocessingTask(TrainingPreprocessor preprocessor, LanguagePair language, Corpus corpus, CorporaPartition mainPartition, CorpusWriter corpusWriter) {
+    public PreprocessingTask(Preprocessor preprocessor, LanguagePair language, Corpus corpus, CorporaPartition mainPartition, CorpusWriter corpusWriter) {
         this(preprocessor, language, corpus, 0, mainPartition, corpusWriter);
     }
 
-    public PreprocessingTask(TrainingPreprocessor preprocessor, LanguagePair language, Corpus corpus, int lineCount, CorporaPartition mainPartition, CorpusWriter corpusWriter) {
+    public PreprocessingTask(Preprocessor preprocessor, LanguagePair language, Corpus corpus, int lineCount, CorporaPartition mainPartition, CorpusWriter corpusWriter) {
         this.language = language;
         this.corpus = corpus;
         this.corpusLines = lineCount;
@@ -68,7 +69,7 @@ class PreprocessingTask {
             // Processing
             String[] batch;
             while ((batch = bufferedReader.readLines()) != null) {
-                String[][] tokenized = preprocessor.process(language, batch);
+                Sentence[] tokenized = preprocessor.process(language, batch);
                 writer.write(tokenized);
             }
         } finally {

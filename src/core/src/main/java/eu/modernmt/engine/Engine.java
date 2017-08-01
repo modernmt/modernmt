@@ -14,7 +14,6 @@ import eu.modernmt.io.FileConst;
 import eu.modernmt.io.Paths;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.TextProcessingModels;
@@ -26,7 +25,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Set;
 
 /**
@@ -61,7 +59,8 @@ public abstract class Engine implements Closeable, DataListenerProvider {
     protected final LanguageIndex languages;
 
     protected final Aligner aligner;
-    protected final HashMap<LanguagePair, Processors> processors;
+    protected final Preprocessor preprocessor;
+    protected final Postprocessor postprocessor;
     protected final ContextAnalyzer contextAnalyzer;
 
     public static Engine load(EngineConfig config) throws BootstrapException {
@@ -87,16 +86,16 @@ public abstract class Engine implements Closeable, DataListenerProvider {
         this.models = Paths.join(this.root, "models");
         this.logs = Paths.join(this.runtime, "logs");
 
-        this.processors = new HashMap<>();
-        for (LanguagePair pair : this.languages) {
-            LanguagePair reversed = pair.reversed();
+        try {
+            this.preprocessor = new Preprocessor();
+        } catch (IOException e) {
+            throw new BootstrapException("Failed to load pre-processor", e);
+        }
 
-            try {
-                this.processors.put(pair, Processors.forLanguagePair(pair));
-                this.processors.put(reversed, Processors.forLanguagePair(reversed));
-            } catch (IOException e) {
-                throw new BootstrapException("Failed to create processors", e);
-            }
+        try {
+            this.postprocessor = new Postprocessor();
+        } catch (IOException e) {
+            throw new BootstrapException("Failed to load post-processor", e);
         }
 
         try {
@@ -134,20 +133,12 @@ public abstract class Engine implements Closeable, DataListenerProvider {
         return contextAnalyzer;
     }
 
-    public Preprocessor getPreprocessor(LanguagePair pair) {
-        Processors entry = this.processors.get(pair);
-        if (entry == null)
-            throw new UnsupportedLanguageException(pair);
-
-        return entry.preprocessor;
+    public Preprocessor getPreprocessor() {
+        return preprocessor;
     }
 
-    public Postprocessor getPostprocessor(LanguagePair pair) {
-        Processors entry = this.processors.get(pair);
-        if (entry == null)
-            throw new UnsupportedLanguageException(pair);
-
-        return entry.postprocessor;
+    public Postprocessor getPostprocessor() {
+        return postprocessor;
     }
 
     public LanguageIndex getLanguages() {
@@ -190,31 +181,10 @@ public abstract class Engine implements Closeable, DataListenerProvider {
 
     @Override
     public void close() {
-        for (Processors entry : this.processors.values())
-            IOUtils.closeQuietly(entry);
-
+        IOUtils.closeQuietly(preprocessor);
+        IOUtils.closeQuietly(postprocessor);
         IOUtils.closeQuietly(aligner);
         IOUtils.closeQuietly(contextAnalyzer);
     }
 
-    protected static final class Processors implements Closeable {
-
-        public final Preprocessor preprocessor;
-        public final Postprocessor postprocessor;
-
-        public static Processors forLanguagePair(LanguagePair pair) throws IOException {
-            return new Processors(new Preprocessor(pair.source, pair.target), new Postprocessor(pair.source, pair.target));
-        }
-
-        public Processors(Preprocessor preprocessor, Postprocessor postprocessor) {
-            this.preprocessor = preprocessor;
-            this.postprocessor = postprocessor;
-        }
-
-        @Override
-        public void close() {
-            IOUtils.closeQuietly(preprocessor);
-            IOUtils.closeQuietly(postprocessor);
-        }
-    }
 }

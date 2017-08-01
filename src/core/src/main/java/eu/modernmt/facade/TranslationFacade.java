@@ -12,7 +12,10 @@ import eu.modernmt.facade.exceptions.TranslationException;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
-import eu.modernmt.model.*;
+import eu.modernmt.model.Alignment;
+import eu.modernmt.model.ContextVector;
+import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Translation;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
@@ -211,10 +214,10 @@ public class TranslationFacade {
 
             Engine engine = node.getEngine();
             Decoder decoder = engine.getDecoder();
-            Preprocessor preprocessor = engine.getPreprocessor(direction);
-            Postprocessor postprocessor = engine.getPostprocessor(direction);
+            Preprocessor preprocessor = engine.getPreprocessor();
+            Postprocessor postprocessor = engine.getPostprocessor();
 
-            Sentence sentence = preprocessor.process(text);
+            Sentence sentence = preprocessor.process(direction, text);
 
             Translation translation;
 
@@ -232,7 +235,7 @@ public class TranslationFacade {
                 translation.setAlignment(alignment);
             }
 
-            postprocessor.process(translation);
+            postprocessor.process(direction, translation);
 
             return translation;
         }

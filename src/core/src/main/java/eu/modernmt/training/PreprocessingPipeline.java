@@ -3,11 +3,11 @@ package eu.modernmt.training;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.training.partitioning.CorporaPartition;
 import eu.modernmt.training.partitioning.PartitioningUtils;
 import eu.modernmt.training.preprocessing.CorpusWriter;
-import eu.modernmt.training.preprocessing.TrainingPreprocessor;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -41,7 +41,7 @@ public class PreprocessingPipeline {
     }
 
     public void process(Collection<MultilingualCorpus> bilingualCorpora, Collection<Corpus> monolingualCorpora) throws ProcessingException, IOException {
-        TrainingPreprocessor preprocessor = new TrainingPreprocessor(threads);
+        Preprocessor preprocessor = new Preprocessor(threads);
 
         try {
             Map<LanguagePair, Long> bilingualCorporaLinesMap = PartitioningUtils.countTotalCorporaLines(bilingualCorpora, threads);
