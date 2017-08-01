@@ -138,8 +138,8 @@ class DataBatch {
 
         public void add(TranslationUnit unit) {
             units.add(unit);
-            sources.add(unit.originalSourceSentence);
-            targets.add(unit.originalTargetSentence);
+            sources.add(unit.rawSourceSentence);
+            targets.add(unit.rawTargetSentence);
         }
 
         public void process(Engine engine) throws ProcessingException, AlignerException {

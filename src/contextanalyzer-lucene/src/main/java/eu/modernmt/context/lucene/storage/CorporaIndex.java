@@ -93,7 +93,7 @@ public class CorporaIndex implements Closeable {
         }
     }
 
-    public CorpusBucket getBucket(LanguagePair direction, long domain) {
+    public CorpusBucket getBucket(LanguagePair direction, long domain) throws IOException {
         BucketKey key = new BucketKey(direction, domain);
 
         CorpusBucket bucket = bucketByKey.get(key);
@@ -104,6 +104,9 @@ public class CorporaIndex implements Closeable {
             this.bucketByKey.put(key, bucket);
             this.bucketsByDomain.computeIfAbsent(domain, k -> new HashSet<>()).add(bucket);
         }
+
+        if (!bucket.isOpen())
+            bucket.open();
 
         return bucket;
     }

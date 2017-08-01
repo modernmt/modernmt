@@ -21,15 +21,28 @@ public class LanguageIndex implements Iterable<LanguagePair> {
         return languages;
     }
 
-    public boolean isLanguageSupported(LanguagePair language) {
-        return languages.contains(language);
-    }
-
     public int size() {
         return languages.size();
     }
 
+    public boolean isSupported(LanguagePair pair) {
+        return languages.contains(pair);
+    }
+
     public LanguagePair map(LanguagePair pair) {
+        LanguagePair mapped = strictMap(pair);
+
+        if (mapped == null) {
+            mapped = strictMap(pair.reversed());
+
+            if (mapped != null)
+                mapped = mapped.reversed();
+        }
+
+        return mapped;
+    }
+
+    private LanguagePair strictMap(LanguagePair pair) {
         if (languages.contains(pair))
             return pair;
 

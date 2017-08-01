@@ -31,15 +31,18 @@ public class TagFacade {
     public Translation project(LanguagePair direction, String sentence, String translation, Aligner.SymmetrizationStrategy strategy) throws AlignerException {
         LanguageIndex languages = ModernMT.getNode().getEngine().getLanguages();
 
-        LanguagePair actualDirection = languages.map(direction);
-        if (actualDirection == null)
-            actualDirection = languages.map(direction.reversed());
+        LanguagePair mappedDirection = languages.map(direction);
+        if (mappedDirection == null) {
+            // Aligner is always bi-directional even if the engine does not support it
+            mappedDirection = languages.map(direction.reversed());
 
-        // Aligner is always bi-directional even if the engine does not support it
-        if (actualDirection == null)
-            throw new UnsupportedLanguageException(direction);
+            if (mappedDirection == null)
+                throw new UnsupportedLanguageException(direction);
+            else
+                mappedDirection = mappedDirection.reversed();
+        }
 
-        ProjectTagsCallable operation = new ProjectTagsCallable(direction, sentence, translation, strategy);
+        ProjectTagsCallable operation = new ProjectTagsCallable(mappedDirection, sentence, translation, strategy);
 
         try {
             return ModernMT.getNode().submit(operation).get();

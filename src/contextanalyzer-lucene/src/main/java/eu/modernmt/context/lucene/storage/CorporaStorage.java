@@ -122,15 +122,41 @@ public class CorporaStorage implements DataListener {
 
             MultilingualCorpus.StringPair pair;
             while ((pair = reader.read()) != null) {
-                CorpusBucket bucket = buckets.computeIfAbsent(pair.language, direction -> index.getBucket(direction, domain));
+                LanguagePair language = languages.map(pair.language);
 
-                if (!bucket.isOpen())
-                    bucket.open();
+                if (language == null)
+                    continue;
 
-                bucket.append(pair.source);
+                if (languages.isSupported(language)) {
+                    CorpusBucket bucket = buckets.computeIfAbsent(language, direction -> {
+                        try {
+                            return index.getBucket(direction, domain);
+                        } catch (IOException e) {
+                            throw new RuntimeIOException(e);
+                        }
+                    });
+
+                    bucket.append(pair.source);
+                }
+
+                language = language.reversed();
+
+                if (languages.isSupported(language)) {
+                    CorpusBucket bucket = buckets.computeIfAbsent(language, direction -> {
+                        try {
+                            return index.getBucket(direction, domain);
+                        } catch (IOException e) {
+                            throw new RuntimeIOException(e);
+                        }
+                    });
+
+                    bucket.append(pair.target);
+                }
             }
 
             pendingUpdatesBuckets.addAll(buckets.values());
+        } catch (RuntimeIOException e) {
+            throw e.cause;
         } finally {
             IOUtils.closeQuietly(reader);
         }
@@ -279,13 +305,17 @@ public class CorporaStorage implements DataListener {
                     if (message instanceof TranslationUnit) {
                         TranslationUnit unit = (TranslationUnit) message;
 
-                        CorpusBucket bucket = index.getBucket(unit.direction, unit.domain);
+                        if (languages.isSupported(unit.direction)) {
+                            CorpusBucket bucket = index.getBucket(unit.direction, unit.domain);
+                            bucket.append(unit.rawSourceSentence);
+                            pendingUpdatesBuckets.add(bucket);
+                        }
 
-                        if (!bucket.isOpen())
-                            bucket.open();
-
-                        bucket.append(unit.originalSourceSentence);
-                        pendingUpdatesBuckets.add(bucket);
+                        if (languages.isSupported(unit.direction.reversed())) {
+                            CorpusBucket bucket = index.getBucket(unit.direction.reversed(), unit.domain);
+                            bucket.append(unit.rawTargetSentence);
+                            pendingUpdatesBuckets.add(bucket);
+                        }
                     } else if (message instanceof Deletion) {
                         Deletion deletion = (Deletion) message;
 

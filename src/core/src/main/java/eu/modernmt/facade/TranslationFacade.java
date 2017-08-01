@@ -167,7 +167,7 @@ public class TranslationFacade {
 
     private void ensureLanguagePairIsSupported(LanguagePair pair) {
         LanguageIndex languages = ModernMT.getNode().getEngine().getLanguages();
-        if (!languages.isLanguageSupported(pair))
+        if (!languages.isSupported(pair))
             throw new UnsupportedLanguageException(pair);
     }
 

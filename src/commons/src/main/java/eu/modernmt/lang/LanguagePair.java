@@ -10,6 +10,7 @@ public final class LanguagePair implements Serializable {
 
     public final Locale source;
     public final Locale target;
+    private transient LanguagePair reversed = null;
 
     public LanguagePair(Locale source, Locale target) {
         this.source = source;
@@ -17,7 +18,14 @@ public final class LanguagePair implements Serializable {
     }
 
     public LanguagePair reversed() {
-        return new LanguagePair(target, source);
+        if (reversed == null) {
+            LanguagePair reversed = new LanguagePair(target, source);
+            reversed.reversed = this;
+
+            this.reversed = reversed;
+        }
+
+        return reversed;
     }
 
     public boolean equalsIgnoreDirection(LanguagePair o) {

@@ -4,9 +4,7 @@ import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.NodeInfo;
 import eu.modernmt.data.DataManager;
 import eu.modernmt.data.DataManagerException;
-import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Domain;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -112,11 +110,6 @@ public class DomainFacade {
     }
 
     public ImportJob add(LanguagePair direction, long domainId, String source, String target) throws DataManagerException, PersistenceException {
-        LanguageIndex languages = ModernMT.getNode().getEngine().getLanguages();
-
-        if (languages.map(direction) == null)
-            throw new UnsupportedLanguageException(direction);
-
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
