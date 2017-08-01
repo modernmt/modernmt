@@ -85,7 +85,7 @@ public class CoreNLPTokenizer extends TextProcessor<SentenceBuilder, SentenceBui
      * to one common String arrayList.
      * <p>
      * In the end, the token Strings arrayList is passed to the
-     * TokenizerOutputTransformer static object
+     * TokenizerUtils static object
      * so that it can transform each token String into an actual WORD Token.*
      *
      * @param builder  the SentenceBuilder that holds the current string to tokenize

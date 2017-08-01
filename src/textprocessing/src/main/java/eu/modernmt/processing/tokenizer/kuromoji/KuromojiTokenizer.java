@@ -6,9 +6,7 @@ import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.SentenceBuilder;
-import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -59,7 +57,7 @@ public class KuromojiTokenizer extends TextProcessor<SentenceBuilder, SentenceBu
      * <p>
      * In the end for each Kuromoji Library Token, the text string
      * is extracted and put inside an array, that is passed to the
-     * TokenizerOutputTransformer static object
+     * TokenizerUtils static object
      * so that it can transform each token String into an actual WORD Token.*
      *
      * @param builder  the SentenceBuilder that holds the current string to tokenize
@@ -72,22 +70,14 @@ public class KuromojiTokenizer extends TextProcessor<SentenceBuilder, SentenceBu
     @Override
     public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) throws ProcessingException {
         List<Token> tokens = tokenizer.tokenize(builder.toString());
-
         // Remove empty tokens
-        Iterator<Token> iterator = tokens.iterator();
-        while (iterator.hasNext()) {
-            String surface = iterator.next().getSurface();
+        tokens.removeIf(token -> token.getSurface().trim().length() == 0);
 
-            if (surface.trim().length() == 0)
-                iterator.remove();
-        }
+        SentenceBuilder.Editor editor = builder.edit();
+        for (Token token : tokens)
+            editor.setWord(token.getPosition(), token.getSurface().length(), null);
 
-        String[] array = new String[tokens.size()];
-
-        for (int i = 0; i < array.length; i++)
-            array[i] = tokens.get(i).getSurface();
-
-        return TokenizerOutputTransformer.transform(builder, array);
+        return editor.commit();
     }
 
 }

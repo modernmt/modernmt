@@ -6,14 +6,12 @@ import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.SentenceBuilder;
-import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 import eu.modernmt.processing.tokenizer.lucene.analyzers.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -86,16 +84,6 @@ public class LuceneTokenizer extends TextProcessor<SentenceBuilder, SentenceBuil
     * (the language of the SentenceBuilder string to edit)*/
     private final Analyzer analyzer;
 
-    /**
-     * This constructor initializes the LuceneTokenizer
-     * by setting the source and target language to handle,
-     * and by choosing and trying to instantiate the specific Lucene analyzer
-     * that suits the source language of the string to translate.
-     *
-     * @param sourceLanguage the language of the input String
-     * @param targetLanguage the language the input String must be translated to
-     * @throws UnsupportedLanguageException the requested language is not supported by this software
-     */
     public LuceneTokenizer(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
@@ -110,47 +98,6 @@ public class LuceneTokenizer extends TextProcessor<SentenceBuilder, SentenceBuil
         }
     }
 
-    /**
-     * Method that performs tokenization of the string under analysis
-     * by skipping whitespace characters sequences.
-     * <p>
-     * It splits the string to tokenize in correspondence of "\\s+" occurrences,
-     * (that are just sequences of one or more whitespace characters)
-     * filters out the resulting tokens that are empty, and
-     * adds the relevant tokens to the current tokens list.
-     *
-     * @param string the string to tokenize
-     * @param tokens the current list or non-whitespace tokens
-     */
-    private static void whitespaceTokenize(String string, ArrayList<String> tokens) {
-        for (String token : string.trim().split("\\s+")) {
-            token = token.trim();
-
-            if (!token.isEmpty())
-                tokens.add(token);
-        }
-    }
-
-    /**
-     * This method uses the Analyzer object for the current source language
-     * to perform word tokenization of the current string in the SentenceBuilder.
-     * <p>
-     * It extracts the current string to process from the builder
-     * and scans it by employing a tokenstream.
-     * For each substring extracted by the tokenstream,
-     * it performs cleaning by removing its internal whitespace sequences.
-     * <p>
-     * In the end it passes the token Strings arrayList to the
-     * TokenizerOutputTransformer static object
-     * so that it can transform each token String into an actual WORD Token.*
-     *
-     * @param builder  the SentenceBuilder that holds the current string to tokenize
-     * @param metadata additional information on the current pipe
-     *                 (not used in this specific operation)
-     * @return the SentenceBuilder received as a parameter;
-     * its internal state has been updated by the execution of the call() method
-     * @throws ProcessingException
-     */
     @Override
     public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) throws ProcessingException {
         char[] chars = builder.toCharArray();
@@ -163,7 +110,8 @@ public class LuceneTokenizer extends TextProcessor<SentenceBuilder, SentenceBuil
 
             OffsetAttribute offsetAttribute = stream.getAttribute(OffsetAttribute.class);
 
-            ArrayList<String> tokens = new ArrayList<>();
+            SentenceBuilder.Editor editor = builder.edit();
+
             int maxOffset = 0;
             while (stream.incrementToken()) {
                 int startOffset = offsetAttribute.startOffset();
@@ -176,10 +124,10 @@ public class LuceneTokenizer extends TextProcessor<SentenceBuilder, SentenceBuil
                     break;
 
                 if (startOffset > maxOffset && maxOffset < chars.length)
-                    whitespaceTokenize(new String(chars, maxOffset, startOffset - maxOffset), tokens);
+                    annotate(editor, chars, maxOffset, startOffset - maxOffset);
 
                 if (endOffset > startOffset)
-                    whitespaceTokenize(new String(chars, startOffset, endOffset - startOffset), tokens);
+                    annotate(editor, chars, startOffset, endOffset - startOffset);
 
                 maxOffset = endOffset;
 
@@ -190,23 +138,12 @@ public class LuceneTokenizer extends TextProcessor<SentenceBuilder, SentenceBuil
 
             stream.close();
 
-            /*handles the last token, if it has been skipped by the tokenStream*/
-            if (maxOffset < chars.length) {
-                String skippedToken = new String(chars, maxOffset, chars.length - maxOffset).trim();
+            if (maxOffset < chars.length)
+                annotate(editor, chars, maxOffset, chars.length - maxOffset);
 
-                for (String token : skippedToken.split("\\s+")) {
-                    token = token.trim();
-
-                    if (!token.isEmpty())
-                        tokens.add(token);
-                }
-            }
-
-            return TokenizerOutputTransformer.transform(builder, tokens);
+            return editor.commit();
         } catch (IOException e) {
             throw new ProcessingException(e.getMessage(), e);
-
-            /*close the stream anyway*/
         } finally {
             if (stream != null)
                 try {
@@ -215,5 +152,24 @@ public class LuceneTokenizer extends TextProcessor<SentenceBuilder, SentenceBuil
                     // Ignore
                 }
         }
+    }
+
+    private static void annotate(SentenceBuilder.Editor editor, char[] chars, int offset, int length) {
+        int beginIndex = -1;
+
+        for (int i = 0; i < length; i++) {
+            if (Character.isWhitespace(chars[offset + i])) {
+                if (beginIndex >= 0) {
+                    editor.setWord(beginIndex + offset, i - beginIndex, null);
+                    beginIndex = -1;
+                }
+            } else {
+                if (beginIndex < 0)
+                    beginIndex = i;
+            }
+        }
+
+        if (beginIndex >= 0)
+            editor.setWord(beginIndex + offset, length - beginIndex, null);
     }
 }

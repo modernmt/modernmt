@@ -1,13 +1,13 @@
 package eu.modernmt.processing.tokenizer.opennlp;
 
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessingModels;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.string.SentenceBuilder;
-import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 import opennlp.tools.tokenize.TokenizerME;
 import opennlp.tools.tokenize.TokenizerModel;
+import opennlp.tools.util.Span;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
@@ -71,7 +71,7 @@ public class OpenNLPTokenizer extends TextProcessor<SentenceBuilder, SentenceBui
      * to perform word tokenization of the current string in the SentenceBuilder.
      * <p>
      * The resulting the token Strings array is passed to the
-     * TokenizerOutputTransformer to transform each token String
+     * TokenizerUtils to transform each token String
      * into an actual WORD Token.*
      *
      * @param builder  the SentenceBuilder that holds the current string to tokenize
@@ -83,7 +83,19 @@ public class OpenNLPTokenizer extends TextProcessor<SentenceBuilder, SentenceBui
      */
     @Override
     public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) throws ProcessingException {
-        return TokenizerOutputTransformer.transform(builder, this.tokenizer.tokenize(builder.toString()));
+        Span[] tokens = this.tokenizer.tokenizePos(builder.toString());
+
+        SentenceBuilder.Editor editor = builder.edit();
+
+        for (Span token : tokens) {
+            int start = token.getStart();
+            int end = token.getEnd();
+            int length = end - start;
+
+            editor.setWord(start, length, null);
+        }
+
+        return editor.commit();
     }
 
 }

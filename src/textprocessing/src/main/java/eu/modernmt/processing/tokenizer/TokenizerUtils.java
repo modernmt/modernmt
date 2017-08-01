@@ -9,8 +9,7 @@ import java.util.List;
  * Created by davide on 19/02/16.
  * Updated by Andrea on 1/03/2017
  */
-@Deprecated
-public class TokenizerOutputTransformer {
+public class TokenizerUtils {
 
     /**
      * Method that, starting from an array of strings that represent
@@ -32,8 +31,7 @@ public class TokenizerOutputTransformer {
      * its internal state has been updated by the execution of the call() method.
      * @throws ProcessingException
      */
-    @Deprecated
-    public static SentenceBuilder transform(SentenceBuilder builder, String[] tokens) throws ProcessingException {
+    public static SentenceBuilder transform(SentenceBuilder builder, List<String> tokens) throws ProcessingException {
         SentenceBuilder.Editor editor = builder.edit();
 
         String string = builder.toString();
@@ -55,25 +53,6 @@ public class TokenizerOutputTransformer {
         }
 
         return editor.commit();
-    }
-
-    /**
-     * Version of the transform() method in case the tokens are passed as a List of Strings
-     * instead of a String array.
-     * It just transforms the List into an array and calls the main transform() method.
-     *
-     * @param builder a SentenceBuilder that holds the input String
-     *                and can generate Editors to process it
-     * @param tokens  List of strings, each string representing a token
-     *                identified by the external tokenizer
-     *                that has called the transform() method
-     * @return the SentenceBuilder received as a parameter;
-     * its internal state has been updated by the execution of the call() method.
-     * @throws ProcessingException
-     */
-    @Deprecated
-    public static SentenceBuilder transform(SentenceBuilder builder, List<String> tokens) throws ProcessingException {
-        return transform(builder, tokens.toArray(new String[tokens.size()]));
     }
 
 }

@@ -1,11 +1,10 @@
 package eu.modernmt.processing.tokenizer.jflex;
 
 import eu.modernmt.lang.Languages;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.string.SentenceBuilder;
-import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
 import eu.modernmt.processing.tokenizer.jflex.annotators.*;
 
 import java.io.IOException;
@@ -105,7 +104,7 @@ public class JFlexTokenizer extends TextProcessor<SentenceBuilder, SentenceBuild
      * and stored in the annotatedString.
      * <p>
      * In the end, such indexes are used to build an array of token strings,
-     * that is passed to the TokenizerOutputTransformer static object
+     * that is passed to the TokenizerUtils static object
      * so that it can transform each token String into an actual WORD Token.*
      *
      * @param builder  the SentenceBuilder that holds the current string to tokenize
@@ -126,7 +125,7 @@ public class JFlexTokenizer extends TextProcessor<SentenceBuilder, SentenceBuild
             annotator.annotate(astring, type);
         }
 
-        return TokenizerOutputTransformer.transform(builder, astring.toTokenArray());
+        return astring.compile(builder);
     }
 
 

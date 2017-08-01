@@ -1,8 +1,9 @@
 package eu.modernmt.processing.tokenizer.jflex;
 
+import eu.modernmt.processing.string.SentenceBuilder;
+
 import java.io.CharArrayReader;
 import java.io.Reader;
-import java.util.ArrayList;
 
 /**
  * Created by davide on 01/02/16.
@@ -96,8 +97,8 @@ public class TokensAnnotatedString {
         return new CharArrayReader(chars, 0, length);
     }
 
-    public String[] toTokenArray() {
-        ArrayList<String> tokens = new ArrayList<>();
+    public SentenceBuilder compile(SentenceBuilder builder) {
+        SentenceBuilder.Editor editor = builder.edit();
 
         int tokenStart = 0;
         int tokenEnd = 0;
@@ -113,7 +114,7 @@ public class TokensAnnotatedString {
                 int tokenLength = 1 + tokenEnd - tokenStart;
 
                 if (tokenLength > 0) {
-                    tokens.add(new String(chars, tokenStart, tokenLength));
+                    editor.setWord(tokenStart - 1, tokenLength, null);
                     tokenStart = tokenEnd = i;
                     foundNonWhitespace = false;
                 }
@@ -130,7 +131,7 @@ public class TokensAnnotatedString {
             }
         }
 
-        return tokens.toArray(new String[tokens.size()]);
+        return editor.commit();
     }
 
     @Override
