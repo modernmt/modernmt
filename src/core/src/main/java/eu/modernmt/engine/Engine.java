@@ -111,7 +111,9 @@ public abstract class Engine implements Closeable, DataListenerProvider {
         }
     }
 
-    protected abstract boolean isMultilingual();
+    public abstract boolean isMultilingual();
+
+    public abstract ContributionOptions getContributionOptions();
 
     public String getName() {
         return name;

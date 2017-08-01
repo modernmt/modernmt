@@ -49,8 +49,7 @@ public class KafkaDataManager implements DataManager {
     private KafkaChannel[] channels;
     private ArrayList<TopicPartition> partitions;
     private HashMap<String, KafkaChannel> name2channel;
-
-
+    
     public KafkaDataManager(Engine engine, String uuid, DataStreamConfig config) {
         this.uuid = uuid;
         this.pollingThread = new DataPollingThread(engine, this);

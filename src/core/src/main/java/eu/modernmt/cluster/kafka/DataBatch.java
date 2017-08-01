@@ -5,6 +5,7 @@ import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.data.DataMessage;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.engine.ContributionOptions;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
@@ -145,20 +146,28 @@ class DataBatch {
             if (units.isEmpty())
                 return;
 
+            ContributionOptions options = engine.getContributionOptions();
             LanguagePair direction = units.get(0).direction;
 
-            Preprocessor preprocessor = engine.getPreprocessor();
-            Aligner aligner = engine.getAligner();
+            if (options.process) {
+                Preprocessor preprocessor = engine.getPreprocessor();
+                List<Sentence> sourceSentences = preprocessor.process(direction, sources);
+                List<Sentence> targetSentences = preprocessor.process(direction.reversed(), targets);
+                Alignment[] alignments = null;
 
-            List<Sentence> sourceSentences = preprocessor.process(direction, sources);
-            List<Sentence> targetSentences = preprocessor.process(direction.reversed(), targets);
-            Alignment[] alignments = aligner.getAlignments(direction, sourceSentences, targetSentences);
+                if (options.align) {
+                    Aligner aligner = engine.getAligner();
+                    alignments = aligner.getAlignments(direction, sourceSentences, targetSentences);
+                }
 
-            for (int i = 0; i < alignments.length; i++) {
-                TranslationUnit unit = units.get(i);
-                unit.sourceSentence = sourceSentences.get(i);
-                unit.targetSentence = targetSentences.get(i);
-                unit.alignment = alignments[i];
+                for (int i = 0; i < units.size(); i++) {
+                    TranslationUnit unit = units.get(i);
+                    unit.sourceSentence = sourceSentences.get(i);
+                    unit.targetSentence = targetSentences.get(i);
+
+                    if (alignments != null)
+                        unit.alignment = alignments[i];
+                }
             }
         }
     }

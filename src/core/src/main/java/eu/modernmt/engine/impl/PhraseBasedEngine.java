@@ -6,6 +6,7 @@ import eu.modernmt.data.DataListener;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.phrasebased.MosesDecoder;
 import eu.modernmt.engine.BootstrapException;
+import eu.modernmt.engine.ContributionOptions;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.io.Paths;
 import eu.modernmt.lang.LanguagePair;
@@ -19,6 +20,7 @@ import java.util.Collection;
  */
 public class PhraseBasedEngine extends Engine {
 
+    private static final ContributionOptions CONTRIBUTION_OPTIONS = new ContributionOptions(true, true);
     private final MosesDecoder decoder;
 
     public PhraseBasedEngine(EngineConfig config) throws BootstrapException {
@@ -38,8 +40,13 @@ public class PhraseBasedEngine extends Engine {
     }
 
     @Override
-    protected boolean isMultilingual() {
+    public boolean isMultilingual() {
         return false;
+    }
+
+    @Override
+    public ContributionOptions getContributionOptions() {
+        return CONTRIBUTION_OPTIONS;
     }
 
     @Override

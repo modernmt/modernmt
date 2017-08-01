@@ -7,6 +7,7 @@ import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.opennmt.OpenNMTDecoder;
 import eu.modernmt.decoder.opennmt.OpenNMTException;
 import eu.modernmt.engine.BootstrapException;
+import eu.modernmt.engine.ContributionOptions;
 import eu.modernmt.engine.Engine;
 import org.apache.commons.io.IOUtils;
 
@@ -18,6 +19,7 @@ import java.util.Collection;
  */
 public class NeuralEngine extends Engine {
 
+    private static final ContributionOptions CONTRIBUTION_OPTIONS = new ContributionOptions(true, false);
     private final OpenNMTDecoder decoder;
 
     public NeuralEngine(EngineConfig config) throws BootstrapException {
@@ -35,8 +37,13 @@ public class NeuralEngine extends Engine {
     }
 
     @Override
-    protected boolean isMultilingual() {
+    public boolean isMultilingual() {
         return true;
+    }
+
+    @Override
+    public ContributionOptions getContributionOptions() {
+        return CONTRIBUTION_OPTIONS;
     }
 
     @Override
