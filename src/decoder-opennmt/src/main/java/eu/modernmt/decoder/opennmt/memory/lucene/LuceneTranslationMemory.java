@@ -151,8 +151,10 @@ public class LuceneTranslationMemory implements TranslationMemory {
             while ((pair = reader.read()) != null) {
                 LanguagePair direction = languages.map(pair.language);
 
-                Document document = DocumentBuilder.build(direction, domain, pair.source, pair.target);
-                this.indexWriter.addDocument(document);
+                if (direction != null) {
+                    Document document = DocumentBuilder.build(direction, domain, pair.source, pair.target);
+                    this.indexWriter.addDocument(document);
+                }
             }
 
             double elapsed = System.currentTimeMillis() - begin;
@@ -190,7 +192,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
         ScoreEntry[] entries = new ScoreEntry[docs.length];
         for (int i = 0; i < docs.length; i++) {
-            entries[i] = DocumentBuilder.parseEntry(searcher.doc(docs[i].doc));
+            entries[i] = DocumentBuilder.parseEntry(direction, searcher.doc(docs[i].doc));
             entries[i].score = docs[i].score;
         }
 

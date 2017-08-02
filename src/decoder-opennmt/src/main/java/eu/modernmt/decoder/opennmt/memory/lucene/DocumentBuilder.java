@@ -10,6 +10,7 @@ import org.apache.lucene.util.BytesRef;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -17,16 +18,13 @@ import java.util.Map;
  */
 class DocumentBuilder {
 
-    public static final String CHANNELS_FIELD = "channels";
+    private static final String CHANNELS_FIELD = "channels";
 
     public static final String DOMAIN_ID_FIELD = "domain";
     public static final String LANGUAGE_FIELD = "language";
-    public static final String SENTENCE_FIELD = "sentence";
-    public static final String TRANSLATION_FIELD = "translation";
+    private static final String CONTENT_PREFIX_FIELD = "content::";
 
-    public static String serialize(LanguagePair pair) {
-        return pair.source.toLanguageTag() + " \u2192 " + pair.target.toLanguageTag();
-    }
+    // TranslationUnit entries
 
     public static Document build(TranslationUnit unit) {
         return build(unit.direction, unit.domain, unit.sourceSentence, unit.targetSentence);
@@ -41,20 +39,39 @@ class DocumentBuilder {
     public static Document build(LanguagePair direction, long domain, String sentence, String translation) {
         Document document = new Document();
         document.add(new LongField(DOMAIN_ID_FIELD, domain, Field.Store.YES));
-        document.add(new StringField(LANGUAGE_FIELD, serialize(direction), Field.Store.NO));
-        document.add(new TextField(SENTENCE_FIELD, sentence, Field.Store.YES));
-        document.add(new StoredField(TRANSLATION_FIELD, translation));
+        document.add(new StringField(LANGUAGE_FIELD, encode(direction), Field.Store.NO));
+        document.add(new TextField(getContentFieldName(direction.source), sentence, Field.Store.YES));
+        document.add(new TextField(getContentFieldName(direction.target), translation, Field.Store.YES));
 
         return document;
     }
 
-    public static ScoreEntry parseEntry(Document doc) {
+    public static ScoreEntry parseEntry(LanguagePair direction, Document doc) {
         long domain = Long.parseLong(doc.get(DOMAIN_ID_FIELD));
-        String[] sentence = doc.get(SENTENCE_FIELD).split(" ");
-        String[] translation = doc.get(TRANSLATION_FIELD).split(" ");
+        String[] sentence = doc.get(getContentFieldName(direction.source)).split(" ");
+        String[] translation = doc.get(getContentFieldName(direction.target)).split(" ");
 
         return new ScoreEntry(domain, sentence, translation);
     }
+
+    public static String encode(LanguagePair direction) {
+        String l1 = direction.source.toLanguageTag();
+        String l2 = direction.target.toLanguageTag();
+
+        if (l1.compareTo(l2) > 0) {
+            String tmp = l1;
+            l1 = l2;
+            l2 = tmp;
+        }
+
+        return l1 + " \u2194 " + l2;
+    }
+
+    public static String getContentFieldName(Locale locale) {
+        return CONTENT_PREFIX_FIELD + locale.toLanguageTag();
+    }
+
+    // Channels data entry
 
     public static Document build(Map<Short, Long> channels) {
         ByteBuffer buffer = ByteBuffer.allocate(10 * channels.size());
