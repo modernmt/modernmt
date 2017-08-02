@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 /**
  * Created by davide on 31/01/17.
@@ -90,17 +91,19 @@ public class TranslationFacade {
         if (operation.nbest > 0)
             ensureDecoderSupportsNBest();
 
-        Translation translation;
-
         try {
-            translation = ModernMT.getNode().submit(operation).get();
+            ClusterNode node = ModernMT.getNode();
+
+            Future<Translation> future = node.submit(operation, operation.direction);
+            if (future == null)
+                future = node.submit(operation);
+
+            return future.get();
         } catch (InterruptedException e) {
             throw new SystemShutdownException(e);
         } catch (ExecutionException e) {
             throw unwrapException(TranslationException.class, e);
         }
-
-        return translation;
     }
 
     // =============================

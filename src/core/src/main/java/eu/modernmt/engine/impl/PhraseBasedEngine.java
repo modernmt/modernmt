@@ -9,7 +9,6 @@ import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.ContributionOptions;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.io.Paths;
-import eu.modernmt.lang.LanguagePair;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -27,21 +26,15 @@ public class PhraseBasedEngine extends Engine {
         super(config);
 
         try {
-            LanguagePair direction = this.languages.iterator().next();
             PhraseBasedDecoderConfig decoderConfig = (PhraseBasedDecoderConfig) config.getDecoderConfig();
 
             if (decoderConfig.isEnabled())
-                this.decoder = new MosesDecoder(direction, Paths.join(this.models, "decoder"), decoderConfig.getThreads());
+                this.decoder = new MosesDecoder(Paths.join(this.models, "decoder"), decoderConfig.getThreads());
             else
                 this.decoder = null;
         } catch (IOException e) {
             throw new BootstrapException("Failed to instantiate Moses decoder", e);
         }
-    }
-
-    @Override
-    public boolean isMultilingual() {
-        return false;
     }
 
     @Override

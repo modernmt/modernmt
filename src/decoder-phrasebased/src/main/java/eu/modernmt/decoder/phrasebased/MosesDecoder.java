@@ -4,19 +4,21 @@ import eu.modernmt.data.DataListener;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.*;
+import eu.modernmt.io.DefaultCharset;
 import eu.modernmt.io.Paths;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
-import eu.modernmt.model.*;
+import eu.modernmt.model.ContextVector;
+import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Translation;
+import eu.modernmt.model.Word;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by davide on 26/11/15.
@@ -42,8 +44,11 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
     private final MosesFeature[] features;
     private long nativeHandle;
 
-    public MosesDecoder(LanguagePair direction, File path, int threads) throws IOException {
-        this.direction = direction;
+    public MosesDecoder(File path, int threads) throws IOException {
+        String raw = FileUtils.readFileToString(Paths.join(path, "language.info"), DefaultCharset.get());
+        String[] parts = raw.split(" ");
+
+        this.direction = new LanguagePair(Locale.forLanguageTag(parts[0]), Locale.forLanguageTag(parts[1]));
         this.storage = new FeatureWeightsStorage(Paths.join(path, "weights.dat"));
 
         File vocabulary = Paths.join(path, "vocab.vb");
@@ -67,7 +72,6 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
 
         for (MosesFeature feature : features)
             this.featuresMap.put(feature.getName(), feature);
-
     }
 
     private native long instantiate(String inifile, String vocabulary);
@@ -117,6 +121,11 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
     private native void setFeatureWeights(String[] features, float[][] weights);
 
     // Decoder
+
+    @Override
+    public void setListener(DecoderListener listener) {
+        listener.onTranslationDirectionsChanged(Collections.singleton(this.direction));
+    }
 
     @Override
     public Translation translate(LanguagePair direction, Sentence text) throws DecoderException {

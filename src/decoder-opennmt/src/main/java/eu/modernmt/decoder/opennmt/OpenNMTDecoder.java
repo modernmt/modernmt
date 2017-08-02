@@ -3,6 +3,7 @@ package eu.modernmt.decoder.opennmt;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.Decoder;
+import eu.modernmt.decoder.DecoderListener;
 import eu.modernmt.decoder.opennmt.execution.ExecutionQueue;
 import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
 import eu.modernmt.decoder.opennmt.memory.TranslationMemory;
@@ -36,8 +37,13 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
     private final TranslationMemory memory;
     private final Set<LanguagePair> directions;
 
-    public OpenNMTDecoder(LanguageIndex languages, File modelPath, int[] gpus) throws OpenNMTException {
-        this.directions = languages.getLanguages();
+    public OpenNMTDecoder(File modelPath, int[] gpus) throws OpenNMTException {
+        File mappingFile = new File(modelPath, "model.map");
+        try {
+            this.directions = ModelMappingFile.readAvailableTranslationDirections(mappingFile);
+        } catch (IOException e) {
+            throw new OpenNMTException("Failed to read file model.map", e);
+        }
 
         File pythonHome = new File(FileConst.getLibPath(), "pynmt");
         File storageModelPath = new File(modelPath, "memory");
@@ -45,13 +51,18 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
         this.executor = ExecutionQueue.newInstance(pythonHome, modelPath, gpus);
 
         try {
-            this.memory = new LuceneTranslationMemory(languages, storageModelPath);
+            this.memory = new LuceneTranslationMemory(new LanguageIndex(this.directions), storageModelPath);
         } catch (IOException e) {
             throw new OpenNMTException("Failed to initialize memory", e);
         }
     }
 
     // Decoder
+
+    @Override
+    public void setListener(DecoderListener listener) {
+        listener.onTranslationDirectionsChanged(directions);
+    }
 
     @Override
     public Translation translate(LanguagePair direction, Sentence text) throws OpenNMTException {

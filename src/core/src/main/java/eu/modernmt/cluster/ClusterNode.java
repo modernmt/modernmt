@@ -19,16 +19,14 @@ import eu.modernmt.decoder.DecoderWithFeatures;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.hw.NetworkUtils;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.persistence.Database;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Created by davide on 18/04/16.
@@ -314,6 +312,11 @@ public class ClusterNode {
 
         timer.reset();
         this.engine = Engine.load(nodeConfig.getEngineConfig());
+        try {
+            this.engine.getDecoder().setListener(this::updateDecoderTranslationDirections);
+        } catch (UnsupportedOperationException e) {
+            // Ignore, decoder not available
+        }
         setStatus(Status.LOADED);
         logger.info("Model loaded in " + (timer.time() / 1000.) + "s");
 
@@ -424,6 +427,11 @@ public class ClusterNode {
         NodeInfo.updateChannelsPositionsInMember(localMember, positions);
     }
 
+    private void updateDecoderTranslationDirections(Set<LanguagePair> directions) {
+        Member localMember = hazelcast.getCluster().getLocalMember();
+        NodeInfo.updateTranslationDirections(localMember, directions);
+    }
+
     public void notifyDecoderWeightsChanged(Map<String, float[]> weights) {
         this.decoderWeightsTopic.publish(weights);
     }
@@ -458,6 +466,14 @@ public class ClusterNode {
 
     public <V> Future<V> submit(Callable<V> callable) {
         return executor.submit(callable);
+    }
+
+    public <V> Future<V> submit(Callable<V> callable, LanguagePair direction) {
+        try {
+            return executor.submit(callable, member -> NodeInfo.hasTranslationDirection(member, direction));
+        } catch (RejectedExecutionException e) {
+            return null;
+        }
     }
 
     public synchronized void shutdown() {

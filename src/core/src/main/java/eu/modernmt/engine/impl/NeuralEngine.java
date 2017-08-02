@@ -28,17 +28,12 @@ public class NeuralEngine extends Engine {
         try {
             NeuralDecoderConfig decoderConfig = (NeuralDecoderConfig) config.getDecoderConfig();
             if (decoderConfig.isEnabled())
-                this.decoder = new OpenNMTDecoder(this.languages, new File(this.models, "decoder"), decoderConfig.getGPUs());
+                this.decoder = new OpenNMTDecoder(new File(this.models, "decoder"), decoderConfig.getGPUs());
             else
                 this.decoder = null;
         } catch (OpenNMTException e) {
             throw new BootstrapException("Failed to instantiate OpenNMT decoder", e);
         }
-    }
-
-    @Override
-    public boolean isMultilingual() {
-        return true;
     }
 
     @Override

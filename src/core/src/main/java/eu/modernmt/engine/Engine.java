@@ -78,9 +78,6 @@ public abstract class Engine implements Closeable, DataListenerProvider {
         this.name = config.getName();
         this.languages = new LanguageIndex(config.getLanguagePairs());
 
-        if (this.languages.size() > 1 && !isMultilingual())
-            throw new BootstrapException("Engine implementation does not support multiple translation directions.");
-
         this.root = FileConst.getEngineRoot(name);
         this.runtime = FileConst.getEngineRuntime(name);
         this.models = Paths.join(this.root, "models");
@@ -110,8 +107,6 @@ public abstract class Engine implements Closeable, DataListenerProvider {
             throw new BootstrapException("Failed to instantiate context analyzer", e);
         }
     }
-
-    public abstract boolean isMultilingual();
 
     public abstract ContributionOptions getContributionOptions();
 
