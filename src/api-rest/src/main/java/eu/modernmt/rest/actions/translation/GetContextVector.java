@@ -3,7 +3,6 @@ package eu.modernmt.rest.actions.translation;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.model.ContextVector;
-import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.actions.util.ContextUtils;
 import eu.modernmt.rest.framework.FileParameter;
@@ -12,19 +11,21 @@ import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
 import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
+import eu.modernmt.rest.model.ContextVectorResult;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.Locale;
+import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 /**
  * Created by davide on 15/12/15.
  */
 @Route(aliases = "context-vector", method = HttpMethod.GET)
-public class GetContextVector extends ObjectAction<ContextVector> {
+public class GetContextVector extends ObjectAction<ContextVectorResult> {
 
     public enum FileCompression {
         GZIP
@@ -56,27 +57,28 @@ public class GetContextVector extends ObjectAction<ContextVector> {
     }
 
     @Override
-    protected ContextVector execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, PersistenceException, IOException {
+    protected ContextVectorResult execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, PersistenceException, IOException {
         Params params = (Params) _params;
-        ContextVector context;
+        Map<Locale, ContextVector> contexts;
 
         if (params.text != null) {
-            context = ModernMT.translation.getContextVector(params.direction, params.text, params.limit);
+            contexts = ModernMT.translation.getContextVectors(params.text, params.limit, params.source, params.targets);
         } else if (params.localFile != null) {
-            context = ModernMT.translation.getContextVector(params.direction, params.localFile, params.limit);
+            contexts = ModernMT.translation.getContextVectors(params.localFile, params.limit, params.source, params.targets);
         } else {
             File file = null;
 
             try {
                 file = File.createTempFile("mmt-context", "txt");
                 copy(params.content, file, params.compression);
-                context = ModernMT.translation.getContextVector(params.direction, file, params.limit);
+                contexts = ModernMT.translation.getContextVectors(file, params.limit, params.source, params.targets);
             } finally {
                 FileUtils.deleteQuietly(file);
             }
         }
 
-        return ContextUtils.resolve(context);
+        ContextUtils.resolve(contexts.values());
+        return new ContextVectorResult(params.source, contexts);
     }
 
     @Override
@@ -88,7 +90,8 @@ public class GetContextVector extends ObjectAction<ContextVector> {
 
         public static final int DEFAULT_LIMIT = 10;
 
-        public final LanguagePair direction;
+        public final Locale source;
+        public final Locale[] targets;
         public final int limit;
         public final String text;
         public final File localFile;
@@ -99,10 +102,8 @@ public class GetContextVector extends ObjectAction<ContextVector> {
             super(req);
 
             this.limit = getInt("limit", DEFAULT_LIMIT);
-
-            Locale sourceLanguage = getLocale("source");
-            Locale targetLanguage = getLocale("target");
-            direction = new LanguagePair(sourceLanguage, targetLanguage);
+            this.source = getLocale("source");
+            this.targets = getLocaleArray("targets");
 
             FileParameter content;
             String localFile;

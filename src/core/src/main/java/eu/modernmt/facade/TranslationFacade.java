@@ -23,6 +23,7 @@ import eu.modernmt.processing.ProcessingException;
 import java.io.File;
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -96,18 +97,7 @@ public class TranslationFacade {
         } catch (InterruptedException e) {
             throw new SystemShutdownException(e);
         } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-
-            if (cause instanceof RuntimeException)
-                throw new TranslationException("Unexpected exceptions while translating", cause);
-            else if (cause instanceof ProcessingException)
-                throw new TranslationException("Problem while processing translation", cause);
-            else if (cause instanceof DecoderException)
-                throw new TranslationException("Problem while decoding source sentence", cause);
-            else if (cause instanceof AlignerException)
-                throw new TranslationException("Problem while aligning source sentence to its translation", cause);
-            else
-                throw new Error("Unexpected exception: " + cause.getMessage(), cause);
+            throw unwrapException(TranslationException.class, e);
         }
 
         return translation;
@@ -136,28 +126,75 @@ public class TranslationFacade {
         return analyzer.getContextVector(direction, context, limit);
     }
 
+    public Map<Locale, ContextVector> getContextVectors(File context, int limit, Locale source, Locale... targets) throws ContextAnalyzerException {
+        LanguagePair[] languages = new LanguagePair[targets.length];
+        for (int i = 0; i < targets.length; i++) {
+            languages[i] = new LanguagePair(source, targets[i]);
+            ensureLanguagePairIsSupported(languages[i]);
+        }
+
+        // Because the file is local to the machine, this method ensures that the
+        // local context analyzer is invoked instead of a remote one
+        Engine engine = ModernMT.getNode().getEngine();
+        ContextAnalyzer analyzer = engine.getContextAnalyzer();
+
+        HashMap<Locale, ContextVector> result = new HashMap<>(languages.length);
+        for (LanguagePair direction : languages) {
+            ContextVector contextVector = analyzer.getContextVector(direction, context, limit);
+            result.put(direction.target, contextVector);
+        }
+
+        return result;
+    }
+
     public ContextVector getContextVector(LanguagePair direction, String context, int limit) throws ContextAnalyzerException {
         ensureLanguagePairIsSupported(direction);
 
         try {
-            return ModernMT.getNode().submit(new GetContextVectorCallable(direction, context, limit)).get();
+            return ModernMT.getNode().submit(new GetContextVectorCallable(new LanguagePair[]{direction}, context, limit)).get()[0];
         } catch (InterruptedException e) {
             throw new SystemShutdownException();
         } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
+            throw unwrapException(ContextAnalyzerException.class, e);
+        }
+    }
 
-            if (cause instanceof ContextAnalyzerException)
-                throw (ContextAnalyzerException) cause;
-            else if (cause instanceof RuntimeException)
-                throw new ContextAnalyzerException("Unexpected exceptions in context analyzer", cause);
-            else
-                throw new Error("Unexpected exception: " + cause.getMessage(), cause);
+    public Map<Locale, ContextVector> getContextVectors(String context, int limit, Locale source, Locale... targets) throws ContextAnalyzerException {
+        LanguagePair[] languages = new LanguagePair[targets.length];
+        for (int i = 0; i < targets.length; i++) {
+            languages[i] = new LanguagePair(source, targets[i]);
+            ensureLanguagePairIsSupported(languages[i]);
+        }
+
+        try {
+            ContextVector[] vectors = ModernMT.getNode().submit(new GetContextVectorCallable(languages, context, limit)).get();
+            HashMap<Locale, ContextVector> result = new HashMap<>(languages.length);
+
+            for (int i = 0; i < vectors.length; i++)
+                result.put(languages[i].target, vectors[i]);
+
+            return result;
+        } catch (InterruptedException e) {
+            throw new SystemShutdownException();
+        } catch (ExecutionException e) {
+            throw unwrapException(ContextAnalyzerException.class, e);
         }
     }
 
     // -----------------------------
     //  Util functions
     // -----------------------------
+
+    private <T extends Throwable> T unwrapException(Class<T> type, ExecutionException e) {
+        Throwable cause = e.getCause();
+
+        if (type.isAssignableFrom(cause.getClass()))
+            return type.cast(cause);
+        else if (cause instanceof RuntimeException)
+            throw (RuntimeException) cause;
+        else
+            throw new Error("Unexpected exception: " + cause.getMessage(), cause);
+    }
 
     private void ensureDecoderSupportsNBest() {
         Decoder decoder = ModernMT.getNode().getEngine().getDecoder();
@@ -175,22 +212,27 @@ public class TranslationFacade {
     //  Internal Operations
     // -----------------------------
 
-    private static class GetContextVectorCallable implements Callable<ContextVector>, Serializable {
+    private static class GetContextVectorCallable implements Callable<ContextVector[]>, Serializable {
 
-        public final LanguagePair direction;
+        public final LanguagePair[] languages;
         private final String context;
         private final int limit;
 
-        public GetContextVectorCallable(LanguagePair direction, String context, int limit) {
-            this.direction = direction;
+        public GetContextVectorCallable(LanguagePair[] languages, String context, int limit) {
+            this.languages = languages;
             this.context = context;
             this.limit = limit;
         }
 
         @Override
-        public ContextVector call() throws ContextAnalyzerException {
+        public ContextVector[] call() throws ContextAnalyzerException {
             ContextAnalyzer analyzer = ModernMT.getNode().getEngine().getContextAnalyzer();
-            return analyzer.getContextVector(direction, context, limit);
+
+            ContextVector[] result = new ContextVector[languages.length];
+            for (int i = 0; i < result.length; i++)
+                result[i] = analyzer.getContextVector(languages[i], context, limit);
+
+            return result;
         }
     }
 
@@ -209,7 +251,7 @@ public class TranslationFacade {
         }
 
         @Override
-        public Translation call() throws ProcessingException, DecoderException, AlignerException {
+        public Translation call() throws TranslationException {
             ClusterNode node = ModernMT.getNode();
 
             Engine engine = node.getEngine();
@@ -217,27 +259,36 @@ public class TranslationFacade {
             Preprocessor preprocessor = engine.getPreprocessor();
             Postprocessor postprocessor = engine.getPostprocessor();
 
-            Sentence sentence = preprocessor.process(direction, text);
+            try {
 
-            Translation translation;
+                Sentence sentence = preprocessor.process(direction, text);
 
-            if (nbest > 0) {
-                DecoderWithNBest nBestDecoder = (DecoderWithNBest) decoder;
-                translation = nBestDecoder.translate(direction, sentence, context, nbest);
-            } else {
-                translation = decoder.translate(direction, sentence, context);
+                Translation translation;
+
+                if (nbest > 0) {
+                    DecoderWithNBest nBestDecoder = (DecoderWithNBest) decoder;
+                    translation = nBestDecoder.translate(direction, sentence, context, nbest);
+                } else {
+                    translation = decoder.translate(direction, sentence, context);
+                }
+
+                if (!translation.hasAlignment()) {
+                    Aligner aligner = engine.getAligner();
+                    Alignment alignment = aligner.getAlignment(direction, sentence, translation);
+
+                    translation.setAlignment(alignment);
+                }
+
+                postprocessor.process(direction, translation);
+
+                return translation;
+            } catch (ProcessingException e) {
+                throw new TranslationException("Problem while processing translation", e);
+            } catch (AlignerException e) {
+                throw new TranslationException("Problem while aligning source sentence to its translation", e);
+            } catch (DecoderException e) {
+                throw new TranslationException("Problem while decoding source sentence", e);
             }
-
-            if (!translation.hasAlignment()) {
-                Aligner aligner = engine.getAligner();
-                Alignment alignment = aligner.getAlignment(direction, sentence, translation);
-
-                translation.setAlignment(alignment);
-            }
-
-            postprocessor.process(direction, translation);
-
-            return translation;
         }
     }
 

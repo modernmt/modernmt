@@ -6,7 +6,9 @@ import eu.modernmt.model.Domain;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.framework.Parameters;
 
-import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 
 /**
@@ -14,20 +16,29 @@ import java.util.Map;
  */
 public class ContextUtils {
 
-    public static ContextVector resolve(ContextVector context) throws PersistenceException {
-        ArrayList<Long> ids = new ArrayList<>(context.size());
-        for (ContextVector.Entry e : context)
-            ids.add(e.domain.getId());
+    public static void resolve(ContextVector context) throws PersistenceException {
+        resolve(Collections.singleton(context));
+    }
+
+    public static void resolve(Collection<ContextVector> collection) throws PersistenceException {
+        HashSet<Long> ids = new HashSet<>();
+        for (ContextVector context : collection) {
+            for (ContextVector.Entry e : context) {
+                ids.add(e.domain.getId());
+            }
+        }
 
         Map<Long, Domain> domains = ModernMT.domain.get(ids);
 
-        ContextVector.Builder builder = new ContextVector.Builder(context.size());
-        for (ContextVector.Entry e : context) {
-            long id = e.domain.getId();
-            builder.add(domains.get(id), e.score);
+        for (ContextVector context : collection) {
+            for (ContextVector.Entry e : context) {
+                copy(domains.get(e.domain.getId()), e.domain);
+            }
         }
+    }
 
-        return builder.build();
+    private static void copy(Domain from, Domain to) {
+        to.setName(from.getName());
     }
 
     public static ContextVector parseParameter(String name, String value) throws Parameters.ParameterParsingException {

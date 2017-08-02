@@ -3,8 +3,8 @@ package eu.modernmt.rest.actions.translation;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.facade.exceptions.TranslationException;
-import eu.modernmt.model.ContextVector;
 import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.model.ContextVector;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.actions.util.ContextUtils;
 import eu.modernmt.rest.framework.HttpMethod;
@@ -40,7 +40,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
         }
 
         if (result.context != null)
-            result.context = ContextUtils.resolve(result.context);
+            ContextUtils.resolve(result.context);
 
         return result;
     }
