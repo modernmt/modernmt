@@ -12,11 +12,14 @@ import java.util.concurrent.TimeUnit;
 public class NetworkUtils {
 
     /**
-     * This method gets the first IPV4 address
-     * that this machine is working on.
+     * This method gets the first IPV4 address that this machine is working on.
      */
-    public static String getMyIpv4Address() throws UnknownHostException {
-        return Inet4Address.getLocalHost().getHostAddress();
+    public static String getMyIpv4Address() {
+        try {
+            return Inet4Address.getLocalHost().getHostAddress();
+        } catch(UnknownHostException e){
+            return null;
+        }
     }
 
     public static boolean isAvailable(int port) {
