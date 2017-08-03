@@ -1,7 +1,7 @@
 package eu.modernmt.processing.tokenizer.jflex;
 
-import eu.modernmt.model.Languages;
-import eu.modernmt.processing.LanguageNotSupportedException;
+import eu.modernmt.lang.Languages;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.string.SentenceBuilder;
 
 import java.util.Locale;
@@ -11,11 +11,11 @@ import java.util.Locale;
  */
 public class ChineseJFlexTokenizer extends JFlexTokenizer {
 
-    public ChineseJFlexTokenizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+    public ChineseJFlexTokenizer(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
         if (!Languages.sameLanguage(Locale.CHINESE, sourceLanguage))
-            throw new LanguageNotSupportedException(sourceLanguage, targetLanguage);
+            throw new UnsupportedLanguageException(sourceLanguage, targetLanguage);
     }
 
     @Override

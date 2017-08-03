@@ -43,13 +43,20 @@ public class LuceneTranslationMemory implements TranslationMemory {
     private final LanguageIndex languages;
 
     private DirectoryReader indexReader;
-    private Map<Short, Long> channels;
+    private final Map<Short, Long> channels;
+
+    private static File forceMkdir(File directory) throws IOException {
+        if (!directory.isDirectory())
+            FileUtils.forceMkdir(directory);
+        return directory;
+    }
 
     public LuceneTranslationMemory(LanguageIndex languages, File indexPath) throws IOException {
-        if (!indexPath.isDirectory())
-            FileUtils.forceMkdir(indexPath);
+        this(languages, FSDirectory.open(forceMkdir(indexPath)));
+    }
 
-        this.indexDirectory = FSDirectory.open(indexPath);
+    public LuceneTranslationMemory(LanguageIndex languages, Directory directory) throws IOException {
+        this.indexDirectory = directory;
         this.queries = new SentenceQueryBuilder();
         this.rescorer = new Rescorer();
         this.languages = languages;
@@ -77,6 +84,8 @@ public class LuceneTranslationMemory implements TranslationMemory {
             } else {
                 this.channels = new HashMap<>();
             }
+        } else {
+            this.channels = new HashMap<>();
         }
     }
 
