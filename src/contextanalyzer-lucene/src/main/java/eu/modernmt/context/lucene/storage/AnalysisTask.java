@@ -40,7 +40,7 @@ class AnalysisTask implements Callable<Void> {
             Reader reader = new InputStreamReader(bucket.getContentStream(), DefaultCharset.get());
 
             Document document = DocumentBuilder.createDocument(direction, domain, reader);
-            index.update(direction, domain, document);
+            index.update(document);
 
             bucket.onAnalysisCompleted();
         } catch (FileNotFoundException e) {

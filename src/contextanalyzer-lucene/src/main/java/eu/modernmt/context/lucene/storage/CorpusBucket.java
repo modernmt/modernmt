@@ -59,6 +59,10 @@ public class CorpusBucket implements Closeable {
     private final File path;
     private FileOutputStream stream = null;
 
+    private static String toString(Locale locale) {
+        return locale.toLanguageTag().replace('-', '_');
+    }
+
     public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, LanguagePair direction, long domain) {
         this(analysisOptions, folder, direction, domain, 0L, 0L);
     }
@@ -66,7 +70,7 @@ public class CorpusBucket implements Closeable {
     public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, LanguagePair direction, long domain, long analyzerOffset, long currentOffset) {
         this.direction = direction;
         this.domain = domain;
-        this.path = new File(folder, "_" + domain);
+        this.path = new File(folder, domain + "_" + toString(direction.source) + "__" + toString(direction.target));
         this.analysisOptions = analysisOptions;
 
         this.analyzerOffset = analyzerOffset;

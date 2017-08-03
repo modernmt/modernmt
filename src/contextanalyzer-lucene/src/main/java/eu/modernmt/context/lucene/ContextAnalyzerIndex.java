@@ -14,11 +14,9 @@ import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
+import org.apache.lucene.queries.TermFilter;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -103,13 +101,14 @@ public class ContextAnalyzerIndex implements Closeable {
         // Do nothing.
     }
 
-    public void update(LanguagePair direction, long domain, Document document) throws ContextAnalyzerException {
-        Term id = DocumentBuilder.makeDocumentIdTerm(direction, domain);
+    public void update(Document document) throws ContextAnalyzerException {
+        String id = DocumentBuilder.getDocumentId(document);
+        Term term = new Term(DocumentBuilder.DOCID_FIELD, id);
 
         try {
-            this.indexWriter.updateDocument(id, document);
+            this.indexWriter.updateDocument(term, document);
         } catch (IOException e) {
-            throw new ContextAnalyzerException("Unable to update corpus " + domain, e);
+            throw new ContextAnalyzerException("Unable to update corpus " + id, e);
         }
     }
 
@@ -168,7 +167,9 @@ public class ContextAnalyzerIndex implements Closeable {
         }
 
         try {
-            Query query = mlt.like(contentFieldName, queryDocumentReader);
+            Query mltQuery = mlt.like(contentFieldName, queryDocumentReader);
+            Filter langFilter = new TermFilter(DocumentBuilder.makeLanguageTerm(direction));
+            FilteredQuery query = new FilteredQuery(mltQuery, langFilter);
             searcher.search(query, collector);
         } catch (IOException e) {
             throw new ContextAnalyzerException("Failed to execute MoreLikeThis query", e);
