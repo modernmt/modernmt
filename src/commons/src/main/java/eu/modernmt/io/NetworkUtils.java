@@ -1,6 +1,5 @@
 package eu.modernmt.io;
 
-import com.sun.org.apache.xpath.internal.SourceTree;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
@@ -11,6 +10,14 @@ import java.util.concurrent.TimeUnit;
  * Created by davide on 10/04/17.
  */
 public class NetworkUtils {
+
+    /**
+     * This method gets the first IPV4 address
+     * that this machine is working on.
+     */
+    public static String getMyIpv4Address() throws UnknownHostException {
+        return Inet4Address.getLocalHost().getHostAddress();
+    }
 
     public static boolean isAvailable(int port) {
         ServerSocket ss = null;
