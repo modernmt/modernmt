@@ -36,6 +36,7 @@ public class Languages {
     public static final Locale ITALIAN = Locale.forLanguageTag("it");
     public static final Locale JAPANESE = Locale.forLanguageTag("ja");
     public static final Locale KHMER = Locale.forLanguageTag("km");
+    public static final Locale KOREAN = Locale.forLanguageTag("ko");
     public static final Locale LATVIAN = Locale.forLanguageTag("lv");
     public static final Locale MALAYALAM = Locale.forLanguageTag("ml");
     public static final Locale DUTCH = Locale.forLanguageTag("nl");
