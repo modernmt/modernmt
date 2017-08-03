@@ -34,11 +34,11 @@ public class Postprocessor implements Closeable {
     }
 
     public void process(LanguagePair language, Translation[] batch) throws ProcessingException {
-        this.executor.processBatch(language, batch);
+        this.executor.processBatch(language, batch, new Void[batch.length]);
     }
 
     public void process(LanguagePair language, List<Translation> batch) throws ProcessingException {
-        this.executor.processBatch(language, batch);
+        this.executor.processBatch(language, batch.toArray(new Translation[batch.size()]), new Void[batch.size()]);
     }
 
     public void process(LanguagePair language, Translation text) throws ProcessingException {

@@ -5,8 +5,6 @@ import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.ProcessingPipeline;
 import eu.modernmt.processing.builder.PipelineBuilder;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.*;
 
 /**
@@ -28,19 +26,7 @@ public class PipelineExecutor<P, R> {
         return pipelines.get(language).call(input);
     }
 
-
-    @SuppressWarnings("unchecked")
-    public List<R> processBatch(LanguagePair language, List<P> batch) throws ProcessingException {
-        P[] array = (P[]) batch.toArray();
-        R[] result = processBatch(language, array);
-
-        return Arrays.asList(result);
-    }
-
-    @SuppressWarnings("unchecked")
-    public R[] processBatch(LanguagePair language, P[] batch) throws ProcessingException {
-        R[] output = (R[]) new Object[batch.length];
-
+    public R[] processBatch(LanguagePair language, P[] batch, R[] output) throws ProcessingException {
         Future<?>[] locks = new Future<?>[threads];
 
         if (batch.length < threads) {

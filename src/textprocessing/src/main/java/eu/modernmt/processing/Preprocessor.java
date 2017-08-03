@@ -9,6 +9,7 @@ import org.apache.commons.io.IOUtils;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -34,11 +35,12 @@ public class Preprocessor implements Closeable {
     }
 
     public Sentence[] process(LanguagePair language, String[] batch) throws ProcessingException {
-        return this.executor.processBatch(language, batch);
+        return this.executor.processBatch(language, batch, new Sentence[batch.length]);
     }
 
     public List<Sentence> process(LanguagePair language, List<String> batch) throws ProcessingException {
-        return this.executor.processBatch(language, batch);
+        Sentence[] result = this.executor.processBatch(language, batch.toArray(new String[batch.size()]), new Sentence[batch.size()]);
+        return Arrays.asList(result);
     }
 
     public Sentence process(LanguagePair language, String text) throws ProcessingException {
