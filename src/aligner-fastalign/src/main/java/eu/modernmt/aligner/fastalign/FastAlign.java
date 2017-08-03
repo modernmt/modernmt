@@ -6,6 +6,7 @@ import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,8 +37,9 @@ public class FastAlign implements Aligner {
     private final HashMap<LanguagePair, Long> models;
 
     private static LanguagePair getLanguagePairFromFilename(File file) throws IOException {
-        String[] parts = file.getName().split("\\.");
-        if (parts.length != 3)
+        String encoded = FilenameUtils.removeExtension(file.getName());
+        String[] parts = encoded.split("__");
+        if (parts.length != 2)
             throw new IOException("Invalid FastAlign model: " + file);
 
         return new LanguagePair(Locale.forLanguageTag(parts[0]), Locale.forLanguageTag(parts[1]));
@@ -47,7 +49,7 @@ public class FastAlign implements Aligner {
         if (!modelPath.isDirectory())
             throw new IOException("Invalid model path: " + modelPath);
 
-        File[] paths = modelPath.listFiles(path -> path.isDirectory() && path.getName().endsWith(".fmdl"));
+        File[] paths = modelPath.listFiles(path -> path.isDirectory() && path.getName().endsWith(".mdl"));
 
         if (paths == null || paths.length == 0)
             throw new IOException("Could not load any FastAlign model from path " + modelPath);
