@@ -46,7 +46,7 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
 
     public MosesDecoder(File path, int threads) throws IOException {
         String raw = FileUtils.readFileToString(Paths.join(path, "language.info"), DefaultCharset.get());
-        String[] parts = raw.split(" ");
+        String[] parts = raw.trim().split(" ");
 
         this.direction = new LanguagePair(Locale.forLanguageTag(parts[0]), Locale.forLanguageTag(parts[1]));
         this.storage = new FeatureWeightsStorage(Paths.join(path, "weights.dat"));
@@ -159,7 +159,7 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
         }
 
         long start = System.currentTimeMillis();
-        TranslationXObject xtranslation = this.translate(text,
+        TranslationXObject xtranslation = this.xtranslate(text,
                 context == null ? null : context.keys,
                 context == null ? null : context.values,
                 nbestListSize);
@@ -174,7 +174,7 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
         return translation;
     }
 
-    private native TranslationXObject translate(String text, long[] contextKeys, float[] contextValues, int nbest);
+    private native TranslationXObject xtranslate(String text, long[] contextKeys, float[] contextValues, int nbest);
 
     // DataListener
 
