@@ -218,15 +218,17 @@ public class ClusterNode {
             hazelcastConfig.setProperty("hazelcast.max.join.seconds", Long.toString(seconds));
         }
 
+        String host = networkConfig.getHost();
+        if (host != null)
+            hazelcastConfig.getNetworkConfig().setPublicAddress(host);
+
+        hazelcastConfig.getNetworkConfig().setPort(networkConfig.getPort());
+
         String listenInterface = networkConfig.getListeningInterface();
-        if (listenInterface != null) {
+        if (listenInterface != null)
             hazelcastConfig.getNetworkConfig().getInterfaces()
                     .setEnabled(true)
                     .addInterface(listenInterface);
-        }
-
-        hazelcastConfig.getNetworkConfig()
-                .setPort(networkConfig.getPort());
 
         JoinConfig.Member[] members = networkConfig.getJoinConfig().getMembers();
         if (members != null && members.length > 0) {

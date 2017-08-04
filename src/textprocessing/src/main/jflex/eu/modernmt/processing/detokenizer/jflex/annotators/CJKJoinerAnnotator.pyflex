@@ -1,0 +1,18 @@
+package eu.modernmt.processing.detokenizer.jflex.annotators;
+
+import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
+
+%%
+
+//pyflex class JFlexSpaceAnnotator
+//pyflex include ../stddetok-defs.pyx
+
+//pyflex include ../macros.pyx
+
+%%
+
+//pyflex include ../stddetok-rules.pyx
+
+/* Language Specific - CJK */
+
+{CJK}{_}{CJK}                                                       { return REMOVE_FIRST; }
