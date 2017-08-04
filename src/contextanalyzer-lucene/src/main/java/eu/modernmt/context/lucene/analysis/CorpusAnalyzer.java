@@ -84,8 +84,8 @@ public class CorpusAnalyzer extends DelegatingAnalyzerWrapper {
 
     @Override
     protected Analyzer getWrappedAnalyzer(String fieldName) {
-        Locale language = DocumentBuilder.getSourceLanguage(fieldName);
-        return getByLanguage(language);
+        Locale language = DocumentBuilder.getContentFieldLanguage(fieldName);
+        return language == null ? new StandardAnalyzer() : getByLanguage(language);
     }
 
 }

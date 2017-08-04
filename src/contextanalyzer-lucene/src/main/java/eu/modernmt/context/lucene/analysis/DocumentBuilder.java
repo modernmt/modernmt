@@ -19,20 +19,21 @@ import java.util.Locale;
  */
 public class DocumentBuilder {
 
-    private static final String DOCID_FIELD = "doc_id";
+    public static final String DOCID_FIELD = "docid";
     private static final String DOMAIN_FIELD = "domain";
-    private static final String CONTENT_FIELD = "content";
+    private static final String LANGUAGE_FIELD = "language";
+    private static final String CONTENT_PREFIX_FIELD = "content__";
 
     // Fields
 
     public static String getContentFieldName(LanguagePair direction) {
-        return CONTENT_FIELD + "::" + direction.source.toLanguageTag() + "::" + direction.target.toLanguageTag();
+        return CONTENT_PREFIX_FIELD + direction.source.toLanguageTag();
     }
 
     // Terms
 
-    public static Term makeDocumentIdTerm(LanguagePair direction, long domain) {
-        return new Term(DOCID_FIELD, makeDocumentId(direction, domain));
+    public static Term makeLanguageTerm(LanguagePair direction) {
+        return new Term(LANGUAGE_FIELD, makeLanguageTag(direction));
     }
 
     public static Term makeDomainTerm(long domain) {
@@ -42,23 +43,21 @@ public class DocumentBuilder {
         return new Term(DOMAIN_FIELD, builder.toBytesRef());
     }
 
-    private static String makeDocumentId(LanguagePair direction, long domain) {
-        return Long.toString(domain) + "::" + direction.source.toLanguageTag() + "::" + direction.target.toLanguageTag();
-    }
-
     // Terms and fields parsing
 
     public static long getDomain(Document document) {
         return Long.parseLong(document.get(DOMAIN_FIELD));
     }
 
-    public static Locale getSourceLanguage(String fieldName) {
-        String[] parts = fieldName.split("::");
+    public static String getDocumentId(Document document) {
+        return document.get(DOCID_FIELD);
+    }
 
-        if (parts.length != 3 || !parts[0].equals(CONTENT_FIELD))
-            throw new IllegalArgumentException("Field '" + fieldName + "' is not a content field");
-
-        return Locale.forLanguageTag(parts[1]);
+    public static Locale getContentFieldLanguage(String fieldName) {
+        if (fieldName.startsWith(CONTENT_PREFIX_FIELD))
+            return Locale.forLanguageTag(fieldName.substring(CONTENT_PREFIX_FIELD.length()));
+        else
+            return null;
     }
 
     // Document creation
@@ -76,9 +75,29 @@ public class DocumentBuilder {
         Document document = new Document();
         document.add(new StringField(DOCID_FIELD, makeDocumentId(direction, domain), Field.Store.NO));
         document.add(new LongField(DOMAIN_FIELD, domain, Field.Store.YES));
+        document.add(new StringField(LANGUAGE_FIELD, makeLanguageTag(direction), Field.Store.NO));
         document.add(new CorpusContentField(getContentFieldName(direction), contentReader));
 
         return document;
+    }
+
+    // Utils
+
+    private static String makeDocumentId(LanguagePair direction, long domain) {
+        return Long.toString(domain) + "::" + direction.source.toLanguageTag() + "::" + direction.target.toLanguageTag();
+    }
+
+    public static String makeLanguageTag(LanguagePair direction) {
+        String l1 = direction.source.toLanguageTag();
+        String l2 = direction.target.toLanguageTag();
+
+        if (l1.compareTo(l2) > 0) {
+            String tmp = l1;
+            l1 = l2;
+            l2 = tmp;
+        }
+
+        return l1 + "__" + l2;
     }
 
 }
