@@ -63,7 +63,7 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
 
             domain = req.getPathParameterAsLong("id");
 
-            source = getString("text", false, null);
+            source = getString("sentence", false, null);
             target = getString("translation", false, null);
 
             if (source == null && target == null) {
@@ -98,7 +98,7 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
                 direction = null;
             } else {
                 if (source == null)
-                    throw new ParameterParsingException("text");
+                    throw new ParameterParsingException("sentence");
                 if (target == null)
                     throw new ParameterParsingException("translation");
 

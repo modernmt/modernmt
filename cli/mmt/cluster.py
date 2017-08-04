@@ -142,20 +142,25 @@ class ClusterNode(object):
         def get_features(self):
             return self._get('decoder/features')
 
-        def get_context_f(self, document, limit=None):
-            params = {'local_file': document}
+        def get_context_f(self, source, target, document, limit=None):
+            params = {'local_file': document, 'source': source, 'targets': target}
             if limit is not None:
                 params['limit'] = limit
-            return self._get('context-vector', params=params)
+            return self._unpack_context(self._get('context-vector', params=params))
 
-        def get_context_s(self, text, limit=None):
-            params = {'text': text}
+        def get_context_s(self, source, target, text, limit=None):
+            params = {'text': text, 'source': source, 'targets': target}
             if limit is not None:
                 params['limit'] = limit
-            return self._get('context-vector', params=params)
+            return self._unpack_context(self._get('context-vector', params=params))
 
-        def translate(self, source, context=None, nbest=None):
-            p = {'q': source}
+        @staticmethod
+        def _unpack_context(data):
+            result = data['vectors']
+            return None if len(result) != 1 else result.values()[0]
+
+        def translate(self, source, target, text, context=None, nbest=None):
+            p = {'q': text, 'source': source, 'target': target}
             if nbest is not None:
                 p['nbest'] = nbest
             if context is not None:
@@ -167,8 +172,8 @@ class ClusterNode(object):
             params = {'name': name}
             return self._post('domains', params=params)
 
-        def append_to_domain(self, domain, source, target):
-            params = {'source': source, 'target': target}
+        def append_to_domain(self, source, target, domain, sentence, translation):
+            params = {'sentence': sentence, 'translation': translation, 'source': source, 'target': target}
             return self._put('domains/' + str(domain) + '/corpus', params=params)
 
         def import_into_domain(self, domain, tmx):
@@ -446,7 +451,7 @@ class ClusterNode(object):
             # Run MERT algorithm
             with listener.step('Tuning') as _:
                 # Start MERT
-                decoder_flags = ['--port', str(self.api.port)]
+                decoder_flags = ['--port', str(self.api.port), '--source', source_lang, '--target', target_lang]
 
                 if self.api.root is not None:
                     decoder_flags += ['--root', self.api.root]
@@ -535,4 +540,4 @@ class ClusterNode(object):
             else:
                 domain = ids[0]
 
-        return self.api.append_to_domain(domain, source, target)
+        return self.api.append_to_domain(self.engine.source_lang, self.engine.target_lang, domain, source, target)

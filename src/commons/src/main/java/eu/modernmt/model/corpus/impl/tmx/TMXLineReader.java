@@ -51,7 +51,7 @@ class TMXLineReader implements MultilingualCorpus.MultilingualLineReader {
             if (cachedPairs.isEmpty())
                 cachedPairs = tmxPairReader.read(reader);
 
-            return cachedPairs.isEmpty() ? null : cachedPairs.remove(0);
+            return (cachedPairs == null || cachedPairs.isEmpty()) ? null : cachedPairs.remove(0);
         } catch (XMLStreamException e) {
             throw new IOException("Invalid TMX " + tmx, e);
         }

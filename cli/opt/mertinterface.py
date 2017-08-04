@@ -23,7 +23,9 @@ def _sorted_features_list(features=None):
 
 
 class _DocumentTranslator:
-    def __init__(self, corpus, nbest, nbest_file, workers=100):
+    def __init__(self, source_lang, target_lang, corpus, nbest, nbest_file, workers=100):
+        self.source_lang = source_lang
+        self.target_lang = target_lang
         self.corpus = corpus
         self.nbest = nbest
         self.nbest_file = nbest_file
@@ -53,7 +55,7 @@ class _DocumentTranslator:
                 array.append(float(token))
 
     def _get_translation(self, line, nbest, context_vector):
-        translation = Api.translate(line, context=context_vector, nbest=nbest)
+        translation = Api.translate(self.source_lang, self.target_lang, line, context=context_vector, nbest=nbest)
 
         nbest_list = sorted(translation['nbest'], key=lambda hypo: hypo['totalScore'], reverse=True)
 
@@ -105,7 +107,7 @@ class _DocumentTranslator:
                     context_vector = None
 
                     if not self.skip_context:
-                        context_vector = Api.get_context_f(corpus_path)
+                        context_vector = Api.get_context_f(self.source_lang, self.target_lang, corpus_path)
 
                     with open(corpus_path) as doc:
                         for docline in doc:
@@ -138,8 +140,9 @@ def show_weighs():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='MMT Server wrapper script for \'mert-moses.pl\' script.')
     parser.add_argument('--port', '-p', dest='port', type=int, help='MMT engine port')
-
     parser.add_argument('--root', dest='root', help='MMT REST root path')
+    parser.add_argument('--source', dest='source_lang', help='Source language')
+    parser.add_argument('--target', dest='target_lang', help='Target language')
 
     parser.add_argument('--skip-context-analysis', dest='context_analysis', type=int,
                         help='if present, skip context analysis')
@@ -168,7 +171,8 @@ if __name__ == '__main__':
         # Show weights
         show_weighs()
     else:
-        translator = _DocumentTranslator(args.input_file, int(args.nbest_list[1]), args.nbest_list[0])
+        translator = _DocumentTranslator(args.source_lang, args.target_lang,
+                                         args.input_file, int(args.nbest_list[1]), args.nbest_list[0])
         translator.set_weights(args.weights)
 
         if args.context_analysis is not None:
