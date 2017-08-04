@@ -22,10 +22,12 @@ class XMLNetworkConfigBuilder extends XMLAbstractBuilder {
     }
 
     public NetworkConfig build(NetworkConfig config) throws ConfigException {
-        if (hasAttribute("interface"))
-            config.setListeningInterface(getStringAttribute("interface"));
+        if (hasAttribute("host"))
+            config.setHost(getStringAttribute("host"));
         if (hasAttribute("port"))
             config.setPort(getIntAttribute("port"));
+        if (hasAttribute("interface"))
+            config.setListeningInterface(getStringAttribute("interface"));
 
         apiConfigBuilder.build(config.getApiConfig());
         joinConfigBuilder.build(config.getJoinConfig());

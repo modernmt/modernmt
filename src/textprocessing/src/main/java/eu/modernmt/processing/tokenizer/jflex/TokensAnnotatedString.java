@@ -29,11 +29,11 @@ public class TokensAnnotatedString {
                 (0x7800 <= c && c <= 0x8CFF) || (0x8D00 <= c && c <= 0x9FFF);
     }
 
-    public TokensAnnotatedString(String string) {
-        this(string.toCharArray());
+    public TokensAnnotatedString(String string, boolean splitCJK) {
+        this(string.toCharArray(), splitCJK);
     }
 
-    public TokensAnnotatedString(char[] source) {
+    public TokensAnnotatedString(char[] source, boolean splitCJK) {
         this.chars = new char[source.length + 2];
         this.flags = new byte[source.length + 3];
 
@@ -47,7 +47,7 @@ public class TokensAnnotatedString {
 
             if (isWhitespace(c)) {
                 type = WHITESPACE;
-            } else if (isCJK(c) || (c != '-' && !Character.isLetterOrDigit(c))) {
+            } else if ((splitCJK && isCJK(c)) || (c != '-' && !Character.isLetterOrDigit(c))) {
                 type = BREAK;
             }
 

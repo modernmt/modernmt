@@ -1,5 +1,8 @@
 package eu.modernmt.config;
 
+
+import eu.modernmt.hw.NetworkUtils;
+
 /**
  * Created by davide on 04/01/17.
  */
@@ -7,15 +10,24 @@ public class NetworkConfig {
 
     private String listeningInterface = null;
     private int port = 5016;
+    private String host = NetworkUtils.getMyIpv4Address();
     private final ApiConfig apiConfig = new ApiConfig();
     private final JoinConfig joinConfig = new JoinConfig();
 
-    public String getListeningInterface() {
-        return listeningInterface;
+    public ApiConfig getApiConfig() {
+        return apiConfig;
     }
 
-    public void setListeningInterface(String listeningInterface) {
-        this.listeningInterface = listeningInterface;
+    public JoinConfig getJoinConfig() {
+        return joinConfig;
+    }
+
+    public String getHost() {
+        return host;
+    }
+
+    public void setHost(String host) {
+        this.host = host;
     }
 
     public int getPort() {
@@ -26,17 +38,18 @@ public class NetworkConfig {
         this.port = port;
     }
 
-    public ApiConfig getApiConfig() {
-        return apiConfig;
+    public String getListeningInterface() {
+        return listeningInterface;
     }
 
-    public JoinConfig getJoinConfig() {
-        return joinConfig;
+    public void setListeningInterface(String listeningInterface) {
+        this.listeningInterface = listeningInterface;
     }
 
     @Override
     public String toString() {
         return "[Network]\n" +
+                "  host = " + host + "\n" +
                 "  interface = " + listeningInterface + "\n" +
                 "  port = " + port + "\n" +
                 "  " + apiConfig.toString().replace("\n", "\n  ") + "\n" +

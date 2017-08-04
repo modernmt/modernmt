@@ -117,7 +117,7 @@ public class JFlexTokenizer extends TextProcessor<SentenceBuilder, SentenceBuild
      */
     @Override
     public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) throws ProcessingException {
-        TokensAnnotatedString astring = new TokensAnnotatedString(builder.toString());
+        TokensAnnotatedString astring = wrap(builder);
 
         annotator.yyreset(astring.getReader());
 
@@ -127,6 +127,10 @@ public class JFlexTokenizer extends TextProcessor<SentenceBuilder, SentenceBuild
         }
 
         return TokenizerOutputTransformer.transform(builder, astring.toTokenArray());
+    }
+
+    protected TokensAnnotatedString wrap(SentenceBuilder builder) {
+        return new TokensAnnotatedString(builder.toString(), false);
     }
 
 
