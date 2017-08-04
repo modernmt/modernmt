@@ -199,7 +199,7 @@ def main_start(argv):
 
         if node.api is not None:
             print 'You can try the API with:\n' \
-                  '\tcurl "%s/translate?q=world&context=computer"' \
+                  '\tcurl "%s/translate?q=world&source=en&target=it&context=computer"' \
                   ' | python -mjson.tool\n' % node.api.base_path
         success = True
 

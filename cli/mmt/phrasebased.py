@@ -187,6 +187,8 @@ class Moses:
     def __init__(self, model_path, source_lang, target_lang,
                  stack_size=1000, cube_pruning_pop_limit=1000, distortion_limit=6):
         self._path = model_path
+        self._source_lang = source_lang
+        self._target_lang = target_lang
 
         self._stack_size = stack_size
         self._cube_pruning_pop_limit = cube_pruning_pop_limit
@@ -194,6 +196,7 @@ class Moses:
 
         self._ini_file = os.path.join(self._path, 'moses.ini')
         self._weights_file = os.path.join(self._path, 'weights.dat')
+        self._lang_info_file = os.path.join(self._path, 'language.info')
 
         self.vb = Vocabulary(os.path.join(model_path, 'vocab.vb'))
         self.lm = InterpolatedLM(os.path.join(model_path, 'lm'), self.vb)
@@ -236,6 +239,11 @@ class Moses:
     def create_configs(self):
         self.__create_ini()
         self.__store_default_weights(self._optimal_weights)
+        self.__create_language_info()
+
+    def __create_language_info(self):
+        with open(self._lang_info_file, 'wb') as out:
+            out.write('%s %s\n' % (self._source_lang, self._target_lang))
 
     def __create_ini(self):
         lines = ['[input-factors]', '0', '', '[search-algorithm]', '1', '', '[stack]', str(self._stack_size), '',

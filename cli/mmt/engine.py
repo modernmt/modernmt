@@ -47,7 +47,7 @@ class ContextAnalyzer:
 
 class FastAlign:
     def __init__(self, model, source_lang, target_lang):
-        self._model = model
+        self._model = os.path.join(model, '%s__%s.mdl' % (source_lang, target_lang))
         self._source_lang = source_lang
         self._target_lang = target_lang
 
@@ -191,7 +191,7 @@ class Engine:
         # common models
         self.cleaner = TMCleaner(self.source_lang, self.target_lang)
         self.training_preprocessor = TrainingPreprocessor(self.source_lang, self.target_lang)
-        self.aligner = FastAlign(os.path.join(self.models_path, 'align'), self.source_lang, self.target_lang)
+        self.aligner = FastAlign(os.path.join(self.models_path, 'aligner'), self.source_lang, self.target_lang)
         self.db = JsonDatabase(os.path.join(self.models_path, 'db'))
         self.analyzer = ContextAnalyzer(os.path.join(self.models_path, 'context'), self.source_lang,
                                         self.target_lang)
