@@ -18,7 +18,7 @@ public class NetworkUtils {
     public static String getMyIpv4Address() {
         try {
             return Inet4Address.getLocalHost().getHostAddress();
-        } catch(UnknownHostException e){
+        } catch (UnknownHostException e) {
             return null;
         }
     }
