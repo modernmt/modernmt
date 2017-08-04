@@ -47,7 +47,11 @@ public class JFlexDetokenizer extends Detokenizer {
 
     public JFlexDetokenizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
         super(sourceLanguage, targetLanguage);
-        this.annotator = newAnnotator(targetLanguage);
+        this.annotator = getAnnotator(targetLanguage);
+    }
+
+    protected JFlexSpaceAnnotator getAnnotator(Locale language) {
+        return newAnnotator(language);
     }
 
     @Override

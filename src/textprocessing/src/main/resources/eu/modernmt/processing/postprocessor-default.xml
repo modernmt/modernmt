@@ -10,8 +10,12 @@
     <!-- Detokenization -->
     <processorGroup>
         <!-- Language specific -->
-        <processor source="en fr it">
+        <processor target="en fr it">
             eu.modernmt.processing.detokenizer.jflex.JFlexDetokenizer
+        </processor>
+
+        <processor target="ja zh">
+            eu.modernmt.processing.detokenizer.jflex.CJKJoinerDetokenizer
         </processor>
 
         <!-- Backoff strategy: default implementation -->
@@ -20,7 +24,9 @@
         </processor>
     </processorGroup>
 
-    <processor>eu.modernmt.processing.detokenizer.WhitespaceProjector</processor>
+    <processor source="^ ja ko zh" target="^ ja ko zh">
+        eu.modernmt.processing.detokenizer.WhitespaceProjector
+    </processor>
 
     <processor source="fr">eu.modernmt.processing.chars.GuillemetsToQuotesProcessor</processor>
 
