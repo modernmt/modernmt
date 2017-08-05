@@ -40,7 +40,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
     private final SentenceQueryBuilder queries;
     private final Rescorer rescorer;
     private final IndexWriter indexWriter;
-    private final LanguageIndex languages;
+    protected final LanguageIndex languages;
 
     private DirectoryReader indexReader;
     private final Map<Short, Long> channels;
@@ -96,7 +96,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         return new Term(field, builder.toBytesRef());
     }
 
-    private synchronized IndexReader getIndexReader() throws IOException {
+    protected synchronized IndexReader getIndexReader() throws IOException {
         if (this.indexReader == null) {
             this.indexReader = DirectoryReader.open(this.indexDirectory);
             this.indexReader.incRef();
@@ -252,15 +252,19 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
     @Override
     public void onDelete(Deletion deletion) throws Exception {
-        Term deleteId = newLongTerm(DocumentBuilder.DOMAIN_ID_FIELD, deletion.domain);
-        this.indexWriter.deleteDocuments(deleteId);
+        Long currentPosition = this.channels.get(deletion.channel);
 
-        this.channels.put(deletion.channel, deletion.channelPosition);
+        if (currentPosition == null || currentPosition < deletion.channelPosition) {
+            Term deleteId = newLongTerm(DocumentBuilder.DOMAIN_ID_FIELD, deletion.domain);
+            this.indexWriter.deleteDocuments(deleteId);
 
-        Term channelsId = newLongTerm(DocumentBuilder.DOMAIN_ID_FIELD, 0);
-        Document channelsDocument = DocumentBuilder.build(this.channels);
-        this.indexWriter.updateDocument(channelsId, channelsDocument);
-        this.indexWriter.commit();
+            this.channels.put(deletion.channel, deletion.channelPosition);
+
+            Term channelsId = newLongTerm(DocumentBuilder.DOMAIN_ID_FIELD, 0);
+            Document channelsDocument = DocumentBuilder.build(this.channels);
+            this.indexWriter.updateDocument(channelsId, channelsDocument);
+            this.indexWriter.commit();
+        }
     }
 
     @Override

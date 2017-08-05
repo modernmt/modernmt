@@ -39,7 +39,7 @@ class DocumentBuilder {
     public static Document build(LanguagePair direction, long domain, String sentence, String translation) {
         Document document = new Document();
         document.add(new LongField(DOMAIN_ID_FIELD, domain, Field.Store.YES));
-        document.add(new StringField(LANGUAGE_FIELD, encode(direction), Field.Store.NO));
+        document.add(new StringField(LANGUAGE_FIELD, encode(direction), Field.Store.YES));
         document.add(new TextField(getContentFieldName(direction.source), sentence, Field.Store.YES));
         document.add(new TextField(getContentFieldName(direction.target), translation, Field.Store.YES));
 
@@ -64,7 +64,7 @@ class DocumentBuilder {
             l2 = tmp;
         }
 
-        return l1 + " \u2194 " + l2;
+        return l1 + "__" + l2;
     }
 
     public static String getContentFieldName(Locale locale) {
