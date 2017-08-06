@@ -43,6 +43,10 @@ public class DocumentBuilder {
         return new Term(DOMAIN_FIELD, builder.toBytesRef());
     }
 
+    public static Term makeDocumentIdTerm(long domain, LanguagePair direction) {
+        return new Term(DOCID_FIELD, makeDocumentId(direction, domain));
+    }
+
     // Terms and fields parsing
 
     public static long getDomain(Document document) {

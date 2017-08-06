@@ -1,7 +1,6 @@
 package eu.modernmt.context.lucene.storage;
 
-import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.context.lucene.ContextAnalyzerIndex;
+import eu.modernmt.context.lucene.analysis.ContextAnalyzerIndex;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataMessage;
 import eu.modernmt.data.Deletion;
@@ -54,25 +53,38 @@ public class CorporaStorage implements DataListener {
         else
             this.index = new CorporaIndex(indexPath, options.analysisOptions, path);
 
-        try {
-            this.analyzeIfNeeded(this.index.getBuckets());
-        } catch (ContextAnalyzerException e) {
-            throw new IOException(e);
-        }
+        this.analyzeIfNeeded(this.index.getBuckets());
 
         this.backgroundTask = new BackgroundTask(options.queueSize);
         this.backgroundTask.start();
     }
 
-    @Override
-    public void onDataReceived(List<TranslationUnit> batch) throws InterruptedException, IOException {
-        for (TranslationUnit unit : batch)
-            backgroundTask.enqueue(unit);
+    public CorpusBucket getBucket(long domain, LanguagePair direction) throws IOException {
+        return this.index.getBucket(direction, domain, false);
+    }
+
+    public int size() {
+        return index.getBuckets().size();
     }
 
     @Override
-    public void onDelete(Deletion deletion) throws IOException, InterruptedException {
-        backgroundTask.enqueue(deletion);
+    public void onDataReceived(List<TranslationUnit> batch) throws IOException {
+        for (TranslationUnit unit : batch) {
+            try {
+                backgroundTask.enqueue(unit);
+            } catch (InterruptedException e) {
+                throw new IOException("Operation interrupted", e);
+            }
+        }
+    }
+
+    @Override
+    public void onDelete(Deletion deletion) throws IOException {
+        try {
+            backgroundTask.enqueue(deletion);
+        } catch (InterruptedException e) {
+            throw new IOException("Operation interrupted", e);
+        }
     }
 
     @Override
@@ -96,14 +108,10 @@ public class CorporaStorage implements DataListener {
         }
 
         if (!skipAnalysis || forceAnalysis) {
-            try {
-                if (forceAnalysis)
-                    doAnalyze(pendingUpdatesBuckets);
-                else
-                    analyzeIfNeeded(pendingUpdatesBuckets);
-            } catch (ContextAnalyzerException e) {
-                throw new IOException(e);
-            }
+            if (forceAnalysis)
+                doAnalyze(pendingUpdatesBuckets);
+            else
+                analyzeIfNeeded(pendingUpdatesBuckets);
         }
 
         pendingUpdatesBuckets.clear();
@@ -164,7 +172,7 @@ public class CorporaStorage implements DataListener {
         logger.info("Bulk insert of domain " + domain);
     }
 
-    private void analyzeIfNeeded(Collection<CorpusBucket> buckets) throws ContextAnalyzerException {
+    private void analyzeIfNeeded(Collection<CorpusBucket> buckets) throws IOException {
         List<CorpusBucket> filteredBuckets = buckets.stream()
                 .filter(CorpusBucket::shouldAnalyze)
                 .collect(Collectors.toList());
@@ -181,7 +189,7 @@ public class CorporaStorage implements DataListener {
         this.doAnalyze(filteredBuckets);
     }
 
-    private void doAnalyze(Collection<CorpusBucket> buckets) throws ContextAnalyzerException {
+    private void doAnalyze(Collection<CorpusBucket> buckets) throws IOException {
         if (buckets.isEmpty())
             return;
 
@@ -204,14 +212,14 @@ public class CorporaStorage implements DataListener {
             try {
                 analysis.get();
             } catch (InterruptedException e) {
-                throw new ContextAnalyzerException("Analysis has been interrupted", e);
+                throw new IOException("Analysis has been interrupted", e);
             } catch (ExecutionException e) {
                 Throwable cause = e.getCause();
 
                 if (cause instanceof RuntimeException)
                     throw (RuntimeException) cause;
-                else if (cause instanceof ContextAnalyzerException)
-                    throw (ContextAnalyzerException) cause;
+                else if (cause instanceof IOException)
+                    throw (IOException) cause;
                 else
                     throw new Error("Unexpected exception", cause);
             }

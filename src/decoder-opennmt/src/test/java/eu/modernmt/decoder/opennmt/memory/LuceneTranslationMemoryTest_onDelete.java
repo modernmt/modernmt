@@ -3,17 +3,15 @@ package eu.modernmt.decoder.opennmt.memory;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Domain;
-import eu.modernmt.test.TestData;
 import org.junit.After;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static eu.modernmt.test.TestData.*;
+import static eu.modernmt.decoder.opennmt.memory.TestData.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -22,10 +20,10 @@ import static org.junit.Assert.assertTrue;
  */
 public class LuceneTranslationMemoryTest_onDelete {
 
-    private InspectableLuceneTranslationMemory memory;
+    private TLuceneTranslationMemory memory;
 
     public void setup(LanguagePair... languages) throws Throwable {
-        this.memory = new InspectableLuceneTranslationMemory(languages);
+        this.memory = new TLuceneTranslationMemory(languages);
     }
 
     @After
@@ -40,8 +38,8 @@ public class LuceneTranslationMemoryTest_onDelete {
         List<TranslationUnit> units1 = TestData.tuList(1, EN__IT, 10);
         List<TranslationUnit> units2 = TestData.tuList(2, EN__IT, 10);
 
-        Set<InspectableLuceneTranslationMemory.Entry> expectedEntries =
-                InspectableLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguages(), units2);
+        Set<TLuceneTranslationMemory.Entry> expectedEntries =
+                TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguageIndex(), units2);
 
         memory.add(new Domain(1), TestData.corpus("none", units1));
         memory.add(new Domain(2), TestData.corpus("none", units2));
@@ -66,8 +64,8 @@ public class LuceneTranslationMemoryTest_onDelete {
         );
         List<TranslationUnit> units2 = TestData.tuList(2, EN__IT, 10);
 
-        Set<InspectableLuceneTranslationMemory.Entry> expectedEntries =
-                InspectableLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguages(), units2);
+        Set<TLuceneTranslationMemory.Entry> expectedEntries =
+                TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguageIndex(), units2);
 
         memory.add(new Domain(1), TestData.corpus("none", units1));
         memory.add(new Domain(2), TestData.corpus("none", units2));
@@ -104,8 +102,8 @@ public class LuceneTranslationMemoryTest_onDelete {
         List<TranslationUnit> units1 = TestData.tuList(0, 0, 1, EN__IT, 10);
         List<TranslationUnit> units2 = TestData.tuList(0, 10, 2, EN__IT, 10);
 
-        Set<InspectableLuceneTranslationMemory.Entry> expectedEntries =
-                InspectableLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguages(), units2);
+        Set<TLuceneTranslationMemory.Entry> expectedEntries =
+                TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguageIndex(), units2);
 
         memory.onDataReceived(units1);
         memory.onDataReceived(units2);
@@ -125,9 +123,9 @@ public class LuceneTranslationMemoryTest_onDelete {
         List<TranslationUnit> units1 = TestData.tuList(1, 0, 1, EN__IT, 10);
         List<TranslationUnit> units2 = TestData.tuList(1, 10, 2, EN__IT, 10);
 
-        Set<InspectableLuceneTranslationMemory.Entry> expectedEntries = new HashSet<>();
-        expectedEntries.addAll(InspectableLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguages(), units1));
-        expectedEntries.addAll(InspectableLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguages(), units2));
+        Set<TLuceneTranslationMemory.Entry> expectedEntries = new HashSet<>();
+        expectedEntries.addAll(TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguageIndex(), units1));
+        expectedEntries.addAll(TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguageIndex(), units2));
 
         memory.onDataReceived(units1);
         memory.onDataReceived(units2);

@@ -14,14 +14,10 @@ import java.util.*;
 /**
  * Created by davide on 05/08/17.
  */
-public class InspectableLuceneTranslationMemory extends LuceneTranslationMemory {
+public class TLuceneTranslationMemory extends LuceneTranslationMemory {
 
-    public InspectableLuceneTranslationMemory(LanguagePair... languages) throws IOException {
+    public TLuceneTranslationMemory(LanguagePair... languages) throws IOException {
         super(new LanguageIndex(Arrays.asList(languages)), new RAMDirectory());
-    }
-
-    public LanguageIndex getLanguages() {
-        return super.languages;
     }
 
     public int size() throws IOException {

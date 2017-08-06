@@ -1,4 +1,4 @@
-package eu.modernmt.test;
+package eu.modernmt.context.lucene;
 
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;

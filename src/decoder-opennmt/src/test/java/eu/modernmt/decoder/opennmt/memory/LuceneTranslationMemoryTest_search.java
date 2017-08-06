@@ -2,15 +2,13 @@ package eu.modernmt.decoder.opennmt.memory;
 
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.model.Domain;
-import eu.modernmt.test.TestData;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
-import static eu.modernmt.test.TestData.*;
+import static eu.modernmt.decoder.opennmt.memory.TestData.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -19,11 +17,11 @@ import static org.junit.Assert.assertTrue;
  */
 public class LuceneTranslationMemoryTest_search {
 
-    private InspectableLuceneTranslationMemory memory;
+    private TLuceneTranslationMemory memory;
 
     @Before
     public void setup() throws Throwable {
-        this.memory = new InspectableLuceneTranslationMemory(EN__IT, IT__EN, EN__FR);
+        this.memory = new TLuceneTranslationMemory(EN__IT, IT__EN, EN__FR);
 
         ArrayList<TranslationUnit> units1 = new ArrayList<>();
         units1.add(TestData.tu(EN__IT, "Hello world 1", "Ciao mondo 1"));

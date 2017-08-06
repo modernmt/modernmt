@@ -2,6 +2,7 @@ package eu.modernmt.context.lucene;
 
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
+import eu.modernmt.context.lucene.analysis.ContextAnalyzerIndex;
 import eu.modernmt.context.lucene.storage.CorporaStorage;
 import eu.modernmt.context.lucene.storage.Options;
 import eu.modernmt.data.Deletion;
@@ -43,6 +44,19 @@ public class LuceneAnalyzer implements ContextAnalyzer {
         this.storage = new CorporaStorage(new File(indexPath, "storage"), options, this.index, languages);
     }
 
+    public LuceneAnalyzer(ContextAnalyzerIndex index, CorporaStorage storage) {
+        this.index = index;
+        this.storage = storage;
+    }
+
+    public ContextAnalyzerIndex getIndex() {
+        return index;
+    }
+
+    public CorporaStorage getStorage() {
+        return storage;
+    }
+
     @Override
     public void add(Domain domain, MultilingualCorpus corpus) throws ContextAnalyzerException {
         HashMap<Domain, MultilingualCorpus> map = new HashMap<>(1);
@@ -82,7 +96,11 @@ public class LuceneAnalyzer implements ContextAnalyzer {
 
     @Override
     public ContextVector getContextVector(LanguagePair direction, Corpus query, int limit) throws ContextAnalyzerException {
-        return this.index.getSimilarDocuments(direction, query, limit);
+        try {
+            return this.index.getContextVector(direction, query, limit);
+        } catch (IOException e) {
+            throw new ContextAnalyzerException("Failed to calculate context-vector due an internal error", e);
+        }
     }
 
     @Override
@@ -103,7 +121,7 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     public void onDataReceived(List<TranslationUnit> batch) throws ContextAnalyzerException {
         try {
             storage.onDataReceived(batch);
-        } catch (InterruptedException | IOException e) {
+        } catch (IOException e) {
             throw new ContextAnalyzerException(e);
         }
     }
@@ -116,7 +134,7 @@ public class LuceneAnalyzer implements ContextAnalyzer {
         try {
             storage.onDelete(deletion);
             deletedFromStorage = true;
-        } catch (InterruptedException | IOException e) {
+        } catch (IOException e) {
             logger.error("Storage delete failed for domain " + deletion.domain, e);
         }
 
@@ -125,7 +143,7 @@ public class LuceneAnalyzer implements ContextAnalyzer {
             index.flush();
 
             deletedFromIndex = true;
-        } catch (ContextAnalyzerException e) {
+        } catch (IOException e) {
             logger.error("Index delete failed for domain " + deletion.domain, e);
         }
 

@@ -2,7 +2,6 @@ package eu.modernmt.decoder.opennmt.memory;
 
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.test.TestData;
 import org.junit.After;
 import org.junit.Test;
 
@@ -12,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static eu.modernmt.test.TestData.*;
+import static eu.modernmt.decoder.opennmt.memory.TestData.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -21,10 +20,10 @@ import static org.junit.Assert.assertTrue;
  */
 public class LuceneTranslationMemoryTest_onDataReceived {
 
-    private InspectableLuceneTranslationMemory memory;
+    private TLuceneTranslationMemory memory;
 
     public void setup(LanguagePair... languages) throws Throwable {
-        this.memory = new InspectableLuceneTranslationMemory(languages);
+        this.memory = new TLuceneTranslationMemory(languages);
     }
 
     @After
@@ -36,8 +35,8 @@ public class LuceneTranslationMemoryTest_onDataReceived {
     private void test(List<TranslationUnit> units) throws IOException {
         int size = units.size();
         Map<Short, Long> expectedChannels = TestData.channels(0, size - 1);
-        Set<InspectableLuceneTranslationMemory.Entry> expectedEntries =
-                InspectableLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguages(), units);
+        Set<TLuceneTranslationMemory.Entry> expectedEntries =
+                TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguageIndex(), units);
 
         memory.onDataReceived(units);
 

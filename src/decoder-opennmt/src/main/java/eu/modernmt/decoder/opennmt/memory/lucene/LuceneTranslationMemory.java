@@ -4,6 +4,8 @@ import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
 import eu.modernmt.decoder.opennmt.memory.TranslationMemory;
+import eu.modernmt.decoder.opennmt.memory.lucene.rescoring.LevenshteinRescorer;
+import eu.modernmt.decoder.opennmt.memory.lucene.rescoring.Rescorer;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
@@ -40,9 +42,10 @@ public class LuceneTranslationMemory implements TranslationMemory {
     private final SentenceQueryBuilder queries;
     private final Rescorer rescorer;
     private final IndexWriter indexWriter;
-    protected final LanguageIndex languages;
+    private final LanguageIndex languages;
 
-    private DirectoryReader indexReader;
+    private DirectoryReader _indexReader;
+    private IndexSearcher _indexSearcher;
     private final Map<Short, Long> channels;
 
     private static File forceMkdir(File directory) throws IOException {
@@ -52,13 +55,21 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     public LuceneTranslationMemory(LanguageIndex languages, File indexPath) throws IOException {
-        this(languages, FSDirectory.open(forceMkdir(indexPath)));
+        this(languages, indexPath, new LevenshteinRescorer());
     }
 
     public LuceneTranslationMemory(LanguageIndex languages, Directory directory) throws IOException {
+        this(languages, directory, new LevenshteinRescorer());
+    }
+
+    public LuceneTranslationMemory(LanguageIndex languages, File indexPath, Rescorer rescorer) throws IOException {
+        this(languages, FSDirectory.open(forceMkdir(indexPath)), rescorer);
+    }
+
+    public LuceneTranslationMemory(LanguageIndex languages, Directory directory, Rescorer rescorer) throws IOException {
         this.indexDirectory = directory;
         this.queries = new SentenceQueryBuilder();
-        this.rescorer = new Rescorer();
+        this.rescorer = rescorer;
         this.languages = languages;
 
         // Index writer setup
@@ -96,21 +107,33 @@ public class LuceneTranslationMemory implements TranslationMemory {
         return new Term(field, builder.toBytesRef());
     }
 
-    protected synchronized IndexReader getIndexReader() throws IOException {
-        if (this.indexReader == null) {
-            this.indexReader = DirectoryReader.open(this.indexDirectory);
-            this.indexReader.incRef();
+    public LanguageIndex getLanguageIndex() {
+        return languages;
+    }
+
+    public synchronized IndexReader getIndexReader() throws IOException {
+        if (this._indexReader == null) {
+            this._indexReader = DirectoryReader.open(this.indexDirectory);
+            this._indexReader.incRef();
+            this._indexSearcher = new IndexSearcher(this._indexReader);
         } else {
-            DirectoryReader reader = DirectoryReader.openIfChanged(this.indexReader);
+            DirectoryReader reader = DirectoryReader.openIfChanged(this._indexReader);
 
             if (reader != null) {
-                IOUtils.closeQuietly(this.indexReader);
-                this.indexReader = reader;
-                this.indexReader.incRef();
+                this._indexReader.close();
+                this._indexReader = reader;
+                this._indexReader.incRef();
+
+                this._indexSearcher = new IndexSearcher(this._indexReader);
             }
         }
 
-        return this.indexReader;
+        return this._indexReader;
+    }
+
+    public IndexSearcher getIndexSearcher() throws IOException {
+        getIndexReader();
+        return this._indexSearcher;
     }
 
     // TranslationMemory
@@ -185,15 +208,23 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
     @Override
     public ScoreEntry[] search(LanguagePair direction, Sentence source, int limit) throws IOException {
-        return search(direction, source, null, limit);
+        return search(direction, source, null, this.rescorer, limit);
+    }
+
+    public ScoreEntry[] search(LanguagePair direction, Sentence source, Rescorer rescorer, int limit) throws IOException {
+        return this.search(direction, source, null, rescorer, limit);
     }
 
     @Override
     public ScoreEntry[] search(LanguagePair direction, Sentence source, ContextVector contextVector, int limit) throws IOException {
+        return this.search(direction, source, contextVector, this.rescorer, limit);
+    }
+
+    public ScoreEntry[] search(LanguagePair direction, Sentence source, ContextVector contextVector, Rescorer rescorer, int limit) throws IOException {
         Query query = this.queries.build(direction, source);
 
-        IndexReader reader = this.getIndexReader();
-        IndexSearcher searcher = new IndexSearcher(reader);
+        IndexSearcher searcher = getIndexSearcher();
+
         searcher.setSimilarity(new CustomSimilarity());
 
         int queryLimit = Math.max(10, limit * 2);
@@ -205,7 +236,8 @@ public class LuceneTranslationMemory implements TranslationMemory {
             entries[i].score = docs[i].score;
         }
 
-        rescorer.score(source, entries, contextVector);
+        if (rescorer != null)
+            rescorer.rescore(source, entries, contextVector);
 
         if (entries.length > limit) {
             ScoreEntry[] temp = new ScoreEntry[limit];
@@ -276,7 +308,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
     @Override
     public void close() {
-        IOUtils.closeQuietly(this.indexReader);
+        IOUtils.closeQuietly(this._indexReader);
         IOUtils.closeQuietly(this.indexWriter);
         IOUtils.closeQuietly(this.indexDirectory);
     }

@@ -1,4 +1,4 @@
-package eu.modernmt.decoder.opennmt.memory.lucene;
+package eu.modernmt.decoder.opennmt.memory.lucene.rescoring;
 
 import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
@@ -10,15 +10,17 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 /**
- * Created by davide on 24/05/17.
+ * Created by davide on 06/08/17.
  */
-class Rescorer {
+public class LevenshteinRescorer implements Rescorer {
 
-    public void score(Sentence input, ScoreEntry[] entries) {
-        score(input, entries, null);
+    @Override
+    public void rescore(Sentence input, ScoreEntry[] entries) {
+        this.rescore(input, entries, null);
     }
 
-    public void score(Sentence input, ScoreEntry[] entries, ContextVector context) {
+    @Override
+    public void rescore(Sentence input, ScoreEntry[] entries, ContextVector context) {
         String[] words = TokensOutputStream.toTokensArray(input, false, true);
 
         for (ScoreEntry entry : entries)
