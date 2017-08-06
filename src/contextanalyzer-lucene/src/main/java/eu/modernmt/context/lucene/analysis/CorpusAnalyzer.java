@@ -13,7 +13,7 @@ import java.util.Map;
 public class CorpusAnalyzer extends DelegatingAnalyzerWrapper {
 
     private static final int MAX_INDEXED_WORDS_PER_DOCUMENT = 100000000;
-    private static final Map<String, Class<? extends Analyzer>> ANALYZERS;
+    public static final Map<String, Class<? extends Analyzer>> ANALYZERS;
 
     static {
         HashMap<String, Class<? extends Analyzer>> analyzers = new HashMap<>();
@@ -57,12 +57,10 @@ public class CorpusAnalyzer extends DelegatingAnalyzerWrapper {
         ANALYZERS = Collections.unmodifiableMap(analyzers);
     }
 
-    private static Analyzer getByLanguage(Locale lang) {
-        String tag = lang.toLanguageTag();
-
-        Class<? extends Analyzer> analyzerClass = ANALYZERS.get(tag);
+    private static Analyzer getByLanguage(Locale locale) {
+        Class<? extends Analyzer> analyzerClass = ANALYZERS.get(locale.toLanguageTag());
         if (analyzerClass == null)
-            analyzerClass = ANALYZERS.get(tag.substring(0, 2));
+            analyzerClass = ANALYZERS.get(locale.getLanguage());
 
         if (analyzerClass == null)
             analyzerClass = StandardAnalyzer.class;

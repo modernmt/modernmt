@@ -19,7 +19,7 @@ public class CosineSimilarityRescorer implements Rescorer {
     @Override
     public void rescore(IndexReader reader, Analyzer analyzer, ScoreDoc[] topDocs, Document reference, String fieldName) throws IOException {
         // Compute reference document stats
-        HashMap<String, Float> referenceTerms = LuceneUtils.getTermFrequencies(analyzer, reference, fieldName);
+        Map<String, Float> referenceTerms = LuceneUtils.getTermFrequencies(analyzer, reference, fieldName);
         double referenceL2Norm = getL2Norm(referenceTerms);
 
         // Calculate similarity with reference
@@ -47,7 +47,7 @@ public class CosineSimilarityRescorer implements Rescorer {
         }
     }
 
-    public static double getL2Norm(HashMap<String, Float> terms) throws IOException {
+    public static double getL2Norm(Map<String, Float> terms) throws IOException {
         double norm = 0;
 
         for (Float value : terms.values())
@@ -61,11 +61,11 @@ public class CosineSimilarityRescorer implements Rescorer {
         private final IndexReader reader;
         private final String fieldName;
         private final ScoreDoc target;
-        private final HashMap<String, Float> referenceTerms;
+        private final Map<String, Float> referenceTerms;
         private final double referenceL2Norm;
 
         public RescoringTask(IndexReader reader, String fieldName,
-                             ScoreDoc target, HashMap<String, Float> referenceTerms, double referenceL2Norm) {
+                             ScoreDoc target, Map<String, Float> referenceTerms, double referenceL2Norm) {
             this.reader = reader;
             this.fieldName = fieldName;
             this.target = target;
@@ -75,7 +75,7 @@ public class CosineSimilarityRescorer implements Rescorer {
 
         @Override
         public Void call() throws IOException {
-            HashMap<String, Float> terms = LuceneUtils.getTermFrequencies(this.reader, this.target.doc, this.fieldName);
+            Map<String, Float> terms = LuceneUtils.getTermFrequencies(this.reader, this.target.doc, this.fieldName);
 
             double dotProduct = 0;
             double l2Norm = 0;
