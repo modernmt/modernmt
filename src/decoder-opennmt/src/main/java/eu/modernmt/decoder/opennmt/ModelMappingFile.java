@@ -18,19 +18,22 @@ import java.util.Set;
 public class ModelMappingFile {
 
     public static Set<LanguagePair> readAvailableTranslationDirections(File file) throws IOException {
-        Properties properties = new Properties();
-
         Reader reader = null;
         try {
             reader = new FileReader(file);
-            properties.load(reader);
+            return readAvailableTranslationDirections(reader);
         } finally {
             IOUtils.closeQuietly(reader);
         }
+    }
+
+    public static Set<LanguagePair> readAvailableTranslationDirections(Reader reader) throws IOException {
+        Properties properties = new Properties();
+        properties.load(reader);
 
         HashSet<LanguagePair> result = new HashSet<>();
         for (String key : properties.stringPropertyNames()) {
-            String[] parts = key.split("___");
+            String[] parts = key.split("__");
             result.add(new LanguagePair(Locale.forLanguageTag(parts[0]), Locale.forLanguageTag(parts[1])));
         }
 

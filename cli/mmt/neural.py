@@ -213,6 +213,9 @@ class OpenNMTDecoder:
         logger.info('Storing model "%s" to %s' % (checkpoint, self._model))
         os.rename(checkpoint, self._model)
 
+        with open(os.path.join(model_folder, 'model.map'), 'w') as model_map:
+            model_map.write('%s__%s = model\n' % (self._source_lang, self._target_lang))
+
 
 class NeuralEngine(Engine):
     def __init__(self, name, source_lang, target_lang, gpus=None):

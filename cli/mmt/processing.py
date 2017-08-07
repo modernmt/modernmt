@@ -65,7 +65,7 @@ class Tokenizer:
             args = ['-s', self._target_lang, '-t', self._source_lang]
         else:
             raise ValueError('Unsupported language "%s"' % lang)
-        
+
         if not self._print_tags:
             args.append('--no-tags')
         if self._print_placeholders:
