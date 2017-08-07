@@ -1,16 +1,12 @@
 package eu.modernmt.context.lucene;
 
-import eu.modernmt.context.lucene.analysis.CorpusAnalyzer;
 import eu.modernmt.context.lucene.analysis.LuceneUtils;
+import eu.modernmt.context.lucene.analysis.lang.LanguageAnalyzer;
 import eu.modernmt.data.Deletion;
-import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.io.LineReader;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
-import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Word;
 import eu.modernmt.model.corpus.Corpus;
-import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.impl.BaseMultilingualCorpus;
 import eu.modernmt.model.corpus.impl.StringCorpus;
 import org.apache.commons.io.IOUtils;
@@ -115,17 +111,8 @@ public class TestData {
     public static Set<String> getTerms(Locale... locales) throws IOException {
         HashSet<String> terms = new HashSet<>();
         for (Locale locale : locales) {
-            String lang = locale.getLanguage();
-
-            Analyzer analyzer;
-
-            try {
-                analyzer = CorpusAnalyzer.ANALYZERS.get(lang).newInstance();
-            } catch (Throwable e) {
-                throw new RuntimeException(e);
-            }
-
-            terms.addAll(LuceneUtils.analyze(analyzer, EXAMPLE_CONTENTS.get(lang)));
+            Analyzer analyzer = LanguageAnalyzer.getByLanguage(locale);
+            terms.addAll(LuceneUtils.analyze(analyzer, EXAMPLE_CONTENTS.get(locale.getLanguage())));
         }
 
         return terms;
