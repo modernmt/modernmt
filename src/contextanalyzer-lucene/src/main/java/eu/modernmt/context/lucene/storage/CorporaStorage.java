@@ -1,8 +1,6 @@
 package eu.modernmt.context.lucene.storage;
 
 import eu.modernmt.context.lucene.analysis.ContextAnalyzerIndex;
-import eu.modernmt.data.DataListener;
-import eu.modernmt.data.DataMessage;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.lang.LanguageIndex;
@@ -22,14 +20,14 @@ import java.util.stream.Collectors;
 /**
  * Created by davide on 22/09/16.
  */
-public class CorporaStorage implements DataListener {
+public class CorporaStorage {
 
     private static final int MAX_CONCURRENT_BUCKET_ANALYSIS = 8;
 
     private final Logger logger = LogManager.getLogger(CorporaStorage.class);
 
     private final Options options;
-    private final BackgroundTask backgroundTask;
+    private final AnalysisTimer analysisTimer;
     private final ExecutorService analysisExecutor;
 
     private final ContextAnalyzerIndex contextAnalyzer;
@@ -55,8 +53,8 @@ public class CorporaStorage implements DataListener {
 
         this.analyzeIfNeeded(this.index.getBuckets());
 
-        this.backgroundTask = new BackgroundTask(options.queueSize);
-        this.backgroundTask.start();
+        this.analysisTimer = new AnalysisTimer();
+        this.analysisTimer.start();
     }
 
     public CorpusBucket getBucket(long domain, LanguagePair direction) throws IOException {
@@ -67,27 +65,37 @@ public class CorporaStorage implements DataListener {
         return index.getBuckets().size();
     }
 
-    @Override
-    public void onDataReceived(List<TranslationUnit> batch) throws IOException {
+    public synchronized void add(List<TranslationUnit> batch) throws IOException {
         for (TranslationUnit unit : batch) {
-            try {
-                backgroundTask.enqueue(unit);
-            } catch (InterruptedException e) {
-                throw new IOException("Operation interrupted", e);
+            if (!index.registerData(unit.channel, unit.channelPosition))
+                continue;
+
+            if (languages.isSupported(unit.direction)) {
+                CorpusBucket bucket = index.getBucket(unit.direction, unit.domain);
+                bucket.append(unit.rawSourceSentence);
+                pendingUpdatesBuckets.add(bucket);
+            }
+
+            if (languages.isSupported(unit.direction.reversed())) {
+                CorpusBucket bucket = index.getBucket(unit.direction.reversed(), unit.domain);
+                bucket.append(unit.rawTargetSentence);
+                pendingUpdatesBuckets.add(bucket);
             }
         }
     }
 
-    @Override
-    public void onDelete(Deletion deletion) throws IOException {
-        try {
-            backgroundTask.enqueue(deletion);
-        } catch (InterruptedException e) {
-            throw new IOException("Operation interrupted", e);
+    public synchronized boolean delete(Deletion deletion) {
+        if (!index.registerData(deletion.channel, deletion.channelPosition))
+            return false;
+
+        for (CorpusBucket bucket : index.getBucketsByDomain(deletion.domain)) {
+            bucket.markForDeletion();
+            pendingUpdatesBuckets.add(bucket);
         }
+
+        return true;
     }
 
-    @Override
     public Map<Short, Long> getLatestChannelPositions() {
         return index.getChannels();
     }
@@ -98,10 +106,14 @@ public class CorporaStorage implements DataListener {
 
         logger.info("Flushing index to disk. Pending updates: " + pendingUpdatesBuckets.size());
 
-        for (CorpusBucket bucket : pendingUpdatesBuckets) {
+        for (Iterator<CorpusBucket> iterator = pendingUpdatesBuckets.iterator(); iterator.hasNext(); ) {
+            CorpusBucket bucket = iterator.next();
+
             if (bucket.isDeleted()) {
                 bucket.delete();
                 index.remove(bucket);
+
+                iterator.remove();
             } else {
                 bucket.flush();
             }
@@ -112,9 +124,10 @@ public class CorporaStorage implements DataListener {
                 doAnalyze(pendingUpdatesBuckets);
             else
                 analyzeIfNeeded(pendingUpdatesBuckets);
+
+            pendingUpdatesBuckets.clear();
         }
 
-        pendingUpdatesBuckets.clear();
         index.save();
 
         logger.debug("CorporaStorage index successfully written to disk");
@@ -230,14 +243,14 @@ public class CorporaStorage implements DataListener {
     }
 
     public void shutdown() {
-        backgroundTask.shutdown();
+        analysisTimer.shutdown();
         analysisExecutor.shutdownNow();
     }
 
     public void awaitTermination(TimeUnit unit, long timeout) throws InterruptedException {
         Thread waitThread = new Thread(() -> {
             try {
-                backgroundTask.join();
+                analysisTimer.join();
             } catch (InterruptedException e) {
                 // Ignore it
             }
@@ -253,96 +266,49 @@ public class CorporaStorage implements DataListener {
         unit.timedJoin(waitThread, timeout);
     }
 
-    private static final DataMessage POISON_PILL = new DataMessage((short) 0, 0) {
-    };
+    private class AnalysisTimer extends Thread {
 
-    private class BackgroundTask extends Thread {
-
-        private final BlockingQueue<DataMessage> queue;
+        private final SynchronousQueue<Object> shutdownSignal = new SynchronousQueue<>();
         private boolean shuttingDown = false;
-        private IOException error = null;
-
-        private long lastWriteDate = 0;
-
-        public BackgroundTask(int queueSize) {
-            this.queue = new ArrayBlockingQueue<>(queueSize);
-        }
-
-        public void enqueue(DataMessage message) throws InterruptedException, IOException {
-            if (error != null)
-                throw error;
-
-            if (!shuttingDown)
-                queue.put(message);
-        }
 
         public void shutdown() {
             if (!shuttingDown) {
                 shuttingDown = true;
-                queue.clear();
 
-                while (!queue.add(POISON_PILL)) ;
-            }
-        }
-
-        private DataMessage poll(long timeout) {
-            if (timeout < 1)
-                return null;
-
-            try {
-                return queue.poll(timeout, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-                return POISON_PILL;
-            }
-        }
-
-        private void doRun() throws IOException {
-            while (true) {
-                long availableTime = options.writeBehindDelay - (System.currentTimeMillis() - lastWriteDate);
-
-                DataMessage message = poll(availableTime);
-
-                if (message == null) {
-                    // timeout
-                    flushToDisk(false, false);
-                    lastWriteDate = System.currentTimeMillis();
-                } else if (message == POISON_PILL) {
-                    logger.debug("CorporaStorage background thread KILL");
-                    break;
-                } else if (index.registerData(message.channel, message.channelPosition)) {
-                    if (message instanceof TranslationUnit) {
-                        TranslationUnit unit = (TranslationUnit) message;
-
-                        if (languages.isSupported(unit.direction)) {
-                            CorpusBucket bucket = index.getBucket(unit.direction, unit.domain);
-                            bucket.append(unit.rawSourceSentence);
-                            pendingUpdatesBuckets.add(bucket);
-                        }
-
-                        if (languages.isSupported(unit.direction.reversed())) {
-                            CorpusBucket bucket = index.getBucket(unit.direction.reversed(), unit.domain);
-                            bucket.append(unit.rawTargetSentence);
-                            pendingUpdatesBuckets.add(bucket);
-                        }
-                    } else if (message instanceof Deletion) {
-                        Deletion deletion = (Deletion) message;
-
-                        for (CorpusBucket bucket : index.getBucketsByDomain(deletion.domain)) {
-                            bucket.markForDeletion();
-                            pendingUpdatesBuckets.add(bucket);
-                        }
-                    }
+                try {
+                    shutdownSignal.put(new Object());
+                } catch (InterruptedException e) {
+                    this.interrupt();
                 }
             }
         }
 
         @Override
         public void run() {
+            while (true) {
+                Object poisonPill;
+
+                try {
+                    poisonPill = shutdownSignal.poll(options.writeBehindDelay, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    break;
+                }
+
+                if (poisonPill == null) { // timeout
+                    try {
+                        flushToDisk(false, false);
+                    } catch (IOException e) {
+                        logger.error("Failed to flush CorporaStorage to disk", e);
+                    }
+                } else { // poison pill
+                    break;
+                }
+            }
+
             try {
-                doRun();
                 flushToDisk(true, false);
             } catch (IOException e) {
-                error = e;
+                logger.error("Failed to flush CorporaStorage to disk", e);
             } finally {
                 IOUtils.closeQuietly(index);
             }

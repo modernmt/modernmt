@@ -56,11 +56,15 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
         return getStorage().size();
     }
 
+    public void flush() throws IOException {
+        getStorage().flushToDisk(false, true);
+    }
+
     public Entry getEntry(long domain, LanguagePair direction) throws IOException {
         ContextAnalyzerIndex index = getIndex();
         CorporaStorage storage = getStorage();
 
-        storage.flushToDisk(false, true);
+        this.flush();
 
         // Bucket for content
 
@@ -119,7 +123,7 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
             this.domain = domain;
             this.language = language;
             this.terms = Collections.unmodifiableSet(new HashSet<>(terms));
-            this.content = content;
+            this.content = content.trim();
         }
 
         @Override

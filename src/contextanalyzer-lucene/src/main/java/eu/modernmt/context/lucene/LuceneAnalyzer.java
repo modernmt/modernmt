@@ -120,7 +120,7 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     @Override
     public void onDataReceived(List<TranslationUnit> batch) throws ContextAnalyzerException {
         try {
-            storage.onDataReceived(batch);
+            storage.add(batch);
         } catch (IOException e) {
             throw new ContextAnalyzerException(e);
         }
@@ -128,11 +128,14 @@ public class LuceneAnalyzer implements ContextAnalyzer {
 
     @Override
     public void onDelete(Deletion deletion) throws ContextAnalyzerException {
+        if (!storage.delete(deletion))
+            return;
+
         boolean deletedFromIndex = false;
         boolean deletedFromStorage = false;
 
         try {
-            storage.onDelete(deletion);
+            storage.flushToDisk(true, false);
             deletedFromStorage = true;
         } catch (IOException e) {
             logger.error("Storage delete failed for domain " + deletion.domain, e);

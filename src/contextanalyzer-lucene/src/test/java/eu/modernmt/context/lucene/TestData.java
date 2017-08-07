@@ -1,16 +1,16 @@
 package eu.modernmt.context.lucene;
 
-import eu.modernmt.context.lucene.analysis.LuceneUtils;
-import eu.modernmt.context.lucene.analysis.lang.LanguageAnalyzer;
 import eu.modernmt.data.Deletion;
+import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.io.LineReader;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
+import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Word;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.impl.BaseMultilingualCorpus;
 import eu.modernmt.model.corpus.impl.StringCorpus;
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.analysis.Analyzer;
 
 import java.io.IOException;
 import java.util.*;
@@ -22,20 +22,11 @@ public class TestData {
 
     public static final Locale EN = new Locale("en");
     public static final Locale EN_US = new Locale("en", "US");
-    public static final Locale ES = new Locale("es");
-    public static final Locale ES_AR = new Locale("es", "AR");
     public static final Locale FR = new Locale("fr");
     public static final Locale FR_CA = new Locale("fr", "CA");
     public static final Locale IT = new Locale("it");
     public static final Locale IT_CH = new Locale("it", "CH");
-    public static final Locale NL = new Locale("nl");
-    public static final Locale NL_BE = new Locale("nl", "BE");
-    public static final Locale DE = new Locale("de");
-    public static final Locale DE_LU = new Locale("de", "LU");
-    public static final Locale PT = new Locale("pt");
-    public static final Locale PT_BR = new Locale("pt", "BR");
 
-    public static final LanguagePair FR__ES = new LanguagePair(TestData.FR, TestData.ES);
     public static final LanguagePair FR__EN = new LanguagePair(TestData.FR, TestData.EN);
     public static final LanguagePair EN__IT = new LanguagePair(TestData.EN, TestData.IT);
     public static final LanguagePair EN__FR = new LanguagePair(TestData.EN, TestData.FR);
@@ -43,9 +34,15 @@ public class TestData {
     public static final LanguagePair EN_US__IT = new LanguagePair(TestData.EN_US, TestData.IT);
     public static final LanguagePair IT__EN_US = new LanguagePair(TestData.IT, TestData.EN_US);
 
+    private static final HashMap<String, String> EXAMPLE_SENTENCES = new HashMap<>();
     private static final HashMap<String, String> EXAMPLE_CONTENTS = new HashMap<>();
+    private static final HashMap<String, Set<String>> EXAMPLE_TERMS = new HashMap<>();
 
     static {
+        EXAMPLE_SENTENCES.put("en", "hello world");
+        EXAMPLE_SENTENCES.put("it", "ciao mondo");
+        EXAMPLE_SENTENCES.put("fr", "bonjour monde");
+
         EXAMPLE_CONTENTS.put("en", "If Parliament and the Commission work together real progress can be made in 'cleaning up' the Commission.\n" +
                 "If this does not happen the college of Commissioners will cease to have my support.\n" +
                 "He who is not punished for a greater crime will be punished for a lesser crime.\n" +
@@ -76,6 +73,120 @@ public class TestData {
                 "Ne tenons pas nos mots: dans cette affaire, l'attitude de la Commission était plus que négligente, c'était une attitude irresponsable et criminelle.\n" +
                 "Pourtant, le Parlement européen n'a pas puni la Commission.\n" +
                 "Il n'y a pas eu de châtiment dans ce cas non plus.");
+
+        EXAMPLE_TERMS.put("en", new HashSet<>(Arrays.asList(
+                ("college been creutzfeldt mince several had parliament transmitted negligent either lesser punish than let " +
+                        "affair up because criminal greater case us happen still work made european nothing cattle real my " +
+                        "done condemning feed were europeans contaminated millions support who attitude tens young our can " +
+                        "perhaps does taken irresponsible have commission crime punished said jacob human together contaminate " +
+                        "cleaning declared commissioners cases disease more words continued health yet any beings punishment " +
+                        "cease circulation progress risk he humans did knowingly").split(" ")
+        )));
+        EXAMPLE_TERMS.put("it", new HashSet<>(Arrays.asList(
+                ("contaminare irresponsabile negligente creutzfeldt censurato stata dice europea commissari ancora uomo " +
+                        "può tale cose provvedimenti offrirò cosa caso definitiva parlamento circolazione sanitario ripulire " +
+                        "casi state chiamiamo fatto sindrome volontariamente commissione ecco nome colpito totalmente " +
+                        "altrimenti epoca criminale denunciate corso pazza trasmessa essere potremo rischio giovani malattia " +
+                        "esseri jacob contaminate collegio preso milioni umani sostegno grande mucca piccolo europei " +
+                        "atteggiamento farine veramente collaboreranno alcuna sanzione viene europeo decine nulla").split(" ")
+        )));
+    }
+
+    public static Sentence sentence(String text) {
+        String[] tokens = text.split("\\s+");
+        Word[] words = new Word[tokens.length];
+
+        for (int i = 0; i < words.length; i++)
+            words[i] = new Word(tokens[i], " ");
+
+        return new Sentence(words);
+    }
+
+    // Translation units
+
+    public static List<TranslationUnit> tuList(LanguagePair language, int size) {
+        return tuList(1L, language, size);
+    }
+
+    public static List<TranslationUnit> tuList(long domain, LanguagePair language, int size) {
+        return tuList(0, 0L, domain, language, size);
+    }
+
+    public static List<TranslationUnit> tuList(int channel, long channelPosition, long domain, LanguagePair language, int size) {
+        ArrayList<TranslationUnit> units = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            String source = EXAMPLE_SENTENCES.get(language.source.getLanguage());
+            String target = EXAMPLE_SENTENCES.get(language.target.getLanguage());
+
+            if (i > 0) {
+                source += " " + i;
+                target += " " + i;
+            }
+
+            units.add(tu(channel, channelPosition++, domain, language, source, target));
+        }
+        return units;
+    }
+
+    public static TranslationUnit tu(LanguagePair language) {
+        return tu(1L, language);
+    }
+
+    public static TranslationUnit tu(long domain, LanguagePair language) {
+        return tu(0, 0L, domain, language);
+    }
+
+    public static TranslationUnit tu(int channel, long channelPosition, long domain, LanguagePair language) {
+        return tu(channel, channelPosition, domain, language,
+                EXAMPLE_SENTENCES.get(language.source.getLanguage()),
+                EXAMPLE_SENTENCES.get(language.target.getLanguage()));
+    }
+
+    public static TranslationUnit tu(LanguagePair language, String source, String target) {
+        return tu(1L, language, source, target);
+    }
+
+    public static TranslationUnit tu(long domain, LanguagePair language, String source, String target) {
+        return tu(0, 0, domain, language, source, target);
+    }
+
+    public static TranslationUnit tu(int channel, long channelPosition, long domain, LanguagePair language, String source, String target) {
+        TranslationUnit tu = new TranslationUnit((short) channel, channelPosition, language, domain, source, target);
+        tu.sourceSentence = sentence(source);
+        tu.targetSentence = sentence(target);
+        return tu;
+    }
+
+    public static Set<String> tuGetTerms(List<TranslationUnit> units, boolean source) throws IOException {
+        return tuGetTerms(units, source, null);
+    }
+
+    public static Set<String> tuGetTerms(List<TranslationUnit> units, boolean source, LanguagePair direction) throws IOException {
+        HashSet<String> terms = new HashSet<>();
+        for (TranslationUnit unit : units) {
+            if (direction == null || unit.direction.equals(direction)) {
+                String text = source ? unit.rawSourceSentence : unit.rawTargetSentence;
+                terms.addAll(Arrays.asList(text.split(" ")));
+            }
+        }
+
+        return terms;
+    }
+
+    public static String tuGetContent(List<TranslationUnit> units, boolean source) {
+        return tuGetContent(units, source, null);
+    }
+
+    public static String tuGetContent(List<TranslationUnit> units, boolean source, LanguagePair direction) {
+        StringBuilder builder = new StringBuilder();
+        for (TranslationUnit unit : units) {
+            if (direction == null || unit.direction.equals(direction)) {
+                builder.append(source ? unit.rawSourceSentence : unit.rawTargetSentence);
+                builder.append('\n');
+            }
+        }
+
+        return builder.substring(0, builder.length() - 1);
     }
 
     // Channels
@@ -110,10 +221,8 @@ public class TestData {
 
     public static Set<String> getTerms(Locale... locales) throws IOException {
         HashSet<String> terms = new HashSet<>();
-        for (Locale locale : locales) {
-            Analyzer analyzer = LanguageAnalyzer.getByLanguage(locale);
-            terms.addAll(LuceneUtils.analyze(analyzer, EXAMPLE_CONTENTS.get(locale.getLanguage())));
-        }
+        for (Locale locale : locales)
+            terms.addAll(EXAMPLE_TERMS.get(locale.getLanguage()));
 
         return terms;
     }
@@ -136,7 +245,7 @@ public class TestData {
         return new DummyMultilingualCorpus(corpora);
     }
 
-    public static DummyMultilingualCorpus corpus(DummyBilingualCorpus[] corpora) {
+    public static DummyMultilingualCorpus corpus(DummyBilingualCorpus... corpora) {
         return new DummyMultilingualCorpus(corpora);
     }
 
@@ -152,6 +261,14 @@ public class TestData {
             this.language = new LanguagePair(sourceCorpus.getLanguage(), targetCorpus.getLanguage());
             this.sourceCorpus = sourceCorpus;
             this.targetCorpus = targetCorpus;
+        }
+
+        public String getSourceCorpus() {
+            return sourceCorpus.toString().trim();
+        }
+
+        public String getTargetCorpus() {
+            return targetCorpus.toString().trim();
         }
 
         @Override

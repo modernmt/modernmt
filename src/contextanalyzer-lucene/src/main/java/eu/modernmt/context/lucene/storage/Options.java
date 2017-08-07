@@ -16,8 +16,6 @@ public class Options {
         return options;
     }
 
-    public int queueSize = 1000;
-
     // Background threads that add corpora to the
     // context analyzer index
     public int analysisThreads = 4;

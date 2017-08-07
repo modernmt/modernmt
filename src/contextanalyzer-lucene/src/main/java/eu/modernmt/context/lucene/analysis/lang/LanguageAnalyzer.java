@@ -103,7 +103,7 @@ public abstract class LanguageAnalyzer extends StopwordAnalyzerBase {
     public static Analyzer getByLanguage(Locale locale, AnalyzerConfig config, Analyzer def) {
         Class<? extends Analyzer> analyzerClass = ANALYZERS.get(locale.toLanguageTag());
         if (analyzerClass == null)
-            analyzerClass = ANALYZERS.get(locale.toLanguageTag());
+            analyzerClass = ANALYZERS.get(locale.getLanguage());
 
         if (analyzerClass == null)
             return def;
