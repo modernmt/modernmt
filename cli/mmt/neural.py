@@ -70,7 +70,6 @@ class OpenNMTPreprocessor:
 
             def __exit__(self, exc_type, exc_val, exc_tb):
                 self._reader.__exit__(exc_type, exc_val, exc_tb)
-                return self._reader
 
         self._logger.info('Creating VBE vocabulary')
         vb_builder = SubwordTextProcessor.Builder(symbols=bpe_symbols, max_vocabulary_size=max_vocab_size)

@@ -37,26 +37,35 @@ def _TrainingPreprocessor_filter_file(corpus, dest_folder, langs, min_thr, max_t
 
 
 class Tokenizer:
-    def __init__(self, lang, print_tags=False, print_placeholders=True):
-        self._lang = lang
+    def __init__(self, source_lang, target_lang, print_tags=False, print_placeholders=True):
+        self._source_lang = source_lang
+        self._target_lang = target_lang
         self._print_tags = print_tags
         self._print_placeholders = print_placeholders
         self._java_mainclass = 'eu.modernmt.cli.PreprocessorMain'
 
-    def process_corpora(self, corpora, dest_folder):
-        fileutils.makedirs(dest_folder, exist_ok=True)
+    def process_corpora(self, corpora, output_folder):
+        fileutils.makedirs(output_folder, exist_ok=True)
 
         for corpus in corpora:
+            output_corpus = BilingualCorpus.make_parallel(corpus.name, output_folder, corpus.langs)
+
             for lang in corpus.langs:
-                source = corpus.get_file(lang)
-                dest = BilingualCorpus.make_parallel(corpus.name, dest_folder, [lang])
+                input_path = corpus.get_file(lang)
+                output_path = output_corpus.get_file(lang)
 
-                self.process_file(source, dest, lang)
+                self.process_file(input_path, output_path, lang)
 
-        return BilingualCorpus.list(dest_folder)
+        return BilingualCorpus.list(output_folder)
 
-    def process_file(self, source, dest, lang):
-        args = ['--lang', self._lang]
+    def process_file(self, input_path, output_path, lang):
+        if lang == self._source_lang:
+            args = ['-s', self._source_lang, '-t', self._target_lang]
+        elif lang == self._target_lang:
+            args = ['-s', self._target_lang, '-t', self._source_lang]
+        else:
+            raise ValueError('Unsupported language "%s"' % lang)
+        
         if not self._print_tags:
             args.append('--no-tags')
         if self._print_placeholders:
@@ -64,8 +73,8 @@ class Tokenizer:
 
         command = mmt_javamain(self._java_mainclass, args=args)
 
-        with open(source) as input_stream:
-            with open(dest.get_file(lang), 'w') as output_stream:
+        with open(input_path) as input_stream:
+            with open(output_path, 'w') as output_stream:
                 shell.execute(command, stdin=input_stream, stdout=output_stream)
 
 

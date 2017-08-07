@@ -35,7 +35,6 @@ class ClusterNode(object):
 
                 def __exit__(self, *_):
                     self._l.on_step_end(self._step)
-                    return self
 
             return _(self, step)
 
@@ -428,12 +427,12 @@ class ClusterNode(object):
 
         try:
             # Tokenization
-            tokenizer = Tokenizer(target_lang)
+            tokenizer = Tokenizer(source_lang=source_lang, target_lang=target_lang)
             tokenized_output = os.path.join(working_dir, 'reference_corpora')
             fileutils.makedirs(tokenized_output, exist_ok=True)
 
             with listener.step('Corpora tokenization') as _:
-                reference_corpora = tokenizer.process_corpora(reference_corpora, tokenized_output)
+                reference_corpora = tokenizer.process_corpora(corpora=reference_corpora, output_folder=tokenized_output)
 
             # Create merged corpus
             with listener.step('Merging corpus') as _:
