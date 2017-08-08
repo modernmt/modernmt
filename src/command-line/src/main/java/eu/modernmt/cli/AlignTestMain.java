@@ -58,13 +58,14 @@ public class AlignTestMain {
     public static void main(String[] _args) throws Throwable {
         Log4jConfiguration.setup(Level.INFO);
         Args args = new Args(_args);
+
         FileCorpus srcCorpus = new FileCorpus(args.sourceFile);
         FileCorpus trgCorpus = new FileCorpus(args.targetFile);
+        Locale source = srcCorpus.getLanguage();
+        Locale target = trgCorpus.getLanguage();
         LineReader srcReader = null;
         LineReader trgReader = null;
         FileWriter writer = null;
-        Locale source = srcCorpus.getLanguage();
-        Locale target = trgCorpus.getLanguage();
         LanguagePair direction;
         direction = new LanguagePair(source, target);
         System.out.println("Original direction: " + direction);
@@ -79,6 +80,7 @@ public class AlignTestMain {
             trgReader = trgCorpus.getContentReader();
             writer = new FileWriter(args.outputFile);
             FastAlign aligner = new FastAlign(args.model);
+
             String sourceString = srcReader.readLine();
             String targetString = trgReader.readLine();
             Sentence srcSentence;
@@ -86,10 +88,13 @@ public class AlignTestMain {
             Alignment alignment;
             while (sourceString != null && targetString != null) {
                 srcSentence = preprocessor.process(direction, sourceString);
-                trgSentence = preprocessor.process(direction, targetString);
+                trgSentence = preprocessor.process(direction.reversed(), targetString);
                 alignment = aligner.getAlignment(direction, srcSentence, trgSentence);
                 if (source.toLanguageTag().compareTo(target.toLanguageTag()) > 0)
                     alignment = alignment.getInverse();
+                else
+                    alignment = alignment.getInverse().getInverse();
+
                 writer.write(alignment.toString() + "\n");
                 sourceString = srcReader.readLine();
                 targetString = trgReader.readLine();
