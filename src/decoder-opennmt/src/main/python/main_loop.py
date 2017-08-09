@@ -21,7 +21,9 @@ class Suggestion:
 # ======================================================================================================================
 
 class TranslationRequest:
-    def __init__(self, source, suggestions=None):
+    def __init__(self, source_lang, target_lang, source, suggestions=None):
+        self.source_lang = source_lang
+        self.target_lang = target_lang
         self.source = source
         self.suggestions = suggestions if suggestions is not None else []
 
@@ -30,6 +32,9 @@ class TranslationRequest:
         obj = json.loads(json_string)
 
         source = obj['source']
+        source_language = obj['source_language']
+        target_language = obj['target_language']
+
         suggestions = []
 
         if 'suggestions' in obj:
@@ -40,7 +45,7 @@ class TranslationRequest:
 
                 suggestions.append(Suggestion(suggestion_source, suggestion_target, suggestion_score))
 
-        return TranslationRequest(source, suggestions)
+        return TranslationRequest(source_language, target_language, source, suggestions)
 
 
 class TranslationResponse:

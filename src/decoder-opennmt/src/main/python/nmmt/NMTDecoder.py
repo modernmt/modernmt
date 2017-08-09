@@ -10,6 +10,7 @@ from nmmt.internal_utils import log_timed_action
 
 class NMTDecoder:
     def __init__(self, model_path, gpu_id=None, random_seed=None):
+
         self._logger = logging.getLogger('nmmt.NMTDecoder')
 
         if gpu_id is not None:
@@ -21,9 +22,24 @@ class NMTDecoder:
 
         using_cuda = gpu_id is not None
 
-        self._text_processor = SubwordTextProcessor.load_from_file(os.path.join(model_path, 'model.bpe'))
-        with log_timed_action(self._logger, 'Loading model from checkpoint'):
-            self._engine = NMTEngine.load_from_checkpoint(os.path.join(model_path, 'model.pt'), using_cuda=using_cuda)
+        # a map languageDirection -> TextProcessor (the direction is a string <src>__<trg>)
+        self._text_processors = {}
+        # a map languageDirection -> NMTEngine (the direction is a string <src>__<trg>)
+        self._engines = {}
+
+        # read from model.map file the translation directions and the corresponding the model names;
+        # use them to create the text processors and engines and put them in the maps
+        with open(os.path.join(model_path, 'model.map'), "r") as model_map_file:
+            model_map_lines = model_map_file.readlines()
+            for line in model_map_lines:
+                direction, model_name = line.strip().split("=")
+                tp_model = model_name + '.bpe'
+                engine_model = model_name + '.pt'
+                self._text_processors[direction] = SubwordTextProcessor.load_from_file(
+                    os.path.join(model_path, tp_model))
+                with log_timed_action(self._logger, 'Loading model from checkpoint'):
+                    self._engines[direction] = NMTEngine.load_from_checkpoint(os.path.join(model_path, engine_model),
+                                                                              using_cuda=using_cuda)
 
         # Public-editable options
         self.beam_size = 5
@@ -31,34 +47,39 @@ class NMTDecoder:
         self.replace_unk = False
         self.tuning_epochs = 5
 
-    def translate(self, text, suggestions=None, n_best=1):
+    def translate(self, source_lang, target_lang, text, suggestions=None, n_best=1):
+        # (0) Get textProcessor and nmtEngine for current direction
+        direction = source_lang + '__' + target_lang
+        text_processor = self._text_processors[direction]
+        engine = self._engines[direction]
+
         # (1) Process text and suggestions
-        processed_text = self._text_processor.encode_line(text, is_source=True)
+        processed_text = text_processor.encode_line(text, is_source=True)
         processed_suggestions = None
 
         if self.tuning_epochs > 0 and suggestions is not None and len(suggestions) > 0:
             processed_suggestions = [], []
 
             for suggestion in suggestions:
-                processed_suggestions[0].append(self._text_processor.encode_line(suggestion.source, is_source=True))
-                processed_suggestions[1].append(self._text_processor.encode_line(suggestion.target, is_source=False))
+                processed_suggestions[0].append(text_processor.encode_line(suggestion.source, is_source=True))
+                processed_suggestions[1].append(text_processor.encode_line(suggestion.target, is_source=False))
 
         # (2) Tune engine if suggestions provided
         if processed_suggestions is not None:
             msg = 'Tuning engine on %d suggestions (%d epochs)' % (len(processed_suggestions[0]), self.tuning_epochs)
 
             with log_timed_action(self._logger, msg, log_start=False):
-                self._engine.tune(*processed_suggestions, epochs=self.tuning_epochs)
+                engine.tune(*processed_suggestions, epochs=self.tuning_epochs)
 
         # (3) Translate
-        pred_batch, pred_score = self._engine.translate(processed_text,
-                                                        n_best=n_best, beam_size=self.beam_size,
-                                                        max_sent_length=self.max_sent_length,
-                                                        replace_unk=self.replace_unk)
+        pred_batch, pred_score = engine.translate(processed_text,
+                                                  n_best=n_best, beam_size=self.beam_size,
+                                                  max_sent_length=self.max_sent_length,
+                                                  replace_unk=self.replace_unk)
 
         # (4) Reset engine if needed
         if processed_suggestions is not None:
             with log_timed_action(self._logger, 'Restoring model initial state', log_start=False):
-                self._engine.reset_model()
+                engine.reset_model()
 
-        return self._text_processor.decode_tokens(pred_batch[0])
+        return text_processor.decode_tokens(pred_batch[0])
