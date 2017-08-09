@@ -8,6 +8,16 @@ from nmmt import SubwordTextProcessor, NMTEngine
 from nmmt.internal_utils import log_timed_action
 
 
+class UnsupportedLanguageException(Exception):
+    def __init__(self, source_language, target_language):
+        self.message = "No engine and text processors found for " + source_language + " -> " + target_language + "."
+
+
+class IllegalStateException(Exception):
+    def __init__(self, source_language, target_language):
+        self.message = "Error: illegal internal state for direction " + source_language + " -> " + target_language + "."
+
+
 class NMTDecoder:
     def __init__(self, model_path, gpu_id=None, random_seed=None):
 
@@ -22,17 +32,20 @@ class NMTDecoder:
 
         using_cuda = gpu_id is not None
 
-        # a map languageDirection -> TextProcessor (the direction is a string <src>__<trg>)
+        # map <direction -> TextProcessor>    (the direction is a string <src>__<trg>)
         self._text_processors = {}
-        # a map languageDirection -> NMTEngine (the direction is a string <src>__<trg>)
+        # map <direction -> NMTEngine>    (the direction is a string <src>__<trg>)
         self._engines = {}
 
-        # read from model.map file the translation directions and the corresponding the model names;
-        # use them to create the text processors and engines and put them in the maps
         with open(os.path.join(model_path, 'model.map'), "r") as model_map_file:
             model_map_lines = model_map_file.readlines()
             for line in model_map_lines:
+                # read from model.map file the translation directions and the corresponding the model;
                 direction, model_name = line.strip().split("=")
+                direction = direction.strip()
+                model_name = model_name.strip()
+
+                # use the directions and models to create and store the text processors and engines
                 tp_model = model_name + '.bpe'
                 engine_model = model_name + '.pt'
                 self._text_processors[direction] = SubwordTextProcessor.load_from_file(
@@ -50,6 +63,11 @@ class NMTDecoder:
     def translate(self, source_lang, target_lang, text, suggestions=None, n_best=1):
         # (0) Get textProcessor and nmtEngine for current direction
         direction = source_lang + '__' + target_lang
+        if direction not in self._text_processors.keys() and direction not in self._engines.keys():
+            raise UnsupportedLanguageException(source_lang, target_lang)
+        elif direction not in self._text_processors.keys() or direction not in self._engines.keys():
+            raise IllegalStateException(source_lang, target_lang)
+
         text_processor = self._text_processors[direction]
         engine = self._engines[direction]
 

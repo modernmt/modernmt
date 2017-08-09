@@ -94,7 +94,7 @@ class MainController:
     def process(self, line):
         try:
             request = TranslationRequest.from_json_string(line)
-            translation = self._decoder.translate(request.source, request.suggestions)
+            translation = self._decoder.translate(request.source_lang, request.target_lang, request.source, request.suggestions)
             return TranslationResponse(translation=translation)
         except BaseException as e:
             self._logger.exception('Failed to process request "' + line + '"')
