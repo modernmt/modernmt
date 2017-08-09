@@ -65,7 +65,7 @@ def run_main():
                     print '>> decoder not loaded'
                 else:
                     now = time.time()
-                    translation = decoders[-1].translate(query, [Suggestion('hello world', 'ciao mondo', 1.)])
+                    translation = decoders[-1].translate('en', 'it', query, [Suggestion('hello world', 'ciao mondo', 1.)])
                     print '>> DONE in %f seconds' % (time.time() - now)
                     print translation
     except KeyboardInterrupt:
