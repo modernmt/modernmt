@@ -153,13 +153,16 @@ def run_main():
     # ------------------------------------------------------------------------------------------------------------------
     try:
         decoder = NMTDecoder(args.model, gpu_id=args.gpu, random_seed=3435)
-
         controller = MainController(decoder, stdout)
+        stdout.write("ok\n")
+        stdout.flush()
         controller.serve_forever()
     except KeyboardInterrupt:
         pass  # ignore and exit
     except BaseException as e:
         logger.exception(e)
+        stdout.write(e)
+        stdout.flush()
 
 
 if __name__ == '__main__':

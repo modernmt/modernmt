@@ -11,6 +11,7 @@ import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -38,15 +39,15 @@ class NativeProcess implements Closeable {
             this.model = model;
         }
 
-        public NativeProcess startOnCPU() throws IOException {
+        public NativeProcess startOnCPU() throws IOException, OpenNMTException {
             return start(-1);
         }
 
-        public NativeProcess startOnGPU(int gpu) throws IOException {
+        public NativeProcess startOnGPU(int gpu) throws IOException, OpenNMTException {
             return start(gpu);
         }
 
-        private NativeProcess start(int gpu) throws IOException {
+        private NativeProcess start(int gpu) throws IOException, OpenNMTException {
             ArrayList<String> command = new ArrayList<>(5);
             command.add("python");
             command.add("main_loop.py");
@@ -75,13 +76,26 @@ class NativeProcess implements Closeable {
     private final BufferedReader stdout;
     private final LogThread logThread;
 
-    private NativeProcess(Process decoder) {
+    private NativeProcess(Process decoder) throws IOException, OpenNMTException {
         this.decoder = decoder;
         this.stdin = decoder.getOutputStream();
         this.stdout = new BufferedReader(new InputStreamReader(decoder.getInputStream()));
         this.logThread = new LogThread(decoder.getErrorStream());
 
         this.logThread.start();
+
+        /*Wait for feedback from the engine: it can be either "ok" or an exception. */
+        try {
+            String line = this.stdout.readLine();
+            logger.info("READ LINE FROM DECODER " + line);
+            if (line == null || !line.trim().equals("ok"))
+                deserialize(line);
+        } catch (IOException | OpenNMTException e) {
+            IOUtils.closeQuietly(this.stdin);
+            IOUtils.closeQuietly(this.stdout);
+            throw e;
+        }
+
     }
 
     public Word[] translate(LanguagePair direction, Sentence sentence) throws OpenNMTException {

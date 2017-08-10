@@ -1,19 +1,19 @@
 import os
 
 import logging
-import torch
-import torch.cuda.random as random
+# import torch
+# import torch.cuda.random as random
 
-from nmmt import SubwordTextProcessor, NMTEngine
+from nmmt import SubwordTextProcessor, NMTEngineDummy
 from nmmt.internal_utils import log_timed_action
 
 
-class UnsupportedLanguageException(Exception):
+class UnsupportedLanguageException(BaseException):
     def __init__(self, source_language, target_language):
         self.message = "No engine and text processors found for %s -> %s." %(source_language, target_language)
 
 
-class ModelFileNotFoundException(Exception):
+class ModelFileNotFoundException(BaseException):
     def __init__(self, path):
         self.message = "Decoder model file not found: %s" % path
 
@@ -30,7 +30,7 @@ class _EngineData:
             raise ModelFileNotFoundException(engine_model_file)
 
         text_processor = SubwordTextProcessor.load_from_file(tp_model_file)
-        engine = NMTEngine.load_from_checkpoint(engine_model_file, using_cuda=using_cuda)
+        engine = NMTEngineDummy.load_from_checkpoint(engine_model_file, using_cuda=using_cuda)
 
         return _EngineData(engine, text_processor)
 
@@ -43,17 +43,18 @@ class NMTDecoder:
     def __init__(self, model_path, gpu_id=None, random_seed=None):
         self._logger = logging.getLogger('nmmt.NMTDecoder')
 
-        if gpu_id is not None:
-            torch.cuda.set_device(gpu_id)
-
-        if random_seed is not None:
-            torch.manual_seed(random_seed)
-            random.manual_seed_all(random_seed)
-
-        using_cuda = gpu_id is not None
+        # if gpu_id is not None:
+        #     torch.cuda.set_device(gpu_id)
+        #
+        # if random_seed is not None:
+        #     torch.manual_seed(random_seed)
+        #     random.manual_seed_all(random_seed)
+        #
+        # using_cuda = gpu_id is not None
+        using_cuda = False
 
         # map languageDirection -> _EngineData (direction is a string <src>__<trg>)
-        self._engines = {}
+        self._engines_data = {}
 
         # create and put in its map a TextProcessor and a NMTEngine for each line in model.map
         with open(os.path.join(model_path, 'model.map'), "r") as model_map_file:
@@ -62,7 +63,7 @@ class NMTDecoder:
                 direction, model_name = map(str.strip, line.split("="))
 
                 with log_timed_action(self._logger, 'Loading "%s" model from checkpoint' % direction):
-                    self._engines[direction] = _EngineData.load(model_name, base_path=model_path, using_cuda=using_cuda)
+                    self._engines_data[direction] = _EngineData.load(model_name, base_path=model_path, using_cuda=using_cuda)
 
         # Public-editable options
         self.beam_size = 5
@@ -73,12 +74,12 @@ class NMTDecoder:
     def translate(self, source_lang, target_lang, text, suggestions=None, n_best=1):
         # (0) Get TextProcessor and NMTEngine for current direction; if it does not exist, raise an exception
         direction = source_lang + '__' + target_lang
-        if direction not in self._engines:
+        if direction not in self._engines_data:
             raise UnsupportedLanguageException(source_lang, target_lang)
 
-        data = self._engines[direction]
-        text_processor = data.text_processor
-        engine = data.engine
+        engine_data = self._engines_data[direction]
+        text_processor = engine_data.text_processor
+        engine = engine_data.engine
 
         # (1) Process text and suggestions
         processed_text = text_processor.encode_line(text, is_source=True)
