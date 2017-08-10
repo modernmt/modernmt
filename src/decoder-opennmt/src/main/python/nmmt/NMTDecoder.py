@@ -10,17 +10,16 @@ from nmmt.internal_utils import log_timed_action
 
 class UnsupportedLanguageException(Exception):
     def __init__(self, source_language, target_language):
-        self.message = "No engine and text processors found for " + source_language + " -> " + target_language + "."
+        self.message = "No engine and text processors found for %s -> %s." %(source_language, target_language)
 
 
-class IllegalStateException(Exception):
-    def __init__(self, source_language, target_language):
-        self.message = "Error: illegal internal state for direction " + source_language + " -> " + target_language + "."
+class ModelFileNotFoundException(Exception):
+    def __init__(self, path):
+        self.message = "Decoder model file not found: %s" % path
 
 
 class NMTDecoder:
     def __init__(self, model_path, gpu_id=None, random_seed=None):
-
         self._logger = logging.getLogger('nmmt.NMTDecoder')
 
         if gpu_id is not None:
@@ -32,27 +31,27 @@ class NMTDecoder:
 
         using_cuda = gpu_id is not None
 
-        # map <direction -> TextProcessor>    (the direction is a string <src>__<trg>)
+        # map languageDirection -> TextProcessor (direction is a string <src>__<trg>)
         self._text_processors = {}
-        # map <direction -> NMTEngine>    (the direction is a string <src>__<trg>)
+        # map languageDirection -> NMTEngine (direction is a string <src>__<trg>)
         self._engines = {}
 
+        # create and put in its map a TextProcessor and a NMTEngine for each line in model.map
         with open(os.path.join(model_path, 'model.map'), "r") as model_map_file:
             model_map_lines = model_map_file.readlines()
             for line in model_map_lines:
-                # read from model.map file the translation directions and the corresponding the model;
-                direction, model_name = line.strip().split("=")
-                direction = direction.strip()
-                model_name = model_name.strip()
+                direction, model_name = map(str.strip, line.split("="))
+                tp_model_file = os.path.join(model_path, model_name + '.bpe')
+                engine_model_file = os.path.join(model_path, model_name + '.pt')
 
-                # use the directions and models to create and store the text processors and engines
-                tp_model = model_name + '.bpe'
-                engine_model = model_name + '.pt'
-                self._text_processors[direction] = SubwordTextProcessor.load_from_file(
-                    os.path.join(model_path, tp_model))
+                if not os.path.isfile(tp_model_file):
+                    raise ModelFileNotFoundException(tp_model_file)
+                if not os.path.isfile(engine_model_file):
+                    raise ModelFileNotFoundException(engine_model_file)
+
+                self._text_processors[direction] = SubwordTextProcessor.load_from_file(tp_model_file)
                 with log_timed_action(self._logger, 'Loading model from checkpoint'):
-                    self._engines[direction] = NMTEngine.load_from_checkpoint(os.path.join(model_path, engine_model),
-                                                                              using_cuda=using_cuda)
+                    self._engines[direction] = NMTEngine.load_from_checkpoint(engine_model_file, using_cuda=using_cuda)
 
         # Public-editable options
         self.beam_size = 5
@@ -61,13 +60,10 @@ class NMTDecoder:
         self.tuning_epochs = 5
 
     def translate(self, source_lang, target_lang, text, suggestions=None, n_best=1):
-        # (0) Get textProcessor and nmtEngine for current direction
+        # (0) Get TextProcessor and NMTEngine for current direction; if it does not exist, raise an exception
         direction = source_lang + '__' + target_lang
-        if direction not in self._text_processors.keys() and direction not in self._engines.keys():
+        if direction not in self._text_processors.keys() or direction not in self._engines.keys():
             raise UnsupportedLanguageException(source_lang, target_lang)
-        elif direction not in self._text_processors.keys() or direction not in self._engines.keys():
-            raise IllegalStateException(source_lang, target_lang)
-
         text_processor = self._text_processors[direction]
         engine = self._engines[direction]
 
