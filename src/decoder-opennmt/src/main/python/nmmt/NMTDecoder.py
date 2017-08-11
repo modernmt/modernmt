@@ -1,16 +1,16 @@
 import os
 
 import logging
-# import torch
-# import torch.cuda.random as random
+import torch
+import torch.cuda.random as random
 
-from nmmt import SubwordTextProcessor, NMTEngineDummy
+from nmmt import SubwordTextProcessor, NMTEngine
 from nmmt.internal_utils import log_timed_action
 
 
 class UnsupportedLanguageException(BaseException):
     def __init__(self, source_language, target_language):
-        self.message = "No engine and text processors found for %s -> %s." %(source_language, target_language)
+        self.message = "No engine and text processors found for %s -> %s." % (source_language, target_language)
 
 
 class ModelFileNotFoundException(BaseException):
@@ -30,7 +30,7 @@ class _EngineData:
             raise ModelFileNotFoundException(engine_model_file)
 
         text_processor = SubwordTextProcessor.load_from_file(tp_model_file)
-        engine = NMTEngineDummy.load_from_checkpoint(engine_model_file, using_cuda=using_cuda)
+        engine = NMTEngine.load_from_checkpoint(engine_model_file, using_cuda=using_cuda)
 
         return _EngineData(engine, text_processor)
 
@@ -43,15 +43,14 @@ class NMTDecoder:
     def __init__(self, model_path, gpu_id=None, random_seed=None):
         self._logger = logging.getLogger('nmmt.NMTDecoder')
 
-        # if gpu_id is not None:
-        #     torch.cuda.set_device(gpu_id)
-        #
-        # if random_seed is not None:
-        #     torch.manual_seed(random_seed)
-        #     random.manual_seed_all(random_seed)
-        #
-        # using_cuda = gpu_id is not None
-        using_cuda = False
+        if gpu_id is not None:
+            torch.cuda.set_device(gpu_id)
+
+        if random_seed is not None:
+            torch.manual_seed(random_seed)
+            random.manual_seed_all(random_seed)
+
+        using_cuda = gpu_id is not None
 
         # map languageDirection -> _EngineData (direction is a string <src>__<trg>)
         self._engines_data = {}
@@ -63,7 +62,9 @@ class NMTDecoder:
                 direction, model_name = map(str.strip, line.split("="))
 
                 with log_timed_action(self._logger, 'Loading "%s" model from checkpoint' % direction):
-                    self._engines_data[direction] = _EngineData.load(model_name, base_path=model_path, using_cuda=using_cuda)
+                    self._engines_data[direction] = _EngineData.load(model_name,
+                                                                     base_path=model_path,
+                                                                     using_cuda=using_cuda)
 
         # Public-editable options
         self.beam_size = 5
