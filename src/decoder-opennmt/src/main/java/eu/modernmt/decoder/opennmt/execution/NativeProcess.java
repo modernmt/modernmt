@@ -76,7 +76,7 @@ class NativeProcess implements Closeable {
     private final BufferedReader stdout;
     private final LogThread logThread;
 
-    private NativeProcess(Process decoder) throws IOException, OpenNMTException {
+    public NativeProcess(Process decoder) throws IOException, OpenNMTException {
         this.decoder = decoder;
         this.stdin = decoder.getOutputStream();
         this.stdout = new BufferedReader(new InputStreamReader(decoder.getInputStream()));

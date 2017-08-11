@@ -14,23 +14,25 @@ import java.io.IOException;
  */
 class SingletonExecutionQueue implements ExecutionQueue {
 
+    public static SingletonExecutionQueue forCPU(StartNativeProcessCpuTask startTask) throws OpenNMTException {
+        /*borderline case: if only one decoder process must be launched, execute the task in this thread*/
+        try {
+            return new SingletonExecutionQueue(startTask.call());
+        } catch (IOException e) {
+            throw new OpenNMTException("Unable to start OpenNMT process", e);
+        }
+    }
+
+    public static SingletonExecutionQueue forGPU(StartNativeProcessGpuTask startTask) throws OpenNMTException {
+        /*borderline case: if only one decoder process must be launched, execute the task in this thread*/
+        try {
+            return new SingletonExecutionQueue(startTask.call());
+        } catch (IOException e) {
+            throw new OpenNMTException("Unable to start OpenNMT process", e);
+        }
+    }
+
     private final NativeProcess decoder;
-
-    public static SingletonExecutionQueue forCPU(NativeProcess.Builder builder) throws OpenNMTException {
-        try {
-            return new SingletonExecutionQueue(builder.startOnCPU());
-        } catch (IOException e) {
-            throw new OpenNMTException("Unable to start OpenNMT process", e);
-        }
-    }
-
-    public static SingletonExecutionQueue forGPU(NativeProcess.Builder builder, int gpu) throws OpenNMTException {
-        try {
-            return new SingletonExecutionQueue(builder.startOnGPU(gpu));
-        } catch (IOException e) {
-            throw new OpenNMTException("Unable to start OpenNMT process", e);
-        }
-    }
 
     private SingletonExecutionQueue(NativeProcess decoder) {
         this.decoder = decoder;
