@@ -22,7 +22,7 @@ public interface ExecutionQueue extends Closeable {
     static ExecutionQueue newInstance(File home, File model, int[] gpus) throws OpenNMTException {
 
 
-//        if (gpus == null || gpus.length == 0) {
+        if (gpus == null || gpus.length == 0) {
             ArrayList<StartNativeProcessCpuTask> startTasks = new ArrayList<>();
             int cpus = Runtime.getRuntime().availableProcessors();
             if (cpus > 1) {
@@ -32,17 +32,16 @@ public interface ExecutionQueue extends Closeable {
             } else {
                 return SingletonExecutionQueue.forCPU(new StartNativeProcessCpuTask(home, model));
             }
-//        } else {
-//            if (gpus.length > 1) {
-//                ArrayList<StartNativeProcessGpuTask> startTasks = new ArrayList<>();
-//                for (int i = 0; i < gpus.length; i++)
-//                    startTasks.add(i, new StartNativeProcessGpuTask(home, model, i));
-//                return ParallelExecutionQueue.forGPUs(startTasks);
-//            } else {
-//                return SingletonExecutionQueue.forGPU(new StartNativeProcessGpuTask(home, model, 0));
-//            }
-//        }
-
+        } else {
+            if (gpus.length > 1) {
+                ArrayList<StartNativeProcessGpuTask> startTasks = new ArrayList<>();
+                for (int i = 0; i < gpus.length; i++)
+                    startTasks.add(i, new StartNativeProcessGpuTask(home, model, i));
+                return ParallelExecutionQueue.forGPUs(startTasks);
+            } else {
+                return SingletonExecutionQueue.forGPU(new StartNativeProcessGpuTask(home, model, 0));
+            }
+        }
     }
 
     Translation execute(LanguagePair direction, Sentence sentence) throws OpenNMTException;

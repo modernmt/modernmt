@@ -87,7 +87,6 @@ class NativeProcess implements Closeable {
         /*Wait for feedback from the engine: it can be either "ok" or an exception. */
         try {
             String line = this.stdout.readLine();
-            logger.info("READ LINE FROM DECODER " + line);
             if (line == null || !line.trim().equals("ok"))
                 deserialize(line);
         } catch (IOException | OpenNMTException e) {
