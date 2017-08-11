@@ -24,11 +24,20 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Created by davide on 05/06/17.
+ * <p>
+ * A NativeProcess represents a separate process that is launched by an MMT engine to run an OpenNMTDecoder.
+ * The NativeProcess object is thus to run and request translations to its specific decoder process.
+ * If necessary, it also handles its close.
  */
 class NativeProcess implements Closeable {
 
     private static final Logger logger = LogManager.getLogger(NativeProcess.class);
 
+    /**
+     * A NativeProcess.Builder is an object that allows the creation of a NativeProcess
+     * (and thus the launch of the separate process for the OpenNMT decoder).
+     * It offers methods for running the decoder process either on a CPU or on a GPU.
+     */
     public static class Builder {
 
         private final File home;
@@ -39,10 +48,26 @@ class NativeProcess implements Closeable {
             this.model = model;
         }
 
+        /**
+         * This methods launches a separate process for an OpenNMTDecoder running on an available CPU
+         * and returns a NativeProcess that allows to interact with such process.
+         *
+         * @return a NativeProcess object, referencing the launched process
+         * @throws IOException      if the communication with the decoder process raised unexpected issues
+         * @throws OpenNMTException if the decoder process itself raised unexpected issues
+         */
         public NativeProcess startOnCPU() throws IOException, OpenNMTException {
             return start(-1);
         }
 
+        /**
+         * This methods launches a separate process for an OpenNMTDecoder running on a CPU
+         * and returns a NativeProcess that allows to interact with such process.
+         *
+         * @return a NativeProcess object, referencing the launched process
+         * @throws IOException      if the communication with the decoder process raised unexpected issues
+         * @throws OpenNMTException if the decoder process itself raised unexpected issues
+         */
         public NativeProcess startOnGPU(int gpu) throws IOException, OpenNMTException {
             return start(gpu);
         }
@@ -71,12 +96,21 @@ class NativeProcess implements Closeable {
 
     private static final JsonParser parser = new JsonParser();
 
-    private final Process decoder;
-    private final OutputStream stdin;
-    private final BufferedReader stdout;
-    private final LogThread logThread;
+    private final Process decoder;          // the decoder Python process
+    private final OutputStream stdin;       // stream to the standard input that the decoder process will read
+    private final BufferedReader stdout;    // reader to the standard output that the decoder process will write
+    private final LogThread logThread;      // separate thread for logging
 
-    public NativeProcess(Process decoder) throws IOException, OpenNMTException {
+    /**
+     * Create a new NativeProcess that connects to a specific OpenNMTDecoder process.
+     * After it is created, the NativeProcess allows communication with the decoder.
+     * NOTE: The process must be running already.
+     *
+     * @param decoder an already running decoder process
+     * @throws IOException
+     * @throws OpenNMTException
+     */
+    NativeProcess(Process decoder) throws IOException, OpenNMTException {
         this.decoder = decoder;
         this.stdin = decoder.getOutputStream();
         this.stdout = new BufferedReader(new InputStreamReader(decoder.getInputStream()));
@@ -97,10 +131,27 @@ class NativeProcess implements Closeable {
 
     }
 
+    /**
+     * This method requests a translation to this decoder process.
+     *
+     * @param direction the direction of the translation to execute
+     * @param sentence  the source sentence to translate
+     * @return an array of Words, representing the translation of the passed sentence
+     * @throws OpenNMTException
+     */
     public Word[] translate(LanguagePair direction, Sentence sentence) throws OpenNMTException {
         return translate(direction, sentence, null);
     }
 
+    /**
+     * This method requests a translation to this decoder process.
+     *
+     * @param direction   the direction of the translation to execute
+     * @param sentence    the source sentence to translate
+     * @param suggestions an array of translation suggestions that the decoder will study before the translation
+     * @return an array of Words, representing the translation of the passed sentence
+     * @throws OpenNMTException
+     */
     public Word[] translate(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions) throws OpenNMTException {
         if (!decoder.isAlive())
             throw new OpenNMTRejectedExecutionException();
@@ -154,7 +205,7 @@ class NativeProcess implements Closeable {
         return json.toString().replace('\n', ' ');
     }
 
-    public static Word[] deserialize(String response) throws OpenNMTException {
+    private static Word[] deserialize(String response) throws OpenNMTException {
         JsonObject json;
         try {
             json = parser.parse(response).getAsJsonObject();
@@ -193,6 +244,13 @@ class NativeProcess implements Closeable {
         return words;
     }
 
+
+    /**
+     * This method kills this decoder process.
+     * <p>
+     * It first tries to gently kill it.
+     * If after 5 seconds the process is still alive, it is forcibly destroyed.
+     */
     @Override
     public void close() throws IOException {
         decoder.destroy();

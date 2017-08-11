@@ -9,7 +9,7 @@ import java.io.IOException;
 /**
  * Created by andrea on 10/08/17.
  * <p>
- * A StartNativeProcessCpuTask is a Callable that, on execution,
+ * A StartNativeProcessGpuTask is a Callable that, on execution,
  * launches and returns a new NativeProcess that works on a GPU
  */
 public class StartNativeProcessGpuTask extends StartNativeProcessTask {
@@ -20,6 +20,11 @@ public class StartNativeProcessGpuTask extends StartNativeProcessTask {
         this.gpu = gpu;
     }
 
+    /**
+     * This method launches a new decoder process to run on a GPU.
+     *
+     * @return a NativeProcess object to interact with the decoder.
+     */
     @Override
     public NativeProcess call() throws IOException, OpenNMTException {
         NativeProcess.Builder builder = new NativeProcess.Builder(home, model);

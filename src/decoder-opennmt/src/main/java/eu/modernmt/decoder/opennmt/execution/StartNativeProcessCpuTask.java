@@ -17,6 +17,11 @@ public class StartNativeProcessCpuTask extends StartNativeProcessTask {
         super(home, model);
     }
 
+    /**
+     * This method launches a new decoder process to run on a CPU.
+     *
+     * @return a NativeProcess object to interact with the decoder.
+     */
     @Override
     public NativeProcess call() throws IOException, OpenNMTException {
         NativeProcess.Builder builder = new NativeProcess.Builder(home, model);

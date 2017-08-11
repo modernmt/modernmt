@@ -18,6 +18,11 @@ public abstract class StartNativeProcessTask implements Callable<NativeProcess> 
         this.model = model;
     }
 
+    /**
+     * This method launches a new decoder process.
+     *
+     * @return a NativeProcess object to interact with the decoder.
+     */
     @Override
     public abstract NativeProcess call() throws Exception;
 }
