@@ -161,6 +161,12 @@ class MMTTranslator(Translator):
 
         try:
             context_vector = self._contexts[corpus_file]
+
+            line = line.decode('utf-8')
+
+            if len(line) > 4096:
+                line = line[:4096]
+
             translation = self._api.translate(self.source_lang, self.target_lang, line, context=context_vector)
         except requests.exceptions.ConnectionError:
             raise TranslateError('Unable to connect to MMT. '

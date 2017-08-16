@@ -55,14 +55,20 @@ class _DocumentTranslator:
                 array.append(float(token))
 
     def _get_translation(self, line, nbest, context_vector):
+        line = line.decode('utf-8')
+
+        if len(line) > 4096:
+            line = line[:4096]
+
         translation = Api.translate(self.source_lang, self.target_lang, line, context=context_vector, nbest=nbest)
 
-        nbest_list = sorted(translation['nbest'], key=lambda hypo: hypo['totalScore'], reverse=True)
+        nbest_list = sorted(translation['nbest'], key=lambda hypo: hypo['totalScore'], reverse=True) \
+            if 'nbest' in translation else []
 
-        translation['nbest'] = nbest_list
-        translation['translation'] = nbest_list[0]['translation']
-
-        return translation
+        if len(nbest_list) > 0:
+            return {'nbest': nbest_list, 'translation': nbest_list[0]['translation']}
+        else:
+            return {'translation': ''}
 
     def _print(self, translation, nbest_out):
         print translation['translation'].encode('utf-8')
