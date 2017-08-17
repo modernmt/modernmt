@@ -406,13 +406,15 @@ class Evaluator:
         ]
 
     def evaluate(self, corpora, heval_output=None, debug=False):
-        if len(corpora) == 0:
-            raise IllegalArgumentException('empty corpora')
-        if heval_output is not None:
-            fileutils.makedirs(heval_output, exist_ok=True)
-
         target_lang = self._engine.target_lang
         source_lang = self._engine.source_lang
+
+        corpora = [corpus for corpus in corpora if source_lang in corpus.langs and target_lang in corpus.langs]
+        if len(corpora) == 0:
+            raise IllegalArgumentException('No %s > %s corpora found into specified path' % (source_lang, target_lang))
+
+        if heval_output is not None:
+            fileutils.makedirs(heval_output, exist_ok=True)
 
         logger = _evaluate_logger()
         logger.start(corpora)
