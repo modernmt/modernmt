@@ -417,11 +417,12 @@ class ClusterNode(object):
         if corpora is None:
             corpora = BilingualCorpus.list(os.path.join(self.engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME))
 
-        if len(corpora) == 0:
-            raise IllegalArgumentException('empty corpora')
-
         target_lang = self.engine.target_lang
         source_lang = self.engine.source_lang
+
+        corpora = [corpus for corpus in corpora if source_lang in corpus.langs and target_lang in corpus.langs]
+        if len(corpora) == 0:
+            raise IllegalArgumentException('No %s > %s corpora found into specified path' % (source_lang, target_lang))
 
         source_corpora = [BilingualCorpus.make_parallel(corpus.name, corpus.get_folder(), [source_lang])
                           for corpus in corpora]
