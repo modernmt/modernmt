@@ -1,11 +1,8 @@
-package eu.modernmt.model.corpus.impl;
+package eu.modernmt.model.corpus;
 
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.corpus.Corpora;
-import eu.modernmt.model.corpus.Corpus;
-import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.io.IOException;
 import java.io.Reader;

@@ -3,9 +3,12 @@ package eu.modernmt.cli;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.facade.TrainingFacade;
+import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpusMask;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.Level;
 
@@ -82,6 +85,12 @@ public class TrainingPipelineMain {
 
         if (bilingualCorpora.isEmpty())
             throw new ParseException("Input path does not contains valid bilingual data");
+
+        // Wrap corpora masking original language
+        LanguageIndex languages = new LanguageIndex(new LanguagePair(args.sourceLanguage, args.targetLanguage));
+
+        for (int i = 0; i < bilingualCorpora.size(); i++)
+            bilingualCorpora.set(i, new MultilingualCorpusMask(languages, bilingualCorpora.get(i)));
 
         TrainingFacade.TrainingOptions options = new TrainingFacade.TrainingOptions();
 

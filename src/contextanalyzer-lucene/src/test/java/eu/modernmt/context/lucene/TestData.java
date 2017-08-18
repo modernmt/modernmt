@@ -8,7 +8,7 @@ import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
 import eu.modernmt.model.corpus.Corpus;
-import eu.modernmt.model.corpus.impl.BaseMultilingualCorpus;
+import eu.modernmt.model.corpus.BaseMultilingualCorpus;
 import eu.modernmt.model.corpus.impl.StringCorpus;
 import org.apache.commons.io.IOUtils;
 

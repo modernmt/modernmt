@@ -1,7 +1,7 @@
 package eu.modernmt.training;
 
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.corpus.impl.BaseMultilingualCorpus;
+import eu.modernmt.model.corpus.BaseMultilingualCorpus;
 
 import java.io.IOException;
 import java.util.ArrayList;

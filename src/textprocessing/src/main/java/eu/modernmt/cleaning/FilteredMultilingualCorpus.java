@@ -1,7 +1,7 @@
 package eu.modernmt.cleaning;
 
 import eu.modernmt.model.corpus.MultilingualCorpus;
-import eu.modernmt.model.corpus.impl.BaseMultilingualCorpus;
+import eu.modernmt.model.corpus.BaseMultilingualCorpus;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;

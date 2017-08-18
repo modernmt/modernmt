@@ -1,7 +1,7 @@
 package eu.modernmt.model.corpus.impl.tmx;
 
 import eu.modernmt.io.FileProxy;
-import eu.modernmt.model.corpus.impl.BaseMultilingualCorpus;
+import eu.modernmt.model.corpus.BaseMultilingualCorpus;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;

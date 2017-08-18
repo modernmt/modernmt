@@ -38,10 +38,10 @@ public interface MultilingualCorpus {
 
     class StringPair {
 
-        public final LanguagePair language;
+        public LanguagePair language;
         public String source;
         public String target;
-        public final Date timestamp;
+        public Date timestamp;
 
         public StringPair(LanguagePair language, String source, String target) {
             this(language, source, target, null);

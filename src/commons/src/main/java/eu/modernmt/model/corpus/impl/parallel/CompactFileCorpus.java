@@ -5,7 +5,7 @@ import eu.modernmt.io.FileProxy;
 import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.io.UnixLineWriter;
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.corpus.impl.BaseMultilingualCorpus;
+import eu.modernmt.model.corpus.BaseMultilingualCorpus;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;

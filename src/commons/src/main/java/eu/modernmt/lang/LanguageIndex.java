@@ -13,6 +13,10 @@ public class LanguageIndex implements Iterable<LanguagePair> {
     private final Set<LanguagePair> languages;
     private final ConcurrentHashMap<LanguagePair, LanguagePair> cache = new ConcurrentHashMap<>();
 
+    public LanguageIndex(LanguagePair... languages) {
+        this(Arrays.asList(languages));
+    }
+
     public LanguageIndex(Collection<LanguagePair> languages) {
         this.languages = Collections.unmodifiableSet(new HashSet<>(languages));
     }
