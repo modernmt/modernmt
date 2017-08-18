@@ -1,6 +1,6 @@
 package eu.modernmt.processing.string;
 
-import eu.modernmt.processing.LanguageNotSupportedException;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 
@@ -36,9 +36,9 @@ public class SentenceConstructor extends TextProcessor<String, SentenceBuilder> 
      *
      * @param sourceLanguage the language of the input String
      * @param targetLanguage the language the input String must be translated to
-     * @throws LanguageNotSupportedException the requested language is not supported by this software
+     * @throws UnsupportedLanguageException the requested language is not supported by this software
      */
-    public SentenceConstructor(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+    public SentenceConstructor(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
     }
 

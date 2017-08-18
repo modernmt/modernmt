@@ -1,8 +1,9 @@
 package eu.modernmt.processing.tokenizer.jflex;
 
+import eu.modernmt.processing.string.SentenceBuilder;
+
 import java.io.CharArrayReader;
 import java.io.Reader;
-import java.util.ArrayList;
 
 /**
  * Created by davide on 01/02/16.
@@ -29,11 +30,11 @@ public class TokensAnnotatedString {
                 (0x7800 <= c && c <= 0x8CFF) || (0x8D00 <= c && c <= 0x9FFF);
     }
 
-    public TokensAnnotatedString(String string) {
-        this(string.toCharArray());
+    public TokensAnnotatedString(String string, boolean splitCJK) {
+        this(string.toCharArray(), splitCJK);
     }
 
-    public TokensAnnotatedString(char[] source) {
+    public TokensAnnotatedString(char[] source, boolean splitCJK) {
         this.chars = new char[source.length + 2];
         this.flags = new byte[source.length + 3];
 
@@ -47,7 +48,7 @@ public class TokensAnnotatedString {
 
             if (isWhitespace(c)) {
                 type = WHITESPACE;
-            } else if (isCJK(c) || (c != '-' && !Character.isLetterOrDigit(c))) {
+            } else if ((splitCJK && isCJK(c)) || (c != '-' && !Character.isLetterOrDigit(c))) {
                 type = BREAK;
             }
 
@@ -96,8 +97,8 @@ public class TokensAnnotatedString {
         return new CharArrayReader(chars, 0, length);
     }
 
-    public String[] toTokenArray() {
-        ArrayList<String> tokens = new ArrayList<>();
+    public SentenceBuilder compile(SentenceBuilder builder) {
+        SentenceBuilder.Editor editor = builder.edit();
 
         int tokenStart = 0;
         int tokenEnd = 0;
@@ -113,7 +114,7 @@ public class TokensAnnotatedString {
                 int tokenLength = 1 + tokenEnd - tokenStart;
 
                 if (tokenLength > 0) {
-                    tokens.add(new String(chars, tokenStart, tokenLength));
+                    editor.setWord(tokenStart - 1, tokenLength, null);
                     tokenStart = tokenEnd = i;
                     foundNonWhitespace = false;
                 }
@@ -130,7 +131,7 @@ public class TokensAnnotatedString {
             }
         }
 
-        return tokens.toArray(new String[tokens.size()]);
+        return editor.commit();
     }
 
     @Override

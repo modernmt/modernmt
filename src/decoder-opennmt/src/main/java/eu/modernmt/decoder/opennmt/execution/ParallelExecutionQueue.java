@@ -2,63 +2,91 @@ package eu.modernmt.decoder.opennmt.execution;
 
 import eu.modernmt.decoder.opennmt.OpenNMTException;
 import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
 import org.apache.commons.io.IOUtils;
 
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Created by davide on 23/05/17.
+ * <p>
+ * A ParallelExecutionQueue launches and manages a group of OpenNMTDecoder processes.
+ * It assigns them translation jobs and, if necessary, closes the processes.
  */
 class ParallelExecutionQueue implements ExecutionQueue {
 
-    private final NativeProcess[] processes;
-    private final ArrayBlockingQueue<NativeProcess> queue;
+    /**
+     * This method launches multiple OpenNMTDecoder processes that must be run on CPU
+     * and returns the list of NativeProcess objects to interact with them.
+     *
+     * @param tasks a list of StartNativeProcessCpuTask to execute
+     * @return the list of NativeProcess object resulting from the execution of all the passed tasks
+     * @throws OpenNMTException
+     */
+    public static ParallelExecutionQueue forCPUs(ArrayList<StartNativeProcessCpuTask> tasks) throws OpenNMTException {
+        return executeStartTasks(tasks);
+    }
 
-    public static ParallelExecutionQueue forCPUs(NativeProcess.Builder builder, int cpus) throws OpenNMTException {
-        NativeProcess[] processes = new NativeProcess[cpus];
+    /**
+     * This method launches multiple OpenNMTDecoder processes that must be run on GPU
+     * and returns the list of NativeProcess objects to interact with them.
+     *
+     * @param tasks a list of StartNativeProcessGpuTask to execute
+     * @return the list of NativeProcess object resulting from the execution of all the passed tasks
+     */
+    public static ParallelExecutionQueue forGPUs(ArrayList<StartNativeProcessGpuTask> tasks) throws OpenNMTException {
+        return executeStartTasks(tasks);
+    }
 
-        boolean success = false;
-        try {
-            for (int i = 0; i < cpus; i++)
-                processes[i] = builder.startOnCPU();
+    private static ParallelExecutionQueue executeStartTasks(ArrayList<? extends StartNativeProcessTask> tasks) throws OpenNMTException {
+        ExecutorService executor;
+        ArrayList<Future<NativeProcess>> futures;
 
-            success = true;
-        } catch (IOException e) {
-            throw new OpenNMTException("Unable to start OpenNMT process", e);
-        } finally {
-            if (!success) {
-                for (NativeProcess decoder : processes)
-                    IOUtils.closeQuietly(decoder);
-            }
-        }
-
+        /*start decoder processes using GPUs*/
+        futures = new ArrayList<>(tasks.size());
+        executor = Executors.newFixedThreadPool(tasks.size());
+        for (int i = 0; i < tasks.size(); i++)
+            futures.add(i, executor.submit(tasks.get(i)));
+        executor.shutdown();
+        NativeProcess[] processes = getProcesses(futures);
         return new ParallelExecutionQueue(processes);
     }
 
-    public static ParallelExecutionQueue forGPUs(NativeProcess.Builder builder, int[] gpus) throws OpenNMTException {
-        NativeProcess[] processes = new NativeProcess[gpus.length];
+    private static NativeProcess[] getProcesses(ArrayList<Future<NativeProcess>> futures) throws OpenNMTException {
+        NativeProcess[] processes = new NativeProcess[futures.size()];
+        boolean success = true;
 
-        boolean success = false;
-        try {
-            for (int i = 0; i < gpus.length; i++)
-                processes[i] = builder.startOnGPU(gpus[i]);
-
-            success = true;
-        } catch (IOException e) {
-            throw new OpenNMTException("Unable to start OpenNMT process", e);
-        } finally {
-            if (!success) {
-                for (NativeProcess decoder : processes)
-                    IOUtils.closeQuietly(decoder);
+        /*get all the NativeProcesses for all the futures.
+        * if an exception is thrown, mark that something has gone wrong
+        * and keep getting the processes (so it will be possible to stop them all later)*/
+        for (int i = 0; i < futures.size(); i++) {
+            try {
+                processes[i] = futures.get(i).get();
+            } catch (Exception e) {
+                success = false;
+                logger.error("Unable to start OpenNMT process", e);
             }
         }
 
-        return new ParallelExecutionQueue(processes);
+        if (!success) {
+            for (NativeProcess process : processes)
+                IOUtils.closeQuietly(process);
+            throw new OpenNMTException("Unable to start OpenNMT process");
+        }
+
+        return processes;
     }
+
+
+    private final NativeProcess[] processes;    //the list of decoder NativeProcesses to manage
+    private final ArrayBlockingQueue<NativeProcess> queue;  //queue of NativeProcesses allowing round-robin access
 
     private ParallelExecutionQueue(NativeProcess[] processes) {
         this.processes = processes;
@@ -68,19 +96,39 @@ class ParallelExecutionQueue implements ExecutionQueue {
             this.queue.offer(process);
     }
 
+    /**
+     * This method assigns a translation job to one of the OpenNMTDecoder processes
+     * that this ParallelExecutionQueue manages, and returns the translation result.
+     *
+     * @param direction the direction of the translation to execute
+     * @param sentence  the source sentence to translate
+     * @return a Translation object representing the translation result
+     * @throws OpenNMTException
+     */
     @Override
-    public Translation execute(Sentence sentence) throws OpenNMTException {
-        return execute(sentence, null);
+    public Translation execute(LanguagePair direction, Sentence sentence) throws OpenNMTException {
+        return execute(direction, sentence, null);
     }
 
+    /**
+     * This method assigns a translation job to one of the OpenNMTDecoder processes
+     * that this ParallelExecutionQueue manages, and returns the translation result.
+     *
+     * @param direction   the direction of the translation to execute
+     * @param sentence    the source sentence to translate
+     * @param suggestions an array of translation suggestions that the decoder will study before the translation
+     * @return a Translation object representing the translation result
+     * @throws OpenNMTException
+     */
     @Override
-    public Translation execute(Sentence sentence, ScoreEntry[] suggestions) throws OpenNMTException {
+    public Translation execute(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions) throws
+            OpenNMTException {
         NativeProcess decoder = null;
 
         try {
             decoder = this.queue.take();
 
-            Word[] translation = decoder.translate(sentence, suggestions);
+            Word[] translation = decoder.translate(direction, sentence, suggestions);
             return new Translation(translation, sentence, null);
         } catch (InterruptedException e) {
             throw new OpenNMTException("No OpenNMT processes available", e);
@@ -90,10 +138,12 @@ class ParallelExecutionQueue implements ExecutionQueue {
         }
     }
 
+    /**
+     * This method closes all the decoder processes that this ParallelExecutionQueue manages
+     */
     @Override
     public void close() {
         for (NativeProcess decoder : processes)
             IOUtils.closeQuietly(decoder);
     }
-
 }

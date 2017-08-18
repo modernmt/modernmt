@@ -3,7 +3,7 @@ package eu.modernmt.rest.actions.translation;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.facade.ModernMT;
-import eu.modernmt.facade.exceptions.validation.LanguagePairNotSupportedException;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
 import eu.modernmt.rest.framework.HttpMethod;
@@ -22,17 +22,14 @@ import java.util.Locale;
 public class TagsProjection extends ObjectAction<ProjectedTranslation> {
 
     @Override
-    protected ProjectedTranslation execute(RESTRequest req, Parameters _params) throws AlignerException, LanguagePairNotSupportedException {
+    protected ProjectedTranslation execute(RESTRequest req, Parameters _params) throws AlignerException {
         Params params = (Params) _params;
 
-        ModernMT.tags.isLanguagesSupported(params.sourceLanguage, params.targetLanguage);
-
         Translation taggedTranslation;
-        if (params.symmetrizationStrategy != null) {
-            taggedTranslation = ModernMT.tags.project(params.sentence, params.translation, params.sourceLanguage, params.targetLanguage, params.symmetrizationStrategy);
-        } else {
-            taggedTranslation = ModernMT.tags.project(params.sentence, params.translation, params.sourceLanguage, params.targetLanguage);
-        }
+        if (params.symmetrizationStrategy != null)
+            taggedTranslation = ModernMT.tags.project(params.direction, params.sentence, params.translation, params.symmetrizationStrategy);
+        else
+            taggedTranslation = ModernMT.tags.project(params.direction, params.sentence, params.translation);
 
         ProjectedTranslation result = new ProjectedTranslation(taggedTranslation.toString());
 
@@ -60,21 +57,23 @@ public class TagsProjection extends ObjectAction<ProjectedTranslation> {
 
     public static class Params extends Parameters {
 
+        public final LanguagePair direction;
         public final String sentence;
         public final String translation;
         public final Aligner.SymmetrizationStrategy symmetrizationStrategy;
         public final boolean showDetails;
-        public final Locale sourceLanguage;
-        public final Locale targetLanguage;
 
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
-            this.sentence = getString("s", false);
-            this.translation = getString("t", false);
-            this.showDetails = getBoolean("d", false);
+
+            Locale sourceLanguage = getLocale("source");
+            Locale targetLanguage = getLocale("target");
+            direction = new LanguagePair(sourceLanguage, targetLanguage);
+
+            this.sentence = getString("text", false);
+            this.translation = getString("translation", false);
+            this.showDetails = getBoolean("verbose", false);
             this.symmetrizationStrategy = getEnum("symmetrization", Aligner.SymmetrizationStrategy.class, null);
-            this.sourceLanguage = Locale.forLanguageTag(getString("sl", false));
-            this.targetLanguage = Locale.forLanguageTag(getString("tl", false));
         }
     }
 }

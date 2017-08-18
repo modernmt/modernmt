@@ -6,6 +6,8 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import eu.modernmt.rest.framework.routing.RouteTemplate;
 
+import java.util.Locale;
+
 public class Parameters {
 
     protected final RouteTemplate template;
@@ -176,6 +178,39 @@ public class Parameters {
         } catch (IllegalArgumentException e) {
             throw new ParameterParsingException(name, value);
         }
+    }
+
+    public Locale getLocale(String name) throws ParameterParsingException {
+        return Locale.forLanguageTag(getString(name, false));
+    }
+
+    public Locale getLocale(String name, Locale def) throws ParameterParsingException {
+        String tag = getString(name, false, null);
+        return tag == null ? def : Locale.forLanguageTag(tag);
+    }
+
+    public Locale[] getLocaleArray(String name) throws ParameterParsingException {
+        String[] rawArray = getString(name, false).split(",");
+        Locale[] array = new Locale[rawArray.length];
+
+        for (int i = 0; i < rawArray.length; i++)
+            array[i] = Locale.forLanguageTag(rawArray[i]);
+
+        return array;
+    }
+
+    public Locale[] getLocaleArray(String name, Locale[] def) throws ParameterParsingException {
+        String rawValue = getString(name, false, null);
+        if (rawValue == null)
+            return def;
+
+        String[] rawArray = rawValue.split(",");
+        Locale[] array = new Locale[rawArray.length];
+
+        for (int i = 0; i < rawArray.length; i++)
+            array[i] = Locale.forLanguageTag(rawArray[i]);
+
+        return array;
     }
 
     public static class ParameterParsingException extends Exception {

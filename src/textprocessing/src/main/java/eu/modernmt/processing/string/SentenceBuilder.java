@@ -79,7 +79,6 @@ public class SentenceBuilder {
      * @param string the original string that must be processed and tokenized
      */
     public SentenceBuilder(String string) {
-        this();
         this.initialize(string);
     }
 
@@ -87,7 +86,7 @@ public class SentenceBuilder {
      * This method initializes a SentenceBuilder object
      * with information about one string that must be processed.
      *
-     * @param string the original string that must be processed and tokenized
+     * @param string the original string that must be processed
      */
     public SentenceBuilder initialize(String string) {
         this.originalString = string;

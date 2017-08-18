@@ -1,50 +1,38 @@
 package eu.modernmt.model.corpus.impl.tmx;
 
 import eu.modernmt.io.FileProxy;
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.BaseMultilingualCorpus;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Locale;
 
 /**
  * Created by davide on 14/03/16.
  */
-public class TMXCorpus implements BilingualCorpus {
+public class TMXCorpus extends BaseMultilingualCorpus {
 
     public static final String TMX_DATE_FORMAT = "yyyyMMdd'T'HHmmss'Z'";
     public static final String XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace";
 
     private final FileProxy tmx;
     private final String name;
-    private final Locale sourceLanguage;
-    private final Locale targetLanguage;
-    private int lineCount = -1;
 
-    private final TMXMonolingualView sourceCorpus;
-    private final TMXMonolingualView targetCorpus;
-
-    public TMXCorpus(File tmx, Locale sourceLanguage, Locale targetLanguage) {
-        this(FileProxy.wrap(tmx), sourceLanguage, targetLanguage);
+    public TMXCorpus(File tmx) {
+        this(FileProxy.wrap(tmx));
     }
 
-    public TMXCorpus(FileProxy tmx, Locale sourceLanguage, Locale targetLanguage) {
-        this(FilenameUtils.removeExtension(tmx.getFilename()), tmx, sourceLanguage, targetLanguage);
+    public TMXCorpus(FileProxy tmx) {
+        this(FilenameUtils.removeExtension(tmx.getFilename()), tmx);
     }
 
-    public TMXCorpus(String name, File tmx, Locale sourceLanguage, Locale targetLanguage) {
-        this(name, FileProxy.wrap(tmx), sourceLanguage, targetLanguage);
+    public TMXCorpus(String name, File tmx) {
+        this(name, FileProxy.wrap(tmx));
     }
 
-    public TMXCorpus(String name, FileProxy tmx, Locale sourceLanguage, Locale targetLanguage) {
-        this.targetLanguage = targetLanguage;
-        this.sourceLanguage = sourceLanguage;
+    public TMXCorpus(String name, FileProxy tmx) {
         this.name = name;
         this.tmx = tmx;
-
-        this.sourceCorpus = new TMXMonolingualView(tmx, name, sourceLanguage, targetLanguage, true);
-        this.targetCorpus = new TMXMonolingualView(tmx, name, sourceLanguage, targetLanguage, false);
     }
 
     @Override
@@ -53,51 +41,18 @@ public class TMXCorpus implements BilingualCorpus {
     }
 
     @Override
-    public Locale getSourceLanguage() {
-        return sourceLanguage;
+    public MultilingualLineReader getContentReader() throws IOException {
+        return new TMXLineReader(tmx);
     }
 
     @Override
-    public Locale getTargetLanguage() {
-        return targetLanguage;
-    }
-
-    @Override
-    public int getLineCount() throws IOException {
-        if (lineCount < 0) {
-            synchronized (this) {
-                if (lineCount < 0) {
-                    this.lineCount = BilingualCorpus.getLineCount(this);
-                }
-            }
-        }
-
-        return this.lineCount;
-    }
-
-    @Override
-    public BilingualLineReader getContentReader() throws IOException {
-        return new TMXBilingualLineReader(tmx, sourceLanguage, targetLanguage);
-    }
-
-    @Override
-    public BilingualLineWriter getContentWriter(boolean append) throws IOException {
-        return new TMXBilingualLineWriter(tmx, sourceLanguage, targetLanguage);
-    }
-
-    @Override
-    public TMXMonolingualView getSourceCorpus() {
-        return sourceCorpus;
-    }
-
-    @Override
-    public TMXMonolingualView getTargetCorpus() {
-        return targetCorpus;
+    public MultilingualLineWriter getContentWriter(boolean append) throws IOException {
+        return new TMXLineWriter(tmx);
     }
 
     @Override
     public String toString() {
-        return name + ".tmx{" + sourceLanguage.toLanguageTag() + '|' + targetLanguage.toLanguageTag() + '}';
+        return name + ".tmx";
     }
 
 }

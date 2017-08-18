@@ -4,6 +4,7 @@ import eu.modernmt.io.DefaultCharset;
 import eu.modernmt.io.LineWriter;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.io.UnixLineWriter;
+import eu.modernmt.model.Sentence;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -26,17 +27,18 @@ public class TermsCollectorWriter extends CorpusWriter {
     }
 
     @Override
-    protected void doWrite(String[][] batch, LineWriter writer) throws IOException {
+    protected void doWrite(Sentence[] batch, LineWriter writer) throws IOException {
         StringBuilder builder = new StringBuilder();
 
-        for (String[] line : batch) {
+        for (Sentence sentence : batch) {
+            String[] line = TokensOutputStream.toTokensArray(sentence, false, true);
+
             for (int i = 0; i < line.length; i++) {
-                String token = TokensOutputStream.escapeWhitespaces(line[i]);
-                terms.put(token, Boolean.TRUE);
+                terms.put(line[i], Boolean.TRUE);
 
                 if (i > 0)
                     builder.append(' ');
-                builder.append(token);
+                builder.append(line[i]);
             }
 
             writer.writeLine(builder.toString());

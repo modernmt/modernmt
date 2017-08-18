@@ -2,12 +2,12 @@ package eu.modernmt.rest;
 
 import eu.modernmt.io.DefaultCharset;
 import eu.modernmt.model.Alignment;
-import eu.modernmt.model.ContextVector;
 import eu.modernmt.rest.framework.JSONSerializer;
 import eu.modernmt.rest.framework.routing.RouterServlet;
+import eu.modernmt.rest.model.ContextVectorResult;
 import eu.modernmt.rest.model.TranslationResponse;
 import eu.modernmt.rest.serializers.AlignmentSerializer;
-import eu.modernmt.rest.serializers.ContextVectorSerializer;
+import eu.modernmt.rest.serializers.ContextVectorResultSerializer;
 import eu.modernmt.rest.serializers.TranslationResponseSerializer;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -30,7 +30,7 @@ public class RESTServer {
     static {
         JSONSerializer.registerCustomSerializer(TranslationResponse.class, new TranslationResponseSerializer());
         JSONSerializer.registerCustomSerializer(Alignment.class, new AlignmentSerializer());
-        JSONSerializer.registerCustomSerializer(ContextVector.class, new ContextVectorSerializer());
+        JSONSerializer.registerCustomSerializer(ContextVectorResult.class, new ContextVectorResultSerializer());
     }
 
     public static class ServerOptions {

@@ -3,16 +3,18 @@ package eu.modernmt.cli;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.lucene.LuceneAnalyzer;
+import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Domain;
-import eu.modernmt.model.corpus.BilingualCorpus;
 import eu.modernmt.model.corpus.Corpora;
-import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.Level;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 
@@ -64,20 +66,23 @@ public class ContextAnalyzerMain {
 
         Args args = new Args(_args);
 
-        ArrayList<BilingualCorpus> corpora = new ArrayList<>();
+        ArrayList<MultilingualCorpus> corpora = new ArrayList<>();
         Corpora.list(null, false, corpora, args.sourceLanguage, args.targetLanguage, args.corporaRoots);
 
-        HashMap<Domain, Corpus> domain2corpus = new HashMap<>();
-        for (BilingualCorpus corpus : corpora) {
+        HashMap<Domain, MultilingualCorpus> domain2corpus = new HashMap<>();
+        for (MultilingualCorpus corpus : corpora) {
             long id = Long.parseLong(corpus.getName());
 
             Domain domain = new Domain(id);
-            domain2corpus.put(domain, corpus.getSourceCorpus());
+            domain2corpus.put(domain, corpus);
         }
+
+        LanguagePair direction = new LanguagePair(args.sourceLanguage, args.targetLanguage);
+        LanguageIndex languages = new LanguageIndex(Collections.singleton(direction));
 
         ContextAnalyzer contextAnalyzer = null;
         try {
-            contextAnalyzer = new LuceneAnalyzer(args.indexPath, args.sourceLanguage, eu.modernmt.context.lucene.storage.Options.prepareForBulkLoad());
+            contextAnalyzer = new LuceneAnalyzer(languages, args.indexPath, eu.modernmt.context.lucene.storage.Options.prepareForBulkLoad());
             contextAnalyzer.add(domain2corpus);
         } finally {
             IOUtils.closeQuietly(contextAnalyzer);

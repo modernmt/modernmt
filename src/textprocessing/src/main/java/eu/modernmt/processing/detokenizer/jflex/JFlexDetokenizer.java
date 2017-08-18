@@ -1,9 +1,9 @@
 package eu.modernmt.processing.detokenizer.jflex;
 
-import eu.modernmt.model.Languages;
+import eu.modernmt.lang.Languages;
 import eu.modernmt.model.Translation;
-import eu.modernmt.processing.LanguageNotSupportedException;
 import eu.modernmt.processing.ProcessingException;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.detokenizer.Detokenizer;
 import eu.modernmt.processing.detokenizer.jflex.annotators.EnglishSpaceAnnotator;
 import eu.modernmt.processing.detokenizer.jflex.annotators.FrenchSpaceAnnotator;
@@ -45,9 +45,13 @@ public class JFlexDetokenizer extends Detokenizer {
         }
     }
 
-    public JFlexDetokenizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+    public JFlexDetokenizer(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
-        this.annotator = newAnnotator(targetLanguage);
+        this.annotator = getAnnotator(targetLanguage);
+    }
+
+    protected JFlexSpaceAnnotator getAnnotator(Locale language) {
+        return newAnnotator(language);
     }
 
     @Override

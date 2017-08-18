@@ -5,7 +5,10 @@ import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.data.DataMessage;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.engine.ContributionOptions;
 import eu.modernmt.engine.Engine;
+import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Preprocessor;
@@ -22,63 +25,75 @@ class DataBatch {
 
     private final ArrayList<TranslationUnit> translationUnits = new ArrayList<>();
     private final ArrayList<Deletion> deletions = new ArrayList<>();
-    private final ArrayList<String> rawSources = new ArrayList<>();
-    private final ArrayList<String> rawTargets = new ArrayList<>();
+    private final HashMap<Short, Long> currentPositions = new HashMap<>();
 
-    private final Aligner aligner;
-    private final Preprocessor sourcePreprocessor;
-    private final Preprocessor targetPreprocessor;
+    private final Engine engine;
+    private final KafkaDataManager manager;
 
-    private KafkaDataManager manager;
-
-    private HashMap<Short, Long> currentPositions;
+    private final Stack<DataPartition> cachedPartitions = new Stack<>();
+    private final HashMap<LanguagePair, DataPartition> cachedDataSet = new HashMap<>();
 
     public DataBatch(Engine engine, KafkaDataManager manager) {
-        this.aligner = engine.getAligner();
-        this.sourcePreprocessor = engine.getSourcePreprocessor();
-        this.targetPreprocessor = engine.getTargetPreprocessor();
+        this.engine = engine;
         this.manager = manager;
     }
 
-    public void load(ConsumerRecords<Integer, KafkaElement> records) throws ProcessingException, AlignerException {
+    public void clear() {
+        translationUnits.clear();
+        deletions.clear();
+        currentPositions.clear();
+    }
+
+    private DataPartition getDataPartition(int expectedSize) {
+        if (cachedPartitions.isEmpty())
+            return new DataPartition().reset(expectedSize);
+        else
+            return cachedPartitions.pop().reset(expectedSize);
+    }
+
+    private void releaseDataPartition(DataPartition partition) {
+        cachedPartitions.push(partition.clear());
+    }
+
+    public void load(ConsumerRecords<Integer, KafkaPacket> records) throws ProcessingException, AlignerException {
+        LanguageIndex languages = engine.getLanguages();
+
         this.clear();
-        this.ensureCapacity(records.count());
 
-        this.currentPositions = new HashMap<>();
+        int size = records.count();
 
-        for (ConsumerRecord<Integer, KafkaElement> record : records) {
+        this.cachedDataSet.clear();
+        for (ConsumerRecord<Integer, KafkaPacket> record : records) {
             KafkaChannel channel = this.manager.getChannel(record.topic());
-            KafkaElement value = record.value();
             long offset = record.offset();
 
-            DataMessage message = value.toDataMessage(channel.getId(), offset);
+            this.currentPositions.put(channel.getId(), offset);
+
+            KafkaPacket packet = record.value();
+            DataMessage message = packet.toDataMessage(channel.getId(), offset);
 
             if (message instanceof TranslationUnit) {
                 TranslationUnit unit = (TranslationUnit) message;
-                translationUnits.add(unit);
-                rawSources.add(unit.originalSourceSentence);
-                rawTargets.add(unit.originalTargetSentence);
+
+                LanguagePair direction = languages.map(unit.direction);
+                if (direction != null) {
+                    unit.direction = direction;
+                    cachedDataSet.computeIfAbsent(unit.direction, key -> getDataPartition(size))
+                            .add(unit);
+                }
             } else {
                 deletions.add((Deletion) message);
             }
-
-            this.currentPositions.put(channel.getId(), offset);
         }
 
-        List<Sentence> sourceSentences = sourcePreprocessor.process(rawSources);
-        List<Sentence> targetSentences = targetPreprocessor.process(rawTargets);
-
-        Alignment[] alignments = aligner.getAlignments(sourceSentences, targetSentences);
-
-        for (int i = 0; i < alignments.length; i++) {
-            TranslationUnit unit = translationUnits.get(i);
-            unit.sourceSentence = sourceSentences.get(i);
-            unit.targetSentence = targetSentences.get(i);
-            unit.alignment = alignments[i];
+        this.translationUnits.ensureCapacity(size);
+        for (DataPartition partition : cachedDataSet.values()) {
+            partition.process(engine);
+            this.translationUnits.addAll(partition.units);
+            releaseDataPartition(partition);
         }
 
-        this.rawSources.clear();
-        this.rawTargets.clear();
+        this.cachedDataSet.clear();
     }
 
     public Map<Short, Long> getBatchOffset() {
@@ -89,19 +104,6 @@ class DataBatch {
         return translationUnits.size() + deletions.size();
     }
 
-    public void clear() {
-        this.translationUnits.clear();
-        this.deletions.clear();
-        this.rawSources.clear();
-        this.rawTargets.clear();
-    }
-
-    public void ensureCapacity(int size) {
-        this.translationUnits.ensureCapacity(size);
-        this.rawSources.ensureCapacity(size);
-        this.rawTargets.ensureCapacity(size);
-    }
-
     public List<TranslationUnit> getTranslationUnits() {
         return translationUnits;
     }
@@ -110,4 +112,63 @@ class DataBatch {
         return deletions;
     }
 
+    private static class DataPartition {
+
+        public final ArrayList<TranslationUnit> units = new ArrayList<>();
+        public final ArrayList<String> sources = new ArrayList<>();
+        public final ArrayList<String> targets = new ArrayList<>();
+
+        public DataPartition reset(int size) {
+            this.clear();
+
+            units.ensureCapacity(size);
+            sources.ensureCapacity(size);
+            targets.ensureCapacity(size);
+
+            return this;
+        }
+
+        public DataPartition clear() {
+            units.clear();
+            sources.clear();
+            targets.clear();
+
+            return this;
+        }
+
+        public void add(TranslationUnit unit) {
+            units.add(unit);
+            sources.add(unit.rawSourceSentence);
+            targets.add(unit.rawTargetSentence);
+        }
+
+        public void process(Engine engine) throws ProcessingException, AlignerException {
+            if (units.isEmpty())
+                return;
+
+            ContributionOptions options = engine.getContributionOptions();
+            LanguagePair direction = units.get(0).direction;
+
+            if (options.process) {
+                Preprocessor preprocessor = engine.getPreprocessor();
+                List<Sentence> sourceSentences = preprocessor.process(direction, sources);
+                List<Sentence> targetSentences = preprocessor.process(direction.reversed(), targets);
+                Alignment[] alignments = null;
+
+                if (options.align) {
+                    Aligner aligner = engine.getAligner();
+                    alignments = aligner.getAlignments(direction, sourceSentences, targetSentences);
+                }
+
+                for (int i = 0; i < units.size(); i++) {
+                    TranslationUnit unit = units.get(i);
+                    unit.sourceSentence = sourceSentences.get(i);
+                    unit.targetSentence = targetSentences.get(i);
+
+                    if (alignments != null)
+                        unit.alignment = alignments[i];
+                }
+            }
+        }
+    }
 }

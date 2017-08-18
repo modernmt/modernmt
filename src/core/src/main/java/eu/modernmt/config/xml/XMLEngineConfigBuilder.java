@@ -1,7 +1,11 @@
 package eu.modernmt.config.xml;
 
 import eu.modernmt.config.*;
+import eu.modernmt.lang.LanguagePair;
 import org.w3c.dom.Element;
+
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * Created by davide on 04/01/17.
@@ -16,16 +20,50 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
     }
 
     public EngineConfig build(EngineConfig config) throws ConfigException {
-        if (hasAttribute("source-language"))
-            config.setSourceLanguage(getLocaleAttribute("source-language"));
-        if (hasAttribute("target-language"))
-            config.setTargetLanguage(getLocaleAttribute("target-language"));
+        if (hasAttribute("source-language") || hasAttribute("target-language")) {
+            if (hasAttribute("source-language") && hasAttribute("target-language")) {
+                Locale source = getLocaleAttribute("source-language");
+                Locale target = getLocaleAttribute("target-language");
+
+                config.addLanguagePair(new LanguagePair(source, target));
+            } else {
+                throw new ConfigException("Missing source/target language specifier in <engine> element");
+            }
+        } else {
+            parseLanguages(getChild("languages"), config);
+        }
+
+        Set<LanguagePair> pairs = config.getLanguagePairs();
+        if (pairs == null || pairs.isEmpty())
+            throw new ConfigException("Missing language specification for <engine> element");
+
         if (hasAttribute("type"))
             config.setType(getEnumAttribute("type", EngineConfig.Type.class));
 
         decoderConfigBuilder.build(config.getDecoderConfig());
 
         return config;
+    }
+
+    private static void parseLanguages(Element element, EngineConfig config) throws ConfigException {
+        Element[] children = getChildren(element, "pair");
+        if (children == null)
+            return;
+
+        for (Element child : children) {
+            if (child == null)
+                continue;
+
+            Locale source = getLocaleAttribute(child, "source");
+            if (source == null)
+                throw new ConfigException("Missing 'source' attribute");
+
+            Locale target = getLocaleAttribute(child, "target");
+            if (target == null)
+                throw new ConfigException("Missing 'target' attribute");
+
+            config.addLanguagePair(new LanguagePair(source, target));
+        }
     }
 
     private static class XMLDecoderConfigBuilder extends XMLAbstractBuilder {

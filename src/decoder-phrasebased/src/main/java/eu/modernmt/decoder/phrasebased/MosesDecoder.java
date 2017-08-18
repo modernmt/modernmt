@@ -4,7 +4,10 @@ import eu.modernmt.data.DataListener;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.*;
+import eu.modernmt.io.DefaultCharset;
 import eu.modernmt.io.Paths;
+import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -15,9 +18,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by davide on 26/11/15.
@@ -37,12 +38,17 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
         NativeLogger.initialize();
     }
 
+    private final LanguagePair direction;
     private final FeatureWeightsStorage storage;
     private final HashMap<String, DecoderFeature> featuresMap;
     private final MosesFeature[] features;
     private long nativeHandle;
 
     public MosesDecoder(File path, int threads) throws IOException {
+        String raw = FileUtils.readFileToString(Paths.join(path, "language.info"), DefaultCharset.get());
+        String[] parts = raw.trim().split(" ");
+
+        this.direction = new LanguagePair(Locale.forLanguageTag(parts[0]), Locale.forLanguageTag(parts[1]));
         this.storage = new FeatureWeightsStorage(Paths.join(path, "weights.dat"));
 
         File vocabulary = Paths.join(path, "vocab.vb");
@@ -66,7 +72,6 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
 
         for (MosesFeature feature : features)
             this.featuresMap.put(feature.getName(), feature);
-
     }
 
     private native long instantiate(String inifile, String vocabulary);
@@ -118,22 +123,30 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
     // Decoder
 
     @Override
-    public Translation translate(Sentence text) throws DecoderException {
-        return translate(text, null, 0);
+    public void setListener(DecoderListener listener) {
+        listener.onTranslationDirectionsChanged(Collections.singleton(this.direction));
     }
 
     @Override
-    public Translation translate(Sentence text, ContextVector contextVector) throws DecoderException {
-        return translate(text, contextVector, 0);
+    public Translation translate(LanguagePair direction, Sentence text) throws DecoderException {
+        return translate(direction, text, null, 0);
     }
 
     @Override
-    public Translation translate(Sentence text, int nbestListSize) throws DecoderException {
-        return translate(text, null, nbestListSize);
+    public Translation translate(LanguagePair direction, Sentence text, ContextVector contextVector) throws DecoderException {
+        return translate(direction, text, contextVector, 0);
     }
 
     @Override
-    public Translation translate(Sentence sentence, ContextVector contextVector, int nbestListSize) throws DecoderException {
+    public Translation translate(LanguagePair direction, Sentence text, int nbestListSize) throws DecoderException {
+        return translate(direction, text, null, nbestListSize);
+    }
+
+    @Override
+    public Translation translate(LanguagePair direction, Sentence sentence, ContextVector contextVector, int nbestListSize) throws DecoderException {
+        if (!this.direction.equals(direction))
+            throw new UnsupportedLanguageException(direction);
+
         if (sentence.getWords().length == 0)
             return new Translation(new Word[0], sentence, null);
 
@@ -146,7 +159,7 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
         }
 
         long start = System.currentTimeMillis();
-        TranslationXObject xtranslation = this.translate(text,
+        TranslationXObject xtranslation = this.xtranslate(text,
                 context == null ? null : context.keys,
                 context == null ? null : context.values,
                 nbestListSize);
@@ -161,13 +174,17 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
         return translation;
     }
 
-    private native TranslationXObject translate(String text, long[] contextKeys, float[] contextValues, int nbest);
+    private native TranslationXObject xtranslate(String text, long[] contextKeys, float[] contextValues, int nbest);
 
     // DataListener
 
     @Override
     public void onDataReceived(List<TranslationUnit> batch) throws Exception {
-        int size = batch.size();
+        int size = 0;
+        for (TranslationUnit unit : batch) {
+            if (this.direction.equals(unit.direction))
+                size++;
+        }
 
         short[] channels = new short[size];
         long[] channelPositions = new long[size];
@@ -178,6 +195,9 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
 
         int i = 0;
         for (TranslationUnit unit : batch) {
+            if (!this.direction.equals(unit.direction))
+                continue;
+
             channels[i] = unit.channel;
             channelPositions[i] = unit.channelPosition;
             domains[i] = unit.domain;

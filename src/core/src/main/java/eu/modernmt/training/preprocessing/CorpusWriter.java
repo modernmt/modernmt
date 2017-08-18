@@ -1,6 +1,7 @@
 package eu.modernmt.training.preprocessing;
 
 import eu.modernmt.io.LineWriter;
+import eu.modernmt.model.Sentence;
 import eu.modernmt.model.corpus.Corpus;
 
 import java.io.Closeable;
@@ -12,7 +13,7 @@ import java.util.concurrent.SynchronousQueue;
  */
 public abstract class CorpusWriter {
 
-    private static final String[][] POISON_PILL = new String[0][0];
+    private static final Sentence[] POISON_PILL = new Sentence[0];
 
     public final Instance forCorpus(Corpus corpus) throws IOException {
         return new Instance(corpus.getContentWriter(false));
@@ -22,11 +23,11 @@ public abstract class CorpusWriter {
         // Default empty implementation
     }
 
-    protected abstract void doWrite(String[][] batch, LineWriter writer) throws IOException;
+    protected abstract void doWrite(Sentence[] batch, LineWriter writer) throws IOException;
 
     public class Instance implements Closeable {
 
-        private final SynchronousQueue<String[][]> queue = new SynchronousQueue<>();
+        private final SynchronousQueue<Sentence[]> queue = new SynchronousQueue<>();
         private final WriterThread writerThread = new WriterThread();
         private final LineWriter writer;
 
@@ -35,7 +36,7 @@ public abstract class CorpusWriter {
             this.writerThread.start();
         }
 
-        public final void write(String[][] batch) throws IOException {
+        public final void write(Sentence[] batch) throws IOException {
             writerThread.checkForError();
 
             try {
@@ -71,7 +72,7 @@ public abstract class CorpusWriter {
             @Override
             public void run() {
                 while (true) {
-                    String[][] batch;
+                    Sentence[] batch;
 
                     try {
                         batch = queue.take();

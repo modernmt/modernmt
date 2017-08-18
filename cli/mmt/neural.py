@@ -72,7 +72,6 @@ class OpenNMTPreprocessor:
 
             def __exit__(self, exc_type, exc_val, exc_tb):
                 self._reader.__exit__(exc_type, exc_val, exc_tb)
-                return self._reader
 
         self._logger.info('Creating VBE vocabulary')
         vb_builder = SubwordTextProcessor.Builder(symbols=bpe_symbols, max_vocabulary_size=max_vocab_size)
@@ -255,6 +254,9 @@ class OpenNMTDecoder:
             os.rename(checkpoint, self._model)
         else:
             logger.info('checkpoint is None')
+
+        with open(os.path.join(model_folder, 'model.map'), 'w') as model_map:
+            model_map.write('%s__%s = model\n' % (self._source_lang, self._target_lang))
 
 
 class NeuralEngine(Engine):

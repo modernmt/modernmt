@@ -2,15 +2,20 @@ package eu.modernmt.aligner.fastalign;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
+import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Created by lucamastrostefano on 15/03/16.
@@ -29,13 +34,35 @@ public class FastAlign implements Aligner {
     }
 
     private SymmetrizationStrategy strategy = SymmetrizationStrategy.GROW_DIAGONAL_FINAL_AND;
-    private long nativeHandle;
+    private final HashMap<LanguagePair, Long> models;
 
-    public FastAlign(File model) throws IOException {
-        if (!model.isDirectory())
-            throw new IOException("Invalid model path: " + model);
+    private static LanguagePair getLanguagePairFromFilename(File file) throws IOException {
+        String encoded = FilenameUtils.removeExtension(file.getName());
+        String[] parts = encoded.split("__");
+        if (parts.length != 2)
+            throw new IOException("Invalid FastAlign model: " + file);
 
-        this.nativeHandle = instantiate(model.getAbsolutePath(), Runtime.getRuntime().availableProcessors());
+        return new LanguagePair(Locale.forLanguageTag(parts[0]), Locale.forLanguageTag(parts[1]));
+    }
+
+    public FastAlign(File modelPath) throws IOException {
+        if (!modelPath.isDirectory())
+            throw new IOException("Invalid model path: " + modelPath);
+
+        File[] paths = modelPath.listFiles(path -> path.isDirectory() && path.getName().endsWith(".mdl"));
+
+        if (paths == null || paths.length == 0)
+            throw new IOException("Could not load any FastAlign model from path " + modelPath);
+
+        int threads = Runtime.getRuntime().availableProcessors();
+
+        this.models = new HashMap<>(paths.length);
+        for (File path : paths) {
+            long nativeHandle = instantiate(path.getAbsolutePath(), threads);
+            LanguagePair pair = getLanguagePairFromFilename(path);
+
+            this.models.put(pair, nativeHandle);
+        }
     }
 
     private native long instantiate(String modelDirectory, int threads);
@@ -51,23 +78,47 @@ public class FastAlign implements Aligner {
     }
 
     @Override
-    public Alignment getAlignment(Sentence source, Sentence target) throws AlignerException {
-        return getAlignment(source, target, strategy);
+    public Alignment getAlignment(LanguagePair direction, Sentence source, Sentence target) throws AlignerException {
+        return getAlignment(direction, source, target, strategy);
     }
 
     @Override
-    public Alignment getAlignment(Sentence source, Sentence target, SymmetrizationStrategy strategy) throws AlignerException {
-        int[] alignment = align(XUtils.toTokensArray(source), XUtils.toTokensArray(target), XUtils.toInt(strategy));
+    public Alignment getAlignment(LanguagePair direction, Sentence source, Sentence target, SymmetrizationStrategy strategy) throws AlignerException {
+        boolean reversed = false;
+        Long nativeHandle = models.get(direction);
+
+        if (nativeHandle == null) {
+            reversed = true;
+            nativeHandle = models.get(direction.reversed());
+        }
+
+        if (nativeHandle == null)
+            throw new UnsupportedLanguageException(direction);
+
+        int[] alignment = align(nativeHandle, reversed, XUtils.toTokensArray(source), XUtils.toTokensArray(target), XUtils.toInt(strategy));
         return XUtils.parseAlignment(alignment);
     }
 
+    private native int[] align(long nativeHandle, boolean reversed, String[] source, String[] target, int strategy);
+
     @Override
-    public Alignment[] getAlignments(List<Sentence> sources, List<Sentence> targets) throws AlignerException {
-        return getAlignments(sources, targets, strategy);
+    public Alignment[] getAlignments(LanguagePair direction, List<Sentence> sources, List<Sentence> targets) throws AlignerException {
+        return getAlignments(direction, sources, targets, strategy);
     }
 
     @Override
-    public Alignment[] getAlignments(List<Sentence> sources, List<Sentence> targets, SymmetrizationStrategy strategy) throws AlignerException {
+    public Alignment[] getAlignments(LanguagePair direction, List<Sentence> sources, List<Sentence> targets, SymmetrizationStrategy strategy) throws AlignerException {
+        boolean reversed = false;
+        Long nativeHandle = models.get(direction);
+
+        if (nativeHandle == null) {
+            reversed = true;
+            nativeHandle = models.get(direction.reversed());
+        }
+
+        if (nativeHandle == null)
+            throw new UnsupportedLanguageException(direction);
+
         String[][] sourceArray = new String[sources.size()][];
         String[][] targetArray = new String[targets.size()][];
 
@@ -84,7 +135,7 @@ public class FastAlign implements Aligner {
         int[][] result = new int[sourceArray.length][];
         Alignment[] alignments = new Alignment[result.length];
 
-        align(sourceArray, targetArray, result, XUtils.toInt(strategy));
+        align(nativeHandle, reversed, sourceArray, targetArray, result, XUtils.toInt(strategy));
 
         for (int j = 0; j < result.length; j++)
             alignments[j] = XUtils.parseAlignment(result[j]);
@@ -92,14 +143,16 @@ public class FastAlign implements Aligner {
         return alignments;
     }
 
-    private native int[] align(String[] source, String[] target, int strategy);
-
-    private native void align(String[][] sources, String[][] targets, int[][] result, int strategy);
+    private native void align(long nativeHandle, boolean reversed, String[][] sources, String[][] targets, int[][] result, int strategy);
 
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
-        nativeHandle = dispose(nativeHandle);
+
+        for (long nativeHandle : models.values())
+            dispose(nativeHandle);
+
+        models.clear();
     }
 
     @Override

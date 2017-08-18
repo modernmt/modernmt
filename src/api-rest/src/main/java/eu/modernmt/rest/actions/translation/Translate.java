@@ -3,6 +3,7 @@ package eu.modernmt.rest.actions.translation;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.facade.exceptions.TranslationException;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.actions.util.ContextUtils;
@@ -13,6 +14,8 @@ import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
 import eu.modernmt.rest.model.TranslationResponse;
 
+import java.util.Locale;
+
 /**
  * Created by davide on 17/12/15.
  */
@@ -22,22 +25,22 @@ public class Translate extends ObjectAction<TranslationResponse> {
     public static final int MAX_QUERY_LENGTH = 5000;
 
     @Override
-    protected TranslationResponse execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, TranslationException, PersistenceException, TranslationException {
+    protected TranslationResponse execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, PersistenceException, TranslationException {
         Params params = (Params) _params;
 
         TranslationResponse result = new TranslationResponse();
 
         if (params.context != null) {
-            result.translation = ModernMT.translation.get(params.query, params.context, params.nbest);
+            result.translation = ModernMT.translation.get(params.direction, params.query, params.context, params.nbest);
         } else if (params.contextString != null) {
-            result.context = ModernMT.translation.getContextVector(params.contextString, params.contextLimit);
-            result.translation = ModernMT.translation.get(params.query, result.context, params.nbest);
+            result.context = ModernMT.translation.getContextVector(params.direction, params.contextString, params.contextLimit);
+            result.translation = ModernMT.translation.get(params.direction, params.query, result.context, params.nbest);
         } else {
-            result.translation = ModernMT.translation.get(params.query, params.nbest);
+            result.translation = ModernMT.translation.get(params.direction, params.query, params.nbest);
         }
 
         if (result.context != null)
-            result.context = ContextUtils.resolve(result.context);
+            ContextUtils.resolve(result.context);
 
         return result;
     }
@@ -49,6 +52,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
 
     public static class Params extends Parameters {
 
+        public final LanguagePair direction;
         public final String query;
         public final ContextVector context;
         public final String contextString;
@@ -59,6 +63,9 @@ public class Translate extends ObjectAction<TranslationResponse> {
             super(req);
 
             query = getString("q", true);
+            Locale sourceLanguage = getLocale("source");
+            Locale targetLanguage = getLocale("target");
+            direction = new LanguagePair(sourceLanguage, targetLanguage);
 
             if (query.length() > MAX_QUERY_LENGTH)
                 throw new ParameterParsingException("q", query.substring(0, 10) + "...",

@@ -4,9 +4,10 @@ import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.NodeInfo;
 import eu.modernmt.data.DataManager;
 import eu.modernmt.data.DataManagerException;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Domain;
 import eu.modernmt.model.ImportJob;
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.persistence.*;
 import org.apache.commons.io.IOUtils;
 
@@ -108,7 +109,7 @@ public class DomainFacade {
         return true;
     }
 
-    public ImportJob add(long domainId, String source, String target) throws DataManagerException, PersistenceException {
+    public ImportJob add(LanguagePair direction, long domainId, String source, String target) throws DataManagerException, PersistenceException {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
@@ -122,7 +123,7 @@ public class DomainFacade {
                 return null;
 
             DataManager dataManager = ModernMT.getNode().getDataManager();
-            ImportJob job = dataManager.upload(domainId, source, target, DataManager.CONTRIBUTIONS_CHANNEL_ID);
+            ImportJob job = dataManager.upload(direction, domainId, source, target, DataManager.CONTRIBUTIONS_CHANNEL_ID);
 
             if (job == null)
                 return null;
@@ -135,7 +136,7 @@ public class DomainFacade {
         }
     }
 
-    public ImportJob add(long domainId, BilingualCorpus corpus) throws PersistenceException, DataManagerException {
+    public ImportJob add(long domainId, MultilingualCorpus corpus) throws PersistenceException, DataManagerException {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 

@@ -3,9 +3,10 @@ package eu.modernmt.rest.actions.domain;
 import eu.modernmt.data.DataManagerException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.io.FileProxy;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ImportJob;
-import eu.modernmt.model.corpus.BilingualCorpus;
-import eu.modernmt.model.corpus.impl.parallel.InlineParallelFileCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.framework.FileParameter;
@@ -31,7 +32,7 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
         Params params = (Params) _params;
 
         if (params.corpus == null)
-            return ModernMT.domain.add(params.domain, params.source, params.target);
+            return ModernMT.domain.add(params.direction, params.domain, params.source, params.target);
         else
             return ModernMT.domain.add(params.domain, params.corpus);
     }
@@ -51,18 +52,19 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
 
     public static class Params extends Parameters {
 
+        private final LanguagePair direction;
         private final long domain;
         private final String source;
         private final String target;
-        private final BilingualCorpus corpus;
+        private final MultilingualCorpus corpus;
 
         public Params(RESTRequest req) throws ParameterParsingException, TemplateException {
             super(req);
 
             domain = req.getPathParameterAsLong("id");
 
-            source = getString("source", false, null);
-            target = getString("target", false, null);
+            source = getString("sentence", false, null);
+            target = getString("translation", false, null);
 
             if (source == null && target == null) {
                 FileType fileType = getEnum("content_type", FileType.class);
@@ -82,24 +84,27 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
                     fileProxy = new LocalFileProxy(localFile, gzipped);
                 }
 
-                Locale sourceLanguage = ModernMT.translation.getSourceLanguage();
-                Locale targetLanguage = ModernMT.translation.getTargetLanguage();
-
                 switch (fileType) {
                     case INLINE:
-                        corpus = new InlineParallelFileCorpus(fileProxy, sourceLanguage, targetLanguage);
+                        corpus = new CompactFileCorpus(fileProxy);
                         break;
                     case TMX:
-                        corpus = new TMXCorpus(fileProxy, sourceLanguage, targetLanguage);
+                        corpus = new TMXCorpus(fileProxy);
                         break;
                     default:
                         throw new ParameterParsingException("content_type");
                 }
+
+                direction = null;
             } else {
                 if (source == null)
-                    throw new ParameterParsingException("source");
+                    throw new ParameterParsingException("sentence");
                 if (target == null)
-                    throw new ParameterParsingException("target");
+                    throw new ParameterParsingException("translation");
+
+                Locale sourceLanguage = getLocale("source");
+                Locale targetLanguage = getLocale("target");
+                direction = new LanguagePair(sourceLanguage, targetLanguage);
 
                 corpus = null;
             }

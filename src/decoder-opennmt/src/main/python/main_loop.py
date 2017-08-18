@@ -21,7 +21,9 @@ class Suggestion:
 # ======================================================================================================================
 
 class TranslationRequest:
-    def __init__(self, source, suggestions=None):
+    def __init__(self, source_lang, target_lang, source, suggestions=None):
+        self.source_lang = source_lang
+        self.target_lang = target_lang
         self.source = source
         self.suggestions = suggestions if suggestions is not None else []
 
@@ -30,6 +32,9 @@ class TranslationRequest:
         obj = json.loads(json_string)
 
         source = obj['source']
+        source_language = obj['source_language']
+        target_language = obj['target_language']
+
         suggestions = []
 
         if 'suggestions' in obj:
@@ -40,7 +45,7 @@ class TranslationRequest:
 
                 suggestions.append(Suggestion(suggestion_source, suggestion_target, suggestion_score))
 
-        return TranslationRequest(source, suggestions)
+        return TranslationRequest(source_language, target_language, source, suggestions)
 
 
 class TranslationResponse:
@@ -89,7 +94,7 @@ class MainController:
     def process(self, line):
         try:
             request = TranslationRequest.from_json_string(line)
-            translation = self._decoder.translate(request.source, request.suggestions)
+            translation = self._decoder.translate(request.source_lang, request.target_lang, request.source, request.suggestions)
             return TranslationResponse(translation=translation)
         except BaseException as e:
             self._logger.exception('Failed to process request "' + line + '"')
@@ -148,13 +153,16 @@ def run_main():
     # ------------------------------------------------------------------------------------------------------------------
     try:
         decoder = NMTDecoder(args.model, gpu_id=args.gpu, random_seed=3435)
-
         controller = MainController(decoder, stdout)
+        stdout.write("ok\n")
+        stdout.flush()
         controller.serve_forever()
     except KeyboardInterrupt:
         pass  # ignore and exit
     except BaseException as e:
         logger.exception(e)
+        stdout.write(e)
+        stdout.flush()
 
 
 if __name__ == '__main__':

@@ -1,6 +1,7 @@
 package eu.modernmt.model.corpus.impl.tmx;
 
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.xml.XMLUtils;
 
 import javax.xml.stream.Location;
@@ -11,8 +12,9 @@ import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.Locale;
+import java.util.List;
 import java.util.TimeZone;
 
 /**
@@ -20,25 +22,18 @@ import java.util.TimeZone;
  */
 class TMXPairReader {
 
+    private final LanguageCache languageCache = new LanguageCache();
+    private final ArrayList<MultilingualCorpus.StringPair> resultCache = new ArrayList<>(8);
+
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(TMXCorpus.TMX_DATE_FORMAT);
     private boolean decodeSegments = true;
-    private Locale headerSourceLang = null;
+    private String headerSourceLanguage = null;
 
     TMXPairReader() {
         dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
     }
 
-    private BilingualCorpus.StringPair wrap(XMLEvent event, String source, String target, Date timestamp, boolean inverted) throws XMLStreamException {
-        if (source == null)
-            throw new XMLStreamException(format("Missing source sentence", event));
-
-        if (target == null)
-            throw new XMLStreamException(format("Missing target sentence", event));
-
-        return new BilingualCorpus.StringPair(source.replace('\n', ' '), target.replace('\n', ' '), timestamp, inverted);
-    }
-
-    public BilingualCorpus.StringPair read(XMLEventReader reader, String sourceLanguage, String targetLanguage) throws XMLStreamException {
+    public List<MultilingualCorpus.StringPair> read(XMLEventReader reader) throws XMLStreamException {
         while (reader.hasNext()) {
             XMLEvent event = reader.nextEvent();
 
@@ -47,9 +42,9 @@ class TMXPairReader {
                     StartElement element = event.asStartElement();
                     String name = XMLUtils.getLocalName(element);
                     if ("header".equals(name)) {
-                        readHeader(reader, element);
+                        readHeader(element);
                     } else if ("tu".equals(name)) {
-                        return readTu(reader, element, sourceLanguage, targetLanguage);
+                        return readTu(reader, element);
                     }
 
                     break;
@@ -59,11 +54,8 @@ class TMXPairReader {
         return null;
     }
 
-    private void readHeader(XMLEventReader reader, StartElement header) throws XMLStreamException {
-        String srclang = XMLUtils.getAttributeValue(header, null, "srclang");
-        if (srclang == null)
-            throw new XMLStreamException("Missing 'srclang' in header element");
-        headerSourceLang = Locale.forLanguageTag(srclang);
+    private void readHeader(StartElement header) throws XMLStreamException {
+        this.headerSourceLanguage = XMLUtils.getAttributeValue(header, null, "srclang");
 
         String datatype = XMLUtils.getAttributeValue(header, null, "datatype");
         datatype = datatype == null ? "unknown" : datatype.toLowerCase();
@@ -72,38 +64,14 @@ class TMXPairReader {
             decodeSegments = false;
     }
 
-    private BilingualCorpus.StringPair readTu(XMLEventReader reader, StartElement tu, String sourceLanguage, String targetLanguage) throws XMLStreamException {
-        Date timestamp = null;
+    private List<MultilingualCorpus.StringPair> readTu(XMLEventReader reader, StartElement tu) throws XMLStreamException {
+        this.resultCache.clear();
 
-        String date = XMLUtils.getAttributeValue(tu, null, "changedate");
-        if (date == null)
-            date = XMLUtils.getAttributeValue(tu, null, "creationdate");
+        Date tuTimestamp = getTimestamp(tu);
+        String tuSourceLanguage = XMLUtils.getAttributeValue(tu, null, "srclang");
 
-        if (date != null) {
-            try {
-                timestamp = dateFormat.parse(date);
-            } catch (ParseException | NumberFormatException e) {
-                throw new XMLStreamException(format("Invalid date '" + date + "'", tu), e);
-            }
-        }
-
-        String srclangString = XMLUtils.getAttributeValue(tu, null, "srclang");
-        Locale srcLocale = srclangString == null ? headerSourceLang : Locale.forLanguageTag(srclangString);
-
-        String srcLang = srcLocale.getLanguage();
-
-        boolean inverted;
-        if (srcLang.equals(sourceLanguage)) {
-            inverted = false;
-        } else if (srcLang.equals(targetLanguage)) {
-            inverted = true;
-        } else {
-            // default assume not inverted
-            inverted = false;
-        }
-
-        String source = null;
-        String target = null;
+        String sourceLanguage = tuSourceLanguage == null ? headerSourceLanguage : tuSourceLanguage;
+        String sourceText = null;
 
         while (reader.hasNext()) {
             XMLEvent event = reader.nextEvent();
@@ -116,24 +84,36 @@ class TMXPairReader {
                         String lang = XMLUtils.getAttributeValue(element, TMXCorpus.XML_NAMESPACE, "lang");
                         if (lang == null)
                             lang = XMLUtils.getAttributeValue(element, null, "lang");
-
-                        String text = readTuv(reader, element);
-
                         if (lang == null)
                             throw new XMLStreamException(format("Missing language for 'tuv'", event));
 
-                        lang = Locale.forLanguageTag(lang).getLanguage();
+                        if (sourceLanguage == null)
+                            sourceLanguage = lang; // The first <TUV> element in a <TU> is expected to be the source.
+
+                        Date tuvTimestamp = getTimestamp(element);
+
+                        Date timestamp = tuvTimestamp == null ? tuTimestamp : tuvTimestamp;
+                        String text = readTuv(reader, element);
 
                         if (lang.equals(sourceLanguage)) {
-                            source = text;
-                        } else if (lang.equals(targetLanguage)) {
-                            target = text;
+                            sourceText = text;
+                        } else {
+                            LanguagePair language = languageCache.get(sourceLanguage, lang);
+                            resultCache.add(new MultilingualCorpus.StringPair(language, null, text, timestamp));
                         }
                     }
                     break;
                 case XMLStreamConstants.END_ELEMENT:
                     if ("tu".equals(XMLUtils.getLocalName(event.asEndElement()))) {
-                        return wrap(event, source, target, timestamp, inverted);
+                        if (sourceText == null)
+                            throw new XMLStreamException(format("Missing source text in <tu> element", event));
+                        if (resultCache.isEmpty())
+                            throw new XMLStreamException(format("Not enough <tuv> elements found in <tu> element", event));
+
+                        for (MultilingualCorpus.StringPair pair : resultCache)
+                            pair.source = sourceText;
+
+                        return resultCache;
                     }
                     break;
             }
@@ -151,7 +131,8 @@ class TMXPairReader {
                     StartElement element = event.asStartElement();
 
                     if ("seg".equals(XMLUtils.getLocalName(element))) {
-                        return XMLUtils.getXMLContent(reader, element, decodeSegments);
+                        return XMLUtils.getXMLContent(reader, element, decodeSegments)
+                                .replace('\n', ' ');
                     }
                     break;
             }
@@ -160,7 +141,25 @@ class TMXPairReader {
         throw new XMLStreamException(format("Missing 'seg' inside 'tuv' element", tuv));
     }
 
-    private static final String format(String message, XMLEvent event) {
+    private Date getTimestamp(StartElement tu) throws XMLStreamException {
+        Date timestamp = null;
+
+        String date = XMLUtils.getAttributeValue(tu, null, "changedate");
+        if (date == null)
+            date = XMLUtils.getAttributeValue(tu, null, "creationdate");
+
+        if (date != null) {
+            try {
+                timestamp = dateFormat.parse(date);
+            } catch (ParseException | NumberFormatException e) {
+                throw new XMLStreamException(format("Invalid date '" + date + "'", tu), e);
+            }
+        }
+
+        return timestamp;
+    }
+
+    private static String format(String message, XMLEvent event) {
         Location location = event == null ? null : event.getLocation();
         return location == null ? message : (message + " at line " + location.getLineNumber());
     }

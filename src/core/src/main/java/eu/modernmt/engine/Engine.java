@@ -12,7 +12,8 @@ import eu.modernmt.engine.impl.NeuralEngine;
 import eu.modernmt.engine.impl.PhraseBasedEngine;
 import eu.modernmt.io.FileConst;
 import eu.modernmt.io.Paths;
-import eu.modernmt.persistence.PersistenceException;
+import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.TextProcessingModels;
@@ -24,7 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Locale;
+import java.util.Set;
 
 /**
  * Created by davide on 19/04/16.
@@ -55,46 +56,59 @@ public abstract class Engine implements Closeable, DataListenerProvider {
     protected final File logs;
 
     protected final String name;
-    protected final Locale sourceLanguage;
-    protected final Locale targetLanguage;
+    protected final LanguageIndex languages;
 
     protected final Aligner aligner;
-    protected final Preprocessor sourcePreprocessor;
-    protected final Preprocessor targetPreprocessor;
+    protected final Preprocessor preprocessor;
     protected final Postprocessor postprocessor;
     protected final ContextAnalyzer contextAnalyzer;
 
     public static Engine load(EngineConfig config) throws BootstrapException {
-        try {
-            EngineConfig.Type type = config.getType();
+        EngineConfig.Type type = config.getType();
 
-            if (type == EngineConfig.Type.NEURAL)
-                return new NeuralEngine(config);
-            else if (type == EngineConfig.Type.PHRASE_BASED)
-                return new PhraseBasedEngine(config);
-            else
-                throw new BootstrapException("Missing engine type (neural|phrase-based)");
-        } catch (Exception e) {
-            throw new BootstrapException(e);
-        }
+        if (type == EngineConfig.Type.NEURAL)
+            return new NeuralEngine(config);
+        else if (type == EngineConfig.Type.PHRASE_BASED)
+            return new PhraseBasedEngine(config);
+        else
+            throw new BootstrapException("Missing engine type (neural|phrase-based)");
     }
 
-    protected Engine(EngineConfig config) throws IOException, PersistenceException {
+    protected Engine(EngineConfig config) throws BootstrapException {
         this.name = config.getName();
-        this.sourceLanguage = config.getSourceLanguage();
-        this.targetLanguage = config.getTargetLanguage();
+        this.languages = new LanguageIndex(config.getLanguagePairs());
 
         this.root = FileConst.getEngineRoot(name);
         this.runtime = FileConst.getEngineRuntime(name);
         this.models = Paths.join(this.root, "models");
         this.logs = Paths.join(this.runtime, "logs");
 
-        this.sourcePreprocessor = new Preprocessor(sourceLanguage, targetLanguage);
-        this.targetPreprocessor = new Preprocessor(targetLanguage, sourceLanguage);
-        this.postprocessor = new Postprocessor(sourceLanguage, targetLanguage);
-        this.aligner = new FastAlign(Paths.join(this.models, "align"));
-        this.contextAnalyzer = new LuceneAnalyzer(Paths.join(this.models, "context"), sourceLanguage);
+        try {
+            this.preprocessor = new Preprocessor();
+        } catch (IOException e) {
+            throw new BootstrapException("Failed to load pre-processor", e);
+        }
+
+        try {
+            this.postprocessor = new Postprocessor();
+        } catch (IOException e) {
+            throw new BootstrapException("Failed to load post-processor", e);
+        }
+
+        try {
+            this.aligner = new FastAlign(Paths.join(this.models, "aligner"));
+        } catch (IOException e) {
+            throw new BootstrapException("Failed to instantiate aligner", e);
+        }
+
+        try {
+            this.contextAnalyzer = new LuceneAnalyzer(this.languages, Paths.join(this.models, "context"));
+        } catch (IOException e) {
+            throw new BootstrapException("Failed to instantiate context analyzer", e);
+        }
     }
+
+    public abstract ContributionOptions getContributionOptions();
 
     public String getName() {
         return name;
@@ -116,24 +130,20 @@ public abstract class Engine implements Closeable, DataListenerProvider {
         return contextAnalyzer;
     }
 
-    public Preprocessor getSourcePreprocessor() {
-        return sourcePreprocessor;
-    }
-
-    public Preprocessor getTargetPreprocessor() {
-        return targetPreprocessor;
+    public Preprocessor getPreprocessor() {
+        return preprocessor;
     }
 
     public Postprocessor getPostprocessor() {
         return postprocessor;
     }
 
-    public Locale getSourceLanguage() {
-        return sourceLanguage;
+    public LanguageIndex getLanguages() {
+        return this.languages;
     }
 
-    public Locale getTargetLanguage() {
-        return targetLanguage;
+    public Set<LanguagePair> getAvailableLanguagePairs() {
+        return this.languages.getLanguages();
     }
 
     public File getRootPath() {
@@ -168,8 +178,7 @@ public abstract class Engine implements Closeable, DataListenerProvider {
 
     @Override
     public void close() {
-        IOUtils.closeQuietly(sourcePreprocessor);
-        IOUtils.closeQuietly(targetPreprocessor);
+        IOUtils.closeQuietly(preprocessor);
         IOUtils.closeQuietly(postprocessor);
         IOUtils.closeQuietly(aligner);
         IOUtils.closeQuietly(contextAnalyzer);

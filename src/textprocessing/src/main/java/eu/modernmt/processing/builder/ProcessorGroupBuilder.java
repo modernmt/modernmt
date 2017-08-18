@@ -1,6 +1,6 @@
 package eu.modernmt.processing.builder;
 
-import eu.modernmt.processing.LanguageNotSupportedException;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 
@@ -25,7 +25,7 @@ class ProcessorGroupBuilder extends AbstractBuilder {
                 return builder.create(sourceLanguage, targetLanguage);
         }
 
-        throw new LanguageNotSupportedException(sourceLanguage, targetLanguage);
+        throw new UnsupportedLanguageException(sourceLanguage, targetLanguage);
     }
 
 }

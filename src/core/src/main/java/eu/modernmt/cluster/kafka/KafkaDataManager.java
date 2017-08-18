@@ -3,8 +3,9 @@ package eu.modernmt.cluster.kafka;
 import eu.modernmt.config.DataStreamConfig;
 import eu.modernmt.data.*;
 import eu.modernmt.engine.Engine;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ImportJob;
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.io.IOUtils;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -43,14 +44,13 @@ public class KafkaDataManager implements DataManager {
     private final String uuid;
     private final DataPollingThread pollingThread;
 
-    private KafkaProducer<Integer, KafkaElement> producer;
+    private KafkaProducer<Integer, KafkaPacket> producer;
 
     private KafkaChannel[] channels;
     private ArrayList<TopicPartition> partitions;
     private HashMap<String, KafkaChannel> name2channel;
-
-
-    public KafkaDataManager(String uuid, Engine engine, DataStreamConfig config) {
+    
+    public KafkaDataManager(Engine engine, String uuid, DataStreamConfig config) {
         this.uuid = uuid;
         this.pollingThread = new DataPollingThread(engine, this);
 
@@ -127,9 +127,9 @@ public class KafkaDataManager implements DataManager {
 
             properties.put("bootstrap.servers", host + ":" + port);
             properties.put("key.serializer", IntegerSerializer.class.getName());
-            properties.put("value.serializer", KafkaElementSerializer.class.getName());
+            properties.put("value.serializer", KafkaPacketSerializer.class.getName());
             properties.put("key.deserializer", IntegerDeserializer.class.getName());
-            properties.put("value.deserializer", KafkaElementDeserializer.class.getName());
+            properties.put("value.deserializer", KafkaPacketDeserializer.class.getName());
 
             return properties;
         } catch (IOException e) {
@@ -141,7 +141,6 @@ public class KafkaDataManager implements DataManager {
 
     @Override
     public Map<Short, Long> connect(String host, int port, long timeout, TimeUnit unit) throws HostUnreachableException {
-
         // load producer properties and
         // build kafka producer for sending messages to the server
         Properties producerProperties = loadProperties("kafka-producer.properties", host, port);
@@ -153,7 +152,7 @@ public class KafkaDataManager implements DataManager {
         Properties consumerProperties = loadProperties("kafka-consumer.properties", host, port);
         consumerProperties.put("group.id", uuid);
 
-        KafkaConsumer<Integer, KafkaElement> consumer = new KafkaConsumer<>(consumerProperties);
+        KafkaConsumer<Integer, KafkaPacket> consumer = new KafkaConsumer<>(consumerProperties);
         consumer.assign(partitions);
 
         ConnectionThread connectThread = new ConnectionThread(consumer);
@@ -184,19 +183,19 @@ public class KafkaDataManager implements DataManager {
     }
 
     @Override
-    public ImportJob upload(long domainId, BilingualCorpus corpus, short channel) throws DataManagerException {
+    public ImportJob upload(long domainId, MultilingualCorpus corpus, short channel) throws DataManagerException {
         return upload(domainId, corpus, getDataChannel(channel));
     }
 
     @Override
-    public ImportJob upload(long domainId, BilingualCorpus corpus, DataChannel channel) throws DataManagerException {
+    public ImportJob upload(long domainId, MultilingualCorpus corpus, DataChannel channel) throws DataManagerException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 
         if (logger.isDebugEnabled())
             logger.debug("Uploading domain " + domainId);
 
-        BilingualCorpus.BilingualLineReader reader = null;
+        MultilingualCorpus.MultilingualLineReader reader = null;
 
         long importBegin, importEnd;
         int size = 0;
@@ -204,23 +203,23 @@ public class KafkaDataManager implements DataManager {
         try {
             reader = corpus.getContentReader();
 
-            BilingualCorpus.StringPair pair = reader.read();
+            MultilingualCorpus.StringPair pair = reader.read();
             if (pair == null)
                 return null;
 
-            importEnd = importBegin = sendElement(KafkaElement.createUpdate(domainId, pair.source, pair.target), true, channel);
+            importEnd = importBegin = sendElement(KafkaPacket.createUpdate(pair.language, domainId, pair.source, pair.target), true, channel);
             size++;
 
             pair = reader.read();
 
             while (pair != null) {
-                BilingualCorpus.StringPair current = pair;
+                MultilingualCorpus.StringPair current = pair;
                 pair = reader.read();
 
                 if (pair == null)
-                    importEnd = sendElement(KafkaElement.createUpdate(domainId, current.source, current.target), true, channel);
+                    importEnd = sendElement(KafkaPacket.createUpdate(current.language, domainId, current.source, current.target), true, channel);
                 else
-                    sendElement(KafkaElement.createUpdate(domainId, current.source, current.target), false, channel);
+                    sendElement(KafkaPacket.createUpdate(current.language, domainId, current.source, current.target), false, channel);
 
                 size++;
             }
@@ -244,16 +243,16 @@ public class KafkaDataManager implements DataManager {
     }
 
     @Override
-    public ImportJob upload(long domainId, String sourceSentence, String targetSentence, short channel) throws DataManagerException {
-        return upload(domainId, sourceSentence, targetSentence, getDataChannel(channel));
+    public ImportJob upload(LanguagePair direction, long domainId, String sourceSentence, String targetSentence, short channel) throws DataManagerException {
+        return upload(direction, domainId, sourceSentence, targetSentence, getDataChannel(channel));
     }
 
     @Override
-    public ImportJob upload(long domainId, String sourceSentence, String targetSentence, DataChannel channel) throws DataManagerException {
+    public ImportJob upload(LanguagePair direction, long domainId, String sourceSentence, String targetSentence, DataChannel channel) throws DataManagerException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 
-        long offset = sendElement(KafkaElement.createUpdate(domainId, sourceSentence, targetSentence), true, channel);
+        long offset = sendElement(KafkaPacket.createUpdate(direction, domainId, sourceSentence, targetSentence), true, channel);
         return ImportJob.createEphemeralJob(offset, channel.getId());
     }
 
@@ -263,13 +262,13 @@ public class KafkaDataManager implements DataManager {
             throw new IllegalStateException("connect() not called");
 
         DataChannel channel = getDataChannel(DataManager.DOMAIN_UPLOAD_CHANNEL_ID);
-        sendElement(KafkaElement.createDeletion(domainId), true, channel);
+        sendElement(KafkaPacket.createDeletion(domainId), true, channel);
     }
 
-    private long sendElement(KafkaElement element, boolean sync, DataChannel channel) throws DataManagerException {
+    private long sendElement(KafkaPacket packet, boolean sync, DataChannel channel) throws DataManagerException {
         pollingThread.ensureRunning();
 
-        Future<RecordMetadata> future = producer.send(new ProducerRecord<>(channel.getName(), 0, element));
+        Future<RecordMetadata> future = producer.send(new ProducerRecord<>(channel.getName(), 0, packet));
 
         long offset = -1L;
 
@@ -277,7 +276,7 @@ public class KafkaDataManager implements DataManager {
             try {
                 offset = future.get().offset();
             } catch (InterruptedException e) {
-                throw new DataManagerException("Interrupted upload for element " + element, e);
+                throw new DataManagerException("Interrupted upload for packet " + packet, e);
             } catch (ExecutionException e) {
                 Throwable cause = e.getCause();
                 if (cause instanceof RuntimeException)
@@ -361,10 +360,10 @@ public class KafkaDataManager implements DataManager {
 
     private class ConnectionThread extends Thread {
 
-        private final KafkaConsumer<Integer, KafkaElement> consumer;
+        private final KafkaConsumer<Integer, KafkaPacket> consumer;
         private HashMap<Short, Long> positions = new HashMap<>(channels.length);
 
-        private ConnectionThread(KafkaConsumer<Integer, KafkaElement> consumer) {
+        private ConnectionThread(KafkaConsumer<Integer, KafkaPacket> consumer) {
             this.consumer = consumer;
         }
 

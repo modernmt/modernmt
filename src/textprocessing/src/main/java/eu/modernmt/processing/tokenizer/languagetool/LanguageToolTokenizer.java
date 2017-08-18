@@ -1,11 +1,11 @@
 package eu.modernmt.processing.tokenizer.languagetool;
 
-import eu.modernmt.model.Languages;
-import eu.modernmt.processing.LanguageNotSupportedException;
+import eu.modernmt.lang.Languages;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.SentenceBuilder;
-import eu.modernmt.processing.tokenizer.TokenizerOutputTransformer;
+import eu.modernmt.processing.tokenizer.TokenizerUtils;
 import org.languagetool.language.tokenizers.TagalogWordTokenizer;
 import org.languagetool.tokenizers.br.BretonWordTokenizer;
 import org.languagetool.tokenizers.eo.EsperantoWordTokenizer;
@@ -73,14 +73,14 @@ public class LanguageToolTokenizer extends TextProcessor<SentenceBuilder, Senten
      *
      * @param sourceLanguage the language of the input String
      * @param targetLanguage the language the input String must be translated to
-     * @throws LanguageNotSupportedException the requested language is not supported by this software
+     * @throws UnsupportedLanguageException the requested language is not supported by this software
      */
-    public LanguageToolTokenizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+    public LanguageToolTokenizer(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
         Class<? extends org.languagetool.tokenizers.Tokenizer> tokenizerClass = TOKENIZERS.get(sourceLanguage);
         if (tokenizerClass == null)
-            throw new LanguageNotSupportedException(sourceLanguage);
+            throw new UnsupportedLanguageException(sourceLanguage);
 
         try {
             this.tokenizer = tokenizerClass.newInstance();
@@ -100,7 +100,7 @@ public class LanguageToolTokenizer extends TextProcessor<SentenceBuilder, Senten
      * are filtered out.
      * <p>
      * An arraylist containing all the relevant token Strings
-     * is finally passed to the TokenizerOutputTransformer static object,
+     * is finally passed to the TokenizerUtils static object,
      * so that it can transform each token String into an actual WORD Token.*
      *
      * @param builder  the SentenceBuilder that holds the current string to tokenize
@@ -117,7 +117,7 @@ public class LanguageToolTokenizer extends TextProcessor<SentenceBuilder, Senten
 
         result.addAll(tokens.stream().filter(token -> !token.trim().isEmpty()).collect(Collectors.toList()));
 
-        return TokenizerOutputTransformer.transform(builder, result);
+        return TokenizerUtils.transform(builder, result);
     }
 
 }

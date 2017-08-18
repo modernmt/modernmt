@@ -2,13 +2,17 @@ package eu.modernmt.context.lucene;
 
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
+import eu.modernmt.context.lucene.analysis.ContextAnalyzerIndex;
 import eu.modernmt.context.lucene.storage.CorporaStorage;
 import eu.modernmt.context.lucene.storage.Options;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Domain;
 import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.impl.StringCorpus;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
 import org.apache.logging.log4j.LogManager;
@@ -18,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -32,26 +35,39 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     private final ContextAnalyzerIndex index;
     private final CorporaStorage storage;
 
-    public LuceneAnalyzer(File indexPath, Locale language) throws IOException {
-        this(indexPath, language, new Options());
+    public LuceneAnalyzer(LanguageIndex languages, File indexPath) throws IOException {
+        this(languages, indexPath, new Options());
     }
 
-    public LuceneAnalyzer(File indexPath, Locale language, Options options) throws IOException {
-        this.index = new ContextAnalyzerIndex(new File(indexPath, "index"), language);
-        this.storage = new CorporaStorage(new File(indexPath, "storage"), options, this.index);
+    public LuceneAnalyzer(LanguageIndex languages, File indexPath, Options options) throws IOException {
+        this.index = new ContextAnalyzerIndex(new File(indexPath, "index"));
+        this.storage = new CorporaStorage(new File(indexPath, "storage"), options, this.index, languages);
+    }
+
+    public LuceneAnalyzer(ContextAnalyzerIndex index, CorporaStorage storage) {
+        this.index = index;
+        this.storage = storage;
+    }
+
+    public ContextAnalyzerIndex getIndex() {
+        return index;
+    }
+
+    public CorporaStorage getStorage() {
+        return storage;
     }
 
     @Override
-    public void add(Domain domain, Corpus corpus) throws ContextAnalyzerException {
-        HashMap<Domain, Corpus> map = new HashMap<>(1);
+    public void add(Domain domain, MultilingualCorpus corpus) throws ContextAnalyzerException {
+        HashMap<Domain, MultilingualCorpus> map = new HashMap<>(1);
         map.put(domain, corpus);
 
         this.add(map);
     }
 
     @Override
-    public void add(Map<Domain, Corpus> corpora) throws ContextAnalyzerException {
-        for (Map.Entry<Domain, Corpus> entry : corpora.entrySet()) {
+    public void add(Map<Domain, MultilingualCorpus> corpora) throws ContextAnalyzerException {
+        for (Map.Entry<Domain, MultilingualCorpus> entry : corpora.entrySet()) {
             long id = entry.getKey().getId();
 
             try {
@@ -69,18 +85,22 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     }
 
     @Override
-    public ContextVector getContextVector(String query, int limit) throws ContextAnalyzerException {
-        return getContextVector(new StringCorpus(null, null, query), limit);
+    public ContextVector getContextVector(LanguagePair direction, String query, int limit) throws ContextAnalyzerException {
+        return getContextVector(direction, new StringCorpus(null, null, query), limit);
     }
 
     @Override
-    public ContextVector getContextVector(File source, int limit) throws ContextAnalyzerException {
-        return getContextVector(new FileCorpus(source, null, null), limit);
+    public ContextVector getContextVector(LanguagePair direction, File source, int limit) throws ContextAnalyzerException {
+        return getContextVector(direction, new FileCorpus(source, null, null), limit);
     }
 
     @Override
-    public ContextVector getContextVector(Corpus query, int limit) throws ContextAnalyzerException {
-        return this.index.getSimilarDocuments(query, limit);
+    public ContextVector getContextVector(LanguagePair direction, Corpus query, int limit) throws ContextAnalyzerException {
+        try {
+            return this.index.getContextVector(direction, query, limit);
+        } catch (IOException e) {
+            throw new ContextAnalyzerException("Failed to calculate context-vector due an internal error", e);
+        }
     }
 
     @Override
@@ -100,21 +120,24 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     @Override
     public void onDataReceived(List<TranslationUnit> batch) throws ContextAnalyzerException {
         try {
-            storage.onDataReceived(batch);
-        } catch (InterruptedException | IOException e) {
+            storage.add(batch);
+        } catch (IOException e) {
             throw new ContextAnalyzerException(e);
         }
     }
 
     @Override
     public void onDelete(Deletion deletion) throws ContextAnalyzerException {
+        if (!storage.delete(deletion))
+            return;
+
         boolean deletedFromIndex = false;
         boolean deletedFromStorage = false;
 
         try {
-            storage.onDelete(deletion);
+            storage.flushToDisk(true, false);
             deletedFromStorage = true;
-        } catch (InterruptedException | IOException e) {
+        } catch (IOException e) {
             logger.error("Storage delete failed for domain " + deletion.domain, e);
         }
 
@@ -123,7 +146,7 @@ public class LuceneAnalyzer implements ContextAnalyzer {
             index.flush();
 
             deletedFromIndex = true;
-        } catch (ContextAnalyzerException e) {
+        } catch (IOException e) {
             logger.error("Index delete failed for domain " + deletion.domain, e);
         }
 

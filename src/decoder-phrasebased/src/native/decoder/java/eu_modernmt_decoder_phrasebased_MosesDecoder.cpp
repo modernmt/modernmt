@@ -145,13 +145,11 @@ Java_eu_modernmt_decoder_phrasebased_MosesDecoder_setFeatureWeights(JNIEnv *jvm,
 
 /*
  * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
- * Method:    translate
+ * Method:    xtranslate
  * Signature: (Ljava/lang/String;[J[FI)Leu/modernmt/decoder/phrasebased/TranslationXObject;
  */
-JNIEXPORT jobject JNICALL
-Java_eu_modernmt_decoder_phrasebased_MosesDecoder_translate(JNIEnv *jvm, jobject jself, jstring text,
-                                                            jlongArray contextKeys,
-                                                            jfloatArray contextValues, jint nbest) {
+JNIEXPORT jobject JNICALL Java_eu_modernmt_decoder_phrasebased_MosesDecoder_xtranslate
+        (JNIEnv *jvm, jobject jself, jstring text, jlongArray contextKeys, jfloatArray contextValues, jint nbest) {
     MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
     string sentence = jni_jstrtostr(jvm, text);
 

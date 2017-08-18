@@ -2,7 +2,7 @@ package eu.modernmt.cli;
 
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.facade.ModernMT;
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.Corpora;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.Level;
@@ -60,7 +60,7 @@ public class CleaningPipelineMain {
 
         Args args = new Args(_args);
 
-        ArrayList<BilingualCorpus> bilingualCorpora = new ArrayList<>();
+        ArrayList<MultilingualCorpus> bilingualCorpora = new ArrayList<>();
         Corpora.list(null, true, bilingualCorpora, args.sourceLanguage, args.targetLanguage, args.inputRoots);
 
         if (bilingualCorpora.isEmpty())

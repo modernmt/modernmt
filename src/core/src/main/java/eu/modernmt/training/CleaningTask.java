@@ -1,6 +1,6 @@
 package eu.modernmt.training;
 
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.io.IOUtils;
 
 import java.util.concurrent.Callable;
@@ -10,24 +10,24 @@ import java.util.concurrent.Callable;
  */
 class CleaningTask implements Callable<Void> {
 
-    private BilingualCorpus corpus;
-    private BilingualCorpus output;
+    private MultilingualCorpus corpus;
+    private MultilingualCorpus output;
 
-    public CleaningTask(BilingualCorpus corpus, BilingualCorpus output) {
+    public CleaningTask(MultilingualCorpus corpus, MultilingualCorpus output) {
         this.corpus = corpus;
         this.output = output;
     }
 
     @Override
     public Void call() throws Exception {
-        BilingualCorpus.BilingualLineReader reader = null;
-        BilingualCorpus.BilingualLineWriter writer = null;
+        MultilingualCorpus.MultilingualLineReader reader = null;
+        MultilingualCorpus.MultilingualLineWriter writer = null;
 
         try {
             reader = corpus.getContentReader();
             writer = output.getContentWriter(false);
 
-            BilingualCorpus.StringPair pair;
+            MultilingualCorpus.StringPair pair;
             while ((pair = reader.read()) != null) {
                 writer.write(pair);
             }

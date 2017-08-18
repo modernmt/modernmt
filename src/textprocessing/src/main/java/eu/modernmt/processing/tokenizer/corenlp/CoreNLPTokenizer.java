@@ -6,10 +6,10 @@ import edu.stanford.nlp.international.spanish.process.SpanishTokenizer;
 import edu.stanford.nlp.ling.HasOffset;
 import edu.stanford.nlp.process.PTBTokenizer;
 import edu.stanford.nlp.process.TokenizerFactory;
-import eu.modernmt.model.Languages;
-import eu.modernmt.processing.LanguageNotSupportedException;
+import eu.modernmt.lang.Languages;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.string.SentenceBuilder;
 
 import java.io.Reader;
@@ -59,14 +59,14 @@ public class CoreNLPTokenizer extends TextProcessor<SentenceBuilder, SentenceBui
      *
      * @param sourceLanguage the language of the input String
      * @param targetLanguage the language the input String must be translated to
-     * @throws LanguageNotSupportedException the requested language is not supported by this software
+     * @throws UnsupportedLanguageException the requested language is not supported by this software
      */
-    public CoreNLPTokenizer(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+    public CoreNLPTokenizer(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
         this.factory = FACTORIES.get(sourceLanguage);
         if (this.factory == null)
-            throw new LanguageNotSupportedException(sourceLanguage);
+            throw new UnsupportedLanguageException(sourceLanguage);
 
         /*sets special options if source language is English*/
         if (Languages.sameLanguage(Languages.ENGLISH, sourceLanguage))
@@ -85,7 +85,7 @@ public class CoreNLPTokenizer extends TextProcessor<SentenceBuilder, SentenceBui
      * to one common String arrayList.
      * <p>
      * In the end, the token Strings arrayList is passed to the
-     * TokenizerOutputTransformer static object
+     * TokenizerUtils static object
      * so that it can transform each token String into an actual WORD Token.*
      *
      * @param builder  the SentenceBuilder that holds the current string to tokenize

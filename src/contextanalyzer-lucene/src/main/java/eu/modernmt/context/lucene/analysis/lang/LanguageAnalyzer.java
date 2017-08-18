@@ -1,7 +1,6 @@
 package eu.modernmt.context.lucene.analysis.lang;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.miscellaneous.LimitTokenCountAnalyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 
@@ -13,7 +12,6 @@ import java.util.Map;
 
 public abstract class LanguageAnalyzer extends StopwordAnalyzerBase {
 
-    public static final int MAX_INDEXED_WORDS_PER_DOCUMENT = 100000000;
     private static final Map<String, Class<? extends Analyzer>> ANALYZERS;
 
     static {
@@ -64,7 +62,7 @@ public abstract class LanguageAnalyzer extends StopwordAnalyzerBase {
 
     public static final class AnalyzerConfig {
 
-        public boolean enableStemming = true;
+        public boolean enableStemming = false;
         public CharArraySet stemmingExclusionSet = null;
 
         public boolean filterStopWords = true;
@@ -90,19 +88,25 @@ public abstract class LanguageAnalyzer extends StopwordAnalyzerBase {
         this.config = config;
     }
 
-    public static Analyzer getByLanguage(Locale lang) {
-        return getByLanguage(lang, new AnalyzerConfig());
+    public static Analyzer getByLanguage(Locale locale) {
+        return getByLanguage(locale, new AnalyzerConfig());
     }
 
-    public static Analyzer getByLanguage(Locale lang, AnalyzerConfig config) {
-        String tag = lang.toLanguageTag();
+    public static Analyzer getByLanguage(Locale locale, Analyzer def) {
+        return getByLanguage(locale, new AnalyzerConfig(), def);
+    }
 
-        Class<? extends Analyzer> analyzerClass = ANALYZERS.get(tag);
+    public static Analyzer getByLanguage(Locale locale, AnalyzerConfig config) {
+        return getByLanguage(locale, config, new DefaultAnalyzer(config));
+    }
+
+    public static Analyzer getByLanguage(Locale locale, AnalyzerConfig config, Analyzer def) {
+        Class<? extends Analyzer> analyzerClass = ANALYZERS.get(locale.toLanguageTag());
         if (analyzerClass == null)
-            analyzerClass = ANALYZERS.get(tag.substring(0, 2));
+            analyzerClass = ANALYZERS.get(locale.getLanguage());
 
         if (analyzerClass == null)
-            analyzerClass = DefaultAnalyzer.class;
+            return def;
 
         Analyzer analyzer;
 
@@ -116,8 +120,7 @@ public abstract class LanguageAnalyzer extends StopwordAnalyzerBase {
             throw new RuntimeException("Unable to instantiate class " + analyzerClass.getCanonicalName(), e);
         }
 
-        return new LimitTokenCountAnalyzer(analyzer, MAX_INDEXED_WORDS_PER_DOCUMENT, false);
+        return analyzer;
     }
-
 
 }

@@ -1,59 +1,60 @@
 package eu.modernmt.model.corpus.impl.parallel;
 
 import eu.modernmt.io.*;
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.corpus.BaseMultilingualCorpus;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Locale;
 
 /**
  * Created by davide on 24/02/16.
  */
-public class ParallelFileCorpus implements BilingualCorpus {
-
-    private static final int DEFAULT_BUFFER_SIZE = 4096;
+public class ParallelFileCorpus extends BaseMultilingualCorpus {
 
     private final FileProxy source;
     private final FileProxy target;
     private final String name;
-    private final Locale sourceLanguage;
-    private final Locale targetLanguage;
-    private int lineCount = -1;
+    private final LanguagePair language;
 
-    private final FileCorpus sourceCorpus;
-    private final FileCorpus targetCorpus;
-
-    public ParallelFileCorpus(File directory, String name, Locale sourceLanguage, Locale targetLanguage) {
-        this(name, sourceLanguage, new File(directory, name + "." + sourceLanguage.toLanguageTag()),
-                targetLanguage, new File(directory, name + "." + targetLanguage.toLanguageTag()));
+    public ParallelFileCorpus(File directory, String name, LanguagePair language) {
+        this(name, language, new File(directory, name + "." + language.source.toLanguageTag()),
+                new File(directory, name + "." + language.target.toLanguageTag()));
     }
 
-    public ParallelFileCorpus(Locale sourceLanguage, File source, Locale targetLanguage, File target) {
-        this(FilenameUtils.removeExtension(source.getName()), sourceLanguage, source, targetLanguage, target);
+    public ParallelFileCorpus(LanguagePair language, File source, File target) {
+        this(FilenameUtils.removeExtension(source.getName()), language, source, target);
     }
 
-    public ParallelFileCorpus(Locale sourceLanguage, FileProxy source, Locale targetLanguage, FileProxy target) {
-        this(FilenameUtils.removeExtension(source.getFilename()), sourceLanguage, source, targetLanguage, target);
+    public ParallelFileCorpus(LanguagePair language, FileProxy source, FileProxy target) {
+        this(FilenameUtils.removeExtension(source.getFilename()), language, source, target);
     }
 
-    public ParallelFileCorpus(String name, Locale sourceLanguage, File source, Locale targetLanguage, File target) {
-        this(name, sourceLanguage, FileProxy.wrap(source), targetLanguage, FileProxy.wrap(target));
+    public ParallelFileCorpus(String name, LanguagePair language, File source, File target) {
+        this(name, language, FileProxy.wrap(source), FileProxy.wrap(target));
     }
 
-    public ParallelFileCorpus(String name, Locale sourceLanguage, FileProxy source, Locale targetLanguage, FileProxy target) {
+    public ParallelFileCorpus(String name, LanguagePair language, FileProxy source, FileProxy target) {
         this.name = name;
-        this.sourceLanguage = sourceLanguage;
-        this.targetLanguage = targetLanguage;
+        this.language = language;
         this.source = source;
         this.target = target;
+    }
 
-        this.sourceCorpus = new FileCorpus(this.source, this.name, this.sourceLanguage);
-        this.targetCorpus = new FileCorpus(this.target, this.name, this.targetLanguage);
+    public LanguagePair getLanguage() {
+        return language;
+    }
+
+    @Override
+    public Corpus getCorpus(LanguagePair language, boolean source) {
+        if (this.language.equals(language))
+            return new FileCorpus(source ? this.source : this.target, name, source ? language.source : language.target);
+        else
+            throw new UnsupportedLanguageException(language);
     }
 
     @Override
@@ -62,65 +63,13 @@ public class ParallelFileCorpus implements BilingualCorpus {
     }
 
     @Override
-    public Locale getSourceLanguage() {
-        return sourceLanguage;
+    public MultilingualLineReader getContentReader() throws IOException {
+        return new ParallelFileLineReader(language, source, target);
     }
 
     @Override
-    public Locale getTargetLanguage() {
-        return targetLanguage;
-    }
-
-    @Override
-    public int getLineCount() throws IOException {
-        if (lineCount < 0) {
-            synchronized (this) {
-                if (lineCount < 0) {
-                    InputStream stream = null;
-
-                    try {
-                        byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
-                        stream = this.source.getInputStream();
-
-                        int count = 0;
-                        int size;
-
-                        while ((size = stream.read(buffer)) != -1) {
-                            for (int i = 0; i < size; i++) {
-                                if (buffer[i] == (byte) 0x0A)
-                                    count++;
-                            }
-                        }
-
-                        this.lineCount = count;
-                    } finally {
-                        IOUtils.closeQuietly(stream);
-                    }
-                }
-            }
-        }
-
-        return this.lineCount;
-    }
-
-    @Override
-    public BilingualLineReader getContentReader() throws IOException {
-        return new ParallelFileLineReader(source, target);
-    }
-
-    @Override
-    public BilingualLineWriter getContentWriter(boolean append) throws IOException {
+    public MultilingualLineWriter getContentWriter(boolean append) throws IOException {
         return new ParallelFileLineWriter(append, source, target);
-    }
-
-    @Override
-    public Corpus getSourceCorpus() {
-        return sourceCorpus;
-    }
-
-    @Override
-    public Corpus getTargetCorpus() {
-        return targetCorpus;
     }
 
     @Override
@@ -144,16 +93,19 @@ public class ParallelFileCorpus implements BilingualCorpus {
 
     @Override
     public String toString() {
-        return name + '.' + sourceLanguage.toLanguageTag() + '|' + targetLanguage.toLanguageTag();
+        return name + '[' + language.toString() + ']';
     }
 
-    private static class ParallelFileLineReader implements BilingualLineReader {
+    private static class ParallelFileLineReader implements MultilingualLineReader {
 
+        private final LanguagePair language;
         private UnixLineReader sourceReader;
         private UnixLineReader targetReader;
         private int index;
 
-        private ParallelFileLineReader(FileProxy source, FileProxy target) throws IOException {
+        private ParallelFileLineReader(LanguagePair language, FileProxy source, FileProxy target) throws IOException {
+            this.language = language;
+
             boolean success = false;
 
             try {
@@ -178,7 +130,7 @@ public class ParallelFileCorpus implements BilingualCorpus {
                 return null;
             } else if (source != null && target != null) {
                 this.index++;
-                return new StringPair(source, target);
+                return new StringPair(language, source, target);
             } else {
                 throw new IOException("Invalid parallel corpus: unmatched line at " + (this.index + 1));
             }
@@ -191,7 +143,7 @@ public class ParallelFileCorpus implements BilingualCorpus {
         }
     }
 
-    private static class ParallelFileLineWriter implements BilingualLineWriter {
+    private static class ParallelFileLineWriter implements MultilingualLineWriter {
 
         private LineWriter sourceWriter;
         private LineWriter targetWriter;
@@ -211,14 +163,9 @@ public class ParallelFileCorpus implements BilingualCorpus {
         }
 
         @Override
-        public void write(String source, String target) throws IOException {
-            sourceWriter.writeLine(source);
-            targetWriter.writeLine(target);
-        }
-
-        @Override
         public void write(StringPair pair) throws IOException {
-            write(pair.source, pair.target);
+            sourceWriter.writeLine(pair.source);
+            targetWriter.writeLine(pair.target);
         }
 
         @Override

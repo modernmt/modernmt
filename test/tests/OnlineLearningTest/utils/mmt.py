@@ -63,11 +63,11 @@ def mmt_restart(engine='default'):
 
 
 def mmt_api_translate(line):
-    return _api.translate(line)['translation']
+    return _api.translate('en', 'it', line)['translation']
 
 
 def mmt_api_append(domain, source, target):
-    _api.append_to_domain(domain, source, target)
+    _api.append_to_domain('en', 'it', domain, source, target)
     time.sleep(5)
 
 

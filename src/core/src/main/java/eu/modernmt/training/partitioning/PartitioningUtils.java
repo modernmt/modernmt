@@ -1,10 +1,10 @@
 package eu.modernmt.training.partitioning;
 
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -14,13 +14,8 @@ public class PartitioningUtils {
 
     private static final double MAX_CORPUS_PARTITION_RATIO = 0.01;
 
-    public static double getAdjustedWeight(BilingualCorpus corpus, long extraPartitionsLines, long corporaLines) {
-        int corpusLines;
-        try {
-            corpusLines = corpus.getLineCount();
-        } catch (IOException e) {
-            throw new Error("This cannot happen", e);
-        }
+    public static double getAdjustedWeight(LanguagePair language, MultilingualCorpus corpus, long extraPartitionsLines, long corporaLines) {
+        int corpusLines = corpus.getLineCount(language);
 
         double weight = ((double) corpusLines) / corporaLines;
         int expectedSize = (int) Math.round(weight * extraPartitionsLines);
@@ -42,21 +37,34 @@ public class PartitioningUtils {
         return count;
     }
 
-    public static long countTotalCorporaLines(Collection<BilingualCorpus> corpora, int threads) throws IOException {
+    public static Map<LanguagePair, Long> countTotalCorporaLines(Collection<MultilingualCorpus> corpora, int threads) throws IOException {
         ExecutorService executor = null;
 
         try {
             executor = threads > 1 ? Executors.newFixedThreadPool(threads) : Executors.newSingleThreadExecutor();
 
-            ArrayList<Future<Long>> counts = new ArrayList<>(corpora.size());
-            for (BilingualCorpus corpus : corpora) {
-                counts.add(executor.submit(() -> (long) corpus.getLineCount()));
+            ArrayList<Future<HashMap<LanguagePair, Long>>> futures = new ArrayList<>(corpora.size());
+
+            for (MultilingualCorpus corpus : corpora) {
+                futures.add(executor.submit(() -> {
+                    Set<LanguagePair> languages = corpus.getLanguages();
+                    HashMap<LanguagePair, Long> counts = new HashMap<>(languages.size());
+
+                    for (LanguagePair language : languages)
+                        counts.put(language, (long) corpus.getLineCount(language));
+
+                    return counts;
+                }));
             }
 
-            long count = 0;
-            for (Future<Long> c : counts) {
+            HashMap<LanguagePair, Long> result = new HashMap<>();
+
+            for (Future<HashMap<LanguagePair, Long>> future : futures) {
                 try {
-                    count += c.get();
+                    for (Map.Entry<LanguagePair, Long> count : future.get().entrySet()) {
+                        Long old = result.get(count.getKey());
+                        result.put(count.getKey(), (old == null ? 0L : old) + count.getValue());
+                    }
                 } catch (ExecutionException e) {
                     Throwable cause = e.getCause();
 
@@ -71,7 +79,7 @@ public class PartitioningUtils {
                 }
             }
 
-            return count;
+            return result;
         } finally {
             if (executor != null) {
                 executor.shutdown();

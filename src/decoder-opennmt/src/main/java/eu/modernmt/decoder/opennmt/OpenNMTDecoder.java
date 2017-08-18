@@ -3,11 +3,15 @@ package eu.modernmt.decoder.opennmt;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.Decoder;
+import eu.modernmt.decoder.DecoderListener;
 import eu.modernmt.decoder.opennmt.execution.ExecutionQueue;
 import eu.modernmt.decoder.opennmt.memory.ScoreEntry;
 import eu.modernmt.decoder.opennmt.memory.TranslationMemory;
 import eu.modernmt.decoder.opennmt.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.io.FileConst;
+import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -19,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Set;
 
 /**
  * Created by davide on 22/05/17.
@@ -30,15 +35,23 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
     private static final int SUGGESTIONS_LIMIT = 4;
     private final ExecutionQueue executor;
     private final TranslationMemory memory;
+    private final Set<LanguagePair> directions;
 
     public OpenNMTDecoder(File modelPath, int[] gpus) throws OpenNMTException {
+        File mappingFile = new File(modelPath, "model.map");
+        try {
+            this.directions = ModelMappingFile.readAvailableTranslationDirections(mappingFile);
+        } catch (IOException e) {
+            throw new OpenNMTException("Failed to read file model.map", e);
+        }
+
         File pythonHome = new File(FileConst.getLibPath(), "pynmt");
         File storageModelPath = new File(modelPath, "memory");
 
         this.executor = ExecutionQueue.newInstance(pythonHome, modelPath, gpus);
 
         try {
-            this.memory = new LuceneTranslationMemory(storageModelPath);
+            this.memory = new LuceneTranslationMemory(new LanguageIndex(this.directions), storageModelPath);
         } catch (IOException e) {
             throw new OpenNMTException("Failed to initialize memory", e);
         }
@@ -47,18 +60,26 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
     // Decoder
 
     @Override
-    public Translation translate(Sentence text) throws OpenNMTException {
-        return translate(text, null);
+    public void setListener(DecoderListener listener) {
+        listener.onTranslationDirectionsChanged(directions);
     }
 
     @Override
-    public Translation translate(Sentence text, ContextVector contextVector) throws OpenNMTException {
+    public Translation translate(LanguagePair direction, Sentence text) throws OpenNMTException {
+        return translate(direction, text, null);
+    }
+
+    @Override
+    public Translation translate(LanguagePair direction, Sentence text, ContextVector contextVector) throws OpenNMTException {
+        if (!this.directions.contains(direction))
+            throw new UnsupportedLanguageException(direction);
+
         long start = System.currentTimeMillis();
 
         ScoreEntry[] suggestions;
 
         try {
-            suggestions = memory.search(text, contextVector, SUGGESTIONS_LIMIT);
+            suggestions = memory.search(direction, text, contextVector, SUGGESTIONS_LIMIT);
         } catch (IOException e) {
             throw new OpenNMTException("Failed to retrieve suggestions from memory", e);
         }
@@ -66,9 +87,9 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
         Translation translation;
 
         if (suggestions != null && suggestions.length > 0)
-            translation = executor.execute(text, suggestions);
+            translation = executor.execute(direction, text, suggestions);
         else
-            translation = executor.execute(text);
+            translation = executor.execute(direction, text);
 
         long elapsed = System.currentTimeMillis() - start;
         translation.setElapsedTime(elapsed);

@@ -19,16 +19,14 @@ import eu.modernmt.decoder.DecoderWithFeatures;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.hw.NetworkUtils;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.persistence.Database;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Created by davide on 18/04/16.
@@ -83,7 +81,10 @@ public class ClusterNode {
 //                // Ignore exception
 //            }
 
-            forcefullyClose(executor);
+            /*shutdown the executor only if this member is the only member left in the cluster*/
+            if (hazelcast.getCluster().getMembers().size() == 1)
+                forcefullyClose(executor);
+
             forcefullyClose(hazelcast);
 
             // Close engine resources
@@ -220,15 +221,17 @@ public class ClusterNode {
             hazelcastConfig.setProperty("hazelcast.max.join.seconds", Long.toString(seconds));
         }
 
+        String host = networkConfig.getHost();
+        if (host != null)
+            hazelcastConfig.getNetworkConfig().setPublicAddress(host);
+
+        hazelcastConfig.getNetworkConfig().setPort(networkConfig.getPort());
+
         String listenInterface = networkConfig.getListeningInterface();
-        if (listenInterface != null) {
+        if (listenInterface != null)
             hazelcastConfig.getNetworkConfig().getInterfaces()
                     .setEnabled(true)
                     .addInterface(listenInterface);
-        }
-
-        hazelcastConfig.getNetworkConfig()
-                .setPort(networkConfig.getPort());
 
         JoinConfig.Member[] members = networkConfig.getJoinConfig().getMembers();
         if (members != null && members.length > 0) {
@@ -314,6 +317,11 @@ public class ClusterNode {
 
         timer.reset();
         this.engine = Engine.load(nodeConfig.getEngineConfig());
+        try {
+            this.engine.getDecoder().setListener(this::updateDecoderTranslationDirections);
+        } catch (UnsupportedOperationException e) {
+            // Ignore, decoder not available
+        }
         setStatus(Status.LOADED);
         logger.info("Model loaded in " + (timer.time() / 1000.) + "s");
 
@@ -344,7 +352,7 @@ public class ClusterNode {
                 throw new BootstrapException("Datastream name is compulsory if datastream is not embedded");
 
 
-            this.dataManager = new KafkaDataManager(uuid, this.engine, dataStreamConfig);
+            this.dataManager = new KafkaDataManager(this.engine, uuid, dataStreamConfig);
             this.dataManager.setDataManagerListener(this::updateChannelsPositions);
 
             addToDataManager(this.engine, this.dataManager);
@@ -424,6 +432,11 @@ public class ClusterNode {
         NodeInfo.updateChannelsPositionsInMember(localMember, positions);
     }
 
+    private void updateDecoderTranslationDirections(Set<LanguagePair> directions) {
+        Member localMember = hazelcast.getCluster().getLocalMember();
+        NodeInfo.updateTranslationDirections(localMember, directions);
+    }
+
     public void notifyDecoderWeightsChanged(Map<String, float[]> weights) {
         this.decoderWeightsTopic.publish(weights);
     }
@@ -458,6 +471,14 @@ public class ClusterNode {
 
     public <V> Future<V> submit(Callable<V> callable) {
         return executor.submit(callable);
+    }
+
+    public <V> Future<V> submit(Callable<V> callable, LanguagePair direction) {
+        try {
+            return executor.submit(callable, member -> NodeInfo.hasTranslationDirection(member, direction));
+        } catch (RejectedExecutionException e) {
+            return null;
+        }
     }
 
     public synchronized void shutdown() {

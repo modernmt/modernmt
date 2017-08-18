@@ -6,7 +6,6 @@ import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.analysis.util.CharArraySet;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -16,7 +15,7 @@ public class DefaultAnalyzer extends LanguageAnalyzer {
     public static final int DEFAULT_MAX_TOKEN_LENGTH = 255;
     private int maxTokenLength = DEFAULT_MAX_TOKEN_LENGTH;
 
-    protected DefaultAnalyzer(AnalyzerConfig config, CharArraySet defaultStopWordsSet) {
+    protected DefaultAnalyzer(AnalyzerConfig config) {
         super(config, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
     }
 

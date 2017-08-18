@@ -2,8 +2,8 @@ package eu.modernmt.processing.recaser;
 
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
-import eu.modernmt.processing.LanguageNotSupportedException;
 import eu.modernmt.processing.TextProcessor;
+import eu.modernmt.lang.UnsupportedLanguageException;
 
 import java.util.Locale;
 import java.util.Map;
@@ -13,7 +13,7 @@ import java.util.Map;
  */
 public class SimpleRecaser extends TextProcessor<Translation, Translation> {
 
-    public SimpleRecaser(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+    public SimpleRecaser(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
     }
 

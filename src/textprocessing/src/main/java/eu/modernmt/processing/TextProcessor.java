@@ -1,5 +1,7 @@
 package eu.modernmt.processing;
 
+import eu.modernmt.lang.UnsupportedLanguageException;
+
 import java.util.Locale;
 import java.util.Map;
 
@@ -8,7 +10,7 @@ import java.util.Map;
  */
 public abstract class TextProcessor<P, R> {
 
-    public TextProcessor(Locale sourceLanguage, Locale targetLanguage) throws LanguageNotSupportedException {
+    public TextProcessor(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
     }
 
     public abstract R call(P param, Map<String, Object> metadata) throws ProcessingException;

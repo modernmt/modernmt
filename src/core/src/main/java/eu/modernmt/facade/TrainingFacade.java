@@ -1,11 +1,10 @@
 package eu.modernmt.facade;
 
-import eu.modernmt.cleaning.FilteredBilingualCorpus;
+import eu.modernmt.cleaning.FilteredMultilingualCorpus;
 import eu.modernmt.engine.Engine;
-import eu.modernmt.model.corpus.BilingualCorpus;
+import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
-import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
-import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.training.CleaningPipeline;
 import eu.modernmt.training.PreprocessingPipeline;
@@ -18,7 +17,6 @@ import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Created by davide on 17/08/16.
@@ -40,22 +38,14 @@ public class TrainingFacade {
 
     }
 
-    public void clean(List<BilingualCorpus> bilingualCorpora, File outputDirectory) throws IOException {
-        BilingualCorpus sample = bilingualCorpora.get(0);
-
-        final Locale sourceLanguage = sample.getSourceLanguage();
-        final Locale targetLanguage = sample.getTargetLanguage();
-
+    public void clean(List<MultilingualCorpus> bilingualCorpora, File outputDirectory) throws IOException {
         CleaningPipeline cleaningPipeline = new CleaningPipeline(corpus -> {
-            while (corpus instanceof FilteredBilingualCorpus) {
-                corpus = ((FilteredBilingualCorpus) corpus).getWrappedCorpus();
+            while (corpus instanceof FilteredMultilingualCorpus) {
+                corpus = ((FilteredMultilingualCorpus) corpus).getWrappedCorpus();
             }
 
-            if (corpus instanceof TMXCorpus)
-                return new TMXCorpus(new File(outputDirectory, corpus.getName() + ".tmx"), sourceLanguage, targetLanguage);
-            else
-                return new ParallelFileCorpus(outputDirectory, corpus.getName(), sourceLanguage, targetLanguage);
-        }, sourceLanguage, targetLanguage);
+            return Corpora.rename(corpus, outputDirectory, corpus.getName());
+        });
         bilingualCorpora.forEach(cleaningPipeline::add);
 
         FileUtils.deleteDirectory(outputDirectory);
@@ -64,13 +54,11 @@ public class TrainingFacade {
         cleaningPipeline.process();
     }
 
-    public void preprocess(List<BilingualCorpus> bilingualCorpora, List<Corpus> monolingualCorpora, Locale sourceLanguage,
-                           Locale targetLanguage, File destFolder) throws ProcessingException, IOException {
-        preprocess(bilingualCorpora, monolingualCorpora, sourceLanguage, targetLanguage, destFolder, new TrainingOptions());
+    public void preprocess(List<MultilingualCorpus> multilingualCorpora, List<Corpus> monolingualCorpora, File destFolder) throws ProcessingException, IOException {
+        preprocess(multilingualCorpora, monolingualCorpora, destFolder, new TrainingOptions());
     }
 
-    public void preprocess(List<BilingualCorpus> bilingualCorpora, List<Corpus> monolingualCorpora, Locale sourceLanguage,
-                           Locale targetLanguage, File destFolder, TrainingOptions options) throws ProcessingException, IOException {
+    public void preprocess(List<MultilingualCorpus> multilingualCorpora, List<Corpus> monolingualCorpora, File destFolder, TrainingOptions options) throws ProcessingException, IOException {
         FilesCorporaPartition mainPartition = new FilesCorporaPartition(destFolder);
 
         CorpusWriter writer;
@@ -79,7 +67,7 @@ public class TrainingFacade {
         else
             writer = new TermsCollectorWriter(options.vocabulary);
 
-        PreprocessingPipeline pipeline = new PreprocessingPipeline(mainPartition, sourceLanguage, targetLanguage, writer);
+        PreprocessingPipeline pipeline = new PreprocessingPipeline(mainPartition, writer);
 
         FileUtils.deleteDirectory(destFolder);
 
@@ -93,7 +81,7 @@ public class TrainingFacade {
             pipeline.addExtraPartition(new FilesCorporaPartition(options.testPartition, options.partitionSize));
         }
 
-        pipeline.process(bilingualCorpora, monolingualCorpora);
+        pipeline.process(multilingualCorpora, monolingualCorpora);
     }
 
 }

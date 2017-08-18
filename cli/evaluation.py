@@ -148,7 +148,7 @@ class MMTTranslator(Translator):
     def _before_translate(self, corpus):
         try:
             corpus_file = corpus.get_file(self.source_lang)
-            context = self._api.get_context_f(corpus_file)
+            context = self._api.get_context_f(self.source_lang, self.target_lang, corpus_file)
             self._contexts[corpus_file] = context
         except requests.exceptions.ConnectionError:
             raise TranslateError('Unable to connect to MMT. '
@@ -161,7 +161,13 @@ class MMTTranslator(Translator):
 
         try:
             context_vector = self._contexts[corpus_file]
-            translation = self._api.translate(line, context=context_vector)
+
+            line = line.decode('utf-8')
+
+            if len(line) > 4096:
+                line = line[:4096]
+
+            translation = self._api.translate(self.source_lang, self.target_lang, line, context=context_vector)
         except requests.exceptions.ConnectionError:
             raise TranslateError('Unable to connect to MMT. '
                                  'Please check if engine is running on port %d.' % self._api.port)
@@ -400,13 +406,15 @@ class Evaluator:
         ]
 
     def evaluate(self, corpora, heval_output=None, debug=False):
-        if len(corpora) == 0:
-            raise IllegalArgumentException('empty corpora')
-        if heval_output is not None:
-            fileutils.makedirs(heval_output, exist_ok=True)
-
         target_lang = self._engine.target_lang
         source_lang = self._engine.source_lang
+
+        corpora = [corpus for corpus in corpora if source_lang in corpus.langs and target_lang in corpus.langs]
+        if len(corpora) == 0:
+            raise IllegalArgumentException('No %s > %s corpora found into specified path' % (source_lang, target_lang))
+
+        if heval_output is not None:
+            fileutils.makedirs(heval_output, exist_ok=True)
 
         logger = _evaluate_logger()
         logger.start(corpora)

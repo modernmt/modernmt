@@ -14,6 +14,8 @@ __author__ = 'Davide Caroselli'
 class Translator:
     def __init__(self, node, context_string=None, context_file=None, context_vector=None,
                  print_nbest=None, nbest_file=None):
+        self.source_lang = node.engine.source_lang
+        self.target_lang = node.engine.target_lang
         self._api = node.api
         self._print_nbest = print_nbest
 
@@ -29,9 +31,9 @@ class Translator:
         self._context = None
 
         if context_string is not None:
-            self._context = self._api.get_context_s(context_string)
+            self._context = self._api.get_context_s(self.source_lang, self.target_lang, context_string)
         elif context_file is not None:
-            self._context = self._api.get_context_f(context_file)
+            self._context = self._api.get_context_f(self.source_lang, self.target_lang, context_file)
         elif context_vector is not None:
             self._context = self.__parse_context_vector(context_vector)
 
@@ -71,7 +73,8 @@ class Translator:
         ]
 
     def _translate(self, line, _=None):
-        return self._api.translate(line, context=self._context, nbest=self._print_nbest)
+        return self._api.translate(self.source_lang, self.target_lang, line,
+                                   context=self._context, nbest=self._print_nbest)
 
     def execute(self, line):
         pass
