@@ -125,9 +125,9 @@ class OpenNMTPreprocessor:
                     trg_words = bpe_encoder.encode_line(target, is_source=False)
 
                     if len(src_words) > 0 and len(trg_words) > 0:
-                        src.append(src_vocab.convertToIdx(src_words,
+                        src.append(src_vocab.convertToIdxTensor(src_words,
                                                           onmt.Constants.UNK_WORD))
-                        trg.append(trg_vocab.convertToIdx(trg_words,
+                        trg.append(trg_vocab.convertToIdxTensor(trg_words,
                                                           onmt.Constants.UNK_WORD,
                                                           onmt.Constants.BOS_WORD,
                                                           onmt.Constants.EOS_WORD))

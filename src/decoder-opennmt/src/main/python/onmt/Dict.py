@@ -110,7 +110,7 @@ class Dict(object):
         Return a LongTensor
         """
 
-        vec = convertToIdxList(labels, unkWord, bosWord, eosWord)
+        vec = self.convertToIdxList(labels, unkWord, bosWord, eosWord)
 
         return torch.LongTensor(vec)
 

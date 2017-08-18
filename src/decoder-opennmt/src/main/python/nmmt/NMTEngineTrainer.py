@@ -107,7 +107,6 @@ class NMTEngineTrainer:
             scores_t = generator(out_t)
             loss_t = criterion(scores_t, targ_t.view(-1))
             pred_t = scores_t.max(1)[1]
-            self._logger.log(self._log_level, 'pred_t.data:%s targ_t.ne(Constants.PAD).data.size():%s targ_t.data.size():%s' % (repr(pred_t.data.size()), repr(targ_t.ne(Constants.PAD).data.size()), repr(targ_t.data.size())))
             num_correct_t = pred_t.data.eq(targ_t.data).masked_select(targ_t.ne(Constants.PAD).data).sum()
             num_correct += num_correct_t
             loss += loss_t.data[0]
@@ -182,6 +181,7 @@ class NMTEngineTrainer:
                                          epoch, valid_loss, valid_ppl, (float(valid_acc) * 100)))
 
                     # (3) update the learning rate
+
                     self._optim.updateLearningRate(valid_loss, epoch)
 
                     self._logger.log(self._log_level,
@@ -191,17 +191,19 @@ class NMTEngineTrainer:
                     if len(checkpoint_files) > 0 and len(checkpoint_files) > save_epochs - 1:
                         os.remove(checkpoint_files.pop(0))
 
+                    opt_state_dict = self._model_params.__dict__
                     model_state_dict = self._model.module.state_dict() if multi_gpu else self._model.state_dict()
                     model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
                     generator_state_dict = self._model.generator.module.state_dict() if multi_gpu \
                         else self._model.generator.state_dict()
+
 
                     #  (4) drop a checkpoint
                     checkpoint = {
                         'model': model_state_dict,
                         'generator': generator_state_dict,
                         'dicts': {'src': self._src_dict, 'tgt': self._trg_dict},
-                        'opt': copy.deepcopy(self._model_params.__dict__),
+                        'opt': copy.deepcopy(opt_state_dict),
                         'epoch': epoch,
                         'optim': self._optim
                     }

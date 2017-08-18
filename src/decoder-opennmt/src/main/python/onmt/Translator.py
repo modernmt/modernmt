@@ -72,7 +72,7 @@ class Translator(object):
     def buildData(self, srcBatch, goldBatch):
         # This needs to be the same as preprocess.py.
         if self._type == "text":
-            srcData = [self.src_dict.convertToIdx(b,
+            srcData = [self.src_dict.convertToIdxTensor(b,
                                                   onmt.Constants.UNK_WORD)
                        for b in srcBatch]
         elif self._type == "img":
@@ -82,7 +82,7 @@ class Translator(object):
 
         tgtData = None
         if goldBatch:
-            tgtData = [self.tgt_dict.convertToIdx(b,
+            tgtData = [self.tgt_dict.convertToIdxTensor(b,
                        onmt.Constants.UNK_WORD,
                        onmt.Constants.BOS_WORD,
                        onmt.Constants.EOS_WORD) for b in goldBatch]

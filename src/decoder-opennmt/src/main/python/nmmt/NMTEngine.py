@@ -135,8 +135,8 @@ class NMTEngine:
         tuning_src_batch, tuning_trg_batch = [], []
 
         for source, target in zip(src_batch, trg_batch):
-            tuning_src_batch.append(self._src_dict.convertToIdx(source, Constants.UNK_WORD))
-            tuning_trg_batch.append(self._trg_dict.convertToIdx(target, Constants.UNK_WORD,
+            tuning_src_batch.append(self._src_dict.convertToIdxTensor(source, Constants.UNK_WORD))
+            tuning_trg_batch.append(self._trg_dict.convertToIdxTensor(target, Constants.UNK_WORD,
                                                                 Constants.BOS_WORD, Constants.EOS_WORD))
 
         # Prepare data for training on the tuningBatch
