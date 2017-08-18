@@ -103,10 +103,22 @@ class Dict(object):
 
         return newDict
 
-    def convertToIdx(self, labels, unkWord, bosWord=None, eosWord=None):
+    def convertToIdxTensor(self, labels, unkWord, bosWord=None, eosWord=None):
         """
         Convert `labels` to indices. Use `unkWord` if not found.
-        Optionally insert `bosWord` at the beginning and `eosWord` at the .
+        Optionally insert `bosWord` at the beginning and `eosWord` at the end.
+        Return a LongTensor
+        """
+
+        vec = convertToIdxList(labels, unkWord, bosWord, eosWord)
+
+        return torch.LongTensor(vec)
+
+    def convertToIdxList(self, labels, unkWord, bosWord=None, eosWord=None):
+        """
+        Convert `labels` to indices. Use `unkWord` if not found.
+        Optionally insert `bosWord` at the beginning and `eosWord` at at the end.
+        Return a list
         """
         vec = []
 
@@ -119,7 +131,7 @@ class Dict(object):
         if eosWord is not None:
             vec += [self.lookup(eosWord)]
 
-        return torch.LongTensor(vec)
+        return vec
 
     def convertToLabels(self, idx, stop):
         """

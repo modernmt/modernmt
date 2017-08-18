@@ -2,3 +2,4 @@ from SubwordTextProcessor import SubwordTextProcessor
 from NMTEngine import NMTEngine
 from NMTEngineTrainer import NMTEngineTrainer, TrainingInterrupt
 from NMTDecoder import NMTDecoder
+from ShardedDataset import ShardedDataset

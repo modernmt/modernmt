@@ -71,6 +71,16 @@ class NMTEngine:
         model.generator = generator
         model.eval()
 
+
+
+
+        # optim_state_dict = checkpoint['optim']
+        # optim = Optim(optim_state_dict.optim, optim_state_dict.learning_rate, optim_state_dict.max_grad_norm,
+        #               lr_decay=optim_state_dict.learning_rate_decay, start_decay_at=optim_state_dict.start_decay_at)
+        #
+        # self._logger.log(self._log_level, 'model.parameters():%s' % (repr(model.parameters())))
+        # self._logger.log(self._log_level, 'optim_state_dict:%s' % (repr(optim_state_dict)))
+
         optim = checkpoint['optim']
         optim.set_parameters(model.parameters())
         optim.optimizer.load_state_dict(checkpoint['optim'].optimizer.state_dict())
@@ -78,6 +88,8 @@ class NMTEngine:
         return NMTEngine(model_opt, src_dict, trg_dict, model, optim, checkpoint, using_cuda)
 
     def __init__(self, params, src_dict, trg_dict, model, optim, checkpoint, using_cuda):
+        self._logger = logging.getLogger('ommt.NMTEngine')
+        self._log_level = logging.INFO
         self._model_loaded = False
 
         self._model_params = params

@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(LIB_DIR, 'pynmt')))
 
 import onmt
 from nmmt import NMTEngineTrainer, SubwordTextProcessor, TrainingInterrupt
+from nmmt import ShardedDataset
 import torch
 
 
@@ -55,8 +56,9 @@ class OpenNMTPreprocessor:
         self._bpe_model = bpe_model
 
         self._logger = logging.getLogger('mmt.train.OpenNMTPreprocessor')
+        self._ram_limit_mb = 1024
 
-    def process(self, corpora, valid_corpora, output_file, bpe_symbols, max_vocab_size, working_dir='.',
+    def process(self, corpora, valid_corpora, output_path, bpe_symbols, max_vocab_size, working_dir='.',
                 dump_dicts=False):
         class _ReaderWrapper:
             def __init__(self, _corpus, _langs):
@@ -89,15 +91,16 @@ class OpenNMTPreprocessor:
             trg_vocab.add(word)
 
         self._logger.info('Preparing training corpora')
-        src_train, trg_train = self._prepare_corpora(corpora, bpe_encoder, src_vocab, trg_vocab)
+        self._logger.info('Storing OpenNMT preprocessed training data to "%s"' % output_path)
+        self._prepare_sharded_dataset(output_path, corpora, bpe_encoder, src_vocab, trg_vocab)
 
         self._logger.info('Preparing validation corpora')
         src_valid, trg_valid = self._prepare_corpora(valid_corpora, bpe_encoder, src_vocab, trg_vocab)
 
-        self._logger.info('Storing OpenNMT preprocessed data to "%s"' % output_file)
+        output_file = os.path.join(output_path, 'train_processed.train.pt')
+        self._logger.info('Storing OpenNMT preprocessed validation data to "%s"' % output_file)
         torch.save({
             'dicts': {'src': src_vocab, 'tgt': trg_vocab},
-            'train': {'src': src_train, 'tgt': trg_train},
             'valid': {'src': src_valid, 'tgt': trg_valid},
         }, output_file)
 
@@ -152,6 +155,40 @@ class OpenNMTPreprocessor:
 
         return src, trg
 
+    def _prepare_sharded_dataset(self, path, corpora, bpe_encoder, src_vocab, trg_vocab):
+        count, added, ignored = 0, 0, 0
+
+        # create the ShardedDataset builder
+        builder = ShardedDataset.Builder(path)
+
+        # fill the ShardedDataset with source pairs
+        for corpus in corpora:
+            with corpus.reader([self._source_lang, self._target_lang]) as reader:
+                for source, target in reader:
+                    src_words = bpe_encoder.encode_line(source, is_source=True)
+                    trg_words = bpe_encoder.encode_line(target, is_source=False)
+
+                    if len(src_words) > 0 and len(trg_words) > 0:
+                        source = src_vocab.convertToIdxList(src_words,
+                                                          onmt.Constants.UNK_WORD)
+                        target = trg_vocab.convertToIdxList(trg_words,
+                                                          onmt.Constants.UNK_WORD,
+                                                          onmt.Constants.BOS_WORD,
+                                                          onmt.Constants.EOS_WORD)
+                        builder.add([source], [target])
+                        added += 1
+
+                    else:
+                        ignored += 1
+
+                    count += 1
+                    if count % 100000 == 0:
+                        self._logger.info(' %d sentences prepared' % count)
+
+        self._logger.info('Prepared %d sentences (%d ignored due to length == 0)' % (added, ignored))
+
+        return builder.build(self._ram_limit_mb)
+
 
 class OpenNMTDecoder:
     def __init__(self, model, source_lang, target_lang, gpus):
@@ -164,16 +201,22 @@ class OpenNMTDecoder:
         logger = logging.getLogger('mmt.train.OpenNMTDecoder')
         logger.info('Training started for data "%s"' % data_path)
 
-        save_model = os.path.join(working_dir, 'train_model')
+        save_model = os.path.join(data_path, 'train_model')
 
         # Loading training data ----------------------------------------------------------------------------------------
-        logger.info('Loading data from "%s"... START' % data_path)
+        logger.info('Loading training data from "%s"... START' % data_path)
         start_time = time.time()
-        data_set = torch.load(data_path)
-        logger.info('Loading data... END %.2fs' % (time.time() - start_time))
+        train_data = ShardedDataset.load(data_path, 64, cuda=self._gpus, volatile=False)
+        logger.info('Loading training data... END %.2fs' % (time.time() - start_time))
+
+        # Loading validation data and dictionaries ----------------------------------------------------------------------------------------
+        data_file = os.path.join(data_path, 'train_processed.train.pt')
+        logger.info('Loading validation data and dictionaries from "%s"... START' % data_file)
+        start_time = time.time()
+        data_set = torch.load(data_file)
+        logger.info('Loading validation data... END %.2fs' % (time.time() - start_time))
 
         src_dict, trg_dict = data_set['dicts']['src'], data_set['dicts']['tgt']
-        src_train, trg_train = data_set['train']['src'], data_set['train']['tgt']
         src_valid, trg_valid = data_set['valid']['src'], data_set['valid']['tgt']
 
         # Creating trainer ---------------------------------------------------------------------------------------------
@@ -183,20 +226,16 @@ class OpenNMTDecoder:
         trainer = NMTEngineTrainer.new_instance(src_dict, trg_dict, random_seed=3435, gpu_ids=self._gpus)
         logger.info('Building model... END %.2fs' % (time.time() - start_time))
 
-        # Creating data sets -------------------------------------------------------------------------------------------
-
+        # Creating validation data sets -------------------------------------------------------------------------------------------
         logger.info('Creating Data... START')
         start_time = time.time()
-        train_data = onmt.Dataset(src_train, trg_train, trainer.batch_size, self._gpus)
         valid_data = onmt.Dataset(src_valid, trg_valid, trainer.batch_size, self._gpus, volatile=True)
         logger.info('Creating Data... END %.2fs' % (time.time() - start_time))
 
         logger.info(' Vocabulary size. source = %d; target = %d' % (src_dict.size(), trg_dict.size()))
-        logger.info(' Number of training sentences. %d' % len(data_set['train']['src']))
         logger.info(' Maximum batch size. %d' % trainer.batch_size)
 
         # Training model -----------------------------------------------------------------------------------------------
-
         logger.info('Training model... START')
         try:
             start_time = time.time()
@@ -211,8 +250,11 @@ class OpenNMTDecoder:
         if not os.path.isdir(model_folder):
             os.mkdir(model_folder)
 
-        logger.info('Storing model "%s" to %s' % (checkpoint, self._model))
-        os.rename(checkpoint, self._model)
+        if checkpoint is not None:
+            logger.info('Storing model "%s" to %s' % (checkpoint, self._model))
+            os.rename(checkpoint, self._model)
+        else:
+            logger.info('checkpoint is None')
 
 
 class NeuralEngine(Engine):
@@ -276,7 +318,8 @@ class NeuralEngineBuilder(EngineBuilder):
     @EngineBuilder.Step('Preparing training data')
     def _prepare_training_data(self, args, skip=False):
         working_dir = self._get_tempdir('onmt_training')
-        args.onmt_training_file = os.path.join(working_dir, 'train_processed.train.pt')
+        args.onmt_training_path = working_dir
+        #### args.onmt_training_file = os.path.join(working_dir, 'train_processed.train.pt')
 
         if not skip:
             validation_corpora = BilingualCorpus.list(self._valid_corpora_path)
@@ -286,7 +329,7 @@ class NeuralEngineBuilder(EngineBuilder):
             corpora = filter(None, [args.filtered_bilingual_corpora, args.processed_bilingual_corpora,
                                     args.bilingual_corpora])[0]
 
-            self._engine.onmt_preprocessor.process(corpora, validation_corpora, args.onmt_training_file,
+            self._engine.onmt_preprocessor.process(corpora, validation_corpora, args.onmt_training_path,
                                                    bpe_symbols=self._bpe_symbols, max_vocab_size=self._max_vocab_size,
                                                    working_dir=working_dir)
 
@@ -295,7 +338,7 @@ class NeuralEngineBuilder(EngineBuilder):
         working_dir = self._get_tempdir('onmt_model')
 
         if not skip:
-            self._engine.decoder.train(args.onmt_training_file, working_dir)
+            self._engine.decoder.train(args.onmt_training_path, working_dir)
 
             if delete_on_exit:
                 shutil.rmtree(working_dir, ignore_errors=True)

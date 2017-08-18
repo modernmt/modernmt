@@ -107,6 +107,7 @@ class NMTEngineTrainer:
             scores_t = generator(out_t)
             loss_t = criterion(scores_t, targ_t.view(-1))
             pred_t = scores_t.max(1)[1]
+            self._logger.log(self._log_level, 'pred_t.data:%s targ_t.ne(Constants.PAD).data.size():%s targ_t.data.size():%s' % (repr(pred_t.data.size()), repr(targ_t.ne(Constants.PAD).data.size()), repr(targ_t.data.size())))
             num_correct_t = pred_t.data.eq(targ_t.data).masked_select(targ_t.ne(Constants.PAD).data).sum()
             num_correct += num_correct_t
             loss += loss_t.data[0]
