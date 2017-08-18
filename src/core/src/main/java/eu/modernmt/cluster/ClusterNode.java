@@ -85,7 +85,10 @@ public class ClusterNode {
 //                // Ignore exception
 //            }
 
-            forcefullyClose(executor);
+            /*shutdown the executor only if this member is the only member left in the cluster*/
+            if (hazelcast.getCluster().getMembers().size() == 1)
+                forcefullyClose(executor);
+
             forcefullyClose(hazelcast);
 
             // Close engine resources
