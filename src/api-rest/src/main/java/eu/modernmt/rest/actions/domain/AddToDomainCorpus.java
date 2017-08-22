@@ -24,7 +24,7 @@ import java.util.zip.GZIPInputStream;
 /**
  * Created by davide on 15/12/15.
  */
-@Route(aliases = "domains/:id/corpus", method = HttpMethod.PUT)
+@Route(aliases = "domains/:id/corpus", method = HttpMethod.POST)
 public class AddToDomainCorpus extends ObjectAction<ImportJob> {
 
     @Override

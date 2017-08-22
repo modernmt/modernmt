@@ -173,7 +173,7 @@ class ClusterNode(object):
 
         def append_to_domain(self, source, target, domain, sentence, translation):
             params = {'sentence': sentence, 'translation': translation, 'source': source, 'target': target}
-            return self._put('domains/' + str(domain) + '/corpus', params=params)
+            return self._post('domains/' + str(domain) + '/corpus', params=params)
 
         def import_into_domain(self, domain, tmx):
             params = {
@@ -181,7 +181,7 @@ class ClusterNode(object):
                 'local_file': tmx
             }
 
-            return self._put('domains/' + str(domain) + '/corpus', params=params)
+            return self._post('domains/' + str(domain) + '/corpus', params=params)
 
         def get_import_job(self, id):
             return self._get('domains/imports/' + str(id))
