@@ -1,8 +1,10 @@
-package eu.modernmt.model.corpus;
+package eu.modernmt.training.preprocessing;
 
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
+import eu.modernmt.model.corpus.BaseMultilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.io.IOException;
 
@@ -36,8 +38,11 @@ public class MultilingualCorpusMask extends BaseMultilingualCorpus {
                 while ((pair = reader.read()) != null) {
                     pair.language = languages.map(pair.language);
 
-                    if (pair.language != null)
+                    if (languages.isSupported(pair.language))
                         return pair;
+
+                    if (languages.isSupported(pair.language.reversed()))
+                        return reverse(pair);
                 }
 
                 return null;
@@ -50,6 +55,16 @@ public class MultilingualCorpusMask extends BaseMultilingualCorpus {
         };
     }
 
+    private static StringPair reverse(StringPair pair) {
+        pair.language = pair.language.reversed();
+
+        String temp = pair.target;
+        pair.target = pair.source;
+        pair.source = temp;
+
+        return pair;
+    }
+
     @Override
     public MultilingualLineWriter getContentWriter(boolean append) throws IOException {
         return new MultilingualLineWriter() {
@@ -59,10 +74,13 @@ public class MultilingualCorpusMask extends BaseMultilingualCorpus {
             @Override
             public void write(StringPair pair) throws IOException {
                 LanguagePair mapped = languages.map(pair.language);
-                if (mapped == null)
-                    throw new UnsupportedLanguageException(pair.language);
 
-                writer.write(new StringPair(mapped, pair.source, pair.target, pair.timestamp));
+                if (languages.isSupported(pair.language))
+                    writer.write(new StringPair(mapped, pair.source, pair.target, pair.timestamp));
+                else if (languages.isSupported(pair.language.reversed()))
+                    writer.write(new StringPair(mapped.reversed(), pair.target, pair.source, pair.timestamp));
+                else
+                    throw new UnsupportedLanguageException(pair.language);
             }
 
             @Override

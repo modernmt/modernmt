@@ -2,6 +2,7 @@ package eu.modernmt.facade;
 
 import eu.modernmt.cleaning.FilteredMultilingualCorpus;
 import eu.modernmt.engine.Engine;
+import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -54,11 +55,11 @@ public class TrainingFacade {
         cleaningPipeline.process();
     }
 
-    public void preprocess(List<MultilingualCorpus> multilingualCorpora, List<Corpus> monolingualCorpora, File destFolder) throws ProcessingException, IOException {
-        preprocess(multilingualCorpora, monolingualCorpora, destFolder, new TrainingOptions());
+    public void preprocess(LanguageIndex languages, List<MultilingualCorpus> multilingualCorpora, List<Corpus> monolingualCorpora, File destFolder) throws ProcessingException, IOException {
+        preprocess(languages, multilingualCorpora, monolingualCorpora, destFolder, new TrainingOptions());
     }
 
-    public void preprocess(List<MultilingualCorpus> multilingualCorpora, List<Corpus> monolingualCorpora, File destFolder, TrainingOptions options) throws ProcessingException, IOException {
+    public void preprocess(LanguageIndex languages, List<MultilingualCorpus> multilingualCorpora, List<Corpus> monolingualCorpora, File destFolder, TrainingOptions options) throws ProcessingException, IOException {
         FilesCorporaPartition mainPartition = new FilesCorporaPartition(destFolder);
 
         CorpusWriter writer;
@@ -67,7 +68,7 @@ public class TrainingFacade {
         else
             writer = new TermsCollectorWriter(options.vocabulary);
 
-        PreprocessingPipeline pipeline = new PreprocessingPipeline(mainPartition, writer);
+        PreprocessingPipeline pipeline = new PreprocessingPipeline(languages, mainPartition, writer);
 
         FileUtils.deleteDirectory(destFolder);
 

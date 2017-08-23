@@ -1,5 +1,6 @@
 package eu.modernmt.training;
 
+import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -8,6 +9,7 @@ import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.training.partitioning.CorporaPartition;
 import eu.modernmt.training.partitioning.PartitioningUtils;
 import eu.modernmt.training.preprocessing.CorpusWriter;
+import eu.modernmt.training.preprocessing.MultilingualCorpusMask;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -23,31 +25,39 @@ public class PreprocessingPipeline {
     private final int threads;
     private final CorporaPartition mainPartition;
     private final CorpusWriter corpusWriter;
+    private final LanguageIndex languages;
 
     private ArrayList<CorporaPartition> extraPartitions = new ArrayList<>();
 
-    public PreprocessingPipeline(CorporaPartition mainPartition, CorpusWriter writer) {
-        this(mainPartition, writer, Runtime.getRuntime().availableProcessors() * 2);
+    public PreprocessingPipeline(LanguageIndex languages, CorporaPartition mainPartition, CorpusWriter writer) {
+        this(languages, mainPartition, writer, Runtime.getRuntime().availableProcessors() * 2);
     }
 
-    public PreprocessingPipeline(CorporaPartition mainPartition, CorpusWriter writer, int threads) {
+    public PreprocessingPipeline(LanguageIndex languages, CorporaPartition mainPartition, CorpusWriter writer, int threads) {
         this.threads = threads;
         this.mainPartition = mainPartition;
         this.corpusWriter = writer;
+        this.languages = languages;
     }
 
     public void addExtraPartition(CorporaPartition partition) {
         this.extraPartitions.add(partition);
     }
 
-    public void process(Collection<MultilingualCorpus> bilingualCorpora, Collection<Corpus> monolingualCorpora) throws ProcessingException, IOException {
+    public void process(Collection<MultilingualCorpus> multilingualCorpora, Collection<Corpus> monolingualCorpora) throws ProcessingException, IOException {
+        // Masking input corpora
+        ArrayList<MultilingualCorpus> maskedMultilingualCorpora = new ArrayList<>(multilingualCorpora.size());
+        for (MultilingualCorpus corpus : multilingualCorpora)
+            maskedMultilingualCorpora.add(new MultilingualCorpusMask(languages, corpus));
+
+        // Start processing
         Preprocessor preprocessor = new Preprocessor(threads);
 
         try {
-            Map<LanguagePair, Long> bilingualCorporaLinesMap = PartitioningUtils.countTotalCorporaLines(bilingualCorpora, threads);
+            Map<LanguagePair, Long> bilingualCorporaLinesMap = PartitioningUtils.countTotalCorporaLines(maskedMultilingualCorpora, threads);
             long extraPartitionsLines = PartitioningUtils.countTotalPartitionsLines(extraPartitions);
 
-            for (MultilingualCorpus corpus : bilingualCorpora) {
+            for (MultilingualCorpus corpus : maskedMultilingualCorpora) {
                 for (LanguagePair language : corpus.getLanguages()) {
                     long bilingualCorporaLines = bilingualCorporaLinesMap.get(language);
                     double weight = PartitioningUtils.getAdjustedWeight(language, corpus, extraPartitionsLines, bilingualCorporaLines);
