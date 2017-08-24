@@ -30,7 +30,7 @@ public class LanguageIndex implements Iterable<LanguagePair> {
     }
 
     public boolean isSupported(LanguagePair pair) {
-        return languages.contains(pair);
+        return pair != null && languages.contains(pair);
     }
 
     public LanguagePair map(LanguagePair pair) {
