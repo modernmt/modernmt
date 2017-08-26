@@ -33,7 +33,7 @@ import java.util.concurrent.Future;
  */
 public class NeuralCleaningTestMain {
 
-    public static final long TARGET_WORDS = 80000000;
+    public static final long TARGET_WORDS = 90000000;
 
     private static class Args {
 
@@ -155,16 +155,16 @@ public class NeuralCleaningTestMain {
             }
         }
 
-        double threshold = 1.;
+        double reduction = 1.;
 
         if (global.words > TARGET_WORDS) {
-            double reduction = ((double) TARGET_WORDS) / global.words;
-            threshold = 1. - reduction;
+            reduction = ((double) TARGET_WORDS) / global.words;
+            System.out.println(reduction);
         }
 
         for (MultilingualCorpus corpus : inCorpora) {
             ParallelFileCorpus output = new ParallelFileCorpus(outputFolder, corpus.getName(), language);
-            copy(corpus, output, threshold);
+            copy(corpus, output, reduction);
         }
     }
 

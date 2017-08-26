@@ -511,14 +511,15 @@ class EngineBuilder:
     # ~~~~~~~~~~~~~~~~~~~~~ Training step functions ~~~~~~~~~~~~~~~~~~~~~
 
     # TODO: restore after test success
-    # @Step('TMs clean-up')
-    # def _clean_tms(self, args, skip=False, log=None):
-    #     folder = self._get_tempdir('clean_tms')
-    #
-    #     if skip:
-    #         args.bilingual_corpora = BilingualCorpus.list(folder)
-    #     else:
-    #         args.bilingual_corpora = self._engine.cleaner.clean(args.bilingual_corpora, folder, log=log)
+    @Step('TMs clean-up')
+    def _clean_tms(self, args, skip=False, log=None):
+        pass
+        # folder = self._get_tempdir('clean_tms')
+        #
+        # if skip:
+        #     args.bilingual_corpora = BilingualCorpus.list(folder)
+        # else:
+        #     args.bilingual_corpora = self._engine.cleaner.clean(args.bilingual_corpora, folder, log=log)
 
     @Step('Database create', optional=False, hidden=True)
     def _create_db(self, args, skip=False):
