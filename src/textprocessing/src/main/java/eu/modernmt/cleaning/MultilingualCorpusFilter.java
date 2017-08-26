@@ -7,19 +7,18 @@ import java.io.IOException;
 /**
  * Created by davide on 14/03/16.
  */
-public interface BilingualCorpusFilter {
+public interface MultilingualCorpusFilter {
 
     interface FilterInitializer {
 
+        void onBegin();
+
         void onPair(MultilingualCorpus corpus, MultilingualCorpus.StringPair pair, int index) throws IOException;
 
+        void onEnd();
     }
 
     FilterInitializer getInitializer();
-
-    void onInitStart();
-
-    void onInitEnd();
 
     boolean accept(MultilingualCorpus.StringPair pair, int index) throws IOException;
 

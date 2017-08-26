@@ -1,5 +1,8 @@
 package eu.modernmt.cleaning;
 
+import eu.modernmt.cleaning.filters.RareNgramFilter;
+import eu.modernmt.cleaning.filters.SentenceLengthFilter;
+import eu.modernmt.cleaning.filters.draft.DraftFilter;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.BaseMultilingualCorpus;
 import org.apache.commons.io.IOUtils;
@@ -13,8 +16,8 @@ import java.util.ArrayList;
 public class FilteredMultilingualCorpus extends BaseMultilingualCorpus {
 
     private MultilingualCorpus corpus;
-    private ArrayList<BilingualCorpusFilter> filters;
-    private ArrayList<BilingualCorpusNormalizer> normalizers;
+    private ArrayList<MultilingualCorpusFilter> filters;
+    private ArrayList<MultilingualCorpusNormalizer> normalizers;
 
     public FilteredMultilingualCorpus(MultilingualCorpus corpus) {
         this.corpus = corpus;
@@ -22,23 +25,17 @@ public class FilteredMultilingualCorpus extends BaseMultilingualCorpus {
         this.normalizers = new ArrayList<>(10);
     }
 
-    public void addFilter(BilingualCorpusFilter filter) {
+    public void addFilter(MultilingualCorpusFilter filter) {
         this.filters.add(filter);
     }
 
-    public void addNormalizer(BilingualCorpusNormalizer normalizer) {
+    public void addNormalizer(MultilingualCorpusNormalizer normalizer) {
         this.normalizers.add(normalizer);
     }
 
     @Override
     public MultilingualLineReader getContentReader() throws IOException {
-        for (BilingualCorpusFilter filter : filters)
-            filter.onInitStart();
-
         this.initialize();
-
-        for (BilingualCorpusFilter filter : filters)
-            filter.onInitEnd();
 
         return new MultilingualLineReader() {
 
@@ -50,12 +47,12 @@ public class FilteredMultilingualCorpus extends BaseMultilingualCorpus {
                 StringPair next;
 
                 while ((next = reader.read()) != null) {
-                    for (BilingualCorpusNormalizer normalizer : normalizers)
+                    for (MultilingualCorpusNormalizer normalizer : normalizers)
                         normalizer.normalize(next, index);
 
                     boolean accept = true;
 
-                    for (BilingualCorpusFilter filter : filters) {
+                    for (MultilingualCorpusFilter filter : filters) {
                         if (!filter.accept(next, index)) {
                             accept = false;
                             break;
@@ -75,21 +72,24 @@ public class FilteredMultilingualCorpus extends BaseMultilingualCorpus {
             public void close() throws IOException {
                 reader.close();
 
-                for (BilingualCorpusFilter filter : filters)
+                for (MultilingualCorpusFilter filter : filters)
                     filter.clear();
             }
         };
     }
 
     private void initialize() throws IOException {
-        ArrayList<BilingualCorpusFilter.FilterInitializer> initializers = new ArrayList<>(filters.size());
-        for (BilingualCorpusFilter filter : filters) {
-            BilingualCorpusFilter.FilterInitializer initializer = filter.getInitializer();
+        ArrayList<MultilingualCorpusFilter.FilterInitializer> initializers = new ArrayList<>(filters.size());
+        for (MultilingualCorpusFilter filter : filters) {
+            MultilingualCorpusFilter.FilterInitializer initializer = filter.getInitializer();
             if (initializer != null)
                 initializers.add(initializer);
         }
 
         if (initializers.size() > 0) {
+            for (MultilingualCorpusFilter.FilterInitializer initializer : initializers)
+                initializer.onBegin();
+
             MultilingualLineReader reader = null;
 
             try {
@@ -99,10 +99,10 @@ public class FilteredMultilingualCorpus extends BaseMultilingualCorpus {
                 StringPair pair;
 
                 while ((pair = reader.read()) != null) {
-                    for (BilingualCorpusNormalizer normalizer : normalizers)
+                    for (MultilingualCorpusNormalizer normalizer : normalizers)
                         normalizer.normalize(pair, index);
 
-                    for (BilingualCorpusFilter.FilterInitializer initializer : initializers)
+                    for (MultilingualCorpusFilter.FilterInitializer initializer : initializers)
                         initializer.onPair(corpus, pair, index);
 
                     index++;
@@ -110,6 +110,9 @@ public class FilteredMultilingualCorpus extends BaseMultilingualCorpus {
             } finally {
                 IOUtils.closeQuietly(reader);
             }
+
+            for (MultilingualCorpusFilter.FilterInitializer initializer : initializers)
+                initializer.onEnd();
         }
     }
 

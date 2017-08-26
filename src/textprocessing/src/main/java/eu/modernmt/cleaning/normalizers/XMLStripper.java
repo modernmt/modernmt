@@ -1,6 +1,6 @@
 package eu.modernmt.cleaning.normalizers;
 
-import eu.modernmt.cleaning.BilingualCorpusNormalizer;
+import eu.modernmt.cleaning.MultilingualCorpusNormalizer;
 import eu.modernmt.model.Tag;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
@@ -9,7 +9,7 @@ import java.util.regex.Matcher;
 /**
  * Created by davide on 17/11/16.
  */
-public class XMLStripper implements BilingualCorpusNormalizer {
+public class XMLStripper implements MultilingualCorpusNormalizer {
 
     private static String stripXML(String line) {
         StringBuilder builder = new StringBuilder();

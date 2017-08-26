@@ -1,6 +1,6 @@
 package eu.modernmt.cleaning.filters;
 
-import eu.modernmt.cleaning.BilingualCorpusFilterAdapter;
+import eu.modernmt.cleaning.MultilingualCorpusFilter;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.io.IOException;
@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 /**
  * Created by davide on 14/03/16.
  */
-public class EmptyLinesFilter extends BilingualCorpusFilterAdapter {
+public class EmptyLinesFilter implements MultilingualCorpusFilter {
 
     private static final Pattern WHITESPACE_REMOVER = Pattern.compile("\\s+");
 

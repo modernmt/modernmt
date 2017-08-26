@@ -1,29 +1,26 @@
 package eu.modernmt.cleaning.filters;
 
-import eu.modernmt.cleaning.BilingualCorpusFilter;
+import eu.modernmt.cleaning.MultilingualCorpusFilter;
+import eu.modernmt.cleaning.filters.util.Sequence;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 /**
  * Created by davide on 17/11/16.
  */
-public class RareNgramFilter implements BilingualCorpusFilter {
+public class RareNgramFilter implements MultilingualCorpusFilter {
 
-    private final boolean useSource;
-    private final HashMap<String, Integer> vocabulary = new HashMap<>();
+    public static final int MIN_CORPUS_LINES = 1000;
 
-    private double avg = -1;
-    private double stddev = -1;
-
-    public RareNgramFilter(boolean useSource) {
-        this.useSource = useSource;
-    }
+    private final HashMap<LanguagePair, Vocabulary> ngrams = new HashMap<>();
 
     private static String normalize(String line) {
-        return line.toLowerCase().replaceAll("\\s+", " ").replaceAll("[0-9]", "0").trim();
+        return line.toLowerCase().replaceAll("[0-9\\p{Punct}\\s]+", "");
     }
 
     private static String[] tokenize(String string) {
@@ -43,65 +40,111 @@ public class RareNgramFilter implements BilingualCorpusFilter {
         return result;
     }
 
-    @Override
-    public void onInitStart() {
-        clear();
+    private static void add(String line, HashMap<String, Counter> vocabulary) {
+        line = normalize(line);
+
+        for (String token : tokenize(line))
+            vocabulary.computeIfAbsent(token, key -> new Counter()).count++;
+    }
+
+    private static void filterVocabulary(HashMap<String, Counter> vocabulary, HashSet<String> output) {
+        Sequence sequence = new Sequence();
+        for (Counter value : vocabulary.values())
+            sequence.add(value.count);
+
+        long threshold = Math.round(sequence.getAverage());
+
+        for (Map.Entry<String, Counter> entry : vocabulary.entrySet()) {
+            if (entry.getValue().count > threshold)
+                output.add(entry.getKey());
+        }
     }
 
     @Override
     public FilterInitializer getInitializer() {
-        return (corpus, pair, index) -> {
-            String line = normalize(useSource ? pair.source : pair.target);
+        return new FilterInitializer() {
 
-            for (String token : tokenize(line)) {
-                Integer count = vocabulary.get(token);
-                vocabulary.put(token, count == null ? 1 : count + 1);
+            private final HashMap<LanguagePair, VocabularyBuilder> vocabs = new HashMap<>();
+
+            @Override
+            public void onBegin() {
+                clear();
             }
+
+            @Override
+            public void onPair(MultilingualCorpus corpus, MultilingualCorpus.StringPair pair, int index) throws IOException {
+                VocabularyBuilder builder = vocabs.computeIfAbsent(pair.language, key -> new VocabularyBuilder());
+                builder.lines++;
+                add(pair.source, builder.source);
+                add(pair.target, builder.target);
+            }
+
+            @Override
+            public void onEnd() {
+                for (Map.Entry<LanguagePair, VocabularyBuilder> entry : vocabs.entrySet()) {
+                    Vocabulary vocab = new Vocabulary();
+                    vocab.lines = entry.getValue().lines;
+                    filterVocabulary(entry.getValue().source, vocab.source);
+                    filterVocabulary(entry.getValue().target, vocab.target);
+
+                    ngrams.put(entry.getKey(), vocab);
+                }
+            }
+
         };
     }
 
     @Override
-    public void onInitEnd() {
-        double sum = 0;
-        double sum2 = 0;
-
-        for (Map.Entry<String, Integer> entry : vocabulary.entrySet()) {
-            int value = entry.getValue();
-            sum += value;
-            sum2 += value * value;
-        }
-
-        int size = vocabulary.size();
-        avg = sum / size;
-        stddev = Math.sqrt((sum2 / size) - (avg * avg));
+    public boolean accept(MultilingualCorpus.StringPair pair, int index) throws IOException {
+        Vocabulary vocabulary = ngrams.get(pair.language);
+        return vocabulary.lines < MIN_CORPUS_LINES ||
+                (accept(pair.source, vocabulary.source) && accept(pair.target, vocabulary.target));
     }
 
-    @Override
-    public boolean accept(MultilingualCorpus.StringPair pair, int index) throws IOException {
+    private static boolean accept(String line, HashSet<String> ngrams) {
         int rare = 0;
         int common = 0;
 
-        String line = normalize(useSource ? pair.source : pair.target);
+        line = normalize(line);
 
         if (line.length() < 10)
             return true;
 
         for (String token : tokenize(line)) {
-            int count = vocabulary.containsKey(token) ? vocabulary.get(token) : 0;
-
-            if (count > avg)
+            if (ngrams.contains(token))
                 common++;
             else
                 rare++;
         }
 
-        return common >= rare;
+        return (common / (double)(common + rare)) > .25;
     }
 
     @Override
     public void clear() {
-        avg = stddev = -1;
-        vocabulary.clear();
+        ngrams.clear();
+    }
+
+    private static final class Counter {
+
+        public long count = 0;
+
+    }
+
+    private static final class VocabularyBuilder {
+
+        public HashMap<String, Counter> source = new HashMap<>();
+        public HashMap<String, Counter> target = new HashMap<>();
+        public int lines = 0;
+
+    }
+
+    private static final class Vocabulary {
+
+        public HashSet<String> source = new HashSet<>();
+        public HashSet<String> target = new HashSet<>();
+        public int lines = 0;
+
     }
 
 }

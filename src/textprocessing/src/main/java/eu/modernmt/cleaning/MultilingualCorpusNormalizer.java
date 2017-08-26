@@ -5,7 +5,7 @@ import eu.modernmt.model.corpus.MultilingualCorpus;
 /**
  * Created by davide on 14/03/16.
  */
-public interface BilingualCorpusNormalizer {
+public interface MultilingualCorpusNormalizer {
 
     void normalize(MultilingualCorpus.StringPair pair, int index);
 
