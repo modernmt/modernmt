@@ -126,11 +126,11 @@ class OpenNMTPreprocessor:
 
                     if len(src_words) > 0 and len(trg_words) > 0:
                         src.append(src_vocab.convertToIdxTensor(src_words,
-                                                          onmt.Constants.UNK_WORD))
+                                                                onmt.Constants.UNK_WORD))
                         trg.append(trg_vocab.convertToIdxTensor(trg_words,
-                                                          onmt.Constants.UNK_WORD,
-                                                          onmt.Constants.BOS_WORD,
-                                                          onmt.Constants.EOS_WORD))
+                                                                onmt.Constants.UNK_WORD,
+                                                                onmt.Constants.BOS_WORD,
+                                                                onmt.Constants.EOS_WORD))
                         sizes.append(len(src_words))
                     else:
                         ignored += 1
@@ -169,11 +169,11 @@ class OpenNMTPreprocessor:
 
                     if len(src_words) > 0 and len(trg_words) > 0:
                         source = src_vocab.convertToIdxList(src_words,
-                                                          onmt.Constants.UNK_WORD)
+                                                            onmt.Constants.UNK_WORD)
                         target = trg_vocab.convertToIdxList(trg_words,
-                                                          onmt.Constants.UNK_WORD,
-                                                          onmt.Constants.BOS_WORD,
-                                                          onmt.Constants.EOS_WORD)
+                                                            onmt.Constants.UNK_WORD,
+                                                            onmt.Constants.BOS_WORD,
+                                                            onmt.Constants.EOS_WORD)
                         builder.add([source], [target])
                         added += 1
 
@@ -292,9 +292,9 @@ class NeuralEngine(Engine):
 
 class NeuralEngineBuilder(EngineBuilder):
     def __init__(self, name, source_lang, target_lang, roots, debug=False, steps=None, split_trainingset=True,
-                 validation_corpora=None, bpe_symbols=90000, max_vocab_size=None, gpus=None):
+                 validation_corpora=None, bpe_symbols=90000, max_vocab_size=None, max_training_words=None, gpus=None):
         EngineBuilder.__init__(self, NeuralEngine(name, source_lang, target_lang, gpus), roots, debug, steps,
-                               split_trainingset)
+                               split_trainingset, max_training_words)
         self._bpe_symbols = bpe_symbols
         self._max_vocab_size = max_vocab_size
         self._valid_corpora_path = validation_corpora if validation_corpora is not None \
@@ -312,8 +312,7 @@ class NeuralEngineBuilder(EngineBuilder):
     @EngineBuilder.Step('Creating translation memory')
     def _build_memory(self, args, skip=False, log=None):
         if not skip:
-            corpora = filter(None, [args.filtered_bilingual_corpora, args.processed_bilingual_corpora,
-                                    args.bilingual_corpora])[0]
+            corpora = filter(None, [args.processed_bilingual_corpora, args.bilingual_corpora])[0]
 
             self._engine.memory.create(corpora, log=log)
 
@@ -321,15 +320,13 @@ class NeuralEngineBuilder(EngineBuilder):
     def _prepare_training_data(self, args, skip=False):
         working_dir = self._get_tempdir('onmt_training')
         args.onmt_training_path = working_dir
-        #### args.onmt_training_file = os.path.join(working_dir, 'train_processed.train.pt')
 
         if not skip:
             validation_corpora = BilingualCorpus.list(self._valid_corpora_path)
             validation_corpora, _ = self._engine.training_preprocessor.process(validation_corpora,
                                                                                os.path.join(working_dir, 'valid_set'))
 
-            corpora = filter(None, [args.filtered_bilingual_corpora, args.processed_bilingual_corpora,
-                                    args.bilingual_corpora])[0]
+            corpora = filter(None, [args.processed_bilingual_corpora, args.bilingual_corpora])[0]
 
             self._engine.onmt_preprocessor.process(corpora, validation_corpora, args.onmt_training_path,
                                                    bpe_symbols=self._bpe_symbols, max_vocab_size=self._max_vocab_size,

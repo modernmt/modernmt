@@ -10,32 +10,6 @@ from cli.mmt import BilingualCorpus
 __author__ = 'Davide Caroselli'
 
 
-def _TrainingPreprocessor_filter_file(corpus, dest_folder, langs, min_thr, max_thr, ratio_thr):
-    dest_corpus = BilingualCorpus.make_parallel(corpus.name, dest_folder, corpus.langs)
-
-    regex = re.compile('\s+')
-
-    def _tok(line):
-        return filter(lambda x: x, regex.split(line))
-
-    with corpus.reader(langs) as reader:
-        with dest_corpus.writer(langs) as writer:
-            for source, target in reader:
-                src_length = len(_tok(source))
-                trg_length = len(_tok(target))
-
-                if src_length > max_thr or trg_length > max_thr:
-                    continue
-                if src_length < min_thr or trg_length < min_thr:
-                    continue
-
-                ratio = float(max(src_length, trg_length)) / float(min(src_length, trg_length))
-                if ratio > ratio_thr:
-                    continue
-
-                writer.writelines(source, target)
-
-
 class Tokenizer:
     def __init__(self, source_lang, target_lang, print_tags=False, print_placeholders=True):
         self._source_lang = source_lang
@@ -95,7 +69,9 @@ class TMCleaner:
 
         extended_heap_mb = int(mem_mb * 90 / 100)
 
-        args = ['-s', self._source_lang, '-t', self._target_lang, '--output', output_path, '--input']
+        args = ['-s', self._source_lang, '-t', self._target_lang,
+                '--filters', 'normalize', 'punctuation', 'odd_sentences', 'drafts', 'sentence_length',
+                '--output', output_path, '--input']
 
         input_paths = set([corpus.get_folder() for corpus in corpora])
 
@@ -120,7 +96,8 @@ class TrainingPreprocessor:
         self._min = clean_min
         self._max = clean_max
 
-        self._java_mainclass = 'eu.modernmt.cli.TrainingPipelineMain'
+        self._process_mainclass = 'eu.modernmt.cli.TrainingPipelineMain'
+        self._reduce_mainclass = 'eu.modernmt.cli.ReducingCorporaMain'
 
     def process(self, corpora, output_path, data_path=None, log=None, vb_path=None):
         if log is None:
@@ -143,29 +120,25 @@ class TrainingPreprocessor:
             args.append('--test')
             args.append(os.path.join(data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
 
-        command = mmt_javamain(self._java_mainclass, args)
+        command = mmt_javamain(self._process_mainclass, args)
         shell.execute(command, stdout=log, stderr=log)
 
         return BilingualCorpus.splitlist(self._source_lang, self._target_lang, roots=output_path)
 
-    def filter(self, corpora, dest_folder):
-        if not os.path.isdir(dest_folder):
-            fileutils.makedirs(dest_folder, exist_ok=True)
+    def reduce(self, corpora, output_path, word_limit, log=None):
+        if log is None:
+            log = shell.DEVNULL
 
-        langs = (self._source_lang, self._target_lang)
+        args = ['-s', self._source_lang, '-t', self._target_lang, '--words', str(word_limit),
+                '--output', output_path, '--input']
 
-        workers = min(multiprocessing.cpu_count(), len(corpora))
-        pool = multiprocessing.Pool(workers)
+        for root in set([corpus.get_folder() for corpus in corpora]):
+            args.append(root)
 
-        try:
-            jobs = [(corpus, dest_folder, langs, self._min, self._max, self._ratio) for corpus in corpora]
-            aync_jobs = [pool.apply_async(_TrainingPreprocessor_filter_file, job) for job in jobs]
-            for job in aync_jobs:
-                job.get()
-        finally:
-            pool.terminate()
+        command = mmt_javamain(self._reduce_mainclass, args=args)
+        shell.execute(command, stdout=log, stderr=log)
 
-        return BilingualCorpus.list(dest_folder)
+        return BilingualCorpus.list(output_path)
 
 
 class XMLEncoder:

@@ -29,17 +29,18 @@ def _pretty_print_time(elapsed):
 
 class Training(EngineBuilder.Listener):
     @staticmethod
-    def phrase_based(name, source_lang, target_lang, roots, debug, steps, split_trainingset):
+    def phrase_based(name, source_lang, target_lang, roots, debug, steps, split_trainingset, max_training_words):
         from cli.mmt.phrasebased import PhraseBasedEngineBuilder
-        builder = PhraseBasedEngineBuilder(name, source_lang, target_lang, roots, debug, steps, split_trainingset)
+        builder = PhraseBasedEngineBuilder(name, source_lang, target_lang, roots, debug,
+                                           steps, split_trainingset, max_training_words)
         return Training(builder)
 
     @staticmethod
     def neural(name, source_lang, target_lang, roots, debug, steps, split_trainingset, validation_corpora, bpe_symbols,
-               max_vocab_size, gpus):
+               max_vocab_size, max_training_words, gpus):
         from cli.mmt.neural import NeuralEngineBuilder
         builder = NeuralEngineBuilder(name, source_lang, target_lang, roots, debug, steps, split_trainingset,
-                                      validation_corpora, bpe_symbols, max_vocab_size, gpus)
+                                      validation_corpora, bpe_symbols, max_vocab_size, max_training_words, gpus)
         return Training(builder)
 
     def __init__(self, builder, line_len=70):

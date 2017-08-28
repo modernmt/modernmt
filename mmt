@@ -74,6 +74,8 @@ def main_create(argv):
     parser.add_argument('--no-split', action='store_false', dest='split_corpora', default=True,
                         help='if no-split is set, MMT will not extract dev and test sets out of the provided '
                              'training corpora')
+    parser.add_argument('--words-limit', dest='max_words', help='limits the max number of source words in training set',
+                        default=None)
     parser.add_argument('-s', '--steps', metavar='STEPS', dest='training_steps',
                         nargs='+', help='run only specified training steps')
     parser.add_argument('-r', '--resume', action='store_true', dest='resume', default=False,
@@ -120,6 +122,7 @@ def main_create(argv):
                                        validation_corpora=args.validation_corpora,
                                        bpe_symbols=args.bpe_symbols,
                                        max_vocab_size=args.max_vocab_size,
+                                       max_training_words=args.max_words,
                                        gpus=args.gpus)
         else:
             training = Training.phrase_based(name=args.engine,
@@ -128,7 +131,8 @@ def main_create(argv):
                                              roots=args.corpora_paths,
                                              debug=args.debug,
                                              steps=args.training_steps,
-                                             split_trainingset=args.split_corpora)
+                                             split_trainingset=args.split_corpora,
+                                             max_training_words=args.max_words)
 
         # build the engine
         if args.resume:

@@ -284,9 +284,10 @@ class PhraseBasedEngineBuilder(EngineBuilder):
     __MB = (1024 * 1024)
     __GB = (1024 * 1024 * 1024)
 
-    def __init__(self, name, source_lang, target_lang, roots, debug=False, steps=None, split_trainingset=True):
+    def __init__(self, name, source_lang, target_lang, roots, debug=False, steps=None, split_trainingset=True,
+                 max_training_words=None):
         EngineBuilder.__init__(self, PhraseBasedEngine(name, source_lang, target_lang),
-                               roots, debug, steps, split_trainingset)
+                               roots, debug, steps, split_trainingset, max_training_words)
 
     def _build_schedule(self):
         return EngineBuilder._build_schedule(self) + [self._train_tm, self._train_lm, self._write_moses_config]
@@ -318,8 +319,7 @@ class PhraseBasedEngineBuilder(EngineBuilder):
     @EngineBuilder.Step('Translation Model training')
     def _train_tm(self, args, skip=False, log=None, delete_on_exit=False):
         if not skip:
-            corpora = filter(None, [args.filtered_bilingual_corpora, args.processed_bilingual_corpora,
-                                    args.bilingual_corpora])[0]
+            corpora = filter(None, [args.processed_bilingual_corpora, args.bilingual_corpora])[0]
 
             working_dir = self._get_tempdir('tm', delete_if_exists=True)
             self._engine.moses.pt.train(corpora, self._engine.aligner, working_dir, log=log)

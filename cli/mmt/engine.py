@@ -369,19 +369,21 @@ class EngineBuilder:
     # - the steps to perform (steps) (if None, perform all)
     # - the set splitting boolean flag (split_trainingset): if it is set to false,
     #   MMT will not extract dev and test sets out of the provided training corpora
-    def __init__(self, engine, roots, debug=False, steps=None, split_trainingset=True):
+    def __init__(self, engine, roots, debug=False, steps=None, split_trainingset=True, max_training_words=None):
         self._engine = engine
         self._roots = roots
         self._delete_on_exit = not debug
         self._split_trainingset = split_trainingset
+        self._max_training_words = max_training_words
 
         self._temp_dir = None
 
         self._schedule = EngineBuilder.__Schedule(self._build_schedule(), steps)
 
     def _build_schedule(self):
-        return [self._clean_tms, self._create_db, self._preprocess, self._train_context, self._train_aligner,
-                self._write_config]
+        return [self._clean_tms] + \
+               ([self._reduce_train] if self._max_training_words > 0 else []) + \
+               [self._create_db, self._preprocess, self._train_context, self._train_aligner, self._write_config]
 
     def _get_tempdir(self, name, delete_if_exists=False):
         path = os.path.join(self._temp_dir, name)
@@ -512,12 +514,22 @@ class EngineBuilder:
 
     @Step('Corpora cleaning')
     def _clean_tms(self, args, skip=False, log=None):
-        folder = self._get_tempdir('clean_tms')
+        folder = self._get_tempdir('clean_corpora')
 
         if skip:
             args.bilingual_corpora = BilingualCorpus.list(folder)
         else:
             args.bilingual_corpora = self._engine.cleaner.clean(args.bilingual_corpora, folder, log=log)
+
+    @Step('Reducing training corpora')
+    def _reduce_train(self, args, skip=False, log=None):
+        folder = self._get_tempdir('reduced_corpora')
+
+        if skip:
+            args.bilingual_corpora = BilingualCorpus.list(folder)
+        else:
+            args.bilingual_corpora = self._engine.training_preprocessor.reduce(
+                args.bilingual_corpora, folder, self._max_training_words, log=log)
 
     @Step('Database create', optional=False, hidden=True)
     def _create_db(self, args, skip=False):
@@ -536,14 +548,12 @@ class EngineBuilder:
 
     @Step('Corpora pre-processing')
     def _preprocess(self, args, skip=False, log=None):
-        preprocessed_folder = self._get_tempdir('preprocessed')
-        filtered_folder = self._get_tempdir('filtered_corpora')
+        preprocessed_folder = self._get_tempdir('preprocessed_corpora')
 
         if skip:
             processed_bicorpora, processed_monocorpora = BilingualCorpus.splitlist(self._engine.source_lang,
                                                                                    self._engine.target_lang,
                                                                                    roots=preprocessed_folder)
-            filtered_bicorpora = BilingualCorpus.list(filtered_folder)
         else:
             processed_bicorpora, processed_monocorpora = self._engine.training_preprocessor.process(
                 args.bilingual_corpora + args.monolingual_corpora,
@@ -552,11 +562,8 @@ class EngineBuilder:
                 vb_path=self._engine.vocabulary_path,
                 log=log)
 
-            filtered_bicorpora = self._engine.training_preprocessor.filter(processed_bicorpora, filtered_folder)
-
         args.processed_bilingual_corpora = processed_bicorpora
         args.processed_monolingual_corpora = processed_monocorpora
-        args.filtered_bilingual_corpora = filtered_bicorpora
 
     @Step('Context Analyzer training')
     def _train_context(self, args, skip=False, log=None):
@@ -566,8 +573,7 @@ class EngineBuilder:
     @Step('Aligner training')
     def _train_aligner(self, args, skip=False, log=None, delete_on_exit=False):
         if not skip:
-            corpora = filter(None, [args.filtered_bilingual_corpora, args.processed_bilingual_corpora,
-                                    args.bilingual_corpora])[0]
+            corpora = filter(None, [args.processed_bilingual_corpora, args.bilingual_corpora])[0]
 
             working_dir = self._get_tempdir('aligner', delete_if_exists=True)
             self._engine.aligner.build(corpora, working_dir, log=log)
