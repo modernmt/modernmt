@@ -54,6 +54,12 @@ public class TrainingFacade {
 
     public static class CleaningOptions {
 
+        public static CleaningOptions defaultOptions() {
+            CleaningOptions options = new CleaningOptions();
+            options.filterDrafts = true;
+            return options;
+        }
+
         public boolean normalize = false;
         public boolean filterByPunctuation = false;
         public boolean filterOddSentences = false;

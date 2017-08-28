@@ -510,16 +510,14 @@ class EngineBuilder:
 
     # ~~~~~~~~~~~~~~~~~~~~~ Training step functions ~~~~~~~~~~~~~~~~~~~~~
 
-    # TODO: restore after test success
-    @Step('TMs clean-up')
+    @Step('Corpora cleaning')
     def _clean_tms(self, args, skip=False, log=None):
-        pass
-        # folder = self._get_tempdir('clean_tms')
-        #
-        # if skip:
-        #     args.bilingual_corpora = BilingualCorpus.list(folder)
-        # else:
-        #     args.bilingual_corpora = self._engine.cleaner.clean(args.bilingual_corpora, folder, log=log)
+        folder = self._get_tempdir('clean_tms')
+
+        if skip:
+            args.bilingual_corpora = BilingualCorpus.list(folder)
+        else:
+            args.bilingual_corpora = self._engine.cleaner.clean(args.bilingual_corpora, folder, log=log)
 
     @Step('Database create', optional=False, hidden=True)
     def _create_db(self, args, skip=False):
@@ -545,9 +543,7 @@ class EngineBuilder:
             processed_bicorpora, processed_monocorpora = BilingualCorpus.splitlist(self._engine.source_lang,
                                                                                    self._engine.target_lang,
                                                                                    roots=preprocessed_folder)
-            # TODO: restore after test success
-            # filtered_bicorpora = BilingualCorpus.list(filtered_folder)
-            filtered_bicorpora = processed_bicorpora
+            filtered_bicorpora = BilingualCorpus.list(filtered_folder)
         else:
             processed_bicorpora, processed_monocorpora = self._engine.training_preprocessor.process(
                 args.bilingual_corpora + args.monolingual_corpora,
@@ -556,9 +552,7 @@ class EngineBuilder:
                 vb_path=self._engine.vocabulary_path,
                 log=log)
 
-            # TODO: restore after test success
-            # filtered_bicorpora = self._engine.training_preprocessor.filter(processed_bicorpora, filtered_folder)
-            filtered_bicorpora = processed_bicorpora
+            filtered_bicorpora = self._engine.training_preprocessor.filter(processed_bicorpora, filtered_folder)
 
         args.processed_bilingual_corpora = processed_bicorpora
         args.processed_monolingual_corpora = processed_monocorpora

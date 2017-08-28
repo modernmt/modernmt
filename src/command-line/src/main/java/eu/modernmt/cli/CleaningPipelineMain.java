@@ -86,11 +86,13 @@ public class CleaningPipelineMain {
         if (bilingualCorpora.isEmpty())
             throw new ParseException("Input path does not contains valid bilingual data");
 
-        TrainingFacade.CleaningOptions options = new TrainingFacade.CleaningOptions();
+        TrainingFacade.CleaningOptions options;
 
         if (args.filters == null) {
-            options.filterDrafts = true;
+            options = TrainingFacade.CleaningOptions.defaultOptions();
         } else {
+            options = new TrainingFacade.CleaningOptions();
+
             for (Filter filter : args.filters) {
                 switch (filter) {
                     case NORMALIZE:
