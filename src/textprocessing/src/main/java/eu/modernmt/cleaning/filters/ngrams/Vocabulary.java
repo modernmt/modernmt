@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
  */
 class Vocabulary {
 
-    public static final int MIN_CORPUS_LINES = 1000;
+    public static final int MIN_CORPUS_LINES = 500;
     public static final int MIN_SENTENCE_LENGTH = 20;
 
     static class Builder {
@@ -136,6 +136,9 @@ class Vocabulary {
     }
 
     public boolean accept(MultilingualCorpus.StringPair pair, double threshold) {
+        if (source == null || target == null)
+            return true;
+
         String sourceLine = normalize(pair.source);
         String targetLine = normalize(pair.target);
 
