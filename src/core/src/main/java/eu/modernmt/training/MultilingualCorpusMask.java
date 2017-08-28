@@ -1,17 +1,18 @@
-package eu.modernmt.training.preprocessing;
+package eu.modernmt.training;
 
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.corpus.BaseMultilingualCorpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpusWrapper;
 
 import java.io.IOException;
 
 /**
  * Created by davide on 18/08/17.
  */
-public class MultilingualCorpusMask extends BaseMultilingualCorpus {
+public class MultilingualCorpusMask extends BaseMultilingualCorpus implements MultilingualCorpusWrapper {
 
     private final MultilingualCorpus corpus;
     private final LanguageIndex languages;
@@ -88,6 +89,11 @@ public class MultilingualCorpusMask extends BaseMultilingualCorpus {
                 writer.close();
             }
         };
+    }
+
+    @Override
+    public MultilingualCorpus getWrappedCorpus() {
+        return corpus;
     }
 
 }

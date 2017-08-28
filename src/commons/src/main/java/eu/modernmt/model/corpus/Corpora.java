@@ -21,7 +21,21 @@ public class Corpora {
 
     public static final String TMX_EXTENSION = "tmx";
 
+    public static MultilingualCorpus unwrap(MultilingualCorpus corpus) {
+        while (corpus instanceof MultilingualCorpusWrapper) {
+            corpus = ((MultilingualCorpusWrapper) corpus).getWrappedCorpus();
+        }
+
+        return corpus;
+    }
+
+    public static MultilingualCorpus rename(MultilingualCorpus corpus, File folder) {
+        return rename(corpus, folder, corpus.getName());
+    }
+
     public static MultilingualCorpus rename(MultilingualCorpus corpus, File folder, String name) {
+        corpus = unwrap(corpus);
+
         if (corpus instanceof TMXCorpus) {
             return new TMXCorpus(new File(folder, name + ".tmx"));
         } else if (corpus instanceof ParallelFileCorpus) {

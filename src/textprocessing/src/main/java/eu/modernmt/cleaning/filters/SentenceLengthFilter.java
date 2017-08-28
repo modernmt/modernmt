@@ -2,7 +2,7 @@ package eu.modernmt.cleaning.filters;
 
 import eu.modernmt.cleaning.MultilingualCorpusFilter;
 import eu.modernmt.cleaning.filters.util.Sequence;
-import eu.modernmt.cleaning.filters.util.WordCounter;
+import eu.modernmt.io.WordCounter;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
@@ -73,14 +73,14 @@ public class SentenceLengthFilter implements MultilingualCorpusFilter {
         int sourceWordCount = WordCounter.count(pair.source, pair.language.source);
         int targetWordCount = WordCounter.count(pair.target, pair.language.target);
 
-        if (sourceWordCount < 5 || targetWordCount < 5)
+        if (sourceWordCount < 6 && targetWordCount < 6)
             return true;
 
         double ratio = ((double) sourceWordCount) / targetWordCount;
 
-        if (ratio > (seq.getAverage() + 4 * seq.getStandardDeviation()))
+        if (ratio > (seq.getAverage() + 6 * seq.getStandardDeviation()))
             return false;
-        if (ratio < (seq.getAverage() - 4 * seq.getStandardDeviation()))
+        if (ratio < (seq.getAverage() - 6 * seq.getStandardDeviation()))
             return false;
 
         return true;

@@ -2,7 +2,6 @@ package eu.modernmt.cli;
 
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.facade.ModernMT;
-import eu.modernmt.facade.TrainingFacade;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.Corpora;
@@ -12,16 +11,13 @@ import org.apache.logging.log4j.Level;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 /**
  * Created by davide on 17/12/15.
  */
-public class CleaningPipelineMain {
-
-    public enum Filter {
-        NORMALIZE, PUNCTUATION, ODD_SENTENCES, DRAFTS, SENTENCE_LENGTH
-    }
+public class ReducingCorporaMain {
 
     private static class Args {
 
@@ -32,21 +28,21 @@ public class CleaningPipelineMain {
             Option targetLanguage = Option.builder("t").hasArg().required().build();
             Option inputPath = Option.builder().longOpt("input").hasArgs().required().build();
             Option outputPath = Option.builder().longOpt("output").hasArg().required().build();
-            Option filters = Option.builder().longOpt("filters").hasArgs().build();
+            Option maxWordCount = Option.builder().longOpt("words").hasArg().required().build();
 
             cliOptions = new Options();
             cliOptions.addOption(sourceLanguage);
             cliOptions.addOption(targetLanguage);
             cliOptions.addOption(inputPath);
             cliOptions.addOption(outputPath);
-            cliOptions.addOption(filters);
+            cliOptions.addOption(maxWordCount);
         }
 
         public final Locale sourceLanguage;
         public final Locale targetLanguage;
+        public final int maxWordCount;
         public final File[] inputRoots;
         public final File outputRoot;
-        public final Filter[] filters;
 
         public Args(String[] args) throws ParseException {
             CommandLineParser parser = new DefaultParser();
@@ -61,16 +57,7 @@ public class CleaningPipelineMain {
                 inputRoots[i] = new File(roots[i]);
 
             outputRoot = new File(cli.getOptionValue("output"));
-
-            if (cli.hasOption("filters")) {
-                String[] values = cli.getOptionValues("filters");
-                filters = new Filter[values.length];
-
-                for (int i = 0; i < filters.length; i++)
-                    filters[i] = Filter.valueOf(values[i].toUpperCase());
-            } else {
-                filters = null;
-            }
+            maxWordCount = Integer.parseInt(cli.getOptionValue("words"));
         }
 
     }
@@ -80,40 +67,14 @@ public class CleaningPipelineMain {
 
         Args args = new Args(_args);
 
-        ArrayList<MultilingualCorpus> bilingualCorpora = new ArrayList<>();
-        Corpora.list(null, true, bilingualCorpora, args.sourceLanguage, args.targetLanguage, args.inputRoots);
+        List<MultilingualCorpus> corpora = new ArrayList<>();
+        Corpora.list(null, true, corpora, args.sourceLanguage, args.targetLanguage, args.inputRoots);
 
-        if (bilingualCorpora.isEmpty())
+        if (corpora.isEmpty())
             throw new ParseException("Input path does not contains valid bilingual data");
 
-        TrainingFacade.CleaningOptions options = new TrainingFacade.CleaningOptions();
-
-        if (args.filters == null) {
-            options.filterDrafts = true;
-        } else {
-            for (Filter filter : args.filters) {
-                switch (filter) {
-                    case NORMALIZE:
-                        options.normalize = true;
-                        break;
-                    case PUNCTUATION:
-                        options.filterByPunctuation = true;
-                        break;
-                    case ODD_SENTENCES:
-                        options.filterOddSentences = true;
-                        break;
-                    case DRAFTS:
-                        options.filterDrafts = true;
-                        break;
-                    case SENTENCE_LENGTH:
-                        options.filterBySentenceLength = true;
-                        break;
-                }
-            }
-        }
-
         LanguageIndex languages = new LanguageIndex(new LanguagePair(args.sourceLanguage, args.targetLanguage));
-        ModernMT.training.clean(languages, bilingualCorpora, args.outputRoot, options);
+        ModernMT.training.reduce(languages, corpora, args.outputRoot, args.maxWordCount);
     }
 
 }

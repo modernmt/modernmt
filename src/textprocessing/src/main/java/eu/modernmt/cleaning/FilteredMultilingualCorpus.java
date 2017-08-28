@@ -1,10 +1,8 @@
 package eu.modernmt.cleaning;
 
-import eu.modernmt.cleaning.filters.RareNgramFilter;
-import eu.modernmt.cleaning.filters.SentenceLengthFilter;
-import eu.modernmt.cleaning.filters.draft.DraftFilter;
-import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.BaseMultilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpusWrapper;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -13,7 +11,7 @@ import java.util.ArrayList;
 /**
  * Created by davide on 14/03/16.
  */
-public class FilteredMultilingualCorpus extends BaseMultilingualCorpus {
+public class FilteredMultilingualCorpus extends BaseMultilingualCorpus implements MultilingualCorpusWrapper {
 
     private MultilingualCorpus corpus;
     private ArrayList<MultilingualCorpusFilter> filters;
@@ -126,6 +124,7 @@ public class FilteredMultilingualCorpus extends BaseMultilingualCorpus {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public MultilingualCorpus getWrappedCorpus() {
         return corpus;
     }

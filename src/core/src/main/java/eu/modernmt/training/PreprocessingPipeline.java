@@ -9,7 +9,6 @@ import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.training.partitioning.CorporaPartition;
 import eu.modernmt.training.partitioning.PartitioningUtils;
 import eu.modernmt.training.preprocessing.CorpusWriter;
-import eu.modernmt.training.preprocessing.MultilingualCorpusMask;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;

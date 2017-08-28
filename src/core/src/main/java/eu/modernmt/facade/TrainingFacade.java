@@ -1,14 +1,25 @@
 package eu.modernmt.facade;
 
 import eu.modernmt.cleaning.FilteredMultilingualCorpus;
+import eu.modernmt.cleaning.filters.EmptyLinesFilter;
+import eu.modernmt.cleaning.filters.PunctuationFilter;
+import eu.modernmt.cleaning.filters.SentenceLengthFilter;
+import eu.modernmt.cleaning.filters.draft.DraftFilter;
+import eu.modernmt.cleaning.filters.ngrams.RareNgramFilter;
+import eu.modernmt.cleaning.normalizers.ControlCharsStripper;
+import eu.modernmt.cleaning.normalizers.XMLStripper;
 import eu.modernmt.engine.Engine;
+import eu.modernmt.io.IOCorporaUtils;
 import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.processing.ProcessingException;
-import eu.modernmt.training.CleaningPipeline;
+import eu.modernmt.training.BatchCopyProcess;
+import eu.modernmt.training.MultilingualCorpusMask;
 import eu.modernmt.training.PreprocessingPipeline;
+import eu.modernmt.training.ReducedMultilingualCorpus;
 import eu.modernmt.training.partitioning.FilesCorporaPartition;
 import eu.modernmt.training.preprocessing.CorpusWriter;
 import eu.modernmt.training.preprocessing.PlainTextWriter;
@@ -17,7 +28,9 @@ import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by davide on 17/08/16.
@@ -39,20 +52,44 @@ public class TrainingFacade {
 
     }
 
-    public void clean(List<MultilingualCorpus> bilingualCorpora, File outputDirectory) throws IOException {
-        CleaningPipeline cleaningPipeline = new CleaningPipeline(corpus -> {
-            while (corpus instanceof FilteredMultilingualCorpus) {
-                corpus = ((FilteredMultilingualCorpus) corpus).getWrappedCorpus();
+    public static class CleaningOptions {
+
+        public boolean normalize = false;
+        public boolean filterByPunctuation = false;
+        public boolean filterOddSentences = false;
+        public boolean filterDrafts = false;
+        public boolean filterBySentenceLength = false;
+    }
+
+    public void clean(LanguageIndex languages, List<MultilingualCorpus> corpora, File outputDirectory, CleaningOptions options) throws IOException {
+        BatchCopyProcess copyProcess = new BatchCopyProcess(corpus -> Corpora.rename(corpus, outputDirectory));
+
+        for (MultilingualCorpus corpus : corpora) {
+            FilteredMultilingualCorpus filteredCorpus = new FilteredMultilingualCorpus(new MultilingualCorpusMask(languages, corpus));
+
+            if (options.normalize) {
+                filteredCorpus.addNormalizer(new ControlCharsStripper());
+                filteredCorpus.addNormalizer(new XMLStripper());
             }
 
-            return Corpora.rename(corpus, outputDirectory, corpus.getName());
-        });
-        bilingualCorpora.forEach(cleaningPipeline::add);
+            filteredCorpus.addFilter(new EmptyLinesFilter());
+
+            if (options.filterByPunctuation)
+                filteredCorpus.addFilter(new PunctuationFilter());
+            if (options.filterOddSentences)
+                filteredCorpus.addFilter(new RareNgramFilter());
+            if (options.filterDrafts)
+                filteredCorpus.addFilter(new DraftFilter());
+            if (options.filterBySentenceLength)
+                filteredCorpus.addFilter(new SentenceLengthFilter());
+
+            copyProcess.add(filteredCorpus);
+        }
 
         FileUtils.deleteDirectory(outputDirectory);
         FileUtils.forceMkdir(outputDirectory);
 
-        cleaningPipeline.process();
+        copyProcess.run();
     }
 
     public void preprocess(LanguageIndex languages, List<MultilingualCorpus> multilingualCorpora, List<Corpus> monolingualCorpora, File destFolder) throws ProcessingException, IOException {
@@ -83,6 +120,32 @@ public class TrainingFacade {
         }
 
         pipeline.process(multilingualCorpora, monolingualCorpora);
+    }
+
+    public void reduce(LanguageIndex languages, List<MultilingualCorpus> originalCorpora, File outputDirectory, long maxWordCount) throws IOException {
+        ArrayList<ReducedMultilingualCorpus> corpora = new ArrayList<>(originalCorpora.size());
+        for (MultilingualCorpus corpus : originalCorpora)
+            corpora.add(new ReducedMultilingualCorpus(new MultilingualCorpusMask(languages, corpus)));
+
+        Map<LanguagePair, Long> counts = IOCorporaUtils.wordCount(corpora, Runtime.getRuntime().availableProcessors());
+
+        for (Map.Entry<LanguagePair, Long> e : counts.entrySet()) {
+            LanguagePair language = e.getKey();
+            long count = e.getValue();
+
+            if (count > maxWordCount) {
+                double reduction = maxWordCount / ((double) count);
+                for (ReducedMultilingualCorpus corpus : corpora)
+                    corpus.reduce(language, reduction);
+            }
+        }
+
+        FileUtils.deleteDirectory(outputDirectory);
+        FileUtils.forceMkdir(outputDirectory);
+
+        BatchCopyProcess copyProcess = new BatchCopyProcess(corpus -> Corpora.rename(corpus, outputDirectory));
+        copyProcess.addAll(corpora);
+        copyProcess.run();
     }
 
 }

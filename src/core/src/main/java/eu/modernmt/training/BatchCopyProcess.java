@@ -1,16 +1,17 @@
 package eu.modernmt.training;
 
-import eu.modernmt.cleaning.Cleaner;
+import eu.modernmt.io.IOCorporaUtils;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.concurrent.*;
 
 /**
- * Created by davide on 24/02/16.
+ * Created by davide on 28/08/17.
  */
-public class CleaningPipeline {
+public class BatchCopyProcess {
 
     public interface OutputCorpusFactory {
 
@@ -20,18 +21,22 @@ public class CleaningPipeline {
 
     private static final int MAX_IO_THREADS = 10;
 
-    private ArrayList<MultilingualCorpus> bilingualCorpora = new ArrayList<>();
+    private ArrayList<MultilingualCorpus> corpora = new ArrayList<>();
 
     private final OutputCorpusFactory outputFactory;
 
     private int ioThreads = MAX_IO_THREADS;
 
-    public CleaningPipeline(OutputCorpusFactory outputFactory) {
+    public BatchCopyProcess(OutputCorpusFactory outputFactory) {
         this.outputFactory = outputFactory;
     }
 
     public void add(MultilingualCorpus corpus) {
-        this.bilingualCorpora.add(Cleaner.wrap(corpus));
+        this.corpora.add(corpus);
+    }
+
+    public void addAll(Collection<? extends MultilingualCorpus> corpora) {
+        this.corpora.addAll(corpora);
     }
 
     public int getIoThreads() {
@@ -45,32 +50,30 @@ public class CleaningPipeline {
         this.ioThreads = ioThreads;
     }
 
-    public void process() throws IOException {
-        int totalCorporaCount = this.bilingualCorpora.size();
+    public void run() throws IOException {
+        int totalCorporaCount = this.corpora.size();
         int ioThreads = Math.min(Math.min(this.ioThreads, MAX_IO_THREADS), totalCorporaCount);
 
         ExecutorService executor = Executors.newFixedThreadPool(ioThreads);
-        ExecutorCompletionService<Void> ecs = new ExecutorCompletionService<>(executor);
-
-        int pendingTasks = 0;
+        Future<?>[] futures = new Future[totalCorporaCount];
 
         // Enqueue bilingual corpora tasks
-        for (MultilingualCorpus corpus : bilingualCorpora) {
-            CleaningTask task = new CleaningTask(corpus, outputFactory.getOutput(corpus));
-            ecs.submit(task);
-            pendingTasks++;
+        for (int i = 0; i < totalCorporaCount; i++) {
+            final MultilingualCorpus corpus = corpora.get(i);
+            final MultilingualCorpus output = outputFactory.getOutput(corpus);
+
+            futures[i] = executor.submit((Callable<Void>) () -> {
+                IOCorporaUtils.copy(corpus, output);
+                return null;
+            });
         }
 
         try {
-            for (int i = 0; i < pendingTasks; i++) {
-                ecs.take().get();
-            }
+            for (Future<?> future : futures) future.get();
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
 
-            if (cause instanceof InterruptedException)
-                throw new IOException("Execution interrupted", cause);
-            else if (cause instanceof IOException)
+            if (cause instanceof IOException)
                 throw (IOException) cause;
             else if (cause instanceof RuntimeException)
                 throw (RuntimeException) cause;

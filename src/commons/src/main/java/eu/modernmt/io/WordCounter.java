@@ -1,4 +1,4 @@
-package eu.modernmt.cleaning.filters.util;
+package eu.modernmt.io;
 
 import java.util.Locale;
 import java.util.regex.Matcher;
