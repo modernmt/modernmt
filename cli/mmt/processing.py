@@ -88,13 +88,9 @@ class TrainingPreprocessor:
     DEV_FOLDER_NAME = 'dev'
     TEST_FOLDER_NAME = 'test'
 
-    def __init__(self, source_lang, target_lang, clean_ratio=3, clean_min=1, clean_max=80):
+    def __init__(self, source_lang, target_lang):
         self._source_lang = source_lang
         self._target_lang = target_lang
-
-        self._ratio = clean_ratio
-        self._min = clean_min
-        self._max = clean_max
 
         self._process_mainclass = 'eu.modernmt.cli.TrainingPipelineMain'
         self._reduce_mainclass = 'eu.modernmt.cli.ReducingCorporaMain'
