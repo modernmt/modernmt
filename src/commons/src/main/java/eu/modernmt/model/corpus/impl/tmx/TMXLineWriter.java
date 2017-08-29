@@ -19,7 +19,6 @@ import java.util.TimeZone;
 class TMXLineWriter implements MultilingualCorpus.MultilingualLineWriter {
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(TMXCorpus.TMX_DATE_FORMAT);
-    private final FileProxy tmx;
 
     private boolean headerWritten = false;
 
@@ -28,7 +27,6 @@ class TMXLineWriter implements MultilingualCorpus.MultilingualLineWriter {
 
     public TMXLineWriter(FileProxy tmx) throws IOException {
         this.dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-        this.tmx = tmx;
 
         OutputStream stream = null;
         XMLStreamWriter writer = null;
@@ -49,12 +47,12 @@ class TMXLineWriter implements MultilingualCorpus.MultilingualLineWriter {
 
     @Override
     public void write(MultilingualCorpus.StringPair pair) throws IOException {
-        if (!headerWritten) {
-            this.writeHeader(pair.language.source);
-            headerWritten = true;
-        }
-
         try {
+            if (!headerWritten) {
+                headerWritten = true;
+                writeHeader(pair.language.source);
+            }
+
             writer.writeStartElement("tu");
             writer.writeAttribute("srclang", pair.language.source.toLanguageTag());
             writer.writeAttribute("datatype", "plaintext");
@@ -92,28 +90,28 @@ class TMXLineWriter implements MultilingualCorpus.MultilingualLineWriter {
         }
     }
 
-    private void writeHeader(Locale sourceLanguage) throws IOException {
-        try {
-            writer.writeStartDocument("UTF-8", "1.0");
-            writer.writeStartElement("tmx");
-            writer.writeAttribute("version", "1.4");
+    private void writeHeader(Locale sourceLanguage) throws XMLStreamException {
+        writer.writeStartDocument("UTF-8", "1.0");
+        writer.writeStartElement("tmx");
+        writer.writeAttribute("version", "1.4");
 
-            writer.writeEmptyElement("header");
-            writer.writeAttribute("creationtool", "ModernMT - modernmt.eu");
-            writer.writeAttribute("creationtoolversion", "1.0");
-            writer.writeAttribute("datatype", "plaintext");
-            writer.writeAttribute("o-tmf", "ModernMT");
-            writer.writeAttribute("segtype", "sentence");
-            writer.writeAttribute("adminlang", "en-us");
+        writer.writeEmptyElement("header");
+        writer.writeAttribute("creationtool", "ModernMT - modernmt.eu");
+        writer.writeAttribute("creationtoolversion", "1.0");
+        writer.writeAttribute("datatype", "plaintext");
+        writer.writeAttribute("o-tmf", "ModernMT");
+        writer.writeAttribute("segtype", "sentence");
+        writer.writeAttribute("adminlang", "en-us");
+        if (sourceLanguage != null)
             writer.writeAttribute("srclang", sourceLanguage.toLanguageTag());
 
-            writer.writeStartElement("body");
-        } catch (XMLStreamException e) {
-            throw new IOException("Error while writing to TMX " + tmx, e);
-        }
+        writer.writeStartElement("body");
     }
 
     private void flush() throws XMLStreamException {
+        if (!headerWritten)
+            writeHeader(null);
+
         writer.writeEndElement();
         writer.writeEndElement();
         writer.writeEndDocument();

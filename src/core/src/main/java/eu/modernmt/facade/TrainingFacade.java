@@ -16,10 +16,7 @@ import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.processing.ProcessingException;
-import eu.modernmt.training.BatchCopyProcess;
-import eu.modernmt.training.MultilingualCorpusMask;
-import eu.modernmt.training.PreprocessingPipeline;
-import eu.modernmt.training.ReducedMultilingualCorpus;
+import eu.modernmt.training.*;
 import eu.modernmt.training.partitioning.FilesCorporaPartition;
 import eu.modernmt.training.preprocessing.CorpusWriter;
 import eu.modernmt.training.preprocessing.PlainTextWriter;
@@ -56,7 +53,11 @@ public class TrainingFacade {
 
         public static CleaningOptions defaultOptions() {
             CleaningOptions options = new CleaningOptions();
+            options.normalize = true;
+            options.filterByPunctuation = true;
+            options.filterOddSentences = true;
             options.filterDrafts = true;
+            options.filterBySentenceLength = true;
             return options;
         }
 
@@ -65,10 +66,11 @@ public class TrainingFacade {
         public boolean filterOddSentences = false;
         public boolean filterDrafts = false;
         public boolean filterBySentenceLength = false;
+
     }
 
     public void clean(LanguageIndex languages, List<MultilingualCorpus> corpora, File outputDirectory, CleaningOptions options) throws IOException {
-        BatchCopyProcess copyProcess = new BatchCopyProcess(corpus -> Corpora.rename(corpus, outputDirectory));
+        BatchCopyProcess copyProcess = new BatchCopyProcess(corpus -> new LazyWriterMultilingualCorpus(Corpora.rename(corpus, outputDirectory)));
 
         for (MultilingualCorpus corpus : corpora) {
             FilteredMultilingualCorpus filteredCorpus = new FilteredMultilingualCorpus(new MultilingualCorpusMask(languages, corpus));
