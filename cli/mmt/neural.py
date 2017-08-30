@@ -49,17 +49,17 @@ class TranslationMemory:
         shell.execute(command, stdout=log, stderr=log)
 
 
-class OpenNMTPreprocessor:
-    def __init__(self, source_lang, target_lang, bpe_model):
+class BPEPreprocessor:
+    def __init__(self, source_lang, target_lang, bpe_symbols, max_vocab_size, bpe_model):
         self._source_lang = source_lang
         self._target_lang = target_lang
         self._bpe_model = bpe_model
+        self._bpe_symbols = bpe_symbols
+        self._max_vocab_size = max_vocab_size
 
-        self._logger = logging.getLogger('mmt.train.OpenNMTPreprocessor')
-        self._ram_limit_mb = 1024
+        self._logger = logging.getLogger('mmt.neural.BPEPreprocessor')
 
-    def process(self, corpora, valid_corpora, output_path, bpe_symbols, max_vocab_size, working_dir='.',
-                dump_dicts=False):
+    def create(self, corpora):
         class _ReaderWrapper:
             def __init__(self, _corpus, _langs):
                 self.corpus = _corpus
@@ -73,10 +73,33 @@ class OpenNMTPreprocessor:
             def __exit__(self, exc_type, exc_val, exc_tb):
                 self._reader.__exit__(exc_type, exc_val, exc_tb)
 
-        self._logger.info('Creating VBE vocabulary')
-        vb_builder = SubwordTextProcessor.Builder(symbols=bpe_symbols, max_vocabulary_size=max_vocab_size)
-        bpe_encoder = vb_builder.build([_ReaderWrapper(c, [self._source_lang, self._target_lang]) for c in corpora])
-        bpe_encoder.save_to_file(self._bpe_model)
+        if not os.path.exists(self._bpe_model):
+            self._logger.info('Creating BPE model')
+            vb_builder = SubwordTextProcessor.Builder(symbols=self._bpe_symbols,
+                                                      max_vocabulary_size=self._max_vocab_size)
+            self.encoder = vb_builder.build(
+                [_ReaderWrapper(c, [self._source_lang, self._target_lang]) for c in corpora])
+            self.encoder.save_to_file(self._bpe_model)
+        else:
+            self._logger.info('Creating BPE model: do nothing because it already exists')
+
+    @staticmethod
+    def load(model):
+        return SubwordTextProcessor.load_from_file(model)
+
+
+class OpenNMTPreprocessor:
+    def __init__(self, source_lang, target_lang, bpe_model):
+        self._source_lang = source_lang
+        self._target_lang = target_lang
+        self._bpe_model = bpe_model
+
+        self._logger = logging.getLogger('mmt.neural.OpenNMTPreprocessor')
+        self._ram_limit_mb = 1024
+
+    def process(self, corpora, valid_corpora, output_path, working_dir='.', dump_dicts=False):
+
+        bpe_encoder = BPEPreprocessor.load(self._bpe_model)
 
         self._logger.info('Creating vocabularies')
         src_vocab = onmt.Dict([onmt.Constants.PAD_WORD, onmt.Constants.UNK_WORD,
@@ -197,7 +220,7 @@ class OpenNMTDecoder:
         self._gpus = gpus
 
     def train(self, data_path, working_dir):
-        logger = logging.getLogger('mmt.train.OpenNMTDecoder')
+        logger = logging.getLogger('mmt.neural.OpenNMTDecoder')
         logger.info('Training started for data "%s"' % data_path)
 
         save_model = os.path.join(data_path, 'train_model')
@@ -260,7 +283,7 @@ class OpenNMTDecoder:
 
 
 class NeuralEngine(Engine):
-    def __init__(self, name, source_lang, target_lang, gpus=None):
+    def __init__(self, name, source_lang, target_lang, bpe_symbols=90000, max_vocab_size=None, gpus=None):
         Engine.__init__(self, name, source_lang, target_lang)
 
         if torch.cuda.is_available():
@@ -278,10 +301,13 @@ class NeuralEngine(Engine):
         decoder_path = os.path.join(self.models_path, 'decoder')
 
         # Neural specific models
-        self.memory = TranslationMemory(os.path.join(decoder_path, 'memory'), self.source_lang, self.target_lang)
-        self.decoder = OpenNMTDecoder(os.path.join(decoder_path, 'model.pt'), self.source_lang, self.target_lang, gpus)
-        self.onmt_preprocessor = OpenNMTPreprocessor(self.source_lang, self.target_lang,
-                                                     os.path.join(decoder_path, 'model.bpe'))
+        memory_path = os.path.join(decoder_path, 'memory')
+        bpe_model = os.path.join(decoder_path, 'model.bpe')
+        pt_model = os.path.join(decoder_path, 'model.pt')
+        self.memory = TranslationMemory(memory_path, self.source_lang, self.target_lang)
+        self.bpe_processor = BPEPreprocessor(source_lang, target_lang, bpe_symbols, max_vocab_size, bpe_model)
+        self.onmt_preprocessor = OpenNMTPreprocessor(self.source_lang, self.target_lang, bpe_model)
+        self.decoder = OpenNMTDecoder(pt_model, self.source_lang, self.target_lang, gpus)
 
     def is_tuning_supported(self):
         return False
@@ -293,16 +319,16 @@ class NeuralEngine(Engine):
 class NeuralEngineBuilder(EngineBuilder):
     def __init__(self, name, source_lang, target_lang, roots, debug=False, steps=None, split_trainingset=True,
                  validation_corpora=None, bpe_symbols=90000, max_vocab_size=None, max_training_words=None, gpus=None):
-        EngineBuilder.__init__(self, NeuralEngine(name, source_lang, target_lang, gpus), roots, debug, steps,
-                               split_trainingset, max_training_words)
-        self._bpe_symbols = bpe_symbols
-        self._max_vocab_size = max_vocab_size
+        EngineBuilder.__init__(self,
+                               NeuralEngine(name, source_lang, target_lang, bpe_symbols=bpe_symbols,
+                                            max_vocab_size=max_vocab_size, gpus=gpus),
+                               roots, debug, steps, split_trainingset, max_training_words)
         self._valid_corpora_path = validation_corpora if validation_corpora is not None \
             else os.path.join(self._engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME)
 
     def _build_schedule(self):
         return EngineBuilder._build_schedule(self) + \
-               [self._build_memory, self._prepare_training_data, self._train_decoder]
+               [self._build_memory, self._build_bpe, self._prepare_training_data, self._train_decoder]
 
     def _check_constraints(self):
         pass
@@ -315,6 +341,14 @@ class NeuralEngineBuilder(EngineBuilder):
             corpora = filter(None, [args.processed_bilingual_corpora, args.bilingual_corpora])[0]
 
             self._engine.memory.create(corpora, log=log)
+
+    @EngineBuilder.Step('Creating BPE model')
+    def _build_bpe(self, args, skip=False):
+        if not skip:
+            corpora = filter(None, [args.filtered_bilingual_corpora, args.processed_bilingual_corpora,
+                                    args.bilingual_corpora])[0]
+
+            self._engine.bpe_processor.create(corpora)
 
     @EngineBuilder.Step('Preparing training data')
     def _prepare_training_data(self, args, skip=False):
@@ -329,7 +363,6 @@ class NeuralEngineBuilder(EngineBuilder):
             corpora = filter(None, [args.processed_bilingual_corpora, args.bilingual_corpora])[0]
 
             self._engine.onmt_preprocessor.process(corpora, validation_corpora, args.onmt_training_path,
-                                                   bpe_symbols=self._bpe_symbols, max_vocab_size=self._max_vocab_size,
                                                    working_dir=working_dir)
 
     @EngineBuilder.Step('Neural decoder training')
