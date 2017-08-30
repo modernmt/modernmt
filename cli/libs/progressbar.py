@@ -20,7 +20,7 @@ class Progressbar:
         self._background_thread = threading.Timer(self._refresh_timeout, self._timer_handle)
         self._background_thread.start()
 
-    def _update(self):
+    def _update(self, message=None):
         elapsed = time.time() - self._start_time
         filled_len = int(self._bar_length * self._progress)
         percents = round(100.0 * self._progress, 1)
@@ -30,7 +30,10 @@ class Progressbar:
         percents_text = ('%.1f%%' % percents).rjust(6)
         elapsed_text = '%02d:%02d' % (int(elapsed / 60), elapsed % 60)
 
-        sys.stdout.write('%s[%s] %s %s\r' % (prefix, bar, percents_text, elapsed_text))
+        sys.stdout.write('%s[%s] %s %s ' % (prefix, bar, percents_text, elapsed_text))
+        if message is not None:
+            sys.stdout.write(message)
+        sys.stdout.write('\r')
         sys.stdout.flush()
 
     def start(self):
@@ -51,8 +54,7 @@ class Progressbar:
 
     def abort(self, error=None):
         self._background_thread.cancel()
-        if error is not None:
-            sys.stdout.write(' ERROR: %s' % error)
+        self._update(message=None if error is None else (' ERROR: %s' % error))
         sys.stdout.write('\n')
 
 

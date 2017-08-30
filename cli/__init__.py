@@ -44,9 +44,11 @@ def mmt_javamain(main_class, args=None, hserr_path=None, remote_debug=False, max
 
 class IllegalStateException(Exception):
     def __init__(self, error):
+        super(Exception, self).__init__(error)
         self.message = error
 
 
 class IllegalArgumentException(Exception):
     def __init__(self, error):
+        super(Exception, self).__init__(error)
         self.message = error
