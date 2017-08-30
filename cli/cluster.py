@@ -12,7 +12,7 @@ import cli
 from cli import mmt_javamain, IllegalArgumentException
 from cli.engine import MMTEngine
 from cli.libs import fileutils, daemon, shell
-from cli.mt import BilingualCorpus
+from cli.mt import BilingualCorpus, TMXCorpus, FileParallelCorpus
 from cli.mt.processing import TrainingPreprocessor, Tokenizer
 
 __author__ = 'Davide Caroselli'
@@ -138,11 +138,18 @@ class MMTApi:
         params = {'source': source, 'target': target}
         return self._put('domains/' + str(domain) + '/corpus', params=params)
 
-    def import_into_domain(self, domain, tmx):
-        params = {
-            'content_type': 'tmx',
-            'local_file': tmx
-        }
+    def import_into_domain(self, domain, tmx=None, source_file=None, target_file=None):
+        if tmx is not None:
+            params = {
+                'content_type': 'tmx',
+                'local_file': tmx
+            }
+        else:
+            params = {
+                'content_type': 'parallel',
+                'source_local_file': source_file,
+                'target_local_file': target_file,
+            }
 
         return self._put('domains/' + str(domain) + '/corpus', params=params)
 
@@ -524,8 +531,15 @@ class ClusterNode(object):
     def new_domain(self, name):
         return self.api.create_domain(name)
 
-    def import_tmx(self, domain_id, tmx, callback=None, refresh_rate_in_seconds=1):
-        job = self.api.import_into_domain(domain_id, tmx)
+    def import_corpus(self, domain_id, corpus, callback=None, refresh_rate_in_seconds=1):
+        if type(corpus) == TMXCorpus:
+            job = self.api.import_into_domain(domain_id, tmx=corpus.get_tmx())
+        elif type(corpus) == FileParallelCorpus:
+            source_file = corpus.get_file(self.engine.source_lang)
+            target_file = corpus.get_file(self.engine.target_lang)
+            job = self.api.import_into_domain(domain_id, source_file=source_file, target_file=target_file)
+        else:
+            raise IllegalArgumentException('Invalid corpus type: ' + str(type(corpus)))
 
         if callback is not None:
             callback(job)

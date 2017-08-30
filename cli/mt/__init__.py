@@ -19,7 +19,7 @@ class _CorpusBuilder:
         self.lang2file[lang] = f
 
     def build(self):
-        return _TMXCorpus(self.name, self.tmx) if self.tmx is not None else _FileParallelCorpus(self.name,
+        return TMXCorpus(self.name, self.tmx) if self.tmx is not None else FileParallelCorpus(self.name,
                                                                                                 self.lang2file)
 
 
@@ -37,7 +37,7 @@ def _parse_lang(lang):
     return lang.lower()
 
 
-class BilingualCorpus:
+class BilingualCorpus(object):
     @staticmethod
     def list(root='.'):
         corpus_map = {}
@@ -88,7 +88,7 @@ class BilingualCorpus:
             corpora = BilingualCorpus.list(directory)
 
             for corpus in corpora:
-                if isinstance(corpus, _TMXCorpus):
+                if isinstance(corpus, TMXCorpus):
                     bilingual_corpora.append(corpus)
                 elif len(corpus.langs) > 1:
                     if source_lang in corpus.langs and target_lang in corpus.langs:
@@ -107,7 +107,7 @@ class BilingualCorpus:
         for lang in langs:
             lang2file[lang] = os.path.join(folder, name + '.' + lang.lower())
 
-        return _FileParallelCorpus(name, lang2file)
+        return FileParallelCorpus(name, lang2file)
 
     def __init__(self, name, langs=None):
         self.name = name
@@ -135,7 +135,7 @@ class BilingualCorpus:
         return self.__str__()
 
 
-class _FileParallelCorpus(BilingualCorpus):
+class FileParallelCorpus(BilingualCorpus):
     def __init__(self, name, lang2file):
         BilingualCorpus.__init__(self, name, lang2file.keys())
 
@@ -172,11 +172,14 @@ class _FileParallelCorpus(BilingualCorpus):
         return link
 
 
-class _TMXCorpus(BilingualCorpus):
+class TMXCorpus(BilingualCorpus):
     def __init__(self, name, f):
         BilingualCorpus.__init__(self, name, None)
         self._tmx_file = f
         self._root = os.path.dirname(f)
+
+    def get_tmx(self):
+        return self._tmx_file
 
     def get_folder(self):
         return self._root
@@ -198,7 +201,7 @@ class _TMXCorpus(BilingualCorpus):
         link = os.path.join(folder, name + '.tmx')
         os.symlink(self._tmx_file, link)
 
-        return _TMXCorpus(name, link)
+        return TMXCorpus(name, link)
 
     def __str__(self):
         return self.name + '[' + ','.join(self.langs) + ']'
