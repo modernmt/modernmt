@@ -11,7 +11,7 @@ import requests
 import cli
 from cli import mmt_javamain, IllegalArgumentException, IllegalStateException
 from cli.libs import fileutils, daemon, shell
-from cli.mmt import BilingualCorpus
+from cli.mmt import BilingualCorpus, TMXCorpus, FileParallelCorpus
 from cli.mmt.engine import Engine
 from cli.mmt.processing import TrainingPreprocessor, Tokenizer
 
@@ -50,7 +50,7 @@ class ClusterNode(object):
         def on_tuning_end(self, node, final_bleu):
             pass
 
-    class Api:
+    class Api(object):
         DEFAULT_TIMEOUT = 60 * 60  # sec
 
         def __init__(self, host=None, port=None, root=None):
@@ -175,11 +175,21 @@ class ClusterNode(object):
             params = {'sentence': sentence, 'translation': translation, 'source': source, 'target': target}
             return self._post('domains/' + str(domain) + '/corpus', params=params)
 
-        def import_into_domain(self, domain, tmx):
-            params = {
-                'content_type': 'tmx',
-                'local_file': tmx
-            }
+        def import_into_domain(self, domain, tmx=None,
+                               source_file=None, target_file=None, source_lang=None, target_lang=None):
+            if tmx is not None:
+                params = {
+                    'content_type': 'tmx',
+                    'local_file': tmx
+                }
+            else:
+                params = {
+                    'content_type': 'parallel',
+                    'source': source_lang,
+                    'target': target_lang,
+                    'source_local_file': source_file,
+                    'target_local_file': target_file
+                }
 
             return self._post('domains/' + str(domain) + '/corpus', params=params)
 
@@ -515,8 +525,20 @@ class ClusterNode(object):
     def new_domain(self, name):
         return self.api.create_domain(name)
 
-    def import_tmx(self, domain_id, tmx, callback=None, refresh_rate_in_seconds=1):
-        job = self.api.import_into_domain(domain_id, tmx)
+    def import_corpus(self, domain_id, corpus, callback=None, refresh_rate_in_seconds=1):
+        if type(corpus) == TMXCorpus:
+            job = self.api.import_into_domain(domain_id, tmx=corpus.get_tmx())
+        elif type(corpus) == FileParallelCorpus:
+            source_lang = self.engine.source_lang
+            target_lang = self.engine.target_lang
+
+            job = self.api.import_into_domain(domain_id,
+                                              source_file=corpus.get_file(source_lang),
+                                              target_file=corpus.get_file(target_lang),
+                                              source_lang=source_lang,
+                                              target_lang=target_lang)
+        else:
+            raise IllegalArgumentException('Invalid corpus type: ' + str(type(corpus)))
 
         if callback is not None:
             callback(job)

@@ -10,7 +10,7 @@ from cli.evaluation import Evaluator
 from cli.libs import shell
 from cli.libs.datahub import DataHub
 from cli.libs.progressbar import Progressbar, UndefinedProgressbar
-from cli.mmt import BilingualCorpus
+from cli.mmt import BilingualCorpus, TMXCorpus, FileParallelCorpus
 from cli.mmt.engine import Engine
 from cli.mmt.cluster import ClusterNode
 from cli.mmt.processing import TrainingPreprocessor
@@ -534,8 +534,11 @@ def main_rename(argv):
 def main_import(argv):
     parser = argparse.ArgumentParser(description='Import a new domain given TMX')
 
-    parser.add_argument('-d', '--domain', help='The name of the new domain (default is the filename', default=None)
-    parser.add_argument('-x', '--tmx-file', dest='tmx', metavar='TMX_FILE', help='TMX file to import')
+    parser.add_argument('-x', '--tmx-file', dest='tmx', metavar='TMX_FILE', help='TMX file to import', default=None)
+    parser.add_argument('-p', '--parallel-files', dest='parallel_file', help='Source and target file',
+                        default=None, nargs=2)
+    parser.add_argument('--path', dest='path', help='the folder containing the corpora you want to import',
+                        default=None)
 
     # Mixed arguments
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
@@ -543,28 +546,47 @@ def main_import(argv):
 
     args = parser.parse_args(argv)
 
-    if args.tmx is None:
-        raise CLIArgsException(parser, 'missing option "-x"')
-
-    if args.domain is None:
-        args.domain = os.path.basename(os.path.splitext(args.tmx)[0])
+    if args.tmx is None and args.parallel_file is None and args.path is None:
+        raise CLIArgsException(parser, 'missing one of the following options: "-x", "-p" or "--path"')
 
     node = ClusterNode.connect(args.engine)
     ensure_running(node)
     ensure_api(node)
 
-    progressbar = Progressbar(label='Importing TMX')
+    def __import(c):
+        def _import_callback(job):
+            progressbar.set_progress(job['progress'])
 
-    def _import_callback(job):
-        progressbar.set_progress(job['progress'])
+        domain = node.new_domain(corpus.name)
+        progressbar = Progressbar(label='Importing %s' % c.name)
+        progressbar.start()
 
-    domain = node.new_domain(args.domain)
+        try:
+            node.import_corpus(domain['id'], corpus, callback=_import_callback)
+            progressbar.complete()
+        except BaseException as e:
+            progressbar.abort(repr(e))
+            raise
 
-    progressbar.start()
-    node.import_tmx(domain['id'], args.tmx, _import_callback)
-    progressbar.complete()
+    if args.tmx is not None:
+        corpora = [TMXCorpus(os.path.basename(os.path.splitext(args.tmx)[0]), args.tmx)]
+    elif args.parallel_file is not None:
+        corpora = [FileParallelCorpus(os.path.basename(os.path.splitext(args.parallel_file[0])[0]), {
+            node.engine.source_lang: args.parallel_file[0],
+            node.engine.target_lang: args.parallel_file[1],
+        })]
+    else:
+        corpora, _ = BilingualCorpus.splitlist(node.engine.source_lang, node.engine.target_lang, roots=args.path)
 
-    print 'SUCCESS - imported domain "' + domain['name'] + '" with id ' + str(domain['id'])
+    success = True
+    for corpus in corpora:
+        try:
+            __import(corpus)
+        except:
+            success = False
+            pass
+
+    print 'IMPORT SUCCESS' if success else 'IMPORT FAILED'
 
 
 def main_download(argv):
@@ -600,7 +622,7 @@ def main_download(argv):
             return int(num_string[:-1]) * magnitude[last_char] if last_char in magnitude.keys() else int(num_string)
         except Exception:
             raise Exception("Could not interpretate number " + num_string + ". "
-                            "Allowed numbers examples: 100000, 25k, 104m, 1b.\n ")
+                                                                            "Allowed numbers examples: 100000, 25k, 104m, 1b.\n ")
 
     src_words = __parse_number(args.srcWords)
     trg_words = None if args.trgWords is None else __parse_number(args.trgWords)

@@ -7,6 +7,7 @@ import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
+import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.framework.FileParameter;
@@ -47,7 +48,7 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
     }
 
     public enum FileType {
-        TMX, INLINE
+        TMX, COMPACT, PARALLEL
     }
 
     public static class Params extends Parameters {
@@ -71,25 +72,20 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
                 FileCompression fileCompression = getEnum("content_compression", FileCompression.class, null);
 
                 boolean gzipped = FileCompression.GZIP.equals(fileCompression);
-                FileProxy fileProxy;
-
-                FileParameter content;
-                if ((content = req.getFile("content")) != null) {
-                    fileProxy = new ParameterFileProxy(content, gzipped);
-                } else {
-                    File localFile = new File(getString("local_file", false));
-                    if (!localFile.isFile())
-                        throw new ParameterParsingException("local_file", localFile.toString());
-
-                    fileProxy = new LocalFileProxy(localFile, gzipped);
-                }
 
                 switch (fileType) {
-                    case INLINE:
-                        corpus = new CompactFileCorpus(fileProxy);
+                    case COMPACT:
+                        corpus = new CompactFileCorpus(getFileProxy(null, gzipped));
                         break;
                     case TMX:
-                        corpus = new TMXCorpus(fileProxy);
+                        corpus = new TMXCorpus(getFileProxy(null, gzipped));
+                        break;
+                    case PARALLEL:
+                        Locale sourceLanguage = getLocale("source");
+                        Locale targetLanguage = getLocale("target");
+                        LanguagePair language = new LanguagePair(sourceLanguage, targetLanguage);
+                        
+                        corpus = new ParallelFileCorpus(language, getFileProxy("source", gzipped), getFileProxy("target", gzipped));
                         break;
                     default:
                         throw new ParameterParsingException("content_type");
@@ -107,6 +103,24 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
                 direction = new LanguagePair(sourceLanguage, targetLanguage);
 
                 corpus = null;
+            }
+        }
+
+        private FileProxy getFileProxy(String prefix, boolean gzipped) throws ParameterParsingException {
+            prefix = prefix == null ? "" : (prefix + '_');
+
+            String contentParameter = prefix + "content";
+            String fileParameter = prefix + "local_file";
+
+            FileParameter content;
+            if ((content = req.getFile(contentParameter)) != null) {
+                return new ParameterFileProxy(content, gzipped);
+            } else {
+                File localFile = new File(getString(fileParameter, false));
+                if (!localFile.isFile())
+                    throw new ParameterParsingException(fileParameter, localFile.toString());
+
+                return new LocalFileProxy(localFile, gzipped);
             }
         }
     }
