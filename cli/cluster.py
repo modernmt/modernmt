@@ -152,6 +152,9 @@ class MMTApi:
     def get_all_domains(self):
         return self._get('domains')
 
+    def rename_domain(self, id, name):
+        return self._put('domains/' + str(id), params={'name': name})
+
 
 ###########################################################################################
 
@@ -550,3 +553,20 @@ class ClusterNode(object):
                 domain = ids[0]
 
         return self.api.append_to_domain(domain, source, target)
+
+    def rename_domain(self, domain, name):
+        try:
+            domain = int(domain)
+        except ValueError:
+            domains = self.api.get_all_domains()
+            ids = [d['id'] for d in domains if d['name'] == domain]
+
+            if len(ids) == 0:
+                raise IllegalArgumentException('unable to find domain "' + domain + '"')
+            elif len(ids) > 1:
+                raise IllegalArgumentException(
+                    'ambiguous domain name "' + domain + '", choose one of the following ids: ' + str(ids))
+            else:
+                domain = ids[0]
+
+        return self.api.rename_domain(domain, name)
