@@ -164,6 +164,20 @@ public class DomainFacade {
         }
     }
 
+    public Domain update(Domain domain) throws PersistenceException {
+        Connection connection = null;
+        Database db = ModernMT.getNode().getDatabase();
+
+        try {
+            connection = db.getConnection();
+            DomainDAO domainDAO = db.getDomainDAO(connection);
+            
+            return domainDAO.update(domain);
+        } finally {
+            IOUtils.closeQuietly(connection);
+        }
+    }
+
     public ImportJob getImportJob(UUID id) throws PersistenceException {
         ImportJob job = ImportJob.fromEphemeralUUID(id);
 

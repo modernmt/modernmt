@@ -189,6 +189,9 @@ class ClusterNode(object):
         def get_all_domains(self):
             return self._get('domains')
 
+        def rename_domain(self, id, name):
+            return self._put('domains/' + str(id), params={'name': name})
+
     __SIGTERM_TIMEOUT = 10  # after this amount of seconds, there is no excuse for a process to still be there.
     __LOG_FILENAME = 'node'
 
@@ -541,3 +544,20 @@ class ClusterNode(object):
                 domain = ids[0]
 
         return self.api.append_to_domain(self.engine.source_lang, self.engine.target_lang, domain, source, target)
+
+    def rename_domain(self, domain, name):
+        try:
+            domain = int(domain)
+        except ValueError:
+            domains = self.api.get_all_domains()
+            ids = [d['id'] for d in domains if d['name'] == domain]
+
+            if len(ids) == 0:
+                raise IllegalArgumentException('unable to find domain "' + domain + '"')
+            elif len(ids) > 1:
+                raise IllegalArgumentException(
+                    'ambiguous domain name "' + domain + '", choose one of the following ids: ' + str(ids))
+            else:
+                domain = ids[0]
+
+        return self.api.rename_domain(domain, name)

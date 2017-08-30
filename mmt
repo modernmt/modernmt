@@ -510,6 +510,27 @@ def main_add(argv):
     print 'SUCCESS - contribution added to domain "' + args.domain + '"'
 
 
+def main_rename(argv):
+    parser = argparse.ArgumentParser(description='Rename an existent domain')
+
+    parser.add_argument('domain', help='The id or name of the domain you want to rename')
+    parser.add_argument('name', help='The new name')
+
+    # Mixed arguments
+    parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
+                        default='default')
+
+    args = parser.parse_args(argv)
+
+    node = ClusterNode.connect(args.engine)
+    ensure_running(node)
+    ensure_api(node)
+
+    domain = node.rename_domain(args.domain, args.name)
+
+    print 'SUCCESS - changed domain name to "%s"' % domain['name']
+
+
 def main_import(argv):
     parser = argparse.ArgumentParser(description='Import a new domain given TMX')
 
@@ -659,6 +680,7 @@ def main():
         'tune': main_tune,
         'translate': main_translate,
         'add': main_add,
+        'rename': main_rename,
         'import': main_import,
         'download': main_download,
     }
