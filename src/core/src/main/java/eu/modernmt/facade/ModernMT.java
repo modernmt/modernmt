@@ -1,12 +1,16 @@
 package eu.modernmt.facade;
 
+import eu.modernmt.Pom;
 import eu.modernmt.cluster.ClusterNode;
+import eu.modernmt.cluster.NodeInfo;
+import eu.modernmt.cluster.ServerInfo;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.config.NodeConfig;
 import eu.modernmt.engine.BootstrapException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -43,6 +47,14 @@ public class ModernMT {
             node.addStatusListener(listener);
 
         node.start(config, 30, TimeUnit.SECONDS);
+    }
+
+    public static ServerInfo info() {
+        Collection<NodeInfo> nodes = cluster.getNodes();
+        String buildVersion = Pom.getProperty("mmt.version");
+        long buildNumber = Long.parseLong(Pom.getProperty("mmt.build.number"));
+
+        return new ServerInfo(new ServerInfo.ClusterInfo(nodes), new ServerInfo.BuildInfo(buildVersion, buildNumber));
     }
 
 }

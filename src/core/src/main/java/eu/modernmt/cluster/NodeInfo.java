@@ -16,23 +16,23 @@ public class NodeInfo {
 
     public final String uuid;
     public final ClusterNode.Status status;
-    public final Map<Short, Long> channelsPositions;
-    public final Set<LanguagePair> loadedTranslationDirections;
+    public final Map<Short, Long> channels;
+    public final Set<LanguagePair> languages;
 
     static NodeInfo fromMember(Member member) {
         String uuid = member.getUuid();
         ClusterNode.Status status = ClusterNode.Status.valueOf(member.getStringAttribute(STATUS_ATTRIBUTE));
         Map<Short, Long> positions = deserializeChannels(member.getStringAttribute(DATA_CHANNELS_ATTRIBUTE));
-        Set<LanguagePair> loadedTranslationDirections = deserializeTranslationDirections(member.getStringAttribute(TRANSLATION_DIRECTIONS_ATTRIBUTE));
+        Set<LanguagePair> languages = deserializeLanguages(member.getStringAttribute(TRANSLATION_DIRECTIONS_ATTRIBUTE));
 
-        return new NodeInfo(uuid, status, positions, loadedTranslationDirections);
+        return new NodeInfo(uuid, status, positions, languages);
     }
 
-    private NodeInfo(String uuid, ClusterNode.Status status, Map<Short, Long> channelsPositions, Set<LanguagePair> loadedTranslationDirections) {
+    private NodeInfo(String uuid, ClusterNode.Status status, Map<Short, Long> channels, Set<LanguagePair> languages) {
         this.uuid = uuid;
         this.status = status;
-        this.channelsPositions = channelsPositions;
-        this.loadedTranslationDirections = loadedTranslationDirections;
+        this.channels = channels;
+        this.languages = languages;
     }
 
     // Utils
@@ -100,7 +100,7 @@ public class NodeInfo {
 
     // Deserializers
 
-    private static Set<LanguagePair> deserializeTranslationDirections(String encoded) {
+    private static Set<LanguagePair> deserializeLanguages(String encoded) {
         if (encoded == null || encoded.isEmpty())
             return Collections.emptySet();
 
@@ -110,8 +110,11 @@ public class NodeInfo {
         for (String element : elements) {
             String[] tags = element.split(":");
 
-            Locale source = Locale.forLanguageTag(tags[0].substring(1, tags[0].length() - 1));
-            Locale target = Locale.forLanguageTag(tags[1].substring(1, tags[1].length() - 1));
+            String sourceTag = tags[0].substring(1);
+            String targetTag = tags[1].substring(0, tags[1].length() - 1);
+
+            Locale source = Locale.forLanguageTag(sourceTag);
+            Locale target = Locale.forLanguageTag(targetTag);
 
             result.add(new LanguagePair(source, target));
         }

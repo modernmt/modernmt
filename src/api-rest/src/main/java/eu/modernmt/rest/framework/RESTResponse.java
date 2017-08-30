@@ -86,8 +86,10 @@ public class RESTResponse {
         response.setContentType("application/json; charset=utf-8");
 
         try {
-            if (content != null)
-                response.getOutputStream().write(content.toString().getBytes("UTF-8"));
+            if (content != null) {
+                String rawContent = content.toString() + '\n';
+                response.getOutputStream().write(rawContent.getBytes("UTF-8"));
+            }
         } catch (IOException e) {
             logger.error("unable to write response", e);
         }
@@ -107,19 +109,12 @@ public class RESTResponse {
         // Type
         String type = e.getClass().getSimpleName();
 
-//        // Code
-//        int code = 0;
-//        if (e instanceof ClientException)
-//            code = ((ClientException) e).getCode();
-
         // Encoding
         JsonObject error = new JsonObject();
 
         error.addProperty("type", type);
         if (msg != null)
             error.addProperty("message", msg);
-//        if (code > 0)
-//            error.addProperty("code", code);
 
         return error;
     }

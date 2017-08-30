@@ -8,6 +8,7 @@ import eu.modernmt.rest.model.ContextVectorResult;
 import eu.modernmt.rest.model.TranslationResponse;
 import eu.modernmt.rest.serializers.AlignmentSerializer;
 import eu.modernmt.rest.serializers.ContextVectorResultSerializer;
+import eu.modernmt.rest.serializers.LocaleSerializer;
 import eu.modernmt.rest.serializers.TranslationResponseSerializer;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -21,6 +22,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Locale;
 
 /**
  * Created by davide on 15/12/15.
@@ -31,6 +33,7 @@ public class RESTServer {
         JSONSerializer.registerCustomSerializer(TranslationResponse.class, new TranslationResponseSerializer());
         JSONSerializer.registerCustomSerializer(Alignment.class, new AlignmentSerializer());
         JSONSerializer.registerCustomSerializer(ContextVectorResult.class, new ContextVectorResultSerializer());
+        JSONSerializer.registerCustomSerializer(Locale.class, new LocaleSerializer());
     }
 
     public static class ServerOptions {

@@ -210,7 +210,7 @@ public class DomainFacade {
         int completed = 0;
 
         for (NodeInfo node : nodes) {
-            Long nodeOffset = node.channelsPositions == null ? 0L : node.channelsPositions.get(channel);
+            Long nodeOffset = node.channels == null ? 0L : node.channels.get(channel);
             if (nodeOffset == null)
                 nodeOffset = 0L;
 
