@@ -28,7 +28,7 @@ class TranslationRequest:
         self.suggestions = suggestions if suggestions is not None else []
 
     @staticmethod
-    def from_json_string(json_string, max_suggestions):
+    def from_json_string(json_string):
         obj = json.loads(json_string)
 
         source = obj['source']
@@ -40,11 +40,6 @@ class TranslationRequest:
         if 'suggestions' in obj:
             i = 0
             for sobj in obj['suggestions']:
-
-                # add at most max_suggestions entry in the suugestion array
-                if max_suggestions > -1 and i >= max_suggestions:
-                    break
-
                 suggestion_source = sobj['source']
                 suggestion_target = sobj['target']
                 suggestion_score = float(sobj['score']) if 'score' in sobj else 0
@@ -76,9 +71,8 @@ class TranslationResponse:
 
 
 class MainController:
-    def __init__(self, decoder, max_suggestions, stdout):
+    def __init__(self, decoder, stdout):
         self._decoder = decoder
-        self._max_suggestions = max_suggestions
         self._stdin = sys.stdin
         self._stdout = stdout
 
@@ -101,8 +95,9 @@ class MainController:
 
     def process(self, line):
         try:
-            request = TranslationRequest.from_json_string(line, self._max_suggestions)
-            translation = self._decoder.translate(request.source_lang, request.target_lang, request.source, request.suggestions)
+            request = TranslationRequest.from_json_string(line)
+            translation = self._decoder.translate(request.source_lang, request.target_lang,
+                                                  request.source, request.suggestions)
             return TranslationResponse(translation=translation)
         except BaseException as e:
             self._logger.exception('Failed to process request "' + line + '"')
@@ -132,9 +127,6 @@ def run_main():
     parser.add_argument('model', metavar='MODEL', help='the path to the decoder model')
     parser.add_argument('-l', '--log-level', dest='log_level', metavar='LEVEL', help='select the log level',
                         choices=['critical', 'error', 'warning', 'info', 'debug'], default='info')
-    parser.add_argument('--tuning_epochs', type=int, dest='tuning_epochs', metavar='EPOCHS', help='the number of epochs to use for tuning', default=None)
-    parser.add_argument('--tuning_learning_rate', type=float, dest='tuning_lr', metavar='LEARNING_RATE', help='the learning rate to use for tuning', default=None)
-    parser.add_argument('--tuning_suggestions', type=float, dest='tuning_suggestions', metavar='SUGGESTIONS', help='the maximum number of suggestions to use for tuning (default is -1. i.e. all suggestions found; 0 means no suggestions and hence no tuning', default=-1)
     parser.add_argument('-g', '--gpu', type=int, dest='gpu', metavar='GPU', help='the index of the GPU to use',
                         default=None)
 
@@ -163,8 +155,8 @@ def run_main():
     # Main loop
     # ------------------------------------------------------------------------------------------------------------------
     try:
-        decoder = NMTDecoder(args.model, gpu_id=args.gpu, random_seed=3435, epochs=args.tuning_epochs, learning_rate=args.tuning_lr)
-        controller = MainController(decoder, args.tuning_suggestions, stdout)
+        decoder = NMTDecoder(args.model, gpu_id=args.gpu, random_seed=3435)
+        controller = MainController(decoder, stdout)
         stdout.write("ok\n")
         stdout.flush()
         controller.serve_forever()

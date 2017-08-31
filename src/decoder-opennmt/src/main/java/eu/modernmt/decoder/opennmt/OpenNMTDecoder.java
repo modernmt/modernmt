@@ -32,7 +32,7 @@ public class OpenNMTDecoder implements Decoder, DataListenerProvider {
 
     private static final Logger logger = LogManager.getLogger(OpenNMTDecoder.class);
 
-    private static final int SUGGESTIONS_LIMIT = 4;
+    private static final int SUGGESTIONS_LIMIT = 1;
     private final ExecutionQueue executor;
     private final TranslationMemory memory;
     private final Set<LanguagePair> directions;

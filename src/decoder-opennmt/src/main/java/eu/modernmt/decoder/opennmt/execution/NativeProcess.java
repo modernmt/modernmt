@@ -83,17 +83,6 @@ class NativeProcess implements Closeable {
                 command.add(Integer.toString(gpu));
             }
 
-            # TODO: make it parametrizable
-            command.add(“--tuning_suggestions");
-            command.add(Integer.toString(2));
-
-            command.add(“--tuning_epochs");
-            command.add(Integer.toString(3));
-
-            command.add(“--tuning_learning_rate");
-            command.add(Integer.toString(0.2));
-
-
             ProcessBuilder builder = new ProcessBuilder(command);
             builder.directory(home);
 

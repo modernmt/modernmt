@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 from nmmt.NMTEngineTrainer import NMTEngineTrainer
-from nmmt.internal_utils import opts_object
+from nmmt.internal_utils import opts_object, log_timed_action
 from onmt import Models, Translator, Constants, Dataset
 
 
@@ -42,6 +42,10 @@ class NMTEngine:
             self.learning_rate_decay = 0.9
             self.start_decay_at = 10
 
+            # Tuning options -------------------------------------------------------------------------------------------
+            self.tuning_max_learning_rate = 0.2
+            self.tuning_max_epochs = 5
+
     @staticmethod
     def load_from_checkpoint(checkpoint_path, using_cuda):
         checkpoint = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
@@ -71,16 +75,6 @@ class NMTEngine:
         model.generator = generator
         model.eval()
 
-
-
-
-        # optim_state_dict = checkpoint['optim']
-        # optim = Optim(optim_state_dict.optim, optim_state_dict.learning_rate, optim_state_dict.max_grad_norm,
-        #               lr_decay=optim_state_dict.learning_rate_decay, start_decay_at=optim_state_dict.start_decay_at)
-        #
-        # self._logger.log(self._log_level, 'model.parameters():%s' % (repr(model.parameters())))
-        # self._logger.log(self._log_level, 'optim_state_dict:%s' % (repr(optim_state_dict)))
-
         optim = checkpoint['optim']
         optim.set_parameters(model.parameters())
         optim.optimizer.load_state_dict(checkpoint['optim'].optimizer.state_dict())
@@ -103,6 +97,13 @@ class NMTEngine:
         self._translator = None  # lazy load
         self._tuner = None  # lazy load
 
+    def get_tuning_options(self):
+        return self._model_params.tuning_max_epochs, self._model_params.tuning_max_learning_rate
+
+    def set_tuning_options(self, max_epochs, max_learning_rate):
+        self._model_params.tuning_max_epochs = max_epochs
+        self._model_params.tuning_max_learning_rate = max_learning_rate
+
     def _ensure_model_loaded(self):
         if not self._model_loaded:
             self.reset_model()
@@ -120,31 +121,44 @@ class NMTEngine:
         self._optim.set_parameters(self._model.parameters())
         self._optim.optimizer.load_state_dict(self._checkpoint['optim'].optimizer.state_dict())
 
-    def tune(self, src_batch, trg_batch, epochs, learning_rate):
+    def tune(self, suggestions, epochs=None, learning_rate=None):
         self._ensure_model_loaded()
 
         if self._tuner is None:
             self._tuner = NMTEngineTrainer(self._model, self._optim, self._src_dict, self._trg_dict,
                                            model_params=self._model_params, gpu_ids=([0] if self._using_cuda else None))
+            self._tuner.start_epoch = 1
             self._tuner.min_perplexity_decrement = -1.
             self._tuner.set_log_level(logging.NOTSET)
 
-        # self._tuner.min_epochs = self._tuner.max_epochs = epochs
+        # Set tuning parameters
+        if epochs is None or learning_rate is None:
+            _epochs, _learning_rate = self._estimate_tuning_parameters(suggestions)
 
-        self._tuner.set_tuning_parameters(learning_rate=learning_rate,min_epochs=epochs,max_epochs=epochs)
+            self._tuner.min_epochs = self._tuner.max_epochs = epochs if epochs is not None else _epochs
+            self._tuner.learning_rate = learning_rate if learning_rate is not None else _learning_rate
 
         # Convert words to indexes [suggestions]
         tuning_src_batch, tuning_trg_batch = [], []
 
-        for source, target in zip(src_batch, trg_batch):
+        for source, target, _ in suggestions:
             tuning_src_batch.append(self._src_dict.convertToIdxTensor(source, Constants.UNK_WORD))
             tuning_trg_batch.append(self._trg_dict.convertToIdxTensor(target, Constants.UNK_WORD,
-                                                                Constants.BOS_WORD, Constants.EOS_WORD))
+                                                                      Constants.BOS_WORD, Constants.EOS_WORD))
 
         # Prepare data for training on the tuningBatch
         tuning_dataset = Dataset(tuning_src_batch, tuning_trg_batch, 32, self._using_cuda)
 
-        self._tuner.train_model(tuning_dataset, save_epochs=0)
+        # Run tuning
+        log_message = 'Tuning on %d suggestions (epochs = %d epochs, learning_rate = %.2f )' % (
+            len(suggestions), self._tuner.min_epochs, self._tuner.learning_rate)
+
+        with log_timed_action(self._logger, log_message, log_start=False):
+            self._tuner.train_model(tuning_dataset, save_epochs=0)
+
+    def _estimate_tuning_parameters(self, suggestions):
+        # TODO: it should return an actual learning_rate and epochs based on the quality of the suggestions
+        return self.get_tuning_options()
 
     def translate(self, text, beam_size=5, max_sent_length=160, replace_unk=False, n_best=1):
         self._ensure_model_loaded()

@@ -82,6 +82,14 @@ class NMTEngineTrainer:
         self.start_epoch = 1  # The epoch from which to start
         self.min_perplexity_decrement = .02  # If perplexity decrement is lower than this percentage, stop training
 
+    @property
+    def learning_rate(self):
+        return self._optim.lr
+
+    @learning_rate.setter
+    def learning_rate(self, value):
+        self._optim.lr = value
+
     def set_log_level(self, level):
         self._log_level = level
 
@@ -198,7 +206,6 @@ class NMTEngineTrainer:
                     generator_state_dict = self._model.generator.module.state_dict() if multi_gpu \
                         else self._model.generator.state_dict()
 
-
                     #  (4) drop a checkpoint
                     checkpoint = {
                         'model': model_state_dict,
@@ -298,11 +305,3 @@ class NMTEngineTrainer:
                                               'new perplexity is %f, while previous was %f (-%.1f%%)'
                              % (current_value, previous_value, decrement * 100))
             return False
-
-    def set_tuning_parameters(self, learning_rate=None,min_epochs=None,max_epochs=None):
-        if learning_rate is not None:
-            self._optim.lr = learning_rate
-        if min_epochs is not None:
-            self.min_epochs = min_epochs
-        if max_epochs is not None:
-            self.max_epochs = max_epochs
