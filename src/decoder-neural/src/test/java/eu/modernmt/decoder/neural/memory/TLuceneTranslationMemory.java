@@ -17,7 +17,7 @@ import java.util.*;
 public class TLuceneTranslationMemory extends LuceneTranslationMemory {
 
     public TLuceneTranslationMemory(LanguagePair... languages) throws IOException {
-        super(new LanguageIndex(Arrays.asList(languages)), new RAMDirectory());
+        super(new LanguageIndex(Arrays.asList(languages)), new RAMDirectory(), 10);
     }
 
     public int size() throws IOException {
