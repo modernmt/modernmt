@@ -120,7 +120,7 @@ class NMTEngine:
         self._optim.set_parameters(self._model.parameters())
         self._optim.optimizer.load_state_dict(self._checkpoint['optim'].optimizer.state_dict())
 
-    def tune(self, src_batch, trg_batch, epochs):
+    def tune(self, src_batch, trg_batch, epochs, learning_rate):
         self._ensure_model_loaded()
 
         if self._tuner is None:
@@ -129,7 +129,9 @@ class NMTEngine:
             self._tuner.min_perplexity_decrement = -1.
             self._tuner.set_log_level(logging.NOTSET)
 
-        self._tuner.min_epochs = self._tuner.max_epochs = epochs
+        # self._tuner.min_epochs = self._tuner.max_epochs = epochs
+
+        self._tuner.set_tuning_parameters(learning_rate=learning_rate,min_epochs=epochs,max_epochs=epochs)
 
         # Convert words to indexes [suggestions]
         tuning_src_batch, tuning_trg_batch = [], []

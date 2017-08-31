@@ -40,7 +40,7 @@ class _EngineData:
 
 
 class NMTDecoder:
-    def __init__(self, model_path, gpu_id=None, random_seed=None):
+    def __init__(self, model_path, gpu_id=None, random_seed=None, epochs=None, learning_rate=None):
         self._logger = logging.getLogger('nmmt.NMTDecoder')
 
         if gpu_id is not None:
@@ -70,7 +70,8 @@ class NMTDecoder:
         self.beam_size = 5
         self.max_sent_length = 160
         self.replace_unk = False
-        self.tuning_epochs = 5
+        self.tuning_epochs = epochs if epochs is not None else 5
+        self.tuning_learning_rate = learning_rate if learning_rate is not None else 0.1
 
     def translate(self, source_lang, target_lang, text, suggestions=None, n_best=1):
         # (0) Get TextProcessor and NMTEngine for current direction; if it does not exist, raise an exception
@@ -95,10 +96,10 @@ class NMTDecoder:
 
         # (2) Tune engine if suggestions provided
         if processed_suggestions is not None:
-            msg = 'Tuning engine on %d suggestions (%d epochs)' % (len(processed_suggestions[0]), self.tuning_epochs)
+            msg = 'Tuning engine on %d suggestions (%d epochs, %.2f)' % (len(processed_suggestions[0]), self.tuning_epochs, self.tuning_lr)
 
             with log_timed_action(self._logger, msg, log_start=False):
-                engine.tune(*processed_suggestions, epochs=self.tuning_epochs)
+                engine.tune(*processed_suggestions, epochs=self.tuning_epochs, learning_rate=self.tuning_learning_rate)
 
         # (3) Translate
         pred_batch, pred_score = engine.translate(processed_text,

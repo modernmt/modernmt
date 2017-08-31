@@ -156,6 +156,7 @@ class NMTEngineTrainer:
         valid_acc, valid_ppl = None, None
 
         try:
+            self._logger.log(self._log_level, 'Optim options:%s' % (repr(self._optim)))
             for epoch in range(self.start_epoch, self.max_epochs + 1):
                 self._logger.log(self._log_level, 'Training epoch %g... START' % epoch)
                 start_time_epoch = time.time()
@@ -297,3 +298,11 @@ class NMTEngineTrainer:
                                               'new perplexity is %f, while previous was %f (-%.1f%%)'
                              % (current_value, previous_value, decrement * 100))
             return False
+
+    def set_tuning_parameters(self, learning_rate=None,min_epochs=None,max_epochs=None):
+        if learning_rate is not None:
+            self._optim.lr = learning_rate
+        if min_epochs is not None:
+            self.min_epochs = min_epochs
+        if max_epochs is not None:
+            self.max_epochs = max_epochs
