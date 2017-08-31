@@ -278,8 +278,8 @@ class NMTDecoder:
         else:
             logger.info('checkpoint is None')
 
-        with open(os.path.join(model_folder, 'model.map'), 'w') as model_map:
-            model_map.write('%s__%s = model\n' % (self._source_lang, self._target_lang))
+        with open(os.path.join(model_folder, 'model.conf'), 'w') as model_map:
+            model_map.write('model.%s__%s = model\n' % (self._source_lang, self._target_lang))
 
 
 class NeuralEngine(Engine):
