@@ -1,10 +1,11 @@
 import logging
+import os
+
 import torch
 import torch.nn as nn
 
-from nmmt.NMTEngineTrainer import NMTEngineTrainer
 from nmmt.internal_utils import opts_object, log_timed_action
-from onmt import Models, Translator, Constants, Dataset, Optim
+from onmt import Models, Translator, Constants, Dataset
 
 
 class _Translator(Translator):
@@ -43,15 +44,36 @@ class NMTEngine:
             self.start_decay_at = 10
 
             # Tuning options -------------------------------------------------------------------------------------------
+            self.memory_query_min_results = 10
+            self.memory_suggestions_limit = 1
             self.tuning_max_learning_rate = 0.2
             self.tuning_max_epochs = 5
 
     @staticmethod
     def load_from_checkpoint(checkpoint_path, using_cuda):
-        checkpoint = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
-
+        # Metadata
         model_opt = NMTEngine.Parameters()
-        model_opt.__dict__.update(checkpoint['opt'])
+
+        if os.path.isfile(checkpoint_path + '.meta'):
+            with open(checkpoint_path + '.meta', 'rb') as metadata_file:
+                for line in metadata_file:
+                    key, value = (x.strip() for x in line.split('=', 1))
+
+                    if value == 'True':
+                        value = True
+                    elif value == 'False':
+                        value = False
+                    else:
+                        try:
+                            number = float(value)
+                            value = number if '.' in value else int(value)
+                        except ValueError:
+                            pass  # value is a string
+
+                    model_opt.__dict__[key] = value
+
+        # Data
+        checkpoint = torch.load(checkpoint_path + '.dat', map_location=lambda storage, loc: storage)
 
         src_dict = checkpoint['dicts']['src']
         trg_dict = checkpoint['dicts']['tgt']
@@ -79,52 +101,46 @@ class NMTEngine:
         optim.set_parameters(model.parameters())
         optim.optimizer.load_state_dict(checkpoint['optim'].optimizer.state_dict())
 
-        return NMTEngine(model_opt, src_dict, trg_dict, model, optim, checkpoint, using_cuda)
+        return NMTEngine(src_dict, trg_dict, model, optim, model_opt, checkpoint, using_cuda)
 
-    def __init__(self, params, src_dict, trg_dict, model, optim, checkpoint, using_cuda):
+    def __init__(self, src_dict, trg_dict, model, optimizer, parameters=None, checkpoint=None, using_cuda=True):
         self._logger = logging.getLogger('ommt.NMTEngine')
         self._log_level = logging.INFO
         self._model_loaded = False
 
-        self._model_params = params
-        self._src_dict = src_dict
-        self._trg_dict = trg_dict
-        self._model = model
-        self._optim = optim
-        self._checkpoint = checkpoint
-        self._using_cuda = using_cuda
+        self.src_dict = src_dict
+        self.trg_dict = trg_dict
+        self.model = model
+        self.optimizer = optimizer
+        self.parameters = parameters if parameters is not None else NMTEngine.Parameters()
+        self.checkpoint = checkpoint
+        self.using_cuda = using_cuda
 
         self._translator = None  # lazy load
         self._tuner = None  # lazy load
 
-    def get_tuning_options(self):
-        return self._model_params.tuning_max_epochs, self._model_params.tuning_max_learning_rate
+    def _reset_model(self):
+        model_state_dict = {k: v for k, v in sorted(self.checkpoint['model'].items()) if 'generator' not in k}
+        model_state_dict.update({"generator." + k: v for k, v in sorted(self.checkpoint['generator'].items())})
+        self.model.load_state_dict(model_state_dict)
 
-    def set_tuning_options(self, max_epochs, max_learning_rate):
-        self._model_params.tuning_max_epochs = max_epochs
-        self._model_params.tuning_max_learning_rate = max_learning_rate
+        self.model.encoder.rnn.dropout = 0.
+        self.model.decoder.dropout = nn.Dropout(0.)
+        self.model.decoder.rnn.dropout = nn.Dropout(0.)
+
+        self.optimizer.set_parameters(self.model.parameters())
+        self.optimizer.optimizer.load_state_dict(self.checkpoint['optim'].optimizer.state_dict())
 
     def _ensure_model_loaded(self):
         if not self._model_loaded:
             self._reset_model()
             self._model_loaded = True
 
-    def _reset_model(self):
-        model_state_dict = {k: v for k, v in sorted(self._checkpoint['model'].items()) if 'generator' not in k}
-        model_state_dict.update({"generator." + k: v for k, v in sorted(self._checkpoint['generator'].items())})
-        self._model.load_state_dict(model_state_dict)
-
-        self._model.encoder.rnn.dropout = 0.
-        self._model.decoder.dropout = nn.Dropout(0.)
-        self._model.decoder.rnn.dropout = nn.Dropout(0.)
-
-        self._optim.set_parameters(self._model.parameters())
-        self._optim.optimizer.load_state_dict(self._checkpoint['optim'].optimizer.state_dict())
-
     def tune(self, suggestions, epochs=None, learning_rate=None):
         if self._tuner is None:
-            self._tuner = NMTEngineTrainer(self._model, self._optim, self._src_dict, self._trg_dict,
-                                           model_params=self._model_params, gpu_ids=([0] if self._using_cuda else None))
+            from nmmt.NMTEngineTrainer import NMTEngineTrainer
+            self._tuner = NMTEngineTrainer(self, gpu_ids=([0] if self.using_cuda else None))
+
             self._tuner.start_epoch = 1
             self._tuner.min_perplexity_decrement = -1.
             self._tuner.set_log_level(logging.NOTSET)
@@ -137,7 +153,7 @@ class NMTEngine:
             learning_rate = learning_rate if learning_rate is not None else _learning_rate
 
         self._tuner.min_epochs = self._tuner.max_epochs = epochs
-        self._optim.lr = learning_rate
+        self.optimizer.lr = learning_rate
 
         # Reset model
         with log_timed_action(self._logger, 'Restoring model initial state', log_start=False):
@@ -147,12 +163,12 @@ class NMTEngine:
         tuning_src_batch, tuning_trg_batch = [], []
 
         for source, target, _ in suggestions:
-            tuning_src_batch.append(self._src_dict.convertToIdxTensor(source, Constants.UNK_WORD))
-            tuning_trg_batch.append(self._trg_dict.convertToIdxTensor(target, Constants.UNK_WORD,
-                                                                      Constants.BOS_WORD, Constants.EOS_WORD))
+            tuning_src_batch.append(self.src_dict.convertToIdxTensor(source, Constants.UNK_WORD))
+            tuning_trg_batch.append(self.trg_dict.convertToIdxTensor(target, Constants.UNK_WORD,
+                                                                     Constants.BOS_WORD, Constants.EOS_WORD))
 
         # Prepare data for training on the tuningBatch
-        tuning_dataset = Dataset(tuning_src_batch, tuning_trg_batch, 32, self._using_cuda)
+        tuning_dataset = Dataset(tuning_src_batch, tuning_trg_batch, 32, self.using_cuda)
 
         # Run tuning
         log_message = 'Tuning on %d suggestions (epochs = %d epochs, learning_rate = %.2f )' % (
@@ -163,13 +179,13 @@ class NMTEngine:
 
     def _estimate_tuning_parameters(self, suggestions):
         # TODO: it should return an actual learning_rate and epochs based on the quality of the suggestions
-        return self.get_tuning_options()
+        return self.parameters.tuning_max_epochs, self.parameters.tuning_max_learning_rate
 
     def translate(self, text, beam_size=5, max_sent_length=160, replace_unk=False, n_best=1):
         self._ensure_model_loaded()
 
         if self._translator is None:
-            self._translator = _Translator(self._using_cuda, self._src_dict, self._trg_dict, self._model)
+            self._translator = _Translator(self.using_cuda, self.src_dict, self.trg_dict, self.model)
 
         self._translator.opt.replace_unk = replace_unk
         self._translator.opt.beam_size = beam_size
@@ -179,3 +195,30 @@ class NMTEngine:
         pred_batch, pred_score, _ = self._translator.translate([text], None)
 
         return pred_batch[0], pred_score[0]
+
+    def save(self, path, store_data=True, store_parameters=True, multi_gpu=False, epoch=None):
+        if store_parameters:
+            with open(path + '.meta', 'wb') as metadata_file:
+                for key, value in self.parameters.__dict__.iteritems():
+                    if value is not None:
+                        metadata_file.write('%s = %s\n' % (key, str(value)))
+
+        if store_data:
+            model = self.model.module if multi_gpu else self.model
+            generator = self.model.generator.module if multi_gpu else self.model.generator
+
+            model_state_dict = {k: v for k, v in model.state_dict().items() if 'generator' not in k}
+            generator_state_dict = generator.state_dict()
+
+            if epoch is None:
+                epoch = self.checkpoint['epoch'] if self.checkpoint else 0
+
+            checkpoint = {
+                'model': model_state_dict,
+                'generator': generator_state_dict,
+                'dicts': {'src': self.src_dict, 'tgt': self.trg_dict},
+                'epoch': epoch,
+                'optim': self.optimizer
+            }
+
+            torch.save(checkpoint, path + '.dat')

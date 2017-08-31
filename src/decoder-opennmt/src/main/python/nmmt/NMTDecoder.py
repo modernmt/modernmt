@@ -21,16 +21,16 @@ class ModelFileNotFoundException(BaseException):
 class _EngineData:
     @staticmethod
     def load(model_name, base_path='.', using_cuda=True):
-        tp_model_file = os.path.join(base_path, model_name + '.bpe')
-        engine_model_file = os.path.join(base_path, model_name + '.pt')
+        model_file = os.path.join(base_path, model_name)
+        tp_model_file = model_file + '.bpe'
 
         if not os.path.isfile(tp_model_file):
             raise ModelFileNotFoundException(tp_model_file)
-        if not os.path.isfile(engine_model_file):
-            raise ModelFileNotFoundException(engine_model_file)
+        if not os.path.isfile(model_file + '.dat'):
+            raise ModelFileNotFoundException(model_file + '.dat')
 
         text_processor = SubwordTextProcessor.load_from_file(tp_model_file)
-        engine = NMTEngine.load_from_checkpoint(engine_model_file, using_cuda=using_cuda)
+        engine = NMTEngine.load_from_checkpoint(model_file, using_cuda=using_cuda)
 
         return _EngineData(engine, text_processor)
 

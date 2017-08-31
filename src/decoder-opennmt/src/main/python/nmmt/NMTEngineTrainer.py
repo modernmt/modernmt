@@ -1,15 +1,13 @@
 import logging
+import math
 import os
-
 import time
 
-import math
-
-import copy
 import torch.cuda.random as random
 from torch import nn, torch
 from torch.autograd import Variable
 
+from nmmt import NMTEngine
 from onmt import Models, Optim, Constants
 
 
@@ -23,7 +21,6 @@ class NMTEngineTrainer:
     @staticmethod
     def new_instance(src_dict, trg_dict, model_params=None, random_seed=None, gpu_ids=None, init_value=0.1):
         if model_params is None:
-            from nmmt import NMTEngine
             model_params = NMTEngine.Parameters()
 
         if gpu_ids is not None and len(gpu_ids) > 0:
@@ -36,6 +33,7 @@ class NMTEngineTrainer:
         model = Models.NMTModel(encoder, decoder)
 
         if gpu_ids is not None and len(gpu_ids) > 0:
+            using_cuda = True
             model.cuda()
             generator.cuda()
 
@@ -43,6 +41,7 @@ class NMTEngineTrainer:
                 model = nn.DataParallel(model, device_ids=gpu_ids, dim=1)
                 generator = nn.DataParallel(generator, device_ids=gpu_ids, dim=0)
         else:
+            using_cuda = False
             model.cpu()
             generator.cpu()
 
@@ -51,22 +50,18 @@ class NMTEngineTrainer:
         for p in model.parameters():
             p.data.uniform_(-init_value, init_value)
 
-        optim = Optim(model_params.optim, model_params.learning_rate, model_params.max_grad_norm,
-                      lr_decay=model_params.learning_rate_decay, start_decay_at=model_params.start_decay_at)
-        optim.set_parameters(model.parameters())
+        optimizer = Optim(model_params.optim, model_params.learning_rate, model_params.max_grad_norm,
+                          lr_decay=model_params.learning_rate_decay, start_decay_at=model_params.start_decay_at)
+        optimizer.set_parameters(model.parameters())
 
-        return NMTEngineTrainer(model, optim, src_dict, trg_dict,
-                                model_params=model_params, gpu_ids=gpu_ids, random_seed=random_seed)
+        engine = NMTEngine(src_dict, trg_dict, model, optimizer, parameters=model_params, using_cuda=using_cuda)
+        return NMTEngineTrainer(engine, gpu_ids=gpu_ids, random_seed=random_seed)
 
-    def __init__(self, model, optim, src_dict, trg_dict, model_params=None, gpu_ids=None, random_seed=None):
+    def __init__(self, engine, gpu_ids=None, random_seed=None):
         self._logger = logging.getLogger('nmmt.NMTEngineTrainer')
         self._log_level = logging.INFO
 
-        self._model = model
-        self._optim = optim
-        self._src_dict = src_dict
-        self._trg_dict = trg_dict
-        self._model_params = model_params
+        self._engine = engine
         self._gpu_ids = gpu_ids
 
         if random_seed is not None:
@@ -121,48 +116,53 @@ class NMTEngineTrainer:
         total_words = 0
         total_num_correct = 0
 
-        self._model.eval()
+        model = self._engine.model
+
+        model.eval()
         for i in range(len(data)):
             # exclude original indices
             batch = data[i][:-1]
-            outputs = self._model(batch)
+            outputs = model(batch)
             # exclude <s> from targets
             targets = batch[1][1:]
-            loss, _, num_correct = self._compute_memory_efficient_loss(outputs, targets, self._model.generator,
+            loss, _, num_correct = self._compute_memory_efficient_loss(outputs, targets, model.generator,
                                                                        criterion, evaluation=True)
             total_loss += loss
             total_num_correct += num_correct
             total_words += targets.data.ne(Constants.PAD).sum()
 
-        self._model.train()
+        model.train()
         return total_loss / total_words, float(total_num_correct) / total_words
 
     def train_model(self, train_data, valid_data=None, save_path=None, save_epochs=5):
         multi_gpu = self._gpu_ids is not None and len(self._gpu_ids) > 1
 
+        model = self._engine.model
+        optimizer = self._engine.optimizer
+
         # set the mask to None; required when the same model is trained after a translation
         if multi_gpu:
-            decoder = self._model.module.decoder
+            decoder = model.module.decoder
         else:
-            decoder = self._model.decoder
+            decoder = model.decoder
         decoder.attn.applyMask(None)
-        self._model.train()
+        model.train()
 
         # define criterion of each GPU
-        criterion = self._new_nmt_criterion(self._trg_dict.size())
+        criterion = self._new_nmt_criterion(self._engine.trg_dict.size())
 
         perplexity_history = []
         checkpoint_files = []
         valid_acc, valid_ppl = None, None
 
         try:
-            self._logger.log(self._log_level, 'Optim options:%s' % (repr(self._optim)))
+            self._logger.log(self._log_level, 'Optim options:%s' % repr(optimizer))
             for epoch in range(self.start_epoch, self.max_epochs + 1):
                 self._logger.log(self._log_level, 'Training epoch %g... START' % epoch)
                 start_time_epoch = time.time()
 
                 #  (1) train for one epoch on the training set
-                train_loss, train_acc = self._train_epoch(epoch, train_data, self._model, criterion, self._optim)
+                train_loss, train_acc = self._train_epoch(epoch, train_data, criterion)
                 train_ppl = math.exp(min(train_loss, 100))
                 self._logger.log(self._log_level, 'trainEpoch Epoch %g Train loss: %g perplexity: %g accuracy: %g' % (
                     epoch, train_loss, train_ppl, (float(train_acc) * 100)))
@@ -182,39 +182,24 @@ class NMTEngineTrainer:
                                          epoch, valid_loss, valid_ppl, (float(valid_acc) * 100)))
 
                     # (3) update the learning rate
-
-                    self._optim.updateLearningRate(valid_loss, epoch)
+                    optimizer.updateLearningRate(valid_loss, epoch)
 
                     self._logger.log(self._log_level,
-                                     "trainModel Epoch %g Decaying learning rate to %g" % (epoch, self._optim.lr))
+                                     "trainModel Epoch %g Decaying learning rate to %g" % (epoch, optimizer.lr))
 
                 if save_path is not None and save_epochs > 0:
                     if len(checkpoint_files) > 0 and len(checkpoint_files) > save_epochs - 1:
                         os.remove(checkpoint_files.pop(0))
 
-                    opt_state_dict = self._model_params.__dict__
-                    model_state_dict = self._model.module.state_dict() if multi_gpu else self._model.state_dict()
-                    model_state_dict = {k: v for k, v in model_state_dict.items() if 'generator' not in k}
-                    generator_state_dict = self._model.generator.module.state_dict() if multi_gpu \
-                        else self._model.generator.state_dict()
-
-                    #  (4) drop a checkpoint
-                    checkpoint = {
-                        'model': model_state_dict,
-                        'generator': generator_state_dict,
-                        'dicts': {'src': self._src_dict, 'tgt': self._trg_dict},
-                        'opt': copy.deepcopy(opt_state_dict),
-                        'epoch': epoch,
-                        'optim': self._optim
-                    }
-
+                    # (4) drop a checkpoint
                     if valid_acc is not None:
                         checkpoint_file = \
-                            '%s_acc_%.2f_ppl_%.2f_e%d.pt' % (save_path, 100 * valid_acc, valid_ppl, epoch)
+                            '%s_acc_%.2f_ppl_%.2f_e%d' % (save_path, 100 * valid_acc, valid_ppl, epoch)
                     else:
-                        checkpoint_file = '%s_acc_NA_ppl_NA_e%d.pt' % (save_path, epoch)
+                        checkpoint_file = '%s_acc_NA_ppl_NA_e%d' % (save_path, epoch)
 
-                    torch.save(checkpoint, checkpoint_file)
+                    self._engine.save(checkpoint_file, multi_gpu=multi_gpu, epoch=epoch)
+
                     checkpoint_files.append(checkpoint_file)
                     self._logger.log(self._log_level,
                                      "Checkpoint for epoch %d saved to file %s" % (epoch, checkpoint_file))
@@ -229,10 +214,13 @@ class NMTEngineTrainer:
 
         return checkpoint_files[-1] if len(checkpoint_files) > 0 else None
 
-    def _train_epoch(self, epoch, train_data, model, criterion, optim):
+    def _train_epoch(self, epoch, train_data, criterion):
         total_loss, total_words, total_num_correct = 0, 0, 0
         report_loss, report_tgt_words, report_src_words, report_num_correct = 0, 0, 0, 0
         start = time.time()
+
+        model = self._engine.model
+        optimizer = self._engine.optimizer
 
         # Shuffle mini batch order.
         batch_order = torch.randperm(len(train_data))
@@ -249,7 +237,7 @@ class NMTEngineTrainer:
             outputs.backward(grad_output)
 
             # update the parameters
-            optim.step()
+            optimizer.step()
 
             num_words = targets.data.ne(Constants.PAD).sum()
             report_loss += loss
