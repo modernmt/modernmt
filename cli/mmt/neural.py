@@ -274,7 +274,8 @@ class NMTDecoder:
 
         if checkpoint is not None:
             logger.info('Storing model "%s" to %s' % (checkpoint, self._model))
-            os.rename(checkpoint, self._model)
+            os.rename(checkpoint + '.dat', self._model + '.dat')
+            os.rename(checkpoint + '.meta', self._model + '.meta')
         else:
             logger.info('checkpoint is None')
 
@@ -303,7 +304,7 @@ class NeuralEngine(Engine):
         # Neural specific models
         memory_path = os.path.join(decoder_path, 'memory')
         bpe_model = os.path.join(decoder_path, 'model.bpe')
-        pt_model = os.path.join(decoder_path, 'model.pt')
+        pt_model = os.path.join(decoder_path, 'model')
         self.memory = TranslationMemory(memory_path, self.source_lang, self.target_lang)
         self.bpe_processor = BPEPreprocessor(source_lang, target_lang, bpe_symbols, max_vocab_size, bpe_model)
         self.nmt_preprocessor = NMTPreprocessor(self.source_lang, self.target_lang, bpe_model)

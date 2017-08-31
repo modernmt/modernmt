@@ -55,14 +55,14 @@ public class ModelConfigFile {
     }
 
     public int getSuggestionsLimit() {
-        if (properties.contains("memory_suggestions_limit"))
+        if (properties.containsKey("memory_suggestions_limit"))
             return Integer.parseInt(properties.getProperty("memory_suggestions_limit"));
         else
             return 1; // default
     }
 
     public int getQueryMinimumResults() {
-        if (properties.contains("memory_query_min_results"))
+        if (properties.containsKey("memory_query_min_results"))
             return Integer.parseInt(properties.getProperty("memory_query_min_results"));
         else
             return 10; // default

@@ -63,7 +63,7 @@ class NMTDecoder:
                     continue
 
                 direction, model_name = map(str.strip, line.split("="))
-                direction = direction.lstrip('model.')
+                direction = direction[6:]
 
                 with log_timed_action(self._logger, 'Loading "%s" model from checkpoint' % direction):
                     self._engines_data[direction] = _EngineData.load(model_name,
