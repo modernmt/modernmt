@@ -55,11 +55,15 @@ class NMTDecoder:
         # map languageDirection -> _EngineData (direction is a string <src>__<trg>)
         self._engines_data = {}
 
-        # create and put in its map a TextProcessor and a NMTEngine for each line in model.map
-        with open(os.path.join(model_path, 'model.map'), "r") as model_map_file:
+        # create and put in its map a TextProcessor and a NMTEngine for each line in model.conf
+        with open(os.path.join(model_path, 'model.conf'), "r") as model_map_file:
             model_map_lines = model_map_file.readlines()
             for line in model_map_lines:
+                if not line.startswith('model.'):
+                    continue
+
                 direction, model_name = map(str.strip, line.split("="))
+                direction = direction.lstrip('model.')
 
                 with log_timed_action(self._logger, 'Loading "%s" model from checkpoint' % direction):
                     self._engines_data[direction] = _EngineData.load(model_name,

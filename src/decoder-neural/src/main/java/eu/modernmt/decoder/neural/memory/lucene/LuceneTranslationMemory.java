@@ -38,6 +38,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
     private final Logger logger = LogManager.getLogger(LuceneTranslationMemory.class);
 
+    private final int minQuerySize;
     private final Directory indexDirectory;
     private final SentenceQueryBuilder queries;
     private final Rescorer rescorer;
@@ -54,23 +55,24 @@ public class LuceneTranslationMemory implements TranslationMemory {
         return directory;
     }
 
-    public LuceneTranslationMemory(LanguageIndex languages, File indexPath) throws IOException {
-        this(languages, indexPath, new LevenshteinRescorer());
+    public LuceneTranslationMemory(LanguageIndex languages, File indexPath, int minQuerySize) throws IOException {
+        this(languages, indexPath, new LevenshteinRescorer(), minQuerySize);
     }
 
-    public LuceneTranslationMemory(LanguageIndex languages, Directory directory) throws IOException {
-        this(languages, directory, new LevenshteinRescorer());
+    public LuceneTranslationMemory(LanguageIndex languages, Directory directory, int minQuerySize) throws IOException {
+        this(languages, directory, new LevenshteinRescorer(), minQuerySize);
     }
 
-    public LuceneTranslationMemory(LanguageIndex languages, File indexPath, Rescorer rescorer) throws IOException {
-        this(languages, FSDirectory.open(forceMkdir(indexPath)), rescorer);
+    public LuceneTranslationMemory(LanguageIndex languages, File indexPath, Rescorer rescorer, int minQuerySize) throws IOException {
+        this(languages, FSDirectory.open(forceMkdir(indexPath)), rescorer, minQuerySize);
     }
 
-    public LuceneTranslationMemory(LanguageIndex languages, Directory directory, Rescorer rescorer) throws IOException {
+    public LuceneTranslationMemory(LanguageIndex languages, Directory directory, Rescorer rescorer, int minQuerySize) throws IOException {
         this.indexDirectory = directory;
         this.queries = new SentenceQueryBuilder();
         this.rescorer = rescorer;
         this.languages = languages;
+        this.minQuerySize = minQuerySize;
 
         // Index writer setup
         IndexWriterConfig indexConfig = new IndexWriterConfig(Version.LUCENE_4_10_4, Analyzers.getTrainAnalyzer());
@@ -227,7 +229,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
         searcher.setSimilarity(new CustomSimilarity());
 
-        int queryLimit = Math.max(10, limit * 2);
+        int queryLimit = Math.max(this.minQuerySize, limit * 2);
         ScoreDoc[] docs = searcher.search(query, queryLimit).scoreDocs;
 
         ScoreEntry[] entries = new ScoreEntry[docs.length];

@@ -32,18 +32,21 @@ public class NeuralDecoder implements Decoder, DataListenerProvider {
 
     private static final Logger logger = LogManager.getLogger(NeuralDecoder.class);
 
-    private static final int SUGGESTIONS_LIMIT = 1;
+    private final int suggestionsLimit;
     private final ExecutionQueue executor;
     private final TranslationMemory memory;
     private final Set<LanguagePair> directions;
 
     public NeuralDecoder(File modelPath, int[] gpus) throws NeuralDecoderException {
-        File mappingFile = new File(modelPath, "model.map");
+        ModelConfigFile config;
         try {
-            this.directions = ModelMappingFile.readAvailableTranslationDirections(mappingFile);
+            config = ModelConfigFile.load(new File(modelPath, "model.conf"));
         } catch (IOException e) {
-            throw new NeuralDecoderException("Failed to read file model.map", e);
+            throw new NeuralDecoderException("Failed to read file model.conf", e);
         }
+
+        this.directions = config.getAvailableTranslationDirections();
+        this.suggestionsLimit = config.getSuggestionsLimit();
 
         File pythonHome = new File(FileConst.getLibPath(), "pynmt");
         File storageModelPath = new File(modelPath, "memory");
@@ -51,7 +54,7 @@ public class NeuralDecoder implements Decoder, DataListenerProvider {
         this.executor = ExecutionQueue.newInstance(pythonHome, modelPath, gpus);
 
         try {
-            this.memory = new LuceneTranslationMemory(new LanguageIndex(this.directions), storageModelPath);
+            this.memory = new LuceneTranslationMemory(new LanguageIndex(this.directions), storageModelPath, config.getQueryMinimumResults());
         } catch (IOException e) {
             throw new NeuralDecoderException("Failed to initialize memory", e);
         }
@@ -79,7 +82,7 @@ public class NeuralDecoder implements Decoder, DataListenerProvider {
         ScoreEntry[] suggestions;
 
         try {
-            suggestions = memory.search(direction, text, contextVector, SUGGESTIONS_LIMIT);
+            suggestions = memory.search(direction, text, contextVector, this.suggestionsLimit);
         } catch (IOException e) {
             throw new NeuralDecoderException("Failed to retrieve suggestions from memory", e);
         }
