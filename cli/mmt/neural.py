@@ -88,13 +88,13 @@ class BPEPreprocessor:
         return SubwordTextProcessor.load_from_file(model)
 
 
-class OpenNMTPreprocessor:
+class NMTPreprocessor:
     def __init__(self, source_lang, target_lang, bpe_model):
         self._source_lang = source_lang
         self._target_lang = target_lang
         self._bpe_model = bpe_model
 
-        self._logger = logging.getLogger('mmt.neural.OpenNMTPreprocessor')
+        self._logger = logging.getLogger('mmt.neural.NMTPreprocessor')
         self._ram_limit_mb = 1024
 
     def process(self, corpora, valid_corpora, output_path, working_dir='.', dump_dicts=False):
@@ -113,14 +113,14 @@ class OpenNMTPreprocessor:
             trg_vocab.add(word)
 
         self._logger.info('Preparing training corpora')
-        self._logger.info('Storing OpenNMT preprocessed training data to "%s"' % output_path)
+        self._logger.info('Storing NMT preprocessed training data to "%s"' % output_path)
         self._prepare_sharded_dataset(output_path, corpora, bpe_encoder, src_vocab, trg_vocab)
 
         self._logger.info('Preparing validation corpora')
         src_valid, trg_valid = self._prepare_corpora(valid_corpora, bpe_encoder, src_vocab, trg_vocab)
 
         output_file = os.path.join(output_path, 'train_processed.train.pt')
-        self._logger.info('Storing OpenNMT preprocessed validation data to "%s"' % output_file)
+        self._logger.info('Storing NMT preprocessed validation data to "%s"' % output_file)
         torch.save({
             'dicts': {'src': src_vocab, 'tgt': trg_vocab},
             'valid': {'src': src_valid, 'tgt': trg_valid},
@@ -130,10 +130,10 @@ class OpenNMTPreprocessor:
             src_dict_file = os.path.join(working_dir, 'train_processed.src.dict')
             trg_dict_file = os.path.join(working_dir, 'train_processed.trg.dict')
 
-            self._logger.info('Storing OpenNMT preprocessed source dictionary "%s"' % src_dict_file)
+            self._logger.info('Storing NMT preprocessed source dictionary "%s"' % src_dict_file)
             src_vocab.writeFile(src_dict_file)
 
-            self._logger.info('Storing OpenNMT preprocessed target dictionary "%s"' % trg_dict_file)
+            self._logger.info('Storing NMT preprocessed target dictionary "%s"' % trg_dict_file)
             trg_vocab.writeFile(trg_dict_file)
 
     def _prepare_corpora(self, corpora, bpe_encoder, src_vocab, trg_vocab):
@@ -212,7 +212,7 @@ class OpenNMTPreprocessor:
         return builder.build(self._ram_limit_mb)
 
 
-class OpenNMTDecoder:
+class NMTDecoder:
     def __init__(self, model, source_lang, target_lang, gpus):
         self._model = model
         self._source_lang = source_lang
@@ -220,7 +220,7 @@ class OpenNMTDecoder:
         self._gpus = gpus
 
     def train(self, data_path, working_dir):
-        logger = logging.getLogger('mmt.neural.OpenNMTDecoder')
+        logger = logging.getLogger('mmt.neural.NMTDecoder')
         logger.info('Training started for data "%s"' % data_path)
 
         save_model = os.path.join(data_path, 'train_model')
@@ -306,8 +306,8 @@ class NeuralEngine(Engine):
         pt_model = os.path.join(decoder_path, 'model.pt')
         self.memory = TranslationMemory(memory_path, self.source_lang, self.target_lang)
         self.bpe_processor = BPEPreprocessor(source_lang, target_lang, bpe_symbols, max_vocab_size, bpe_model)
-        self.onmt_preprocessor = OpenNMTPreprocessor(self.source_lang, self.target_lang, bpe_model)
-        self.decoder = OpenNMTDecoder(pt_model, self.source_lang, self.target_lang, gpus)
+        self.nmt_preprocessor = NMTPreprocessor(self.source_lang, self.target_lang, bpe_model)
+        self.decoder = NMTDecoder(pt_model, self.source_lang, self.target_lang, gpus)
 
     def is_tuning_supported(self):
         return False
@@ -362,7 +362,7 @@ class NeuralEngineBuilder(EngineBuilder):
 
             corpora = filter(None, [args.processed_bilingual_corpora, args.bilingual_corpora])[0]
 
-            self._engine.onmt_preprocessor.process(corpora, validation_corpora, args.onmt_training_path,
+            self._engine.nmt_preprocessor.process(corpora, validation_corpora, args.onmt_training_path,
                                                    working_dir=working_dir)
 
     @EngineBuilder.Step('Neural decoder training')

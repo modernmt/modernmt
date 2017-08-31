@@ -13,7 +13,7 @@
         <module>aligner-fastalign</module>
         <module>contextanalyzer-lucene</module>
         <module>decoder-phrasebased</module>
-        <module>decoder-opennmt</module>
+        <module>decoder-neural</module>
         <module>persistence-cassandra</module>
 
         <module>core</module>

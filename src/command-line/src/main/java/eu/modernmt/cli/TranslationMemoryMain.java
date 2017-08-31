@@ -1,7 +1,7 @@
 package eu.modernmt.cli;
 
 import eu.modernmt.cli.log4j.Log4jConfiguration;
-import eu.modernmt.decoder.opennmt.memory.lucene.LuceneTranslationMemory;
+import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Domain;

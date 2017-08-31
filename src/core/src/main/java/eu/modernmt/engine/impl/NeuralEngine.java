@@ -4,8 +4,8 @@ import eu.modernmt.config.EngineConfig;
 import eu.modernmt.config.NeuralDecoderConfig;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.decoder.Decoder;
-import eu.modernmt.decoder.opennmt.OpenNMTDecoder;
-import eu.modernmt.decoder.opennmt.OpenNMTException;
+import eu.modernmt.decoder.neural.NeuralDecoder;
+import eu.modernmt.decoder.neural.NeuralDecoderException;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.ContributionOptions;
 import eu.modernmt.engine.Engine;
@@ -20,7 +20,7 @@ import java.util.Collection;
 public class NeuralEngine extends Engine {
 
     private static final ContributionOptions CONTRIBUTION_OPTIONS = new ContributionOptions(true, false);
-    private final OpenNMTDecoder decoder;
+    private final NeuralDecoder decoder;
 
     public NeuralEngine(EngineConfig config) throws BootstrapException {
         super(config);
@@ -28,11 +28,11 @@ public class NeuralEngine extends Engine {
         try {
             NeuralDecoderConfig decoderConfig = (NeuralDecoderConfig) config.getDecoderConfig();
             if (decoderConfig.isEnabled())
-                this.decoder = new OpenNMTDecoder(new File(this.models, "decoder"), decoderConfig.getGPUs());
+                this.decoder = new NeuralDecoder(new File(this.models, "decoder"), decoderConfig.getGPUs());
             else
                 this.decoder = null;
-        } catch (OpenNMTException e) {
-            throw new BootstrapException("Failed to instantiate OpenNMT decoder", e);
+        } catch (NeuralDecoderException e) {
+            throw new BootstrapException("Failed to instantiate NMT Decoder", e);
         }
     }
 

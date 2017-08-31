@@ -30,7 +30,7 @@
         </dependency>
         <dependency>
             <groupId>eu.modernmt</groupId>
-            <artifactId>mmt-decoder-opennmt</artifactId>
+            <artifactId>mmt-decoder-neural</artifactId>
             <version>${mmt.version}</version>
         </dependency>
         <dependency>
