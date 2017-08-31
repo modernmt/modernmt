@@ -106,9 +106,4 @@ class NMTDecoder:
                                                   max_sent_length=self.max_sent_length,
                                                   replace_unk=self.replace_unk)
 
-        # (4) Reset engine if needed
-        if processed_suggestions is not None:
-            with log_timed_action(self._logger, 'Restoring model initial state', log_start=False):
-                engine.reset_model()
-
         return text_processor.decode_tokens(pred_batch[0])

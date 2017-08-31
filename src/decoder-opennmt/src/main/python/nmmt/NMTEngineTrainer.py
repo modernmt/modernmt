@@ -82,14 +82,6 @@ class NMTEngineTrainer:
         self.start_epoch = 1  # The epoch from which to start
         self.min_perplexity_decrement = .02  # If perplexity decrement is lower than this percentage, stop training
 
-    @property
-    def learning_rate(self):
-        return self._optim.lr
-
-    @learning_rate.setter
-    def learning_rate(self, value):
-        self._optim.lr = value
-
     def set_log_level(self, level):
         self._log_level = level
 

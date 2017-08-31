@@ -231,7 +231,7 @@ class OpenNMTDecoder:
         train_data = ShardedDataset.load(data_path, 64, cuda=self._gpus, volatile=False)
         logger.info('Loading training data... END %.2fs' % (time.time() - start_time))
 
-        # Loading validation data and dictionaries ----------------------------------------------------------------------------------------
+        # Loading validation data and dictionaries ---------------------------------------------------------------------
         data_file = os.path.join(data_path, 'train_processed.train.pt')
         logger.info('Loading validation data and dictionaries from "%s"... START' % data_file)
         start_time = time.time()
@@ -248,7 +248,7 @@ class OpenNMTDecoder:
         trainer = NMTEngineTrainer.new_instance(src_dict, trg_dict, random_seed=3435, gpu_ids=self._gpus)
         logger.info('Building model... END %.2fs' % (time.time() - start_time))
 
-        # Creating validation data sets -------------------------------------------------------------------------------------------
+        # Creating validation data sets --------------------------------------------------------------------------------
         logger.info('Creating Data... START')
         start_time = time.time()
         valid_data = onmt.Dataset(src_valid, trg_valid, trainer.batch_size, self._gpus, volatile=True)

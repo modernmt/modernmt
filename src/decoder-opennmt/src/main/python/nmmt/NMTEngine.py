@@ -4,7 +4,7 @@ import torch.nn as nn
 
 from nmmt.NMTEngineTrainer import NMTEngineTrainer
 from nmmt.internal_utils import opts_object, log_timed_action
-from onmt import Models, Translator, Constants, Dataset
+from onmt import Models, Translator, Constants, Dataset, Optim
 
 
 class _Translator(Translator):
@@ -106,10 +106,10 @@ class NMTEngine:
 
     def _ensure_model_loaded(self):
         if not self._model_loaded:
-            self.reset_model()
+            self._reset_model()
             self._model_loaded = True
 
-    def reset_model(self):
+    def _reset_model(self):
         model_state_dict = {k: v for k, v in sorted(self._checkpoint['model'].items()) if 'generator' not in k}
         model_state_dict.update({"generator." + k: v for k, v in sorted(self._checkpoint['generator'].items())})
         self._model.load_state_dict(model_state_dict)
@@ -122,8 +122,6 @@ class NMTEngine:
         self._optim.optimizer.load_state_dict(self._checkpoint['optim'].optimizer.state_dict())
 
     def tune(self, suggestions, epochs=None, learning_rate=None):
-        self._ensure_model_loaded()
-
         if self._tuner is None:
             self._tuner = NMTEngineTrainer(self._model, self._optim, self._src_dict, self._trg_dict,
                                            model_params=self._model_params, gpu_ids=([0] if self._using_cuda else None))
@@ -135,8 +133,15 @@ class NMTEngine:
         if epochs is None or learning_rate is None:
             _epochs, _learning_rate = self._estimate_tuning_parameters(suggestions)
 
-            self._tuner.min_epochs = self._tuner.max_epochs = epochs if epochs is not None else _epochs
-            self._tuner.learning_rate = learning_rate if learning_rate is not None else _learning_rate
+            epochs = epochs if epochs is not None else _epochs
+            learning_rate = learning_rate if learning_rate is not None else _learning_rate
+
+        self._tuner.min_epochs = self._tuner.max_epochs = epochs
+        self._optim.lr = learning_rate
+
+        # Reset model
+        with log_timed_action(self._logger, 'Restoring model initial state', log_start=False):
+            self._reset_model()
 
         # Convert words to indexes [suggestions]
         tuning_src_batch, tuning_trg_batch = [], []
@@ -151,7 +156,7 @@ class NMTEngine:
 
         # Run tuning
         log_message = 'Tuning on %d suggestions (epochs = %d epochs, learning_rate = %.2f )' % (
-            len(suggestions), self._tuner.min_epochs, self._tuner.learning_rate)
+            len(suggestions), epochs, learning_rate)
 
         with log_timed_action(self._logger, log_message, log_start=False):
             self._tuner.train_model(tuning_dataset, save_epochs=0)
