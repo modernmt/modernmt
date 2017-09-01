@@ -44,8 +44,6 @@ class NMTEngine:
             self.start_decay_at = 10
 
             # Tuning options -------------------------------------------------------------------------------------------
-            self.memory_query_min_results = 10
-            self.memory_suggestions_limit = 1
             self.tuning_max_learning_rate = 0.2
             self.tuning_max_epochs = 5
 
