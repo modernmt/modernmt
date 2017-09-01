@@ -330,7 +330,7 @@ class NeuralEngine(Engine):
     def type(self):
         return 'neural'
 
-    def tune(self, validation_path, working_dir, max_lines=100, min_bleu_delta=0.5, min_lr_delta=0.01, max_epochs=10):
+    def tune(self, validation_path, working_dir, max_lines=1000, lr_delta=0.1, max_epochs=10):
         logger = logging.getLogger('NeuralEngine.Tuning')
 
         # Loading data and decoder -------------------------------------------------------------------------------------
@@ -362,41 +362,20 @@ class NeuralEngine(Engine):
                 stream.write('\n')
 
         # Tuning -------------------------------------------------------------------------------------------------------
-        run = 1
-        best_lr, best_bleu = None, None
-        history_lr, history_bleu = None, None
-        current_lr, current_bleu = 1., None
+        probes = []
+        runs = int(1. / lr_delta)
 
-        while True:
-            with _log_timed_action(logger, 'Tuning run %d' % run):
+        for run in range(1, runs + 1):
+            learning_rate = round(run * lr_delta, 5)
+
+            with _log_timed_action(logger, 'Tuning run %d/%d' % (1, runs)):
                 output_file = os.path.join(working_dir, 'run%d.out' % run)
-                current_bleu = self._tune_run(decoder, content, current_lr, max_epochs, output_file, reference_file)
+                bleu_score = self._tune_run(decoder, content, learning_rate, max_epochs, output_file, reference_file)
 
-            logger.info('Run %d completed: lr = %f, bleu = %f' % (run, current_lr, current_bleu))
+            logger.info('Run %d completed: lr=%f, bleu=%f' % (run, learning_rate, bleu_score))
+            probes.append((learning_rate, bleu_score))
 
-            if best_lr is None or best_bleu < current_bleu:
-                best_lr, best_bleu = current_lr, current_bleu
-
-            if history_lr is None:
-                history_lr, history_bleu = current_lr, current_bleu
-                current_lr, current_bleu = .5, None
-            else:
-                direction = -1 if history_lr > current_lr else 1
-                quality_increment = -1 if history_bleu > current_bleu else 1
-                lr_delta = abs(history_lr - current_lr)
-                bleu_delta = abs(history_bleu - current_bleu)
-
-                if bleu_delta < min_bleu_delta and lr_delta < min_lr_delta:
-                    logger.info('Tuning terminate on bleu_delta=%f lr_delta=%f' % (bleu_delta, lr_delta))
-                    break
-                else:
-                    new_lr = current_lr + quality_increment * direction * (lr_delta / 2)
-                    logger.info('Continuing tuning from (lr=%f, bleu=%f) to (lr=%f, bleu=%f), new lr = %f'
-                                % (history_lr, history_bleu, current_lr, current_bleu, new_lr))
-                    history_lr, history_bleu = current_lr, current_bleu
-                    current_lr, current_bleu = new_lr, None
-
-            run += 1
+        best_lr, best_bleu = sorted(probes, key=lambda x: x[1], reverse=True)[0]
 
         with _log_timed_action(logger, 'Updating engine with learning_rate %f (bleu=%f)' % (best_lr, best_bleu)):
             engine = decoder.get_engine(self.source_lang, self.target_lang)
@@ -407,9 +386,12 @@ class NeuralEngine(Engine):
     def _tune_run(self, decoder, corpora, lr, epochs, output_file, reference_file):
         with open(output_file, 'wb') as output:
             for source, target in corpora:
-                suggestion = Suggestion(source, target, 1.)
+                if lr == 0.:
+                    suggestions = None
+                else:
+                    suggestions = [Suggestion(source, target, 1.)]
                 translation = decoder.translate(self.source_lang, self.target_lang, source,
-                                                suggestions=[suggestion], tuning_epochs=epochs, tuning_learning_rate=lr)
+                                                suggestions=suggestions, tuning_epochs=epochs, tuning_learning_rate=lr)
 
                 output.write(translation.encode('utf-8'))
                 output.write('\n')
