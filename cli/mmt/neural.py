@@ -368,7 +368,7 @@ class NeuralEngine(Engine):
         for run in range(1, runs + 1):
             learning_rate = round(run * lr_delta, 5)
 
-            with _log_timed_action(logger, 'Tuning run %d/%d' % (1, runs)):
+            with _log_timed_action(logger, 'Tuning run %d/%d' % (run, runs)):
                 output_file = os.path.join(working_dir, 'run%d.out' % run)
                 bleu_score = self._tune_run(decoder, content, learning_rate, max_epochs, output_file, reference_file)
 
