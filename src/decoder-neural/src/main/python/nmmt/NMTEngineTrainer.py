@@ -1,3 +1,4 @@
+import glob
 import logging
 import math
 import os
@@ -189,7 +190,9 @@ class NMTEngineTrainer:
 
                 if save_path is not None and save_epochs > 0:
                     if len(checkpoint_files) > 0 and len(checkpoint_files) > save_epochs - 1:
-                        os.remove(checkpoint_files.pop(0))
+                        checkpoint_file = checkpoint_files.pop(0)
+                        for f in glob.glob(checkpoint_file + '.*'):
+                            os.remove(f)
 
                     # (4) drop a checkpoint
                     if valid_acc is not None:
