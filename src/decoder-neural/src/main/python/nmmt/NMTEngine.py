@@ -176,8 +176,22 @@ class NMTEngine:
             self._tuner.train_model(tuning_dataset, save_epochs=0)
 
     def _estimate_tuning_parameters(self, suggestions):
-        # TODO: it should return an actual learning_rate and epochs based on the quality of the suggestions
-        return self.parameters.tuning_max_epochs, self.parameters.tuning_max_learning_rate
+        # it returns an actual learning_rate and epochs based on the quality of the suggestions
+        # it is assured that at least one suggestion is provided (hence, len(suggestions) > 0)
+        average_score = 0
+        for sugg in suggestions:
+            average_score += sugg.score
+        average_score /= len(suggestions)
+
+        # Empirically defined function to make the number of epochs dependent to the quality of the suggestions
+        # epochs = 7 * average_score + 1
+        tuning_epochs = 7 * self.parameters.tuning_max_epochs + 1
+
+        # Empirically defined function to make the learning rate dependent to the quality of the suggestions
+        # lr = sqrt(average_score) / 2
+        tuning_learning_rate = math.sqrt(average_score) / 2.
+
+        return tuning_epochs, tuning_learning_rate
 
     def translate(self, text, beam_size=5, max_sent_length=160, replace_unk=False, n_best=1):
         self._ensure_model_loaded()

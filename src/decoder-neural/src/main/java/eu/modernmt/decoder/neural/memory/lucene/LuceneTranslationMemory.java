@@ -5,6 +5,7 @@ import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.decoder.neural.memory.TranslationMemory;
 import eu.modernmt.decoder.neural.memory.lucene.rescoring.LevenshteinRescorer;
+import eu.modernmt.decoder.neural.memory.lucene.rescoring.F1BleuRescorer;
 import eu.modernmt.decoder.neural.memory.lucene.rescoring.Rescorer;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
@@ -56,11 +57,13 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     public LuceneTranslationMemory(LanguageIndex languages, File indexPath, int minQuerySize) throws IOException {
-        this(languages, indexPath, new LevenshteinRescorer(), minQuerySize);
+//        this(languages, indexPath, new LevenshteinRescorer(), minQuerySize);
+        this(languages, indexPath, new F1BleuRescorer(), minQuerySize);
     }
 
     public LuceneTranslationMemory(LanguageIndex languages, Directory directory, int minQuerySize) throws IOException {
-        this(languages, directory, new LevenshteinRescorer(), minQuerySize);
+//        this(languages, directory, new LevenshteinRescorer(), minQuerySize);
+        this(languages, directory, new F1BleuRescorer(), minQuerySize);
     }
 
     public LuceneTranslationMemory(LanguageIndex languages, File indexPath, Rescorer rescorer, int minQuerySize) throws IOException {

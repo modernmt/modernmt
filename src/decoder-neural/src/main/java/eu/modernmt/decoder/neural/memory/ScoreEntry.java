@@ -52,6 +52,7 @@ public class ScoreEntry implements Comparable<ScoreEntry> {
                 "domain=" + domain +
                 ", sentence=" + Arrays.toString(sentence) +
                 ", translation=" + Arrays.toString(translation) +
+                ", score=" + score +
                 '}';
     }
 }
