@@ -1,5 +1,5 @@
 from SubwordTextProcessor import SubwordTextProcessor
 from NMTEngine import NMTEngine
 from NMTEngineTrainer import NMTEngineTrainer, TrainingInterrupt
-from NMTDecoder import NMTDecoder
+from NMTDecoder import NMTDecoder, Suggestion
 from ShardedDataset import ShardedDataset

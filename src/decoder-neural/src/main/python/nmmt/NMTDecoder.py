@@ -18,6 +18,13 @@ class ModelFileNotFoundException(BaseException):
         self.message = "Decoder model file not found: %s" % path
 
 
+class Suggestion:
+    def __init__(self, source, target, score):
+        self.source = source
+        self.target = target
+        self.score = score
+
+
 class _EngineData:
     @staticmethod
     def load(model_name, base_path='.', using_cuda=True):
@@ -74,6 +81,12 @@ class NMTDecoder:
         self.beam_size = 5
         self.max_sent_length = 160
         self.replace_unk = False
+
+    def get_engine(self, source_lang, target_lang):
+        direction = source_lang + '__' + target_lang
+        if direction not in self._engines_data:
+            return None
+        return self._engines_data[direction].engine
 
     def translate(self, source_lang, target_lang, text, suggestions=None, n_best=1,
                   tuning_epochs=None, tuning_learning_rate=None):

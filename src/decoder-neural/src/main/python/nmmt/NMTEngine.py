@@ -45,7 +45,7 @@ class NMTEngine:
 
             # Tuning options -------------------------------------------------------------------------------------------
             self.tuning_max_learning_rate = 0.2
-            self.tuning_max_epochs = 5
+            self.tuning_max_epochs = 10
 
     @staticmethod
     def load_from_checkpoint(checkpoint_path, using_cuda):
@@ -102,8 +102,7 @@ class NMTEngine:
         return NMTEngine(src_dict, trg_dict, model, optim, model_opt, checkpoint, using_cuda)
 
     def __init__(self, src_dict, trg_dict, model, optimizer, parameters=None, checkpoint=None, using_cuda=True):
-        self._logger = logging.getLogger('ommt.NMTEngine')
-        self._log_level = logging.INFO
+        self._logger = logging.getLogger('nmmt.NMTEngine')
         self._model_loaded = False
 
         self.src_dict = src_dict

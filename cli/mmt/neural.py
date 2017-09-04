@@ -1,12 +1,13 @@
 import glob
 import logging
 import os
+import random
 import shutil
 import sys
 
 import time
 
-from cli import mmt_javamain, LIB_DIR
+from cli import mmt_javamain, LIB_DIR, PYOPT_DIR
 from cli.libs import fileutils
 from cli.libs import shell
 from cli.mmt import BilingualCorpus
@@ -16,9 +17,29 @@ from cli.mmt.processing import TrainingPreprocessor
 sys.path.insert(0, os.path.abspath(os.path.join(LIB_DIR, 'pynmt')))
 
 import onmt
-from nmmt import NMTEngineTrainer, SubwordTextProcessor, TrainingInterrupt
-from nmmt import ShardedDataset
+import nmmt
+from nmmt import NMTEngineTrainer, SubwordTextProcessor, TrainingInterrupt, ShardedDataset, Suggestion
 import torch
+
+
+def _log_timed_action(logger, op, level=logging.INFO, log_start=True):
+    class _logger:
+        def __init__(self):
+            self.logger = logger
+            self.level = level
+            self.op = op
+            self.start_time = None
+            self.log_start = log_start
+
+        def __enter__(self):
+            self.start_time = time.time()
+            if self.log_start:
+                self.logger.log(self.level, '%s... START' % self.op)
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self.logger.log(self.level, '%s END %.2fs' % (self.op, time.time() - self.start_time))
+
+    return _logger()
 
 
 class TranslationMemory:
@@ -77,9 +98,8 @@ class BPEPreprocessor:
             self._logger.info('Creating BPE model')
             vb_builder = SubwordTextProcessor.Builder(symbols=self._bpe_symbols,
                                                       max_vocabulary_size=self._max_vocab_size)
-            self.encoder = vb_builder.build(
-                [_ReaderWrapper(c, [self._source_lang, self._target_lang]) for c in corpora])
-            self.encoder.save_to_file(self._bpe_model)
+            encoder = vb_builder.build([_ReaderWrapper(c, [self._source_lang, self._target_lang]) for c in corpora])
+            encoder.save_to_file(self._bpe_model)
         else:
             self._logger.info('Creating BPE model: do nothing because it already exists')
 
@@ -214,73 +234,61 @@ class NMTPreprocessor:
 
 class NMTDecoder:
     def __init__(self, model, source_lang, target_lang, gpus):
-        self._model = model
+        self._logger = logging.getLogger('mmt.neural.NMTDecoder')
+
+        self.model = model
         self._source_lang = source_lang
         self._target_lang = target_lang
         self._gpus = gpus
 
     def train(self, data_path, working_dir):
-        logger = logging.getLogger('mmt.neural.NMTDecoder')
-        logger.info('Training started for data "%s"' % data_path)
+        self._logger.info('Training started for data "%s"' % data_path)
 
-        save_model = os.path.join(data_path, 'train_model')
+        save_model = os.path.join(working_dir, 'train_model')
 
         # Loading training data ----------------------------------------------------------------------------------------
-        logger.info('Loading training data from "%s"... START' % data_path)
-        start_time = time.time()
-        train_data = ShardedDataset.load(data_path, 64, cuda=self._gpus, volatile=False)
-        logger.info('Loading training data... END %.2fs' % (time.time() - start_time))
+        with _log_timed_action(self._logger, 'Loading training data from "%s"' % data_path):
+            train_data = ShardedDataset.load(data_path, 64, cuda=self._gpus, volatile=False)
 
         # Loading validation data and dictionaries ---------------------------------------------------------------------
         data_file = os.path.join(data_path, 'train_processed.train.pt')
-        logger.info('Loading validation data and dictionaries from "%s"... START' % data_file)
-        start_time = time.time()
-        data_set = torch.load(data_file)
-        logger.info('Loading validation data... END %.2fs' % (time.time() - start_time))
 
-        src_dict, trg_dict = data_set['dicts']['src'], data_set['dicts']['tgt']
-        src_valid, trg_valid = data_set['valid']['src'], data_set['valid']['tgt']
+        with _log_timed_action(self._logger, 'Loading validation data and dictionaries from "%s"' % data_file):
+            data_set = torch.load(data_file)
+            src_dict, trg_dict = data_set['dicts']['src'], data_set['dicts']['tgt']
+            src_valid, trg_valid = data_set['valid']['src'], data_set['valid']['tgt']
+            valid_data = onmt.Dataset(src_valid, trg_valid, 64, self._gpus, volatile=True)
 
         # Creating trainer ---------------------------------------------------------------------------------------------
-
-        logger.info('Building model... START')
-        start_time = time.time()
-        trainer = NMTEngineTrainer.new_instance(src_dict, trg_dict, random_seed=3435, gpu_ids=self._gpus)
-        logger.info('Building model... END %.2fs' % (time.time() - start_time))
-
-        # Creating validation data sets --------------------------------------------------------------------------------
-        logger.info('Creating Data... START')
-        start_time = time.time()
-        valid_data = onmt.Dataset(src_valid, trg_valid, trainer.batch_size, self._gpus, volatile=True)
-        logger.info('Creating Data... END %.2fs' % (time.time() - start_time))
-
-        logger.info(' Vocabulary size. source = %d; target = %d' % (src_dict.size(), trg_dict.size()))
-        logger.info(' Maximum batch size. %d' % trainer.batch_size)
+        with _log_timed_action(self._logger, 'Building trainer'):
+            trainer = NMTEngineTrainer.new_instance(src_dict, trg_dict, random_seed=3435, gpu_ids=self._gpus)
 
         # Training model -----------------------------------------------------------------------------------------------
-        logger.info('Training model... START')
+        self._logger.info(' Vocabulary size. source = %d; target = %d' % (src_dict.size(), trg_dict.size()))
+        self._logger.info(' Maximum batch size. %d' % trainer.batch_size)
+
         try:
-            start_time = time.time()
-            checkpoint = trainer.train_model(train_data, valid_data=valid_data, save_path=save_model)
-            logger.info('Training model... END %.2fs' % (time.time() - start_time))
+            with _log_timed_action(self._logger, 'Train model'):
+                checkpoint = trainer.train_model(train_data, valid_data=valid_data, save_path=save_model)
         except TrainingInterrupt as e:
             checkpoint = e.checkpoint
-            logger.info('Training model... INTERRUPTED %.2fs' % (time.time() - start_time))
 
         # Saving last checkpoint ---------------------------------------------------------------------------------------
-        model_folder = os.path.abspath(os.path.join(self._model, os.path.pardir))
-        if not os.path.isdir(model_folder):
-            os.mkdir(model_folder)
+        if checkpoint is None:
+            raise Exception('Training interrupted before first checkpoint could be saved')
 
-        if checkpoint is not None:
-            logger.info('Storing model "%s" to %s' % (checkpoint, self._model))
-            os.rename(checkpoint + '.dat', self._model + '.dat')
-            os.rename(checkpoint + '.meta', self._model + '.meta')
-        else:
-            logger.info('checkpoint is None')
+        with _log_timed_action(self._logger, 'Storing model'):
+            model_folder = os.path.abspath(os.path.join(self.model, os.path.pardir))
+            if not os.path.isdir(model_folder):
+                os.mkdir(model_folder)
 
-        with open(os.path.join(model_folder, 'model.conf'), 'w') as model_map:
-            model_map.write('model.%s__%s = model\n' % (self._source_lang, self._target_lang))
+            for f in glob.glob(checkpoint + '.*'):
+                _, extension = os.path.splitext(f)
+                os.rename(f, self.model + extension)
+
+            with open(os.path.join(model_folder, 'model.conf'), 'w') as model_map:
+                filename = os.path.basename(self.model)
+                model_map.write('model.%s__%s = %s\n' % (self._source_lang, self._target_lang, filename))
 
 
 class NeuralEngine(Engine):
@@ -299,12 +307,18 @@ class NeuralEngine(Engine):
         else:
             gpus = None
 
+        self._gpus = gpus
+        self._bleu_script = os.path.join(PYOPT_DIR, 'mmt-bleu.perl')
+
         decoder_path = os.path.join(self.models_path, 'decoder')
 
         # Neural specific models
+        model_name = 'model.%s__%s' % (source_lang, target_lang)
+
         memory_path = os.path.join(decoder_path, 'memory')
-        bpe_model = os.path.join(decoder_path, 'model.bpe')
-        pt_model = os.path.join(decoder_path, 'model')
+        bpe_model = os.path.join(decoder_path, model_name + '.bpe')
+        pt_model = os.path.join(decoder_path, model_name)
+
         self.memory = TranslationMemory(memory_path, self.source_lang, self.target_lang)
         self.bpe_processor = BPEPreprocessor(source_lang, target_lang, bpe_symbols, max_vocab_size, bpe_model)
         self.nmt_preprocessor = NMTPreprocessor(self.source_lang, self.target_lang, bpe_model)
@@ -315,6 +329,78 @@ class NeuralEngine(Engine):
 
     def type(self):
         return 'neural'
+
+    def tune(self, validation_path, working_dir, max_lines=1000, lr_delta=0.1, max_epochs=10):
+        logger = logging.getLogger('NeuralEngine.Tuning')
+
+        # Loading data and decoder -------------------------------------------------------------------------------------
+        content = []
+        with _log_timed_action(logger, 'Creating validation data'):
+            validation_corpora, _ = self.training_preprocessor.process(
+                BilingualCorpus.list(validation_path), os.path.join(working_dir, 'valid_set'))
+
+            for corpus in validation_corpora:
+                with corpus.reader([self.source_lang, self.target_lang]) as reader:
+                    for source, target in reader:
+                        content.append((source.strip(), target.strip()))
+
+        if 0 < max_lines < len(content):
+            random.shuffle(content)
+            content = content[:max_lines]
+
+        with _log_timed_action(logger, 'Loading decoder'):
+            model_folder = os.path.abspath(os.path.join(self.decoder.model, os.path.pardir))
+            decoder = nmmt.NMTDecoder(model_folder, self._gpus[0])
+
+            logging.getLogger('nmmt.NMTEngine').disabled = True  # prevent translation log
+
+        # Creating reference file --------------------------------------------------------------------------------------
+        reference_file = os.path.join(working_dir, 'reference.out')
+        with open(reference_file, 'wb') as stream:
+            for _, target in content:
+                stream.write(target)
+                stream.write('\n')
+
+        # Tuning -------------------------------------------------------------------------------------------------------
+        probes = []
+        runs = int(1. / lr_delta)
+
+        for run in range(1, runs + 1):
+            learning_rate = round(run * lr_delta, 5)
+
+            with _log_timed_action(logger, 'Tuning run %d/%d' % (run, runs)):
+                output_file = os.path.join(working_dir, 'run%d.out' % run)
+                bleu_score = self._tune_run(decoder, content, learning_rate, max_epochs, output_file, reference_file)
+
+            logger.info('Run %d completed: lr=%f, bleu=%f' % (run, learning_rate, bleu_score))
+            probes.append((learning_rate, bleu_score))
+
+        best_lr, best_bleu = sorted(probes, key=lambda x: x[1], reverse=True)[0]
+
+        with _log_timed_action(logger, 'Updating engine with learning_rate %f (bleu=%f)' % (best_lr, best_bleu)):
+            engine = decoder.get_engine(self.source_lang, self.target_lang)
+            engine.parameters.tuning_max_learning_rate = best_lr
+            engine.parameters.tuning_max_epochs = max_epochs
+            engine.save(self.decoder.model, store_data=False)
+
+    def _tune_run(self, decoder, corpora, lr, epochs, output_file, reference_file):
+        with open(output_file, 'wb') as output:
+            for source, target in corpora:
+                if lr == 0.:
+                    suggestions = None
+                else:
+                    suggestions = [Suggestion(source, target, 1.)]
+                translation = decoder.translate(self.source_lang, self.target_lang, source,
+                                                suggestions=suggestions, tuning_epochs=epochs, tuning_learning_rate=lr)
+
+                output.write(translation.encode('utf-8'))
+                output.write('\n')
+
+        command = ['perl', self._bleu_script, reference_file]
+        with open(output_file) as input_stream:
+            stdout, _ = shell.execute(command, stdin=input_stream)
+
+        return float(stdout) * 100
 
 
 class NeuralEngineBuilder(EngineBuilder):
@@ -328,8 +414,8 @@ class NeuralEngineBuilder(EngineBuilder):
             else os.path.join(self._engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME)
 
     def _build_schedule(self):
-        return EngineBuilder._build_schedule(self) + \
-               [self._build_memory, self._build_bpe, self._prepare_training_data, self._train_decoder]
+        return EngineBuilder._build_schedule(self) + [self._build_memory, self._build_bpe, self._prepare_training_data,
+                                                      self._train_decoder, self._tune_decoder]
 
     def _check_constraints(self):
         pass
@@ -360,11 +446,11 @@ class NeuralEngineBuilder(EngineBuilder):
             validation_corpora = BilingualCorpus.list(self._valid_corpora_path)
             validation_corpora, _ = self._engine.training_preprocessor.process(validation_corpora,
                                                                                os.path.join(working_dir, 'valid_set'))
-
+            args.validation_corpora = validation_corpora
             corpora = filter(None, [args.processed_bilingual_corpora, args.bilingual_corpora])[0]
 
             self._engine.nmt_preprocessor.process(corpora, validation_corpora, args.onmt_training_path,
-                                                   working_dir=working_dir)
+                                                  working_dir=working_dir)
 
     @EngineBuilder.Step('Neural decoder training')
     def _train_decoder(self, args, skip=False, delete_on_exit=False):
@@ -372,6 +458,16 @@ class NeuralEngineBuilder(EngineBuilder):
 
         if not skip:
             self._engine.decoder.train(args.onmt_training_path, working_dir)
+
+            if delete_on_exit:
+                shutil.rmtree(working_dir, ignore_errors=True)
+
+    @EngineBuilder.Step('Tuning neural decoder')
+    def _tune_decoder(self, args, skip=False, delete_on_exit=False):
+        working_dir = self._get_tempdir('model_tuning')
+
+        if not skip:
+            self._engine.tune(self._valid_corpora_path, working_dir)
 
             if delete_on_exit:
                 shutil.rmtree(working_dir, ignore_errors=True)

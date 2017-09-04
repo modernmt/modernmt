@@ -135,7 +135,7 @@ class JsonDatabase:
         return self.domains
 
 
-class Engine:
+class Engine(object):
     @staticmethod
     def _get_config_path(name):
         return os.path.join(cli.ENGINES_DIR, name, 'engine.xconf')

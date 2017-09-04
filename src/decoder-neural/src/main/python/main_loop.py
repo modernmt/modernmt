@@ -3,18 +3,9 @@ import json
 import os
 import sys
 
-from nmmt import NMTDecoder
+from nmmt import NMTDecoder, Suggestion
 
 import logging
-
-
-# Base models and Decoder definitions
-# ======================================================================================================================
-class Suggestion:
-    def __init__(self, source, target, score):
-        self.source = source
-        self.target = target
-        self.score = score
 
 
 # I/O definitions
