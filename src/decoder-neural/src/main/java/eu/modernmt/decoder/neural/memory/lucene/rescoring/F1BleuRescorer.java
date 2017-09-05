@@ -136,8 +136,8 @@ public class F1BleuRescorer implements Rescorer {
             double precision = 0;
             double recall = 0;
             for (int order = 1; order <= N; ++order) {
-                precision += Math.log(smooth(numer[sugg_id][order], suggLen - order + 1, 1));
-                recall += Math.log(smooth(numer[sugg_id][order], srcLen - order + 1, 1));
+                precision += Math.log(smooth(numer[sugg_id][order], Math.max(suggLen - order + 1,0), 1));
+                recall += Math.log(smooth(numer[sugg_id][order], Math.max(srcLen - order + 1,0), 1));
             }
 
             precision = Math.exp(precision / N);
@@ -163,19 +163,18 @@ public class F1BleuRescorer implements Rescorer {
 //        Sentence input = new Sentence(src_words);
 //
 //        ScoreEntry[] suggestions = new ScoreEntry[4];
-//        String sugg_sentence = "This is a suggestion .";
+//        String sugg_sentence = "This is another suggestion .";
 //        String[] sugg_toks = sugg_sentence.split(" ");
-//        suggestions[2] = new ScoreEntry(2, sugg_toks, sugg_toks);
+//        suggestions[0] = new ScoreEntry(0, sugg_toks, sugg_toks);
 //
-//
-//        sugg_sentence = "One more retrieved suggestion .";
+//        sugg_sentence = "Short suggestion";
 //        sugg_toks = sugg_sentence.split(" ");
 //        suggestions[1] = new ScoreEntry(1, sugg_toks, sugg_toks);
 //
 //
 //        sugg_sentence = "This is another suggestion .";
 //        sugg_toks = sugg_sentence.split(" ");
-//        suggestions[0] = new ScoreEntry(0, sugg_toks, sugg_toks);
+//        suggestions[2] = new ScoreEntry(2, sugg_toks, sugg_toks);
 //
 //        sugg_sentence = "This is a hypothesis sentence .";
 //        sugg_toks = sugg_sentence.split(" ");

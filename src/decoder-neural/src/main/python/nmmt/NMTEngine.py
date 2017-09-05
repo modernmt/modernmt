@@ -1,5 +1,6 @@
 import logging
 import os
+import math
 
 import torch
 import torch.nn as nn
@@ -103,6 +104,7 @@ class NMTEngine:
 
     def __init__(self, src_dict, trg_dict, model, optimizer, parameters=None, checkpoint=None, using_cuda=True):
         self._logger = logging.getLogger('nmmt.NMTEngine')
+        self._log_level = logging.INFO
         self._model_loaded = False
 
         self.src_dict = src_dict
@@ -168,7 +170,7 @@ class NMTEngine:
         tuning_dataset = Dataset(tuning_src_batch, tuning_trg_batch, 32, self.using_cuda)
 
         # Run tuning
-        log_message = 'Tuning on %d suggestions (epochs = %d epochs, learning_rate = %.2f )' % (
+        log_message = 'Tuning on %d suggestions (epochs = %d epochs, learning_rate = %.3f )' % (
             len(suggestions), epochs, learning_rate)
 
         with log_timed_action(self._logger, log_message, log_start=False):
@@ -177,9 +179,9 @@ class NMTEngine:
     def _estimate_tuning_parameters(self, suggestions):
         # it returns an actual learning_rate and epochs based on the quality of the suggestions
         # it is assured that at least one suggestion is provided (hence, len(suggestions) > 0)
-        average_score = 0
-        for sugg in suggestions:
-            average_score += sugg.score
+        average_score = 0.0
+        for source, target, score in suggestions:
+            average_score += score
         average_score /= len(suggestions)
 
         # Empirically defined function to make the number of epochs dependent to the quality of the suggestions
@@ -187,13 +189,13 @@ class NMTEngine:
         # where max_epochs is the maximum number of epochs allowed;
         # hence epochs = max_epochs only with perfect suggestions
         # and epochs = 0, when the average_score is close to 0.0 (<1/max_epochs)
-        tuning_epochs = (int) self.parameters.tuning_max_epochs * average_score
+        tuning_epochs = int(self.parameters.tuning_max_epochs * average_score)
 
         # Empirically defined function to make the learning rate dependent to the quality of the suggestions
         # lr = max_lr * sqrt(average_score)
         # hence lr = max_lr only with perfect suggestions
         # and lr = 0, when the average_score is exactly 0.0
-        tuning_learning_rate = self.tuning_learning_rate * math.sqrt(average_score)
+        tuning_learning_rate = self.parameters.tuning_max_learning_rate * math.sqrt(average_score)
 
         return tuning_epochs, tuning_learning_rate
 
