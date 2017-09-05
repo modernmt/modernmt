@@ -183,12 +183,17 @@ class NMTEngine:
         average_score /= len(suggestions)
 
         # Empirically defined function to make the number of epochs dependent to the quality of the suggestions
-        # epochs = 7 * average_score + 1
-        tuning_epochs = 7 * self.parameters.tuning_max_epochs + 1
+        # epochs = max_epochs * average_score + 1
+        # where max_epochs is the maximum number of epochs allowed;
+        # hence epochs = max_epochs only with perfect suggestions
+        # and epochs = 0, when the average_score is close to 0.0 (<1/max_epochs)
+        tuning_epochs = (int) self.parameters.tuning_max_epochs * average_score
 
         # Empirically defined function to make the learning rate dependent to the quality of the suggestions
-        # lr = sqrt(average_score) / 2
-        tuning_learning_rate = math.sqrt(average_score) / 2.
+        # lr = max_lr * sqrt(average_score)
+        # hence lr = max_lr only with perfect suggestions
+        # and lr = 0, when the average_score is exactly 0.0
+        tuning_learning_rate = self.tuning_learning_rate * math.sqrt(average_score)
 
         return tuning_epochs, tuning_learning_rate
 
