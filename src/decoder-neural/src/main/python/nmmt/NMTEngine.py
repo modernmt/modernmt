@@ -136,14 +136,6 @@ class NMTEngine:
             self._model_loaded = True
 
     def tune(self, suggestions, epochs=None, learning_rate=None):
-        if self._tuner is None:
-            from nmmt.NMTEngineTrainer import NMTEngineTrainer
-            self._tuner = NMTEngineTrainer(self, gpu_ids=([0] if self.using_cuda else None))
-
-            self._tuner.start_epoch = 1
-            self._tuner.min_perplexity_decrement = -1.
-            self._tuner.set_log_level(logging.NOTSET)
-
         # Set tuning parameters
         if epochs is None or learning_rate is None:
             _epochs, _learning_rate = self._estimate_tuning_parameters(suggestions)
@@ -151,30 +143,39 @@ class NMTEngine:
             epochs = epochs if epochs is not None else _epochs
             learning_rate = learning_rate if learning_rate is not None else _learning_rate
 
-        self._tuner.min_epochs = self._tuner.max_epochs = epochs
-        self.optimizer.lr = learning_rate
+        if learning_rate > 0. or epochs > 0:
+            if self._tuner is None:
+                from nmmt.NMTEngineTrainer import NMTEngineTrainer
+                self._tuner = NMTEngineTrainer(self, gpu_ids=([0] if self.using_cuda else None))
 
-        # Reset model
-        with log_timed_action(self._logger, 'Restoring model initial state', log_start=False):
-            self._reset_model()
+                self._tuner.start_epoch = 1
+                self._tuner.min_perplexity_decrement = -1.
+                self._tuner.set_log_level(logging.NOTSET)
 
-        # Convert words to indexes [suggestions]
-        tuning_src_batch, tuning_trg_batch = [], []
+            self._tuner.min_epochs = self._tuner.max_epochs = epochs
+            self.optimizer.lr = learning_rate
 
-        for source, target, _ in suggestions:
-            tuning_src_batch.append(self.src_dict.convertToIdxTensor(source, Constants.UNK_WORD))
-            tuning_trg_batch.append(self.trg_dict.convertToIdxTensor(target, Constants.UNK_WORD,
-                                                                     Constants.BOS_WORD, Constants.EOS_WORD))
+            # Reset model
+            with log_timed_action(self._logger, 'Restoring model initial state', log_start=False):
+                self._reset_model()
 
-        # Prepare data for training on the tuningBatch
-        tuning_dataset = Dataset(tuning_src_batch, tuning_trg_batch, 32, self.using_cuda)
+            # Convert words to indexes [suggestions]
+            tuning_src_batch, tuning_trg_batch = [], []
 
-        # Run tuning
-        log_message = 'Tuning on %d suggestions (epochs = %d epochs, learning_rate = %.3f )' % (
-            len(suggestions), epochs, learning_rate)
+            for source, target, _ in suggestions:
+                tuning_src_batch.append(self.src_dict.convertToIdxTensor(source, Constants.UNK_WORD))
+                tuning_trg_batch.append(self.trg_dict.convertToIdxTensor(target, Constants.UNK_WORD,
+                                                                         Constants.BOS_WORD, Constants.EOS_WORD))
 
-        with log_timed_action(self._logger, log_message, log_start=False):
-            self._tuner.train_model(tuning_dataset, save_epochs=0)
+            # Prepare data for training on the tuningBatch
+            tuning_dataset = Dataset(tuning_src_batch, tuning_trg_batch, 32, self.using_cuda)
+
+            # Run tuning
+            log_message = 'Tuning on %d suggestions (epochs = %d epochs, learning_rate = %.3f )' % (
+                len(suggestions), epochs, learning_rate)
+
+            with log_timed_action(self._logger, log_message, log_start=False):
+                self._tuner.train_model(tuning_dataset, save_epochs=0)
 
     def _estimate_tuning_parameters(self, suggestions):
         # it returns an actual learning_rate and epochs based on the quality of the suggestions
