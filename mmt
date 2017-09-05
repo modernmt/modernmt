@@ -82,20 +82,21 @@ def main_create(argv):
                         help='if resume is set, it restores a previously interrupted process')
 
     # Neural args
-    parser.add_argument('--neural', action='store_true', dest='neural', default=False,
-                        help='if neural is set, the process will train a neural engine (default is phrase-based)')
-    parser.add_argument('--validation-corpora', dest='validation_corpora',
-                        help='if neural is set, you can provide a custom validation corpora with this option '
-                             '(dev set used by default).', default=None)
-    parser.add_argument('--bpe-symbols', dest='bpe_symbols', type=int,
-                        help='if neural is set, this is the number of symbols of the BPE encoder '
-                             '(default value is 90000).', default=90000)
-    parser.add_argument('--max-vocabulary-size', dest='max_vocab_size', type=int,
-                        help='if neural is set, this is the maximum size of the vocabulary '
-                             '(default value is unbound).', default=None)
-    parser.add_argument('--gpus', dest='gpus', nargs='+', type=int, default=None,
-                        help='if neural is set, you can specify the list of GPUs used during training '
-                             '(default value is all available GPUs). Specify the value -1 to not use any GPU.')
+    nmt_arguments = parser.add_argument_group('neural decoder only arguments')
+    nmt_arguments.add_argument('--neural', action='store_true', dest='neural', default=False,
+                               help='if set, the process will train a neural engine (default is phrase-based)')
+    nmt_arguments.add_argument('--validation-corpora', dest='validation_corpora',
+                               help='if neural is set, you can provide a custom validation corpora with this option '
+                                    '(dev set used by default).', default=None)
+    nmt_arguments.add_argument('--bpe-symbols', dest='bpe_symbols', type=int,
+                               help='if neural is set, this is the number of symbols of the BPE encoder '
+                                    '(default value is 90000).', default=90000)
+    nmt_arguments.add_argument('--max-vocabulary-size', dest='max_vocab_size', type=int,
+                               help='if neural is set, this is the maximum size of the vocabulary '
+                                    '(default value is unbound).', default=None)
+    nmt_arguments.add_argument('--gpus', dest='gpus', nargs='+', type=int, default=None,
+                               help='if neural is set, you can specify the list of GPUs used during training '
+                                    '(default value is all available GPUs). Specify the value -1 to not use any GPU.')
 
     if len(argv) > 0:
         # Parse args
@@ -238,50 +239,62 @@ def main_tune(argv):
     parser = argparse.ArgumentParser(description='Tune MMT engine')
     parser.prog = 'mmt tune'
     parser.add_argument('--path', dest='corpora_path', metavar='CORPORA', default=None,
-                        help='the path to the training corpora (default is the automatically splitted sample)')
+                        help='the path to the tuning corpora (default is the automatically split sample)')
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
     parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='if debug is set, it enables verbose '
                                                                                  'logging and prevents temporary files '
                                                                                  'to be removed after execution')
-    parser.add_argument('--skip-context-analysis', dest='context_enabled', help='if set, context analysis is skipped',
-                        default=True, action='store_false')
-    parser.add_argument('--random-seeds', dest='random_seeds', help='if set, uses random seed for tuning',
-                        default=False, action='store_true')
-    parser.add_argument('--max-iterations', dest='max_iterations',
-                        help='set maximum iterations during tuning (default is 25)',
-                        default=25, type=int)
-    parser.add_argument('--accuracy', dest='accuracy', choices=['default', 'fast', 'best'], default='default',
-                        help='accuracy value set the trade-off between quality and speed, possible values are: '
-                             '"default" - for good trade-off between translation quality and tuning process duration, '
-                             '"best" - for best translation quality and slower tuning process, '
-                             '"fast" - for fastest tuning process at the expense of translation quality.')
+
+    # Phrase-based tuning
+    pb_arguments = parser.add_argument_group('phrase-based decoder only arguments')
+    pb_arguments.add_argument('--skip-context-analysis', dest='context_enabled', default=True, action='store_false',
+                              help='if set, context analysis is skipped')
+    pb_arguments.add_argument('--random-seeds', dest='random_seeds', help='if set, uses random seed for tuning',
+                              default=False, action='store_true')
+    pb_arguments.add_argument('--max-iterations', dest='max_iterations', default=25, type=int,
+                              help='set maximum iterations during tuning (default is 25)')
+    pb_arguments.add_argument('--accuracy', dest='accuracy', choices=['default', 'fast', 'best'], default='default',
+                              help='accuracy value set the trade-off between quality and speed, possible values are: '
+                                   '"default" - for good trade-off between translation quality and process duration, '
+                                   '"best" - for best translation quality and slower tuning process, '
+                                   '"fast" - for fastest tuning process at the expense of translation quality.')
+
+    # Neural tuning
+    nmt_arguments = parser.add_argument_group('neural decoder only arguments')
+    nmt_arguments.add_argument('--max-lines', dest='max_lines', default=None, type=int,
+                               help='the maximum number of lines to be randomly picked from the tuning corpora '
+                                    '(default: use all lines in the tuning corpora)')
+    nmt_arguments.add_argument('--learning-rate-step', dest='lr_delta', type=float, default=0.1,
+                               help='learning rate step to be used during tuning (default is 0.1)')
+    nmt_arguments.add_argument('--max-epochs', dest='max_epochs', default=10, type=int,
+                               help='the max number of epochs to be used during adaptation (default is 10)')
+    nmt_arguments.add_argument('--gpus', dest='gpus', nargs='+', type=int, default=None,
+                               help='if neural is set, you can specify the list of GPUs used during training '
+                                    '(default value is all available GPUs). Specify the value -1 to not use any GPU.')
 
     # Parse args
     args = parser.parse_args(argv)
 
-    if args.accuracy == 'fast':
-        args.accuracy = 10
-    elif args.accuracy == 'best':
-        args.accuracy = None
-    else:
-        args.accuracy = 1
-
-    # connect to the already active cluster node
+    # Setting up cluster node and tuning process
     node = ClusterNode.connect(args.engine)
-    ensure_running(node)
-    ensure_api(node)
+    if node.engine.type() == 'neural':
+        tuning = Tuning.neural(max_lines=args.max_lines, lr_delta=args.lr_delta,
+                               max_epochs=args.max_epochs, gpus=args.gpus)
+    else:
+        tuning = Tuning.phrase_based(context_enabled=args.context_enabled, random_seeds=args.random_seeds,
+                                     max_iterations=args.max_iterations, accuracy=args.accuracy)
 
-    # perform tuning
+    if tuning.requires_node_running():
+        ensure_running(node)
+        ensure_api(node)
+
+    if tuning.requires_node_stop():
+        ensure_not_running(node)
+
+    # Perform tuning
     corpora = BilingualCorpus.list(args.corpora_path) if args.corpora_path is not None else None
-
-    tuning = Tuning(debug=args.debug,
-                    context_enabled=args.context_enabled,
-                    random_seeds=args.random_seeds,
-                    max_iterations=args.max_iterations,
-                    accuracy=args.accuracy)
-
-    tuning.start(node, corpora)
+    tuning.start(node, corpora, debug=args.debug)
 
 
 def main_evaluate(argv):

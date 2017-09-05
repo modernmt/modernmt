@@ -2,6 +2,7 @@ import json as js
 import logging
 import multiprocessing
 import os
+import random
 import subprocess
 import tempfile
 import time
@@ -411,14 +412,8 @@ class ClusterNode(object):
             else:
                 break
 
-    def tune(self, corpora=None, debug=False, context_enabled=True, random_seeds=False, max_iterations=25,
-             early_stopping_value=None, listener=None):
-        if not self.engine.is_tuning_supported():
-            raise IllegalStateException('Engine implementation does not support tuning')
-
-        if corpora is None:
-            corpora = BilingualCorpus.list(os.path.join(self.engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME))
-
+    def phrase_based_tune(self, corpora, debug=False, listener=None,
+                          context_enabled=True, random_seeds=False, max_iterations=25, early_stopping_value=None):
         target_lang = self.engine.target_lang
         source_lang = self.engine.source_lang
 
@@ -516,6 +511,47 @@ class ClusterNode(object):
                             found_weights = True
 
                 _ = self.api.update_features(weights)
+
+            listener.on_tuning_end(self, bleu_score)
+        finally:
+            if not debug:
+                self.engine.clear_tempdir("tuning")
+
+    def nmt_tune(self, corpora, debug=False, listener=None, max_lines=None, lr_delta=0.1, max_epochs=10, gpus=None):
+        target_lang = self.engine.target_lang
+        source_lang = self.engine.source_lang
+
+        corpora = [corpus for corpus in corpora if source_lang in corpus.langs and target_lang in corpus.langs]
+        if len(corpora) == 0:
+            raise IllegalArgumentException('No %s > %s corpora found into specified path' % (source_lang, target_lang))
+
+        if listener is None:
+            listener = self.TuneListener()
+
+        listener.on_tuning_begin(corpora, self, 2)
+
+        working_dir = self.engine.get_tempdir('tuning')
+        log_file = self.engine.get_logfile('nmt_tune')
+
+        try:
+            content = []
+
+            with listener.step('Corpora pre-processing'):
+                validation_corpora_path = os.path.join(working_dir, 'valid_set')
+                validation_corpora, _ = self.engine.training_preprocessor.process(corpora, validation_corpora_path)
+
+                for corpus in validation_corpora:
+                    with corpus.reader([source_lang, target_lang]) as reader:
+                        for source, target in reader:
+                            content.append((source.strip(), target.strip()))
+
+                if 0 < max_lines < len(content):
+                    random.shuffle(content)
+                    content = content[:max_lines]
+
+            with listener.step('Tuning'):
+                bleu_score = self.engine.tune(content, working_dir, lr_delta=lr_delta,
+                                              max_epochs=max_epochs, log_file=log_file, gpus=gpus)
 
             listener.on_tuning_end(self, bleu_score)
         finally:

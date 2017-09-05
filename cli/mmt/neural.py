@@ -295,19 +295,7 @@ class NeuralEngine(Engine):
     def __init__(self, name, source_lang, target_lang, bpe_symbols=90000, max_vocab_size=None, gpus=None):
         Engine.__init__(self, name, source_lang, target_lang)
 
-        if torch.cuda.is_available():
-            if gpus is None:
-                gpus = range(torch.cuda.device_count()) if torch.cuda.is_available() else None
-            else:
-                # remove indexes of GPUs which are not valid,
-                # because larger than the number of available GPU or smaller than 0
-                gpus = [x for x in gpus if x < torch.cuda.device_count() or x < 0]
-                if len(gpus) == 0:
-                    gpus = None
-        else:
-            gpus = None
-
-        self._gpus = gpus
+        self._gpus = self._parse_gpus_param(gpus)
         self._bleu_script = os.path.join(PYOPT_DIR, 'mmt-bleu.perl')
 
         decoder_path = os.path.join(self.models_path, 'decoder')
@@ -322,44 +310,49 @@ class NeuralEngine(Engine):
         self.memory = TranslationMemory(memory_path, self.source_lang, self.target_lang)
         self.bpe_processor = BPEPreprocessor(source_lang, target_lang, bpe_symbols, max_vocab_size, bpe_model)
         self.nmt_preprocessor = NMTPreprocessor(self.source_lang, self.target_lang, bpe_model)
-        self.decoder = NMTDecoder(pt_model, self.source_lang, self.target_lang, gpus)
+        self.decoder = NMTDecoder(pt_model, self.source_lang, self.target_lang, self._gpus)
 
-    def is_tuning_supported(self):
-        return False
+    @staticmethod
+    def _parse_gpus_param(gpus):
+        if torch.cuda.is_available():
+            if gpus is None:
+                gpus = range(torch.cuda.device_count()) if torch.cuda.is_available() else None
+            else:
+                # remove indexes of GPUs which are not valid,
+                # because larger than the number of available GPU or smaller than 0
+                gpus = [x for x in gpus if x < torch.cuda.device_count() or x < 0]
+                if len(gpus) == 0:
+                    gpus = None
+        else:
+            gpus = None
+
+        return gpus
 
     def type(self):
         return 'neural'
 
-    def tune(self, validation_path, working_dir, max_lines=1000, lr_delta=0.1, max_epochs=10):
+    def tune(self, validation_set, working_dir, lr_delta=0.1, max_epochs=10, gpus=None, log_file=None):
         logger = logging.getLogger('NeuralEngine.Tuning')
 
-        # Loading data and decoder -------------------------------------------------------------------------------------
-        content = []
-        with _log_timed_action(logger, 'Creating validation data'):
-            validation_corpora, _ = self.training_preprocessor.process(
-                BilingualCorpus.list(validation_path), os.path.join(working_dir, 'valid_set'))
-
-            for corpus in validation_corpora:
-                with corpus.reader([self.source_lang, self.target_lang]) as reader:
-                    for source, target in reader:
-                        content.append((source.strip(), target.strip()))
-
-        if 0 < max_lines < len(content):
-            random.shuffle(content)
-            content = content[:max_lines]
+        if log_file is not None:
+            fh = logging.FileHandler(log_file, mode='w')
+            fh.setLevel(logging.DEBUG)
+            fh.setFormatter(logging.Formatter('%(asctime)-15s [%(levelname)s] - %(message)s'))
+            logger.addHandler(fh)
+            logger.setLevel(logging.DEBUG)
 
         with _log_timed_action(logger, 'Loading decoder'):
+            gpus = self._parse_gpus_param(gpus)
             model_folder = os.path.abspath(os.path.join(self.decoder.model, os.path.pardir))
-            decoder = nmmt.NMTDecoder(model_folder, self._gpus[0])
-
+            decoder = nmmt.NMTDecoder(model_folder, gpus[0])
             logging.getLogger('nmmt.NMTEngine').disabled = True  # prevent translation log
 
-        # Creating reference file --------------------------------------------------------------------------------------
-        reference_file = os.path.join(working_dir, 'reference.out')
-        with open(reference_file, 'wb') as stream:
-            for _, target in content:
-                stream.write(target)
-                stream.write('\n')
+        with _log_timed_action(logger, 'Creating reference file'):
+            reference_file = os.path.join(working_dir, 'reference.out')
+            with open(reference_file, 'wb') as stream:
+                for _, target in validation_set:
+                    stream.write(target)
+                    stream.write('\n')
 
         # Tuning -------------------------------------------------------------------------------------------------------
         probes = []
@@ -370,7 +363,8 @@ class NeuralEngine(Engine):
 
             with _log_timed_action(logger, 'Tuning run %d/%d' % (run, runs)):
                 output_file = os.path.join(working_dir, 'run%d.out' % run)
-                bleu_score = self._tune_run(decoder, content, learning_rate, max_epochs, output_file, reference_file)
+                bleu_score = self._tune_run(decoder, validation_set, learning_rate, max_epochs,
+                                            output_file, reference_file)
 
             logger.info('Run %d completed: lr=%f, bleu=%f' % (run, learning_rate, bleu_score))
             probes.append((learning_rate, bleu_score))
@@ -382,6 +376,8 @@ class NeuralEngine(Engine):
             engine.parameters.tuning_max_learning_rate = best_lr
             engine.parameters.tuning_max_epochs = max_epochs
             engine.save(self.decoder.model, store_data=False)
+
+        return best_bleu / 100.
 
     def _tune_run(self, decoder, corpora, lr, epochs, output_file, reference_file):
         with open(output_file, 'wb') as output:
@@ -414,8 +410,8 @@ class NeuralEngineBuilder(EngineBuilder):
             else os.path.join(self._engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME)
 
     def _build_schedule(self):
-        return EngineBuilder._build_schedule(self) + [self._build_memory, self._build_bpe, self._prepare_training_data,
-                                                      self._train_decoder, self._tune_decoder]
+        return EngineBuilder._build_schedule(self) + [self._build_memory, self._build_bpe,
+                                                      self._prepare_training_data, self._train_decoder]
 
     def _check_constraints(self):
         pass
@@ -458,16 +454,6 @@ class NeuralEngineBuilder(EngineBuilder):
 
         if not skip:
             self._engine.decoder.train(args.onmt_training_path, working_dir)
-
-            if delete_on_exit:
-                shutil.rmtree(working_dir, ignore_errors=True)
-
-    @EngineBuilder.Step('Tuning neural decoder')
-    def _tune_decoder(self, args, skip=False, delete_on_exit=False):
-        working_dir = self._get_tempdir('model_tuning')
-
-        if not skip:
-            self._engine.tune(self._valid_corpora_path, working_dir)
 
             if delete_on_exit:
                 shutil.rmtree(working_dir, ignore_errors=True)

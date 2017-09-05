@@ -273,9 +273,6 @@ class PhraseBasedEngine(Engine):
         self.moses = Moses(os.path.join(self.models_path, 'decoder'), self.source_lang, self.target_lang)
         self.vocabulary_path = self.moses.vb.model
 
-    def is_tuning_supported(self):
-        return True
-
     def type(self):
         return 'phrase_based'
 

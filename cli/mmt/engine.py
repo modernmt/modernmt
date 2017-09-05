@@ -231,9 +231,6 @@ class Engine(object):
         path = os.path.join(self.temp_path, subdir) if subdir is not None else self.temp_path
         shutil.rmtree(path, ignore_errors=True)
 
-    def is_tuning_supported(self):
-        raise NotImplementedError('abstract method')
-
     def type(self):
         raise NotImplementedError('abstract method')
 

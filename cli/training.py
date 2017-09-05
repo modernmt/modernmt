@@ -1,7 +1,10 @@
+import os
 import time
 
+from cli.mmt import BilingualCorpus
 from cli.mmt.cluster import ClusterNode
 from cli.mmt.engine import EngineBuilder
+from cli.mmt.processing import TrainingPreprocessor
 
 __author__ = 'Davide Caroselli'
 
@@ -99,14 +102,31 @@ class Training(EngineBuilder.Listener):
 
 
 class Tuning(ClusterNode.TuneListener):
-    def __init__(self, debug, context_enabled, random_seeds, max_iterations, accuracy, line_len=70):
+    @staticmethod
+    def neural(max_lines=None, lr_delta=0.1, max_epochs=10, gpus=None):
+        return Tuning(lambda node, corpora, listener, debug:
+                      node.nmt_tune(corpora=corpora, debug=debug, listener=listener,
+                                    max_lines=max_lines, lr_delta=lr_delta, max_epochs=max_epochs, gpus=gpus), False)
+
+    @staticmethod
+    def phrase_based(context_enabled=True, random_seeds=True, max_iterations=25, accuracy='default'):
+        if accuracy == 'fast':
+            accuracy = 10
+        elif accuracy == 'best':
+            accuracy = None
+        else:
+            accuracy = 1
+
+        return Tuning(lambda node, corpora, listener, debug:
+                      node.phrase_based_tune(corpora=corpora, debug=debug, listener=listener,
+                                             context_enabled=context_enabled, random_seeds=random_seeds,
+                                             max_iterations=max_iterations, early_stopping_value=accuracy), True)
+
+    def __init__(self, start_fn, node_running, line_len=70):
         ClusterNode.TuneListener.__init__(self)
 
-        self._debug = debug
-        self._context_enabled = context_enabled
-        self._random_seeds = random_seeds
-        self._max_iterations = max_iterations
-        self._accuracy = accuracy
+        self._start_fn = start_fn
+        self._node_running = node_running
 
         self.line_len = line_len
         self._steps_count = 0
@@ -115,9 +135,17 @@ class Tuning(ClusterNode.TuneListener):
 
         self._start_time = 0
 
-    def start(self, node, corpora):
-        node.tune(corpora, debug=self._debug, context_enabled=self._context_enabled, random_seeds=self._random_seeds,
-                  max_iterations=self._max_iterations, early_stopping_value=self._accuracy, listener=self)
+    def requires_node_running(self):
+        return self._node_running
+
+    def requires_node_stop(self):
+        return not self._node_running
+
+    def start(self, node, corpora, debug=False):
+        if corpora is None:
+            corpora = BilingualCorpus.list(os.path.join(node.engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME))
+
+        self._start_fn(node, corpora, self, debug)
 
     def on_tuning_begin(self, corpora, node, steps_count):
         self._steps_count = steps_count
@@ -142,6 +170,8 @@ class Tuning(ClusterNode.TuneListener):
     def on_tuning_end(self, node, final_bleu):
         print '\n============ TUNING SUCCESS ============\n'
         print '\nFinal BLEU: %.2f\n' % (final_bleu * 100.)
-        print 'You can try the API with:'
-        print '\tcurl "%s/translate?q=hello+world&context=computer"' % node.api.base_path + ' | python -mjson.tool'
-        print
+
+        if node.api is not None:
+            print 'You can try the API with:'
+            print '\tcurl "%s/translate?q=hello+world&context=computer"' % node.api.base_path + ' | python -mjson.tool'
+            print
