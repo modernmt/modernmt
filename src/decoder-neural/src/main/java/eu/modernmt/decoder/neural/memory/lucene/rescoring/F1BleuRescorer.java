@@ -6,7 +6,9 @@ import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by davide on 06/08/17.
@@ -26,10 +28,10 @@ public class F1BleuRescorer implements Rescorer {
         String[] inputWords = TokensOutputStream.toTokensArray(input, false, true);
 
         // Compute F1-BLEU score
-        HashMap<NGram, Counter> inputNGrams = split(inputWords);
+        HashMap<NGram, Counter> inputNGrams = split(inputWords, N);
 
         for (ScoreEntry entry : entries) {
-            HashMap<NGram, Counter> entryNGrams = split(entry.sentence);
+            HashMap<NGram, Counter> entryNGrams = split(entry.sentence, N);
             entry.score = getF1BleuScore(inputNGrams, inputWords.length, entryNGrams, entry.sentence.length);
         }
 
@@ -50,12 +52,16 @@ public class F1BleuRescorer implements Rescorer {
         ArrayUtils.reverse(entries);
     }
 
-    private static HashMap<NGram, Counter> split(String[] sentence) {
-        List<NGram> ngrams = NGram.split(sentence, N);
-        HashMap<NGram, Counter> counts = new HashMap<>(ngrams.size());
+    private static HashMap<NGram, Counter> split(String[] sentence, int order) {
+        HashMap<NGram, Counter> counts = new HashMap<>(sentence.length * order);
 
-        for (NGram ngram : ngrams) {
-            counts.computeIfAbsent(ngram, key -> new Counter()).value++;
+        for (int offset = 0; offset < sentence.length; offset++) {
+            int maxOrder = sentence.length - offset;
+
+            for (int o = 1; o <= Math.min(order, maxOrder); o++) {
+                NGram ngram = new NGram(sentence, offset, o);
+                counts.computeIfAbsent(ngram, key -> new Counter()).value++;
+            }
         }
 
         return counts;
@@ -101,20 +107,6 @@ public class F1BleuRescorer implements Rescorer {
     }
 
     private static final class NGram {
-
-        public static List<NGram> split(String[] sentence, int order) {
-            ArrayList<NGram> ngrams = new ArrayList<>(sentence.length * order);
-
-            for (int offset = 0; offset < sentence.length; offset++) {
-                int maxOrder = sentence.length - offset;
-
-                for (int o = 1; o <= Math.min(order, maxOrder); o++) {
-                    ngrams.add(new NGram(sentence, offset, o));
-                }
-            }
-
-            return ngrams;
-        }
 
         private final String[] sentence;
         private final int offset;
