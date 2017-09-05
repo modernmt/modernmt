@@ -1,30 +1,20 @@
 package eu.modernmt.decoder.neural.memory.lucene.rescoring;
 
-import eu.modernmt.decoder.neural.memory.lucene.rescoring.util.Ngram;
-
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Word;
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by davide on 06/08/17.
  */
 public class F1BleuRescorer implements Rescorer {
-    // TODO: Support BLEU other than BLEU=4
+
     private static final int N = 4;
-    private static final double epsilon = 0.1;
-
-
-    public static double smooth(int num, int den, int count){
-        return (num + epsilon) / (den + count * epsilon);
-    }
+    private static final double EPSILON = 0.1;
 
     @Override
     public void rescore(Sentence input, ScoreEntry[] entries) {
@@ -33,10 +23,17 @@ public class F1BleuRescorer implements Rescorer {
 
     @Override
     public void rescore(Sentence input, ScoreEntry[] entries, ContextVector context) {
-        String[] words = TokensOutputStream.toTokensArray(input, false, true);
+        String[] inputWords = TokensOutputStream.toTokensArray(input, false, true);
 
-        computeF1BleuScores(words, entries);
+        // Compute F1-BLEU score
+        HashMap<NGram, Counter> inputNGrams = split(inputWords);
 
+        for (ScoreEntry entry : entries) {
+            HashMap<NGram, Counter> entryNGrams = split(entry.sentence);
+            entry.score = getF1BleuScore(inputNGrams, inputWords.length, entryNGrams, entry.sentence.length);
+        }
+
+        // Apply context scores if possible
         if (context != null && context.size() > 0) {
             HashMap<Long, Float> contextScores = new HashMap<>(context.size());
             for (ContextVector.Entry ce : context) {
@@ -53,105 +50,140 @@ public class F1BleuRescorer implements Rescorer {
         ArrayUtils.reverse(entries);
     }
 
-    public void computeF1BleuScores(String[] src, ScoreEntry[] entries) {
-        int srcLen = src.length;
+    private static HashMap<NGram, Counter> split(String[] sentence) {
+        List<NGram> ngrams = NGram.split(sentence, N);
+        HashMap<NGram, Counter> counts = new HashMap<>(ngrams.size());
 
-        // Collect ngram counts of the source sentence into an HashMap where:
-        // - key is the ngram
-        // - value is the number of occurrences of the ngram in the source sentence
-        // It also collects the order of the ngrams
-        HashMap srcNgramCounts = new HashMap<>();
-        HashMap srcNgramOrders = new HashMap<>();
-        for(int order = 1; order <= N; ++order) {
-            for(int i = 0; i <= srcLen - order; i++) {
-                String[] toks = Arrays.copyOfRange(src, i, i + order);
-                Ngram ngram = new Ngram(toks);
-                int ngram_id = ngram.hashCode();
-
-                int value = 1;
-                Object v = srcNgramCounts.get(ngram_id);
-                if (v != null){
-                    value = (int) v + 1;
-                }
-                srcNgramCounts.put(ngram_id, value);
-                srcNgramOrders.put(ngram_id, order);
-            }
+        for (NGram ngram : ngrams) {
+            counts.computeIfAbsent(ngram, key -> new Counter()).value++;
         }
 
-        // Collect ngram counts of each suggestions into an HashMap of HshMaps where:
-        // - key is the ngram
-        // - value (at the upper level) is a the HashMap, where:
-        //   -- key is the idx of the suggestion
-        //   -- value is the number of occurrences of the ngram in the specific suggestion
-        HashMap suggNgramCounts = new HashMap<>();
-
-        int sugg_id = 0;
-        for (ScoreEntry entry : entries) {
-            String[] sugg = entry.sentence;
-            int suggLen = sugg.length;
-
-            for(int order = 1; order <= N; ++order) {
-
-                for(int i = 0; i <= suggLen - order; ++i) {
-                    String[] toks = Arrays.copyOfRange(sugg, i, i + order);
-                    Ngram ngram = new Ngram(toks);
-                    int ngram_id = ngram.hashCode();
-
-                    HashMap map = (HashMap)  suggNgramCounts.get(ngram_id);
-                    int value = 1;
-                    if (map == null){
-                        map = new HashMap<>();
-                        suggNgramCounts.put(ngram_id, map);
-                    } else{
-                        Object v = map.get(sugg_id);
-                        value = (v == null) ? value : (int) v + 1;
-                    }
-                    map.put(sugg_id, value);
-                }
-            }
-            ++sugg_id;
-        }
-
-        // Compute the precision and the recall of the source sentence against each suggestion
-        int numer[][] = new int[entries.length][N+1];
-        for (HashMap.Entry ngNode : (Set<HashMap.Entry>) srcNgramCounts.entrySet()) {
-            int ngram_id = (int) ngNode.getKey();
-            int src_count = (int) ngNode.getValue();
-            int ngram_order = (int) srcNgramOrders.get(ngram_id);
-            HashMap suggCounts = (HashMap) suggNgramCounts.get(ngram_id);
-            if (suggCounts != null) {
-                for (HashMap.Entry suggNode : (Set<HashMap.Entry>) suggCounts.entrySet()) {
-                    sugg_id = (int) suggNode.getKey();
-                    int sugg_count = (int) suggNode.getValue();
-                    numer[sugg_id][ngram_order] += Math.min(src_count, sugg_count);
-                }
-            }
-        }
-
-        sugg_id = 0;
-        for (ScoreEntry entry : entries) {
-            int suggLen = entry.sentence.length;
-
-            // compute precision and recall
-            double precision = 0;
-            double recall = 0;
-            for (int order = 1; order <= N; ++order) {
-                precision += Math.log(smooth(numer[sugg_id][order], Math.max(suggLen - order + 1,0), 1));
-                recall += Math.log(smooth(numer[sugg_id][order], Math.max(srcLen - order + 1,0), 1));
-            }
-
-            precision = Math.exp(precision / N);
-            recall = Math.exp(recall / N);
-
-            // compute F1
-            entry.score = (float) (2 * ( precision * recall) / (precision + recall));
-            ++sugg_id;
-        }
+        return counts;
     }
 
+    private static float getF1BleuScore(HashMap<NGram, Counter> sentence, int sentenceLength, HashMap<NGram, Counter> suggestion, int suggestionLength) {
+        int numerators[] = new int[N];
+
+        for (Map.Entry<NGram, Counter> entry : sentence.entrySet()) {
+            NGram ngram = entry.getKey();
+
+            int order = ngram.getOrder();
+            int count = entry.getValue().value;
+            int suggestionCount = suggestion.getOrDefault(ngram, Counter.ZERO).value;
+
+            numerators[order - 1] += Math.min(count, suggestionCount);
+        }
+
+        double precision = 0;
+        double recall = 0;
+
+        for (int order = 1; order <= N; ++order) {
+            precision += Math.log(smooth(numerators[order - 1], Math.max(suggestionLength - order + 1, 0), 1));
+            recall += Math.log(smooth(numerators[order - 1], Math.max(sentenceLength - order + 1, 0), 1));
+        }
+
+        precision = Math.exp(precision / N);
+        recall = Math.exp(recall / N);
+
+        // compute F1
+        return (float) (2 * (precision * recall) / (precision + recall));
+    }
+
+    private static double smooth(int num, int den, int count) {
+        return (num + EPSILON) / (den + count * EPSILON);
+    }
+
+    private static final class Counter {
+
+        public static final Counter ZERO = new Counter();
+
+        public int value = 0;
+    }
+
+    private static final class NGram {
+
+        public static List<NGram> split(String[] sentence, int order) {
+            ArrayList<NGram> ngrams = new ArrayList<>(sentence.length * order);
+
+            for (int offset = 0; offset < sentence.length; offset++) {
+                int maxOrder = sentence.length - offset;
+
+                for (int o = 1; o <= Math.min(order, maxOrder); o++) {
+                    ngrams.add(new NGram(sentence, offset, o));
+                }
+            }
+
+            return ngrams;
+        }
+
+        private final String[] sentence;
+        private final int offset;
+        private final int order;
+
+        private int hash = 0;
+
+        public NGram(String[] sentence, int offset, int order) {
+            this.sentence = sentence;
+            this.offset = offset;
+            this.order = order;
+        }
+
+        public int getOrder() {
+            return order;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            NGram ngram = (NGram) o;
+
+            if (order != ngram.order) return false;
+
+            for (int i = 0; i < order; i++) {
+                String a = sentence[i + offset];
+                String b = ngram.sentence[i + ngram.offset];
+
+                if (!(a != null && b != null && a.equals(b)))
+                    return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            if (hash == 0) {
+                int result = 1;
+
+                for (int i = 0; i < order; i++) {
+                    String element = sentence[i + offset];
+                    result = 31 * result + (element == null ? 0 : element.hashCode());
+                }
+
+                hash = result;
+            }
+
+            return hash;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder string = new StringBuilder("(");
+            for (int i = 0; i < order; i++) {
+                if (i > 0)
+                    string.append(' ');
+                string.append(sentence[i + offset]);
+            }
+            string.append(')');
+
+            return string.toString();
+        }
+
+    }
 
 //    public static void main(String[] args) {
-//
 //        String src_sentence = "This is a hypothesis sentence .";
 //
 //        String[] src_toks = src_sentence.split(" ");
@@ -195,4 +227,5 @@ public class F1BleuRescorer implements Rescorer {
 //            System.err.println("sugg: " + sugg);
 //        }
 //    }
+
 }
