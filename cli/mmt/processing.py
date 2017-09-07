@@ -1,4 +1,3 @@
-import multiprocessing
 import os
 import re
 from HTMLParser import HTMLParser
