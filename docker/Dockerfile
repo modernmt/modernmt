@@ -30,7 +30,7 @@ WORKDIR /home/mmtuser
 RUN chown mmtuser:mmtuser /home/mmtuser
 USER mmtuser
 
-RUN wget -qO- https://github.com/ModernMT/MMT/releases/download/v1.0.2/mmt-1.0.2-ubuntu.tar.gz | tar xvfz -
+RUN wget -qO- https://github.com/ModernMT/MMT/releases/download/v1.0.3/mmt-1.0.3-ubuntu.tar.gz | tar xvfz -
 WORKDIR /home/mmtuser/mmt
 
 # Make MMT example engine
