@@ -4,11 +4,11 @@ import math
 import os
 import time
 
-import torch.cuda.random as random
 from torch import nn, torch
 from torch.autograd import Variable
 
 from nmmt import NMTEngine
+from nmmt.torch_utils import torch_get_gpus, torch_is_multi_gpu, torch_is_using_cuda
 from onmt import Models, Optim, Constants
 
 
@@ -20,12 +20,9 @@ class TrainingInterrupt(Exception):
 
 class NMTEngineTrainer:
     @staticmethod
-    def new_instance(src_dict, trg_dict, model_params=None, random_seed=None, gpu_ids=None, init_value=0.1):
+    def new_instance(src_dict, trg_dict, model_params=None, init_value=0.1):
         if model_params is None:
             model_params = NMTEngine.Parameters()
-
-        if gpu_ids is not None and len(gpu_ids) > 0:
-            torch.cuda.set_device(gpu_ids[0])
 
         encoder = Models.Encoder(model_params, src_dict)
         decoder = Models.Decoder(model_params, trg_dict)
@@ -33,14 +30,14 @@ class NMTEngineTrainer:
 
         model = Models.NMTModel(encoder, decoder)
 
-        if gpu_ids is not None and len(gpu_ids) > 0:
+        if torch_is_using_cuda():
             using_cuda = True
             model.cuda()
             generator.cuda()
 
-            if len(gpu_ids) > 1:
-                model = nn.DataParallel(model, device_ids=gpu_ids, dim=1)
-                generator = nn.DataParallel(generator, device_ids=gpu_ids, dim=0)
+            if torch_is_multi_gpu():
+                model = nn.DataParallel(model, device_ids=torch_get_gpus(), dim=1)
+                generator = nn.DataParallel(generator, device_ids=torch_get_gpus(), dim=0)
         else:
             using_cuda = False
             model.cpu()
@@ -55,19 +52,14 @@ class NMTEngineTrainer:
                           lr_decay=model_params.learning_rate_decay, start_decay_at=model_params.start_decay_at)
         optimizer.set_parameters(model.parameters())
 
-        engine = NMTEngine(src_dict, trg_dict, model, optimizer, parameters=model_params, using_cuda=using_cuda)
-        return NMTEngineTrainer(engine, gpu_ids=gpu_ids, random_seed=random_seed)
+        engine = NMTEngine(src_dict, trg_dict, model, optimizer, parameters=model_params)
+        return NMTEngineTrainer(engine)
 
-    def __init__(self, engine, gpu_ids=None, random_seed=None):
+    def __init__(self, engine):
         self._logger = logging.getLogger('nmmt.NMTEngineTrainer')
         self._log_level = logging.INFO
 
         self._engine = engine
-        self._gpu_ids = gpu_ids
-
-        if random_seed is not None:
-            torch.manual_seed(random_seed)
-            random.manual_seed_all(random_seed)
 
         # Public-editable options
         self.log_interval = 50  # Log status every 'log_interval' updates
@@ -85,7 +77,7 @@ class NMTEngineTrainer:
         weight = torch.ones(vocab_size)
         weight[Constants.PAD] = 0
         criterion = nn.NLLLoss(weight, size_average=False)
-        if self._gpu_ids is not None:
+        if torch_is_using_cuda():
             criterion.cuda()
         return criterion
 
@@ -136,13 +128,11 @@ class NMTEngineTrainer:
         return total_loss / total_words, float(total_num_correct) / total_words
 
     def train_model(self, train_data, valid_data=None, save_path=None, save_epochs=5):
-        multi_gpu = self._gpu_ids is not None and len(self._gpu_ids) > 1
-
         model = self._engine.model
         optimizer = self._engine.optimizer
 
         # set the mask to None; required when the same model is trained after a translation
-        if multi_gpu:
+        if torch_is_multi_gpu():
             decoder = model.module.decoder
         else:
             decoder = model.decoder
@@ -201,7 +191,7 @@ class NMTEngineTrainer:
                     else:
                         checkpoint_file = '%s_acc_NA_ppl_NA_e%d' % (save_path, epoch)
 
-                    self._engine.save(checkpoint_file, multi_gpu=multi_gpu, epoch=epoch)
+                    self._engine.save(checkpoint_file, epoch=epoch)
 
                     checkpoint_files.append(checkpoint_file)
                     self._logger.log(self._log_level,

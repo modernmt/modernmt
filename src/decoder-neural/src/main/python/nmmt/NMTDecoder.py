@@ -1,11 +1,10 @@
+import logging
 import os
 
-import logging
-import torch
-import torch.cuda.random as random
-
-from nmmt import SubwordTextProcessor, NMTEngine
+from nmmt.NMTEngine import NMTEngine
+from nmmt.SubwordTextProcessor import SubwordTextProcessor
 from nmmt.internal_utils import log_timed_action
+from nmmt.torch_utils import torch_setup
 
 
 class UnsupportedLanguageException(BaseException):
@@ -27,7 +26,7 @@ class Suggestion:
 
 class _EngineData:
     @staticmethod
-    def load(model_name, base_path='.', using_cuda=True):
+    def load(model_name, base_path='.'):
         model_file = os.path.join(base_path, model_name)
         tp_model_file = model_file + '.bpe'
 
@@ -37,7 +36,7 @@ class _EngineData:
             raise ModelFileNotFoundException(model_file + '.dat')
 
         text_processor = SubwordTextProcessor.load_from_file(tp_model_file)
-        engine = NMTEngine.load_from_checkpoint(model_file, using_cuda=using_cuda)
+        engine = NMTEngine.load_from_checkpoint(model_file)
 
         return _EngineData(engine, text_processor)
 
@@ -48,18 +47,9 @@ class _EngineData:
 
 class NMTDecoder:
     def __init__(self, model_path, gpu_id=None, random_seed=None):
+        torch_setup(gpus=[gpu_id] if gpu_id is not None else None, random_seed=random_seed)
+
         self._logger = logging.getLogger('nmmt.NMTDecoder')
-
-        if gpu_id is not None:
-            torch.cuda.set_device(gpu_id)
-
-        if random_seed is not None:
-            torch.manual_seed(random_seed)
-            random.manual_seed_all(random_seed)
-
-        using_cuda = gpu_id is not None
-
-        # map languageDirection -> _EngineData (direction is a string <src>__<trg>)
         self._engines_data = {}
 
         # create and put in its map a TextProcessor and a NMTEngine for each line in model.conf
@@ -73,9 +63,7 @@ class NMTDecoder:
                 direction = direction[6:]
 
                 with log_timed_action(self._logger, 'Loading "%s" model from checkpoint' % direction):
-                    self._engines_data[direction] = _EngineData.load(model_name,
-                                                                     base_path=model_path,
-                                                                     using_cuda=using_cuda)
+                    self._engines_data[direction] = _EngineData.load(model_name, base_path=model_path)
 
         # Public-editable options
         self.beam_size = 5

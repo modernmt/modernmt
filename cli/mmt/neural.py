@@ -1,10 +1,8 @@
 import glob
 import logging
 import os
-import random
 import shutil
 import sys
-
 import time
 
 from cli import mmt_javamain, LIB_DIR, PYOPT_DIR
@@ -18,7 +16,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(LIB_DIR, 'pynmt')))
 
 import onmt
 import nmmt
-from nmmt import NMTEngineTrainer, SubwordTextProcessor, TrainingInterrupt, ShardedDataset, Suggestion
+from nmmt import NMTEngineTrainer, SubwordTextProcessor, TrainingInterrupt, ShardedDataset, Suggestion, \
+    torch_is_using_cuda, torch_setup
 import torch
 
 
@@ -233,22 +232,22 @@ class NMTPreprocessor:
 
 
 class NMTDecoder:
-    def __init__(self, model, source_lang, target_lang, gpus):
+    def __init__(self, model, source_lang, target_lang):
         self._logger = logging.getLogger('mmt.neural.NMTDecoder')
 
         self.model = model
         self._source_lang = source_lang
         self._target_lang = target_lang
-        self._gpus = gpus
 
     def train(self, data_path, working_dir):
         self._logger.info('Training started for data "%s"' % data_path)
 
+        is_using_cuda = torch_is_using_cuda()
         save_model = os.path.join(working_dir, 'train_model')
 
         # Loading training data ----------------------------------------------------------------------------------------
         with _log_timed_action(self._logger, 'Loading training data from "%s"' % data_path):
-            train_data = ShardedDataset.load(data_path, 64, cuda=self._gpus, volatile=False)
+            train_data = ShardedDataset.load(data_path, 64, cuda=is_using_cuda, volatile=False)
 
         # Loading validation data and dictionaries ---------------------------------------------------------------------
         data_file = os.path.join(data_path, 'train_processed.train.pt')
@@ -257,11 +256,11 @@ class NMTDecoder:
             data_set = torch.load(data_file)
             src_dict, trg_dict = data_set['dicts']['src'], data_set['dicts']['tgt']
             src_valid, trg_valid = data_set['valid']['src'], data_set['valid']['tgt']
-            valid_data = onmt.Dataset(src_valid, trg_valid, 64, self._gpus, volatile=True)
+            valid_data = onmt.Dataset(src_valid, trg_valid, 64, is_using_cuda, volatile=True)
 
         # Creating trainer ---------------------------------------------------------------------------------------------
         with _log_timed_action(self._logger, 'Building trainer'):
-            trainer = NMTEngineTrainer.new_instance(src_dict, trg_dict, random_seed=3435, gpu_ids=self._gpus)
+            trainer = NMTEngineTrainer.new_instance(src_dict, trg_dict)
 
         # Training model -----------------------------------------------------------------------------------------------
         self._logger.info(' Vocabulary size. source = %d; target = %d' % (src_dict.size(), trg_dict.size()))
@@ -294,8 +293,8 @@ class NMTDecoder:
 class NeuralEngine(Engine):
     def __init__(self, name, source_lang, target_lang, bpe_symbols=90000, max_vocab_size=None, gpus=None):
         Engine.__init__(self, name, source_lang, target_lang)
+        torch_setup(gpus=gpus, random_seed=3435)
 
-        self._gpus = self._parse_gpus_param(gpus)
         self._bleu_script = os.path.join(PYOPT_DIR, 'mmt-bleu.perl')
 
         decoder_path = os.path.join(self.models_path, 'decoder')
@@ -310,28 +309,14 @@ class NeuralEngine(Engine):
         self.memory = TranslationMemory(memory_path, self.source_lang, self.target_lang)
         self.bpe_processor = BPEPreprocessor(source_lang, target_lang, bpe_symbols, max_vocab_size, bpe_model)
         self.nmt_preprocessor = NMTPreprocessor(self.source_lang, self.target_lang, bpe_model)
-        self.decoder = NMTDecoder(pt_model, self.source_lang, self.target_lang, self._gpus)
-
-    @staticmethod
-    def _parse_gpus_param(gpus):
-        if torch.cuda.is_available():
-            if gpus is None:
-                gpus = range(torch.cuda.device_count()) if torch.cuda.is_available() else None
-            else:
-                # remove indexes of GPUs which are not valid,
-                # because larger than the number of available GPU or smaller than 0
-                gpus = [x for x in gpus if x < torch.cuda.device_count() or x < 0]
-                if len(gpus) == 0:
-                    gpus = None
-        else:
-            gpus = None
-
-        return gpus
+        self.decoder = NMTDecoder(pt_model, self.source_lang, self.target_lang)
 
     def type(self):
         return 'neural'
 
     def tune(self, validation_set, working_dir, lr_delta=0.1, max_epochs=10, gpus=None, log_file=None):
+        torch_setup(gpus=gpus, random_seed=3435)
+
         logger = logging.getLogger('NeuralEngine.Tuning')
 
         if log_file is not None:
@@ -342,7 +327,6 @@ class NeuralEngine(Engine):
             logger.setLevel(logging.DEBUG)
 
         with _log_timed_action(logger, 'Loading decoder'):
-            gpus = self._parse_gpus_param(gpus)
             model_folder = os.path.abspath(os.path.join(self.decoder.model, os.path.pardir))
             decoder = nmmt.NMTDecoder(model_folder, gpus[0])
             logging.getLogger('nmmt.NMTEngine').disabled = True  # prevent translation log
