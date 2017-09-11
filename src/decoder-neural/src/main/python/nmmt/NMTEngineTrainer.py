@@ -7,9 +7,8 @@ import time
 from torch import nn, torch
 from torch.autograd import Variable
 
-from nmmt import NMTEngine
-from nmmt.torch_utils import torch_get_gpus, torch_is_multi_gpu, torch_is_using_cuda
-from onmt import Models, Optim, Constants
+from nmmt.torch_utils import torch_is_multi_gpu, torch_is_using_cuda
+from onmt import Constants
 
 
 class TrainingInterrupt(Exception):
@@ -19,42 +18,6 @@ class TrainingInterrupt(Exception):
 
 
 class NMTEngineTrainer:
-    @staticmethod
-    def new_instance(src_dict, trg_dict, model_params=None, init_value=0.1):
-        if model_params is None:
-            model_params = NMTEngine.Parameters()
-
-        encoder = Models.Encoder(model_params, src_dict)
-        decoder = Models.Decoder(model_params, trg_dict)
-        generator = nn.Sequential(nn.Linear(model_params.rnn_size, trg_dict.size()), nn.LogSoftmax())
-
-        model = Models.NMTModel(encoder, decoder)
-
-        if torch_is_using_cuda():
-            using_cuda = True
-            model.cuda()
-            generator.cuda()
-
-            if torch_is_multi_gpu():
-                model = nn.DataParallel(model, device_ids=torch_get_gpus(), dim=1)
-                generator = nn.DataParallel(generator, device_ids=torch_get_gpus(), dim=0)
-        else:
-            using_cuda = False
-            model.cpu()
-            generator.cpu()
-
-        model.generator = generator
-
-        for p in model.parameters():
-            p.data.uniform_(-init_value, init_value)
-
-        optimizer = Optim(model_params.optim, model_params.learning_rate, model_params.max_grad_norm,
-                          lr_decay=model_params.learning_rate_decay, start_decay_at=model_params.start_decay_at)
-        optimizer.set_parameters(model.parameters())
-
-        engine = NMTEngine(src_dict, trg_dict, model, optimizer, parameters=model_params)
-        return NMTEngineTrainer(engine)
-
     def __init__(self, engine):
         self._logger = logging.getLogger('nmmt.NMTEngineTrainer')
         self._log_level = logging.INFO
@@ -73,7 +36,8 @@ class NMTEngineTrainer:
     def set_log_level(self, level):
         self._log_level = level
 
-    def _new_nmt_criterion(self, vocab_size):
+    @staticmethod
+    def _new_nmt_criterion(vocab_size):
         weight = torch.ones(vocab_size)
         weight[Constants.PAD] = 0
         criterion = nn.NLLLoss(weight, size_average=False)

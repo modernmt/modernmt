@@ -5,9 +5,11 @@ import os
 import torch
 import torch.nn as nn
 
+from nmmt.SubwordTextProcessor import SubwordTextProcessor
 from nmmt.internal_utils import opts_object, log_timed_action
-from nmmt.torch_utils import torch_is_multi_gpu, torch_is_using_cuda
+from nmmt.torch_utils import torch_is_multi_gpu, torch_is_using_cuda, torch_get_gpus
 from onmt import Models, Translator, Constants, Dataset
+from onmt import Optim
 
 
 class _Translator(Translator):
@@ -25,8 +27,15 @@ class _Translator(Translator):
         self.model = model
 
 
+class ModelFileNotFoundException(BaseException):
+    def __init__(self, path):
+        self.message = "Model file not found: %s" % path
+
+
 class NMTEngine:
     class Parameters:
+        __custom_values = {'True': True, 'False': False, 'None': None}
+
         def __init__(self):
             self.layers = 2  # Number of layers in the LSTM encoder/decoder
             self.rnn_size = 500  # Size of hidden states
@@ -49,20 +58,16 @@ class NMTEngine:
             self.tuning_max_learning_rate = 0.2
             self.tuning_max_epochs = 10
 
-    @staticmethod
-    def load_from_checkpoint(checkpoint_path):
-        # Metadata
-        model_opt = NMTEngine.Parameters()
-
-        if os.path.isfile(checkpoint_path + '.meta'):
-            with open(checkpoint_path + '.meta', 'rb') as metadata_file:
-                for line in metadata_file:
+        def load_from_file(self, path):
+            with open(path, 'rb') as metadata_stream:
+                for line in metadata_stream:
                     key, value = (x.strip() for x in line.split('=', 1))
 
-                    if value == 'True':
-                        value = True
-                    elif value == 'False':
-                        value = False
+                    if key not in self.__dict__:
+                        continue
+
+                    if value in self.__custom_values:
+                        value = self.__custom_values[value]
                     else:
                         try:
                             number = float(value)
@@ -70,10 +75,69 @@ class NMTEngine:
                         except ValueError:
                             pass  # value is a string
 
-                    model_opt.__dict__[key] = value
+                    self.__dict__[key] = value
+
+        def save_to_file(self, path):
+            with open(path, 'wb') as metadata_file:
+                for key, value in self.__dict__.iteritems():
+                    if value is not None:
+                        metadata_file.write('%s = %s\n' % (key, str(value)))
+
+    @staticmethod
+    def new_instance(src_dict, trg_dict, processor, model_params=None, init_value=0.1):
+        if model_params is None:
+            model_params = NMTEngine.Parameters()
+
+        encoder = Models.Encoder(model_params, src_dict)
+        decoder = Models.Decoder(model_params, trg_dict)
+        generator = nn.Sequential(nn.Linear(model_params.rnn_size, trg_dict.size()), nn.LogSoftmax())
+
+        model = Models.NMTModel(encoder, decoder)
+
+        if torch_is_using_cuda():
+            model.cuda()
+            generator.cuda()
+
+            if torch_is_multi_gpu():
+                model = nn.DataParallel(model, device_ids=torch_get_gpus(), dim=1)
+                generator = nn.DataParallel(generator, device_ids=torch_get_gpus(), dim=0)
+        else:
+            model.cpu()
+            generator.cpu()
+
+        model.generator = generator
+
+        for p in model.parameters():
+            p.data.uniform_(-init_value, init_value)
+
+        optimizer = Optim(model_params.optim, model_params.learning_rate, model_params.max_grad_norm,
+                          lr_decay=model_params.learning_rate_decay, start_decay_at=model_params.start_decay_at)
+        optimizer.set_parameters(model.parameters())
+
+        return NMTEngine(src_dict, trg_dict, model, optimizer, processor, parameters=model_params)
+
+    @staticmethod
+    def load_from_checkpoint(checkpoint_path):
+        metadata_file = checkpoint_path + '.meta'
+        processor_file = checkpoint_path + '.bpe'
+        data_file = checkpoint_path + '.dat'
+
+        if not os.path.isfile(processor_file):
+            raise ModelFileNotFoundException(processor_file)
+        if not os.path.isfile(data_file):
+            raise ModelFileNotFoundException(data_file)
+
+        # Metadata
+        model_opt = NMTEngine.Parameters()
+
+        if os.path.isfile(metadata_file):
+            model_opt.load_from_file(metadata_file)
+
+        # Processor
+        processor = SubwordTextProcessor.load_from_file(processor_file)
 
         # Data
-        checkpoint = torch.load(checkpoint_path + '.dat', map_location=lambda storage, loc: storage)
+        checkpoint = torch.load(data_file, map_location=lambda storage, loc: storage)
 
         src_dict = checkpoint['dicts']['src']
         trg_dict = checkpoint['dicts']['tgt']
@@ -101,9 +165,9 @@ class NMTEngine:
         optim.set_parameters(model.parameters())
         optim.optimizer.load_state_dict(checkpoint['optim'].optimizer.state_dict())
 
-        return NMTEngine(src_dict, trg_dict, model, optim, model_opt, checkpoint)
+        return NMTEngine(src_dict, trg_dict, model, optim, processor, parameters=model_opt, checkpoint=checkpoint)
 
-    def __init__(self, src_dict, trg_dict, model, optimizer, parameters=None, checkpoint=None):
+    def __init__(self, src_dict, trg_dict, model, optimizer, processor, parameters=None, checkpoint=None):
         self._logger = logging.getLogger('nmmt.NMTEngine')
         self._log_level = logging.INFO
         self._model_loaded = False
@@ -112,6 +176,7 @@ class NMTEngine:
         self.trg_dict = trg_dict
         self.model = model
         self.optimizer = optimizer
+        self.processor = processor
         self.parameters = parameters if parameters is not None else NMTEngine.Parameters()
         self.checkpoint = checkpoint
 
@@ -159,30 +224,35 @@ class NMTEngine:
             with log_timed_action(self._logger, 'Restoring model initial state', log_start=False):
                 self._reset_model()
 
-            # Convert words to indexes [suggestions]
+            # Process suggestions
             tuning_src_batch, tuning_trg_batch = [], []
 
-            for source, target, _ in suggestions:
-                tuning_src_batch.append(self.src_dict.convertToIdxTensor(source, Constants.UNK_WORD))
-                tuning_trg_batch.append(self.trg_dict.convertToIdxTensor(target, Constants.UNK_WORD,
-                                                                         Constants.BOS_WORD, Constants.EOS_WORD))
+            for suggestion in suggestions:
+                source = self.processor.encode_line(suggestion.source, is_source=True)
+                source = self.src_dict.convertToIdxTensor(source, Constants.UNK_WORD)
 
-            # Prepare data for training on the tuningBatch
-            tuning_dataset = Dataset(tuning_src_batch, tuning_trg_batch, 32, torch_is_using_cuda())
+                target = self.processor.encode_line(suggestion.target, is_source=False)
+                target = self.trg_dict.convertToIdxTensor(target, Constants.UNK_WORD, Constants.BOS_WORD,
+                                                          Constants.EOS_WORD)
+
+                tuning_src_batch.append(source)
+                tuning_trg_batch.append(target)
+
+            tuning_set = Dataset(tuning_src_batch, tuning_trg_batch, len(tuning_src_batch), torch_is_using_cuda())
 
             # Run tuning
             log_message = 'Tuning on %d suggestions (epochs = %d, learning_rate = %.3f )' % (
                 len(suggestions), epochs, learning_rate)
 
             with log_timed_action(self._logger, log_message, log_start=False):
-                self._tuner.train_model(tuning_dataset, save_epochs=0)
+                self._tuner.train_model(tuning_set, save_epochs=0)
 
     def _estimate_tuning_parameters(self, suggestions):
         # it returns an actual learning_rate and epochs based on the quality of the suggestions
         # it is assured that at least one suggestion is provided (hence, len(suggestions) > 0)
         average_score = 0.0
-        for source, target, score in suggestions:
-            average_score += score
+        for suggestion in suggestions:
+            average_score += suggestion.score
         average_score /= len(suggestions)
 
         # Empirically defined function to make the number of epochs dependent to the quality of the suggestions
@@ -211,9 +281,9 @@ class NMTEngine:
         self._translator.opt.max_sent_length = max_sent_length
         self._translator.opt.n_best = n_best
 
-        pred_batch, pred_score, _ = self._translator.translate([text], None)
+        pred_batch, _, _ = self._translator.translate([self.processor.encode_line(text, is_source=True)], None)
 
-        return pred_batch[0], pred_score[0]
+        return self.processor.decode_tokens(pred_batch[0][0])
 
     def save(self, path, store_data=True, store_parameters=True, epoch=None):
         if store_parameters:

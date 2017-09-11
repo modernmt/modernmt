@@ -16,7 +16,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(LIB_DIR, 'pynmt')))
 
 import onmt
 import nmmt
-from nmmt import NMTEngineTrainer, SubwordTextProcessor, TrainingInterrupt, ShardedDataset, Suggestion, \
+from nmmt import NMTEngineTrainer, NMTEngine, SubwordTextProcessor, \
+    TrainingInterrupt, ShardedDataset, Suggestion, \
     torch_is_using_cuda, torch_setup
 import torch
 
@@ -260,7 +261,8 @@ class NMTDecoder:
 
         # Creating trainer ---------------------------------------------------------------------------------------------
         with _log_timed_action(self._logger, 'Building trainer'):
-            trainer = NMTEngineTrainer.new_instance(src_dict, trg_dict)
+            engine = NMTEngine.new_instance(src_dict, trg_dict, processor=None)
+            trainer = NMTEngineTrainer(engine)
 
         # Training model -----------------------------------------------------------------------------------------------
         self._logger.info(' Vocabulary size. source = %d; target = %d' % (src_dict.size(), trg_dict.size()))
