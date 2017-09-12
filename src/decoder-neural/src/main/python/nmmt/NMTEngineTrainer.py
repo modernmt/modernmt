@@ -28,13 +28,20 @@ class NMTEngineTrainer:
             self.min_epochs = 10  # Minimum number of training epochs
             self.min_perplexity_decrement = .02  # If perplexity decrement is lower than this percentage, stop training
 
+            self.optimizer = 'sgd'
+            self.learning_rate = 1.
+            self.max_grad_norm = 5
+            self.lr_decay = 0.9
+            self.start_decay_at = 10
+
     def __init__(self, engine, options=None, optimizer=None):
         self._logger = logging.getLogger('nmmt.NMTEngineTrainer')
         self._engine = engine
         self.opts = options if options is not None else NMTEngineTrainer.Options()
 
         if optimizer is None:
-            optimizer = Optim('sgd', 1., max_grad_norm=5, lr_decay=0.9, start_decay_at=10)
+            optimizer = Optim(self.opts.optimizer, self.opts.learning_rate, max_grad_norm=self.opts.max_grad_norm,
+                              lr_decay=self.opts.lr_decay, start_decay_at=self.opts.start_decay_at)
         self.optimizer = optimizer
         self.optimizer.set_parameters(engine.model.parameters())
 
