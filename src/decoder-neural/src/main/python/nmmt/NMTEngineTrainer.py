@@ -1,4 +1,3 @@
-import copy
 import glob
 import logging
 import math
@@ -43,9 +42,12 @@ class NMTEngineTrainer:
         if optimizer is None:
             optimizer = Optim(self.opts.optimizer, self.opts.learning_rate, max_grad_norm=self.opts.max_grad_norm,
                               lr_decay=self.opts.lr_decay, start_decay_at=self.opts.start_decay_at)
+            optimizer.set_parameters(engine.model.parameters())
         self.optimizer = optimizer
-        self.optimizer.set_parameters(engine.model.parameters())
-        # self._optimizer_init_state = copy.deepcopy(self.optimizer.optimizer.state_dict())
+
+    def reset_learning_rate(self, value):
+        self.optimizer.lr = value
+        self.optimizer.set_parameters(self._engine.model.parameters())
 
     def _log(self, message):
         self._logger.log(self.opts.log_level, message)
@@ -106,10 +108,6 @@ class NMTEngineTrainer:
         return total_loss / total_words, float(total_num_correct) / total_words
 
     def train_model(self, train_data, valid_data=None, save_path=None, save_epochs=5, start_epoch=1):
-        # Reset optimizer
-        self.optimizer.set_parameters(self._engine.model.parameters())
-        # self.optimizer.optimizer.load_state_dict(self._optimizer_init_state)
-
         # set the mask to None; required when the same model is trained after a translation
         if torch_is_multi_gpu():
             decoder = self._engine.model.module.decoder
@@ -167,7 +165,7 @@ class NMTEngineTrainer:
                     else:
                         checkpoint_file = '%s_acc_NA_ppl_NA_e%d' % (save_path, epoch)
 
-                    self._engine.save(checkpoint_file, epoch=epoch)
+                    self._engine.save(checkpoint_file)
 
                     checkpoint_files.append(checkpoint_file)
                     self._log('Checkpoint for epoch %d saved to file %s' % (epoch, checkpoint_file))

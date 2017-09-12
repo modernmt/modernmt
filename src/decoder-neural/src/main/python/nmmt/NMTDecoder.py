@@ -66,6 +66,6 @@ class NMTDecoder:
 
         # (3) Reset model if needed
         if reset_model:
-            engine.reset()
+            engine.reset_model()
 
         return result

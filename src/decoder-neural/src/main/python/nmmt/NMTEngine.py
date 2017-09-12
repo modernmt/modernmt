@@ -168,7 +168,7 @@ class NMTEngine:
         self._translator = None  # lazy load
         self._tuner = None  # lazy load
 
-    def reset(self):
+    def reset_model(self):
         with log_timed_action(self._logger, 'Restoring model initial state', log_start=False):
             model_state_dict = {k: v for k, v in sorted(self.checkpoint['model'].items()) if 'generator' not in k}
             model_state_dict.update({"generator." + k: v for k, v in sorted(self.checkpoint['generator'].items())})
@@ -182,7 +182,7 @@ class NMTEngine:
 
     def _ensure_model_loaded(self):
         if not self._model_loaded:
-            self.reset()
+            self.reset_model()
 
     def tune(self, suggestions, epochs=None, learning_rate=None):
         # Set tuning parameters
@@ -206,7 +206,7 @@ class NMTEngine:
                 self._tuner = NMTEngineTrainer(self, options=tuner_opts, optimizer=optimizer)
 
             self._tuner.opts.min_epochs = self._tuner.opts.max_epochs = epochs
-            self._tuner.optimizer.lr = learning_rate
+            self._tuner.reset_learning_rate(learning_rate)
 
             # Process suggestions
             tuning_src_batch, tuning_trg_batch = [], []
@@ -271,7 +271,7 @@ class NMTEngine:
 
         return self.processor.decode_tokens(pred_batch[0][0])
 
-    def save(self, path, store_data=True, store_metadata=True, epoch=None):
+    def save(self, path, store_data=True, store_metadata=True):
         if store_metadata:
             self.metadata.save_to_file(path + '.meta')
 
@@ -284,14 +284,10 @@ class NMTEngine:
             model_state_dict = {k: v for k, v in model.state_dict().items() if 'generator' not in k}
             generator_state_dict = generator.state_dict()
 
-            if epoch is None:
-                epoch = self.checkpoint['epoch'] if self.checkpoint else 0
-
             checkpoint = {
                 'model': model_state_dict,
                 'generator': generator_state_dict,
                 'dicts': {'src': self.src_dict, 'tgt': self.trg_dict},
-                'epoch': epoch,
             }
 
             torch.save(checkpoint, path + '.dat')
