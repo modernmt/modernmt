@@ -1,3 +1,4 @@
+import copy
 import logging
 import math
 import os
@@ -151,9 +152,9 @@ class NMTEngine:
         model.generator = generator
         model.eval()
 
-        return NMTEngine(src_dict, trg_dict, model, processor, metadata=metadata, checkpoint=checkpoint)
+        return NMTEngine(src_dict, trg_dict, model, processor, metadata=metadata)
 
-    def __init__(self, src_dict, trg_dict, model, processor, metadata=None, checkpoint=None):
+    def __init__(self, src_dict, trg_dict, model, processor, metadata=None):
         self._logger = logging.getLogger('nmmt.NMTEngine')
         self._log_level = logging.INFO
         self._model_loaded = False
@@ -163,16 +164,19 @@ class NMTEngine:
         self.model = model
         self.processor = processor
         self.metadata = metadata if metadata is not None else NMTEngine.Metadata()
-        self.checkpoint = checkpoint
 
         self._translator = None  # lazy load
         self._tuner = None  # lazy load
 
+        # Compute initial state
+        model_state_dict, generator_state_dict = self._get_state_dicts()
+
+        self._model_init_state = {k: v for k, v in sorted(model_state_dict.items()) if 'generator' not in k}
+        self._model_init_state.update({"generator." + k: v for k, v in sorted(generator_state_dict.items())})
+
     def reset_model(self):
         with log_timed_action(self._logger, 'Restoring model initial state', log_start=False):
-            model_state_dict = {k: v for k, v in sorted(self.checkpoint['model'].items()) if 'generator' not in k}
-            model_state_dict.update({"generator." + k: v for k, v in sorted(self.checkpoint['generator'].items())})
-            self.model.load_state_dict(model_state_dict)
+            self.model.load_state_dict(self._model_init_state)
 
             self.model.encoder.rnn.dropout = 0.
             self.model.decoder.dropout = nn.Dropout(0.)
@@ -276,13 +280,7 @@ class NMTEngine:
             self.metadata.save_to_file(path + '.meta')
 
         if store_data:
-            is_multi_gpu = torch_is_multi_gpu()
-
-            model = self.model.module if is_multi_gpu else self.model
-            generator = self.model.generator.module if is_multi_gpu else self.model.generator
-
-            model_state_dict = {k: v for k, v in model.state_dict().items() if 'generator' not in k}
-            generator_state_dict = generator.state_dict()
+            model_state_dict, generator_state_dict = self._get_state_dicts()
 
             checkpoint = {
                 'model': model_state_dict,
@@ -291,3 +289,14 @@ class NMTEngine:
             }
 
             torch.save(checkpoint, path + '.dat')
+
+    def _get_state_dicts(self):
+        is_multi_gpu = torch_is_multi_gpu()
+
+        model = self.model.module if is_multi_gpu else self.model
+        generator = self.model.generator.module if is_multi_gpu else self.model.generator
+
+        model_state_dict = {k: v for k, v in model.state_dict().items() if 'generator' not in k}
+        generator_state_dict = generator.state_dict()
+
+        return copy.deepcopy(model_state_dict), copy.deepcopy(generator_state_dict)
