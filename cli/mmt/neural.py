@@ -266,7 +266,7 @@ class NMTDecoder:
 
         # Training model -----------------------------------------------------------------------------------------------
         self._logger.info(' Vocabulary size. source = %d; target = %d' % (src_dict.size(), trg_dict.size()))
-        self._logger.info(' Maximum batch size. %d' % trainer.batch_size)
+        self._logger.info(' Trainer options: %s' % str(trainer.opts.__dict__))
 
         try:
             with _log_timed_action(self._logger, 'Train model'):

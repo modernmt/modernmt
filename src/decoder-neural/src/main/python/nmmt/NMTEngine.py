@@ -8,8 +8,7 @@ import torch.nn as nn
 from nmmt.SubwordTextProcessor import SubwordTextProcessor
 from nmmt.internal_utils import opts_object, log_timed_action
 from nmmt.torch_utils import torch_is_multi_gpu, torch_is_using_cuda, torch_get_gpus
-from onmt import Models, Translator, Constants, Dataset
-from onmt import Optim
+from onmt import Models, Translator, Constants, Dataset, Optim
 
 
 class _Translator(Translator):
@@ -47,14 +46,9 @@ class NMTEngine:
             self.context_gate = None  # Type of context gate to use [source|target|both] or None.
             self.dropout = 0.3  # Dropout probability; applied between LSTM stacks.
 
-            # Optimization options -------------------------------------------------------------------------------------
-            self.optim = 'sgd'  # Optimization method. [sgd|adagrad|adadelta|adam]
-            self.max_grad_norm = 5  # If norm(gradient vector) > max_grad_norm, re-normalize
-            self.learning_rate = 1.0
-            self.learning_rate_decay = 0.9
-            self.start_decay_at = 10
-
             # Tuning options -------------------------------------------------------------------------------------------
+            self.tuning_optimizer = 'sgd'  # Optimization method. [sgd|adagrad|adadelta|adam]
+            self.tuning_max_grad_norm = 5  # If norm(gradient vector) > max_grad_norm, re-normalize
             self.tuning_max_learning_rate = 0.2
             self.tuning_max_epochs = 10
 
@@ -110,11 +104,7 @@ class NMTEngine:
         for p in model.parameters():
             p.data.uniform_(-init_value, init_value)
 
-        optimizer = Optim(metadata.optim, metadata.learning_rate, metadata.max_grad_norm,
-                          lr_decay=metadata.learning_rate_decay, start_decay_at=metadata.start_decay_at)
-        optimizer.set_parameters(model.parameters())
-
-        return NMTEngine(src_dict, trg_dict, model, optimizer, processor, metadata=metadata)
+        return NMTEngine(src_dict, trg_dict, model, processor, metadata=metadata)
 
     @staticmethod
     def load_from_checkpoint(checkpoint_path):
@@ -161,13 +151,9 @@ class NMTEngine:
         model.generator = generator
         model.eval()
 
-        optim = checkpoint['optim']
-        optim.set_parameters(model.parameters())
-        optim.optimizer.load_state_dict(checkpoint['optim'].optimizer.state_dict())
+        return NMTEngine(src_dict, trg_dict, model, processor, metadata=metadata, checkpoint=checkpoint)
 
-        return NMTEngine(src_dict, trg_dict, model, optim, processor, metadata=metadata, checkpoint=checkpoint)
-
-    def __init__(self, src_dict, trg_dict, model, optimizer, processor, metadata=None, checkpoint=None):
+    def __init__(self, src_dict, trg_dict, model, processor, metadata=None, checkpoint=None):
         self._logger = logging.getLogger('nmmt.NMTEngine')
         self._log_level = logging.INFO
         self._model_loaded = False
@@ -175,7 +161,6 @@ class NMTEngine:
         self.src_dict = src_dict
         self.trg_dict = trg_dict
         self.model = model
-        self.optimizer = optimizer
         self.processor = processor
         self.metadata = metadata if metadata is not None else NMTEngine.Metadata()
         self.checkpoint = checkpoint
@@ -191,9 +176,6 @@ class NMTEngine:
         self.model.encoder.rnn.dropout = 0.
         self.model.decoder.dropout = nn.Dropout(0.)
         self.model.decoder.rnn.dropout = nn.Dropout(0.)
-
-        self.optimizer.set_parameters(self.model.parameters())
-        self.optimizer.optimizer.load_state_dict(self.checkpoint['optim'].optimizer.state_dict())
 
     def _ensure_model_loaded(self):
         if not self._model_loaded:
@@ -211,14 +193,18 @@ class NMTEngine:
         if learning_rate > 0. or epochs > 0:
             if self._tuner is None:
                 from nmmt.NMTEngineTrainer import NMTEngineTrainer
-                self._tuner = NMTEngineTrainer(self)
 
-                self._tuner.start_epoch = 1
-                self._tuner.min_perplexity_decrement = -1.
-                self._tuner.set_log_level(logging.NOTSET)
+                optimizer = Optim(self.metadata.tuning_optimizer, 1., max_grad_norm=self.metadata.tuning_max_grad_norm)
 
-            self._tuner.min_epochs = self._tuner.max_epochs = epochs
-            self.optimizer.lr = learning_rate
+                tuner_opts = NMTEngineTrainer.Options()
+                tuner_opts.log_interval = 999999
+                tuner_opts.log_level = logging.NOTSET
+                tuner_opts.min_perplexity_decrement = -1.
+
+                self._tuner = NMTEngineTrainer(self, options=tuner_opts, optimizer=optimizer)
+
+            self._tuner.opts.min_epochs = self._tuner.opts.max_epochs = epochs
+            self._tuner.optimizer.lr = learning_rate
 
             # Reset model
             with log_timed_action(self._logger, 'Restoring model initial state', log_start=False):
@@ -242,7 +228,13 @@ class NMTEngine:
 
             # Run tuning
             log_message = 'Tuning on %d suggestions (epochs = %d, learning_rate = %.3f )' % (
-                len(suggestions), epochs, learning_rate)
+                len(suggestions), self._tuner.opts.max_epochs, self._tuner.optimizer.lr)
+
+            # optimizer = Optim('sgd', lr=1, max_grad_norm=5)
+            # optimizer.set_parameters(self.model.parameters())
+            #
+            # optimizer.lr = learning_rate
+            # optimizer.set_parameters(self.model.parameters())
 
             with log_timed_action(self._logger, log_message, log_start=False):
                 self._tuner.train_model(tuning_set, save_epochs=0)
@@ -306,7 +298,6 @@ class NMTEngine:
                 'generator': generator_state_dict,
                 'dicts': {'src': self.src_dict, 'tgt': self.trg_dict},
                 'epoch': epoch,
-                'optim': self.optimizer
             }
 
             torch.save(checkpoint, path + '.dat')
