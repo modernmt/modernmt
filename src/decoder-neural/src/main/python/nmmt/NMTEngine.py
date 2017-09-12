@@ -33,7 +33,7 @@ class ModelFileNotFoundException(BaseException):
 
 
 class NMTEngine:
-    class Parameters:
+    class Metadata:
         __custom_values = {'True': True, 'False': False, 'None': None}
 
         def __init__(self):
@@ -84,13 +84,13 @@ class NMTEngine:
                         metadata_file.write('%s = %s\n' % (key, str(value)))
 
     @staticmethod
-    def new_instance(src_dict, trg_dict, processor, model_params=None, init_value=0.1):
-        if model_params is None:
-            model_params = NMTEngine.Parameters()
+    def new_instance(src_dict, trg_dict, processor, metadata=None, init_value=0.1):
+        if metadata is None:
+            metadata = NMTEngine.Metadata()
 
-        encoder = Models.Encoder(model_params, src_dict)
-        decoder = Models.Decoder(model_params, trg_dict)
-        generator = nn.Sequential(nn.Linear(model_params.rnn_size, trg_dict.size()), nn.LogSoftmax())
+        encoder = Models.Encoder(metadata, src_dict)
+        decoder = Models.Decoder(metadata, trg_dict)
+        generator = nn.Sequential(nn.Linear(metadata.rnn_size, trg_dict.size()), nn.LogSoftmax())
 
         model = Models.NMTModel(encoder, decoder)
 
@@ -110,11 +110,11 @@ class NMTEngine:
         for p in model.parameters():
             p.data.uniform_(-init_value, init_value)
 
-        optimizer = Optim(model_params.optim, model_params.learning_rate, model_params.max_grad_norm,
-                          lr_decay=model_params.learning_rate_decay, start_decay_at=model_params.start_decay_at)
+        optimizer = Optim(metadata.optim, metadata.learning_rate, metadata.max_grad_norm,
+                          lr_decay=metadata.learning_rate_decay, start_decay_at=metadata.start_decay_at)
         optimizer.set_parameters(model.parameters())
 
-        return NMTEngine(src_dict, trg_dict, model, optimizer, processor, parameters=model_params)
+        return NMTEngine(src_dict, trg_dict, model, optimizer, processor, metadata=metadata)
 
     @staticmethod
     def load_from_checkpoint(checkpoint_path):
@@ -128,10 +128,10 @@ class NMTEngine:
             raise ModelFileNotFoundException(data_file)
 
         # Metadata
-        model_opt = NMTEngine.Parameters()
+        metadata = NMTEngine.Metadata()
 
         if os.path.isfile(metadata_file):
-            model_opt.load_from_file(metadata_file)
+            metadata.load_from_file(metadata_file)
 
         # Processor
         processor = SubwordTextProcessor.load_from_file(processor_file)
@@ -142,13 +142,13 @@ class NMTEngine:
         src_dict = checkpoint['dicts']['src']
         trg_dict = checkpoint['dicts']['tgt']
 
-        encoder = Models.Encoder(model_opt, src_dict)
-        decoder = Models.Decoder(model_opt, trg_dict)
+        encoder = Models.Encoder(metadata, src_dict)
+        decoder = Models.Decoder(metadata, trg_dict)
 
         model = Models.NMTModel(encoder, decoder)
         model.load_state_dict(checkpoint['model'])
 
-        generator = nn.Sequential(nn.Linear(model_opt.rnn_size, trg_dict.size()), nn.LogSoftmax())
+        generator = nn.Sequential(nn.Linear(metadata.rnn_size, trg_dict.size()), nn.LogSoftmax())
         generator.load_state_dict(checkpoint['generator'])
 
         if torch_is_using_cuda():
@@ -165,9 +165,9 @@ class NMTEngine:
         optim.set_parameters(model.parameters())
         optim.optimizer.load_state_dict(checkpoint['optim'].optimizer.state_dict())
 
-        return NMTEngine(src_dict, trg_dict, model, optim, processor, parameters=model_opt, checkpoint=checkpoint)
+        return NMTEngine(src_dict, trg_dict, model, optim, processor, metadata=metadata, checkpoint=checkpoint)
 
-    def __init__(self, src_dict, trg_dict, model, optimizer, processor, parameters=None, checkpoint=None):
+    def __init__(self, src_dict, trg_dict, model, optimizer, processor, metadata=None, checkpoint=None):
         self._logger = logging.getLogger('nmmt.NMTEngine')
         self._log_level = logging.INFO
         self._model_loaded = False
@@ -177,7 +177,7 @@ class NMTEngine:
         self.model = model
         self.optimizer = optimizer
         self.processor = processor
-        self.parameters = parameters if parameters is not None else NMTEngine.Parameters()
+        self.metadata = metadata if metadata is not None else NMTEngine.Metadata()
         self.checkpoint = checkpoint
 
         self._translator = None  # lazy load
@@ -260,13 +260,13 @@ class NMTEngine:
         # where max_epochs is the maximum number of epochs allowed;
         # hence epochs = max_epochs only with perfect suggestions
         # and epochs = 0, when the average_score is close to 0.0 (<1/max_epochs)
-        tuning_epochs = int(self.parameters.tuning_max_epochs * average_score)
+        tuning_epochs = int(self.metadata.tuning_max_epochs * average_score)
 
         # Empirically defined function to make the learning rate dependent to the quality of the suggestions
         # lr = max_lr * sqrt(average_score)
         # hence lr = max_lr only with perfect suggestions
         # and lr = 0, when the average_score is exactly 0.0
-        tuning_learning_rate = self.parameters.tuning_max_learning_rate * math.sqrt(average_score)
+        tuning_learning_rate = self.metadata.tuning_max_learning_rate * math.sqrt(average_score)
 
         return tuning_epochs, tuning_learning_rate
 
@@ -285,12 +285,9 @@ class NMTEngine:
 
         return self.processor.decode_tokens(pred_batch[0][0])
 
-    def save(self, path, store_data=True, store_parameters=True, epoch=None):
-        if store_parameters:
-            with open(path + '.meta', 'wb') as metadata_file:
-                for key, value in self.parameters.__dict__.iteritems():
-                    if value is not None:
-                        metadata_file.write('%s = %s\n' % (key, str(value)))
+    def save(self, path, store_data=True, store_metadata=True, epoch=None):
+        if store_metadata:
+            self.metadata.save_to_file(path + '.meta')
 
         if store_data:
             is_multi_gpu = torch_is_multi_gpu()

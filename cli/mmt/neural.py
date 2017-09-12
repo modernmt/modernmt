@@ -359,8 +359,8 @@ class NeuralEngine(Engine):
 
         with _log_timed_action(logger, 'Updating engine with learning_rate %f (bleu=%f)' % (best_lr, best_bleu)):
             engine = decoder.get_engine(self.source_lang, self.target_lang)
-            engine.parameters.tuning_max_learning_rate = best_lr
-            engine.parameters.tuning_max_epochs = max_epochs
+            engine.metadata.tuning_max_learning_rate = best_lr
+            engine.metadata.tuning_max_epochs = max_epochs
             engine.save(self.decoder.model, store_data=False)
 
         return best_bleu / 100.
