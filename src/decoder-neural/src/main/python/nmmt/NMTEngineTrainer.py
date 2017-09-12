@@ -1,3 +1,4 @@
+import copy
 import glob
 import logging
 import math
@@ -44,6 +45,7 @@ class NMTEngineTrainer:
                               lr_decay=self.opts.lr_decay, start_decay_at=self.opts.start_decay_at)
         self.optimizer = optimizer
         self.optimizer.set_parameters(engine.model.parameters())
+        # self._optimizer_init_state = copy.deepcopy(self.optimizer.optimizer.state_dict())
 
     def _log(self, message):
         self._logger.log(self.opts.log_level, message)
@@ -106,6 +108,7 @@ class NMTEngineTrainer:
     def train_model(self, train_data, valid_data=None, save_path=None, save_epochs=5, start_epoch=1):
         # Reset optimizer
         self.optimizer.set_parameters(self._engine.model.parameters())
+        # self.optimizer.optimizer.load_state_dict(self._optimizer_init_state)
 
         # set the mask to None; required when the same model is trained after a translation
         if torch_is_multi_gpu():

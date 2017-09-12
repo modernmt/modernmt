@@ -54,9 +54,18 @@ class NMTDecoder:
         # (0) Get NMTEngine for current direction; if it does not exist, raise an exception
         engine = self.get_engine(source_lang, target_lang)
 
+        reset_model = False
+
         # (1) Tune engine if suggestions provided
         if suggestions is not None and len(suggestions) > 0:
             engine.tune(suggestions, epochs=tuning_epochs, learning_rate=tuning_learning_rate)
+            reset_model = True
 
         # (2) Translate
-        return engine.translate(text, n_best=n_best, beam_size=self.beam_size, max_sent_length=self.max_sent_length)
+        result = engine.translate(text, n_best=n_best, beam_size=self.beam_size, max_sent_length=self.max_sent_length)
+
+        # (3) Reset model if needed
+        if reset_model:
+            engine.reset()
+
+        return result

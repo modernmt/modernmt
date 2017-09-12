@@ -168,19 +168,21 @@ class NMTEngine:
         self._translator = None  # lazy load
         self._tuner = None  # lazy load
 
-    def _reset_model(self):
-        model_state_dict = {k: v for k, v in sorted(self.checkpoint['model'].items()) if 'generator' not in k}
-        model_state_dict.update({"generator." + k: v for k, v in sorted(self.checkpoint['generator'].items())})
-        self.model.load_state_dict(model_state_dict)
+    def reset(self):
+        with log_timed_action(self._logger, 'Restoring model initial state', log_start=False):
+            model_state_dict = {k: v for k, v in sorted(self.checkpoint['model'].items()) if 'generator' not in k}
+            model_state_dict.update({"generator." + k: v for k, v in sorted(self.checkpoint['generator'].items())})
+            self.model.load_state_dict(model_state_dict)
 
-        self.model.encoder.rnn.dropout = 0.
-        self.model.decoder.dropout = nn.Dropout(0.)
-        self.model.decoder.rnn.dropout = nn.Dropout(0.)
+            self.model.encoder.rnn.dropout = 0.
+            self.model.decoder.dropout = nn.Dropout(0.)
+            self.model.decoder.rnn.dropout = nn.Dropout(0.)
+
+            self._model_loaded = True
 
     def _ensure_model_loaded(self):
         if not self._model_loaded:
-            self._reset_model()
-            self._model_loaded = True
+            self.reset()
 
     def tune(self, suggestions, epochs=None, learning_rate=None):
         # Set tuning parameters
@@ -206,10 +208,6 @@ class NMTEngine:
             self._tuner.opts.min_epochs = self._tuner.opts.max_epochs = epochs
             self._tuner.optimizer.lr = learning_rate
 
-            # Reset model
-            with log_timed_action(self._logger, 'Restoring model initial state', log_start=False):
-                self._reset_model()
-
             # Process suggestions
             tuning_src_batch, tuning_trg_batch = [], []
 
@@ -229,12 +227,6 @@ class NMTEngine:
             # Run tuning
             log_message = 'Tuning on %d suggestions (epochs = %d, learning_rate = %.3f )' % (
                 len(suggestions), self._tuner.opts.max_epochs, self._tuner.optimizer.lr)
-
-            # optimizer = Optim('sgd', lr=1, max_grad_norm=5)
-            # optimizer.set_parameters(self.model.parameters())
-            #
-            # optimizer.lr = learning_rate
-            # optimizer.set_parameters(self.model.parameters())
 
             with log_timed_action(self._logger, log_message, log_start=False):
                 self._tuner.train_model(tuning_set, save_epochs=0)
@@ -264,6 +256,8 @@ class NMTEngine:
 
     def translate(self, text, beam_size=5, max_sent_length=160, replace_unk=False, n_best=1):
         self._ensure_model_loaded()
+
+        self.model.eval()
 
         if self._translator is None:
             self._translator = _Translator(self.src_dict, self.trg_dict, self.model)
