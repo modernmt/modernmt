@@ -55,16 +55,19 @@ class NMTEngineTrainer:
             self.batch_size = 64
             self.max_generator_batches = 32  # Maximum batches of words in a seq to run the generator on in parallel.
             self.checkpoint_steps = 10000  # Drop a checkpoint every 'checkpoint_steps' steps
+            self.validation_steps = 1000  # compute the validation score every 'validation_steps' steps
             self.steps_limit = None  # If set, run 'steps_limit' steps at most
 
             self.optimizer = 'sgd'
             self.learning_rate = 1.
             self.max_grad_norm = 5
+            self.lr_decay_steps = 10000  # decrease learning rate every 'lr_decay_steps' steps
             self.lr_decay = 0.9
-            self.start_decay_at = 10
+            self.start_decay_at = 100000  # start learning rate decay after 'start_decay_at' steps
 
     class State(object):
         def __init__(self):
+            #TODO: what happens if this number becomes tto large: overflow problem?
             self.step = 0
 
         def checkpoint(self, step, file_path, perplexity):
@@ -189,12 +192,34 @@ class NMTEngineTrainer:
                     self._log('Step %d: %s' % (step, str(mini_batch_stats)))
                     mini_batch_stats = _Stats()
 
+                valid_ppl = 0
+                if step > 0 and step % self.opts.validation_steps == 0:
+
+                    if valid_dataset is not None:
+                        valid_loss, valid_acc = self._evaluate(criterion, valid_dataset)
+                        valid_ppl = math.exp(min(valid_loss, 100))
+
+                        self._log('Validation Set at step %d: loss = %g, perplexity = %g, accuracy = %g' % (
+                            step, valid_loss, valid_ppl, (float(valid_acc) * 100)))
+
+                        # compute the policy to start the learning rate_decay
+
+                if step > 0 and step % self.opts.lr_decay_steps == 0:
+                        # Update the learning rate
+                    self.optimizer.updateLearningRate(valid_ppl, step)
+
+                    if self.optimizer.start_decay:
+                        self._log('Decaying learning rate to %g' % self.optimizer.lr)
+
+
                 if step > 0 and step % self.opts.checkpoint_steps == 0:
-                    state.step = step + 1  # next step
 
                     checkpoint_ppl = checkpoint_stats.perplexity
 
-                    if valid_dataset is not None:
+                    # re-compute the validation perplexity at his step because it is not already available
+
+                    #TODO: if che checkpoint does not need the validation score, we can remove this part.
+                    if self.opts.checkpoint_steps %  self.opts.validation_steps != 0 and valid_dataset is not None:
                         valid_loss, valid_acc = self._evaluate(criterion, valid_dataset)
                         valid_ppl = math.exp(min(valid_loss, 100))
 
@@ -221,6 +246,9 @@ class NMTEngineTrainer:
                         state.save_to_file(state_file_path)
 
                     checkpoint_stats = _Stats()
+
+                state.step = step + 1  # next step
+
         except KeyboardInterrupt:
             pass
 
