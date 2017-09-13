@@ -281,7 +281,7 @@ class _Heap:
         return self._data.read_batch(self._idx.read(index, length))
 
 
-class ShardedDataset(object):
+class MMapDataset(object):
     class Builder(object):
         def __init__(self, path):
             shutil.rmtree(path, ignore_errors=True)
@@ -303,7 +303,7 @@ class ShardedDataset(object):
 
     @staticmethod
     def load(file_path, batch_size, cuda, volatile=False):
-        return ShardedDataset(_Heap(file_path), batch_size, cuda, volatile)
+        return MMapDataset(_Heap(file_path), batch_size, cuda, volatile)
 
     def __init__(self, heap, batch_size, cuda, volatile=False):
         self._heap = heap
@@ -329,7 +329,7 @@ class ShardedDataset(object):
 
 
 def _test_build(path, size=1000000):
-    builder = ShardedDataset.Builder(path)
+    builder = MMapDataset.Builder(path)
     for i in xrange(size):
         base = [x + i for x in xrange(random.randint(1, 20))]
 
@@ -342,7 +342,7 @@ def _test_build(path, size=1000000):
 
 
 def _test_dump(path, do_print=False):
-    dataset = ShardedDataset.load(path, 64, None)
+    dataset = MMapDataset.load(path, 64, None)
 
     prev_len = 0
 

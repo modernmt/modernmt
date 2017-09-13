@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(LIB_DIR, 'pynmt')))
 import onmt
 import nmmt
 from nmmt import NMTEngineTrainer, NMTEngine, SubwordTextProcessor, \
-    TrainingInterrupt, ShardedDataset, Suggestion, \
+    TrainingInterrupt, MMapDataset, Suggestion, \
     torch_is_using_cuda, torch_setup
 import torch
 
@@ -115,10 +115,8 @@ class NMTPreprocessor:
     def _prepare_corpora(self, corpora, bpe_encoder, src_vocab, trg_vocab, output_path):
         count, added, ignored = 0, 0, 0
 
-        # create the ShardedDataset builder
-        builder = ShardedDataset.Builder(output_path)
+        builder = MMapDataset.Builder(output_path)
 
-        # fill the ShardedDataset with source pairs
         for corpus in corpora:
             with corpus.reader([self._source_lang, self._target_lang]) as reader:
                 for source, target in reader:
@@ -167,10 +165,8 @@ class NMTDecoder:
             valid_dataset_path = os.path.join(train_path, 'valid_dataset')
             vocab_path = os.path.join(train_path, 'vocab.pt')
 
-            train_dataset = ShardedDataset.load(train_dataset_path, self._batch_size, cuda=is_using_cuda,
-                                                volatile=False)
-            valid_dataset = ShardedDataset.load(valid_dataset_path, self._batch_size, cuda=is_using_cuda,
-                                                volatile=True)
+            train_dataset = MMapDataset.load(train_dataset_path, self._batch_size, cuda=is_using_cuda, volatile=False)
+            valid_dataset = MMapDataset.load(valid_dataset_path, self._batch_size, cuda=is_using_cuda, volatile=True)
             vocab = torch.load(vocab_path)
             src_dict, tgt_dict = vocab['src'], vocab['tgt']
 
