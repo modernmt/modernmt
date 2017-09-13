@@ -16,9 +16,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(LIB_DIR, 'pynmt')))
 
 import onmt
 import nmmt
-from nmmt import NMTEngineTrainer, NMTEngine, SubwordTextProcessor, \
-    TrainingInterrupt, MMapDataset, Suggestion, \
-    torch_is_using_cuda, torch_setup
+from nmmt import NMTEngineTrainer, NMTEngine, SubwordTextProcessor, TrainingInterrupt, MMapDataset, Suggestion
+from nmmt import torch_setup
 import torch
 
 
@@ -146,18 +145,15 @@ class NMTPreprocessor:
 
 
 class NMTDecoder:
-    def __init__(self, model, source_lang, target_lang, batch_size=64):
+    def __init__(self, model, source_lang, target_lang):
         self._logger = logging.getLogger('mmt.neural.NMTDecoder')
 
         self.model = model
         self._source_lang = source_lang
         self._target_lang = target_lang
-        self._batch_size = batch_size
 
     def train(self, train_path, working_dir):
         self._logger.info('Training started for data "%s"' % train_path)
-
-        is_using_cuda = torch_is_using_cuda()
 
         # Loading training data ----------------------------------------------------------------------------------------
         with _log_timed_action(self._logger, 'Loading training data from "%s"' % train_path):
@@ -165,8 +161,8 @@ class NMTDecoder:
             valid_dataset_path = os.path.join(train_path, 'valid_dataset')
             vocab_path = os.path.join(train_path, 'vocab.pt')
 
-            train_dataset = MMapDataset.load(train_dataset_path, self._batch_size, cuda=is_using_cuda, volatile=False)
-            valid_dataset = MMapDataset.load(valid_dataset_path, self._batch_size, cuda=is_using_cuda, volatile=True)
+            train_dataset = MMapDataset.load(train_dataset_path)
+            valid_dataset = MMapDataset.load(valid_dataset_path)
             vocab = torch.load(vocab_path)
             src_dict, tgt_dict = vocab['src'], vocab['tgt']
 
@@ -182,7 +178,7 @@ class NMTDecoder:
         try:
             with _log_timed_action(self._logger, 'Train model'):
                 save_model = os.path.join(working_dir, 'train_model')
-                checkpoint = trainer.train_model(train_dataset, valid_data=valid_dataset, save_path=save_model)
+                checkpoint = trainer.train_model(train_dataset, valid_dataset=valid_dataset, save_path=save_model)
         except TrainingInterrupt as e:
             checkpoint = e.checkpoint
 

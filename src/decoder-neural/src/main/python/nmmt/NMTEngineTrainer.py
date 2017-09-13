@@ -23,6 +23,7 @@ class NMTEngineTrainer:
             self.log_interval = 50  # Log status every 'log_interval' updates
             self.log_level = logging.INFO
 
+            self.batch_size = 64
             self.max_generator_batches = 32  # Maximum batches of words in a seq to run the generator on in parallel.
             self.max_epochs = 40  # Maximum number of training epochs
             self.min_epochs = 10  # Minimum number of training epochs
@@ -84,17 +85,19 @@ class NMTEngineTrainer:
         grad_output = None if outputs.grad is None else outputs.grad.data
         return loss, grad_output, num_correct
 
-    def _evaluate(self, criterion, data):
+    def _evaluate(self, criterion, dataset):
         total_loss = 0
         total_words = 0
         total_num_correct = 0
 
         model = self._engine.model
-
         model.eval()
-        for i in range(len(data)):
+
+        iterator = dataset.iterator(self.opts.batch_size, shuffle=False, volatile=True)
+
+        for _, batch in iterator:
             # exclude original indices
-            batch = data[i][:-1]
+            batch = batch[:-1]
             outputs = model(batch)
             # exclude <s> from targets
             targets = batch[1][1:]
@@ -107,7 +110,7 @@ class NMTEngineTrainer:
         model.train()
         return total_loss / total_words, float(total_num_correct) / total_words
 
-    def train_model(self, train_data, valid_data=None, save_path=None, save_epochs=5, start_epoch=1):
+    def train_model(self, train_dataset, valid_dataset=None, save_path=None, save_epochs=5, start_epoch=1):
         # set the mask to None; required when the same model is trained after a translation
         if torch_is_multi_gpu():
             decoder = self._engine.model.module.decoder
@@ -129,7 +132,7 @@ class NMTEngineTrainer:
                 start_time_epoch = time.time()
 
                 #  (1) train for one epoch on the training set
-                train_loss, train_acc = self._train_epoch(epoch, train_data, criterion)
+                train_loss, train_acc = self._train_epoch(epoch, train_dataset, criterion)
                 train_ppl = math.exp(min(train_loss, 100))
                 self._log('trainEpoch Epoch %g Train loss: %g perplexity: %g accuracy: %g' % (
                     epoch, train_loss, train_ppl, (float(train_acc) * 100)))
@@ -140,9 +143,9 @@ class NMTEngineTrainer:
                     perplexity_history.append(train_ppl)
                     force_termination = self._should_terminate(perplexity_history)
 
-                if valid_data:
+                if valid_dataset:
                     #  (2) evaluate on the validation set
-                    valid_loss, valid_acc = self._evaluate(criterion, valid_data)
+                    valid_loss, valid_acc = self._evaluate(criterion, valid_dataset)
                     valid_ppl = math.exp(min(valid_loss, 100))
                     self._log('trainModel Epoch %g Validation loss: %g perplexity: %g accuracy: %g' % (
                         epoch, valid_loss, valid_ppl, (float(valid_acc) * 100)))
@@ -150,7 +153,8 @@ class NMTEngineTrainer:
                     # (3) update the learning rate
                     self.optimizer.updateLearningRate(valid_loss, epoch)
 
-                    self._log('trainModel Epoch %g Decaying learning rate to %g' % (epoch, self.optimizer.lr))
+                    if self.optimizer.start_decay:
+                        self._log('trainModel Epoch %g Decaying learning rate to %g' % (epoch, self.optimizer.lr))
 
                 if save_path is not None and save_epochs > 0:
                     if len(checkpoint_files) > 0 and len(checkpoint_files) > save_epochs - 1:
@@ -179,18 +183,17 @@ class NMTEngineTrainer:
 
         return checkpoint_files[-1] if len(checkpoint_files) > 0 else None
 
-    def _train_epoch(self, epoch, train_data, criterion):
+    def _train_epoch(self, epoch, train_dataset, criterion):
         total_loss, total_words, total_num_correct = 0, 0, 0
         report_loss, report_tgt_words, report_src_words, report_num_correct = 0, 0, 0, 0
         start = time.time()
 
         model = self._engine.model
 
-        # Shuffle mini batch order.
-        batch_order = torch.randperm(len(train_data))
+        iterator = train_dataset.iterator(self.opts.batch_size, shuffle=True, volatile=False, random_seed=epoch)
 
-        for i in range(len(train_data)):
-            batch = train_data[batch_order[i]][:-1]  # exclude original indices
+        for i, batch in iterator:
+            batch = batch[:-1]  # exclude original indices
 
             model.zero_grad()
             outputs = model(batch)
@@ -216,7 +219,7 @@ class NMTEngineTrainer:
                 self._log(
                     'trainEpoch epoch %2d, %5d/%5d; num_corr: %6.2f; %3.0f src tok; '
                     '%3.0f tgt tok; acc: %6.2f; ppl: %6.2f; %3.0f src tok/s; %3.0f tgt tok/s;' %
-                    (epoch, i + 1, len(train_data),
+                    (epoch, i + 1, len(iterator),
                      report_num_correct,
                      report_src_words,
                      report_tgt_words,

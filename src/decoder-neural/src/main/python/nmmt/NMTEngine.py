@@ -6,6 +6,7 @@ import os
 import torch
 import torch.nn as nn
 
+from nmmt.IDataset import DatasetWrapper
 from nmmt.SubwordTextProcessor import SubwordTextProcessor
 from nmmt.internal_utils import opts_object, log_timed_action
 from nmmt.torch_utils import torch_is_multi_gpu, torch_is_using_cuda, torch_get_gpus
@@ -227,6 +228,7 @@ class NMTEngine:
                 tuning_trg_batch.append(target)
 
             tuning_set = Dataset(tuning_src_batch, tuning_trg_batch, len(tuning_src_batch), torch_is_using_cuda())
+            tuning_set = DatasetWrapper(tuning_set)
 
             # Run tuning
             log_message = 'Tuning on %d suggestions (epochs = %d, learning_rate = %.3f )' % (
