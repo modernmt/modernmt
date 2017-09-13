@@ -70,138 +70,53 @@ class TranslationMemory:
         shell.execute(command, stdout=log, stderr=log)
 
 
-class BPEPreprocessor:
-    def __init__(self, source_lang, target_lang, bpe_symbols, max_vocab_size, bpe_model):
+class NMTPreprocessor:
+    def __init__(self, source_lang, target_lang, bpe_model_path, bpe_symbols, max_vocab_size):
         self._source_lang = source_lang
         self._target_lang = target_lang
-        self._bpe_model = bpe_model
+        self._bpe_model_path = bpe_model_path
         self._bpe_symbols = bpe_symbols
         self._max_vocab_size = max_vocab_size
-
-        self._logger = logging.getLogger('mmt.neural.BPEPreprocessor')
-
-    def create(self, corpora):
-        class _ReaderWrapper:
-            def __init__(self, _corpus, _langs):
-                self.corpus = _corpus
-                self.langs = _langs
-                self._reader = None
-
-            def __enter__(self):
-                self._reader = self.corpus.reader(self.langs).__enter__()
-                return self._reader
-
-            def __exit__(self, exc_type, exc_val, exc_tb):
-                self._reader.__exit__(exc_type, exc_val, exc_tb)
-
-        if not os.path.exists(self._bpe_model):
-            self._logger.info('Creating BPE model')
-            vb_builder = SubwordTextProcessor.Builder(symbols=self._bpe_symbols,
-                                                      max_vocabulary_size=self._max_vocab_size)
-            encoder = vb_builder.build([_ReaderWrapper(c, [self._source_lang, self._target_lang]) for c in corpora])
-            encoder.save_to_file(self._bpe_model)
-        else:
-            self._logger.info('Creating BPE model: do nothing because it already exists')
-
-    @staticmethod
-    def load(model):
-        return SubwordTextProcessor.load_from_file(model)
-
-
-class NMTPreprocessor:
-    def __init__(self, source_lang, target_lang, bpe_model):
-        self._source_lang = source_lang
-        self._target_lang = target_lang
-        self._bpe_model = bpe_model
 
         self._logger = logging.getLogger('mmt.neural.NMTPreprocessor')
         self._ram_limit_mb = 1024
 
-    def process(self, corpora, valid_corpora, output_path, working_dir='.', dump_dicts=False):
+    def process(self, corpora, valid_corpora, output_path):
+        with _log_timed_action(self._logger, 'Creating BPE model'):
+            vb_builder = SubwordTextProcessor.Builder(symbols=self._bpe_symbols,
+                                                      max_vocabulary_size=self._max_vocab_size)
+            bpe_encoder = vb_builder.build([c.reader([self._source_lang, self._target_lang]) for c in corpora])
+            bpe_encoder.save_to_file(self._bpe_model_path)
 
-        bpe_encoder = BPEPreprocessor.load(self._bpe_model)
+        with _log_timed_action(self._logger, 'Creating vocabularies'):
+            src_vocab = onmt.Dict([onmt.Constants.PAD_WORD, onmt.Constants.UNK_WORD,
+                                   onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD], lower=False)
+            trg_vocab = onmt.Dict([onmt.Constants.PAD_WORD, onmt.Constants.UNK_WORD,
+                                   onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD], lower=False)
 
-        self._logger.info('Creating vocabularies')
-        src_vocab = onmt.Dict([onmt.Constants.PAD_WORD, onmt.Constants.UNK_WORD,
-                               onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD], lower=False)
-        trg_vocab = onmt.Dict([onmt.Constants.PAD_WORD, onmt.Constants.UNK_WORD,
-                               onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD], lower=False)
+            for word in bpe_encoder.get_source_terms():
+                src_vocab.add(word)
+            for word in bpe_encoder.get_target_terms():
+                trg_vocab.add(word)
 
-        for word in bpe_encoder.get_source_terms():
-            src_vocab.add(word)
-        for word in bpe_encoder.get_target_terms():
-            trg_vocab.add(word)
+            torch.save({
+                'src': src_vocab,
+                'tgt': trg_vocab
+            }, os.path.join(output_path, 'vocab.pt'))
 
-        self._logger.info('Preparing training corpora')
-        self._logger.info('Storing NMT preprocessed training data to "%s"' % output_path)
-        self._prepare_sharded_dataset(output_path, corpora, bpe_encoder, src_vocab, trg_vocab)
+        with _log_timed_action(self._logger, 'Preparing training corpora'):
+            train_output_path = os.path.join(output_path, 'train_dataset')
+            self._prepare_corpora(corpora, bpe_encoder, src_vocab, trg_vocab, train_output_path)
 
-        self._logger.info('Preparing validation corpora')
-        src_valid, trg_valid = self._prepare_corpora(valid_corpora, bpe_encoder, src_vocab, trg_vocab)
+        with _log_timed_action(self._logger, 'Preparing validation corpora'):
+            valid_output_path = os.path.join(output_path, 'valid_dataset')
+            self._prepare_corpora(valid_corpora, bpe_encoder, src_vocab, trg_vocab, valid_output_path)
 
-        output_file = os.path.join(output_path, 'train_processed.train.pt')
-        self._logger.info('Storing NMT preprocessed validation data to "%s"' % output_file)
-        torch.save({
-            'dicts': {'src': src_vocab, 'tgt': trg_vocab},
-            'valid': {'src': src_valid, 'tgt': trg_valid},
-        }, output_file)
-
-        if dump_dicts:
-            src_dict_file = os.path.join(working_dir, 'train_processed.src.dict')
-            trg_dict_file = os.path.join(working_dir, 'train_processed.trg.dict')
-
-            self._logger.info('Storing NMT preprocessed source dictionary "%s"' % src_dict_file)
-            src_vocab.writeFile(src_dict_file)
-
-            self._logger.info('Storing NMT preprocessed target dictionary "%s"' % trg_dict_file)
-            trg_vocab.writeFile(trg_dict_file)
-
-    def _prepare_corpora(self, corpora, bpe_encoder, src_vocab, trg_vocab):
-        src, trg = [], []
-        sizes = []
-        count, ignored = 0, 0
-
-        for corpus in corpora:
-            with corpus.reader([self._source_lang, self._target_lang]) as reader:
-                for source, target in reader:
-                    src_words = bpe_encoder.encode_line(source, is_source=True)
-                    trg_words = bpe_encoder.encode_line(target, is_source=False)
-
-                    if len(src_words) > 0 and len(trg_words) > 0:
-                        src.append(src_vocab.convertToIdxTensor(src_words,
-                                                                onmt.Constants.UNK_WORD))
-                        trg.append(trg_vocab.convertToIdxTensor(trg_words,
-                                                                onmt.Constants.UNK_WORD,
-                                                                onmt.Constants.BOS_WORD,
-                                                                onmt.Constants.EOS_WORD))
-                        sizes.append(len(src_words))
-                    else:
-                        ignored += 1
-
-                    count += 1
-                    if count % 100000 == 0:
-                        self._logger.info(' %d sentences prepared' % count)
-
-        self._logger.info('Shuffling sentences')
-        perm = torch.randperm(len(src))
-        src = [src[idx] for idx in perm]
-        trg = [trg[idx] for idx in perm]
-        sizes = [sizes[idx] for idx in perm]
-
-        self._logger.info('Sorting sentences by size')
-        _, perm = torch.sort(torch.Tensor(sizes))
-        src = [src[idx] for idx in perm]
-        trg = [trg[idx] for idx in perm]
-
-        self._logger.info('Prepared %d sentences (%d ignored due to length == 0)' % (len(src), ignored))
-
-        return src, trg
-
-    def _prepare_sharded_dataset(self, path, corpora, bpe_encoder, src_vocab, trg_vocab):
+    def _prepare_corpora(self, corpora, bpe_encoder, src_vocab, trg_vocab, output_path):
         count, added, ignored = 0, 0, 0
 
         # create the ShardedDataset builder
-        builder = ShardedDataset.Builder(path)
+        builder = ShardedDataset.Builder(output_path)
 
         # fill the ShardedDataset with source pairs
         for corpus in corpora:
@@ -233,44 +148,45 @@ class NMTPreprocessor:
 
 
 class NMTDecoder:
-    def __init__(self, model, source_lang, target_lang):
+    def __init__(self, model, source_lang, target_lang, batch_size=64):
         self._logger = logging.getLogger('mmt.neural.NMTDecoder')
 
         self.model = model
         self._source_lang = source_lang
         self._target_lang = target_lang
+        self._batch_size = batch_size
 
-    def train(self, data_path, working_dir):
-        self._logger.info('Training started for data "%s"' % data_path)
+    def train(self, train_path, working_dir):
+        self._logger.info('Training started for data "%s"' % train_path)
 
         is_using_cuda = torch_is_using_cuda()
-        save_model = os.path.join(working_dir, 'train_model')
 
         # Loading training data ----------------------------------------------------------------------------------------
-        with _log_timed_action(self._logger, 'Loading training data from "%s"' % data_path):
-            train_data = ShardedDataset.load(data_path, 64, cuda=is_using_cuda, volatile=False)
+        with _log_timed_action(self._logger, 'Loading training data from "%s"' % train_path):
+            train_dataset_path = os.path.join(train_path, 'train_dataset')
+            valid_dataset_path = os.path.join(train_path, 'valid_dataset')
+            vocab_path = os.path.join(train_path, 'vocab.pt')
 
-        # Loading validation data and dictionaries ---------------------------------------------------------------------
-        data_file = os.path.join(data_path, 'train_processed.train.pt')
-
-        with _log_timed_action(self._logger, 'Loading validation data and dictionaries from "%s"' % data_file):
-            data_set = torch.load(data_file)
-            src_dict, trg_dict = data_set['dicts']['src'], data_set['dicts']['tgt']
-            src_valid, trg_valid = data_set['valid']['src'], data_set['valid']['tgt']
-            valid_data = onmt.Dataset(src_valid, trg_valid, 64, is_using_cuda, volatile=True)
+            train_dataset = ShardedDataset.load(train_dataset_path, self._batch_size, cuda=is_using_cuda,
+                                                volatile=False)
+            valid_dataset = ShardedDataset.load(valid_dataset_path, self._batch_size, cuda=is_using_cuda,
+                                                volatile=True)
+            vocab = torch.load(vocab_path)
+            src_dict, tgt_dict = vocab['src'], vocab['tgt']
 
         # Creating trainer ---------------------------------------------------------------------------------------------
-        with _log_timed_action(self._logger, 'Building trainer'):
-            engine = NMTEngine.new_instance(src_dict, trg_dict, processor=None)
+        with _log_timed_action(self._logger, 'Creating trainer'):
+            engine = NMTEngine.new_instance(src_dict, tgt_dict, processor=None)
             trainer = NMTEngineTrainer(engine)
 
         # Training model -----------------------------------------------------------------------------------------------
-        self._logger.info(' Vocabulary size. source = %d; target = %d' % (src_dict.size(), trg_dict.size()))
+        self._logger.info(' Vocabulary size. source = %d; target = %d' % (src_dict.size(), tgt_dict.size()))
         self._logger.info(' Trainer options: %s' % str(trainer.opts.__dict__))
 
         try:
             with _log_timed_action(self._logger, 'Train model'):
-                checkpoint = trainer.train_model(train_data, valid_data=valid_data, save_path=save_model)
+                save_model = os.path.join(working_dir, 'train_model')
+                checkpoint = trainer.train_model(train_dataset, valid_data=valid_dataset, save_path=save_model)
         except TrainingInterrupt as e:
             checkpoint = e.checkpoint
 
@@ -306,12 +222,12 @@ class NeuralEngine(Engine):
 
         memory_path = os.path.join(decoder_path, 'memory')
         bpe_model = os.path.join(decoder_path, model_name + '.bpe')
-        pt_model = os.path.join(decoder_path, model_name)
+        decoder_model = os.path.join(decoder_path, model_name)
 
         self.memory = TranslationMemory(memory_path, self.source_lang, self.target_lang)
-        self.bpe_processor = BPEPreprocessor(source_lang, target_lang, bpe_symbols, max_vocab_size, bpe_model)
-        self.nmt_preprocessor = NMTPreprocessor(self.source_lang, self.target_lang, bpe_model)
-        self.decoder = NMTDecoder(pt_model, self.source_lang, self.target_lang)
+        self.nmt_preprocessor = NMTPreprocessor(self.source_lang, self.target_lang, bpe_model_path=bpe_model,
+                                                bpe_symbols=bpe_symbols, max_vocab_size=max_vocab_size)
+        self.decoder = NMTDecoder(decoder_model, self.source_lang, self.target_lang)
 
     def type(self):
         return 'neural'
@@ -396,8 +312,8 @@ class NeuralEngineBuilder(EngineBuilder):
             else os.path.join(self._engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME)
 
     def _build_schedule(self):
-        return EngineBuilder._build_schedule(self) + [self._build_memory, self._build_bpe,
-                                                      self._prepare_training_data, self._train_decoder]
+        return EngineBuilder._build_schedule(self) + \
+               [self._build_memory, self._prepare_training_data, self._train_decoder]
 
     def _check_constraints(self):
         pass
@@ -408,31 +324,24 @@ class NeuralEngineBuilder(EngineBuilder):
     def _build_memory(self, args, skip=False, log=None):
         if not skip:
             corpora = filter(None, [args.processed_bilingual_corpora, args.bilingual_corpora])[0]
-
             self._engine.memory.create(corpora, log=log)
 
-    @EngineBuilder.Step('Creating BPE model')
-    def _build_bpe(self, args, skip=False):
-        if not skip:
-            corpora = filter(None, [args.filtered_bilingual_corpora, args.processed_bilingual_corpora,
-                                    args.bilingual_corpora])[0]
-
-            self._engine.bpe_processor.create(corpora)
-
     @EngineBuilder.Step('Preparing training data')
-    def _prepare_training_data(self, args, skip=False):
-        working_dir = self._get_tempdir('onmt_training')
-        args.onmt_training_path = working_dir
+    def _prepare_training_data(self, args, skip=False, delete_on_exit=False):
+        args.onmt_training_path = self._get_tempdir('onmt_training')
 
         if not skip:
+            processed_valid_path = os.path.join(args.onmt_training_path, 'processed_valid')
+
             validation_corpora = BilingualCorpus.list(self._valid_corpora_path)
-            validation_corpora, _ = self._engine.training_preprocessor.process(validation_corpora,
-                                                                               os.path.join(working_dir, 'valid_set'))
-            args.validation_corpora = validation_corpora
+            validation_corpora, _ = self._engine.training_preprocessor.process(validation_corpora, processed_valid_path)
+
             corpora = filter(None, [args.processed_bilingual_corpora, args.bilingual_corpora])[0]
 
-            self._engine.nmt_preprocessor.process(corpora, validation_corpora, args.onmt_training_path,
-                                                  working_dir=working_dir)
+            self._engine.nmt_preprocessor.process(corpora, validation_corpora, args.onmt_training_path)
+
+            if delete_on_exit:
+                shutil.rmtree(processed_valid_path, ignore_errors=True)
 
     @EngineBuilder.Step('Neural decoder training')
     def _train_decoder(self, args, skip=False, delete_on_exit=False):
