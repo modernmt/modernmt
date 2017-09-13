@@ -36,10 +36,10 @@ public interface ExecutionQueue extends Closeable {
             if (gpus.length > 1) {
                 ArrayList<StartNativeProcessGpuTask> startTasks = new ArrayList<>();
                 for (int i = 0; i < gpus.length; i++)
-                    startTasks.add(i, new StartNativeProcessGpuTask(home, model, i));
+                    startTasks.add(i, new StartNativeProcessGpuTask(home, model, gpus[i]));
                 return ParallelExecutionQueue.forGPUs(startTasks);
             } else {
-                return SingletonExecutionQueue.forGPU(new StartNativeProcessGpuTask(home, model, 0));
+                return SingletonExecutionQueue.forGPU(new StartNativeProcessGpuTask(home, model, gpus[0]));
             }
         }
     }
