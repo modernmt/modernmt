@@ -1,4 +1,3 @@
-import glob
 import logging
 import math
 import os
@@ -11,29 +10,74 @@ from nmmt.torch_utils import torch_is_multi_gpu, torch_is_using_cuda
 from onmt import Constants, Optim
 
 
-class TrainingInterrupt(Exception):
-    def __init__(self, checkpoint):
-        super(TrainingInterrupt, self).__init__()
-        self.checkpoint = checkpoint
+class _Stats(object):
+    def __init__(self):
+        self.start_time = time.time()
+        self.total_loss = 0
+        self.src_words = 0
+        self.tgt_words = 0
+        self.num_correct = 0
+
+    def update(self, loss, src_words, tgt_words, num_correct):
+        self.total_loss += loss
+        self.src_words += src_words
+        self.tgt_words += tgt_words
+        self.num_correct += num_correct
+
+    @property
+    def accuracy(self):
+        return float(self.num_correct) / self.tgt_words
+
+    @property
+    def loss(self):
+        return self.total_loss / self.tgt_words
+
+    @property
+    def perplexity(self):
+        return math.exp(self.loss)
+
+    def __str__(self):
+        elapsed_time = time.time() - self.start_time
+
+        return '[num_correct: %6.2f; %3.0f src tok; %3.0f tgt tok; ' \
+               'acc: %6.2f; ppl: %6.2f; %3.0f src tok/s; %3.0f tgt tok/s]' % (
+                   self.num_correct, self.src_words, self.tgt_words,
+                   self.accuracy * 100, self.perplexity, self.src_words / elapsed_time, self.tgt_words / elapsed_time
+               )
 
 
 class NMTEngineTrainer:
-    class Options:
+    class Options(object):
         def __init__(self):
-            self.log_interval = 50  # Log status every 'log_interval' updates
             self.log_level = logging.INFO
+            self.log_interval = 100  # Log status every 'log_interval' steps
 
             self.batch_size = 64
             self.max_generator_batches = 32  # Maximum batches of words in a seq to run the generator on in parallel.
-            self.max_epochs = 40  # Maximum number of training epochs
-            self.min_epochs = 10  # Minimum number of training epochs
-            self.min_perplexity_decrement = .02  # If perplexity decrement is lower than this percentage, stop training
+            self.checkpoint_steps = 10000  # Drop a checkpoint every 'checkpoint_steps' steps
+            self.steps_limit = None  # If set, run 'steps_limit' steps at most
 
             self.optimizer = 'sgd'
             self.learning_rate = 1.
             self.max_grad_norm = 5
             self.lr_decay = 0.9
             self.start_decay_at = 10
+
+    class State(object):
+        def __init__(self):
+            self.step = 0
+
+        def checkpoint(self, step, file_path, perplexity):
+            raise NotImplementedError
+
+        def save_to_file(self, file_path):
+            torch.save(self.__dict__, file_path)
+
+        @staticmethod
+        def load_from_file(file_path):
+            state = NMTEngineTrainer.State()
+            state.__dict__ = torch.load(file_path)
+            return state
 
     def __init__(self, engine, options=None, optimizer=None):
         self._logger = logging.getLogger('nmmt.NMTEngineTrainer')
@@ -110,7 +154,16 @@ class NMTEngineTrainer:
         model.train()
         return total_loss / total_words, float(total_num_correct) / total_words
 
-    def train_model(self, train_dataset, valid_dataset=None, save_path=None, save_epochs=5, start_epoch=1):
+    def train_model(self, train_dataset, valid_dataset=None, save_path=None, state=None):
+        state_file_path = None if save_path is None else os.path.join(save_path, 'state.dat')
+
+        # resume training if state file found
+        if state is None:
+            if state_file_path is None or not os.path.isfile(state_file_path):
+                state = NMTEngineTrainer.State()
+            else:
+                state = NMTEngineTrainer.State.load_from_file(state_file_path)
+
         # set the mask to None; required when the same model is trained after a translation
         if torch_is_multi_gpu():
             decoder = self._engine.model.module.decoder
@@ -122,132 +175,72 @@ class NMTEngineTrainer:
         # define criterion of each GPU
         criterion = self._new_nmt_criterion(self._engine.trg_dict.size())
 
-        perplexity_history = []
-        checkpoint_files = []
-        valid_acc, valid_ppl = None, None
-
         try:
-            for epoch in range(start_epoch, self.opts.max_epochs + 1):
-                self._log('Training epoch %g... START' % epoch)
-                start_time_epoch = time.time()
+            checkpoint_stats = _Stats()
+            mini_batch_stats = _Stats()
 
-                #  (1) train for one epoch on the training set
-                train_loss, train_acc = self._train_epoch(epoch, train_dataset, criterion)
-                train_ppl = math.exp(min(train_loss, 100))
-                self._log('trainEpoch Epoch %g Train loss: %g perplexity: %g accuracy: %g' % (
-                    epoch, train_loss, train_ppl, (float(train_acc) * 100)))
-
-                force_termination = False
-
-                if self.opts.min_perplexity_decrement > 0.:
-                    perplexity_history.append(train_ppl)
-                    force_termination = self._should_terminate(perplexity_history)
-
-                if valid_dataset:
-                    #  (2) evaluate on the validation set
-                    valid_loss, valid_acc = self._evaluate(criterion, valid_dataset)
-                    valid_ppl = math.exp(min(valid_loss, 100))
-                    self._log('trainModel Epoch %g Validation loss: %g perplexity: %g accuracy: %g' % (
-                        epoch, valid_loss, valid_ppl, (float(valid_acc) * 100)))
-
-                    # (3) update the learning rate
-                    self.optimizer.updateLearningRate(valid_loss, epoch)
-
-                    if self.optimizer.start_decay:
-                        self._log('trainModel Epoch %g Decaying learning rate to %g' % (epoch, self.optimizer.lr))
-
-                if save_path is not None and save_epochs > 0:
-                    if len(checkpoint_files) > 0 and len(checkpoint_files) > save_epochs - 1:
-                        checkpoint_file = checkpoint_files.pop(0)
-                        for f in glob.glob(checkpoint_file + '.*'):
-                            os.remove(f)
-
-                    # (4) drop a checkpoint
-                    if valid_acc is not None:
-                        checkpoint_file = \
-                            '%s_acc_%.2f_ppl_%.2f_e%d' % (save_path, 100 * valid_acc, valid_ppl, epoch)
-                    else:
-                        checkpoint_file = '%s_acc_NA_ppl_NA_e%d' % (save_path, epoch)
-
-                    self._engine.save(checkpoint_file)
-
-                    checkpoint_files.append(checkpoint_file)
-                    self._log('Checkpoint for epoch %d saved to file %s' % (epoch, checkpoint_file))
-
-                if force_termination:
+            for step, batch in train_dataset.iterator(self.opts.batch_size, loop=True, start_position=state.step):
+                if self.opts.steps_limit is not None and step >= self.opts.steps_limit:
                     break
 
-                self._log('Training epoch %g... END %.2fs' % (epoch, time.time() - start_time_epoch))
+                self._train_step(batch, criterion, [checkpoint_stats, mini_batch_stats])
+
+                if step > 0 and step % self.opts.log_interval == 0:
+                    self._log('Step %d: %s' % (step, str(mini_batch_stats)))
+                    mini_batch_stats = _Stats()
+
+                if step > 0 and step % self.opts.checkpoint_steps == 0:
+                    state.step = step + 1  # next step
+
+                    checkpoint_ppl = checkpoint_stats.perplexity
+
+                    if valid_dataset is not None:
+                        valid_loss, valid_acc = self._evaluate(criterion, valid_dataset)
+                        valid_ppl = math.exp(min(valid_loss, 100))
+
+                        self._log('Validation Set at step %d: loss = %g, perplexity = %g, accuracy = %g' % (
+                            step, valid_loss, valid_ppl, (float(valid_acc) * 100)))
+
+                        # Update the learning rate
+                        self.optimizer.updateLearningRate(valid_ppl, step)
+
+                        if self.optimizer.start_decay:
+                            self._log('Decaying learning rate to %g' % self.optimizer.lr)
+
+                        checkpoint_ppl = valid_ppl
+
+                    if save_path is not None:
+                        self._log('Checkpoint %d: %s' % (step, str(checkpoint_stats)))
+
+                        checkpoint_file = 'checkpoint_s%d_ppl%.2f' % (step, checkpoint_ppl)
+                        checkpoint_file = os.path.join(save_path, checkpoint_file)
+
+                        self._engine.save(checkpoint_file)
+
+                        state.checkpoint(step, checkpoint_file, checkpoint_ppl)
+                        state.save_to_file(state_file_path)
+
+                    checkpoint_stats = _Stats()
         except KeyboardInterrupt:
-            raise TrainingInterrupt(checkpoint=checkpoint_files[-1] if len(checkpoint_files) > 0 else None)
+            pass
 
-        return checkpoint_files[-1] if len(checkpoint_files) > 0 else None
+        return state
 
-    def _train_epoch(self, epoch, train_dataset, criterion):
-        total_loss, total_words, total_num_correct = 0, 0, 0
-        report_loss, report_tgt_words, report_src_words, report_num_correct = 0, 0, 0, 0
-        start = time.time()
+    def _train_step(self, batch, criterion, stats):
+        batch = batch[:-1]  # exclude original indices
 
-        model = self._engine.model
+        self._engine.model.zero_grad()
+        outputs = self._engine.model(batch)
+        targets = batch[1][1:]  # exclude <s> from targets
+        loss, grad_output, num_correct = self._compute_memory_efficient_loss(outputs, targets,
+                                                                             self._engine.model.generator, criterion)
+        outputs.backward(grad_output)
 
-        iterator = train_dataset.iterator(self.opts.batch_size, shuffle=True, volatile=False, random_seed=epoch)
+        # update the parameters
+        self.optimizer.step()
 
-        for i, batch in iterator:
-            batch = batch[:-1]  # exclude original indices
+        src_words = batch[0][1].data.sum()
+        tgt_words = targets.data.ne(Constants.PAD).sum()
 
-            model.zero_grad()
-            outputs = model(batch)
-            targets = batch[1][1:]  # exclude <s> from targets
-            loss, grad_output, num_correct = self._compute_memory_efficient_loss(outputs, targets, model.generator,
-                                                                                 criterion)
-
-            outputs.backward(grad_output)
-
-            # update the parameters
-            self.optimizer.step()
-
-            num_words = targets.data.ne(Constants.PAD).sum()
-            report_loss += loss
-            report_num_correct += num_correct
-            report_tgt_words += num_words
-            report_src_words += batch[0][1].data.sum()
-            total_loss += loss
-            total_num_correct += num_correct
-            total_words += num_words
-
-            if i % self.opts.log_interval == -1 % self.opts.log_interval:
-                self._log(
-                    'trainEpoch epoch %2d, %5d/%5d; num_corr: %6.2f; %3.0f src tok; '
-                    '%3.0f tgt tok; acc: %6.2f; ppl: %6.2f; %3.0f src tok/s; %3.0f tgt tok/s;' %
-                    (epoch, i + 1, len(iterator),
-                     report_num_correct,
-                     report_src_words,
-                     report_tgt_words,
-                     (float(report_num_correct) / report_tgt_words) * 100,
-                     math.exp(report_loss / report_tgt_words),
-                     report_src_words / (time.time() - start),
-                     report_tgt_words / (time.time() - start)))
-
-                report_loss = report_tgt_words = report_src_words = report_num_correct = 0
-                start = time.time()
-
-        return total_loss / total_words, float(total_num_correct) / total_words
-
-    def _should_terminate(self, history):
-        if len(history) <= self.opts.min_epochs:
-            return False
-
-        current_value = history[-1]
-        previous_value = history[-2]
-
-        decrement = (previous_value - current_value) / previous_value
-
-        if 0 < decrement < self.opts.min_perplexity_decrement:
-            self._log('Terminating training for perplexity threshold reached: '
-                      'new perplexity is %f, while previous was %f (-%.1f%%)'
-                      % (current_value, previous_value, decrement * 100))
-            return True
-        else:
-            self._log('Continuing training: new perplexity is %f, while previous was %f (-%.1f%%)'
-                      % (current_value, previous_value, decrement * 100))
-            return False
+        for stat in stats:
+            stat.update(loss, src_words, tgt_words, num_correct)

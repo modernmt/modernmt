@@ -321,7 +321,7 @@ class MMapDataset(IDataset):
                          random_seed=random_seed)
 
 
-class _Iterator(object):
+class _Iterator(IDataset.Iterator):
     def __init__(self, heap, batch_size, shuffle=True, volatile=False, start_position=0, loop=False, random_seed=1):
         self._heap = heap
         self._batch_size = batch_size
@@ -377,3 +377,6 @@ class _Iterator(object):
         self._current_position += 1
 
         return self._current_position - 1, self.__getitem__(i)
+
+    def position(self):
+        return self._current_position

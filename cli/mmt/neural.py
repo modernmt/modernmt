@@ -175,12 +175,8 @@ class NMTDecoder:
         self._logger.info(' Vocabulary size. source = %d; target = %d' % (src_dict.size(), tgt_dict.size()))
         self._logger.info(' Trainer options: %s' % str(trainer.opts.__dict__))
 
-        try:
-            with _log_timed_action(self._logger, 'Train model'):
-                save_model = os.path.join(working_dir, 'train_model')
-                checkpoint = trainer.train_model(train_dataset, valid_dataset=valid_dataset, save_path=save_model)
-        except TrainingInterrupt as e:
-            checkpoint = e.checkpoint
+        with _log_timed_action(self._logger, 'Train model'):
+            state = trainer.train_model(train_dataset, valid_dataset=valid_dataset, save_path=working_dir)
 
         # Saving last checkpoint ---------------------------------------------------------------------------------------
         if checkpoint is None:
