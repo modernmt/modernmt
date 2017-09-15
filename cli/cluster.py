@@ -125,7 +125,7 @@ class MMTApi:
         p = {'q': source}
         if nbest is not None:
             p['nbest'] = nbest
-        if context is not None and context != []:
+        if context is not None and len(context) != 0:
             p['context_vector'] = self._encode_context(context)
 
         return self._get('translate', params=p)
