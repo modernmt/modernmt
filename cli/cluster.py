@@ -95,6 +95,7 @@ class MMTApi:
 
     @staticmethod
     def _encode_context(context):
+        context = [e for e in context if 'domain' in e]
         return ','.join([('%d:%f' % (
             el['domain']['id'] if isinstance(el['domain'], dict) else el['domain'],
             el['score'])
