@@ -1,4 +1,5 @@
 import codecs
+import os
 from collections import Counter
 from collections import defaultdict
 
@@ -371,6 +372,10 @@ class SubwordTextProcessor:
         return list(self._target_terms)
 
     def save_to_file(self, path):
+        parent_folder = os.path.abspath(os.path.join(path, os.pardir))
+        if not os.path.isdir(parent_folder):
+            os.makedirs(parent_folder)
+
         source_codes = self._source_bpe.bpe_codes
         target_codes = self._target_bpe.bpe_codes if self._target_bpe is not None else dict()
 
