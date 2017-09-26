@@ -1,8 +1,10 @@
+import glob
+import json
 import logging
 import math
-import os
 import time
 
+import os
 from torch import nn, torch
 from torch.autograd import Variable
 
@@ -54,7 +56,7 @@ class NMTEngineTrainer:
             self.batch_size = 64
             self.max_generator_batches = 32  # Maximum batches of words in a seq to run the generator on in parallel.
 
-            self.report_steps = 1000  # Log status every 'report_steps' steps
+            self.report_steps = 100  # Log status every 'report_steps' steps
             self.validation_steps = 10000  # compute the validation score every 'validation_steps' steps
             self.checkpoint_steps = 10000  # Drop a checkpoint every 'checkpoint_steps' steps
             self.steps_limit = None  # If set, run 'steps_limit' steps at most
@@ -66,34 +68,69 @@ class NMTEngineTrainer:
             self.lr_decay_steps = 40  # decrease learning rate every 'lr_decay_steps' steps
             self.lr_decay_start_at = 50000  # start learning rate decay after 'start_decay_at' steps
 
-            self.early_stop = 5 # terminate training if validations is stalled for 'early_stop' times
+            self.early_stop = 5  # terminate training if validations is stalled for 'early_stop' times
+            self.n_avg_checkpoints = 10  # number of checkpoints to merge at the end of training process
 
     class State(object):
-        def __init__(self):
-            #TODO: what happens if this number becomes too large: overflow problem?
-            self.step = 0
-            self.file_path = None
-            self.perplexity = None
+        def __init__(self, size):
+            self.size = size
+            self.checkpoint = None
+            self.history = []
 
-        def checkpoint(self, step, file_path, perplexity):
-            self.step = step
-            self.file_path = file_path
-            self.perplexity = perplexity
-#            raise NotImplementedError
+        def empty(self):
+            return len(self.history) == 0
+
+        @property
+        def last_step(self):
+            return self.checkpoint['step'] if self.checkpoint is not None else 0
+
+        @staticmethod
+        def _delete_checkpoint(checkpoint):
+            for path in glob.glob(checkpoint['file'] + '.*'):
+                os.remove(path)
+
+        def _contains(self, checkpoint):
+            for h in self.history:
+                if h['file'] == checkpoint['file']:
+                    return True
+            return False
+
+        def add_checkpoint(self, step, file_path, perplexity):
+            if self.checkpoint is not None and not self._contains(self.checkpoint):
+                self._delete_checkpoint(self.checkpoint)
+
+            self.checkpoint = {
+                'step': step,
+                'file': file_path,
+                'perplexity': perplexity
+            }
+
+            self.history.append(self.checkpoint)
+            self.history.sort(key=lambda e: e['perplexity'], reverse=False)
+
+            if len(self.history) > self.size:
+                for c in self.history[self.size:]:
+                    if c['file'] != file_path:  # do not remove last checkpoint
+                        self._delete_checkpoint(c)
+
+                self.history = self.history[:self.size]
 
         def save_to_file(self, file_path):
-            torch.save(self.__dict__, file_path)
+            with open(file_path, 'w') as stream:
+                stream.write(json.dumps(self.__dict__, indent=4))
 
         @staticmethod
         def load_from_file(file_path):
-            state = NMTEngineTrainer.State()
-            state.__dict__ = torch.load(file_path)
+            state = NMTEngineTrainer.State(0)
+            with open(file_path, 'r') as stream:
+                state.__dict__ = json.loads(stream.read())
             return state
 
-    def __init__(self, engine, options=None, optimizer=None):
+    def __init__(self, engine, options=None, optimizer=None, state=None):
         self._logger = logging.getLogger('nmmt.NMTEngineTrainer')
         self._engine = engine
         self.opts = options if options is not None else NMTEngineTrainer.Options()
+        self.state = state if state is not None else NMTEngineTrainer.State(self.opts.n_avg_checkpoints)
 
         if optimizer is None:
             optimizer = Optim(self.opts.optimizer, self.opts.learning_rate, max_grad_norm=self.opts.max_grad_norm,
@@ -140,7 +177,7 @@ class NMTEngineTrainer:
         grad_output = None if outputs.grad is None else outputs.grad.data
         return loss, grad_output, num_correct
 
-    def _evaluate(self, criterion, dataset):
+    def _evaluate(self, step, criterion, dataset):
         total_loss = 0
         total_words = 0
         total_num_correct = 0
@@ -163,165 +200,14 @@ class NMTEngineTrainer:
             total_words += targets.data.ne(Constants.PAD).sum()
 
         model.train()
-        return total_loss / total_words, float(total_num_correct) / total_words
 
-    def train_model(self, train_dataset, valid_dataset=None, save_path=None, state=None):
-        state_file_path = None if save_path is None else os.path.join(save_path, 'state.dat')
+        valid_loss, valid_acc = total_loss / total_words, float(total_num_correct) / total_words
+        valid_ppl = math.exp(min(valid_loss, 100))
 
-        # resume training if state file found
-        if state is None:
-            if state_file_path is None or not os.path.isfile(state_file_path):
-                state = NMTEngineTrainer.State()
-            else:
-                state = NMTEngineTrainer.State.load_from_file(state_file_path)
+        self._log('Validation Set at step %d: loss = %g, perplexity = %g, accuracy = %g' % (
+            step, valid_loss, valid_ppl, (float(valid_acc) * 100)))
 
-        # set the mask to None; required when the same model is trained after a translation
-        if torch_is_multi_gpu():
-            decoder = self._engine.model.module.decoder
-        else:
-            decoder = self._engine.model.decoder
-        decoder.attn.applyMask(None)
-        self._engine.model.train()
-
-        # define criterion of each GPU
-        criterion = self._new_nmt_criterion(self._engine.trg_dict.size())
-
-        run_validation = False
-        run_dump = False
-        run_lr_update = False
-        run_report = False
-        terminate = False
-
-        valid_ppl_history = {0:None}   # key=0 refers to the best value
-        valid_ppl_stalled = 0   # keep track of how many consecutive validations ddo not improve the actual best validation
-
-        try:
-            checkpoint_stats = _Stats()
-            mini_batch_stats = _Stats()
-
-            for step, batch in train_dataset.iterator(self.opts.batch_size, loop=True, start_position=state.step):
-
-
-                if step > 0:
-                    # activate report
-                    if step % self.opts.report_steps == 0:
-                        run_report = True
-
-                    # activate learning rate update
-                    if self.optimizer.lr_start_decay == True and step % self.opts.lr_decay_steps == 0:
-                        run_lr_update = True
-
-                    # activate validation
-                    if step % self.opts.validation_steps == 0 and valid_dataset is not None:
-                        run_validation = True
-
-                    # activate dump
-                    if step % self.opts.checkpoint_steps == 0:
-                        run_dump = True
-
-                    if self.opts.steps_limit is not None and step >= self.opts.steps_limit:
-                        terminate = True
-
-
-
-#                self._log('step:%d run_report:%s run_lr_update:%s run_validation:%s run_dump:%s terminate:%s ' % (step, repr(run_report), repr(run_lr_update), repr(run_validation), repr(run_dump), repr(terminate) ))
-
-
-                if terminate:
-                    break
-
-                self._train_step(batch, criterion, [checkpoint_stats, mini_batch_stats])
-
-                if run_report:
-                    self._log('Step %d: %s' % (step, str(mini_batch_stats)))
-                    mini_batch_stats = _Stats()
-
-
-                valid_ppl = None
-                if run_validation:
-                    valid_loss, valid_acc = self._evaluate(criterion, valid_dataset)
-                    valid_ppl = math.exp(min(valid_loss, 100))
-
-                    self._log('Validation Set at step %d: loss = %g, perplexity = %g, accuracy = %g' % (
-                        step, valid_loss, valid_ppl, (float(valid_acc) * 100)))
-
-                    valid_ppl_history[step] = valid_ppl
-
-                    # check and optionally update best value
-                    if valid_ppl_history[0] is None or valid_ppl < valid_ppl_history[0]:
-                        valid_ppl_history[0] = valid_ppl
-                        valid_ppl_stalled = 0
-                    else:
-                        valid_ppl_stalled += 1
-
-
-                    # TODO: compute the policy to start the learning rate_decay
-                    # it is also possible to activate LR decay according to the validation scores
-                    if step > self.optimizer.lr_start_decay_at:
-                        self.optimizer.lr_start_decay = True
-
-                    self._log('step:%s valid_ppl:%f valid_ppl_stalled:%d self.optimizer.lr_start_decay_at:%d self.optimizer.lr_start_decay:%s' % (step,valid_ppl, valid_ppl_stalled, self.optimizer.lr_start_decay_at, repr(self.optimizer.lr_start_decay)))
-
-                    # TODO: compute the policy to terminate the training
-                    # terminate training if validation perplexity does not improve for 'self.opts.early_stop' consecutive times
-                    if valid_ppl_stalled >= self.opts.early_stop:
-                        terminate = True
-
-
-                if run_lr_update:
-                    # Update the learning rate
-                    self.optimizer.updateLearningRate(valid_ppl, step)
-
-                    self._log('step:%d lr:%g' % (step, self.optimizer.lr))
-
-
-                if run_dump:
-
-                    # if validation has been done  in this exact step
-                    # just take the value
-                    # else re-validate
-                    if valid_ppl is None  and valid_dataset is not None:
-                        valid_loss, valid_acc = self._evaluate(criterion, valid_dataset)
-                        valid_ppl = math.exp(min(valid_loss, 100))
-
-                        self._log('Validation Set at step %d: loss = %g, perplexity = %g, accuracy = %g' % (
-                            step, valid_loss, valid_ppl, (float(valid_acc) * 100)))
-
-                        valid_ppl_history[step] = valid_ppl
-
-
-                    checkpoint_ppl = valid_ppl
-
-                    if save_path is not None:
-                        self._log('Checkpoint %d: %s' % (step, str(checkpoint_stats)))
-
-                        if checkpoint_ppl is not None:
-                            checkpoint_file = 'checkpoint_s%d_ppl%.2f' % (step, checkpoint_ppl)
-                        else:
-                            checkpoint_file = 'checkpoint_s%d_pplUndef' % (step)
-                        checkpoint_file = os.path.join(save_path, checkpoint_file)
-
-                        self._engine.save(checkpoint_file)
-
-                        state.checkpoint(step, checkpoint_file, checkpoint_ppl)
-                        state.save_to_file(state_file_path)
-
-                        self._logger.info('step:%d type(state): %s state: %s' % (step, type(state), state))
-
-                    checkpoint_stats = _Stats()
-
-                run_report = False
-                run_validation = False
-                run_lr_update = False
-                run_dump = False
-
-                state.step = step + 1  # next step
-
-
-        except KeyboardInterrupt:
-            pass
-
-        return state
+        return valid_ppl
 
     def _train_step(self, batch, criterion, stats):
         batch = batch[:-1]  # exclude original indices
@@ -341,3 +227,88 @@ class NMTEngineTrainer:
 
         for stat in stats:
             stat.update(loss, src_words, tgt_words, num_correct)
+
+    def train_model(self, train_dataset, valid_dataset=None, save_path=None):
+        state_file_path = None if save_path is None else os.path.join(save_path, 'state.json')
+
+        # set the mask to None; required when the same model is trained after a translation
+        if torch_is_multi_gpu():
+            decoder = self._engine.model.module.decoder
+        else:
+            decoder = self._engine.model.decoder
+        decoder.attn.applyMask(None)
+
+        self._engine.model.train()
+
+        # define criterion of each GPU
+        criterion = self._new_nmt_criterion(self._engine.trg_dict.size())
+
+        step = self.state.last_step
+        valid_ppl_best = None
+        valid_ppl_stalled = 0  # keep track of how many consecutive validations do not improve the best perplexity
+
+        try:
+            checkpoint_stats = _Stats()
+            report_stats = _Stats()
+
+            for step, batch in train_dataset.iterator(self.opts.batch_size, loop=True, start_position=step):
+
+                # Terminate policy -------------------------------------------------------------------------------------
+                if valid_ppl_stalled >= self.opts.early_stop \
+                        or (self.opts.steps_limit is not None and step >= self.opts.steps_limit):
+                    break
+
+                # Run step ---------------------------------------------------------------------------------------------
+                self._train_step(batch, criterion, [checkpoint_stats, report_stats])
+                step += 1
+
+                # Report -----------------------------------------------------------------------------------------------
+                if (step % self.opts.report_steps) == 0:
+                    self._log('Step %d: %s' % (step, str(report_stats)))
+                    report_stats = _Stats()
+
+                valid_perplexity = None
+
+                # Validation -------------------------------------------------------------------------------------------
+                if valid_dataset is not None and (step % self.opts.validation_steps) == 0:
+                    valid_perplexity = self._evaluate(step, criterion, valid_dataset)
+
+                    if valid_ppl_best is None or valid_perplexity < valid_ppl_best:
+                        valid_ppl_best = valid_perplexity
+                        valid_ppl_stalled = 0
+                    else:
+                        valid_ppl_stalled += 1
+
+                    self._log('Validation perplexity stalled: %d' % valid_ppl_stalled)
+
+                # Learning rate update --------------------------------------------------------------------------------
+                if not self.optimizer.lr_start_decay \
+                        and step > self.optimizer.lr_start_decay_at \
+                        and valid_ppl_stalled > 0:  # activate decay only if validation perplexity starts to increase
+                    self.optimizer.lr_start_decay = True
+                    self._log('Optimizer learning rate decay started at %d step with %f.' % (
+                        step, self.optimizer.lr_decay))
+
+                if self.optimizer.lr_start_decay:
+                    self.optimizer.updateLearningRate()
+                    self._log('Learning rate decrease: step = %d lr = %g' % (step, self.optimizer.lr))
+
+                # Checkpoint -------------------------------------------------------------------------------------------
+                if (step % self.opts.checkpoint_steps) == 0 and save_path is not None:
+                    if valid_perplexity is None and valid_dataset is not None:
+                        valid_perplexity = self._evaluate(step, criterion, valid_dataset)
+
+                    checkpoint_ppl = valid_perplexity if valid_perplexity is not None else checkpoint_stats.perplexity
+                    checkpoint_file = os.path.join(save_path, 'checkpoint_%d' % step)
+
+                    self._log('Checkpoint at %d: %s' % (step, str(checkpoint_stats)))
+                    self._engine.save(checkpoint_file)
+                    self.state.add_checkpoint(step, checkpoint_file, checkpoint_ppl)
+                    self.state.save_to_file(state_file_path)
+                    self._logger.info('Checkpoint saved: path = %s ppl = %.2f' % (checkpoint_file, checkpoint_ppl))
+
+                    checkpoint_stats = _Stats()
+        except KeyboardInterrupt:
+            pass
+
+        return self.state

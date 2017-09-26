@@ -155,6 +155,12 @@ class NMTDecoder:
     def train(self, train_path, working_dir):
         self._logger.info('Training started for data "%s"' % train_path)
 
+        state = None
+        state_file = os.path.join(working_dir, 'state.json')
+
+        if os.path.isfile(state_file):
+            state = NMTEngineTrainer.State.load_from_file(state_file)
+
         # Loading training data ----------------------------------------------------------------------------------------
         with _log_timed_action(self._logger, 'Loading training data from "%s"' % train_path):
             train_dataset_path = os.path.join(train_path, 'train_dataset')
@@ -167,9 +173,14 @@ class NMTDecoder:
             src_dict, tgt_dict = vocab['src'], vocab['tgt']
 
         # Creating trainer ---------------------------------------------------------------------------------------------
-        with _log_timed_action(self._logger, 'Creating trainer'):
-            engine = NMTEngine.new_instance(src_dict, tgt_dict, processor=None)
-            trainer = NMTEngineTrainer(engine)
+        if state is not None and state.checkpoint is not None:
+            with _log_timed_action(self._logger, 'Resuming engine from step %d' % state.checkpoint['step']):
+                engine = NMTEngine.load_from_checkpoint(state.checkpoint['file'])
+        else:
+            with _log_timed_action(self._logger, 'Creating engine from scratch'):
+                engine = NMTEngine.new_instance(src_dict, tgt_dict, processor=None)
+
+        trainer = NMTEngineTrainer(engine, state=state)
 
         # Training model -----------------------------------------------------------------------------------------------
         self._logger.info(' Vocabulary size. source = %d; target = %d' % (src_dict.size(), tgt_dict.size()))
@@ -178,13 +189,12 @@ class NMTDecoder:
         with _log_timed_action(self._logger, 'Train model'):
             state = trainer.train_model(train_dataset, valid_dataset=valid_dataset, save_path=working_dir)
 
-        self._logger.info('type(state): %s state: %s' % (type(state), state))
-
         # Saving last checkpoint ---------------------------------------------------------------------------------------
-        if state is None:
+        if state.empty():
             raise Exception('Training interrupted before first checkpoint could be saved')
 
-        checkpoint = state.file_path
+        checkpoint = state.history[0]['file']
+        self._logger.info('Copying checkpoint at %s' % checkpoint)
 
         with _log_timed_action(self._logger, 'Storing model'):
             model_folder = os.path.abspath(os.path.join(self.model, os.path.pardir))
@@ -193,7 +203,6 @@ class NMTDecoder:
 
             for f in glob.glob(checkpoint + '.*'):
                 _, extension = os.path.splitext(f)
-####                os.rename(f, self.model + extension)
                 shutil.copy2(f, self.model + extension)
 
             with open(os.path.join(model_folder, 'model.conf'), 'w') as model_map:

@@ -235,7 +235,7 @@ class NMTEngine:
                 len(suggestions), self._tuner.opts.max_epochs, self._tuner.optimizer.lr)
 
             with log_timed_action(self._logger, log_message, log_start=False):
-                self._tuner.train_model(tuning_set, save_epochs=0)
+                self._tuner.train_model(tuning_set)
 
     def _estimate_tuning_parameters(self, suggestions):
         # it returns an actual learning_rate and epochs based on the quality of the suggestions

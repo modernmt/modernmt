@@ -33,7 +33,7 @@ class Optim(object):
             clip_grad_norm(self.params, self.max_grad_norm)
         self.optimizer.step()
 
-    def updateLearningRate(self, ppl, epoch):
+    def updateLearningRate(self):
         """
         Decay learning rate
         if perplexity on validation does not improve
@@ -43,5 +43,4 @@ class Optim(object):
         if self.lr_start_decay:
             self.lr = self.lr * self.lr_decay
 
-        self.last_ppl = ppl
         self.optimizer.param_groups[0]['lr'] = self.lr
