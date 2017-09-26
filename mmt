@@ -85,6 +85,10 @@ def main_create(argv):
     nmt_arguments = parser.add_argument_group('neural decoder only arguments')
     nmt_arguments.add_argument('--neural', action='store_true', dest='neural', default=False,
                                help='if set, the process will train a neural engine (default is phrase-based)')
+    nmt_arguments.add_argument('--checkpoint', dest='checkpoint',
+                               help='initial model for the training, by default a random network is used')
+    nmt_arguments.add_argument('--metadata', dest='metadata',
+                               help='the path to the neural engine metadata file')
     nmt_arguments.add_argument('--validation-corpora', dest='validation_corpora',
                                help='if neural is set, you can provide a custom validation corpora with this option '
                                     '(dev set used by default).', default=None)
@@ -121,6 +125,8 @@ def main_create(argv):
                                        steps=args.training_steps,
                                        split_trainingset=args.split_corpora,
                                        validation_corpora=args.validation_corpora,
+                                       checkpoint=args.checkpoint,
+                                       metadata=args.metadata,
                                        bpe_symbols=args.bpe_symbols,
                                        max_vocab_size=args.max_vocab_size,
                                        max_training_words=args.max_words,
@@ -756,7 +762,6 @@ def main():
         sys.stderr.write('ERROR Illegal State: {message}\n'.format(message=e.message))
         exit(1)
     except Exception as e:
-        raise
         sys.stderr.write('ERROR Unexpected exception:\n\t{message}\n'.format(message=repr(e)))
         exit(1)
 

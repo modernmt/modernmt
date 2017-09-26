@@ -80,12 +80,19 @@ class NMTPreprocessor:
         self._logger = logging.getLogger('mmt.neural.NMTPreprocessor')
         self._ram_limit_mb = 1024
 
-    def process(self, corpora, valid_corpora, output_path):
-        with _log_timed_action(self._logger, 'Creating BPE model'):
-            vb_builder = SubwordTextProcessor.Builder(symbols=self._bpe_symbols,
-                                                      max_vocabulary_size=self._max_vocab_size)
-            bpe_encoder = vb_builder.build([c.reader([self._source_lang, self._target_lang]) for c in corpora])
-            bpe_encoder.save_to_file(self._bpe_model_path)
+    def process(self, corpora, valid_corpora, output_path, checkpoint=None):
+        if checkpoint is not None:
+            existing_bpe_path = checkpoint + '.bpe'
+
+            with _log_timed_action(self._logger, 'Loading BPE model from %s' % existing_bpe_path):
+                shutil.copy(existing_bpe_path, self._bpe_model_path)
+                bpe_encoder = SubwordTextProcessor.load_from_file(self._bpe_model_path)
+        else:
+            with _log_timed_action(self._logger, 'Creating BPE model'):
+                vb_builder = SubwordTextProcessor.Builder(symbols=self._bpe_symbols,
+                                                          max_vocabulary_size=self._max_vocab_size)
+                bpe_encoder = vb_builder.build([c.reader([self._source_lang, self._target_lang]) for c in corpora])
+                bpe_encoder.save_to_file(self._bpe_model_path)
 
         with _log_timed_action(self._logger, 'Creating vocabularies'):
             src_vocab = onmt.Dict([onmt.Constants.PAD_WORD, onmt.Constants.UNK_WORD,
@@ -152,7 +159,7 @@ class NMTDecoder:
         self._source_lang = source_lang
         self._target_lang = target_lang
 
-    def train(self, train_path, working_dir):
+    def train(self, train_path, working_dir, checkpoint_path=None, metadata_path=None):
         self._logger.info('Training started for data "%s"' % train_path)
 
         state = None
@@ -177,14 +184,26 @@ class NMTDecoder:
             with _log_timed_action(self._logger, 'Resuming engine from step %d' % state.checkpoint['step']):
                 engine = NMTEngine.load_from_checkpoint(state.checkpoint['file'])
         else:
-            with _log_timed_action(self._logger, 'Creating engine from scratch'):
-                engine = NMTEngine.new_instance(src_dict, tgt_dict, processor=None)
+            if checkpoint_path is not None:
+                with _log_timed_action(self._logger, 'Loading engine from %s' % checkpoint_path):
+                    engine = NMTEngine.load_from_checkpoint(checkpoint_path)
+            else:
+                metadata = None
+                if metadata_path is not None:
+                    metadata = NMTEngine.Metadata()
+                    metadata.load_from_file(metadata_path)
+                    self._logger.info('Reading neural engine metadata from %s' % metadata_path)
+
+                with _log_timed_action(self._logger, 'Creating engine from scratch'):
+                    engine = NMTEngine.new_instance(src_dict, tgt_dict, processor=None, metadata=metadata)
 
         trainer = NMTEngineTrainer(engine, state=state)
 
         # Training model -----------------------------------------------------------------------------------------------
-        self._logger.info(' Vocabulary size. source = %d; target = %d' % (src_dict.size(), tgt_dict.size()))
-        self._logger.info(' Trainer options: %s' % str(trainer.opts.__dict__))
+        self._logger.info('Vocabulary size. source = %d; target = %d' % (src_dict.size(), tgt_dict.size()))
+        self._logger.info('Engine parameters: %d' % engine.count_parameters())
+        self._logger.info('Engine metadata: %s' % str(engine.metadata))
+        self._logger.info('Trainer options: %s' % str(trainer.opts))
 
         with _log_timed_action(self._logger, 'Train model'):
             state = trainer.train_model(train_dataset, valid_dataset=valid_dataset, save_path=working_dir)
@@ -203,7 +222,7 @@ class NMTDecoder:
 
             for f in glob.glob(checkpoint + '.*'):
                 _, extension = os.path.splitext(f)
-                shutil.copy2(f, self.model + extension)
+                shutil.copy(f, self.model + extension)
 
             with open(os.path.join(model_folder, 'model.conf'), 'w') as model_map:
                 filename = os.path.basename(self.model)
@@ -305,13 +324,16 @@ class NeuralEngine(Engine):
 
 class NeuralEngineBuilder(EngineBuilder):
     def __init__(self, name, source_lang, target_lang, roots, debug=False, steps=None, split_trainingset=True,
-                 validation_corpora=None, bpe_symbols=90000, max_vocab_size=None, max_training_words=None, gpus=None):
+                 validation_corpora=None, checkpoint=None, metadata=None, bpe_symbols=90000, max_vocab_size=None,
+                 max_training_words=None, gpus=None):
         EngineBuilder.__init__(self,
                                NeuralEngine(name, source_lang, target_lang, bpe_symbols=bpe_symbols,
                                             max_vocab_size=max_vocab_size, gpus=gpus),
                                roots, debug, steps, split_trainingset, max_training_words)
         self._valid_corpora_path = validation_corpora if validation_corpora is not None \
             else os.path.join(self._engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME)
+        self._checkpoint = checkpoint
+        self._metadata = metadata
 
     def _build_schedule(self):
         return EngineBuilder._build_schedule(self) + \
@@ -340,7 +362,8 @@ class NeuralEngineBuilder(EngineBuilder):
 
             corpora = filter(None, [args.processed_bilingual_corpora, args.bilingual_corpora])[0]
 
-            self._engine.nmt_preprocessor.process(corpora, validation_corpora, args.onmt_training_path)
+            self._engine.nmt_preprocessor.process(corpora, validation_corpora, args.onmt_training_path,
+                                                  checkpoint=self._checkpoint)
 
             if delete_on_exit:
                 shutil.rmtree(processed_valid_path, ignore_errors=True)
@@ -350,7 +373,8 @@ class NeuralEngineBuilder(EngineBuilder):
         working_dir = self._get_tempdir('onmt_model')
 
         if not skip:
-            self._engine.decoder.train(args.onmt_training_path, working_dir)
+            self._engine.decoder.train(args.onmt_training_path, working_dir,
+                                       checkpoint_path=self._checkpoint, metadata_path=self._metadata)
 
             if delete_on_exit:
                 shutil.rmtree(working_dir, ignore_errors=True)

@@ -65,11 +65,17 @@ class NMTEngineTrainer:
             self.learning_rate = 1.
             self.max_grad_norm = 5
             self.lr_decay = 0.9
-            self.lr_decay_steps = 40  # decrease learning rate every 'lr_decay_steps' steps
+            self.lr_decay_steps = 1000  # decrease learning rate every 'lr_decay_steps' steps
             self.lr_decay_start_at = 50000  # start learning rate decay after 'start_decay_at' steps
 
             self.early_stop = 5  # terminate training if validations is stalled for 'early_stop' times
             self.n_avg_checkpoints = 10  # number of checkpoints to merge at the end of training process
+
+        def __str__(self):
+            return str(self.__dict__)
+
+        def __repr__(self):
+            return str(self.__dict__)
 
     class State(object):
         def __init__(self, size):

@@ -54,6 +54,12 @@ class NMTEngine:
             self.tuning_max_learning_rate = 0.2
             self.tuning_max_epochs = 10
 
+        def __str__(self):
+            return str(self.__dict__)
+
+        def __repr__(self):
+            return str(self.__dict__)
+
         def load_from_file(self, path):
             with open(path, 'rb') as metadata_stream:
                 for line in metadata_stream:
@@ -188,6 +194,9 @@ class NMTEngine:
     def _ensure_model_loaded(self):
         if not self._model_loaded:
             self.reset_model()
+
+    def count_parameters(self):
+        return sum([p.nelement() for p in self.model.parameters()])
 
     def tune(self, suggestions, epochs=None, learning_rate=None):
         # Set tuning parameters
