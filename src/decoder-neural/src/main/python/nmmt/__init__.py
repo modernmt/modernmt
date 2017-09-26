@@ -1,6 +1,6 @@
 from NMTDecoder import NMTDecoder, Suggestion
 from NMTEngine import NMTEngine
-from NMTEngineTrainer import NMTEngineTrainer, TrainingInterrupt
+from NMTEngineTrainer import NMTEngineTrainer
 from IDataset import IDataset, DatasetWrapper
 from MMapDataset import MMapDataset
 from SubwordTextProcessor import SubwordTextProcessor

@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(LIB_DIR, 'pynmt')))
 
 import onmt
 import nmmt
-from nmmt import NMTEngineTrainer, NMTEngine, SubwordTextProcessor, TrainingInterrupt, MMapDataset, Suggestion
+from nmmt import NMTEngineTrainer, NMTEngine, SubwordTextProcessor, MMapDataset, Suggestion
 from nmmt import torch_setup
 import torch
 
@@ -178,9 +178,13 @@ class NMTDecoder:
         with _log_timed_action(self._logger, 'Train model'):
             state = trainer.train_model(train_dataset, valid_dataset=valid_dataset, save_path=working_dir)
 
+        self._logger.info('type(state): %s state: %s' % (type(state), state))
+
         # Saving last checkpoint ---------------------------------------------------------------------------------------
-        if checkpoint is None:
+        if state is None:
             raise Exception('Training interrupted before first checkpoint could be saved')
+
+        checkpoint = state.file_path
 
         with _log_timed_action(self._logger, 'Storing model'):
             model_folder = os.path.abspath(os.path.join(self.model, os.path.pardir))
@@ -189,7 +193,8 @@ class NMTDecoder:
 
             for f in glob.glob(checkpoint + '.*'):
                 _, extension = os.path.splitext(f)
-                os.rename(f, self.model + extension)
+####                os.rename(f, self.model + extension)
+                shutil.copy2(f, self.model + extension)
 
             with open(os.path.join(model_folder, 'model.conf'), 'w') as model_map:
                 filename = os.path.basename(self.model)

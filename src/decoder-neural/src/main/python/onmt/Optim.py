@@ -17,15 +17,15 @@ class Optim(object):
             raise RuntimeError("Invalid optim method: " + self.method)
 
     def __init__(self, method, lr, max_grad_norm,
-                 lr_decay=1, start_decay_at=None):
+                 lr_decay=1, lr_start_decay_at=None):
 
         self.last_ppl = None
-        self.lr = lr
         self.max_grad_norm = max_grad_norm
         self.method = method
+        self.lr = lr
         self.lr_decay = lr_decay
-        self.start_decay_at = start_decay_at
-        self.start_decay = False
+        self.lr_start_decay_at = lr_start_decay_at
+        self.lr_start_decay = False
 
     def step(self):
         "Compute gradients norm."
@@ -40,13 +40,7 @@ class Optim(object):
         or if we hit the start_decay_at limit.
         """
 
-        if self.start_decay_at is not None and epoch >= self.start_decay_at:
-            self.start_decay = True
-
-        if self.last_ppl is not None and ppl > self.last_ppl:
-            self.start_decay = True
-
-        if self.start_decay:
+        if self.lr_start_decay:
             self.lr = self.lr * self.lr_decay
 
         self.last_ppl = ppl
