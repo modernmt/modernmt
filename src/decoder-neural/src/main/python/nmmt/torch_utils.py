@@ -20,7 +20,8 @@ def torch_setup(gpus=None, random_seed=None):
 
     if random_seed is not None:
         torch.manual_seed(random_seed)
-        torch.cuda.random.manual_seed_all(random_seed)
+        if torch.cuda.is_available():
+            torch.cuda.random.manual_seed_all(random_seed)
 
     if gpus is not None and len(gpus) > 0:
         torch.cuda.set_device(gpus[0])
