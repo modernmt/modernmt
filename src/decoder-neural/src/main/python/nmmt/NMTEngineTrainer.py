@@ -304,7 +304,7 @@ class NMTEngineTrainer:
                 else:
                     self.optimizer.lr_start_decay = False
                     self._log('Optimizer learning rate decay de-activated at %d step; current lr value:%f' % (
-                        step, self.optimizer.lr_decay, self.optimizer.lr))
+                        step, self.optimizer.lr))
 
                 if self.optimizer.lr_start_decay and (step % self.opts.lr_decay_steps) == 0:
                     self.optimizer.updateLearningRate()
