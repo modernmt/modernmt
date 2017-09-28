@@ -56,6 +56,32 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
         }
     }
 
+
+    private static void copy(File source, File destination, FileCompression compression) throws IOException {
+        Reader reader = null;
+        Writer writer = null;
+
+        try {
+            InputStream input = new FileInputStream(source);
+            if (compression != null) {
+                switch (compression) {
+                    case GZIP:
+                        input = new GZIPInputStream(input);
+                        break;
+                }
+            }
+
+            reader = new InputStreamReader(input, Charset.defaultCharset());
+            writer = new OutputStreamWriter(new FileOutputStream(destination, false), Charset.defaultCharset());
+            IOUtils.copyLarge(reader, writer);
+
+        } finally {
+            IOUtils.closeQuietly(reader);
+            IOUtils.closeQuietly(writer);
+        }
+    }
+
+
     @Override
     protected ContextVectorResult execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, PersistenceException, IOException {
         Params params = (Params) _params;
@@ -64,7 +90,21 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
         if (params.text != null) {
             contexts = ModernMT.translation.getContextVectors(params.text, params.limit, params.source, params.targets);
         } else if (params.localFile != null) {
-            contexts = ModernMT.translation.getContextVectors(params.localFile, params.limit, params.source, params.targets);
+            File file = null;
+
+            /*if local file is compressed, decompress it in a new file mmt-context and use it for the context, then delete it*/
+            if (params.localFile.getName().endsWith(".gz")) {
+                try {
+                    file = File.createTempFile("mmt-context", "txt");
+                    copy(params.localFile, file, FileCompression.GZIP);
+                    contexts = ModernMT.translation.getContextVectors(file, params.limit, params.source, params.targets);
+                } finally {
+                    FileUtils.deleteQuietly(file);
+                }
+                /*if local file is not compressed, use it directly*/
+            } else {
+                contexts = ModernMT.translation.getContextVectors(params.localFile, params.limit, params.source, params.targets);
+            }
         } else {
             File file = null;
 
