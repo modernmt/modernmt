@@ -65,11 +65,11 @@ class NMTEngineTrainer:
             self.learning_rate = 1.
             self.max_grad_norm = 5
             self.lr_decay = 0.9
-            self.lr_decay_steps = 1000  # decrease learning rate every 'lr_decay_steps' steps
+            self.lr_decay_steps = 10000  # decrease learning rate every 'lr_decay_steps' steps
             self.lr_decay_start_at = 50000  # start learning rate decay after 'start_decay_at' steps
 
-            self.early_stop = 5  # terminate training if validations is stalled for 'early_stop' times
-            self.n_avg_checkpoints = 10  # number of checkpoints to merge at the end of training process
+            self.early_stop = 10  # terminate training if validations is stalled for 'early_stop' times
+            self.n_avg_checkpoints = 5  # number of checkpoints to merge at the end of training process
 
         def __str__(self):
             return str(self.__dict__)
@@ -285,19 +285,30 @@ class NMTEngineTrainer:
                     else:
                         valid_ppl_stalled += 1
 
-                    self._log('Validation perplexity stalled: %d' % valid_ppl_stalled)
+                    self._log('Validation perplexity stalled %d times' % valid_ppl_stalled)
 
                 # Learning rate update --------------------------------------------------------------------------------
-                if not self.optimizer.lr_start_decay \
-                        and step > self.optimizer.lr_start_decay_at \
-                        and valid_ppl_stalled > 0:  # activate decay only if validation perplexity starts to increase
-                    self.optimizer.lr_start_decay = True
-                    self._log('Optimizer learning rate decay started at %d step with %f.' % (
-                        step, self.optimizer.lr_decay))
+                # TODO: check the condition for starting the decay of learning rate
+                # if not self.optimizer.lr_start_decay \
+                #         and step > self.optimizer.lr_start_decay_at \
+                #         and valid_ppl_stalled > 0:  # activate decay only if validation perplexity starts to increase
+                #     self.optimizer.lr_start_decay = True
+                #     self._log('Optimizer learning rate decay started at %d step with decay value %f' % (
+                #         step, self.optimizer.lr_decay))
 
-                if self.optimizer.lr_start_decay:
+                if valid_ppl_stalled > 0: # activate decay only if validation perplexity starts to increase
+                    if step > self.optimizer.lr_start_decay_at:
+                        self.optimizer.lr_start_decay = True
+                        self._log('Optimizer learning rate decay activated at %d step with decay value %f; current lr value:%f' % (
+                            step, self.optimizer.lr_decay, self.optimizer.lr))
+                else:
+                    self.optimizer.lr_start_decay = False
+                    self._log('Optimizer learning rate decay de-activated at %d step; current lr value:%f' % (
+                        step, self.optimizer.lr_decay, self.optimizer.lr))
+
+                if self.optimizer.lr_start_decay and (step % self.opts.lr_decay_steps) == 0:
                     self.optimizer.updateLearningRate()
-                    self._log('Learning rate decrease: step = %d lr = %g' % (step, self.optimizer.lr))
+                    self._log('Optimizer learning rate after step %d set to lr = %g' % (step, self.optimizer.lr))
 
                 # Checkpoint -------------------------------------------------------------------------------------------
                 if (step % self.opts.checkpoint_steps) == 0 and save_path is not None:
@@ -314,6 +325,7 @@ class NMTEngineTrainer:
                     self._logger.info('Checkpoint saved: path = %s ppl = %.2f' % (checkpoint_file, checkpoint_ppl))
 
                     checkpoint_stats = _Stats()
+
         except KeyboardInterrupt:
             pass
 
