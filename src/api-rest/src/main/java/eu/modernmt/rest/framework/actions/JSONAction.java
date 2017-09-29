@@ -22,7 +22,7 @@ public abstract class JSONAction implements Action {
         } catch (TemplateException e) {
             if (logger.isDebugEnabled())
                 logger.debug("Template exception while executing action " + this, e);
-            resp.resourceNotFound(e);
+            resp.resourceNotFound();
         } catch (Parameters.ParameterParsingException e) {
             resp.badRequest(e);
         } catch (UnsupportedLanguageException e) {

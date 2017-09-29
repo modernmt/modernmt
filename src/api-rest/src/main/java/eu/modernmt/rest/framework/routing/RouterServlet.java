@@ -95,7 +95,7 @@ public abstract class RouterServlet extends HttpServlet {
             Class<? extends Action> actionClass = restRequest.getActionClass();
 
             if (actionClass == null) {
-                restResponse.resourceNotFound();
+                restResponse.apiNotFound();
             } else {
                 Action action = actionClass.newInstance();
 
