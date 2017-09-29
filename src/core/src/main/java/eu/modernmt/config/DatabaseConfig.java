@@ -11,17 +11,16 @@ package eu.modernmt.config;
 public class DatabaseConfig {
 
     private boolean embedded = true;
-    /*if the db is enabled MMT start launches a db process or connects to a remote one;
-      if it is disabled no db process is launched; MMT does not interact with any DBs;
-      By default it is enabled*/
+    /*if DB enabled, at start MMT launches/connects to a DB process. If disabled, will not use any DBs. By default: enabled*/
     private boolean enabled = true;
-    /*the host of the db process; it may be a name or an IP address
-    * by default it is localhost*/
+
+    /*host and port (default localhost:3306)*/
     private String host = "localhost";
-    /*the port on which the db process is waiting for clients*/
-    private int port = 9042;
-    /*the db name*/
+    private int port = 3306;
+
     private String name = null;
+    private String user = null;
+    private String password = null;
 
 
     public boolean isEmbedded() {
@@ -69,13 +68,33 @@ public class DatabaseConfig {
         return this;
     }
 
+    public String getPassword() {
+        return password;
+    }
+
+    public DatabaseConfig setPassword(String password) {
+        this.password = password;
+        return this;
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
     @Override
     public String toString() {
-        return "[Database]\n" +
-                "  enabled = " + this.enabled + "\n" +
-                "  embedded = " + this.embedded + "\n" +
-                "  host = " + this.host + "\n" +
-                "  port = " + this.port + "\n" +
-                "  name = " + this.name;
+        return "[Database]\n{" +
+                "embedded=" + embedded +
+                ", enabled=" + enabled +
+                ", host='" + host + '\'' +
+                ", port=" + port +
+                ", name='" + name + '\'' +
+                ", user='" + user + '\'' +
+                ", password='" + password + '\'' +
+                '}';
     }
 }

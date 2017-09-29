@@ -41,7 +41,7 @@ public class MemoryFacade {
             connection = db.getConnection();
 
             MemoryDAO memoryDAO = db.getMemoryDAO(connection);
-            return memoryDAO.retrieveById(id);
+            return memoryDAO.retrieve(id);
         } finally {
             IOUtils.closeQuietly(connection);
         }
@@ -63,7 +63,7 @@ public class MemoryFacade {
             connection = db.getConnection();
 
             MemoryDAO memoryDAO = db.getMemoryDAO(connection);
-            return memoryDAO.retrieveByIds(ids);
+            return memoryDAO.retrieve(ids);
         } finally {
             IOUtils.closeQuietly(connection);
         }
@@ -79,7 +79,7 @@ public class MemoryFacade {
             Memory memory = new Memory(0L, name);
 
             MemoryDAO memoryDAO = db.getMemoryDAO(connection);
-            memory = memoryDAO.put(memory);
+            memory = memoryDAO.store(memory);
 
             return memory;
         } finally {
@@ -117,7 +117,7 @@ public class MemoryFacade {
             connection = db.getConnection();
 
             MemoryDAO memoryDAO = db.getMemoryDAO(connection);
-            Memory memory = memoryDAO.retrieveById(memoryId);
+            Memory memory = memoryDAO.retrieve(memoryId);
 
             if (memory == null)
                 return null;
@@ -144,7 +144,7 @@ public class MemoryFacade {
             connection = db.getConnection();
 
             MemoryDAO memoryDAO = db.getMemoryDAO(connection);
-            Memory memory = memoryDAO.retrieveById(memoryId);
+            Memory memory = memoryDAO.retrieve(memoryId);
 
             if (memory == null)
                 return null;
@@ -156,7 +156,7 @@ public class MemoryFacade {
                 return null;
 
             ImportJobDAO jobDAO = db.getImportJobDAO(connection);
-            job = jobDAO.put(job);
+            job = jobDAO.store(job);
 
             return job;
         } finally {
@@ -189,7 +189,7 @@ public class MemoryFacade {
                 connection = db.getConnection();
 
                 ImportJobDAO jobDAO = db.getImportJobDAO(connection);
-                job = jobDAO.retrieveById(id);
+                job = jobDAO.retrieve(id);
             } finally {
                 IOUtils.closeQuietly(connection);
             }

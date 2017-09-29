@@ -1,11 +1,9 @@
 package eu.modernmt.persistence;
 
-import java.io.Closeable;
-
 /**
  * Created by davide on 21/09/16.
  */
-public abstract class Database implements Closeable {
+public abstract class Database {
 
     public final Connection getConnection() throws PersistenceException {
         return getConnection(true);

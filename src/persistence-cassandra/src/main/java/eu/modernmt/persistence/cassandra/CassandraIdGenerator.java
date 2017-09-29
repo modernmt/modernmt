@@ -95,7 +95,7 @@ public class CassandraIdGenerator {
     }
 
     /**
-     * This method creates the necessary statements to put
+     * This method creates the necessary statements to store
      * in the counters_table a new entry for each table
      * created during the database initialization
      *

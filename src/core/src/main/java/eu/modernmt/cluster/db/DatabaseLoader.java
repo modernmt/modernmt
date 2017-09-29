@@ -76,7 +76,7 @@ public class DatabaseLoader {
 
                 MemoryDAO memoryDao = database.getMemoryDAO(connection);
                 for (Memory memory : memories) {
-                    memoryDao.put(memory, true);
+                    memoryDao.store(memory, true);
 
                 }
                 logger.info("Database initialized");

@@ -13,8 +13,6 @@ import eu.modernmt.io.DefaultCharset;
 import eu.modernmt.rest.RESTServer;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,9 +26,8 @@ import java.util.List;
 public class ClusterNodeMain {
 
     /**
-     * This class represents the list of arguments that
-     * can be passed to the ClusterNodeMain main
-     * by the Python module that invokes it during MMT START
+     * This class models the list of arguments that can be passed to the ClusterNodeMain main.
+     * It is typically created by parsing the arguments passed from the outside during the execution of MMT start.
      */
     private static class Args {
 

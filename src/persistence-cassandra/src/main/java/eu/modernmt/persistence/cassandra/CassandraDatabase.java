@@ -9,8 +9,6 @@ import com.datastax.driver.core.schemabuilder.SchemaBuilder;
 import eu.modernmt.persistence.*;
 import org.apache.commons.io.IOUtils;
 
-import java.io.IOException;
-
 /**
  * Created by andrearossi on 08/03/17.
  * A CassandraDatabase object represents the access point
@@ -209,17 +207,5 @@ public class CassandraDatabase extends Database {
 
     private KeyspaceMetadata getKeyspaceMetadata() {
         return this.cluster.getMetadata().getKeyspace('"' + this.keyspace + '"');
-    }
-
-    /**
-     * This method closes the Cluster,
-     * which is the current access point to the DB
-     * (it DOES NOT kill the DB process!)
-     *
-     * @throws IOException
-     */
-    @Override
-    public void close() throws IOException {
-        this.cluster.close();
     }
 }

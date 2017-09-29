@@ -9,8 +9,8 @@ import java.util.UUID;
  */
 public interface ImportJobDAO {
 
-    ImportJob retrieveById(UUID id) throws PersistenceException;
+    ImportJob retrieve(UUID id) throws PersistenceException;
 
-    ImportJob put(ImportJob job) throws PersistenceException;
+    ImportJob store(ImportJob job) throws PersistenceException;
 
 }
