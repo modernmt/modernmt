@@ -5,8 +5,8 @@ import eu.modernmt.cluster.NodeInfo;
 import eu.modernmt.data.DataManager;
 import eu.modernmt.data.DataManagerException;
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.Memory;
 import eu.modernmt.model.ImportJob;
+import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.persistence.*;
 import org.apache.commons.io.IOUtils;
@@ -103,10 +103,14 @@ public class MemoryFacade {
             IOUtils.closeQuietly(connection);
         }
 
-        DataManager dataManager = ModernMT.getNode().getDataManager();
-        dataManager.delete(id);
+        this.empty(id);
 
         return true;
+    }
+
+    public void empty(long id) throws DataManagerException {
+        DataManager dataManager = ModernMT.getNode().getDataManager();
+        dataManager.delete(id);
     }
 
     public ImportJob add(LanguagePair direction, long memoryId, String source, String target) throws DataManagerException, PersistenceException {
@@ -171,7 +175,7 @@ public class MemoryFacade {
         try {
             connection = db.getConnection();
             MemoryDAO memoryDAO = db.getMemoryDAO(connection);
-            
+
             return memoryDAO.update(memory);
         } finally {
             IOUtils.closeQuietly(connection);
