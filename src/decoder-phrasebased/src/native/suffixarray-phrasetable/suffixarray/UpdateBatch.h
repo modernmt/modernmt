@@ -19,13 +19,13 @@ namespace mmt {
         public:
             UpdateBatch(size_t maxSize, const vector<seqid_t> &streams);
 
-            bool Add(const updateid_t &id, const domain_t domain, const std::vector<wid_t> &source,
+            bool Add(const updateid_t &id, const memory_t memory, const std::vector<wid_t> &source,
                      const std::vector<wid_t> &target, const alignment_t &alignment);
 
-            bool Add(const domain_t domain, const std::vector<wid_t> &source,
+            bool Add(const memory_t memory, const std::vector<wid_t> &source,
                      const std::vector<wid_t> &target, const alignment_t &alignment);
 
-            bool Delete(const updateid_t &id, const domain_t domain);
+            bool Delete(const updateid_t &id, const memory_t memory);
 
             bool IsEmpty();
 
@@ -40,7 +40,7 @@ namespace mmt {
         private:
 
             struct sentencepair_t {
-                domain_t domain;
+                memory_t memory;
                 vector<wid_t> source;
                 vector<wid_t> target;
                 alignment_t alignment;
@@ -52,7 +52,7 @@ namespace mmt {
 
             vector<seqid_t> streams;
             vector<sentencepair_t> data;
-            vector<domain_t> deletions;
+            vector<memory_t> deletions;
 
             bool SetStreamIfValid(stream_t stream, seqid_t sentence);
 

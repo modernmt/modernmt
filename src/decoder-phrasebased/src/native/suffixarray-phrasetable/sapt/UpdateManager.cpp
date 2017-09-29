@@ -33,16 +33,16 @@ UpdateManager::~UpdateManager() {
             AwakeBackgroundThread(true); \
     }
 
-void UpdateManager::Add(const updateid_t &id, const domain_t domain, const vector<wid_t> &source,
+void UpdateManager::Add(const updateid_t &id, const memory_t memory, const vector<wid_t> &source,
                         const vector<wid_t> &target, const alignment_t &alignment) {
     UpdateManagerEnqueue(
-            foregroundBatch->Add(id, domain, source, target, alignment)
+            foregroundBatch->Add(id, memory, source, target, alignment)
     );
 }
 
-void UpdateManager::Delete(const mmt::updateid_t &id, const mmt::domain_t domain) {
+void UpdateManager::Delete(const mmt::updateid_t &id, const mmt::memory_t memory) {
     UpdateManagerEnqueue(
-            foregroundBatch->Delete(id, domain)
+            foregroundBatch->Delete(id, memory)
     );
 }
 

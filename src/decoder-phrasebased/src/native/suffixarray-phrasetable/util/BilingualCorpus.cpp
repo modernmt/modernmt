@@ -13,9 +13,9 @@ using namespace mmt::sapt;
 
 namespace fs = boost::filesystem;
 
-BilingualCorpus::BilingualCorpus(domain_t domain, const string &sourceFile, const string &targetFile,
+BilingualCorpus::BilingualCorpus(memory_t memory, const string &sourceFile, const string &targetFile,
                                  const string &alignmentFile)
-        : domain(domain), source(sourceFile), target(targetFile), alignment(alignmentFile) {
+        : memory(memory), source(sourceFile), target(targetFile), alignment(alignmentFile) {
 }
 
 static inline void ParseSentenceLine(Vocabulary &vb, const string &line, sentence_t &output) {
@@ -74,9 +74,9 @@ void BilingualCorpus::List(const string &path, const string &sourceLang, const s
             if (!fs::is_regular_file(alignmentFile))
                 continue;
 
-            domain_t domain = (domain_t) stoi(file.stem().string());
+            memory_t memory = (memory_t) stoi(file.stem().string());
 
-            list.push_back(BilingualCorpus(domain, sourceFile.string(), targetFile.string(), alignmentFile.string()));
+            list.push_back(BilingualCorpus(memory, sourceFile.string(), targetFile.string(), alignmentFile.string()));
         }
     }
 }

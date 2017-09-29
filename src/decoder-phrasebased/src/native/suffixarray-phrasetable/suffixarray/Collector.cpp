@@ -15,11 +15,11 @@ Collector::Collector(CorporaStorage *storage, rocksdb::DB *db, length_t prefixLe
     phrase.reserve(20); // typical max phrase length
 
     if (context && !context->empty()) {
-        inDomainStates.resize(context->size());
+        inMemoryStates.resize(context->size());
 
         for (size_t i = 0; i < context->size(); ++i) {
-            inDomainStates[i].cursor.reset(
-                    PrefixCursor::NewDomainCursor(db, prefixLength, context->at(i).domain)
+            inMemoryStates[i].cursor.reset(
+                    PrefixCursor::NewMemoryCursor(db, prefixLength, context->at(i).memory)
             );
         }
     }
@@ -39,7 +39,7 @@ void Collector::Extend(const vector<wid_t> &words, size_t limit, vector<sample_t
 
     // Get in-context samples
 
-    for (auto state = inDomainStates.begin(); state != inDomainStates.end(); /* no increment */) {
+    for (auto state = inMemoryStates.begin(); state != inMemoryStates.end(); /* no increment */) {
         size_t collected = CollectLocations(state->cursor.get(), phrase, prefixLength, state->phraseOffset,
                                             state->postingList);
 
@@ -72,7 +72,7 @@ void Collector::Extend(const vector<wid_t> &words, size_t limit, vector<sample_t
 
             ++state;
         } else {
-            state = inDomainStates.erase(state);
+            state = inMemoryStates.erase(state);
         }
     }
 
@@ -161,14 +161,14 @@ void Collector::Retrieve(const vector<location_t> &locations, vector<sample_t> &
     int64_t lastPointer = -1;
 
     for (auto location = locations.begin(); location != locations.end(); ++location) {
-        if (lastSample && lastSample->domain == location->domain && lastPointer == location->pointer) {
+        if (lastSample && lastSample->memory == location->memory && lastPointer == location->pointer) {
             lastSample->offsets.push_back(location->offset);
         } else {
             sample_t sample;
-            sample.domain = location->domain;
+            sample.memory = location->memory;
             sample.offsets.push_back(location->offset);
 
-            if (storage->Retrieve(location->domain, location->pointer,
+            if (storage->Retrieve(location->memory, location->pointer,
                                   &sample.source, &sample.target, &sample.alignment)) {
                 outSamples.push_back(sample);
 

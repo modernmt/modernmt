@@ -77,7 +77,7 @@ int main(int argc, const char *argv[]) {
     while (iterator->Next(&entry)) {
         if (entry.is_source) {
             output << "SOURCE";
-            output << " domain " << entry.domain;
+            output << " memory " << entry.memory;
             output << " words ";
             for (auto w = entry.words.begin(); w != entry.words.end(); ++w) { output << *w << ","; }
             output << " count " << entry.count;

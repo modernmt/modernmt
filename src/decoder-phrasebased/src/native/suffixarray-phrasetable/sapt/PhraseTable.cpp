@@ -38,13 +38,13 @@ PhraseTable::~PhraseTable() {
     delete self;
 }
 
-void PhraseTable::Add(const updateid_t &id, const domain_t domain, const std::vector<wid_t> &source,
+void PhraseTable::Add(const updateid_t &id, const memory_t memory, const std::vector<wid_t> &source,
                       const std::vector<wid_t> &target, const alignment_t &alignment) {
-    self->updates->Add(id, domain, source, target, alignment);
+    self->updates->Add(id, memory, source, target, alignment);
 }
 
-void PhraseTable::Delete(const updateid_t &id, const domain_t domain) {
-    self->updates->Delete(id, domain);
+void PhraseTable::Delete(const updateid_t &id, const memory_t memory) {
+    self->updates->Delete(id, memory);
 }
 
 unordered_map<stream_t, seqid_t> PhraseTable::GetLatestUpdatesIdentifier() {

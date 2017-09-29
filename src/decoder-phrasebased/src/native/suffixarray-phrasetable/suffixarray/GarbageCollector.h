@@ -26,7 +26,7 @@ namespace mmt {
 
             virtual ~GarbageCollector();
 
-            void MarkForDeletion(const std::vector<domain_t> &domains);
+            void MarkForDeletion(const std::vector<memory_t> &memories);
 
         private:
             mmt::logging::Logger logger;
@@ -34,13 +34,13 @@ namespace mmt {
             rocksdb::DB *db;
             CorporaStorage *storage;
 
-            domain_t pendingDeletionDomain;
+            memory_t pendingDeletionMemory;
             int64_t pendingDeletionOffset;
             size_t batchSize;
             uint8_t prefixLength;
 
             std::mutex queueAccess;
-            std::unordered_set<domain_t> queue;
+            std::unordered_set<memory_t> queue;
 
             class interrupted_exception : public std::exception {
             public:
@@ -49,15 +49,15 @@ namespace mmt {
 
             void BackgroundThreadRun() throw(index_exception) override;
 
-            void Delete(domain_t domain, int64_t offset = 0) throw(interrupted_exception, index_exception);
+            void Delete(memory_t memory, int64_t offset = 0) throw(interrupted_exception, index_exception);
 
-            void DeleteStorage(domain_t domain) throw(index_exception);
+            void DeleteStorage(memory_t memory) throw(index_exception);
 
-            int64_t LoadBatch(domain_t domain, StorageIterator *iterator,
+            int64_t LoadBatch(memory_t memory, StorageIterator *iterator,
                               std::unordered_set<std::string> *outPrefixKeys,
                               std::unordered_map<std::string, int64_t> *outTargetCounts) throw(interrupted_exception);
 
-            void WriteBatch(domain_t domain, int64_t offset, const std::unordered_set<std::string> &prefixKeys,
+            void WriteBatch(memory_t memory, int64_t offset, const std::unordered_set<std::string> &prefixKeys,
                             const std::unordered_map<std::string, int64_t> &targetCounts);
 
         };

@@ -70,11 +70,11 @@ int main(int argc, const char *argv[]) {
 
     CorporaStorage *storage = index.GetStorage();
 
-    unordered_set<domain_t> domains;
-    storage->GetManifest()->GetDomains(&domains);
+    unordered_set<memory_t> memories;
+    storage->GetManifest()->GetMemories(&memories);
 
-    for (auto domain = domains.begin(); domain != domains.end(); ++domain) {
-        StorageIterator *it = storage->NewIterator(*domain);
+    for (auto memory = memories.begin(); memory != memories.end(); ++memory) {
+        StorageIterator *it = storage->NewIterator(*memory);
 
         ofstream output(args.dump_file.c_str());
 
@@ -83,7 +83,7 @@ int main(int argc, const char *argv[]) {
         alignment_t alignment;
 
         while (it->Next(&sourceSentence, &targetSentence, &alignment, nullptr)) {
-            output << *domain << ": ";
+            output << *memory << ": ";
             for (auto w = sourceSentence.begin(); w!=sourceSentence.end(); ++w) { output << *w << " ";}
             output << "||| ";
             for (auto w = targetSentence.begin(); w!=targetSentence.end(); ++w) { output << *w << " ";}

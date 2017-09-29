@@ -33,7 +33,7 @@ bool ParseContext(const string &str, context_t &context) {
 
         string tok;
         getline(ess, tok, ':');
-        domain_t id = (domain_t) stoi(tok);
+        memory_t id = (memory_t) stoi(tok);
         getline(ess, tok, ':');
         float w = stof(tok);
 

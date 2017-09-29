@@ -21,7 +21,7 @@ void ParseContext(JNIEnv *jvm, jlongArray keys, jfloatArray values, map<string, 
     jfloat *valuesArray = jvm->GetFloatArrayElements(values, 0);
 
     for (int i = 0; i < size; i++) {
-        string key = std::to_string((domain_t) keysArray[i]);
+        string key = std::to_string((memory_t) keysArray[i]);
         float value = valuesArray[i];
 
         outContext[key] = value;
@@ -197,7 +197,7 @@ JNIEXPORT jobject JNICALL Java_eu_modernmt_decoder_phrasebased_MosesDecoder_xtra
  */
 JNIEXPORT void JNICALL
 Java_eu_modernmt_decoder_phrasebased_MosesDecoder_updateReceived(JNIEnv *jvm, jobject jself, jshortArray jchannels,
-                                                                 jlongArray jpositions, jlongArray jdomains,
+                                                                 jlongArray jpositions, jlongArray jmemories,
                                                                  jobjectArray jsources, jobjectArray jtargets,
                                                                  jobjectArray jalignments) {
     MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
@@ -207,12 +207,12 @@ Java_eu_modernmt_decoder_phrasebased_MosesDecoder_updateReceived(JNIEnv *jvm, jo
 
     jshort *jchannelsArray = jvm->GetShortArrayElements(jchannels, 0);
     jlong *jpositionsArray = jvm->GetLongArrayElements(jpositions, 0);
-    jlong *jdomainsArray = jvm->GetLongArrayElements(jdomains, 0);
+    jlong *jmemoriesArray = jvm->GetLongArrayElements(jmemories, 0);
 
     for (size_t i = 0; i < size; ++i) {
         translation_unit_t &unit = batch[i];
         unit.id = updateid_t((stream_t) jchannelsArray[i], (seqid_t) jpositionsArray[i]);
-        unit.domain = (domain_t) jdomainsArray[i];
+        unit.memory = (memory_t) jmemoriesArray[i];
         unit.source = jni_jstrtostr(jvm, (jstring) jvm->GetObjectArrayElement(jsources, (jsize) i));
         unit.target = jni_jstrtostr(jvm, (jstring) jvm->GetObjectArrayElement(jtargets, (jsize) i));
         unit.alignment = ParseAlignment(jvm, (jintArray) jvm->GetObjectArrayElement(jalignments, (jsize) i));
@@ -220,7 +220,7 @@ Java_eu_modernmt_decoder_phrasebased_MosesDecoder_updateReceived(JNIEnv *jvm, jo
 
     jvm->ReleaseShortArrayElements(jchannels, jchannelsArray, 0);
     jvm->ReleaseLongArrayElements(jpositions, jpositionsArray, 0);
-    jvm->ReleaseLongArrayElements(jdomains, jdomainsArray, 0);
+    jvm->ReleaseLongArrayElements(jmemories, jmemoriesArray, 0);
 
     instance->DeliverUpdates(batch);
 }
@@ -232,13 +232,13 @@ Java_eu_modernmt_decoder_phrasebased_MosesDecoder_updateReceived(JNIEnv *jvm, jo
  */
 JNIEXPORT void JNICALL
 Java_eu_modernmt_decoder_phrasebased_MosesDecoder_deleteReceived(JNIEnv *jvm, jobject jself, jshort jchannel,
-                                                                 jlong jchannelPosition, jlong jdomain) {
+                                                                 jlong jchannelPosition, jlong jmemory) {
     MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
 
     updateid_t id((stream_t) jchannel, (seqid_t) jchannelPosition);
-    domain_t domain = (domain_t) jdomain;
+    memory_t memory = (memory_t) jmemory;
 
-    instance->DeliverDeletion(id, domain);
+    instance->DeliverDeletion(id, memory);
 }
 
 /*

@@ -97,19 +97,19 @@ double GetTime() {
 }
 
 void LoadCorpus(Vocabulary &vb, const string &corpus, NGramStorage &storage, uint8_t order, size_t buffer_size) {
-    domain_t domain = (domain_t) stoi(fs::path(corpus).stem().string());
+    memory_t memory = (memory_t) stoi(fs::path(corpus).stem().string());
 
     CorpusReader reader(vb, corpus);
     NGramBatch batch(order, buffer_size);
     size_t batches=1;
     vector<wid_t> sentence;
     while(reader.Read(sentence)) {
-        if (!batch.Add(domain, sentence)) {
+        if (!batch.Add(memory, sentence)) {
             storage.PutBatch(batch);
 
             ++batches;
             batch.Clear();
-            batch.Add(domain, sentence);
+            batch.Add(memory, sentence);
         }
     }
 
@@ -117,7 +117,7 @@ void LoadCorpus(Vocabulary &vb, const string &corpus, NGramStorage &storage, uin
         storage.PutBatch(batch);
         batch.Clear();
     }
-    cerr << "loading domain:" << domain << " requires " << batches << " batches" << endl;
+    cerr << "loading memory:" << memory << " requires " << batches << " batches" << endl;
 }
 
 int main(int argc, const char *argv[]) {

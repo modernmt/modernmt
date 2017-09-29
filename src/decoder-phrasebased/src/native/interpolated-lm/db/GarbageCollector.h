@@ -20,7 +20,7 @@ namespace mmt {
 
             virtual ~GarbageCollector();
 
-            void MarkForDeletion(const std::vector<domain_t> &domains);
+            void MarkForDeletion(const std::vector<memory_t> &memories);
 
         private:
             mmt::logging::Logger logger = logging::Logger("ilm.GarbageCollector");
@@ -28,7 +28,7 @@ namespace mmt {
             rocksdb::DB *db;
 
             std::mutex queueAccess;
-            std::unordered_set<domain_t> queue;
+            std::unordered_set<memory_t> queue;
 
             class interrupted_exception : public std::exception {
             public:
@@ -37,7 +37,7 @@ namespace mmt {
 
             void BackgroundThreadRun() override;
 
-            void Delete(domain_t domain) throw(interrupted_exception);
+            void Delete(memory_t memory) throw(interrupted_exception);
 
         };
 

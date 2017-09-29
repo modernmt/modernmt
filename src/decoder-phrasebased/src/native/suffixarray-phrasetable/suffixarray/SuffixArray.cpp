@@ -172,10 +172,10 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
     unordered_map <string, int64_t> targetCounts;
 
     for (auto entry = batch.data.begin(); entry != batch.data.end(); ++entry) {
-        domain_t domain = entry->domain;
+        memory_t memory = entry->memory;
 
-        int64_t offset = storage->Append(domain, entry->source, entry->target, entry->alignment);
-        AddPrefixesToBatch(domain, entry->source, offset, sourcePrefixes);
+        int64_t offset = storage->Append(memory, entry->source, entry->target, entry->alignment);
+        AddPrefixesToBatch(memory, entry->source, offset, sourcePrefixes);
         AddTargetCountsToBatch(entry->target, targetCounts);
     }
 
@@ -191,9 +191,9 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
         writeBatch.Merge(count->first, value);
     }
 
-    // Write deleted domains
-    for (auto domain = batch.deletions.begin(); domain != batch.deletions.end(); ++domain)
-        writeBatch.Put(MakeDomainDeletionKey(*domain), "");
+    // Write deleted memories
+    for (auto memory = batch.deletions.begin(); memory != batch.deletions.end(); ++memory)
+        writeBatch.Put(MakeMemoryDeletionKey(*memory), "");
 
     // Write streams
     writeBatch.Put(kStreamsKey, SerializeStreams(batch.GetStreams()));
@@ -210,12 +210,12 @@ void SuffixArray::PutBatch(UpdateBatch &batch) throw(index_exception, storage_ex
     if (!status.ok())
         throw index_exception("Unable to write to index: " + status.ToString());
 
-    // Reset streams and domains
+    // Reset streams and memories
     streams = batch.GetStreams();
     garbageCollector->MarkForDeletion(batch.deletions);
 }
 
-void SuffixArray::AddPrefixesToBatch(domain_t domain, const vector <wid_t> &sentence,
+void SuffixArray::AddPrefixesToBatch(memory_t memory, const vector <wid_t> &sentence,
                                      int64_t location, unordered_map <string, PostingList> &outBatch) {
     size_t size = sentence.size();
 
@@ -224,8 +224,8 @@ void SuffixArray::AddPrefixesToBatch(domain_t domain, const vector <wid_t> &sent
             if (start + length > size)
                 break;
 
-            string dkey = MakePrefixKey(prefixLength, domain, sentence, start, length);
-            outBatch[dkey].Append(domain, location, (length_t) start);
+            string dkey = MakePrefixKey(prefixLength, memory, sentence, start, length);
+            outBatch[dkey].Append(memory, location, (length_t) start);
         }
     }
 }
@@ -305,7 +305,7 @@ bool IndexIterator::Next(IndexIterator::IndexEntry *outEntry) {
         switch (type) {
             case kSourcePrefixKeyType:
                 outEntry->is_source = true;
-                outEntry->domain = GetDomainFromKey(key.data(), prefixLength);
+                outEntry->memory = GetMemoryFromKey(key.data(), prefixLength);
 
                 outEntry->words.clear();
                 GetWordsFromKey(key.data(), prefixLength, outEntry->words);
@@ -317,7 +317,7 @@ bool IndexIterator::Next(IndexIterator::IndexEntry *outEntry) {
                 break;
             case kTargetCountKeyType:
                 outEntry->is_source = false;
-                outEntry->domain = 0;
+                outEntry->memory = 0;
                 outEntry->positions.clear();
 
                 outEntry->words.clear();

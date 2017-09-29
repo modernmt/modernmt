@@ -12,17 +12,17 @@ using namespace mmt;
 using namespace mmt::ilm;
 
 GarbageCollector::GarbageCollector(rocksdb::DB *db, double timeout) : BackgroundPollingThread(timeout), db(db) {
-    // Deleted domains
+    // Deleted memories
     Iterator *it = db->NewIterator(ReadOptions());
 
     for (it->SeekToFirst(); it->Valid(); it->Next()) {
         Slice key = it->key();
-        if (!HasDomainDeletionPrefix(key.data(), key.size()))
+        if (!HasMemoryDeletionPrefix(key.data(), key.size()))
             break;
 
-        domain_t domain = GetDomainFromDeletionKey(key.data(), key.size());
-        if (domain > 0)
-            queue.insert(domain);
+        memory_t memory = GetMemoryFromDeletionKey(key.data(), key.size());
+        if (memory > 0)
+            queue.insert(memory);
     }
 
     delete it;
@@ -35,31 +35,31 @@ GarbageCollector::~GarbageCollector() {
     Stop();
 }
 
-void GarbageCollector::MarkForDeletion(const std::vector<domain_t> &domains) {
+void GarbageCollector::MarkForDeletion(const std::vector<memory_t> &memories) {
     queueAccess.lock();
-    queue.insert(domains.begin(), domains.end());
+    queue.insert(memories.begin(), memories.end());
     queueAccess.unlock();
 }
 
 void GarbageCollector::BackgroundThreadRun() {
     queueAccess.lock();
-    unordered_set<domain_t> domains = queue;
+    unordered_set<memory_t> memories = queue;
     queueAccess.unlock();
 
-    if (domains.empty())
+    if (memories.empty())
         return;
 
     LogInfo(logger) << "Started cleaning process";
     double beginTime = GetTime();
 
     try {
-        for (auto domain = domains.begin(); domain != domains.end(); ++domain) {
-            Delete(*domain);
+        for (auto memory = memories.begin(); memory != memories.end(); ++memory) {
+            Delete(*memory);
 
-            db->Delete(WriteOptions(), MakeDomainDeletionKey(*domain));
+            db->Delete(WriteOptions(), MakeMemoryDeletionKey(*memory));
 
             queueAccess.lock();
-            queue.erase(*domain);
+            queue.erase(*memory);
             queueAccess.unlock();
         }
 
@@ -69,26 +69,26 @@ void GarbageCollector::BackgroundThreadRun() {
     }
 }
 
-void GarbageCollector::Delete(domain_t domain) throw(interrupted_exception) {
+void GarbageCollector::Delete(memory_t memory) throw(interrupted_exception) {
     if (!IsRunning())
         throw interrupted_exception();
 
     double beginTime = GetTime();
-    LogInfo(logger) << "Deleting domain " << domain;
+    LogInfo(logger) << "Deleting memory " << memory;
 
     WriteOptions writeOptions;
 
-    string entryKey = MakeNGramKey(domain, 0);
+    string entryKey = MakeNGramKey(memory, 0);
     Iterator *it = db->NewIterator(ReadOptions());
 
     for (it->Seek(entryKey); it->Valid(); it->Next()) {
         Slice key = it->key();
 
-        domain_t keyDomain;
+        memory_t keyMemory;
         ngram_hash_t keyHash;
-        GetNGramKeyData(key.data(), key.size(), &keyDomain, &keyHash);
+        GetNGramKeyData(key.data(), key.size(), &keyMemory, &keyHash);
 
-        if (domain != keyDomain)
+        if (memory != keyMemory)
             break;
 
         db->Delete(writeOptions, key);
@@ -96,5 +96,5 @@ void GarbageCollector::Delete(domain_t domain) throw(interrupted_exception) {
 
     delete it;
 
-    LogInfo(logger) << "Deletion of domain " << domain << " completed in " << GetElapsedTime(beginTime) << "s";
+    LogInfo(logger) << "Deletion of memory " << memory << " completed in " << GetElapsedTime(beginTime) << "s";
 }

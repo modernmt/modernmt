@@ -41,7 +41,7 @@ typedef struct {
 
 typedef struct {
     mmt::updateid_t id;
-    mmt::domain_t domain;
+    mmt::memory_t memory;
     std::string source;
     std::string target;
     mmt::alignment_t alignment;
@@ -83,7 +83,7 @@ namespace mmt {
 
             virtual void DeliverUpdates(const std::vector<translation_unit_t> &batch) = 0;
 
-            virtual void DeliverDeletion(const updateid_t &id, const domain_t domain) = 0;
+            virtual void DeliverDeletion(const updateid_t &id, const memory_t memory) = 0;
 
             virtual std::unordered_map<stream_t, seqid_t> GetLatestUpdatesIdentifiers() = 0;
 

@@ -52,27 +52,27 @@ namespace mmt {
          * update twice.
          *
          * @param id the update unique id.
-         * @param domain the domain id.
+         * @param memory the memory id.
          * @param source the source sentence.
          * @param target the target sentence.
          * @param alignment the sentence pair alignment.
          */
         virtual void
-        Add(const updateid_t &id, const domain_t domain,
+        Add(const updateid_t &id, const memory_t memory,
             const std::vector<wid_t> &source, const std::vector <wid_t> &target,
             const alignment_t &alignment) = 0;
 
         /**
-         * Requests the deletion of the specified domain.
+         * Requests the deletion of the specified memory.
          *
          * The invocation of this method is always made by exactly one thread at time, so
          * the implementation of this method does not need to handle exclusive access to resources
          * or, more in general, worry about multi-thread execution.
          *
          * @param id the update unique id.
-         * @param domain the domain id.
+         * @param memory the memory id.
          */
-        virtual void Delete(const updateid_t &id, const domain_t domain) = 0;
+        virtual void Delete(const updateid_t &id, const memory_t memory) = 0;
 
         /**
          * Retrieve the latest update ids registered in the system. These values must be updated
