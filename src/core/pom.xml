@@ -38,11 +38,6 @@
             <artifactId>mmt-contextanalyzer-lucene</artifactId>
             <version>${mmt.version}</version>
         </dependency>
-        <dependency>
-            <groupId>eu.modernmt</groupId>
-            <artifactId>mmt-persistence-cassandra</artifactId>
-            <version>${mmt.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>eu.modernmt</groupId>
@@ -54,6 +49,18 @@
             <artifactId>mmt-commons</artifactId>
             <version>${mmt.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>eu.modernmt</groupId>
+            <artifactId>mmt-persistence-cassandra</artifactId>
+            <version>${mmt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.modernmt</groupId>
+            <artifactId>mmt-persistence-mysql</artifactId>
+            <version>${mmt.version}</version>
+        </dependency>
+
 
         <dependency>
             <groupId>org.apache.kafka</groupId>
@@ -85,5 +92,6 @@
             <version>4.11</version>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 </project>

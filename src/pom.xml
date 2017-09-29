@@ -15,11 +15,10 @@
         <module>decoder-phrasebased</module>
         <module>decoder-neural</module>
         <module>persistence-cassandra</module>
-
         <module>core</module>
-
         <module>api-rest</module>
         <module>command-line</module>
+        <module>persistence-mysql</module>
     </modules>
 
     <packaging>pom</packaging>

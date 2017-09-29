@@ -22,4 +22,6 @@ public abstract class Database implements Closeable {
     public abstract boolean exists() throws PersistenceException;
 
     public abstract String getName() throws PersistenceException;
+
+    public abstract boolean initialize() throws PersistenceException;
 }

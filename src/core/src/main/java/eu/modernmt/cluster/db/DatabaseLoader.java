@@ -10,6 +10,7 @@ import eu.modernmt.persistence.Database;
 import eu.modernmt.persistence.MemoryDAO;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.persistence.cassandra.CassandraDatabase;
+import eu.modernmt.persistence.mysql.MySQLDatabase;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -53,35 +54,41 @@ public class DatabaseLoader {
         /*if a keyspace name was passed in the config, use it;
         else get a default name in the 1x nomenclature.
         NOTE: 0.15x nomenclature is now discontinued.*/
-        String name = config.getName();
-        if (name == null)
-            name = CassandraDatabase.getDefaultKeyspace();
 
         // create the Database object (an access point to the db in the running process)
-        CassandraDatabase database = new CassandraDatabase(
-                config.getHost(),
-                config.getPort(),
-                name);
+        Database database;
+        if (config.getType() == DatabaseConfig.TYPE.MYSQL) {
+            /*name is never null if DB is mysql*/
+            database = new MySQLDatabase(config.getHost(), config.getPort(), config.getName(), config.getUser(), config.getPassword());
+        } else {
+            String name = config.getName();
+            if (name == null)
+                name = CassandraDatabase.getDefaultKeyspace();
+            database = new CassandraDatabase(config.getHost(), config.getPort(), name);
+        }
         logger.info("Connected to the database");
 
         // if a db with that name hasn't been created yet in db process,
         Connection connection = null;
         try {
-            if (!database.exists()) {
+
+            /*after connecting to the DB, check of the DB exist. If it does not exist yet, create it*/
+            if (!database.exists())     //NOTE: if db is mysql, it will always already exist
                 database.create();
 
+            /*Now try to initialize the db (this atomic operation only succeeds if the db was not initialized yet).
+            * If the initialization succeeds, upload all the baseline memories in the DB.*/
+            if (database.initialize()) {
                 File baselineMemories = Paths.join(engine.getModelsPath(), "db", "baseline_memories.json");
                 List<Memory> memories = BaselineMemoryCollection.load(baselineMemories);
                 connection = database.getConnection();
 
                 MemoryDAO memoryDao = database.getMemoryDAO(connection);
-                for (Memory memory : memories) {
-                    memoryDao.put(memory, true);
-
-                }
+                for (Memory memory : memories)
+                    memoryDao.store(memory, true);
                 logger.info("Database initialized");
             }
-            // if the db is already there, do nothing
+            // if the db already exists and was already initialized, do nothing
 
         } catch (PersistenceException e) {
             throw new BootstrapException("Unable to initialize the DB", e);

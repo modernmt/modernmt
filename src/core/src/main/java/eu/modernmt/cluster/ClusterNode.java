@@ -388,12 +388,12 @@ public class ClusterNode {
         DatabaseConfig databaseConfig = nodeConfig.getDatabaseConfig();
         if (databaseConfig.isEnabled()) {
 
-            boolean localDatabase = NetworkUtils.isLocalhost(databaseConfig.getHost());
-            boolean embeddedDatabase = databaseConfig.isEmbedded();
+            boolean local = NetworkUtils.isLocalhost(databaseConfig.getHost());
+            boolean embedded = databaseConfig.isEmbedded();
 
-            // if db type is 'embedded' and db host is localhost, start a db process;
+            // if db is 'embedded' and db host is localhost, start a db process;
             // else do nothing - will connect to a remote db or a local standalone db
-            if (embeddedDatabase && localDatabase) {
+            if (embedded && local && databaseConfig.getType() == DatabaseConfig.TYPE.CASSANDRA) {
                 logger.info("Starting embedded Cassandra process");
                 timer.reset();
 
@@ -403,11 +403,10 @@ public class ClusterNode {
                 this.services.add(cassandra);
             }
 
-            if (!embeddedDatabase && databaseConfig.getName() == null)
+            /*else if is not embedded, check that it has a name and connect to it*/
+            if (!embedded && databaseConfig.getName() == null)
                 throw new BootstrapException("Database name is compulsory if database is not embedded");
-
             this.database = DatabaseLoader.load(engine, databaseConfig);
-            //load may throw a bootstrap exception: just let it pass
         }
 
 

@@ -13,8 +13,6 @@ import eu.modernmt.io.DefaultCharset;
 import eu.modernmt.rest.RESTServer;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,9 +26,8 @@ import java.util.List;
 public class ClusterNodeMain {
 
     /**
-     * This class represents the list of arguments that
-     * can be passed to the ClusterNodeMain main
-     * by the Python module that invokes it during MMT START
+     * This class models the list of arguments that can be passed to the ClusterNodeMain main.
+     * It is typically created by parsing the arguments passed from the outside during the execution of MMT start.
      */
     private static class Args {
 
@@ -95,7 +92,8 @@ public class ClusterNodeMain {
             String verbosity = cli.getOptionValue("verbosity");
             this.verbosity = verbosity == null ? 1 : Integer.parseInt(verbosity);
 
-            // read the engine.xconf file
+            /* read the engine.xconf file and build the engineConfig, with its:
+               network config, datastream config, database config, net-api config and net-join config */
             this.config = XMLConfigBuilder.build(Engine.getConfigFile(this.engine));
             this.config.getEngineConfig().setName(this.engine);
 
@@ -106,14 +104,11 @@ public class ClusterNodeMain {
             ApiConfig apiConfig = netConfig.getApiConfig();
             JoinConfig joinConfig = netConfig.getJoinConfig();
 
+            /* alter the values read from the engine.xconf file in the following cases:*/
 
-            // ~~~~~~~~~~~~~~~~ PORTS MANAGEMENT ~~~~~~~~~~~~~~~~~~~
-            // If the port [passed by command line] is not null
-            // write it in the suitable config: it is the port to use.
-            // Else, if it is null use the the port already in the config:
-            // it is the port parsed from the engine.xconf file,
-            // so it is either a manually-chosen port or the default value
-            // (if the user didn't update the engine.xconf file)
+            // ~~~~~~~~~~~~~~~~ PORTS ~~~~~~~~~~~~~~~~~~~
+            /* Ports passed by command line have priority over the ones read by engine.xconf
+            (that may be either the default ones or actual values written by the user) so use them if they are not null.*/
             String port = cli.getOptionValue("cluster-port");
             if (port != null)
                 netConfig.setPort(Integer.parseInt(port));
@@ -129,35 +124,26 @@ public class ClusterNodeMain {
 
 
             // ~~~~~~~~~~~~~~~~ MEMBERS MANAGEMENT ~~~~~~~~~~~~~~~~~~~
-            // Members are other nodes in the MMT cluster.
-            // If this node is to join an MMT cluster, it must contact
-            // a member of the cluster as an entry point.
+            /* Members are other nodes in the MMT cluster. This node must use them as entry points to join the cluster.
 
-            // If a leader was passed by command line:
-            //  - for the cluster join task, put it in an empty Member array:
-            //    it is the only cluster member that this node will try to join to.
-            //  - since the leader also hosts the database and datastream,
-            //    set the datastreamconfig and databaseconfig host as the leader
-            //
-            // Assume that all the ports that the leader uses
-            // (cluster, datastream and db ports) are the same as this node.
-            // If they are not, then the configuration is wrong.
+            If a leader was passed by command line with option --join-leader:
+                - create a Member with its host and port try to use this Member only to join the cluster
+                - the leader hosts the database and datastream, so set it as the host in datastreamconfig and databaseconfig
 
-            // If no leader is passed by command line, do nothing:
-            // this way the config object will use the members list parsed
-            // from the engine.xconf file and try to join those members in order.
+            Assume that all the ports that the leader uses (cluster, datastream and db ports) are the same as this node.
+            If they are not, then the configuration is wrong.
 
-            // NOTE: In this case there may or may not be a cluster leader.
-            // so just use the database and datastream hosts and ports
-            // set in the engine.xconf file.
+            If no leader is passed by command line, do nothing.
+                - The config object will use the list of members parsed from engine.xconf and try to join them in order.
+                - use the database and datastream hosts and ports in engine.xconf for datastreamconfig and databaseconfig */
             String leader = cli.getOptionValue("leader");
+
             if (leader != null) {
                 JoinConfig.Member[] members = new JoinConfig.Member[1];
                 members[0] = new JoinConfig.Member(leader, netConfig.getPort());
                 joinConfig.setMembers(members);
-
-                this.config.getDataStreamConfig().setHost(leader);
-                this.config.getDatabaseConfig().setHost(leader);
+                streamConfig.setHost(leader);
+                dbConfig.setHost(leader);
             }
         }
     }

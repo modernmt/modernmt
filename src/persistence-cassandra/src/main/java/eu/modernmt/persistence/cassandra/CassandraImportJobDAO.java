@@ -42,7 +42,7 @@ public class CassandraImportJobDAO implements ImportJobDAO {
      * @throws PersistenceException if couldn't insert the importjob in the DB
      */
     @Override
-    public ImportJob put(ImportJob job) throws PersistenceException {
+    public ImportJob store(ImportJob job) throws PersistenceException {
         long id = CassandraIdGenerator.generate(connection, CassandraDatabase.IMPORT_JOBS_TABLE_ID);
 
         String[] columns = {"id", "memory", "\"begin\"", "end", "data_channel", "size"};
@@ -72,7 +72,7 @@ public class CassandraImportJobDAO implements ImportJobDAO {
      * @throws PersistenceException
      */
     @Override
-    public ImportJob retrieveById(UUID uuid) throws PersistenceException {
+    public ImportJob retrieve(UUID uuid) throws PersistenceException {
         long id = ImportJob.getLongId(uuid);
 
         BuiltStatement statement = QueryBuilder.

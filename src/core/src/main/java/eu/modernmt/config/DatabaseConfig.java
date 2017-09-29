@@ -9,20 +9,26 @@ package eu.modernmt.config;
  * (or obtained in some different way)
  */
 public class DatabaseConfig {
+    public static final int MYSQL_DEFAULT_PORT = 3306;
+    public static final int CASSANDRA_DEFAULT_PORT = 9042;
+
+    public enum TYPE {CASSANDRA, MYSQL}
 
     private boolean embedded = true;
-    /*if the db is enabled MMT start launches a db process or connects to a remote one;
-      if it is disabled no db process is launched; MMT does not interact with any DBs;
-      By default it is enabled*/
+    /*if DB enabled, at start MMT launches/connects to a DB process. If disabled, will not use any DBs. By default: enabled*/
     private boolean enabled = true;
-    /*the host of the db process; it may be a name or an IP address
-    * by default it is localhost*/
-    private String host = "localhost";
-    /*the port on which the db process is waiting for clients*/
-    private int port = 9042;
-    /*the db name*/
-    private String name = null;
 
+    /*db type: either Cassandra (by default) or MySQL*/
+    private TYPE type = TYPE.CASSANDRA;
+    private int port = CASSANDRA_DEFAULT_PORT;
+
+    /*host and port (default localhost:3306)*/
+    private String host = "localhost";
+    private String name = null; //the DB name (if mysql) or keyspace name (if Cassandra)
+
+    /*user and password are only used if this is mysql*/
+    private String user = null;
+    private String password = null;
 
     public boolean isEmbedded() {
         return this.embedded;
@@ -69,13 +75,43 @@ public class DatabaseConfig {
         return this;
     }
 
+    public String getPassword() {
+        return password;
+    }
+
+    public DatabaseConfig setPassword(String password) {
+        this.password = password;
+        return this;
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
+    public TYPE getType() {
+        return type;
+    }
+
+    public void setType(TYPE type) {
+        this.type = type;
+    }
+
+
     @Override
     public String toString() {
-        return "[Database]\n" +
-                "  enabled = " + this.enabled + "\n" +
-                "  embedded = " + this.embedded + "\n" +
-                "  host = " + this.host + "\n" +
-                "  port = " + this.port + "\n" +
-                "  name = " + this.name;
+        return "[Database]\n{" +
+                "embedded=" + embedded +
+                ", enabled=" + enabled +
+                ", host='" + host + '\'' +
+                ", port=" + port +
+                ", type=" + type +
+                ", name='" + name + '\'' +
+                ", user='" + user + '\'' +
+                ", password='" + password + '\'' +
+                '}';
     }
 }

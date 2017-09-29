@@ -47,7 +47,7 @@ public class CassandraMemoryDAO implements MemoryDAO {
      * @throws PersistenceException
      */
     @Override
-    public Memory retrieveById(long id) throws PersistenceException {
+    public Memory retrieve(long id) throws PersistenceException {
         BuiltStatement statement = QueryBuilder.select()
                 .from(CassandraDatabase.MEMORIES_TABLE)
                 .where(QueryBuilder.eq("id", id));
@@ -91,7 +91,7 @@ public class CassandraMemoryDAO implements MemoryDAO {
      * @throws PersistenceException
      */
     @Override
-    public Map<Long, Memory> retrieveByIds(Collection<Long> ids) throws PersistenceException {
+    public Map<Long, Memory> retrieve(Collection<Long> ids) throws PersistenceException {
         Map<Long, Memory> map = new HashMap<>(ids.size());
 
         /*if the list is empty, return an empty map*/
@@ -148,8 +148,8 @@ public class CassandraMemoryDAO implements MemoryDAO {
      * @throws PersistenceException if couldn't insert the importjob in the DB
      */
     @Override
-    public Memory put(Memory memory) throws PersistenceException {
-        return this.put(memory, false);
+    public Memory store(Memory memory) throws PersistenceException {
+        return this.store(memory, false);
     }
 
     /**
@@ -164,7 +164,7 @@ public class CassandraMemoryDAO implements MemoryDAO {
      * @throws PersistenceException if couldn't insert the importjob in the DB
      */
     @Override
-    public Memory put(Memory memory, boolean forceId) throws PersistenceException {
+    public Memory store(Memory memory, boolean forceId) throws PersistenceException {
         long id;
 
         if (!forceId) {
@@ -197,7 +197,7 @@ public class CassandraMemoryDAO implements MemoryDAO {
      * and stores it in the DB overwriting an existing row with same ID.
      * If in the DB there is no row with that ID nothing happens.
      *
-     * @param memory the Memory object to put in the DB
+     * @param memory the Memory object to store in the DB
      *               in place of an already existing one
      * @return the same memory object passed as a parameter,
      * if the overwrite is successful

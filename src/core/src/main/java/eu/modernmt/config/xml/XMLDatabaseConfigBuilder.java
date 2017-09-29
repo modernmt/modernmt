@@ -1,7 +1,6 @@
 package eu.modernmt.config.xml;
 
 import eu.modernmt.config.ConfigException;
-import eu.modernmt.config.DataStreamConfig;
 import eu.modernmt.config.DatabaseConfig;
 import org.w3c.dom.Element;
 
@@ -41,12 +40,29 @@ class XMLDatabaseConfigBuilder extends XMLAbstractBuilder {
             config.setEnabled(this.getBooleanAttribute("enabled"));
         if (this.hasAttribute("embedded"))
             config.setEmbedded(this.getBooleanAttribute("embedded"));
-        if (this.hasAttribute("host"))
-            config.setHost(this.getStringAttribute("host"));
+        if (this.hasAttribute("type")) {
+            if (this.getStringAttribute("type").equals("mysql")) {
+                config.setType(DatabaseConfig.TYPE.MYSQL);
+                config.setPort(DatabaseConfig.MYSQL_DEFAULT_PORT);
+            } else {
+                config.setType(DatabaseConfig.TYPE.CASSANDRA);
+                config.setPort(DatabaseConfig.CASSANDRA_DEFAULT_PORT);
+            }
+        }
         if (this.hasAttribute("port"))
             config.setPort(this.getIntAttribute("port"));
+        if (this.hasAttribute("host"))
+            config.setHost(this.getStringAttribute("host"));
         if (this.hasAttribute("name"))
             config.setName(this.getStringAttribute("name"));
+        if (this.hasAttribute("user"))
+            config.setName(this.getStringAttribute("user"));
+        if (this.hasAttribute("password"))
+            config.setName(this.getStringAttribute("password"));
+
+        if (config.getType() != DatabaseConfig.TYPE.CASSANDRA && config.isEmbedded())
+            throw new ConfigException("Bad DBConfiguration: only Cassandra DB can be embedded in MMT");
+
         return config;
     }
 }

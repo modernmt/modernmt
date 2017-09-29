@@ -10,15 +10,15 @@ import java.util.Map;
  */
 public interface MemoryDAO {
 
-    Memory retrieveById(long id) throws PersistenceException;
+    Memory retrieve(long id) throws PersistenceException;
 
-    Map<Long, Memory> retrieveByIds(Collection<Long> ids) throws PersistenceException;
+    Map<Long, Memory> retrieve(Collection<Long> ids) throws PersistenceException;
 
     Collection<Memory> retrieveAll() throws PersistenceException;
 
-    Memory put(Memory memory, boolean forceId) throws PersistenceException;
+    Memory store(Memory memory, boolean forceId) throws PersistenceException;
 
-    Memory put(Memory memory) throws PersistenceException;
+    Memory store(Memory memory) throws PersistenceException;
 
     Memory update(Memory memory) throws PersistenceException;
 
