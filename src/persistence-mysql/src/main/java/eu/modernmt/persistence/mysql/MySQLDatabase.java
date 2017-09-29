@@ -25,9 +25,7 @@ public class MySQLDatabase extends Database {
                 + "&serverTimezone=UTC";
 
         MysqlDataSource mysqlDS = new MysqlDataSource();
-        mysqlDS.setURL(host + ":" + port + "?" + params);
-
-
+        mysqlDS.setURL("jdbc:mysql://" + host + ":" + port + "/" + name + "?" + params);
         mysqlDS.setDatabaseName(name);
         mysqlDS.setUser(user);
         mysqlDS.setPassword(password);
@@ -88,9 +86,9 @@ public class MySQLDatabase extends Database {
             String query = "UPDATE metadata SET initialized = ? WHERE id = ? AND initialized = ?";
             connection = this.dataSource.getConnection();
             statement = connection.prepareStatement(query);
-            statement.setBoolean(1, true);
-            statement.setLong(2, 1);
-            statement.setBoolean(3, false);
+            statement.setShort(1, (short) 1);
+            statement.setLong(2, 1L);
+            statement.setShort(3, (short) 0);
             int affectedRows = statement.executeUpdate();
             return affectedRows != 0;
         } catch (SQLException e) {
@@ -99,10 +97,5 @@ public class MySQLDatabase extends Database {
             SQLUtils.closeQuietly(connection);
             SQLUtils.closeQuietly(statement);
         }
-    }
-
-
-    public static String getDefaultName() {
-        return "default";
     }
 }

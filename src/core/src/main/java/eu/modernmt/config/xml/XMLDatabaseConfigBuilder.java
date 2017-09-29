@@ -56,9 +56,9 @@ class XMLDatabaseConfigBuilder extends XMLAbstractBuilder {
         if (this.hasAttribute("name"))
             config.setName(this.getStringAttribute("name"));
         if (this.hasAttribute("user"))
-            config.setName(this.getStringAttribute("user"));
+            config.setUser(this.getStringAttribute("user"));
         if (this.hasAttribute("password"))
-            config.setName(this.getStringAttribute("password"));
+            config.setPassword(this.getStringAttribute("password"));
 
         if (config.getType() != DatabaseConfig.TYPE.CASSANDRA && config.isEmbedded())
             throw new ConfigException("Bad DBConfiguration: only Cassandra DB can be embedded in MMT");
