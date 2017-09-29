@@ -6,6 +6,7 @@ import os
 import torch
 import torch.nn as nn
 
+from nmmt.IDataset import DatasetWrapper
 from nmmt.SubwordTextProcessor import SubwordTextProcessor
 from nmmt.internal_utils import opts_object, log_timed_action
 from nmmt.torch_utils import torch_is_multi_gpu, torch_is_using_cuda, torch_get_gpus
@@ -52,6 +53,12 @@ class NMTEngine:
             self.tuning_max_grad_norm = 5  # If norm(gradient vector) > max_grad_norm, re-normalize
             self.tuning_max_learning_rate = 0.2
             self.tuning_max_epochs = 10
+
+        def __str__(self):
+            return str(self.__dict__)
+
+        def __repr__(self):
+            return str(self.__dict__)
 
         def load_from_file(self, path):
             with open(path, 'rb') as metadata_stream:
@@ -188,6 +195,9 @@ class NMTEngine:
         if not self._model_loaded:
             self.reset_model()
 
+    def count_parameters(self):
+        return sum([p.nelement() for p in self.model.parameters()])
+
     def tune(self, suggestions, epochs=None, learning_rate=None):
         # Set tuning parameters
         if epochs is None or learning_rate is None:
@@ -227,13 +237,14 @@ class NMTEngine:
                 tuning_trg_batch.append(target)
 
             tuning_set = Dataset(tuning_src_batch, tuning_trg_batch, len(tuning_src_batch), torch_is_using_cuda())
+            tuning_set = DatasetWrapper(tuning_set)
 
             # Run tuning
             log_message = 'Tuning on %d suggestions (epochs = %d, learning_rate = %.3f )' % (
                 len(suggestions), self._tuner.opts.max_epochs, self._tuner.optimizer.lr)
 
             with log_timed_action(self._logger, log_message, log_start=False):
-                self._tuner.train_model(tuning_set, save_epochs=0)
+                self._tuner.train_model(tuning_set)
 
     def _estimate_tuning_parameters(self, suggestions):
         # it returns an actual learning_rate and epochs based on the quality of the suggestions

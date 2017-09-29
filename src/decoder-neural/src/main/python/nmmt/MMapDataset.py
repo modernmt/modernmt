@@ -1,15 +1,15 @@
-import logging
-
+import math
 import mmap
 import os
 import random
 import shutil
 import struct
 
-import math
 import torch
 
 from onmt import Dataset
+from IDataset import IDataset
+from torch_utils import torch_is_using_cuda
 
 
 class _HeapIndex:
@@ -31,9 +31,6 @@ class _HeapIndex:
         return word_count, pointer, data_size
 
     def __init__(self, path):
-        self._logger = logging.getLogger('nmmt._HeapIndex')
-        self._log_level = logging.INFO
-
         self._path = path
         self._output_stream = None
         self._input_stream = None
@@ -182,9 +179,6 @@ class _HeapData:
         return source, target
 
     def __init__(self, path):
-        self._logger = logging.getLogger('nmmt._HeapData')
-        self._log_level = logging.INFO
-
         self._path = path
         self._output_stream = None
         self._input_stream = None
@@ -256,9 +250,6 @@ class _HeapData:
 
 class _Heap:
     def __init__(self, path):
-        self._logger = logging.getLogger('nmmt._Heap')
-        self._log_level = logging.INFO
-
         self._idx = _HeapIndex(os.path.join(path, 'heap.idx'))
         self._data = _HeapData(os.path.join(path, 'heap.dat'))
 
@@ -292,13 +283,11 @@ class _Heap:
         return self._data.read_batch(self._idx.read(index, length))
 
 
-class ShardedDataset(object):
+class MMapDataset(IDataset):
     class Builder(object):
         def __init__(self, path):
-            # shutil.rmtree(path, ignore_errors=True)
-            # os.makedirs(path)
-            if not os.path.exists(path):
-                os.makedirs(path)
+            shutil.rmtree(path, ignore_errors=True)
+            os.makedirs(path)
 
             self._heap = _Heap(path)
             self._heap_writer = None
@@ -314,20 +303,49 @@ class ShardedDataset(object):
             self._heap_writer.close()
             self._heap.sort(ram_limit_mb)
 
+            return MMapDataset(self._heap)
+
     @staticmethod
-    def load(file_path, batch_size, cuda, volatile=False):
-        return ShardedDataset(_Heap(file_path), batch_size, cuda, volatile)
+    def load(file_path):
+        return MMapDataset(_Heap(file_path))
 
-    def __init__(self, heap, batch_size, cuda, volatile=False):
-        self._logger = logging.getLogger('nmmt.ShardedDataset')
-        self._log_level = logging.INFO
+    def __init__(self, heap):
+        self._heap = heap
 
+    def __len__(self):
+        return len(self._heap)
+
+    def iterator(self, batch_size, shuffle=True, volatile=False, start_position=0, loop=False, random_seed=1):
+        return _Iterator(self._heap, batch_size,
+                         shuffle=shuffle, volatile=volatile, start_position=start_position, loop=loop,
+                         random_seed=random_seed)
+
+
+class _Iterator(IDataset.Iterator):
+    def __init__(self, heap, batch_size, shuffle=True, volatile=False, start_position=0, loop=False, random_seed=1):
         self._heap = heap
         self._batch_size = batch_size
         self._batch_count = int(math.ceil(float(len(heap)) / batch_size))
+        self._shuffle = shuffle
+        self._random_seed = random_seed
+        self._loop = loop
 
-        self._dataset_impl = Dataset([], [], batch_size, cuda, volatile=volatile, data_type="text")
-        self._dataset_impl.numBatches = 1
+        self._dataset = Dataset([], [], batch_size, torch_is_using_cuda(), volatile=volatile, data_type="text")
+        self._dataset.numBatches = 1
+
+        self._current_batch_order = None
+        self._current_position = None
+        self._reset(start_position)
+
+    def _reset(self, position=None):
+        if position is not None:
+            self._current_position = position
+
+        self._current_batch_order = range(self._batch_count)
+
+        if self._shuffle:
+            epoch = int(self._current_position / self._batch_count) + self._random_seed
+            random.Random(epoch).shuffle(self._current_batch_order)
 
     def __len__(self):
         return self._batch_count
@@ -338,40 +356,27 @@ class ShardedDataset(object):
 
         batch = self._heap.read(index * self._batch_size, self._batch_size)
 
-        self._dataset_impl.src = [torch.LongTensor(x[0]) for x in batch]
-        self._dataset_impl.tgt = [torch.LongTensor(x[1]) for x in batch]
+        self._dataset.src = [torch.LongTensor(x[0]) for x in batch]
+        self._dataset.tgt = [torch.LongTensor(x[1]) for x in batch]
 
-        return self._dataset_impl.__getitem__(0)
+        return self._dataset.__getitem__(0)
 
+    def __iter__(self):
+        return self
 
-def _test_build(path, size=1000000):
-    builder = ShardedDataset.Builder(path)
-    for i in xrange(size):
-        base = [x + i for x in xrange(random.randint(1, 20))]
+    def next(self):
+        if self._current_position > 0 and (self._current_position % self._batch_count) == 0:
+            if self._loop:
+                self._reset()
+            else:
+                raise StopIteration
 
-        source = [0] + base + [0]
-        target = [1] + [x + 1 for x in base] + [1]
+        i = self._current_position % self._batch_count
+        i = self._current_batch_order[i]
 
-        builder.add([source], [target])
+        self._current_position += 1
 
-    return builder.build(5)
+        return self._current_position - 1, self.__getitem__(i)
 
-
-def _test_dump(path, do_print=False):
-    dataset = ShardedDataset.load(path, 64, None)
-
-    prev_len = 0
-
-    for source, translation in dataset._heap.read_all():
-        assert source[-1] == source[0] == 0
-        assert translation[-1] == translation[0] == 1
-        assert prev_len <= len(source)
-        prev_len = len(source)
-
-        source_base = [x for x in source[1:-1]]
-        target_base = [x - 1 for x in translation[1:-1]]
-
-        assert source_base == target_base
-
-        if do_print:
-            print source, translation
+    def position(self):
+        return self._current_position

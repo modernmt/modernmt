@@ -60,6 +60,10 @@ class NMTDecoder:
         if suggestions is not None and len(suggestions) > 0:
             engine.tune(suggestions, epochs=tuning_epochs, learning_rate=tuning_learning_rate)
             reset_model = True
+            self._logger.log(logging.INFO,"text:|%s| sugg_src:|%s| sugg_trg:|%s| sugg-score:|%f|" % (text, suggestions[0].source, suggestions[0].target, suggestions[0].score))
+        else:
+            self._logger.log(logging.INFO,"text:|%s| sugg_src:|EMPTY| sugg_trg:|EMPTY| sugg-score:|EMPTY|" % (text))
+
 
         # (2) Translate
         result = engine.translate(text, n_best=n_best, beam_size=self.beam_size, max_sent_length=self.max_sent_length)
