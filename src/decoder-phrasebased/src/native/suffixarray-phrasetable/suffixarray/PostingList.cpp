@@ -18,7 +18,7 @@ PostingList::PostingList() : entryCount(0) {
 
 }
 
-void PostingList::Append(domain_t domain, const string &value) {
+void PostingList::Append(memory_t memory, const string &value) {
     assert(value.size() % kEntrySize == 0);
 
     size_t count = value.size() / kEntrySize;
@@ -30,13 +30,13 @@ void PostingList::Append(domain_t domain, const string &value) {
         vector<char> chunk(size);
         memcpy(chunk.data(), cstr, size);
 
-        datamap[domain] = chunk;
+        datamap[memory] = chunk;
         entryCount += count;
     }
 }
 
-void PostingList::Append(domain_t domain, int64_t location, length_t offset) {
-    vector<char> &data = datamap[domain];
+void PostingList::Append(memory_t memory, int64_t location, length_t offset) {
+    vector<char> &data = datamap[memory];
     size_t ptr = data.size();
 
     data.resize(ptr + kEntrySize);
@@ -54,8 +54,8 @@ size_t PostingList::size() const {
     return entryCount;
 }
 
-void PostingList::GetLocationMap(domain_t domain, unordered_map<int64_t, unordered_set<length_t>> &output) const {
-    auto entry = datamap.find(domain);
+void PostingList::GetLocationMap(memory_t memory, unordered_map<int64_t, unordered_set<length_t>> &output) const {
+    auto entry = datamap.find(memory);
 
     if (entry == datamap.end())
         return;

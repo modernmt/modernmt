@@ -18,10 +18,10 @@ namespace mmt {
         struct location_t {
             int64_t pointer;
             length_t offset;
-            domain_t domain;
+            memory_t memory;
 
-            location_t(int64_t pointer = -1, length_t offset = 0, domain_t domain = 0)
-                    : pointer(pointer), offset(offset), domain(domain) {}
+            location_t(int64_t pointer = -1, length_t offset = 0, memory_t memory = 0)
+                    : pointer(pointer), offset(offset), memory(memory) {}
         };
 
         class PostingList {
@@ -31,9 +31,9 @@ namespace mmt {
 
             PostingList();
 
-            void Append(domain_t domain, const string &value);
+            void Append(memory_t memory, const string &value);
 
-            void Append(domain_t domain, int64_t location, length_t offset);
+            void Append(memory_t memory, int64_t location, length_t offset);
 
             void Retain(const PostingList *successors, size_t start);
 
@@ -49,9 +49,9 @@ namespace mmt {
 
         private:
             size_t entryCount;
-            map<domain_t, vector<char>> datamap;
+            map<memory_t, vector<char>> datamap;
 
-            void GetLocationMap(domain_t domain, unordered_map<int64_t, unordered_set<length_t>> &output) const;
+            void GetLocationMap(memory_t memory, unordered_map<int64_t, unordered_set<length_t>> &output) const;
 
             inline void Get(const vector<char> &chunk, size_t index, int64_t *outLocation, length_t *outOffset);
         };

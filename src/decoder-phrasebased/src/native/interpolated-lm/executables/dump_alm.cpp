@@ -91,15 +91,15 @@ int main(int argc, const char *argv[]) {
     NGramStorage storage(args.model_path, args.order, options.gc_timeout);
     cerr << "Model loaded." << endl;
 
-    domain_t domain;
+    memory_t memory;
     ngram_hash_t key;
     counts_t val;
 
     ofstream output(args.dump_file.c_str());
 
     StorageIterator *iterator = storage.NewIterator();
-    while (iterator->Next(&domain, &key, &val)) {
-        output << "domain " << domain
+    while (iterator->Next(&memory, &key, &val)) {
+        output << "memory " << memory
                << " key " << key
                << " count " << val.count
                << " successors " << val.successors

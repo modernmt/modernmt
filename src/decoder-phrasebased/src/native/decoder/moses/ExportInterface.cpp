@@ -203,11 +203,11 @@ batch_run()
   std::string context_string;
   params.SetParameter(context_string,"context-string",string(""));
 
-  // ... or weights for documents/domains from config file / cmd. line
+  // ... or weights for documents/memories from config file / cmd. line
   std::string context_weights;
   params.SetParameter(context_weights,"context-weights",string(""));
 
-  // ... or weights for documents/domains from config file / cmd. line
+  // ... or weights for documents/memories from config file / cmd. line
   std::string lm_interpolation_weights;
   params.SetParameter(lm_interpolation_weights,"lm-interpolation-weights",string(""));
 

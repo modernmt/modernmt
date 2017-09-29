@@ -46,14 +46,14 @@ namespace mmt {
             /* Incremental Model */
 
             virtual void
-            Add(const updateid_t &id, domain_t domain, const vector<wid_t> &source, const vector<wid_t> &target,
+            Add(const updateid_t &id, memory_t memory, const vector<wid_t> &source, const vector<wid_t> &target,
                 const alignment_t &alignment) override;
 
             virtual unordered_map<stream_t, seqid_t> GetLatestUpdatesIdentifier() override;
 
             virtual void NormalizeContext(context_t *context);
 
-            void Delete(const updateid_t &id, const domain_t domain) override;
+            void Delete(const updateid_t &id, const memory_t memory) override;
 
         private:
             const uint8_t order;

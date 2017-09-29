@@ -22,23 +22,23 @@ CorporaStorage::~CorporaStorage() {
     delete manifest;
 }
 
-std::shared_ptr<StorageBucket> CorporaStorage::GetBucket(domain_t domain, bool putIfAbsent) {
+std::shared_ptr<StorageBucket> CorporaStorage::GetBucket(memory_t memory, bool putIfAbsent) {
     boost::upgrade_lock<boost::shared_mutex> lock(access);
 
-    auto bucket = buckets.find(domain);
+    auto bucket = buckets.find(memory);
     if (bucket == buckets.end()) {
         boost::upgrade_to_unique_lock<boost::shared_mutex> uniqueLock(lock);
 
         StorageManifest::Entry mEntry;
 
-        if (manifest->Get(domain, &mEntry, putIfAbsent)) {
-            bucket = buckets.find(domain);
+        if (manifest->Get(memory, &mEntry, putIfAbsent)) {
+            bucket = buckets.find(memory);
 
             if (bucket == buckets.end()) {
-                fs::path filepath = folder / fs::path("_" + to_string(domain) + "_" + to_string(mEntry.seq_id));
+                fs::path filepath = folder / fs::path("_" + to_string(memory) + "_" + to_string(mEntry.seq_id));
                 StorageBucket *bucketObj = new StorageBucket(filepath.string(), mEntry.size);
 
-                bucket = buckets.emplace(domain, shared_ptr<StorageBucket>(bucketObj)).first;
+                bucket = buckets.emplace(memory, shared_ptr<StorageBucket>(bucketObj)).first;
             }
         }
     }
@@ -46,9 +46,9 @@ std::shared_ptr<StorageBucket> CorporaStorage::GetBucket(domain_t domain, bool p
     return bucket == buckets.end() ? shared_ptr<StorageBucket>() : bucket->second;
 }
 
-bool CorporaStorage::Retrieve(domain_t domain, int64_t offset, std::vector<wid_t> *outSourceSentence,
+bool CorporaStorage::Retrieve(memory_t memory, int64_t offset, std::vector<wid_t> *outSourceSentence,
                               std::vector<wid_t> *outTargetSentence, alignment_t *outAlignment) {
-    std::shared_ptr<StorageBucket> bucket = GetBucket(domain);
+    std::shared_ptr<StorageBucket> bucket = GetBucket(memory);
 
     if (bucket == nullptr)
         return false;
@@ -56,67 +56,67 @@ bool CorporaStorage::Retrieve(domain_t domain, int64_t offset, std::vector<wid_t
     return bucket->Retrieve(offset, outSourceSentence, outTargetSentence, outAlignment) >= 0;
 }
 
-int64_t CorporaStorage::Append(domain_t domain, const std::vector<wid_t> &sourceSentence,
+int64_t CorporaStorage::Append(memory_t memory, const std::vector<wid_t> &sourceSentence,
                                const std::vector<wid_t> &targetSentence,
                                const alignment_t &alignment) throw(storage_exception) {
-    std::shared_ptr<StorageBucket> bucket = GetBucket(domain, true);
+    std::shared_ptr<StorageBucket> bucket = GetBucket(memory, true);
     int64_t result = bucket->Append(sourceSentence, targetSentence, alignment);
 
-    pendingDomainsAccess.lock();
-    pendingDomains.insert(domain);
-    pendingDomainsAccess.unlock();
+    pendingMemoriesAccess.lock();
+    pendingMemories.insert(memory);
+    pendingMemoriesAccess.unlock();
 
     return result;
 }
 
 void CorporaStorage::Flush() throw(storage_exception) {
-    pendingDomainsAccess.lock();
+    pendingMemoriesAccess.lock();
 
-    for (auto domain = pendingDomains.begin(); domain != pendingDomains.end(); ++domain) {
-        std::shared_ptr<StorageBucket> bucket = GetBucket(*domain);
+    for (auto memory = pendingMemories.begin(); memory != pendingMemories.end(); ++memory) {
+        std::shared_ptr<StorageBucket> bucket = GetBucket(*memory);
 
         if (bucket != nullptr) {
             StorageManifest::Entry mEntry;
-            manifest->Get(*domain, &mEntry, true);
+            manifest->Get(*memory, &mEntry, true);
 
             mEntry.size = bucket->Flush();
-            manifest->Set(*domain, mEntry);
+            manifest->Set(*memory, mEntry);
         }
     }
 
-    pendingDomains.clear();
-    pendingDomainsAccess.unlock();
+    pendingMemories.clear();
+    pendingMemoriesAccess.unlock();
 }
 
-void CorporaStorage::Delete(domain_t domain) {
-    std::shared_ptr<StorageBucket> bucket = GetBucket(domain);
+void CorporaStorage::Delete(memory_t memory) {
+    std::shared_ptr<StorageBucket> bucket = GetBucket(memory);
 
     if (bucket != nullptr) {
         bucket->MarkForDeletion();
 
-        pendingDomainsAccess.lock();
+        pendingMemoriesAccess.lock();
         boost::upgrade_lock<boost::shared_mutex> lock(access);
         boost::upgrade_to_unique_lock<boost::shared_mutex> uniqueLock(lock);
 
-        buckets.erase(domain);
-        pendingDomains.erase(domain);
+        buckets.erase(memory);
+        pendingMemories.erase(memory);
 
         StorageManifest::Entry mEntry;
-        if (manifest->Get(domain, &mEntry)) {
+        if (manifest->Get(memory, &mEntry)) {
             mEntry.seq_id++;
             mEntry.size = -1;
 
-            manifest->Set(domain, mEntry);
+            manifest->Set(memory, mEntry);
         }
 
-        pendingDomainsAccess.unlock();
+        pendingMemoriesAccess.unlock();
     }
 }
 
-StorageIterator *CorporaStorage::NewIterator(domain_t domain, size_t offset) {
+StorageIterator *CorporaStorage::NewIterator(memory_t memory, size_t offset) {
     StorageIterator *iterator = nullptr;
 
-    std::shared_ptr<StorageBucket> bucket = GetBucket(domain);
+    std::shared_ptr<StorageBucket> bucket = GetBucket(memory);
     if (bucket != nullptr)
         iterator = new StorageIterator(bucket, (int64_t) offset);
 

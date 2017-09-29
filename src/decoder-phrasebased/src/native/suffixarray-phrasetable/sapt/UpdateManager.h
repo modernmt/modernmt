@@ -20,10 +20,10 @@ namespace mmt {
 
             virtual ~UpdateManager();
 
-            void Add(const updateid_t &id, const domain_t domain, const vector<wid_t> &source,
+            void Add(const updateid_t &id, const memory_t memory, const vector<wid_t> &source,
                      const vector<wid_t> &target, const alignment_t &alignment);
 
-            void Delete(const updateid_t &id, const domain_t domain);
+            void Delete(const updateid_t &id, const memory_t memory);
 
         private:
             SuffixArray *index;

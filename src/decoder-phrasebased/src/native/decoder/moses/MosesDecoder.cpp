@@ -128,7 +128,7 @@ namespace mmt {
 
             void DeliverUpdates(const std::vector<translation_unit_t> &batch) override;
 
-            void DeliverDeletion(const updateid_t &id, const domain_t domain) override;
+            void DeliverDeletion(const updateid_t &id, const memory_t memory) override;
 
             unordered_map<stream_t, seqid_t> GetLatestUpdatesIdentifiers() override;
         };
@@ -300,15 +300,15 @@ void MosesDecoderImpl::DeliverUpdates(const std::vector<translation_unit_t> &bat
 
         for (auto it = m_incrementalModels.begin(); it != m_incrementalModels.end(); ++it) {
             IncrementalModel *model = *it;
-            model->Add(unit.id, unit.domain, source, target, unit.alignment);
+            model->Add(unit.id, unit.memory, source, target, unit.alignment);
         }
     }
 }
 
-void MosesDecoderImpl::DeliverDeletion(const updateid_t &id, const domain_t domain) {
+void MosesDecoderImpl::DeliverDeletion(const updateid_t &id, const memory_t memory) {
     for (auto it = m_incrementalModels.begin(); it != m_incrementalModels.end(); ++it) {
         IncrementalModel *model = *it;
-        model->Delete(id, domain);
+        model->Delete(id, memory);
     }
 }
 

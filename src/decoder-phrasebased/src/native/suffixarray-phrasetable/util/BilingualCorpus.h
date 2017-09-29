@@ -18,18 +18,18 @@ namespace mmt {
             friend class CorpusReader;
 
         public:
-            BilingualCorpus(domain_t domain, const string &sourceFile, const string &targetFile,
+            BilingualCorpus(memory_t memory, const string &sourceFile, const string &targetFile,
                             const string &alignmentFile);
 
-            const domain_t GetDomain() const {
-                return domain;
+            const memory_t GetMemory() const {
+                return memory;
             }
 
             static void
             List(const string &path, const string &sourceLang, const string &targetLang, vector<BilingualCorpus> &list);
 
         private:
-            const domain_t domain;
+            const memory_t memory;
             const string source;
             const string target;
             const string alignment;

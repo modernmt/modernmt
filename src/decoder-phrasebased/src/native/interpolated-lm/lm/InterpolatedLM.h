@@ -41,7 +41,7 @@ namespace mmt {
 
             /* Incremental Model */
 
-            virtual void Add(const updateid_t &id, const domain_t domain,
+            virtual void Add(const updateid_t &id, const memory_t memory,
                              const vector <wid_t> &source, const vector <wid_t> &target,
                              const alignment_t &alignment) override;
 
@@ -49,7 +49,7 @@ namespace mmt {
 
             virtual void NormalizeContext(context_t *context);
 
-            void Delete(const updateid_t &id, const domain_t domain) override;
+            void Delete(const updateid_t &id, const memory_t memory) override;
 
         private:
             struct ilm_private;

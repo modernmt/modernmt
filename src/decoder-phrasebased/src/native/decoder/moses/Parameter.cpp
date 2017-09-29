@@ -307,7 +307,7 @@ Parameter::Parameter()
   AddParam(deprec_opts,"weight-w", "w", "DEPRECATED. DO NOT USE. weight for word penalty");
   AddParam(deprec_opts,"weight-u", "u", "DEPRECATED. DO NOT USE. weight for unknown word penalty");
   AddParam(deprec_opts,"weight-e", "e", "DEPRECATED. DO NOT USE. weight for word deletion");
-  AddParam(deprec_opts,"text-type", "DEPRECATED. DO NOT USE. should be one of dev/devtest/test, used for domain adaptation features");
+  AddParam(deprec_opts,"text-type", "DEPRECATED. DO NOT USE. should be one of dev/devtest/test, used for memory adaptation features");
   AddParam(deprec_opts,"input-scores", "DEPRECATED. DO NOT USE. 2 numbers on 2 lines - [1] of scores on each edge of a confusion network or lattice input (default=1). [2] Number of 'real' word scores (0 or 1. default=0)");
   AddParam(deprec_opts,"dlm-model", "DEPRECATED. DO NOT USE. Order, factor and vocabulary file for discriminative LM. Use * for filename to indicate unlimited vocabulary.");
   AddParam(deprec_opts,"generation-file", "DEPRECATED. DO NOT USE. location and properties of the generation table");

@@ -11,7 +11,7 @@
 #include "SuffixArray.h"
 
 static_assert(sizeof(mmt::wid_t) == 4, "Current implementation works only with 32-bit word ids");
-static_assert(sizeof(mmt::domain_t) == 4, "Current implementation works only with 32-bit domain id");
+static_assert(sizeof(mmt::memory_t) == 4, "Current implementation works only with 32-bit memory id");
 static_assert(sizeof(mmt::length_t) == 2, "Current implementation works only with 16-bit sentence length");
 
 using namespace std;
@@ -22,7 +22,7 @@ namespace mmt {
         enum KeyType {
             kStreamsKeyType = 0,
             kStorageManifestKeyType = 1,
-            kDeletedDomainKeyType = 2,
+            kDeletedMemoryKeyType = 2,
             kPendingDeletionKeyType = 3,
 
             kSourcePrefixKeyType = 4,
@@ -39,9 +39,9 @@ namespace mmt {
         }
 
         static inline string
-        MakePrefixKey(length_t prefixLength, domain_t domain,
+        MakePrefixKey(length_t prefixLength, memory_t memory,
                       const vector<wid_t> &phrase, size_t offset, size_t length) {
-            size_t size = 1 + sizeof(domain_t) + prefixLength * sizeof(wid_t);
+            size_t size = 1 + sizeof(memory_t) + prefixLength * sizeof(wid_t);
             char *bytes = new char[size];
             bytes[0] = kSourcePrefixKeyType;
 
@@ -52,7 +52,7 @@ namespace mmt {
             for (size_t i = length; i < prefixLength; ++i)
                 WriteUInt32(bytes, &ptr, 0);
 
-            WriteUInt32(bytes, &ptr, domain);
+            WriteUInt32(bytes, &ptr, memory);
 
             string key(bytes, size);
             delete[] bytes;
@@ -62,7 +62,7 @@ namespace mmt {
 
         static inline string
         MakeCountKey(length_t prefixLength, const vector<wid_t> &phrase, size_t offset, size_t length) {
-            size_t size = 1 + sizeof(domain_t) + prefixLength * sizeof(wid_t);
+            size_t size = 1 + sizeof(memory_t) + prefixLength * sizeof(wid_t);
             char *bytes = new char[size];
             bytes[0] = kTargetCountKeyType;
 
@@ -73,7 +73,7 @@ namespace mmt {
             for (size_t i = length; i < prefixLength; ++i)
                 WriteUInt32(bytes, &ptr, 0);
 
-            WriteUInt32(bytes, &ptr, 0); // no domain info
+            WriteUInt32(bytes, &ptr, 0); // no memory info
 
             string key(bytes, size);
             delete[] bytes;
@@ -81,12 +81,12 @@ namespace mmt {
             return key;
         }
 
-        static inline string MakeDomainDeletionKey(domain_t domain) {
+        static inline string MakeMemoryDeletionKey(memory_t memory) {
             char bytes[5];
-            bytes[0] = kDeletedDomainKeyType;
+            bytes[0] = kDeletedMemoryKeyType;
 
             size_t ptr = 1;
-            WriteUInt32(bytes, &ptr, domain);
+            WriteUInt32(bytes, &ptr, memory);
 
             return string(bytes, 5);
         }
@@ -95,7 +95,7 @@ namespace mmt {
             return (KeyType) data[0];
         }
 
-        static inline domain_t GetDomainFromKey(const char *data, length_t prefixLength) {
+        static inline memory_t GetMemoryFromKey(const char *data, length_t prefixLength) {
             size_t i = 1 + prefixLength * sizeof(wid_t);
             return ReadUInt32(data, i);
         }
@@ -108,7 +108,7 @@ namespace mmt {
             }
         }
 
-        static inline domain_t GetDomainFromDeletionKey(const char *data) {
+        static inline memory_t GetMemoryFromDeletionKey(const char *data) {
             return ReadUInt32(data, 1);
         }
 
@@ -157,11 +157,11 @@ namespace mmt {
             return ReadInt64(data, (size_t) 0);
         }
 
-        static inline string SerializePendingDeletionData(domain_t domain, int64_t offset) {
+        static inline string SerializePendingDeletionData(memory_t memory, int64_t offset) {
             char bytes[12];
             size_t ptr = 0;
 
-            WriteUInt32(bytes, &ptr, domain);
+            WriteUInt32(bytes, &ptr, memory);
             WriteInt64(bytes, &ptr, offset);
 
             string value(bytes, 12);
@@ -169,12 +169,12 @@ namespace mmt {
         }
 
         static inline bool
-        DeserializePendingDeletionData(const char *data, size_t bytes_size, domain_t *outDomain, int64_t *outOffset) {
+        DeserializePendingDeletionData(const char *data, size_t bytes_size, memory_t *outMemory, int64_t *outOffset) {
             if (bytes_size != 12)
                 return false;
 
             size_t ptr = 0;
-            *outDomain = ReadUInt32(data, &ptr);
+            *outMemory = ReadUInt32(data, &ptr);
             *outOffset = ReadInt64(data, &ptr);
 
             return true;

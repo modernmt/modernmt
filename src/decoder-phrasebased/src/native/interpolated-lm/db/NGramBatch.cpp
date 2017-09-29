@@ -14,31 +14,31 @@ NGramBatch::NGramBatch(uint8_t order, size_t maxSize, const vector<seqid_t> &_st
     streams = _streams;
 }
 
-bool NGramBatch::Add(const domain_t domain, const vector<wid_t> &sentence, const count_t count) {
+bool NGramBatch::Add(const memory_t memory, const vector<wid_t> &sentence, const count_t count) {
     if (size >= maxSize)
         return false;
 
-    AddToBatch(domain, sentence, count);
+    AddToBatch(memory, sentence, count);
 
     return true;
 }
 
-bool NGramBatch::Add(const updateid_t &id, const domain_t domain, const vector<wid_t> &sentence, const count_t count) {
+bool NGramBatch::Add(const updateid_t &id, const memory_t memory, const vector<wid_t> &sentence, const count_t count) {
     if (size >= maxSize)
         return false;
 
     if (!SetStreamIfValid(id.stream_id, id.sentence_id))
         return true;
 
-    AddToBatch(domain, sentence, count);
+    AddToBatch(memory, sentence, count);
 
     return true;
 }
 
-inline void NGramBatch::AddToBatch(const domain_t domain, const vector<wid_t> &sentence, const count_t count) {
+inline void NGramBatch::AddToBatch(const memory_t memory, const vector<wid_t> &sentence, const count_t count) {
     sentenceCount++;
 
-    auto el = ngrams_map.emplace(domain, ngram_table_t());
+    auto el = ngrams_map.emplace(memory, ngram_table_t());
     ngram_table_t &ngrams = el.first->second;
 
     if (el.second)
@@ -78,11 +78,11 @@ inline void NGramBatch::AddToBatch(const domain_t domain, const vector<wid_t> &s
     delete words;
 }
 
-bool NGramBatch::Delete(const updateid_t &id, const domain_t domain) {
+bool NGramBatch::Delete(const updateid_t &id, const memory_t memory) {
     if (!SetStreamIfValid(id.stream_id, id.sentence_id))
         return true;
 
-    deletions.push_back(domain);
+    deletions.push_back(memory);
     return true;
 }
 

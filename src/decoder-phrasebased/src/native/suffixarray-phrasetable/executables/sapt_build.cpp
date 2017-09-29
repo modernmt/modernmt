@@ -82,7 +82,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
 }
 
 void LoadCorpus(Vocabulary &vb, const BilingualCorpus &corpus, SuffixArray &index, size_t buffer_size) {
-    domain_t domain = corpus.GetDomain();
+    memory_t memory = corpus.GetMemory();
 
     CorpusReader reader(vb, corpus);
     UpdateBatch batch(buffer_size, vector<seqid_t>());
@@ -92,11 +92,11 @@ void LoadCorpus(Vocabulary &vb, const BilingualCorpus &corpus, SuffixArray &inde
     alignment_t alignment;
 
     while(reader.Read(source, target, alignment)) {
-        if (!batch.Add(domain, source, target, alignment)) {
+        if (!batch.Add(memory, source, target, alignment)) {
             index.PutBatch(batch);
 
             batch.Clear();
-            batch.Add(domain, source, target, alignment);
+            batch.Add(memory, source, target, alignment);
         }
     }
 
@@ -149,7 +149,7 @@ int main(int argc, const char *argv[]) {
         double begin = GetTime();
         LoadCorpus(vb, corpus, index, args.buffer_size);
         double elapsed = GetElapsedTime(begin);
-        cout << "Corpus " << corpus.GetDomain() << " DONE in " << elapsed << "s" << endl;
+        cout << "Corpus " << corpus.GetMemory() << " DONE in " << elapsed << "s" << endl;
     }
 
     index.ForceCompaction();

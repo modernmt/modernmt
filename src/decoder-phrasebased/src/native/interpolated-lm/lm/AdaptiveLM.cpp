@@ -112,22 +112,22 @@ cachevalue_t AdaptiveLM::ComputeProbability(const context_t *context, const vect
             uint8_t maxLength = 0;
 
             for (context_t::const_iterator it = context->begin(); it != context->end(); ++it) {
-                counts_t domainHistoryCounts = storage.GetCounts(it->domain, historyKey);
+                counts_t memoryHistoryCounts = storage.GetCounts(it->memory, historyKey);
 
                 float fstar = 0.f;
                 float lambda = 1.f;
                 uint8_t length = 0;
 
-                if (domainHistoryCounts.count > 0) {
-                    count_t domainNgramCount = storage.GetCounts(it->domain, ngramKey).count;
+                if (memoryHistoryCounts.count > 0) {
+                    count_t memoryNgramCount = storage.GetCounts(it->memory, ngramKey).count;
 
-                    if (domainNgramCount > 0) {
-                        fstar = (float) domainNgramCount / (domainHistoryCounts.count + domainHistoryCounts.successors);
+                    if (memoryNgramCount > 0) {
+                        fstar = (float) memoryNgramCount / (memoryHistoryCounts.count + memoryHistoryCounts.successors);
                         length = (uint8_t) min(end - start + 1, (size_t) (order - 1));
                     }
 
-                    lambda = (float) domainHistoryCounts.successors /
-                             (domainHistoryCounts.count + domainHistoryCounts.successors);
+                    lambda = (float) memoryHistoryCounts.successors /
+                             (memoryHistoryCounts.count + memoryHistoryCounts.successors);
                 }
 
                 interpolatedFstar += it->score * fstar;
@@ -172,12 +172,12 @@ cachevalue_t AdaptiveLM::ComputeUnigramProbability(const context_t *context, ngr
     for (context_t::const_iterator it = context->begin(); it != context->end(); ++it) {
         count_t wordCount; // This value includes also the occurrencies of the kVocabularyStartSymbol
         count_t uniqueWordCount;
-        storage.GetWordCounts(it->domain, &uniqueWordCount, &wordCount);
+        storage.GetWordCounts(it->memory, &uniqueWordCount, &wordCount);
 
         count_t oovFrequency = OOVClassFrequency(uniqueWordCount);
         count_t den = (count_t) (wordCount + oovFrequency + kUnigramEpsilon * uniqueWordCount);
 
-        count_t unigramCount = storage.GetCounts(it->domain, wordKey).count;
+        count_t unigramCount = storage.GetCounts(it->memory, wordKey).count;
 
         float probability;
 
@@ -225,21 +225,21 @@ bool AdaptiveLM::IsOOV(const context_t *context, const wid_t word) const {
     ngram_hash_t key = hash_ngram(word);
 
     for (context_t::const_iterator it = context->begin(); it != context->end(); ++it) {
-        counts_t domainCounts = storage.GetCounts(it->domain, key);
-        if (domainCounts.count > 0)
+        counts_t memoryCounts = storage.GetCounts(it->memory, key);
+        if (memoryCounts.count > 0)
             return false;
     }
 
     return true;
 }
 
-void AdaptiveLM::Add(const updateid_t &id, domain_t domain, const vector<wid_t> &source, const vector<wid_t> &target,
+void AdaptiveLM::Add(const updateid_t &id, memory_t memory, const vector<wid_t> &source, const vector<wid_t> &target,
                      const alignment_t &alignment) {
-    updateManager.Add(id, domain, target);
+    updateManager.Add(id, memory, target);
 }
 
-void AdaptiveLM::Delete(const updateid_t &id, const domain_t domain) {
-    updateManager.Delete(id, domain);
+void AdaptiveLM::Delete(const updateid_t &id, const memory_t memory) {
+    updateManager.Delete(id, memory);
 }
 
 unordered_map<stream_t, seqid_t> AdaptiveLM::GetLatestUpdatesIdentifier() {
@@ -262,10 +262,10 @@ void AdaptiveLM::NormalizeContext(context_t *context) {
     float total = 0.0;
 
     for (auto it = context->begin(); it != context->end(); ++it) {
-        counts_t domainCounts;
-        storage.GetWordCounts(it->domain, &domainCounts.count, &domainCounts.successors);
+        counts_t memoryCounts;
+        storage.GetWordCounts(it->memory, &memoryCounts.count, &memoryCounts.successors);
 
-        if (domainCounts.count == 0) continue;
+        if (memoryCounts.count == 0) continue;
 
         total += it->score;
     }
@@ -274,10 +274,10 @@ void AdaptiveLM::NormalizeContext(context_t *context) {
         total = 1.0f;
 
     for (auto it = context->begin(); it != context->end(); ++it) {
-        counts_t domainCounts;
-        storage.GetWordCounts(it->domain, &domainCounts.count, &domainCounts.successors);
+        counts_t memoryCounts;
+        storage.GetWordCounts(it->memory, &memoryCounts.count, &memoryCounts.successors);
 
-        if (domainCounts.count == 0) continue;
+        if (memoryCounts.count == 0) continue;
 
         it->score /= total;
 

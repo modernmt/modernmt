@@ -11,17 +11,17 @@
 
 namespace mmt {
 
-    typedef uint32_t domain_t;
+    typedef uint32_t memory_t;
     typedef uint32_t wid_t;
     typedef uint16_t length_t;
 
     typedef std::vector<wid_t> sentence_t;
 
     struct cscore_t {
-        domain_t domain;
+        memory_t memory;
         float score;
 
-        cscore_t(domain_t domain = 0, float score = 0.f) : domain(domain), score(score) {};
+        cscore_t(memory_t memory = 0, float score = 0.f) : memory(memory), score(score) {};
     };
 
     typedef std::vector<cscore_t> context_t;

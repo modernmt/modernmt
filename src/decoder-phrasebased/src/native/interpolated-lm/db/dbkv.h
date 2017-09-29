@@ -13,7 +13,7 @@
 #include <mmt/IncrementalModel.h>
 
 static_assert(sizeof(mmt::wid_t) == 4, "Current implementation works only with 32-bit word ids");
-static_assert(sizeof(mmt::domain_t) == 4, "Current implementation works only with 32-bit domain id");
+static_assert(sizeof(mmt::memory_t) == 4, "Current implementation works only with 32-bit memory id");
 static_assert(sizeof(mmt::seqid_t) == 8, "Current version only supports 64-bit seqid_t");
 static_assert(sizeof(mmt::ilm::count_t) == 4, "Current implementation works only with 32-bit counts");
 
@@ -24,47 +24,47 @@ namespace mmt {
 
         /* Keys */
 
-        static inline string MakeNGramKey(domain_t domain, ngram_hash_t key) {
+        static inline string MakeNGramKey(memory_t memory, ngram_hash_t key) {
             char bytes[12];
 
             size_t ptr = 0;
-            WriteUInt32(bytes, &ptr, domain);
+            WriteUInt32(bytes, &ptr, memory);
             WriteUInt64(bytes, &ptr, key);
 
             return string(bytes, 12);
         }
 
-        static inline string MakeDomainDeletionKey(domain_t domain) {
+        static inline string MakeMemoryDeletionKey(memory_t memory) {
             char bytes[12];
 
             size_t ptr = 0;
             WriteUInt32(bytes, &ptr, 0);
             WriteUInt32(bytes, &ptr, 0);
-            WriteUInt32(bytes, &ptr, domain);
+            WriteUInt32(bytes, &ptr, memory);
 
             return string(bytes, 12);
         }
 
-        static inline bool HasDomainDeletionPrefix(const char *data, size_t bytes_size) {
+        static inline bool HasMemoryDeletionPrefix(const char *data, size_t bytes_size) {
             if (bytes_size != 12)
                 return false;
 
             return ReadUInt64(data, (size_t) 0) == 0;
         }
 
-        static inline domain_t GetDomainFromDeletionKey(const char *data, size_t bytes_size) {
+        static inline memory_t GetMemoryFromDeletionKey(const char *data, size_t bytes_size) {
             if (bytes_size != 12)
                 return 0;
 
             return ReadUInt32(data, 8);
         }
 
-        static inline bool GetNGramKeyData(const char *data, size_t size, domain_t *outDomain, ngram_hash_t *outHash) {
+        static inline bool GetNGramKeyData(const char *data, size_t size, memory_t *outMemory, ngram_hash_t *outHash) {
             if (size != 12)
                 return false;
 
             size_t ptr = 0;
-            *outDomain = ReadUInt32(data, &ptr);
+            *outMemory = ReadUInt32(data, &ptr);
             *outHash = ReadUInt64(data, &ptr);
 
             return true;

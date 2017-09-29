@@ -62,7 +62,7 @@ NGramStorage::NGramStorage(string basepath, uint8_t order, double gcTimeout,
     options.merge_operator.reset(new CountsAddOperator);
 
     PlainTableOptions plainTableOptions;
-    plainTableOptions.user_key_len = sizeof(domain_t) + sizeof(ngram_hash_t);
+    plainTableOptions.user_key_len = sizeof(memory_t) + sizeof(ngram_hash_t);
 
     options.prefix_extractor.reset(NewNoopTransform());
     options.table_factory.reset(NewPlainTableFactory(plainTableOptions));
@@ -110,8 +110,8 @@ NGramStorage::~NGramStorage() {
     delete db;
 }
 
-counts_t NGramStorage::GetCounts(const domain_t domain, const ngram_hash_t h) const {
-    string key = MakeNGramKey(domain, h);
+counts_t NGramStorage::GetCounts(const memory_t memory, const ngram_hash_t h) const {
+    string key = MakeNGramKey(memory, h);
     string value;
 
     Status status = db->Get(ReadOptions(false, true), key, &value);
@@ -127,8 +127,8 @@ counts_t NGramStorage::GetCounts(const domain_t domain, const ngram_hash_t h) co
     return DeserializeCounts(value.data(), value.size(), &output) ? output : counts_t();
 }
 
-void NGramStorage::GetWordCounts(const domain_t domain, count_t *outUniqueWordCount, count_t *outWordCount) const {
-    counts_t counts = GetCounts(domain, kWordCountsHash);
+void NGramStorage::GetWordCounts(const memory_t memory, count_t *outUniqueWordCount, count_t *outWordCount) const {
+    counts_t counts = GetCounts(memory, kWordCountsHash);
     if (outWordCount)
         *outWordCount = counts.count;
     if (outUniqueWordCount)
@@ -149,9 +149,9 @@ void NGramStorage::PutBatch(NGramBatch &batch) throw(storage_exception) {
         PrepareBatch(it->first, it->second, writeBatch);
     }
 
-    // Write deleted domains
-    for (auto domain = batch.deletions.begin(); domain != batch.deletions.end(); ++domain)
-        writeBatch.Put(MakeDomainDeletionKey(*domain), "");
+    // Write deleted memories
+    for (auto memory = batch.deletions.begin(); memory != batch.deletions.end(); ++memory)
+        writeBatch.Put(MakeMemoryDeletionKey(*memory), "");
 
     // Store streams status
     writeBatch.Put(kStreamsKey, Slice(SerializeStreams(batch.GetStreams())));
@@ -165,7 +165,7 @@ void NGramStorage::PutBatch(NGramBatch &batch) throw(storage_exception) {
     garbageCollector->MarkForDeletion(batch.deletions);
 }
 
-bool NGramStorage::PrepareBatch(domain_t domain, ngram_table_t &table, rocksdb::WriteBatch &writeBatch) {
+bool NGramStorage::PrepareBatch(memory_t memory, ngram_table_t &table, rocksdb::WriteBatch &writeBatch) {
     // Compute counts (successors and word counts)
     // ------------------------
 
@@ -192,7 +192,7 @@ bool NGramStorage::PrepareBatch(domain_t domain, ngram_table_t &table, rocksdb::
                 wordCount += ngram.counts.count;
 
             if (!ngram.is_in_db_for_sure) {
-                string key = MakeNGramKey(domain, h);
+                string key = MakeNGramKey(memory, h);
                 string value;
                 status = db->Get(read_ops, key, &value);
 
@@ -235,14 +235,14 @@ bool NGramStorage::PrepareBatch(domain_t domain, ngram_table_t &table, rocksdb::
             ngram_hash_t h = it->first;
             ngram_t &ngram = it->second;
 
-            string key = MakeNGramKey(domain, h);
+            string key = MakeNGramKey(memory, h);
             writeBatch.Merge(key, SerializeCounts(ngram.counts));
         }
     }
 
     // Store word counts
     counts_t wordCounts(wordCount, uniqueWordCount);
-    writeBatch.Merge(MakeNGramKey(domain, kWordCountsHash), SerializeCounts(wordCounts));
+    writeBatch.Merge(MakeNGramKey(memory, kWordCountsHash), SerializeCounts(wordCounts));
 
     return true;
 }
@@ -268,12 +268,12 @@ StorageIterator::~StorageIterator() {
     delete it;
 }
 
-bool StorageIterator::Next(domain_t *outDomain, ngram_hash_t *outKey, counts_t *outValue) {
+bool StorageIterator::Next(memory_t *outMemory, ngram_hash_t *outKey, counts_t *outValue) {
     if (it->Valid()) {
         Slice key = it->key();
         Slice value = it->value();
 
-        GetNGramKeyData(key.data(), key.size(), outDomain, outKey);
+        GetNGramKeyData(key.data(), key.size(), outMemory, outKey);
         DeserializeCounts(value.data(), value.size(), outValue);
 
         it->Next();

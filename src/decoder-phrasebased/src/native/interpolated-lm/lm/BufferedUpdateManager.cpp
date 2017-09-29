@@ -33,15 +33,15 @@ BufferedUpdateManager::~BufferedUpdateManager() {
             AwakeBackgroundThread(true); \
     }
 
-void BufferedUpdateManager::Add(const updateid_t &id, const domain_t domain, const vector<wid_t> &sentence) {
+void BufferedUpdateManager::Add(const updateid_t &id, const memory_t memory, const vector<wid_t> &sentence) {
     UpdateManagerEnqueue(
-            foregroundBatch->Add(id, domain, sentence);
+            foregroundBatch->Add(id, memory, sentence);
     );
 }
 
-void BufferedUpdateManager::Delete(const mmt::updateid_t &id, const mmt::domain_t domain) {
+void BufferedUpdateManager::Delete(const mmt::updateid_t &id, const mmt::memory_t memory) {
     UpdateManagerEnqueue(
-            foregroundBatch->Delete(id, domain)
+            foregroundBatch->Delete(id, memory)
     );
 }
 

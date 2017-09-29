@@ -15,7 +15,7 @@ namespace mmt {
     namespace sapt {
 
         struct sample_t {
-            domain_t domain;
+            memory_t memory;
             vector<wid_t> source;
             vector<wid_t> target;
             alignment_t alignment;
@@ -23,7 +23,7 @@ namespace mmt {
 
             string ToString() const {
                 ostringstream repr;
-                repr << "(" << domain << ")";
+                repr << "(" << memory << ")";
 
                 for (auto word = source.begin(); word != source.end(); ++word)
                     repr << " " << *word;

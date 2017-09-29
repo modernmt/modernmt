@@ -61,7 +61,7 @@ namespace mmt {
             CorporaStorage *storage;
 
             vector<wid_t> phrase;
-            vector<state_t> inDomainStates;
+            vector<state_t> inMemoryStates;
             state_t *backgroundState = NULL;
         };
 

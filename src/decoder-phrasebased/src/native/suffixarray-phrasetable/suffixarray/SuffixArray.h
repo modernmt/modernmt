@@ -32,7 +32,7 @@ namespace mmt {
         public:
             struct IndexEntry {
                 bool is_source;
-                domain_t domain;
+                memory_t memory;
                 vector<wid_t> words;
                 int64_t count;
                 vector<location_t> positions;
@@ -88,7 +88,7 @@ namespace mmt {
 
             GarbageCollector *garbageCollector;
 
-            void AddPrefixesToBatch(domain_t domain, const vector<wid_t> &sentence,
+            void AddPrefixesToBatch(memory_t memory, const vector<wid_t> &sentence,
                                     int64_t location, unordered_map<string, PostingList> &outBatch);
 
             void AddTargetCountsToBatch(const vector<wid_t> &sentence, unordered_map<string, int64_t> &outBatch);

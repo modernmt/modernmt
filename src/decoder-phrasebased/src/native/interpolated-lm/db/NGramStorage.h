@@ -38,7 +38,7 @@ namespace mmt {
         public:
             virtual ~StorageIterator();
 
-            bool Next(domain_t *outDomain, ngram_hash_t *outKey, counts_t *outValue);
+            bool Next(memory_t *outMemory, ngram_hash_t *outKey, counts_t *outValue);
 
         private:
             rocksdb::Iterator *it;
@@ -54,9 +54,9 @@ namespace mmt {
 
             ~NGramStorage();
 
-            counts_t GetCounts(const domain_t domain, const ngram_hash_t key) const;
+            counts_t GetCounts(const memory_t memory, const ngram_hash_t key) const;
 
-            void GetWordCounts(const domain_t domain, count_t *outUniqueWordCount, count_t *outWordCount) const;
+            void GetWordCounts(const memory_t memory, count_t *outUniqueWordCount, count_t *outWordCount) const;
 
             size_t GetEstimateSize() const;
 
@@ -80,7 +80,7 @@ namespace mmt {
 
             GarbageCollector *garbageCollector;
 
-            inline bool PrepareBatch(domain_t domain, ngram_table_t &table, rocksdb::WriteBatch &writeBatch);
+            inline bool PrepareBatch(memory_t memory, ngram_table_t &table, rocksdb::WriteBatch &writeBatch);
         };
     }
 }

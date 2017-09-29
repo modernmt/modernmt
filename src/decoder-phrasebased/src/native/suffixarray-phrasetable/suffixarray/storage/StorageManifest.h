@@ -29,16 +29,16 @@ namespace mmt {
 
             std::string Serialize() const;
 
-            void GetDomains(std::unordered_set<domain_t> *outDomains) const;
+            void GetMemories(std::unordered_set<memory_t> *outMemories) const;
 
-            bool Get(domain_t domain, Entry *outEntry, bool putIfAbsent = false);
+            bool Get(memory_t memory, Entry *outEntry, bool putIfAbsent = false);
 
-            void Set(domain_t domain, const Entry &entry);
+            void Set(memory_t memory, const Entry &entry);
 
         private:
-            std::unordered_map<domain_t, Entry> entries;
+            std::unordered_map<memory_t, Entry> entries;
 
-            StorageManifest(const std::unordered_map<domain_t, Entry> &entries);
+            StorageManifest(const std::unordered_map<memory_t, Entry> &entries);
         };
 
     }
