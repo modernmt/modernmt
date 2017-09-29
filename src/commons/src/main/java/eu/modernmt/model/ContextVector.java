@@ -10,7 +10,7 @@ public class ContextVector implements Iterable<ContextVector.Entry>, Serializabl
 
     public static class Builder {
 
-        private final HashMap<Domain, Float> entries;
+        private final HashMap<Memory, Float> entries;
         private int limit = 0;
 
         public Builder(int initialCapacity) {
@@ -25,17 +25,17 @@ public class ContextVector implements Iterable<ContextVector.Entry>, Serializabl
             this.limit = limit;
         }
 
-        public void add(long domain, float score) {
-            this.add(new Domain(domain), score);
+        public void add(long memory, float score) {
+            this.add(new Memory(memory), score);
         }
 
-        public void add(Domain domain, float score) {
-            entries.put(domain, score);
+        public void add(Memory memory, float score) {
+            entries.put(memory, score);
         }
 
         public ContextVector build() {
             List<Entry> list = new ArrayList<>(this.entries.size());
-            for (Map.Entry<Domain, Float> e : this.entries.entrySet())
+            for (Map.Entry<Memory, Float> e : this.entries.entrySet())
                 list.add(new Entry(e.getKey(), e.getValue()));
 
             Collections.sort(list);
@@ -50,11 +50,11 @@ public class ContextVector implements Iterable<ContextVector.Entry>, Serializabl
 
     public static class Entry implements Comparable<Entry>, Serializable {
 
-        public final Domain domain;
+        public final Memory memory;
         public final float score;
 
-        private Entry(Domain domain, float score) {
-            this.domain = domain;
+        private Entry(Memory memory, float score) {
+            this.memory = memory;
             this.score = score;
         }
 
@@ -66,12 +66,12 @@ public class ContextVector implements Iterable<ContextVector.Entry>, Serializabl
             Entry entry = (Entry) o;
 
             if (Float.compare(entry.score, score) != 0) return false;
-            return domain.equals(entry.domain);
+            return memory.equals(entry.memory);
         }
 
         @Override
         public int hashCode() {
-            int result = domain.hashCode();
+            int result = memory.hashCode();
             result = 31 * result + (score != +0.0f ? Float.floatToIntBits(score) : 0);
             return result;
         }

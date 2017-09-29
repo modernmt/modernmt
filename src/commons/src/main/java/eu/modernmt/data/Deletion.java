@@ -5,11 +5,11 @@ package eu.modernmt.data;
  */
 public class Deletion extends DataMessage {
 
-    public final long domain;
+    public final long memory;
 
-    public Deletion(short channel, long channelPosition, long domain) {
+    public Deletion(short channel, long channelPosition, long memory) {
         super(channel, channelPosition);
-        this.domain = domain;
+        this.memory = memory;
     }
 
 }

@@ -24,7 +24,7 @@ public class Options {
     public long writeBehindDelay = 10000L; // 10s (10000 ms)
 
     public static class AnalysisOptions {
-        // Prevent storing domain in the context analyzer if
+        // Prevent storing memory in the context analyzer if
         // it has been written less than 'minOffset' bytes
         public long minOffset = 10L * 1024L; // 10kb
 

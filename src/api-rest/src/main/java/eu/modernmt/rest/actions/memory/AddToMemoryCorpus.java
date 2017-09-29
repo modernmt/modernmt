@@ -1,4 +1,4 @@
-package eu.modernmt.rest.actions.domain;
+package eu.modernmt.rest.actions.memory;
 
 import eu.modernmt.data.DataManagerException;
 import eu.modernmt.facade.ModernMT;
@@ -25,17 +25,17 @@ import java.util.zip.GZIPInputStream;
 /**
  * Created by davide on 15/12/15.
  */
-@Route(aliases = "domains/:id/corpus", method = HttpMethod.POST)
-public class AddToDomainCorpus extends ObjectAction<ImportJob> {
+@Route(aliases = "memories/:id/corpus", method = HttpMethod.POST)
+public class AddToMemoryCorpus extends ObjectAction<ImportJob> {
 
     @Override
     protected ImportJob execute(RESTRequest req, Parameters _params) throws DataManagerException, PersistenceException {
         Params params = (Params) _params;
 
         if (params.corpus == null)
-            return ModernMT.domain.add(params.direction, params.domain, params.source, params.target);
+            return ModernMT.memory.add(params.direction, params.memory, params.source, params.target);
         else
-            return ModernMT.domain.add(params.domain, params.corpus);
+            return ModernMT.memory.add(params.memory, params.corpus);
     }
 
     @Override
@@ -54,7 +54,7 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
     public static class Params extends Parameters {
 
         private final LanguagePair direction;
-        private final long domain;
+        private final long memory;
         private final String source;
         private final String target;
         private final MultilingualCorpus corpus;
@@ -62,7 +62,7 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
         public Params(RESTRequest req) throws ParameterParsingException, TemplateException {
             super(req);
 
-            domain = req.getPathParameterAsLong("id");
+            memory = req.getPathParameterAsLong("id");
 
             source = getString("sentence", false, null);
             target = getString("translation", false, null);
@@ -84,7 +84,7 @@ public class AddToDomainCorpus extends ObjectAction<ImportJob> {
                         Locale sourceLanguage = getLocale("source");
                         Locale targetLanguage = getLocale("target");
                         LanguagePair language = new LanguagePair(sourceLanguage, targetLanguage);
-                        
+
                         corpus = new ParallelFileCorpus(language, getFileProxy("source", gzipped), getFileProxy("target", gzipped));
                         break;
                     default:

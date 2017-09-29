@@ -45,8 +45,8 @@ public class CassandraImportJobDAO implements ImportJobDAO {
     public ImportJob put(ImportJob job) throws PersistenceException {
         long id = CassandraIdGenerator.generate(connection, CassandraDatabase.IMPORT_JOBS_TABLE_ID);
 
-        String[] columns = {"id", "domain", "\"begin\"", "end", "data_channel", "size"};
-        Object[] values = {id, job.getDomain(), job.getBegin(), job.getEnd(), job.getDataChannel(), job.getSize()};
+        String[] columns = {"id", "memory", "\"begin\"", "end", "data_channel", "size"};
+        Object[] values = {id, job.getMemory(), job.getBegin(), job.getEnd(), job.getDataChannel(), job.getSize()};
         BuiltStatement statement = QueryBuilder
                 .insertInto("import_jobs")
                 .values(columns, values)
@@ -97,7 +97,7 @@ public class CassandraImportJobDAO implements ImportJobDAO {
      */
     private static ImportJob read(Row row) {
         long id = row.getLong("id");
-        long domain = row.getLong("domain");
+        long memory = row.getLong("memory");
         int size = row.getInt("size");
         long begin = row.getLong("begin");
         long end = row.getLong("end");
@@ -105,7 +105,7 @@ public class CassandraImportJobDAO implements ImportJobDAO {
 
         ImportJob job = new ImportJob();
         job.setId(id);
-        job.setDomain(domain);
+        job.setMemory(memory);
         job.setSize(size);
         job.setBegin(begin);
         job.setEnd(end);

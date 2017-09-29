@@ -29,10 +29,10 @@ public class LevenshteinRescorer implements Rescorer {
         if (context != null && context.size() > 0) {
             HashMap<Long, Float> contextScores = new HashMap<>(context.size());
             for (ContextVector.Entry ce : context)
-                contextScores.put(ce.domain.getId(), ce.score);
+                contextScores.put(ce.memory.getId(), ce.score);
 
             for (ScoreEntry entry : entries) {
-                Float contextScore = contextScores.get(entry.domain);
+                Float contextScore = contextScores.get(entry.memory);
                 entry.score = entry.score * .5f + (contextScore == null ? 0.f : contextScore) * .5f;
             }
         }

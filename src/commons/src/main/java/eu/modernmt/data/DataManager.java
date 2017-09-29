@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
  */
 public interface DataManager extends Closeable {
 
-    short DOMAIN_UPLOAD_CHANNEL_ID = 0;
+    short MEMORY_UPLOAD_CHANNEL_ID = 0;
     short CONTRIBUTIONS_CHANNEL_ID = 1;
 
     interface Listener {
@@ -26,15 +26,15 @@ public interface DataManager extends Closeable {
 
     void addDataListener(DataListener listener);
 
-    ImportJob upload(long domainId, MultilingualCorpus corpus, short channel) throws DataManagerException;
+    ImportJob upload(long memory, MultilingualCorpus corpus, short channel) throws DataManagerException;
 
-    ImportJob upload(long domainId, MultilingualCorpus corpus, DataChannel channel) throws DataManagerException;
+    ImportJob upload(long memory, MultilingualCorpus corpus, DataChannel channel) throws DataManagerException;
 
-    ImportJob upload(LanguagePair direction, long domainId, String sourceSentence, String targetSentence, short channel) throws DataManagerException;
+    ImportJob upload(LanguagePair direction, long memory, String sourceSentence, String targetSentence, short channel) throws DataManagerException;
 
-    ImportJob upload(LanguagePair direction, long domainId, String sourceSentence, String targetSentence, DataChannel channel) throws DataManagerException;
+    ImportJob upload(LanguagePair direction, long memory, String sourceSentence, String targetSentence, DataChannel channel) throws DataManagerException;
 
-    void delete(long domainId) throws DataManagerException;
+    void delete(long memory) throws DataManagerException;
 
     DataChannel getDataChannel(short id);
 

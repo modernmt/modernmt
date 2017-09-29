@@ -57,7 +57,7 @@ public class CorporaIndex implements Closeable {
     private final Options.AnalysisOptions analysisOptions;
     private final File bucketsFolder;
     private final HashMap<BucketKey, CorpusBucket> bucketByKey;
-    private final HashMap<Long, HashSet<CorpusBucket>> bucketsByDomain;
+    private final HashMap<Long, HashSet<CorpusBucket>> bucketsByMemory;
     private final HashMap<Short, Long> channels;
 
     public CorporaIndex(File file, Options.AnalysisOptions analysisOptions, File bucketsFolder) {
@@ -72,12 +72,12 @@ public class CorporaIndex implements Closeable {
         this.channels = channels;
 
         this.bucketByKey = new HashMap<>(buckets.size());
-        this.bucketsByDomain = new HashMap<>(buckets.size());
+        this.bucketsByMemory = new HashMap<>(buckets.size());
 
         for (CorpusBucket bucket : buckets) {
             BucketKey key = BucketKey.forBucket(bucket);
             this.bucketByKey.put(key, bucket);
-            this.bucketsByDomain.computeIfAbsent(bucket.getDomain(), k -> new HashSet<>()).add(bucket);
+            this.bucketsByMemory.computeIfAbsent(bucket.getMemory(), k -> new HashSet<>()).add(bucket);
         }
 
     }
@@ -93,12 +93,12 @@ public class CorporaIndex implements Closeable {
         }
     }
 
-    public CorpusBucket getBucket(LanguagePair direction, long domain) throws IOException {
-        return getBucket(direction, domain, true);
+    public CorpusBucket getBucket(LanguagePair direction, long memory) throws IOException {
+        return getBucket(direction, memory, true);
     }
 
-    public CorpusBucket getBucket(LanguagePair direction, long domain, boolean createIfAbsent) throws IOException {
-        BucketKey key = new BucketKey(direction, domain);
+    public CorpusBucket getBucket(LanguagePair direction, long memory, boolean createIfAbsent) throws IOException {
+        BucketKey key = new BucketKey(direction, memory);
 
         CorpusBucket bucket = bucketByKey.get(key);
 
@@ -106,10 +106,10 @@ public class CorporaIndex implements Closeable {
             if (!createIfAbsent)
                 return null;
 
-            bucket = new CorpusBucket(analysisOptions, bucketsFolder, direction, domain);
+            bucket = new CorpusBucket(analysisOptions, bucketsFolder, direction, memory);
 
             this.bucketByKey.put(key, bucket);
-            this.bucketsByDomain.computeIfAbsent(domain, k -> new HashSet<>()).add(bucket);
+            this.bucketsByMemory.computeIfAbsent(memory, k -> new HashSet<>()).add(bucket);
         }
 
         if (!bucket.isOpen())
@@ -118,22 +118,22 @@ public class CorporaIndex implements Closeable {
         return bucket;
     }
 
-    public Collection<CorpusBucket> getBucketsByDomain(long domain) {
-        return this.bucketsByDomain.get(domain);
+    public Collection<CorpusBucket> getBucketsByMemory(long memory) {
+        return this.bucketsByMemory.get(memory);
     }
 
     public void remove(CorpusBucket bucket) {
-        Long domain = bucket.getDomain();
+        Long memory = bucket.getMemory();
         BucketKey key = BucketKey.forBucket(bucket);
 
         bucketByKey.remove(key);
-        HashSet<CorpusBucket> buckets = bucketsByDomain.get(domain);
+        HashSet<CorpusBucket> buckets = bucketsByMemory.get(memory);
 
         if (buckets != null) {
             buckets.remove(bucket);
 
             if (buckets.isEmpty())
-                bucketsByDomain.remove(domain);
+                bucketsByMemory.remove(memory);
         }
     }
 
@@ -189,15 +189,15 @@ public class CorporaIndex implements Closeable {
     private static final class BucketKey {
 
         private final LanguagePair direction;
-        private final long domain;
+        private final long memory;
 
         public static BucketKey forBucket(CorpusBucket bucket) {
-            return new BucketKey(bucket.getLanguageDirection(), bucket.getDomain());
+            return new BucketKey(bucket.getLanguageDirection(), bucket.getMemory());
         }
 
-        public BucketKey(LanguagePair direction, long domain) {
+        public BucketKey(LanguagePair direction, long memory) {
             this.direction = direction;
-            this.domain = domain;
+            this.memory = memory;
         }
 
         @Override
@@ -207,14 +207,14 @@ public class CorporaIndex implements Closeable {
 
             BucketKey bucketKey = (BucketKey) o;
 
-            if (domain != bucketKey.domain) return false;
+            if (memory != bucketKey.memory) return false;
             return direction.equals(bucketKey.direction);
         }
 
         @Override
         public int hashCode() {
             int result = direction.hashCode();
-            result = 31 * result + (int) (domain ^ (domain >>> 32));
+            result = 31 * result + (int) (memory ^ (memory >>> 32));
             return result;
         }
     }

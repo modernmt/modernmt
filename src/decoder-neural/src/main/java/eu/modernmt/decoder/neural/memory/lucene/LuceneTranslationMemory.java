@@ -9,7 +9,7 @@ import eu.modernmt.decoder.neural.memory.lucene.rescoring.Rescorer;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.Memory;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.io.FileUtils;
@@ -85,7 +85,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         if (DirectoryReader.indexExists(this.indexDirectory)) {
             IndexReader reader = this.getIndexReader();
 
-            Term term = newLongTerm(DocumentBuilder.DOMAIN_ID_FIELD, 0);
+            Term term = newLongTerm(DocumentBuilder.MEMORY_ID_FIELD, 0);
             IndexSearcher searcher = new IndexSearcher(reader);
 
             Query query = new TermQuery(term);
@@ -141,11 +141,11 @@ public class LuceneTranslationMemory implements TranslationMemory {
     // TranslationMemory
 
     @Override
-    public void add(Map<Domain, MultilingualCorpus> batch) throws IOException {
+    public void add(Map<Memory, MultilingualCorpus> batch) throws IOException {
         boolean success = false;
 
         try {
-            for (Map.Entry<Domain, MultilingualCorpus> entry : batch.entrySet())
+            for (Map.Entry<Memory, MultilingualCorpus> entry : batch.entrySet())
                 add(entry.getKey().getId(), entry.getValue());
 
             this.indexWriter.commit();
@@ -158,11 +158,11 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     @Override
-    public void add(Domain domain, MultilingualCorpus corpus) throws IOException {
+    public void add(Memory memory, MultilingualCorpus corpus) throws IOException {
         boolean success = false;
 
         try {
-            add(domain.getId(), corpus);
+            add(memory.getId(), corpus);
 
             this.indexWriter.commit();
 
@@ -173,7 +173,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         }
     }
 
-    private void add(long domain, MultilingualCorpus corpus) throws IOException {
+    private void add(long memory, MultilingualCorpus corpus) throws IOException {
         MultilingualCorpus.MultilingualLineReader reader = null;
 
         try {
@@ -186,7 +186,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
                 LanguagePair direction = languages.map(pair.language);
 
                 if (direction != null) {
-                    Document document = DocumentBuilder.build(direction, domain, pair.source, pair.target);
+                    Document document = DocumentBuilder.build(direction, memory, pair.source, pair.target);
                     this.indexWriter.addDocument(document);
                 }
             }
@@ -195,15 +195,15 @@ public class LuceneTranslationMemory implements TranslationMemory {
             elapsed = (int) (elapsed / 100);
             elapsed /= 10.;
 
-            logger.info("Domain " + domain + " imported in " + elapsed + "s");
+            logger.info("Memory " + memory + " imported in " + elapsed + "s");
         } finally {
             IOUtils.closeQuietly(reader);
         }
     }
 
     @Override
-    public void add(LanguagePair direction, Domain domain, Sentence sentence, Sentence translation) throws IOException {
-        Document document = DocumentBuilder.build(direction, domain.getId(), sentence, translation);
+    public void add(LanguagePair direction, Memory memory, Sentence sentence, Sentence translation) throws IOException {
+        Document document = DocumentBuilder.build(direction, memory.getId(), sentence, translation);
         this.indexWriter.addDocument(document);
         this.indexWriter.commit();
     }
@@ -270,7 +270,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
                 }
             }
 
-            Term id = newLongTerm(DocumentBuilder.DOMAIN_ID_FIELD, 0);
+            Term id = newLongTerm(DocumentBuilder.MEMORY_ID_FIELD, 0);
             Document channelsDocument = DocumentBuilder.build(newChannels);
             this.indexWriter.updateDocument(id, channelsDocument);
 
@@ -289,12 +289,12 @@ public class LuceneTranslationMemory implements TranslationMemory {
         Long currentPosition = this.channels.get(deletion.channel);
 
         if (currentPosition == null || currentPosition < deletion.channelPosition) {
-            Term deleteId = newLongTerm(DocumentBuilder.DOMAIN_ID_FIELD, deletion.domain);
+            Term deleteId = newLongTerm(DocumentBuilder.MEMORY_ID_FIELD, deletion.memory);
             this.indexWriter.deleteDocuments(deleteId);
 
             this.channels.put(deletion.channel, deletion.channelPosition);
 
-            Term channelsId = newLongTerm(DocumentBuilder.DOMAIN_ID_FIELD, 0);
+            Term channelsId = newLongTerm(DocumentBuilder.MEMORY_ID_FIELD, 0);
             Document channelsDocument = DocumentBuilder.build(this.channels);
             this.indexWriter.updateDocument(channelsId, channelsDocument);
             this.indexWriter.commit();

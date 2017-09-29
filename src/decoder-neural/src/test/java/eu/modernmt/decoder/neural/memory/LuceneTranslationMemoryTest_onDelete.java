@@ -2,7 +2,7 @@ package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.Memory;
 import org.junit.After;
 import org.junit.Test;
 
@@ -33,7 +33,7 @@ public class LuceneTranslationMemoryTest_onDelete {
     }
 
     @Test
-    public void monolingualDomain() throws Throwable {
+    public void monolingualMemory() throws Throwable {
         setup(EN__IT, FR__ES);
         List<TranslationUnit> units1 = TestData.tuList(1, EN__IT, 10);
         List<TranslationUnit> units2 = TestData.tuList(2, EN__IT, 10);
@@ -41,8 +41,8 @@ public class LuceneTranslationMemoryTest_onDelete {
         Set<TLuceneTranslationMemory.Entry> expectedEntries =
                 TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguageIndex(), units2);
 
-        memory.add(new Domain(1), TestData.corpus("none", units1));
-        memory.add(new Domain(2), TestData.corpus("none", units2));
+        memory.add(new Memory(1), TestData.corpus("none", units1));
+        memory.add(new Memory(2), TestData.corpus("none", units2));
         assertEquals(20, memory.size());
 
         memory.onDelete(TestData.deletion(1));
@@ -53,7 +53,7 @@ public class LuceneTranslationMemoryTest_onDelete {
     }
 
     @Test
-    public void multilingualDomain() throws Throwable {
+    public void multilingualMemory() throws Throwable {
         setup(EN__IT, FR__ES);
 
         List<TranslationUnit> units1 = Arrays.asList(
@@ -67,8 +67,8 @@ public class LuceneTranslationMemoryTest_onDelete {
         Set<TLuceneTranslationMemory.Entry> expectedEntries =
                 TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguageIndex(), units2);
 
-        memory.add(new Domain(1), TestData.corpus("none", units1));
-        memory.add(new Domain(2), TestData.corpus("none", units2));
+        memory.add(new Memory(1), TestData.corpus("none", units1));
+        memory.add(new Memory(2), TestData.corpus("none", units2));
         assertEquals(14, memory.size());
 
         memory.onDelete(TestData.deletion(1));
@@ -79,13 +79,13 @@ public class LuceneTranslationMemoryTest_onDelete {
     }
 
     @Test
-    public void multipleDomains() throws Throwable {
+    public void multipleMemories() throws Throwable {
         setup(EN__IT, FR__ES);
         List<TranslationUnit> units1 = TestData.tuList(1, EN__IT, 10);
         List<TranslationUnit> units2 = TestData.tuList(2, EN__IT, 10);
 
-        memory.add(new Domain(1), TestData.corpus("none", units1));
-        memory.add(new Domain(2), TestData.corpus("none", units2));
+        memory.add(new Memory(1), TestData.corpus("none", units1));
+        memory.add(new Memory(2), TestData.corpus("none", units2));
         assertEquals(20, memory.size());
 
         memory.onDelete(TestData.deletion(0, 1));

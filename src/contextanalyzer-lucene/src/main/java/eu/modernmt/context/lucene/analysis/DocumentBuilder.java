@@ -20,7 +20,7 @@ import java.util.Locale;
 public class DocumentBuilder {
 
     public static final String DOCID_FIELD = "docid";
-    private static final String DOMAIN_FIELD = "domain";
+    private static final String MEMORY_FIELD = "memory";
     private static final String LANGUAGE_FIELD = "language";
     private static final String CONTENT_PREFIX_FIELD = "content__";
 
@@ -36,21 +36,21 @@ public class DocumentBuilder {
         return new Term(LANGUAGE_FIELD, makeLanguageTag(direction));
     }
 
-    public static Term makeDomainTerm(long domain) {
+    public static Term makeMemoryTerm(long memory) {
         BytesRefBuilder builder = new BytesRefBuilder();
-        NumericUtils.longToPrefixCoded(domain, 0, builder);
+        NumericUtils.longToPrefixCoded(memory, 0, builder);
 
-        return new Term(DOMAIN_FIELD, builder.toBytesRef());
+        return new Term(MEMORY_FIELD, builder.toBytesRef());
     }
 
-    public static Term makeDocumentIdTerm(long domain, LanguagePair direction) {
-        return new Term(DOCID_FIELD, makeDocumentId(direction, domain));
+    public static Term makeDocumentIdTerm(long memory, LanguagePair direction) {
+        return new Term(DOCID_FIELD, makeDocumentId(direction, memory));
     }
 
     // Terms and fields parsing
 
-    public static long getDomain(Document document) {
-        return Long.parseLong(document.get(DOMAIN_FIELD));
+    public static long getMemory(Document document) {
+        return Long.parseLong(document.get(MEMORY_FIELD));
     }
 
     public static String getDocumentId(Document document) {
@@ -70,15 +70,15 @@ public class DocumentBuilder {
         return createDocument(direction, 0L, corpus);
     }
 
-    public static Document createDocument(LanguagePair direction, long domain, Corpus corpus) throws IOException {
+    public static Document createDocument(LanguagePair direction, long memory, Corpus corpus) throws IOException {
         Reader reader = corpus.getRawContentReader();
-        return createDocument(direction, domain, reader);
+        return createDocument(direction, memory, reader);
     }
 
-    public static Document createDocument(LanguagePair direction, long domain, Reader contentReader) {
+    public static Document createDocument(LanguagePair direction, long memory, Reader contentReader) {
         Document document = new Document();
-        document.add(new StringField(DOCID_FIELD, makeDocumentId(direction, domain), Field.Store.NO));
-        document.add(new LongField(DOMAIN_FIELD, domain, Field.Store.YES));
+        document.add(new StringField(DOCID_FIELD, makeDocumentId(direction, memory), Field.Store.NO));
+        document.add(new LongField(MEMORY_FIELD, memory, Field.Store.YES));
         document.add(new StringField(LANGUAGE_FIELD, makeLanguageTag(direction), Field.Store.NO));
         document.add(new CorpusContentField(getContentFieldName(direction), contentReader));
 
@@ -87,8 +87,8 @@ public class DocumentBuilder {
 
     // Utils
 
-    private static String makeDocumentId(LanguagePair direction, long domain) {
-        return Long.toString(domain) + "::" + direction.source.toLanguageTag() + "::" + direction.target.toLanguageTag();
+    private static String makeDocumentId(LanguagePair direction, long memory) {
+        return Long.toString(memory) + "::" + direction.source.toLanguageTag() + "::" + direction.target.toLanguageTag();
     }
 
     public static String makeLanguageTag(LanguagePair direction) {

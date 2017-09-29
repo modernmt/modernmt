@@ -20,25 +20,25 @@ class DocumentBuilder {
 
     private static final String CHANNELS_FIELD = "channels";
 
-    public static final String DOMAIN_ID_FIELD = "domain";
+    public static final String MEMORY_ID_FIELD = "memory";
     public static final String LANGUAGE_FIELD = "language";
     private static final String CONTENT_PREFIX_FIELD = "content::";
 
     // TranslationUnit entries
 
     public static Document build(TranslationUnit unit) {
-        return build(unit.direction, unit.domain, unit.sourceSentence, unit.targetSentence);
+        return build(unit.direction, unit.memory, unit.sourceSentence, unit.targetSentence);
     }
 
-    public static Document build(LanguagePair direction, long domain, Sentence sentence, Sentence translation) {
+    public static Document build(LanguagePair direction, long memory, Sentence sentence, Sentence translation) {
         String s = TokensOutputStream.toString(sentence, false, true);
         String t = TokensOutputStream.toString(translation, false, true);
-        return build(direction, domain, s, t);
+        return build(direction, memory, s, t);
     }
 
-    public static Document build(LanguagePair direction, long domain, String sentence, String translation) {
+    public static Document build(LanguagePair direction, long memory, String sentence, String translation) {
         Document document = new Document();
-        document.add(new LongField(DOMAIN_ID_FIELD, domain, Field.Store.YES));
+        document.add(new LongField(MEMORY_ID_FIELD, memory, Field.Store.YES));
         document.add(new StringField(LANGUAGE_FIELD, encode(direction), Field.Store.YES));
         document.add(new TextField(getContentFieldName(direction.source), sentence, Field.Store.YES));
         document.add(new TextField(getContentFieldName(direction.target), translation, Field.Store.YES));
@@ -47,11 +47,11 @@ class DocumentBuilder {
     }
 
     public static ScoreEntry parseEntry(LanguagePair direction, Document doc) {
-        long domain = Long.parseLong(doc.get(DOMAIN_ID_FIELD));
+        long memory = Long.parseLong(doc.get(MEMORY_ID_FIELD));
         String[] sentence = doc.get(getContentFieldName(direction.source)).split(" ");
         String[] translation = doc.get(getContentFieldName(direction.target)).split(" ");
 
-        return new ScoreEntry(domain, sentence, translation);
+        return new ScoreEntry(memory, sentence, translation);
     }
 
     public static String encode(LanguagePair direction) {
@@ -81,7 +81,7 @@ class DocumentBuilder {
         }
 
         Document document = new Document();
-        document.add(new LongField(DOMAIN_ID_FIELD, 0, Field.Store.YES));
+        document.add(new LongField(MEMORY_ID_FIELD, 0, Field.Store.YES));
         document.add(new StoredField(CHANNELS_FIELD, buffer.array()));
 
         return document;

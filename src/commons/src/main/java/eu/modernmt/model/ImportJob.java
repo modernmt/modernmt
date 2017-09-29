@@ -23,7 +23,7 @@ public class ImportJob {
 
         ImportJob job = new ImportJob();
         job.id = new UUID(msbs, lsbs);
-        job.domain = 0; // no domain for ephemeral job
+        job.memory = 0; // no memory for ephemeral job
         job.size = 1;
         job.begin = job.end = offset;
         job.dataChannel = dataChannel;
@@ -47,7 +47,7 @@ public class ImportJob {
 
         ImportJob job = new ImportJob();
         job.id = id;
-        job.domain = 0; // no domain for ephemeral job
+        job.memory = 0; // no memory for ephemeral job
         job.size = 1;
         job.begin = job.end = offset;
         job.dataChannel = dataChannel;
@@ -60,7 +60,7 @@ public class ImportJob {
     }
 
     private UUID id;
-    private long domain;
+    private long memory;
     private int size;
 
     private long begin;
@@ -89,12 +89,12 @@ public class ImportJob {
         this.progress = progress;
     }
 
-    public long getDomain() {
-        return domain;
+    public long getMemory() {
+        return memory;
     }
 
-    public void setDomain(long domain) {
-        this.domain = domain;
+    public void setMemory(long memory) {
+        this.memory = memory;
     }
 
     public long getBegin() {

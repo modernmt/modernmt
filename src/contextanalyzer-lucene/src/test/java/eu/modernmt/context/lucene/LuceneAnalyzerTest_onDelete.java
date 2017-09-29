@@ -2,7 +2,7 @@ package eu.modernmt.context.lucene;
 
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.junit.After;
 import org.junit.Test;
@@ -32,13 +32,13 @@ public class LuceneAnalyzerTest_onDelete {
     }
 
     @Test
-    public void monolingualDomain() throws Throwable {
+    public void monolingualMemory() throws Throwable {
         setup(EN__IT, EN__FR);
 
         DummyBilingualCorpus corpus = TestData.corpus("dummy", EN__IT);
 
-        analyzer.add(new Domain(1), corpus);
-        analyzer.add(new Domain(2), corpus);
+        analyzer.add(new Memory(1), corpus);
+        analyzer.add(new Memory(2), corpus);
         analyzer.flush();
 
         assertEquals(2, analyzer.getIndexSize());
@@ -57,15 +57,15 @@ public class LuceneAnalyzerTest_onDelete {
     }
 
     @Test
-    public void multilingualDomain() throws Throwable {
+    public void multilingualMemory() throws Throwable {
         setup(EN__IT, EN__FR);
 
         DummyBilingualCorpus itCorpus = TestData.corpus("dummy", EN__IT);
         DummyBilingualCorpus frCorpus = TestData.corpus("dummy", EN__FR);
         MultilingualCorpus corpus = TestData.corpus(itCorpus, frCorpus);
 
-        analyzer.add(new Domain(1), corpus);
-        analyzer.add(new Domain(2), itCorpus);
+        analyzer.add(new Memory(1), corpus);
+        analyzer.add(new Memory(2), itCorpus);
         analyzer.flush();
 
         assertEquals(3, analyzer.getIndexSize());
@@ -85,13 +85,13 @@ public class LuceneAnalyzerTest_onDelete {
     }
 
     @Test
-    public void multipleDomains() throws Throwable {
+    public void multipleMemories() throws Throwable {
         setup(EN__IT, EN__FR);
 
         DummyBilingualCorpus corpus = TestData.corpus("dummy", EN__IT);
 
-        analyzer.add(new Domain(1), corpus);
-        analyzer.add(new Domain(2), corpus);
+        analyzer.add(new Memory(1), corpus);
+        analyzer.add(new Memory(2), corpus);
         analyzer.flush();
 
         assertEquals(2, analyzer.getIndexSize());

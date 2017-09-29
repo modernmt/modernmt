@@ -15,7 +15,7 @@ import java.util.Locale;
 public class CorpusBucket implements Closeable {
 
     public static void serialize(CorpusBucket bucket, Writer writer) throws IOException {
-        writer.append(Long.toString(bucket.domain));
+        writer.append(Long.toString(bucket.memory));
         writer.append(',');
         writer.append(bucket.direction.source.toLanguageTag());
         writer.append(',');
@@ -33,7 +33,7 @@ public class CorpusBucket implements Closeable {
         try {
             String[] parts = line.split(",");
 
-            long domain = Long.parseLong(parts[0]);
+            long memory = Long.parseLong(parts[0]);
             Locale source = Locale.forLanguageTag(parts[1]);
             Locale target = Locale.forLanguageTag(parts[2]);
             long analyzerOffset = Long.parseUnsignedLong(parts[3], 16);
@@ -41,7 +41,7 @@ public class CorpusBucket implements Closeable {
 
             LanguagePair direction = new LanguagePair(source, target);
 
-            return new CorpusBucket(analysisOptions, folder, direction, domain, analyzerOffset, currentOffset);
+            return new CorpusBucket(analysisOptions, folder, direction, memory, analyzerOffset, currentOffset);
         } catch (RuntimeException e) {
             throw new IOException("Unexpected CorpusBucket serialized data: " + line, e);
         }
@@ -49,7 +49,7 @@ public class CorpusBucket implements Closeable {
 
     private final Options.AnalysisOptions analysisOptions;
 
-    private final long domain;
+    private final long memory;
     private final LanguagePair direction;
 
     private long analyzerOffset;
@@ -63,14 +63,14 @@ public class CorpusBucket implements Closeable {
         return locale.toLanguageTag().replace('-', '_');
     }
 
-    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, LanguagePair direction, long domain) {
-        this(analysisOptions, folder, direction, domain, 0L, 0L);
+    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, LanguagePair direction, long memory) {
+        this(analysisOptions, folder, direction, memory, 0L, 0L);
     }
 
-    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, LanguagePair direction, long domain, long analyzerOffset, long currentOffset) {
+    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, LanguagePair direction, long memory, long analyzerOffset, long currentOffset) {
         this.direction = direction;
-        this.domain = domain;
-        this.path = new File(folder, domain + "_" + toString(direction.source) + "__" + toString(direction.target));
+        this.memory = memory;
+        this.path = new File(folder, memory + "_" + toString(direction.source) + "__" + toString(direction.target));
         this.analysisOptions = analysisOptions;
 
         this.analyzerOffset = analyzerOffset;
@@ -114,8 +114,8 @@ public class CorpusBucket implements Closeable {
         currentOffset = 0L;
     }
 
-    public long getDomain() {
-        return domain;
+    public long getMemory() {
+        return memory;
     }
 
     public LanguagePair getLanguageDirection() {
@@ -162,13 +162,13 @@ public class CorpusBucket implements Closeable {
 
         CorpusBucket that = (CorpusBucket) o;
 
-        if (domain != that.domain) return false;
+        if (memory != that.memory) return false;
         return direction.equals(that.direction);
     }
 
     @Override
     public int hashCode() {
-        int result = (int) (domain ^ (domain >>> 32));
+        int result = (int) (memory ^ (memory >>> 32));
         result = 31 * result + direction.hashCode();
         return result;
     }
@@ -176,7 +176,7 @@ public class CorpusBucket implements Closeable {
     @Override
     public String toString() {
         return "CorpusBucket{" +
-                "domain=" + domain +
+                "memory=" + memory +
                 ", direction=" + direction +
                 '}';
     }

@@ -41,15 +41,15 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
 
     public static class Entry {
 
-        private final long domain;
+        private final long memory;
         private final LanguagePair language;
         private final String source;
         private final String target;
 
         private static Entry parse(Document doc) {
-            long domain = Long.parseLong(doc.get("domain"));
+            long memory = Long.parseLong(doc.get("memory"));
 
-            if (domain == 0L)
+            if (memory == 0L)
                 return null;
 
             String[] langs = doc.get("language").split("__");
@@ -58,7 +58,7 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
             String source = doc.get("content::" + langs[0]);
             String target = doc.get("content::" + langs[1]);
 
-            return new Entry(domain, language, source, target);
+            return new Entry(memory, language, source, target);
         }
 
         public static Set<Entry> asEntrySet(LanguageIndex languages, Collection<TranslationUnit> units) {
@@ -74,9 +74,9 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
 
                 Entry entry;
                 if (source.compareTo(target) < 0)
-                    entry = new Entry(unit.domain, direction, unit.rawSourceSentence, unit.rawTargetSentence);
+                    entry = new Entry(unit.memory, direction, unit.rawSourceSentence, unit.rawTargetSentence);
                 else
-                    entry = new Entry(unit.domain, direction.reversed(), unit.rawTargetSentence, unit.rawSourceSentence);
+                    entry = new Entry(unit.memory, direction.reversed(), unit.rawTargetSentence, unit.rawSourceSentence);
 
                 result.add(entry);
             }
@@ -84,8 +84,8 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
             return result;
         }
 
-        public Entry(long domain, LanguagePair language, String source, String target) {
-            this.domain = domain;
+        public Entry(long memory, LanguagePair language, String source, String target) {
+            this.memory = memory;
             this.language = language;
             this.source = source;
             this.target = target;
@@ -98,7 +98,7 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
 
             Entry entry = (Entry) o;
 
-            if (domain != entry.domain) return false;
+            if (memory != entry.memory) return false;
             if (!language.equals(entry.language)) return false;
             if (!source.equals(entry.source)) return false;
             return target.equals(entry.target);
@@ -106,7 +106,7 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
 
         @Override
         public int hashCode() {
-            int result = (int) (domain ^ (domain >>> 32));
+            int result = (int) (memory ^ (memory >>> 32));
             result = 31 * result + language.hashCode();
             result = 31 * result + source.hashCode();
             result = 31 * result + target.hashCode();
@@ -116,7 +116,7 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
         @Override
         public String toString() {
             return "Entry{" +
-                    "domain=" + domain +
+                    "memory=" + memory +
                     ", language=" + language +
                     ", source='" + source + '\'' +
                     ", target='" + target + '\'' +

@@ -60,7 +60,7 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
         getStorage().flushToDisk(false, true);
     }
 
-    public Entry getEntry(long domain, LanguagePair direction) throws IOException {
+    public Entry getEntry(long memory, LanguagePair direction) throws IOException {
         ContextAnalyzerIndex index = getIndex();
         CorporaStorage storage = getStorage();
 
@@ -70,7 +70,7 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
 
         String content = null;
 
-        CorpusBucket bucket = storage.getBucket(domain, direction);
+        CorpusBucket bucket = storage.getBucket(memory, direction);
         if (bucket != null) {
             InputStream stream = null;
 
@@ -87,7 +87,7 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
         Set<String> terms = null;
 
         IndexSearcher searcher = index.getIndexSearcher();
-        TermQuery query = new TermQuery(DocumentBuilder.makeDocumentIdTerm(domain, direction));
+        TermQuery query = new TermQuery(DocumentBuilder.makeDocumentIdTerm(memory, direction));
         TopDocs docs = searcher.search(query, 1);
 
         if (docs.scoreDocs.length > 0) {
@@ -100,7 +100,7 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
         if (terms == null && content == null)
             return null;
 
-        return new Entry(domain, direction, terms, content);
+        return new Entry(memory, direction, terms, content);
     }
 
     @Override
@@ -114,13 +114,13 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
 
     public static final class Entry {
 
-        public final long domain;
+        public final long memory;
         public final LanguagePair language;
         public final Set<String> terms;
         public final String content;
 
-        public Entry(long domain, LanguagePair language, Set<String> terms, String content) {
-            this.domain = domain;
+        public Entry(long memory, LanguagePair language, Set<String> terms, String content) {
+            this.memory = memory;
             this.language = language;
             this.terms = Collections.unmodifiableSet(new HashSet<>(terms));
             this.content = content.trim();
@@ -133,13 +133,13 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
 
             Entry entry = (Entry) o;
 
-            if (domain != entry.domain) return false;
+            if (memory != entry.memory) return false;
             return language.equals(entry.language);
         }
 
         @Override
         public int hashCode() {
-            int result = (int) (domain ^ (domain >>> 32));
+            int result = (int) (memory ^ (memory >>> 32));
             result = 31 * result + language.hashCode();
             return result;
         }
@@ -147,7 +147,7 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
         @Override
         public String toString() {
             return "Entry{" +
-                    "domain=" + domain +
+                    "memory=" + memory +
                     ", language=" + language +
                     '}';
         }

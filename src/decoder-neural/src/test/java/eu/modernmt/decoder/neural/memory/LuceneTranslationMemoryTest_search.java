@@ -1,7 +1,7 @@
 package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.Memory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,8 +35,8 @@ public class LuceneTranslationMemoryTest_search {
         units2.add(TestData.tu(EN__FR, "Hello world 2", "Bonjour monde 2"));
         units2.add(TestData.tu(EN__FR, "The test 2", "Le preuve 2"));
 
-        this.memory.add(new Domain(1), TestData.corpus("domain-1", units1));
-        this.memory.add(new Domain(2), TestData.corpus("domain-2", units2));
+        this.memory.add(new Memory(1), TestData.corpus("memory-1", units1));
+        this.memory.add(new Memory(2), TestData.corpus("memory-2", units2));
     }
 
     @After
@@ -45,8 +45,8 @@ public class LuceneTranslationMemoryTest_search {
         this.memory = null;
     }
 
-    private static boolean contains(ScoreEntry[] entries, long domain, String sentence, String translation) {
-        ScoreEntry target = new ScoreEntry(domain, sentence.split(" "), translation.split(" "));
+    private static boolean contains(ScoreEntry[] entries, long memory, String sentence, String translation) {
+        ScoreEntry target = new ScoreEntry(memory, sentence.split(" "), translation.split(" "));
 
         for (ScoreEntry entry : entries) {
             if (entry.equals(target))

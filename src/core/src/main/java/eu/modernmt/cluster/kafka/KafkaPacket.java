@@ -19,23 +19,23 @@ class KafkaPacket {
     private static final byte TYPE_DELETION = 0x01;
 
     private final byte type;
-    private final long domain;
+    private final long memory;
     private final LanguagePair direction;
     private final String sourceSentence;
     private final String targetSentence;
 
-    public static KafkaPacket createUpdate(LanguagePair direction, long domain, String sourceSentence, String targetSentence) {
-        return new KafkaPacket(TYPE_UPDATE, direction, domain, sourceSentence, targetSentence);
+    public static KafkaPacket createUpdate(LanguagePair direction, long memory, String sourceSentence, String targetSentence) {
+        return new KafkaPacket(TYPE_UPDATE, direction, memory, sourceSentence, targetSentence);
     }
 
-    public static KafkaPacket createDeletion(long domain) {
-        return new KafkaPacket(TYPE_DELETION, null, domain, null, null);
+    public static KafkaPacket createDeletion(long memory) {
+        return new KafkaPacket(TYPE_DELETION, null, memory, null, null);
     }
 
     public static KafkaPacket fromBytes(byte[] data) {
         ByteBuffer buffer = ByteBuffer.wrap(data);
         byte type = buffer.get();
-        long domain = buffer.getLong();
+        long memory = buffer.getLong();
 
         LanguagePair direction = null;
         String sourceSentence = null;
@@ -60,7 +60,7 @@ class KafkaPacket {
                 throw new IllegalArgumentException("Invalid packet received, unknown type: " + (int) type);
         }
 
-        return new KafkaPacket(type, direction, domain, sourceSentence, targetSentence);
+        return new KafkaPacket(type, direction, memory, sourceSentence, targetSentence);
     }
 
     private static String deserializeString(ByteBuffer buffer, Charset charset) {
@@ -71,10 +71,10 @@ class KafkaPacket {
         return string;
     }
 
-    private KafkaPacket(byte type, LanguagePair direction, long domain, String sourceSentence, String targetSentence) {
+    private KafkaPacket(byte type, LanguagePair direction, long memory, String sourceSentence, String targetSentence) {
         this.type = type;
         this.direction = direction;
-        this.domain = domain;
+        this.memory = memory;
         this.sourceSentence = sourceSentence;
         this.targetSentence = targetSentence;
     }
@@ -82,9 +82,9 @@ class KafkaPacket {
     public DataMessage toDataMessage(short channel, long position) {
         switch (type) {
             case TYPE_UPDATE:
-                return new TranslationUnit(channel, position, direction, domain, sourceSentence, targetSentence);
+                return new TranslationUnit(channel, position, direction, memory, sourceSentence, targetSentence);
             case TYPE_DELETION:
-                return new Deletion(channel, position, domain);
+                return new Deletion(channel, position, memory);
             default:
                 throw new IllegalArgumentException("Invalid packet received, unknown type: " + (int) type);
         }
@@ -107,7 +107,7 @@ class KafkaPacket {
                         sourceBytes.length + targetBytes.length);
 
                 buffer.put(type);
-                buffer.putLong(domain);
+                buffer.putLong(memory);
                 buffer.putInt(sourceBytes.length);
                 buffer.put(sourceBytes);
                 buffer.putInt(targetBytes.length);
@@ -121,7 +121,7 @@ class KafkaPacket {
             case TYPE_DELETION:
                 buffer = ByteBuffer.allocate(9);
                 buffer.put(type);
-                buffer.putLong(domain);
+                buffer.putLong(memory);
 
                 break;
             default:
@@ -133,7 +133,7 @@ class KafkaPacket {
 
     @Override
     public String toString() {
-        return "<" + domain + "::" + direction + ":\"" + sourceSentence + "\",\"" + targetSentence + "\">";
+        return "<" + memory + "::" + direction + ":\"" + sourceSentence + "\",\"" + targetSentence + "\">";
     }
 
 }

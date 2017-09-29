@@ -1,7 +1,7 @@
-package eu.modernmt.rest.actions.domain;
+package eu.modernmt.rest.actions.memory;
 
 import eu.modernmt.facade.ModernMT;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.ImportJob;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
@@ -10,16 +10,18 @@ import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
 import eu.modernmt.rest.framework.routing.TemplateException;
 
+import java.util.UUID;
+
 /**
  * Created by davide on 15/12/15.
  */
-@Route(aliases = "domains", method = HttpMethod.POST)
-public class CreateDomain extends ObjectAction<Domain> {
+@Route(aliases = "memories/imports/:id", method = HttpMethod.GET)
+public class GetImportJob extends ObjectAction<ImportJob> {
 
     @Override
-    protected Domain execute(RESTRequest req, Parameters _params) throws PersistenceException {
+    protected ImportJob execute(RESTRequest req, Parameters _params) throws PersistenceException {
         Params params = (Params) _params;
-        return ModernMT.domain.create(params.name);
+        return ModernMT.memory.getImportJob(params.id);
     }
 
     @Override
@@ -29,12 +31,11 @@ public class CreateDomain extends ObjectAction<Domain> {
 
     public static class Params extends Parameters {
 
-        private final String name;
+        private final UUID id;
 
         public Params(RESTRequest req) throws ParameterParsingException, TemplateException {
             super(req);
-
-            name = getString("name", false);
+            id = req.getPathParameterAsUUID("id");
         }
     }
 

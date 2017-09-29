@@ -29,7 +29,7 @@ public class ModernMT {
     }
 
     public static final TranslationFacade translation = new TranslationFacade();
-    public static final DomainFacade domain = new DomainFacade();
+    public static final MemoryFacade memory = new MemoryFacade();
 
 
     public static final TagFacade tags = new TagFacade();

@@ -1,7 +1,7 @@
-package eu.modernmt.rest.actions.domain;
+package eu.modernmt.rest.actions.memory;
 
 import eu.modernmt.facade.ModernMT;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.Memory;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
@@ -13,13 +13,13 @@ import eu.modernmt.rest.framework.routing.TemplateException;
 /**
  * Created by davide on 15/12/15.
  */
-@Route(aliases = "domains/:id", method = HttpMethod.GET)
-public class GetDomain extends ObjectAction<Domain> {
+@Route(aliases = "memories", method = HttpMethod.POST)
+public class CreateMemory extends ObjectAction<Memory> {
 
     @Override
-    protected Domain execute(RESTRequest req, Parameters _params) throws PersistenceException {
+    protected Memory execute(RESTRequest req, Parameters _params) throws PersistenceException {
         Params params = (Params) _params;
-        return ModernMT.domain.get(params.id);
+        return ModernMT.memory.create(params.name);
     }
 
     @Override
@@ -29,11 +29,12 @@ public class GetDomain extends ObjectAction<Domain> {
 
     public static class Params extends Parameters {
 
-        private final long id;
+        private final String name;
 
         public Params(RESTRequest req) throws ParameterParsingException, TemplateException {
             super(req);
-            id = req.getPathParameterAsLong("id");
+
+            name = getString("name", false);
         }
     }
 

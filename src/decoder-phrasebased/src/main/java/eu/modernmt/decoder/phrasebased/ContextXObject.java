@@ -17,7 +17,7 @@ class ContextXObject {
 
             int i = 0;
             for (ContextVector.Entry e : vector) {
-                keys[i] = e.domain.getId();
+                keys[i] = e.memory.getId();
                 values[i] = e.score;
                 i++;
             }

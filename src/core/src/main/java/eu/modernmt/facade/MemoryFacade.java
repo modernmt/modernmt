@@ -5,7 +5,7 @@ import eu.modernmt.cluster.NodeInfo;
 import eu.modernmt.data.DataManager;
 import eu.modernmt.data.DataManagerException;
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.Memory;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.persistence.*;
@@ -17,37 +17,37 @@ import java.util.stream.Collectors;
 /**
  * Created by davide on 06/09/16.
  */
-public class DomainFacade {
+public class MemoryFacade {
 
-    public Collection<Domain> list() throws PersistenceException {
+    public Collection<Memory> list() throws PersistenceException {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
         try {
             connection = db.getConnection();
 
-            DomainDAO domainDAO = db.getDomainDAO(connection);
-            return domainDAO.retrieveAll();
+            MemoryDAO memoryDAO = db.getMemoryDAO(connection);
+            return memoryDAO.retrieveAll();
         } finally {
             IOUtils.closeQuietly(connection);
         }
     }
 
-    public Domain get(long domainId) throws PersistenceException {
+    public Memory get(long id) throws PersistenceException {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
         try {
             connection = db.getConnection();
 
-            DomainDAO domainDAO = db.getDomainDAO(connection);
-            return domainDAO.retrieveById(domainId);
+            MemoryDAO memoryDAO = db.getMemoryDAO(connection);
+            return memoryDAO.retrieveById(id);
         } finally {
             IOUtils.closeQuietly(connection);
         }
     }
 
-    public Map<Long, Domain> get(long[] ids) throws PersistenceException {
+    public Map<Long, Memory> get(long[] ids) throws PersistenceException {
         ArrayList<Long> list = new ArrayList<>(ids.length);
         for (long id : ids)
             list.add(id);
@@ -55,33 +55,33 @@ public class DomainFacade {
         return get(list);
     }
 
-    public Map<Long, Domain> get(Collection<Long> ids) throws PersistenceException {
+    public Map<Long, Memory> get(Collection<Long> ids) throws PersistenceException {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
         try {
             connection = db.getConnection();
 
-            DomainDAO domainDAO = db.getDomainDAO(connection);
-            return domainDAO.retrieveByIds(ids);
+            MemoryDAO memoryDAO = db.getMemoryDAO(connection);
+            return memoryDAO.retrieveByIds(ids);
         } finally {
             IOUtils.closeQuietly(connection);
         }
     }
 
-    public Domain create(String name) throws PersistenceException {
+    public Memory create(String name) throws PersistenceException {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
         try {
             connection = db.getConnection();
 
-            Domain domain = new Domain(0L, name);
+            Memory memory = new Memory(0L, name);
 
-            DomainDAO domainDAO = db.getDomainDAO(connection);
-            domain = domainDAO.put(domain);
+            MemoryDAO memoryDAO = db.getMemoryDAO(connection);
+            memory = memoryDAO.put(memory);
 
-            return domain;
+            return memory;
         } finally {
             IOUtils.closeQuietly(connection);
         }
@@ -94,8 +94,8 @@ public class DomainFacade {
         try {
             connection = db.getConnection();
 
-            DomainDAO domainDAO = db.getDomainDAO(connection);
-            boolean deleted = domainDAO.delete(id);
+            MemoryDAO memoryDAO = db.getMemoryDAO(connection);
+            boolean deleted = memoryDAO.delete(id);
 
             if (!deleted)
                 return false;
@@ -109,21 +109,21 @@ public class DomainFacade {
         return true;
     }
 
-    public ImportJob add(LanguagePair direction, long domainId, String source, String target) throws DataManagerException, PersistenceException {
+    public ImportJob add(LanguagePair direction, long memoryId, String source, String target) throws DataManagerException, PersistenceException {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
         try {
             connection = db.getConnection();
 
-            DomainDAO domainDAO = db.getDomainDAO(connection);
-            Domain domain = domainDAO.retrieveById(domainId);
+            MemoryDAO memoryDAO = db.getMemoryDAO(connection);
+            Memory memory = memoryDAO.retrieveById(memoryId);
 
-            if (domain == null)
+            if (memory == null)
                 return null;
 
             DataManager dataManager = ModernMT.getNode().getDataManager();
-            ImportJob job = dataManager.upload(direction, domainId, source, target, DataManager.CONTRIBUTIONS_CHANNEL_ID);
+            ImportJob job = dataManager.upload(direction, memoryId, source, target, DataManager.CONTRIBUTIONS_CHANNEL_ID);
 
             if (job == null)
                 return null;
@@ -136,21 +136,21 @@ public class DomainFacade {
         }
     }
 
-    public ImportJob add(long domainId, MultilingualCorpus corpus) throws PersistenceException, DataManagerException {
+    public ImportJob add(long memoryId, MultilingualCorpus corpus) throws PersistenceException, DataManagerException {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
         try {
             connection = db.getConnection();
 
-            DomainDAO domainDAO = db.getDomainDAO(connection);
-            Domain domain = domainDAO.retrieveById(domainId);
+            MemoryDAO memoryDAO = db.getMemoryDAO(connection);
+            Memory memory = memoryDAO.retrieveById(memoryId);
 
-            if (domain == null)
+            if (memory == null)
                 return null;
 
             DataManager dataManager = ModernMT.getNode().getDataManager();
-            ImportJob job = dataManager.upload(domainId, corpus, DataManager.DOMAIN_UPLOAD_CHANNEL_ID);
+            ImportJob job = dataManager.upload(memoryId, corpus, DataManager.MEMORY_UPLOAD_CHANNEL_ID);
 
             if (job == null)
                 return null;
@@ -164,15 +164,15 @@ public class DomainFacade {
         }
     }
 
-    public Domain update(Domain domain) throws PersistenceException {
+    public Memory update(Memory memory) throws PersistenceException {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
         try {
             connection = db.getConnection();
-            DomainDAO domainDAO = db.getDomainDAO(connection);
+            MemoryDAO memoryDAO = db.getMemoryDAO(connection);
             
-            return domainDAO.update(domain);
+            return memoryDAO.update(memory);
         } finally {
             IOUtils.closeQuietly(connection);
         }

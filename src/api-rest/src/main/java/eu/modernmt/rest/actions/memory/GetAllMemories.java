@@ -1,7 +1,7 @@
-package eu.modernmt.rest.actions.domain;
+package eu.modernmt.rest.actions.memory;
 
 import eu.modernmt.facade.ModernMT;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.Memory;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
@@ -14,12 +14,12 @@ import java.util.Collection;
 /**
  * Created by davide on 15/12/15.
  */
-@Route(aliases = "domains", method = HttpMethod.GET)
-public class GetAllDomains extends CollectionAction<Domain> {
+@Route(aliases = "memories", method = HttpMethod.GET)
+public class GetAllMemories extends CollectionAction<Memory> {
 
     @Override
-    protected Collection<Domain> execute(RESTRequest req, Parameters _params) throws PersistenceException {
-        return ModernMT.domain.list();
+    protected Collection<Memory> execute(RESTRequest req, Parameters _params) throws PersistenceException {
+        return ModernMT.memory.list();
     }
 
 }

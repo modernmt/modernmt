@@ -1,7 +1,7 @@
 package eu.modernmt.context.lucene;
 
 import eu.modernmt.model.ContextVector;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.junit.After;
 import org.junit.Before;
@@ -37,13 +37,13 @@ public class LuceneAnalyzerTest_getContextVector {
         MultilingualCorpus langMixedCorpus = TestData.corpus(enItHelloWorld, enFrHelloWorld);
         MultilingualCorpus contentMixedCorpus = TestData.corpus(enItHelloWorld, enItTheTest);
 
-        this.analyzer.add(new Domain(1), enItHelloWorld);
-        this.analyzer.add(new Domain(2), enFrHelloWorld);
-        this.analyzer.add(new Domain(3), enItTheTest);
-        this.analyzer.add(new Domain(4), enFrTheTest);
+        this.analyzer.add(new Memory(1), enItHelloWorld);
+        this.analyzer.add(new Memory(2), enFrHelloWorld);
+        this.analyzer.add(new Memory(3), enItTheTest);
+        this.analyzer.add(new Memory(4), enFrTheTest);
 
-        this.analyzer.add(new Domain(12), langMixedCorpus);
-        this.analyzer.add(new Domain(13), contentMixedCorpus);
+        this.analyzer.add(new Memory(12), langMixedCorpus);
+        this.analyzer.add(new Memory(13), contentMixedCorpus);
 
         this.analyzer.flush();
     }
@@ -55,9 +55,9 @@ public class LuceneAnalyzerTest_getContextVector {
         this.analyzer = null;
     }
 
-    private static boolean contains(ContextVector result, long domain) {
+    private static boolean contains(ContextVector result, long memory) {
         for (ContextVector.Entry entry : result) {
-            if (entry.domain.getId() == domain)
+            if (entry.memory.getId() == memory)
                 return true;
         }
 

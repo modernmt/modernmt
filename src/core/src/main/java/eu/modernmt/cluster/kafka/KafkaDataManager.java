@@ -49,7 +49,7 @@ public class KafkaDataManager implements DataManager {
     private KafkaChannel[] channels;
     private ArrayList<TopicPartition> partitions;
     private HashMap<String, KafkaChannel> name2channel;
-    
+
     public KafkaDataManager(Engine engine, String uuid, DataStreamConfig config) {
         this.uuid = uuid;
         this.pollingThread = new DataPollingThread(engine, this);
@@ -60,8 +60,8 @@ public class KafkaDataManager implements DataManager {
 
         String[] topicNames = getDefaultTopicNames(config.getName());
 
-        this.channels[0] = new KafkaChannel(DataManager.DOMAIN_UPLOAD_CHANNEL_ID,
-                topicNames[DataManager.DOMAIN_UPLOAD_CHANNEL_ID]);
+        this.channels[0] = new KafkaChannel(DataManager.MEMORY_UPLOAD_CHANNEL_ID,
+                topicNames[DataManager.MEMORY_UPLOAD_CHANNEL_ID]);
         this.channels[1] = new KafkaChannel(DataManager.CONTRIBUTIONS_CHANNEL_ID,
                 topicNames[DataManager.CONTRIBUTIONS_CHANNEL_ID]);
 
@@ -78,7 +78,7 @@ public class KafkaDataManager implements DataManager {
      * This method calculates default acceptable names for all kafka topics
      * and puts them in an ordered String array.
      * The array order is:
-     * 0: domains topic name
+     * 0: memories topic name
      * 1: contributions topic name
      * (using an array ensures high access speed)
      *
@@ -90,7 +90,7 @@ public class KafkaDataManager implements DataManager {
         int maxLength = 249;
 
         //default names for the topics
-        String domainsTopicName = "domain-upload-stream";
+        String memoriesTopicName = "memory-upload-stream";
         String contributionsTopicName = "contributions-stream";
 
         //if prefix is not null, normalize it and update the topic names
@@ -98,7 +98,7 @@ public class KafkaDataManager implements DataManager {
             String normalizedPrefix = prefix.replaceAll("[^A-Za-z0-9_\\.\\-]", "");
 
             int length = Math.max(
-                    normalizedPrefix.length() + domainsTopicName.length() + 1,
+                    normalizedPrefix.length() + memoriesTopicName.length() + 1,
                     normalizedPrefix.length() + contributionsTopicName.length()) + 1;
 
             /*if even only one of the two names are too long,
@@ -106,13 +106,13 @@ public class KafkaDataManager implements DataManager {
             if (length > maxLength)
                 normalizedPrefix = normalizedPrefix.substring(0, length - maxLength - 1).replaceAll("/[^A-Za-z0-9\\._\\-]/", "");
 
-            domainsTopicName = normalizedPrefix + "-" + domainsTopicName;
+            memoriesTopicName = normalizedPrefix + "-" + memoriesTopicName;
             contributionsTopicName = normalizedPrefix + "-" + contributionsTopicName;
         }
 
         /*create, populate and return the topics map*/
         String[] topicNames = new String[2];
-        topicNames[DataManager.DOMAIN_UPLOAD_CHANNEL_ID] = domainsTopicName;
+        topicNames[DataManager.MEMORY_UPLOAD_CHANNEL_ID] = memoriesTopicName;
         topicNames[DataManager.CONTRIBUTIONS_CHANNEL_ID] = contributionsTopicName;
         return topicNames;
     }
@@ -183,17 +183,17 @@ public class KafkaDataManager implements DataManager {
     }
 
     @Override
-    public ImportJob upload(long domainId, MultilingualCorpus corpus, short channel) throws DataManagerException {
-        return upload(domainId, corpus, getDataChannel(channel));
+    public ImportJob upload(long memory, MultilingualCorpus corpus, short channel) throws DataManagerException {
+        return upload(memory, corpus, getDataChannel(channel));
     }
 
     @Override
-    public ImportJob upload(long domainId, MultilingualCorpus corpus, DataChannel channel) throws DataManagerException {
+    public ImportJob upload(long memory, MultilingualCorpus corpus, DataChannel channel) throws DataManagerException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 
         if (logger.isDebugEnabled())
-            logger.debug("Uploading domain " + domainId);
+            logger.debug("Uploading memory " + memory);
 
         MultilingualCorpus.MultilingualLineReader reader = null;
 
@@ -207,7 +207,7 @@ public class KafkaDataManager implements DataManager {
             if (pair == null)
                 return null;
 
-            importEnd = importBegin = sendElement(KafkaPacket.createUpdate(pair.language, domainId, pair.source, pair.target), true, channel);
+            importEnd = importBegin = sendElement(KafkaPacket.createUpdate(pair.language, memory, pair.source, pair.target), true, channel);
             size++;
 
             pair = reader.read();
@@ -217,23 +217,23 @@ public class KafkaDataManager implements DataManager {
                 pair = reader.read();
 
                 if (pair == null)
-                    importEnd = sendElement(KafkaPacket.createUpdate(current.language, domainId, current.source, current.target), true, channel);
+                    importEnd = sendElement(KafkaPacket.createUpdate(current.language, memory, current.source, current.target), true, channel);
                 else
-                    sendElement(KafkaPacket.createUpdate(current.language, domainId, current.source, current.target), false, channel);
+                    sendElement(KafkaPacket.createUpdate(current.language, memory, current.source, current.target), false, channel);
 
                 size++;
             }
         } catch (IOException e) {
-            throw new DataManagerException("Failed to read corpus for domain " + domainId, e);
+            throw new DataManagerException("Failed to read corpus for memory " + memory, e);
         } finally {
             IOUtils.closeQuietly(reader);
         }
 
         if (logger.isDebugEnabled())
-            logger.debug("Domain " + domainId + " uploaded [" + importBegin + ", " + importEnd + "]: " + size + " pairs");
+            logger.debug("Memory " + memory + " uploaded [" + importBegin + ", " + importEnd + "]: " + size + " pairs");
 
         ImportJob job = new ImportJob();
-        job.setDomain(domainId);
+        job.setMemory(memory);
         job.setSize(size);
         job.setDataChannel(channel.getId());
         job.setBegin(importBegin);
@@ -243,26 +243,26 @@ public class KafkaDataManager implements DataManager {
     }
 
     @Override
-    public ImportJob upload(LanguagePair direction, long domainId, String sourceSentence, String targetSentence, short channel) throws DataManagerException {
-        return upload(direction, domainId, sourceSentence, targetSentence, getDataChannel(channel));
+    public ImportJob upload(LanguagePair direction, long memory, String sourceSentence, String targetSentence, short channel) throws DataManagerException {
+        return upload(direction, memory, sourceSentence, targetSentence, getDataChannel(channel));
     }
 
     @Override
-    public ImportJob upload(LanguagePair direction, long domainId, String sourceSentence, String targetSentence, DataChannel channel) throws DataManagerException {
+    public ImportJob upload(LanguagePair direction, long memory, String sourceSentence, String targetSentence, DataChannel channel) throws DataManagerException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 
-        long offset = sendElement(KafkaPacket.createUpdate(direction, domainId, sourceSentence, targetSentence), true, channel);
+        long offset = sendElement(KafkaPacket.createUpdate(direction, memory, sourceSentence, targetSentence), true, channel);
         return ImportJob.createEphemeralJob(offset, channel.getId());
     }
 
     @Override
-    public void delete(long domainId) throws DataManagerException {
+    public void delete(long memory) throws DataManagerException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 
-        DataChannel channel = getDataChannel(DataManager.DOMAIN_UPLOAD_CHANNEL_ID);
-        sendElement(KafkaPacket.createDeletion(domainId), true, channel);
+        DataChannel channel = getDataChannel(DataManager.MEMORY_UPLOAD_CHANNEL_ID);
+        sendElement(KafkaPacket.createDeletion(memory), true, channel);
     }
 
     private long sendElement(KafkaPacket packet, boolean sync, DataChannel channel) throws DataManagerException {

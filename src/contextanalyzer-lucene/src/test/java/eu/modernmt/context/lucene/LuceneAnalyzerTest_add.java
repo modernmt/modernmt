@@ -1,7 +1,7 @@
 package eu.modernmt.context.lucene;
 
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.lucene.index.IndexNotFoundException;
 import org.junit.After;
@@ -30,11 +30,11 @@ public class LuceneAnalyzerTest_add {
     }
 
     @Test
-    public void monoDirectionalAnalyzerAndDirectDomain() throws Throwable {
+    public void monoDirectionalAnalyzerAndDirectMemory() throws Throwable {
         setup(EN__IT);
         DummyBilingualCorpus corpus = TestData.corpus("dummy", EN__IT);
 
-        analyzer.add(new Domain(1), corpus);
+        analyzer.add(new Memory(1), corpus);
         TLuceneAnalyzer.Entry entry = analyzer.getEntry(1, EN__IT);
 
         assertEquals(1, analyzer.getIndexSize());
@@ -44,11 +44,11 @@ public class LuceneAnalyzerTest_add {
     }
 
     @Test
-    public void monoDirectionalAnalyzerAndReversedDomain() throws Throwable {
+    public void monoDirectionalAnalyzerAndReversedMemory() throws Throwable {
         setup(EN__IT);
 
         DummyBilingualCorpus corpus = TestData.corpus("dummy", IT__EN);
-        analyzer.add(new Domain(1), corpus);
+        analyzer.add(new Memory(1), corpus);
 
         TLuceneAnalyzer.Entry entry = analyzer.getEntry(1, EN__IT);
 
@@ -59,11 +59,11 @@ public class LuceneAnalyzerTest_add {
     }
 
     @Test
-    public void monoDirectionalAnalyzerAndDialectDomain() throws Throwable {
+    public void monoDirectionalAnalyzerAndDialectMemory() throws Throwable {
         setup(EN__IT);
 
         DummyBilingualCorpus corpus = TestData.corpus("dummy", EN_US__IT);
-        analyzer.add(new Domain(1), corpus);
+        analyzer.add(new Memory(1), corpus);
 
         TLuceneAnalyzer.Entry entry = analyzer.getEntry(1, EN__IT);
 
@@ -78,7 +78,7 @@ public class LuceneAnalyzerTest_add {
         setup(EN__IT, IT__EN);
 
         DummyBilingualCorpus corpus = TestData.corpus("dummy", EN__IT);
-        analyzer.add(new Domain(1), corpus);
+        analyzer.add(new Memory(1), corpus);
 
         TLuceneAnalyzer.Entry fwdEntry = analyzer.getEntry(1, EN__IT);
         TLuceneAnalyzer.Entry bwdEntry = analyzer.getEntry(1, IT__EN);
@@ -92,11 +92,11 @@ public class LuceneAnalyzerTest_add {
     }
 
     @Test
-    public void biDirectionalAnalyzerAndDialectDomain() throws Throwable {
+    public void biDirectionalAnalyzerAndDialectMemory() throws Throwable {
         setup(EN__IT, IT__EN);
 
         DummyBilingualCorpus corpus = TestData.corpus("dummy", EN_US__IT);
-        analyzer.add(new Domain(1), corpus);
+        analyzer.add(new Memory(1), corpus);
 
         TLuceneAnalyzer.Entry fwdEntry = analyzer.getEntry(1, EN__IT);
         TLuceneAnalyzer.Entry bwdEntry = analyzer.getEntry(1, IT__EN);
@@ -110,11 +110,11 @@ public class LuceneAnalyzerTest_add {
     }
 
     @Test
-    public void dialectMonoDirectionalAnalyzerAndDirectDomain() throws Throwable {
+    public void dialectMonoDirectionalAnalyzerAndDirectMemory() throws Throwable {
         setup(EN_US__IT);
 
         DummyBilingualCorpus corpus = TestData.corpus("dummy", EN__IT);
-        analyzer.add(new Domain(1), corpus);
+        analyzer.add(new Memory(1), corpus);
 
         assertEquals(0, analyzer.getStorageSize());
 
@@ -127,11 +127,11 @@ public class LuceneAnalyzerTest_add {
     }
 
     @Test
-    public void dialectMonoDirectionalAnalyzerAndReversedDomain() throws Throwable {
+    public void dialectMonoDirectionalAnalyzerAndReversedMemory() throws Throwable {
         setup(EN_US__IT);
 
         DummyBilingualCorpus corpus = TestData.corpus("dummy", IT__EN);
-        analyzer.add(new Domain(1), corpus);
+        analyzer.add(new Memory(1), corpus);
 
         assertEquals(0, analyzer.getStorageSize());
 
@@ -144,11 +144,11 @@ public class LuceneAnalyzerTest_add {
     }
 
     @Test
-    public void dialectMonoDirectionalAnalyzerAndDialectDomain() throws Throwable {
+    public void dialectMonoDirectionalAnalyzerAndDialectMemory() throws Throwable {
         setup(EN_US__IT);
 
         DummyBilingualCorpus corpus = TestData.corpus("dummy", EN_US__IT);
-        analyzer.add(new Domain(1), corpus);
+        analyzer.add(new Memory(1), corpus);
 
         TLuceneAnalyzer.Entry entry = analyzer.getEntry(1, EN_US__IT);
 
@@ -159,11 +159,11 @@ public class LuceneAnalyzerTest_add {
     }
 
     @Test
-    public void dialectMonoDirectionalAnalyzerAndDialectReversedDomain() throws Throwable {
+    public void dialectMonoDirectionalAnalyzerAndDialectReversedMemory() throws Throwable {
         setup(EN_US__IT);
 
         DummyBilingualCorpus corpus = TestData.corpus("dummy", IT__EN_US);
-        analyzer.add(new Domain(1), corpus);
+        analyzer.add(new Memory(1), corpus);
 
         TLuceneAnalyzer.Entry entry = analyzer.getEntry(1, EN_US__IT);
 
@@ -178,7 +178,7 @@ public class LuceneAnalyzerTest_add {
         setup(EN_US__IT, IT__EN_US);
 
         DummyBilingualCorpus corpus = TestData.corpus("dummy", EN__IT);
-        analyzer.add(new Domain(1), corpus);
+        analyzer.add(new Memory(1), corpus);
 
         assertEquals(0, analyzer.getStorageSize());
 
@@ -191,11 +191,11 @@ public class LuceneAnalyzerTest_add {
     }
 
     @Test
-    public void dialectBiDirectionalAnalyzerAndDialectDomain() throws Throwable {
+    public void dialectBiDirectionalAnalyzerAndDialectMemory() throws Throwable {
         setup(EN_US__IT, IT__EN_US);
 
         DummyBilingualCorpus corpus = TestData.corpus("dummy", EN_US__IT);
-        analyzer.add(new Domain(1), corpus);
+        analyzer.add(new Memory(1), corpus);
 
         TLuceneAnalyzer.Entry fwdEntry = analyzer.getEntry(1, EN_US__IT);
         TLuceneAnalyzer.Entry bwdEntry = analyzer.getEntry(1, IT__EN_US);
@@ -209,11 +209,11 @@ public class LuceneAnalyzerTest_add {
     }
 
     @Test
-    public void multilingualAnalyzerAndOneDirectionDomain() throws Throwable {
+    public void multilingualAnalyzerAndOneDirectionMemory() throws Throwable {
         setup(EN__IT, EN__FR);
 
         DummyBilingualCorpus corpus = TestData.corpus("dummy", EN__IT);
-        analyzer.add(new Domain(1), corpus);
+        analyzer.add(new Memory(1), corpus);
 
         TLuceneAnalyzer.Entry entry = analyzer.getEntry(1, EN__IT);
 
@@ -224,14 +224,14 @@ public class LuceneAnalyzerTest_add {
     }
 
     @Test
-    public void multilingualAnalyzerAndAllDirectionDomain() throws Throwable {
+    public void multilingualAnalyzerAndAllDirectionMemory() throws Throwable {
         setup(IT__EN, EN__FR);
 
         DummyBilingualCorpus itCorpus = TestData.corpus("dummy", IT__EN);
         DummyBilingualCorpus frCorpus = TestData.corpus("dummy", EN__FR);
         MultilingualCorpus corpus = TestData.corpus(itCorpus, frCorpus);
 
-        analyzer.add(new Domain(1), corpus);
+        analyzer.add(new Memory(1), corpus);
 
         TLuceneAnalyzer.Entry itEntry = analyzer.getEntry(1, IT__EN);
         TLuceneAnalyzer.Entry frEntry = analyzer.getEntry(1, EN__FR);
@@ -245,7 +245,7 @@ public class LuceneAnalyzerTest_add {
     }
 
     @Test
-    public void multilingualAnalyzerAndMultipleAllDirectionDomains() throws Throwable {
+    public void multilingualAnalyzerAndMultipleAllDirectionMemorys() throws Throwable {
         setup(IT__EN, EN__FR);
 
         DummyBilingualCorpus itCorpus = TestData.corpus("dummy", IT__EN);
@@ -254,8 +254,8 @@ public class LuceneAnalyzerTest_add {
         MultilingualCorpus corpus1 = TestData.corpus(itCorpus, frCorpus, frCorpus);
         MultilingualCorpus corpus2 = TestData.corpus(itCorpus, itCorpus, frCorpus);
 
-        analyzer.add(new Domain(1), corpus1);
-        analyzer.add(new Domain(2), corpus2);
+        analyzer.add(new Memory(1), corpus1);
+        analyzer.add(new Memory(2), corpus2);
 
         TLuceneAnalyzer.Entry itEntry1 = analyzer.getEntry(1, IT__EN);
         TLuceneAnalyzer.Entry frEntry1 = analyzer.getEntry(1, EN__FR);

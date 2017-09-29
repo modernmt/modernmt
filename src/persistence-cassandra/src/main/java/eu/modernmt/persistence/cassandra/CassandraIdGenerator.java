@@ -1,13 +1,8 @@
 package eu.modernmt.persistence.cassandra;
 
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
-import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.querybuilder.BuiltStatement;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import eu.modernmt.persistence.PersistenceException;
-
-import java.util.ArrayList;
 
 /**
  * This class provides static methods
@@ -70,7 +65,7 @@ public class CassandraIdGenerator {
      * if it is greater than the current counter for that table
      *
      * @param connection the current connection with the database
-     * @param newCounter the new domains counter (if it is greater than the current one)
+     * @param newCounter the new memories counter (if it is greater than the current one)
      * @throws PersistenceException
      */
     public static boolean advanceCounter(CassandraConnection connection, int tableID, long newCounter) throws PersistenceException {

@@ -188,7 +188,7 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
 
         short[] channels = new short[size];
         long[] channelPositions = new long[size];
-        long[] domains = new long[size];
+        long[] memories = new long[size];
         String[] sources = new String[size];
         String[] targets = new String[size];
         int[][] alignments = new int[size][];
@@ -200,7 +200,7 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
 
             channels[i] = unit.channel;
             channelPositions[i] = unit.channelPosition;
-            domains[i] = unit.domain;
+            memories[i] = unit.memory;
             sources[i] = XUtils.encodeSentence(unit.sourceSentence);
             targets[i] = XUtils.encodeSentence(unit.targetSentence);
             alignments[i] = XUtils.encodeAlignment(unit.alignment);
@@ -208,17 +208,17 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
             i++;
         }
 
-        updateReceived(channels, channelPositions, domains, sources, targets, alignments);
+        updateReceived(channels, channelPositions, memories, sources, targets, alignments);
     }
 
-    private native void updateReceived(short[] channels, long[] channelPositions, long[] domains, String[] sources, String[] targets, int[][] alignments);
+    private native void updateReceived(short[] channels, long[] channelPositions, long[] memories, String[] sources, String[] targets, int[][] alignments);
 
     @Override
     public void onDelete(Deletion deletion) throws Exception {
-        deleteReceived(deletion.channel, deletion.channelPosition, deletion.domain);
+        deleteReceived(deletion.channel, deletion.channelPosition, deletion.memory);
     }
 
-    private native void deleteReceived(short channel, long channelPosition, long domain);
+    private native void deleteReceived(short channel, long channelPosition, long memory);
 
     @Override
     public Map<Short, Long> getLatestChannelPositions() {

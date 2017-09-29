@@ -108,11 +108,11 @@ public class TestData {
         return tuList(1L, language, size);
     }
 
-    public static List<TranslationUnit> tuList(long domain, LanguagePair language, int size) {
-        return tuList(0, 0L, domain, language, size);
+    public static List<TranslationUnit> tuList(long memory, LanguagePair language, int size) {
+        return tuList(0, 0L, memory, language, size);
     }
 
-    public static List<TranslationUnit> tuList(int channel, long channelPosition, long domain, LanguagePair language, int size) {
+    public static List<TranslationUnit> tuList(int channel, long channelPosition, long memory, LanguagePair language, int size) {
         ArrayList<TranslationUnit> units = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             String source = EXAMPLE_SENTENCES.get(language.source.getLanguage());
@@ -123,7 +123,7 @@ public class TestData {
                 target += " " + i;
             }
 
-            units.add(tu(channel, channelPosition++, domain, language, source, target));
+            units.add(tu(channel, channelPosition++, memory, language, source, target));
         }
         return units;
     }
@@ -132,12 +132,12 @@ public class TestData {
         return tu(1L, language);
     }
 
-    public static TranslationUnit tu(long domain, LanguagePair language) {
-        return tu(0, 0L, domain, language);
+    public static TranslationUnit tu(long memory, LanguagePair language) {
+        return tu(0, 0L, memory, language);
     }
 
-    public static TranslationUnit tu(int channel, long channelPosition, long domain, LanguagePair language) {
-        return tu(channel, channelPosition, domain, language,
+    public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguagePair language) {
+        return tu(channel, channelPosition, memory, language,
                 EXAMPLE_SENTENCES.get(language.source.getLanguage()),
                 EXAMPLE_SENTENCES.get(language.target.getLanguage()));
     }
@@ -146,12 +146,12 @@ public class TestData {
         return tu(1L, language, source, target);
     }
 
-    public static TranslationUnit tu(long domain, LanguagePair language, String source, String target) {
-        return tu(0, 0, domain, language, source, target);
+    public static TranslationUnit tu(long memory, LanguagePair language, String source, String target) {
+        return tu(0, 0, memory, language, source, target);
     }
 
-    public static TranslationUnit tu(int channel, long channelPosition, long domain, LanguagePair language, String source, String target) {
-        TranslationUnit tu = new TranslationUnit((short) channel, channelPosition, language, domain, source, target);
+    public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguagePair language, String source, String target) {
+        TranslationUnit tu = new TranslationUnit((short) channel, channelPosition, language, memory, source, target);
         tu.sourceSentence = sentence(source);
         tu.targetSentence = sentence(target);
         return tu;
@@ -199,12 +199,12 @@ public class TestData {
 
     // Deletion
 
-    public static Deletion deletion(long domain) {
-        return new Deletion((short) 1, 0, domain);
+    public static Deletion deletion(long memory) {
+        return new Deletion((short) 1, 0, memory);
     }
 
-    public static Deletion deletion(long channelPosition, long domain) {
-        return new Deletion((short) 1, channelPosition, domain);
+    public static Deletion deletion(long channelPosition, long memory) {
+        return new Deletion((short) 1, channelPosition, memory);
     }
 
     // Content

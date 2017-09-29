@@ -2,7 +2,7 @@ package eu.modernmt.rest.serializers;
 
 import com.google.gson.*;
 import eu.modernmt.model.ContextVector;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.Memory;
 import eu.modernmt.rest.model.ContextVectorResult;
 
 import java.lang.reflect.Type;
@@ -35,7 +35,7 @@ public class ContextVectorResultSerializer implements JsonSerializer<ContextVect
 
         for (ContextVector.Entry e : vector) {
             JsonObject je = new JsonObject();
-            je.add("domain", context.serialize(e.domain, Domain.class));
+            je.add("memory", context.serialize(e.memory, Memory.class));
             je.addProperty("score", e.score);
 
             array.add(je);

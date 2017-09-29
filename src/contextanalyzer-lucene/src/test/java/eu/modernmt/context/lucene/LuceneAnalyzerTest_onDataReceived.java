@@ -2,7 +2,7 @@ package eu.modernmt.context.lucene;
 
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.Memory;
 import org.junit.After;
 import org.junit.Test;
 
@@ -182,7 +182,7 @@ public class LuceneAnalyzerTest_onDataReceived {
     }
 
     @Test
-    public void multilingualAnalyzerWithMultipleDomainAllDirectionContributions() throws Throwable {
+    public void multilingualAnalyzerWithMultipleMemoryAllDirectionContributions() throws Throwable {
         setup(IT__EN, EN__FR);
 
         List<TranslationUnit> units1 = Arrays.asList(
@@ -225,11 +225,11 @@ public class LuceneAnalyzerTest_onDataReceived {
     }
 
     @Test
-    public void appendToExistingDomain() throws Throwable {
+    public void appendToExistingMemory() throws Throwable {
         setup(EN__IT);
 
         DummyBilingualCorpus corpus = TestData.corpus("dummy", EN__IT);
-        analyzer.add(new Domain(1), corpus);
+        analyzer.add(new Memory(1), corpus);
         analyzer.flush();
 
         List<TranslationUnit> units = TestData.tuList(EN__IT, 4);

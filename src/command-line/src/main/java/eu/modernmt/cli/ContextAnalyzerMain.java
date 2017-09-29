@@ -5,7 +5,7 @@ import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.lucene.LuceneAnalyzer;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.cli.*;
@@ -69,12 +69,12 @@ public class ContextAnalyzerMain {
         ArrayList<MultilingualCorpus> corpora = new ArrayList<>();
         Corpora.list(null, false, corpora, args.sourceLanguage, args.targetLanguage, args.corporaRoots);
 
-        HashMap<Domain, MultilingualCorpus> domain2corpus = new HashMap<>();
+        HashMap<Memory, MultilingualCorpus> memory2corpus = new HashMap<>();
         for (MultilingualCorpus corpus : corpora) {
             long id = Long.parseLong(corpus.getName());
 
-            Domain domain = new Domain(id);
-            domain2corpus.put(domain, corpus);
+            Memory memory = new Memory(id);
+            memory2corpus.put(memory, corpus);
         }
 
         LanguagePair direction = new LanguagePair(args.sourceLanguage, args.targetLanguage);
@@ -83,7 +83,7 @@ public class ContextAnalyzerMain {
         ContextAnalyzer contextAnalyzer = null;
         try {
             contextAnalyzer = new LuceneAnalyzer(languages, args.indexPath, eu.modernmt.context.lucene.storage.Options.prepareForBulkLoad());
-            contextAnalyzer.add(domain2corpus);
+            contextAnalyzer.add(memory2corpus);
         } finally {
             IOUtils.closeQuietly(contextAnalyzer);
         }

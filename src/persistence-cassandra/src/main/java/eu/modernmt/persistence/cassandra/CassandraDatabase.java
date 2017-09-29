@@ -20,13 +20,13 @@ import java.io.IOException;
  */
 public class CassandraDatabase extends Database {
 
-    public static final String DOMAINS_TABLE = "domains";
+    public static final String MEMORIES_TABLE = "memories";
     public static final String IMPORT_JOBS_TABLE = "import_jobs";
     public static final String COUNTERS_TABLE = "table_counters";
 
-    public static final int DOMAINS_TABLE_ID = 1;
+    public static final int MEMORIES_TABLE_ID = 1;
     public static final int IMPORT_JOBS_TABLE_ID = 2;
-    public static final int[] TABLE_IDS = {DOMAINS_TABLE_ID, IMPORT_JOBS_TABLE_ID};
+    public static final int[] TABLE_IDS = {MEMORIES_TABLE_ID, IMPORT_JOBS_TABLE_ID};
 
     private final String keyspace;
     private final String host;
@@ -86,14 +86,14 @@ public class CassandraDatabase extends Database {
     }
 
     /**
-     * This method creates and returns a DAO for Domain objects
+     * This method creates and returns a DAO for Memory objects
      *
      * @param connection a currently active connection to the DB
-     * @return A DomainDao that can perform CRUD operations for Domain objects
+     * @return A MemoryDAO that can perform CRUD operations for Memory objects
      */
     @Override
-    public DomainDAO getDomainDAO(Connection connection) {
-        return new CassandraDomainDAO((CassandraConnection) connection);
+    public MemoryDAO getMemoryDAO(Connection connection) {
+        return new CassandraMemoryDAO((CassandraConnection) connection);
     }
 
     /**
@@ -133,10 +133,10 @@ public class CassandraDatabase extends Database {
      * This method establishes a new connection to the DB
      * and uses it to create
      * - a new keyspace
-     * - a new domains table
+     * - a new memories table
      * - a new importjobs table
      * - a new table_counters table,
-     * with an entry for domain and another one for importjobs
+     * with an entry for memory and another one for importjobs
      *
      * @throws PersistenceException
      */
@@ -166,17 +166,17 @@ public class CassandraDatabase extends Database {
                     "CREATE TABLE IF NOT EXISTS " + COUNTERS_TABLE +
                             " (table_id int PRIMARY KEY, table_counter bigint);");
 
-            SimpleStatement createDomainsTable = new SimpleStatement(
-                    "CREATE TABLE IF NOT EXISTS " + DOMAINS_TABLE +
+            SimpleStatement createMemoriesTable = new SimpleStatement(
+                    "CREATE TABLE IF NOT EXISTS " + MEMORIES_TABLE +
                             " (id bigint PRIMARY KEY, name varchar);");
 
             SimpleStatement createImportJobsTable = new SimpleStatement(
                     "CREATE TABLE IF NOT EXISTS " + IMPORT_JOBS_TABLE +
-                            " (id bigint PRIMARY KEY, domain bigint, size int, \"begin\" bigint, end bigint, data_channel smallint);");
+                            " (id bigint PRIMARY KEY, memory bigint, size int, \"begin\" bigint, end bigint, data_channel smallint);");
 
 
             CassandraUtils.checkedExecute(connection, createCountersTable);
-            CassandraUtils.checkedExecute(connection, createDomainsTable);
+            CassandraUtils.checkedExecute(connection, createMemoriesTable);
             CassandraUtils.checkedExecute(connection, createImportJobsTable);
             CassandraIdGenerator.initializeTableCounter(connection, TABLE_IDS);
         } finally {

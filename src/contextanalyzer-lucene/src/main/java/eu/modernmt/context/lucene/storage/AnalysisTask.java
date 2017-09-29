@@ -1,6 +1,5 @@
 package eu.modernmt.context.lucene.storage;
 
-import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.lucene.analysis.ContextAnalyzerIndex;
 import eu.modernmt.context.lucene.analysis.DocumentBuilder;
 import eu.modernmt.io.DefaultCharset;
@@ -32,7 +31,7 @@ class AnalysisTask implements Callable<Void> {
 
     @Override
     public Void call() throws IOException {
-        long domain = bucket.getDomain();
+        long memory = bucket.getMemory();
         LanguagePair direction = bucket.getLanguageDirection();
 
         logger.info("Indexing bucket " + bucket);
@@ -40,7 +39,7 @@ class AnalysisTask implements Callable<Void> {
         try {
             Reader reader = new InputStreamReader(bucket.getContentStream(), DefaultCharset.get());
 
-            Document document = DocumentBuilder.createDocument(direction, domain, reader);
+            Document document = DocumentBuilder.createDocument(direction, memory, reader);
             index.update(document);
 
             bucket.onAnalysisCompleted();

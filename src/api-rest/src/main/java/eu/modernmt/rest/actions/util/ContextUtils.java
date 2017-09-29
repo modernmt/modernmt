@@ -2,7 +2,7 @@ package eu.modernmt.rest.actions.util;
 
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.model.ContextVector;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.Memory;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.framework.Parameters;
 
@@ -24,20 +24,20 @@ public class ContextUtils {
         HashSet<Long> ids = new HashSet<>();
         for (ContextVector context : collection) {
             for (ContextVector.Entry e : context) {
-                ids.add(e.domain.getId());
+                ids.add(e.memory.getId());
             }
         }
 
-        Map<Long, Domain> domains = ModernMT.domain.get(ids);
+        Map<Long, Memory> memories = ModernMT.memory.get(ids);
 
         for (ContextVector context : collection) {
             for (ContextVector.Entry e : context) {
-                copy(domains.get(e.domain.getId()), e.domain);
+                copy(memories.get(e.memory.getId()), e.memory);
             }
         }
     }
 
-    private static void copy(Domain from, Domain to) {
+    private static void copy(Memory from, Memory to) {
         to.setName(from.getName());
     }
 
@@ -52,23 +52,23 @@ public class ContextUtils {
             if (keyvalue.length != 2)
                 throw new Parameters.ParameterParsingException(name, value);
 
-            long domainId;
+            long memoryId;
             float score;
 
             try {
-                domainId = Long.parseLong(keyvalue[0]);
+                memoryId = Long.parseLong(keyvalue[0]);
                 score = Float.parseFloat(keyvalue[1]);
             } catch (NumberFormatException e) {
                 throw new Parameters.ParameterParsingException(name, value);
             }
 
-            if (domainId < 1)
+            if (memoryId < 1)
                 throw new Parameters.ParameterParsingException(name, value);
 
             if (score < 0.f || score > 1.f)
                 throw new Parameters.ParameterParsingException(name, value);
 
-            builder.add(domainId, score);
+            builder.add(memoryId, score);
         }
 
         return builder.build();

@@ -7,14 +7,14 @@ import java.util.Arrays;
  */
 public class ScoreEntry implements Comparable<ScoreEntry> {
 
-    public final long domain;
+    public final long memory;
     public final String[] sentence;
     public final String[] translation;
 
     public float score = 0.f;
 
-    public ScoreEntry(long domain, String[] sentence, String[] translation) {
-        this.domain = domain;
+    public ScoreEntry(long memory, String[] sentence, String[] translation) {
+        this.memory = memory;
         this.sentence = sentence;
         this.translation = translation;
     }
@@ -31,7 +31,7 @@ public class ScoreEntry implements Comparable<ScoreEntry> {
 
         ScoreEntry entry = (ScoreEntry) o;
 
-        if (domain != entry.domain) return false;
+        if (memory != entry.memory) return false;
         // Probably incorrect - comparing Object[] arrays with Arrays.equals
         if (!Arrays.equals(sentence, entry.sentence)) return false;
         // Probably incorrect - comparing Object[] arrays with Arrays.equals
@@ -40,7 +40,7 @@ public class ScoreEntry implements Comparable<ScoreEntry> {
 
     @Override
     public int hashCode() {
-        int result = (int) (domain ^ (domain >>> 32));
+        int result = (int) (memory ^ (memory >>> 32));
         result = 31 * result + Arrays.hashCode(sentence);
         result = 31 * result + Arrays.hashCode(translation);
         return result;
@@ -49,7 +49,7 @@ public class ScoreEntry implements Comparable<ScoreEntry> {
     @Override
     public String toString() {
         return "ScoreEntry{" +
-                "domain=" + domain +
+                "memory=" + memory +
                 ", sentence=" + Arrays.toString(sentence) +
                 ", translation=" + Arrays.toString(translation) +
                 ", score=" + score +

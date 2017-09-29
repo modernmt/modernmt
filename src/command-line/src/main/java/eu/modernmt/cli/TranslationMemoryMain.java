@@ -4,7 +4,7 @@ import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.cli.*;
@@ -68,12 +68,12 @@ public class TranslationMemoryMain {
         ArrayList<MultilingualCorpus> corpora = new ArrayList<>();
         Corpora.list(null, false, corpora, args.sourceLanguage, args.targetLanguage, args.corporaRoots);
 
-        HashMap<Domain, MultilingualCorpus> domain2corpus = new HashMap<>();
+        HashMap<Memory, MultilingualCorpus> memory2corpus = new HashMap<>();
         for (MultilingualCorpus corpus : corpora) {
             long id = Long.parseLong(corpus.getName());
 
-            Domain domain = new Domain(id);
-            domain2corpus.put(domain, corpus);
+            Memory memory = new Memory(id);
+            memory2corpus.put(memory, corpus);
         }
 
         LanguagePair direction = new LanguagePair(args.sourceLanguage, args.targetLanguage);
@@ -82,7 +82,7 @@ public class TranslationMemoryMain {
         LuceneTranslationMemory memory = null;
         try {
             memory = new LuceneTranslationMemory(languages, args.modelPath, 10);
-            memory.add(domain2corpus);
+            memory.add(memory2corpus);
         } finally {
             IOUtils.closeQuietly(memory);
         }

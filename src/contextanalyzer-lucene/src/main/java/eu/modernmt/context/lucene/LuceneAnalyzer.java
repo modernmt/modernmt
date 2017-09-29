@@ -10,7 +10,7 @@ import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.impl.StringCorpus;
@@ -58,22 +58,22 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     }
 
     @Override
-    public void add(Domain domain, MultilingualCorpus corpus) throws ContextAnalyzerException {
-        HashMap<Domain, MultilingualCorpus> map = new HashMap<>(1);
-        map.put(domain, corpus);
+    public void add(Memory memory, MultilingualCorpus corpus) throws ContextAnalyzerException {
+        HashMap<Memory, MultilingualCorpus> map = new HashMap<>(1);
+        map.put(memory, corpus);
 
         this.add(map);
     }
 
     @Override
-    public void add(Map<Domain, MultilingualCorpus> corpora) throws ContextAnalyzerException {
-        for (Map.Entry<Domain, MultilingualCorpus> entry : corpora.entrySet()) {
+    public void add(Map<Memory, MultilingualCorpus> corpora) throws ContextAnalyzerException {
+        for (Map.Entry<Memory, MultilingualCorpus> entry : corpora.entrySet()) {
             long id = entry.getKey().getId();
 
             try {
                 this.storage.bulkInsert(id, entry.getValue());
             } catch (IOException e) {
-                throw new ContextAnalyzerException("Unable to add domain " + id, e);
+                throw new ContextAnalyzerException("Unable to add memory " + id, e);
             }
         }
 
@@ -138,22 +138,22 @@ public class LuceneAnalyzer implements ContextAnalyzer {
             storage.flushToDisk(true, false);
             deletedFromStorage = true;
         } catch (IOException e) {
-            logger.error("Storage delete failed for domain " + deletion.domain, e);
+            logger.error("Storage delete failed for memory " + deletion.memory, e);
         }
 
         try {
-            index.delete(deletion.domain);
+            index.delete(deletion.memory);
             index.flush();
 
             deletedFromIndex = true;
         } catch (IOException e) {
-            logger.error("Index delete failed for domain " + deletion.domain, e);
+            logger.error("Index delete failed for memory " + deletion.memory, e);
         }
 
         if (!deletedFromIndex || !deletedFromStorage)
-            throw new ContextAnalyzerException("Failed to delete domain " + deletion.domain);
+            throw new ContextAnalyzerException("Failed to delete memory " + deletion.memory);
 
-        logger.info("Deleted domain " + deletion.domain);
+        logger.info("Deleted memory " + deletion.memory);
     }
 
     @Override

@@ -2,7 +2,7 @@ package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.Memory;
 import org.junit.After;
 import org.junit.Test;
 
@@ -36,7 +36,7 @@ public class LuceneTranslationMemoryTest_add {
         Set<TLuceneTranslationMemory.Entry> expectedEntries =
                 TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguageIndex(), units);
 
-        memory.add(new Domain(1), TestData.corpus("none", units));
+        memory.add(new Memory(1), TestData.corpus("none", units));
 
         assertEquals(units.size(), memory.size());
         assertEquals(expectedEntries, memory.entrySet());
@@ -44,26 +44,26 @@ public class LuceneTranslationMemoryTest_add {
     }
 
     private void testFail(List<TranslationUnit> units) throws IOException {
-        memory.add(new Domain(1), TestData.corpus("none", units));
+        memory.add(new Memory(1), TestData.corpus("none", units));
 
         assertEquals(0, memory.size());
         assertTrue(memory.entrySet().isEmpty());
     }
 
     @Test
-    public void monoDirectionalMemoryAndDirectDomain() throws Throwable {
+    public void monoDirectionalMemoryAndDirectMemory() throws Throwable {
         setup(EN__IT);
         testSuccess(TestData.tuList(EN__IT, 10));
     }
 
     @Test
-    public void monoDirectionalMemoryAndReversedDomain() throws Throwable {
+    public void monoDirectionalMemoryAndReversedMemory() throws Throwable {
         setup(EN__IT);
         testSuccess(TestData.tuList(IT__EN, 10));
     }
 
     @Test
-    public void monoDirectionalMemoryAndDialectDomain() throws Throwable {
+    public void monoDirectionalMemoryAndDialectMemory() throws Throwable {
         setup(EN__IT);
         testSuccess(TestData.tuList(EN_US__IT, 10));
     }
@@ -75,31 +75,31 @@ public class LuceneTranslationMemoryTest_add {
     }
 
     @Test
-    public void biDirectionalMemoryAndDialectDomain() throws Throwable {
+    public void biDirectionalMemoryAndDialectMemory() throws Throwable {
         setup(EN__IT, IT__EN);
         testSuccess(TestData.tuList(EN_US__IT, 10));
     }
 
     @Test
-    public void dialectMonoDirectionalMemoryAndDirectDomain() throws Throwable {
+    public void dialectMonoDirectionalMemoryAndDirectMemory() throws Throwable {
         setup(EN_US__IT);
         testFail(TestData.tuList(EN__IT, 10));
     }
 
     @Test
-    public void dialectMonoDirectionalMemoryAndReversedDomain() throws Throwable {
+    public void dialectMonoDirectionalMemoryAndReversedMemory() throws Throwable {
         setup(EN_US__IT);
         testFail(TestData.tuList(IT__EN, 10));
     }
 
     @Test
-    public void dialectMonoDirectionalMemoryAndDialectDomain() throws Throwable {
+    public void dialectMonoDirectionalMemoryAndDialectMemory() throws Throwable {
         setup(EN_US__IT);
         testSuccess(TestData.tuList(EN_US__IT, 10));
     }
 
     @Test
-    public void dialectMonoDirectionalMemoryAndDialectReversedDomain() throws Throwable {
+    public void dialectMonoDirectionalMemoryAndDialectReversedMemory() throws Throwable {
         setup(EN_US__IT);
         testSuccess(TestData.tuList(IT__EN_US, 10));
     }
@@ -111,19 +111,19 @@ public class LuceneTranslationMemoryTest_add {
     }
 
     @Test
-    public void dialectBiDirectionalMemoryAndDialectDomain() throws Throwable {
+    public void dialectBiDirectionalMemoryAndDialectMemory() throws Throwable {
         setup(EN_US__IT, IT__EN_US);
         testSuccess(TestData.tuList(EN_US__IT, 10));
     }
 
     @Test
-    public void multilingualMemoryAndOneDirectionDomain() throws Throwable {
+    public void multilingualMemoryAndOneDirectionMemory() throws Throwable {
         setup(EN__IT, FR__ES);
         testSuccess(TestData.tuList(EN__IT, 10));
     }
 
     @Test
-    public void multilingualMemoryAndAllDirectionDomain() throws Throwable {
+    public void multilingualMemoryAndAllDirectionMemory() throws Throwable {
         setup(EN__IT, FR__ES);
 
         List<TranslationUnit> units = Arrays.asList(

@@ -4,10 +4,10 @@ import eu.modernmt.config.DatabaseConfig;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.io.Paths;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.Memory;
 import eu.modernmt.persistence.Connection;
 import eu.modernmt.persistence.Database;
-import eu.modernmt.persistence.DomainDAO;
+import eu.modernmt.persistence.MemoryDAO;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.persistence.cassandra.CassandraDatabase;
 import org.apache.commons.io.IOUtils;
@@ -29,7 +29,7 @@ public class DatabaseLoader {
 
     /**
      * This method connects to a Database to interact with,
-     * and proceeds to poopulate it with the baseline domains.
+     * and proceeds to populate it with the baseline memories.
      * <p>
      * The database process can run:
      * - in the same machine (host = localhost):
@@ -70,13 +70,13 @@ public class DatabaseLoader {
             if (!database.exists()) {
                 database.create();
 
-                File baselineDomains = Paths.join(engine.getModelsPath(), "db", "baseline_domains.json");
-                List<Domain> domains = BaselineDomainsCollection.load(baselineDomains);
+                File baselineMemories = Paths.join(engine.getModelsPath(), "db", "baseline_memories.json");
+                List<Memory> memories = BaselineMemoryCollection.load(baselineMemories);
                 connection = database.getConnection();
 
-                DomainDAO domainDao = database.getDomainDAO(connection);
-                for (Domain domain : domains) {
-                    domainDao.put(domain, true);
+                MemoryDAO memoryDao = database.getMemoryDAO(connection);
+                for (Memory memory : memories) {
+                    memoryDao.put(memory, true);
 
                 }
                 logger.info("Database initialized");

@@ -4,10 +4,13 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import eu.modernmt.io.DefaultCharset;
-import eu.modernmt.model.Domain;
+import eu.modernmt.model.Memory;
 import org.apache.commons.io.IOUtils;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,28 +22,28 @@ import java.util.List;
  * It is only employed when a node is performing mmt start
  * and a DB is being build locally (in the same machine).
  */
-class BaselineDomainsCollection {
+class BaselineMemoryCollection {
 
     /**
-     * This method reads the domains json file and returns
-     * the list of domains that it contained
+     * This method reads the memories json file and returns
+     * the list of memories that it contained
      *
-     * @return the list of parsed domains
+     * @return the list of parsed memories
      */
-    public static List<Domain> load(File domainsJsonPath) {
+    public static List<Memory> load(File memoriesJsonPath) {
         Gson gson = new Gson();
         JsonReader jsonReader = null;
-        Type DOMAINS_TYPE = new TypeToken<List<Domain>>() {
+        Type MEMORIES_TYPE = new TypeToken<List<Memory>>() {
         }.getType();
 
         try {
             jsonReader = new JsonReader(
                     new InputStreamReader(
-                            new FileInputStream(domainsJsonPath),
+                            new FileInputStream(memoriesJsonPath),
                             DefaultCharset.get()
                     )
             );
-            return gson.fromJson(jsonReader, DOMAINS_TYPE);
+            return gson.fromJson(jsonReader, MEMORIES_TYPE);
         } catch (FileNotFoundException e) {
             return new ArrayList<>(0);
         } finally {

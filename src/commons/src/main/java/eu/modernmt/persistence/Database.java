@@ -1,9 +1,6 @@
 package eu.modernmt.persistence;
 
-import eu.modernmt.model.Domain;
-
 import java.io.Closeable;
-import java.util.List;
 
 /**
  * Created by davide on 21/09/16.
@@ -16,7 +13,7 @@ public abstract class Database implements Closeable {
 
     public abstract Connection getConnection(boolean cached) throws PersistenceException;
 
-    public abstract DomainDAO getDomainDAO(Connection connection);
+    public abstract MemoryDAO getMemoryDAO(Connection connection);
 
     public abstract ImportJobDAO getImportJobDAO(Connection connection);
 

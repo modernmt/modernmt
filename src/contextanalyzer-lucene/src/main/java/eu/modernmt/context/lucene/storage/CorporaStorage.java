@@ -57,8 +57,8 @@ public class CorporaStorage {
         this.analysisTimer.start();
     }
 
-    public CorpusBucket getBucket(long domain, LanguagePair direction) throws IOException {
-        return this.index.getBucket(direction, domain, false);
+    public CorpusBucket getBucket(long memory, LanguagePair direction) throws IOException {
+        return this.index.getBucket(direction, memory, false);
     }
 
     public int size() {
@@ -71,13 +71,13 @@ public class CorporaStorage {
                 continue;
 
             if (languages.isSupported(unit.direction)) {
-                CorpusBucket bucket = index.getBucket(unit.direction, unit.domain);
+                CorpusBucket bucket = index.getBucket(unit.direction, unit.memory);
                 bucket.append(unit.rawSourceSentence);
                 pendingUpdatesBuckets.add(bucket);
             }
 
             if (languages.isSupported(unit.direction.reversed())) {
-                CorpusBucket bucket = index.getBucket(unit.direction.reversed(), unit.domain);
+                CorpusBucket bucket = index.getBucket(unit.direction.reversed(), unit.memory);
                 bucket.append(unit.rawTargetSentence);
                 pendingUpdatesBuckets.add(bucket);
             }
@@ -88,7 +88,7 @@ public class CorporaStorage {
         if (!index.registerData(deletion.channel, deletion.channelPosition))
             return false;
 
-        for (CorpusBucket bucket : index.getBucketsByDomain(deletion.domain)) {
+        for (CorpusBucket bucket : index.getBucketsByMemory(deletion.memory)) {
             bucket.markForDeletion();
             pendingUpdatesBuckets.add(bucket);
         }
@@ -133,7 +133,7 @@ public class CorporaStorage {
         logger.debug("CorporaStorage index successfully written to disk");
     }
 
-    public void bulkInsert(long domain, MultilingualCorpus corpus) throws IOException {
+    public void bulkInsert(long memory, MultilingualCorpus corpus) throws IOException {
         MultilingualCorpus.MultilingualLineReader reader = null;
 
         HashMap<LanguagePair, CorpusBucket> buckets = new HashMap<>();
@@ -151,7 +151,7 @@ public class CorporaStorage {
                 if (languages.isSupported(language)) {
                     CorpusBucket bucket = buckets.computeIfAbsent(language, direction -> {
                         try {
-                            return index.getBucket(direction, domain);
+                            return index.getBucket(direction, memory);
                         } catch (IOException e) {
                             throw new RuntimeIOException(e);
                         }
@@ -165,7 +165,7 @@ public class CorporaStorage {
                 if (languages.isSupported(language)) {
                     CorpusBucket bucket = buckets.computeIfAbsent(language, direction -> {
                         try {
-                            return index.getBucket(direction, domain);
+                            return index.getBucket(direction, memory);
                         } catch (IOException e) {
                             throw new RuntimeIOException(e);
                         }
@@ -182,7 +182,7 @@ public class CorporaStorage {
             IOUtils.closeQuietly(reader);
         }
 
-        logger.info("Bulk insert of domain " + domain);
+        logger.info("Bulk insert of memory " + memory);
     }
 
     private void analyzeIfNeeded(Collection<CorpusBucket> buckets) throws IOException {

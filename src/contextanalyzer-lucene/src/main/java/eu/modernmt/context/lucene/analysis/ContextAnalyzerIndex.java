@@ -112,9 +112,9 @@ public class ContextAnalyzerIndex implements Closeable {
         this.indexWriter.updateDocument(term, document);
     }
 
-    public void delete(long domain) throws IOException {
-        Term domainTerm = DocumentBuilder.makeDomainTerm(domain);
-        this.indexWriter.deleteDocuments(domainTerm);
+    public void delete(long memory) throws IOException {
+        Term memoryTerm = DocumentBuilder.makeMemoryTerm(memory);
+        this.indexWriter.deleteDocuments(memoryTerm);
     }
 
     public void flush() throws IOException {
@@ -178,8 +178,8 @@ public class ContextAnalyzerIndex implements Closeable {
         for (ScoreDoc topDocRef : topDocs) {
             Document topDoc = searcher.doc(topDocRef.doc);
 
-            long domain = DocumentBuilder.getDomain(topDoc);
-            resultBuilder.add(domain, topDocRef.score);
+            long memory = DocumentBuilder.getMemory(topDoc);
+            resultBuilder.add(memory, topDocRef.score);
         }
 
         return resultBuilder.build();

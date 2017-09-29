@@ -1,26 +1,24 @@
-package eu.modernmt.rest.actions.domain;
+package eu.modernmt.rest.actions.memory;
 
-import eu.modernmt.data.DataManagerException;
 import eu.modernmt.facade.ModernMT;
-import eu.modernmt.persistence.PersistenceException;
+import eu.modernmt.model.Memory;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
-import eu.modernmt.rest.framework.actions.VoidAction;
+import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
 import eu.modernmt.rest.framework.routing.TemplateException;
 
 /**
  * Created by davide on 15/12/15.
  */
-@Route(aliases = "domains/:id", method = HttpMethod.DELETE)
-public class DeleteDomain extends VoidAction {
+@Route(aliases = "memories/:id", method = HttpMethod.PUT)
+public class UpdateMemories extends ObjectAction<Memory> {
 
     @Override
-    protected void execute(RESTRequest req, Parameters _params) throws PersistenceException, NotFoundException, DataManagerException {
+    protected Memory execute(RESTRequest req, Parameters _params) throws Throwable {
         Params params = (Params) _params;
-        if (!ModernMT.domain.delete(params.id))
-            throw new NotFoundException();
+        return ModernMT.memory.update(new Memory(params.id, params.name));
     }
 
     @Override
@@ -31,10 +29,12 @@ public class DeleteDomain extends VoidAction {
     public static class Params extends Parameters {
 
         private final long id;
+        private final String name;
 
         public Params(RESTRequest req) throws ParameterParsingException, TemplateException {
             super(req);
             id = req.getPathParameterAsLong("id");
+            name = getString("name", false);
         }
     }
 
