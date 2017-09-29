@@ -13,6 +13,18 @@ import java.io.IOException;
  */
 public class RESTResponse {
 
+    public static final class ApiNotFoundException extends Exception {
+        public ApiNotFoundException() {
+            super("Invalid API endpoint");
+        }
+    }
+
+    public static final class NotFoundException extends Exception {
+        public NotFoundException() {
+            super("Requested resource not found");
+        }
+    }
+
     protected final Logger logger = LogManager.getLogger(getClass());
 
     private HttpServletResponse response;
@@ -22,12 +34,12 @@ public class RESTResponse {
         this.response = response;
     }
 
-    public void resourceNotFound() {
-        resourceNotFound(null);
+    public void apiNotFound() {
+        output(HttpServletResponse.SC_NOT_FOUND, null, new ApiNotFoundException());
     }
 
-    public void resourceNotFound(Throwable e) {
-        output(HttpServletResponse.SC_NOT_FOUND, null, e);
+    public void resourceNotFound() {
+        output(HttpServletResponse.SC_NOT_FOUND, null, new NotFoundException());
     }
 
     public void badRequest() {
