@@ -4,10 +4,14 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.SimpleStatement;
+import com.datastax.driver.core.querybuilder.BuiltStatement;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.schemabuilder.DropKeyspace;
 import com.datastax.driver.core.schemabuilder.SchemaBuilder;
 import eu.modernmt.persistence.*;
 import org.apache.commons.io.IOUtils;
+
+import java.io.IOException;
 
 /**
  * Created by andrearossi on 08/03/17.
@@ -21,6 +25,7 @@ public class CassandraDatabase extends Database {
     public static final String MEMORIES_TABLE = "memories";
     public static final String IMPORT_JOBS_TABLE = "import_jobs";
     public static final String COUNTERS_TABLE = "table_counters";
+    public static final String INITIALIZATION_METADATA = "metadata";
 
     public static final int MEMORIES_TABLE_ID = 1;
     public static final int IMPORT_JOBS_TABLE_ID = 2;
@@ -79,7 +84,7 @@ public class CassandraDatabase extends Database {
      * @throws PersistenceException
      */
     @Override
-    public Connection getConnection(boolean cached) throws PersistenceException {
+    public CassandraConnection getConnection(boolean cached) throws PersistenceException {
         return new CassandraConnection(this.cluster, this.keyspace);
     }
 
@@ -134,7 +139,9 @@ public class CassandraDatabase extends Database {
      * - a new memories table
      * - a new importjobs table
      * - a new table_counters table,
+     * - a new initialization metadata table,
      * with an entry for memory and another one for importjobs
+     * and with an entry in the initialization metadata table
      *
      * @throws PersistenceException
      */
@@ -172,15 +179,20 @@ public class CassandraDatabase extends Database {
                     "CREATE TABLE IF NOT EXISTS " + IMPORT_JOBS_TABLE +
                             " (id bigint PRIMARY KEY, memory bigint, size int, \"begin\" bigint, end bigint, data_channel smallint);");
 
+            SimpleStatement createInitializationTable = new SimpleStatement(
+                    "CREATE TABLE IF NOT EXISTS " + INITIALIZATION_METADATA +
+                            " (id bigint PRIMARY KEY, initialized Boolean);");
+
 
             CassandraUtils.checkedExecute(connection, createCountersTable);
             CassandraUtils.checkedExecute(connection, createMemoriesTable);
             CassandraUtils.checkedExecute(connection, createImportJobsTable);
+            CassandraUtils.checkedExecute(connection, createInitializationTable);
+            this.populateInitializationTable();
             CassandraIdGenerator.initializeTableCounter(connection, TABLE_IDS);
         } finally {
             IOUtils.closeQuietly(connection);
         }
-
 
         /*It is necessary to close and restart the cluster object because
         * we need Cassandra to refresh its internal structures.
@@ -205,7 +217,61 @@ public class CassandraDatabase extends Database {
         return this.keyspace;
     }
 
+
+    /**
+     * This method tries to set to true the initialized field in the initialization metadata.
+     * If the field was already true, meaning that the DB was already initialized, this method will return false.
+     *
+     * @return true if could update the initialization metadata, false otherwise.
+     * @throws PersistenceException if a DB error occurs
+     */
+    @Override
+    public boolean initialize() throws PersistenceException {
+        CassandraConnection connection = null;
+        try {
+            connection = (CassandraConnection) this.getConnection();
+            BuiltStatement built = QueryBuilder.update(INITIALIZATION_METADATA).
+                    with(QueryBuilder.set("initialized", true)).
+                    where(QueryBuilder.eq("id", 1)).
+                    onlyIf(QueryBuilder.eq("initialized", false));
+            ResultSet result = CassandraUtils.checkedExecute(connection, built);
+            return result.wasApplied();
+        } finally {
+            IOUtils.closeQuietly(connection);
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        this.cluster.close();
+    }
+
     private KeyspaceMetadata getKeyspaceMetadata() {
         return this.cluster.getMetadata().getKeyspace('"' + this.keyspace + '"');
     }
+
+
+    /**
+     * This method inserts an entry id:1, initialized:false in the initialization metadata.
+     * If there is already an entry with that id, this method will do nothing.
+     *
+     * @throws PersistenceException if a DB error occurs
+     */
+    private void populateInitializationTable() throws PersistenceException {
+        CassandraConnection connection = null;
+
+        try {
+            connection = (CassandraConnection) this.getConnection();
+            String[] columns = {"id", "initialized"};
+            Object[] values = {1, false};
+            BuiltStatement built = QueryBuilder
+                    .insertInto(INITIALIZATION_METADATA)
+                    .values(columns, values)
+                    .ifNotExists();
+            CassandraUtils.checkedExecute(connection, built);
+        } finally {
+            IOUtils.closeQuietly(connection);
+        }
+    }
+
 }

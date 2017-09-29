@@ -9,19 +9,26 @@ package eu.modernmt.config;
  * (or obtained in some different way)
  */
 public class DatabaseConfig {
+    public static final int MYSQL_DEFAULT_PORT = 3306;
+    public static final int CASSANDRA_DEFAULT_PORT = 9042;
+
+    public enum TYPE {CASSANDRA, MYSQL}
 
     private boolean embedded = true;
     /*if DB enabled, at start MMT launches/connects to a DB process. If disabled, will not use any DBs. By default: enabled*/
     private boolean enabled = true;
 
+    /*db type: either Cassandra (by default) or MySQL*/
+    private TYPE type = TYPE.CASSANDRA;
+    private int port = CASSANDRA_DEFAULT_PORT;
+
     /*host and port (default localhost:3306)*/
     private String host = "localhost";
-    private int port = 3306;
+    private String name = null; //the DB name (if mysql) or keyspace name (if Cassandra)
 
-    private String name = null;
+    /*user and password are only used if this is mysql*/
     private String user = null;
     private String password = null;
-
 
     public boolean isEmbedded() {
         return this.embedded;
@@ -85,6 +92,15 @@ public class DatabaseConfig {
         this.user = user;
     }
 
+    public TYPE getType() {
+        return type;
+    }
+
+    public void setType(TYPE type) {
+        this.type = type;
+    }
+
+
     @Override
     public String toString() {
         return "[Database]\n{" +
@@ -92,6 +108,7 @@ public class DatabaseConfig {
                 ", enabled=" + enabled +
                 ", host='" + host + '\'' +
                 ", port=" + port +
+                ", type=" + type +
                 ", name='" + name + '\'' +
                 ", user='" + user + '\'' +
                 ", password='" + password + '\'' +

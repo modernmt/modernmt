@@ -1,9 +1,11 @@
 package eu.modernmt.persistence;
 
+import java.io.Closeable;
+
 /**
  * Created by davide on 21/09/16.
  */
-public abstract class Database {
+public abstract class Database implements Closeable {
 
     public final Connection getConnection() throws PersistenceException {
         return getConnection(true);
@@ -20,4 +22,6 @@ public abstract class Database {
     public abstract boolean exists() throws PersistenceException;
 
     public abstract String getName() throws PersistenceException;
+
+    public abstract boolean initialize() throws PersistenceException;
 }

@@ -1,10 +1,12 @@
 package eu.modernmt.persistence.mysql;
 
 import com.mysql.cj.jdbc.MysqlDataSource;
-import eu.modernmt.config.DatabaseConfig;
 import eu.modernmt.persistence.*;
+import eu.modernmt.persistence.mysql.utils.SQLUtils;
 
 import javax.sql.DataSource;
+import java.io.IOException;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 /**
@@ -14,8 +16,8 @@ public class MySQLDatabase extends Database {
     private String name;
     private DataSource dataSource;
 
-    public MySQLDatabase(DatabaseConfig config) {
-        this.name = config.getName();
+    public MySQLDatabase(String host, int port, String name, String user, String password) {
+        this.name = name;
 
         String params = "useUnicode=true"
                 + "&useJDBCCompliantTimezoneShift=true"
@@ -23,10 +25,12 @@ public class MySQLDatabase extends Database {
                 + "&serverTimezone=UTC";
 
         MysqlDataSource mysqlDS = new MysqlDataSource();
-        mysqlDS.setURL(config.getHost() + ":" + config.getPort() + "?" + params);
-        mysqlDS.setDatabaseName(config.getName());
-        mysqlDS.setUser(config.getUser());
-        mysqlDS.setPassword(config.getPassword());
+        mysqlDS.setURL(host + ":" + port + "?" + params);
+
+
+        mysqlDS.setDatabaseName(name);
+        mysqlDS.setUser(user);
+        mysqlDS.setPassword(password);
         this.dataSource = mysqlDS;
     }
 
@@ -67,7 +71,38 @@ public class MySQLDatabase extends Database {
     }
 
     @Override
+    public void close() throws IOException {
+        //do nothing
+    }
+
+    @Override
     public String getName() throws PersistenceException {
         return this.name;
+    }
+
+    @Override
+    public boolean initialize() throws PersistenceException {
+        java.sql.Connection connection = null;
+        PreparedStatement statement = null;
+        try {
+            String query = "UPDATE metadata SET initialized = ? WHERE id = ? AND initialized = ?";
+            connection = this.dataSource.getConnection();
+            statement = connection.prepareStatement(query);
+            statement.setBoolean(1, true);
+            statement.setLong(2, 1);
+            statement.setBoolean(3, false);
+            int affectedRows = statement.executeUpdate();
+            return affectedRows != 0;
+        } catch (SQLException e) {
+            throw new PersistenceException(e);
+        } finally {
+            SQLUtils.closeQuietly(connection);
+            SQLUtils.closeQuietly(statement);
+        }
+    }
+
+
+    public static String getDefaultName() {
+        return "default";
     }
 }
