@@ -268,10 +268,15 @@ class NMTEngineTrainer:
                 self._train_step(batch, criterion, [checkpoint_stats, report_stats])
                 step += 1
 
+
                 # Report -----------------------------------------------------------------------------------------------
                 if (step % self.opts.report_steps) == 0:
                     self._log('Step %d: %s' % (step, str(report_stats)))
                     report_stats = _Stats()
+
+                if (step % len(train_dataset)) == 0 :
+                    epoch = int(step / len(train_dataset))
+                    self._log('New epoch %d is starting at step %d' % (epoch, step))
 
                 valid_perplexity = None
 
@@ -298,13 +303,16 @@ class NMTEngineTrainer:
 
                 if valid_ppl_stalled > 0: # activate decay only if validation perplexity starts to increase
                     if step > self.optimizer.lr_start_decay_at:
+                        if self.optimizer.lr_start_decay == False:
+                            self._log('Optimizer learning rate decay activated at %d step with decay value %f; current lr value: %f' % (
+                                step, self.optimizer.lr_decay, self.optimizer.lr))
                         self.optimizer.lr_start_decay = True
-                        self._log('Optimizer learning rate decay activated at %d step with decay value %f; current lr value:%f' % (
-                            step, self.optimizer.lr_decay, self.optimizer.lr))
-                else:
+
+                else: # otherwise de-activate
+                    if self.optimizer.lr_start_decay == True:
+                        self._log('Optimizer learning rate decay de-activated at %d step; current lr value: %f' % (
+                            step, self.optimizer.lr))
                     self.optimizer.lr_start_decay = False
-                    self._log('Optimizer learning rate decay de-activated at %d step; current lr value:%f' % (
-                        step, self.optimizer.lr))
 
                 if self.optimizer.lr_start_decay and (step % self.opts.lr_decay_steps) == 0:
                     self.optimizer.updateLearningRate()
