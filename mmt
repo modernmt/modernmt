@@ -502,9 +502,9 @@ def main_translate(argv):
 
 
 def main_add(argv):
-    parser = argparse.ArgumentParser(description='Add contribution to an existent domain')
+    parser = argparse.ArgumentParser(description='Add contribution to an existent memory')
 
-    parser.add_argument('domain', help='The id or name of the domain you want to add the contribution to')
+    parser.add_argument('memory', help='The id or name of the memory you want to add the contribution to')
     parser.add_argument('source', metavar='SOURCE_SENTENCE', help='The source sentence of the contribution')
     parser.add_argument('target', metavar='TARGET_SENTENCE', help='The target sentence of the contribution')
 
@@ -518,15 +518,15 @@ def main_add(argv):
     ensure_running(node)
     ensure_api(node)
 
-    node.append_to_domain(args.domain, args.source, args.target)
+    node.append_to_memory(args.memory, args.source, args.target)
 
-    print 'SUCCESS - contribution added to domain "' + args.domain + '"'
+    print 'SUCCESS - contribution added to memory "' + args.memory + '"'
 
 
 def main_rename(argv):
-    parser = argparse.ArgumentParser(description='Rename an existent domain')
+    parser = argparse.ArgumentParser(description='Rename an existent memory')
 
-    parser.add_argument('domain', help='The id or name of the domain you want to rename')
+    parser.add_argument('memory', help='The id or name of the memory you want to rename')
     parser.add_argument('name', help='The new name')
 
     # Mixed arguments
@@ -539,13 +539,13 @@ def main_rename(argv):
     ensure_running(node)
     ensure_api(node)
 
-    domain = node.rename_domain(args.domain, args.name)
+    memory = node.rename_memory(args.memory, args.name)
 
-    print 'SUCCESS - changed domain name to "%s"' % domain['name']
+    print 'SUCCESS - changed memory name to "%s"' % memory['name']
 
 
 def main_import(argv):
-    parser = argparse.ArgumentParser(description='Import a new domain given TMX')
+    parser = argparse.ArgumentParser(description='Import a new memory given a TMX')
 
     parser.add_argument('-x', '--tmx-file', dest='tmx', metavar='TMX_FILE', help='TMX file to import', default=None)
     parser.add_argument('-p', '--parallel-files', dest='parallel_file', help='Source and target file',
@@ -570,12 +570,12 @@ def main_import(argv):
         def _import_callback(job):
             progressbar.set_progress(job['progress'])
 
-        domain = node.new_domain(corpus.name)
+        memory = node.new_memory(corpus.name)
         progressbar = Progressbar(label='Importing %s' % c.name)
         progressbar.start()
 
         try:
-            node.import_corpus(domain['id'], corpus, callback=_import_callback)
+            node.import_corpus(memory['id'], corpus, callback=_import_callback)
             progressbar.complete()
         except BaseException as e:
             progressbar.abort(repr(e))

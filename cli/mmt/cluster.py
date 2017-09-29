@@ -129,7 +129,7 @@ class ClusterNode(object):
         @staticmethod
         def _encode_context(context):
             return ','.join([('%d:%f' % (
-                el['domain']['id'] if isinstance(el['domain'], dict) else el['domain'],
+                el['memory']['id'] if isinstance(el['memory'], dict) else el['memory'],
                 el['score'])
                               ) for el in context])
 
@@ -168,15 +168,15 @@ class ClusterNode(object):
 
             return self._get('translate', params=p)
 
-        def create_domain(self, name):
+        def create_memory(self, name):
             params = {'name': name}
-            return self._post('domains', params=params)
+            return self._post('memories', params=params)
 
-        def append_to_domain(self, source, target, domain, sentence, translation):
+        def append_to_memory(self, source, target, memory, sentence, translation):
             params = {'sentence': sentence, 'translation': translation, 'source': source, 'target': target}
-            return self._post('domains/' + str(domain) + '/corpus', params=params)
+            return self._post('memories/' + str(memory) + '/corpus', params=params)
 
-        def import_into_domain(self, domain, tmx=None,
+        def import_into_memory(self, memory, tmx=None,
                                source_file=None, target_file=None, source_lang=None, target_lang=None):
             if tmx is not None:
                 params = {
@@ -192,16 +192,16 @@ class ClusterNode(object):
                     'target_local_file': target_file
                 }
 
-            return self._post('domains/' + str(domain) + '/corpus', params=params)
+            return self._post('memories/' + str(memory) + '/corpus', params=params)
 
         def get_import_job(self, id):
-            return self._get('domains/imports/' + str(id))
+            return self._get('memories/imports/' + str(id))
 
-        def get_all_domains(self):
-            return self._get('domains')
+        def get_all_memories(self):
+            return self._get('memories')
 
-        def rename_domain(self, id, name):
-            return self._put('domains/' + str(id), params={'name': name})
+        def rename_memory(self, id, name):
+            return self._put('memories/' + str(id), params={'name': name})
 
     __SIGTERM_TIMEOUT = 10  # after this amount of seconds, there is no excuse for a process to still be there.
     __LOG_FILENAME = 'node'
@@ -558,17 +558,17 @@ class ClusterNode(object):
             if not debug:
                 self.engine.clear_tempdir("tuning")
 
-    def new_domain(self, name):
-        return self.api.create_domain(name)
+    def new_memory(self, name):
+        return self.api.create_memory(name)
 
-    def import_corpus(self, domain_id, corpus, callback=None, refresh_rate_in_seconds=1):
+    def import_corpus(self, memory_id, corpus, callback=None, refresh_rate_in_seconds=1):
         if type(corpus) == TMXCorpus:
-            job = self.api.import_into_domain(domain_id, tmx=corpus.get_tmx())
+            job = self.api.import_into_memory(memory_id, tmx=corpus.get_tmx())
         elif type(corpus) == FileParallelCorpus:
             source_lang = self.engine.source_lang
             target_lang = self.engine.target_lang
 
-            job = self.api.import_into_domain(domain_id,
+            job = self.api.import_into_memory(memory_id,
                                               source_file=corpus.get_file(source_lang),
                                               target_file=corpus.get_file(target_lang),
                                               source_lang=source_lang,
@@ -586,25 +586,25 @@ class ClusterNode(object):
             if callback is not None:
                 callback(job)
 
-    def get_domain_id_by_name(self, name):
+    def get_memory_id_by_name(self, name):
         try:
             return int(name)
         except ValueError:
-            domains = self.api.get_all_domains()
-            ids = [d['id'] for d in domains if d['name'] == name]
+            memories = self.api.get_all_memories()
+            ids = [m['id'] for m in memories if m['name'] == name]
 
             if len(ids) == 0:
-                raise IllegalArgumentException('unable to find domain "%s"' % name)
+                raise IllegalArgumentException('unable to find memory "%s"' % name)
             elif len(ids) > 1:
                 raise IllegalArgumentException(
-                    'ambiguous domain name "%s", choose one of the following ids: %s' % (name, str(ids)))
+                    'ambiguous memory name "%s", choose one of the following ids: %s' % (name, str(ids)))
             else:
                 return ids[0]
 
-    def append_to_domain(self, domain, source, target):
-        domain = self.get_domain_id_by_name(domain)
-        return self.api.append_to_domain(self.engine.source_lang, self.engine.target_lang, domain, source, target)
+    def append_to_memory(self, memory, source, target):
+        memory = self.get_memory_id_by_name(memory)
+        return self.api.append_to_memory(self.engine.source_lang, self.engine.target_lang, memory, source, target)
 
-    def rename_domain(self, domain, name):
-        domain = self.get_domain_id_by_name(domain)
-        return self.api.rename_domain(domain, name)
+    def rename_memory(self, memory, name):
+        memory = self.get_memory_id_by_name(memory)
+        return self.api.rename_memory(memory, name)

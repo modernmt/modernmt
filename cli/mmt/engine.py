@@ -103,7 +103,7 @@ class FastAlign:
 
 
 class JsonDatabase:
-    class Domain:
+    class Memory:
         def __init__(self, _id, name, corpus=None):
             self.id = _id
             self.name = name
@@ -114,25 +114,25 @@ class JsonDatabase:
 
     def __init__(self, path):
         self._path = path
-        self._json_file = os.path.join(path, 'baseline_domains.json')
-        self.domains = []
+        self._json_file = os.path.join(path, 'baseline_memories.json')
+        self.memories = []
 
     def insert(self, bilingual_corpora):
         for i in xrange(len(bilingual_corpora)):
             corpus = bilingual_corpora[i]
-            self.domains.append(
-                JsonDatabase.Domain((i + 1), name=corpus.name, corpus=corpus)
+            self.memories.append(
+                JsonDatabase.Memory((i + 1), name=corpus.name, corpus=corpus)
             )
 
         # create the necessary folders if they don't already exist
         if not os.path.isdir(self._path):
             os.makedirs(self._path)
 
-        # create the json file and stores the domains inside it
+        # create the json file and stores memories inside it
         with open(self._json_file, 'w') as out:
-            json.dump([domain.to_json() for domain in self.domains], out)
+            json.dump([memory.to_json() for memory in self.memories], out)
 
-        return self.domains
+        return self.memories
 
 
 class Engine(object):
@@ -535,9 +535,9 @@ class EngineBuilder:
         if skip:
             b, m = BilingualCorpus.splitlist(self._engine.source_lang, self._engine.target_lang, roots=training_folder)
         else:
-            domains = self._engine.db.insert(args.bilingual_corpora)
+            memories = self._engine.db.insert(args.bilingual_corpora)
 
-            b = [domain.corpus.symlink(training_folder, name=str(domain.id)) for domain in domains]
+            b = [memory.corpus.symlink(training_folder, name=str(memory.id)) for memory in memories]
             m = [corpus.symlink(training_folder) for corpus in args.monolingual_corpora]
 
         args.bilingual_corpora = b

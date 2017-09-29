@@ -47,7 +47,7 @@ class Translator:
                 value = float(value)
 
                 context.append({
-                    'domain': int(id),
+                    'memory': int(id),
                     'score': value
                 })
         except ValueError:
@@ -179,7 +179,7 @@ class InteractiveTranslator(Translator):
         if self._context:
             norm = sum([e['score'] for e in self._context])
             print '>> Context:', ', '.join(
-                ['%s %.f%%' % (self._domain_to_string(score['domain']), round(score['score'] * 100 / norm)) for score in
+                ['%s %.f%%' % (self._memory_to_string(score['memory']), round(score['score'] * 100 / norm)) for score in
                  self._context]
             )
         else:
@@ -188,11 +188,11 @@ class InteractiveTranslator(Translator):
         print
 
     @staticmethod
-    def _domain_to_string(domain):
-        if isinstance(domain, int):
-            return '[' + str(domain) + ']'
+    def _memory_to_string(memory):
+        if isinstance(memory, int):
+            return '[' + str(memory) + ']'
         else:
-            return domain['name']
+            return memory['name']
 
     def execute(self, line):
         if len(line) == 0:
