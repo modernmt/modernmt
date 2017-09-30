@@ -41,8 +41,8 @@ public class LuceneTranslationMemoryTest_onDelete {
         Set<TLuceneTranslationMemory.Entry> expectedEntries =
                 TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguageIndex(), units2);
 
-        memory.add(new Memory(1), TestData.corpus("none", units1));
-        memory.add(new Memory(2), TestData.corpus("none", units2));
+        memory.bulkInsert(new Memory(1), TestData.corpus("none", units1));
+        memory.bulkInsert(new Memory(2), TestData.corpus("none", units2));
         assertEquals(20, memory.size());
 
         memory.onDelete(TestData.deletion(1));
@@ -67,8 +67,8 @@ public class LuceneTranslationMemoryTest_onDelete {
         Set<TLuceneTranslationMemory.Entry> expectedEntries =
                 TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguageIndex(), units2);
 
-        memory.add(new Memory(1), TestData.corpus("none", units1));
-        memory.add(new Memory(2), TestData.corpus("none", units2));
+        memory.bulkInsert(new Memory(1), TestData.corpus("none", units1));
+        memory.bulkInsert(new Memory(2), TestData.corpus("none", units2));
         assertEquals(14, memory.size());
 
         memory.onDelete(TestData.deletion(1));
@@ -84,8 +84,8 @@ public class LuceneTranslationMemoryTest_onDelete {
         List<TranslationUnit> units1 = TestData.tuList(1, EN__IT, 10);
         List<TranslationUnit> units2 = TestData.tuList(2, EN__IT, 10);
 
-        memory.add(new Memory(1), TestData.corpus("none", units1));
-        memory.add(new Memory(2), TestData.corpus("none", units2));
+        memory.bulkInsert(new Memory(1), TestData.corpus("none", units1));
+        memory.bulkInsert(new Memory(2), TestData.corpus("none", units2));
         assertEquals(20, memory.size());
 
         memory.onDelete(TestData.deletion(0, 1));

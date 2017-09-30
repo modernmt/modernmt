@@ -36,7 +36,7 @@ public class LuceneTranslationMemoryTest_add {
         Set<TLuceneTranslationMemory.Entry> expectedEntries =
                 TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguageIndex(), units);
 
-        memory.add(new Memory(1), TestData.corpus("none", units));
+        memory.bulkInsert(new Memory(1), TestData.corpus("none", units));
 
         assertEquals(units.size(), memory.size());
         assertEquals(expectedEntries, memory.entrySet());
@@ -44,7 +44,7 @@ public class LuceneTranslationMemoryTest_add {
     }
 
     private void testFail(List<TranslationUnit> units) throws IOException {
-        memory.add(new Memory(1), TestData.corpus("none", units));
+        memory.bulkInsert(new Memory(1), TestData.corpus("none", units));
 
         assertEquals(0, memory.size());
         assertTrue(memory.entrySet().isEmpty());

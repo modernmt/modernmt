@@ -82,7 +82,7 @@ public class TranslationMemoryMain {
         LuceneTranslationMemory memory = null;
         try {
             memory = new LuceneTranslationMemory(languages, args.modelPath, 10);
-            memory.add(memory2corpus);
+            memory.bulkInsert(memory2corpus);
         } finally {
             IOUtils.closeQuietly(memory);
         }

@@ -35,8 +35,8 @@ public class LuceneTranslationMemoryTest_search {
         units2.add(TestData.tu(EN__FR, "Hello world 2", "Bonjour monde 2"));
         units2.add(TestData.tu(EN__FR, "The test 2", "Le preuve 2"));
 
-        this.memory.add(new Memory(1), TestData.corpus("memory-1", units1));
-        this.memory.add(new Memory(2), TestData.corpus("memory-2", units2));
+        this.memory.bulkInsert(new Memory(1), TestData.corpus("memory-1", units1));
+        this.memory.bulkInsert(new Memory(2), TestData.corpus("memory-2", units2));
     }
 
     @After

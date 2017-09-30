@@ -133,12 +133,13 @@ public class LuceneTranslationMemory implements TranslationMemory {
     // TranslationMemory
 
     @Override
-    public void add(Map<Memory, MultilingualCorpus> batch) throws IOException {
+    /* This method does not store segments hash. Update of content inserted with this method is not possible */
+    public void bulkInsert(Map<Memory, MultilingualCorpus> batch) throws IOException {
         boolean success = false;
 
         try {
             for (Map.Entry<Memory, MultilingualCorpus> entry : batch.entrySet())
-                add(entry.getKey().getId(), entry.getValue());
+                bulkInsert(entry.getKey().getId(), entry.getValue());
 
             this.indexWriter.commit();
 
@@ -150,11 +151,12 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     @Override
-    public void add(Memory memory, MultilingualCorpus corpus) throws IOException {
+    /* This method does not store segments hash. Update of content inserted with this method is not possible */
+    public void bulkInsert(Memory memory, MultilingualCorpus corpus) throws IOException {
         boolean success = false;
 
         try {
-            add(memory.getId(), corpus);
+            bulkInsert(memory.getId(), corpus);
 
             this.indexWriter.commit();
 
@@ -165,7 +167,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         }
     }
 
-    private void add(long memory, MultilingualCorpus corpus) throws IOException {
+    private void bulkInsert(long memory, MultilingualCorpus corpus) throws IOException {
         MultilingualCorpus.MultilingualLineReader reader = null;
 
         try {

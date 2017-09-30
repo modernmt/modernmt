@@ -16,9 +16,11 @@ import java.util.Map;
  */
 public interface TranslationMemory extends Closeable, DataListener {
 
-    void add(Map<Memory, MultilingualCorpus> batch) throws IOException;
+    /* This method does not store segments hash. Update of content inserted with this method is not possible */
+    void bulkInsert(Map<Memory, MultilingualCorpus> batch) throws IOException;
 
-    void add(Memory memory, MultilingualCorpus corpus) throws IOException;
+    /* This method does not store segments hash. Update of content inserted with this method is not possible */
+    void bulkInsert(Memory memory, MultilingualCorpus corpus) throws IOException;
 
     ScoreEntry[] search(LanguagePair direction, Sentence source, int limit) throws IOException;
 
