@@ -201,8 +201,8 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
             channels[i] = unit.channel;
             channelPositions[i] = unit.channelPosition;
             memories[i] = unit.memory;
-            sources[i] = XUtils.encodeSentence(unit.sourceSentence);
-            targets[i] = XUtils.encodeSentence(unit.targetSentence);
+            sources[i] = XUtils.encodeSentence(unit.sentence);
+            targets[i] = XUtils.encodeSentence(unit.translation);
             alignments[i] = XUtils.encodeAlignment(unit.alignment);
 
             i++;

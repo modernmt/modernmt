@@ -20,8 +20,6 @@ public interface TranslationMemory extends Closeable, DataListener {
 
     void add(Memory memory, MultilingualCorpus corpus) throws IOException;
 
-    void add(LanguagePair direction, Memory memory, Sentence sentence, Sentence translation) throws IOException;
-
     ScoreEntry[] search(LanguagePair direction, Sentence source, int limit) throws IOException;
 
     ScoreEntry[] search(LanguagePair direction, Sentence source, ContextVector contextVector, int limit) throws IOException;

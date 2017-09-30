@@ -9,15 +9,46 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.search.*;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.NumericUtils;
 
 import java.io.IOException;
 
 /**
  * Created by davide on 24/05/17.
  */
-class SentenceQueryBuilder {
+public class QueryBuilder {
 
-    public Query build(LanguagePair direction, Sentence sentence) {
+    public static Query getByHash(long memory, LanguagePair direction, String hash) {
+        PhraseQuery hashQuery = new PhraseQuery();
+        for (String h : hash.split(" "))
+            hashQuery.add(new Term(DocumentBuilder.HASH_FIELD, h));
+
+        TermQuery langQuery = new TermQuery(
+                new Term(DocumentBuilder.LANGUAGE_FIELD, DocumentBuilder.encode(direction))
+        );
+
+        TermQuery memoryQuery = new TermQuery(
+                newLongTerm(DocumentBuilder.MEMORY_ID_FIELD, memory)
+        );
+
+        BooleanQuery query = new BooleanQuery();
+        query.add(hashQuery, BooleanClause.Occur.MUST);
+        query.add(langQuery, BooleanClause.Occur.MUST);
+        query.add(memoryQuery, BooleanClause.Occur.MUST);
+
+        return query;
+    }
+
+    public static Term memoryTerm(long memory) {
+        return newLongTerm(DocumentBuilder.MEMORY_ID_FIELD, memory);
+    }
+
+    public static Term channelsTerm() {
+        return newLongTerm(DocumentBuilder.MEMORY_ID_FIELD, 0);
+    }
+
+    public static Query bestMatchingSuggestion(LanguagePair direction, Sentence sentence) {
         int length = sentence.getWords().length;
         boolean isLongQuery = length > 4;
 
@@ -54,5 +85,12 @@ class SentenceQueryBuilder {
         } catch (IOException e) {
             throw new Error("This should never happen", e);
         }
+    }
+
+    private static Term newLongTerm(String field, long value) {
+        BytesRefBuilder builder = new BytesRefBuilder();
+        NumericUtils.longToPrefixCoded(value, 0, builder);
+
+        return new Term(field, builder.toBytesRef());
     }
 }

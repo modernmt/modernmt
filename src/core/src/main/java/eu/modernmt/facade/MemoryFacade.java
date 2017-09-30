@@ -140,6 +140,36 @@ public class MemoryFacade {
         }
     }
 
+    public ImportJob replace(LanguagePair direction, long memoryId, String sentence, String translation,
+                             String previousSentence, String previousTranslation)
+            throws DataManagerException, PersistenceException {
+        Connection connection = null;
+        Database db = ModernMT.getNode().getDatabase();
+
+        try {
+            connection = db.getConnection();
+
+            MemoryDAO memoryDAO = db.getMemoryDAO(connection);
+            Memory memory = memoryDAO.retrieve(memoryId);
+
+            if (memory == null)
+                return null;
+
+            DataManager dataManager = ModernMT.getNode().getDataManager();
+            ImportJob job = dataManager.replace(direction, memoryId, sentence, translation,
+                    previousSentence, previousTranslation, DataManager.CONTRIBUTIONS_CHANNEL_ID);
+
+            if (job == null)
+                return null;
+
+            // Don't store ephemeral ImportJob!
+
+            return job;
+        } finally {
+            IOUtils.closeQuietly(connection);
+        }
+    }
+
     public ImportJob add(long memoryId, MultilingualCorpus corpus) throws PersistenceException, DataManagerException {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();

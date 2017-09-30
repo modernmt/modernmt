@@ -21,8 +21,6 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Version;
 
 import java.io.File;
@@ -40,7 +38,6 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
     private final int minQuerySize;
     private final Directory indexDirectory;
-    private final SentenceQueryBuilder queries;
     private final Rescorer rescorer;
     private final IndexWriter indexWriter;
     private final LanguageIndex languages;
@@ -69,7 +66,6 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
     public LuceneTranslationMemory(LanguageIndex languages, Directory directory, Rescorer rescorer, int minQuerySize) throws IOException {
         this.indexDirectory = directory;
-        this.queries = new SentenceQueryBuilder();
         this.rescorer = rescorer;
         this.languages = languages;
         this.minQuerySize = minQuerySize;
@@ -85,10 +81,9 @@ public class LuceneTranslationMemory implements TranslationMemory {
         if (DirectoryReader.indexExists(this.indexDirectory)) {
             IndexReader reader = this.getIndexReader();
 
-            Term term = newLongTerm(DocumentBuilder.MEMORY_ID_FIELD, 0);
             IndexSearcher searcher = new IndexSearcher(reader);
 
-            Query query = new TermQuery(term);
+            Query query = new TermQuery(QueryBuilder.channelsTerm());
             TopDocs docs = searcher.search(query, 1);
 
             if (docs.scoreDocs.length > 0) {
@@ -100,13 +95,6 @@ public class LuceneTranslationMemory implements TranslationMemory {
         } else {
             this.channels = new HashMap<>();
         }
-    }
-
-    private static Term newLongTerm(String field, long value) {
-        BytesRefBuilder builder = new BytesRefBuilder();
-        NumericUtils.longToPrefixCoded(value, 0, builder);
-
-        return new Term(field, builder.toBytesRef());
     }
 
     public LanguageIndex getLanguageIndex() {
@@ -136,6 +124,10 @@ public class LuceneTranslationMemory implements TranslationMemory {
     public IndexSearcher getIndexSearcher() throws IOException {
         getIndexReader();
         return this._indexSearcher;
+    }
+
+    public IndexWriter getIndexWriter() {
+        return this.indexWriter;
     }
 
     // TranslationMemory
@@ -202,13 +194,6 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     @Override
-    public void add(LanguagePair direction, Memory memory, Sentence sentence, Sentence translation) throws IOException {
-        Document document = DocumentBuilder.build(direction, memory.getId(), sentence, translation);
-        this.indexWriter.addDocument(document);
-        this.indexWriter.commit();
-    }
-
-    @Override
     public ScoreEntry[] search(LanguagePair direction, Sentence source, int limit) throws IOException {
         return search(direction, source, null, this.rescorer, limit);
     }
@@ -223,7 +208,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     public ScoreEntry[] search(LanguagePair direction, Sentence source, ContextVector contextVector, Rescorer rescorer, int limit) throws IOException {
-        Query query = this.queries.build(direction, source);
+        Query query = QueryBuilder.bestMatchingSuggestion(direction, source);
 
         IndexSearcher searcher = getIndexSearcher();
 
@@ -265,14 +250,20 @@ public class LuceneTranslationMemory implements TranslationMemory {
                 if (currentPosition == null || currentPosition < unit.channelPosition) {
                     newChannels.put(unit.channel, unit.channelPosition);
 
+                    if (unit.rawPreviousSentence != null && unit.rawPreviousTranslation != null) {
+                        String hash = HashGenerator.hash(unit.rawPreviousSentence, unit.rawPreviousTranslation);
+                        Query hashQuery = QueryBuilder.getByHash(unit.memory, unit.direction, hash);
+
+                        this.indexWriter.deleteDocuments(hashQuery);
+                    }
+
                     Document document = DocumentBuilder.build(unit);
                     this.indexWriter.addDocument(document);
                 }
             }
 
-            Term id = newLongTerm(DocumentBuilder.MEMORY_ID_FIELD, 0);
             Document channelsDocument = DocumentBuilder.build(newChannels);
-            this.indexWriter.updateDocument(id, channelsDocument);
+            this.indexWriter.updateDocument(QueryBuilder.channelsTerm(), channelsDocument);
 
             this.indexWriter.commit();
 
@@ -289,14 +280,12 @@ public class LuceneTranslationMemory implements TranslationMemory {
         Long currentPosition = this.channels.get(deletion.channel);
 
         if (currentPosition == null || currentPosition < deletion.channelPosition) {
-            Term deleteId = newLongTerm(DocumentBuilder.MEMORY_ID_FIELD, deletion.memory);
-            this.indexWriter.deleteDocuments(deleteId);
+            this.indexWriter.deleteDocuments(QueryBuilder.memoryTerm(deletion.memory));
 
             this.channels.put(deletion.channel, deletion.channelPosition);
 
-            Term channelsId = newLongTerm(DocumentBuilder.MEMORY_ID_FIELD, 0);
             Document channelsDocument = DocumentBuilder.build(this.channels);
-            this.indexWriter.updateDocument(channelsId, channelsDocument);
+            this.indexWriter.updateDocument(QueryBuilder.channelsTerm(), channelsDocument);
             this.indexWriter.commit();
         }
     }

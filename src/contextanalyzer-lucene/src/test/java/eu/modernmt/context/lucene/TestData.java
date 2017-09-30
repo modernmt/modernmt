@@ -151,9 +151,9 @@ public class TestData {
     }
 
     public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguagePair language, String source, String target) {
-        TranslationUnit tu = new TranslationUnit((short) channel, channelPosition, language, memory, source, target);
-        tu.sourceSentence = sentence(source);
-        tu.targetSentence = sentence(target);
+        TranslationUnit tu = new TranslationUnit((short) channel, channelPosition, language, memory, source, target, null, null);
+        tu.sentence = sentence(source);
+        tu.translation = sentence(target);
         return tu;
     }
 
@@ -165,7 +165,7 @@ public class TestData {
         HashSet<String> terms = new HashSet<>();
         for (TranslationUnit unit : units) {
             if (direction == null || unit.direction.equals(direction)) {
-                String text = source ? unit.rawSourceSentence : unit.rawTargetSentence;
+                String text = source ? unit.rawSentence : unit.rawTranslation;
                 terms.addAll(Arrays.asList(text.split(" ")));
             }
         }
@@ -181,7 +181,7 @@ public class TestData {
         StringBuilder builder = new StringBuilder();
         for (TranslationUnit unit : units) {
             if (direction == null || unit.direction.equals(direction)) {
-                builder.append(source ? unit.rawSourceSentence : unit.rawTargetSentence);
+                builder.append(source ? unit.rawSentence : unit.rawTranslation);
                 builder.append('\n');
             }
         }

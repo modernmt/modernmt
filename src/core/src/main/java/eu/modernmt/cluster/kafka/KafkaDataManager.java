@@ -207,7 +207,7 @@ public class KafkaDataManager implements DataManager {
             if (pair == null)
                 return null;
 
-            importEnd = importBegin = sendElement(KafkaPacket.createUpdate(pair.language, memory, pair.source, pair.target), true, channel);
+            importEnd = importBegin = sendElement(KafkaPacket.createAddition(pair.language, memory, pair.source, pair.target), true, channel);
             size++;
 
             pair = reader.read();
@@ -217,9 +217,9 @@ public class KafkaDataManager implements DataManager {
                 pair = reader.read();
 
                 if (pair == null)
-                    importEnd = sendElement(KafkaPacket.createUpdate(current.language, memory, current.source, current.target), true, channel);
+                    importEnd = sendElement(KafkaPacket.createAddition(current.language, memory, current.source, current.target), true, channel);
                 else
-                    sendElement(KafkaPacket.createUpdate(current.language, memory, current.source, current.target), false, channel);
+                    sendElement(KafkaPacket.createAddition(current.language, memory, current.source, current.target), false, channel);
 
                 size++;
             }
@@ -243,16 +243,30 @@ public class KafkaDataManager implements DataManager {
     }
 
     @Override
-    public ImportJob upload(LanguagePair direction, long memory, String sourceSentence, String targetSentence, short channel) throws DataManagerException {
-        return upload(direction, memory, sourceSentence, targetSentence, getDataChannel(channel));
+    public ImportJob upload(LanguagePair direction, long memory, String sentence, String translation, short channel) throws DataManagerException {
+        return upload(direction, memory, sentence, translation, getDataChannel(channel));
     }
 
     @Override
-    public ImportJob upload(LanguagePair direction, long memory, String sourceSentence, String targetSentence, DataChannel channel) throws DataManagerException {
+    public ImportJob upload(LanguagePair direction, long memory, String sentence, String translation, DataChannel channel) throws DataManagerException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 
-        long offset = sendElement(KafkaPacket.createUpdate(direction, memory, sourceSentence, targetSentence), true, channel);
+        long offset = sendElement(KafkaPacket.createAddition(direction, memory, sentence, translation), true, channel);
+        return ImportJob.createEphemeralJob(offset, channel.getId());
+    }
+
+    @Override
+    public ImportJob replace(LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, short channel) throws DataManagerException {
+        return replace(direction, memory, sentence, translation, previousSentence, previousTranslation, getDataChannel(channel));
+    }
+
+    @Override
+    public ImportJob replace(LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, DataChannel channel) throws DataManagerException {
+        if (this.producer == null)
+            throw new IllegalStateException("connect() not called");
+
+        long offset = sendElement(KafkaPacket.createOverwrite(direction, memory, sentence, translation, previousSentence, previousTranslation), true, channel);
         return ImportJob.createEphemeralJob(offset, channel.getId());
     }
 

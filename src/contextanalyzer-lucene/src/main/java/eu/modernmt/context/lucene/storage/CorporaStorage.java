@@ -72,13 +72,13 @@ public class CorporaStorage {
 
             if (languages.isSupported(unit.direction)) {
                 CorpusBucket bucket = index.getBucket(unit.direction, unit.memory);
-                bucket.append(unit.rawSourceSentence);
+                bucket.append(unit.rawSentence);
                 pendingUpdatesBuckets.add(bucket);
             }
 
             if (languages.isSupported(unit.direction.reversed())) {
                 CorpusBucket bucket = index.getBucket(unit.direction.reversed(), unit.memory);
-                bucket.append(unit.rawTargetSentence);
+                bucket.append(unit.rawTranslation);
                 pendingUpdatesBuckets.add(bucket);
             }
         }

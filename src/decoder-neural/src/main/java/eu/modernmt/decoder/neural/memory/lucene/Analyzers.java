@@ -1,15 +1,19 @@
 package eu.modernmt.decoder.neural.memory.lucene;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.miscellaneous.LimitTokenCountAnalyzer;
 import org.apache.lucene.analysis.shingle.ShingleFilter;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.FilteringTokenFilter;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 /**
@@ -20,33 +24,65 @@ public class Analyzers {
     private static final int SHINGLE_SIZE = 2;
 
     private static Analyzer trainAnalyzer = null;
+    private static Analyzer hashAnalyzer = null;
     private static Analyzer shortQueryAnalyzer = null;
     private static Analyzer longQueryAnalyzer = null;
 
     public static Analyzer getTrainAnalyzer() {
         if (trainAnalyzer == null)
-            trainAnalyzer = new CustomAnalyzer(SHINGLE_SIZE, true);
+            trainAnalyzer = new TrainAnalyzer();
         return trainAnalyzer;
+    }
+
+    public static Analyzer getHashAnalyzer() {
+        if (hashAnalyzer == null)
+            hashAnalyzer = new HashAnalyzer();
+        return hashAnalyzer;
     }
 
     public static Analyzer getShortQueryAnalyzer() {
         if (shortQueryAnalyzer == null)
-            shortQueryAnalyzer = new CustomAnalyzer(0, true);
+            shortQueryAnalyzer = new ContentAnalyzer(0, true);
         return shortQueryAnalyzer;
     }
 
     public static Analyzer getLongQueryAnalyzer() {
         if (longQueryAnalyzer == null)
-            longQueryAnalyzer = new CustomAnalyzer(SHINGLE_SIZE, false);
+            longQueryAnalyzer = new ContentAnalyzer(SHINGLE_SIZE, false);
         return longQueryAnalyzer;
     }
 
-    private static class CustomAnalyzer extends Analyzer {
+    public static final class TrainAnalyzer extends DelegatingAnalyzerWrapper {
+
+        public TrainAnalyzer() {
+            super(PER_FIELD_REUSE_STRATEGY);
+        }
+
+        @Override
+        protected Analyzer getWrappedAnalyzer(String fieldName) {
+            if (DocumentBuilder.HASH_FIELD.equals(fieldName))
+                return getHashAnalyzer();
+            else
+                return new ContentAnalyzer(SHINGLE_SIZE, true);
+        }
+
+    }
+
+    private static final class HashAnalyzer extends Analyzer {
+
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+            return new TokenStreamComponents(new WhitespaceTokenizer(reader));
+        }
+
+    }
+
+    private static final class ContentAnalyzer extends Analyzer {
 
         private final int shingleSize;
         private final boolean outputUnigrams;
 
-        public CustomAnalyzer(int shingleSize, boolean outputUnigrams) {
+        public ContentAnalyzer(int shingleSize, boolean outputUnigrams) {
             this.shingleSize = shingleSize;
             this.outputUnigrams = outputUnigrams;
         }
@@ -69,7 +105,7 @@ public class Analyzers {
 
     }
 
-    private static class PunctuationFilter extends FilteringTokenFilter {
+    private static final class PunctuationFilter extends FilteringTokenFilter {
 
         private static final Pattern REGEX = Pattern.compile("\\p{Punct}");
 

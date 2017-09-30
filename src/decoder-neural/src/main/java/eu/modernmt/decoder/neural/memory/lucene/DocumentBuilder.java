@@ -16,32 +16,38 @@ import java.util.Map;
 /**
  * Created by davide on 23/05/17.
  */
-class DocumentBuilder {
+public class DocumentBuilder {
 
     private static final String CHANNELS_FIELD = "channels";
 
     public static final String MEMORY_ID_FIELD = "memory";
+    public static final String HASH_FIELD = "hash";
     public static final String LANGUAGE_FIELD = "language";
     private static final String CONTENT_PREFIX_FIELD = "content::";
 
     // TranslationUnit entries
 
     public static Document build(TranslationUnit unit) {
-        return build(unit.direction, unit.memory, unit.sourceSentence, unit.targetSentence);
-    }
+        String sentence = TokensOutputStream.toString(unit.sentence, false, true);
+        String translation = TokensOutputStream.toString(unit.translation, false, true);
+        String hash = HashGenerator.hash(unit.rawSentence, unit.rawTranslation);
 
-    public static Document build(LanguagePair direction, long memory, Sentence sentence, Sentence translation) {
-        String s = TokensOutputStream.toString(sentence, false, true);
-        String t = TokensOutputStream.toString(translation, false, true);
-        return build(direction, memory, s, t);
+        return build(unit.direction, unit.memory, sentence, translation, hash);
     }
 
     public static Document build(LanguagePair direction, long memory, String sentence, String translation) {
+        return build(direction, memory, sentence, translation, null);
+    }
+
+    public static Document build(LanguagePair direction, long memory, String sentence, String translation, String hash) {
         Document document = new Document();
         document.add(new LongField(MEMORY_ID_FIELD, memory, Field.Store.YES));
         document.add(new StringField(LANGUAGE_FIELD, encode(direction), Field.Store.YES));
         document.add(new TextField(getContentFieldName(direction.source), sentence, Field.Store.YES));
         document.add(new TextField(getContentFieldName(direction.target), translation, Field.Store.YES));
+
+        if (hash != null)
+            document.add(new HashField(HASH_FIELD, hash, Field.Store.NO));
 
         return document;
     }

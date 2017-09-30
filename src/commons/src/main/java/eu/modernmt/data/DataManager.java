@@ -30,9 +30,13 @@ public interface DataManager extends Closeable {
 
     ImportJob upload(long memory, MultilingualCorpus corpus, DataChannel channel) throws DataManagerException;
 
-    ImportJob upload(LanguagePair direction, long memory, String sourceSentence, String targetSentence, short channel) throws DataManagerException;
+    ImportJob upload(LanguagePair direction, long memory, String sentence, String translation, short channel) throws DataManagerException;
 
-    ImportJob upload(LanguagePair direction, long memory, String sourceSentence, String targetSentence, DataChannel channel) throws DataManagerException;
+    ImportJob upload(LanguagePair direction, long memory, String sentence, String translation, DataChannel channel) throws DataManagerException;
+
+    ImportJob replace(LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, short channel) throws DataManagerException;
+
+    ImportJob replace(LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, DataChannel channel) throws DataManagerException;
 
     void delete(long memory) throws DataManagerException;
 

@@ -110,9 +110,13 @@ public class TestData {
     }
 
     public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguagePair language, String source, String target) {
-        TranslationUnit tu = new TranslationUnit((short) channel, channelPosition, language, memory, source, target);
-        tu.sourceSentence = sentence(source);
-        tu.targetSentence = sentence(target);
+        return tu(channel, channelPosition, memory, language, source, target, null, null);
+    }
+
+    public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguagePair language, String source, String target, String previousSource, String previousTarget) {
+        TranslationUnit tu = new TranslationUnit((short) channel, channelPosition, language, memory, source, target, previousSource, previousTarget);
+        tu.sentence = sentence(source);
+        tu.translation = sentence(target);
         return tu;
     }
 
@@ -150,7 +154,7 @@ public class TestData {
                         if (index < units.size()) {
                             TranslationUnit unit = units.get(index++);
 
-                            return new StringPair(unit.direction, unit.rawSourceSentence, unit.rawTargetSentence);
+                            return new StringPair(unit.direction, unit.rawSentence, unit.rawTranslation);
                         } else {
                             return null;
                         }

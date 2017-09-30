@@ -74,9 +74,9 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
 
                 Entry entry;
                 if (source.compareTo(target) < 0)
-                    entry = new Entry(unit.memory, direction, unit.rawSourceSentence, unit.rawTargetSentence);
+                    entry = new Entry(unit.memory, direction, unit.rawSentence, unit.rawTranslation);
                 else
-                    entry = new Entry(unit.memory, direction.reversed(), unit.rawTargetSentence, unit.rawSourceSentence);
+                    entry = new Entry(unit.memory, direction.reversed(), unit.rawTranslation, unit.rawSentence);
 
                 result.add(entry);
             }

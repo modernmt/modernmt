@@ -138,8 +138,8 @@ class DataBatch {
 
         public void add(TranslationUnit unit) {
             units.add(unit);
-            sources.add(unit.rawSourceSentence);
-            targets.add(unit.rawTargetSentence);
+            sources.add(unit.rawSentence);
+            targets.add(unit.rawTranslation);
         }
 
         public void process(Engine engine) throws ProcessingException, AlignerException {
@@ -162,8 +162,8 @@ class DataBatch {
 
                 for (int i = 0; i < units.size(); i++) {
                     TranslationUnit unit = units.get(i);
-                    unit.sourceSentence = sourceSentences.get(i);
-                    unit.targetSentence = targetSentences.get(i);
+                    unit.sentence = sourceSentences.get(i);
+                    unit.translation = targetSentences.get(i);
 
                     if (alignments != null)
                         unit.alignment = alignments[i];
