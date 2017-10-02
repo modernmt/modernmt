@@ -1,11 +1,11 @@
 import argparse
 import json
-import os
+import logging
 import sys
 
-from nmmt import NMTDecoder, Suggestion
+import os
 
-import logging
+from nmmt import Suggestion, NMTDecoder
 
 
 # I/O definitions
@@ -106,6 +106,14 @@ class JSONLogFormatter(logging.Formatter):
             'message': message,
             'logger': record.name
         }).replace('\n', ' ')
+
+
+# TM Decoder
+# ======================================================================================================================
+class _TMDecoder(object):
+    def translate(self, source_lang, target_lang, text, suggestions=None, n_best=1,
+                  tuning_epochs=None, tuning_learning_rate=None):
+        return suggestions[0].target if len(suggestions) > 0 else ''
 
 
 # Main function
