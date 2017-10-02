@@ -240,12 +240,12 @@ public class KafkaDataManager implements DataManager {
     }
 
     @Override
-    public ImportJob upload(LanguagePair direction, long memory, String sentence, String translation, short channel, Date timestamp) throws DataManagerException {
-        return upload(direction, memory, sentence, translation, getDataChannel(channel), timestamp);
+    public ImportJob upload(LanguagePair direction, long memory, String sentence, String translation, Date timestamp, short channel) throws DataManagerException {
+        return upload(direction, memory, sentence, translation, timestamp, getDataChannel(channel));
     }
 
     @Override
-    public ImportJob upload(LanguagePair direction, long memory, String sentence, String translation, DataChannel channel, Date timestamp) throws DataManagerException {
+    public ImportJob upload(LanguagePair direction, long memory, String sentence, String translation, Date timestamp, DataChannel channel) throws DataManagerException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
         long offset = sendElement(KafkaPacket.createAddition(direction, memory, sentence, translation, timestamp), true, channel);
@@ -253,12 +253,12 @@ public class KafkaDataManager implements DataManager {
     }
 
     @Override
-    public ImportJob replace(LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, short channel, Date timestamp) throws DataManagerException {
-        return replace(direction, memory, sentence, translation, previousSentence, previousTranslation, getDataChannel(channel), timestamp);
+    public ImportJob replace(LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, short channel) throws DataManagerException {
+        return replace(direction, memory, sentence, translation, previousSentence, previousTranslation, timestamp, getDataChannel(channel));
     }
 
     @Override
-    public ImportJob replace(LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, DataChannel channel, Date timestamp) throws DataManagerException {
+    public ImportJob replace(LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, DataChannel channel) throws DataManagerException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 
