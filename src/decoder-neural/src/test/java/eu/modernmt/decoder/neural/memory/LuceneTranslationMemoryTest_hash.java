@@ -41,14 +41,14 @@ public class LuceneTranslationMemoryTest_hash {
         setup(EN__IT, EN__FR);
 
         IndexWriter indexWriter = memory.getIndexWriter();
-        indexWriter.addDocument(DocumentBuilder.build(EN__IT, 2, "2-1", "2-1", "A B C"));
-        indexWriter.addDocument(DocumentBuilder.build(EN__IT, 1, "1-1", "1-1", "A B C"));
-        indexWriter.addDocument(DocumentBuilder.build(EN__FR, 1, "1-1F", "1-1F", "A B C"));
-        indexWriter.addDocument(DocumentBuilder.build(EN__IT, 1, "1-2", "1-2", "C B A"));
-        indexWriter.addDocument(DocumentBuilder.build(EN__IT, 1, "1-3", "1-3", "C B Z"));
+        indexWriter.addDocument(DocumentBuilder.build(EN__IT, 2, "2-1", "2-1", "A B C D"));
+        indexWriter.addDocument(DocumentBuilder.build(EN__IT, 1, "1-1", "1-1", "A B C D"));
+        indexWriter.addDocument(DocumentBuilder.build(EN__FR, 1, "1-1F", "1-1F", "A B C D"));
+        indexWriter.addDocument(DocumentBuilder.build(EN__IT, 1, "1-2", "1-2", "D C B A"));
+        indexWriter.addDocument(DocumentBuilder.build(EN__IT, 1, "1-3", "1-3", "D C B Z"));
         indexWriter.commit();
 
-        Query query = QueryBuilder.getByHash(1, EN__IT, "A B C");
+        Query query = QueryBuilder.getByHash(1, EN__IT, "A B C D");
 
         IndexSearcher searcher = memory.getIndexSearcher();
         ScoreDoc[] result = searcher.search(query, 10).scoreDocs;
