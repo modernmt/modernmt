@@ -4,7 +4,6 @@ import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.Sentence;
 import org.apache.lucene.document.*;
 import org.apache.lucene.util.BytesRef;
 
@@ -30,7 +29,7 @@ public class DocumentBuilder {
     public static Document build(TranslationUnit unit) {
         String sentence = TokensOutputStream.toString(unit.sentence, false, true);
         String translation = TokensOutputStream.toString(unit.translation, false, true);
-        String hash = HashGenerator.hash(unit.rawSentence, unit.rawTranslation);
+        String hash = HashGenerator.hash(unit.direction, unit.rawSentence, unit.rawTranslation);
 
         return build(unit.direction, unit.memory, sentence, translation, hash);
     }

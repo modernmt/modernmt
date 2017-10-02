@@ -1,51 +1,58 @@
 package eu.modernmt.decoder.neural.memory.lucene;
 
+import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.lang.LanguagePair;
+
 /**
  * Created by davide on 30/09/17.
  */
 class HashGenerator {
 
+    private static final long TRUE_HASH_SIZE = 1L << 40;
+    private static final long TRUE_HASH_MASK = TRUE_HASH_SIZE - 1;
+    private static final long FNV_PRIME = 1099511628211L;
+    private static final long FNV_OFFSET_BASIS = 0xcbf29ce484222325L;
     private static final String CHARS = "0123456789ABCDEF";
 
-    public static String hash(String sentence, String translation) {
-        if (sentence.compareTo(translation) > 0) {
+    public static String hash(LanguagePair direction, String sentence, String translation) {
+        String l1 = direction.source.toLanguageTag();
+        String l2 = direction.target.toLanguageTag();
+
+        if (l1.compareTo(l2) > 0) {
             String tmp = sentence;
             sentence = translation;
             translation = tmp;
         }
 
-        long h1 = get30BitHash(sentence);
-        long h2 = get30BitHash(translation);
+        long h1_40bit = FNV_1a_lazy_mod_mapping(sentence);
+        long h2_40bit = FNV_1a_lazy_mod_mapping(translation);
 
-        long hash = (h1 << 30) + h2;
+        char[] string = new char[23];
 
-        char[] string = new char[17];
-
-        toHex((int)(hash & 0xFFFFF), string, 12);
-        hash >>>= 20;
-        toHex((int)(hash & 0xFFFFF), string, 6);
-        hash >>>= 20;
-        toHex((int)(hash & 0xFFFFF), string, 0);
-
+        toHex((int) ((h1_40bit >>> 20) & 0xFFFFF), string, 0);
         string[5] = ' ';
+        toHex((int) (h1_40bit & 0xFFFFF), string, 6);
         string[11] = ' ';
+        toHex((int) ((h2_40bit >>> 20) & 0xFFFFF), string, 12);
+        string[17] = ' ';
+        toHex((int) (h2_40bit & 0xFFFFF), string, 18);
 
         return new String(string);
     }
 
-    private static int get30BitHash(String sentence) {
-        int hash = sentence.hashCode();
+    private static long FNV_1a_lazy_mod_mapping(String sentence) {
+        long hash = FNV_OFFSET_BASIS;
+        for (byte b : sentence.getBytes(DefaultCharset.get())) {
+            hash ^= (b & 0xff);
+            hash *= FNV_PRIME;
+        }
 
-        if ((hash & 0x1) > 0)
-            hash >>>= 1;
-        hash >>>= 1;
-
-        return hash & 0x3FFFFFFF;
+        return (hash % TRUE_HASH_SIZE) & TRUE_HASH_MASK;
     }
 
     private static void toHex(int b20, char[] dest, int offset) {
         for (int i = 5; i > 0; i--) {
-            dest[offset + i - 1]= CHARS.charAt(b20 & 0xF);
+            dest[offset + i - 1] = CHARS.charAt(b20 & 0xF);
             b20 >>>= 4;
         }
     }

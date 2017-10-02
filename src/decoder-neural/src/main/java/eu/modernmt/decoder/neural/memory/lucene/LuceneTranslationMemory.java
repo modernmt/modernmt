@@ -17,7 +17,10 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -253,7 +256,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
                     newChannels.put(unit.channel, unit.channelPosition);
 
                     if (unit.rawPreviousSentence != null && unit.rawPreviousTranslation != null) {
-                        String hash = HashGenerator.hash(unit.rawPreviousSentence, unit.rawPreviousTranslation);
+                        String hash = HashGenerator.hash(unit.direction, unit.rawPreviousSentence, unit.rawPreviousTranslation);
                         Query hashQuery = QueryBuilder.getByHash(unit.memory, unit.direction, hash);
 
                         this.indexWriter.deleteDocuments(hashQuery);
