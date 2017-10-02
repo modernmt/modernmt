@@ -19,19 +19,10 @@ def makedirs(name, mode=0777, exist_ok=False):
 
 
 def linecount(f):
-    blank_line = False
-
     with open(f) as stream:
         count = 0
         for _, line in enumerate(stream):
-            if blank_line:
-                count += 1
-                blank_line = False
-
-            if len(line.rstrip('\n')) == 0:
-                blank_line = True
-            else:
-                count += 1
+            count += 1
 
     return count
 
