@@ -1,10 +1,11 @@
 package eu.modernmt.data;
 
-import eu.modernmt.model.ImportJob;
 import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.io.Closeable;
+import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -30,13 +31,13 @@ public interface DataManager extends Closeable {
 
     ImportJob upload(long memory, MultilingualCorpus corpus, DataChannel channel) throws DataManagerException;
 
-    ImportJob upload(LanguagePair direction, long memory, String sentence, String translation, short channel) throws DataManagerException;
+    ImportJob upload(LanguagePair direction, long memory, String sentence, String translation, short channel, Date timestamp) throws DataManagerException;
 
-    ImportJob upload(LanguagePair direction, long memory, String sentence, String translation, DataChannel channel) throws DataManagerException;
+    ImportJob upload(LanguagePair direction, long memory, String sentence, String translation, DataChannel channel, Date timestamp) throws DataManagerException;
 
-    ImportJob replace(LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, short channel) throws DataManagerException;
+    ImportJob replace(LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, short channel, Date timestamp) throws DataManagerException;
 
-    ImportJob replace(LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, DataChannel channel) throws DataManagerException;
+    ImportJob replace(LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, DataChannel channel, Date timestamp) throws DataManagerException;
 
     void delete(long memory) throws DataManagerException;
 

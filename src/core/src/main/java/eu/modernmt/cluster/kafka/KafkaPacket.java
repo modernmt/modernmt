@@ -8,6 +8,7 @@ import eu.modernmt.lang.LanguagePair;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Date;
 import java.util.Locale;
 
 /**
@@ -26,19 +27,26 @@ class KafkaPacket {
     private final String translation;
     private final String previousSentence;
     private final String previousTranslation;
+    private final Date timestamp;
 
     public static KafkaPacket createDeletion(long memory) {
-        return new KafkaPacket(TYPE_DELETION, null, memory, null, null, null, null);
+        return new KafkaPacket(TYPE_DELETION, null, memory, null, null, null, null, null);
     }
 
-    public static KafkaPacket createAddition(LanguagePair direction, long memory, String sentence, String translation) {
-        return new KafkaPacket(TYPE_ADDITION, direction, memory, sentence, translation, null, null);
+    public static KafkaPacket createAddition(LanguagePair direction, long memory, String sentence, String translation, Date timestamp) {
+        return new KafkaPacket(TYPE_ADDITION, direction, memory, sentence, translation, null, null, timestamp);
     }
 
-    public static KafkaPacket createOverwrite(LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation) {
-        return new KafkaPacket(TYPE_OVERWRITE, direction, memory, sentence, translation, previousSentence, previousTranslation);
+    public static KafkaPacket createOverwrite(LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp) {
+        return new KafkaPacket(TYPE_OVERWRITE, direction, memory, sentence, translation, previousSentence, previousTranslation, timestamp);
     }
 
+    /**
+     * Parse a KafkaPacket from the bytes read from a Kafka Channel
+     *
+     * @param data the bytes read from the Kafka Channel
+     * @return the parsed data as a KafkaPacket
+     */
     public static KafkaPacket fromBytes(byte[] data) {
         ByteBuffer buffer = ByteBuffer.wrap(data);
         byte type = buffer.get();
@@ -49,7 +57,7 @@ class KafkaPacket {
         String translation = null;
         String previousSentence = null;
         String previousTranslation = null;
-
+        Date timestamp = null;
 
         switch (type) {
             case TYPE_DELETION:
@@ -70,15 +78,19 @@ class KafkaPacket {
                     previousTranslation = deserializeString(buffer, charset);
                 }
 
+                /*parse the date as millis from epoch as the last field; if 0 then date is null*/
+                long millis = Long.parseLong(deserializeString(buffer, charset));
+                timestamp = millis == 0L ? null : new Date(millis);
+
                 break;
             default:
                 throw new IllegalArgumentException("Invalid packet received, unknown type: " + (int) type);
         }
 
-        return new KafkaPacket(type, direction, memory, sentence, translation, previousSentence, previousTranslation);
+        return new KafkaPacket(type, direction, memory, sentence, translation, previousSentence, previousTranslation, timestamp);
     }
 
-    private KafkaPacket(byte type, LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation) {
+    private KafkaPacket(byte type, LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp) {
         this.type = type;
         this.direction = direction;
         this.memory = memory;
@@ -86,6 +98,7 @@ class KafkaPacket {
         this.translation = translation;
         this.previousSentence = previousSentence;
         this.previousTranslation = previousTranslation;
+        this.timestamp = timestamp;
     }
 
     public DataMessage toDataMessage(short channel, long position) {
@@ -93,14 +106,20 @@ class KafkaPacket {
             case TYPE_DELETION:
                 return new Deletion(channel, position, memory);
             case TYPE_ADDITION:
-                return new TranslationUnit(channel, position, direction, memory, sentence, translation, null, null);
+                return new TranslationUnit(channel, position, direction, memory, sentence, translation, null, null, timestamp);
             case TYPE_OVERWRITE:
-                return new TranslationUnit(channel, position, direction, memory, sentence, translation, previousSentence, previousTranslation);
+                return new TranslationUnit(channel, position, direction, memory, sentence, translation, previousSentence, previousTranslation, timestamp);
             default:
                 throw new IllegalArgumentException("Invalid packet received, unknown type: " + (int) type);
         }
     }
 
+    /**
+     * This method makes this KafkaPacket a series of bytes.
+     * This method is typically used to get the bytes that must be sent into a Kafka channel.
+     *
+     * @return the array of bytes obtained from the original KafkaPacket
+     */
     public byte[] toBytes() {
         int size = 9;
 
@@ -114,6 +133,7 @@ class KafkaPacket {
 
         byte[] previousSentence = null;
         byte[] previousTranslation = null;
+        byte[] timestamp = null;
 
         switch (type) {
             case TYPE_DELETION:
@@ -137,6 +157,10 @@ class KafkaPacket {
                     size += 4 + previousSentence.length + 4 + previousTranslation.length;
                 }
 
+                long millis = this.timestamp == null ? 0L : this.timestamp.getTime();
+                timestamp = Long.toString(millis).getBytes();
+                size += 4 + timestamp.length;
+
                 break;
             default:
                 throw new IllegalArgumentException("Invalid packet received, unknown type: " + (int) type);
@@ -154,6 +178,8 @@ class KafkaPacket {
 
         serializeString(buffer, previousSentence);
         serializeString(buffer, previousTranslation);
+
+        serializeString(buffer, timestamp);
 
         return buffer.array();
     }
@@ -177,5 +203,4 @@ class KafkaPacket {
             buffer.put(string);
         }
     }
-
 }

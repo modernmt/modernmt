@@ -4,6 +4,8 @@ import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 
+import java.util.Date;
+
 /**
  * Created by davide on 06/09/16.
  */
@@ -21,8 +23,10 @@ public class TranslationUnit extends DataMessage {
     public Sentence translation = null;
     public Alignment alignment = null;
 
+    public Date timestamp = null;
+
     public TranslationUnit(short channel, long channelPosition, LanguagePair direction, long memory, String rawSentence,
-                           String rawTranslation, String rawPreviousSentence, String rawPreviousTranslation) {
+                           String rawTranslation, String rawPreviousSentence, String rawPreviousTranslation, Date timestamp) {
         super(channel, channelPosition);
         this.memory = memory;
         this.direction = direction;
@@ -30,6 +34,7 @@ public class TranslationUnit extends DataMessage {
         this.rawTranslation = rawTranslation;
         this.rawPreviousSentence = rawPreviousSentence;
         this.rawPreviousTranslation = rawPreviousTranslation;
+        this.timestamp = timestamp;
     }
 
     @Override
@@ -50,6 +55,8 @@ public class TranslationUnit extends DataMessage {
             builder.append(':');
             builder.append(rawPreviousTranslation);
         }
+        builder.append(':');
+        builder.append(timestamp);
 
         builder.append('>');
 

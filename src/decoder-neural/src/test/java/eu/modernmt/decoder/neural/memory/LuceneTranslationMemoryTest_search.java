@@ -24,16 +24,16 @@ public class LuceneTranslationMemoryTest_search {
         this.memory = new TLuceneTranslationMemory(EN__IT, IT__EN, EN__FR);
 
         ArrayList<TranslationUnit> units1 = new ArrayList<>();
-        units1.add(TestData.tu(EN__IT, "Hello world 1", "Ciao mondo 1"));
-        units1.add(TestData.tu(EN__IT, "The test 1", "Il test 1"));
-        units1.add(TestData.tu(EN__FR, "Hello world 1", "Bonjour monde 1"));
-        units1.add(TestData.tu(EN__FR, "The test 1", "Le preuve 1"));
+        units1.add(TestData.tu(EN__IT, "Hello world 1", "Ciao mondo 1", null));
+        units1.add(TestData.tu(EN__IT, "The test 1", "Il test 1", null));
+        units1.add(TestData.tu(EN__FR, "Hello world 1", "Bonjour monde 1", null));
+        units1.add(TestData.tu(EN__FR, "The test 1", "Le preuve 1", null));
 
         ArrayList<TranslationUnit> units2 = new ArrayList<>();
-        units2.add(TestData.tu(EN__IT, "Hello world 2", "Ciao mondo 2"));
-        units2.add(TestData.tu(EN__IT, "The test 2", "Il test 2"));
-        units2.add(TestData.tu(EN__FR, "Hello world 2", "Bonjour monde 2"));
-        units2.add(TestData.tu(EN__FR, "The test 2", "Le preuve 2"));
+        units2.add(TestData.tu(EN__IT, "Hello world 2", "Ciao mondo 2", null));
+        units2.add(TestData.tu(EN__IT, "The test 2", "Il test 2", null));
+        units2.add(TestData.tu(EN__FR, "Hello world 2", "Bonjour monde 2", null));
+        units2.add(TestData.tu(EN__FR, "The test 2", "Le preuve 2", null));
 
         this.memory.bulkInsert(new Memory(1), TestData.corpus("memory-1", units1));
         this.memory.bulkInsert(new Memory(2), TestData.corpus("memory-2", units2));

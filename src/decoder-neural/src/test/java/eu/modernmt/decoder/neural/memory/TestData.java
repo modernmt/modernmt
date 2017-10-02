@@ -82,39 +82,40 @@ public class TestData {
                 target += " " + i;
             }
 
-            units.add(tu(channel, channelPosition++, memory, language, source, target));
+            units.add(tu(channel, channelPosition++, memory, language, source, target, null));
         }
         return units;
     }
 
-    public static TranslationUnit tu(LanguagePair language) {
-        return tu(1L, language);
+    public static TranslationUnit tu(LanguagePair language, Date timestamp) {
+        return tu(1L, language, timestamp);
     }
 
-    public static TranslationUnit tu(long memory, LanguagePair language) {
-        return tu(0, 0L, memory, language);
+    public static TranslationUnit tu(long memory, LanguagePair language, Date timestamp) {
+        return tu(0, 0L, memory, language, timestamp);
     }
 
-    public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguagePair language) {
+    public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguagePair language, Date timestamp) {
         return tu(channel, channelPosition, memory, language,
                 EXAMPLE_SENTENCES.get(language.source.getLanguage()),
-                EXAMPLE_SENTENCES.get(language.target.getLanguage()));
+                EXAMPLE_SENTENCES.get(language.target.getLanguage()),
+                timestamp);
     }
 
-    public static TranslationUnit tu(LanguagePair language, String source, String target) {
-        return tu(1L, language, source, target);
+    public static TranslationUnit tu(LanguagePair language, String source, String target, Date timestamp) {
+        return tu(1L, language, source, target, timestamp);
     }
 
-    public static TranslationUnit tu(long memory, LanguagePair language, String source, String target) {
-        return tu(0, 0, memory, language, source, target);
+    public static TranslationUnit tu(long memory, LanguagePair language, String source, String target, Date timestamp) {
+        return tu(0, 0, memory, language, source, target, timestamp);
     }
 
-    public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguagePair language, String source, String target) {
-        return tu(channel, channelPosition, memory, language, source, target, null, null);
+    public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguagePair language, String source, String target, Date timestamp) {
+        return tu(channel, channelPosition, memory, language, source, target, null, null, timestamp);
     }
 
-    public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguagePair language, String source, String target, String previousSource, String previousTarget) {
-        TranslationUnit tu = new TranslationUnit((short) channel, channelPosition, language, memory, source, target, previousSource, previousTarget);
+    public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguagePair language, String source, String target, String previousSource, String previousTarget, Date timestamp) {
+        TranslationUnit tu = new TranslationUnit((short) channel, channelPosition, language, memory, source, target, previousSource, previousTarget, timestamp);
         tu.sentence = sentence(source);
         tu.translation = sentence(target);
         return tu;

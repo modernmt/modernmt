@@ -64,11 +64,11 @@ public class LuceneTranslationMemoryTest_hash {
     public void overwriteNotExisting() throws Throwable {
         setup(EN__IT, EN__FR);
 
-        TranslationUnit original = tu(0, 0L, 1L, EN__IT, "hello world", "ciao mondo");
+        TranslationUnit original = tu(0, 0L, 1L, EN__IT, "hello world", "ciao mondo", null);
         memory.onDataReceived(Collections.singletonList(original));
 
         TranslationUnit overwrite = tu(0, 1L, 1L, EN__IT, "test sentence", "frase di prova",
-                "hello world __", "ciao mondo __");
+                "hello world __", "ciao mondo __", null);
         memory.onDataReceived(Collections.singletonList(overwrite));
 
         Set<TLuceneTranslationMemory.Entry> expectedEntries =
@@ -81,11 +81,11 @@ public class LuceneTranslationMemoryTest_hash {
     public void overwriteExisting() throws Throwable {
         setup(EN__IT, EN__FR);
 
-        TranslationUnit original = tu(0, 0L, 1L, EN__IT, "hello world", "ciao mondo");
+        TranslationUnit original = tu(0, 0L, 1L, EN__IT, "hello world", "ciao mondo", null);
         memory.onDataReceived(Collections.singletonList(original));
 
         TranslationUnit overwrite = tu(0, 1L, 1L, EN__IT, "test sentence", "frase di prova",
-                "hello world", "ciao mondo");
+                "hello world", "ciao mondo", null);
         memory.onDataReceived(Collections.singletonList(overwrite));
 
         Set<TLuceneTranslationMemory.Entry> expectedEntries =

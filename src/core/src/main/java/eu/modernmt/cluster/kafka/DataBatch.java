@@ -81,6 +81,7 @@ class DataBatch {
                     cachedDataSet.computeIfAbsent(unit.direction, key -> getDataPartition(size))
                             .add(unit);
                 }
+
             } else {
                 deletions.add((Deletion) message);
             }

@@ -160,10 +160,10 @@ public class LuceneAnalyzerTest_onDataReceived {
         setup(IT__EN, EN__FR);
 
         List<TranslationUnit> units = Arrays.asList(
-                TestData.tu(0, 0L, 1L, IT__EN),
-                TestData.tu(0, 1L, 1L, IT__EN),
-                TestData.tu(0, 2L, 1L, EN__FR),
-                TestData.tu(0, 3L, 1L, EN__FR)
+                TestData.tu(0, 0L, 1L, IT__EN, null),
+                TestData.tu(0, 1L, 1L, IT__EN, null),
+                TestData.tu(0, 2L, 1L, EN__FR, null),
+                TestData.tu(0, 3L, 1L, EN__FR, null)
         );
 
         analyzer.onDataReceived(units);
@@ -186,15 +186,15 @@ public class LuceneAnalyzerTest_onDataReceived {
         setup(IT__EN, EN__FR);
 
         List<TranslationUnit> units1 = Arrays.asList(
-                TestData.tu(0, 0L, 1L, IT__EN),
-                TestData.tu(0, 1L, 1L, IT__EN),
-                TestData.tu(0, 2L, 1L, EN__FR),
-                TestData.tu(0, 3L, 1L, EN__FR)
+                TestData.tu(0, 0L, 1L, IT__EN, null),
+                TestData.tu(0, 1L, 1L, IT__EN, null),
+                TestData.tu(0, 2L, 1L, EN__FR, null),
+                TestData.tu(0, 3L, 1L, EN__FR, null)
         );
 
         List<TranslationUnit> units2 = Arrays.asList(
-                TestData.tu(0, 4L, 2L, IT__EN),
-                TestData.tu(0, 5L, 2L, EN__FR)
+                TestData.tu(0, 4L, 2L, IT__EN, null),
+                TestData.tu(0, 5L, 2L, EN__FR, null)
         );
 
         List<TranslationUnit> allUnits = new ArrayList<>();
@@ -257,13 +257,13 @@ public class LuceneAnalyzerTest_onDataReceived {
         setup(EN__IT, EN__FR);
 
         List<TranslationUnit> units = Arrays.asList(
-                TestData.tu(1, 0L, 1L, EN__IT),
-                TestData.tu(1, 1L, 1L, EN__IT)
+                TestData.tu(1, 0L, 1L, EN__IT, null),
+                TestData.tu(1, 1L, 1L, EN__IT, null)
         );
 
         List<TranslationUnit> cloneUnits = Arrays.asList(
-                TestData.tu(1, 0L, 2L, EN__FR),
-                TestData.tu(1, 1L, 2L, EN__FR)
+                TestData.tu(1, 0L, 2L, EN__FR, null),
+                TestData.tu(1, 1L, 2L, EN__FR, null)
         );
 
         analyzer.onDataReceived(units);

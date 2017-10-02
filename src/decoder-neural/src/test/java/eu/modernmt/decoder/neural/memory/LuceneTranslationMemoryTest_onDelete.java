@@ -11,7 +11,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static eu.modernmt.decoder.neural.memory.TestData.*;
+import static eu.modernmt.decoder.neural.memory.TestData.EN__IT;
+import static eu.modernmt.decoder.neural.memory.TestData.FR__ES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -57,10 +58,10 @@ public class LuceneTranslationMemoryTest_onDelete {
         setup(EN__IT, FR__ES);
 
         List<TranslationUnit> units1 = Arrays.asList(
-                TestData.tu(1L, EN__IT),
-                TestData.tu(1L, EN__IT),
-                TestData.tu(1L, FR__ES),
-                TestData.tu(1L, FR__ES)
+                TestData.tu(1L, EN__IT, null),
+                TestData.tu(1L, EN__IT, null),
+                TestData.tu(1L, FR__ES, null),
+                TestData.tu(1L, FR__ES, null)
         );
         List<TranslationUnit> units2 = TestData.tuList(2, EN__IT, 10);
 

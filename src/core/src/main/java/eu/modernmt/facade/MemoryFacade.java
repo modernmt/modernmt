@@ -127,7 +127,7 @@ public class MemoryFacade {
                 return null;
 
             DataManager dataManager = ModernMT.getNode().getDataManager();
-            ImportJob job = dataManager.upload(direction, memoryId, source, target, DataManager.CONTRIBUTIONS_CHANNEL_ID);
+            ImportJob job = dataManager.upload(direction, memoryId, source, target, DataManager.CONTRIBUTIONS_CHANNEL_ID, new Date());
 
             if (job == null)
                 return null;
@@ -157,7 +157,7 @@ public class MemoryFacade {
 
             DataManager dataManager = ModernMT.getNode().getDataManager();
             ImportJob job = dataManager.replace(direction, memoryId, sentence, translation,
-                    previousSentence, previousTranslation, DataManager.CONTRIBUTIONS_CHANNEL_ID);
+                    previousSentence, previousTranslation, DataManager.CONTRIBUTIONS_CHANNEL_ID, new Date());
 
             if (job == null)
                 return null;

@@ -127,10 +127,10 @@ public class LuceneTranslationMemoryTest_add {
         setup(EN__IT, FR__ES);
 
         List<TranslationUnit> units = Arrays.asList(
-                TestData.tu(0, 0L, 1L, EN__IT),
-                TestData.tu(0, 1L, 1L, EN__IT),
-                TestData.tu(0, 2L, 1L, FR__ES),
-                TestData.tu(0, 3L, 1L, FR__ES)
+                TestData.tu(0, 0L, 1L, EN__IT, null),
+                TestData.tu(0, 1L, 1L, EN__IT, null),
+                TestData.tu(0, 2L, 1L, FR__ES, null),
+                TestData.tu(0, 3L, 1L, FR__ES, null)
         );
 
         testSuccess(units);
