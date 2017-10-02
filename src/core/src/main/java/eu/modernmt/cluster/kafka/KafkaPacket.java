@@ -73,14 +73,13 @@ class KafkaPacket {
                 sentence = deserializeString(buffer, charset);
                 translation = deserializeString(buffer, charset);
 
+                long millis = buffer.getLong();
+                timestamp = millis == 0L ? null : new Date(millis);
+
                 if (type == TYPE_OVERWRITE) {
                     previousSentence = deserializeString(buffer, charset);
                     previousTranslation = deserializeString(buffer, charset);
                 }
-
-                /*parse the date as millis from epoch as the last field; if 0 then date is null*/
-                long millis = Long.parseLong(deserializeString(buffer, charset));
-                timestamp = millis == 0L ? null : new Date(millis);
 
                 break;
             default:
@@ -130,10 +129,10 @@ class KafkaPacket {
         byte[] directionTarget = null;
         byte[] sentence = null;
         byte[] translation = null;
+        long timestamp = this.timestamp == null ? 0L : this.timestamp.getTime();
 
         byte[] previousSentence = null;
         byte[] previousTranslation = null;
-        byte[] timestamp = null;
 
         switch (type) {
             case TYPE_DELETION:
@@ -148,7 +147,7 @@ class KafkaPacket {
                 translation = this.translation.getBytes(charset);
 
                 size += 4 + directionSource.length + 4 + directionTarget.length +
-                        4 + sentence.length + 4 + translation.length;
+                        4 + sentence.length + 4 + translation.length + 8;
 
                 if (type == TYPE_OVERWRITE) {
                     previousSentence = this.previousSentence.getBytes(charset);
@@ -156,10 +155,6 @@ class KafkaPacket {
 
                     size += 4 + previousSentence.length + 4 + previousTranslation.length;
                 }
-
-                long millis = this.timestamp == null ? 0L : this.timestamp.getTime();
-                timestamp = Long.toString(millis).getBytes();
-                size += 4 + timestamp.length;
 
                 break;
             default:
@@ -175,11 +170,10 @@ class KafkaPacket {
         serializeString(buffer, directionTarget);
         serializeString(buffer, sentence);
         serializeString(buffer, translation);
+        buffer.putLong(timestamp);
 
         serializeString(buffer, previousSentence);
         serializeString(buffer, previousTranslation);
-
-        serializeString(buffer, timestamp);
 
         return buffer.array();
     }
