@@ -120,7 +120,7 @@ class KafkaPacket {
      * @return the array of bytes obtained from the original KafkaPacket
      */
     public byte[] toBytes() {
-        int size = 9;
+        int size = 1 + 8 + 8;   //type (enum: 1 byte) + memory (long: 8 bytes)
 
         byte type = this.type;
         long memory = this.memory;
@@ -146,8 +146,11 @@ class KafkaPacket {
                 sentence = this.sentence.getBytes(charset);
                 translation = this.translation.getBytes(charset);
 
-                size += 4 + directionSource.length + 4 + directionTarget.length +
-                        4 + sentence.length + 4 + translation.length + 8;
+                size += 4 + directionSource.length +
+                        4 + directionTarget.length +
+                        4 + sentence.length +
+                        4 + translation.length +
+                        8;  // + timestamp (long: 8 bytes)
 
                 if (type == TYPE_OVERWRITE) {
                     previousSentence = this.previousSentence.getBytes(charset);
@@ -170,7 +173,9 @@ class KafkaPacket {
         serializeString(buffer, directionTarget);
         serializeString(buffer, sentence);
         serializeString(buffer, translation);
-        buffer.putLong(timestamp);
+
+        if (type != TYPE_DELETION)
+            buffer.putLong(timestamp);
 
         serializeString(buffer, previousSentence);
         serializeString(buffer, previousTranslation);

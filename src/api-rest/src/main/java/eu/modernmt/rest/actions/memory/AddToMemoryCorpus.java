@@ -69,7 +69,7 @@ public class AddToMemoryCorpus extends ObjectAction<ImportJob> {
 
             if (source == null && target == null) {
                 FileType fileType = getEnum("content_type", FileType.class);
-                FileCompression fileCompression = getEnum("content_compression", FileCompression.class, null);
+                FileCompression fileCompression = getEnum("compression", FileCompression.class, null);
 
                 boolean gzipped = FileCompression.GZIP.equals(fileCompression);
 
@@ -113,8 +113,11 @@ public class AddToMemoryCorpus extends ObjectAction<ImportJob> {
             String fileParameter = prefix + "local_file";
 
             FileParameter content;
+
+            /*if the corpus is passed by remote*/
             if ((content = req.getFile(contentParameter)) != null) {
                 return new ParameterFileProxy(content, gzipped);
+                /*else, if the corpus is notified as a local file a*/
             } else {
                 File localFile = new File(getString(fileParameter, false));
                 if (!localFile.isFile())

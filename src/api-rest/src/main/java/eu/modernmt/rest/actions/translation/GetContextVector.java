@@ -87,27 +87,29 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
         Params params = (Params) _params;
         Map<Locale, ContextVector> contexts;
 
+        /*CASE 1: TEXT*/
         if (params.text != null) {
             contexts = ModernMT.translation.getContextVectors(params.text, params.limit, params.source, params.targets);
+            /*CASE 2: LOCAL FILE*/
         } else if (params.localFile != null) {
-            File file = null;
-
-            /*if local file is compressed, decompress it in a new file mmt-context and use it for the context, then delete it*/
-            if (params.localFile.getName().endsWith(".gz")) {
+            /*if local file is compressed, decompress it, use the decompressed file for the context, finally delete it*/
+            if (params.compression != null) {
+                File file = null;
                 try {
                     file = File.createTempFile("mmt-context", "txt");
-                    copy(params.localFile, file, FileCompression.GZIP);
+                    copy(params.localFile, file, params.compression);
                     contexts = ModernMT.translation.getContextVectors(file, params.limit, params.source, params.targets);
                 } finally {
                     FileUtils.deleteQuietly(file);
                 }
-                /*if local file is not compressed, use it directly*/
             } else {
+                /*else use the local file as it is*/
                 contexts = ModernMT.translation.getContextVectors(params.localFile, params.limit, params.source, params.targets);
             }
+            /*CASE 3: CONTENT*/
         } else {
             File file = null;
-
+            /*copy the passed content in a new file anyway, (because it is passed in the form of a FileParameter)*/
             try {
                 file = File.createTempFile("mmt-context", "txt");
                 copy(params.content, file, params.compression);
@@ -152,12 +154,12 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
                 this.text = null;
                 this.localFile = null;
                 this.content = content;
-                this.compression = getEnum("content_compression", FileCompression.class, null);
+                this.compression = getEnum("compression", FileCompression.class, null);
             } else if ((localFile = getString("local_file", false, null)) != null) {
                 this.text = null;
                 this.localFile = new File(localFile);
                 this.content = null;
-                this.compression = null;
+                this.compression = getEnum("compression", FileCompression.class, null);
             } else {
                 this.text = getString("text", false);
                 this.localFile = null;
