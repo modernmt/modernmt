@@ -2,18 +2,17 @@ package eu.modernmt.rest.actions.translation;
 
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.facade.ModernMT;
+import eu.modernmt.io.FileProxy;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.actions.util.ContextUtils;
-import eu.modernmt.rest.framework.FileParameter;
-import eu.modernmt.rest.framework.HttpMethod;
-import eu.modernmt.rest.framework.Parameters;
-import eu.modernmt.rest.framework.RESTRequest;
+import eu.modernmt.rest.framework.*;
 import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
 import eu.modernmt.rest.model.ContextVectorResult;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.tools.ant.taskdefs.GZip;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -27,96 +26,54 @@ import java.util.zip.GZIPInputStream;
 @Route(aliases = "context-vector", method = HttpMethod.GET)
 public class GetContextVector extends ObjectAction<ContextVectorResult> {
 
-    public enum FileCompression {
-        GZIP
-    }
+    private static File copy(FileProxy source) throws IOException {
+        File destination = File.createTempFile("mmt-context", "txt");
 
-    private static void copy(FileParameter source, File destination, FileCompression compression) throws IOException {
-        Reader reader = null;
-        Writer writer = null;
+        InputStream input = null;
+        OutputStream output = null;
 
         try {
-            InputStream input = source.getInputStream();
+            input = source.getInputStream();
+            output = new FileOutputStream(destination, false);
 
-            if (compression != null) {
-                switch (compression) {
-                    case GZIP:
-                        input = new GZIPInputStream(input);
-                        break;
-                }
-            }
-
-            reader = new InputStreamReader(input, Charset.defaultCharset());
-            writer = new OutputStreamWriter(new FileOutputStream(destination, false), Charset.defaultCharset());
-
-            IOUtils.copyLarge(reader, writer);
+            IOUtils.copyLarge(input, output);
         } finally {
-            IOUtils.closeQuietly(reader);
-            IOUtils.closeQuietly(writer);
+            IOUtils.closeQuietly(input);
+            IOUtils.closeQuietly(output);
         }
+
+        return destination;
     }
-
-
-    private static void copy(File source, File destination, FileCompression compression) throws IOException {
-        Reader reader = null;
-        Writer writer = null;
-
-        try {
-            InputStream input = new FileInputStream(source);
-            if (compression != null) {
-                switch (compression) {
-                    case GZIP:
-                        input = new GZIPInputStream(input);
-                        break;
-                }
-            }
-
-            reader = new InputStreamReader(input, Charset.defaultCharset());
-            writer = new OutputStreamWriter(new FileOutputStream(destination, false), Charset.defaultCharset());
-            IOUtils.copyLarge(reader, writer);
-
-        } finally {
-            IOUtils.closeQuietly(reader);
-            IOUtils.closeQuietly(writer);
-        }
-    }
-
 
     @Override
     protected ContextVectorResult execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, PersistenceException, IOException {
         Params params = (Params) _params;
         Map<Locale, ContextVector> contexts;
 
-        /*CASE 1: TEXT*/
-        if (params.text != null) {
-            contexts = ModernMT.translation.getContextVectors(params.text, params.limit, params.source, params.targets);
-            /*CASE 2: LOCAL FILE*/
-        } else if (params.localFile != null) {
-            /*if local file is compressed, decompress it, use the decompressed file for the context, finally delete it*/
-            if (params.compression != null) {
-                File file = null;
-                try {
-                    file = File.createTempFile("mmt-context", "txt");
-                    copy(params.localFile, file, params.compression);
-                    contexts = ModernMT.translation.getContextVectors(file, params.limit, params.source, params.targets);
-                } finally {
-                    FileUtils.deleteQuietly(file);
-                }
+        File temp = null;
+
+        try {
+
+            if (params.text != null) {
+                contexts = ModernMT.translation.getContextVectors(params.text, params.limit, params.source, params.targets);
             } else {
-                /*else use the local file as it is*/
-                contexts = ModernMT.translation.getContextVectors(params.localFile, params.limit, params.source, params.targets);
-            }
-            /*CASE 3: CONTENT*/
-        } else {
-            File file = null;
-            /*copy the passed content in a new file anyway, (because it is passed in the form of a FileParameter)*/
-            try {
-                file = File.createTempFile("mmt-context", "txt");
-                copy(params.content, file, params.compression);
+                boolean gzipped = params.compression != null;
+                File file;
+
+                if (params.localFile != null) {
+                    if (gzipped)
+                        temp = file = copy(FileProxy.wrap(params.localFile, true));
+                    else
+                        file = params.localFile;
+                } else {
+                    temp = file = copy(new ParameterFileProxy(params.content, gzipped));
+                }
+
                 contexts = ModernMT.translation.getContextVectors(file, params.limit, params.source, params.targets);
-            } finally {
-                FileUtils.deleteQuietly(file);
             }
+        } finally {
+            if (temp != null)
+                FileUtils.deleteQuietly(temp);
         }
 
         ContextUtils.resolve(contexts.values());
@@ -126,6 +83,10 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
     @Override
     protected Parameters getParameters(RESTRequest req) throws Parameters.ParameterParsingException {
         return new Params(req);
+    }
+
+    public enum FileCompression {
+        GZIP
     }
 
     public static class Params extends Parameters {

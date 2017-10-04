@@ -10,10 +10,7 @@ import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
 import eu.modernmt.persistence.PersistenceException;
-import eu.modernmt.rest.framework.FileParameter;
-import eu.modernmt.rest.framework.HttpMethod;
-import eu.modernmt.rest.framework.Parameters;
-import eu.modernmt.rest.framework.RESTRequest;
+import eu.modernmt.rest.framework.*;
 import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
 import eu.modernmt.rest.framework.routing.TemplateException;
@@ -114,87 +111,15 @@ public class AddToMemoryCorpus extends ObjectAction<ImportJob> {
 
             FileParameter content;
 
-            /*if the corpus is passed by remote*/
             if ((content = req.getFile(contentParameter)) != null) {
                 return new ParameterFileProxy(content, gzipped);
-                /*else, if the corpus is notified as a local file a*/
             } else {
                 File localFile = new File(getString(fileParameter, false));
                 if (!localFile.isFile())
                     throw new ParameterParsingException(fileParameter, localFile.toString());
 
-                return new LocalFileProxy(localFile, gzipped);
+                return FileProxy.wrap(localFile, gzipped);
             }
-        }
-    }
-
-    private static class LocalFileProxy implements FileProxy {
-
-        private final File file;
-        private final boolean gzipped;
-
-        public LocalFileProxy(File file, boolean gzipped) {
-            this.file = file;
-            this.gzipped = gzipped;
-        }
-
-        @Override
-        public String getFilename() {
-            return file.getName();
-        }
-
-        @Override
-        public InputStream getInputStream() throws IOException {
-            InputStream stream = new FileInputStream(file);
-            if (gzipped)
-                stream = new GZIPInputStream(stream);
-
-            return stream;
-        }
-
-        @Override
-        public OutputStream getOutputStream(boolean append) throws IOException {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public String toString() {
-            return getFilename();
-        }
-    }
-
-    private static class ParameterFileProxy implements FileProxy {
-
-        private final FileParameter file;
-        private final boolean gzipped;
-
-        public ParameterFileProxy(FileParameter file, boolean gzipped) {
-            this.file = file;
-            this.gzipped = gzipped;
-        }
-
-        @Override
-        public String getFilename() {
-            return file.getFilename();
-        }
-
-        @Override
-        public InputStream getInputStream() throws IOException {
-            InputStream stream = file.getInputStream();
-            if (gzipped)
-                stream = new GZIPInputStream(stream);
-
-            return stream;
-        }
-
-        @Override
-        public OutputStream getOutputStream(boolean append) throws IOException {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public String toString() {
-            return getFilename();
         }
     }
 
