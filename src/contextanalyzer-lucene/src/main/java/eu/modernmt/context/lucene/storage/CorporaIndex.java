@@ -119,7 +119,8 @@ public class CorporaIndex implements Closeable {
     }
 
     public Collection<CorpusBucket> getBucketsByMemory(long memory) {
-        return this.bucketsByMemory.get(memory);
+        Collection<CorpusBucket> result = this.bucketsByMemory.get(memory);
+        return result == null ? Collections.emptyList() : result;
     }
 
     public void remove(CorpusBucket bucket) {
