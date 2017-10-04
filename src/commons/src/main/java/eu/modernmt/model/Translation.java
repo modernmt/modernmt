@@ -10,6 +10,10 @@ import java.util.List;
  */
 public class Translation extends Sentence {
 
+    public static Translation emptyTranslation(Sentence source) {
+        return new Translation(new Word[0], source, new Alignment(new int[0], new int[0]));
+    }
+
     protected final Sentence source;
     private Alignment alignment;
     private long elapsedTime;
