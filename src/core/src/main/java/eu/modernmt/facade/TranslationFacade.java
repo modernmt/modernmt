@@ -22,10 +22,7 @@ import eu.modernmt.processing.ProcessingException;
 
 import java.io.File;
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -130,18 +127,17 @@ public class TranslationFacade {
     }
 
     public Map<Locale, ContextVector> getContextVectors(File context, int limit, Locale source, Locale... targets) throws ContextAnalyzerException {
-        LanguagePair[] languages = new LanguagePair[targets.length];
-        for (int i = 0; i < targets.length; i++) {
-            languages[i] = new LanguagePair(source, targets[i]);
-            ensureLanguagePairIsSupported(languages[i]);
-        }
+        List<LanguagePair> languages = filterUnsupportedLanguages(source, targets);
+
+        if (languages.isEmpty())
+            return Collections.emptyMap();
 
         // Because the file is local to the machine, this method ensures that the
         // local context analyzer is invoked instead of a remote one
         Engine engine = ModernMT.getNode().getEngine();
         ContextAnalyzer analyzer = engine.getContextAnalyzer();
 
-        HashMap<Locale, ContextVector> result = new HashMap<>(languages.length);
+        HashMap<Locale, ContextVector> result = new HashMap<>(languages.size());
         for (LanguagePair direction : languages) {
             ContextVector contextVector = analyzer.getContextVector(direction, context, limit);
             result.put(direction.target, contextVector);
@@ -163,14 +159,15 @@ public class TranslationFacade {
     }
 
     public Map<Locale, ContextVector> getContextVectors(String context, int limit, Locale source, Locale... targets) throws ContextAnalyzerException {
-        LanguagePair[] languages = new LanguagePair[targets.length];
-        for (int i = 0; i < targets.length; i++) {
-            languages[i] = new LanguagePair(source, targets[i]);
-            ensureLanguagePairIsSupported(languages[i]);
-        }
+        List<LanguagePair> _languages = filterUnsupportedLanguages(source, targets);
+
+        if (_languages.isEmpty())
+            return Collections.emptyMap();
 
         try {
+            LanguagePair[] languages = _languages.toArray(new LanguagePair[_languages.size()]);
             ContextVector[] vectors = ModernMT.getNode().submit(new GetContextVectorCallable(languages, context, limit)).get();
+
             HashMap<Locale, ContextVector> result = new HashMap<>(languages.length);
 
             for (int i = 0; i < vectors.length; i++)
@@ -209,6 +206,20 @@ public class TranslationFacade {
         LanguageIndex languages = ModernMT.getNode().getEngine().getLanguages();
         if (!languages.isSupported(pair))
             throw new UnsupportedLanguageException(pair);
+    }
+
+    private List<LanguagePair> filterUnsupportedLanguages(Locale source, Locale[] targets) {
+        ArrayList<LanguagePair> result = new ArrayList<>(targets.length);
+
+        LanguageIndex languages = ModernMT.getNode().getEngine().getLanguages();
+        for (Locale target : targets) {
+            LanguagePair language = new LanguagePair(source, target);
+
+            if (languages.isSupported(language))
+                result.add(language);
+        }
+
+        return result;
     }
 
     // -----------------------------
