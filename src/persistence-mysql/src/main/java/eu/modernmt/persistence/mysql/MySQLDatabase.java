@@ -83,7 +83,7 @@ public class MySQLDatabase extends Database {
         java.sql.Connection connection = null;
         PreparedStatement statement = null;
         try {
-            String query = "UPDATE metadata SET initialized = ? WHERE id = ? AND initialized = ?";
+            String query = "UPDATE mmt_metadata SET initialized = ? WHERE id = ? AND initialized = ?";
             connection = this.dataSource.getConnection();
             statement = connection.prepareStatement(query);
             statement.setShort(1, (short) 1);

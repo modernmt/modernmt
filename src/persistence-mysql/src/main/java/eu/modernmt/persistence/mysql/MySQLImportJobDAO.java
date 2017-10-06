@@ -38,7 +38,7 @@ public class MySQLImportJobDAO implements ImportJobDAO {
     public ImportJob retrieve(UUID id) throws PersistenceException {
         long longId = ImportJob.getLongId(id);
 
-        String query = "SELECT * FROM import_jobs WHERE id = ?;";
+        String query = "SELECT * FROM mmt_import_jobs WHERE id = ?;";
 
         PreparedStatement statement = null;
         ResultSet result = null;
@@ -70,11 +70,7 @@ public class MySQLImportJobDAO implements ImportJobDAO {
      */
     @Override
     public ImportJob store(ImportJob importJob) throws PersistenceException {
-
-        String query = "INSERT INTO import_jobs"
-                + " (memory, begin, end, data_channel, size)"
-                + " values (?, ?, ?, ?, ?);";
-
+        String query = "INSERT INTO mmt_import_jobs(memory, begin, end, data_channel, size) VALUES (?,?,?,?,?)";
 
         PreparedStatement statement = null;
         ResultSet generatedKeys = null;
@@ -119,7 +115,7 @@ public class MySQLImportJobDAO implements ImportJobDAO {
      * @throws PersistenceException if a required field is not found
      */
     public static ImportJob read(ResultSet result) throws PersistenceException {
-        return read(result, "import_jobs");
+        return read(result, "mmt_import_jobs");
     }
 
 

@@ -2,7 +2,7 @@ CREATE DATABASE IF NOT EXISTS mmt;
 
 USE mmt;
 
-CREATE TABLE memories (
+CREATE TABLE mmt_memories (
   id              BIGINT       NOT NULL AUTO_INCREMENT,
   name            VARCHAR(255) NOT NULL,
   PRIMARY KEY (id)
@@ -10,7 +10,7 @@ CREATE TABLE memories (
   ENGINE InnoDB
   DEFAULT CHARSET = utf8;
 
-CREATE TABLE import_jobs (
+CREATE TABLE mmt_import_jobs (
   id              BIGINT      NOT NULL AUTO_INCREMENT,
   memory          BIGINT      NOT NULL,
   size            INT         NOT NULL,
@@ -24,7 +24,7 @@ CREATE TABLE import_jobs (
   ENGINE InnoDB
   DEFAULT CHARSET = utf8;
 
-CREATE TABLE metadata (
+CREATE TABLE mmt_metadata (
   id            BIGINT       NOT NULL,
   initialized   BOOLEAN      NOT NULL,
   PRIMARY KEY (id)
@@ -32,4 +32,4 @@ CREATE TABLE metadata (
   ENGINE InnoDB
   DEFAULT CHARSET = utf8;
 
-INSERT INTO metadata (id, initialized) VALUES (1, FALSE);
+INSERT INTO mmt_metadata (id, initialized) VALUES (1, FALSE);
