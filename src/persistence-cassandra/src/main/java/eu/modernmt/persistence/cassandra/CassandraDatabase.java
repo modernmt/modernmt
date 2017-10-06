@@ -179,16 +179,16 @@ public class CassandraDatabase extends Database {
                     "CREATE TABLE IF NOT EXISTS " + IMPORT_JOBS_TABLE +
                             " (id bigint PRIMARY KEY, memory bigint, size int, \"begin\" bigint, end bigint, data_channel smallint);");
 
-//            SimpleStatement createInitializationTable = new SimpleStatement(
-//                    "CREATE TABLE IF NOT EXISTS " + INITIALIZATION_METADATA +
-//                            " (id bigint PRIMARY KEY, initialized Boolean);");
+            SimpleStatement createInitializationTable = new SimpleStatement(
+                    "CREATE TABLE IF NOT EXISTS " + INITIALIZATION_METADATA +
+                            " (id bigint PRIMARY KEY, initialized Boolean);");
 
 
             CassandraUtils.checkedExecute(connection, createCountersTable);
             CassandraUtils.checkedExecute(connection, createMemoriesTable);
             CassandraUtils.checkedExecute(connection, createImportJobsTable);
-//            CassandraUtils.checkedExecute(connection, createInitializationTable);
-//            this.populateInitializationTable();
+            CassandraUtils.checkedExecute(connection, createInitializationTable);
+            this.populateInitializationTable();
             CassandraIdGenerator.initializeTableCounter(connection, TABLE_IDS);
         } finally {
             IOUtils.closeQuietly(connection);
@@ -227,19 +227,18 @@ public class CassandraDatabase extends Database {
      */
     @Override
     public boolean initialize() throws PersistenceException {
-        return true;
-//        CassandraConnection connection = null;
-//        try {
-//            connection = (CassandraConnection) this.getConnection();
-//            BuiltStatement built = QueryBuilder.update(INITIALIZATION_METADATA).
-//                    with(QueryBuilder.set("initialized", true)).
-//                    where(QueryBuilder.eq("id", 1)).
-//                    onlyIf(QueryBuilder.eq("initialized", false));
-//            ResultSet result = CassandraUtils.checkedExecute(connection, built);
-//            return result.wasApplied();
-//        } finally {
-//            IOUtils.closeQuietly(connection);
-//        }
+        CassandraConnection connection = null;
+        try {
+            connection = (CassandraConnection) this.getConnection();
+            BuiltStatement built = QueryBuilder.update(INITIALIZATION_METADATA).
+                    with(QueryBuilder.set("initialized", true)).
+                    where(QueryBuilder.eq("id", 1)).
+                    onlyIf(QueryBuilder.eq("initialized", false));
+            ResultSet result = CassandraUtils.checkedExecute(connection, built);
+            return result.wasApplied();
+        } finally {
+            IOUtils.closeQuietly(connection);
+        }
     }
 
     @Override
