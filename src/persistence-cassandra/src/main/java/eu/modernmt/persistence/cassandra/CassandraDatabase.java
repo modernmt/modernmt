@@ -227,7 +227,7 @@ public class CassandraDatabase extends Database {
      */
     @Override
     public boolean initialize() throws PersistenceException {
-        return false;
+        return true;
 //        CassandraConnection connection = null;
 //        try {
 //            connection = (CassandraConnection) this.getConnection();

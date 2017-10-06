@@ -71,22 +71,14 @@ public class DatabaseLoader {
         // if a db with that name hasn't been created yet in db process,
         Connection connection = null;
         try {
-            boolean addBaselineMemories = false;
 
             /*after connecting to the DB, check of the DB exist. If it does not exist yet, create it*/
-            if (!database.exists()) {     //NOTE: if db is mysql, it will always already exist
+            if (!database.exists())     //NOTE: if db is mysql, it will always already exist
                 database.create();
 
-                if (config.getType() != DatabaseConfig.TYPE.MYSQL)      //if cassandra, you must only add the baseline memories at creation
-                    addBaselineMemories = true;
-            }
             /*Now try to initialize the db (this atomic operation only succeeds if the db was not initialized yet).
             * If the initialization succeeds, upload all the baseline memories in the DB.*/
-
-            if (config.getType() == DatabaseConfig.TYPE.MYSQL)      //if mysql, check if mysql db is initialized. If not, initialize it and add baseline domains
-                addBaselineMemories = database.initialize();
-
-            if (addBaselineMemories) {
+            if (database.initialize()) {
                 File baselineMemories = Paths.join(engine.getModelsPath(), "db", "baseline_memories.json");
                 List<Memory> memories = BaselineMemoryCollection.load(baselineMemories);
                 connection = database.getConnection();
