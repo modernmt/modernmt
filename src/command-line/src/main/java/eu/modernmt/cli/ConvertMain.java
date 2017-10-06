@@ -121,6 +121,5 @@ public class ConvertMain {
     public static void main(String[] _args) throws Throwable {
         Args args = new Args(_args);
         IOCorporaUtils.copy(args.input, args.output);
-        System.err.println("OK");
     }
 }
