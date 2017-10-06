@@ -145,7 +145,7 @@ class Vocabulary {
         if (sourceLine.length() < MIN_SENTENCE_LENGTH || targetLine.length() < MIN_SENTENCE_LENGTH)
             return true;
 
-        return match(sourceLine, source) >= threshold && match(sourceLine, target) >= threshold;
+        return match(sourceLine, source) >= threshold && match(targetLine, target) >= threshold;
     }
 
     private double match(String line, HashSet<String> terms) {
