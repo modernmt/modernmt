@@ -25,15 +25,21 @@ You can report issues on [GitHub](https://github.com/ModernMT/MMT/issues)
 For customizations and enterprise support: davide.caroselli@translated.net
 
 # Option 1 - Using Docker
+If you want to use the NVIDIA CUDA drivers with Docker (recommended for the neural adaptive engine), you need to install [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) tool:
+```
+wget -P /tmp https://github.com/NVIDIA/nvidia-docker/releases/download/v1.0.1/nvidia-docker_1.0.1-1_amd64.deb
+sudo dpkg -i /tmp/nvidia-docker*.deb && rm /tmp/nvidia-docker*.deb
+```
+Then you can pull the modernmt image:
 
 ```
-docker pull modernmt/master
+nvidia-docker pull modernmt/master
 ```
 
 To run your istance and publish the API on port 8045 of your host, execute
 
 ```
-docker run -it --publish 8045:8045 modernmt/master bash
+nvidia-docker run -it --publish 8045:8045 modernmt/master bash
 ```
 
 Done! go to [README.md](README.md) to create your first engine.
