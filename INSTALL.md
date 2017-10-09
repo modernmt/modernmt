@@ -62,7 +62,7 @@ In order to avoid this error, in Ubuntu 14.04 and 16.04 you have to set the opti
 ```
 
 ## CUDA drivers (only for neural engine)
-In order to create and run MMT Neural MT engine, you have to install CUDA 8.0 drivers on your machine; you can find the procedure on the NVIDIA website: [NVIDIA CUDA Installation Guide for Linux](http://docs.nvidia.com/cuda/cuda-installation-guide-linux/#axzz4VZnqTJ2A)
+In order to create and run MMT Neural MT engine, you have to install CUDA 8.0 drivers on your machine; you can find the procedure on the NVIDIA website: [NVIDIA CUDA Installation Guide for Linux](https://developer.nvidia.com/cuda-80-ga2-download-archive)
 
 Optionally, you can also install the **CUDNN 6.0** drivers in order to speed-up the deep-neural network computation. You can follow the steps described in this guide: [NVIDIA cuDNN](https://developer.nvidia.com/cudnn).
 
@@ -159,7 +159,7 @@ sudo apt-get install libsnappy-dev zlib1g-dev libbz2-dev libboost-all-dev libspa
 ```
 
 ## CUDA drivers (only for neural engine)
-In order to create and run MMT Neural MT engine, you have to install CUDA 8.0 drivers on your machine; you can find the procedure on the NVIDIA website: [NVIDIA CUDA Installation Guide for Linux](http://docs.nvidia.com/cuda/cuda-installation-guide-linux/#axzz4VZnqTJ2A)
+In order to create and run MMT Neural MT engine, you have to install CUDA 8.0 drivers on your machine; you can find the procedure on the NVIDIA website: [NVIDIA CUDA Installation Guide for Linux](https://developer.nvidia.com/cuda-80-ga2-download-archive)
 
 Optionally, you can also install the **CUDNN 6.0** drivers in order to speed-up the deep-neural network computation. You can follow the steps described in this guide: [NVIDIA cuDNN](https://developer.nvidia.com/cudnn).
 
