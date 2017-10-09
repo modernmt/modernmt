@@ -62,6 +62,7 @@ Optionally, you can also install the **CUDNN 6.0** drivers in order to speed-up 
 
 ## Libraries that MMT requires:
 
+### Java 8
 Install **Java 8** if not present
 ```bash
 sudo add-apt-repository ppa:openjdk-r/ppa && sudo apt-get update && sudo apt-get install openjdk-8-jdk
@@ -94,6 +95,7 @@ There are 2 choices for the alternative java (providing /usr/bin/java).
 Press enter to keep the current choice[*], or type selection number: 2
 ```
 
+### `requests` for python
 **Python 2.7** with module **Requests** is also required but it is pre-installed in Ubuntu.
 
 Just in case *Requests* is not installed:
@@ -102,6 +104,15 @@ sudo apt-get install python-pip
 sudo pip install -U requests
 ```
 
+### PyTorch (for Neural engine)
+Install *PyTorch 0.2* with `pip`:
+
+```bash
+pip install http://download.pytorch.org/whl/cu80/torch-0.2.0.post3-cp27-cp27mu-manylinux1_x86_64.whl 
+
+# if the above command does not work, then you have python 2.7 UCS2, use this command 
+pip install http://download.pytorch.org/whl/cu80/torch-0.2.0.post3-cp27-cp27m-manylinux1_x86_64.whl
+```
 
 ## Install the MMT Binaries
 
@@ -145,6 +156,16 @@ sudo apt-get install libsnappy-dev zlib1g-dev libbz2-dev libboost-all-dev libspa
 In order to create and run MMT Neural MT engine, you have to install CUDA 8.0 drivers on your machine; you can find the procedure on the NVIDIA website: [NVIDIA CUDA Installation Guide for Linux](http://docs.nvidia.com/cuda/cuda-installation-guide-linux/#axzz4VZnqTJ2A)
 
 Optionally, you can also install the **CUDNN 6.0** drivers in order to speed-up the deep-neural network computation. You can follow the steps described in this guide: [NVIDIA cuDNN](https://developer.nvidia.com/cudnn).
+
+## PyTorch (for Neural engine)
+Install *PyTorch 0.2* with `pip`:
+
+```bash
+pip install http://download.pytorch.org/whl/cu80/torch-0.2.0.post3-cp27-cp27mu-manylinux1_x86_64.whl 
+
+# if the above command does not work, then you have python 2.7 UCS2, use this command 
+pip install http://download.pytorch.org/whl/cu80/torch-0.2.0.post3-cp27-cp27m-manylinux1_x86_64.whl
+```
 
 ## Install MMT
 
