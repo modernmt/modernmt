@@ -10,11 +10,11 @@ import time
 import requests
 
 import cli
-from cli import mmt_javamain, IllegalArgumentException, IllegalStateException
+from cli import mmt_javamain, IllegalArgumentException
 from cli.libs import fileutils, daemon, shell
 from cli.mmt import BilingualCorpus, TMXCorpus, FileParallelCorpus
 from cli.mmt.engine import Engine
-from cli.mmt.processing import TrainingPreprocessor, Tokenizer
+from cli.mmt.processing import Tokenizer
 
 __author__ = 'Davide Caroselli'
 
@@ -128,10 +128,9 @@ class ClusterNode(object):
 
         @staticmethod
         def _encode_context(context):
-            return ','.join([('%d:%f' % (
-                el['memory']['id'] if isinstance(el['memory'], dict) else el['memory'],
-                el['score'])
-                              ) for el in context])
+            scores = [(e['memory'], e['score']) for e in context if 'memory' in e]
+            scores = [(m['id'] if isinstance(m, dict) else m, s['score']) for m, s in scores]
+            return ','.join(['%d:%f' % e for e in scores])
 
         def stats(self):
             return self._get('_stat')
@@ -163,7 +162,7 @@ class ClusterNode(object):
             p = {'q': text, 'source': source, 'target': target}
             if nbest is not None:
                 p['nbest'] = nbest
-            if context is not None:
+            if context is not None and len(context) > 0:
                 p['context_vector'] = self._encode_context(context)
 
             return self._get('translate', params=p)
