@@ -129,7 +129,7 @@ class ClusterNode(object):
         @staticmethod
         def _encode_context(context):
             scores = [(e['memory'], e['score']) for e in context if 'memory' in e]
-            scores = [(m['id'] if isinstance(m, dict) else m, s['score']) for m, s in scores]
+            scores = [(m['id'] if isinstance(m, dict) else m, s) for m, s in scores]
             return ','.join(['%d:%f' % e for e in scores])
 
         def stats(self):
