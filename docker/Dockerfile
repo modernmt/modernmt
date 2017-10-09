@@ -1,16 +1,16 @@
-FROM ubuntu:14.04
+FROM nvidia/cuda:8.0-cudnn7-runtime-ubuntu16.04
 MAINTAINER Davide Caroselli <davide.caroselli@translated.net>
 
 # Install dependencies
 RUN apt-get -y update
 RUN apt-get install -y software-properties-common
+RUN apt-get install -y wget
 
 RUN add-apt-repository -y ppa:openjdk-r/ppa
 RUN apt-get -y update
 
 RUN apt-get install -y openjdk-8-jdk
-RUN apt-get install -y python-requests python-psutil
-RUN apt-get install -y wget
+RUN apt-get install -y python-pip python-requests python-psutil
 
 # Set ulimit
 RUN echo "* soft nofile 1048576" > /etc/security/limits.conf
@@ -18,20 +18,28 @@ RUN echo "* hard nofile 1048576" >> /etc/security/limits.conf
 RUN ulimit -n 1048576
 
 # Set locales
-RUN locale-gen "en_US.UTF-8"
+RUN apt-get install -y locales
+RUN locale-gen en_US.UTF-8
 RUN dpkg-reconfigure locales
-RUN update-locale LANG=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LC_ALL=en_US.UTF-8
+RUN localedef -i en_US -c -f UTF-8 en_US.UTF-8
+RUN echo "LC_ALL=en_US.UTF-8" >> /etc/environment
+RUN echo "LANG=en_US.UTF-8" >> /etc/environment
 
-#create a new user mmtuser and login as mmtuser
-#RUN adduser mmtuser --gecos "" 
-RUN useradd -p $(echo "" | openssl passwd -1 -stdin) mmtuser
-RUN usermod -aG sudo mmtuser
-WORKDIR /home/mmtuser
-RUN chown mmtuser:mmtuser /home/mmtuser
-USER mmtuser
+# Install PyTorch
+RUN pip install http://download.pytorch.org/whl/cu80/torch-0.2.0.post3-cp27-cp27mu-manylinux1_x86_64.whl
 
-RUN wget -qO- https://github.com/ModernMT/MMT/releases/download/v1.0.3/mmt-1.0.3-ubuntu.tar.gz | tar xvfz -
-WORKDIR /home/mmtuser/mmt
+# Create a new user "mmt" and login as "mmt"
+RUN apt-get install -y sudo && rm -rf /var/lib/apt/lists/*
+RUN useradd mmt
+RUN passwd -d mmt
+RUN usermod -aG sudo mmt
+WORKDIR /home/mmt
+RUN chown mmt:mmt /home/mmt
+USER mmt
+
+# Install MMT
+RUN wget -qO- https://github.com/ModernMT/MMT/releases/download/v2.0/mmt-2.0-ubuntu.tar.gz | tar xvfz -
+WORKDIR /home/mmt/mmt
 
 # Make MMT example engine
 RUN ./mmt create en it examples/data/train
