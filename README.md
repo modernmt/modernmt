@@ -37,7 +37,11 @@ In order to create a *phrase-based* engine you can simply:
 $ ./mmt create en it examples/data/train
 ```
 
-> Note: if you wish to create an *neural* engine, you can just add the `--neural` flag. Please notice however that the training process will take much more time and you will need a dedicated hardware (GPUs) in order to create and use the neural engine.
+*Note:* if you wish to create an *neural* engine, you can just add the `--neural` flag:
+```bash
+$ ./mmt create en it examples/data/train --neural
+```
+Please notice however that the training process will take much more time and you will need a dedicated hardware (GPUs) in order to create and use the neural engine.
 
 ### Start the engine
 
