@@ -11,6 +11,9 @@ No minimum required.
 * More cores generally will give you a faster training and translation request throughput. 
 * More clock speed will generally give you a faster translation for the single request.
 
+### GPU (only for neural engine)
+At least one [CUDA-capable GPU](https://developer.nvidia.com/cuda-gpus). Current MMT version supports only single-GPU training, while you can increase the translation throughput using multiple GPUs at runtime.
+
 ### Memory
 *  Min 5GB
 *  1GB each 350MB of training data
@@ -51,6 +54,11 @@ In order to avoid this error, in Ubuntu 14.04 and 16.04 you have to set the opti
 * soft nofile 1048576
 * hard nofile 1048576
 ```
+
+## CUDA drivers (only for neural engine)
+In order to create and run MMT Neural MT engine, you have to install CUDA 8.0 drivers on your machine; you can find the procedure on the NVIDIA website: [NVIDIA CUDA Installation Guide for Linux](http://docs.nvidia.com/cuda/cuda-installation-guide-linux/#axzz4VZnqTJ2A)
+
+Optionally, you can also install the **CUDNN 6.0** drivers in order to speed-up the deep-neural network computation. You can follow the steps described in this guide: [NVIDIA cuDNN](https://developer.nvidia.com/cudnn).
 
 ## Libraries that MMT requires:
 
@@ -106,9 +114,9 @@ cd mmt
 
 Done! go to [README.md](README.md)
 
-# Option 3 - Installing from source (for contributors)
+# Option 3 - Installing from source
 
-Build MMT from source allows you to contribute to this repository. 
+Build MMT from source ensures the best performance and it also resolves some issues with hardware compatibility.
 The following procedure describes how to build MMT from source in an Ubuntu 14.04 or Ubuntu 16.04 environment.
 
 ## Installing third-party libraries
@@ -132,6 +140,11 @@ sudo pip install -U requests
 sudo apt-get install g++
 sudo apt-get install libsnappy-dev zlib1g-dev libbz2-dev libboost-all-dev libsparsehash-dev cmake openjdk-8-jdk git maven
 ```
+
+## CUDA drivers (only for neural engine)
+In order to create and run MMT Neural MT engine, you have to install CUDA 8.0 drivers on your machine; you can find the procedure on the NVIDIA website: [NVIDIA CUDA Installation Guide for Linux](http://docs.nvidia.com/cuda/cuda-installation-guide-linux/#axzz4VZnqTJ2A)
+
+Optionally, you can also install the **CUDNN 6.0** drivers in order to speed-up the deep-neural network computation. You can follow the steps described in this guide: [NVIDIA cuDNN](https://developer.nvidia.com/cudnn).
 
 ## Install MMT
 
