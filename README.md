@@ -1,11 +1,12 @@
-# MMT 1.0.3 - Release for Ubuntu 14.04 and 16.04
+# MMT 2.0 - Neural Adaptive Machine Translation
+Release for Ubuntu 14.04 and 16.04
 
 ## About MMT
 MMT is a context-aware, incremental and distributed general purpose Machine Translation technology.
 
 MMT is:
 - Simple to use, fast to train, and easy to scale with respect to domains, data, and users.
-- Trained by pooling all available domains/projects/customers data and translation memories in one folder.
+- Trained by pooling all available projects/customers data and translation memories in one folder.
 - Queried by providing the sentence to be translated and optionally some context text.
 
 MMT's goal is to deliver the quality of multiple custom engines by adapting on the fly to the provided context.
@@ -14,8 +15,7 @@ You can find more information on: http://www.modernmt.eu
 
 ## About this Release
 
-This release allows you to create an MT engine from a collection of line aligned parallel data or TMX files, 
-that can be queried via a [REST API](https://github.com/ModernMT/MMT/wiki/API-Documentation).
+This release introduces the new **Adaptive Neural MT engine**. In addition to the fast Phrase-Based engine, you can now create  a neural engine with the same simplicity, starting from a collection of line aligned parallel data or TMX files; the engine will be accessible via a [REST API](https://github.com/ModernMT/MMT/wiki/API-Documentation).
 It also lets you create an MT cluster where identical engines on different machines cooperate in order to increase the system speed and fault tolerance.
 
 Intro video (for version 0.11): http://87k.eu/lk9l
@@ -31,9 +31,13 @@ English to Italian in three domains.
 
 ### Create an engine
 
+In order to create a *phrase-based* engine you can simply:
+
 ```bash
 $ ./mmt create en it examples/data/train
 ```
+
+> Note: if you wish to create an *neural* engine, you can just add the `--neural` flag. Please notice however that the training process will take much more time and you will need a dedicated hardware (GPUs) in order to create and use the neural engine.
 
 ### Start the engine
 
