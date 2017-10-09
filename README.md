@@ -1,5 +1,5 @@
 # MMT 2.0 - Neural Adaptive Machine Translation
-Release for Ubuntu 14.04 and 16.04
+Release for Ubuntu 16.04
 
 ## About MMT
 MMT is a context-aware, incremental and distributed general purpose Machine Translation technology.
