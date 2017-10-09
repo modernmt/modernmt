@@ -46,8 +46,7 @@ Done! go to [README.md](README.md) to create your first engine.
 
 # Option 2 - Install Binaries on Your Server
 
-This release was tested on a clean Ubuntu 14.04 server from Amazon AWS.
-AMI: Ubuntu Server 14.04 LTS (HVM), SSD Volume Type -  ami-accff2b1
+This release was tested on a clean Ubuntu 16.04 server from Amazon AWS (AMI: Ubuntu Server 16.04 LTS (HVM), SSD Volume Type - ami-cd0f5cb6).
 
 For training >100M words we suggest to use this instance: 
 c3.4xlarge (30GB RAM, 16 core, circa $0.90/hour)
@@ -55,7 +54,7 @@ c3.4xlarge (30GB RAM, 16 core, circa $0.90/hour)
 ## Max open files limit
 The current version of ModernMT does not limit the maximum number of open files for performance reasons. For this reason, if you plan to create an engine with a high number of different domains you could hit the OS limit and MMT will crash.
 
-In order to avoid this error, in Ubuntu 14.04 and 16.04 you have to set the option `nofile` in `/etc/security/limits.conf` to a high limit and restart the machine, for example:
+In order to avoid this error, in Ubuntu 16.04 you have to set the option `nofile` in `/etc/security/limits.conf` to a high limit and restart the machine, for example:
 ```
 * soft nofile 1048576
 * hard nofile 1048576
@@ -134,7 +133,7 @@ Done! go to [README.md](README.md)
 # Option 3 - Installing from source
 
 Build MMT from source ensures the best performance and it also resolves some issues with hardware compatibility.
-The following procedure describes how to build MMT from source in an Ubuntu 14.04 or Ubuntu 16.04 environment.
+The following procedure describes how to build MMT from source in an Ubuntu 16.04 environment.
 
 ## Installing third-party libraries
 
@@ -143,15 +142,7 @@ Open a bash shell and type:
 sudo add-apt-repository ppa:george-edison55/cmake-3.x
 sudo add-apt-repository ppa:openjdk-r/ppa
 sudo apt-get update
-```
 
-If your OS is **Ubuntu 14.04**, then run the following command:
-```
-sudo apt-get install libsnappy-dev libbz2-dev libboost1.55-all-dev libsparsehash-dev cmake openjdk-8-jdk git maven
-```
-
-Alternatively, if your OS is **Ubuntu 16.04** then run the following commands:
-```
 sudo apt-get install python-pip
 sudo pip install -U requests
 sudo apt-get install g++
