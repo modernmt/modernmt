@@ -15,7 +15,7 @@ You can find more information on: http://www.modernmt.eu
 
 ## About this Release
 
-This release introduces a new **Adaptive Neural MT engine**. In addition to the fast Phrase-Based engine, you can now create  a neural engine with the same simplicity, starting from a collection of line aligned parallel data or TMX files; the engine will be accessible via a [REST API](https://github.com/ModernMT/MMT/wiki/API-Documentation).
+This release introduces our new **Adaptive Neural MT engine**. In addition to the fast Phrase-Based engine, you can now create  a neural engine with the same simplicity, starting from a collection of line aligned parallel data or TMX files; the engine will be accessible via a [REST API](https://github.com/ModernMT/MMT/wiki/API-Documentation).
 It also lets you create an MT cluster where identical engines on different machines cooperate in order to increase the system speed and fault tolerance.
 
 Intro video (for version 0.11): http://87k.eu/lk9l
