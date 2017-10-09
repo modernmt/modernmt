@@ -46,10 +46,9 @@ Done! go to [README.md](README.md) to create your first engine.
 
 # Option 2 - Install Binaries on Your Server
 
-This release was tested on a clean Ubuntu 16.04 server from Amazon AWS (AMI: Ubuntu Server 16.04 LTS (HVM), SSD Volume Type - ami-cd0f5cb6).
+This release was tested on a clean Ubuntu 16.04 server from Amazon AWS (AMI: *Ubuntu Server 16.04 LTS (HVM), SSD Volume Type - ami-cd0f5cb6*).
 
-For training >100M words we suggest to use this instance: 
-c3.4xlarge (30GB RAM, 16 core, circa $0.90/hour)
+For training >100M words we suggest to use this instance: r4.2xlarge.
 
 ## Max open files limit
 The current version of ModernMT does not limit the maximum number of open files for performance reasons. For this reason, if you plan to create an engine with a high number of different domains you could hit the OS limit and MMT will crash.
