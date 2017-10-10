@@ -156,7 +156,7 @@ sudo add-apt-repository ppa:openjdk-r/ppa
 sudo apt-get update
 
 sudo apt-get install python-pip
-sudo pip install -U requests
+pip install -U requests
 sudo apt-get install g++
 sudo apt-get install libsnappy-dev zlib1g-dev libbz2-dev libboost-all-dev libsparsehash-dev cmake openjdk-8-jdk git maven
 ```
