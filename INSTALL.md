@@ -18,11 +18,32 @@ At least one [CUDA-capable GPU](https://developer.nvidia.com/cuda-gpus). Current
 *  Min 5GB
 *  1GB each 350MB of training data
 
-# Support
+# Pre-installation actions
 
-You can report issues on [GitHub](https://github.com/ModernMT/MMT/issues)
+## CUDA drivers (required for neural engine)
+In order to run the Neural Adaptive MMT engine, NVIDIA CUDA 8 drivers are required no matter the option you choose for installing MMT.
 
-For customizations and enterprise support: davide.caroselli@translated.net
+Here we report the procedure for installing CUDA 8.0 for Ubuntu on a x86_64 machine; a detailed guide for different platforms  is available on the NVIDIA website: [NVIDIA CUDA Installation Guide for Linux](https://developer.nvidia.com/cuda-80-ga2-download-archive).
+```
+wget -O cuda-repo-ubuntu1604-8-0-local-ga2_8.0.61-1_amd64.deb https://developer.nvidia.com/compute/cuda/8.0/Prod2/local_installers/cuda-repo-ubuntu1604-8-0-local-ga2_8.0.61-1_amd64-deb
+wget -O cuda-repo-ubuntu1604-8-0-local-cublas-performance-update_8.0.61-1_amd64.deb https://developer.nvidia.com/compute/cuda/8.0/Prod2/patches/2/cuda-repo-ubuntu1604-8-0-local-cublas-performance-update_8.0.61-1_amd64-deb
+
+sudo dpkg -i cuda-repo-ubuntu1604-8-0-local-ga2_8.0.61-1_amd64.deb
+sudo dpkg -i cuda-repo-ubuntu1604-8-0-local-cublas-performance-update_8.0.61-1_amd64.deb
+sudo apt-get update
+sudo apt-get install cuda
+```
+
+Optionally, you can also install the **CUDNN 6.0** drivers in order to speed-up the deep-neural network computation. You can follow the steps described in this guide: [NVIDIA cuDNN](https://developer.nvidia.com/cudnn).
+
+## Max open files limit
+The current version of ModernMT does not limit the maximum number of open files for performance reasons. For this reason, if you plan to create an engine with a high number of different domains you could hit the OS limit and MMT will crash.
+
+In order to avoid this error, in Ubuntu 16.04 you have to set the option `nofile` in `/etc/security/limits.conf` to a high limit and restart the machine, for example:
+```
+* soft nofile 1048576
+* hard nofile 1048576
+```
 
 # Option 1 - Using Docker
 If you want to use the NVIDIA CUDA drivers with Docker (recommended for the neural adaptive engine), you need to install [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) tool:
@@ -47,22 +68,6 @@ Done! go to [README.md](README.md) to create your first engine.
 # Option 2 - Install Binaries on Your Server
 
 This release was tested on a clean Ubuntu 16.04 server from Amazon AWS (AMI: *Ubuntu Server 16.04 LTS (HVM), SSD Volume Type - ami-cd0f5cb6*).
-
-For training >100M words we suggest to use this instance: r4.2xlarge.
-
-## Max open files limit
-The current version of ModernMT does not limit the maximum number of open files for performance reasons. For this reason, if you plan to create an engine with a high number of different domains you could hit the OS limit and MMT will crash.
-
-In order to avoid this error, in Ubuntu 16.04 you have to set the option `nofile` in `/etc/security/limits.conf` to a high limit and restart the machine, for example:
-```
-* soft nofile 1048576
-* hard nofile 1048576
-```
-
-## CUDA drivers (only for neural engine)
-In order to create and run MMT Neural MT engine, you have to install CUDA 8.0 drivers on your machine; you can find the procedure on the NVIDIA website: [NVIDIA CUDA Installation Guide for Linux](https://developer.nvidia.com/cuda-80-ga2-download-archive)
-
-Optionally, you can also install the **CUDNN 6.0** drivers in order to speed-up the deep-neural network computation. You can follow the steps described in this guide: [NVIDIA cuDNN](https://developer.nvidia.com/cudnn).
 
 ## Libraries that MMT requires:
 
@@ -99,7 +104,7 @@ There are 2 choices for the alternative java (providing /usr/bin/java).
 Press enter to keep the current choice[*], or type selection number: 2
 ```
 
-### `requests` for python
+### Python module `requests`
 **Python 2.7** with module **Requests** is also required but it is pre-installed in Ubuntu.
 
 Just in case *Requests* is not installed:
@@ -131,7 +136,7 @@ Done! go to [README.md](README.md)
 
 # Option 3 - Installing from source
 
-Build MMT from source ensures the best performance and it also resolves some issues with hardware compatibility.
+Build MMT from source ensures the best performance and it can also solve some issues with hardware compatibility.
 The following procedure describes how to build MMT from source in an Ubuntu 16.04 environment.
 
 ## Installing third-party libraries
@@ -147,11 +152,6 @@ sudo pip install -U requests
 sudo apt-get install g++
 sudo apt-get install libsnappy-dev zlib1g-dev libbz2-dev libboost-all-dev libsparsehash-dev cmake openjdk-8-jdk git maven
 ```
-
-## CUDA drivers (only for neural engine)
-In order to create and run MMT Neural MT engine, you have to install CUDA 8.0 drivers on your machine; you can find the procedure on the NVIDIA website: [NVIDIA CUDA Installation Guide for Linux](https://developer.nvidia.com/cuda-80-ga2-download-archive)
-
-Optionally, you can also install the **CUDNN 6.0** drivers in order to speed-up the deep-neural network computation. You can follow the steps described in this guide: [NVIDIA cuDNN](https://developer.nvidia.com/cudnn).
 
 ## PyTorch (for Neural engine)
 Install *PyTorch 0.2* with `pip`:
@@ -195,3 +195,9 @@ cd ..
 ```
 
 You have now a working instance of MMT. Go to [README.md](README.md) to find how to test your installation.
+
+# Support
+
+You can report issues on [GitHub](https://github.com/ModernMT/MMT/issues)
+
+For customizations and enterprise support: davide.caroselli@translated.net
