@@ -32,6 +32,8 @@ sudo dpkg -i cuda-repo-ubuntu1604-8-0-local-ga2_8.0.61-1_amd64.deb
 sudo dpkg -i cuda-repo-ubuntu1604-8-0-local-cublas-performance-update_8.0.61-1_amd64.deb
 sudo apt-get update
 sudo apt-get install cuda
+
+rm cuda-*
 ```
 
 Optionally, you can also install the **CUDNN 6.0** drivers in order to speed-up the deep-neural network computation. You can follow the steps described in this guide: [NVIDIA cuDNN](https://developer.nvidia.com/cudnn).
@@ -46,6 +48,9 @@ In order to avoid this error, in Ubuntu 16.04 you have to set the option `nofile
 ```
 
 # Option 1 - Using Docker
+
+**Important**: follow [pre-installation steps](#pre-installation-actions) before continuing with this installation.
+
 If you want to use the NVIDIA CUDA drivers with Docker (recommended for the neural adaptive engine), you need to install [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) tool:
 ```
 wget -P /tmp https://github.com/NVIDIA/nvidia-docker/releases/download/v1.0.1/nvidia-docker_1.0.1-1_amd64.deb
@@ -66,6 +71,8 @@ nvidia-docker run -it --publish 8045:8045 modernmt/master bash
 Done! go to [README.md](README.md) to create your first engine.
 
 # Option 2 - Install Binaries on Your Server
+
+**Important**: follow [pre-installation steps](#pre-installation-actions) before continuing with this installation.
 
 This release was tested on a clean Ubuntu 16.04 server from Amazon AWS (AMI: *Ubuntu Server 16.04 LTS (HVM), SSD Volume Type - ami-cd0f5cb6*).
 
@@ -105,21 +112,19 @@ Press enter to keep the current choice[*], or type selection number: 2
 ```
 
 ### Python module `requests`
-**Python 2.7** with module **Requests** is also required but it is pre-installed in Ubuntu.
-
-Just in case *Requests* is not installed:
-```
+You can install `requests` module with the following commands:
+```bash
 sudo apt-get install python-pip
-sudo pip install -U requests
+pip install -U requests
 ```
 
 ### PyTorch (for Neural engine)
 Install *PyTorch 0.2* with `pip`:
-
 ```bash
 pip install http://download.pytorch.org/whl/cu80/torch-0.2.0.post3-cp27-cp27mu-manylinux1_x86_64.whl 
-
-# if the above command does not work, then you have python 2.7 UCS2, use this command 
+```
+If the above command does not work, then you have python 2.7 UCS2, use this command 
+```
 pip install http://download.pytorch.org/whl/cu80/torch-0.2.0.post3-cp27-cp27m-manylinux1_x86_64.whl
 ```
 
@@ -129,12 +134,15 @@ Download from here: https://github.com/ModernMT/MMT/releases and then untar the 
 
 ```
 tar xvfz mmt-<version-number>.tar.gz
+rm mmt-*.tar.gz
 cd mmt
 ```
 
 Done! go to [README.md](README.md)
 
 # Option 3 - Installing from source
+
+**Important**: follow [pre-installation steps](#pre-installation-actions) before continuing with this installation.
 
 Build MMT from source ensures the best performance and it can also solve some issues with hardware compatibility.
 The following procedure describes how to build MMT from source in an Ubuntu 16.04 environment.
