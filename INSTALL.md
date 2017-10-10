@@ -206,6 +206,5 @@ You have now a working instance of MMT. Go to [README.md](README.md) to find how
 
 # Support
 
-You can report issues on [GitHub](https://github.com/ModernMT/MMT/issues)
-
+You can report issues on [GitHub](https://github.com/ModernMT/MMT/issues).
 For customizations and enterprise support: davide.caroselli@translated.net
