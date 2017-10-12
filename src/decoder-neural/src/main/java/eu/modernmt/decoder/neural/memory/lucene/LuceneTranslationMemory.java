@@ -80,21 +80,19 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
         this.indexWriter = new IndexWriter(this.indexDirectory, indexConfig);
 
+        // Ensure index exists
+        if (!DirectoryReader.indexExists(directory))
+            this.indexWriter.commit();
+
         // Read channels status
-        if (DirectoryReader.indexExists(this.indexDirectory)) {
-            IndexReader reader = this.getIndexReader();
+        IndexSearcher searcher = this.getIndexSearcher();
 
-            IndexSearcher searcher = new IndexSearcher(reader);
+        Query query = new TermQuery(QueryBuilder.channelsTerm());
+        TopDocs docs = searcher.search(query, 1);
 
-            Query query = new TermQuery(QueryBuilder.channelsTerm());
-            TopDocs docs = searcher.search(query, 1);
-
-            if (docs.scoreDocs.length > 0) {
-                Document channelsDocument = searcher.doc(docs.scoreDocs[0].doc);
-                this.channels = DocumentBuilder.parseChannels(channelsDocument);
-            } else {
-                this.channels = new HashMap<>();
-            }
+        if (docs.scoreDocs.length > 0) {
+            Document channelsDocument = searcher.doc(docs.scoreDocs[0].doc);
+            this.channels = DocumentBuilder.parseChannels(channelsDocument);
         } else {
             this.channels = new HashMap<>();
         }
