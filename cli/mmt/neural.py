@@ -159,7 +159,7 @@ class NMTDecoder:
         self._source_lang = source_lang
         self._target_lang = target_lang
 
-    def train(self, train_path, working_dir, checkpoint_path=None, metadata_path=None):
+    def train(self, train_path, working_dir, checkpoint_path=None, metadata_path=None, training_opts=None):
         self._logger.info('Training started for data "%s"' % train_path)
 
         state = None
@@ -197,7 +197,10 @@ class NMTDecoder:
                 with _log_timed_action(self._logger, 'Creating engine from scratch'):
                     engine = NMTEngine.new_instance(src_dict, tgt_dict, processor=None, metadata=metadata)
 
-        trainer = NMTEngineTrainer(engine, state=state)
+        trainer_opts = NMTEngineTrainer.Options()
+        trainer_opts.set(training_opts)
+
+        trainer = NMTEngineTrainer(engine, state=state, options=trainer_opts)
 
         # Training model -----------------------------------------------------------------------------------------------
         self._logger.info('Vocabulary size. source = %d; target = %d' % (src_dict.size(), tgt_dict.size()))
@@ -325,7 +328,7 @@ class NeuralEngine(Engine):
 class NeuralEngineBuilder(EngineBuilder):
     def __init__(self, name, source_lang, target_lang, roots, debug=False, steps=None, split_trainingset=True,
                  validation_corpora=None, checkpoint=None, metadata=None, bpe_symbols=90000, max_vocab_size=None,
-                 max_training_words=None, gpus=None):
+                 max_training_words=None, gpus=None, training_opts=None):
         EngineBuilder.__init__(self,
                                NeuralEngine(name, source_lang, target_lang, bpe_symbols=bpe_symbols,
                                             max_vocab_size=max_vocab_size, gpus=gpus),
@@ -334,6 +337,7 @@ class NeuralEngineBuilder(EngineBuilder):
             else os.path.join(self._engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME)
         self._checkpoint = checkpoint
         self._metadata = metadata
+        self._training_opts = training_opts
 
     def _build_schedule(self):
         return EngineBuilder._build_schedule(self) + \
@@ -374,7 +378,7 @@ class NeuralEngineBuilder(EngineBuilder):
 
         if not skip:
             self._engine.decoder.train(args.onmt_training_path, working_dir,
-                                       checkpoint_path=self._checkpoint, metadata_path=self._metadata)
+                                       checkpoint_path=self._checkpoint, metadata_path=self._metadata, training_opts=self._training_opts)
 
             if delete_on_exit:
                 shutil.rmtree(working_dir, ignore_errors=True)
