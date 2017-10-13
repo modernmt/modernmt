@@ -79,27 +79,32 @@ public class NeuralDecoder implements Decoder, DataListenerProvider {
 
         long start = System.currentTimeMillis();
 
-        ScoreEntry[] suggestions;
-
-        try {
-            suggestions = memory.search(direction, text, contextVector, this.suggestionsLimit);
-        } catch (IOException e) {
-            throw new NeuralDecoderException("Failed to retrieve suggestions from memory", e);
-        }
 
         Translation translation;
 
-        if (suggestions != null && suggestions.length > 0)
-            translation = executor.execute(direction, text, suggestions);
-        else
-            translation = executor.execute(direction, text);
+        if (text.hasWords()) {
+            ScoreEntry[] suggestions;
 
+            try {
+                suggestions = memory.search(direction, text, contextVector, this.suggestionsLimit);
+            } catch (IOException e) {
+                throw new NeuralDecoderException("Failed to retrieve suggestions from memory", e);
+            }
+
+            if (suggestions != null && suggestions.length > 0)
+                translation = executor.execute(direction, text, suggestions);
+            else
+                translation = executor.execute(direction, text);
+        } else {
+            translation = Translation.emptyTranslation(text);
+        }
         long elapsed = System.currentTimeMillis() - start;
         translation.setElapsedTime(elapsed);
 
         logger.info("Translation of " + text.length() + " words took " + (((double) elapsed) / 1000.) + "s");
 
         return translation;
+
     }
 
     // DataListenerProvider
