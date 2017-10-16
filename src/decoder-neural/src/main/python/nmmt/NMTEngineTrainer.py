@@ -109,7 +109,8 @@ class NMTEngineTrainer:
             return str(self.__dict__)
 
     class State(object):
-        def __init__(self, size):
+        def __init__(self, size, nmt_preprocessor_path=None):
+            self.nmt_preprocessor_path = nmt_preprocessor_path
             self.size = size
             self.checkpoint = None
             self.history = []
@@ -163,11 +164,12 @@ class NMTEngineTrainer:
                 state.__dict__ = json.loads(stream.read())
             return state
 
-    def __init__(self, engine, options=None, optimizer=None, state=None):
+    def __init__(self, engine, options=None, optimizer=None, state=None, nmt_preprocessor_path=None):
         self._logger = logging.getLogger('nmmt.NMTEngineTrainer')
         self._engine = engine
         self.opts = options if options is not None else NMTEngineTrainer.Options()
-        self.state = state if state is not None else NMTEngineTrainer.State(self.opts.n_avg_checkpoints)
+
+        self.state = state if state is not None else NMTEngineTrainer.State(self.opts.n_avg_checkpoints, nmt_preprocessor_path)
 
         if optimizer is None:
             optimizer = Optim(self.opts.optimizer, self.opts.learning_rate, max_grad_norm=self.opts.max_grad_norm,

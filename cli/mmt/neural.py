@@ -150,6 +150,8 @@ class NMTPreprocessor:
 
         return builder.build(self._ram_limit_mb)
 
+    def getPath(self):
+        return self._bpe_model_path
 
 class NMTDecoder:
     def __init__(self, model, source_lang, target_lang):
@@ -159,7 +161,7 @@ class NMTDecoder:
         self._source_lang = source_lang
         self._target_lang = target_lang
 
-    def train(self, train_path, working_dir, checkpoint_path=None, metadata_path=None, training_opts=None):
+    def train(self, train_path, working_dir, checkpoint_path=None, metadata_path=None, training_opts=None, nmt_preprocessor_path=None):
         self._logger.info('Training started for data "%s"' % train_path)
 
         state = None
@@ -180,8 +182,9 @@ class NMTDecoder:
             src_dict, tgt_dict = vocab['src'], vocab['tgt']
 
         # Creating trainer ---------------------------------------------------------------------------------------------
-        if state is not None and state.checkpoint is not None:
+        if state is not None and state.checkpoint is not None and state.nmt_preprocessor_path is not None:
             with _log_timed_action(self._logger, 'Resuming engine from step %d' % state.checkpoint['step']):
+                os.symlink(state.nmt_preprocessor_path, state.checkpoint['file'] + '.bpe')
                 engine = NMTEngine.load_from_checkpoint(state.checkpoint['file'])
         else:
             if checkpoint_path is not None:
@@ -200,7 +203,7 @@ class NMTDecoder:
         trainer_opts = NMTEngineTrainer.Options()
         trainer_opts.set(training_opts)
 
-        trainer = NMTEngineTrainer(engine, state=state, options=trainer_opts)
+        trainer = NMTEngineTrainer(engine, state=state, options=trainer_opts, nmt_preprocessor_path=nmt_preprocessor_path)
 
         # Training model -----------------------------------------------------------------------------------------------
         self._logger.info('Vocabulary size. source = %d; target = %d' % (src_dict.size(), tgt_dict.size()))
@@ -378,7 +381,7 @@ class NeuralEngineBuilder(EngineBuilder):
 
         if not skip:
             self._engine.decoder.train(args.onmt_training_path, working_dir,
-                                       checkpoint_path=self._checkpoint, metadata_path=self._metadata, training_opts=self._training_opts)
+                                       checkpoint_path=self._checkpoint, metadata_path=self._metadata, training_opts=self._training_opts,nmt_preprocessor_path=self._engine.nmt_preprocessor.getPath())
 
             if delete_on_exit:
                 shutil.rmtree(working_dir, ignore_errors=True)
