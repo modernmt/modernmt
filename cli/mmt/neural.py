@@ -83,10 +83,17 @@ class NMTPreprocessor:
     def process(self, corpora, valid_corpora, output_path, checkpoint=None):
         if checkpoint is not None:
             existing_bpe_path = checkpoint + '.bpe'
+            existing_dat_path = checkpoint + '.dat'
 
             with _log_timed_action(self._logger, 'Loading BPE model from %s' % existing_bpe_path):
                 shutil.copy(existing_bpe_path, self._bpe_model_path)
                 bpe_encoder = SubwordTextProcessor.load_from_file(self._bpe_model_path)
+
+            with _log_timed_action(self._logger, 'Loading vocabularies from %s' % existing_dat_path):
+                checkpoint_dat = torch.load(existing_dat_path, map_location=lambda storage, loc: storage)
+                src_vocab = checkpoint_dat['dicts']['src']
+                trg_vocab = checkpoint_dat['dicts']['tgt']
+
         else:
             with _log_timed_action(self._logger, 'Creating BPE model'):
                 vb_builder = SubwordTextProcessor.Builder(symbols=self._bpe_symbols,
@@ -94,21 +101,26 @@ class NMTPreprocessor:
                 bpe_encoder = vb_builder.build([c.reader([self._source_lang, self._target_lang]) for c in corpora])
                 bpe_encoder.save_to_file(self._bpe_model_path)
 
-        with _log_timed_action(self._logger, 'Creating vocabularies'):
-            src_vocab = onmt.Dict([onmt.Constants.PAD_WORD, onmt.Constants.UNK_WORD,
-                                   onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD], lower=False)
-            trg_vocab = onmt.Dict([onmt.Constants.PAD_WORD, onmt.Constants.UNK_WORD,
-                                   onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD], lower=False)
+            with _log_timed_action(self._logger, 'Creating vocabularies'):
+                src_vocab = onmt.Dict([onmt.Constants.PAD_WORD, onmt.Constants.UNK_WORD,
+                                       onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD], lower=False)
+                trg_vocab = onmt.Dict([onmt.Constants.PAD_WORD, onmt.Constants.UNK_WORD,
+                                       onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD], lower=False)
 
-            for word in bpe_encoder.get_source_terms():
-                src_vocab.add(word)
-            for word in bpe_encoder.get_target_terms():
-                trg_vocab.add(word)
+                for word in bpe_encoder.get_source_terms():
+                    src_vocab.add(word)
+                for word in bpe_encoder.get_target_terms():
+                    trg_vocab.add(word)
 
-            torch.save({
-                'src': src_vocab,
-                'tgt': trg_vocab
-            }, os.path.join(output_path, 'vocab.pt'))
+
+        # self._logger.info('Prepared src_vocab: "%s"' % repr(src_vocab))
+        # self._logger.info('Prepared src_vocab.__dict__: "%s"' % repr(src_vocab.__dict__))
+        # self._logger.info('Prepared trg_vocab: "%s"' % repr(trg_vocab))
+        # self._logger.info('Prepared trg_vocab.__dict__: "%s"' % repr(trg_vocab.__dict__))
+        torch.save({
+            'src': src_vocab,
+            'tgt': trg_vocab
+        }, os.path.join(output_path, 'vocab.pt'))
 
         with _log_timed_action(self._logger, 'Preparing training corpora'):
             train_output_path = os.path.join(output_path, 'train_dataset')
@@ -180,6 +192,10 @@ class NMTDecoder:
             valid_dataset = MMapDataset.load(valid_dataset_path)
             vocab = torch.load(vocab_path)
             src_dict, tgt_dict = vocab['src'], vocab['tgt']
+            # self._logger.info('Loaded src_dict: "%s"' % repr(src_dict))
+            # self._logger.info('Loaded src_dict.__dict__: "%s"' % repr(src_dict.__dict__))
+            # self._logger.info('Loaded tgt_dict: "%s"' % repr(tgt_dict))
+            # self._logger.info('Loaded tgt_dict.__dict__: "%s"' % repr(tgt_dict.__dict__))
 
         # Creating trainer ---------------------------------------------------------------------------------------------
         if state is not None and state.checkpoint is not None and state.nmt_preprocessor_path is not None:
