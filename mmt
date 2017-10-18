@@ -134,7 +134,7 @@ def main_create(argv):
     nmt_train_arguments.add_argument('--early-stop', dest='early_stop', type=int, default=None,
                                      help='if neural is set, terminate training if validations is stalled for this number of times '
                                     '(default value is 10).')
-    nmt_train_arguments.add_argument('--number-avg-checkpoints', dest='n_avg_checkpoints', type=float, default=None,
+    nmt_train_arguments.add_argument('--number-avg-checkpoints', dest='n_avg_checkpoints', type=int, default=None,
                                      help='if neural is set, number of checkpoints to merge at the end of training process'
                                      '(default value is 5).')
 
