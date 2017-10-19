@@ -14,7 +14,7 @@ import java.util.Locale;
 /**
  * Created by davide on 06/09/16.
  */
-class KafkaPacket {
+public class KafkaPacket {
 
     private static final byte TYPE_DELETION = 0x00;
     private static final byte TYPE_ADDITION = 0x01;

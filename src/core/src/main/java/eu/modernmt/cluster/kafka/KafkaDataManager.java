@@ -81,7 +81,7 @@ public class KafkaDataManager implements DataManager {
      *
      * @return the array with all topic names (Strings)
      */
-    private String[] getDefaultTopicNames(String prefix) {
+    public static String[] getDefaultTopicNames(String prefix) {
 
         //max topic name length supported by Apache Kafka
         int maxLength = 249;
@@ -114,7 +114,7 @@ public class KafkaDataManager implements DataManager {
         return topicNames;
     }
 
-    private static Properties loadProperties(String filename, String host, int port) {
+    public static Properties loadProperties(String filename, String host, int port) {
         InputStream stream = null;
 
         try {
