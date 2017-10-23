@@ -6,6 +6,7 @@
 #include <thread>
 #include <unordered_set>
 #include <boost/filesystem.hpp>
+#include <assert.h>
 #include "DiagonalAlignment.h"
 #include "Builder.h"
 #include "BidirectionalModel.h"
@@ -39,75 +40,244 @@ inline double digamma(double x) {
     return result;
 }
 
-class BuilderModel : public Model {
-public:
-    vector<unordered_map<word_t, pair<double, double>>> data;
+//
+//class BuilderModel : public Model {
+//public:
+//    vector<unordered_map<word_t, pair<double, double>>> data;
+//
+//    BuilderModel(bool is_reverse, bool use_null, bool favor_diagonal, double prob_align_null, double diagonal_tension)
+//            : Model(is_reverse, use_null, favor_diagonal, prob_align_null, diagonal_tension) {
+//    }
+//
+//    ~BuilderModel(){
+//    }
+//
+//    double GetProbability(word_t source, word_t target) override {
+//        if (data.empty())
+//            return kNullProbability;
+//        if (source >= data.size())
+//            return kNullProbability;
+//
+//        unordered_map<word_t, pair<double, double>> &row = data[source];
+//        auto ptr = row.find(target);
+//        return ptr == row.end() ? kNullProbability : ptr->second.first;
+//    }
+//
+//    void IncrementProbability(word_t source, word_t target, double amount) override {
+//#pragma omp atomic
+//        data[source][target].second += amount;
+//    }
+//
+//    void Prune(double threshold = 1e-20) {
+//#pragma omp parallel for schedule(dynamic)
+//        for (size_t i = 0; i < data.size(); ++i) {
+//            unordered_map<word_t, pair<double, double>> &row = data[i];
+//
+//            for (auto cell = row.cbegin(); cell != row.cend(); /* no increment */) {
+//                if (cell->second.first <= threshold)
+//                    row.erase(cell++);
+//                else
+//                    ++cell;
+//            }
+//        }
+//    }
+//
+//    void Normalize(double alpha = 0) {
+//        for (size_t i = 0; i < data.size(); ++i) {
+//            unordered_map<word_t, pair<double, double>> &row = data[i];
+//            double row_norm = 0;
+//
+//            for (auto cell = row.begin(); cell != row.end(); ++cell)
+//                row_norm += cell->second.first + alpha;
+//
+//            if (row_norm == 0) row_norm = 1;
+//
+//            if (alpha > 0)
+//                row_norm = digamma(row_norm);
+//
+//            for (auto cell = row.begin(); cell != row.end(); ++cell)
+//                cell->second.first =
+//                        alpha > 0 ?
+//                        exp(digamma(cell->second.first + alpha) - row_norm) :
+//                        cell->second.first / row_norm;
+//        }
+//    }
+//
+//    void Swap() {
+//#pragma omp parallel for schedule(dynamic)
+//        for (size_t i = 0; i < data.size(); ++i) {
+//            for (auto cell = data[i].begin(); cell != data[i].end(); ++cell) {
+//                cell->second.first = cell->second.second;
+//                cell->second.second = 0;
+//            }
+//        }
+//    }
+//
+//    void Store(const string &filename, bool forward){
+//    ofstream out(filename, ios::binary | ios::out);
+//
+//    out.write((const char *) &use_null, sizeof(bool));
+//    out.write((const char *) &favor_diagonal, sizeof(bool));
+//
+//    out.write((const char *) &prob_align_null, sizeof(double));
+//    if (forward){
+//        out.write((const char *) &diagonal_tension, sizeof(double));
+//        out.write((const char *) &0, sizeof(double));
+//    } else{
+//        out.write((const char *) &0, sizeof(double));
+//        out.write((const char *) &diagonal_tension, sizeof(double));
+//    }
+//
+//    size_t data_size = data.size();
+//    out.write((const char *) &data_size, sizeof(size_t));
+//
+//    for (word_t sourceWord = 0; sourceWord < data_size; ++sourceWord) {
+//
+//        out.write((const char *) &sourceWord, sizeof(word_t));
+//
+//        unordered_map<word_t, pair<double, double>> &row = &data[sourceWord];
+//        size_t row_size = row->size();
+//
+//        if (!row->empty()){
+//            out.write((const char *) &row_size, sizeof(size_t));
+//
+//            if (forward){
+//                for (auto entry = row->begin(); entry != row->end(); ++entry) {
+//                    word_t target = entry->first;
+//                    out.write((const char *) &targetWord, sizeof(word_t));
+//                    out.write((const char *) &entry->second.first, sizeof(float));
+//                    out.write((const char *) &0, sizeof(float));
+//            } else{
+//                for (auto entry = row->begin(); entry != row->end(); ++entry) {
+//                    word_t target = entry->first;
+//                    out.write((const char *) &targetWord, sizeof(word_t));
+//                    out.write((const char *) &0, sizeof(float));
+//                    out.write((const char *) &entry->second.second, sizeof(float));
+//                }
+//            }
+//        }
+//    }
+//}
+//}
+//};
+//
 
-    BuilderModel(bool is_reverse, bool use_null, bool favor_diagonal, double prob_align_null, double diagonal_tension)
-            : Model(is_reverse, use_null, favor_diagonal, prob_align_null, diagonal_tension) {
-    }
 
-    double GetProbability(word_t source, word_t target) override {
-        if (data.empty())
-            return kNullProbability;
-        if (source >= data.size())
-            return kNullProbability;
+BuilderModel::BuilderModel(bool is_reverse, bool use_null, bool favor_diagonal, double prob_align_null, double diagonal_tension): Model(is_reverse, use_null, favor_diagonal, prob_align_null, diagonal_tension) {}
 
-        unordered_map<word_t, pair<double, double>> &row = data[source];
-        auto ptr = row.find(target);
-        return ptr == row.end() ? kNullProbability : ptr->second.first;
-    }
+BuilderModel::~BuilderModel(){}
 
-    void IncrementProbability(word_t source, word_t target, double amount) override {
+double BuilderModel::GetProbability(word_t source, word_t target) {
+    if (data.empty())
+        return kNullProbability;
+    if (source >= data.size())
+        return kNullProbability;
+
+    unordered_map<word_t, pair<double, double>> &row = data[source];
+    auto ptr = row.find(target);
+    return ptr == row.end() ? kNullProbability : ptr->second.first;
+}
+
+void BuilderModel::IncrementProbability(word_t source, word_t target, double amount) {
 #pragma omp atomic
-        data[source][target].second += amount;
+    data[source][target].second += amount;
+}
+
+void BuilderModel::Prune(double threshold) {
+#pragma omp parallel for schedule(dynamic)
+    for (size_t i = 0; i < data.size(); ++i) {
+        unordered_map<word_t, pair<double, double>> &row = data[i];
+
+        for (auto cell = row.cbegin(); cell != row.cend(); /* no increment */) {
+            if (cell->second.first <= threshold)
+                row.erase(cell++);
+            else
+                ++cell;
+        }
+    }
+}
+
+void BuilderModel::Normalize(double alpha) {
+    for (size_t i = 0; i < data.size(); ++i) {
+        unordered_map<word_t, pair<double, double>> &row = data[i];
+        double row_norm = 0;
+
+        for (auto cell = row.begin(); cell != row.end(); ++cell)
+            row_norm += cell->second.first + alpha;
+
+        if (row_norm == 0)
+            row_norm = 1;
+
+        if (alpha > 0)
+            row_norm = digamma(row_norm);
+
+        for (auto cell = row.begin(); cell != row.end(); ++cell)
+            cell->second.first =
+                alpha > 0 ?
+                exp(digamma(cell->second.first + alpha) - row_norm) :
+                cell->second.first / row_norm;
+    }
+}
+
+void BuilderModel::Swap() {
+#pragma omp parallel for schedule(dynamic)
+    for (size_t i = 0; i < data.size(); ++i) {
+        for (auto cell = data[i].begin(); cell != data[i].end(); ++cell) {
+            cell->second.first = cell->second.second;
+            cell->second.second = 0;
+        }
+    }
+}
+
+void BuilderModel::Store(const string &filename, bool forward){
+    ofstream out(filename, ios::binary | ios::out);
+
+    float dummy_float=0;
+
+    out.write((const char *) &use_null, sizeof(bool));
+    out.write((const char *) &favor_diagonal, sizeof(bool));
+
+    out.write((const char *) &prob_align_null, sizeof(double));
+    if (forward){
+        out.write((const char *) &diagonal_tension, sizeof(double));
+        out.write((const char *) &kNullProbability, sizeof(double));
+    } else{
+        out.write((const char *) &kNullProbability, sizeof(double));
+        out.write((const char *) &diagonal_tension, sizeof(double));
     }
 
-    void Prune(double threshold = 1e-20) {
-#pragma omp parallel for schedule(dynamic)
-        for (size_t i = 0; i < data.size(); ++i) {
-            unordered_map<word_t, pair<double, double>> &row = data[i];
+    size_t data_size = data.size();
+    out.write((const char *) &data_size, sizeof(size_t));
 
-            for (auto cell = row.cbegin(); cell != row.cend(); /* no increment */) {
-                if (cell->second.first <= threshold)
-                    row.erase(cell++);
-                else
-                    ++cell;
+    for (word_t sourceWord = 0; sourceWord < data_size; ++sourceWord) {
+
+        out.write((const char *) &sourceWord, sizeof(word_t));
+
+        unordered_map<word_t, pair<double, double>> &row = data[sourceWord];
+        size_t row_size = row.size();
+
+        if (!row.empty()){
+            out.write((const char *) &row_size, sizeof(size_t));
+
+            if (forward){
+                for (auto entry = row.begin(); entry != row.end(); ++entry) {
+                    word_t targetWord = entry->first;
+                    out.write((const char *) &targetWord, sizeof(word_t));
+                    out.write((const char *) &entry->second.first, sizeof(float));
+                    out.write((const char *) &dummy_float, sizeof(float));
+                }
+            } else{
+                for (auto entry = row.begin(); entry != row.end(); ++entry) {
+                    word_t targetWord = entry->first;
+                    out.write((const char *) &targetWord, sizeof(word_t));
+                    out.write((const char *) &dummy_float, sizeof(float));
+                    out.write((const char *) &entry->second.second, sizeof(float));
+                }
             }
         }
     }
+}
 
-    void Normalize(double alpha = 0) {
-        for (size_t i = 0; i < data.size(); ++i) {
-            unordered_map<word_t, pair<double, double>> &row = data[i];
-            double row_norm = 0;
-
-            for (auto cell = row.begin(); cell != row.end(); ++cell)
-                row_norm += cell->second.first + alpha;
-
-            if (row_norm == 0) row_norm = 1;
-
-            if (alpha > 0)
-                row_norm = digamma(row_norm);
-
-            for (auto cell = row.begin(); cell != row.end(); ++cell)
-                cell->second.first =
-                        alpha > 0 ?
-                        exp(digamma(cell->second.first + alpha) - row_norm) :
-                        cell->second.first / row_norm;
-        }
-    }
-
-    void Swap() {
-#pragma omp parallel for schedule(dynamic)
-        for (size_t i = 0; i < data.size(); ++i) {
-            for (auto cell = data[i].begin(); cell != data[i].end(); ++cell) {
-                cell->second.first = cell->second.second;
-                cell->second.second = 0;
-            }
-        }
-    }
-};
 
 Builder::Builder(Options options) : mean_srclen_multiplier(options.mean_srclen_multiplier),
                                     initial_diagonal_tension(options.initial_diagonal_tension),
@@ -239,22 +409,22 @@ void Builder::Build(const Corpus &corpus, const string &path) {
     if (listener) listener->VocabularyBuildEnd();
 
     BuilderModel *forward = (BuilderModel *) BuildModel(vocab, corpus, true);
-    BuilderModel *backward = (BuilderModel *) BuildModel(vocab, corpus, false);
-
-    if (listener) listener->ModelDumpBegin();
-
-    fs::path vocab_filename = fs::absolute(fs::path(path) / fs::path("model.voc"));
-    fs::path model_filename = fs::absolute(fs::path(path) / fs::path("model.dat"));
-
-    shared_ptr<bitable_t> table(MergeModels(forward, backward));
-    BidirectionalModel _forward(table, true, use_null, favor_diagonal, prob_align_null, forward->diagonal_tension);
-    BidirectionalModel _backward(table, false, use_null, favor_diagonal, prob_align_null, backward->diagonal_tension);
-
+    fs::path fwd_model_filename = fs::absolute(fs::path(path) / fs::path("fwd_model.dat"));
+    forward->Store(fwd_model_filename.string(), true);
     delete forward;
+
+    BuilderModel *backward = (BuilderModel *) BuildModel(vocab, corpus, false);
+    fs::path bwd_model_filename = fs::absolute(fs::path(path) / fs::path("bwd_model.dat"));
+    backward->Store(bwd_model_filename.string(), false);
     delete backward;
 
-    BidirectionalModel::Store(&_forward, &_backward, model_filename.string());
+    if (listener) listener->ModelDumpBegin();
+    fs::path model_filename = fs::absolute(fs::path(path) / fs::path("model.dat"));
+    BidirectionalModel::Store(fwd_model_filename.string(), bwd_model_filename.string(), model_filename.string());
+
+    fs::path vocab_filename = fs::absolute(fs::path(path) / fs::path("model.voc"));
     vocab->Store(vocab_filename.string());
+    delete vocab;
 
     if (listener) listener->ModelDumpEnd();
 }

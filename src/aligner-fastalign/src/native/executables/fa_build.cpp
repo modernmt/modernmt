@@ -137,7 +137,7 @@ public:
     }
 
     virtual void End(bool forward) override {
-        cerr << "\nTraining done in " << (GetTime() - processBegin) << "s" << endl << endl;
+        cerr << "\nTraining DONE in " << (GetTime() - processBegin) << "s" << endl << endl;
     }
 
     void ModelDumpBegin() override {

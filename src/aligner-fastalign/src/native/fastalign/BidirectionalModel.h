@@ -5,6 +5,8 @@
 #ifndef MMT_FASTALIGN_BIDIRECTIONALMODEL_H
 #define MMT_FASTALIGN_BIDIRECTIONALMODEL_H
 
+using namespace std;
+
 #include <memory>
 #include <vector>
 #include <string>
@@ -40,12 +42,15 @@ namespace mmt {
                 // no-op
             }
 
-            void ExportLexicalModel(const std::string &filename, const Vocabulary *vb);
+            void ExportLexicalModel(const string &filename, const Vocabulary *vb);
 
             static void Store(const BidirectionalModel *forward, const BidirectionalModel *backward,
-                              const std::string &filename);
+                              const string &filename);
 
-            static void Open(const std::string &filename, Model **outForward, Model **outBackward);
+            static void Store(const string &fwd_path, const string &bwd_path,
+                                                  const string &out_path);
+
+            static void Open(const string &filename, Model **outForward, Model **outBackward);
 
         private:
             const std::shared_ptr<bitable_t> table;

@@ -5,6 +5,8 @@
 #ifndef FASTALIGN_BUILDER_H
 #define FASTALIGN_BUILDER_H
 
+using namespace std;
+
 #include <string>
 #include <vector>
 #include "Model.h"
@@ -91,8 +93,29 @@ namespace mmt {
 
             Model *BuildModel(const Vocabulary *vocab, const Corpus &corpus, bool forward);
 
+            void Store(const string &filename, bool forward);
         };
 
+        class BuilderModel : public Model {
+        public:
+            vector<unordered_map<word_t, pair<double, double>>> data;
+
+            BuilderModel(bool is_reverse, bool use_null, bool favor_diagonal, double prob_align_null, double diagonal_tension);
+
+            ~BuilderModel();
+
+            double GetProbability(word_t source, word_t target) override;
+
+            void IncrementProbability(word_t source, word_t target, double amount) override;
+
+            void Prune(double threshold = 1e-20);
+
+            void Normalize(double alpha = 0);
+
+            void Swap();
+
+            void Store(const string &filename, bool forward);
+        };
     }
 }
 

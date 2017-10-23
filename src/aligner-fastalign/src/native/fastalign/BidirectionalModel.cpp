@@ -2,8 +2,10 @@
 // Created by Davide  Caroselli on 08/05/17.
 //
 
-#include "BidirectionalModel.h"
+#include <assert.h>
 #include <fstream>
+
+#include "BidirectionalModel.h"
 
 using namespace std;
 using namespace mmt;
@@ -23,7 +25,11 @@ void BidirectionalModel::Store(const BidirectionalModel *forward, const Bidirect
 
     out.write((const char *) &forward->prob_align_null, sizeof(double));
     out.write((const char *) &forward->diagonal_tension, sizeof(double));
-    out.write((const char *) &backward->diagonal_tension, sizeof(double));
+    if (backward != nullptr){
+        out.write((const char *) &backward->diagonal_tension, sizeof(double));
+    } else{
+        out.write((const char *) &kNullProbability, sizeof(double));
+    }
 
     bitable_t &table = *forward->table;
 
@@ -48,6 +54,101 @@ void BidirectionalModel::Store(const BidirectionalModel *forward, const Bidirect
             out.write((const char *) &it->second.second, sizeof(float));
         }
     }
+}
+
+void BidirectionalModel::Store(const string &fwd_path, const string &bwd_path, const string &out_path) {
+    bool fwd_use_null, bwd_use_null;
+    bool fwd_favor_diagonal, bwd_favor_diagonal;
+    double fwd_prob_align_null, bwd_prob_align_null;
+    double fwd_diagonal_tension, bwd_diagonal_tension;
+    double dummy_double;
+    float dummy_float;
+
+    //opening forward and backward model files for reading
+    //opening bidirectional model files for writing
+    ifstream fwd_in(fwd_path, ios::binary | ios::in);
+    ifstream bwd_in(bwd_path, ios::binary | ios::in);
+    ofstream out(out_path, ios::binary | ios::out);
+
+    //reading forward and backward model files in parallel
+    //and writing into out model file
+    fwd_in.read((char *) &fwd_use_null, sizeof(bool));
+    bwd_in.read((char *) &bwd_use_null, sizeof(bool));
+    assert(fwd_use_null == bwd_use_null);
+    out.write((const char *) &fwd_use_null, sizeof(bool));
+
+    fwd_in.read((char *) &fwd_favor_diagonal, sizeof(bool));
+    bwd_in.read((char *) &bwd_favor_diagonal, sizeof(bool));
+    assert(fwd_favor_diagonal == bwd_favor_diagonal);
+    out.write((const char *) &fwd_favor_diagonal, sizeof(bool));
+
+    fwd_in.read((char *) &fwd_prob_align_null, sizeof(double));
+    bwd_in.read((char *) &bwd_prob_align_null, sizeof(double));
+    assert(fwd_prob_align_null == bwd_prob_align_null);
+    out.write((const char *) &fwd_prob_align_null, sizeof(double));
+
+    fwd_in.read((char *) &fwd_diagonal_tension, sizeof(double));
+    bwd_in.read((char *) &dummy_double, sizeof(double));
+    out.write((const char *) &fwd_diagonal_tension, sizeof(double));
+
+    fwd_in.read((char *) &dummy_double, sizeof(double));
+    bwd_in.read((char *) &bwd_diagonal_tension, sizeof(double));
+    out.write((const char *) &bwd_diagonal_tension, sizeof(double));
+
+    size_t fwd_ttable_size, bwd_ttable_size;
+    bwd_in.read((char *) &fwd_ttable_size, sizeof(size_t));
+    bwd_in.read((char *) &bwd_ttable_size, sizeof(size_t));
+    assert(fwd_ttable_size == bwd_ttable_size);
+    out.write((const char *) &fwd_ttable_size, sizeof(size_t));
+
+    while (true) {
+        word_t fwd_sourceWord, bwd_sourceWord;
+        fwd_in.read((char *) &fwd_sourceWord, sizeof(word_t));
+        bwd_in.read((char *) &bwd_sourceWord, sizeof(word_t));
+
+        if (fwd_in.eof() || bwd_in.eof())
+            break;
+
+        assert(fwd_sourceWord == bwd_sourceWord);
+        out.write((const char *) &fwd_sourceWord, sizeof(word_t));
+
+
+        size_t fwd_row_size, bwd_row_size;
+        fwd_in.read((char *) &fwd_row_size, sizeof(size_t));
+        bwd_in.read((char *) &bwd_row_size, sizeof(size_t));
+        assert(fwd_row_size == bwd_row_size);
+        out.write((const char *) &fwd_row_size, sizeof(size_t));
+
+        //the order of fw_row and bwd_row can diffwr because of its type (unordered_map<word_t, pair<double, double>>)
+        //hence, read them independently, then merge the bwd_row into the fwd_row, and then write the fwd_row to the model file
+        unordered_map<word_t, pair<double, double>> fwd_row(fwd_row_size);
+
+        for (size_t i = 0; i < fwd_row_size; ++i) {
+            word_t fwd_targetWord;
+            float first;
+
+            fwd_in.read((char *) &fwd_targetWord, sizeof(word_t));
+            fwd_in.read((char *) &first, sizeof(float));
+            fwd_in.read((char *) &dummy_float, sizeof(float));
+            fwd_row[fwd_targetWord] = pair<float, float>(first, kNullProbability);
+        }
+
+        for (size_t i = 0; i < fwd_row_size; ++i) {
+            word_t bwd_targetWord;
+            float second;
+
+            bwd_in.read((char *) &bwd_targetWord, sizeof(word_t));
+            bwd_in.read((char *) &dummy_float, sizeof(float));
+            bwd_in.read((char *) &second, sizeof(float));
+
+            out.write((const char *) &bwd_targetWord, sizeof(word_t));
+            out.write((const char *) &fwd_row[bwd_targetWord].first, sizeof(float));
+            out.write((const char *) &second, sizeof(float));
+        }
+    }
+
+    fwd_in.close();
+    bwd_in.close();
 }
 
 void BidirectionalModel::Open(const string &filename, Model **outForward, Model **outBackward) {
