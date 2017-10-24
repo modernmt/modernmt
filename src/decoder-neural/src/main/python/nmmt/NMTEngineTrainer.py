@@ -293,6 +293,11 @@ class NMTEngineTrainer:
             number_of_batches_per_epoch = math.ceil(float(len(train_dataset))/self.opts.batch_size)
             self._log('Number of steps per epoch: %d' % number_of_batches_per_epoch)
 
+            # forcing step limits to be smaller or (at most) equal to the number of steps per epochs
+            self.opts.report_steps = self.opts.report_steps if number_of_batches_per_epoch >= self.opts.report_steps else number_of_batches_per_epoch
+            self.opts.validation_steps = self.opts.validation_steps if number_of_batches_per_epoch >= self.opts.validation_steps else number_of_batches_per_epoch
+            self.opts.checkpoint_steps = self.opts.checkpoint_steps if number_of_batches_per_epoch >= self.opts.checkpoint_steps else number_of_batches_per_epoch
+            self.opts.lr_decay_steps = self.opts.lr_decay_steps if number_of_batches_per_epoch >= self.opts.lr_decay_steps else number_of_batches_per_epoch
 
             # self._log('NMTEngineTrainer train_model self._engine.model: %s' % repr(self._engine.model))
             # self._log('NMTEngineTrainer train_model self.optimizer.lr: %f' % self.optimizer.lr)
