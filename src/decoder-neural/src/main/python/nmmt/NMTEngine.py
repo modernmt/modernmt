@@ -213,6 +213,7 @@ class NMTEngine:
             epochs = epochs if epochs is not None else _epochs
             learning_rate = learning_rate if learning_rate is not None else _learning_rate
 
+
         if learning_rate > 0. or epochs > 0:
             if self._tuner is None:
                 from nmmt.NMTEngineTrainer import NMTEngineTrainer
@@ -220,13 +221,11 @@ class NMTEngine:
                 optimizer = Optim(self.metadata.tuning_optimizer, 1., max_grad_norm=self.metadata.tuning_max_grad_norm)
 
                 tuner_opts = NMTEngineTrainer.Options()
-                tuner_opts.log_interval = 999999
                 tuner_opts.log_level = logging.NOTSET
-                tuner_opts.min_perplexity_decrement = -1.
 
                 self._tuner = NMTEngineTrainer(self, options=tuner_opts, optimizer=optimizer)
 
-            self._tuner.opts.min_epochs = self._tuner.opts.max_epochs = epochs
+            self._tuner.opts.steps_limit = epochs
             self._tuner.reset_learning_rate(learning_rate)
 
             # Process suggestions
@@ -248,8 +247,7 @@ class NMTEngine:
 
             # Run tuning
             log_message = 'Tuning on %d suggestions (epochs = %d, learning_rate = %.3f )' % (
-                len(suggestions), self._tuner.opts.max_epochs, self._tuner.optimizer.lr)
-
+                len(suggestions), self._tuner.opts.steps_limit, self._tuner.optimizer.lr)
             with log_timed_action(self._logger, log_message, log_start=False):
                 self._tuner.train_model(tuning_set)
 
