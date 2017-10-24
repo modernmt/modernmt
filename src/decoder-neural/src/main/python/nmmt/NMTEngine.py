@@ -225,7 +225,7 @@ class NMTEngine:
 
                 self._tuner = NMTEngineTrainer(self, options=tuner_opts, optimizer=optimizer)
 
-            self._tuner.opts.steps_limit = epochs
+            self._tuner.opts.step_limit = epochs
             self._tuner.reset_learning_rate(learning_rate)
 
             # Process suggestions
@@ -247,7 +247,7 @@ class NMTEngine:
 
             # Run tuning
             log_message = 'Tuning on %d suggestions (epochs = %d, learning_rate = %.3f )' % (
-                len(suggestions), self._tuner.opts.steps_limit, self._tuner.optimizer.lr)
+                len(suggestions), self._tuner.opts.step_limit, self._tuner.optimizer.lr)
             with log_timed_action(self._logger, log_message, log_start=False):
                 self._tuner.train_model(tuning_set)
 
