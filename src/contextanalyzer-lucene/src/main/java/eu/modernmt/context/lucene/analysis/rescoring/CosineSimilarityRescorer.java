@@ -24,26 +24,29 @@ public class CosineSimilarityRescorer implements Rescorer {
 
         // Calculate similarity with reference
         ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        try {
+            Future<?>[] tasks = new Future<?>[topDocs.length];
+            for (int i = 0; i < tasks.length; i++)
+                tasks[i] = executor.submit(new RescoringTask(reader, fieldName, topDocs[i], referenceTerms, referenceL2Norm));
 
-        Future<?>[] tasks = new Future<?>[topDocs.length];
-        for (int i = 0; i < tasks.length; i++)
-            tasks[i] = executor.submit(new RescoringTask(reader, fieldName, topDocs[i], referenceTerms, referenceL2Norm));
-
-        for (Future<?> task : tasks) {
-            try {
-                task.get();
-            } catch (InterruptedException e) {
-                throw new IOException("Execution interrupted", e);
-            } catch (ExecutionException e) {
-                Throwable cause = e.getCause();
-                if (cause instanceof IOException) {
-                    throw (IOException) cause;
-                } else if (cause instanceof RuntimeException) {
-                    throw (RuntimeException) cause;
-                } else {
-                    throw new Error("Expected exception", e);
+            for (Future<?> task : tasks) {
+                try {
+                    task.get();
+                } catch (InterruptedException e) {
+                    throw new IOException("Execution interrupted", e);
+                } catch (ExecutionException e) {
+                    Throwable cause = e.getCause();
+                    if (cause instanceof IOException) {
+                        throw (IOException) cause;
+                    } else if (cause instanceof RuntimeException) {
+                        throw (RuntimeException) cause;
+                    } else {
+                        throw new Error("Expected exception", e);
+                    }
                 }
             }
+        } finally {
+            executor.shutdown();
         }
     }
 

@@ -278,8 +278,6 @@ class PhraseBasedEngine(Engine):
 
 
 class PhraseBasedEngineBuilder(EngineBuilder):
-    __MB = (1024 * 1024)
-    __GB = (1024 * 1024 * 1024)
 
     def __init__(self, name, source_lang, target_lang, roots, debug=False, steps=None, split_trainingset=True,
                  max_training_words=None):
@@ -296,19 +294,19 @@ class PhraseBasedEngineBuilder(EngineBuilder):
             corpus_size_on_disk += fileutils.du(root)
         free_memory = fileutils.free()
 
-        recommended_mem = self.__GB * corpus_size_on_disk / (350 * self.__MB)  # 1G RAM every 350M on disk
+        recommended_mem = self._GB * corpus_size_on_disk / (350 * self._MB)  # 1G RAM every 350M on disk
         recommended_disk = 10 * corpus_size_on_disk
 
         if free_memory < recommended_mem or free_space_on_disk < recommended_disk:
             if free_memory < recommended_mem:
                 raise EngineBuilder.HWConstraintViolated(
                     'more than %.fG of RAM recommended, only %.fG available' %
-                    (recommended_mem / self.__GB, free_memory / self.__GB)
+                    (recommended_mem / self._GB, free_memory / self._GB)
                 )
             if free_space_on_disk < recommended_disk:
                 raise EngineBuilder.HWConstraintViolated(
                     'more than %.fG of storage recommended, only %.fG available' %
-                    (recommended_disk / self.__GB, free_space_on_disk / self.__GB)
+                    (recommended_disk / self._GB, free_space_on_disk / self._GB)
                 )
 
     # ~~~~~~~~~~~~~~~~~~~~~ Training step functions ~~~~~~~~~~~~~~~~~~~~~
