@@ -345,6 +345,7 @@ class NeuralEngine(Engine):
 
 
 class NeuralEngineBuilder(EngineBuilder):
+
     def __init__(self, name, source_lang, target_lang, roots, debug=False, steps=None, split_trainingset=True,
                  validation_corpora=None, checkpoint=None, metadata=None, bpe_symbols=90000, max_vocab_size=None,
                  max_training_words=None, gpus=None, training_opts=None):
@@ -363,7 +364,18 @@ class NeuralEngineBuilder(EngineBuilder):
                [self._build_memory, self._prepare_training_data, self._train_decoder]
 
     def _check_constraints(self):
-        pass
+        recommended_gpu_ram = 2 * self._GB
+        available_gpu_ram = self._get_gpu_ram()
+
+        if available_gpu_ram <= recommended_gpu_ram:
+            raise EngineBuilder.HWConstraintViolated(
+                    'more than %.fG of GPU RAM recommended, only %.fG available' %
+                    (recommended_gpu_ram / self._GB, available_gpu_ram / self._GB)
+                )
+
+    # TODO: IMPLEMENT GPU RAM GET
+    def _get_gpu_ram(self):
+        return 3 * self._GB
 
     # ~~~~~~~~~~~~~~~~~~~~~ Training step functions ~~~~~~~~~~~~~~~~~~~~~
 

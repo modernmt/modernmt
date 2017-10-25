@@ -5,7 +5,7 @@ import shutil
 import sys
 import getpass
 
-from cli import IllegalStateException, IllegalArgumentException
+from cli import IllegalStateException, IllegalArgumentException, CorpusNotFoundInFolderException
 from cli.evaluation import Evaluator
 from cli.libs import shell
 from cli.libs.datahub import DataHub
@@ -792,6 +792,9 @@ def main():
         message = '{prog}: error: {message}\n'.format(prog=e.parser.prog, message=e.message)
         e.parser.print_usage(file=sys.stderr)
         sys.stderr.write(message)
+        exit(1)
+    except CorpusNotFoundInFolderException as e:
+        sys.stderr.write('ERROR Corpus not found: {message}\n'.format(message=e.message))
         exit(1)
     except IllegalArgumentException as e:
         sys.stderr.write('ERROR Illegal Argument: {message}\n'.format(message=e.message))
