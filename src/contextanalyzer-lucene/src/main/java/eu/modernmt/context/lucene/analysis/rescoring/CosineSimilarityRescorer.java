@@ -3,11 +3,10 @@ package eu.modernmt.context.lucene.analysis.rescoring;
 import eu.modernmt.context.lucene.analysis.LuceneUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.ScoreDoc;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -46,7 +45,7 @@ public class CosineSimilarityRescorer implements Rescorer {
                 }
             }
         } finally {
-            executor.shutdown();
+            executor.shutdownNow();
         }
     }
 
