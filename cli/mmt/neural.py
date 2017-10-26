@@ -373,28 +373,31 @@ class NeuralEngineBuilder(EngineBuilder):
         elif self._gpus is None:
             gpus = self._get_all_gpus()
         else:
-            for gpu in self._gpus.split(","):
-                gpus.append(gpu.strip())
+            gpus = self._gpus
 
-        for gpu_id in gpus:
-            gpu_ram = self._get_gpu_ram(gpu_id)
-            if gpu_ram <= recommended_gpu_ram:
+        gpus_ram = self._get_gpus_ram(gpus)
+
+        for i in range(len(gpus_ram)):
+            if gpus_ram[i] < recommended_gpu_ram:
                 raise EngineBuilder.HWConstraintViolated(
                         'The RAM of GPU %d is only %.fG. More than %.fG of RAM recommended for each GPU.' %
-                        (gpu_id, gpu_ram / self._GB, recommended_gpu_ram / self._GB)
+                        (gpus[i], gpus_ram[i] / self._GB, recommended_gpu_ram / self._GB)
                     )
 
-    def _get_gpu_ram(self, gpu_id):
-        command = ["nvidia-smi", "--query-gpu=memory.total", "--format=csv, noheader, nounits", "--id=%d" % gpu_id]
+    def _get_gpus_ram(self, gpu_ids):
+        result = []
+        command = ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits", "--id=%s" % ",".join(gpu_ids)]
         stdout, _ = shell.execute(command)
-        return int(stdout) * self._MB
+        for line in stdout.split("\n"):
+            result.append(int(line.strip() * self._MB))
+        return result
 
     def _get_all_gpus(self):
         gpus=[]
         command = ["nvidia-smi", "--list-gpus"]
         stdout, _ = shell.execute(command)
 
-        lines = stdout.split("/n")
+        lines = stdout.split("\n")
         for line in lines:
             end = line.find(":")
             gpu_id = int(line[4:end])
