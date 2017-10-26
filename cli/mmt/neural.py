@@ -386,10 +386,12 @@ class NeuralEngineBuilder(EngineBuilder):
 
     def _get_gpus_ram(self, gpu_ids):
         result = []
-        command = ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits", "--id=%s" % ",".join(gpu_ids)]
+        command = ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits", "--id=%s" % ",".join(str(id) for id in gpu_ids)]
         stdout, _ = shell.execute(command)
         for line in stdout.split("\n"):
-            result.append(int(line.strip() * self._MB))
+            line = line.strip()
+            if line:
+                result.append(int(line) * self._MB)
         return result
 
     def _get_all_gpus(self):
@@ -399,10 +401,9 @@ class NeuralEngineBuilder(EngineBuilder):
 
         lines = stdout.split("\n")
         for line in lines:
-            end = line.find(":")
-            gpu_id = int(line[4:end])
-            gpus.append(gpu_id)
-
+            line = line.strip()
+            if line:
+                gpus.append(int(line[4:line.find(":")]))
         return gpus
 
     # ~~~~~~~~~~~~~~~~~~~~~ Training step functions ~~~~~~~~~~~~~~~~~~~~~
