@@ -358,6 +358,7 @@ class NeuralEngineBuilder(EngineBuilder):
         self._checkpoint = checkpoint
         self._metadata = metadata
         self._training_opts = training_opts
+        self._gpus = gpus
 
     def _build_schedule(self):
         return EngineBuilder._build_schedule(self) + \
@@ -365,17 +366,41 @@ class NeuralEngineBuilder(EngineBuilder):
 
     def _check_constraints(self):
         recommended_gpu_ram = 2 * self._GB
-        available_gpu_ram = self._get_gpu_ram()
+        gpus = []
 
-        if available_gpu_ram <= recommended_gpu_ram:
-            raise EngineBuilder.HWConstraintViolated(
-                    'more than %.fG of GPU RAM recommended, only %.fG available' %
-                    (recommended_gpu_ram / self._GB, available_gpu_ram / self._GB)
-                )
+        if self._gpus == -1:
+            return
+        elif self._gpus is None:
+            gpus = self._get_all_gpus()
+        else:
+            for gpu in self._gpus.split(","):
+                gpus.append(gpu.strip())
 
-    # TODO: IMPLEMENT GPU RAM GET
-    def _get_gpu_ram(self):
-        return 3 * self._GB
+        for gpu_id in gpus:
+            gpu_ram = self._get_gpu_ram(gpu_id)
+            if gpu_ram <= recommended_gpu_ram:
+                raise EngineBuilder.HWConstraintViolated(
+                        'The RAM of GPU %d is only %.fG. More than %.fG of RAM recommended for each GPU.' %
+                        (gpu_id, gpu_ram / self._GB, recommended_gpu_ram / self._GB)
+                    )
+
+    def _get_gpu_ram(self, gpu_id):
+        command = ["nvidia-smi", "--query-gpu=memory.total", "--format=csv, noheader, nounits", "--id=%d" % gpu_id]
+        stdout, _ = shell.execute(command)
+        return int(stdout) * self._MB
+
+    def _get_all_gpus(self):
+        gpus=[]
+        command = ["nvidia-smi", "--list-gpus"]
+        stdout, _ = shell.execute(command)
+
+        lines = stdout.split("/n")
+        for line in lines:
+            end = line.find(":")
+            gpu_id = int(line[4:end])
+            gpus.append(gpu_id)
+
+        return gpus
 
     # ~~~~~~~~~~~~~~~~~~~~~ Training step functions ~~~~~~~~~~~~~~~~~~~~~
 
