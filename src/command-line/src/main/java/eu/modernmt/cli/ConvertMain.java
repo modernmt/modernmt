@@ -70,20 +70,20 @@ public class ConvertMain {
         private static final Options cliOptions;
 
         static {
+            Option sourceLanguage = Option.builder("s").hasArg().build();
+            Option targetLanguage = Option.builder("t").hasArg().build();
             Option input = Option.builder().longOpt("input").hasArgs().required().build();
             Option inputFormat = Option.builder().longOpt("input-format").hasArg().required().build();
             Option output = Option.builder().longOpt("output").hasArgs().required().build();
             Option outputFormat = Option.builder().longOpt("output-format").hasArg().required().build();
-            Option sourceLanguage = Option.builder("s").hasArg().build();
-            Option targetLanguage = Option.builder("t").hasArg().build();
 
             cliOptions = new Options();
+            cliOptions.addOption(sourceLanguage);
+            cliOptions.addOption(targetLanguage);
             cliOptions.addOption(input);
             cliOptions.addOption(inputFormat);
             cliOptions.addOption(output);
             cliOptions.addOption(outputFormat);
-            cliOptions.addOption(sourceLanguage);
-            cliOptions.addOption(targetLanguage);
         }
 
         public final MultilingualCorpus input;
@@ -110,11 +110,13 @@ public class ConvertMain {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
+            /*source and target language may be null if conversion is from tmx to compact or vice versa*/
+            sourceLanguage = cli.hasOption('s') ? Locale.forLanguageTag(cli.getOptionValue("s")) : null;
+            targetLanguage = cli.hasOption('t') ? Locale.forLanguageTag(cli.getOptionValue("t")) : null;
+
             input = getCorpusInstance(cli, "input");
             output = getCorpusInstance(cli, "output");
-            /*source and target language may be null if conversion is from tmx to compact or vice versa*/
-            sourceLanguage = cli.hasOption('s') ? Locale.forLanguageTag(cli.getOptionValue('s')) : null;
-            targetLanguage = cli.hasOption('t') ? Locale.forLanguageTag(cli.getOptionValue('t')) : null;
+
         }
     }
 
