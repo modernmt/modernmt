@@ -94,6 +94,9 @@ namespace mmt {
             Model *BuildModel(const Vocabulary *vocab, const Corpus &corpus, bool forward);
 
             void Store(const string &filename, bool forward);
+
+            void MergeAndStore(const string &fwd_path, const string &bwd_path,
+                       const string &out_path);
         };
 
         class BuilderModel : public Model {
