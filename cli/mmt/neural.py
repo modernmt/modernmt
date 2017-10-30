@@ -112,11 +112,6 @@ class NMTPreprocessor:
                 for word in bpe_encoder.get_target_terms():
                     trg_vocab.add(word)
 
-
-        # self._logger.info('Prepared src_vocab: "%s"' % repr(src_vocab))
-        # self._logger.info('Prepared src_vocab.__dict__: "%s"' % repr(src_vocab.__dict__))
-        # self._logger.info('Prepared trg_vocab: "%s"' % repr(trg_vocab))
-        # self._logger.info('Prepared trg_vocab.__dict__: "%s"' % repr(trg_vocab.__dict__))
         torch.save({
             'src': src_vocab,
             'tgt': trg_vocab
@@ -165,6 +160,7 @@ class NMTPreprocessor:
     def getPath(self):
         return self._bpe_model_path
 
+
 class NMTDecoder:
     def __init__(self, model, source_lang, target_lang):
         self._logger = logging.getLogger('mmt.neural.NMTDecoder')
@@ -192,10 +188,6 @@ class NMTDecoder:
             valid_dataset = MMapDataset.load(valid_dataset_path)
             vocab = torch.load(vocab_path)
             src_dict, tgt_dict = vocab['src'], vocab['tgt']
-            # self._logger.info('Loaded src_dict: "%s"' % repr(src_dict))
-            # self._logger.info('Loaded src_dict.__dict__: "%s"' % repr(src_dict.__dict__))
-            # self._logger.info('Loaded tgt_dict: "%s"' % repr(tgt_dict))
-            # self._logger.info('Loaded tgt_dict.__dict__: "%s"' % repr(tgt_dict.__dict__))
 
         # Creating trainer ---------------------------------------------------------------------------------------------
         if state is not None and state.checkpoint is not None and state.nmt_preprocessor_path is not None:

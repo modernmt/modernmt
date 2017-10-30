@@ -181,13 +181,6 @@ class NMTEngine:
         self._model_init_state = {k: v for k, v in sorted(model_state_dict.items()) if 'generator' not in k}
         self._model_init_state.update({"generator." + k: v for k, v in sorted(generator_state_dict.items())})
 
-        # self._log("NMTEngine __init__ model:%s" % repr(self.model))
-        # self._log("NMTEngine __init__ model_state_dict:%s" % repr(model_state_dict))
-        # self._log("NMTEngine __init__ self._model_init_state:%s" % repr(self._model_init_state))
-
-    def _log(self, message):
-        self._logger.log(self._log_level, message)
-
     def reset_model(self):
         with log_timed_action(self._logger, 'Restoring model initial state', log_start=False):
             self.model.load_state_dict(self._model_init_state)

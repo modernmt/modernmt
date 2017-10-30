@@ -299,11 +299,6 @@ class NMTEngineTrainer:
             checkpoint_steps = min(self.opts.checkpoint_steps, number_of_batches_per_epoch)
             lr_decay_steps = min(self.opts.lr_decay_steps, number_of_batches_per_epoch)
 
-            # self._log('NMTEngineTrainer train_model self._engine.model: %s' % repr(self._engine.model))
-            # self._log('NMTEngineTrainer train_model self.optimizer.lr: %f' % self.optimizer.lr)
-            # self._log('NMTEngineTrainer train_model self.optimizer: %s' % repr(self.optimizer))
-            # self._log('NMTEngineTrainer train_model self.optimizer.__dict__: %s' % repr(self.optimizer.__dict__))
-
             for step, batch in train_dataset.iterator(self.opts.batch_size, loop=True, start_position=step):
 
                 # Terminate policy -------------------------------------------------------------------------------------
