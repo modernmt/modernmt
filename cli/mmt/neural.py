@@ -201,10 +201,14 @@ class NMTDecoder:
                 if metadata_path is not None:
                     metadata = NMTEngine.Metadata()
                     metadata.load_from_file(metadata_path)
-                    self._logger.info('Reading neural engine metadata from %s' % metadata_path)
+                    self._logger.info('Neural engine metadata read from %s' % metadata_path)
+
+                with _log_timed_action(self._logger, 'Reading BPE processor'):
+                    bpe_model_path = os.path.join(train_path, 'vocab.bpe')
+                    bpe_encoder = SubwordTextProcessor.load_from_file(bpe_model_path)
 
                 with _log_timed_action(self._logger, 'Creating engine from scratch'):
-                    engine = NMTEngine.new_instance(src_dict, tgt_dict, processor=None, metadata=metadata)
+                    engine = NMTEngine.new_instance(src_dict, tgt_dict, bpe_encoder, metadata=metadata)
 
         trainer = NMTEngineTrainer(engine, state=state, options=training_opts)
 
