@@ -2,10 +2,8 @@
 // Created by Davide  Caroselli on 08/05/17.
 //
 
-#include <assert.h>
-#include <fstream>
-
 #include "BidirectionalModel.h"
+#include <fstream>
 
 using namespace std;
 using namespace mmt;

@@ -6,7 +6,6 @@
 #include <thread>
 #include <unordered_set>
 #include <boost/filesystem.hpp>
-#include <assert.h>
 #include "DiagonalAlignment.h"
 #include "Builder.h"
 #include "BidirectionalModel.h"
