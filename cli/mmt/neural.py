@@ -338,15 +338,14 @@ class NeuralEngineBuilder(EngineBuilder):
         if training_args is not None:
             self._training_opts.load_from_dict(training_args.__dict__)
 
+        engine = NeuralEngine(name, source_lang, target_lang, bpe_symbols=self._training_opts.bpe_symbols,
+                              max_vocab_size=self._training_opts.max_vocab_size, gpus=gpus)
+        EngineBuilder.__init__(self, engine, roots, debug, steps, split_trainingset, max_training_words)
+
         self._valid_corpora_path = validation_corpora if validation_corpora is not None \
             else os.path.join(self._engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME)
         self._checkpoint = checkpoint
         self._metadata = metadata
-
-        engine = NeuralEngine(name, source_lang, target_lang, bpe_symbols=self._training_opts.bpe_symbols,
-                              max_vocab_size=self._training_opts.max_vocab_size, gpus=gpus)
-
-        EngineBuilder.__init__(self, engine, roots, debug, steps, split_trainingset, max_training_words)
 
     def _build_schedule(self):
         return EngineBuilder._build_schedule(self) + \
