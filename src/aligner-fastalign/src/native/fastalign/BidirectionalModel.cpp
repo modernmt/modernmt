@@ -16,48 +16,6 @@ BidirectionalModel::BidirectionalModel(shared_ptr<bitable_t> table, bool forward
         : Model(!forward, use_null, favor_diagonal, prob_align_null, diagonal_tension), table(table) {
 }
 
-void BidirectionalModel::Store(const BidirectionalModel *forward, const BidirectionalModel *backward,
-                               const string &filename) {
-    ofstream out(filename, ios::binary | ios::out);
-
-    if (forward == nullptr)
-        throw invalid_argument("Forward model is not specified!");
-
-
-    out.write((const char *) &forward->use_null, sizeof(bool));
-    out.write((const char *) &forward->favor_diagonal, sizeof(bool));
-
-    out.write((const char *) &forward->prob_align_null, sizeof(double));
-    out.write((const char *) &forward->diagonal_tension, sizeof(double));
-    if (backward != nullptr){
-        out.write((const char *) &backward->diagonal_tension, sizeof(double));
-    } else{
-        out.write((const char *) &kNullProbability, sizeof(double));
-    }
-
-    bitable_t &table = *forward->table;
-
-    size_t ttable_size = table.size();
-    out.write((const char *) &ttable_size, sizeof(size_t));
-
-    for (word_t sourceWord = 0; sourceWord < table.size(); ++sourceWord) {
-        auto &row = table[sourceWord];
-        size_t row_size = row.size();
-
-        if (row_size == 0)
-            continue;
-
-        out.write((const char *) &sourceWord, sizeof(word_t));
-        out.write((const char *) &row_size, sizeof(size_t));
-
-        for (auto it = row.begin(); it != row.end(); ++it) {
-            out.write((const char *) &it->first, sizeof(word_t));
-            out.write((const char *) &it->second.first, sizeof(float));
-            out.write((const char *) &it->second.second, sizeof(float));
-        }
-    }
-}
-
 void BidirectionalModel::Open(const string &filename, Model **outForward, Model **outBackward) {
     bool use_null;
     bool favor_diagonal;
@@ -90,7 +48,7 @@ void BidirectionalModel::Open(const string &filename, Model **outForward, Model 
         size_t row_size;
         in.read((char *) &row_size, sizeof(size_t));
 
-        auto &row = table->at(sourceWord);
+        unordered_map<word_t, pair<float, float>> &row = table->at(sourceWord);
         row.reserve(row_size);
 
         for (size_t i = 0; i < row_size; ++i) {
@@ -114,7 +72,7 @@ void BidirectionalModel::ExportLexicalModel(const string &filename, const Vocabu
     ofstream out(filename, ios::binary | ios::out);
 
     for (word_t sid = 0; sid < table->size(); ++sid) {
-        const auto &row = table->at(sid);
+        const unordered_map<word_t, pair<float, float>> &row = table->at(sid);
         size_t row_size = row.size();
 
         if (row_size == 0)
@@ -127,18 +85,4 @@ void BidirectionalModel::ExportLexicalModel(const string &filename, const Vocabu
             out << "  <" << vb->Get(tid) << "> " << it->second.first << " " << it->second.second << endl;
         }
     }
-}
-
-float BidirectionalModel::GetProbability(word_t source, word_t target) {
-    if (is_reverse)
-        std::swap(source, target);
-
-    if (table->empty())
-        return kNullProbability;
-    if (source >= table->size())
-        return kNullProbability;
-
-    auto &row = table->at(source);
-    auto ptr = row.find(target);
-    return ptr == row.end() ? kNullProbability : (is_reverse ? ptr->second.second : ptr->second.first);
 }

@@ -33,7 +33,7 @@ namespace mmt {
                 , NULL, &outAlignments);
             }
 
-            virtual float GetProbability(word_t source, word_t target) = 0;
+            virtual double GetProbability(word_t source, word_t target) = 0;
 
             virtual void IncrementProbability(word_t source, word_t target, double amount) = 0;
 
