@@ -241,12 +241,12 @@ void Builder::Build(const Corpus &corpus, const string &path) {
 
     BuilderModel *forward = (BuilderModel *) BuildModel(vocab, corpus, true);
     fs::path fwd_model_filename = fs::absolute(fs::path(path) / fs::path("fwd_model.tmp"));
-    forward->Store(fwd_model_filename.string(), true);
+    forward->Store(fwd_model_filename.string());
     delete forward;
 
     BuilderModel *backward = (BuilderModel *) BuildModel(vocab, corpus, false);
     fs::path bwd_model_filename = fs::absolute(fs::path(path) / fs::path("bwd_model.tmp"));
-    backward->Store(bwd_model_filename.string(), false);
+    backward->Store(bwd_model_filename.string());
     delete backward;
 
     if (listener) listener->ModelDumpBegin();
@@ -258,10 +258,10 @@ void Builder::Build(const Corpus &corpus, const string &path) {
     delete vocab;
 
     if (remove(fwd_model_filename.c_str()) != 0)
-        throw exception("Error deleting the forward model file");
+        throw runtime_error("Error deleting the forward model file");
 
     if (remove(bwd_model_filename.c_str()) != 0)
-        throw exception("Error deleting the backward model file");
+        throw runtime_error("Error deleting the backward model file");
 
     if (listener) listener->ModelDumpEnd();
 }
