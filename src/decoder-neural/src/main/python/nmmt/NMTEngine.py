@@ -284,9 +284,12 @@ class NMTEngine:
 
         return self.processor.decode_tokens(pred_batch[0][0])
 
-    def save(self, path, store_data=True, store_metadata=True):
+    def save(self, path, store_data=True, store_metadata=True, store_processor=True):
         if store_metadata:
             self.metadata.save_to_file(path + '.meta')
+
+        if store_processor:
+            self.processor.save_to_file(path + '.bpe')
 
         if store_data:
             model_state_dict, generator_state_dict = self._get_state_dicts()
