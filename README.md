@@ -68,7 +68,7 @@ Next, we are going to improve the partial translation `hello mondo`.
 
 ### Improve translation quality with new data
 
-Let's now add a contribution to te existing engine, **without** need for retraining, in order to improve the previous translation. We will use again the command-line tool `mmt`:
+Let's now add a contribution to the existing engine, **without** need for retraining, in order to improve the previous translation. We will use again the command-line tool `mmt`:
 ```
 ./mmt add ibm "hello Mike!" "ciao Mike!"
 ```

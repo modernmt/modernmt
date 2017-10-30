@@ -52,3 +52,9 @@ class IllegalArgumentException(Exception):
     def __init__(self, error):
         super(Exception, self).__init__(error)
         self.message = error
+
+
+class CorpusNotFoundInFolderException(IllegalArgumentException):
+    def __init__(self, error):
+        super(Exception, self).__init__(error)
+        self.message = error

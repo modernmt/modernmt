@@ -9,7 +9,7 @@ import logging
 import time
 
 import cli
-from cli import IllegalArgumentException, mmt_javamain
+from cli import IllegalArgumentException, CorpusNotFoundInFolderException, mmt_javamain
 from cli.libs import fileutils, shell
 from cli.mmt import BilingualCorpus
 from cli.mmt.processing import TrainingPreprocessor, TMCleaner
@@ -236,6 +236,9 @@ class Engine(object):
 
 
 class EngineBuilder:
+    _MB = (1024 * 1024)
+    _GB = (1024 * 1024 * 1024)
+
     class Listener:
         def __init__(self):
             pass
@@ -419,10 +422,12 @@ class EngineBuilder:
         # separate bilingual and monolingual corpora in separate lists, reading them from roots
         bilingual_corpora, monolingual_corpora = BilingualCorpus.splitlist(source_lang, target_lang,
                                                                            roots=self._roots)
+
         # if no bilingual corpora are found, it is not possible to train the translation system
         if len(bilingual_corpora) == 0:
-            raise IllegalArgumentException(
-                'you project does not include %s-%s data.' % (source_lang.upper(), target_lang.upper()))
+            raise CorpusNotFoundInFolderException(
+                'Could not find %s-%s corpora in path %s' %
+                (source_lang.upper(), target_lang.upper(), ', '.join(self._roots)))
 
         # if no old engines (i.e. engine folders) can be found, create a new one from scratch
         # if we are not trying to resume an old one, create from scratch anyway

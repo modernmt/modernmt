@@ -5,7 +5,7 @@ import shutil
 import sys
 import getpass
 
-from cli import IllegalStateException, IllegalArgumentException
+from cli import IllegalStateException, IllegalArgumentException, CorpusNotFoundInFolderException
 from cli.evaluation import Evaluator
 from cli.libs import shell
 from cli.libs.datahub import DataHub
@@ -128,7 +128,7 @@ def main_create(argv):
     nmt_train_arguments.add_argument('--checkpoint-steps', dest='checkpoint_steps', type=int, default=None,
                                      help='if neural is set, dro a checkpoint every this number of steps '
                                     '(default value is 10000).')
-    nmt_train_arguments.add_argument('--step-limit', dest='steps_limit', type=int, default=None,
+    nmt_train_arguments.add_argument('--step-limit', dest='step_limit', type=int, default=None,
                                      help='if neural is set, run for this number of steps at most '
                                     '(default value is infinite).')
     nmt_train_arguments.add_argument('--early-stop', dest='early_stop', type=int, default=None,
@@ -792,6 +792,9 @@ def main():
         message = '{prog}: error: {message}\n'.format(prog=e.parser.prog, message=e.message)
         e.parser.print_usage(file=sys.stderr)
         sys.stderr.write(message)
+        exit(1)
+    except CorpusNotFoundInFolderException as e:
+        sys.stderr.write('ERROR Corpus not found: {message}\n'.format(message=e.message))
         exit(1)
     except IllegalArgumentException as e:
         sys.stderr.write('ERROR Illegal Argument: {message}\n'.format(message=e.message))

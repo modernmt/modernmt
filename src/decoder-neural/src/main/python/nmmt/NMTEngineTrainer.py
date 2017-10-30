@@ -59,7 +59,7 @@ class NMTEngineTrainer:
             self.report_steps = 100  # Log status every 'report_steps' steps
             self.validation_steps = 10000  # compute the validation score every 'validation_steps' steps
             self.checkpoint_steps = 10000  # Drop a checkpoint every 'checkpoint_steps' steps
-            self.steps_limit = None  # If set, run 'steps_limit' steps at most
+            self.step_limit = None  # If set, run 'step_limit' steps at most
 
             self.optimizer = 'sgd'
             self.learning_rate = 1.
@@ -95,8 +95,8 @@ class NMTEngineTrainer:
                     self.validation_steps = args.validation_steps
                 if args.checkpoint_steps:
                     self.checkpoint_steps = args.checkpoint_steps
-                if args.steps_limit:
-                    self.steps_limit = args.steps_limit
+                if args.step_limit:
+                    self.step_limit = args.step_limit
                 if args.early_stop:
                     self.early_stop = args.early_stop
                 if args.n_avg_checkpoints:
@@ -293,6 +293,11 @@ class NMTEngineTrainer:
             number_of_batches_per_epoch = math.ceil(float(len(train_dataset))/self.opts.batch_size)
             self._log('Number of steps per epoch: %d' % number_of_batches_per_epoch)
 
+            # forcing step limits to be smaller or (at most) equal to the number of steps per epochs
+            self.opts.report_steps = self.opts.report_steps if number_of_batches_per_epoch >= self.opts.report_steps else number_of_batches_per_epoch
+            self.opts.validation_steps = self.opts.validation_steps if number_of_batches_per_epoch >= self.opts.validation_steps else number_of_batches_per_epoch
+            self.opts.checkpoint_steps = self.opts.checkpoint_steps if number_of_batches_per_epoch >= self.opts.checkpoint_steps else number_of_batches_per_epoch
+            self.opts.lr_decay_steps = self.opts.lr_decay_steps if number_of_batches_per_epoch >= self.opts.lr_decay_steps else number_of_batches_per_epoch
 
             # self._log('NMTEngineTrainer train_model self._engine.model: %s' % repr(self._engine.model))
             # self._log('NMTEngineTrainer train_model self.optimizer.lr: %f' % self.optimizer.lr)
@@ -303,7 +308,7 @@ class NMTEngineTrainer:
 
                 # Terminate policy -------------------------------------------------------------------------------------
                 if valid_ppl_stalled >= self.opts.early_stop \
-                        or (self.opts.steps_limit is not None and step >= self.opts.steps_limit):
+                        or (self.opts.step_limit is not None and step >= self.opts.step_limit):
                     break
 
                 # Run step ---------------------------------------------------------------------------------------------
