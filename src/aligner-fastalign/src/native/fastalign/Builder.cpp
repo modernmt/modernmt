@@ -40,98 +40,104 @@ inline double digamma(double x) {
     return result;
 }
 
-BuilderModel::BuilderModel(bool is_reverse, bool use_null, bool favor_diagonal, double prob_align_null, double diagonal_tension): Model(is_reverse, use_null, favor_diagonal, prob_align_null, diagonal_tension) {}
+class BuilderModel : public Model {
+public:
+    vector<unordered_map<word_t, pair<float, float>>> data;
 
-BuilderModel::~BuilderModel(){}
+    BuilderModel(bool is_reverse, bool use_null, bool favor_diagonal, double prob_align_null, double diagonal_tension)
+            : Model(is_reverse, use_null, favor_diagonal, prob_align_null, diagonal_tension) {
+    }
 
-float BuilderModel::GetProbability(word_t source, word_t target) {
-    if (data.empty())
-        return kNullProbability;
-    if (source >= data.size())
-        return kNullProbability;
+    ~BuilderModel() {};
 
-    auto &row = data[source];
-    auto ptr = row.find(target);
-    return ptr == row.end() ? kNullProbability : ptr->second.first;
-}
+    double GetProbability(word_t source, word_t target) override {
+        if (data.empty())
+            return kNullProbability;
+        if (source >= data.size())
+            return kNullProbability;
 
-void BuilderModel::IncrementProbability(word_t source, word_t target, double amount) {
+        auto &row = data[source];
+        auto ptr = row.find(target);
+        return ptr == row.end() ? kNullProbability : ptr->second.first;
+    }
+
+    void IncrementProbability(word_t source, word_t target, double amount) override {
 #pragma omp atomic
-    data[source][target].second += (float) amount;
-}
+        data[source][target].second += (float) amount;
+    }
 
-void BuilderModel::Prune(double threshold) {
+    void Prune(double threshold = 1e-20) {
 #pragma omp parallel for schedule(dynamic)
-    for (size_t i = 0; i < data.size(); ++i) {
-        auto &row = data[i];
+        for (size_t i = 0; i < data.size(); ++i) {
+            auto &row = data[i];
 
-        for (auto cell = row.cbegin(); cell != row.cend(); /* no increment */) {
-            if (cell->second.first <= threshold)
-                row.erase(cell++);
-            else
-                ++cell;
-        }
-    }
-}
-
-void BuilderModel::Normalize(double alpha) {
-    for (size_t i = 0; i < data.size(); ++i) {
-        auto &row = data[i];
-        double row_norm = 0;
-
-        for (auto cell = row.begin(); cell != row.end(); ++cell)
-            row_norm += cell->second.first + alpha;
-
-        if (row_norm == 0)
-            row_norm = 1;
-
-        if (alpha > 0)
-            row_norm = digamma(row_norm);
-
-        for (auto cell = row.begin(); cell != row.end(); ++cell)
-            cell->second.first = (float) ( alpha > 0 ?
-                exp(digamma(cell->second.first + alpha) - row_norm) :
-                cell->second.first / row_norm );
-    }
-}
-
-void BuilderModel::Swap() {
-#pragma omp parallel for schedule(dynamic)
-    for (size_t i = 0; i < data.size(); ++i) {
-        for (auto cell = data[i].begin(); cell != data[i].end(); ++cell) {
-            cell->second.first = cell->second.second;
-            cell->second.second = 0;
-        }
-    }
-}
-
-void BuilderModel::Store(const string &filename, bool forward){
-    ofstream out(filename, ios::binary | ios::out);
-
-    out.write((const char *) &use_null, sizeof(bool));
-    out.write((const char *) &favor_diagonal, sizeof(bool));
-
-    out.write((const char *) &prob_align_null, sizeof(double));
-    out.write((const char *) &diagonal_tension, sizeof(double));
-
-    size_t data_size = data.size();
-    out.write((const char *) &data_size, sizeof(size_t));
-
-    for (word_t sourceWord = 0; sourceWord < data_size; ++sourceWord) {
-        auto &row = data[sourceWord];
-        size_t row_size = row.size();
-
-        if (!row.empty()){
-            out.write((const char *) &sourceWord, sizeof(word_t));
-            out.write((const char *) &row_size, sizeof(size_t));
-            for (auto entry = row.begin(); entry != row.end(); ++entry) {
-                out.write((const char *) &entry->first, sizeof(word_t));
-                out.write((const char *) &entry->second.first, sizeof(float));
+            for (auto cell = row.cbegin(); cell != row.cend(); /* no increment */) {
+                if (cell->second.first <= threshold)
+                    row.erase(cell++);
+                else
+                    ++cell;
             }
         }
     }
-}
 
+    void Normalize(double alpha = 0) {
+        for (size_t i = 0; i < data.size(); ++i) {
+            auto &row = data[i];
+            double row_norm = 0;
+
+            for (auto cell = row.begin(); cell != row.end(); ++cell)
+                row_norm += cell->second.first + alpha;
+
+            if (row_norm == 0)
+                row_norm = 1;
+
+            if (alpha > 0)
+                row_norm = digamma(row_norm);
+
+            for (auto cell = row.begin(); cell != row.end(); ++cell)
+                cell->second.first = (float) (alpha > 0 ?
+                                              exp(digamma(cell->second.first + alpha) - row_norm) :
+                                              cell->second.first / row_norm);
+        }
+    }
+
+    void Swap() {
+#pragma omp parallel for schedule(dynamic)
+        for (size_t i = 0; i < data.size(); ++i) {
+            for (auto cell = data[i].begin(); cell != data[i].end(); ++cell) {
+                cell->second.first = cell->second.second;
+                cell->second.second = 0;
+            }
+        }
+    }
+
+    void Store(const string &filename, bool forward) {
+        ofstream out(filename, ios::binary | ios::out);
+
+        out.write((const char *) &use_null, sizeof(bool));
+        out.write((const char *) &favor_diagonal, sizeof(bool));
+
+        out.write((const char *) &prob_align_null, sizeof(double));
+        out.write((const char *) &diagonal_tension, sizeof(double));
+
+        size_t data_size = data.size();
+        out.write((const char *) &data_size, sizeof(size_t));
+
+        for (word_t sourceWord = 0; sourceWord < data_size; ++sourceWord) {
+            auto &row = data[sourceWord];
+            size_t row_size = row.size();
+
+            if (!row.empty()) {
+                out.write((const char *) &sourceWord, sizeof(word_t));
+                out.write((const char *) &row_size, sizeof(size_t));
+                for (auto entry = row.begin(); entry != row.end(); ++entry) {
+                    out.write((const char *) &entry->first, sizeof(word_t));
+                    out.write((const char *) &entry->second.first, sizeof(float));
+                }
+            }
+        }
+    }
+};
 
 Builder::Builder(Options options) : mean_srclen_multiplier(options.mean_srclen_multiplier),
                                     initial_diagonal_tension(options.initial_diagonal_tension),
@@ -280,10 +286,10 @@ void Builder::Build(const Corpus &corpus, const string &path) {
     vocab->Store(vocab_filename.string());
     delete vocab;
 
-    if( remove( fwd_model_filename.c_str() ) != 0 )
+    if (remove(fwd_model_filename.c_str()) != 0)
         throw invalid_argument("Error deleting the forward model file");
 
-    if( remove( bwd_model_filename.c_str() ) != 0 )
+    if (remove(bwd_model_filename.c_str()) != 0)
         throw invalid_argument("Error deleting the backward model file");
 
     if (listener) listener->ModelDumpEnd();
@@ -387,7 +393,7 @@ void Builder::MergeAndStore(const string &fwd_path, const string &bwd_path, cons
     size_t rowSize;
     float score;
 
-    while (true){
+    while (true) {
         fwd_in.read((char *) &sourceWord, sizeof(word_t));
         if (fwd_in.eof())
             break;
@@ -428,7 +434,7 @@ void Builder::MergeAndStore(const string &fwd_path, const string &bwd_path, cons
         throw invalid_argument("The backward model is empty");
 
     //loading backward entries and fill the bitable
-    while (true){
+    while (true) {
         bwd_in.read((char *) &targetWord, sizeof(word_t));
         if (bwd_in.eof())
             break;
@@ -440,7 +446,8 @@ void Builder::MergeAndStore(const string &fwd_path, const string &bwd_path, cons
 
             assert(sourceWord < table->size());
 
-            auto cell = table->at(sourceWord).emplace(targetWord, pair<float, float>(kNullProbability, kNullProbability));
+            auto cell = table->at(sourceWord).emplace(targetWord,
+                                                      pair<float, float>(kNullProbability, kNullProbability));
             pair<float, float> &el = cell.first->second;
             el.second = score;
         }

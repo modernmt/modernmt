@@ -29,8 +29,7 @@ namespace mmt {
 
             inline void ComputeAlignments(const std::vector<std::pair<wordvec_t, wordvec_t>> &batch,
                                           std::vector<alignment_t> &outAlignments) {
-                ComputeAlignments(batch
-                , NULL, &outAlignments);
+                ComputeAlignments(batch, NULL, &outAlignments);
             }
 
             virtual double GetProbability(word_t source, word_t target) = 0;
