@@ -101,13 +101,13 @@ namespace mmt {
 
         class BuilderModel : public Model {
         public:
-            vector<unordered_map<word_t, pair<double, double>>> data;
+            vector<unordered_map<word_t, pair<float, float>>> data;
 
             BuilderModel(bool is_reverse, bool use_null, bool favor_diagonal, double prob_align_null, double diagonal_tension);
 
             ~BuilderModel();
 
-            double GetProbability(word_t source, word_t target) override;
+            float GetProbability(word_t source, word_t target) override;
 
             void IncrementProbability(word_t source, word_t target, double amount) override;
 

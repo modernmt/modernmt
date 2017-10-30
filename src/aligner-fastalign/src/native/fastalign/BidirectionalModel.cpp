@@ -52,8 +52,8 @@ void BidirectionalModel::Store(const BidirectionalModel *forward, const Bidirect
 
         for (auto it = row.begin(); it != row.end(); ++it) {
             out.write((const char *) &it->first, sizeof(word_t));
-            out.write((const char *) &it->second.first, sizeof(double));
-            out.write((const char *) &it->second.second, sizeof(double));
+            out.write((const char *) &it->second.first, sizeof(float));
+            out.write((const char *) &it->second.second, sizeof(float));
         }
     }
 }
@@ -95,13 +95,13 @@ void BidirectionalModel::Open(const string &filename, Model **outForward, Model 
 
         for (size_t i = 0; i < row_size; ++i) {
             word_t targetWord;
-            double first, second;
+            float first, second;
 
             in.read((char *) &targetWord, sizeof(word_t));
-            in.read((char *) &first, sizeof(double));
-            in.read((char *) &second, sizeof(double));
+            in.read((char *) &first, sizeof(float));
+            in.read((char *) &second, sizeof(float));
 
-            row[targetWord] = pair<double, double>(first, second);
+            row[targetWord] = pair<float, float>(first, second);
         }
     }
 
@@ -114,7 +114,7 @@ void BidirectionalModel::ExportLexicalModel(const string &filename, const Vocabu
     ofstream out(filename, ios::binary | ios::out);
 
     for (word_t sid = 0; sid < table->size(); ++sid) {
-        const unordered_map<word_t, pair<double, double>> &row = table->at(sid);
+        const auto &row = table->at(sid);
         size_t row_size = row.size();
 
         if (row_size == 0)
@@ -127,4 +127,18 @@ void BidirectionalModel::ExportLexicalModel(const string &filename, const Vocabu
             out << "  <" << vb->Get(tid) << "> " << it->second.first << " " << it->second.second << endl;
         }
     }
+}
+
+float BidirectionalModel::GetProbability(word_t source, word_t target) {
+    if (is_reverse)
+        std::swap(source, target);
+
+    if (table->empty())
+        return kNullProbability;
+    if (source >= table->size())
+        return kNullProbability;
+
+    auto &row = table->at(source);
+    auto ptr = row.find(target);
+    return ptr == row.end() ? kNullProbability : (is_reverse ? ptr->second.second : ptr->second.first);
 }

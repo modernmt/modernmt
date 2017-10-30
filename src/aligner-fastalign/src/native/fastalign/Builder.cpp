@@ -44,26 +44,26 @@ BuilderModel::BuilderModel(bool is_reverse, bool use_null, bool favor_diagonal, 
 
 BuilderModel::~BuilderModel(){}
 
-double BuilderModel::GetProbability(word_t source, word_t target) {
+float BuilderModel::GetProbability(word_t source, word_t target) {
     if (data.empty())
         return kNullProbability;
     if (source >= data.size())
         return kNullProbability;
 
-    unordered_map<word_t, pair<double, double>> &row = data[source];
+    auto &row = data[source];
     auto ptr = row.find(target);
     return ptr == row.end() ? kNullProbability : ptr->second.first;
 }
 
 void BuilderModel::IncrementProbability(word_t source, word_t target, double amount) {
 #pragma omp atomic
-    data[source][target].second += amount;
+    data[source][target].second += (float) amount;
 }
 
 void BuilderModel::Prune(double threshold) {
 #pragma omp parallel for schedule(dynamic)
     for (size_t i = 0; i < data.size(); ++i) {
-        unordered_map<word_t, pair<double, double>> &row = data[i];
+        auto &row = data[i];
 
         for (auto cell = row.cbegin(); cell != row.cend(); /* no increment */) {
             if (cell->second.first <= threshold)
@@ -76,7 +76,7 @@ void BuilderModel::Prune(double threshold) {
 
 void BuilderModel::Normalize(double alpha) {
     for (size_t i = 0; i < data.size(); ++i) {
-        unordered_map<word_t, pair<double, double>> &row = data[i];
+        auto &row = data[i];
         double row_norm = 0;
 
         for (auto cell = row.begin(); cell != row.end(); ++cell)
@@ -89,10 +89,9 @@ void BuilderModel::Normalize(double alpha) {
             row_norm = digamma(row_norm);
 
         for (auto cell = row.begin(); cell != row.end(); ++cell)
-            cell->second.first =
-                alpha > 0 ?
+            cell->second.first = (float) ( alpha > 0 ?
                 exp(digamma(cell->second.first + alpha) - row_norm) :
-                cell->second.first / row_norm;
+                cell->second.first / row_norm );
     }
 }
 
@@ -127,7 +126,7 @@ void BuilderModel::Store(const string &filename, bool forward){
             out.write((const char *) &row_size, sizeof(size_t));
             for (auto entry = row.begin(); entry != row.end(); ++entry) {
                 out.write((const char *) &entry->first, sizeof(word_t));
-                out.write((const char *) &entry->second.first, sizeof(double));
+                out.write((const char *) &entry->second.first, sizeof(float));
             }
         }
     }
@@ -171,7 +170,7 @@ void Builder::AllocateTTableSpace(Model *_model, const unordered_map<word_t, wor
             word_t sourceWord = row_ptr->first;
 
             for (auto targetWord = row_ptr->second.begin(); targetWord != row_ptr->second.end(); ++targetWord)
-                model->data[sourceWord][*targetWord] = pair<double, double>(kNullProbability, 0);
+                model->data[sourceWord][*targetWord] = pair<float, float>(kNullProbability, 0);
         }
     }
 }
@@ -236,22 +235,22 @@ bitable_t *MergeModels(BuilderModel *forward, BuilderModel *backward) {
 
         for (auto entry = forward->data[source].begin(); entry != forward->data[source].end(); ++entry) {
             word_t target = entry->first;
-            double score = entry->second.first;
+            float score = entry->second.first;
 
-            table->at(source)[target] = pair<double, double>(score, kNullProbability);
+            table->at(source)[target] = pair<float, float>(score, kNullProbability);
         }
     }
 
     for (word_t target = 0; target < backward->data.size(); ++target) {
         for (auto entry = backward->data[target].begin(); entry != backward->data[target].end(); ++entry) {
             word_t source = entry->first;
-            double score = entry->second.first;
+            float score = entry->second.first;
 
             assert(source < table->size());
 
-            auto cell = table->at(source).emplace(target, pair<double, double>(kNullProbability, kNullProbability));
-            pair<double, double> &el = cell.first->second;
-            el.second = (double) score;
+            auto cell = table->at(source).emplace(target, pair<float, float>(kNullProbability, kNullProbability));
+            pair<float, float> &el = cell.first->second;
+            el.second = score;
         }
     }
 
@@ -280,6 +279,12 @@ void Builder::Build(const Corpus &corpus, const string &path) {
     fs::path vocab_filename = fs::absolute(fs::path(path) / fs::path("model.voc"));
     vocab->Store(vocab_filename.string());
     delete vocab;
+
+    if( remove( fwd_model_filename.c_str() ) != 0 )
+        throw invalid_argument("Error deleting the forward model file");
+
+    if( remove( bwd_model_filename.c_str() ) != 0 )
+        throw invalid_argument("Error deleting the backward model file");
 
     if (listener) listener->ModelDumpEnd();
 }
@@ -380,7 +385,7 @@ void Builder::MergeAndStore(const string &fwd_path, const string &bwd_path, cons
     //loading forward entries and fill the bitable
     word_t sourceWord, targetWord;
     size_t rowSize;
-    double score;
+    float score;
 
     while (true){
         fwd_in.read((char *) &sourceWord, sizeof(word_t));
@@ -391,8 +396,8 @@ void Builder::MergeAndStore(const string &fwd_path, const string &bwd_path, cons
         table->at(sourceWord).reserve(rowSize);
         for (size_t i = 0; i < rowSize; ++i) {
             fwd_in.read((char *) &targetWord, sizeof(word_t));
-            fwd_in.read((char *) &score, sizeof(double));
-            table->at(sourceWord)[targetWord] = pair<double, double>(score, kNullProbability);
+            fwd_in.read((char *) &score, sizeof(float));
+            table->at(sourceWord)[targetWord] = pair<float, float>(score, kNullProbability);
         }
     }
 
@@ -431,13 +436,13 @@ void Builder::MergeAndStore(const string &fwd_path, const string &bwd_path, cons
         bwd_in.read((char *) &rowSize, sizeof(size_t));
         for (size_t i = 0; i < rowSize; ++i) {
             bwd_in.read((char *) &sourceWord, sizeof(word_t));
-            bwd_in.read((char *) &score, sizeof(double));
+            bwd_in.read((char *) &score, sizeof(float));
 
             assert(sourceWord < table->size());
 
-            auto cell = table->at(sourceWord).emplace(targetWord, pair<double, double>(kNullProbability, kNullProbability));
-            pair<double, double> &el = cell.first->second;
-            el.second = (double) score;
+            auto cell = table->at(sourceWord).emplace(targetWord, pair<float, float>(kNullProbability, kNullProbability));
+            pair<float, float> &el = cell.first->second;
+            el.second = score;
         }
 
     }
@@ -466,8 +471,8 @@ void Builder::MergeAndStore(const string &fwd_path, const string &bwd_path, cons
         out.write((const char *) &rowSize, sizeof(size_t));
         for (auto trgEntry = row.begin(); trgEntry != row.end(); ++trgEntry) {
             out.write((const char *) &trgEntry->first, sizeof(word_t));
-            out.write((const char *) &trgEntry->second.first, sizeof(double));
-            out.write((const char *) &trgEntry->second.second, sizeof(double));
+            out.write((const char *) &trgEntry->second.first, sizeof(float));
+            out.write((const char *) &trgEntry->second.second, sizeof(float));
         }
     }
     //closing bidirectional model file
