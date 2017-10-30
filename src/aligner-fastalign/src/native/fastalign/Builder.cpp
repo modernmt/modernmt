@@ -41,7 +41,7 @@ inline double digamma(double x) {
 
 class BuilderModel : public Model {
 public:
-    vector<unordered_map<word_t, pair<float, float>>> data;
+    vector<unordered_map<word_t, pair<double, double>>> data;
 
     BuilderModel(bool is_reverse, bool use_null, bool favor_diagonal, double prob_align_null, double diagonal_tension)
             : Model(is_reverse, use_null, favor_diagonal, prob_align_null, diagonal_tension) {
@@ -55,20 +55,20 @@ public:
         if (source >= data.size())
             return kNullProbability;
 
-        auto &row = data[source];
+        unordered_map<word_t, pair<double, double>> &row = data[source];
         auto ptr = row.find(target);
         return ptr == row.end() ? kNullProbability : ptr->second.first;
     }
 
     void IncrementProbability(word_t source, word_t target, double amount) override {
 #pragma omp atomic
-        data[source][target].second += (float) amount;
+        data[source][target].second += amount;
     }
 
     void Prune(double threshold = 1e-20) {
 #pragma omp parallel for schedule(dynamic)
         for (size_t i = 0; i < data.size(); ++i) {
-            auto &row = data[i];
+            unordered_map<word_t, pair<double, double>> &row = data[i];
 
             for (auto cell = row.cbegin(); cell != row.cend(); /* no increment */) {
                 if (cell->second.first <= threshold)
@@ -81,22 +81,22 @@ public:
 
     void Normalize(double alpha = 0) {
         for (size_t i = 0; i < data.size(); ++i) {
-            auto &row = data[i];
+            unordered_map<word_t, pair<double, double>> &row = data[i];
             double row_norm = 0;
 
             for (auto cell = row.begin(); cell != row.end(); ++cell)
                 row_norm += cell->second.first + alpha;
 
-            if (row_norm == 0)
-                row_norm = 1;
+            if (row_norm == 0) row_norm = 1;
 
             if (alpha > 0)
                 row_norm = digamma(row_norm);
 
             for (auto cell = row.begin(); cell != row.end(); ++cell)
-                cell->second.first = (float) (alpha > 0 ?
-                                              exp(digamma(cell->second.first + alpha) - row_norm) :
-                                              cell->second.first / row_norm);
+                cell->second.first =
+                        alpha > 0 ?
+                        exp(digamma(cell->second.first + alpha) - row_norm) :
+                        cell->second.first / row_norm;
         }
     }
 
@@ -110,7 +110,7 @@ public:
         }
     }
 
-    void Store(const string &filename, bool forward) {
+    void Store(const string &filename) {
         ofstream out(filename, ios::binary | ios::out);
 
         out.write((const char *) &use_null, sizeof(bool));
@@ -123,15 +123,18 @@ public:
         out.write((const char *) &data_size, sizeof(size_t));
 
         for (word_t sourceWord = 0; sourceWord < data_size; ++sourceWord) {
-            auto &row = data[sourceWord];
+            unordered_map<word_t, pair<double, double>> &row = data[sourceWord];
             size_t row_size = row.size();
 
             if (!row.empty()) {
                 out.write((const char *) &sourceWord, sizeof(word_t));
                 out.write((const char *) &row_size, sizeof(size_t));
+
                 for (auto entry = row.begin(); entry != row.end(); ++entry) {
+                    float value = (float) (entry->second.first);
+
                     out.write((const char *) &entry->first, sizeof(word_t));
-                    out.write((const char *) &entry->second.first, sizeof(float));
+                    out.write((const char *) &value, sizeof(float));
                 }
             }
         }
@@ -175,7 +178,7 @@ void Builder::AllocateTTableSpace(Model *_model, const unordered_map<word_t, wor
             word_t sourceWord = row_ptr->first;
 
             for (auto targetWord = row_ptr->second.begin(); targetWord != row_ptr->second.end(); ++targetWord)
-                model->data[sourceWord][*targetWord] = pair<float, float>(kNullProbability, 0);
+                model->data[sourceWord][*targetWord] = pair<double, double>(kNullProbability, 0);
         }
     }
 }
@@ -231,49 +234,18 @@ void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const Corpus &
     AllocateTTableSpace(model, buffer, maxSourceWord);
 }
 
-bitable_t *MergeModels(BuilderModel *forward, BuilderModel *backward) {
-    bitable_t *table = new bitable_t;
-    table->resize(forward->data.size());
-
-    for (word_t source = 0; source < forward->data.size(); ++source) {
-        table->at(source).reserve(forward->data[source].size());
-
-        for (auto entry = forward->data[source].begin(); entry != forward->data[source].end(); ++entry) {
-            word_t target = entry->first;
-            float score = entry->second.first;
-
-            table->at(source)[target] = pair<float, float>(score, kNullProbability);
-        }
-    }
-
-    for (word_t target = 0; target < backward->data.size(); ++target) {
-        for (auto entry = backward->data[target].begin(); entry != backward->data[target].end(); ++entry) {
-            word_t source = entry->first;
-            float score = entry->second.first;
-
-            assert(source < table->size());
-
-            auto cell = table->at(source).emplace(target, pair<float, float>(kNullProbability, kNullProbability));
-            pair<float, float> &el = cell.first->second;
-            el.second = score;
-        }
-    }
-
-    return table;
-}
-
 void Builder::Build(const Corpus &corpus, const string &path) {
     if (listener) listener->VocabularyBuildBegin();
     const Vocabulary *vocab = Vocabulary::FromCorpus(corpus);
     if (listener) listener->VocabularyBuildEnd();
 
     BuilderModel *forward = (BuilderModel *) BuildModel(vocab, corpus, true);
-    fs::path fwd_model_filename = fs::absolute(fs::path(path) / fs::path("fwd_model.dat"));
+    fs::path fwd_model_filename = fs::absolute(fs::path(path) / fs::path("fwd_model.tmp"));
     forward->Store(fwd_model_filename.string(), true);
     delete forward;
 
     BuilderModel *backward = (BuilderModel *) BuildModel(vocab, corpus, false);
-    fs::path bwd_model_filename = fs::absolute(fs::path(path) / fs::path("bwd_model.dat"));
+    fs::path bwd_model_filename = fs::absolute(fs::path(path) / fs::path("bwd_model.tmp"));
     backward->Store(bwd_model_filename.string(), false);
     delete backward;
 
@@ -286,10 +258,10 @@ void Builder::Build(const Corpus &corpus, const string &path) {
     delete vocab;
 
     if (remove(fwd_model_filename.c_str()) != 0)
-        throw invalid_argument("Error deleting the forward model file");
+        throw exception("Error deleting the forward model file");
 
     if (remove(bwd_model_filename.c_str()) != 0)
-        throw invalid_argument("Error deleting the backward model file");
+        throw exception("Error deleting the backward model file");
 
     if (listener) listener->ModelDumpEnd();
 }
