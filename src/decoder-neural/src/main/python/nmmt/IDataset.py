@@ -32,11 +32,9 @@ class DatasetWrapper(IDataset):
                 return self
 
             def _reset(self, position=None):
+                # TODO: shuffle?
                 if position is not None:
                     self._current_position = position
-
-                #TODO: shuffle?
-
 
             def next(self):
                 if self._current_position > 0 and (self._current_position % len(self._dataset)) == 0:

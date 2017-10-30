@@ -276,6 +276,7 @@ class NMTEngineTrainer:
             lr_decay_steps = min(self.opts.lr_decay_steps, number_of_batches_per_epoch)
 
             for step, batch in train_dataset.iterator(self.opts.batch_size, loop=True, start_position=step):
+                epoch = float(step) / number_of_batches_per_epoch
 
                 # Terminate policy -------------------------------------------------------------------------------------
                 if valid_ppl_stalled >= self.opts.early_stop \
@@ -288,13 +289,11 @@ class NMTEngineTrainer:
 
                 # Report -----------------------------------------------------------------------------------------------
                 if (step % report_steps) == 0:
-                    self._log('Step %d (epoch: %.2f): %s ' % (
-                    step, float(step) / number_of_batches_per_epoch, str(report_stats)))
+                    self._log('Step %d (epoch: %.2f): %s ' % (step, epoch, str(report_stats)))
                     report_stats = _Stats()
 
                 if (step % number_of_batches_per_epoch) == 0:
-                    self._log(
-                        'New epoch %d is starting at step %d' % (int(float(step) / number_of_batches_per_epoch), step))
+                    self._log('New epoch %d is starting at step %d' % (int(epoch), step))
 
                 valid_perplexity = None
 
@@ -309,36 +308,32 @@ class NMTEngineTrainer:
                         valid_ppl_stalled += 1
 
                     if valid_ppl_stalled > 0:
-                        self._log(
-                            'Validation perplexity at step %d (epoch %.2f): %f; current best: %f; stalled %d times' % (
-                            step, float(step) / number_of_batches_per_epoch, valid_perplexity, valid_ppl_best,
-                            valid_ppl_stalled))
+                        self._log('Validation perplexity at step %d (epoch %.2f): '
+                                  '%f; current best: %f; stalled %d times'
+                                  % (step, epoch, valid_perplexity, valid_ppl_best, valid_ppl_stalled))
                     else:
-                        self._log('Validation perplexity at step %d (epoch %.2f): %f; new best: %f' % (
-                        step, float(step) / number_of_batches_per_epoch, valid_perplexity, valid_ppl_best))
+                        self._log('Validation perplexity at step %d (epoch %.2f): %f; new best: %f'
+                                  % (step, epoch, valid_perplexity, valid_ppl_best))
 
                 # Learning rate update --------------------------------------------------------------------------------
                 if valid_ppl_stalled > 0:  # activate decay only if validation perplexity starts to increase
                     if step > self.optimizer.lr_start_decay_at:
                         if not self.optimizer.lr_start_decay:
-                            self._log(
-                                'Optimizer learning rate decay activated at step %d (epoch %.2f) with decay value %f; '
-                                'current lr value: %f' % (
-                                step, float(step) / number_of_batches_per_epoch, self.optimizer.lr_decay,
-                                self.optimizer.lr))
+                            self._log('Optimizer learning rate decay activated at step %d (epoch %.2f) '
+                                      'with decay value %f; current lr value: %f'
+                                      % (step, epoch, self.optimizer.lr_decay, self.optimizer.lr))
                         self.optimizer.lr_start_decay = True
 
                 else:  # otherwise de-activate
                     if self.optimizer.lr_start_decay:
-                        self._log(
-                            'Optimizer learning rate decay de-activated at step %d (epoch %.2f); current lr value: %f' % (
-                                step, float(step) / number_of_batches_per_epoch, self.optimizer.lr))
+                        self._log('Optimizer learning rate decay de-activated at step %d (epoch %.2f); '
+                                  'current lr value: %f' % (step, epoch, self.optimizer.lr))
                     self.optimizer.lr_start_decay = False
 
                 if self.optimizer.lr_start_decay and (step % lr_decay_steps) == 0:
                     self.optimizer.updateLearningRate()
-                    self._log('Optimizer learning rate after step %d (epoch %.2f) set to lr = %g' % (
-                    step, float(step) / number_of_batches_per_epoch, self.optimizer.lr))
+                    self._log('Optimizer learning rate after step %d (epoch %.2f) set to lr = %g'
+                              % (step, epoch, self.optimizer.lr))
 
                 # Checkpoint -------------------------------------------------------------------------------------------
                 if (step % checkpoint_steps) == 0 and save_path is not None:
@@ -348,8 +343,7 @@ class NMTEngineTrainer:
                     checkpoint_ppl = valid_perplexity if valid_perplexity is not None else checkpoint_stats.perplexity
                     checkpoint_file = os.path.join(save_path, 'checkpoint_%d' % step)
 
-                    self._log('Checkpoint at step %d (epoch %.2f): %s' % (
-                    step, float(step) / number_of_batches_per_epoch, str(checkpoint_stats)))
+                    self._log('Checkpoint at step %d (epoch %.2f): %s' % (step, epoch, str(checkpoint_stats)))
                     self._engine.save(checkpoint_file)
                     self.state.add_checkpoint(step, checkpoint_file, checkpoint_ppl)
                     self.state.save_to_file(state_file_path)
