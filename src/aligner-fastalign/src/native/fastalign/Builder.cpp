@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <thread>
+#include <assert.h>
 #include <unordered_set>
 #include <boost/filesystem.hpp>
 #include "DiagonalAlignment.h"
@@ -354,7 +355,7 @@ void Builder::MergeAndStore(const string &fwd_path, const string &bwd_path, cons
     fwd_in.read((char *) &fwd_ttable_size, sizeof(size_t));
 
     if (fwd_ttable_size == 0)
-        throw invalid_argument("The forward model is empty");
+        throw runtime_error("The forward model is empty");
 
     //resizing the bitable
     table->resize(fwd_ttable_size);
@@ -402,7 +403,7 @@ void Builder::MergeAndStore(const string &fwd_path, const string &bwd_path, cons
     assert(fwd_ttable_size == bwd_ttable_size);
 
     if (bwd_ttable_size == 0)
-        throw invalid_argument("The backward model is empty");
+        throw runtime_error("The backward model is empty");
 
     //loading backward entries and fill the bitable
     while (true) {
@@ -427,7 +428,6 @@ void Builder::MergeAndStore(const string &fwd_path, const string &bwd_path, cons
 
     //closing backward model file
     bwd_in.close();
-
 
     //opening bidirectional model file for writing
     ofstream out(out_path, ios::binary | ios::out);
