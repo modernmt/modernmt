@@ -53,6 +53,9 @@ class NMTEngineTrainer:
         def __init__(self):
             self.log_level = logging.INFO
 
+            self.bpe_symbols = 90000
+            self.max_vocab_size = None  # Unlimited
+
             self.batch_size = 64
             self.max_generator_batches = 32  # Maximum batches of words in a seq to run the generator on in parallel.
 
@@ -71,36 +74,10 @@ class NMTEngineTrainer:
             self.early_stop = 10  # terminate training if validations is stalled for 'early_stop' times
             self.n_avg_checkpoints = 5  # number of checkpoints to merge at the end of training process
 
-        def set(self, args=None):
-            if args is not None:
-
-                # This for-loop changes all parameters of options if they are present in args
-                # for k, v in enumerate(self.__dict__):
-                #     logger.log(logging.INFO,'NMTEngineTrainer k = %s v= %s' % (repr(k), repr(v)))
-                #     self.__dict__[v] = args.__dict__[v] if v in args.__dict__ else self.__dict__[v]
-                # it is a compact way to do the same as follows
-                if args.batch_size:
-                    self.batch_size = args.batch_size
-                if args.learning_rate:
-                    self.learning_rate = args.learning_rate
-                if args.lr_decay:
-                    self.lr_decay = args.lr_decay
-                if args.lr_decay_steps:
-                    self.lr_decay_steps = args.lr_decay_steps
-                if args.lr_decay_start_at:
-                    self.lr_decay_start_at = args.lr_decay_start_at
-                if args.report_steps:
-                    self.report_steps = args.report_steps
-                if args.validation_steps:
-                    self.validation_steps = args.validation_steps
-                if args.checkpoint_steps:
-                    self.checkpoint_steps = args.checkpoint_steps
-                if args.step_limit:
-                    self.step_limit = args.step_limit
-                if args.early_stop:
-                    self.early_stop = args.early_stop
-                if args.n_avg_checkpoints:
-                    self.n_avg_checkpoints = args.n_avg_checkpoints
+        def load_from_dict(self, d):
+            for key in self.__dict__:
+                if key in d:
+                    self.__dict__[key] = d[key]
 
         def __str__(self):
             return str(self.__dict__)
@@ -109,8 +86,7 @@ class NMTEngineTrainer:
             return str(self.__dict__)
 
     class State(object):
-        def __init__(self, size, nmt_preprocessor_path=None):
-            self.nmt_preprocessor_path = nmt_preprocessor_path
+        def __init__(self, size):
             self.size = size
             self.checkpoint = None
             self.history = []
@@ -164,12 +140,12 @@ class NMTEngineTrainer:
                 state.__dict__ = json.loads(stream.read())
             return state
 
-    def __init__(self, engine, options=None, optimizer=None, state=None, nmt_preprocessor_path=None):
+    def __init__(self, engine, options=None, optimizer=None, state=None):
         self._logger = logging.getLogger('nmmt.NMTEngineTrainer')
         self._engine = engine
         self.opts = options if options is not None else NMTEngineTrainer.Options()
 
-        self.state = state if state is not None else NMTEngineTrainer.State(self.opts.n_avg_checkpoints, nmt_preprocessor_path)
+        self.state = state if state is not None else NMTEngineTrainer.State(self.opts.n_avg_checkpoints)
 
         if optimizer is None:
             optimizer = Optim(self.opts.optimizer, self.opts.learning_rate, max_grad_norm=self.opts.max_grad_norm,
@@ -243,7 +219,7 @@ class NMTEngineTrainer:
         valid_loss, valid_acc = total_loss / total_words, float(total_num_correct) / total_words
         valid_ppl = math.exp(min(valid_loss, 100))
 
-        self._log('Validation Set at step %d: loss = %g, perplexity = %g, accuracy = %g' % (
+        self._log('Validation at step %d: loss = %g, perplexity = %g, accuracy = %g' % (
             step, valid_loss, valid_ppl, (float(valid_acc) * 100)))
 
         return valid_ppl
@@ -290,22 +266,16 @@ class NMTEngineTrainer:
             checkpoint_stats = _Stats()
             report_stats = _Stats()
 
-            number_of_batches_per_epoch = math.ceil(float(len(train_dataset))/self.opts.batch_size)
+            number_of_batches_per_epoch = int(math.ceil(float(len(train_dataset)) / self.opts.batch_size))
             self._log('Number of steps per epoch: %d' % number_of_batches_per_epoch)
 
             # forcing step limits to be smaller or (at most) equal to the number of steps per epochs
-            self.opts.report_steps = self.opts.report_steps if number_of_batches_per_epoch >= self.opts.report_steps else number_of_batches_per_epoch
-            self.opts.validation_steps = self.opts.validation_steps if number_of_batches_per_epoch >= self.opts.validation_steps else number_of_batches_per_epoch
-            self.opts.checkpoint_steps = self.opts.checkpoint_steps if number_of_batches_per_epoch >= self.opts.checkpoint_steps else number_of_batches_per_epoch
-            self.opts.lr_decay_steps = self.opts.lr_decay_steps if number_of_batches_per_epoch >= self.opts.lr_decay_steps else number_of_batches_per_epoch
-
-            # self._log('NMTEngineTrainer train_model self._engine.model: %s' % repr(self._engine.model))
-            # self._log('NMTEngineTrainer train_model self.optimizer.lr: %f' % self.optimizer.lr)
-            # self._log('NMTEngineTrainer train_model self.optimizer: %s' % repr(self.optimizer))
-            # self._log('NMTEngineTrainer train_model self.optimizer.__dict__: %s' % repr(self.optimizer.__dict__))
+            report_steps = min(self.opts.report_steps, number_of_batches_per_epoch)
+            validation_steps = min(self.opts.validation_steps, number_of_batches_per_epoch)
+            checkpoint_steps = min(self.opts.checkpoint_steps, number_of_batches_per_epoch)
+            lr_decay_steps = min(self.opts.lr_decay_steps, number_of_batches_per_epoch)
 
             for step, batch in train_dataset.iterator(self.opts.batch_size, loop=True, start_position=step):
-
                 # Terminate policy -------------------------------------------------------------------------------------
                 if valid_ppl_stalled >= self.opts.early_stop \
                         or (self.opts.step_limit is not None and step >= self.opts.step_limit):
@@ -315,18 +285,20 @@ class NMTEngineTrainer:
                 self._train_step(batch, criterion, [checkpoint_stats, report_stats])
                 step += 1
 
+                epoch = float(step) / number_of_batches_per_epoch
+
                 # Report -----------------------------------------------------------------------------------------------
-                if (step % self.opts.report_steps) == 0:
-                    self._log('Step %d (epoch: %.2f): %s ' % (step, float(step) / number_of_batches_per_epoch, str(report_stats)))
+                if (step % report_steps) == 0:
+                    self._log('Step %d (epoch: %.2f): %s ' % (step, epoch, str(report_stats)))
                     report_stats = _Stats()
 
                 if (step % number_of_batches_per_epoch) == 0:
-                    self._log('New epoch %d is starting at step %d' % (int(float(step) / number_of_batches_per_epoch), step))
+                    self._log('New epoch %d is starting at step %d' % (int(epoch) + 1, step))
 
                 valid_perplexity = None
 
                 # Validation -------------------------------------------------------------------------------------------
-                if valid_dataset is not None and (step % self.opts.validation_steps) == 0:
+                if valid_dataset is not None and (step % validation_steps) == 0:
                     valid_perplexity = self._evaluate(step, criterion, valid_dataset)
 
                     if valid_ppl_best is None or valid_perplexity < valid_ppl_best:
@@ -336,37 +308,42 @@ class NMTEngineTrainer:
                         valid_ppl_stalled += 1
 
                     if valid_ppl_stalled > 0:
-                        self._log('Validation perplexity at step %d (epoch %.2f): %f; current best: %f; stalled %d times' % (step, float(step) / number_of_batches_per_epoch, valid_perplexity, valid_ppl_best, valid_ppl_stalled))
+                        self._log('Validation perplexity at step %d (epoch %.2f): '
+                                  '%f; current best: %f; stalled %d times'
+                                  % (step, epoch, valid_perplexity, valid_ppl_best, valid_ppl_stalled))
                     else:
-                        self._log('Validation perplexity at step %d (epoch %.2f): %f; new best: %f' % (step, float(step) / number_of_batches_per_epoch, valid_perplexity, valid_ppl_best))
+                        self._log('Validation perplexity at step %d (epoch %.2f): %f; new best: %f'
+                                  % (step, epoch, valid_perplexity, valid_ppl_best))
 
                 # Learning rate update --------------------------------------------------------------------------------
                 if valid_ppl_stalled > 0:  # activate decay only if validation perplexity starts to increase
                     if step > self.optimizer.lr_start_decay_at:
                         if not self.optimizer.lr_start_decay:
-                            self._log('Optimizer learning rate decay activated at step %d (epoch %.2f) with decay value %f; '
-                                      'current lr value: %f' % (step, float(step) / number_of_batches_per_epoch, self.optimizer.lr_decay, self.optimizer.lr))
+                            self._log('Optimizer learning rate decay activated at step %d (epoch %.2f) '
+                                      'with decay value %f; current lr value: %f'
+                                      % (step, epoch, self.optimizer.lr_decay, self.optimizer.lr))
                         self.optimizer.lr_start_decay = True
 
                 else:  # otherwise de-activate
                     if self.optimizer.lr_start_decay:
-                        self._log('Optimizer learning rate decay de-activated at step %d (epoch %.2f); current lr value: %f' % (
-                            step, float(step) / number_of_batches_per_epoch, self.optimizer.lr))
+                        self._log('Optimizer learning rate decay de-activated at step %d (epoch %.2f); '
+                                  'current lr value: %f' % (step, epoch, self.optimizer.lr))
                     self.optimizer.lr_start_decay = False
 
-                if self.optimizer.lr_start_decay and (step % self.opts.lr_decay_steps) == 0:
+                if self.optimizer.lr_start_decay and (step % lr_decay_steps) == 0:
                     self.optimizer.updateLearningRate()
-                    self._log('Optimizer learning rate after step %d (epoch %.2f) set to lr = %g' % (step, float(step) / number_of_batches_per_epoch,self.optimizer.lr))
+                    self._log('Optimizer learning rate after step %d (epoch %.2f) set to lr = %g'
+                              % (step, epoch, self.optimizer.lr))
 
                 # Checkpoint -------------------------------------------------------------------------------------------
-                if (step % self.opts.checkpoint_steps) == 0 and save_path is not None:
+                if (step % checkpoint_steps) == 0 and save_path is not None:
                     if valid_perplexity is None and valid_dataset is not None:
                         valid_perplexity = self._evaluate(step, criterion, valid_dataset)
 
                     checkpoint_ppl = valid_perplexity if valid_perplexity is not None else checkpoint_stats.perplexity
                     checkpoint_file = os.path.join(save_path, 'checkpoint_%d' % step)
 
-                    self._log('Checkpoint at step %d (epoch %.2f): %s' % (step, float(step) / number_of_batches_per_epoch, str(checkpoint_stats)))
+                    self._log('Checkpoint at step %d (epoch %.2f): %s' % (step, epoch, str(checkpoint_stats)))
                     self._engine.save(checkpoint_file)
                     self.state.add_checkpoint(step, checkpoint_file, checkpoint_ppl)
                     self.state.save_to_file(state_file_path)
