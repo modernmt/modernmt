@@ -290,14 +290,14 @@ class NMTEngineTrainer:
             checkpoint_stats = _Stats()
             report_stats = _Stats()
 
-            number_of_batches_per_epoch = math.ceil(float(len(train_dataset))/self.opts.batch_size)
+            number_of_batches_per_epoch = int(math.ceil(float(len(train_dataset))/self.opts.batch_size))
             self._log('Number of steps per epoch: %d' % number_of_batches_per_epoch)
 
             # forcing step limits to be smaller or (at most) equal to the number of steps per epochs
-            self.opts.report_steps = self.opts.report_steps if number_of_batches_per_epoch >= self.opts.report_steps else number_of_batches_per_epoch
-            self.opts.validation_steps = self.opts.validation_steps if number_of_batches_per_epoch >= self.opts.validation_steps else number_of_batches_per_epoch
-            self.opts.checkpoint_steps = self.opts.checkpoint_steps if number_of_batches_per_epoch >= self.opts.checkpoint_steps else number_of_batches_per_epoch
-            self.opts.lr_decay_steps = self.opts.lr_decay_steps if number_of_batches_per_epoch >= self.opts.lr_decay_steps else number_of_batches_per_epoch
+            report_steps = min(self.opts.report_steps, number_of_batches_per_epoch)
+            validation_steps = min(self.opts.validation_steps, number_of_batches_per_epoch)
+            checkpoint_steps = min(self.opts.checkpoint_steps, number_of_batches_per_epoch)
+            lr_decay_steps = min(self.opts.lr_decay_steps, number_of_batches_per_epoch)
 
             # self._log('NMTEngineTrainer train_model self._engine.model: %s' % repr(self._engine.model))
             # self._log('NMTEngineTrainer train_model self.optimizer.lr: %f' % self.optimizer.lr)
@@ -316,7 +316,7 @@ class NMTEngineTrainer:
                 step += 1
 
                 # Report -----------------------------------------------------------------------------------------------
-                if (step % self.opts.report_steps) == 0:
+                if (step % report_steps) == 0:
                     self._log('Step %d (epoch: %.2f): %s ' % (step, float(step) / number_of_batches_per_epoch, str(report_stats)))
                     report_stats = _Stats()
 
@@ -326,7 +326,7 @@ class NMTEngineTrainer:
                 valid_perplexity = None
 
                 # Validation -------------------------------------------------------------------------------------------
-                if valid_dataset is not None and (step % self.opts.validation_steps) == 0:
+                if valid_dataset is not None and (step % validation_steps) == 0:
                     valid_perplexity = self._evaluate(step, criterion, valid_dataset)
 
                     if valid_ppl_best is None or valid_perplexity < valid_ppl_best:
@@ -354,12 +354,12 @@ class NMTEngineTrainer:
                             step, float(step) / number_of_batches_per_epoch, self.optimizer.lr))
                     self.optimizer.lr_start_decay = False
 
-                if self.optimizer.lr_start_decay and (step % self.opts.lr_decay_steps) == 0:
+                if self.optimizer.lr_start_decay and (step % lr_decay_steps) == 0:
                     self.optimizer.updateLearningRate()
                     self._log('Optimizer learning rate after step %d (epoch %.2f) set to lr = %g' % (step, float(step) / number_of_batches_per_epoch,self.optimizer.lr))
 
                 # Checkpoint -------------------------------------------------------------------------------------------
-                if (step % self.opts.checkpoint_steps) == 0 and save_path is not None:
+                if (step % checkpoint_steps) == 0 and save_path is not None:
                     if valid_perplexity is None and valid_dataset is not None:
                         valid_perplexity = self._evaluate(step, criterion, valid_dataset)
 
