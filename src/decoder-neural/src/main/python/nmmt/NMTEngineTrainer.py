@@ -219,7 +219,7 @@ class NMTEngineTrainer:
         valid_loss, valid_acc = total_loss / total_words, float(total_num_correct) / total_words
         valid_ppl = math.exp(min(valid_loss, 100))
 
-        self._log('Validation Set at step %d: loss = %g, perplexity = %g, accuracy = %g' % (
+        self._log('Validation at step %d: loss = %g, perplexity = %g, accuracy = %g' % (
             step, valid_loss, valid_ppl, (float(valid_acc) * 100)))
 
         return valid_ppl
@@ -276,8 +276,6 @@ class NMTEngineTrainer:
             lr_decay_steps = min(self.opts.lr_decay_steps, number_of_batches_per_epoch)
 
             for step, batch in train_dataset.iterator(self.opts.batch_size, loop=True, start_position=step):
-                epoch = float(step) / number_of_batches_per_epoch
-
                 # Terminate policy -------------------------------------------------------------------------------------
                 if valid_ppl_stalled >= self.opts.early_stop \
                         or (self.opts.step_limit is not None and step >= self.opts.step_limit):
@@ -287,13 +285,15 @@ class NMTEngineTrainer:
                 self._train_step(batch, criterion, [checkpoint_stats, report_stats])
                 step += 1
 
+                epoch = float(step) / number_of_batches_per_epoch
+
                 # Report -----------------------------------------------------------------------------------------------
                 if (step % report_steps) == 0:
                     self._log('Step %d (epoch: %.2f): %s ' % (step, epoch, str(report_stats)))
                     report_stats = _Stats()
 
                 if (step % number_of_batches_per_epoch) == 0:
-                    self._log('New epoch %d is starting at step %d' % (int(epoch), step))
+                    self._log('New epoch %d is starting at step %d' % (int(epoch) + 1, step))
 
                 valid_perplexity = None
 
