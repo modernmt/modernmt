@@ -375,6 +375,12 @@ class NeuralEngineBuilder(EngineBuilder):
         # else, get the list of GPUs to employ using torch utils.
         # (This takes into account the user's choice)
         gpus = torch_utils.torch_get_gpus()
+
+        # AT THE MOMENT TRAINING IS MONOGPU AND WE ONLY USE THE FIRST AVAILABLE GPU FOR TRAINING.
+        # SO JUST CHECK CONSTRAINTS FOR IT.
+        # THIS MAY CHANGE IN THE FUTURE
+        gpus = [gpus[0]]
+
         gpus_ram = self._get_gpus_ram(gpus)
 
         for i in range(len(gpus_ram)):
