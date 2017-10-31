@@ -18,6 +18,7 @@ import onmt
 import nmmt
 from nmmt import NMTEngineTrainer, NMTEngine, SubwordTextProcessor, MMapDataset, Suggestion
 from nmmt import torch_setup
+from nmmt import torch_utils
 import torch
 
 
@@ -338,6 +339,7 @@ class NeuralEngineBuilder(EngineBuilder):
     def __init__(self, name, source_lang, target_lang, roots, debug=False, steps=None, split_trainingset=True,
                  validation_corpora=None, checkpoint=None, metadata=None, max_training_words=None, gpus=None,
                  training_args=None):
+
         self._training_opts = NMTEngineTrainer.Options()
         if training_args is not None:
             self._training_opts.load_from_dict(training_args.__dict__)
@@ -350,6 +352,7 @@ class NeuralEngineBuilder(EngineBuilder):
             else os.path.join(self._engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME)
         self._checkpoint = checkpoint
         self._metadata = metadata
+        self._gpus = gpus
 
     def _build_schedule(self):
         return EngineBuilder._build_schedule(self) + \
@@ -357,17 +360,36 @@ class NeuralEngineBuilder(EngineBuilder):
 
     def _check_constraints(self):
         recommended_gpu_ram = 2 * self._GB
-        available_gpu_ram = self._get_gpu_ram()
 
-        if available_gpu_ram <= recommended_gpu_ram:
-            raise EngineBuilder.HWConstraintViolated(
-                'more than %.fG of GPU RAM recommended, only %.fG available' %
-                (recommended_gpu_ram / self._GB, available_gpu_ram / self._GB)
-            )
+        # if the user explicitly said that no GPU must be used, return immediately
+        if self._gpus == [-1]:
+            return
 
-    # TODO: IMPLEMENT GPU RAM GET
-    def _get_gpu_ram(self):
-        return 3 * self._GB
+        # else, get the list of GPUs to employ using torch utils (This takes into account the user's choice)
+        gpus = torch_utils.torch_get_gpus()
+
+        # AT THE MOMENT TRAINING IS MONOGPU AND WE ONLY USE THE FIRST AVAILABLE GPU FOR TRAINING.
+        # SO JUST CHECK CONSTRAINTS FOR IT. THIS MAY CHANGE IN THE FUTURE
+        gpus = [gpus[0]]
+
+        gpus_ram = self._get_gpus_ram(gpus)
+
+        for i in range(len(gpus_ram)):
+            if gpus_ram[i] < recommended_gpu_ram:
+                raise EngineBuilder.HWConstraintViolated(
+                        'The RAM of GPU %d is only %.fG. More than %.fG of RAM recommended for each GPU.' %
+                        (gpus[i], gpus_ram[i] / self._GB, recommended_gpu_ram / self._GB)
+                    )
+
+    def _get_gpus_ram(self, gpu_ids):
+        result = []
+        command = ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits", "--id=%s" % ",".join(str(id) for id in gpu_ids)]
+        stdout, _ = shell.execute(command)
+        for line in stdout.split("\n"):
+            line = line.strip()
+            if line:
+                result.append(int(line) * self._MB)
+        return result
 
     # ~~~~~~~~~~~~~~~~~~~~~ Training step functions ~~~~~~~~~~~~~~~~~~~~~
 
