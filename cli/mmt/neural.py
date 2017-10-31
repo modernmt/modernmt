@@ -366,14 +366,14 @@ class NeuralEngineBuilder(EngineBuilder):
 
     def _check_constraints(self):
         recommended_gpu_ram = 2 * self._GB
-        gpus = []
+        gpus = torch_get_gpus()
 
-        if self._gpus == -1:
-            return
-        elif self._gpus is None:
-            gpus = self._get_all_gpus()
-        else:
-            gpus = self._gpus
+        # if self._gpus == -1:
+        #     return
+        # elif self._gpus is None:
+        #     gpus = self._get_all_gpus()
+        # else:
+        #     gpus = self._gpus
 
         gpus_ram = self._get_gpus_ram(gpus)
 
