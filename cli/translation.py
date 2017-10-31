@@ -145,7 +145,8 @@ class XLIFFTranslator(Translator):
         source_tag = tu.find('{urn:oasis:names:tc:xliff:document:1.2}source')
         target_tag = tu.find('{urn:oasis:names:tc:xliff:document:1.2}target')
 
-        if source_tag is not None and target_tag is not None:
+        if source_tag is not None and target_tag is not None and source_tag.text:
+
             translation = self._translate(source_tag.text)
             target_tag.text = translation['translation']
 

@@ -74,6 +74,10 @@ public class ContextAnalyzerIndex implements Closeable {
         });
 
         this.indexWriter = new IndexWriter(this.indexDirectory, indexConfig);
+
+        // Ensure index exists
+        if (!DirectoryReader.indexExists(directory))
+            this.indexWriter.commit();
     }
 
     public synchronized IndexReader getIndexReader() throws IOException {

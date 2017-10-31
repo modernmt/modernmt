@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <thread>
+#include <assert.h>
 #include <unordered_set>
 #include <boost/filesystem.hpp>
 #include "DiagonalAlignment.h"
@@ -46,6 +47,8 @@ public:
     BuilderModel(bool is_reverse, bool use_null, bool favor_diagonal, double prob_align_null, double diagonal_tension)
             : Model(is_reverse, use_null, favor_diagonal, prob_align_null, diagonal_tension) {
     }
+
+    ~BuilderModel() {};
 
     double GetProbability(word_t source, word_t target) override {
         if (data.empty())
@@ -104,6 +107,36 @@ public:
             for (auto cell = data[i].begin(); cell != data[i].end(); ++cell) {
                 cell->second.first = cell->second.second;
                 cell->second.second = 0;
+            }
+        }
+    }
+
+    void Store(const string &filename) {
+        ofstream out(filename, ios::binary | ios::out);
+
+        out.write((const char *) &use_null, sizeof(bool));
+        out.write((const char *) &favor_diagonal, sizeof(bool));
+
+        out.write((const char *) &prob_align_null, sizeof(double));
+        out.write((const char *) &diagonal_tension, sizeof(double));
+
+        size_t data_size = data.size();
+        out.write((const char *) &data_size, sizeof(size_t));
+
+        for (word_t sourceWord = 0; sourceWord < data_size; ++sourceWord) {
+            unordered_map<word_t, pair<double, double>> &row = data[sourceWord];
+            size_t row_size = row.size();
+
+            if (!row.empty()) {
+                out.write((const char *) &sourceWord, sizeof(word_t));
+                out.write((const char *) &row_size, sizeof(size_t));
+
+                for (auto entry = row.begin(); entry != row.end(); ++entry) {
+                    float value = (float) (entry->second.first);
+
+                    out.write((const char *) &entry->first, sizeof(word_t));
+                    out.write((const char *) &value, sizeof(float));
+                }
             }
         }
     }
@@ -202,59 +235,34 @@ void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const Corpus &
     AllocateTTableSpace(model, buffer, maxSourceWord);
 }
 
-bitable_t *MergeModels(BuilderModel *forward, BuilderModel *backward) {
-    bitable_t *table = new bitable_t;
-    table->resize(forward->data.size());
-
-    for (word_t source = 0; source < forward->data.size(); ++source) {
-        table->at(source).reserve(forward->data[source].size());
-
-        for (auto entry = forward->data[source].begin(); entry != forward->data[source].end(); ++entry) {
-            word_t target = entry->first;
-            double score = entry->second.first;
-
-            table->at(source)[target] = pair<float, float>(score, kNullProbability);
-        }
-    }
-
-    for (word_t target = 0; target < backward->data.size(); ++target) {
-        for (auto entry = backward->data[target].begin(); entry != backward->data[target].end(); ++entry) {
-            word_t source = entry->first;
-            double score = entry->second.first;
-
-            assert(source < table->size());
-
-            auto cell = table->at(source).emplace(target, pair<float, float>(kNullProbability, kNullProbability));
-            pair<float, float> &el = cell.first->second;
-            el.second = (float) score;
-        }
-    }
-
-    return table;
-}
-
 void Builder::Build(const Corpus &corpus, const string &path) {
     if (listener) listener->VocabularyBuildBegin();
     const Vocabulary *vocab = Vocabulary::FromCorpus(corpus);
     if (listener) listener->VocabularyBuildEnd();
 
     BuilderModel *forward = (BuilderModel *) BuildModel(vocab, corpus, true);
-    BuilderModel *backward = (BuilderModel *) BuildModel(vocab, corpus, false);
-
-    if (listener) listener->ModelDumpBegin();
-
-    fs::path vocab_filename = fs::absolute(fs::path(path) / fs::path("model.voc"));
-    fs::path model_filename = fs::absolute(fs::path(path) / fs::path("model.dat"));
-
-    shared_ptr<bitable_t> table(MergeModels(forward, backward));
-    BidirectionalModel _forward(table, true, use_null, favor_diagonal, prob_align_null, forward->diagonal_tension);
-    BidirectionalModel _backward(table, false, use_null, favor_diagonal, prob_align_null, backward->diagonal_tension);
-
+    fs::path fwd_model_filename = fs::absolute(fs::path(path) / fs::path("fwd_model.tmp"));
+    forward->Store(fwd_model_filename.string());
     delete forward;
+
+    BuilderModel *backward = (BuilderModel *) BuildModel(vocab, corpus, false);
+    fs::path bwd_model_filename = fs::absolute(fs::path(path) / fs::path("bwd_model.tmp"));
+    backward->Store(bwd_model_filename.string());
     delete backward;
 
-    BidirectionalModel::Store(&_forward, &_backward, model_filename.string());
+    if (listener) listener->ModelDumpBegin();
+    fs::path model_filename = fs::absolute(fs::path(path) / fs::path("model.dat"));
+    MergeAndStore(fwd_model_filename.string(), bwd_model_filename.string(), model_filename.string());
+
+    fs::path vocab_filename = fs::absolute(fs::path(path) / fs::path("model.voc"));
     vocab->Store(vocab_filename.string());
+    delete vocab;
+
+    if (remove(fwd_model_filename.c_str()) != 0)
+        throw runtime_error("Error deleting the forward model file");
+
+    if (remove(bwd_model_filename.c_str()) != 0)
+        throw runtime_error("Error deleting the backward model file");
 
     if (listener) listener->ModelDumpEnd();
 }
@@ -325,4 +333,129 @@ Model *Builder::BuildModel(const Vocabulary *vocab, const Corpus &corpus, bool f
     if (listener) listener->End(forward);
 
     return model;
+}
+
+void Builder::MergeAndStore(const string &fwd_path, const string &bwd_path, const string &out_path) {
+
+    //creating the bitable
+    bitable_t *table = new bitable_t;
+
+    //opening forward model file for reading
+    ifstream fwd_in(fwd_path, ios::binary | ios::in);
+
+    //loading forward header
+    bool fwd_use_null, fwd_favor_diagonal;
+    double fwd_prob_align_null, fwd_diagonal_tension;
+    size_t fwd_ttable_size;
+
+    fwd_in.read((char *) &fwd_use_null, sizeof(bool));
+    fwd_in.read((char *) &fwd_favor_diagonal, sizeof(bool));
+    fwd_in.read((char *) &fwd_prob_align_null, sizeof(double));
+    fwd_in.read((char *) &fwd_diagonal_tension, sizeof(double));
+    fwd_in.read((char *) &fwd_ttable_size, sizeof(size_t));
+
+    if (fwd_ttable_size == 0)
+        throw runtime_error("The forward model is empty");
+
+    //resizing the bitable
+    table->resize(fwd_ttable_size);
+
+    //loading forward entries and fill the bitable
+    word_t sourceWord, targetWord;
+    size_t rowSize;
+    float score;
+
+    while (true) {
+        fwd_in.read((char *) &sourceWord, sizeof(word_t));
+        if (fwd_in.eof())
+            break;
+
+        fwd_in.read((char *) &rowSize, sizeof(size_t));
+        table->at(sourceWord).reserve(rowSize);
+        for (size_t i = 0; i < rowSize; ++i) {
+            fwd_in.read((char *) &targetWord, sizeof(word_t));
+            fwd_in.read((char *) &score, sizeof(float));
+            table->at(sourceWord)[targetWord] = pair<float, float>(score, kNullProbability);
+        }
+    }
+
+    //closing forward model file
+    fwd_in.close();
+
+    //opening backward model file for reading
+    ifstream bwd_in(bwd_path, ios::binary | ios::in);
+
+    //loading backward header
+    bool bwd_use_null, bwd_favor_diagonal;
+    double bwd_prob_align_null, bwd_diagonal_tension;
+    size_t bwd_ttable_size;
+
+    bwd_in.read((char *) &bwd_use_null, sizeof(bool));
+    bwd_in.read((char *) &bwd_favor_diagonal, sizeof(bool));
+    bwd_in.read((char *) &bwd_prob_align_null, sizeof(double));
+    bwd_in.read((char *) &bwd_diagonal_tension, sizeof(double));
+    bwd_in.read((char *) &bwd_ttable_size, sizeof(size_t));
+
+    //checking consistency of forward and backward models
+    assert(fwd_use_null == bwd_use_null);
+    assert(fwd_favor_diagonal == bwd_favor_diagonal);
+    assert(fwd_prob_align_null == bwd_prob_align_null);
+    assert(fwd_ttable_size == bwd_ttable_size);
+
+    if (bwd_ttable_size == 0)
+        throw runtime_error("The backward model is empty");
+
+    //loading backward entries and fill the bitable
+    while (true) {
+        bwd_in.read((char *) &targetWord, sizeof(word_t));
+        if (bwd_in.eof())
+            break;
+
+        bwd_in.read((char *) &rowSize, sizeof(size_t));
+        for (size_t i = 0; i < rowSize; ++i) {
+            bwd_in.read((char *) &sourceWord, sizeof(word_t));
+            bwd_in.read((char *) &score, sizeof(float));
+
+            assert(sourceWord < table->size());
+
+            auto cell = table->at(sourceWord).emplace(targetWord,
+                                                      pair<float, float>(kNullProbability, kNullProbability));
+            pair<float, float> &el = cell.first->second;
+            el.second = score;
+        }
+
+    }
+
+    //closing backward model file
+    bwd_in.close();
+
+    //opening bidirectional model file for writing
+    ofstream out(out_path, ios::binary | ios::out);
+
+    //writing header
+    out.write((const char *) &fwd_use_null, sizeof(bool));
+    out.write((const char *) &fwd_favor_diagonal, sizeof(bool));
+    out.write((const char *) &fwd_prob_align_null, sizeof(double));
+    out.write((const char *) &fwd_diagonal_tension, sizeof(double));
+    out.write((const char *) &bwd_diagonal_tension, sizeof(double));
+    out.write((const char *) &fwd_ttable_size, sizeof(size_t));
+
+    //writing all entries of the bitable
+    for (word_t sourceWord = 0; sourceWord < fwd_ttable_size; ++sourceWord) {
+        auto &row = table->at(sourceWord);
+
+        rowSize = row.size();
+        out.write((const char *) &sourceWord, sizeof(word_t));
+        out.write((const char *) &rowSize, sizeof(size_t));
+        for (auto trgEntry = row.begin(); trgEntry != row.end(); ++trgEntry) {
+            out.write((const char *) &trgEntry->first, sizeof(word_t));
+            out.write((const char *) &trgEntry->second.first, sizeof(float));
+            out.write((const char *) &trgEntry->second.second, sizeof(float));
+        }
+    }
+    //closing bidirectional model file
+    out.close();
+
+    //deleting bitable
+    delete table;
 }

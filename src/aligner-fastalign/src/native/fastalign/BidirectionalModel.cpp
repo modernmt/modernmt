@@ -14,42 +14,6 @@ BidirectionalModel::BidirectionalModel(shared_ptr<bitable_t> table, bool forward
         : Model(!forward, use_null, favor_diagonal, prob_align_null, diagonal_tension), table(table) {
 }
 
-void BidirectionalModel::Store(const BidirectionalModel *forward, const BidirectionalModel *backward,
-                               const string &filename) {
-    ofstream out(filename, ios::binary | ios::out);
-
-    out.write((const char *) &forward->use_null, sizeof(bool));
-    out.write((const char *) &forward->favor_diagonal, sizeof(bool));
-
-    out.write((const char *) &forward->prob_align_null, sizeof(double));
-    out.write((const char *) &forward->diagonal_tension, sizeof(double));
-    out.write((const char *) &backward->diagonal_tension, sizeof(double));
-
-    bitable_t &table = *forward->table;
-
-    size_t ttable_size = table.size();
-    out.write((const char *) &ttable_size, sizeof(size_t));
-
-    for (word_t sourceWord = 0; sourceWord < table.size(); ++sourceWord) {
-        unordered_map<word_t, pair<float, float>> &row = table[sourceWord];
-        size_t row_size = row.size();
-
-        if (row_size == 0)
-            continue;
-
-        out.write((const char *) &sourceWord, sizeof(word_t));
-        out.write((const char *) &row_size, sizeof(size_t));
-
-        for (auto it = row.begin(); it != row.end(); ++it) {
-            word_t targetWord = it->first;
-
-            out.write((const char *) &targetWord, sizeof(word_t));
-            out.write((const char *) &it->second.first, sizeof(float));
-            out.write((const char *) &it->second.second, sizeof(float));
-        }
-    }
-}
-
 void BidirectionalModel::Open(const string &filename, Model **outForward, Model **outBackward) {
     bool use_null;
     bool favor_diagonal;

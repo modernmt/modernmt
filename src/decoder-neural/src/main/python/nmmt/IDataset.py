@@ -24,20 +24,33 @@ class DatasetWrapper(IDataset):
         class _Iterator(IDataset.Iterator):
             def __init__(self, dataset):
                 self._dataset = dataset
-                self._i = 0
+                self._current_position = 0
+                self._shuffle = shuffle
+                self._loop = loop
 
             def __iter__(self):
                 return self
 
+            def _reset(self, position=None):
+                # TODO: shuffle?
+                if position is not None:
+                    self._current_position = position
+
             def next(self):
-                if self._i >= len(self._dataset):
-                    raise StopIteration
-                else:
-                    self._i += 1
-                    return self._i - 1, self._dataset[self._i - 1]
+                if self._current_position > 0 and (self._current_position % len(self._dataset)) == 0:
+                    if self._loop:
+                        self._reset()
+                    else:
+                        raise StopIteration
+
+                i = self._current_position % len(self._dataset)
+
+                self._current_position += 1
+
+                return self._current_position - 1, self._dataset[i]
 
             def position(self):
-                return self._i
+                return self._current_position
 
         return _Iterator(self._dataset)
 

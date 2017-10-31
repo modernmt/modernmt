@@ -213,13 +213,11 @@ class NMTEngine:
                 optimizer = Optim(self.metadata.tuning_optimizer, 1., max_grad_norm=self.metadata.tuning_max_grad_norm)
 
                 tuner_opts = NMTEngineTrainer.Options()
-                tuner_opts.log_interval = 999999
                 tuner_opts.log_level = logging.NOTSET
-                tuner_opts.min_perplexity_decrement = -1.
 
                 self._tuner = NMTEngineTrainer(self, options=tuner_opts, optimizer=optimizer)
 
-            self._tuner.opts.min_epochs = self._tuner.opts.max_epochs = epochs
+            self._tuner.opts.step_limit = epochs
             self._tuner.reset_learning_rate(learning_rate)
 
             # Process suggestions
@@ -241,8 +239,7 @@ class NMTEngine:
 
             # Run tuning
             log_message = 'Tuning on %d suggestions (epochs = %d, learning_rate = %.3f )' % (
-                len(suggestions), self._tuner.opts.max_epochs, self._tuner.optimizer.lr)
-
+                len(suggestions), self._tuner.opts.step_limit, self._tuner.optimizer.lr)
             with log_timed_action(self._logger, log_message, log_start=False):
                 self._tuner.train_model(tuning_set)
 
@@ -286,9 +283,12 @@ class NMTEngine:
 
         return self.processor.decode_tokens(pred_batch[0][0])
 
-    def save(self, path, store_data=True, store_metadata=True):
+    def save(self, path, store_data=True, store_metadata=True, store_processor=True):
         if store_metadata:
             self.metadata.save_to_file(path + '.meta')
+
+        if store_processor:
+            self.processor.save_to_file(path + '.bpe')
 
         if store_data:
             model_state_dict, generator_state_dict = self._get_state_dicts()
