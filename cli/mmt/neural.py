@@ -375,14 +375,6 @@ class NeuralEngineBuilder(EngineBuilder):
         # else, get the list of GPUs to employ using torch utils.
         # (This takes into account the user's choice)
         gpus = torch_utils.torch_get_gpus()
-
-        # if self._gpus == -1:
-        #     return
-        # elif self._gpus is None:
-        #     gpus = self._get_all_gpus()
-        # else:
-        #     gpus = self._gpus
-
         gpus_ram = self._get_gpus_ram(gpus)
 
         for i in range(len(gpus_ram)):
@@ -401,18 +393,6 @@ class NeuralEngineBuilder(EngineBuilder):
             if line:
                 result.append(int(line) * self._MB)
         return result
-
-    # def _get_all_gpus(self):
-    #     gpus=[]
-    #     command = ["nvidia-smi", "--list-gpus"]
-    #     stdout, _ = shell.execute(command)
-    #
-    #     lines = stdout.split("\n")
-    #     for line in lines:
-    #         line = line.strip()
-    #         if line:
-    #             gpus.append(int(line[4:line.find(":")]))
-    #     return gpus
 
     # ~~~~~~~~~~~~~~~~~~~~~ Training step functions ~~~~~~~~~~~~~~~~~~~~~
 
