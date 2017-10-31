@@ -18,6 +18,7 @@ import onmt
 import nmmt
 from nmmt import NMTEngineTrainer, NMTEngine, SubwordTextProcessor, MMapDataset, Suggestion
 from nmmt import torch_setup
+from nmmt import torch_utils
 import torch
 
 
@@ -366,7 +367,14 @@ class NeuralEngineBuilder(EngineBuilder):
 
     def _check_constraints(self):
         recommended_gpu_ram = 2 * self._GB
-        gpus = torch_get_gpus()
+
+        # if the user explicitly said that no GPU must be used, return immediately
+        if self._gpus == -1:
+            return
+
+        # else, get the list of GPUs to employ using torch utils.
+        # (This takes into account the user's choice)
+        gpus = torch_utils.torch_get_gpus()
 
         # if self._gpus == -1:
         #     return
@@ -394,17 +402,17 @@ class NeuralEngineBuilder(EngineBuilder):
                 result.append(int(line) * self._MB)
         return result
 
-    def _get_all_gpus(self):
-        gpus=[]
-        command = ["nvidia-smi", "--list-gpus"]
-        stdout, _ = shell.execute(command)
-
-        lines = stdout.split("\n")
-        for line in lines:
-            line = line.strip()
-            if line:
-                gpus.append(int(line[4:line.find(":")]))
-        return gpus
+    # def _get_all_gpus(self):
+    #     gpus=[]
+    #     command = ["nvidia-smi", "--list-gpus"]
+    #     stdout, _ = shell.execute(command)
+    #
+    #     lines = stdout.split("\n")
+    #     for line in lines:
+    #         line = line.strip()
+    #         if line:
+    #             gpus.append(int(line[4:line.find(":")]))
+    #     return gpus
 
     # ~~~~~~~~~~~~~~~~~~~~~ Training step functions ~~~~~~~~~~~~~~~~~~~~~
 
