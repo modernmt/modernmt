@@ -369,7 +369,7 @@ class NeuralEngineBuilder(EngineBuilder):
         recommended_gpu_ram = 2 * self._GB
 
         # if the user explicitly said that no GPU must be used, return immediately
-        if self._gpus == -1:
+        if self._gpus == [-1]:
             return
 
         # else, get the list of GPUs to employ using torch utils.
