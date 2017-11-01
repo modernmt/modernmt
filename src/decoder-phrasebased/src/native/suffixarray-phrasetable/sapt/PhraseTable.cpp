@@ -38,24 +38,19 @@ PhraseTable::~PhraseTable() {
     delete self;
 }
 
-void PhraseTable::Add(const updateid_t &id, const memory_t memory, const std::vector<wid_t> &source,
-                      const std::vector<wid_t> &target, const alignment_t &alignment) {
-    self->updates->Add(id, memory, source, target, alignment);
+void PhraseTable::OnUpdateBatchReceived(const update_batch_t &batch) {
+    self->updates->Add(batch);
 }
 
-void PhraseTable::Delete(const updateid_t &id, const memory_t memory) {
-    self->updates->Delete(id, memory);
-}
-
-unordered_map<stream_t, seqid_t> PhraseTable::GetLatestUpdatesIdentifier() {
+unordered_map<channel_t, seqid_t> PhraseTable::GetLatestUpdatesIdentifier() {
     const vector<seqid_t> &streams = self->index->GetStreams();
 
-    unordered_map<stream_t, seqid_t> result;
+    unordered_map<channel_t, seqid_t> result;
     result.reserve(streams.size());
 
     for (size_t i = 0; i < streams.size(); ++i) {
         if (streams[i] >= 0)
-            result[(stream_t) i] = streams[i];
+            result[(channel_t) i] = streams[i];
     }
 
     return result;

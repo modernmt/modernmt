@@ -39,13 +39,15 @@ typedef struct {
     size_t nBestListSize; //< set to 0 if no n-best list requested
 } translation_request_t;
 
-typedef struct {
-    mmt::updateid_t id;
+struct raw_translation_unit {
+    mmt::channel_t channel;
+    mmt::seqid_t position;
+
     mmt::memory_t memory;
     std::string source;
     std::string target;
     mmt::alignment_t alignment;
-} translation_unit_t;
+};
 
 namespace mmt {
     namespace decoder {
@@ -81,11 +83,11 @@ namespace mmt {
                                             const std::map<std::string, float> *translationContext,
                                             size_t nbestListSize) = 0;
 
-            virtual void DeliverUpdates(const std::vector<translation_unit_t> &batch) = 0;
+            virtual void DeliverUpdates(const std::vector<raw_translation_unit> &translationUnits,
+                                        const std::vector<mmt::deletion> &deletions,
+                                        const std::unordered_map<mmt::channel_t, mmt::seqid_t> &channelPositions) = 0;
 
-            virtual void DeliverDeletion(const updateid_t &id, const memory_t memory) = 0;
-
-            virtual std::unordered_map<stream_t, seqid_t> GetLatestUpdatesIdentifiers() = 0;
+            virtual std::unordered_map<channel_t, seqid_t> GetLatestUpdatesIdentifiers() = 0;
 
             virtual ~MosesDecoder() {}
 

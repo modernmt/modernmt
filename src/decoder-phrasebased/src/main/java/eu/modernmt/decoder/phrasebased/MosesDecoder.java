@@ -1,8 +1,8 @@
 package eu.modernmt.decoder.phrasebased;
 
+import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.Deletion;
-import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.*;
 import eu.modernmt.io.DefaultCharset;
 import eu.modernmt.io.Paths;
@@ -18,7 +18,10 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Created by davide on 26/11/15.
@@ -179,46 +182,30 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
     // DataListener
 
     @Override
-    public void onDataReceived(List<TranslationUnit> batch) throws Exception {
-        int size = 0;
-        for (TranslationUnit unit : batch) {
-            if (this.direction.equals(unit.direction))
-                size++;
-        }
+    public void onDataReceived(DataBatch batch) throws Exception {
+        DataBatchXObject xbatch = new DataBatchXObject(batch, this.direction);
 
-        short[] channels = new short[size];
-        long[] channelPositions = new long[size];
-        long[] memories = new long[size];
-        String[] sources = new String[size];
-        String[] targets = new String[size];
-        int[][] alignments = new int[size][];
+        this.dataReceived(
+                xbatch.tuChannels, xbatch.tuChannelPositions, xbatch.tuMemories,
+                xbatch.tuSources, xbatch.tuTargets, xbatch.tuAlignments,
 
-        int i = 0;
-        for (TranslationUnit unit : batch) {
-            if (!this.direction.equals(unit.direction))
-                continue;
+                xbatch.delChannels, xbatch.delChannelPositions, xbatch.delMemories,
 
-            channels[i] = unit.channel;
-            channelPositions[i] = unit.channelPosition;
-            memories[i] = unit.memory;
-            sources[i] = XUtils.encodeSentence(unit.sentence);
-            targets[i] = XUtils.encodeSentence(unit.translation);
-            alignments[i] = XUtils.encodeAlignment(unit.alignment);
-
-            i++;
-        }
-
-        updateReceived(channels, channelPositions, memories, sources, targets, alignments);
+                xbatch.channels, xbatch.channelPositions
+        );
     }
 
-    private native void updateReceived(short[] channels, long[] channelPositions, long[] memories, String[] sources, String[] targets, int[][] alignments);
+    private native void dataReceived(
+            // Translation units
+            short[] tuChannels, long[] tuChannelPositions, long[] tuMemories,
+            String[] tuSources, String[] tuTargets, int[][] tuAlignments,
 
-    @Override
-    public void onDelete(Deletion deletion) throws Exception {
-        deleteReceived(deletion.channel, deletion.channelPosition, deletion.memory);
-    }
+            // Deletions
+            short[] delChannels, long[] delChannelPositions, long[] delMemories,
 
-    private native void deleteReceived(short channel, long channelPosition, long memory);
+            // Channel positions
+            short[] channels, long[] channelPositions
+    );
 
     @Override
     public Map<Short, Long> getLatestChannelPositions() {

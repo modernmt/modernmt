@@ -49,6 +49,70 @@ alignment_t ParseAlignment(JNIEnv *jvm, jintArray jalignment) {
     return result;
 }
 
+void ParseTranslationUnits(JNIEnv *jvm, jshortArray jchannels, jlongArray jpositions, jlongArray jmemories,
+                           jobjectArray jsources, jobjectArray jtargets, jobjectArray jalignments,
+                           vector<raw_translation_unit> &output) {
+    size_t size = (size_t) jvm->GetArrayLength(jchannels);
+    output.resize(size);
+
+    jshort *jchannelsArray = jvm->GetShortArrayElements(jchannels, 0);
+    jlong *jpositionsArray = jvm->GetLongArrayElements(jpositions, 0);
+    jlong *jmemoriesArray = jvm->GetLongArrayElements(jmemories, 0);
+
+    for (size_t i = 0; i < size; ++i) {
+        raw_translation_unit &unit = output[i];
+        unit.channel = (channel_t) jchannelsArray[i];
+        unit.position = (seqid_t) jpositionsArray[i];
+        unit.memory = (memory_t) jmemoriesArray[i];
+        unit.source = jni_jstrtostr(jvm, (jstring) jvm->GetObjectArrayElement(jsources, (jsize) i));
+        unit.target = jni_jstrtostr(jvm, (jstring) jvm->GetObjectArrayElement(jtargets, (jsize) i));
+        unit.alignment = ParseAlignment(jvm, (jintArray) jvm->GetObjectArrayElement(jalignments, (jsize) i));
+    }
+
+    jvm->ReleaseShortArrayElements(jchannels, jchannelsArray, 0);
+    jvm->ReleaseLongArrayElements(jpositions, jpositionsArray, 0);
+    jvm->ReleaseLongArrayElements(jmemories, jmemoriesArray, 0);
+}
+
+void ParseDeletions(JNIEnv *jvm, jshortArray jchannels, jlongArray jchannelPositions, jlongArray jmemories,
+                    vector<deletion> &output) {
+    size_t size = (size_t) jvm->GetArrayLength(jchannels);
+    output.resize(size);
+
+    jshort *jchannelsArray = jvm->GetShortArrayElements(jchannels, 0);
+    jlong *jpositionsArray = jvm->GetLongArrayElements(jchannelPositions, 0);
+    jlong *jmemoriesArray = jvm->GetLongArrayElements(jmemories, 0);
+
+    for (size_t i = 0; i < size; ++i) {
+        deletion &deletion = output[i];
+        deletion.channel = (channel_t) jchannelsArray[i];
+        deletion.position = (seqid_t) jpositionsArray[i];
+        deletion.memory = (memory_t) jmemoriesArray[i];
+    }
+
+    jvm->ReleaseShortArrayElements(jchannels, jchannelsArray, 0);
+    jvm->ReleaseLongArrayElements(jchannelPositions, jpositionsArray, 0);
+    jvm->ReleaseLongArrayElements(jmemories, jmemoriesArray, 0);
+}
+
+void ParseChannelPositions(JNIEnv *jvm, jshortArray jchannels, jlongArray jchannelPositions,
+                           unordered_map<channel_t, seqid_t> &output) {
+    size_t size = (size_t) jvm->GetArrayLength(jchannels);
+
+    jshort *jchannelsArray = jvm->GetShortArrayElements(jchannels, 0);
+    jlong *jpositionsArray = jvm->GetLongArrayElements(jchannelPositions, 0);
+
+    for (size_t i = 0; i < size; ++i) {
+        channel_t channel = (channel_t) jchannelsArray[i];
+        seqid_t position = (seqid_t) jpositionsArray[i];
+
+        output[channel] = position;
+    }
+
+    jvm->ReleaseShortArrayElements(jchannels, jchannelsArray, 0);
+    jvm->ReleaseLongArrayElements(jchannelPositions, jpositionsArray, 0);
+}
+
 /*
  * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
  * Method:    instantiate
@@ -192,53 +256,31 @@ JNIEXPORT jobject JNICALL Java_eu_modernmt_decoder_phrasebased_MosesDecoder_xtra
 
 /*
  * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
- * Method:    updateReceived
- * Signature: ([S[J[J[Ljava/lang/String;[Ljava/lang/String;[[I)V
+ * Method:    dataReceived
+ * Signature: ([S[J[J[Ljava/lang/String;[Ljava/lang/String;[[I[S[J[J[S[J)V
  */
-JNIEXPORT void JNICALL
-Java_eu_modernmt_decoder_phrasebased_MosesDecoder_updateReceived(JNIEnv *jvm, jobject jself, jshortArray jchannels,
-                                                                 jlongArray jpositions, jlongArray jmemories,
-                                                                 jobjectArray jsources, jobjectArray jtargets,
-                                                                 jobjectArray jalignments) {
+JNIEXPORT void JNICALL Java_eu_modernmt_decoder_phrasebased_MosesDecoder_dataReceived
+        (JNIEnv *jvm, jobject jself,
+
+         jshortArray jtuChannels, jlongArray jtuChannelPositions, jlongArray jtuMemories,
+         jobjectArray jtuSources, jobjectArray jtuTargets, jobjectArray jtuAlignments,
+
+         jshortArray jdelChannels, jlongArray jdelChannelPositions, jlongArray jdelMemories,
+
+         jshortArray jchannels, jlongArray jchannelPositions) {
     MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
 
-    size_t size = (size_t) jvm->GetArrayLength(jchannels);
-    vector<translation_unit_t> batch(size);
+    vector<raw_translation_unit> units;
+    ParseTranslationUnits(jvm, jtuChannels, jtuChannelPositions,
+                          jtuMemories, jtuSources, jtuTargets, jtuAlignments, units);
 
-    jshort *jchannelsArray = jvm->GetShortArrayElements(jchannels, 0);
-    jlong *jpositionsArray = jvm->GetLongArrayElements(jpositions, 0);
-    jlong *jmemoriesArray = jvm->GetLongArrayElements(jmemories, 0);
+    vector<deletion> deletions;
+    ParseDeletions(jvm, jdelChannels, jdelChannelPositions, jdelMemories, deletions);
 
-    for (size_t i = 0; i < size; ++i) {
-        translation_unit_t &unit = batch[i];
-        unit.id = updateid_t((stream_t) jchannelsArray[i], (seqid_t) jpositionsArray[i]);
-        unit.memory = (memory_t) jmemoriesArray[i];
-        unit.source = jni_jstrtostr(jvm, (jstring) jvm->GetObjectArrayElement(jsources, (jsize) i));
-        unit.target = jni_jstrtostr(jvm, (jstring) jvm->GetObjectArrayElement(jtargets, (jsize) i));
-        unit.alignment = ParseAlignment(jvm, (jintArray) jvm->GetObjectArrayElement(jalignments, (jsize) i));
-    }
+    unordered_map<channel_t, seqid_t> positions;
+    ParseChannelPositions(jvm, jchannels, jchannelPositions, positions);
 
-    jvm->ReleaseShortArrayElements(jchannels, jchannelsArray, 0);
-    jvm->ReleaseLongArrayElements(jpositions, jpositionsArray, 0);
-    jvm->ReleaseLongArrayElements(jmemories, jmemoriesArray, 0);
-
-    instance->DeliverUpdates(batch);
-}
-
-/*
- * Class:     eu_modernmt_decoder_phrasebased_MosesDecoder
- * Method:    deleteReceived
- * Signature: (SJJ)V
- */
-JNIEXPORT void JNICALL
-Java_eu_modernmt_decoder_phrasebased_MosesDecoder_deleteReceived(JNIEnv *jvm, jobject jself, jshort jchannel,
-                                                                 jlong jchannelPosition, jlong jmemory) {
-    MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
-
-    updateid_t id((stream_t) jchannel, (seqid_t) jchannelPosition);
-    memory_t memory = (memory_t) jmemory;
-
-    instance->DeliverDeletion(id, memory);
+    instance->DeliverUpdates(units, deletions, positions);
 }
 
 /*
@@ -250,7 +292,7 @@ JNIEXPORT jlongArray JNICALL
 Java_eu_modernmt_decoder_phrasebased_MosesDecoder_getLatestUpdatesIdentifier(JNIEnv *jvm, jobject jself) {
     MosesDecoder *instance = jni_gethandle<MosesDecoder>(jvm, jself);
 
-    unordered_map<stream_t, seqid_t> ids = instance->GetLatestUpdatesIdentifiers();
+    unordered_map<channel_t, seqid_t> ids = instance->GetLatestUpdatesIdentifiers();
 
     vector<jlong> jidsArray(ids.size() * 2);
     size_t i = 0;

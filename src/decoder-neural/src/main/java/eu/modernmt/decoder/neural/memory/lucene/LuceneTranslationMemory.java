@@ -1,5 +1,6 @@
 package eu.modernmt.decoder.neural.memory.lucene;
 
+import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
@@ -28,8 +29,8 @@ import org.apache.lucene.util.Version;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -241,36 +242,29 @@ public class LuceneTranslationMemory implements TranslationMemory {
     // DataListener
 
     @Override
-    public void onDataReceived(List<TranslationUnit> batch) throws IOException {
+    public void onDataReceived(DataBatch batch) throws IOException {
         boolean success = false;
 
-        HashMap<Short, Long> newChannels = new HashMap<>(this.channels);
-
         try {
-            for (TranslationUnit unit : batch) {
-                Long currentPosition = newChannels.get(unit.channel);
+            this.onTranslationUnitsReceived(batch.getTranslationUnits());
+            this.onDeletionsReceived(batch.getDeletions());
 
-                if (currentPosition == null || currentPosition < unit.channelPosition) {
-                    newChannels.put(unit.channel, unit.channelPosition);
+            // Writing channels
+            HashMap<Short, Long> newChannels = new HashMap<>(this.channels);
+            for (Map.Entry<Short, Long> entry : batch.getChannelPositions().entrySet()) {
+                Long position = entry.getValue();
+                Long existingPosition = newChannels.get(entry.getKey());
 
-                    if (unit.rawPreviousSentence != null && unit.rawPreviousTranslation != null) {
-                        String hash = HashGenerator.hash(unit.direction, unit.rawPreviousSentence, unit.rawPreviousTranslation);
-                        Query hashQuery = QueryBuilder.getByHash(unit.memory, unit.direction, hash);
-
-                        this.indexWriter.deleteDocuments(hashQuery);
-                    }
-
-                    Document document = DocumentBuilder.build(unit);
-                    this.indexWriter.addDocument(document);
-                }
+                if (existingPosition == null || existingPosition < position)
+                    newChannels.put(entry.getKey(), position);
             }
 
             Document channelsDocument = DocumentBuilder.build(newChannels);
             this.indexWriter.updateDocument(QueryBuilder.channelsTerm(), channelsDocument);
-
             this.indexWriter.commit();
 
             this.channels.putAll(newChannels);
+
             success = true;
         } finally {
             if (!success)
@@ -278,18 +272,30 @@ public class LuceneTranslationMemory implements TranslationMemory {
         }
     }
 
-    @Override
-    public void onDelete(Deletion deletion) throws Exception {
-        Long currentPosition = this.channels.get(deletion.channel);
+    private void onTranslationUnitsReceived(Collection<TranslationUnit> units) throws IOException {
+        for (TranslationUnit unit : units) {
+            Long currentPosition = this.channels.get(unit.channel);
 
-        if (currentPosition == null || currentPosition < deletion.channelPosition) {
-            this.indexWriter.deleteDocuments(QueryBuilder.memoryTerm(deletion.memory));
+            if (currentPosition == null || currentPosition < unit.channelPosition) {
+                if (unit.rawPreviousSentence != null && unit.rawPreviousTranslation != null) {
+                    String hash = HashGenerator.hash(unit.direction, unit.rawPreviousSentence, unit.rawPreviousTranslation);
+                    Query hashQuery = QueryBuilder.getByHash(unit.memory, unit.direction, hash);
 
-            this.channels.put(deletion.channel, deletion.channelPosition);
+                    this.indexWriter.deleteDocuments(hashQuery);
+                }
 
-            Document channelsDocument = DocumentBuilder.build(this.channels);
-            this.indexWriter.updateDocument(QueryBuilder.channelsTerm(), channelsDocument);
-            this.indexWriter.commit();
+                Document document = DocumentBuilder.build(unit);
+                this.indexWriter.addDocument(document);
+            }
+        }
+    }
+
+    private void onDeletionsReceived(Collection<Deletion> deletions) throws IOException {
+        for (Deletion deletion : deletions) {
+            Long currentPosition = this.channels.get(deletion.channel);
+
+            if (currentPosition == null || currentPosition < deletion.channelPosition)
+                this.indexWriter.deleteDocuments(QueryBuilder.memoryTerm(deletion.memory));
         }
     }
 

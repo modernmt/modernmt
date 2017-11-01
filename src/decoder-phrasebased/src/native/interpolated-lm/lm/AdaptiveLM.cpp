@@ -233,24 +233,19 @@ bool AdaptiveLM::IsOOV(const context_t *context, const wid_t word) const {
     return true;
 }
 
-void AdaptiveLM::Add(const updateid_t &id, memory_t memory, const vector<wid_t> &source, const vector<wid_t> &target,
-                     const alignment_t &alignment) {
-    updateManager.Add(id, memory, target);
+void AdaptiveLM::OnUpdateBatchReceived(const update_batch_t &batch) {
+    updateManager.Add(batch);
 }
 
-void AdaptiveLM::Delete(const updateid_t &id, const memory_t memory) {
-    updateManager.Delete(id, memory);
-}
-
-unordered_map<stream_t, seqid_t> AdaptiveLM::GetLatestUpdatesIdentifier() {
+unordered_map<channel_t, seqid_t> AdaptiveLM::GetLatestUpdatesIdentifier() {
     const vector<seqid_t> &streams = storage.GetStreamsStatus();
 
-    unordered_map<stream_t, seqid_t> result;
+    unordered_map<channel_t, seqid_t> result;
     result.reserve(streams.size());
 
     for (size_t i = 0; i < streams.size(); ++i) {
         if (streams[i] >= 0)
-            result[(stream_t) i] = streams[i];
+            result[(channel_t) i] = streams[i];
     }
 
     return result;
@@ -286,6 +281,5 @@ void AdaptiveLM::NormalizeContext(context_t *context) {
 
     // replace new vector into old vector
     context->clear();
-    //todo: check if the following insert is correct
     context->insert(context->begin(), ret.begin(), ret.end());
 }

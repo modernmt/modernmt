@@ -14,28 +14,13 @@ NGramBatch::NGramBatch(uint8_t order, size_t maxSize, const vector<seqid_t> &_st
     streams = _streams;
 }
 
-bool NGramBatch::Add(const memory_t memory, const vector<wid_t> &sentence, const count_t count) {
-    if (size >= maxSize)
-        return false;
-
-    AddToBatch(memory, sentence, count);
-
-    return true;
+void NGramBatch::Add(const channel_t channel, const seqid_t position,
+                     const memory_t memory, const vector<wid_t> &sentence, const count_t count) {
+    if (ShouldAcceptUpdate(channel, position))
+        Add(memory, sentence, count);
 }
 
-bool NGramBatch::Add(const updateid_t &id, const memory_t memory, const vector<wid_t> &sentence, const count_t count) {
-    if (size >= maxSize)
-        return false;
-
-    if (!SetStreamIfValid(id.stream_id, id.sentence_id))
-        return true;
-
-    AddToBatch(memory, sentence, count);
-
-    return true;
-}
-
-inline void NGramBatch::AddToBatch(const memory_t memory, const vector<wid_t> &sentence, const count_t count) {
+void NGramBatch::Add(const memory_t memory, const vector<wid_t> &sentence, const count_t count) {
     sentenceCount++;
 
     auto el = ngrams_map.emplace(memory, ngram_table_t());
@@ -78,12 +63,9 @@ inline void NGramBatch::AddToBatch(const memory_t memory, const vector<wid_t> &s
     delete words;
 }
 
-bool NGramBatch::Delete(const updateid_t &id, const memory_t memory) {
-    if (!SetStreamIfValid(id.stream_id, id.sentence_id))
-        return true;
-
-    deletions.push_back(memory);
-    return true;
+void NGramBatch::Delete(const channel_t channel, const seqid_t position, const memory_t memory) {
+    if (ShouldAcceptUpdate(channel, position))
+        deletions.push_back(memory);
 }
 
 void NGramBatch::Reset(const vector<seqid_t> &_streams) {
@@ -98,22 +80,27 @@ void NGramBatch::Clear() {
     sentenceCount = 0;
 }
 
-bool NGramBatch::SetStreamIfValid(stream_t stream, seqid_t sentence) {
-    if (streams.size() <= stream)
-        streams.resize(stream + 1, -1);
-
-    if (streams[stream] < sentence) {
-        streams[stream] = sentence;
-        return true;
-    } else {
-        return false;
-    }
-}
-
 const vector<seqid_t> &NGramBatch::GetStreams() const {
     return streams;
 }
 
 bool NGramBatch::IsEmpty() {
     return size == 0 && deletions.empty();
+}
+
+bool NGramBatch::IsFull() {
+    return size >= maxSize;
+}
+
+void NGramBatch::Advance(const unordered_map<channel_t, seqid_t> &channels) {
+    for (auto entry = channels.begin(); entry != channels.end(); ++entry) {
+        channel_t channel = entry->first;
+        seqid_t position = entry->second;
+
+        if (streams.size() <= channel)
+            streams.resize((size_t) (channel + 1), -1);
+
+        if (streams[channel] < position)
+            streams[channel] = position;
+    }
 }

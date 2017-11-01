@@ -39,17 +39,13 @@ namespace mmt {
 
             virtual bool IsOOV(const context_t *context, const wid_t word) const override;
 
-            /* Incremental Model */
-
-            virtual void Add(const updateid_t &id, const memory_t memory,
-                             const vector <wid_t> &source, const vector <wid_t> &target,
-                             const alignment_t &alignment) override;
-
-            virtual unordered_map<stream_t, seqid_t> GetLatestUpdatesIdentifier() override;
-
             virtual void NormalizeContext(context_t *context);
 
-            void Delete(const updateid_t &id, const memory_t memory) override;
+            /* Incremental Model */
+
+            void OnUpdateBatchReceived(const update_batch_t &batch) override;
+
+            virtual unordered_map<channel_t, seqid_t> GetLatestUpdatesIdentifier() override;
 
         private:
             struct ilm_private;

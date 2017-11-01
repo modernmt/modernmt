@@ -35,20 +35,25 @@ namespace mmt {
 
             NGramBatch(uint8_t order, size_t maxSize, const vector<seqid_t> &streams);
 
-            bool Add(const memory_t memory, const vector<wid_t> &sentence, const count_t count = 1);
-
-            bool Add(const updateid_t &id, const memory_t memory, const vector<wid_t> &sentence,
+            void Add(const channel_t channel, const seqid_t position,
+                     const memory_t memory, const vector<wid_t> &sentence,
                      const count_t count = 1);
 
-            bool Delete(const updateid_t &id, const memory_t memory);
+            void Add(const memory_t memory, const vector<wid_t> &sentence, const count_t count = 1);
+
+            void Delete(const channel_t channel, const seqid_t position, const memory_t memory);
 
             bool IsEmpty();
+
+            bool IsFull();
 
             void Reset(const vector<seqid_t> &streams);
 
             void Clear();
 
             const vector<seqid_t> &GetStreams() const;
+
+            void Advance(const unordered_map<channel_t, seqid_t> &channels);
 
         private:
             const uint8_t order;
@@ -60,9 +65,9 @@ namespace mmt {
             unordered_map<memory_t, ngram_table_t> ngrams_map;
             vector<memory_t> deletions;
 
-            bool SetStreamIfValid(stream_t stream, seqid_t sentence);
-
-            inline void AddToBatch(const memory_t memory, const vector<wid_t> &sentence, const count_t count = 1);
+            inline const bool ShouldAcceptUpdate(channel_t channel, seqid_t position) const {
+                return channel >= streams.size() || streams[channel] < position;
+            }
         };
 
     }

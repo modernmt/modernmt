@@ -82,14 +82,19 @@ public class CorporaIndex implements Closeable {
 
     }
 
-    public boolean registerData(short channel, long position) {
+    public boolean shouldAcceptData(short channel, long position) {
         Long existent = this.channels.get(channel);
+        return existent == null || position > existent;
+    }
 
-        if (existent == null || position > existent) {
-            this.channels.put(channel, position);
-            return true;
-        } else {
-            return false;
+    public void advanceChannels(Map<Short, Long> update) {
+        for (Map.Entry<Short, Long> entry : update.entrySet()) {
+            Short channel = entry.getKey();
+            Long position = entry.getValue();
+            Long existent = this.channels.get(channel);
+
+            if (existent == null || position > existent)
+                this.channels.put(channel, position);
         }
     }
 

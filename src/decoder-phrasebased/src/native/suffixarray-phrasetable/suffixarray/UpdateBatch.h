@@ -19,15 +19,17 @@ namespace mmt {
         public:
             UpdateBatch(size_t maxSize, const vector<seqid_t> &streams);
 
-            bool Add(const updateid_t &id, const memory_t memory, const std::vector<wid_t> &source,
+            void Add(const channel_t channel, const seqid_t position, const memory_t memory,
+                     const std::vector<wid_t> &source, const std::vector<wid_t> &target, const alignment_t &alignment);
+
+            void Add(const memory_t memory, const std::vector<wid_t> &source,
                      const std::vector<wid_t> &target, const alignment_t &alignment);
 
-            bool Add(const memory_t memory, const std::vector<wid_t> &source,
-                     const std::vector<wid_t> &target, const alignment_t &alignment);
-
-            bool Delete(const updateid_t &id, const memory_t memory);
+            void Delete(const channel_t channel, const seqid_t position, const memory_t memory);
 
             bool IsEmpty();
+
+            bool IsFull();
 
             void Reset(const vector<seqid_t> &streams);
 
@@ -36,6 +38,8 @@ namespace mmt {
             const vector<seqid_t> &GetStreams() const {
                 return streams;
             }
+
+            void Advance(const unordered_map<channel_t, seqid_t> &channels);
 
         private:
 
@@ -54,7 +58,9 @@ namespace mmt {
             vector<sentencepair_t> data;
             vector<memory_t> deletions;
 
-            bool SetStreamIfValid(stream_t stream, seqid_t sentence);
+            inline const bool ShouldAcceptUpdate(channel_t channel, seqid_t position) const {
+                return channel >= streams.size() || streams[channel] < position;
+            }
 
         };
 

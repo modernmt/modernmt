@@ -2,6 +2,7 @@ package eu.modernmt.cluster.kafka;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
+import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.DataMessage;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
@@ -21,7 +22,7 @@ import java.util.*;
 /**
  * Created by davide on 06/09/16.
  */
-class DataBatch {
+class KafkaDataBatch implements DataBatch {
 
     private final ArrayList<TranslationUnit> translationUnits = new ArrayList<>();
     private final ArrayList<Deletion> deletions = new ArrayList<>();
@@ -33,7 +34,7 @@ class DataBatch {
     private final Stack<DataPartition> cachedPartitions = new Stack<>();
     private final HashMap<LanguagePair, DataPartition> cachedDataSet = new HashMap<>();
 
-    public DataBatch(Engine engine, KafkaDataManager manager) {
+    public KafkaDataBatch(Engine engine, KafkaDataManager manager) {
         this.engine = engine;
         this.manager = manager;
     }
@@ -66,8 +67,11 @@ class DataBatch {
         for (ConsumerRecord<Integer, KafkaPacket> record : records) {
             KafkaChannel channel = this.manager.getChannel(record.topic());
             long offset = record.offset();
+            short channelId = channel.getId();
 
-            this.currentPositions.put(channel.getId(), offset);
+            Long previousOffset = this.currentPositions.get(channelId);
+            if (previousOffset == null || previousOffset < offset)
+                this.currentPositions.put(channelId, offset);
 
             KafkaPacket packet = record.value();
             DataMessage message = packet.toDataMessage(channel.getId(), offset);
@@ -97,20 +101,23 @@ class DataBatch {
         this.cachedDataSet.clear();
     }
 
-    public Map<Short, Long> getBatchOffset() {
-        return currentPositions;
-    }
-
     public int size() {
         return translationUnits.size() + deletions.size();
     }
 
-    public List<TranslationUnit> getTranslationUnits() {
+    @Override
+    public Collection<TranslationUnit> getTranslationUnits() {
         return translationUnits;
     }
 
+    @Override
     public Collection<Deletion> getDeletions() {
         return deletions;
+    }
+
+    @Override
+    public Map<Short, Long> getChannelPositions() {
+        return currentPositions;
     }
 
     private static class DataPartition {

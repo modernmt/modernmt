@@ -1,6 +1,7 @@
 package eu.modernmt.context.lucene.storage;
 
 import eu.modernmt.context.lucene.analysis.ContextAnalyzerIndex;
+import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.lang.LanguageIndex;
@@ -65,9 +66,11 @@ public class CorporaStorage {
         return index.getBuckets().size();
     }
 
-    public synchronized void add(List<TranslationUnit> batch) throws IOException {
-        for (TranslationUnit unit : batch) {
-            if (!index.registerData(unit.channel, unit.channelPosition))
+    public synchronized Collection<Deletion> onDataReceived(DataBatch batch) throws IOException {
+        List<Deletion> deletions = new ArrayList<>(batch.getDeletions().size());
+
+        for (TranslationUnit unit : batch.getTranslationUnits()) {
+            if (!index.shouldAcceptData(unit.channel, unit.channelPosition))
                 continue;
 
             if (languages.isSupported(unit.direction)) {
@@ -82,18 +85,22 @@ public class CorporaStorage {
                 pendingUpdatesBuckets.add(bucket);
             }
         }
-    }
 
-    public synchronized boolean delete(Deletion deletion) {
-        if (!index.registerData(deletion.channel, deletion.channelPosition))
-            return false;
+        for (Deletion deletion : batch.getDeletions()) {
+            if (!index.shouldAcceptData(deletion.channel, deletion.channelPosition))
+                continue;
 
-        for (CorpusBucket bucket : index.getBucketsByMemory(deletion.memory)) {
-            bucket.markForDeletion();
-            pendingUpdatesBuckets.add(bucket);
+            deletions.add(deletion);
+
+            for (CorpusBucket bucket : index.getBucketsByMemory(deletion.memory)) {
+                bucket.markForDeletion();
+                pendingUpdatesBuckets.add(bucket);
+            }
         }
 
-        return true;
+        index.advanceChannels(batch.getChannelPositions());
+
+        return deletions;
     }
 
     public Map<Short, Long> getLatestChannelPositions() {
