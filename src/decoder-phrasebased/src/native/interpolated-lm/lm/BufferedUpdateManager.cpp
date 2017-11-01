@@ -25,7 +25,7 @@ void BufferedUpdateManager::Add(const mmt::update_batch_t &batch) {
     batchAccess.lock();
 
     for (auto it = batch.translation_units.begin(); it != batch.translation_units.end(); ++it)
-        foregroundBatch->Add(it->channel, it->position, it->memory, it->source);
+        foregroundBatch->Add(it->channel, it->position, it->memory, it->target);
 
     for (auto it = batch.deletions.begin(); it != batch.deletions.end(); ++it)
         foregroundBatch->Delete(it->channel, it->position, it->memory);
