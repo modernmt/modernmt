@@ -59,7 +59,7 @@ namespace mmt {
             vector<memory_t> deletions;
 
             inline const bool ShouldAcceptUpdate(channel_t channel, seqid_t position) const {
-                return channel >= streams.size() || streams[channel] < position;
+                return channel >= (ssize_t) streams.size() || streams[channel] < position;
             }
 
         };

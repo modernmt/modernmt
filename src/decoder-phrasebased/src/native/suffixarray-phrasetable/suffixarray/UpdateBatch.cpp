@@ -57,7 +57,7 @@ void UpdateBatch::Advance(const unordered_map<channel_t, seqid_t> &channels) {
         channel_t channel = entry->first;
         seqid_t position = entry->second;
 
-        if (streams.size() <= channel)
+        if ((ssize_t) streams.size() <= channel)
             streams.resize((size_t) (channel + 1), -1);
 
         if (streams[channel] < position)

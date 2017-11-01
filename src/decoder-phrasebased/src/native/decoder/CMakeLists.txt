@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.2)
 project(mmt_pbdecoder)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-dev -O3 -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -fPIC")
 
 # moses defines
 add_definitions(-DMAX_NUM_FACTORS=1 -DWITH_THREADS -DBOOST_TEST_DYN_LINK -DTRACE_ENABLE=1)
