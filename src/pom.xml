@@ -35,7 +35,7 @@
         <kafka.version>0.10.2.1</kafka.version>
         <cassandra.version>3.11.0</cassandra.version>
 
-        <mmt.version>2.0</mmt.version>
+        <mmt.version>2.0.1</mmt.version>
         <mmt.build.number>${maven.build.timestamp}</mmt.build.number>
 
         <!-- Native project definitions -->
