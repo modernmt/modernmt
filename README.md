@@ -1,4 +1,4 @@
-# MMT 2.0 - Neural Adaptive Machine Translation
+# MMT 2.0.1 - Neural Adaptive Machine Translation
 Release for Ubuntu 16.04
 
 ## About MMT
@@ -15,7 +15,8 @@ You can find more information on: http://www.modernmt.eu
 
 ## About this Release
 
-This release introduces our new **Adaptive Neural MT engine**. In addition to the fast Phrase-Based engine, you can now create  a neural engine with the same simplicity, starting from a collection of line aligned parallel data or TMX files; the engine will be accessible via a [REST API](https://github.com/ModernMT/MMT/wiki/API-Documentation).
+This release strongly improves our **Adaptive Neural MT engine**. 
+In addition to the fast Phrase-Based engine, you can now create  a neural engine with the same simplicity, starting from a collection of line aligned parallel data or TMX files; the engine will be accessible via a [REST API](https://github.com/ModernMT/MMT/wiki/API-Documentation).
 It also lets you create an MT cluster where identical engines on different machines cooperate in order to increase the system speed and fault tolerance.
 
 Intro video (for version 0.11): http://87k.eu/lk9l
