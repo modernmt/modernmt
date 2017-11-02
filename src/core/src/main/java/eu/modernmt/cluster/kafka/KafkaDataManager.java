@@ -249,7 +249,7 @@ public class KafkaDataManager implements DataManager {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
         long offset = sendElement(KafkaPacket.createAddition(direction, memory, sentence, translation, timestamp), true, channel);
-        return ImportJob.createEphemeralJob(offset, channel.getId());
+        return ImportJob.createEphemeralJob(memory, offset, channel.getId());
     }
 
     @Override
@@ -263,7 +263,7 @@ public class KafkaDataManager implements DataManager {
             throw new IllegalStateException("connect() not called");
 
         long offset = sendElement(KafkaPacket.createOverwrite(direction, memory, sentence, translation, previousSentence, previousTranslation, timestamp), true, channel);
-        return ImportJob.createEphemeralJob(offset, channel.getId());
+        return ImportJob.createEphemeralJob(memory, offset, channel.getId());
     }
 
     @Override
