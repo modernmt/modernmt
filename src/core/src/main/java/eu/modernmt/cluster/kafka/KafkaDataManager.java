@@ -160,7 +160,6 @@ public class KafkaDataManager implements DataManager {
         if (connectThread.isAlive())    // if the thread is still alive could not connect to the Kafka server
             throw new HostUnreachableException(host + ':' + port);
 
-        /**/
         this.pollingThread.start(consumer);
 
         return connectThread.getLatestPositions();
