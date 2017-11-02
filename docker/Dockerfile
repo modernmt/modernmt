@@ -38,7 +38,7 @@ RUN chown mmt:mmt /home/mmt
 USER mmt
 
 # Install MMT
-RUN wget -qO- https://github.com/ModernMT/MMT/releases/download/v2.0/mmt-2.0-ubuntu.tar.gz | tar xvfz -
+RUN wget -qO- https://github.com/ModernMT/MMT/releases/download/v2.0.1/mmt-2.0.1-ubuntu.tar.gz | tar xvfz -
 WORKDIR /home/mmt/mmt
 
 # Make MMT example engine
