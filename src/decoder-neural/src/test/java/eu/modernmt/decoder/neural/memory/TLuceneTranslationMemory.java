@@ -1,5 +1,7 @@
 package eu.modernmt.decoder.neural.memory;
 
+import eu.modernmt.data.DataBatch;
+import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.lang.LanguageIndex;
@@ -122,5 +124,55 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
                     ", target='" + target + '\'' +
                     '}';
         }
+    }
+
+    // DataListener utils
+
+    public void onDelete(final Deletion deletion) throws IOException {
+        super.onDataReceived(new DataBatch() {
+
+            @Override
+            public Collection<TranslationUnit> getTranslationUnits() {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public Collection<Deletion> getDeletions() {
+                return Collections.singleton(deletion);
+            }
+
+            @Override
+            public Map<Short, Long> getChannelPositions() {
+                return Collections.singletonMap(deletion.channel, deletion.channelPosition);
+            }
+
+        });
+    }
+
+    public void onDataReceived(Collection<TranslationUnit> units) throws IOException {
+        final HashMap<Short, Long> positions = new HashMap<>();
+        for (TranslationUnit unit : units) {
+            Long existingPosition = positions.get(unit.channel);
+
+            if (existingPosition == null || existingPosition < unit.channelPosition)
+                positions.put(unit.channel, unit.channelPosition);
+        }
+
+        super.onDataReceived(new DataBatch() {
+            @Override
+            public Collection<TranslationUnit> getTranslationUnits() {
+                return units;
+            }
+
+            @Override
+            public Collection<Deletion> getDeletions() {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public Map<Short, Long> getChannelPositions() {
+                return positions;
+            }
+        });
     }
 }

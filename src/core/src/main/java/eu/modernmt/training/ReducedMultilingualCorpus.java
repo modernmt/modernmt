@@ -84,6 +84,11 @@ public class ReducedMultilingualCorpus extends BaseMultilingualCorpus implements
             }
 
             @Override
+            public void flush() throws IOException {
+                writer.flush();
+            }
+
+            @Override
             public void close() throws IOException {
                 writer.close();
             }

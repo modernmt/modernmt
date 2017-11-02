@@ -21,29 +21,23 @@ UpdateManager::~UpdateManager() {
     delete backgroundBatch;
 }
 
-#define UpdateManagerEnqueue(_line) \
-    bool success = false; \
-\
-    while (!success) { \
-        batchAccess.lock(); \
-        success = _line; \
-        batchAccess.unlock(); \
-\
-        if (!success) \
-            AwakeBackgroundThread(true); \
-    }
+void UpdateManager::Add(const mmt::update_batch_t &batch) {
+    batchAccess.lock();
 
-void UpdateManager::Add(const updateid_t &id, const memory_t memory, const vector<wid_t> &source,
-                        const vector<wid_t> &target, const alignment_t &alignment) {
-    UpdateManagerEnqueue(
-            foregroundBatch->Add(id, memory, source, target, alignment)
-    );
-}
+    for (auto it = batch.translation_units.begin(); it != batch.translation_units.end(); ++it)
+        foregroundBatch->Add(it->channel, it->position, it->memory, it->source, it->target, it->alignment);
 
-void UpdateManager::Delete(const mmt::updateid_t &id, const mmt::memory_t memory) {
-    UpdateManagerEnqueue(
-            foregroundBatch->Delete(id, memory)
-    );
+    for (auto it = batch.deletions.begin(); it != batch.deletions.end(); ++it)
+        foregroundBatch->Delete(it->channel, it->position, it->memory);
+
+    foregroundBatch->Advance(batch.channelPositions);
+
+    bool full = foregroundBatch->IsFull();
+
+    batchAccess.unlock();
+
+    if (full)
+        AwakeBackgroundThread(true);
 }
 
 void UpdateManager::BackgroundThreadRun() {

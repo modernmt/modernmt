@@ -1,11 +1,15 @@
 package eu.modernmt.context.lucene;
 
+import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.lucene.analysis.ContextAnalyzerIndex;
 import eu.modernmt.context.lucene.analysis.DocumentBuilder;
 import eu.modernmt.context.lucene.analysis.LuceneUtils;
 import eu.modernmt.context.lucene.storage.CorporaStorage;
 import eu.modernmt.context.lucene.storage.CorpusBucket;
 import eu.modernmt.context.lucene.storage.Options;
+import eu.modernmt.data.DataBatch;
+import eu.modernmt.data.Deletion;
+import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.io.DefaultCharset;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
@@ -19,10 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by davide on 06/08/17.
@@ -151,5 +152,55 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
                     ", language=" + language +
                     '}';
         }
+    }
+
+    // DataListener utils
+
+    public void onDelete(final Deletion deletion) throws ContextAnalyzerException {
+        super.onDataReceived(new DataBatch() {
+
+            @Override
+            public Collection<TranslationUnit> getTranslationUnits() {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public Collection<Deletion> getDeletions() {
+                return Collections.singleton(deletion);
+            }
+
+            @Override
+            public Map<Short, Long> getChannelPositions() {
+                return Collections.singletonMap(deletion.channel, deletion.channelPosition);
+            }
+
+        });
+    }
+
+    public void onDataReceived(Collection<TranslationUnit> units) throws ContextAnalyzerException {
+        final HashMap<Short, Long> positions = new HashMap<>();
+        for (TranslationUnit unit : units) {
+            Long existingPosition = positions.get(unit.channel);
+
+            if (existingPosition == null || existingPosition < unit.channelPosition)
+                positions.put(unit.channel, unit.channelPosition);
+        }
+
+        super.onDataReceived(new DataBatch() {
+            @Override
+            public Collection<TranslationUnit> getTranslationUnits() {
+                return units;
+            }
+
+            @Override
+            public Collection<Deletion> getDeletions() {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public Map<Short, Long> getChannelPositions() {
+                return positions;
+            }
+        });
     }
 }

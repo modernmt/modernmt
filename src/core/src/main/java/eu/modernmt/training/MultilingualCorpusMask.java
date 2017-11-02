@@ -85,6 +85,11 @@ public class MultilingualCorpusMask extends BaseMultilingualCorpus implements Mu
             }
 
             @Override
+            public void flush() throws IOException {
+                writer.flush();
+            }
+
+            @Override
             public void close() throws IOException {
                 writer.close();
             }

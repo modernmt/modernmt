@@ -1,6 +1,5 @@
 package eu.modernmt.data;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -8,9 +7,7 @@ import java.util.Map;
  */
 public interface DataListener {
 
-    void onDataReceived(List<TranslationUnit> batch) throws Exception;
-
-    void onDelete(Deletion deletion) throws Exception;
+    void onDataReceived(DataBatch batch) throws Exception;
 
     Map<Short, Long> getLatestChannelPositions();
 

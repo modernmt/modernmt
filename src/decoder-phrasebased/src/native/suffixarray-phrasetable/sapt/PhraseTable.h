@@ -42,12 +42,9 @@ namespace mmt {
 
             /* IncrementalModel */
 
-            virtual void Add(const updateid_t &id, const memory_t memory, const std::vector<wid_t> &source,
-                             const std::vector<wid_t> &target, const alignment_t &alignment) override;
+            virtual void OnUpdateBatchReceived(const update_batch_t &batch) override;
 
-            virtual unordered_map<stream_t, seqid_t> GetLatestUpdatesIdentifier() override;
-
-            void Delete(const updateid_t &id, const memory_t memory) override;
+            virtual unordered_map<channel_t, seqid_t> GetLatestUpdatesIdentifier() override;
 
         private:
             struct pt_private;

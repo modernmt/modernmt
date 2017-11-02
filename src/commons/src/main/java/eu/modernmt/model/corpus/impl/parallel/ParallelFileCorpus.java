@@ -3,8 +3,8 @@ package eu.modernmt.model.corpus.impl.parallel;
 import eu.modernmt.io.*;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
-import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.BaseMultilingualCorpus;
+import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -169,10 +169,15 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
         }
 
         @Override
+        public void flush() throws IOException {
+            sourceWriter.flush();
+            targetWriter.flush();
+        }
+
+        @Override
         public void close() {
             IOUtils.closeQuietly(this.sourceWriter);
             IOUtils.closeQuietly(this.targetWriter);
         }
-
     }
 }

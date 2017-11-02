@@ -9,6 +9,7 @@
 #include <db/NGramStorage.h>
 #include <sys/time.h>
 #include <corpus/CorpusReader.h>
+
 #ifdef _OPENMP
 #include <thread>
 #include <omp.h>
@@ -101,15 +102,17 @@ void LoadCorpus(Vocabulary &vb, const string &corpus, NGramStorage &storage, uin
 
     CorpusReader reader(vb, corpus);
     NGramBatch batch(order, buffer_size);
-    size_t batches=1;
+    size_t batches = 1;
     vector<wid_t> sentence;
-    while(reader.Read(sentence)) {
-        if (!batch.Add(memory, sentence)) {
+
+    while (reader.Read(sentence)) {
+        batch.Add(memory, sentence);
+
+        if (batch.IsFull()) {
             storage.PutBatch(batch);
+            batch.Clear();
 
             ++batches;
-            batch.Clear();
-            batch.Add(memory, sentence);
         }
     }
 
@@ -117,6 +120,7 @@ void LoadCorpus(Vocabulary &vb, const string &corpus, NGramStorage &storage, uin
         storage.PutBatch(batch);
         batch.Clear();
     }
+
     cerr << "loading memory:" << memory << " requires " << batches << " batches" << endl;
 }
 

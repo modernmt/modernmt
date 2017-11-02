@@ -4,7 +4,6 @@ import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataManager;
 import eu.modernmt.data.DataManagerException;
-import eu.modernmt.data.Deletion;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.processing.ProcessingException;
 import org.apache.commons.io.IOUtils;
@@ -26,7 +25,7 @@ class DataPollingThread extends Thread {
 
     private final Logger logger = LogManager.getLogger(KafkaDataManager.class);
 
-    private final DataBatch batch;
+    private final KafkaDataBatch batch;
 
     private DataManagerException exception;
     private KafkaConsumer<Integer, KafkaPacket> consumer;
@@ -40,7 +39,7 @@ class DataPollingThread extends Thread {
     public DataPollingThread(Engine engine, KafkaDataManager manager) {
         super("DataPollingThread");
         this.manager = manager;
-        this.batch = new DataBatch(engine, manager);
+        this.batch = new KafkaDataBatch(engine, manager);
     }
 
     public void ensureRunning() throws DataManagerException {
@@ -88,8 +87,12 @@ class DataPollingThread extends Thread {
         for (DataListener listener : listeners) {
             Map<Short, Long> latestPositions = listener.getLatestChannelPositions();
 
-            if (latestPositions == null || latestPositions.isEmpty())
-                continue;
+            logger.debug("DataListener[" + listener.getClass().getSimpleName() + "]: channel positions = " + latestPositions);
+
+            if (latestPositions == null || latestPositions.isEmpty()) {
+                result = null;
+                break;
+            }
 
             if (result == null) {
                 result = new HashMap<>(latestPositions);
@@ -142,7 +145,7 @@ class DataPollingThread extends Thread {
                 }
 
                 if (dataManagerListener != null)
-                    dataManagerListener.onDataBatchProcessed(batch.getBatchOffset());
+                    dataManagerListener.onDataBatchProcessed(batch.getChannelPositions());
 
                 batch.clear();
             } catch (WakeupException e) {
@@ -150,9 +153,11 @@ class DataPollingThread extends Thread {
                 break;
             } catch (RuntimeException e) {
                 exception = new DataManagerException("Unexpected exception while data-stream polling", e);
+                logger.error(exception.getMessage(), e);
                 break;
             } catch (AlignerException | ProcessingException e) {
                 exception = new DataManagerException("Failed to parse update batch", e);
+                logger.error(exception.getMessage(), e);
                 break;
             }
         }
@@ -161,7 +166,7 @@ class DataPollingThread extends Thread {
         executor.shutdownNow();
     }
 
-    private void deliverBatch(DataBatch batch) throws Exception {
+    private void deliverBatch(KafkaDataBatch batch) throws Exception {
         if (listeners.isEmpty()) {
             logger.warn("Discarding " + batch.size() + " updates, listeners is empty");
             return;
@@ -185,25 +190,24 @@ class DataPollingThread extends Thread {
                     throw new Error("Unexpected exception", cause);
             }
         }
+
+        if (logger.isDebugEnabled())
+            logger.info("DataBatch delivered of size " + batch.size() + ", channels = " + batch.getChannelPositions());
     }
 
     private static final class DeliveryTask implements Callable<Void> {
 
-        private final DataBatch batch;
+        private final KafkaDataBatch batch;
         private final DataListener listener;
 
-        public DeliveryTask(DataBatch batch, DataListener listener) {
+        public DeliveryTask(KafkaDataBatch batch, DataListener listener) {
             this.batch = batch;
             this.listener = listener;
         }
 
         @Override
         public Void call() throws Exception {
-            listener.onDataReceived(batch.getTranslationUnits());
-
-            for (Deletion deletion : batch.getDeletions())
-                listener.onDelete(deletion);
-
+            listener.onDataReceived(batch);
             return null;
         }
     }
