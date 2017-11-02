@@ -2,14 +2,12 @@ package eu.modernmt.rest;
 
 import eu.modernmt.io.DefaultCharset;
 import eu.modernmt.model.Alignment;
+import eu.modernmt.model.ImportJob;
 import eu.modernmt.rest.framework.JSONSerializer;
 import eu.modernmt.rest.framework.routing.RouterServlet;
 import eu.modernmt.rest.model.ContextVectorResult;
 import eu.modernmt.rest.model.TranslationResponse;
-import eu.modernmt.rest.serializers.AlignmentSerializer;
-import eu.modernmt.rest.serializers.ContextVectorResultSerializer;
-import eu.modernmt.rest.serializers.LocaleSerializer;
-import eu.modernmt.rest.serializers.TranslationResponseSerializer;
+import eu.modernmt.rest.serializers.*;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.eclipse.jetty.server.Handler;
@@ -34,6 +32,7 @@ public class RESTServer {
         JSONSerializer.registerCustomSerializer(Alignment.class, new AlignmentSerializer());
         JSONSerializer.registerCustomSerializer(ContextVectorResult.class, new ContextVectorResultSerializer());
         JSONSerializer.registerCustomSerializer(Locale.class, new LocaleSerializer());
+        JSONSerializer.registerCustomSerializer(ImportJob.class, new ImportJobSerializer());
     }
 
     public static class ServerOptions {

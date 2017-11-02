@@ -13,25 +13,31 @@ import java.lang.reflect.Type;
 public class JSONSerializer {
 
     private static final GsonBuilder builder = new GsonBuilder();
-    private static Gson instance = null;
+    private static Gson customInstance = null;
+    private static Gson staticInstance = new Gson();
 
     public static void registerCustomSerializer(Class<?> clazz, JsonSerializer<?> serializer) {
         builder.registerTypeAdapter(clazz, serializer);
     }
 
-    private static Gson get() {
-        if (instance == null) {
+    private static Gson getCustom() {
+        if (customInstance == null) {
             synchronized (JSONSerializer.class) {
-                if (instance == null)
-                    instance = builder.create();
+                if (customInstance == null)
+                    customInstance = builder.create();
             }
         }
 
-        return instance;
+        return customInstance;
     }
 
-    public static JsonElement toJSON(Object object,  Type type) {
-        return get().toJsonTree(object, type);
+    public static JsonElement toJSON(Object object, Type type) {
+        return toJSON(object, type, true);
+    }
+
+    public static JsonElement toJSON(Object object, Type type, boolean custom) {
+        Gson gson = custom ? getCustom() : staticInstance;
+        return gson.toJsonTree(object, type);
     }
 
 }
