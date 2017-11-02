@@ -158,6 +158,7 @@ class DataPollingThread extends Thread {
         }
 
         IOUtils.closeQuietly(consumer);
+        executor.shutdownNow();
     }
 
     private void deliverBatch(DataBatch batch) throws Exception {

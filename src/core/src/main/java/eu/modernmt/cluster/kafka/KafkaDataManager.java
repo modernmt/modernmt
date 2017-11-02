@@ -138,32 +138,29 @@ public class KafkaDataManager implements DataManager {
 
     @Override
     public Map<Short, Long> connect(String host, int port, long timeout, TimeUnit unit) throws HostUnreachableException {
-        // load producer properties and
-        // build kafka producer for sending messages to the server
+        // load producer properties and build kafka producer for sending messages to the server from the given partitions
         Properties producerProperties = loadProperties("kafka-producer.properties", host, port);
         this.producer = new KafkaProducer<>(producerProperties);
 
-        // load consumer properties and
-        // build kafka consumer for reading messages from the server
-        // from the given partitions
+        // load consumer properties and build kafka consumer for reading messages from the server from the given partitions
         Properties consumerProperties = loadProperties("kafka-consumer.properties", host, port);
         consumerProperties.put("group.id", uuid);
-
         KafkaConsumer<Integer, KafkaPacket> consumer = new KafkaConsumer<>(consumerProperties);
         consumer.assign(partitions);
 
+        //use a separate thread to connect to the Kafka server
         ConnectionThread connectThread = new ConnectionThread(consumer);
         connectThread.start();
-
         try {
             unit.timedJoin(connectThread, timeout);
         } catch (InterruptedException e) {
             // ignore it
         }
 
-        if (connectThread.isAlive())
+        if (connectThread.isAlive())    // if the thread is still alive could not connect to the Kafka server
             throw new HostUnreachableException(host + ':' + port);
 
+        /**/
         this.pollingThread.start(consumer);
 
         return connectThread.getLatestPositions();
