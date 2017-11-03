@@ -9,7 +9,9 @@ import eu.modernmt.decoder.neural.NeuralDecoderRejectedExecutionException;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -122,7 +124,7 @@ class NativeProcess implements Closeable {
         try {
             String line = this.stdout.readLine();
             if (line == null || !line.trim().equals("ok"))
-                deserialize(line);
+                deserialize(null, line);
         } catch (IOException | NeuralDecoderException e) {
             IOUtils.closeQuietly(this.stdin);
             IOUtils.closeQuietly(this.stdout);
@@ -136,10 +138,10 @@ class NativeProcess implements Closeable {
      *
      * @param direction the direction of the translation to execute
      * @param sentence  the source sentence to translate
-     * @return an array of Words, representing the translation of the passed sentence
+     * @return the translation of the passed sentence
      * @throws NeuralDecoderException
      */
-    public Word[] translate(LanguagePair direction, Sentence sentence) throws NeuralDecoderException {
+    public Translation translate(LanguagePair direction, Sentence sentence) throws NeuralDecoderException {
         return translate(direction, sentence, null);
     }
 
@@ -149,10 +151,10 @@ class NativeProcess implements Closeable {
      * @param direction   the direction of the translation to execute
      * @param sentence    the source sentence to translate
      * @param suggestions an array of translation suggestions that the decoder will study before the translation
-     * @return an array of Words, representing the translation of the passed sentence
+     * @return the translation of the passed sentence
      * @throws NeuralDecoderException
      */
-    public Word[] translate(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions) throws NeuralDecoderException {
+    public Translation translate(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions) throws NeuralDecoderException {
         if (!decoder.isAlive())
             throw new NeuralDecoderRejectedExecutionException();
 
@@ -176,7 +178,7 @@ class NativeProcess implements Closeable {
         if (line == null)
             throw new NeuralDecoderException("No response from NMT process, request was '" + payload + "'");
 
-        return deserialize(line);
+        return deserialize(sentence, line);
     }
 
     private static String serialize(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions) {
@@ -205,7 +207,7 @@ class NativeProcess implements Closeable {
         return json.toString().replace('\n', ' ');
     }
 
-    private static Word[] deserialize(String response) throws NeuralDecoderException {
+    private static Translation deserialize(Sentence sentence, String response) throws NeuralDecoderException {
         JsonObject json;
         try {
             json = parser.parse(response).getAsJsonObject();
@@ -224,10 +226,18 @@ class NativeProcess implements Closeable {
             throw NeuralDecoderException.fromPythonError(type, message);
         }
 
-        return explode(json.get("translation").getAsString());
+        json = json.getAsJsonObject("translation");
+
+        if (logger.isDebugEnabled())
+            logger.debug("Received translation: " + json);
+
+        Word[] text = explodeText(json.get("text").getAsString());
+        Alignment alignment = parseAlignment(json.get("alignment").getAsJsonArray());
+
+        return new Translation(text, sentence, alignment);
     }
 
-    private static Word[] explode(String text) {
+    private static Word[] explodeText(String text) {
         if (text.isEmpty())
             return new Word[0];
 
@@ -244,6 +254,21 @@ class NativeProcess implements Closeable {
         return words;
     }
 
+    private static Alignment parseAlignment(JsonArray array) {
+        JsonArray sourceIndexesArray = array.get(0).getAsJsonArray();
+        JsonArray targetIndexesArray = array.get(1).getAsJsonArray();
+
+        int size = sourceIndexesArray.size();
+        int[] sourceIndexes = new int[size];
+        int[] targetIndexes = new int[size];
+
+        for (int i = 0; i < size; i++) {
+            sourceIndexes[i] = sourceIndexesArray.get(i).getAsInt();
+            targetIndexes[i] = targetIndexesArray.get(i).getAsInt();
+        }
+
+        return new Alignment(sourceIndexes, targetIndexes);
+    }
 
     /**
      * This method kills this decoder process.

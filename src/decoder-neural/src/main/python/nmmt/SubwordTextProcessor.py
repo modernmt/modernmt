@@ -420,6 +420,8 @@ class SubwordTextProcessor:
             if not tok.endswith(self._separator):
                 i += 1
 
+        return indexes
+
     class Builder:
         def __init__(self, symbols=90000, max_vocabulary_size=None, min_frequency=2,
                      similarity_threshold=.5, separator='@@'):

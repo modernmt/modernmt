@@ -296,7 +296,13 @@ class NMTEngine:
         if not bpe_alignment:
             return None
 
-        return set([(src_indexes[al[0]], trg_indexes[al[1]]) for al in bpe_alignment])
+        pairs = [(src_indexes[al[0]], trg_indexes[al[1]]) for al in bpe_alignment]
+        filtered_pairs = []
+        for i, e in enumerate(pairs):
+            if i == 0 or (e != pairs[i - 1]):
+                filtered_pairs.append(e)
+
+        return filtered_pairs
 
     def save(self, path, store_data=True, store_metadata=True, store_processor=True):
         if store_metadata:
