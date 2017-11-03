@@ -106,10 +106,9 @@ class Translator(object):
         length = pred.index(onmt.Constants.EOS)
 
         alignment = [] # contains a list of pairs (src_pos, trg_pos)
-        if self.opt.alignment:
-            for i in range(length):
-                _, maxIndex = attn[i].max(0)
-                alignment.append((maxIndex[0], i))
+        for i in range(length):
+            _, maxIndex = attn[i].max(0)
+            alignment.append((maxIndex[0], i))
         return alignment
 
     def translateBatch(self, srcBatch, tgtBatch):

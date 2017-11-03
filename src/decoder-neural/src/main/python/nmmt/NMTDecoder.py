@@ -11,13 +11,6 @@ class UnsupportedLanguageException(BaseException):
         self.message = "No engine and text processors found for %s -> %s." % (source_language, target_language)
 
 
-class Suggestion:
-    def __init__(self, source, target, score):
-        self.source = source
-        self.target = target
-        self.score = score
-
-
 class NMTDecoder:
     def __init__(self, model_path, gpu_id=None, random_seed=None):
         torch_setup(gpus=[gpu_id] if gpu_id is not None else None, random_seed=random_seed)
@@ -42,7 +35,6 @@ class NMTDecoder:
         # Public-editable options
         self.beam_size = 5
         self.max_sent_length = 160
-        self.alignment = True
 
     def get_engine(self, source_lang, target_lang):
         direction = source_lang + '__' + target_lang
@@ -63,12 +55,11 @@ class NMTDecoder:
             reset_model = True
 
         # (2) Translate and compute word alignment
-        # it returns a dictionary {'text':translation, 'alignment':alignment}
-        result = engine.translate(text, n_best=n_best, beam_size=self.beam_size, max_sent_length=self.max_sent_length, alignment=self.alignment)
-        self._logger.log(logging.INFO,"translation.text:|%s| translation.alignment" % (result['text'],result['alignment']))
+        translation = engine.translate(text, n_best=n_best, beam_size=self.beam_size,
+                                       max_sent_length=self.max_sent_length)
 
         # (3) Reset model if needed
         if reset_model:
             engine.reset_model()
 
-        return result
+        return translation

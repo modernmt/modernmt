@@ -325,8 +325,7 @@ class NeuralEngine(Engine):
                 translation = decoder.translate(self.source_lang, self.target_lang, source,
                                                 suggestions=suggestions, tuning_epochs=epochs, tuning_learning_rate=lr)
 
-                # output.write(translation.encode('utf-8'))
-                output.write(translation['text'].encode('utf-8'))
+                output.write(translation.text.encode('utf-8'))
                 output.write('\n')
 
         command = ['perl', self._bleu_script, reference_file]
