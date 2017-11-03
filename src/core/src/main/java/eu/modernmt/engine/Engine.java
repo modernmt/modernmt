@@ -101,6 +101,8 @@ public abstract class Engine implements Closeable, DataListenerProvider {
             } catch (IOException e) {
                 throw new BootstrapException("Failed to instantiate aligner", e);
             }
+        } else {
+            aligner = null;
         }
 
         try {
