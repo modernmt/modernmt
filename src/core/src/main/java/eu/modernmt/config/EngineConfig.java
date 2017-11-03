@@ -18,6 +18,7 @@ public class EngineConfig {
     private Set<LanguagePair> languagePairs = null;
     private Type type = Type.PHRASE_BASED;
     private DecoderConfig decoderConfig = new PhraseBasedDecoderConfig();
+    private AlignerConfig alignerConfig = new AlignerConfig();
 
     public String getName() {
         return name;
@@ -56,6 +57,10 @@ public class EngineConfig {
 
     public DecoderConfig getDecoderConfig() {
         return decoderConfig;
+    }
+
+    public AlignerConfig getAlignerConfig() {
+        return alignerConfig;
     }
 
     @Override

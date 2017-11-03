@@ -95,10 +95,12 @@ public abstract class Engine implements Closeable, DataListenerProvider {
             throw new BootstrapException("Failed to load post-processor", e);
         }
 
-        try {
-            this.aligner = new FastAlign(Paths.join(this.models, "aligner"));
-        } catch (IOException e) {
-            throw new BootstrapException("Failed to instantiate aligner", e);
+        if (config.getAlignerConfig().isEnabled()) {
+            try {
+                this.aligner = new FastAlign(Paths.join(this.models, "aligner"));
+            } catch (IOException e) {
+                throw new BootstrapException("Failed to instantiate aligner", e);
+            }
         }
 
         try {
