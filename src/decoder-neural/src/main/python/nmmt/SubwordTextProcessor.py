@@ -207,7 +207,6 @@ class _BPE:
 
     def apply(self, tokens, vocabulary=None):
         output = []
-
         for word in tokens:
             new_word = [out for out in self._encode(word, vocabulary)]
 

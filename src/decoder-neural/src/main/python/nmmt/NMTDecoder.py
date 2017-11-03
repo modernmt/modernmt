@@ -55,11 +55,10 @@ class NMTDecoder:
             reset_model = True
 
         # (2) Translate and compute word alignment
-        translation = engine.translate(text, n_best=n_best, beam_size=self.beam_size,
-                                       max_sent_length=self.max_sent_length)
+        result = engine.translate(text, n_best=n_best, beam_size=self.beam_size, max_sent_length=self.max_sent_length)
 
         # (3) Reset model if needed
         if reset_model:
             engine.reset_model()
 
-        return translation
+        return result
