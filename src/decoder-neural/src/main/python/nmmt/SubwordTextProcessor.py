@@ -207,14 +207,43 @@ class _BPE:
 
     def apply(self, tokens, vocabulary=None):
         output = []
+
+        pos = 0
+        for word in tokens:
+            new_word = [out for out in self._encode(word, vocabulary)]
+
+            for item in new_word[:-1]:
+                 output.append(item + self.separator)
+            output.append(new_word[-1])
+
+            pos += 1
+
+        return output
+
+    def apply_with_position(self, tokens, vocabulary=None):
+        output = []
+        position = []
+        # list to store the map from the position of the subwords to the position of its original words
+        # the list has the same length of the sub-word sequence
+        # example:
+        # original:   my example is clear
+        # subwords:   my ex@@ ample is cle@@ ar
+        # position:   [0, 1, 1, 2, 3, 3]
+
+
+        pos = 0
         for word in tokens:
             new_word = [out for out in self._encode(word, vocabulary)]
 
             for item in new_word[:-1]:
                 output.append(item + self.separator)
+                position.append(pos)
             output.append(new_word[-1])
+            position.append(pos)
 
-        return output
+            pos += 1
+
+        return output, position
 
     def _encode(self, _word, vocabulary=None):
         if _word in self._cache:
@@ -408,8 +437,39 @@ class SubwordTextProcessor:
         bpe = self._source_bpe if is_source or (self._target_bpe is None) else self._target_bpe
         return bpe.apply(line, vocabulary=self._source_terms if is_source else self._target_terms)
 
-    def decode_tokens(self, tokens):
-        return u' '.join(tokens).replace(self._separator + u' ', u'')
+    def encode_line_with_position(self, line, is_source):
+        if isinstance(line, str):
+            line = line.decode('utf-8')
+
+        if isinstance(line, unicode):
+            line = line.strip().split()
+
+        bpe = self._source_bpe if is_source or (self._target_bpe is None) else self._target_bpe
+        return bpe.apply_with_position(line, vocabulary=self._source_terms if is_source else self._target_terms)
+
+    # def decode_tokens(self, tokens):
+    #     return u' '.join(tokens).replace(self._separator + u' ', u'')
+
+    def decode_tokens(self, bpe_tokens, bpe_alignment, src_bpe_position):
+        translation = u' '.join(bpe_tokens).replace(self._separator + u' ', u'')
+
+        next_pos = 0
+        trg_bpe_position = []
+        for tok in bpe_tokens:
+            trg_bpe_position.append(next_pos)
+
+            # if tok does not end with `self._separator` (ex. '@@'), tok is attached to the next one;
+            # otherwise it is an internal BPE subword and it is attached to the next
+            if tok.find(self._separator) == -1 or tok.index(self._separator) != ( len(tok) - len(self._separator)):
+                next_pos += 1
+
+        alignment = None
+        if bpe_alignment is not None:
+            alignment = []
+            for al in bpe_alignment:
+                alignment.append((src_bpe_position[al[0]], trg_bpe_position[al[1]]))
+
+        return translation, alignment
 
     class Builder:
         def __init__(self, symbols=90000, max_vocabulary_size=None, min_frequency=2,

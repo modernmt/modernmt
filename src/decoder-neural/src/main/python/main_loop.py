@@ -51,7 +51,9 @@ class TranslationResponse:
         jobj = {}
 
         if self.translation is not None:
-            jobj['translation'] = self.translation
+            jobj['translation'] = self.translation['text']
+            if self.translation['alignment'] is not None:
+                jobj['alignment'] = self.translation['alignment']
         else:
             error = {'type': self.error_type}
             if self.error_message is not None:
@@ -87,9 +89,9 @@ class MainController:
     def process(self, line):
         try:
             request = TranslationRequest.from_json_string(line)
-            translation = self._decoder.translate(request.source_lang, request.target_lang,
+            result = self._decoder.translate(request.source_lang, request.target_lang,
                                                   request.source, request.suggestions)
-            return TranslationResponse(translation=translation)
+            return TranslationResponse(translation=result)
         except BaseException as e:
             self._logger.exception('Failed to process request "' + line + '"')
             return TranslationResponse(exception=e)

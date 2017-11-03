@@ -274,7 +274,10 @@ class NMTEngine:
 
         return tuning_epochs, tuning_learning_rate
 
-    def translate(self, text, beam_size=5, max_sent_length=160, replace_unk=False, n_best=1):
+    def translate(self, text, beam_size=5, max_sent_length=160, replace_unk=False, n_best=1, alignment=False):
+        # it returns a dictionary {'text':translation, 'alignment':alignment};
+        # if computation of the alignment is not active, alignment will be  None
+
         self._ensure_model_loaded()
 
         self.model.eval()
@@ -283,13 +286,20 @@ class NMTEngine:
             self._translator = _Translator(self.src_dict, self.trg_dict, self.model)
 
         self._translator.opt.replace_unk = replace_unk
+        self._translator.opt.alignment = alignment
         self._translator.opt.beam_size = beam_size
         self._translator.opt.max_sent_length = max_sent_length
         self._translator.opt.n_best = n_best
 
-        pred_batch, _, _ = self._translator.translate([self.processor.encode_line(text, is_source=True)], None)
+        # pred_batch, _, _ = self._translator.translate([self.processor.encode_line(text, is_source=True)], None)
+        #
+        # return self.processor.decode_tokens(pred_batch[0][0])
 
-        return self.processor.decode_tokens(pred_batch[0][0])
+        src_bpe_tokens, src_bpe_position = self.processor.encode_line_with_position(text, is_source=True)
+        pred_batch, _, _, align_batch = self._translator.translate([src_bpe_tokens], None)
+
+        trg_tokens, src_trg_align = self.processor.decode_tokens(pred_batch[0][0], align_batch[0][0], src_bpe_position)
+        return {'text':trg_tokens, 'alignment':src_trg_align}
 
     def save(self, path, store_data=True, store_metadata=True):
         if store_metadata:

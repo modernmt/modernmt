@@ -42,6 +42,7 @@ class NMTDecoder:
         # Public-editable options
         self.beam_size = 5
         self.max_sent_length = 160
+        self.alignment = True
 
     def get_engine(self, source_lang, target_lang):
         direction = source_lang + '__' + target_lang
@@ -65,8 +66,10 @@ class NMTDecoder:
             self._logger.log(logging.INFO,"text:|%s| sugg_src:|EMPTY| sugg_trg:|EMPTY| sugg-score:|EMPTY|" % (text))
 
 
-        # (2) Translate
-        result = engine.translate(text, n_best=n_best, beam_size=self.beam_size, max_sent_length=self.max_sent_length)
+        # (2) Translate and compute word alignment
+        # it returns a dictionary {'text':translation, 'alignment':alignment}
+        result = engine.translate(text, n_best=n_best, beam_size=self.beam_size, max_sent_length=self.max_sent_length, alignment=self.alignment)
+        self._logger.log(logging.INFO,"translation.text:|%s| translation.alignment" % (result['text'],result['alignment']))
 
         # (3) Reset model if needed
         if reset_model:
