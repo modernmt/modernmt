@@ -1,10 +1,14 @@
 # MMT 2.0.1 - Neural Adaptive Machine Translation
-Release for Ubuntu 16.04
+We think that artificial intelligence is going to be the next big thing in our nearby future. It will bring humanity to a new era of access and organization of information.
+Language translation is probably the most complex of the human tasks for a machine to learn but it is also the one with the greatest potential to make the world a single family.
+
+With this project we want to give our contribution to the evolution of machine translation toward singularity.
+We want to consolidate the current state of the art into a single easy to use product, evolve it and keeping it an open to integrate the greatest opportunities in machine intelligence like deep learning.
+
+To achieve our goals we need a better MT technology that is able to extract more from data, adapt to context and easy to deploy. We know that the challenge is big, but the reward is potentially so big that we think it is worth trying hard.
 
 ## About MMT
-MMT is a context-aware, incremental and distributed general purpose Machine Translation technology.
-
-MMT is:
+MMT is a context-aware, incremental and distributed general purpose Neural Machine Translation technology. MMT is:
 - Simple to use, fast to train, and easy to scale with respect to domains, data, and users.
 - Trained by pooling all available projects/customers data and translation memories in one folder.
 - Queried by providing the sentence to be translated and optionally some context text.
@@ -14,12 +18,11 @@ MMT's goal is to deliver the quality of multiple custom engines by adapting on t
 You can find more information on: http://www.modernmt.eu
 
 ## About this Release
+Release for Ubuntu 16.04
 
 This release strongly improves our **Adaptive Neural MT engine**. 
 In addition to the fast Phrase-Based engine, you can now create  a neural engine with the same simplicity, starting from a collection of line aligned parallel data or TMX files; the engine will be accessible via a [REST API](https://github.com/ModernMT/MMT/wiki/API-Documentation).
 It also lets you create an MT cluster where identical engines on different machines cooperate in order to increase the system speed and fault tolerance.
-
-Intro video (for version 0.11): http://87k.eu/lk9l
 
 ## Your first translation with MMT
 
