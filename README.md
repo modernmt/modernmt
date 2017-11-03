@@ -152,3 +152,10 @@ You can learn more on the Wiki page [MMT Cluster](https://github.com/ModernMT/MM
 If you need to customize the properties and behaviour of your engines, you can specify advanced settings in their configuration files. 
 You can learn how on the Wiki page [Advanced Configurations](https://github.com/ModernMT/MMT/wiki/Advanced-Configurations)
 
+# Donate
+
+MMT is free, is open source and welcomes contributions and donations.
+
+MMT is currently sponsored by its funding members (Translated, FBK, UEDIN and TAUS) and the European Commission. 
+
+For donations, customizations and words of encouragement contact alessandro@translated.net
