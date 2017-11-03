@@ -10,7 +10,7 @@ public class ImportJob {
 
     private static final short EPHEMERAL_JOB_HEADER = (short) 0x8000;
 
-    public static ImportJob createEphemeralJob(long offset, short dataChannel) {
+    public static ImportJob createEphemeralJob(long memory, long offset, short dataChannel) {
         ByteBuffer buffer = ByteBuffer.allocate(16);
         buffer.putShort(EPHEMERAL_JOB_HEADER)
                 .putShort(dataChannel)
@@ -23,7 +23,7 @@ public class ImportJob {
 
         ImportJob job = new ImportJob();
         job.id = new UUID(msbs, lsbs);
-        job.memory = 0; // no memory for ephemeral job
+        job.memory = memory;
         job.size = 1;
         job.begin = job.end = offset;
         job.dataChannel = dataChannel;

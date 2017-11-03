@@ -22,9 +22,7 @@ namespace mmt {
 
             ~BufferedUpdateManager();
 
-            void Add(const updateid_t &id, const memory_t memory, const vector <wid_t> &sentence);
-
-            void Delete(const updateid_t &id, const memory_t memory);
+            void Add(const update_batch_t &batch);
 
         private:
             NGramStorage *storage;

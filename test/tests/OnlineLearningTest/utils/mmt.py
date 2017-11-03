@@ -67,16 +67,16 @@ def mmt_api_translate(line):
 
 
 def mmt_api_append(domain, source, target):
-    _api.append_to_domain('en', 'it', domain, source, target)
+    _api.append_to_memory('en', 'it', domain, source, target)
     time.sleep(5)
 
 
 def mmt_api_import(tmx, name=None):
     if name is None:
         name = os.path.basename(os.path.splitext(tmx)[0])
-    domain = _api.create_domain(name)
+    domain = _api.create_memory(name)
 
-    job = _api.import_into_domain(domain['id'], tmx)
+    job = _api.import_into_memory(domain['id'], tmx)
 
     while job['progress'] != 1.0:
         time.sleep(1)
@@ -86,7 +86,7 @@ def mmt_api_import(tmx, name=None):
 
 
 def mmt_api_count_domains():
-    return len(_api.get_all_domains())
+    return len(_api.get_all_memories())
 
 
 class EngineSize:
@@ -219,7 +219,7 @@ def mmt_stream_status(engine='default'):
                 tokens = line.split('Channel')[-1].strip().split()
                 value = int(tokens[-1])
 
-                if 'domain-upload-stream' in tokens[0]:
+                if 'memory-upload-stream' in tokens[0]:
                     domain_upload = value
                 elif 'contributions-stream' in tokens[0]:
                     contributions = value

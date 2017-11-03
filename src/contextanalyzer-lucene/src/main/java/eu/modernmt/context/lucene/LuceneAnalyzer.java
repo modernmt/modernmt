@@ -5,8 +5,8 @@ import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.lucene.analysis.ContextAnalyzerIndex;
 import eu.modernmt.context.lucene.storage.CorporaStorage;
 import eu.modernmt.context.lucene.storage.Options;
+import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
-import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
@@ -20,8 +20,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -118,42 +118,45 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     // UpdateListener
 
     @Override
-    public void onDataReceived(List<TranslationUnit> batch) throws ContextAnalyzerException {
+    public void onDataReceived(DataBatch batch) throws ContextAnalyzerException {
+        Collection<Deletion> deletions;
+
         try {
-            storage.add(batch);
+            deletions = storage.onDataReceived(batch);
         } catch (IOException e) {
             throw new ContextAnalyzerException(e);
         }
-    }
 
-    @Override
-    public void onDelete(Deletion deletion) throws ContextAnalyzerException {
-        if (!storage.delete(deletion))
+        if (deletions.isEmpty()) {
+            // Skip disk flush if no deletions
             return;
+        }
 
-        boolean deletedFromIndex = false;
-        boolean deletedFromStorage = false;
+        boolean indexUpdated = false;
+        boolean storageUpdated = false;
 
         try {
             storage.flushToDisk(true, false);
-            deletedFromStorage = true;
+            storageUpdated = true;
         } catch (IOException e) {
-            logger.error("Storage delete failed for memory " + deletion.memory, e);
+            logger.error("Storage flush failed ", e);
         }
 
         try {
-            index.delete(deletion.memory);
+            for (Deletion deletion : deletions) {
+                index.delete(deletion.memory);
+                logger.info("Memory deleted from ContextAnalyzer index: " + deletion.memory);
+            }
+
             index.flush();
 
-            deletedFromIndex = true;
+            indexUpdated = true;
         } catch (IOException e) {
-            logger.error("Index delete failed for memory " + deletion.memory, e);
+            logger.error("Index flush failed", e);
         }
 
-        if (!deletedFromIndex || !deletedFromStorage)
-            throw new ContextAnalyzerException("Failed to delete memory " + deletion.memory);
-
-        logger.info("Deleted memory " + deletion.memory);
+        if (!indexUpdated || !storageUpdated)
+            throw new ContextAnalyzerException("Failed update LuceneAnalyzer");
     }
 
     @Override

@@ -58,6 +58,12 @@ public class LazyWriterMultilingualCorpus implements MultilingualCorpusWrapper {
             }
 
             @Override
+            public void flush() throws IOException {
+                if (writer != null)
+                    writer.flush();
+            }
+
+            @Override
             public void close() throws IOException {
                 if (writer != null)
                     writer.close();

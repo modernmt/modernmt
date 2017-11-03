@@ -126,11 +126,11 @@ namespace mmt {
                                             const std::map<std::string, float> *translationContext,
                                             size_t nbestListSize) override;
 
-            void DeliverUpdates(const std::vector<translation_unit_t> &batch) override;
+            void DeliverUpdates(const vector<raw_translation_unit> &translationUnits,
+                                const vector<deletion> &deletions,
+                                const unordered_map<channel_t, seqid_t> &channelPositions) override;
 
-            void DeliverDeletion(const updateid_t &id, const memory_t memory) override;
-
-            unordered_map<stream_t, seqid_t> GetLatestUpdatesIdentifiers() override;
+            unordered_map<channel_t, seqid_t> GetLatestUpdatesIdentifiers() override;
         };
     }
 }
@@ -278,13 +278,18 @@ translation_t MosesDecoderImpl::translate(const std::string &text,
     return response;
 }
 
-void MosesDecoderImpl::DeliverUpdates(const std::vector<translation_unit_t> &batch) {
-    vector<vector<string>> _sources(batch.size());
-    vector<vector<string>> _targets(batch.size());
+void MosesDecoderImpl::DeliverUpdates(const std::vector<raw_translation_unit> &translationUnits,
+                                      const std::vector<mmt::deletion> &deletions,
+                                      const std::unordered_map<mmt::channel_t, mmt::seqid_t> &channelPositions) {
+    update_batch_t batch;
 
-    for (size_t i = 0; i < batch.size(); ++i) {
-        Explode(batch[i].source, _sources[i]);
-        Explode(batch[i].target, _targets[i]);
+    // Translation units
+    vector<vector<string>> _sources(translationUnits.size());
+    vector<vector<string>> _targets(translationUnits.size());
+
+    for (size_t i = 0; i < translationUnits.size(); ++i) {
+        Explode(translationUnits[i].source, _sources[i]);
+        Explode(translationUnits[i].target, _targets[i]);
     }
 
     vector<vector<wid_t>> sources;
@@ -293,27 +298,35 @@ void MosesDecoderImpl::DeliverUpdates(const std::vector<translation_unit_t> &bat
     vb.Lookup(_sources, sources, true);
     vb.Lookup(_targets, targets, true);
 
-    for (size_t i = 0; i < batch.size(); ++i) {
-        const translation_unit_t &unit = batch[i];
-        vector<wid_t> &source = sources[i];
-        vector<wid_t> &target = targets[i];
+    batch.translation_units.resize(translationUnits.size());
 
-        for (auto it = m_incrementalModels.begin(); it != m_incrementalModels.end(); ++it) {
-            IncrementalModel *model = *it;
-            model->Add(unit.id, unit.memory, source, target, unit.alignment);
-        }
+    for (size_t i = 0; i < translationUnits.size(); ++i) {
+        const raw_translation_unit &from = translationUnits[i];
+        translation_unit &to = batch.translation_units[i];
+
+        to.channel = from.channel;
+        to.position = from.position;
+        to.memory = from.memory;
+        to.source = sources[i];
+        to.target = targets[i];
+        to.alignment = from.alignment;
     }
-}
 
-void MosesDecoderImpl::DeliverDeletion(const updateid_t &id, const memory_t memory) {
+    // Deletions
+    batch.deletions = deletions;
+
+    // Channel positions
+    batch.channelPositions = channelPositions;
+
+    // Deliver updates
     for (auto it = m_incrementalModels.begin(); it != m_incrementalModels.end(); ++it) {
         IncrementalModel *model = *it;
-        model->Delete(id, memory);
+        model->OnUpdateBatchReceived(batch);
     }
 }
 
-unordered_map<stream_t, seqid_t> MosesDecoderImpl::GetLatestUpdatesIdentifiers() {
-    unordered_map<stream_t, seqid_t> result;
+unordered_map<channel_t, seqid_t> MosesDecoderImpl::GetLatestUpdatesIdentifiers() {
+    unordered_map<channel_t, seqid_t> result;
 
     if (!m_incrementalModels.empty()) {
         result = m_incrementalModels[0]->GetLatestUpdatesIdentifier();
@@ -321,7 +334,7 @@ unordered_map<stream_t, seqid_t> MosesDecoderImpl::GetLatestUpdatesIdentifiers()
         for (size_t i = 1; i < m_incrementalModels.size(); ++i) {
             IncrementalModel *model = m_incrementalModels[i];
 
-            unordered_map<stream_t, seqid_t> ids = model->GetLatestUpdatesIdentifier();
+            unordered_map<channel_t, seqid_t> ids = model->GetLatestUpdatesIdentifier();
             for (auto id = ids.begin(); id != ids.end(); ++id) {
                 auto other = result.find(id->first);
 

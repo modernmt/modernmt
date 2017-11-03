@@ -91,8 +91,8 @@ namespace mmt {
 
             Model *BuildModel(const Vocabulary *vocab, const Corpus &corpus, bool forward);
 
+            void MergeAndStore(const std::string &fwd_path, const std::string &bwd_path, const std::string &out_path);
         };
-
     }
 }
 

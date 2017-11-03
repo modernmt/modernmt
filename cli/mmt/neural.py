@@ -18,6 +18,7 @@ import onmt
 import nmmt
 from nmmt import NMTEngineTrainer, NMTEngine, SubwordTextProcessor, MMapDataset, Suggestion
 from nmmt import torch_setup
+from nmmt import torch_utils
 import torch
 
 
@@ -70,10 +71,9 @@ class TranslationMemory:
 
 
 class NMTPreprocessor:
-    def __init__(self, source_lang, target_lang, bpe_model_path, bpe_symbols, max_vocab_size):
+    def __init__(self, source_lang, target_lang, bpe_symbols, max_vocab_size):
         self._source_lang = source_lang
         self._target_lang = target_lang
-        self._bpe_model_path = bpe_model_path
         self._bpe_symbols = bpe_symbols
         self._max_vocab_size = max_vocab_size
 
@@ -81,13 +81,16 @@ class NMTPreprocessor:
         self._ram_limit_mb = 1024
 
     def process(self, corpora, valid_corpora, output_path, checkpoint=None):
+        bpe_output_path = os.path.join(output_path, 'vocab.bpe')
+        voc_output_path = os.path.join(output_path, 'vocab.pt')
+
         if checkpoint is not None:
             existing_bpe_path = checkpoint + '.bpe'
             existing_dat_path = checkpoint + '.dat'
 
             with _log_timed_action(self._logger, 'Loading BPE model from %s' % existing_bpe_path):
-                shutil.copy(existing_bpe_path, self._bpe_model_path)
-                bpe_encoder = SubwordTextProcessor.load_from_file(self._bpe_model_path)
+                shutil.copy(existing_bpe_path, bpe_output_path)
+                bpe_encoder = SubwordTextProcessor.load_from_file(bpe_output_path)
 
             with _log_timed_action(self._logger, 'Loading vocabularies from %s' % existing_dat_path):
                 checkpoint_dat = torch.load(existing_dat_path, map_location=lambda storage, loc: storage)
@@ -99,7 +102,7 @@ class NMTPreprocessor:
                 vb_builder = SubwordTextProcessor.Builder(symbols=self._bpe_symbols,
                                                           max_vocabulary_size=self._max_vocab_size)
                 bpe_encoder = vb_builder.build([c.reader([self._source_lang, self._target_lang]) for c in corpora])
-                bpe_encoder.save_to_file(self._bpe_model_path)
+                bpe_encoder.save_to_file(bpe_output_path)
 
             with _log_timed_action(self._logger, 'Creating vocabularies'):
                 src_vocab = onmt.Dict([onmt.Constants.PAD_WORD, onmt.Constants.UNK_WORD,
@@ -112,15 +115,10 @@ class NMTPreprocessor:
                 for word in bpe_encoder.get_target_terms():
                     trg_vocab.add(word)
 
-
-        # self._logger.info('Prepared src_vocab: "%s"' % repr(src_vocab))
-        # self._logger.info('Prepared src_vocab.__dict__: "%s"' % repr(src_vocab.__dict__))
-        # self._logger.info('Prepared trg_vocab: "%s"' % repr(trg_vocab))
-        # self._logger.info('Prepared trg_vocab.__dict__: "%s"' % repr(trg_vocab.__dict__))
         torch.save({
             'src': src_vocab,
             'tgt': trg_vocab
-        }, os.path.join(output_path, 'vocab.pt'))
+        }, voc_output_path)
 
         with _log_timed_action(self._logger, 'Preparing training corpora'):
             train_output_path = os.path.join(output_path, 'train_dataset')
@@ -162,8 +160,6 @@ class NMTPreprocessor:
 
         return builder.build(self._ram_limit_mb)
 
-    def getPath(self):
-        return self._bpe_model_path
 
 class NMTDecoder:
     def __init__(self, model, source_lang, target_lang):
@@ -173,7 +169,7 @@ class NMTDecoder:
         self._source_lang = source_lang
         self._target_lang = target_lang
 
-    def train(self, train_path, working_dir, checkpoint_path=None, metadata_path=None, training_opts=None, nmt_preprocessor_path=None):
+    def train(self, train_path, working_dir, training_opts, checkpoint_path=None, metadata_path=None):
         self._logger.info('Training started for data "%s"' % train_path)
 
         state = None
@@ -192,15 +188,10 @@ class NMTDecoder:
             valid_dataset = MMapDataset.load(valid_dataset_path)
             vocab = torch.load(vocab_path)
             src_dict, tgt_dict = vocab['src'], vocab['tgt']
-            # self._logger.info('Loaded src_dict: "%s"' % repr(src_dict))
-            # self._logger.info('Loaded src_dict.__dict__: "%s"' % repr(src_dict.__dict__))
-            # self._logger.info('Loaded tgt_dict: "%s"' % repr(tgt_dict))
-            # self._logger.info('Loaded tgt_dict.__dict__: "%s"' % repr(tgt_dict.__dict__))
 
         # Creating trainer ---------------------------------------------------------------------------------------------
-        if state is not None and state.checkpoint is not None and state.nmt_preprocessor_path is not None:
+        if state is not None and state.checkpoint is not None:
             with _log_timed_action(self._logger, 'Resuming engine from step %d' % state.checkpoint['step']):
-                os.symlink(state.nmt_preprocessor_path, state.checkpoint['file'] + '.bpe')
                 engine = NMTEngine.load_from_checkpoint(state.checkpoint['file'])
         else:
             if checkpoint_path is not None:
@@ -211,15 +202,16 @@ class NMTDecoder:
                 if metadata_path is not None:
                     metadata = NMTEngine.Metadata()
                     metadata.load_from_file(metadata_path)
-                    self._logger.info('Reading neural engine metadata from %s' % metadata_path)
+                    self._logger.info('Neural engine metadata read from %s' % metadata_path)
+
+                with _log_timed_action(self._logger, 'Reading BPE processor'):
+                    bpe_model_path = os.path.join(train_path, 'vocab.bpe')
+                    bpe_encoder = SubwordTextProcessor.load_from_file(bpe_model_path)
 
                 with _log_timed_action(self._logger, 'Creating engine from scratch'):
-                    engine = NMTEngine.new_instance(src_dict, tgt_dict, processor=None, metadata=metadata)
+                    engine = NMTEngine.new_instance(src_dict, tgt_dict, bpe_encoder, metadata=metadata)
 
-        trainer_opts = NMTEngineTrainer.Options()
-        trainer_opts.set(training_opts)
-
-        trainer = NMTEngineTrainer(engine, state=state, options=trainer_opts, nmt_preprocessor_path=nmt_preprocessor_path)
+        trainer = NMTEngineTrainer(engine, state=state, options=training_opts)
 
         # Training model -----------------------------------------------------------------------------------------------
         self._logger.info('Vocabulary size. source = %d; target = %d' % (src_dict.size(), tgt_dict.size()))
@@ -264,11 +256,10 @@ class NeuralEngine(Engine):
         model_name = 'model.%s__%s' % (source_lang, target_lang)
 
         memory_path = os.path.join(decoder_path, 'memory')
-        bpe_model = os.path.join(decoder_path, model_name + '.bpe')
         decoder_model = os.path.join(decoder_path, model_name)
 
         self.memory = TranslationMemory(memory_path, self.source_lang, self.target_lang)
-        self.nmt_preprocessor = NMTPreprocessor(self.source_lang, self.target_lang, bpe_model_path=bpe_model,
+        self.nmt_preprocessor = NMTPreprocessor(self.source_lang, self.target_lang,
                                                 bpe_symbols=bpe_symbols, max_vocab_size=max_vocab_size)
         self.decoder = NMTDecoder(decoder_model, self.source_lang, self.target_lang)
 
@@ -320,7 +311,7 @@ class NeuralEngine(Engine):
             engine = decoder.get_engine(self.source_lang, self.target_lang)
             engine.metadata.tuning_max_learning_rate = best_lr
             engine.metadata.tuning_max_epochs = max_epochs
-            engine.save(self.decoder.model, store_data=False)
+            engine.save(self.decoder.model, store_data=False, store_processor=False)
 
         return best_bleu / 100.
 
@@ -346,19 +337,23 @@ class NeuralEngine(Engine):
 
 
 class NeuralEngineBuilder(EngineBuilder):
-
     def __init__(self, name, source_lang, target_lang, roots, debug=False, steps=None, split_trainingset=True,
-                 validation_corpora=None, checkpoint=None, metadata=None, bpe_symbols=90000, max_vocab_size=None,
-                 max_training_words=None, gpus=None, training_opts=None):
-        EngineBuilder.__init__(self,
-                               NeuralEngine(name, source_lang, target_lang, bpe_symbols=bpe_symbols,
-                                            max_vocab_size=max_vocab_size, gpus=gpus),
-                               roots, debug, steps, split_trainingset, max_training_words)
+                 validation_corpora=None, checkpoint=None, metadata=None, max_training_words=None, gpus=None,
+                 training_args=None):
+
+        self._training_opts = NMTEngineTrainer.Options()
+        if training_args is not None:
+            self._training_opts.load_from_dict(training_args.__dict__)
+
+        engine = NeuralEngine(name, source_lang, target_lang, bpe_symbols=self._training_opts.bpe_symbols,
+                              max_vocab_size=self._training_opts.max_vocab_size, gpus=gpus)
+        EngineBuilder.__init__(self, engine, roots, debug, steps, split_trainingset, max_training_words)
+
         self._valid_corpora_path = validation_corpora if validation_corpora is not None \
             else os.path.join(self._engine.data_path, TrainingPreprocessor.DEV_FOLDER_NAME)
         self._checkpoint = checkpoint
         self._metadata = metadata
-        self._training_opts = training_opts
+        self._gpus = gpus
 
     def _build_schedule(self):
         return EngineBuilder._build_schedule(self) + \
@@ -366,17 +361,36 @@ class NeuralEngineBuilder(EngineBuilder):
 
     def _check_constraints(self):
         recommended_gpu_ram = 2 * self._GB
-        available_gpu_ram = self._get_gpu_ram()
 
-        if available_gpu_ram <= recommended_gpu_ram:
-            raise EngineBuilder.HWConstraintViolated(
-                    'more than %.fG of GPU RAM recommended, only %.fG available' %
-                    (recommended_gpu_ram / self._GB, available_gpu_ram / self._GB)
-                )
+        # if the user explicitly said that no GPU must be used, return immediately
+        if self._gpus == [-1]:
+            return
 
-    # TODO: IMPLEMENT GPU RAM GET
-    def _get_gpu_ram(self):
-        return 3 * self._GB
+        # else, get the list of GPUs to employ using torch utils (This takes into account the user's choice)
+        gpus = torch_utils.torch_get_gpus()
+
+        # AT THE MOMENT TRAINING IS MONOGPU AND WE ONLY USE THE FIRST AVAILABLE GPU FOR TRAINING.
+        # SO JUST CHECK CONSTRAINTS FOR IT. THIS MAY CHANGE IN THE FUTURE
+        gpus = [gpus[0]]
+
+        gpus_ram = self._get_gpus_ram(gpus)
+
+        for i in range(len(gpus_ram)):
+            if gpus_ram[i] < recommended_gpu_ram:
+                raise EngineBuilder.HWConstraintViolated(
+                        'The RAM of GPU %d is only %.fG. More than %.fG of RAM recommended for each GPU.' %
+                        (gpus[i], gpus_ram[i] / self._GB, recommended_gpu_ram / self._GB)
+                    )
+
+    def _get_gpus_ram(self, gpu_ids):
+        result = []
+        command = ["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits", "--id=%s" % ",".join(str(id) for id in gpu_ids)]
+        stdout, _ = shell.execute(command)
+        for line in stdout.split("\n"):
+            line = line.strip()
+            if line:
+                result.append(int(line) * self._MB)
+        return result
 
     # ~~~~~~~~~~~~~~~~~~~~~ Training step functions ~~~~~~~~~~~~~~~~~~~~~
 
@@ -409,8 +423,8 @@ class NeuralEngineBuilder(EngineBuilder):
         working_dir = self._get_tempdir('onmt_model')
 
         if not skip:
-            self._engine.decoder.train(args.onmt_training_path, working_dir,
-                                       checkpoint_path=self._checkpoint, metadata_path=self._metadata, training_opts=self._training_opts,nmt_preprocessor_path=self._engine.nmt_preprocessor.getPath())
+            self._engine.decoder.train(args.onmt_training_path, working_dir, self._training_opts,
+                                       checkpoint_path=self._checkpoint, metadata_path=self._metadata)
 
             if delete_on_exit:
                 shutil.rmtree(working_dir, ignore_errors=True)

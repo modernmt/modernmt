@@ -1,13 +1,6 @@
 package eu.modernmt.facade;
 
-import eu.modernmt.cleaning.FilteredMultilingualCorpus;
-import eu.modernmt.cleaning.filters.EmptyLinesFilter;
-import eu.modernmt.cleaning.filters.PunctuationFilter;
-import eu.modernmt.cleaning.filters.SentenceLengthFilter;
-import eu.modernmt.cleaning.filters.draft.DraftFilter;
-import eu.modernmt.cleaning.filters.ngrams.RareNgramFilter;
-import eu.modernmt.cleaning.normalizers.ControlCharsStripper;
-import eu.modernmt.cleaning.normalizers.XMLStripper;
+import eu.modernmt.cleaning.CorporaCleaning;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.io.IOCorporaUtils;
 import eu.modernmt.lang.LanguageIndex;
@@ -49,50 +42,11 @@ public class TrainingFacade {
 
     }
 
-    public static class CleaningOptions {
-
-        public static CleaningOptions defaultOptions() {
-            CleaningOptions options = new CleaningOptions();
-            options.normalize = true;
-            options.filterByPunctuation = true;
-            options.filterOddSentences = true;
-            options.filterDrafts = true;
-            options.filterBySentenceLength = true;
-            return options;
-        }
-
-        public boolean normalize = false;
-        public boolean filterByPunctuation = false;
-        public boolean filterOddSentences = false;
-        public boolean filterDrafts = false;
-        public boolean filterBySentenceLength = false;
-
-    }
-
-    public void clean(LanguageIndex languages, List<MultilingualCorpus> corpora, File outputDirectory, CleaningOptions options) throws IOException {
+    public void clean(LanguageIndex languages, List<MultilingualCorpus> corpora, File outputDirectory, CorporaCleaning.Options options) throws IOException {
         BatchCopyProcess copyProcess = new BatchCopyProcess(corpus -> new LazyWriterMultilingualCorpus(Corpora.rename(corpus, outputDirectory)));
 
-        for (MultilingualCorpus corpus : corpora) {
-            FilteredMultilingualCorpus filteredCorpus = new FilteredMultilingualCorpus(new MultilingualCorpusMask(languages, corpus));
-
-            if (options.normalize) {
-                filteredCorpus.addNormalizer(new ControlCharsStripper());
-                filteredCorpus.addNormalizer(new XMLStripper());
-            }
-
-            filteredCorpus.addFilter(new EmptyLinesFilter());
-
-            if (options.filterByPunctuation)
-                filteredCorpus.addFilter(new PunctuationFilter());
-            if (options.filterOddSentences)
-                filteredCorpus.addFilter(new RareNgramFilter());
-            if (options.filterDrafts)
-                filteredCorpus.addFilter(new DraftFilter());
-            if (options.filterBySentenceLength)
-                filteredCorpus.addFilter(new SentenceLengthFilter());
-
-            copyProcess.add(filteredCorpus);
-        }
+        for (MultilingualCorpus corpus : corpora)
+            copyProcess.add(CorporaCleaning.wrap(new MultilingualCorpusMask(languages, corpus), options));
 
         FileUtils.deleteDirectory(outputDirectory);
         FileUtils.forceMkdir(outputDirectory);

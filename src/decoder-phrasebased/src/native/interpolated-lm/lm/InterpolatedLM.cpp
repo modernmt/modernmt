@@ -197,19 +197,13 @@ float InterpolatedLM::ComputeProbability(const wid_t word, const HistoryKey *his
     return (float) result;
 }
 
-void InterpolatedLM::Add(const updateid_t &id, const memory_t memory, const vector<wid_t> &source, const vector<wid_t> &target,
-                  const alignment_t &alignment) {
+void InterpolatedLM::OnUpdateBatchReceived(const update_batch_t &batch) {
     if (self->is_alm_active)
-        self->alm->Add(id, memory, source, target, alignment);
+        self->alm->OnUpdateBatchReceived(batch);
 }
 
-void InterpolatedLM::Delete(const updateid_t &id, const memory_t memory) {
-    if (self->is_alm_active)
-        self->alm->Delete(id, memory);
-}
-
-unordered_map<stream_t, seqid_t> InterpolatedLM::GetLatestUpdatesIdentifier() {
-    return self->is_alm_active ? self->alm->GetLatestUpdatesIdentifier() : unordered_map<stream_t, seqid_t>();
+unordered_map<channel_t, seqid_t> InterpolatedLM::GetLatestUpdatesIdentifier() {
+    return self->is_alm_active ? self->alm->GetLatestUpdatesIdentifier() : unordered_map<channel_t, seqid_t>();
 }
 
 void InterpolatedLM::NormalizeContext(context_t *context) {

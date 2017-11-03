@@ -22,6 +22,11 @@ public class UnixLineWriter implements LineWriter {
     }
 
     @Override
+    public void flush() throws IOException {
+        this.writer.flush();
+    }
+
+    @Override
     public void writeLine(String line) throws IOException {
         this.writer.write(line.replace('\n', ' '));
         this.writer.write('\n');

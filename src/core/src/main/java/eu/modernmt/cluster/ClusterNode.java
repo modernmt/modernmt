@@ -339,7 +339,7 @@ public class ClusterNode {
             // else do nothing - will connect to a remote datastream
             // or to a local standalone datastream
             if (embeddedDatastream && localDatastream) {
-                logger.info("Staring embedded Kafka process");
+                logger.info("Starting embedded Kafka process");
                 timer.reset();
 
                 EmbeddedKafka kafka = EmbeddedKafka.start(this.engine, dataStreamConfig.getPort());

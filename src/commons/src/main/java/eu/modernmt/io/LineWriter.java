@@ -10,4 +10,6 @@ public interface LineWriter extends Closeable {
 
     void writeLine(String line) throws IOException;
 
+    void flush() throws IOException;
+
 }

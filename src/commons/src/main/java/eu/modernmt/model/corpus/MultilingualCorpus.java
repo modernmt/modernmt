@@ -34,6 +34,7 @@ public interface MultilingualCorpus {
 
         void write(StringPair pair) throws IOException;
 
+        void flush() throws IOException;
     }
 
     class StringPair {

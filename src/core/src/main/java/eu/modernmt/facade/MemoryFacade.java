@@ -1,5 +1,6 @@
 package eu.modernmt.facade;
 
+import eu.modernmt.cleaning.CorporaCleaning;
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.NodeInfo;
 import eu.modernmt.data.DataManager;
@@ -182,6 +183,8 @@ public class MemoryFacade {
 
             if (memory == null)
                 return null;
+
+            corpus = CorporaCleaning.wrap(corpus);
 
             DataManager dataManager = ModernMT.getNode().getDataManager();
             ImportJob job = dataManager.upload(memoryId, corpus, DataManager.MEMORY_UPLOAD_CHANNEL_ID);

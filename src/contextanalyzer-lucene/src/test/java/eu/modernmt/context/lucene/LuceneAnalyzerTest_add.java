@@ -3,13 +3,11 @@ package eu.modernmt.context.lucene;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
-import org.apache.lucene.index.IndexNotFoundException;
 import org.junit.After;
 import org.junit.Test;
 
 import static eu.modernmt.context.lucene.TestData.*;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 /**
  * Created by davide on 06/08/17.
@@ -117,13 +115,7 @@ public class LuceneAnalyzerTest_add {
         analyzer.add(new Memory(1), corpus);
 
         assertEquals(0, analyzer.getStorageSize());
-
-        try {
-            analyzer.getIndex().getIndexReader();
-            fail("Expected IndexNotFoundException but not thrown");
-        } catch (IndexNotFoundException e) {
-            // Success
-        }
+        assertEquals(0, analyzer.getIndexSize());
     }
 
     @Test
@@ -134,13 +126,7 @@ public class LuceneAnalyzerTest_add {
         analyzer.add(new Memory(1), corpus);
 
         assertEquals(0, analyzer.getStorageSize());
-
-        try {
-            analyzer.getIndex().getIndexReader();
-            fail("Expected IndexNotFoundException but not thrown");
-        } catch (IndexNotFoundException e) {
-            // Success
-        }
+        assertEquals(0, analyzer.getIndexSize());
     }
 
     @Test
@@ -181,13 +167,7 @@ public class LuceneAnalyzerTest_add {
         analyzer.add(new Memory(1), corpus);
 
         assertEquals(0, analyzer.getStorageSize());
-
-        try {
-            analyzer.getIndex().getIndexReader();
-            fail("Expected IndexNotFoundException but not thrown");
-        } catch (IndexNotFoundException e) {
-            // Success
-        }
+        assertEquals(0, analyzer.getIndexSize());
     }
 
     @Test

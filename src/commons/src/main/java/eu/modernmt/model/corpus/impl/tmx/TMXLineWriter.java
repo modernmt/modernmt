@@ -78,10 +78,20 @@ class TMXLineWriter implements MultilingualCorpus.MultilingualLineWriter {
         writer.writeEndElement();
     }
 
+
+    @Override
+    public void flush() throws IOException {
+        try {
+            writer.flush();
+        } catch (XMLStreamException e) {
+            throw new IOException(e);
+        }
+    }
+
     @Override
     public void close() throws IOException {
         try {
-            this.flush();
+            this.closeDocument();
             writer.close();
         } catch (XMLStreamException e) {
             throw new IOException("Error while closing XMLStreamWriter", e);
@@ -108,7 +118,7 @@ class TMXLineWriter implements MultilingualCorpus.MultilingualLineWriter {
         writer.writeStartElement("body");
     }
 
-    private void flush() throws XMLStreamException {
+    private void closeDocument() throws XMLStreamException {
         if (!headerWritten)
             writeHeader(null);
 

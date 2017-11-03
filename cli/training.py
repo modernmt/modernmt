@@ -40,12 +40,10 @@ class Training(EngineBuilder.Listener):
 
     @staticmethod
     def neural(name, source_lang, target_lang, roots, debug, steps, split_trainingset, validation_corpora,
-               checkpoint, metadata, bpe_symbols, max_vocab_size, max_training_words, gpus,
-                                       training_opts=None):
+               checkpoint, metadata, max_training_words, gpus, training_args):
         from cli.mmt.neural import NeuralEngineBuilder
         builder = NeuralEngineBuilder(name, source_lang, target_lang, roots, debug, steps, split_trainingset,
-                                      validation_corpora, checkpoint, metadata, bpe_symbols, max_vocab_size,
-                                      max_training_words, gpus, training_opts)
+                                      validation_corpora, checkpoint, metadata, max_training_words, gpus, training_args)
         return Training(builder)
 
     def __init__(self, builder, line_len=70):

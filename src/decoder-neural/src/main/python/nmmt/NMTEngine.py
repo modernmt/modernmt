@@ -181,13 +181,6 @@ class NMTEngine:
         self._model_init_state = {k: v for k, v in sorted(model_state_dict.items()) if 'generator' not in k}
         self._model_init_state.update({"generator." + k: v for k, v in sorted(generator_state_dict.items())})
 
-        # self._log("NMTEngine __init__ model:%s" % repr(self.model))
-        # self._log("NMTEngine __init__ model_state_dict:%s" % repr(model_state_dict))
-        # self._log("NMTEngine __init__ self._model_init_state:%s" % repr(self._model_init_state))
-
-    def _log(self, message):
-        self._logger.log(self._log_level, message)
-
     def reset_model(self):
         with log_timed_action(self._logger, 'Restoring model initial state', log_start=False):
             self.model.load_state_dict(self._model_init_state)
@@ -212,7 +205,6 @@ class NMTEngine:
 
             epochs = epochs if epochs is not None else _epochs
             learning_rate = learning_rate if learning_rate is not None else _learning_rate
-
 
         if learning_rate > 0. or epochs > 0:
             if self._tuner is None:
@@ -301,9 +293,12 @@ class NMTEngine:
         trg_tokens, src_trg_align = self.processor.decode_tokens(pred_batch[0][0], align_batch[0][0], src_bpe_position)
         return {'text':trg_tokens, 'alignment':src_trg_align}
 
-    def save(self, path, store_data=True, store_metadata=True):
+    def save(self, path, store_data=True, store_metadata=True, store_processor=True):
         if store_metadata:
             self.metadata.save_to_file(path + '.meta')
+
+        if store_processor:
+            self.processor.save_to_file(path + '.bpe')
 
         if store_data:
             model_state_dict, generator_state_dict = self._get_state_dicts()

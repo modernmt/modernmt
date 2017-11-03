@@ -92,11 +92,11 @@ void LoadCorpus(Vocabulary &vb, const BilingualCorpus &corpus, SuffixArray &inde
     alignment_t alignment;
 
     while(reader.Read(source, target, alignment)) {
-        if (!batch.Add(memory, source, target, alignment)) {
-            index.PutBatch(batch);
+        batch.Add(memory, source, target, alignment);
 
+        if (batch.IsFull()) {
+            index.PutBatch(batch);
             batch.Clear();
-            batch.Add(memory, source, target, alignment);
         }
     }
 

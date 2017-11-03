@@ -81,7 +81,7 @@ public class KafkaDataManager implements DataManager {
      *
      * @return the array with all topic names (Strings)
      */
-    private String[] getDefaultTopicNames(String prefix) {
+    public static String[] getDefaultTopicNames(String prefix) {
 
         //max topic name length supported by Apache Kafka
         int maxLength = 249;
@@ -114,7 +114,7 @@ public class KafkaDataManager implements DataManager {
         return topicNames;
     }
 
-    private static Properties loadProperties(String filename, String host, int port) {
+    public static Properties loadProperties(String filename, String host, int port) {
         InputStream stream = null;
 
         try {
@@ -138,30 +138,26 @@ public class KafkaDataManager implements DataManager {
 
     @Override
     public Map<Short, Long> connect(String host, int port, long timeout, TimeUnit unit) throws HostUnreachableException {
-        // load producer properties and
-        // build kafka producer for sending messages to the server
+        // load producer properties and build kafka producer for sending messages to the server from the given partitions
         Properties producerProperties = loadProperties("kafka-producer.properties", host, port);
         this.producer = new KafkaProducer<>(producerProperties);
 
-        // load consumer properties and
-        // build kafka consumer for reading messages from the server
-        // from the given partitions
+        // load consumer properties and build kafka consumer for reading messages from the server from the given partitions
         Properties consumerProperties = loadProperties("kafka-consumer.properties", host, port);
         consumerProperties.put("group.id", uuid);
-
         KafkaConsumer<Integer, KafkaPacket> consumer = new KafkaConsumer<>(consumerProperties);
         consumer.assign(partitions);
 
+        //use a separate thread to connect to the Kafka server
         ConnectionThread connectThread = new ConnectionThread(consumer);
         connectThread.start();
-
         try {
             unit.timedJoin(connectThread, timeout);
         } catch (InterruptedException e) {
             // ignore it
         }
 
-        if (connectThread.isAlive())
+        if (connectThread.isAlive())    // if the thread is still alive could not connect to the Kafka server
             throw new HostUnreachableException(host + ':' + port);
 
         this.pollingThread.start(consumer);
@@ -249,7 +245,7 @@ public class KafkaDataManager implements DataManager {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
         long offset = sendElement(KafkaPacket.createAddition(direction, memory, sentence, translation, timestamp), true, channel);
-        return ImportJob.createEphemeralJob(offset, channel.getId());
+        return ImportJob.createEphemeralJob(memory, offset, channel.getId());
     }
 
     @Override
@@ -263,7 +259,7 @@ public class KafkaDataManager implements DataManager {
             throw new IllegalStateException("connect() not called");
 
         long offset = sendElement(KafkaPacket.createOverwrite(direction, memory, sentence, translation, previousSentence, previousTranslation, timestamp), true, channel);
-        return ImportJob.createEphemeralJob(offset, channel.getId());
+        return ImportJob.createEphemeralJob(memory, offset, channel.getId());
     }
 
     @Override

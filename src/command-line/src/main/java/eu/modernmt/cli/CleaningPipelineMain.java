@@ -1,8 +1,8 @@
 package eu.modernmt.cli;
 
+import eu.modernmt.cleaning.CorporaCleaning;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.facade.ModernMT;
-import eu.modernmt.facade.TrainingFacade;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.Corpora;
@@ -86,12 +86,12 @@ public class CleaningPipelineMain {
         if (bilingualCorpora.isEmpty())
             throw new ParseException("Input path does not contains valid bilingual data");
 
-        TrainingFacade.CleaningOptions options;
+        CorporaCleaning.Options options;
 
         if (args.filters == null) {
-            options = TrainingFacade.CleaningOptions.defaultOptions();
+            options = CorporaCleaning.Options.defaultOptions();
         } else {
-            options = new TrainingFacade.CleaningOptions();
+            options = new CorporaCleaning.Options();
 
             for (Filter filter : args.filters) {
                 switch (filter) {
