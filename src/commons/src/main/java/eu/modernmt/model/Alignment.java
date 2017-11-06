@@ -28,6 +28,7 @@ public class Alignment implements Iterable<int[]>, Serializable {
         this.sourceIndexes = sourceIndexes;
         this.targetIndexes = targetIndexes;
     }
+    public Alignment() {}
 
     public int[] getSourceIndexes() {
         return sourceIndexes;
