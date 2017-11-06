@@ -101,6 +101,18 @@ class Translator(object):
                     tokens[i] = src[maxIndex[0]]
         return tokens
 
+    def buildAlignment(self, src, pred, attn):
+        src_length = len(src)
+
+        alignment = []  # contains a list of pairs (src_pos, trg_pos)
+        for i in xrange(len(pred)):
+            _, max_index = attn[i].max(0)
+            j = max_index[0]
+
+            if 0 <= j < src_length:
+                alignment.append((j, i))
+        return alignment
+
     def translateBatch(self, srcBatch, tgtBatch):
         # Batch size is in different location depending on data.
 
@@ -278,4 +290,14 @@ class Translator(object):
                  for n in range(self.opt.n_best)]
             )
 
-        return predBatch, predScore, goldScore
+        #  (4) get alignment
+        alignmentBatch = []
+        if self.opt.alignment:
+            for b in range(batchSize):
+                alignmentBatch.append(
+                    [self.buildAlignment(srcBatch[b], predBatch[b][n], attn[b][n])
+                     for n in range(self.opt.n_best)]
+                )
+
+        # return predBatch, predScore, goldScore
+        return predBatch, predScore, goldScore, alignmentBatch

@@ -51,7 +51,14 @@ class TranslationResponse:
         jobj = {}
 
         if self.translation is not None:
-            jobj['translation'] = self.translation
+            alignment = None
+            if self.translation.alignment:
+                alignment = [[e[0] for e in self.translation.alignment], [e[1] for e in self.translation.alignment]]
+
+            jobj['translation'] = {
+                'text': self.translation.text,
+                'alignment': alignment
+            }
         else:
             error = {'type': self.error_type}
             if self.error_message is not None:

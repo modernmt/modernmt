@@ -5,7 +5,6 @@ import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
-import eu.modernmt.model.Word;
 import org.apache.commons.io.IOUtils;
 
 import java.util.ArrayList;
@@ -127,9 +126,7 @@ class ParallelExecutionQueue implements ExecutionQueue {
 
         try {
             decoder = this.queue.take();
-
-            Word[] translation = decoder.translate(direction, sentence, suggestions);
-            return new Translation(translation, sentence, null);
+            return decoder.translate(direction, sentence, suggestions);
         } catch (InterruptedException e) {
             throw new NeuralDecoderException("No NMT processes available", e);
         } finally {

@@ -11,13 +11,6 @@ class UnsupportedLanguageException(BaseException):
         self.message = "No engine and text processors found for %s -> %s." % (source_language, target_language)
 
 
-class Suggestion:
-    def __init__(self, source, target, score):
-        self.source = source
-        self.target = target
-        self.score = score
-
-
 class NMTDecoder:
     def __init__(self, model_path, gpu_id=None, random_seed=None):
         torch_setup(gpus=[gpu_id] if gpu_id is not None else None, random_seed=random_seed)
@@ -61,7 +54,7 @@ class NMTDecoder:
             engine.tune(suggestions, epochs=tuning_epochs, learning_rate=tuning_learning_rate)
             reset_model = True
 
-        # (2) Translate
+        # (2) Translate and compute word alignment
         result = engine.translate(text, n_best=n_best, beam_size=self.beam_size, max_sent_length=self.max_sent_length)
 
         # (3) Reset model if needed

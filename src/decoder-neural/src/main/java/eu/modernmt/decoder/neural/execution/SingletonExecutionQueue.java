@@ -5,7 +5,6 @@ import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
-import eu.modernmt.model.Word;
 
 import java.io.IOException;
 
@@ -68,8 +67,7 @@ class SingletonExecutionQueue implements ExecutionQueue {
      */
     @Override
     public synchronized Translation execute(LanguagePair direction, Sentence sentence) throws NeuralDecoderException {
-        Word[] translation = decoder.translate(direction, sentence);
-        return new Translation(translation, sentence, null);
+        return decoder.translate(direction, sentence);
     }
 
     /**
@@ -84,8 +82,7 @@ class SingletonExecutionQueue implements ExecutionQueue {
      */
     @Override
     public synchronized Translation execute(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions) throws NeuralDecoderException {
-        Word[] translation = decoder.translate(direction, sentence, suggestions);
-        return new Translation(translation, sentence, null);
+        return decoder.translate(direction, sentence, suggestions);
     }
 
     /**

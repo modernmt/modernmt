@@ -13,10 +13,12 @@ import java.util.Set;
 class XMLEngineConfigBuilder extends XMLAbstractBuilder {
 
     private final XMLDecoderConfigBuilder decoderConfigBuilder;
+    private final XMLAlignerConfigBuilder alignerConfigBuilder;
 
     public XMLEngineConfigBuilder(Element element) {
         super(element);
         decoderConfigBuilder = new XMLDecoderConfigBuilder(getChild("decoder"));
+        alignerConfigBuilder = new XMLAlignerConfigBuilder(getChild("aligner"));
     }
 
     public EngineConfig build(EngineConfig config) throws ConfigException {
@@ -41,6 +43,7 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
             config.setType(getEnumAttribute("type", EngineConfig.Type.class));
 
         decoderConfigBuilder.build(config.getDecoderConfig());
+        alignerConfigBuilder.build(config.getAlignerConfig());
 
         return config;
     }
@@ -63,6 +66,20 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
                 throw new ConfigException("Missing 'target' attribute");
 
             config.addLanguagePair(new LanguagePair(source, target));
+        }
+    }
+
+    private static class XMLAlignerConfigBuilder extends XMLAbstractBuilder {
+
+        public XMLAlignerConfigBuilder(Element element) {
+            super(element);
+        }
+
+        public AlignerConfig build(AlignerConfig config) throws ConfigException {
+            if (hasAttribute("enabled"))
+                config.setEnabled(getBooleanAttribute("enabled"));
+
+            return config;
         }
     }
 

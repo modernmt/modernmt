@@ -6,6 +6,7 @@ import os
 import torch
 import torch.nn as nn
 
+from nmmt.models import Translation
 from nmmt.IDataset import DatasetWrapper
 from nmmt.SubwordTextProcessor import SubwordTextProcessor
 from nmmt.internal_utils import opts_object, log_timed_action
@@ -18,6 +19,7 @@ class _Translator(Translator):
         # Super constructor MUST NOT be invoked
         # super(_Translator, self).__init__(None)
         self.opt = opts_object()
+        self.opt.alignment = True
         self.opt.batch_size = 32
         self.opt.cuda = torch_is_using_cuda()
         self.tt = torch.cuda if self.opt.cuda else torch
@@ -279,9 +281,22 @@ class NMTEngine:
         self._translator.opt.max_sent_length = max_sent_length
         self._translator.opt.n_best = n_best
 
-        pred_batch, _, _ = self._translator.translate([self.processor.encode_line(text, is_source=True)], None)
+        src_bpe_tokens = self.processor.encode_line(text, is_source=True)
+        pred_batch, _, _, align_batch = self._translator.translate([src_bpe_tokens], None)
+        trg_bpe_tokens, bpe_alignment = pred_batch[0][0], align_batch[0][0]
 
-        return self.processor.decode_tokens(pred_batch[0][0])
+        src_indexes = self.processor.get_words_indexes(src_bpe_tokens)
+        trg_indexes = self.processor.get_words_indexes(trg_bpe_tokens)
+
+        return Translation(text=self.processor.decode_tokens(trg_bpe_tokens),
+                           alignment=self._make_alignment(src_indexes, trg_indexes, bpe_alignment))
+
+    @staticmethod
+    def _make_alignment(src_indexes, trg_indexes, bpe_alignment):
+        if not bpe_alignment:
+            return None
+
+        return sorted(set([(src_indexes[al[0]], trg_indexes[al[1]]) for al in bpe_alignment]))
 
     def save(self, path, store_data=True, store_metadata=True, store_processor=True):
         if store_metadata:

@@ -1,4 +1,6 @@
-from NMTDecoder import NMTDecoder, Suggestion
+from models import Suggestion, Translation
+
+from NMTDecoder import NMTDecoder
 from NMTEngine import NMTEngine
 from NMTEngineTrainer import NMTEngineTrainer
 from IDataset import IDataset, DatasetWrapper
