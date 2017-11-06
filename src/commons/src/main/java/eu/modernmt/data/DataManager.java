@@ -23,6 +23,8 @@ public interface DataManager extends Closeable {
 
     Map<Short, Long> connect(String host, int port, long timeout, TimeUnit unit) throws HostUnreachableException;
 
+    Map<Short, Long> connect(String host, int port, long timeout, TimeUnit unit, boolean enableConsumer) throws HostUnreachableException;
+
     void setDataManagerListener(Listener listener);
 
     void addDataListener(DataListener listener);

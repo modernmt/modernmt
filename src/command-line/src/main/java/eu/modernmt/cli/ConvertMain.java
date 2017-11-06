@@ -1,5 +1,6 @@
 package eu.modernmt.cli;
 
+import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.io.IOCorporaUtils;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -7,6 +8,7 @@ import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
 import org.apache.commons.cli.*;
+import org.apache.logging.log4j.Level;
 
 import java.io.File;
 import java.util.HashMap;
@@ -121,7 +123,9 @@ public class ConvertMain {
     }
 
     public static void main(String[] _args) throws Throwable {
+        Log4jConfiguration.setup(Level.INFO);
         Args args = new Args(_args);
+
         IOCorporaUtils.copy(args.input, args.output);
     }
 }

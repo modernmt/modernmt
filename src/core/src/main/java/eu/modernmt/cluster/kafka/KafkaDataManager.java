@@ -136,33 +136,53 @@ public class KafkaDataManager implements DataManager {
         }
     }
 
+
     @Override
     public Map<Short, Long> connect(String host, int port, long timeout, TimeUnit unit) throws HostUnreachableException {
-        // load producer properties and build kafka producer for sending messages to the server from the given partitions
+        return this.connect(host, port, timeout, unit, true);
+    }
+
+    /**
+     * @param host           host where the Kafka server is running
+     * @param port           port where the Kafka server is listening to
+     * @param timeout        timeout to use while connecting to the Kafka server
+     * @param unit           time unit for the timeout
+     * @param enableConsumer boolean value that specifies whether the consumer should be started or not
+     * @return a map containing, for each Kafka topic, its latest written positions if a consumer was to be started; null if only the producer was to be started.
+     * @throws HostUnreachableException if could not connect to the remote Kafka server
+     */
+    @Override
+    public Map<Short, Long> connect(String host, int port, long timeout, TimeUnit unit, boolean enableConsumer) throws HostUnreachableException {
+
+        // Create Kafka producer
         Properties producerProperties = loadProperties("kafka-producer.properties", host, port);
-        this.producer = new KafkaProducer<>(producerProperties);
+        this.producer = new KafkaProducer<>(producerProperties);    //write in the given partitions
 
-        // load consumer properties and build kafka consumer for reading messages from the server from the given partitions
-        Properties consumerProperties = loadProperties("kafka-consumer.properties", host, port);
-        consumerProperties.put("group.id", uuid);
-        KafkaConsumer<Integer, KafkaPacket> consumer = new KafkaConsumer<>(consumerProperties);
-        consumer.assign(partitions);
+        // Create Kafka consumer and connect to the Kafka remote server to get the latest positions for each channel
+        if (enableConsumer) {
+            // load consumer properties and build kafka consumer for reading messages from the server from the given partitions
+            Properties consumerProperties = loadProperties("kafka-consumer.properties", host, port);
+            consumerProperties.put("group.id", uuid);
+            KafkaConsumer<Integer, KafkaPacket> consumer = new KafkaConsumer<>(consumerProperties);
+            consumer.assign(partitions);
 
-        //use a separate thread to connect to the Kafka server
-        ConnectionThread connectThread = new ConnectionThread(consumer);
-        connectThread.start();
-        try {
-            unit.timedJoin(connectThread, timeout);
-        } catch (InterruptedException e) {
-            // ignore it
+            //use a separate thread to connect to the Kafka server
+            ConnectionThread connectThread = new ConnectionThread(consumer);
+            connectThread.start();
+            try {
+                unit.timedJoin(connectThread, timeout);
+            } catch (InterruptedException e) {
+                // ignore it
+            }
+
+            if (connectThread.isAlive())    // if the thread is still alive could not connect to the Kafka server
+                throw new HostUnreachableException(host + ':' + port);
+
+            this.pollingThread.start(consumer);
+
+            return connectThread.getLatestPositions();
         }
-
-        if (connectThread.isAlive())    // if the thread is still alive could not connect to the Kafka server
-            throw new HostUnreachableException(host + ':' + port);
-
-        this.pollingThread.start(consumer);
-
-        return connectThread.getLatestPositions();
+        return null;
     }
 
     @Override

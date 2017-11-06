@@ -1,32 +1,32 @@
 package eu.modernmt.cli;
 
-import eu.modernmt.cluster.kafka.KafkaChannel;
+import eu.modernmt.cleaning.CorporaCleaning;
+import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.cluster.kafka.KafkaDataManager;
-import eu.modernmt.cluster.kafka.KafkaPacket;
 import eu.modernmt.config.DataStreamConfig;
 import eu.modernmt.data.DataManager;
 import eu.modernmt.data.DataManagerException;
+import eu.modernmt.data.HostUnreachableException;
 import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
+import eu.modernmt.persistence.PersistenceException;
+import eu.modernmt.rest.framework.JSONSerializer;
 import org.apache.commons.cli.*;
-import org.apache.commons.io.IOUtils;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.logging.log4j.Level;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.Properties;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by andrea on 19/10/17.
  */
-public class KafkaUploadMain {
+public class CorpusUploadMain {
 
 
     private static final HashMap<String, InputFormat> FORMATS;
@@ -139,48 +139,45 @@ public class KafkaUploadMain {
         }
     }
 
-    public static void main(String[] _args) throws Throwable {
-        Args args = new Args(_args);
+    /**
+     * A remote memory facade models an access point to the memories of a remote ModernMT instance.
+     * It can be used to upload a corpus to a remote ModernMT.
+     */
+    private static class RemoteMemoryFacade {
 
-        DataStreamConfig defaultConfig = new DataStreamConfig();
+        private KafkaDataManager dataManager;
 
-        String host = args.host != null ? args.host : defaultConfig.getHost();
-        int port = args.port != 0 ? args.port : defaultConfig.getPort();
-        String name = args.name != null ? args.name : defaultConfig.getName();
+        public RemoteMemoryFacade(String host, int port, String name) throws HostUnreachableException {
 
+            DataStreamConfig config = new DataStreamConfig();
 
-        //get the KafkaChannel used to upload files in MMT
-        String[] topicNames = KafkaDataManager.getDefaultTopicNames(name);
-        KafkaChannel channel = new KafkaChannel(DataManager.MEMORY_UPLOAD_CHANNEL_ID, topicNames[DataManager.MEMORY_UPLOAD_CHANNEL_ID]);
+            if (host != null)
+                config.setHost(host);
+            if (port != 0)
+                config.setPort(port);
+            if (name != null)
+                config.setName(name);
 
-        //get a valid KafkaProducer
-        Properties producerProperties = KafkaDataManager.loadProperties("kafka-producer.properties", host, port);
-        KafkaProducer<Integer, KafkaPacket> producer = new KafkaProducer<>(producerProperties);
+            config.setEmbedded(false);
+            config.setEnabled(true);
 
-        //for each entry in the corpus, use it to create a new KafkaPacket and write it into the kafka channel.
-        MultilingualCorpus.MultilingualLineReader reader = null;
-        KafkaPacket packet = null;
-        try {
-            reader = args.corpus.getContentReader();
-            MultilingualCorpus.StringPair pair = reader.read();
-
-            while (pair != null) {
-                packet = KafkaPacket.createAddition(pair.language, args.memory, pair.source, pair.target, pair.timestamp);
-                producer.send(new ProducerRecord<>(channel.getName(), 0, packet)).get();
-                pair = reader.read();
-            }
-        } catch (IOException e) {
-            throw new DataManagerException("Failed to read corpus for memory " + args.memory, e);
-        } catch (InterruptedException e) {
-            throw new DataManagerException("Interrupted upload for packet " + packet, e);
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof RuntimeException)
-                throw (RuntimeException) cause;
-            else
-                throw new DataManagerException("Unexpected exception while uploading packet " + packet, cause);
-        } finally {
-            IOUtils.closeQuietly(reader);
+            this.dataManager = new KafkaDataManager(null, null, config);
+            this.dataManager.connect(config.getHost(), config.getPort(), 30, TimeUnit.SECONDS, false);
         }
+
+        public ImportJob add(long memoryId, MultilingualCorpus corpus) throws PersistenceException, DataManagerException {
+            corpus = CorporaCleaning.wrap(corpus);
+            return dataManager.upload(memoryId, corpus, DataManager.MEMORY_UPLOAD_CHANNEL_ID);
+        }
+
+    }
+
+    public static void main(String[] _args) throws Throwable {
+        Log4jConfiguration.setup(Level.ERROR);
+
+        Args args = new Args(_args);
+        RemoteMemoryFacade memory = new RemoteMemoryFacade(args.host, args.port, args.name);
+        ImportJob job = memory.add(args.memory, args.corpus);
+        System.out.println(JSONSerializer.toJSON(job, ImportJob.class));
     }
 }
