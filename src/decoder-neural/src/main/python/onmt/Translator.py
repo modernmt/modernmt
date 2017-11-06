@@ -101,14 +101,16 @@ class Translator(object):
                     tokens[i] = src[maxIndex[0]]
         return tokens
 
-    def buildAlignment(self, pred, src, attn):
-        # position of the first EOS, which corresponds to the length of the prediction
-        length = pred.index(onmt.Constants.EOS)
+    def buildAlignment(self, src, pred, attn):
+        src_length = len(src)
 
-        alignment = [] # contains a list of pairs (src_pos, trg_pos)
-        for i in range(length):
-            _, maxIndex = attn[i].max(0)
-            alignment.append((maxIndex[0], i))
+        alignment = []  # contains a list of pairs (src_pos, trg_pos)
+        for i in xrange(len(pred)):
+            _, max_index = attn[i].max(0)
+            j = max_index[0]
+
+            if 0 <= j < src_length:
+                alignment.append((j, i))
         return alignment
 
     def translateBatch(self, srcBatch, tgtBatch):
@@ -293,7 +295,7 @@ class Translator(object):
         if self.opt.alignment:
             for b in range(batchSize):
                 alignmentBatch.append(
-                    [self.buildAlignment(pred[b][n], srcBatch[b], attn[b][n])
+                    [self.buildAlignment(srcBatch[b], predBatch[b][n], attn[b][n])
                      for n in range(self.opt.n_best)]
                 )
 
