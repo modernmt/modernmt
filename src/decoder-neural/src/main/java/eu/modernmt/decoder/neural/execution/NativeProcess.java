@@ -270,7 +270,9 @@ class NativeProcess implements Closeable {
 
             return new Alignment(sourceIndexes, targetIndexes);
         } else {
-            return new Alignment();
+            int[] sourceIndexes = new int[0];
+            int[] targetIndexes = new int[0];
+            return new Alignment(sourceIndexes, targetIndexes);
         }
     }
 
