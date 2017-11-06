@@ -4,6 +4,7 @@ import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderListener;
+import eu.modernmt.decoder.DecoderWithNBest;
 import eu.modernmt.decoder.neural.execution.ExecutionQueue;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.decoder.neural.memory.TranslationMemory;
@@ -28,7 +29,7 @@ import java.util.Set;
 /**
  * Created by davide on 22/05/17.
  */
-public class NeuralDecoder implements Decoder, DataListenerProvider {
+public class NeuralDecoder implements Decoder, DecoderWithNBest, DataListenerProvider {
 
     private static final Logger logger = LogManager.getLogger(NeuralDecoder.class);
 
@@ -69,11 +70,21 @@ public class NeuralDecoder implements Decoder, DataListenerProvider {
 
     @Override
     public Translation translate(LanguagePair direction, Sentence text) throws NeuralDecoderException {
-        return translate(direction, text, null);
+        return translate(direction, text, null, 0);
+    }
+
+    @Override
+    public Translation translate(LanguagePair direction, Sentence text, int nbestListSize) throws NeuralDecoderException {
+        return translate(direction, text, null, nbestListSize);
     }
 
     @Override
     public Translation translate(LanguagePair direction, Sentence text, ContextVector contextVector) throws NeuralDecoderException {
+        return translate(direction, text, contextVector, 0);
+    }
+
+    @Override
+    public Translation translate(LanguagePair direction, Sentence text, ContextVector contextVector, int nbestListSize) throws NeuralDecoderException {
         if (!this.directions.contains(direction))
             throw new UnsupportedLanguageException(direction);
 
@@ -92,12 +103,13 @@ public class NeuralDecoder implements Decoder, DataListenerProvider {
             }
 
             if (suggestions != null && suggestions.length > 0)
-                translation = executor.execute(direction, text, suggestions);
+                translation = executor.execute(direction, text, suggestions, nbestListSize);
             else
-                translation = executor.execute(direction, text);
+                translation = executor.execute(direction, text, nbestListSize);
         } else {
             translation = Translation.emptyTranslation(text);
         }
+
         long elapsed = System.currentTimeMillis() - start;
         translation.setElapsedTime(elapsed);
 

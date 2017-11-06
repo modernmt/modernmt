@@ -95,38 +95,18 @@ class ParallelExecutionQueue implements ExecutionQueue {
             this.queue.offer(process);
     }
 
-    /**
-     * This method assigns a translation job to one of the NeuralDecoder processes
-     * that this ParallelExecutionQueue manages, and returns the translation result.
-     *
-     * @param direction the direction of the translation to execute
-     * @param sentence  the source sentence to translate
-     * @return a Translation object representing the translation result
-     * @throws NeuralDecoderException
-     */
     @Override
-    public Translation execute(LanguagePair direction, Sentence sentence) throws NeuralDecoderException {
-        return execute(direction, sentence, null);
+    public Translation execute(LanguagePair direction, Sentence sentence, int nBest) throws NeuralDecoderException {
+        return execute(direction, sentence, null, nBest);
     }
 
-    /**
-     * This method assigns a translation job to one of the NeuralDecoder processes
-     * that this ParallelExecutionQueue manages, and returns the translation result.
-     *
-     * @param direction   the direction of the translation to execute
-     * @param sentence    the source sentence to translate
-     * @param suggestions an array of translation suggestions that the decoder will study before the translation
-     * @return a Translation object representing the translation result
-     * @throws NeuralDecoderException
-     */
     @Override
-    public Translation execute(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions) throws
-            NeuralDecoderException {
+    public Translation execute(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws NeuralDecoderException {
         NativeProcess decoder = null;
 
         try {
             decoder = this.queue.take();
-            return decoder.translate(direction, sentence, suggestions);
+            return decoder.translate(direction, sentence, suggestions, nBest);
         } catch (InterruptedException e) {
             throw new NeuralDecoderException("No NMT processes available", e);
         } finally {

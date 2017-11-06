@@ -124,7 +124,7 @@ class NativeProcess implements Closeable {
         try {
             String line = this.stdout.readLine();
             if (line == null || !line.trim().equals("ok"))
-                deserialize(null, line);
+                deserialize(null, line, false);
         } catch (IOException | NeuralDecoderException e) {
             IOUtils.closeQuietly(this.stdin);
             IOUtils.closeQuietly(this.stdout);
@@ -138,11 +138,12 @@ class NativeProcess implements Closeable {
      *
      * @param direction the direction of the translation to execute
      * @param sentence  the source sentence to translate
+     * @param nBest     number of hypothesis to return (default 0)
      * @return the translation of the passed sentence
      * @throws NeuralDecoderException
      */
-    public Translation translate(LanguagePair direction, Sentence sentence) throws NeuralDecoderException {
-        return translate(direction, sentence, null);
+    public Translation translate(LanguagePair direction, Sentence sentence, int nBest) throws NeuralDecoderException {
+        return translate(direction, sentence, null, nBest);
     }
 
     /**
@@ -151,14 +152,15 @@ class NativeProcess implements Closeable {
      * @param direction   the direction of the translation to execute
      * @param sentence    the source sentence to translate
      * @param suggestions an array of translation suggestions that the decoder will study before the translation
+     * @param nBest       number of hypothesis to return (default 0)
      * @return the translation of the passed sentence
      * @throws NeuralDecoderException
      */
-    public Translation translate(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions) throws NeuralDecoderException {
+    public Translation translate(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws NeuralDecoderException {
         if (!decoder.isAlive())
             throw new NeuralDecoderRejectedExecutionException();
 
-        String payload = serialize(direction, sentence, suggestions);
+        String payload = serialize(direction, sentence, suggestions, nBest);
 
         try {
             this.stdin.write(payload.getBytes("UTF-8"));
@@ -178,16 +180,19 @@ class NativeProcess implements Closeable {
         if (line == null)
             throw new NeuralDecoderException("No response from NMT process, request was '" + payload + "'");
 
-        return deserialize(sentence, line);
+        return deserialize(sentence, line, nBest > 0);
     }
 
-    private static String serialize(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions) {
+    private static String serialize(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) {
         String text = TokensOutputStream.toString(sentence, false, true);
 
         JsonObject json = new JsonObject();
         json.addProperty("source", text);
         json.addProperty("source_language", direction.source.toLanguageTag());
         json.addProperty("target_language", direction.target.toLanguageTag());
+
+        if (nBest > 0)
+            json.addProperty("n_best", nBest);
 
         if (suggestions != null && suggestions.length > 0) {
             JsonArray array = new JsonArray();
@@ -207,7 +212,7 @@ class NativeProcess implements Closeable {
         return json.toString().replace('\n', ' ');
     }
 
-    private static Translation deserialize(Sentence sentence, String response) throws NeuralDecoderException {
+    private static Translation deserialize(Sentence sentence, String response, boolean includeNBest) throws NeuralDecoderException {
         JsonObject json;
         try {
             json = parser.parse(response).getAsJsonObject();
@@ -226,15 +231,36 @@ class NativeProcess implements Closeable {
             throw NeuralDecoderException.fromPythonError(type, message);
         }
 
-        json = json.getAsJsonObject("translation");
+        JsonArray jsonArray = json.getAsJsonArray("result");
 
         if (logger.isDebugEnabled())
-            logger.debug("Received translation: " + json);
+            logger.debug("Received translations: " + jsonArray);
 
-        Word[] text = explodeText(json.get("text").getAsString());
-        Alignment alignment = parseAlignment(json.get("alignment").getAsJsonArray());
+        ArrayList<Translation> translations = new ArrayList<>(jsonArray.size());
 
-        return new Translation(text, sentence, alignment);
+        for (int i = 0; i < jsonArray.size(); i++) {
+            JsonObject jsonTranslation = jsonArray.get(i).getAsJsonObject();
+
+            Word[] text = explodeText(jsonTranslation.get("text").getAsString());
+            Alignment alignment = parseAlignment(jsonTranslation.get("alignment").getAsJsonArray());
+
+            translations.add(new Translation(text, sentence, alignment));
+        }
+
+        if (translations.isEmpty())
+            return Translation.emptyTranslation(sentence);
+
+        Translation best = translations.get(0);
+        Translation result;
+
+        if (includeNBest) {
+            result = new Translation(best.getWords(), sentence, best.getAlignment());
+            result.setNbest(translations);
+        } else {
+            result = best;
+        }
+
+        return result;
     }
 
     private static Word[] explodeText(String text) {
