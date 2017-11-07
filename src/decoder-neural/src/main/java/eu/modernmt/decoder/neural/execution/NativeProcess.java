@@ -255,25 +255,22 @@ class NativeProcess implements Closeable {
     }
 
     private static Alignment parseAlignment(JsonArray array) {
-        if (array.size() > 0) {
-            JsonArray sourceIndexesArray = array.get(0).getAsJsonArray();
-            JsonArray targetIndexesArray = array.get(1).getAsJsonArray();
+        if (array.size() == 0)
+            return new Alignment(new int[0], new int[0]);
 
-            int size = sourceIndexesArray.size();
-            int[] sourceIndexes = new int[size];
-            int[] targetIndexes = new int[size];
+        JsonArray sourceIndexesArray = array.get(0).getAsJsonArray();
+        JsonArray targetIndexesArray = array.get(1).getAsJsonArray();
 
-            for (int i = 0; i < size; i++) {
-                sourceIndexes[i] = sourceIndexesArray.get(i).getAsInt();
-                targetIndexes[i] = targetIndexesArray.get(i).getAsInt();
-            }
+        int size = sourceIndexesArray.size();
+        int[] sourceIndexes = new int[size];
+        int[] targetIndexes = new int[size];
 
-            return new Alignment(sourceIndexes, targetIndexes);
-        } else {
-            int[] sourceIndexes = new int[0];
-            int[] targetIndexes = new int[0];
-            return new Alignment(sourceIndexes, targetIndexes);
+        for (int i = 0; i < size; i++) {
+            sourceIndexes[i] = sourceIndexesArray.get(i).getAsInt();
+            targetIndexes[i] = targetIndexesArray.get(i).getAsInt();
         }
+
+        return new Alignment(sourceIndexes, targetIndexes);
     }
 
     /**
