@@ -8,6 +8,7 @@ import time
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, os.pardir)))
 
 from cli.mmt.cluster import ClusterNode
+from cli.mmt.processing import XMLEncoder
 from cli.libs import multithread
 
 __author__ = 'Davide Caroselli'
@@ -60,15 +61,26 @@ class _DocumentTranslator:
         if len(line) > 4096:
             line = line[:4096]
 
-        translation = Api.translate(self.source_lang, self.target_lang, line, context=context_vector, nbest=nbest)
+        translation = Api.translate(self.source_lang, self.target_lang, line,
+                                    context=context_vector, nbest=nbest, verbose=True)
 
-        nbest_list = sorted(translation['nbest'], key=lambda hypo: hypo['totalScore'], reverse=True) \
-            if 'nbest' in translation else []
-
-        if len(nbest_list) > 0:
-            return {'nbest': nbest_list, 'translation': nbest_list[0]['translation']}
-        else:
+        if 'nbest' not in translation or len(translation['nbest']) == 0:
             return {'translation': ''}
+
+        nbest_list = [{
+            'scores': e['scores'],
+            'totalScore': e['totalScore'],
+            'translation': self._serialize_tokens(e['translationTokens'])
+        } for e in translation['nbest']]
+
+        nbest_list.sort(key=lambda hypo: hypo['totalScore'], reverse=True)
+
+        return {'nbest': nbest_list, 'translation': nbest_list[0]['translation']}
+
+    @staticmethod
+    def _serialize_tokens(tokens):
+        tokens = [XMLEncoder.unescape(text) for text, _ in tokens if not XMLEncoder.is_xml_tag(text)]
+        return u' '.join(tokens)
 
     def _print(self, translation, nbest_out):
         print translation['translation'].encode('utf-8')
