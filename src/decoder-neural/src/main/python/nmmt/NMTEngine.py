@@ -294,7 +294,7 @@ class NMTEngine:
     @staticmethod
     def _make_alignment(src_indexes, trg_indexes, bpe_alignment):
         if not bpe_alignment:
-            return None
+            return []
 
         return sorted(set([(src_indexes[al[0]], trg_indexes[al[1]]) for al in bpe_alignment]))
 

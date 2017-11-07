@@ -51,7 +51,7 @@ class TranslationResponse:
         jobj = {}
 
         if self.translation is not None:
-            alignment = None
+            alignment = []
             if self.translation.alignment:
                 alignment = [[e[0] for e in self.translation.alignment], [e[1] for e in self.translation.alignment]]
 

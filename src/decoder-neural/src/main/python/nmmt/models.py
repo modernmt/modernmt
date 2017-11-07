@@ -1,5 +1,5 @@
 class Translation(object):
-    def __init__(self, text, alignment=None):
+    def __init__(self, text, alignment=[]):
         self.text = text
         self.alignment = alignment
 
