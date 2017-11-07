@@ -1,11 +1,14 @@
 package eu.modernmt.model;
 
+import eu.modernmt.xml.XMLUtils;
+
 /**
  * Created by davide on 17/02/16.
  */
 public class Word extends Token {
 
     protected boolean rightSpaceRequired;
+    private String xmlEscapedString = null;
 
     public Word(String placeholder) {
         super(placeholder);
@@ -35,5 +38,32 @@ public class Word extends Token {
         this.rightSpaceRequired = rightSpaceRequired;
     }
 
+    @Override
+    public void setText(String text) {
+        super.setText(text);
+        xmlEscapedString = null;
+    }
+
+    @Override
+    public void setPlaceholder(String placeholder) {
+        super.setPlaceholder(placeholder);
+        xmlEscapedString = null;
+    }
+
+    @Override
+    public String toString() {
+        return toString(true);
+    }
+
+    public String toString(boolean escape) {
+        if (escape) {
+            if (xmlEscapedString == null)
+                xmlEscapedString = XMLUtils.escape(super.toString());
+
+            return xmlEscapedString;
+        } else {
+            return super.toString();
+        }
+    }
 
 }

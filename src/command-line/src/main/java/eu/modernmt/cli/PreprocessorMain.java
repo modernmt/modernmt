@@ -89,20 +89,24 @@ public class PreprocessorMain {
 
     private static class SentenceOutputter implements Outputter {
 
-        private final SentenceOutputStream stream;
+        private final UnixLineWriter writer;
+        private final boolean printTags;
+        private final boolean printPlaceholders;
 
         public SentenceOutputter(boolean printTags, boolean printPlaceholders) {
-            stream = new SentenceOutputStream(System.out, printTags, printPlaceholders);
+            this.writer = new UnixLineWriter(System.out, DefaultCharset.get());
+            this.printTags = printTags;
+            this.printPlaceholders = printPlaceholders;
         }
 
         @Override
         public void write(Sentence value) throws IOException {
-            stream.write(value);
+            writer.writeLine(value.toString(printTags, printPlaceholders));
         }
 
         @Override
         public void close() throws IOException {
-            stream.close();
+            writer.close();
         }
     }
 

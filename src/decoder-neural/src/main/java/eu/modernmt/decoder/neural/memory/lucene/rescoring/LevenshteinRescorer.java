@@ -21,7 +21,7 @@ public class LevenshteinRescorer implements Rescorer {
 
     @Override
     public void rescore(Sentence input, ScoreEntry[] entries, ContextVector context) {
-        String[] words = TokensOutputStream.toTokensArray(input, false, true);
+        String[] words = TokensOutputStream.tokens(input, false, true);
 
         for (ScoreEntry entry : entries)
             entry.score = 1.f - getLevenshteinDistance(words, entry.sentence);

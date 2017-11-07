@@ -184,7 +184,7 @@ class NativeProcess implements Closeable {
     }
 
     private static String serialize(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) {
-        String text = TokensOutputStream.toString(sentence, false, true);
+        String text = TokensOutputStream.serialize(sentence, false, true);
 
         JsonObject json = new JsonObject();
         json.addProperty("source", text);
@@ -267,14 +267,12 @@ class NativeProcess implements Closeable {
         if (text.isEmpty())
             return new Word[0];
 
-        String[] pieces = text.split(" +");
+        String[] pieces = TokensOutputStream.deserialize(text);
         Word[] words = new Word[pieces.length];
 
         for (int i = 0; i < pieces.length; i++) {
             String rightSpace = i < pieces.length - 1 ? " " : null;
-
-            String placeholder = TokensOutputStream.deescapeWhitespaces(pieces[i]);
-            words[i] = new Word(placeholder, rightSpace);
+            words[i] = new Word(pieces[i], rightSpace);
         }
 
         return words;

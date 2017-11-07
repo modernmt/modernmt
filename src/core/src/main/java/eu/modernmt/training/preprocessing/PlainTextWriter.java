@@ -13,10 +13,8 @@ public class PlainTextWriter extends CorpusWriter {
 
     @Override
     protected void doWrite(Sentence[] batch, LineWriter writer) throws IOException {
-        for (Sentence sentence : batch) {
-            String text = TokensOutputStream.toString(sentence, false, true);
-            writer.writeLine(text);
-        }
+        for (Sentence sentence : batch)
+            writer.writeLine(TokensOutputStream.serialize(sentence, false, true));
     }
 
 }

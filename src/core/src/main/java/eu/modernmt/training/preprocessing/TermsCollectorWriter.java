@@ -31,7 +31,7 @@ public class TermsCollectorWriter extends CorpusWriter {
         StringBuilder builder = new StringBuilder();
 
         for (Sentence sentence : batch) {
-            String[] line = TokensOutputStream.toTokensArray(sentence, false, true);
+            String[] line = TokensOutputStream.tokens(sentence, false, true);
 
             for (int i = 0; i < line.length; i++) {
                 terms.put(line[i], Boolean.TRUE);
