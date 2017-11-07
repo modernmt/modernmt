@@ -29,6 +29,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
         Params params = (Params) _params;
 
         TranslationResponse result = new TranslationResponse();
+        result.verbose = params.verbose;
 
         if (params.context != null) {
             result.translation = ModernMT.translation.get(params.direction, params.query, params.context, params.nbest);
@@ -58,21 +59,23 @@ public class Translate extends ObjectAction<TranslationResponse> {
         public final String contextString;
         public final int contextLimit;
         public final int nbest;
+        public final boolean verbose;
 
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
 
             query = getString("q", true);
-            Locale sourceLanguage = getLocale("source");
-            Locale targetLanguage = getLocale("target");
-            direction = new LanguagePair(sourceLanguage, targetLanguage);
-
             if (query.length() > MAX_QUERY_LENGTH)
                 throw new ParameterParsingException("q", query.substring(0, 10) + "...",
                         "max query length of " + MAX_QUERY_LENGTH + " exceeded");
 
+            Locale sourceLanguage = getLocale("source");
+            Locale targetLanguage = getLocale("target");
+            direction = new LanguagePair(sourceLanguage, targetLanguage);
+
             contextLimit = getInt("context_limit", 10);
             nbest = getInt("nbest", 0);
+            verbose = getBoolean("verbose", false);
 
             String weights = getString("context_vector", false, null);
 

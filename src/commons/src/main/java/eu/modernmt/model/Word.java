@@ -35,4 +35,5 @@ public class Word extends Token {
         this.rightSpaceRequired = rightSpaceRequired;
     }
 
+
 }
