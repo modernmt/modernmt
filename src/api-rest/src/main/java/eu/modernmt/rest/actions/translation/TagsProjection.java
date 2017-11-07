@@ -36,7 +36,7 @@ public class TagsProjection extends ObjectAction<ProjectedTranslation> {
         if (params.showDetails) {
             result.setSourceTokens(stringifyTokens(taggedTranslation.getSource().getWords()));
             result.setTargetTokens(stringifyTokens(taggedTranslation.getWords()));
-            result.setAlignment(taggedTranslation.getAlignment());
+            result.setAlignment(taggedTranslation.getWordAlignment());
         }
 
         return result;

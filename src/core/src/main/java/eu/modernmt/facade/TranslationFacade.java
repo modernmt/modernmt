@@ -290,7 +290,7 @@ public class TranslationFacade {
                     Aligner aligner = engine.getAligner();
                     Alignment alignment = aligner.getAlignment(direction, sentence, translation);
 
-                    translation.setAlignment(alignment);
+                    translation.setWordAlignment(alignment);
                 }
 
                 postprocessor.process(direction, translation);
@@ -309,7 +309,7 @@ public class TranslationFacade {
 
                         int i = 0;
                         for (Translation hypothesis : hypotheses) {
-                            hypothesis.setAlignment(alignments[i]);
+                            hypothesis.setWordAlignment(alignments[i]);
                             i++;
                         }
                     }

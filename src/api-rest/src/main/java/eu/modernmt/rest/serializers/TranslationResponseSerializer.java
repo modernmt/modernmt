@@ -3,10 +3,7 @@ package eu.modernmt.rest.serializers;
 import com.google.gson.*;
 import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.decoder.HasFeatureScores;
-import eu.modernmt.model.Alignment;
-import eu.modernmt.model.ContextVector;
-import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Translation;
+import eu.modernmt.model.*;
 import eu.modernmt.rest.model.TranslationResponse;
 
 import java.lang.reflect.Type;
@@ -28,7 +25,7 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
         if (src.verbose) {
             json.add("translationTokens", serializeTokens(src.translation));
             json.add("sentenceTokens", serializeTokens(source));
-            json.add("alignment", context.serialize(src.translation.getAlignment(), Alignment.class));
+            json.add("alignment", context.serialize(src.translation.getSentenceAlignment(), Alignment.class));
         }
 
         if (src.translation.hasNbest()) {
@@ -50,7 +47,7 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
 
         if (verbose) {
             json.add("translationTokens", serializeTokens(translation));
-            json.add("alignment", context.serialize(translation.getAlignment(), Alignment.class));
+            json.add("alignment", context.serialize(translation.getSentenceAlignment(), Alignment.class));
 
             if (translation instanceof HasFeatureScores) {
                 HasFeatureScores src = (HasFeatureScores) translation;
@@ -78,7 +75,13 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
 
     private static JsonArray serializeTokens(Sentence sentence) {
         JsonArray array = new JsonArray();
-        //TODO: must implement
+        for (Token token : sentence) {
+            JsonArray jToken = new JsonArray();
+            jToken.add(token.toString());
+            jToken.add(token.hasRightSpace() ? token.getRightSpace() : "");
+
+            array.add(jToken);
+        }
         return array;
     }
 

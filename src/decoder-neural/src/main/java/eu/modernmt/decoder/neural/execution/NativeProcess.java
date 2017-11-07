@@ -254,7 +254,7 @@ class NativeProcess implements Closeable {
         Translation result;
 
         if (includeNBest) {
-            result = new Translation(best.getWords(), sentence, best.getAlignment());
+            result = new Translation(best.getWords(), sentence, best.getWordAlignment());
             result.setNbest(translations);
         } else {
             result = best;
