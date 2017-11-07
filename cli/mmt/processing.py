@@ -145,6 +145,10 @@ class XMLEncoder:
     def __init__(self):
         pass
 
+    @staticmethod
+    def is_xml_tag(string):
+        return XMLEncoder.__TAG_REGEX.match(string) is not None
+
     def encode(self, corpora, dest_folder):
         if not os.path.isdir(dest_folder):
             fileutils.makedirs(dest_folder, exist_ok=True)
@@ -172,7 +176,7 @@ class XMLEncoder:
                     outstream.write(encoded.encode('utf-8'))
 
     @staticmethod
-    def __escape(string):
+    def escape(string):
         escaped = XMLEncoder.__HTML.unescape(string)
         return escaped \
             .replace('&', '&amp;') \
@@ -180,6 +184,10 @@ class XMLEncoder:
             .replace('\'', '&apos;') \
             .replace('<', '&lt;') \
             .replace('>', '&gt;')
+
+    @staticmethod
+    def unescape(string):
+        return XMLEncoder.__HTML.unescape(string)
 
     def encode_string(self, string):
         result = []
@@ -189,13 +197,13 @@ class XMLEncoder:
             start = match.start()
             end = match.end()
 
-            result.append(self.__escape(string[index:start]))
+            result.append(self.escape(string[index:start]))
             result.append(match.group())
 
             index = end
 
         if index < len(string):
-            result.append(self.__escape(string[index:]))
+            result.append(self.escape(string[index:]))
 
         return ''.join(result)
 

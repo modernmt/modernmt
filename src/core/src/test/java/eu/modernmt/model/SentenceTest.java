@@ -14,8 +14,8 @@ public class SentenceTest {
                 new Word("!", null),
         });
 
-        assertEquals("Hello world!", sentence.toString(false));
-        assertEquals("Hello world!", sentence.getStrippedString(false));
+        assertEquals("Hello world!", sentence.toString(true, false));
+        assertEquals("Hello world!", sentence.toString(false, false));
     }
 
     @Test
@@ -28,8 +28,8 @@ public class SentenceTest {
                 Tag.fromText("<a>", false, " ", 0)
         });
 
-        assertEquals("<a> Hello world!", sentence.toString(false));
-        assertEquals("Hello world!", sentence.getStrippedString(false));
+        assertEquals("<a> Hello world!", sentence.toString(true, false));
+        assertEquals("Hello world!", sentence.toString(false, false));
     }
 
     @Test
@@ -41,8 +41,8 @@ public class SentenceTest {
                 Tag.fromText("<a>", false, " ", 1)
         });
 
-        assertEquals("Hello<a> world", sentence.toString(false));
-        assertEquals("Hello world", sentence.getStrippedString(false));
+        assertEquals("Hello<a> world", sentence.toString(true, false));
+        assertEquals("Hello world", sentence.toString(false, false));
     }
 
     @Test
@@ -55,8 +55,8 @@ public class SentenceTest {
                 Tag.fromText("<b>", true, null, 1)
         });
 
-        assertEquals("Hello<a> <b>world", sentence.toString(false));
-        assertEquals("Hello world", sentence.getStrippedString(false));
+        assertEquals("Hello<a> <b>world", sentence.toString(true, false));
+        assertEquals("Hello world", sentence.toString(false, false));
     }
 
     @Test
@@ -69,8 +69,8 @@ public class SentenceTest {
                 Tag.fromText("<b>", false, null, 1)
         });
 
-        assertEquals("Hello<a><b>world", sentence.toString(false));
-        assertEquals("Hello world", sentence.getStrippedString(false));
+        assertEquals("Hello<a><b>world", sentence.toString(true, false));
+        assertEquals("Hello world", sentence.toString(false, false));
     }
 
 }

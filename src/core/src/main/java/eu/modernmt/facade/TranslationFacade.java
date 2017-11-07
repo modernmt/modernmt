@@ -274,7 +274,6 @@ public class TranslationFacade {
             Postprocessor postprocessor = engine.getPostprocessor();
 
             try {
-
                 Sentence sentence = preprocessor.process(direction, text);
 
                 Translation translation;
@@ -286,14 +285,37 @@ public class TranslationFacade {
                     translation = decoder.translate(direction, sentence, context);
                 }
 
+                // Translation
                 if (!translation.hasAlignment()) {
                     Aligner aligner = engine.getAligner();
                     Alignment alignment = aligner.getAlignment(direction, sentence, translation);
 
-                    translation.setAlignment(alignment);
+                    translation.setWordAlignment(alignment);
                 }
 
                 postprocessor.process(direction, translation);
+
+                // NBest list
+                if (translation.hasNbest()) {
+                    List<Translation> hypotheses = translation.getNbest();
+
+                    if (!hypotheses.get(0).hasAlignment()) {
+                        ArrayList<Sentence> sources = new ArrayList<>(hypotheses.size());
+                        for (int i = 0; i < hypotheses.size(); i++)
+                            sources.add(sentence);
+
+                        Aligner aligner = engine.getAligner();
+                        Alignment[] alignments = aligner.getAlignments(direction, sources, hypotheses);
+
+                        int i = 0;
+                        for (Translation hypothesis : hypotheses) {
+                            hypothesis.setWordAlignment(alignments[i]);
+                            i++;
+                        }
+                    }
+
+                    postprocessor.process(direction, hypotheses);
+                }
 
                 return translation;
             } catch (ProcessingException e) {

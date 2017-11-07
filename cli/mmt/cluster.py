@@ -158,12 +158,14 @@ class ClusterNode(object):
             result = data['vectors']
             return None if len(result) != 1 else result.values()[0]
 
-        def translate(self, source, target, text, context=None, nbest=None):
+        def translate(self, source, target, text, context=None, nbest=None, verbose=False):
             p = {'q': text, 'source': source, 'target': target}
             if nbest is not None:
                 p['nbest'] = nbest
             if context is not None and len(context) > 0:
                 p['context_vector'] = self._encode_context(context)
+            if verbose:
+                p['verbose'] = 'true'
 
             return self._get('translate', params=p)
 
@@ -435,7 +437,8 @@ class ClusterNode(object):
 
         try:
             # Tokenization
-            tokenizer = Tokenizer(source_lang=source_lang, target_lang=target_lang)
+            tokenizer = Tokenizer(source_lang=source_lang, target_lang=target_lang,
+                                  print_placeholders=False, print_tags=False)
             tokenized_output = os.path.join(working_dir, 'reference_corpora')
             fileutils.makedirs(tokenized_output, exist_ok=True)
 

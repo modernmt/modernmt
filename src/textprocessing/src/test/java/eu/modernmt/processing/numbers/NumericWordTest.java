@@ -38,42 +38,42 @@ public class NumericWordTest {
     public void testCurrency_Matching() throws ProcessingException {
         Translation translation = make("1,76$", "$0.00", new int[][]{{0, 0}});
         postprocessor.call(translation, null);
-        assertEquals("$1.76", translation.getStrippedString(false));
+        assertEquals("$1.76", translation.toString(false, false));
     }
 
     @Test
     public void testCurrency_NotMatching() throws ProcessingException {
         Translation translation = make("1,76$", "$0.000", new int[][]{{0, 0}});
         postprocessor.call(translation, null);
-        assertEquals("1,76$", translation.getStrippedString(false));
+        assertEquals("1,76$", translation.toString(false, false));
     }
 
     @Test
     public void testBigNumber_Matching() throws ProcessingException {
         Translation translation = make("147.530,50", "000000.00", new int[][]{{0, 0}});
         postprocessor.call(translation, null);
-        assertEquals("147530.50", translation.getStrippedString(false));
+        assertEquals("147530.50", translation.toString(false, false));
     }
 
     @Test
     public void testBigNumber_NotMatching() throws ProcessingException {
         Translation translation = make("147.530,50", "00/00/00", new int[][]{{0, 0}});
         postprocessor.call(translation, null);
-        assertEquals("147.530,50", translation.getStrippedString(false));
+        assertEquals("147.530,50", translation.toString(false, false));
     }
 
     @Test
     public void testMultiple_Matching() throws ProcessingException {
         Translation translation = make("147.530", "000 000", new int[][]{{0, 0}, {0, 1}});
         postprocessor.call(translation, null);
-        assertEquals("147 530", translation.getStrippedString(false));
+        assertEquals("147 530", translation.toString(false, false));
     }
 
     @Test
     public void testMultiple_NotMatching() throws ProcessingException {
         Translation translation = make("147.530", "000 00", new int[][]{{0, 0}, {0, 1}});
         postprocessor.call(translation, null);
-        assertEquals("147.530 ??", translation.getStrippedString(false));
+        assertEquals("147.530 ??", translation.toString(false, false));
     }
 
 }

@@ -27,7 +27,7 @@ public class XMLTagProjectorSpacingTest {
         });
         XMLTagProjector.simpleSpaceAnalysis(translation);
 
-        assertEquals("Hello world !", translation.getStrippedString(false));
+        assertEquals("Hello world !", translation.toString(false, false));
         assertEquals("Hello <a>world</a>!", translation.toString());
         Assertions.assertCoherentSpacing(translation);
     }
@@ -45,7 +45,7 @@ public class XMLTagProjectorSpacingTest {
         });
         XMLTagProjector.simpleSpaceAnalysis(translation);
 
-        assertEquals("Hello world !", translation.getStrippedString(false));
+        assertEquals("Hello world !", translation.toString(false, false));
         assertEquals("Hello <a>world</a>!", translation.toString());
         Assertions.assertCoherentSpacing(translation);
     }
@@ -62,7 +62,7 @@ public class XMLTagProjectorSpacingTest {
         });
         XMLTagProjector.simpleSpaceAnalysis(translation);
 
-        assertEquals("Hello world !", translation.getStrippedString(false));
+        assertEquals("Hello world !", translation.toString(false, false));
         assertEquals("Hello <a>world</a> !", translation.toString());
         Assertions.assertCoherentSpacing(translation);
     }
@@ -81,7 +81,7 @@ public class XMLTagProjectorSpacingTest {
         });
         XMLTagProjector.simpleSpaceAnalysis(translation);
 
-        assertEquals("Hello world!", translation.getStrippedString(false));
+        assertEquals("Hello world!", translation.toString(false, false));
         assertEquals("Hello <a> <b> </a> </b> world!", translation.toString());
         Assertions.assertCoherentSpacing(translation);
     }
@@ -99,7 +99,7 @@ public class XMLTagProjectorSpacingTest {
         });
         XMLTagProjector.simpleSpaceAnalysis(translation);
 
-        assertEquals("Hello world!", translation.getStrippedString(false));
+        assertEquals("Hello world!", translation.toString(false, false));
         assertEquals("Hello </a> <b> </b> world!", translation.toString());
         Assertions.assertCoherentSpacing(translation);
     }
@@ -118,7 +118,7 @@ public class XMLTagProjectorSpacingTest {
         });
         XMLTagProjector.simpleSpaceAnalysis(translation);
 
-        assertEquals("That 's it!", translation.getStrippedString(false));
+        assertEquals("That 's it!", translation.toString(false, false));
         assertEquals("That<b>&apos;s</b> it!", translation.toString());
         Assertions.assertCoherentSpacing(translation);
     }
@@ -136,7 +136,7 @@ public class XMLTagProjectorSpacingTest {
         });
         XMLTagProjector.simpleSpaceAnalysis(translation);
 
-        assertEquals("This is XML comment", translation.getStrippedString(false));
+        assertEquals("This is XML comment", translation.toString(false, false));
         assertEquals("This is <!-- XML comment -->", translation.toString());
         Assertions.assertCoherentSpacing(translation);
     }
@@ -154,7 +154,7 @@ public class XMLTagProjectorSpacingTest {
         });
         XMLTagProjector.simpleSpaceAnalysis(translation);
 
-        assertEquals("This is XML comment", translation.getStrippedString(false));
+        assertEquals("This is XML comment", translation.toString(false, false));
         assertEquals("This is<!-- XML comment -->", translation.toString());
         Assertions.assertCoherentSpacing(translation);
     }
@@ -172,7 +172,7 @@ public class XMLTagProjectorSpacingTest {
         });
         XMLTagProjector.simpleSpaceAnalysis(translation);
 
-        assertEquals("This is XML comment", translation.getStrippedString(false));
+        assertEquals("This is XML comment", translation.toString(false, false));
         assertEquals("This is<!-- XML comment -->", translation.toString());
         Assertions.assertCoherentSpacing(translation);
     }

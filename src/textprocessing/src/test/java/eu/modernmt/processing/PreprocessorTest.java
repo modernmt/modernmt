@@ -34,8 +34,8 @@ public class PreprocessorTest {
         String text = "Hello world!";
         Sentence sentence = process(text);
 
-        assertEquals(text, sentence.toString(false));
-        assertEquals("Hello world!", sentence.getStrippedString(false));
+        assertEquals(text, sentence.toString(true, false));
+        assertEquals("Hello world!", sentence.toString(false, false));
         assertFalse(sentence.hasTags());
 
         assertArrayEquals(new Word[]{
@@ -50,8 +50,8 @@ public class PreprocessorTest {
         String text = "<a> Hello world!";
         Sentence sentence = process(text);
 
-        assertEquals(text, sentence.toString(false));
-        assertEquals("Hello world!", sentence.getStrippedString(false));
+        assertEquals(text, sentence.toString(true, false));
+        assertEquals("Hello world!", sentence.toString(false, false));
         assertTrue(sentence.hasTags());
 
         assertArrayEquals(new Word[]{
@@ -69,8 +69,8 @@ public class PreprocessorTest {
         String text = "Hello<a> world!";
         Sentence sentence = process(text);
 
-        assertEquals(text, sentence.toString(false));
-        assertEquals("Hello world!", sentence.getStrippedString(false));
+        assertEquals(text, sentence.toString(true, false));
+        assertEquals("Hello world!", sentence.toString(false, false));
         assertTrue(sentence.hasTags());
 
         assertArrayEquals(new Word[]{
@@ -88,8 +88,8 @@ public class PreprocessorTest {
         String text = "Hello<a> <b>world!";
         Sentence sentence = process(text);
 
-        assertEquals(text, sentence.toString(false));
-        assertEquals("Hello world!", sentence.getStrippedString(false));
+        assertEquals(text, sentence.toString(true, false));
+        assertEquals("Hello world!", sentence.toString(false, false));
         assertTrue(sentence.hasTags());
 
         assertArrayEquals(new Word[]{

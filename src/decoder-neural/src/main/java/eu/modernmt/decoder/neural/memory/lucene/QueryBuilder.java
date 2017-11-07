@@ -68,7 +68,7 @@ public class QueryBuilder {
     }
 
     private static void loadTerms(String fieldName, Sentence sentence, Analyzer analyzer, BooleanQuery output) {
-        String text = TokensOutputStream.toString(sentence, false, true);
+        String text = TokensOutputStream.serialize(sentence, false, true);
 
         try {
             TokenStream stream = analyzer.tokenStream("content", text);

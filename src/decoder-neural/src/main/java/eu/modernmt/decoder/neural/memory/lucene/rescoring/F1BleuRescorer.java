@@ -25,7 +25,7 @@ public class F1BleuRescorer implements Rescorer {
 
     @Override
     public void rescore(Sentence input, ScoreEntry[] entries, ContextVector context) {
-        String[] inputWords = TokensOutputStream.toTokensArray(input, false, true);
+        String[] inputWords = TokensOutputStream.tokens(input, false, true);
 
         // Compute F1-BLEU score
         HashMap<NGram, Counter> inputNGrams = split(inputWords, N);

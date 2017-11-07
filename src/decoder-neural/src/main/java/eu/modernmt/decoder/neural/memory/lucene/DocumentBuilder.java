@@ -27,8 +27,8 @@ public class DocumentBuilder {
     // TranslationUnit entries
 
     public static Document build(TranslationUnit unit) {
-        String sentence = TokensOutputStream.toString(unit.sentence, false, true);
-        String translation = TokensOutputStream.toString(unit.translation, false, true);
+        String sentence = TokensOutputStream.serialize(unit.sentence, false, true);
+        String translation = TokensOutputStream.serialize(unit.translation, false, true);
         String hash = HashGenerator.hash(unit.direction, unit.rawSentence, unit.rawTranslation);
 
         return build(unit.direction, unit.memory, sentence, translation, hash);

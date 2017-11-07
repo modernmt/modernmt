@@ -12,11 +12,12 @@ from nmmt import Suggestion, NMTDecoder
 # ======================================================================================================================
 
 class TranslationRequest:
-    def __init__(self, source_lang, target_lang, source, suggestions=None):
+    def __init__(self, source_lang, target_lang, source, suggestions=None, n_best=None):
         self.source_lang = source_lang
         self.target_lang = target_lang
         self.source = source
         self.suggestions = suggestions if suggestions is not None else []
+        self.n_best = n_best if n_best > 1 else 1
 
     @staticmethod
     def from_json_string(json_string):
@@ -25,6 +26,7 @@ class TranslationRequest:
         source = obj['source']
         source_language = obj['source_language']
         target_language = obj['target_language']
+        n_best = obj['n_best'] if 'n_best' in obj else None
 
         suggestions = []
 
@@ -38,34 +40,39 @@ class TranslationRequest:
                 suggestions.append(Suggestion(suggestion_source, suggestion_target, suggestion_score))
                 i += 1
 
-        return TranslationRequest(source_language, target_language, source, suggestions)
+        return TranslationRequest(source_language, target_language, source, suggestions, n_best)
 
 
 class TranslationResponse:
-    def __init__(self, translation=None, exception=None):
-        self.translation = translation
+    def __init__(self, translations=None, exception=None):
+        self.translations = translations
         self.error_type = type(exception).__name__ if exception is not None else None
         self.error_message = str(exception) if exception is not None and str(exception) else None
 
     def to_json_string(self):
-        jobj = {}
+        json_root = {}
 
-        if self.translation is not None:
-            alignment = []
-            if self.translation.alignment:
-                alignment = [[e[0] for e in self.translation.alignment], [e[1] for e in self.translation.alignment]]
+        if self.translations is not None:
+            json_array = []
 
-            jobj['translation'] = {
-                'text': self.translation.text,
-                'alignment': alignment
-            }
+            for translation in self.translations:
+                alignment = []
+                if translation.alignment:
+                    alignment = [[e[0] for e in translation.alignment], [e[1] for e in translation.alignment]]
+
+                json_array.append({
+                    'text': translation.text,
+                    'alignment': alignment
+                })
+
+            json_root['result'] = json_array
         else:
             error = {'type': self.error_type}
             if self.error_message is not None:
                 error['message'] = self.error_message
-            jobj['error'] = error
+            json_root['error'] = error
 
-        return json.dumps(jobj).replace('\n', ' ')
+        return json.dumps(json_root).replace('\n', ' ')
 
 
 class MainController:
@@ -94,9 +101,9 @@ class MainController:
     def process(self, line):
         try:
             request = TranslationRequest.from_json_string(line)
-            translation = self._decoder.translate(request.source_lang, request.target_lang,
-                                                  request.source, request.suggestions)
-            return TranslationResponse(translation=translation)
+            translations = self._decoder.translate(request.source_lang, request.target_lang, request.source,
+                                                   suggestions=request.suggestions, n_best=request.n_best)
+            return TranslationResponse(translations=translations)
         except BaseException as e:
             self._logger.exception('Failed to process request "' + line + '"')
             return TranslationResponse(exception=e)
@@ -170,8 +177,6 @@ def run_main():
         pass  # ignore and exit
     except BaseException as e:
         logger.exception(e)
-        stdout.write(e)
-        stdout.flush()
 
 
 if __name__ == '__main__':

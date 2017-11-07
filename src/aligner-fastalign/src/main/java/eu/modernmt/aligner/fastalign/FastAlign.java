@@ -102,12 +102,12 @@ public class FastAlign implements Aligner {
     private native int[] align(long nativeHandle, boolean reversed, String[] source, String[] target, int strategy);
 
     @Override
-    public Alignment[] getAlignments(LanguagePair direction, List<Sentence> sources, List<Sentence> targets) throws AlignerException {
+    public Alignment[] getAlignments(LanguagePair direction, List<? extends Sentence> sources, List<? extends Sentence> targets) throws AlignerException {
         return getAlignments(direction, sources, targets, strategy);
     }
 
     @Override
-    public Alignment[] getAlignments(LanguagePair direction, List<Sentence> sources, List<Sentence> targets, SymmetrizationStrategy strategy) throws AlignerException {
+    public Alignment[] getAlignments(LanguagePair direction, List<? extends Sentence> sources, List<? extends Sentence> targets, SymmetrizationStrategy strategy) throws AlignerException {
         boolean reversed = false;
         Long nativeHandle = models.get(direction);
 
@@ -122,8 +122,8 @@ public class FastAlign implements Aligner {
         String[][] sourceArray = new String[sources.size()][];
         String[][] targetArray = new String[targets.size()][];
 
-        Iterator<Sentence> sourceIterator = sources.iterator();
-        Iterator<Sentence> targetIterator = targets.iterator();
+        Iterator<? extends Sentence> sourceIterator = sources.iterator();
+        Iterator<? extends Sentence> targetIterator = targets.iterator();
 
         int i = 0;
         while (sourceIterator.hasNext() && targetIterator.hasNext()) {
