@@ -14,7 +14,7 @@ No minimum required.
 ### GPU (only for neural engine)
 At least one [CUDA-capable GPU](https://developer.nvidia.com/cuda-gpus). Current MMT version supports only single-GPU training, while you can increase the translation throughput using multiple GPUs at runtime.
 
-We recommend at least 4GB GPU memory for training and at least 2GB GPU memory for runtime.
+We recommend at least 8GB GPU memory for training and at least 2GB GPU memory for runtime.
 
 ### Memory
 *  Min 5GB
