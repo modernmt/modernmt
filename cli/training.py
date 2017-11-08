@@ -68,7 +68,7 @@ class Training(EngineBuilder.Listener):
     # EngineBuilder.Listener
 
     def on_hw_constraint_violated(self, message):
-        print '> WARNING: %s' % message
+        print '\033[91mWARNING\033[0m: %s\n' % message
 
     def on_training_begin(self, steps, engine, bilingual_corpora, monolingual_corpora):
         self._steps_count = len(steps)

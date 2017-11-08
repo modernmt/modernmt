@@ -435,13 +435,6 @@ class EngineBuilder:
             shutil.rmtree(self._engine.path, ignore_errors=True)
             os.makedirs(self._engine.path)
 
-        # Check if all requirements are fulfilled before launching engine training
-        try:
-            self._check_constraints()
-        except EngineBuilder.HWConstraintViolated as e:
-            if listener:
-                listener.on_hw_constraint_violated(e.cause)
-
         # Create a new logger for the building activities,
         log_stream = open(self._engine.get_logfile('training'), 'wb')
         logging.basicConfig(format='%(asctime)-15s [%(levelname)s] - %(message)s',
@@ -457,6 +450,13 @@ class EngineBuilder:
             if listener:
                 listener.on_training_begin(self._schedule.visible_steps(), self._engine, bilingual_corpora,
                                            monolingual_corpora)
+
+            # Check if all requirements are fulfilled before actual engine training
+            try:
+                self._check_constraints()
+            except EngineBuilder.HWConstraintViolated as e:
+                if listener:
+                    listener.on_hw_constraint_violated(e.cause)
 
             args = EngineBuilder.__Args()
             args.bilingual_corpora = bilingual_corpora
