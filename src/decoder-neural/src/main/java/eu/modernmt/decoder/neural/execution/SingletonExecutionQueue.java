@@ -56,33 +56,14 @@ class SingletonExecutionQueue implements ExecutionQueue {
         this.decoder = decoder;
     }
 
-    /**
-     * This method assigns a translation job to the NeuralDecoder processe
-     * that this SingletonExecutionQueue manages, and returns the translation result.
-     *
-     * @param direction the direction of the translation to execute
-     * @param sentence  the source sentence to translate
-     * @return a Translation object representing the translation result
-     * @throws NeuralDecoderException
-     */
     @Override
-    public synchronized Translation execute(LanguagePair direction, Sentence sentence) throws NeuralDecoderException {
-        return decoder.translate(direction, sentence);
+    public synchronized Translation execute(LanguagePair direction, Sentence sentence, int nBest) throws NeuralDecoderException {
+        return decoder.translate(direction, sentence, nBest);
     }
 
-    /**
-     * This method assigns a translation job to the NeuralDecoder processe
-     * that this SingletonExecutionQueue manages, and returns the translation result.
-     *
-     * @param direction   the direction of the translation to execute
-     * @param sentence    the source sentence to translate
-     * @param suggestions an array of translation suggestions that the decoder will study before the translation
-     * @return a Translation object representing the translation result
-     * @throws NeuralDecoderException
-     */
     @Override
-    public synchronized Translation execute(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions) throws NeuralDecoderException {
-        return decoder.translate(direction, sentence, suggestions);
+    public synchronized Translation execute(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws NeuralDecoderException {
+        return decoder.translate(direction, sentence, suggestions, nBest);
     }
 
     /**

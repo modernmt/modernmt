@@ -1,5 +1,7 @@
 package eu.modernmt.model;
 
+import eu.modernmt.xml.XMLUtils;
+
 import java.io.Serializable;
 import java.util.Iterator;
 
@@ -49,11 +51,21 @@ public class Sentence implements Serializable, Iterable<Token> {
         this.tags = tags;
     }
 
-    public String getStrippedString(boolean withPlaceholders) {
+    @Override
+    public String toString() {
+        return toString(true, false);
+    }
+
+    public String toString(boolean printTags, boolean printPlaceholders) {
+        return printTags ? toXMLString(printPlaceholders) : toXMLStrippedString(printPlaceholders);
+    }
+
+    private String toXMLStrippedString(boolean printPlaceholders) {
         StringBuilder builder = new StringBuilder();
 
         boolean foundFirstWord = false;
         boolean printSpace = false;
+
         for (Token token : this) {
             if (token instanceof Tag) {
                 printSpace = true;
@@ -63,7 +75,7 @@ public class Sentence implements Serializable, Iterable<Token> {
 
                 foundFirstWord = true;
 
-                String text = withPlaceholders || !token.hasText() ? token.getPlaceholder() : token.getText();
+                String text = printPlaceholders || !token.hasText() ? token.getPlaceholder() : token.getText();
                 builder.append(text);
                 printSpace = token.hasRightSpace();
             }
@@ -72,56 +84,22 @@ public class Sentence implements Serializable, Iterable<Token> {
         return builder.toString();
     }
 
-    public String toString(boolean withPlaceholders) {
+    private String toXMLString(boolean printPlaceholders) {
         StringBuilder builder = new StringBuilder();
-        Iterator<Token> iterator = this.iterator();
 
-        while (iterator.hasNext()) {
-            Token token = iterator.next();
-            append(builder, token, withPlaceholders);
+        for (Token token : this) {
+            if (token instanceof Tag) {
+                builder.append(token.getText());
+            } else {
+                String text = printPlaceholders || !token.hasText() ? token.getPlaceholder() : token.getText();
+                builder.append(XMLUtils.escape(text));
+            }
 
             if (token.hasRightSpace())
                 builder.append(token.getRightSpace());
         }
 
         return builder.toString();
-    }
-
-    private static void append(StringBuilder builder, Token token, boolean withPlaceholders) {
-        if (token instanceof Tag) {
-            builder.append(token.getText());
-        } else {
-            String text = withPlaceholders || !token.hasText() ? token.getPlaceholder() : token.getText();
-            char[] chars = text.toCharArray();
-
-            for (char c : chars) {
-                switch (c) {
-                    case '"':
-                        builder.append("&quot;");
-                        break;
-                    case '&':
-                        builder.append("&amp;");
-                        break;
-                    case '\'':
-                        builder.append("&apos;");
-                        break;
-                    case '<':
-                        builder.append("&lt;");
-                        break;
-                    case '>':
-                        builder.append("&gt;");
-                        break;
-                    default:
-                        builder.append(c);
-                        break;
-                }
-            }
-        }
-    }
-
-    @Override
-    public String toString() {
-        return toString(false);
     }
 
     @Override

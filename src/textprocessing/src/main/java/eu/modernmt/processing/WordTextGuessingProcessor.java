@@ -23,7 +23,7 @@ public class WordTextGuessingProcessor extends TextProcessor<Translation, Transl
         Word[] target = translation.getWords();
 
         if (translation.hasAlignment()) {
-            for (int[] pair : translation.getAlignment()) {
+            for (int[] pair : translation.getWordAlignment()) {
                 Word sourceWord = source[pair[0]];
                 Word targetWord = target[pair[1]];
 

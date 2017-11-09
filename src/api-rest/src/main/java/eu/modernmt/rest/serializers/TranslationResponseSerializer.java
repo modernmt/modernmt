@@ -3,10 +3,7 @@ package eu.modernmt.rest.serializers;
 import com.google.gson.*;
 import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.decoder.HasFeatureScores;
-import eu.modernmt.io.TokensOutputStream;
-import eu.modernmt.model.ContextVector;
-import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Translation;
+import eu.modernmt.model.*;
 import eu.modernmt.rest.model.TranslationResponse;
 
 import java.lang.reflect.Type;
@@ -21,19 +18,20 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
     public JsonElement serialize(TranslationResponse src, Type typeOfSrc, JsonSerializationContext context) {
         Sentence source = src.translation.getSource();
 
-        int sourceWordCount = source.getWords().length;
-        int targetWordCount = src.translation.getWords().length;
-
         JsonObject json = new JsonObject();
-        json.addProperty("translation", src.translation.toString());
         json.addProperty("decodingTime", src.translation.getElapsedTime());
-        json.addProperty("sourceWordCount", sourceWordCount);
-        json.addProperty("targetWordCount", targetWordCount);
+        json.addProperty("translation", src.translation.toString());
+
+        if (src.verbose) {
+            json.add("translationTokens", serializeTokens(src.translation));
+            json.add("sentenceTokens", serializeTokens(source));
+            json.add("alignment", context.serialize(src.translation.getSentenceAlignment(), Alignment.class));
+        }
 
         if (src.translation.hasNbest()) {
             JsonArray array = new JsonArray();
             for (Translation hypothesis : src.translation.getNbest())
-                array.add(serialize(context, hypothesis));
+                array.add(serializeHypothesis(context, hypothesis, src.verbose));
             json.add("nbest", array);
         }
 
@@ -43,21 +41,26 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
         return json;
     }
 
-    private static JsonElement serialize(JsonSerializationContext context, Translation translation) {
+    private static JsonElement serializeHypothesis(JsonSerializationContext context, Translation translation, boolean verbose) {
         JsonObject json = new JsonObject();
-        json.addProperty("translation", TokensOutputStream.toString(translation, false, true));
+        json.addProperty("translation", translation.toString());
 
-        if (translation instanceof HasFeatureScores) {
-            HasFeatureScores src = (HasFeatureScores) translation;
-            json.addProperty("totalScore", src.getTotalScore());
-            json.add("scores", serialize(context, src.getScores()));
+        if (verbose) {
+            json.add("translationTokens", serializeTokens(translation));
+            json.add("alignment", context.serialize(translation.getSentenceAlignment(), Alignment.class));
+
+            if (translation instanceof HasFeatureScores) {
+                HasFeatureScores src = (HasFeatureScores) translation;
+                json.addProperty("totalScore", src.getTotalScore());
+                json.add("scores", serializeScores(context, src.getScores()));
+            }
         }
 
         return json;
 
     }
 
-    private static JsonElement serialize(JsonSerializationContext context, Map<DecoderFeature, float[]> scores) {
+    private static JsonElement serializeScores(JsonSerializationContext context, Map<DecoderFeature, float[]> scores) {
         JsonObject json = new JsonObject();
 
         for (Map.Entry<DecoderFeature, float[]> entry : scores.entrySet()) {
@@ -68,6 +71,18 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
         }
 
         return json;
+    }
+
+    private static JsonArray serializeTokens(Sentence sentence) {
+        JsonArray array = new JsonArray();
+        for (Token token : sentence) {
+            JsonArray jToken = new JsonArray();
+            jToken.add(token.toString());
+            jToken.add(token.hasRightSpace() ? token.getRightSpace() : "");
+
+            array.add(jToken);
+        }
+        return array;
     }
 
 }

@@ -1,7 +1,9 @@
 package eu.modernmt.io;
 
 import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Tag;
 import eu.modernmt.model.Token;
+import eu.modernmt.xml.XMLUtils;
 
 import java.io.*;
 import java.util.Iterator;
@@ -11,15 +13,7 @@ import java.util.Iterator;
  */
 public class TokensOutputStream implements Closeable {
 
-    public static String escapeWhitespaces(String string) {
-        return string.replace(' ', '\u00A0');
-    }
-
-    public static String deescapeWhitespaces(String string) {
-        return string.replace('\u00A0', ' ');
-    }
-
-    public static String[] toTokensArray(Sentence sentence, boolean printTags, boolean printPlaceholders) {
+    public static String[] tokens(Sentence sentence, boolean printTags, boolean printPlaceholders) {
         int size = printTags ? sentence.length() : sentence.getWords().length;
         String[] tokens = new String[size];
 
@@ -28,29 +22,51 @@ public class TokensOutputStream implements Closeable {
         int i = 0;
         while (iterator.hasNext()) {
             Token token = iterator.next();
-            String text = printPlaceholders ? token.getPlaceholder() : token.toString();
 
-            tokens[i++] = escapeWhitespaces(text);
+            String text;
+            if (token instanceof Tag) {
+                text = token.getText();
+            } else {
+                text = printPlaceholders || !token.hasText() ? token.getPlaceholder() : token.getText();
+                if (printTags)
+                    text = XMLUtils.escape(text);
+            }
+
+            tokens[i++] = text.replace(' ', '\u00A0');
         }
 
         return tokens;
     }
 
-    public static String toString(Sentence sentence, boolean printTags, boolean printPlaceholders) {
-        StringBuilder builder = new StringBuilder();
+    public static String serialize(Sentence sentence, boolean printTags, boolean printPlaceholders) {
+        String[] parts = tokens(sentence, printTags, printPlaceholders);
+        if (parts.length == 0)
+            return "";
 
-        Iterator<Token> iterator = printTags ? sentence.iterator() : new ArrayIterator<>(sentence.getWords());
-        while (iterator.hasNext()) {
-            Token token = iterator.next();
-            String text = printPlaceholders ? token.getPlaceholder() : token.toString();
+        int length = 0;
+        for (String part : parts)
+            length += part.length();
 
-            builder.append(escapeWhitespaces(text));
-
-            if (iterator.hasNext())
+        StringBuilder builder = new StringBuilder(length + parts.length - 1);
+        for (int i = 0; i < parts.length; i++) {
+            if (i > 0)
                 builder.append(' ');
+            builder.append(parts[i]);
         }
 
         return builder.toString();
+    }
+
+    public static String[] deserialize(String text) {
+        if (text.isEmpty())
+            return new String[0];
+
+        String[] pieces = text.split(" +");
+
+        for (int i = 0; i < pieces.length; i++)
+            pieces[i] = pieces[i].replace('\u00A0', ' ');
+
+        return pieces;
     }
 
     private final LineWriter writer;
@@ -76,7 +92,7 @@ public class TokensOutputStream implements Closeable {
     }
 
     public void write(Sentence sentence) throws IOException {
-        this.writer.writeLine(toString(sentence, printTags, printPlaceholders));
+        this.writer.writeLine(serialize(sentence, printTags, printPlaceholders));
     }
 
     @Override

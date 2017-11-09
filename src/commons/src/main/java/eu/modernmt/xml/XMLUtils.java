@@ -16,6 +16,43 @@ import java.util.Iterator;
  */
 public class XMLUtils {
 
+    public static String escape(String string) {
+        StringBuilder builder = null;
+
+        for (int i = 0; i < string.length(); i++) {
+            char c = string.charAt(i);
+
+            if (builder == null && (c == '"' || c == '&' || c == '\'' || c == '<' || c == '>')) {
+                builder = new StringBuilder((int) (string.length() * 1.4));
+                builder.append(string, 0, i);
+            }
+
+            switch (c) {
+                case '"':
+                    builder.append("&quot;");
+                    break;
+                case '&':
+                    builder.append("&amp;");
+                    break;
+                case '\'':
+                    builder.append("&apos;");
+                    break;
+                case '<':
+                    builder.append("&lt;");
+                    break;
+                case '>':
+                    builder.append("&gt;");
+                    break;
+                default:
+                    if (builder != null)
+                        builder.append(c);
+                    break;
+            }
+        }
+
+        return builder == null ? string : builder.toString();
+    }
+
     public static XMLEventReader createEventReader(InputStream stream) throws XMLStreamException {
         XMLInputFactory factory = XMLInputFactory.newInstance();
         return factory.createXMLEventReader(new XMLFixInputStreamReader(new BOMInputStream(stream, false), DefaultCharset.get()));

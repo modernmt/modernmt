@@ -15,18 +15,19 @@ public class Translation extends Sentence {
     }
 
     protected final Sentence source;
-    private Alignment alignment;
+    private Alignment wordAlignment;
+    private Alignment sentenceAlignment = null;
     private long elapsedTime;
     private List<Translation> nbest;
 
-    public Translation(Word[] words, Sentence source, Alignment alignment) {
-        this(words, null, source, alignment);
+    public Translation(Word[] words, Sentence source, Alignment wordAlignment) {
+        this(words, null, source, wordAlignment);
     }
 
-    public Translation(Word[] words, Tag[] tags, Sentence source, Alignment alignment) {
+    public Translation(Word[] words, Tag[] tags, Sentence source, Alignment wordAlignment) {
         super(words, tags);
         this.source = source;
-        this.alignment = alignment;
+        this.wordAlignment = wordAlignment;
         this.elapsedTime = 0;
     }
 
@@ -42,16 +43,47 @@ public class Translation extends Sentence {
         return source;
     }
 
-    public void setAlignment(Alignment alignment) {
-        this.alignment = alignment;
+    public void setWordAlignment(Alignment wordAlignment) {
+        this.wordAlignment = wordAlignment;
+        this.sentenceAlignment = null;
     }
 
-    public Alignment getAlignment() {
-        return alignment;
+    public Alignment getWordAlignment() {
+        return wordAlignment;
     }
 
     public boolean hasAlignment() {
-        return alignment != null && alignment.size() > 0;
+        return wordAlignment != null;
+    }
+
+    public Alignment getSentenceAlignment() {
+        if (sentenceAlignment == null && wordAlignment != null) {
+            if (!source.hasTags() && !this.hasTags()) {
+                sentenceAlignment = wordAlignment;
+            } else {
+                int[] sourceIdxs = new int[wordAlignment.size()];
+                System.arraycopy(wordAlignment.getSourceIndexes(), 0, sourceIdxs, 0, sourceIdxs.length);
+                int[] targetIdxs = new int[wordAlignment.size()];
+                System.arraycopy(wordAlignment.getTargetIndexes(), 0, targetIdxs, 0, targetIdxs.length);
+
+                shiftAlignment(source.getTags(), sourceIdxs);
+                shiftAlignment(this.getTags(), targetIdxs);
+
+                sentenceAlignment = new Alignment(sourceIdxs, targetIdxs);
+            }
+        }
+
+        return sentenceAlignment;
+    }
+
+    private static void shiftAlignment(Tag[] tags, int[] indexes) {
+        int t = 0;
+        for (int i = 0; i < indexes.length; i++) {
+            while (t < tags.length && tags[t].getPosition() == i)
+                t++;
+
+            indexes[i] += t;
+        }
     }
 
     public List<Translation> getNbest() {
@@ -112,7 +144,7 @@ public class Translation extends Sentence {
         else
             coveredPerPhraseInTarget.set(word);
 
-        for (int[] point : alignment) {
+        for (int[] point : wordAlignment) {
             if (fromSource) {
                 if (point[0] == word && !coveredPerPhraseInTarget.get(point[1]))
                     cover(point[1], false, coveredPerPhraseInSource, coveredPerPhraseInTarget);

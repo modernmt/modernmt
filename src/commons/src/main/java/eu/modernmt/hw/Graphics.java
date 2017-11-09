@@ -12,7 +12,18 @@ import java.util.regex.Pattern;
  */
 public class Graphics {
 
+    private static int[] gpus = null;
+
     public static int[] getAvailableGPUs() {
+        if (gpus == null)
+            gpus = computeAvailableGPUs();
+
+        int[] result = new int[gpus.length];
+        System.arraycopy(gpus, 0, result, 0, gpus.length);
+        return result;
+    }
+
+    private static int[] computeAvailableGPUs() {
         try {
             Process nvidia = Runtime.getRuntime().exec(new String[]{"nvidia-smi", "--list-gpus"});
 
@@ -49,7 +60,7 @@ public class Graphics {
 
             return gpus;
         } catch (IOException e) {
-            return null;
+            return new int[0];
         }
     }
 

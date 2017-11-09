@@ -24,7 +24,7 @@ public class GuillemetsToQuotesProcessor extends TextProcessor<Translation, Tran
         Word[] target = translation.getWords();
 
         if (translation.hasAlignment()) {
-            for (int[] pair : translation.getAlignment()) {
+            for (int[] pair : translation.getWordAlignment()) {
                 Word sourceWord = source[pair[0]];
                 Word targetWord = target[pair[1]];
 

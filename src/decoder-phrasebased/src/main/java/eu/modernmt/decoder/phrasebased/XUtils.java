@@ -36,21 +36,19 @@ class XUtils {
     }
 
     public static String encodeSentence(Sentence sentence) {
-        return TokensOutputStream.toString(sentence, false, true);
+        return TokensOutputStream.serialize(sentence, false, true);
     }
 
     public static Word[] explode(String text) {
         if (text.isEmpty())
             return new Word[0];
 
-        String[] pieces = text.split(" +");
-        Word[] words = new Word[pieces.length];
+        String[] parts = TokensOutputStream.deserialize(text);
+        Word[] words = new Word[parts.length];
 
-        for (int i = 0; i < pieces.length; i++) {
-            String rightSpace = i < pieces.length - 1 ? " " : null;
-
-            String placeholder = TokensOutputStream.deescapeWhitespaces(pieces[i]);
-            words[i] = new Word(placeholder, rightSpace);
+        for (int i = 0; i < parts.length; i++) {
+            String rightSpace = i < parts.length - 1 ? " " : null;
+            words[i] = new Word(parts[i], rightSpace);
         }
 
         return words;

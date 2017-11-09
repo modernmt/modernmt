@@ -26,7 +26,7 @@ class XUtils {
     }
 
     public static String[] toTokensArray(Sentence sentence) {
-        return TokensOutputStream.toTokensArray(sentence, false, true);
+        return TokensOutputStream.tokens(sentence, false, true);
     }
 
     public static Alignment parseAlignment(int[] encoded) {

@@ -277,24 +277,29 @@ class NMTEngine:
             self._translator = _Translator(self.src_dict, self.trg_dict, self.model)
 
         self._translator.opt.replace_unk = replace_unk
-        self._translator.opt.beam_size = beam_size
+        self._translator.opt.beam_size = max(beam_size, n_best)
         self._translator.opt.max_sent_length = max_sent_length
         self._translator.opt.n_best = n_best
 
         src_bpe_tokens = self.processor.encode_line(text, is_source=True)
         pred_batch, _, _, align_batch = self._translator.translate([src_bpe_tokens], None)
-        trg_bpe_tokens, bpe_alignment = pred_batch[0][0], align_batch[0][0]
 
-        src_indexes = self.processor.get_words_indexes(src_bpe_tokens)
-        trg_indexes = self.processor.get_words_indexes(trg_bpe_tokens)
+        translations = []
+        for trg_bpe_tokens, bpe_alignment in zip(pred_batch[0], align_batch[0]):
+            src_indexes = self.processor.get_words_indexes(src_bpe_tokens)
+            trg_indexes = self.processor.get_words_indexes(trg_bpe_tokens)
 
-        return Translation(text=self.processor.decode_tokens(trg_bpe_tokens),
-                           alignment=self._make_alignment(src_indexes, trg_indexes, bpe_alignment))
+            translation = Translation(text=self.processor.decode_tokens(trg_bpe_tokens),
+                                      alignment=self._make_alignment(src_indexes, trg_indexes, bpe_alignment))
+
+            translations.append(translation)
+
+        return translations
 
     @staticmethod
     def _make_alignment(src_indexes, trg_indexes, bpe_alignment):
         if not bpe_alignment:
-            return None
+            return []
 
         return sorted(set([(src_indexes[al[0]], trg_indexes[al[1]]) for al in bpe_alignment]))
 

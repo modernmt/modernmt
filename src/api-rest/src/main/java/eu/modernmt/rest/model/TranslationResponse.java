@@ -10,5 +10,6 @@ public class TranslationResponse {
 
     public Translation translation = null;
     public ContextVector context = null;
+    public boolean verbose = false;
 
 }

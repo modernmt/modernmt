@@ -68,7 +68,7 @@ public class XMLTagProjector {
         Tag[] sourceTags = translation.getSource().getTags();
         Token[] sourceWord = translation.getSource().getWords();
         Token[] targetTokens = translation.getWords();
-        Alignment alignment = translation.getAlignment();
+        Alignment alignment = translation.getWordAlignment();
         List<ExtendedTag> translationTags = new ArrayList<>(sourceTags.length);
         Map<Integer, Integer> closing2opening = new HashMap<>();
 

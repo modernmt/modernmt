@@ -38,7 +38,7 @@ public class WhitespaceProjector extends TextProcessor<Translation, Translation>
         Word[] sourceWords = source.getWords();
         Word[] targetWords = translation.getWords();
 
-        HashSet<AlignmentPoint> alignment = AlignmentPoint.parse(translation.getAlignment());
+        HashSet<AlignmentPoint> alignment = AlignmentPoint.parse(translation.getWordAlignment());
 
         AlignmentPoint probe = new AlignmentPoint();
         for (AlignmentPoint point : alignment) {
