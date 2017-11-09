@@ -155,9 +155,9 @@ class KafkaDataBatch implements DataBatch {
                 return;
 
             ContributionOptions options = engine.getContributionOptions();
-            LanguagePair direction = units.get(0).direction;
 
             if (options.process) {
+                LanguagePair direction = units.get(0).direction;
                 Preprocessor preprocessor = engine.getPreprocessor();
                 List<Sentence> sourceSentences = preprocessor.process(direction, sources);
                 List<Sentence> targetSentences = preprocessor.process(direction.reversed(), targets);
