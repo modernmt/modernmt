@@ -21,6 +21,8 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
         JsonObject json = new JsonObject();
         json.addProperty("decodingTime", src.translation.getElapsedTime());
         json.addProperty("translation", src.translation.toString());
+        json.addProperty("sourceWordCount", source.getWords().length);
+        json.addProperty("targetWordCount", src.translation.getWords().length);
 
         if (src.verbose) {
             json.add("translationTokens", serializeTokens(src.translation));
