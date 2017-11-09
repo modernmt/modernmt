@@ -38,6 +38,11 @@ import java.util.concurrent.TimeUnit;
 public class KafkaDataManager implements DataManager {
 
     private static final Logger logger = LogManager.getLogger(KafkaDataManager.class);
+
+    private final String host;  //the host of the kafka server
+    private final int port;     //the port of the kafka server
+    private final String name;  //the base name of the kafka topics
+
     private final String uuid;
     private final DataPollingThread pollingThread;
 
@@ -49,13 +54,18 @@ public class KafkaDataManager implements DataManager {
 
     public KafkaDataManager(Engine engine, String uuid, DataStreamConfig config) {
         this.uuid = uuid;
+
+        this.host = config.getHost();
+        this.port = config.getPort();
+        this.name = config.getName();
+
         this.pollingThread = new DataPollingThread(engine, this);
 
         // initialize the two required kafkaChannels with proper names
         // and put them in an array "channels"
         this.channels = new KafkaChannel[2];
 
-        String[] topicNames = getDefaultTopicNames(config.getName());
+        String[] topicNames = getDefaultTopicNames(this.name);
 
         this.channels[0] = new KafkaChannel(DataManager.MEMORY_UPLOAD_CHANNEL_ID,
                 topicNames[DataManager.MEMORY_UPLOAD_CHANNEL_ID]);
@@ -136,27 +146,66 @@ public class KafkaDataManager implements DataManager {
         }
     }
 
-
+    /**
+     * This method makes this KafkaDataManager connect to the Kafka server specified in its initial DataStreamConfiguration.
+     * To connect, a default timeout of 60 seconds is employed.
+     * If the connection succeeded, this method returns a map that associates to the (short) ID of each kafka topic
+     * the corresponding (long) last written position.
+     *
+     * @return a map containing, for each Kafka topic, its latest written positions if a consumer was to be started; null if only the producer was to be started.
+     * @throws HostUnreachableException if could not connect to the Kafka server.
+     */
     @Override
-    public Map<Short, Long> connect(String host, int port, long timeout, TimeUnit unit) throws HostUnreachableException {
-        return this.connect(host, port, timeout, unit, true);
+    public Map<Short, Long> connect() throws HostUnreachableException {
+        return this.connect(60, TimeUnit.SECONDS, true, true);
+    }
+
+
+    /**
+     * This method makes this KafkaDataManager connect to the Kafka server specified in its initial DataStreamConfiguration.
+     * It launches both a kafka consumer and a kafka producer to interact with the Kafka server.
+     * <p>
+     * The connection process will use the passed timeout and timeunit values.
+     * <p>
+     * If the connection succeeds, this method returns a map that associates to the (short) ID of each kafka topic
+     * the corresponding (long) last written position.
+     *
+     * @param timeout timeout to use while connecting to the Kafka server
+     * @param unit    time unit for the timeout
+     * @return a map containing, for each Kafka topic, its latest written positions if a consumer was to be started; null if only the producer was to be started.
+     * @throws HostUnreachableException if could not connect to the Kafka server
+     */
+    @Override
+    public Map<Short, Long> connect(long timeout, TimeUnit unit) throws HostUnreachableException {
+        return this.connect(timeout, unit, true, true);
     }
 
     /**
-     * @param host           host where the Kafka server is running
-     * @param port           port where the Kafka server is listening to
+     * This method makes this KafkaDataManager connect to the Kafka server specified in its initial DataStreamConfiguration.
+     * <p>
+     * A kafka consumer and/or a kafka producer will be launched depending on the passed "enable" params.
+     * If both the "enable" params are false, this method will do nothing.
+     * <p>
+     * The connection process will use the passed timeout and timeunit values.
+     * <p>
+     * If the connection succeeds, this method returns a map that associates to the (short) ID of each kafka topic
+     * the corresponding (long) last written position.
+     *
      * @param timeout        timeout to use while connecting to the Kafka server
      * @param unit           time unit for the timeout
-     * @param enableConsumer boolean value that specifies whether the consumer should be started or not
+     * @param enableConsumer boolean value that specifies whether the kafka consumer should be started or not
+     * @param enableProducer boolean value that specifies whether the kafka producer should be started or not
      * @return a map containing, for each Kafka topic, its latest written positions if a consumer was to be started; null if only the producer was to be started.
-     * @throws HostUnreachableException if could not connect to the remote Kafka server
+     * @throws HostUnreachableException if could not connect to the Kafka server
      */
     @Override
-    public Map<Short, Long> connect(String host, int port, long timeout, TimeUnit unit, boolean enableConsumer) throws HostUnreachableException {
+    public Map<Short, Long> connect(long timeout, TimeUnit unit, boolean enableConsumer, boolean enableProducer) throws HostUnreachableException {
 
         // Create Kafka producer
-        Properties producerProperties = loadProperties("kafka-producer.properties", host, port);
-        this.producer = new KafkaProducer<>(producerProperties);    //write in the given partitions
+        if (enableProducer) {
+            Properties producerProperties = loadProperties("kafka-producer.properties", host, port);
+            this.producer = new KafkaProducer<>(producerProperties);    //write in the given partitions
+        }
 
         // Create Kafka consumer and connect to the Kafka remote server to get the latest positions for each channel
         if (enableConsumer) {

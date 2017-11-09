@@ -349,7 +349,7 @@ public class ClusterNode {
             }
 
             if (!embeddedDatastream && dataStreamConfig.getName() == null)
-                throw new BootstrapException("Datastream name is compulsory if datastream is not embedded");
+                throw new BootstrapException("Datastream name is mandatory if datastream is not embedded");
 
 
             this.dataManager = new KafkaDataManager(this.engine, uuid, dataStreamConfig);
@@ -362,7 +362,7 @@ public class ClusterNode {
                 timer.reset();
 
                 logger.info("Connecting to dataManager...");
-                Map<Short, Long> positions = dataManager.connect(dataStreamConfig.getHost(), dataStreamConfig.getPort(), 60, TimeUnit.SECONDS);
+                Map<Short, Long> positions = dataManager.connect();
                 logger.info("Connected to the dataManager in " + (timer.time() / 1000.) + "s");
 
                 setStatus(Status.UPDATING);
@@ -405,7 +405,7 @@ public class ClusterNode {
 
             /*else if is not embedded, check that it has a name and connect to it*/
             if (!embedded && databaseConfig.getName() == null)
-                throw new BootstrapException("Database name is compulsory if database is not embedded");
+                throw new BootstrapException("Database name is mandatory if database is not embedded");
             this.database = DatabaseLoader.load(engine, databaseConfig);
         }
 

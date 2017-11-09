@@ -162,7 +162,7 @@ public class CorpusUploadMain {
             config.setEnabled(true);
 
             this.dataManager = new KafkaDataManager(null, null, config);
-            this.dataManager.connect(config.getHost(), config.getPort(), 30, TimeUnit.SECONDS, false);
+            this.dataManager.connect(30, TimeUnit.SECONDS, false, true);
         }
 
         public ImportJob add(long memoryId, MultilingualCorpus corpus) throws PersistenceException, DataManagerException {

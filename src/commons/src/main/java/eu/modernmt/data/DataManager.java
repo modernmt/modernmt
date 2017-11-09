@@ -21,9 +21,11 @@ public interface DataManager extends Closeable {
         void onDataBatchProcessed(Map<Short, Long> updatedPositions);
     }
 
-    Map<Short, Long> connect(String host, int port, long timeout, TimeUnit unit) throws HostUnreachableException;
+    Map<Short, Long> connect() throws HostUnreachableException;
 
-    Map<Short, Long> connect(String host, int port, long timeout, TimeUnit unit, boolean enableConsumer) throws HostUnreachableException;
+    Map<Short, Long> connect(long timeout, TimeUnit unit) throws HostUnreachableException;
+
+    Map<Short, Long> connect(long timeout, TimeUnit unit, boolean enableConsumer, boolean enableProducer) throws HostUnreachableException;
 
     void setDataManagerListener(Listener listener);
 
