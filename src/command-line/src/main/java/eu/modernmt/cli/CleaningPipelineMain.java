@@ -76,11 +76,6 @@ public class CleaningPipelineMain {
     }
 
     public static void main(String[] _args) throws Throwable {
-        System.setProperty("mmt.home", "/Users/davide/workspaces/mmt/ModernMT/");
-        _main("-s en -t id --input /Users/davide/Desktop/en-id/original_tmx --output /Users/davide/Desktop/en-id/mmt_clean".split(" "));
-    }
-
-    public static void _main(String[] _args) throws Throwable {
         Log4jConfiguration.setup(Level.INFO);
 
         Args args = new Args(_args);
