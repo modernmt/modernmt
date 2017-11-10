@@ -20,7 +20,7 @@ import java.util.Locale;
 public class CleaningPipelineMain {
 
     public enum Filter {
-        NORMALIZE, PUNCTUATION, ODD_SENTENCES, DRAFTS, SENTENCE_LENGTH
+        NORMALIZE, PUNCTUATION, ODD_SENTENCES, DRAFTS, SENTENCE_LENGTH, VERBATIM, NUMERIC
     }
 
     private static class Args {
@@ -76,6 +76,11 @@ public class CleaningPipelineMain {
     }
 
     public static void main(String[] _args) throws Throwable {
+        System.setProperty("mmt.home", "/Users/davide/workspaces/mmt/ModernMT/");
+        _main("-s en -t id --input /Users/davide/Desktop/en-id/original_tmx --output /Users/davide/Desktop/en-id/mmt_clean".split(" "));
+    }
+
+    public static void _main(String[] _args) throws Throwable {
         Log4jConfiguration.setup(Level.INFO);
 
         Args args = new Args(_args);
@@ -109,6 +114,12 @@ public class CleaningPipelineMain {
                         break;
                     case SENTENCE_LENGTH:
                         options.filterBySentenceLength = true;
+                        break;
+                    case NUMERIC:
+                        options.filterNumericSentences = true;
+                        break;
+                    case VERBATIM:
+                        options.filterVerbatimTranslations = true;
                         break;
                 }
             }
