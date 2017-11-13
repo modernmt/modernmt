@@ -69,9 +69,6 @@ public class Translate extends ObjectAction<TranslationResponse> {
                 throw new ParameterParsingException("q", query.substring(0, 10) + "...",
                         "max query length of " + MAX_QUERY_LENGTH + " exceeded");
 
-//            Locale sourceLanguage = getLocale("source");
-//            Locale targetLanguage = getLocale("target");
-//            direction = new LanguagePair(sourceLanguage, targetLanguage);
             direction = getLanguagePair("source", "target");
             contextLimit = getInt("context_limit", 10);
             nbest = getInt("nbest", 0);

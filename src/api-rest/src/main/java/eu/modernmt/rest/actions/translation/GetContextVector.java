@@ -106,17 +106,16 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
 
             this.limit = getInt("limit", DEFAULT_LIMIT);
 
-            Set<LanguagePair> supportedLanguages = ModernMT.getNode().getEngine().getLanguages().getLanguages();
-
             Locale sourceLanguage = getLocale("source", null);
             Locale[] targetLanguages = getLocaleArray("targets", null);
 
             if (sourceLanguage == null && targetLanguages == null) {
+                Set<LanguagePair> supportedLanguages = ModernMT.getNode().getEngine().getLanguages().getLanguages();
+
                 if (supportedLanguages.size() == 1) {
                     LanguagePair engineDirection = supportedLanguages.iterator().next();
                     this.source = engineDirection.source;
-                    this.targets = new Locale[1];
-                    this.targets[0] = engineDirection.target;
+                    this.targets = new Locale[]{engineDirection.target};
                     this.backwardCompatible = true;
                 } else {
                     throw new ParameterParsingException("source");

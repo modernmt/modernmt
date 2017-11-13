@@ -64,9 +64,6 @@ public class TagsProjection extends ObjectAction<ProjectedTranslation> {
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
 
-//            Locale sourceLanguage = getLocale("source");
-//            Locale targetLanguage = getLocale("target");
-//            direction = new LanguagePair(sourceLanguage, targetLanguage);
             this.direction = getLanguagePair("source", "target");
             this.sentence = getString("text", false);
             this.translation = getString("translation", false);
