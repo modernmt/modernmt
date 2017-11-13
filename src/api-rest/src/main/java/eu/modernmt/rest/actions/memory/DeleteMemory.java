@@ -13,7 +13,7 @@ import eu.modernmt.rest.framework.routing.TemplateException;
 /**
  * Created by davide on 15/12/15.
  */
-@Route(aliases = "memories/:id", method = HttpMethod.DELETE)
+@Route(aliases = {"memories/:id", "domains/:id"}, method = HttpMethod.DELETE)
 public class DeleteMemory extends VoidAction {
 
     @Override

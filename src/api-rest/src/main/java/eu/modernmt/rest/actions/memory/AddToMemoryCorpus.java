@@ -15,14 +15,13 @@ import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
 import eu.modernmt.rest.framework.routing.TemplateException;
 
-import java.io.*;
+import java.io.File;
 import java.util.Locale;
-import java.util.zip.GZIPInputStream;
 
 /**
  * Created by davide on 15/12/15.
  */
-@Route(aliases = "memories/:id/corpus", method = HttpMethod.POST)
+@Route(aliases = {"memories/:id/corpus", "domains/:id/corpus"}, method = HttpMethod.POST)
 public class AddToMemoryCorpus extends ObjectAction<ImportJob> {
 
     @Override

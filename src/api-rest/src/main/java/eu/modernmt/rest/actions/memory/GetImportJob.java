@@ -15,7 +15,7 @@ import java.util.UUID;
 /**
  * Created by davide on 15/12/15.
  */
-@Route(aliases = "memories/imports/:id", method = HttpMethod.GET)
+@Route(aliases = {"memories/imports/:id", "domains/imports/:id"}, method = HttpMethod.GET)
 public class GetImportJob extends ObjectAction<ImportJob> {
 
     @Override

@@ -17,7 +17,7 @@ import java.util.Locale;
 /**
  * Created by davide on 15/12/15.
  */
-@Route(aliases = "memories/:id/corpus", method = HttpMethod.PUT)
+@Route(aliases = {"memories/:id/corpus", "domains/:id/corpus"}, method = HttpMethod.PUT)
 public class UpdateMemoryContribution extends ObjectAction<ImportJob> {
 
     @Override

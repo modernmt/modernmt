@@ -12,7 +12,7 @@ import eu.modernmt.rest.framework.routing.TemplateException;
 /**
  * Created by davide on 15/12/15.
  */
-@Route(aliases = "memories/:id", method = HttpMethod.PUT)
+@Route(aliases = {"memories/:id", "domains/:id"}, method = HttpMethod.PUT)
 public class UpdateMemories extends ObjectAction<Memory> {
 
     @Override
