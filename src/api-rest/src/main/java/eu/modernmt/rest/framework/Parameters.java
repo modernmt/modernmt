@@ -4,9 +4,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import eu.modernmt.facade.ModernMT;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.rest.framework.routing.RouteTemplate;
 
 import java.util.Locale;
+import java.util.Set;
 
 public class Parameters {
 
@@ -211,6 +214,32 @@ public class Parameters {
             array[i] = Locale.forLanguageTag(rawArray[i]);
 
         return array;
+    }
+
+    /**
+     * Get the language direction from the engine if the engine is multilingual, else get them from the parameters.
+     *
+     * @return
+     * @throws ParameterParsingException
+     */
+    public LanguagePair getLanguagePair(String sourceName, String targetName) throws ParameterParsingException {
+        Locale sourceLanguage = getLocale(sourceName, null);
+        Locale targetLanguage = getLocale(targetName, null);
+
+        if (sourceLanguage == null && targetLanguage == null) {
+            Set<LanguagePair> supportedLanguages = ModernMT.getNode().getEngine().getLanguages().getLanguages();
+            if (supportedLanguages.size() == 1) {
+                return supportedLanguages.iterator().next();
+            } else {
+                throw new ParameterParsingException(sourceName);
+            }
+        } else if (sourceLanguage == null) {
+            throw new ParameterParsingException(sourceName);
+        } else if (targetLanguage == null) {
+            throw new ParameterParsingException(targetName);
+        } else {
+            return new LanguagePair(sourceLanguage, targetLanguage);
+        }
     }
 
     public static class ParameterParsingException extends Exception {

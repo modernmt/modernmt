@@ -16,17 +16,39 @@ public class ContextVectorResultSerializer implements JsonSerializer<ContextVect
 
     @Override
     public JsonElement serialize(ContextVectorResult src, Type typeOfSrc, JsonSerializationContext context) {
-        JsonObject result = new JsonObject();
-        result.addProperty("source", src.source.toLanguageTag());
+        JsonElement result;
 
-        JsonObject jsonMap = new JsonObject();
-        result.add("vectors", jsonMap);
+        if (src.backwardCompatible) {
 
-        for (Map.Entry<Locale, ContextVector> entry : src.map.entrySet()) {
-            Locale target = entry.getKey();
-            jsonMap.add(target.toLanguageTag(), serialize(entry.getValue(), context));
+            JsonArray array = new JsonArray();
+
+            //if backwardCompatble is true, there is only one value in the map
+            // so you can get it as the first element of map.values
+            ContextVector vector = src.map.values().iterator().next();
+
+            for (ContextVector.Entry e : vector) {
+                JsonObject je = new JsonObject();
+                je.add("domain", context.serialize(e.memory, Memory.class));
+                je.addProperty("score", e.score);
+                array.add(je);
+            }
+            result = array;
+
+        } else {
+            JsonObject object = new JsonObject();
+            object.addProperty("source", src.source.toLanguageTag());
+
+            JsonObject jsonMap = new JsonObject();
+            object.add("vectors", jsonMap);
+
+            for (Map.Entry<Locale, ContextVector> entry : src.map.entrySet()) {
+                Locale target = entry.getKey();
+                jsonMap.add(target.toLanguageTag(), serialize(entry.getValue(), context));
+            }
+
+            result = object;
+
         }
-
         return result;
     }
 

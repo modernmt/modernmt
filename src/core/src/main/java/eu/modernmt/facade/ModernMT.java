@@ -21,7 +21,7 @@ public class ModernMT {
     private static final Logger logger = LogManager.getLogger(ModernMT.class);
     private static ClusterNode node = null;
 
-    static ClusterNode getNode() {
+    public static ClusterNode getNode() {
         if (node == null)
             throw new IllegalStateException("ModernMT node not available. You must must call start() first.");
 

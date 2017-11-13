@@ -13,8 +13,6 @@ import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
 import eu.modernmt.rest.model.ProjectedTranslation;
 
-import java.util.Locale;
-
 /**
  * Created by lucamastrostefano on 15/03/16.
  */
@@ -66,10 +64,10 @@ public class TagsProjection extends ObjectAction<ProjectedTranslation> {
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
 
-            Locale sourceLanguage = getLocale("source");
-            Locale targetLanguage = getLocale("target");
-            direction = new LanguagePair(sourceLanguage, targetLanguage);
-
+//            Locale sourceLanguage = getLocale("source");
+//            Locale targetLanguage = getLocale("target");
+//            direction = new LanguagePair(sourceLanguage, targetLanguage);
+            this.direction = getLanguagePair("source", "target");
             this.sentence = getString("text", false);
             this.translation = getString("translation", false);
             this.showDetails = getBoolean("verbose", false);

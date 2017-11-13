@@ -3,6 +3,7 @@ package eu.modernmt.rest.actions.translation;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.io.FileProxy;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.rest.actions.util.ContextUtils;
@@ -12,13 +13,11 @@ import eu.modernmt.rest.framework.routing.Route;
 import eu.modernmt.rest.model.ContextVectorResult;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.tools.ant.taskdefs.GZip;
 
 import java.io.*;
-import java.nio.charset.Charset;
 import java.util.Locale;
 import java.util.Map;
-import java.util.zip.GZIPInputStream;
+import java.util.Set;
 
 /**
  * Created by davide on 15/12/15.
@@ -77,7 +76,7 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
         }
 
         ContextUtils.resolve(contexts.values());
-        return new ContextVectorResult(params.source, contexts);
+        return new ContextVectorResult(params.source, contexts, params.backwardCompatible);
     }
 
     @Override
@@ -100,13 +99,37 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
         public final File localFile;
         public final FileParameter content;
         public final FileCompression compression;
+        public final boolean backwardCompatible;
 
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
 
             this.limit = getInt("limit", DEFAULT_LIMIT);
-            this.source = getLocale("source");
-            this.targets = getLocaleArray("targets");
+
+            Set<LanguagePair> supportedLanguages = ModernMT.getNode().getEngine().getLanguages().getLanguages();
+
+            Locale sourceLanguage = getLocale("source", null);
+            Locale[] targetLanguages = getLocaleArray("targets", null);
+
+            if (sourceLanguage == null && targetLanguages == null) {
+                if (supportedLanguages.size() == 1) {
+                    LanguagePair engineDirection = supportedLanguages.iterator().next();
+                    this.source = engineDirection.source;
+                    this.targets = new Locale[1];
+                    this.targets[0] = engineDirection.target;
+                    this.backwardCompatible = true;
+                } else {
+                    throw new ParameterParsingException("source");
+                }
+            } else if (sourceLanguage == null) {
+                throw new ParameterParsingException("source");
+            } else if (targetLanguages == null) {
+                throw new ParameterParsingException("targets");
+            } else {
+                this.source = sourceLanguage;
+                this.targets = targetLanguages;
+                this.backwardCompatible = false;
+            }
 
             FileParameter content;
             String localFile;
