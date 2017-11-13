@@ -163,7 +163,7 @@ class XLIFFTranslator(Translator):
         for job in jobs:
             _ = job.get()
 
-        print ElementTree.tostring(xliff, encoding='utf8', method='xml')
+        print ElementTree.tostring(xliff, encoding='UTF-8', method='xml')
 
     def close(self):
         Translator.close(self)
