@@ -63,13 +63,16 @@ public class Translate extends ObjectAction<TranslationResponse> {
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
 
-
             query = getString("q", true);
             if (query.length() > MAX_QUERY_LENGTH)
                 throw new ParameterParsingException("q", query.substring(0, 10) + "...",
                         "max query length of " + MAX_QUERY_LENGTH + " exceeded");
 
-            direction = getLanguagePair("source", "target");
+            LanguagePair engineDirection = ModernMT.getNode().getEngine().getLanguages().asSingleLanguagePair();
+            direction = engineDirection != null ?
+                    getLanguagePair("source", "target", engineDirection) :
+                    getLanguagePair("source", "target");
+
             contextLimit = getInt("context_limit", 10);
             nbest = getInt("nbest", 0);
             verbose = getBoolean("verbose", false);

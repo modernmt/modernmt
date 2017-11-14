@@ -64,7 +64,10 @@ public class TagsProjection extends ObjectAction<ProjectedTranslation> {
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
 
-            this.direction = getLanguagePair("source", "target");
+            LanguagePair engineDirection = ModernMT.getNode().getEngine().getLanguages().asSingleLanguagePair();
+            this.direction = engineDirection != null ?
+                    getLanguagePair("source", "target", engineDirection) :
+                    getLanguagePair("source", "target");
             this.sentence = getString("text", false);
             this.translation = getString("translation", false);
             this.showDetails = getBoolean("verbose", false);

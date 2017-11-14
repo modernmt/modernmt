@@ -17,7 +17,6 @@ import org.apache.commons.io.IOUtils;
 import java.io.*;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by davide on 15/12/15.
@@ -110,10 +109,9 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
             Locale[] targetLanguages = getLocaleArray("targets", null);
 
             if (sourceLanguage == null && targetLanguages == null) {
-                Set<LanguagePair> supportedLanguages = ModernMT.getNode().getEngine().getLanguages().getLanguages();
+                LanguagePair engineDirection = ModernMT.getNode().getEngine().getLanguages().asSingleLanguagePair();
 
-                if (supportedLanguages.size() == 1) {
-                    LanguagePair engineDirection = supportedLanguages.iterator().next();
+                if (engineDirection != null) {
                     this.source = engineDirection.source;
                     this.targets = new Locale[]{engineDirection.target};
                     this.backwardCompatible = true;
