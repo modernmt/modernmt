@@ -39,6 +39,9 @@ public class MultilingualCorpusMask extends BaseMultilingualCorpus implements Mu
                 while ((pair = reader.read()) != null) {
                     pair.language = languages.map(pair.language);
 
+                    if (pair.language == null)
+                        continue;
+
                     if (languages.isSupported(pair.language))
                         return pair;
 

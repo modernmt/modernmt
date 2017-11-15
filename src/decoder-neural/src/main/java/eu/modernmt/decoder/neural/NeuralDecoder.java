@@ -10,6 +10,7 @@ import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.decoder.neural.memory.TranslationMemory;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.io.FileConst;
+import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
@@ -106,6 +107,25 @@ public class NeuralDecoder implements Decoder, DecoderWithNBest, DataListenerPro
                 translation = executor.execute(direction, text, suggestions, nbestListSize);
             else
                 translation = executor.execute(direction, text, nbestListSize);
+
+            if (logger.isTraceEnabled()) {
+                String sourceText = TokensOutputStream.serialize(text, false, true);
+                String targetText = TokensOutputStream.serialize(translation, false, true);
+
+                StringBuilder log = new StringBuilder("Translation received from neural decoder:\n" +
+                        "   sentence = " + sourceText + "\n" +
+                        "   translation = " + targetText + "\n" +
+                        "   suggestions = [\n");
+
+                if (suggestions != null && suggestions.length > 0) {
+                    for (ScoreEntry entry : suggestions)
+                        log.append("      ").append(entry).append('\n');
+                }
+
+                log.append("   ]");
+
+                logger.trace(log);
+            }
         } else {
             translation = Translation.emptyTranslation(text);
         }

@@ -1,5 +1,7 @@
 package eu.modernmt.decoder.neural.memory;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.Arrays;
 
 /**
@@ -50,8 +52,8 @@ public class ScoreEntry implements Comparable<ScoreEntry> {
     public String toString() {
         return "ScoreEntry{" +
                 "memory=" + memory +
-                ", sentence=" + Arrays.toString(sentence) +
-                ", translation=" + Arrays.toString(translation) +
+                ", sentence=" + StringUtils.join(sentence, ' ') +
+                ", translation=" + StringUtils.join(translation, ' ') +
                 ", score=" + score +
                 '}';
     }
