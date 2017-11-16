@@ -53,7 +53,7 @@ class NMTEngineTrainer:
         def __init__(self):
             self.log_level = logging.INFO
 
-            self.bpe_symbols = 90000
+            self.bpe_symbols = 32000
             self.max_vocab_size = None  # Unlimited
 
             self.batch_size = 64
