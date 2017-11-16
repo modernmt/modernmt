@@ -132,6 +132,7 @@ class BatchTranslator(Translator):
 class XLIFFTranslator(Translator):
 
     DEFAULT_NAMESPACE = 'urn:oasis:names:tc:xliff:document:1.2'
+    SDL_NAMESPACE = 'http://sdl.com/FileTypes/SdlXliff/1.0'
 
     def __init__(self, node, context_string=None, context_file=None, context_vector=None):
         Translator.__init__(self, node, context_string, context_file, context_vector)
@@ -139,12 +140,16 @@ class XLIFFTranslator(Translator):
         self._pool = multithread.Pool(100)
 
         ElementTree.register_namespace('', self.DEFAULT_NAMESPACE)
-        ElementTree.register_namespace('sdl', 'http://sdl.com/FileTypes/SdlXliff/1.0')
+        ElementTree.register_namespace('sdl', self.SDL_NAMESPACE)
 
     def execute(self, line):
         self._content.append(line)
 
     def _translate_transunit(self, tu, _=None):
+
+        # if there is a sdl match to 
+        if self._has_sdl_match(tu):
+            return None
 
         source_tag = tu.find('{' + self.DEFAULT_NAMESPACE+ '}source')
         seg_source_tag = tu.find('{' + self.DEFAULT_NAMESPACE + '}seg-source')
@@ -186,6 +191,11 @@ class XLIFFTranslator(Translator):
 
         return None
 
+    # This method checks if the passed trans-unit has an SDL match content and must therefore be skipped
+    def _has_sdl_match(self, tu):
+        match = tu.find('.//{' + self.SDL_NAMESPACE + '}seg[@percent="100"]')
+        return True if match is not None else False
+
     # This method takes an ElementTree element and gets its content (text + subelements) as a string
     def _get_string_content_of(self, element):
         s = element.text or ""
@@ -208,7 +218,7 @@ class XLIFFTranslator(Translator):
         xliff = ElementTree.fromstring('\n'.join(self._content))
         jobs = []
 
-        for tu in xliff.findall('.//{urn:oasis:names:tc:xliff:document:1.2}trans-unit'):
+        for tu in xliff.findall('.//{' + self.DEFAULT_NAMESPACE + '}trans-unit'):
             job = self._pool.apply_async(self._translate_transunit, (tu, None))
             jobs.append(job)
 
