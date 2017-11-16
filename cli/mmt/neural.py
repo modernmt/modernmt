@@ -244,7 +244,7 @@ class NMTDecoder:
 
 
 class NeuralEngine(Engine):
-    def __init__(self, name, source_lang, target_lang, bpe_symbols=90000, max_vocab_size=None, gpus=None):
+    def __init__(self, name, source_lang, target_lang, bpe_symbols, max_vocab_size=None, gpus=None):
         Engine.__init__(self, name, source_lang, target_lang)
         torch_setup(gpus=gpus, random_seed=3435)
 

@@ -99,7 +99,7 @@ def main_create(argv):
 
     nmt_arguments.add_argument('--bpe-symbols', dest='bpe_symbols', type=int,
                                help='if neural is set, this is the number of symbols of the BPE encoder '
-                                    '(default value is 90000).', default=90000)
+                                    '(default value is 32000).', default=32000)
     nmt_arguments.add_argument('--max-vocabulary-size', dest='max_vocab_size', type=int,
                                help='if neural is set, this is the maximum size of the vocabulary '
                                     '(default value is unbound).', default=None)
