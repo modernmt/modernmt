@@ -47,9 +47,13 @@ public class LuceneUtils {
     }
 
     public static Map<String, Float> getTermFrequencies(IndexReader reader, int docId, String fieldName) throws IOException {
-        Terms vector = reader.getTermVector(docId, fieldName);
-        TermsEnum termsEnum = vector.iterator(null);
         HashMap<String, Float> frequencies = new HashMap<>();
+
+        Terms vector = reader.getTermVector(docId, fieldName);
+        if (vector == null)
+            return frequencies;
+
+        TermsEnum termsEnum = vector.iterator(null);
 
         BytesRef text;
         while ((text = termsEnum.next()) != null) {
