@@ -52,14 +52,6 @@ public class FilteredMultilingualCorpus extends BaseMultilingualCorpus implement
 
                     for (MultilingualCorpusFilter filter : filters) {
                         if (!filter.accept(next, index)) {
-                            String cls = filter.getClass().getSimpleName();
-//                            if (!"DraftFilter".equals(cls)) {
-//
-//                            }
-
-                            if ("VerbatimTranslationFilter".equals(cls))
-                                System.err.println(filter.getClass().getSimpleName() + ": " + next);
-
                             accept = false;
                             break;
                         }
