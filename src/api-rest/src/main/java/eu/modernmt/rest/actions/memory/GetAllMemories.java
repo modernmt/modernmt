@@ -14,7 +14,7 @@ import java.util.Collection;
 /**
  * Created by davide on 15/12/15.
  */
-@Route(aliases = "memories", method = HttpMethod.GET)
+@Route(aliases = {"memories", "domains"}, method = HttpMethod.GET)
 public class GetAllMemories extends CollectionAction<Memory> {
 
     @Override

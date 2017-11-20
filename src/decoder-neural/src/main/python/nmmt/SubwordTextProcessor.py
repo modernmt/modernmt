@@ -423,8 +423,7 @@ class SubwordTextProcessor:
         return indexes
 
     class Builder:
-        def __init__(self, symbols=90000, max_vocabulary_size=None, min_frequency=2,
-                     similarity_threshold=.5, separator='@@'):
+        def __init__(self, symbols, max_vocabulary_size=None, min_frequency=2, similarity_threshold=.5, separator='@@'):
             self._symbols = symbols
             self._max_vocabulary_size = max_vocabulary_size
             self._min_frequency = min_frequency

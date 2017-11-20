@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.rest.framework.routing.RouteTemplate;
 
 import java.util.Locale;
@@ -212,6 +213,45 @@ public class Parameters {
 
         return array;
     }
+
+    /**
+     * Get the language pair from the request parameter using the passed source and target language parameter names.
+     * <p>
+     * If neither the source language parameter nor the target language parameter are passed, return a default LanguagePair.
+     *
+     * @param sourceName the name of the source language field to parse
+     * @param targetName the name of the target language field to parse
+     * @param def        the default LanguagePair to return if neither sourceName nor targetName can be parsed from the request
+     * @return language pair build from the values of parameters sourceName and targetName, if they are passed, or the default LanguagePair otherwise.
+     * @throws ParameterParsingException
+     */
+    public LanguagePair getLanguagePair(String sourceName, String targetName, LanguagePair def) throws ParameterParsingException {
+        Locale sourceLanguage = getLocale(sourceName, null);
+        Locale targetLanguage = getLocale(targetName, null);
+
+        if (sourceLanguage == null && targetLanguage == null) {
+            return def;
+        } else if (sourceLanguage == null) {
+            throw new ParameterParsingException(sourceName);
+        } else if (targetLanguage == null) {
+            throw new ParameterParsingException(targetName);
+        } else {
+            return new LanguagePair(sourceLanguage, targetLanguage);
+        }
+    }
+
+    /**
+     * Get the language pair from the request parameter using the passed source and target language parameter names.
+     *
+     * @param sourceName the name of the source language field to parse
+     * @param targetName the name of the target language field to parse
+     * @return language pair build from the values of parameters sourceName and targetName
+     * @throws ParameterParsingException if the parameter with name sourceName and/or the parameter with name targetName can not be found in the request
+     */
+    public LanguagePair getLanguagePair(String sourceName, String targetName) throws ParameterParsingException {
+        return new LanguagePair(getLocale(sourceName), getLocale(targetName));
+    }
+
 
     public static class ParameterParsingException extends Exception {
 

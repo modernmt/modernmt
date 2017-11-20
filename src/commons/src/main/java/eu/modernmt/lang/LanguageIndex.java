@@ -91,6 +91,16 @@ public class LanguageIndex implements Iterable<LanguagePair> {
         }
     }
 
+    /**
+     * If this LanguageIndex only supports one LanguagePair, this method returns it.
+     * Else, it returns null.
+     *
+     * @return the language pair, if only one is supported; null otherwise
+     */
+    public LanguagePair asSingleLanguagePair() {
+        return languages.size() == 1 ? languages.iterator().next() : null;
+    }
+
     @Override
     public Iterator<LanguagePair> iterator() {
         return languages.iterator();

@@ -50,13 +50,13 @@ public abstract class Engine implements Closeable, DataListenerProvider {
         return new File(FileConst.getEngineRoot(engine), ENGINE_CONFIG_PATH);
     }
 
+    protected final String name;
+    protected final LanguageIndex languages;
+
     protected final File root;
     protected final File runtime;
     protected final File models;
     protected final File logs;
-
-    protected final String name;
-    protected final LanguageIndex languages;
 
     protected final Aligner aligner;
     protected final Preprocessor preprocessor;
@@ -72,6 +72,21 @@ public abstract class Engine implements Closeable, DataListenerProvider {
             return new PhraseBasedEngine(config);
         else
             throw new BootstrapException("Missing engine type (neural|phrase-based)");
+    }
+
+    protected Engine(String name, LanguageIndex languages) {
+        this.name = name;
+        this.languages = languages;
+
+        this.root = null;
+        this.runtime = null;
+        this.models = null;
+        this.logs = null;
+
+        this.aligner = null;
+        this.preprocessor = null;
+        this.postprocessor = null;
+        this.contextAnalyzer = null;
     }
 
     protected Engine(EngineConfig config) throws BootstrapException {

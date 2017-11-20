@@ -14,8 +14,6 @@ import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
 import eu.modernmt.rest.model.TranslationResponse;
 
-import java.util.Locale;
-
 /**
  * Created by davide on 17/12/15.
  */
@@ -39,6 +37,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
         } else {
             result.translation = ModernMT.translation.get(params.direction, params.query, params.nbest);
         }
+
 
         if (result.context != null)
             ContextUtils.resolve(result.context);
@@ -69,9 +68,10 @@ public class Translate extends ObjectAction<TranslationResponse> {
                 throw new ParameterParsingException("q", query.substring(0, 10) + "...",
                         "max query length of " + MAX_QUERY_LENGTH + " exceeded");
 
-            Locale sourceLanguage = getLocale("source");
-            Locale targetLanguage = getLocale("target");
-            direction = new LanguagePair(sourceLanguage, targetLanguage);
+            LanguagePair engineDirection = ModernMT.getNode().getEngine().getLanguages().asSingleLanguagePair();
+            direction = engineDirection != null ?
+                    getLanguagePair("source", "target", engineDirection) :
+                    getLanguagePair("source", "target");
 
             contextLimit = getInt("context_limit", 10);
             nbest = getInt("nbest", 0);

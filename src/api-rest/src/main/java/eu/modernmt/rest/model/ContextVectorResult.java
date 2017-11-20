@@ -12,10 +12,12 @@ public class ContextVectorResult {
 
     public final Locale source;
     public final Map<Locale, ContextVector> map;
+    public final boolean backwardCompatible;
 
-    public ContextVectorResult(Locale source, Map<Locale, ContextVector> map) {
+    public ContextVectorResult(Locale source, Map<Locale, ContextVector> map, boolean backwardCompatible) {
         this.map = map;
         this.source = source;
+        this.backwardCompatible = backwardCompatible;
     }
 
 }

@@ -13,7 +13,7 @@ import eu.modernmt.rest.framework.routing.TemplateException;
 /**
  * Created by davide on 15/12/15.
  */
-@Route(aliases = "memories", method = HttpMethod.POST)
+@Route(aliases = {"memories", "domains"}, method = HttpMethod.POST)
 public class CreateMemory extends ObjectAction<Memory> {
 
     @Override

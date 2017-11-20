@@ -167,7 +167,7 @@ class Engine(object):
 
         if engine_type == 'neural':
             from cli.mmt.neural import NeuralEngine
-            return NeuralEngine(name, source_lang, target_lang)
+            return NeuralEngine(name, source_lang, target_lang, bpe_symbols=None)
         else:
             from cli.mmt.phrasebased import PhraseBasedEngine
             return PhraseBasedEngine(name, source_lang, target_lang)
