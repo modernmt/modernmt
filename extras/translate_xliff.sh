@@ -6,10 +6,12 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
 from cli.libs import shell
 
+
 class IllegalArgumentException(Exception):
     def __init__(self, error):
         super(Exception, self).__init__(error)
         self.message = error
+
 
 def main():
     # Set unbuffered stdout
@@ -17,10 +19,10 @@ def main():
     sys.stdout = unbuffered
 
     parser = argparse.ArgumentParser(description="Translate all files in the passed folder")
-    parser.add_argument('input_folder1', metavar='INPUT', help='the xliff file file to translate, or the folder containing the xliff files to translate')
-    parser.add_argument('input', metavar='INPUT', help='the xliff file file to translate, or the folder containing the xliff files to translate')
+    parser.prog = 'translate_xliff.sh'
+    parser.add_argument('input', metavar='INPUT', help='the xliff file to translate, or the folder containing the xliff files to translate')
 
-    args = parser.parse_args(sys.argv)
+    args = parser.parse_args(sys.argv[1:])
 
     if os.path.isfile(os.path.abspath(args.input)):
         input_file = os.path.abspath(args.input)
@@ -30,7 +32,6 @@ def main():
 
         output_file = "/".join(input_file.split('/')[:-1]) + "/" + "out_" + input_file.split('/')[-1]
         translate_xliff_file(input_file, output_file)
-
 
     elif os.path.isdir(os.path.abspath(args.input)):
         input_folder = os.path.abspath(args.input)
