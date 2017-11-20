@@ -79,7 +79,7 @@ public interface MultilingualCorpus {
 
         @Override
         public String toString() {
-            return '[' + language.toString() + "]<" + source + ',' + target + '>';
+            return '[' + language.toString() + "]<" + source + " ||| " + target + '>';
         }
     }
 }

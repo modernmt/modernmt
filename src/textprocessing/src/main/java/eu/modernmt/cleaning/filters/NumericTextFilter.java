@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
  */
 public class NumericTextFilter implements MultilingualCorpusFilter {
 
-    private static final Pattern REGEX = Pattern.compile("[\\p{Punct}0-9\\s]+");
+    private static final Pattern REGEX = Pattern.compile("[0-9\\s]+");
 
     @Override
     public FilterInitializer getInitializer() {
