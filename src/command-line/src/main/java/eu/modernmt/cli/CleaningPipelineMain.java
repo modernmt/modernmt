@@ -20,7 +20,7 @@ import java.util.Locale;
 public class CleaningPipelineMain {
 
     public enum Filter {
-        NORMALIZE, PUNCTUATION, ODD_SENTENCES, DRAFTS, SENTENCE_LENGTH
+        NORMALIZE, PUNCTUATION, ODD_SENTENCES, DRAFTS, SENTENCE_LENGTH, VERBATIM, NUMERIC
     }
 
     private static class Args {
@@ -109,6 +109,12 @@ public class CleaningPipelineMain {
                         break;
                     case SENTENCE_LENGTH:
                         options.filterBySentenceLength = true;
+                        break;
+                    case NUMERIC:
+                        options.filterNumericSentences = true;
+                        break;
+                    case VERBATIM:
+                        options.filterVerbatimTranslations = true;
                         break;
                 }
             }

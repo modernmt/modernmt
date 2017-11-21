@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 class Vocabulary {
 
     public static final int MIN_CORPUS_LINES = 500;
-    public static final int MIN_SENTENCE_LENGTH = 20;
+    public static final int MIN_SENTENCE_LENGTH = 30;
 
     static class Builder {
 
@@ -28,6 +28,9 @@ class Vocabulary {
 
         private static void add(String line, HashMap<String, Counter> vocabulary) {
             line = normalize(line);
+
+            if (line.length() < MIN_SENTENCE_LENGTH)
+                return;
 
             for (String token : tokenize(line))
                 vocabulary.computeIfAbsent(token, key -> new Counter()).count++;
@@ -101,7 +104,7 @@ class Vocabulary {
 
     private static String normalize(String line) {
         line = line.toLowerCase();
-        line = SKIP_CHARS_REGEX.matcher(line).replaceAll(" ");
+        line = SKIP_CHARS_REGEX.matcher(line).replaceAll("");
         line = DIGITS_REGEX.matcher(line).replaceAll("0");
         return line;
     }

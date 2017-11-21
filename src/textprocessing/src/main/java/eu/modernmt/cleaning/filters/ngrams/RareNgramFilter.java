@@ -35,7 +35,7 @@ public class RareNgramFilter implements MultilingualCorpusFilter {
             @Override
             public void onEnd() {
                 for (Map.Entry<LanguagePair, Vocabulary.Builder> entry : vocabs.entrySet()) {
-                    Vocabulary vocabulary = entry.getValue().build(0.95);
+                    Vocabulary vocabulary = entry.getValue().build(0.9);
                     ngrams.put(entry.getKey(), vocabulary);
                 }
             }
@@ -46,7 +46,7 @@ public class RareNgramFilter implements MultilingualCorpusFilter {
     @Override
     public boolean accept(MultilingualCorpus.StringPair pair, int index) throws IOException {
         Vocabulary vocabulary = ngrams.get(pair.language);
-        return vocabulary.accept(pair, .1);
+        return vocabulary.accept(pair, .3);
     }
 
     @Override
