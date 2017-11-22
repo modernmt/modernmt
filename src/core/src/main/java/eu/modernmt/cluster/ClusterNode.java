@@ -4,6 +4,10 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.*;
+import com.hazelcast.instance.HazelcastInstanceImpl;
+import com.hazelcast.instance.HazelcastInstanceProxy;
+import com.hazelcast.instance.Node;
+import eu.modernmt.TranslationCallable;
 import eu.modernmt.cluster.db.DatabaseLoader;
 import eu.modernmt.cluster.db.EmbeddedCassandra;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
@@ -18,13 +22,17 @@ import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.decoder.DecoderWithFeatures;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
+import eu.modernmt.facade.ModernMT;
+import eu.modernmt.facade.TranslationFacade;
+import eu.modernmt.facade.exceptions.TranslationException;
 import eu.modernmt.hw.NetworkUtils;
 import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.model.Translation;
 import eu.modernmt.persistence.Database;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import java.io.Closeable;
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -480,6 +488,114 @@ public class ClusterNode {
         }
     }
 
+    public Translation runTranslation(TranslationFacade.TranslationTask translationTask) throws TranslationException {
+        Member member = getRandomMember();
+        TranslationOperation operation = new TranslationOperation(translationTask);
+        Future<Translation> future = this.executor.submitToMember(operation, member);
+
+
+        /*
+        NodeEngine thisNodeEngine = this.getNode().getNodeEngine();
+        OperationService thisOperationService = thisNodeEngine.getOperationService();
+        Address target =  getRandomMember().getAddress();
+        String uuid = newUnsecureUuidString();
+
+        TranslationOperation operation = new TranslationOperation(translationTask);
+        ICompletableFuture<Translation> future = thisOperationService.invokeOnTarget("don'tcare", operation, target);
+        */
+        // response
+        try {
+            return future.get();
+        } catch (Exception e) {
+            throw new TranslationException(e);
+        }
+    }
+
+    public Translation runTranslation(TranslationFacade.TranslationTask translationTask, LanguagePair languagePair) throws TranslationException {
+        Member member = getRandomMember(languagePair);
+        TranslationOperation operation = new TranslationOperation(translationTask);
+        Future<Translation> future = this.executor.submitToMember(operation, member);
+
+        try {
+            return future.get();
+        } catch (Exception e) {
+            throw new TranslationException(e);
+        }
+
+        /*
+        NodeEngine thisNodeEngine = this.getNode().getNodeEngine();
+        OperationService thisOperationService = thisNodeEngine.getOperationService();
+
+        Address target =  getRandomMember(languagePair).getAddress();
+        String uuid = newUnsecureUuidString();
+
+        TranslationOperation operation = new TranslationOperation(translationTask);
+        InternalCompletableFuture<Translation> future = thisOperationService.invokeOnTarget(DistributedExecutorService.SERVICE_NAME, operation, target);
+        if (sync) {
+            try {
+                return future.get();
+            } catch (Exception e) {
+                throw new TranslationException(e);
+            }
+        }
+
+        if (future == null)
+            return this.runTranslation(translationTask);
+            */
+    }
+
+    /** This utility method gets the Node for this cluster node.
+     * @return the Node object in this cluster node
+     */
+    private Node getNode() {
+        HazelcastInstanceImpl hazelcastImpl = getHazelcastInstanceImpl();
+        return hazelcastImpl.node;
+    }
+
+    /** This utility method gets the HazelcastInstance implementation for this cluster node.
+     * @return the Node object in this cluster node
+     */
+    private HazelcastInstanceImpl getHazelcastInstanceImpl() {
+        /* If the hazelcast instance that this clusterNode refers to is a proxy, this method gets the original one.
+         * Else, it just returns the downcasted hazelcast instance in this cluster node.
+         * It is also possible that other hazelcastInstance implementations are used - in this case throw an exception*/
+        if (this.hazelcast instanceof HazelcastInstanceProxy)
+            return ((HazelcastInstanceProxy) hazelcast).getOriginal();
+        else if (hazelcast instanceof HazelcastInstanceImpl)
+            return (HazelcastInstanceImpl) hazelcast;
+        else
+            throw new UnsupportedOperationException("This HazelcastInstance type is not supported. Can not get its HazelcastInstanceImpl.");
+    }
+
+    /**
+     * This private method gets a random Member of the mmt cluster that this node is part of too
+     * @return the obtained Member
+     */
+    private Member getRandomMember() {
+        Member[] members = (Member[])hazelcast.getCluster().getMembers().toArray();
+        int randomIndex = new Random().nextInt(members.length);
+        return members[randomIndex];
+    }
+
+    /**
+     * This private method gets a random Member of the mmt cluster that this node is part of too,
+     * after making sure that it supports a specific language direction
+     * @param languagePair the language direction that the Member to retrieve must support
+     * @return the obtained Member
+     */
+    private Member getRandomMember(LanguagePair languagePair) {
+        Set<Member> allMembers = hazelcast.getCluster().getMembers();
+        ArrayList<Member> candidates = new ArrayList<>();
+
+        for(Member member : allMembers)
+            if (NodeInfo.hasTranslationDirection(member, languagePair))
+                candidates.add(member);
+
+        int randomIndex = new Random().nextInt(candidates.size());
+        return candidates.get(randomIndex);
+    }
+
+
     public synchronized void shutdown() {
         if (setStatus(Status.SHUTDOWN, Status.READY))
             shutdownThread.start();
@@ -505,4 +621,59 @@ public class ClusterNode {
         }
 
     }
+
+    /**this is a Hazelcast operation */
+    private static class TranslationOperation implements Callable<Translation>, Serializable {
+        TranslationFacade.TranslationTask task;
+
+        public TranslationOperation(TranslationFacade.TranslationTask task) {
+            this.task = task;
+        }
+
+        @Override
+        public Translation call() throws Exception {
+            TranslationCallable innerCallable = new TranslationCallable(task.priority, task.direction, task.text, task.context, task.nbest);
+            Future<Translation> f = ModernMT.getNode().getEngine().runTranslation(innerCallable);
+            try {
+               return f.get();
+            } catch (RejectedExecutionException e) {
+                throw new TranslationException("The translation request was rejected", e);
+            } catch (ExecutionException e) {
+                throw new TranslationException("Internal error while requesting translation", e);
+            } catch (InterruptedException e) {
+                throw new TranslationException("Internal interruption error while requesting translation", e);
+            }
+        }
+    }
+
+
+//    /**this is a Hazelcast operation */
+//    private static class TranslationOperation extends Operation {
+//        TranslationFacade.TranslationTask task;
+//        Translation response;
+//
+//        public TranslationOperation(TranslationFacade.TranslationTask task) {
+//            this.task = task;
+//        }
+//
+//        @Override
+//        public void run() throws TranslationException {
+//            TranslationCallable callable = new TranslationCallable(task.priority, task.direction, task.text, task.context, task.nbest);
+//            Future<Translation> f = ModernMT.getNode().getEngine().runTranslation(callable);
+//            try {
+//                this.response = f.get();
+//            } catch (RejectedExecutionException e) {
+//                throw new TranslationException("The translation request was rejected", e);
+//            } catch (ExecutionException e) {
+//                throw new TranslationException("Internal error while requesting translation", e);
+//            } catch (InterruptedException e) {
+//                throw new TranslationException("Internal interruption error while requesting translation", e);
+//            }
+//        }
+//
+//        @Override
+//        public Object getResponse() {
+//            return this.response;
+//        }
+//    }
 }

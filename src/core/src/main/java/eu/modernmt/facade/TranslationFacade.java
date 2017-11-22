@@ -1,31 +1,27 @@
 package eu.modernmt.facade;
 
-import eu.modernmt.aligner.Aligner;
-import eu.modernmt.aligner.AlignerException;
+import eu.modernmt.Priority;
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.error.SystemShutdownException;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.decoder.*;
+import eu.modernmt.decoder.Decoder;
+import eu.modernmt.decoder.DecoderFeature;
+import eu.modernmt.decoder.DecoderWithFeatures;
+import eu.modernmt.decoder.DecoderWithNBest;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.facade.exceptions.TranslationException;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
-import eu.modernmt.model.Alignment;
 import eu.modernmt.model.ContextVector;
-import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
-import eu.modernmt.processing.Postprocessor;
-import eu.modernmt.processing.Preprocessor;
-import eu.modernmt.processing.ProcessingException;
 
 import java.io.File;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 /**
  * Created by davide on 31/01/17.
@@ -67,40 +63,29 @@ public class TranslationFacade {
     // =============================
 
     public Translation get(LanguagePair direction, String sentence) throws TranslationException {
-        return get(new TranslateOperation(direction, sentence, null, 0));
+        return get(new TranslationTask(direction, sentence, null, 0));
     }
 
     public Translation get(LanguagePair direction, String sentence, ContextVector translationContext) throws TranslationException {
-        return get(new TranslateOperation(direction, sentence, translationContext, 0));
+        return get(new TranslationTask(direction, sentence, translationContext, 0));
     }
 
     public Translation get(LanguagePair direction, String sentence, int nbest) throws TranslationException {
-        return get(new TranslateOperation(direction, sentence, null, nbest));
+        return get(new TranslationTask(direction, sentence, null, nbest));
     }
 
     public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, int nbest) throws TranslationException {
-        return get(new TranslateOperation(direction, sentence, translationContext, nbest));
+        return get(new TranslationTask(direction, sentence, translationContext, nbest));
     }
 
-    private Translation get(TranslateOperation operation) throws TranslationException {
-        ensureLanguagePairIsSupported(operation.direction);
+    private Translation get(TranslationTask task) throws TranslationException {
+        ensureLanguagePairIsSupported(task.direction);
 
-        if (operation.nbest > 0)
+        if (task.nbest > 0)
             ensureDecoderSupportsNBest();
 
-        try {
-            ClusterNode node = ModernMT.getNode();
-
-            Future<Translation> future = node.submit(operation, operation.direction);
-            if (future == null)
-                future = node.submit(operation);
-
-            return future.get();
-        } catch (InterruptedException e) {
-            throw new SystemShutdownException(e);
-        } catch (ExecutionException e) {
-            throw unwrapException(TranslationException.class, e);
-        }
+        ClusterNode node = ModernMT.getNode();
+        return node.runTranslation(task, task.direction);
     }
 
     // =============================
@@ -250,82 +235,24 @@ public class TranslationFacade {
         }
     }
 
-    private static class TranslateOperation implements Callable<Translation>, Serializable {
-
+    public static class TranslationTask implements Serializable{
         public final LanguagePair direction;
         public final String text;
         public final ContextVector context;
         public final int nbest;
+        public final int priority;
+        public Translation response;
 
-        public TranslateOperation(LanguagePair direction, String text, ContextVector context, int nbest) {
+        public TranslationTask(LanguagePair direction, String text, ContextVector context, int nbest, int priority) {
             this.direction = direction;
             this.text = text;
             this.context = context;
             this.nbest = nbest;
+            this.priority = priority;
         }
 
-        @Override
-        public Translation call() throws TranslationException {
-            ClusterNode node = ModernMT.getNode();
-
-            Engine engine = node.getEngine();
-            Decoder decoder = engine.getDecoder();
-            Preprocessor preprocessor = engine.getPreprocessor();
-            Postprocessor postprocessor = engine.getPostprocessor();
-
-            try {
-                Sentence sentence = preprocessor.process(direction, text);
-
-                Translation translation;
-
-                if (nbest > 0) {
-                    DecoderWithNBest nBestDecoder = (DecoderWithNBest) decoder;
-                    translation = nBestDecoder.translate(direction, sentence, context, nbest);
-                } else {
-                    translation = decoder.translate(direction, sentence, context);
-                }
-
-                // Translation
-                if (!translation.hasAlignment()) {
-                    Aligner aligner = engine.getAligner();
-                    Alignment alignment = aligner.getAlignment(direction, sentence, translation);
-
-                    translation.setWordAlignment(alignment);
-                }
-
-                postprocessor.process(direction, translation);
-
-                // NBest list
-                if (translation.hasNbest()) {
-                    List<Translation> hypotheses = translation.getNbest();
-
-                    if (!hypotheses.get(0).hasAlignment()) {
-                        ArrayList<Sentence> sources = new ArrayList<>(hypotheses.size());
-                        for (int i = 0; i < hypotheses.size(); i++)
-                            sources.add(sentence);
-
-                        Aligner aligner = engine.getAligner();
-                        Alignment[] alignments = aligner.getAlignments(direction, sources, hypotheses);
-
-                        int i = 0;
-                        for (Translation hypothesis : hypotheses) {
-                            hypothesis.setWordAlignment(alignments[i]);
-                            i++;
-                        }
-                    }
-
-                    postprocessor.process(direction, hypotheses);
-                }
-
-                return translation;
-            } catch (ProcessingException e) {
-                throw new TranslationException("Problem while processing translation", e);
-            } catch (AlignerException e) {
-                throw new TranslationException("Problem while aligning source sentence to its translation", e);
-            } catch (DecoderException e) {
-                throw new TranslationException("Problem while decoding source sentence", e);
-            }
+        public TranslationTask(LanguagePair direction, String text, ContextVector context, int nbest) {
+            this(direction, text, context, nbest, Priority.NORMAL);
         }
     }
-
 }
