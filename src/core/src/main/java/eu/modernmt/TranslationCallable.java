@@ -39,7 +39,6 @@ public class TranslationCallable extends PriorityCallable<Translation> {
     @Override
     public Translation call() throws Exception {
         ClusterNode node = ModernMT.getNode();
-
         Engine engine = node.getEngine();
         Decoder decoder = engine.getDecoder();
         Preprocessor preprocessor = engine.getPreprocessor();

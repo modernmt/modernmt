@@ -1,5 +1,6 @@
 package eu.modernmt.rest.actions.translation;
 
+import eu.modernmt.Priority;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.facade.exceptions.TranslationException;
@@ -30,12 +31,12 @@ public class Translate extends ObjectAction<TranslationResponse> {
         result.verbose = params.verbose;
 
         if (params.context != null) {
-            result.translation = ModernMT.translation.get(params.direction, params.query, params.context, params.nbest);
+            result.translation = ModernMT.translation.get(params.direction, params.query, params.context, params.nbest, params.priority);
         } else if (params.contextString != null) {
             result.context = ModernMT.translation.getContextVector(params.direction, params.contextString, params.contextLimit);
-            result.translation = ModernMT.translation.get(params.direction, params.query, result.context, params.nbest);
+            result.translation = ModernMT.translation.get(params.direction, params.query, result.context, params.nbest, params.priority);
         } else {
-            result.translation = ModernMT.translation.get(params.direction, params.query, params.nbest);
+            result.translation = ModernMT.translation.get(params.direction, params.query, params.nbest, params.priority);
         }
 
 
@@ -58,6 +59,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
         public final String contextString;
         public final int contextLimit;
         public final int nbest;
+        public final int priority;
         public final boolean verbose;
 
         public Params(RESTRequest req) throws ParameterParsingException {
@@ -75,6 +77,23 @@ public class Translate extends ObjectAction<TranslationResponse> {
 
             contextLimit = getInt("context_limit", 10);
             nbest = getInt("nbest", 0);
+
+            switch (getString("priority", true, "normal")) {
+                case("normal"):
+                    priority = Priority.NORMAL;
+                    break;
+                case("high"):
+                    priority = Priority.HIGH;
+                    break;
+                case("low"):
+                    priority = Priority.LOW;
+                    break;
+                default:
+                    priority = Priority.NORMAL;
+                    break;
+            }
+
+
             verbose = getBoolean("verbose", false);
 
             String weights = getString("context_vector", false, null);

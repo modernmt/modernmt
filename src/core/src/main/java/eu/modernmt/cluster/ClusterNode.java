@@ -488,11 +488,19 @@ public class ClusterNode {
         }
     }
 
-    public Translation runTranslation(TranslationFacade.TranslationTask translationTask) throws TranslationException {
+    /**
+     * This method dispatches the Translation job to perform to a random node of the cluster and returns its result.
+     *
+     * This method works synchronously, meaning that it waits for the translation job to finish before returning.
+     *
+     * @param translationTask the translationTask with all the information on the translation job to execute
+     * @return the resulting Translation object.
+     * @throws TranslationException
+     */
+    public Translation execute(TranslationFacade.TranslationTask translationTask) throws TranslationException {
         Member member = getRandomMember();
         TranslationOperation operation = new TranslationOperation(translationTask);
         Future<Translation> future = this.executor.submitToMember(operation, member);
-
 
         /*
         NodeEngine thisNodeEngine = this.getNode().getNodeEngine();
@@ -511,9 +519,24 @@ public class ClusterNode {
         }
     }
 
-    public Translation runTranslation(TranslationFacade.TranslationTask translationTask, LanguagePair languagePair) throws TranslationException {
+    /**
+     * This method dispatches the Translation job to perform
+     * to a random node of the cluster that supports the passed language pair, and returns its result.
+     * If no node in the cluster supports the passed language pair, this method returns null immediately.
+     *
+     * This method works synchronously, meaning that it waits for the translation job to finish before returning.
+     *
+     * @param translationTask the translationTask with all the information on the translation job to execute
+     * @param languagePair the language direction that the node that will execute this job must support
+     * @return the resulting Translation object, or null if no nodes support the passed language pair.
+     * @throws TranslationException
+     */
+    public Translation execute(TranslationFacade.TranslationTask translationTask, LanguagePair languagePair) throws TranslationException {
         Member member = getRandomMember(languagePair);
+        if (member == null)
+            return null;
         TranslationOperation operation = new TranslationOperation(translationTask);
+
         Future<Translation> future = this.executor.submitToMember(operation, member);
 
         try {
@@ -540,7 +563,7 @@ public class ClusterNode {
         }
 
         if (future == null)
-            return this.runTranslation(translationTask);
+            return this.execute(translationTask);
             */
     }
 
@@ -581,7 +604,7 @@ public class ClusterNode {
      * This private method gets a random Member of the mmt cluster that this node is part of too,
      * after making sure that it supports a specific language direction
      * @param languagePair the language direction that the Member to retrieve must support
-     * @return the obtained Member
+     * @return the obtained Member, or null if in the cluster there is no member supporting the passed language pair
      */
     private Member getRandomMember(LanguagePair languagePair) {
         Set<Member> allMembers = hazelcast.getCluster().getMembers();
@@ -591,8 +614,12 @@ public class ClusterNode {
             if (NodeInfo.hasTranslationDirection(member, languagePair))
                 candidates.add(member);
 
-        int randomIndex = new Random().nextInt(candidates.size());
-        return candidates.get(randomIndex);
+        if (candidates.size() == 0) {
+            return null;
+        } else {
+            int randomIndex = new Random().nextInt(candidates.size());
+            return candidates.get(randomIndex);
+        }
     }
 
 
@@ -659,7 +686,7 @@ public class ClusterNode {
 //        @Override
 //        public void run() throws TranslationException {
 //            TranslationCallable callable = new TranslationCallable(task.priority, task.direction, task.text, task.context, task.nbest);
-//            Future<Translation> f = ModernMT.getNode().getEngine().runTranslation(callable);
+//            Future<Translation> f = ModernMT.getNode().getEngine().execute(callable);
 //            try {
 //                this.response = f.get();
 //            } catch (RejectedExecutionException e) {

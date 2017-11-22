@@ -1,6 +1,5 @@
 package eu.modernmt.facade;
 
-import eu.modernmt.Priority;
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.error.SystemShutdownException;
 import eu.modernmt.context.ContextAnalyzer;
@@ -62,30 +61,35 @@ public class TranslationFacade {
     //  Translation
     // =============================
 
-    public Translation get(LanguagePair direction, String sentence) throws TranslationException {
-        return get(new TranslationTask(direction, sentence, null, 0));
+    public Translation get(LanguagePair direction, String sentence, int priority) throws TranslationException {
+        return get(new TranslationTask(direction, sentence, null, 0, priority));
     }
 
-    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext) throws TranslationException {
-        return get(new TranslationTask(direction, sentence, translationContext, 0));
+    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, int priority) throws TranslationException {
+        return get(new TranslationTask(direction, sentence, translationContext, 0, priority));
     }
 
-    public Translation get(LanguagePair direction, String sentence, int nbest) throws TranslationException {
-        return get(new TranslationTask(direction, sentence, null, nbest));
+    public Translation get(LanguagePair direction, String sentence, int nbest, int priority) throws TranslationException {
+        return get(new TranslationTask(direction, sentence, null, nbest, priority));
     }
 
-    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, int nbest) throws TranslationException {
-        return get(new TranslationTask(direction, sentence, translationContext, nbest));
+    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, int nbest, int priority) throws TranslationException {
+        return get(new TranslationTask(direction, sentence, translationContext, nbest, priority));
     }
 
     private Translation get(TranslationTask task) throws TranslationException {
+        Translation result;
         ensureLanguagePairIsSupported(task.direction);
 
         if (task.nbest > 0)
             ensureDecoderSupportsNBest();
 
         ClusterNode node = ModernMT.getNode();
-        return node.runTranslation(task, task.direction);
+        result = node.execute(task, task.direction);
+        if (result == null)
+            result = node.execute(task);
+
+        return result;
     }
 
     // =============================
@@ -241,7 +245,6 @@ public class TranslationFacade {
         public final ContextVector context;
         public final int nbest;
         public final int priority;
-        public Translation response;
 
         public TranslationTask(LanguagePair direction, String text, ContextVector context, int nbest, int priority) {
             this.direction = direction;
@@ -249,10 +252,6 @@ public class TranslationFacade {
             this.context = context;
             this.nbest = nbest;
             this.priority = priority;
-        }
-
-        public TranslationTask(LanguagePair direction, String text, ContextVector context, int nbest) {
-            this(direction, text, context, nbest, Priority.NORMAL);
         }
     }
 }
