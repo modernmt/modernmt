@@ -3,7 +3,6 @@ package eu.modernmt.facade;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.cluster.ClusterNode;
-import eu.modernmt.cluster.error.SystemShutdownException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
@@ -17,7 +16,6 @@ import eu.modernmt.processing.xml.XMLTagProjector;
 
 import java.io.Serializable;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Created by davide on 20/04/16.
@@ -43,22 +41,17 @@ public class TagFacade {
         }
 
         ProjectTagsCallable operation = new ProjectTagsCallable(mappedDirection, sentence, translation, strategy);
-
         try {
-            return ModernMT.getNode().submit(operation).get();
-        } catch (InterruptedException e) {
-            throw new SystemShutdownException();
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-
-            if (cause instanceof ProcessingException)
-                throw new AlignerException("Problem while processing translation", cause);
-            else if (cause instanceof AlignerException)
-                throw new AlignerException("Problem while computing alignments", cause);
-            else if (cause instanceof RuntimeException)
-                throw new AlignerException("Unexpected exception while projecting tags", cause);
+            return operation.call(); //run the callable operation locally, so do not submit it to an executor but just run its "call" method
+        } catch (Throwable e) {
+            if (e instanceof ProcessingException)
+                throw new AlignerException("Problem while processing translation", e);
+            else if (e instanceof AlignerException)
+                throw new AlignerException("Problem while computing alignments", e);
+            else if (e instanceof RuntimeException)
+                throw new AlignerException("Unexpected exception while projecting tags", e);
             else
-                throw new Error("Unexpected exception: " + cause.getMessage(), cause);
+                throw new Error("Unexpected exception: " + e.getMessage(), e);
         }
     }
 

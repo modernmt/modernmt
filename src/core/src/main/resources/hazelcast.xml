@@ -29,4 +29,12 @@
             <aws enabled="false"/>
         </join>
     </network>
+
+    <services>
+        <service enabled="true">
+            <name>mmt:cluster:TranslationService</name>
+            <class-name>eu.modernmt.cluster.services.TranslationService</class-name>
+        </service>
+    </services>
+
 </hazelcast>

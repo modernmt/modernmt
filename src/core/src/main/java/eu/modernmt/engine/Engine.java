@@ -1,6 +1,5 @@
 package eu.modernmt.engine;
 
-import eu.modernmt.PriorityThreadPoolExecutor;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.fastalign.FastAlign;
 import eu.modernmt.config.EngineConfig;
@@ -15,7 +14,6 @@ import eu.modernmt.io.FileConst;
 import eu.modernmt.io.Paths;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.Translation;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.TextProcessingModels;
@@ -28,7 +26,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
-import java.util.concurrent.*;
 
 /**
  * Created by davide on 19/04/16.
@@ -65,15 +62,6 @@ public abstract class Engine implements Closeable, DataListenerProvider {
     protected final Preprocessor preprocessor;
     protected final Postprocessor postprocessor;
     protected final ContextAnalyzer contextAnalyzer;
-
-    protected final static int POOL_SIZE = 10;
-    protected final static int QUEUE_SIZE = 100;
-    protected final static long KEEP_ALIVE = 20;
-    protected final static TimeUnit TIME_UNIT = TimeUnit.SECONDS;
-
-
-    //the executor service to perform the translation requests in the PriorityBlockingQueue
-    protected ExecutorService executor;
 
 
     public static Engine load(EngineConfig config) throws BootstrapException {
@@ -113,7 +101,6 @@ public abstract class Engine implements Closeable, DataListenerProvider {
         this.models = Paths.join(this.root, "models");
         this.logs = Paths.join(this.runtime, "logs");
 
-        this.executor = new PriorityThreadPoolExecutor(QUEUE_SIZE, POOL_SIZE, KEEP_ALIVE, TIME_UNIT);
 
         try {
             this.preprocessor = new Preprocessor();
@@ -142,20 +129,6 @@ public abstract class Engine implements Closeable, DataListenerProvider {
         } catch (IOException e) {
             throw new BootstrapException("Failed to instantiate context analyzer", e);
         }
-    }
-
-    /**
-     * This method tries to put a new translation task (e.g. a PriorityTranslationOperation) into the translation queue.
-     * The task will be automatically fetched and run by the executor of this engine.
-     * The execution order will be based on the priority value of the submitted tasks.
-     *
-     * @param translation the PriorityCallable<Translation> object that must be executed
-     * @return true if could put the translation task in queue, false if it was already full
-     */
-    public Future<Translation> runTranslation(PriorityCallable<Translation> translation) throws RejectedExecutionException {
-
-
-        return this.executor.submit(translation);   //true if insert succeeds, false if queue is full
     }
 
     public abstract ContributionOptions getContributionOptions();
@@ -232,6 +205,5 @@ public abstract class Engine implements Closeable, DataListenerProvider {
         IOUtils.closeQuietly(postprocessor);
         IOUtils.closeQuietly(aligner);
         IOUtils.closeQuietly(contextAnalyzer);
-        executor.shutdownNow();
     }
 }
