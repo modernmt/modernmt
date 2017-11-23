@@ -13,6 +13,7 @@ import eu.modernmt.cluster.db.EmbeddedCassandra;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.cluster.kafka.EmbeddedKafka;
 import eu.modernmt.cluster.kafka.KafkaDataManager;
+import eu.modernmt.cluster.services.IPriorityExecutorService;
 import eu.modernmt.config.*;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
@@ -497,7 +498,7 @@ public class ClusterNode {
      * @return the resulting Translation object.
      * @throws TranslationException
      */
-    public Translation execute(TranslationFacade.TranslationTask translationTask) throws TranslationException {
+    public Translation execute(TranslationFacade.TranslationTask translationTask, IPriorityExecutorService.Priority priority) throws TranslationException {
         Member member = getRandomMember();
         TranslationOperation operation = new TranslationOperation(translationTask);
         Future<Translation> future = this.executor.submitToMember(operation, member);
@@ -531,7 +532,7 @@ public class ClusterNode {
      * @return the resulting Translation object, or null if no nodes support the passed language pair.
      * @throws TranslationException
      */
-    public Translation execute(TranslationFacade.TranslationTask translationTask, LanguagePair languagePair) throws TranslationException {
+    public Translation execute(TranslationFacade.TranslationTask translationTask, LanguagePair languagePair, IPriorityExecutorService.Priority priority) throws TranslationException {
         Member member = getRandomMember(languagePair);
         if (member == null)
             return null;

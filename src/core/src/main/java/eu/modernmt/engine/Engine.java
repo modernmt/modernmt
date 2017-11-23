@@ -1,7 +1,5 @@
 package eu.modernmt.engine;
 
-import eu.modernmt.PriorityCallable;
-
 import eu.modernmt.PriorityThreadPoolExecutor;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.fastalign.FastAlign;

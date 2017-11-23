@@ -1,7 +1,12 @@
 package eu.modernmt;
 
+import eu.modernmt.cluster.services.IPriorityExecutorService;
+
 import java.util.Comparator;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A PriorityThreadPoolExecutor is a ThreadPoolExecutor that executes in an order based on their priority.
@@ -13,7 +18,7 @@ public class PriorityThreadPoolExecutor extends ThreadPoolExecutor{
                         queueSize, Comparator.comparingInt(o -> ((PriorityFutureTask) o).getPriority())));
     }
 
-    protected <T> PriorityFutureTask<T> newTaskFor(Callable<T> callable) {
+    protected <T> PriorityFutureTask<T> newTaskFor(Callable<T> callable, IPriorityExecutorService.Priority priority) {
         int priority = callable instanceof PriorityCallable ? ((PriorityCallable) callable).priority : Priority.NORMAL;
         return new PriorityFutureTask<>(callable, priority);
     }

@@ -2,6 +2,7 @@ package eu.modernmt.facade;
 
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.error.SystemShutdownException;
+import eu.modernmt.cluster.services.IPriorityExecutorService;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.decoder.Decoder;
@@ -61,23 +62,23 @@ public class TranslationFacade {
     //  Translation
     // =============================
 
-    public Translation get(LanguagePair direction, String sentence, int priority) throws TranslationException {
-        return get(new TranslationTask(direction, sentence, null, 0, priority));
+    public Translation get(LanguagePair direction, String sentence, IPriorityExecutorService.Priority priority) throws TranslationException {
+        return get(new TranslationTask(direction, sentence, null, 0), priority);
     }
 
-    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, int priority) throws TranslationException {
-        return get(new TranslationTask(direction, sentence, translationContext, 0, priority));
+    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, IPriorityExecutorService.Priority priority) throws TranslationException {
+        return get(new TranslationTask(direction, sentence, translationContext, 0), priority);
     }
 
-    public Translation get(LanguagePair direction, String sentence, int nbest, int priority) throws TranslationException {
-        return get(new TranslationTask(direction, sentence, null, nbest, priority));
+    public Translation get(LanguagePair direction, String sentence, int nbest, IPriorityExecutorService.Priority priority) throws TranslationException {
+        return get(new TranslationTask(direction, sentence, null, nbest), priority);
     }
 
-    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, int nbest, int priority) throws TranslationException {
-        return get(new TranslationTask(direction, sentence, translationContext, nbest, priority));
+    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, int nbest, IPriorityExecutorService.Priority priority) throws TranslationException {
+        return get(new TranslationTask(direction, sentence, translationContext, nbest), priority);
     }
 
-    private Translation get(TranslationTask task) throws TranslationException {
+    private Translation get(TranslationTask task, IPriorityExecutorService.Priority priority) throws TranslationException {
         Translation result;
         ensureLanguagePairIsSupported(task.direction);
 
@@ -85,9 +86,9 @@ public class TranslationFacade {
             ensureDecoderSupportsNBest();
 
         ClusterNode node = ModernMT.getNode();
-        result = node.execute(task, task.direction);
+        result = node.execute(task, task.direction, priority);
         if (result == null)
-            result = node.execute(task);
+            result = node.execute(task, priority);
 
         return result;
     }
@@ -244,14 +245,12 @@ public class TranslationFacade {
         public final String text;
         public final ContextVector context;
         public final int nbest;
-        public final int priority;
 
-        public TranslationTask(LanguagePair direction, String text, ContextVector context, int nbest, int priority) {
+        public TranslationTask(LanguagePair direction, String text, ContextVector context, int nbest) {
             this.direction = direction;
             this.text = text;
             this.context = context;
             this.nbest = nbest;
-            this.priority = priority;
         }
     }
 }
