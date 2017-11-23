@@ -19,55 +19,87 @@ class NMTDecoder:
 
         self._logger = logging.getLogger('nmmt.NMTDecoder')
         self._engines, self._engines_checkpoint = {}, {}
-        self._cold_engines, self._warm_engines, self._hot_engines = {}, {}, {}
-        self._cold_size, self._warm_size, self._hot_size = 10, 5, 2
+        self._cold_engines, self._warm_engines, self._hot_engines = [], [], []
+        self._cold_size, self._warm_size, self._hot_size = 1000, 5, 2
 
         # create and put in its map a TextProcessor and a NMTEngine for each line in model.conf
         settings = ConfigParser.ConfigParser()
         settings.read(os.path.join(model_path, 'model.conf'))
 
-        for direction, model_name in settings.items('models'):
+        try:
+            self._cold_size = settings.getint('setting', 'cold_size')
+        except ConfigParser.NoSectionError:
+            pass
+        except ConfigParser.NoOptionError:
+            pass
+
+        try:
+            self._warm_size = settings.getint('setting', 'warm_size')
+        except ConfigParser.NoSectionError:
+            pass
+        except ConfigParser.NoOptionError:
+            pass
+
+        try:
+            self._hot_size = settings.getint('setting', 'hot_size')
+        except ConfigParser.NoSectionError:
+            pass
+        except ConfigParser.NoOptionError:
+            pass
+
+
+        self._logger.info("Hot model size:%d" % (self._hot_size))
+        self._logger.info("Warm model size:%d" % (self._warm_size))
+        self._logger.info("Cold model size:%d" % (self._cold_size))
+
+        if not settings.has_section('models'):
+            raise Exception('no model specified in %s' % os.path.join(model_path, 'model.conf'))
+
+        for key, model_name in settings.items('models'):
 
             model_file = os.path.join(model_path, model_name)
 
             # the running state of the engines depend on their position in the configration file:
             # the higher in the list the better its state
-            with log_timed_action(self._logger, 'Loading "%s" model from checkpoint' % direction):
-                self._engines[direction] = NMTEngine.load_from_checkpoint(model_file)
+            with log_timed_action(self._logger, 'Loading "%s" model from checkpoint' % key):
+                self._engines[key] = NMTEngine.load_from_checkpoint(model_file)
 
                 if len(self._hot_engines) < self._hot_size:
                     # the engine is automatically created in COLD state
                     # and now it is upgraded to HOT
-                    self._engines[direction].running_state = NMTEngine.HOT
-                    self._hot_engines.append(direction)
+                    self._engines[key].running_state = NMTEngine.HOT
+                    self._hot_engines.append(key)
                 elif len(self._warm_engines) < self._warm_size:
                     # the engine is automatically created in WARM state
-                    self._engines[direction].running_state = NMTEngine.WARM
-                    self._warm_engines.append(direction)
+                    self._engines[key].running_state = NMTEngine.WARM
+                    self._warm_engines.append(key)
                 else:
-                    self._cold_engines.append(direction)
+                    self._cold_engines.append(key)
 
-            self._logger.info("Model %s loaded, its running state is %s" % (direction, self._engines[direction].running_state))
+            self._logger.info("Model %s loaded, its running state is %s" % (key, self._engines[key].running_state))
 
+        self._logger.info("Hot models:%s" % self._hot_engines)
+        self._logger.info("Warm models:%s" % self._warm_engines)
+        self._logger.info("Cold models:%s" % self._cold_engines)
         # Public-editable options
         self.beam_size = 5
         self.max_sent_length = 160
 
     def get_engine(self, source_lang, target_lang, variant=None):
-        direction = source_lang + '__' + target_lang
+        key = source_lang + '__' + target_lang
         if variant is not None:
-            direction += "__" + variant
-        if direction not in self._engines:
+            key += "__" + variant
+        if key not in self._engines:
             return None
 
-        current_engine = self._engines[direction]
+        current_engine = self._engines[key]
 
         if current_engine.running_state != NMTEngine.HOT: # upgrade the engine to HOT
 
             if current_engine.running_state == NMTEngine.WARM:
-                self._warm_engines.remove(direction)
+                self._warm_engines.remove(key)
             else:
-                self._cold_engines.remove(direction)
+                self._cold_engines.remove(key)
 
             if len(self._hot_engines) >= self._hot_size: # no more space for hot engines
                 if len(self._warm_engines) >= self._warm_size: # no more space for warm engines
@@ -82,13 +114,13 @@ class NMTDecoder:
                 self._warm_engines.insert(0, e)
 
             current_engine.running_state = NMTEngine.HOT
-            self._hot_engines.insert(0, direction)
+            self._hot_engines.insert(0, key)
 
         return current_engine
 
     def translate(self, source_lang, target_lang, text, suggestions=None, n_best=1,
                   tuning_epochs=None, tuning_learning_rate=None, variant=None):
-        # (0) Get NMTEngine for current direction (and variant if specified);
+        # (0) Get NMTEngine for current key (direction and variant if specified);
         #     and if needed it upgrades the engine to running state HOT
         #     if it does not exist, raise an exception
         engine = self.get_engine(source_lang, target_lang, variant)

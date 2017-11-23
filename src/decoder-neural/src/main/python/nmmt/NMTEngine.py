@@ -35,7 +35,7 @@ class ModelFileNotFoundException(BaseException):
         self.message = "Model file not found: %s" % path
 
 
-class NMTEngine:
+class NMTEngine(object):
     COLD = 0
     WARM = 1
     HOT = 2
@@ -96,8 +96,10 @@ class NMTEngine:
         if metadata is None:
             metadata = NMTEngine.Metadata()
 
-        def _new_instance_initializer(model):
+        def _new_instance_initializer(model, generator):
             for p in model.parameters():
+                p.data.uniform_(-init_value, init_value)
+            for p in generator.parameters():
                 p.data.uniform_(-init_value, init_value)
 
         return NMTEngine(src_dict, trg_dict, _new_instance_initializer, processor, metadata=metadata)
@@ -129,18 +131,18 @@ class NMTEngine:
         src_dict = dictionary['src']
         trg_dict = dictionary['tgt']
 
-        def _checkpoint_initializer(model):
+        def _checkpoint_initializer(model, generator):
             checkpoint = torch.load(data_file, map_location=lambda storage, loc: storage)
 
             model.load_state_dict(checkpoint['model'])
-            model.generator.load_state_dict(checkpoint['generator'])
+            generator.load_state_dict(checkpoint['generator'])
 
 
         return NMTEngine(src_dict, trg_dict, _checkpoint_initializer, processor, metadata=metadata)
 
 
 
-    def __init__(self, src_dict, trg_dict, initalizer, processor, metadata=None):
+    def __init__(self, src_dict, trg_dict, initializer, processor, metadata=None):
         self._logger = logging.getLogger('nmmt.NMTEngine')
         self._log_level = logging.INFO
         self._model_loaded = False
@@ -156,20 +158,21 @@ class NMTEngine:
         self._translator = None  # lazy load
         self._tuner = None  # lazy load
 
-        self._initializer = initalizer
+        self._initializer = initializer
 
     def __load(self):
         encoder = Models.Encoder(self.metadata, self.src_dict)
         decoder = Models.Decoder(self.metadata, self.trg_dict)
         model = Models.NMTModel(encoder, decoder)
 
-        model.generator = nn.Sequential(nn.Linear(self.metadata.rnn_size, self.trg_dict.size()), nn.LogSoftmax())
+        generator = nn.Sequential(nn.Linear(self.metadata.rnn_size, self.trg_dict.size()), nn.LogSoftmax())
 
         model.cpu()
-        model.generator.cpu()
+        generator.cpu()
 
-        self._initializer(model)
+        self._initializer(model,generator)
 
+        model.generator = generator
         model.eval()
 
         self.model = model
@@ -191,9 +194,20 @@ class NMTEngine:
         self._model_loaded = False
 
     def __gpu(self):
+
+        model = self.model
+        generator = self.model.generator
+
         if torch_is_using_cuda():
-            self.model.cuda()
-            self.model.generator.cuda()
+            model.cuda()
+            generator.cuda()
+
+            if torch_is_multi_gpu():
+                model = nn.DataParallel(model, device_ids=torch_get_gpus(), dim=1)
+                generator = nn.DataParallel(generator, device_ids=torch_get_gpus(), dim=0)
+
+            self.model = model
+            self.model.generator = generator
 
     def __cpu(self):
         self.model.cpu()
@@ -343,11 +357,8 @@ class NMTEngine:
     def _get_state_dicts(self):
         is_multi_gpu = torch_is_multi_gpu()
 
-        model = self.model.module if is_multi_gpu else self.model
-        generator = self.model.generator.module if is_multi_gpu else self.model.generator
-
-        model_state_dict = {k: v for k, v in model.state_dict().items() if 'generator' not in k}
-        generator_state_dict = generator.state_dict()
+        model_state_dict = {k: v for k, v in self.model.state_dict().items() if 'generator' not in k}
+        generator_state_dict = self.model.generator.state_dict()
 
         return copy.deepcopy(model_state_dict), copy.deepcopy(generator_state_dict)
 
@@ -357,8 +368,10 @@ class NMTEngine:
 
     @running_state.setter
     def running_state(self, value):
+
         if not (value == self.COLD or value == self.WARM or value == self.HOT):
             raise ValueError('Invalid Value %d' % value)
+
 
         if self._running_state == self.COLD:
             if value == self.WARM:
