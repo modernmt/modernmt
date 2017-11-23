@@ -1,11 +1,13 @@
 package eu.modernmt.cluster.services;
 
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.Operation;
 import eu.modernmt.cluster.TranslationTask;
 import eu.modernmt.model.Translation;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.Serializable;
+import java.io.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
@@ -80,7 +82,7 @@ class TranslationOperation extends Operation {
     // ============================
 
 
-    private final TranslationTask task;     // the translation task that this Operation must run
+    private TranslationTask task;     // the translation task that this Operation must run
 
     public TranslationOperation(TranslationTask translationCallable) {
         this.task = translationCallable;
@@ -95,6 +97,16 @@ class TranslationOperation extends Operation {
     }
 
     @Override
+    protected void writeInternal(ObjectDataOutput out) throws IOException {
+        out.writeObject(this.task);
+    }
+
+    @Override
+    protected void readInternal(ObjectDataInput in) throws IOException {
+        this.task = in.readObject(TranslationTask.class);
+    }
+
+    @Override
     public boolean returnsResponse() {
         return false;
     }
@@ -103,4 +115,6 @@ class TranslationOperation extends Operation {
     public String getResponse() {
         return null;
     }
+
+
 }

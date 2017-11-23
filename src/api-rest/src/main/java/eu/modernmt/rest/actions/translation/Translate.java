@@ -78,7 +78,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
             contextLimit = getInt("context_limit", 10);
             nbest = getInt("nbest", 0);
 
-            priority = TranslationFacade.Priority.valueOf(getString("priority", true, "normal"));
+            priority = TranslationFacade.Priority.fromName(getString("priority", true, "normal"));
 
             verbose = getBoolean("verbose", false);
 

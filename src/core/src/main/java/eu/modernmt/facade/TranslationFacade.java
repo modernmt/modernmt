@@ -42,6 +42,13 @@ public class TranslationFacade {
             this.intValue = value;
         }
 
+        public static Priority fromName(String name) {
+            for (Priority priority : Priority.values())
+                if (priority.name().equalsIgnoreCase(name))
+                    return priority;
+            throw new IllegalArgumentException("Invalid priority: " + name);
+        }
+
     }
 
     // =============================
@@ -309,6 +316,5 @@ public class TranslationFacade {
         public int compareTo(@NotNull TranslationTask o) {
             return Integer.compare(priority.intValue, ((TranslationTaskImpl) o).priority.intValue);
         }
-
     }
 }
