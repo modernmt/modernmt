@@ -7,9 +7,10 @@ import com.hazelcast.spi.impl.operationservice.impl.responses.ErrorResponse;
 import com.hazelcast.spi.impl.operationservice.impl.responses.NormalResponse;
 import eu.modernmt.cluster.TranslationTask;
 import eu.modernmt.model.Translation;
+import org.apache.commons.lang.SerializationUtils;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -76,14 +77,16 @@ class TranslationOperation extends Operation {
 
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
-        out.writeObject(this.task);
+        byte[] taskBytes = SerializationUtils.serialize(this.task);
+        out.writeByteArray(taskBytes);
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
-        this.task = in.readObject(TranslationTask.class);
+        byte[] taskBytes = in.readByteArray();
+        this.task = (TranslationTask) SerializationUtils.deserialize(taskBytes);
     }
-
+    
     @Override
     public boolean returnsResponse() {
         return false;

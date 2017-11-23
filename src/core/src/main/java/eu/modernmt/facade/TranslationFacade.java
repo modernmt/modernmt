@@ -234,7 +234,6 @@ public class TranslationFacade {
     // -----------------------------
 
     private static class TranslationTaskImpl implements TranslationTask {
-
         public final LanguagePair direction;
         public final String text;
         public final ContextVector context;
