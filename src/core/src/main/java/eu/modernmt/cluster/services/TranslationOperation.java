@@ -3,12 +3,13 @@ package eu.modernmt.cluster.services;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.Operation;
+import com.hazelcast.spi.impl.operationservice.impl.responses.ErrorResponse;
+import com.hazelcast.spi.impl.operationservice.impl.responses.NormalResponse;
 import eu.modernmt.cluster.TranslationTask;
 import eu.modernmt.model.Translation;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
-import java.util.concurrent.ExecutionException;
+import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -18,29 +19,6 @@ import java.util.concurrent.ExecutorService;
  * A cluster member can ask other members to perform TranslationOperations
  */
 class TranslationOperation extends Operation {
-
-    /**
-     * A TranslationOperation.Result represents the result of a TranslationOperation.
-     * It can be either successful (holding a not null Translation translation field)
-     * or unsuccessful (holding a not null Throwable exception field).
-     */
-    public static class Result implements Serializable {    //to allow transmission throughout the cluster
-
-        private final Translation translation;
-        private final Throwable exception;
-
-        public Result(Translation translation, Throwable exception) {
-            this.translation = translation;
-            this.exception = exception;
-        }
-
-        public Translation unwrap() throws ExecutionException {
-            if (exception == null)
-                return translation;
-
-            throw new ExecutionException(exception);
-        }
-    }
 
     /**
      * A TranslationOperation.ComparableRunnable is a Runnable built specifically to contain and handle a TranslationTask.
@@ -66,16 +44,12 @@ class TranslationOperation extends Operation {
 
         @Override
         public void run() {
-            Result result;
-
             try {
                 Translation translation = task.call();
-                result = new Result(translation, null);
-            } catch (Exception e) {
-                result = new Result(null, e);
+                sendResponse(new NormalResponse(translation, getCallId(), 0, false));
+            } catch (Throwable e) {
+                sendResponse(new ErrorResponse(e, getCallId(), false));
             }
-
-            sendResponse(result);
         }
     }
 
@@ -83,6 +57,10 @@ class TranslationOperation extends Operation {
 
 
     private TranslationTask task;     // the translation task that this Operation must run
+
+    // necessary for deserialization
+    public TranslationOperation() {
+    }
 
     public TranslationOperation(TranslationTask translationCallable) {
         this.task = translationCallable;

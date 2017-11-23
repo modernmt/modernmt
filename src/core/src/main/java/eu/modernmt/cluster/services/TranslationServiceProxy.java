@@ -3,14 +3,12 @@ package eu.modernmt.cluster.services;
 
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.AbstractDistributedObject;
-import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.OperationService;
 import eu.modernmt.cluster.TranslationTask;
 import eu.modernmt.model.Translation;
-import org.jetbrains.annotations.NotNull;
 
-import java.util.concurrent.*;
+import java.util.concurrent.Future;
 
 /**
  * A TranslationServiceProxy is an Hazelcast proxy for a TranslationService service.
@@ -52,14 +50,13 @@ public class TranslationServiceProxy extends AbstractDistributedObject<Translati
     public Future<Translation> submit(TranslationTask task, Address address) {
         OperationService localOperationService = getNodeEngine().getOperationService();
         TranslationOperation operation = new TranslationOperation(task);
-        InternalCompletableFuture<TranslationOperation.Result> future =
-                localOperationService.invokeOnTarget(getServiceName(), operation, address);
+        return localOperationService.invokeOnTarget(getServiceName(), operation, address);
 
         /* The resulting InternalCompletableFuture<TranslationOperation.Result>
         is wrapped in a Future<Translation> to allow easier handling by who called it
         (typically the ClusterNode)*/
 
-        return new FutureWrapper(future);
+        //return new FutureWrapper(future);
     }
 
 
@@ -68,47 +65,47 @@ public class TranslationServiceProxy extends AbstractDistributedObject<Translati
      * that allows transparent handling of TranslationOperation.Result instances.
      * @see TranslationOperation.Result
      */
-    private static class FutureWrapper implements Future<Translation> {
-
-        InternalCompletableFuture<TranslationOperation.Result> future;
-
-        public FutureWrapper(InternalCompletableFuture<TranslationOperation.Result> future) {
-            this.future = future;
-        }
-
-        @Override
-        public boolean cancel(boolean mayInterruptIfRunning) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean isCancelled() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean isDone() {
-            throw new UnsupportedOperationException();
-        }
-
-        /* When a TranslationOperation is run, it returns an InternalCompletableFuture<TranslationOperation.Result> object.
-        * The TranslationOperation.Result object is necessary because the translation task
-        * can be either successful (a translation) or unsuccessful (an exception),
-        * but it is not good that the
-        *
-        * A FutureWrapper is just a Future for Translation objects that unwraps the TranslationOperation.Result object returning the corresponding translation.
-        * Note that during this unwrap, if the translation was unsuccessful, the result exception is thrown.
-*/
-
-        @Override
-        public Translation get() throws InterruptedException, ExecutionException {
-            return future.get().unwrap();
-        }
-
-        @Override
-        public Translation get(long timeout, @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-            return future.get(timeout, unit).unwrap();
-        }
-
-    }
+//    private static class FutureWrapper implements Future<Translation> {
+//
+//        InternalCompletableFuture<Translation> future;
+//
+//        public FutureWrapper(InternalCompletableFuture<Translation> future) {
+//            this.future = future;
+//        }
+//
+//        @Override
+//        public boolean cancel(boolean mayInterruptIfRunning) {
+//            throw new UnsupportedOperationException();
+//        }
+//
+//        @Override
+//        public boolean isCancelled() {
+//            throw new UnsupportedOperationException();
+//        }
+//
+//        @Override
+//        public boolean isDone() {
+//            throw new UnsupportedOperationException();
+//        }
+//
+//        /* When a TranslationOperation is run, it returns an InternalCompletableFuture<TranslationOperation.Result> object.
+//        * The TranslationOperation.Result object is necessary because the translation task
+//        * can be either successful (a translation) or unsuccessful (an exception),
+//        * but it is not good that the
+//        *
+//        * A FutureWrapper is just a Future for Translation objects that unwraps the TranslationOperation.Result object returning the corresponding translation.
+//        * Note that during this unwrap, if the translation was unsuccessful, the result exception is thrown.
+//*/
+//
+//        @Override
+//        public Translation get() throws InterruptedException, ExecutionException {
+//            return future.get().unwrap();
+//        }
+//
+//        @Override
+//        public Translation get(long timeout, @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+//            return future.get(timeout, unit).unwrap();
+//        }
+//
+//    }
 }
