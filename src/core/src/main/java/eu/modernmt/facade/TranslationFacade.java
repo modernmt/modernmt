@@ -10,6 +10,7 @@ import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.decoder.*;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.facade.exceptions.TranslationException;
+import eu.modernmt.facade.exceptions.TranslationRejectedException;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
@@ -25,6 +26,7 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
  * Created by davide on 31/01/17.
@@ -108,7 +110,7 @@ public class TranslationFacade {
         } catch (InterruptedException e) {
             throw new SystemShutdownException(e);
         } catch (ExecutionException e) {
-            throw unwrapException(TranslationException.class, e);
+            throw unwrapException(e);
         }
     }
 
@@ -182,11 +184,13 @@ public class TranslationFacade {
     //  Util functions
     // -----------------------------
 
-    private <T extends Throwable> T unwrapException(Class<T> type, ExecutionException e) {
+    private TranslationException unwrapException(ExecutionException e) {
         Throwable cause = e.getCause();
 
-        if (type.isAssignableFrom(cause.getClass()))
-            return type.cast(cause);
+        if (cause instanceof TranslationException)
+            return (TranslationException) cause;
+        else if (cause instanceof RejectedExecutionException)
+            return new TranslationRejectedException();
         else if (cause instanceof RuntimeException)
             throw (RuntimeException) cause;
         else
