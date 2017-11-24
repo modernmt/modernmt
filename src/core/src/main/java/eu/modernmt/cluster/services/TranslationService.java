@@ -1,5 +1,7 @@
 package eu.modernmt.cluster.services;
 
+import com.hazelcast.config.Config;
+import com.hazelcast.config.ServiceConfig;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.spi.ManagedService;
 import com.hazelcast.spi.NodeEngine;
@@ -28,19 +30,17 @@ public class TranslationService implements ManagedService, RemoteService {
 
     @Override
     public void init(NodeEngine nodeEngine, Properties properties) {
+        TranslationServiceConfig config = new TranslationServiceConfig(properties);
+
+        int threads = config.getThreads();
+        int highPriorityQueueSize = config.getHighPriorityQueueSize();
+        int normalPriorityQueueSize = config.getNormalPriorityQueueSize();
+        int backgroundPriorityQueueSize = config.getBackgroundPriorityQueueSize();
+
         this.nodeEngine = nodeEngine;
-
-
-        // TODO: get these values from properties
-        int background_priority_queue_size = 10;
-        int normal_priority_queue_size = 100000;
-        int high_priority_queue_size = 100;
-
-        int threads = Integer.parseInt(properties.getProperty("parallelism-degree"));
-
         this.executor = new ThreadPoolExecutor(threads, threads,
                 0L, TimeUnit.MILLISECONDS,
-                new PriorityBucketBlockingQueue<>(high_priority_queue_size, normal_priority_queue_size, background_priority_queue_size)) {
+                new PriorityBucketBlockingQueue<>(highPriorityQueueSize, normalPriorityQueueSize, backgroundPriorityQueueSize)) {
 
             @Override
             protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
@@ -85,6 +85,14 @@ public class TranslationService implements ManagedService, RemoteService {
 
     @Override
     public void destroyDistributedObject(String objectName) {
+
+    }
+
+    public static TranslationServiceConfig getConfig(Config hazelcastConfig) {
+        return new TranslationServiceConfig(hazelcastConfig
+                .getServicesConfig()
+                .getServiceConfig(SERVICE_NAME)
+                .getProperties());
 
     }
 }

@@ -12,9 +12,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * Created by davide on 23/11/17.
  * A PriorityBucketBlockingQueue is a PriorityBlockingQueue
  * implemented with a separate sub-queue (or bucket) for each priority.
- *
+ * <p>
  * A PriorityBucketBlockingQueue allows to define separate queue size for each subqueue.
- *
  */
 public class PriorityBucketBlockingQueue<E> extends AbstractQueue<E> implements BlockingQueue<E> {
 
@@ -35,7 +34,7 @@ public class PriorityBucketBlockingQueue<E> extends AbstractQueue<E> implements 
         int takeIndex;
 
         /**
-         *  index for next put, offer, or add
+         * index for next put, offer, or add
          */
         int putIndex;
 
@@ -135,7 +134,6 @@ public class PriorityBucketBlockingQueue<E> extends AbstractQueue<E> implements 
      * Call only when holding lock.
      */
     private E dequeue() {
-
         //for each subqueue starting from the highest priority
         for (int i = 0; i < queues.length; i++) {
             SubQueue queue = queues[i];
@@ -147,7 +145,7 @@ public class PriorityBucketBlockingQueue<E> extends AbstractQueue<E> implements 
             @SuppressWarnings("unchecked")
 
             //extract last element and replace with null
-            E x = (E) items[queue.takeIndex];
+                    E x = (E) items[queue.takeIndex];
 
             items[queue.takeIndex] = null;
             if (++queue.takeIndex == items.length)

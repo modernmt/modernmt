@@ -11,6 +11,7 @@ import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.cluster.kafka.EmbeddedKafka;
 import eu.modernmt.cluster.kafka.KafkaDataManager;
 import eu.modernmt.cluster.services.TranslationService;
+import eu.modernmt.cluster.services.TranslationServiceConfig;
 import eu.modernmt.cluster.services.TranslationServiceProxy;
 import eu.modernmt.config.*;
 import eu.modernmt.data.DataListener;
@@ -239,10 +240,16 @@ public class ClusterNode {
             hazelcastConfig.setProperty("hazelcast.initial.min.cluster.size", "1");
         }
 
-        /*for the translation service use as many threads as the decoder threads*/
-        int parallelismDegree = nodeConfig.getEngineConfig().getDecoderConfig().getParallelismDegree();
-        ServiceConfig translationServiceConfig = hazelcastConfig.getServicesConfig().getServiceConfig(TranslationService.SERVICE_NAME);
-        translationServiceConfig.addProperty("parallelism-degree", String.valueOf(parallelismDegree));
+        /* for the translation service use as many threads as the decoder threads */
+        EngineConfig engineConfig = nodeConfig.getEngineConfig();
+        TranslationQueueConfig queueConfig = nodeConfig.getTranslationQueueConfig();
+        int threads = engineConfig.getDecoderConfig().getParallelismDegree();
+
+        TranslationServiceConfig translationServiceConfig = TranslationService.getConfig(hazelcastConfig);
+        translationServiceConfig.setThreads(threads);
+        translationServiceConfig.setHighPriorityQueueSize(queueConfig.getHighPrioritySize());
+        translationServiceConfig.setNormalPriorityQueueSize(queueConfig.getNormalPrioritySize());
+        translationServiceConfig.setBackgroundPriorityQueueSize(queueConfig.getBackgroundPrioritySize());
 
         return hazelcastConfig;
     }
@@ -252,7 +259,6 @@ public class ClusterNode {
     }
 
     public void start(NodeConfig nodeConfig, long joinTimeoutInterval, TimeUnit joinTimeoutUnit) throws FailedToJoinClusterException, BootstrapException {
-
         Timer globalTimer = new Timer();
         Timer timer = new Timer();
 
@@ -404,7 +410,7 @@ public class ClusterNode {
 
         // ===========  TranslationService start  =============
 
-        translationServiceProxy = hazelcast.getDistributedObject(TranslationService.SERVICE_NAME, ClusterConstants.TRANSLATION_EXECUTOR_NAME);
+        translationServiceProxy = hazelcast.getDistributedObject(TranslationService.SERVICE_NAME, ClusterConstants.TRANSLATION_SERVICE_NAME);
 
         decoderWeightsTopic = hazelcast.getTopic(ClusterConstants.DECODER_WEIGHTS_TOPIC_NAME);
         decoderWeightsTopic.addMessageListener(this::onDecoderWeightsChanged);
@@ -486,36 +492,13 @@ public class ClusterNode {
     }
 
 
-//    /** This utility method gets the Node for this cluster node.
-//     * @return the Node object in this cluster node
-//     */
-//    private Node getNode() {
-//        HazelcastInstanceImpl hazelcastImpl = getHazelcastInstanceImpl();
-//        return hazelcastImpl.node;
-//    }
-//
-//    /** This utility method gets the HazelcastInstance implementation for this cluster node.
-//     * @return the Node object in this cluster node
-//     */
-//    private HazelcastInstanceImpl getHazelcastInstanceImpl() {
-//        /* If the hazelcast instance that this clusterNode refers to is a proxy, this method gets the original one.
-//         * Else, it just returns the downcasted hazelcast instance in this cluster node.
-//         * It is also possible that other hazelcastInstance implementations are used - in this case throw an exception*/
-//        if (this.hazelcast instanceof HazelcastInstanceProxy)
-//            return ((HazelcastInstanceProxy) hazelcast).getOriginal();
-//        else if (hazelcast instanceof HazelcastInstanceImpl)
-//            return (HazelcastInstanceImpl) hazelcast;
-//        else
-//            throw new UnsupportedOperationException("This HazelcastInstance type is not supported. Can not get its HazelcastInstanceImpl.");
-//    }
-
-
     /**
      * This private method gets a random Member of the mmt cluster that this node is part of too
+     *
      * @return the obtained Member
      */
     private Member getRandomMember() {
-        Member[] members = (Member[])hazelcast.getCluster().getMembers().toArray();
+        Member[] members = (Member[]) hazelcast.getCluster().getMembers().toArray();
         int randomIndex = new Random().nextInt(members.length);
         return members[randomIndex];
     }
@@ -523,6 +506,7 @@ public class ClusterNode {
     /**
      * This private method gets a random Member of the mmt cluster that this node is part of too,
      * after making sure that it supports a specific language direction
+     *
      * @param languagePair the language direction that the Member to retrieve must support
      * @return the obtained Member, or null if in the cluster there is no member supporting the passed language pair
      */
@@ -530,7 +514,7 @@ public class ClusterNode {
         Set<Member> allMembers = hazelcast.getCluster().getMembers();
         ArrayList<Member> candidates = new ArrayList<>();
 
-        for(Member member : allMembers)
+        for (Member member : allMembers)
             if (NodeInfo.hasTranslationDirection(member, languagePair))
                 candidates.add(member);
 
