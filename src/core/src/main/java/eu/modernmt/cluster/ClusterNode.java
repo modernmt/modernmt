@@ -1,6 +1,7 @@
 package eu.modernmt.cluster;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.ServiceConfig;
 import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.*;
@@ -71,6 +72,7 @@ public class ClusterNode {
     private ITopic<Map<String, float[]>> decoderWeightsTopic;
 
     private TranslationServiceProxy translationServiceProxy;
+    private int translationServiceThreads;
 
     private ArrayList<EmbeddedService> services = new ArrayList<>(2);
 
@@ -237,6 +239,11 @@ public class ClusterNode {
             hazelcastConfig.setProperty("hazelcast.initial.min.cluster.size", "1");
         }
 
+        /*for the translation service use as many threads as the decoder threads*/
+        int parallelismDegree = nodeConfig.getEngineConfig().getDecoderConfig().getParallelismDegree();
+        ServiceConfig translationServiceConfig = hazelcastConfig.getServicesConfig().getServiceConfig(TranslationService.SERVICE_NAME);
+        translationServiceConfig.addProperty("parallelism-degree", String.valueOf(parallelismDegree));
+
         return hazelcastConfig;
     }
 
@@ -395,7 +402,7 @@ public class ClusterNode {
         }
 
 
-        // ========================
+        // ===========  TranslationService start  =============
 
         translationServiceProxy = hazelcast.getDistributedObject(TranslationService.SERVICE_NAME, ClusterConstants.TRANSLATION_EXECUTOR_NAME);
 
