@@ -20,7 +20,6 @@ import eu.modernmt.model.Translation;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.*;
@@ -33,22 +32,13 @@ import java.util.concurrent.Future;
 public class TranslationFacade {
 
     public enum Priority {
-
-        BACKGROUND(1000), LOW(2000), NORMAL(3000), HIGH(4000), URGENT(5000);
+        HIGH(0), NORMAL(1), BACKGROUND(2);  //three priority values are allowed
 
         public final int intValue;
 
         Priority(int value) {
             this.intValue = value;
         }
-
-        public static Priority fromName(String name) {
-            for (Priority priority : Priority.values())
-                if (priority.name().equalsIgnoreCase(name))
-                    return priority;
-            throw new IllegalArgumentException("Invalid priority: " + name);
-        }
-
     }
 
     // =============================
@@ -312,8 +302,8 @@ public class TranslationFacade {
         }
 
         @Override
-        public int compareTo(@NotNull TranslationTask o) {
-            return Integer.compare(priority.intValue, ((TranslationTaskImpl) o).priority.intValue);
+        public int getPriority() {
+            return this.priority.intValue;
         }
     }
 }

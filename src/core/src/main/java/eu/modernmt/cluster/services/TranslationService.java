@@ -32,11 +32,15 @@ public class TranslationService  implements ManagedService, RemoteService {
 
 
         // TODO: get these values from properties
+        int background_priority_queue_size = 100;
+        int normal_priority_queue_size = 100;
+        int high_priority_queue_size = 100;
         int POOL_SIZE = 10;
-        int QUEUE_SIZE = 100;
         long KEEP_ALIVE = 20L;
         TimeUnit TIME_UNIT = TimeUnit.SECONDS;
-        this.executor = new PriorityThreadPoolExecutor(QUEUE_SIZE, POOL_SIZE, KEEP_ALIVE, TIME_UNIT);
+
+        this.executor = new PriorityThreadPoolExecutor(POOL_SIZE, KEEP_ALIVE, TIME_UNIT,
+                high_priority_queue_size, normal_priority_queue_size, background_priority_queue_size);
     }
 
     ExecutorService getExecutor() {

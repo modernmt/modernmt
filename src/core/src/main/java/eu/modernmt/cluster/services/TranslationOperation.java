@@ -8,9 +8,8 @@ import com.hazelcast.spi.impl.operationservice.impl.responses.NormalResponse;
 import eu.modernmt.cluster.TranslationTask;
 import eu.modernmt.model.Translation;
 import org.apache.commons.lang.SerializationUtils;
-import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
+import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -22,7 +21,7 @@ import java.util.concurrent.ExecutorService;
 class TranslationOperation extends Operation {
 
     /**
-     * A TranslationOperation.ComparableRunnable is a Runnable built specifically to contain and handle a TranslationTask.
+     * A TranslationOperation.TranslationRunnable is a Runnable built specifically to contain and handle a TranslationTask.
      * More specifically, when it is run, it executes the TranslationTask in the same thread
      * and sends the corresponding response to the requesting cluster member
      * using the TranslationOperation.sendResponse method.
@@ -30,17 +29,13 @@ class TranslationOperation extends Operation {
      * Note that this implies using Operations *asynchronously*, as when the sendResponse method is called
      * the TranslationOperation.run() execution itself has already ended a while ago.
      */
-    public class ComparableRunnable implements Runnable, Comparable<ComparableRunnable> {
+    public class TranslationRunnable extends PriorityRunnable {
 
         private final TranslationTask task;
 
-        public ComparableRunnable(TranslationTask task) {
+        public TranslationRunnable(TranslationTask task) {
+            super(task.getPriority());
             this.task = task;
-        }
-
-        @Override
-        public int compareTo(@NotNull ComparableRunnable o) {
-            return task.compareTo(o.task);
         }
 
         @Override
@@ -71,8 +66,7 @@ class TranslationOperation extends Operation {
     public void run() throws Exception {
         TranslationService translationService = getService();
         ExecutorService executor = translationService.getExecutor();
-
-        executor.submit(new ComparableRunnable(task));
+        executor.submit(new TranslationRunnable(task));
     }
 
     @Override
