@@ -10,6 +10,7 @@ import cli
 from cli import IllegalArgumentException
 from cli.libs import multithread, shell, fileutils
 from cli.mmt import BilingualCorpus
+from cli.mmt.cluster import ClusterNode
 from cli.mmt.processing import XMLEncoder
 
 DEFAULT_GOOGLE_KEY = 'AIzaSyBl9WAoivTkEfRdBBSCs4CruwnGL_aV74c'
@@ -167,7 +168,8 @@ class MMTTranslator(Translator):
             if len(line) > 4096:
                 line = line[:4096]
 
-            translation = self._api.translate(self.source_lang, self.target_lang, line, context=context_vector)
+            translation = self._api.translate(self.source_lang, self.target_lang, line,
+                                              context=context_vector, priority=ClusterNode.Api.PRIORITY_BACKGROUND)
         except requests.exceptions.ConnectionError:
             raise TranslateError('Unable to connect to MMT. '
                                  'Please check if engine is running on port %d.' % self._api.port)
