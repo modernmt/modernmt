@@ -6,8 +6,7 @@ import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.RemoteService;
 
 import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * A TranslationService is an Hazelcast Service for performing translations in a ModernMT cluster.
@@ -32,16 +31,15 @@ public class TranslationService  implements ManagedService, RemoteService {
 
 
         // TODO: get these values from properties
-        int background_priority_queue_size = 100;
-        int normal_priority_queue_size = 100;
+        int background_priority_queue_size = 10;
+        int normal_priority_queue_size = 100000;
         int high_priority_queue_size = 100;
 
         int threads = Integer.parseInt(properties.getProperty("parallelism-degree"));
-        long KEEP_ALIVE = 20L;
-        TimeUnit TIME_UNIT = TimeUnit.SECONDS;
 
-        this.executor = new PriorityThreadPoolExecutor(threads, KEEP_ALIVE, TIME_UNIT,
-                high_priority_queue_size, normal_priority_queue_size, background_priority_queue_size);
+        this.executor = new ThreadPoolExecutor(threads, threads,
+                0L, TimeUnit.MILLISECONDS,
+                new PriorityBucketBlockingQueue<>(high_priority_queue_size, normal_priority_queue_size, background_priority_queue_size));
     }
 
     ExecutorService getExecutor() {

@@ -29,12 +29,11 @@ class TranslationOperation extends Operation {
      * Note that this implies using Operations *asynchronously*, as when the sendResponse method is called
      * the TranslationOperation.run() execution itself has already ended a while ago.
      */
-    public class TranslationRunnable extends PriorityRunnable {
+    public class TranslationRunnable implements Runnable, Prioritizable {
 
         private final TranslationTask task;
 
         public TranslationRunnable(TranslationTask task) {
-            super(task.getPriority());
             this.task = task;
         }
 
@@ -46,6 +45,11 @@ class TranslationOperation extends Operation {
             } catch (Throwable e) {
                 sendResponse(new ErrorResponse(e, getCallId(), false));
             }
+        }
+
+        @Override
+        public int getPriority() {
+            return task.getPriority();
         }
     }
 
