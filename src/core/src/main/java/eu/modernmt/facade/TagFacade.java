@@ -22,12 +22,20 @@ import java.util.concurrent.Callable;
  */
 public class TagFacade {
 
-    public Translation project(LanguagePair direction, String sentence, String translation) throws AlignerException {
+    private static final XMLTagProjector tagProjector = new XMLTagProjector();
+
+    public Translation project(LanguagePair direction, String sentence, String translation) throws AlignerException, ProcessingException {
         return project(direction, sentence, translation, null);
     }
 
-    public Translation project(LanguagePair direction, String sentence, String translation, Aligner.SymmetrizationStrategy strategy) throws AlignerException {
-        LanguageIndex languages = ModernMT.getNode().getEngine().getLanguages();
+    public Translation project(LanguagePair direction, String sentenceString, String translationString,
+                               Aligner.SymmetrizationStrategy strategy) throws AlignerException, ProcessingException {
+        ClusterNode node = ModernMT.getNode();
+        Engine engine = node.getEngine();
+        Aligner aligner = engine.getAligner();
+        Preprocessor preprocessor = engine.getPreprocessor();
+
+        LanguageIndex languages = engine.getLanguages();
 
         LanguagePair mappedDirection = languages.map(direction);
         if (mappedDirection == null) {
@@ -40,61 +48,19 @@ public class TagFacade {
                 mappedDirection = mappedDirection.reversed();
         }
 
-        ProjectTagsCallable operation = new ProjectTagsCallable(mappedDirection, sentence, translation, strategy);
-        try {
-            return operation.call(); //run the callable operation locally, so do not submit it to an executor but just run its "call" method
-        } catch (Throwable e) {
-            if (e instanceof ProcessingException)
-                throw new AlignerException("Problem while processing translation", e);
-            else if (e instanceof AlignerException)
-                throw new AlignerException("Problem while computing alignments", e);
-            else if (e instanceof RuntimeException)
-                throw new AlignerException("Unexpected exception while projecting tags", e);
-            else
-                throw new Error("Unexpected exception: " + e.getMessage(), e);
-        }
-    }
+        direction = mappedDirection;
 
-    private static class ProjectTagsCallable implements Callable<Translation>, Serializable {
+        Sentence sentence = preprocessor.process(direction, sentenceString);
+        Sentence translation = preprocessor.process(direction.reversed(), translationString);
 
-        private static final XMLTagProjector tagProjector = new XMLTagProjector();
+        Alignment alignment;
 
-        private final LanguagePair direction;
-        private final String sentenceString;
-        private final String translationString;
-        private final Aligner.SymmetrizationStrategy strategy;
+        if (strategy != null)
+            alignment = aligner.getAlignment(direction, sentence, translation, strategy);
+        else
+            alignment = aligner.getAlignment(direction, sentence, translation);
 
-        public ProjectTagsCallable(LanguagePair direction, String sentence, String translation, Aligner.SymmetrizationStrategy strategy) {
-            this.direction = direction;
-            this.sentenceString = sentence;
-            this.translationString = translation;
-            this.strategy = strategy;
-        }
-
-        @Override
-        public Translation call() throws ProcessingException, AlignerException {
-            ClusterNode node = ModernMT.getNode();
-            Engine engine = node.getEngine();
-            Aligner aligner = engine.getAligner();
-
-            Preprocessor preprocessor = engine.getPreprocessor();
-
-            Sentence sentence = preprocessor.process(direction, sentenceString);
-            Sentence translation = preprocessor.process(direction.reversed(), translationString);
-
-            Alignment alignment;
-
-            if (strategy != null)
-                alignment = aligner.getAlignment(direction, sentence, translation, strategy);
-            else
-                alignment = aligner.getAlignment(direction, sentence, translation);
-
-            Translation taggedTranslation = new Translation(translation.getWords(), sentence, alignment);
-            tagProjector.project(taggedTranslation);
-
-            return taggedTranslation;
-        }
-
+        return tagProjector.project(new Translation(translation.getWords(), sentence, alignment));
     }
 
 }

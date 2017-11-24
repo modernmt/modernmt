@@ -37,10 +37,11 @@ public class TranslationService implements ManagedService, RemoteService {
         int normalPriorityQueueSize = config.getNormalPriorityQueueSize();
         int backgroundPriorityQueueSize = config.getBackgroundPriorityQueueSize();
 
+        BlockingQueue<Runnable> queue = new PriorityBucketBlockingQueue<>(
+                highPriorityQueueSize, normalPriorityQueueSize, backgroundPriorityQueueSize);
+
         this.nodeEngine = nodeEngine;
-        this.executor = new ThreadPoolExecutor(threads, threads,
-                0L, TimeUnit.MILLISECONDS,
-                new PriorityBucketBlockingQueue<>(highPriorityQueueSize, normalPriorityQueueSize, backgroundPriorityQueueSize)) {
+        this.executor = new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS, queue) {
 
             @Override
             protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
@@ -61,6 +62,7 @@ public class TranslationService implements ManagedService, RemoteService {
 
                 return task;
             }
+
         };
     }
 

@@ -1,7 +1,6 @@
 package eu.modernmt.cluster;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.ServiceConfig;
 import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.*;
@@ -11,7 +10,6 @@ import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.cluster.kafka.EmbeddedKafka;
 import eu.modernmt.cluster.kafka.KafkaDataManager;
 import eu.modernmt.cluster.services.TranslationService;
-import eu.modernmt.cluster.services.TranslationServiceConfig;
 import eu.modernmt.cluster.services.TranslationServiceProxy;
 import eu.modernmt.config.*;
 import eu.modernmt.data.DataListener;
@@ -72,8 +70,7 @@ public class ClusterNode {
     private Database database;
     private ITopic<Map<String, float[]>> decoderWeightsTopic;
 
-    private TranslationServiceProxy translationServiceProxy;
-    private int translationServiceThreads;
+    private TranslationServiceProxy translationService;
 
     private ArrayList<EmbeddedService> services = new ArrayList<>(2);
 
@@ -245,11 +242,11 @@ public class ClusterNode {
         TranslationQueueConfig queueConfig = nodeConfig.getTranslationQueueConfig();
         int threads = engineConfig.getDecoderConfig().getParallelismDegree();
 
-        TranslationServiceConfig translationServiceConfig = TranslationService.getConfig(hazelcastConfig);
-        translationServiceConfig.setThreads(threads);
-        translationServiceConfig.setHighPriorityQueueSize(queueConfig.getHighPrioritySize());
-        translationServiceConfig.setNormalPriorityQueueSize(queueConfig.getNormalPrioritySize());
-        translationServiceConfig.setBackgroundPriorityQueueSize(queueConfig.getBackgroundPrioritySize());
+        TranslationService.getConfig(hazelcastConfig)
+                .setThreads(threads)
+                .setHighPriorityQueueSize(queueConfig.getHighPrioritySize())
+                .setNormalPriorityQueueSize(queueConfig.getNormalPrioritySize())
+                .setBackgroundPriorityQueueSize(queueConfig.getBackgroundPrioritySize());
 
         return hazelcastConfig;
     }
@@ -408,9 +405,10 @@ public class ClusterNode {
         }
 
 
-        // ===========  TranslationService start  =============
+        // ===========  Hazelcast services init =============
 
-        translationServiceProxy = hazelcast.getDistributedObject(TranslationService.SERVICE_NAME, ClusterConstants.TRANSLATION_SERVICE_NAME);
+        translationService = hazelcast.getDistributedObject(TranslationService.SERVICE_NAME,
+                ClusterConstants.TRANSLATION_SERVICE_NAME);
 
         decoderWeightsTopic = hazelcast.getTopic(ClusterConstants.DECODER_WEIGHTS_TOPIC_NAME);
         decoderWeightsTopic.addMessageListener(this::onDecoderWeightsChanged);
@@ -476,7 +474,7 @@ public class ClusterNode {
      */
     public Future<Translation> submit(TranslationTask task, LanguagePair direction) throws TranslationException {
         Member member = this.getRandomMember(direction);
-        return member != null ? translationServiceProxy.submit(task, member.getAddress()) : null;
+        return member != null ? translationService.submit(task, member.getAddress()) : null;
     }
 
     /**
@@ -488,7 +486,7 @@ public class ClusterNode {
      */
     public Future<Translation> submit(TranslationTask task) {
         Member member = this.getRandomMember();
-        return translationServiceProxy.submit(task, member.getAddress());
+        return translationService.submit(task, member.getAddress());
     }
 
 

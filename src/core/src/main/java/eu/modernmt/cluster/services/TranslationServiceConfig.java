@@ -15,20 +15,24 @@ public class TranslationServiceConfig {
         this.properties = properties;
     }
 
-    public void setThreads(int threads) {
+    public TranslationServiceConfig setThreads(int threads) {
         properties.setProperty("threads", Integer.toString(threads));
+        return this;
     }
 
-    public void setHighPriorityQueueSize(int highPriorityQueueSize) {
+    public TranslationServiceConfig setHighPriorityQueueSize(int highPriorityQueueSize) {
         properties.setProperty("highPriorityQueueSize", Integer.toString(highPriorityQueueSize));
+        return this;
     }
 
-    public void setNormalPriorityQueueSize(int normalPriorityQueueSize) {
+    public TranslationServiceConfig setNormalPriorityQueueSize(int normalPriorityQueueSize) {
         properties.setProperty("normalPriorityQueueSize", Integer.toString(normalPriorityQueueSize));
+        return this;
     }
 
-    public void setBackgroundPriorityQueueSize(int backgroundPriorityQueueSize) {
+    public TranslationServiceConfig setBackgroundPriorityQueueSize(int backgroundPriorityQueueSize) {
         properties.setProperty("backgroundPriorityQueueSize", Integer.toString(backgroundPriorityQueueSize));
+        return this;
     }
 
     public int getThreads() {

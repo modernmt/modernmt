@@ -53,13 +53,12 @@ class TranslationOperation extends Operation {
         }
     }
 
-    // ============================
 
-
-    private TranslationTask task;     // the translation task that this Operation must run
-
+    private TranslationTask task;
     private transient Throwable submitException;
+
     // necessary for deserialization
+    @SuppressWarnings("unused")
     public TranslationOperation() {
     }
 

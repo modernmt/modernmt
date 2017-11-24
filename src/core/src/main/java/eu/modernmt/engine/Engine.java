@@ -63,7 +63,6 @@ public abstract class Engine implements Closeable, DataListenerProvider {
     protected final Postprocessor postprocessor;
     protected final ContextAnalyzer contextAnalyzer;
 
-
     public static Engine load(EngineConfig config) throws BootstrapException {
         EngineConfig.Type type = config.getType();
 
@@ -88,8 +87,6 @@ public abstract class Engine implements Closeable, DataListenerProvider {
         this.preprocessor = null;
         this.postprocessor = null;
         this.contextAnalyzer = null;
-
-
     }
 
     protected Engine(EngineConfig config) throws BootstrapException {
@@ -100,7 +97,6 @@ public abstract class Engine implements Closeable, DataListenerProvider {
         this.runtime = FileConst.getEngineRuntime(name);
         this.models = Paths.join(this.root, "models");
         this.logs = Paths.join(this.runtime, "logs");
-
 
         try {
             this.preprocessor = new Preprocessor();
