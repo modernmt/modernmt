@@ -54,6 +54,7 @@ class TranslationOperation extends Operation {
 
     private TranslationTask task;     // the translation task that this Operation must run
 
+    private transient Throwable submitException;
     // necessary for deserialization
     public TranslationOperation() {
     }
@@ -66,7 +67,12 @@ class TranslationOperation extends Operation {
     public void run() throws Exception {
         TranslationService translationService = getService();
         ExecutorService executor = translationService.getExecutor();
-        executor.submit(new TranslationRunnable(task));
+
+        try {
+            executor.submit(new TranslationRunnable(task));
+        } catch(Throwable e) {
+            submitException = e;
+        }
     }
 
     @Override
@@ -83,13 +89,11 @@ class TranslationOperation extends Operation {
     
     @Override
     public boolean returnsResponse() {
-        return false;
+        return submitException != null;
     }
 
     @Override
-    public String getResponse() {
-        return null;
+    public Object getResponse() {
+        return submitException == null ? null : new ErrorResponse(submitException, getCallId(), false);
     }
-
-
 }
