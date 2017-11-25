@@ -76,11 +76,9 @@ class NMTDecoder:
                 else:
                     self._cold_engines.append(key)
 
-            self._logger.info("Model %s loaded, its running state is %s" % (key, self._engines[key].running_state))
+            self._logger.info("Model %s loaded, with running state %s" % (key, self._engines[key].running_state))
 
-        self._logger.info("Hot models:%s" % self._hot_engines)
-        self._logger.info("Warm models:%s" % self._warm_engines)
-        self._logger.info("Cold models:%s" % self._cold_engines)
+        self._logger.info("Running states of the models: hot:%s, warm:%s, cold:%s" % (self._hot_engines, self._warm_engines, self._cold_engines))
         # Public-editable options
         self.beam_size = 5
         self.max_sent_length = 160
@@ -92,31 +90,40 @@ class NMTDecoder:
         if key not in self._engines:
             return None
 
-        current_engine = self._engines[key]
+        engine = self._engines[key]
 
-        if current_engine.running_state != NMTEngine.HOT: # upgrade the engine to HOT
+        self._logger.info("Required engine %s has running state: %s" % (key, self._engines[key].running_state))
 
-            if current_engine.running_state == NMTEngine.WARM:
+        if engine.running_state != NMTEngine.HOT: # the running state of the required engine is COLD; upgrade to HOT
+
+            if engine.running_state == NMTEngine.WARM: # the running state of the required engine is WARM
                 self._warm_engines.remove(key)
-            else:
+            else: # the running state of the required engine is COLD
                 self._cold_engines.remove(key)
 
-            if len(self._hot_engines) >= self._hot_size: # no more space for hot engines
-                if len(self._warm_engines) >= self._warm_size: # no more space for warm engines
+            if len(self._hot_engines) >= self._hot_size: # no more space among the hot engines
+                if len(self._warm_engines) >= self._warm_size: # no more space among the warm engines
                     # move the last warm engine to cold
-                    e = self._warm_engines.pop()
-                    self._engines[e].running_state = NMTEngine.COLD
-                    self._cold_engines.insert(0, e)
+                    tmpkey = self._warm_engines.pop()
+                    self._engines[tmpkey].running_state = NMTEngine.COLD
+                    self._cold_engines.insert(0, tmpkey)
+                    self._logger.info("Model %s has been downgraded to %s" % (tmpkey, self._engines[tmpkey].running_state))
 
                 # move the last hot engine to warm, which has at least one space
-                e = self._hot_engines.pop()
-                self._engines[e].running_state = NMTEngine.WARM
-                self._warm_engines.insert(0, e)
+                tmpkey = self._hot_engines.pop()
+                self._engines[tmpkey].running_state = NMTEngine.WARM
+                self._warm_engines.insert(0, tmpkey)
+                self._logger.info("Model %s has been downgraded to %s" % (tmpkey, self._engines[tmpkey].running_state))
 
-            current_engine.running_state = NMTEngine.HOT
+            # insert the required engine in the first position  of the hot models
+            engine.running_state = NMTEngine.HOT
             self._hot_engines.insert(0, key)
+            self._logger.info("Model %s has been updated to %s" % (key, self._engines[key].running_state))
 
-        return current_engine
+
+        self._logger.info("Running states of the models: hot:%s, warm:%s, cold:%s" % (self._hot_engines, self._warm_engines, self._cold_engines))
+
+        return engine
 
     def translate(self, source_lang, target_lang, text, suggestions=None, n_best=1,
                   tuning_epochs=None, tuning_learning_rate=None, variant=None):
