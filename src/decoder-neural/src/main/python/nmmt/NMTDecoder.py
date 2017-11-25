@@ -76,7 +76,7 @@ class NMTDecoder:
                 else:
                     self._cold_engines.append(key)
 
-            self._logger.info("Model %s loaded, with running state %s" % (key, self._engines[key].running_state))
+            self._logger.info("Model %s loaded (%s), with running state %s" % (key, self._engines[key], self._engines[key].running_state))
 
         self._logger.info("Running states of the models: hot:%s, warm:%s, cold:%s" % (self._hot_engines, self._warm_engines, self._cold_engines))
         # Public-editable options
