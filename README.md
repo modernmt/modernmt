@@ -152,10 +152,16 @@ You can learn more on the Wiki page [MMT Cluster](https://github.com/ModernMT/MM
 If you need to customize the properties and behaviour of your engines, you can specify advanced settings in their configuration files. 
 You can learn how on the Wiki page [Advanced Configurations](https://github.com/ModernMT/MMT/wiki/Advanced-Configurations)
 
-# Donate
+# Enterprise Edition
 
 MMT is free, is open source and welcomes contributions and donations.
-
 MMT is currently sponsored by its funding members (Translated, FBK, UEDIN and TAUS) and the European Commission. 
 
-For donations, customizations and words of encouragement contact alessandro@translated.net
+We also have an **MMT Enterprise Edition**, managed by the MMT company, is also available and it has some extra features:
+- Pre-trained generic and custom models in 30 language pairs on multiple billion words of premium data.
+- Support for cluster of servers for higher throughput, load balancing and high availability. 
+- Support for 69 files formats without format loss (Office, Adobe, Localization, etc).
+- Enterprise Customer Support via Video Conference Call, Phone and Email on business hours and optionally 24x7.
+- Custom developments billed per hour of work.
+
+For any information plese email federico@fbk.eu
