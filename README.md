@@ -157,7 +157,7 @@ You can learn how on the Wiki page [Advanced Configurations](https://github.com/
 MMT Community is free, is open source and welcomes contributions and donations.
 MMT Community is sponsored by its funding members (Translated, FBK, UEDIN and TAUS) and the European Commission. 
 
-We also have an **MMT Enterprise Edition**, managed by the MMT company with some extra features:
+We also have an **MMT Enterprise Edition**, managed by the MMT company, with some extra features:
 - Pre-trained generic and custom models in 30 language pairs on multiple billion words of premium data.
 - Support for cluster of servers for higher throughput, load balancing and high availability. 
 - Support for 69 files formats without format loss (Office, Adobe, Localization, etc).
