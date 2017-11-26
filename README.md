@@ -164,4 +164,4 @@ We also have an **MMT Enterprise Edition**, managed by the MMT company and not a
 - Enterprise Customer Support via Video Conference Call, Phone and Email on business hours and optionally 24x7.
 - Custom developments billed per hour of work.
 
-For any information plese email federico@fbk.eu
+For any information please email Marcello Federico, mrcfdr@gmail.com
