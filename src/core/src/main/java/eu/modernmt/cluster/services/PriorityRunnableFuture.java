@@ -7,13 +7,14 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * Created by davide on 24/11/17.
+ * A PriorityRunnableFuture is a Prioritizable wrapper for a Runnable Future.
  */
-class PriorityFuture<T> implements RunnableFuture<T>, Prioritizable {
+class PriorityRunnableFuture<T> implements RunnableFuture<T>, Prioritizable {
 
     private RunnableFuture<T> src;
     private int priority;
 
-    public PriorityFuture(RunnableFuture<T> other, int priority) {
+    public PriorityRunnableFuture(RunnableFuture<T> other, int priority) {
         this.src = other;
         this.priority = priority;
     }
