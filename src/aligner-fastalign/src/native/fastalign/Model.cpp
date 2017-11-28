@@ -16,6 +16,25 @@ Model::Model(bool is_reverse, bool use_null, bool favor_diagonal, double prob_al
           diagonal_tension(diagonal_tension) {
 }
 
+double Model::ComputeScores(const vector<pair<wordvec_t, wordvec_t>> &batch, Model *outModel,
+                                vector<double> *outScores) {
+    double current_emp_feat = 0.0, emp_feat = 0.0;
+
+    if (outScores)
+        outScores->resize(batch.size());
+
+#pragma omp parallel for schedule(dynamic) reduction(+:emp_feat)
+    for (size_t i = 0; i < batch.size(); ++i) {
+        const pair<wordvec_t, wordvec_t> &p = batch[i];
+        current_emp_feat = ComputeAlignment(p.first, p.second, outModel, NULL);
+        emp_feat += current_emp_feat;
+        if (outScores)
+            outScores->at(i) = (double) current_emp_feat;
+    }
+
+    return emp_feat;
+}
+
 double Model::ComputeAlignments(const vector<pair<wordvec_t, wordvec_t>> &batch, Model *outModel,
                                 vector<alignment_t> *outAlignments) {
     double emp_feat = 0.0;

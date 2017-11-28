@@ -46,6 +46,52 @@ FastAligner::~FastAligner() {
     delete vocabulary;
 }
 
+double FastAligner::GetScore(const sentence_t &_source, const sentence_t &_target,
+                                      Symmetrization symmetrization) {
+    wordvec_t source, target;
+    vocabulary->Encode(_source, source);
+    vocabulary->Encode(_target, target);
+
+    return GetScore(source, target, symmetrization);
+}
+
+double FastAligner::GetScore(const wordvec_t &source, const wordvec_t &target, Symmetrization symmetrization) {
+    double forward = forwardModel->ComputeScore(source, target);
+    double backward = backwardModel->ComputeScore(source, target);
+
+    return forward+backward;
+}
+
+void FastAligner::GetScores(const std::vector<std::pair<sentence_t, sentence_t>> &_batch,
+                                std::vector<double> &outScores, Symmetrization symmetrization) {
+    vector<pair<wordvec_t, wordvec_t>> batch;
+    batch.resize(_batch.size());
+
+#pragma omp parallel for schedule(dynamic)
+    for (size_t i = 0; i < batch.size(); ++i) {
+        vocabulary->Encode(_batch[i].first, batch[i].first);
+        vocabulary->Encode(_batch[i].second, batch[i].second);
+    }
+
+    GetScores(batch, outScores, symmetrization);
+}
+
+void FastAligner::GetScores(const std::vector<std::pair<wordvec_t, wordvec_t>> &batch,
+                                std::vector<double> &outScores, Symmetrization symmetrization) {
+    vector<double> forwards;
+    vector<double> backwards;
+
+    forwardModel->ComputeScores(batch, forwards);
+    backwardModel->ComputeScores(batch, backwards);
+
+    outScores.resize(batch.size());
+
+#pragma omp parallel for schedule(dynamic)
+    for (size_t i = 0; i < batch.size(); ++i) {
+        outScores[i] = forwards[i] + backwards[i];
+    }
+}
+
 alignment_t FastAligner::GetAlignment(const sentence_t &_source, const sentence_t &_target,
                                       Symmetrization symmetrization) {
     wordvec_t source, target;
@@ -78,6 +124,8 @@ alignment_t FastAligner::GetAlignment(const wordvec_t &source, const wordvec_t &
 
     return symmetrizer.ToAlignment();
 }
+
+
 
 void FastAligner::GetAlignments(const std::vector<std::pair<sentence_t, sentence_t>> &_batch,
                                 std::vector<alignment_t> &outAlignments, Symmetrization symmetrization) {
