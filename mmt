@@ -103,6 +103,9 @@ def main_create(argv):
     nmt_arguments.add_argument('--max-vocabulary-size', dest='max_vocab_size', type=int,
                                help='if neural is set, this is the maximum size of the vocabulary '
                                     '(default value is unbound).', default=None)
+    nmt_arguments.add_argument('--vocabulary-prune', dest='vocab_pruning_threshold', type=float,
+                               help='if neural is set, this is the threshold to prune out subwords of the vocabulary '
+                                    '(default value is unbound).', default=None)
     nmt_arguments.add_argument('--batch-size', dest='batch_size', type=int, default=64,
                                help='if neural is set, set the batch size (default value is 64).')
     nmt_arguments.add_argument('--learning-rate', dest='learning_rate', type=float, default=1.0,
