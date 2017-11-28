@@ -542,7 +542,7 @@ def bpe_main(model_path, is_source):
         line = sys.stdin.readline()
         if not line:
             break
-        print (' '.join(processor.encode_line(line, is_source))).decode('utf-8')
+        print (u' '.join(processor.encode_line(line, is_source))).encode('utf-8')
 
 
 if __name__ == '__main__':
