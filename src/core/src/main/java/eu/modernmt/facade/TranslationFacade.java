@@ -3,12 +3,14 @@ package eu.modernmt.facade;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.cluster.ClusterNode;
+import eu.modernmt.cluster.TranslationTask;
 import eu.modernmt.cluster.error.SystemShutdownException;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.decoder.*;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.facade.exceptions.TranslationException;
+import eu.modernmt.facade.exceptions.TranslationRejectedException;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
@@ -21,16 +23,25 @@ import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
 
 import java.io.File;
-import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
  * Created by davide on 31/01/17.
  */
 public class TranslationFacade {
+
+    public enum Priority {
+        HIGH(0), NORMAL(1), BACKGROUND(2);  //three priority values are allowed
+
+        public final int intValue;
+
+        Priority(int value) {
+            this.intValue = value;
+        }
+    }
 
     // =============================
     //  Decoder Weights
@@ -66,40 +77,40 @@ public class TranslationFacade {
     //  Translation
     // =============================
 
-    public Translation get(LanguagePair direction, String sentence) throws TranslationException {
-        return get(new TranslateOperation(direction, sentence, null, 0));
+    public Translation get(LanguagePair direction, String sentence, Priority priority) throws TranslationException {
+        return get(new TranslationTaskImpl(direction, sentence, null, 0, priority));
     }
 
-    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext) throws TranslationException {
-        return get(new TranslateOperation(direction, sentence, translationContext, 0));
+    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, Priority priority) throws TranslationException {
+        return get(new TranslationTaskImpl(direction, sentence, translationContext, 0, priority));
     }
 
-    public Translation get(LanguagePair direction, String sentence, int nbest) throws TranslationException {
-        return get(new TranslateOperation(direction, sentence, null, nbest));
+    public Translation get(LanguagePair direction, String sentence, int nbest, Priority priority) throws TranslationException {
+        return get(new TranslationTaskImpl(direction, sentence, null, nbest, priority));
     }
 
-    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, int nbest) throws TranslationException {
-        return get(new TranslateOperation(direction, sentence, translationContext, nbest));
+    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, int nbest, Priority priority) throws TranslationException {
+        return get(new TranslationTaskImpl(direction, sentence, translationContext, nbest, priority));
     }
 
-    private Translation get(TranslateOperation operation) throws TranslationException {
-        ensureLanguagePairIsSupported(operation.direction);
+    private Translation get(TranslationTaskImpl task) throws TranslationException {
+        ensureLanguagePairIsSupported(task.direction);
 
-        if (operation.nbest > 0)
+        if (task.nbest > 0)
             ensureDecoderSupportsNBest();
 
         try {
             ClusterNode node = ModernMT.getNode();
 
-            Future<Translation> future = node.submit(operation, operation.direction);
+            Future<Translation> future = node.submit(task, task.direction);
             if (future == null)
-                future = node.submit(operation);
+                future = node.submit(task);
 
             return future.get();
         } catch (InterruptedException e) {
             throw new SystemShutdownException(e);
         } catch (ExecutionException e) {
-            throw unwrapException(TranslationException.class, e);
+            throw unwrapException(e);
         }
     }
 
@@ -118,8 +129,6 @@ public class TranslationFacade {
     public ContextVector getContextVector(LanguagePair direction, File context, int limit) throws ContextAnalyzerException {
         ensureLanguagePairIsSupported(direction);
 
-        // Because the file is local to the machine, this method ensures that the
-        // local context analyzer is invoked instead of a remote one
         Engine engine = ModernMT.getNode().getEngine();
         ContextAnalyzer analyzer = engine.getContextAnalyzer();
 
@@ -132,8 +141,6 @@ public class TranslationFacade {
         if (languages.isEmpty())
             return Collections.emptyMap();
 
-        // Because the file is local to the machine, this method ensures that the
-        // local context analyzer is invoked instead of a remote one
         Engine engine = ModernMT.getNode().getEngine();
         ContextAnalyzer analyzer = engine.getContextAnalyzer();
 
@@ -149,47 +156,41 @@ public class TranslationFacade {
     public ContextVector getContextVector(LanguagePair direction, String context, int limit) throws ContextAnalyzerException {
         ensureLanguagePairIsSupported(direction);
 
-        try {
-            return ModernMT.getNode().submit(new GetContextVectorCallable(new LanguagePair[]{direction}, context, limit)).get()[0];
-        } catch (InterruptedException e) {
-            throw new SystemShutdownException();
-        } catch (ExecutionException e) {
-            throw unwrapException(ContextAnalyzerException.class, e);
-        }
+        Engine engine = ModernMT.getNode().getEngine();
+        ContextAnalyzer analyzer = engine.getContextAnalyzer();
+
+        return analyzer.getContextVector(direction, context, limit);
     }
 
     public Map<Locale, ContextVector> getContextVectors(String context, int limit, Locale source, Locale... targets) throws ContextAnalyzerException {
-        List<LanguagePair> _languages = filterUnsupportedLanguages(source, targets);
+        List<LanguagePair> languages = filterUnsupportedLanguages(source, targets);
 
-        if (_languages.isEmpty())
+        if (languages.isEmpty())
             return Collections.emptyMap();
 
-        try {
-            LanguagePair[] languages = _languages.toArray(new LanguagePair[_languages.size()]);
-            ContextVector[] vectors = ModernMT.getNode().submit(new GetContextVectorCallable(languages, context, limit)).get();
+        Engine engine = ModernMT.getNode().getEngine();
+        ContextAnalyzer analyzer = engine.getContextAnalyzer();
 
-            HashMap<Locale, ContextVector> result = new HashMap<>(languages.length);
-
-            for (int i = 0; i < vectors.length; i++)
-                result.put(languages[i].target, vectors[i]);
-
-            return result;
-        } catch (InterruptedException e) {
-            throw new SystemShutdownException();
-        } catch (ExecutionException e) {
-            throw unwrapException(ContextAnalyzerException.class, e);
+        HashMap<Locale, ContextVector> result = new HashMap<>(languages.size());
+        for (LanguagePair direction : languages) {
+            ContextVector contextVector = analyzer.getContextVector(direction, context, limit);
+            result.put(direction.target, contextVector);
         }
+
+        return result;
     }
 
     // -----------------------------
     //  Util functions
     // -----------------------------
 
-    private <T extends Throwable> T unwrapException(Class<T> type, ExecutionException e) {
+    private TranslationException unwrapException(ExecutionException e) {
         Throwable cause = e.getCause();
 
-        if (type.isAssignableFrom(cause.getClass()))
-            return type.cast(cause);
+        if (cause instanceof TranslationException)
+            return (TranslationException) cause;
+        else if (cause instanceof RejectedExecutionException)
+            return new TranslationRejectedException();
         else if (cause instanceof RuntimeException)
             throw (RuntimeException) cause;
         else
@@ -226,42 +227,19 @@ public class TranslationFacade {
     //  Internal Operations
     // -----------------------------
 
-    private static class GetContextVectorCallable implements Callable<ContextVector[]>, Serializable {
-
-        public final LanguagePair[] languages;
-        private final String context;
-        private final int limit;
-
-        public GetContextVectorCallable(LanguagePair[] languages, String context, int limit) {
-            this.languages = languages;
-            this.context = context;
-            this.limit = limit;
-        }
-
-        @Override
-        public ContextVector[] call() throws ContextAnalyzerException {
-            ContextAnalyzer analyzer = ModernMT.getNode().getEngine().getContextAnalyzer();
-
-            ContextVector[] result = new ContextVector[languages.length];
-            for (int i = 0; i < result.length; i++)
-                result[i] = analyzer.getContextVector(languages[i], context, limit);
-
-            return result;
-        }
-    }
-
-    private static class TranslateOperation implements Callable<Translation>, Serializable {
-
+    private static class TranslationTaskImpl implements TranslationTask {
         public final LanguagePair direction;
         public final String text;
         public final ContextVector context;
         public final int nbest;
+        public final Priority priority;
 
-        public TranslateOperation(LanguagePair direction, String text, ContextVector context, int nbest) {
+        public TranslationTaskImpl(LanguagePair direction, String text, ContextVector context, int nbest, Priority priority) {
             this.direction = direction;
             this.text = text;
             this.context = context;
             this.nbest = nbest;
+            this.priority = priority;
         }
 
         @Override
@@ -326,6 +304,10 @@ public class TranslationFacade {
                 throw new TranslationException("Problem while decoding source sentence", e);
             }
         }
-    }
 
+        @Override
+        public int getPriority() {
+            return this.priority.intValue;
+        }
+    }
 }

@@ -54,6 +54,10 @@ class ClusterNode(object):
     class Api(object):
         DEFAULT_TIMEOUT = 60 * 60  # sec
 
+        PRIORITY_HIGH = 'high'
+        PRIORITY_NORMAL = 'normal'
+        PRIORITY_BACKGROUND = 'background'
+
         def __init__(self, host=None, port=None, root=None):
             self.port = port
             self.host = host if host is not None else "localhost"
@@ -158,7 +162,7 @@ class ClusterNode(object):
             result = data['vectors']
             return None if len(result) != 1 else result.values()[0]
 
-        def translate(self, source, target, text, context=None, nbest=None, verbose=False):
+        def translate(self, source, target, text, context=None, nbest=None, verbose=False, priority=None):
             p = {'q': text, 'source': source, 'target': target}
             if nbest is not None:
                 p['nbest'] = nbest
@@ -166,6 +170,8 @@ class ClusterNode(object):
                 p['context_vector'] = self._encode_context(context)
             if verbose:
                 p['verbose'] = 'true'
+            if priority is not None:
+                p['priority'] = priority
 
             return self._get('translate', params=p)
 
