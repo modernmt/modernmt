@@ -88,7 +88,7 @@ void FastAligner::GetScores(const std::vector<std::pair<wordvec_t, wordvec_t>> &
 
 #pragma omp parallel for schedule(dynamic)
     for (size_t i = 0; i < batch.size(); ++i) {
-        outScores[i] = forwards[i] + backwards[i];
+        outScores[i] = ( forwards[i] + backwards[i] ) / ( batch[i].first.size() + batch[i].second.size() );
     }
 }
 
