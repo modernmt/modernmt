@@ -106,7 +106,7 @@ void AlignCorpus(const Corpus &corpus, size_t buffer_size, Symmetrization strate
     vector<pair<wordvec_t, wordvec_t>> batch;
     vector<alignment_t> alignments;
 
-    ofstream alignStream(corpus.GetOutputPath().c_str());
+    ofstream alignStream(corpus.GetOutputAlignPath().c_str());
     while (reader.Read(batch, buffer_size)) {
         aligner.GetAlignments(batch, alignments, strategy);
 

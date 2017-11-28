@@ -7,6 +7,7 @@
 #include <boost/filesystem.hpp>
 
 #define AlignFileExt "align"
+#define ScoreFileExt "score"
 
 using namespace std;
 using namespace mmt;
@@ -28,9 +29,11 @@ void Corpus::List(const string &path, const string &outPath,
             fs::path sourceFile = file;
             fs::path targetFile = file;
             fs::path alignmentFile = outPath / file.filename();
+            fs::path scoreFile = outPath / file.filename();
 
             targetFile = targetFile.replace_extension(fs::path(targetLang));
             alignmentFile = alignmentFile.replace_extension(fs::path(AlignFileExt));
+            scoreFile = scoreFile.replace_extension(fs::path(ScoreFileExt));
 
             if (!fs::is_regular_file(targetFile))
                 continue;
@@ -38,8 +41,7 @@ void Corpus::List(const string &path, const string &outPath,
             if (fs::is_regular_file(alignmentFile)) //alignment file already present
                 continue;
 
-            list.push_back(Corpus(sourceFile.string(), targetFile.string(), alignmentFile.string()));
-
+            list.push_back(Corpus(sourceFile.string(), targetFile.string(), alignmentFile.string(), scoreFile.string()));
         }
     }
 }

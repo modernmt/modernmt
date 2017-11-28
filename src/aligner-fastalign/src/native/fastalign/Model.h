@@ -32,9 +32,7 @@ namespace mmt {
                 ComputeAlignments(batch, NULL, &outAlignments);
             }
 
-            inline double ComputeScore(const wordvec_t &source, const wordvec_t &target) {
-                return ComputeAlignment(source, target, NULL, NULL);
-            }
+            double ComputeScore(const wordvec_t &source, const wordvec_t &target);
 
             inline void ComputeScores(const std::vector<std::pair<wordvec_t, wordvec_t>> &batch,
                                           std::vector<double> &outScores) {
@@ -60,6 +58,8 @@ namespace mmt {
 
             double ComputeAlignments(const std::vector<std::pair<wordvec_t, wordvec_t>> &batch,
                                      Model *outModel, std::vector<alignment_t> *outAlignments);
+
+
 
             double ComputeScores(const std::vector<std::pair<wordvec_t, wordvec_t>> &batch,
                                  Model *outModel, std::vector<double> *outScores);

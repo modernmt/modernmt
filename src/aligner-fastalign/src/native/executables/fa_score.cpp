@@ -97,7 +97,7 @@ void ScoreCorpus(const Corpus &corpus, size_t buffer_size, Symmetrization strate
     vector<pair<wordvec_t, wordvec_t>> batch;
     vector<double> scores;
 
-    ofstream scoreStream(corpus.GetOutputPath().c_str());
+    ofstream scoreStream(corpus.GetOutputScorePath().c_str());
     while (reader.Read(batch, buffer_size)) {
         aligner.GetScores(batch, scores, strategy);
 

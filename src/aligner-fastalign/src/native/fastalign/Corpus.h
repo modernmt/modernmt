@@ -21,20 +21,26 @@ namespace mmt {
 
         public:
             Corpus(const std::string &sourceFilePath, const std::string &targetFilePath,
-                   const std::string &outputFilePath = "") : sourcePath(sourceFilePath), targetPath(targetFilePath),
-                                                             outputPath(outputFilePath) {};
+                   const std::string &outputAlignPath = "",
+                   const std::string &outputScorePath = "") : sourcePath(sourceFilePath), targetPath(targetFilePath),
+                                                             outputAlignPath(outputAlignPath),
+                                                             outputScorePath(outputScorePath) {};
 
             static void List(const std::string &path, const std::string &outPath,
                              const std::string &sourceLang, const std::string &targetLang, std::vector<Corpus> &list);
 
-            const std::string &GetOutputPath() const {
-                return outputPath;
+            const std::string &GetOutputAlignPath() const {
+                return outputAlignPath;
+            }
+            const std::string &GetOutputScorePath() const {
+                return outputScorePath;
             }
 
         private:
             const std::string sourcePath;
             const std::string targetPath;
-            const std::string outputPath;
+            const std::string outputAlignPath;
+            const std::string outputScorePath;
         };
 
         class CorpusReader {

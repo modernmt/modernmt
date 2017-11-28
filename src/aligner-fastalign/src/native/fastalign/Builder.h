@@ -15,7 +15,6 @@ namespace mmt {
     namespace fastalign {
 
         struct Options {
-            double mean_srclen_multiplier = 1.0;
             int iterations = 5;
             bool favor_diagonal = true;
             double prob_align_null = 0.08;
@@ -69,7 +68,6 @@ namespace mmt {
             void Build(const Corpus &corpus, const std::string &path);
 
         private:
-            const double mean_srclen_multiplier;
             const double initial_diagonal_tension;
             const int iterations;
             const bool favor_diagonal;

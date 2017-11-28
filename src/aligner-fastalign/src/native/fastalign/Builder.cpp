@@ -142,8 +142,7 @@ public:
     }
 };
 
-Builder::Builder(Options options) : mean_srclen_multiplier(options.mean_srclen_multiplier),
-                                    initial_diagonal_tension(options.initial_diagonal_tension),
+Builder::Builder(Options options) : initial_diagonal_tension(options.initial_diagonal_tension),
                                     iterations(options.iterations),
                                     favor_diagonal(options.favor_diagonal),
                                     prob_align_null(options.prob_align_null),
