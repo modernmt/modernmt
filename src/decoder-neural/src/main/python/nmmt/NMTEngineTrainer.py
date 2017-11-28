@@ -55,6 +55,7 @@ class NMTEngineTrainer:
 
             self.bpe_symbols = 32000
             self.max_vocab_size = None  # Unlimited
+            self.vocab_pruning_threshold = None  # Skip pruning
 
             self.batch_size = 64
             self.max_generator_batches = 32  # Maximum batches of words in a seq to run the generator on in parallel.

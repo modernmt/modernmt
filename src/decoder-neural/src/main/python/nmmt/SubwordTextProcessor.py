@@ -467,7 +467,8 @@ class SubwordTextProcessor:
 
             # Create vocabularies
             source_subwords = self._collect_subwords(self._dictionaries[0], source_bpe)
-            target_subwords = self._collect_subwords(self._dictionaries[1], target_bpe if target_bpe is not None else source_bpe)
+            target_subwords = self._collect_subwords(self._dictionaries[1],
+                                                     target_bpe if target_bpe is not None else source_bpe)
 
             # Cleanup
             for counter in self._alphabets + self._dictionaries:
@@ -505,7 +506,6 @@ class SubwordTextProcessor:
             if self._vocab_pruning_threshold is not None:
                 self._prune_rare_terms(voc)
 
-
             if self._max_vocabulary_size is not None and len(voc) > self._max_vocabulary_size:
                 voc = self._reduce_vocabulary(voc)
             else:
@@ -513,19 +513,19 @@ class SubwordTextProcessor:
 
             return voc
 
-
-
         def _prune_rare_terms(self, terms):
             total = sum(terms.values())
-            tot = 0
+            counter = 0
+            threshold = 0
+
             for w, c in terms.most_common():
-                tot += c
-                if tot >= total * self._vocab_pruning_threshold:
-                    c_thr = c
+                counter += c
+                if counter >= total * self._vocab_pruning_threshold:
+                    threshold = c
                     break
 
             for w, c in terms.items():
-                if c < c_thr:
+                if c < threshold:
                     del terms[w]
 
             return terms
@@ -535,12 +535,15 @@ class SubwordTextProcessor:
             return set(x for x, _ in entries)
 
 
-if __name__ == '__main__':
-    processor = SubwordTextProcessor.load_from_file(sys.argv[1])
-    is_source = True if sys.argv[2] == "source" else False
+def bpe_main(model_path, is_source):
+    processor = SubwordTextProcessor.load_from_file(model_path)
 
     while 1:
-        line= sys.stdin.readline()
+        line = sys.stdin.readline()
         if not line:
             break
-        print (" ".join(processor.encode_line(line, is_source))).decode('utf-8')
+        print (' '.join(processor.encode_line(line, is_source))).decode('utf-8')
+
+
+if __name__ == '__main__':
+    bpe_main(sys.argv[1], True if sys.argv[2] == "source" else False)
