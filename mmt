@@ -94,8 +94,9 @@ def main_create(argv):
                                     '(dev set used by default).', default=None)
 
     nmt_arguments.add_argument('--gpus', dest='gpus', nargs='+', type=int, default=None,
-                               help='if neural is set, you can specify the list of GPUs used during training '
-                                    '(default value is all available GPUs). Specify the value -1 to not use any GPU.')
+                               help='if neural is set, you can specify the list of GPUs available to MMT.'
+                                    '(default value is all available GPUs). Specify the value -1 to not use any GPU.'
+                                    'WARNING: MMT only uses one GPU in training, choosing it among the available ones.')
 
     nmt_arguments.add_argument('--bpe-symbols', dest='bpe_symbols', type=int,
                                help='if neural is set, this is the number of symbols of the BPE encoder '
