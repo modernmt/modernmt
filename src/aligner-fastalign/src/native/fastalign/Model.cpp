@@ -168,13 +168,10 @@ double Model::ComputeScore(const wordvec_t &source, const wordvec_t &target) {
     for (length_t j = 0; j < trg_size; ++j) {
         const word_t &f_j = trg[j];
         sums[j] = GetProbability(kNullWord, f_j);
-        std::cerr << "j:" << j << " i:" << 0 <<" sums(j):" << sums[j] << endl;
 
         for (length_t i = 1; i <= src_size; ++i) {
             sums[j] += GetProbability(src[i - 1], f_j);
-            std::cerr << "j:" << j << " i:" << i <<" sums(j):" << sums[j] << endl;
         }
-        std::cerr << "j:" << j <<" sums(j):" << sums[j] << endl;
     }
     for (length_t j = 0; j < trg_size; ++j) {
         const word_t &f_j = trg[j];
@@ -182,9 +179,7 @@ double Model::ComputeScore(const wordvec_t &source, const wordvec_t &target) {
 
         for (length_t i = 1; i <= src_size; ++i) {
             sum += GetProbability(src[i - 1], f_j) / sums[j];
-            std::cerr << "j:" << j << " i:" << i <<" prob(i,j):" << GetProbability(src[i - 1], f_j) << " sum:" << sum << " total:" << total << endl;
         }
-        std::cerr << "j:" << j << " sum:" << sum << " total:" << total << endl;
         total += log(sum);
     }
 

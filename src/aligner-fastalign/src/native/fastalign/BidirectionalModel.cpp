@@ -70,21 +70,17 @@ void BidirectionalModel::Open(const string &filename, Model **outForward, Model 
 void BidirectionalModel::ExportLexicalModel(const string &filename, const Vocabulary *vb) {
     ofstream out(filename, ios::binary | ios::out);
 
-    std::cerr << "table_size:" << table->size() << endl;
     for (word_t sid = 0; sid < table->size(); ++sid) {
         const unordered_map<word_t, pair<float, float>> &row = table->at(sid);
         size_t row_size = row.size();
-        std::cerr << "sid:" << sid << " row_size:" << row_size << endl;
 
         if (row_size == 0)
             continue;
 
-        std::cerr << "<" << vb->Get(sid) << "> " << row_size << endl;
         out << "<" << vb->Get(sid) << "> " << row_size << endl;
 
         for (auto it = row.begin(); it != row.end(); ++it) {
             word_t tid = it->first;
-            std::cerr << "  <" << vb->Get(tid) << "> " << it->second.first << " " << it->second.second << endl;
             out << "  <" << vb->Get(tid) << "> " << it->second.first << " " << it->second.second << endl;
         }
     }
