@@ -7,6 +7,9 @@
 #include "DiagonalAlignment.h"
 #include "Corpus.h"
 
+#include <iostream>
+#include <math.h>       /* isnormal */
+
 using namespace std;
 using namespace mmt;
 using namespace mmt::fastalign;
@@ -31,7 +34,7 @@ double Model::ComputeScores(const vector<pair<wordvec_t, wordvec_t>> &batch, Mod
         if (outScores)
             outScores->at(i) = (double) current_emp_feat;
     }
-
+    assert(isnormal(emp_feat));
     return emp_feat;
 }
 
@@ -48,6 +51,7 @@ double Model::ComputeAlignments(const vector<pair<wordvec_t, wordvec_t>> &batch,
         emp_feat += ComputeAlignment(p.first, p.second, outModel, outAlignments ? &outAlignments->at(i) : NULL);
     }
 
+    assert(isnormal(emp_feat));
     return emp_feat;
 }
 
@@ -74,9 +78,11 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
             if (favor_diagonal)
                 prob_a_i = prob_align_null;
             probs[0] = GetProbability(kNullWord, f_j) * prob_a_i;
+            std::cerr << "j:" << j << " i:" << 0 <<" GetProbability(kNullWord, f_j):" << GetProbability(kNullWord, f_j) << endl;
             sum += probs[0];
         }
 
+        assert(isnormal(sum));
         double az = 0;
         if (favor_diagonal)
             az = DiagonalAlignment::ComputeZ(j + 1, trg_size, src_size, diagonal_tension) /
@@ -90,10 +96,13 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
             probs[i] = GetProbability(src[i - 1], f_j) * prob_a_i;
             sum += probs[i];
         }
+        assert(isnormal(sum));
 
 
         if (use_null) {
             double count = probs[0] / sum;
+
+            assert(isnormal(count));
 
             if (outModel)
                 outModel->IncrementProbability(kNullWord, f_j, count);
@@ -102,11 +111,16 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
         for (length_t i = 1; i <= src_size; ++i) {
             const double p = probs[i] / sum;
 
+            assert(isnormal(p));
+
             if (outModel)
                 outModel->IncrementProbability(src[i - 1], f_j, p);
 
             emp_feat += DiagonalAlignment::Feature(j, i, trg_size, src_size) * p;
         }
+
+
+        assert(isnormal(emp_feat));
 
 
         if (outAlignment) {
@@ -154,10 +168,13 @@ double Model::ComputeScore(const wordvec_t &source, const wordvec_t &target) {
     for (length_t j = 0; j < trg_size; ++j) {
         const word_t &f_j = trg[j];
         sums[j] = GetProbability(kNullWord, f_j);
+        std::cerr << "j:" << j << " i:" << 0 <<" sums(j):" << sums[j] << endl;
 
         for (length_t i = 1; i <= src_size; ++i) {
             sums[j] += GetProbability(src[i - 1], f_j);
+            std::cerr << "j:" << j << " i:" << i <<" sums(j):" << sums[j] << endl;
         }
+        std::cerr << "j:" << j <<" sums(j):" << sums[j] << endl;
     }
     for (length_t j = 0; j < trg_size; ++j) {
         const word_t &f_j = trg[j];
@@ -165,7 +182,9 @@ double Model::ComputeScore(const wordvec_t &source, const wordvec_t &target) {
 
         for (length_t i = 1; i <= src_size; ++i) {
             sum += GetProbability(src[i - 1], f_j) / sums[j];
+            std::cerr << "j:" << j << " i:" << i <<" prob(i,j):" << GetProbability(src[i - 1], f_j) << " sum:" << sum << " total:" << total << endl;
         }
+        std::cerr << "j:" << j << " sum:" << sum << " total:" << total << endl;
         total += log(sum);
     }
 
