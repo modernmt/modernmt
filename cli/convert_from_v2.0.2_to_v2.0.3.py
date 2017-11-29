@@ -20,13 +20,13 @@ def main(argv):
                 key, model_name = map(str.strip, line.split("="))
                 engines[key[6:]] = model_name
             else:
-                settings.append(line)
+                settings.append(line).strip()
 
     with open(os.path.join(path_out,"modelc.conf"),"r") as cfg_out_stream:
         cfg_out_stream.write('[models]\n')
         for key in engines:
             cfg_out_stream.write('%s = %s\n' % (key, engines[key]))
-        cfg_out_stream.write('[models]\n')
+        cfg_out_stream.write('[settings]\n')
         for s in settings:
             cfg_out_stream.write('%s\n' % (s))
 
@@ -50,8 +50,8 @@ def convert_model(path_in, path_out, filename):
     torch.save(chkpt_out, model_out + '.dat')
 
     dict_out = {
-                'src': chkpt_in['dict']['src'],
-                'tgt': chkpt_in['dict']['tgt'],
+                'src': chkpt_in['dicts']['src'],
+                'tgt': chkpt_in['dicts']['tgt'],
             }
     torch.save(dict_out, model_out + '.vcb')
 
