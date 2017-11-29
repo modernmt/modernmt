@@ -75,7 +75,7 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
             if (favor_diagonal)
                 prob_a_i = prob_align_null;
             probs[0] = GetProbability(kNullWord, f_j) * prob_a_i;
-            std::cerr << "j:" << j << " i:" << 0 <<" GetProbability(kNullWord, f_j):" << GetProbability(kNullWord, f_j) << endl;
+//            std::cerr << "j:" << j << " i:" << 0 <<" GetProbability(kNullWord, f_j):" << GetProbability(kNullWord, f_j) << endl;
             sum += probs[0];
         }
 

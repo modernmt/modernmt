@@ -24,9 +24,9 @@ def main(argv):
             score=score_line.strip().split()
             s = float(score[0])
             if math.isinf(s) or math.isnan(s):
-                scores[line] = 0.0
+                scores[line] = -1000.0
             else:
-                scores[line] = math.exp(s)
+                scores[line] = s
             line += 1
 
         selected_scores, z_scores = select(scores, threshold)
@@ -52,16 +52,16 @@ def main(argv):
                                         if selected_scores[line] == True:
                                             source_filtered_stream.write(source_line)
                                             target_filtered_stream.write(target_line)
-                                            if scores[line] > 0.0:
-                                                score_filtered_stream.write("%f %f\n" % (math.log(scores[line]), z_scores[line]))
+                                            if scores[line] > -1000.0:
+                                                score_filtered_stream.write("%f %f\n" % (scores[line], z_scores[line]))
                                             else:
                                                 score_filtered_stream.write("MY_NAN %f\n" % (z_scores[line]))
                                             selected += 1
                                         else:
                                             source_removed_stream.write(source_line)
                                             target_removed_stream.write(target_line)
-                                            if scores[line] > 0.0:
-                                                score_removed_stream.write("%f %f\n" % (math.log(scores[line]), z_scores[line]))
+                                            if scores[line] > -1000.0:
+                                                score_removed_stream.write("%f %f\n" % (scores[line], z_scores[line]))
                                             else:
                                                 score_removed_stream.write("MY_NAN %f\n" % (z_scores[line]))
 
@@ -71,14 +71,31 @@ def main(argv):
 
 
 def select(scores,threshold):
+    selected_scores, z_scores = {}, {}
+    for c in scores:
+        if (scores[c] > -1000.0) and (scores[c] > threshold):
+            selected_scores[c] = True
+        else:
+            selected_scores[c] = False
+        z_scores[c] = scores[c]
+
+
+    return selected_scores, z_scores
+
+def select2(scores,threshold):
     sum, squared_sum = 0.0, 0.0
     N = len(scores)
     for c in scores:
         sum += scores[c] # sum all scores
-        squared_sum += scores[c]*scores[c] # sum all scores
-
     mean  = sum / N
-    std_dev = math.sqrt(squared_sum / N + mean*mean)
+    N_squared_sum = 0
+
+    for c in scores:
+        if (scores[c] < mean):
+            squared_sum += (mean - scores[c])
+            N_squared_sum += 1
+
+    std_dev = squared_sum / N_squared_sum
     sys.stderr.write("N:%s sum:%s squared_sum:%s mean:%s std_dev:%s\n" % (N, sum, squared_sum, mean, std_dev))
 
     selected_scores, z_scores = {}, {}
