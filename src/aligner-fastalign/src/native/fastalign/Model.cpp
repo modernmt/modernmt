@@ -19,23 +19,19 @@ Model::Model(bool is_reverse, bool use_null, bool favor_diagonal, double prob_al
           diagonal_tension(diagonal_tension) {
 }
 
-double Model::ComputeScores(const vector<pair<wordvec_t, wordvec_t>> &batch, Model *outModel,
-                                vector<double> *outScores) {
+void Model::ComputeScores(const vector<pair<wordvec_t, wordvec_t>> &batch,
+                                vector<double> &outScores) {
     double current_emp_feat = 0.0, emp_feat = 0.0;
 
-    if (outScores)
-        outScores->resize(batch.size());
+    outScores.resize(batch.size());
 
 #pragma omp parallel for schedule(dynamic) reduction(+:emp_feat)
     for (size_t i = 0; i < batch.size(); ++i) {
         const pair<wordvec_t, wordvec_t> &p = batch[i];
-        current_emp_feat = ComputeScore(p.first, p.second);
-        emp_feat += current_emp_feat;
-        if (outScores)
-            outScores->at(i) = (double) current_emp_feat;
+        double score;
+        ComputeAlignment(p.first, p.second, NULL, NULL, &score);
+        outScores[i] = score;
     }
-    assert(isnormal(emp_feat));
-    return emp_feat;
 }
 
 double Model::ComputeAlignments(const vector<pair<wordvec_t, wordvec_t>> &batch, Model *outModel,
@@ -56,7 +52,7 @@ double Model::ComputeAlignments(const vector<pair<wordvec_t, wordvec_t>> &batch,
 }
 
 double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target, Model *outModel,
-                               alignment_t *outAlignment) {
+                               alignment_t *outAlignment, double *outScore) {
     double emp_feat = 0.0;
 
     const wordvec_t src = is_reverse ? target : source;
@@ -67,6 +63,7 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
     length_t src_size = (length_t) src.size();
     length_t trg_size = (length_t) trg.size();
 
+    double outProb = 0.0;
     for (length_t j = 0; j < trg_size; ++j) {
         const word_t &f_j = trg[j];
         double sum = 0;
@@ -123,7 +120,7 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
         assert(isnormal(emp_feat));
 
 
-        if (outAlignment) {
+        if (outAlignment || outScore) {
             double max_p = -1;
             int max_index = -1;
             if (use_null) {
@@ -138,7 +135,10 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
                 }
             }
 
-            if (max_index > 0) {
+            if (outScore)
+                outProb += log(max_p);
+
+            if (outAlignment && max_index > 0) {
                 if (is_reverse)
                     outAlignment->push_back(pair<length_t, length_t>(j, max_index - 1));
                 else
@@ -146,44 +146,49 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
             }
         }
     }
+    outProb /= trg_size;
+
+    if (outScore)
+        *outScore = outProb;
 
     return emp_feat;
 }
 
-double Model::ComputeScore(const wordvec_t &source, const wordvec_t &target) {
-    double total = 0.0;
 
-    const wordvec_t src = is_reverse ? target : source;
-    const wordvec_t trg = is_reverse ? source : target;
-
-    vector<double> sums(trg.size());
-
-    length_t src_size = (length_t) src.size();
-    length_t trg_size = (length_t) trg.size();
-
-    for (length_t j = 0; j < trg_size; ++j) {
-        sums[j] = 0.0;
-    }
-
-    for (length_t j = 0; j < trg_size; ++j) {
-        const word_t &f_j = trg[j];
-        sums[j] = GetProbability(kNullWord, f_j);
-
-        for (length_t i = 1; i <= src_size; ++i) {
-            sums[j] += GetProbability(src[i - 1], f_j);
-        }
-    }
-    for (length_t j = 0; j < trg_size; ++j) {
-        const word_t &f_j = trg[j];
-        double sum = GetProbability(kNullWord, f_j);
-
-        for (length_t i = 1; i <= src_size; ++i) {
-            sum += GetProbability(src[i - 1], f_j) / sums[j];
-        }
-        total += log(sum);
-    }
-
-    total -= trg_size * log(src_size + 1);
-
-    return total;
-}
+//double Model::ComputeScore(const wordvec_t &source, const wordvec_t &target) {
+//    double total = 0.0;
+//
+//    const wordvec_t src = is_reverse ? target : source;
+//    const wordvec_t trg = is_reverse ? source : target;
+//
+//    vector<double> sums(trg.size());
+//
+//    length_t src_size = (length_t) src.size();
+//    length_t trg_size = (length_t) trg.size();
+//
+//    for (length_t j = 0; j < trg_size; ++j) {
+//        sums[j] = 0.0;
+//    }
+//
+//    for (length_t j = 0; j < trg_size; ++j) {
+//        const word_t &f_j = trg[j];
+//        sums[j] = GetProbability(kNullWord, f_j);
+//
+//        for (length_t i = 1; i <= src_size; ++i) {
+//            sums[j] += GetProbability(src[i - 1], f_j);
+//        }
+//    }
+//    for (length_t j = 0; j < trg_size; ++j) {
+//        const word_t &f_j = trg[j];
+//        double sum = GetProbability(kNullWord, f_j);
+//
+//        for (length_t i = 1; i <= src_size; ++i) {
+//            sum += GetProbability(src[i - 1], f_j) / sums[j];
+//        }
+//        total += log(sum);
+//    }
+//
+//    total -= trg_size * log(src_size + 1);
+//
+//    return total;
+//}

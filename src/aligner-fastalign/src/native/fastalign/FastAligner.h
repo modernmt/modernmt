@@ -35,9 +35,9 @@ namespace mmt {
             void GetAlignments(const std::vector<std::pair<wordvec_t, wordvec_t>> &batch,
                                std::vector<alignment_t> &outAlignments, Symmetrization symmetrization);
 
-            double GetScore(const sentence_t &source, const sentence_t &target, Symmetrization symmetrization);
-
-            double GetScore(const wordvec_t &source, const wordvec_t &target, Symmetrization symmetrization);
+//            double GetScore(const sentence_t &source, const sentence_t &target, Symmetrization symmetrization);
+//
+//            double GetScore(const wordvec_t &source, const wordvec_t &target, Symmetrization symmetrization);
 
             void GetScores(const std::vector<std::pair<sentence_t, sentence_t>> &batch,
                                std::vector<double> &outScores, Symmetrization symmetrization);

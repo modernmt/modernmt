@@ -46,21 +46,21 @@ FastAligner::~FastAligner() {
     delete vocabulary;
 }
 
-double FastAligner::GetScore(const sentence_t &_source, const sentence_t &_target,
-                                      Symmetrization symmetrization) {
-    wordvec_t source, target;
-    vocabulary->Encode(_source, source);
-    vocabulary->Encode(_target, target);
+//double FastAligner::GetScore(const sentence_t &_source, const sentence_t &_target,
+//                                      Symmetrization symmetrization) {
+//    wordvec_t source, target;
+//    vocabulary->Encode(_source, source);
+//    vocabulary->Encode(_target, target);
+//
+//    return GetScore(source, target, symmetrization);
+//}
 
-    return GetScore(source, target, symmetrization);
-}
-
-double FastAligner::GetScore(const wordvec_t &source, const wordvec_t &target, Symmetrization symmetrization) {
-    double forward = forwardModel->ComputeScore(source, target);
-    double backward = backwardModel->ComputeScore(source, target);
-
-    return forward+backward;
-}
+//double FastAligner::GetScore(const wordvec_t &source, const wordvec_t &target, Symmetrization symmetrization) {
+//    double forward = forwardModel->ComputeScore(source, target);
+//    double backward = backwardModel->ComputeScore(source, target);
+//
+//    return forward+backward;
+//}
 
 void FastAligner::GetScores(const std::vector<std::pair<sentence_t, sentence_t>> &_batch,
                                 std::vector<double> &outScores, Symmetrization symmetrization) {
@@ -88,7 +88,8 @@ void FastAligner::GetScores(const std::vector<std::pair<wordvec_t, wordvec_t>> &
 
 #pragma omp parallel for schedule(dynamic)
     for (size_t i = 0; i < batch.size(); ++i) {
-        outScores[i] = ( ( forwards[i] / batch[i].first.size() ) + ( backwards[i] / batch[i].second.size() ) ) / 2;
+//        outScores[i] = ( ( forwards[i] / batch[i].first.size() ) + ( backwards[i] / batch[i].second.size() ) ) / 2;
+        outScores[i] = ( forwards[i] + backwards[i] ) / 2;
     }
 }
 
