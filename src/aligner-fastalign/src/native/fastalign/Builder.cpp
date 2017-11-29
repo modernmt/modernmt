@@ -117,18 +117,18 @@ public:
     void Store(const string &filename) {
         ofstream out(filename, ios::binary | ios::out);
 
-        cerr << "storing use_null:" << use_null << std::endl;
+        //cerr << "storing use_null:" << use_null << std::endl;
         out.write((const char *) &use_null, sizeof(bool));
-        cerr << "storing favor_diagonal:" << favor_diagonal << std::endl;
+        //cerr << "storing favor_diagonal:" << favor_diagonal << std::endl;
         out.write((const char *) &favor_diagonal, sizeof(bool));
 
-        cerr << "storing prob_align_null:" << prob_align_null << std::endl;
+        //cerr << "storing prob_align_null:" << prob_align_null << std::endl;
         out.write((const char *) &prob_align_null, sizeof(double));
-        cerr << "storing diagonal_tension:" << diagonal_tension << std::endl;
+        //cerr << "storing diagonal_tension:" << diagonal_tension << std::endl;
         out.write((const char *) &diagonal_tension, sizeof(double));
 
         size_t data_size = data.size();
-        cerr << "storing data_size:" << data_size << std::endl;
+        //cerr << "storing data_size:" << data_size << std::endl;
         out.write((const char *) &data_size, sizeof(size_t));
 
         for (word_t sourceWord = 0; sourceWord < data_size; ++sourceWord) {
@@ -136,17 +136,17 @@ public:
             size_t row_size = row.size();
 
             if (!row.empty()) {
-                cerr << "storing s:<" << sourceWord << std::endl;
+                //cerr << "storing s:<" << sourceWord << std::endl;
                 out.write((const char *) &sourceWord, sizeof(word_t));
-                cerr << "storing row_size:" << row_size << std::endl;
+                //cerr << "storing row_size:" << row_size << std::endl;
                 out.write((const char *) &row_size, sizeof(size_t));
 
                 for (auto entry = row.begin(); entry != row.end(); ++entry) {
                     float value = (float) (entry->second.first);
 
-                    cerr << "storing t:<" << entry->first << ">" << std::endl;
+                    //cerr << "storing t:<" << entry->first << ">" << std::endl;
                     out.write((const char *) &entry->first, sizeof(word_t));
-                    cerr << "storing p(t|s):" << value << std::endl;
+                    //cerr << "storing p(t|s):" << value << std::endl;
                     out.write((const char *) &value, sizeof(float));
                 }
             }
@@ -402,15 +402,15 @@ void Builder::MergeAndStore(const string &fwd_path, const string &bwd_path, cons
     size_t bwd_ttable_size;
 
     bwd_in.read((char *) &bwd_use_null, sizeof(bool));
-    cerr << "reading bwd use_null:" << use_null << std::endl;
+    //cerr << "reading bwd use_null:" << use_null << std::endl;
     bwd_in.read((char *) &bwd_favor_diagonal, sizeof(bool));
-    cerr << "reading bwd bwd_favor_diagonal:" << bwd_favor_diagonal << std::endl;
+    //cerr << "reading bwd bwd_favor_diagonal:" << bwd_favor_diagonal << std::endl;
     bwd_in.read((char *) &bwd_prob_align_null, sizeof(double));
-    cerr << "reading bwd bwd_prob_align_null:" << bwd_prob_align_null << std::endl;
+    //cerr << "reading bwd bwd_prob_align_null:" << bwd_prob_align_null << std::endl;
     bwd_in.read((char *) &bwd_diagonal_tension, sizeof(double));
-    cerr << "reading bwd bwd_diagonal_tension:" << bwd_diagonal_tension << std::endl;
+    //cerr << "reading bwd bwd_diagonal_tension:" << bwd_diagonal_tension << std::endl;
     bwd_in.read((char *) &bwd_ttable_size, sizeof(size_t));
-    cerr << "reading bwd bwd_ttable_size:" << bwd_ttable_size << std::endl;
+    //cerr << "reading bwd bwd_ttable_size:" << bwd_ttable_size << std::endl;
 
     //checking consistency of forward and backward models
     assert(fwd_use_null == bwd_use_null);
@@ -424,17 +424,17 @@ void Builder::MergeAndStore(const string &fwd_path, const string &bwd_path, cons
     //loading backward entries and fill the bitable
     while (true) {
         bwd_in.read((char *) &targetWord, sizeof(word_t));
-        cerr << "reading bwd targetWord:<" << targetWord << ">" << std::endl;
+      //  cerr << "reading bwd targetWord:<" << targetWord << ">" << std::endl;
         if (bwd_in.eof())
             break;
 
         bwd_in.read((char *) &rowSize, sizeof(size_t));
-        cerr << "reading bwd rowSize:" << rowSize << std::endl;
+        //cerr << "reading bwd rowSize:" << rowSize << std::endl;
         for (size_t i = 0; i < rowSize; ++i) {
             bwd_in.read((char *) &sourceWord, sizeof(word_t));
-            cerr << "reading bwd sourceWord:<" << sourceWord << ">" << std::endl;
+          //  cerr << "reading bwd sourceWord:<" << sourceWord << ">" << std::endl;
             bwd_in.read((char *) &score, sizeof(float));
-            cerr << "reading bwd score:" << score << std::endl;
+            //cerr << "reading bwd score:" << score << std::endl;
 
             assert(sourceWord < table->size());
 
@@ -442,7 +442,7 @@ void Builder::MergeAndStore(const string &fwd_path, const string &bwd_path, cons
                                                       pair<float, float>(kNullProbability, kNullProbability));
             pair<float, float> &el = cell.first->second;
             el.second = score;
-            cerr << "reading bwd el.first:" << el.first << " el.second:" << el.second << std::endl;
+            //cerr << "reading bwd el.first:" << el.first << " el.second:" << el.second << std::endl;
         }
 
     }
@@ -469,11 +469,11 @@ void Builder::MergeAndStore(const string &fwd_path, const string &bwd_path, cons
         out.write((const char *) &sourceWord, sizeof(word_t));
         out.write((const char *) &rowSize, sizeof(size_t));
         for (auto trgEntry = row.begin(); trgEntry != row.end(); ++trgEntry) {
-            cerr << "storing t:<" << trgEntry->first << ">" << std::endl;
+            //cerr << "storing t:<" << trgEntry->first << ">" << std::endl;
             out.write((const char *) &trgEntry->first, sizeof(word_t));
-            cerr << "storing p(t|s):" << trgEntry->second.first << std::endl;
+            //cerr << "storing p(t|s):" << trgEntry->second.first << std::endl;
             out.write((const char *) &trgEntry->second.first, sizeof(float));
-            cerr << "storing p(s|t):" << trgEntry->second.second << std::endl;
+            //cerr << "storing p(s|t):" << trgEntry->second.second << std::endl;
             out.write((const char *) &trgEntry->second.second, sizeof(float));
         }
     }
