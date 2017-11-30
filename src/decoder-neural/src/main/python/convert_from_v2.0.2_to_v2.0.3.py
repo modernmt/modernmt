@@ -14,7 +14,7 @@ def main(argv):
 
     engines = {}
     settings = []
-    with open(os.path.join(path_in,"modelc.conf"),"r") as cfg_in_stream:
+    with open(os.path.join(path_in,"model.conf"),"r") as cfg_in_stream:
         for line in cfg_in_stream:
             if line.startswith('model.'):
                 key, model_name = map(str.strip, line.split("="))
@@ -22,7 +22,7 @@ def main(argv):
             else:
                 settings.append(line).strip()
 
-    with open(os.path.join(path_out,"modelc.conf"),"r") as cfg_out_stream:
+    with open(os.path.join(path_out,"model.conf"),"r") as cfg_out_stream:
         cfg_out_stream.write('[models]\n')
         for key in engines:
             cfg_out_stream.write('%s = %s\n' % (key, engines[key]))
