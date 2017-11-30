@@ -22,7 +22,7 @@ def main(argv):
             else:
                 settings.append(line).strip()
 
-    with open(os.path.join(path_out,"model.conf"),"r") as cfg_out_stream:
+    with open(os.path.join(path_out,"model.conf"),"w") as cfg_out_stream:
         cfg_out_stream.write('[models]\n')
         for key in engines:
             cfg_out_stream.write('%s = %s\n' % (key, engines[key]))
