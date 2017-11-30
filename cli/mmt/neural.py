@@ -244,7 +244,8 @@ class NMTDecoder:
 
             with open(os.path.join(model_folder, 'model.conf'), 'w') as model_map:
                 filename = os.path.basename(self.model)
-                model_map.write('model.%s__%s = %s\n' % (self._source_lang, self._target_lang, filename))
+                model_map.write('[models]\n')
+                model_map.write('%s__%s = %s\n' % (self._source_lang, self._target_lang, filename))
 
 
 class NeuralEngine(Engine):
