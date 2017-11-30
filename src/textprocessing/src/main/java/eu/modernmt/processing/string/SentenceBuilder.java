@@ -16,13 +16,11 @@ import java.util.*;
  * <p>
  * The SentenceBuilder stores both
  * - the original version of the String, which is never altered
- * - the current version of the String, that can undergo changes
- * (and is therefore implemented as a StringBuilder)
+ * - the current version of the String, that can undergo changes (and is therefore implemented as a StringBuilder)
  * <p>
  * In order to perform String processing the SentenceBuilder employs one Editor,
  * that can update the current string by creating and committing Transformations.
- * The SentenceBuilder also has a Transformation list
- * all Editors add their Transformations to when executing commit.
+ * The SentenceBuilder also has a Transformation list all Editors add their Transformations to when executing commit.
  * <p>
  * Moreover, the SentenceBuilder has a reference to a IndexMap object
  * that for each position on the local version of the string in the current Editor
@@ -33,8 +31,7 @@ import java.util.*;
  * <p>
  * In order to save memory and time, during all preprocessing activities for all strings
  * one and only one SentenceBuilder object is used.
- * After the generation of the Sentence for the current string,
- * it is just cleared and re-initialized.
+ * After the generation of the Sentence for the current string it is just cleared and re-initialized.
  */
 public class SentenceBuilder {
 

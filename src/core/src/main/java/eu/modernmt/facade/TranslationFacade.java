@@ -14,13 +14,11 @@ import eu.modernmt.facade.exceptions.TranslationRejectedException;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
-import eu.modernmt.model.Alignment;
-import eu.modernmt.model.ContextVector;
-import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Translation;
+import eu.modernmt.model.*;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
+import eu.modernmt.processing.splitter.SentenceSplitter;
 
 import java.io.File;
 import java.util.*;
@@ -253,21 +251,23 @@ public class TranslationFacade {
 
             try {
                 Sentence sentence = preprocessor.process(direction, text);
-
                 Translation translation;
 
-                if (nbest > 0) {
-                    DecoderWithNBest nBestDecoder = (DecoderWithNBest) decoder;
-                    translation = nBestDecoder.translate(direction, sentence, context, nbest);
+                if (decoder.supportsSentenceSplit()) {
+                    /* split the Sentence tokens in multiple sentences using the SentenceSplitter */
+                    Sentence[] splitSentences = SentenceSplitter.forLanguage(direction.source).split(sentence);
+                    /*get the corresponding translations*/
+                    Translation[] splitTranslations = translate(splitSentences, engine);
+                    /*merge them back*/
+                    translation = this.merge(sentence, splitSentences, splitTranslations);
                 } else {
-                    translation = decoder.translate(direction, sentence, context);
+                    translation = translate(sentence, engine);
                 }
 
-                // Translation
+                // Alignment
                 if (!translation.hasAlignment()) {
                     Aligner aligner = engine.getAligner();
                     Alignment alignment = aligner.getAlignment(direction, sentence, translation);
-
                     translation.setWordAlignment(alignment);
                 }
 
@@ -291,10 +291,8 @@ public class TranslationFacade {
                             i++;
                         }
                     }
-
                     postprocessor.process(direction, hypotheses);
                 }
-
                 return translation;
             } catch (ProcessingException e) {
                 throw new TranslationException("Problem while processing translation", e);
@@ -303,6 +301,157 @@ public class TranslationFacade {
             } catch (DecoderException e) {
                 throw new TranslationException("Problem while decoding source sentence", e);
             }
+        }
+
+        /**
+         * This private method asks the passed Engine to translate one single sentence
+         * @param sentence the Sentence object to translate
+         * @param engine the engine to which the translation must be requested
+         * @return the obtained Translation
+         * @throws DecoderException if there is an error in the Decoding process
+         * @throws AlignerException if there is an error while computing the alignments
+         */
+        private Translation translate(Sentence sentence, Engine engine) throws DecoderException, AlignerException{
+            Decoder decoder = engine.getDecoder();
+
+            Translation translation;
+
+            if (nbest > 0) {
+                DecoderWithNBest nBestDecoder = (DecoderWithNBest) decoder;
+                translation = nBestDecoder.translate(direction, sentence, context, nbest);
+            } else {
+                translation = decoder.translate(direction, sentence, context);
+            }
+            return translation;
+        }
+
+        /**
+         * This private method asks the passed Engine to translate, one by one, the passed sentences
+         * @param sentences an array containing the Sentence objects to translate
+         * @param engine the engine to which the translations must be requested
+         * @return an array containing, for each passed Sentence, the corresponding Translation
+         * @throws DecoderException if there is an error in the Decoding process
+         * @throws AlignerException if there is an error while computing the alignments
+         */
+        private Translation[] translate(Sentence[] sentences, Engine engine) throws DecoderException, AlignerException{
+
+            Translation[] translations = new Translation[sentences.length];
+
+            for(int i = 0; i < sentences.length; i++)
+                translations[i] = this.translate(sentences[i], engine);
+
+            return translations;
+        }
+
+        /**
+         * This private method merges a group of split translations back into a single Translation.
+         * If necessary, it also takes into account the Translation NBests.
+         *
+         * This method is typically called by the TranslationTaskImpl "translate" method when
+         * the original sentence was split into multiple sentences and it needs
+         * It is first used on the obtained split translation and then, if those translation had NBests too,
+         * it is also called iteratively on their NBests to merge them too.
+         *
+         * @param originalSentence the original Sentence to translate
+         * @param splitSentences the sub-sentences obtained by splitting the first Sentence
+         * @param splitTranslations the sub-translations obtained by translating the sub-sentences one by one
+         * @return the Translation obtained by merging the sub-translations back into one
+         */
+        private Translation merge(Sentence originalSentence, Sentence[] splitSentences, Translation[] splitTranslations) {
+
+            Translation translation = this.join(originalSentence, splitSentences, splitTranslations);
+
+            /* If there are nbests in the obtained translations, they must be merged too.
+            Join the n-bests in the array to obtain a valid nbest for the global translation.*/
+            if (!splitTranslations[0].hasNbest())
+                return translation;
+
+            int nbestSize = splitTranslations[0].getNbest().size();
+            if (nbestSize > 0) {
+                List<Translation> globalNBests = new ArrayList<>(nbestSize);    //list of global merged nbests to write in the result global translation
+                Translation[] nbests = new Translation[splitTranslations.length];   //array with the nbests with same nbest index got from the partial translations
+
+                /* Iterate over the n-bests of each translation and recompute in each iteration the nbest array
+                to have the partial nbests referring to the current nbest index (e.g. the 2nd nbest from all partial translations)
+                Then merge the Translations in the recomputed nbests array and put the result in globalNBests*/
+
+                for (int nbestIndex = 0; nbestIndex < nbestSize; nbestIndex++) {
+                    for (int translationIndex = 0; translationIndex < splitTranslations.length; translationIndex++)
+                        nbests[translationIndex] = splitTranslations[translationIndex].getNbest().get(nbestIndex);
+                    globalNBests.add(this.join(originalSentence, splitSentences, nbests));
+                }
+
+                translation.setNbest(globalNBests);
+            }
+
+            return translation;
+        }
+
+        /**
+         * This private method merges a group of split translations back into a single Translation
+         * without taking into account the Translation NBests.
+         *
+         * This method is typically called by the TranslationTaskImpl "merge" method when
+         * the original sentence was split into multiple sentences and so multiple translations were obtained.
+         * It is first used on the obtained split translation and then, if those translation had NBests too,
+         * it is also called iteratively on their NBests to merge them too.
+         *
+         * @param originalSentence the original Sentence to translate
+         * @param splitSentences the sub-sentences obtained by splitting the first Sentence
+         * @param splitTranslations the sub-translations obtained by translating the sub-sentences one by one
+         * @return the Translation obtained by merging the sub-translations back into one
+         */
+        private Translation join(Sentence originalSentence, Sentence[] splitSentences, Translation[] splitTranslations) {
+
+            /* get the sizes for the data structures of the "global" translation: wordsSize, wordAlignmentSize.
+            * [do not use tags because they are still projected in the translation */
+            int globalWordsSize = 0;
+            int globalWordAlignmentSize = 0;
+            for (Translation splitTranslation : splitTranslations) {
+                globalWordsSize += splitTranslation.getWords().length;
+                if (splitTranslations[0].hasAlignment())
+                    globalWordAlignmentSize += splitTranslation.getWordAlignment().size();  //remains 0 if translations do not have alignments
+            }
+
+            /* create and initialize the data structures for the global translation using the computed sizes */
+            Word[] globalWords = new Word[globalWordsSize];
+            int[] globalSrcIndexes = new int[globalWordAlignmentSize];    //size 0 if translations do not have alignments
+            int[] globalTrgIndexes = new int[globalWordAlignmentSize];    //size 0 if translations do not have alignments
+
+            int srcWordsOffset = 0;  /* in each iteration, this is the amount of src words seen in the previous sentences*/
+            int trgWordsOffset = 0; /* in each iteration, this is the amount of trg words seen in the previous sentences*/
+
+            /* this is the latest visited position in the global indexes in the last iteration*/
+            int latestGlobalPosition = 0;
+
+            /* for each partial translation get words and alignment indexes and  merge them in the right positions of the global translation arrays */
+            for (int sentenceIndex = 0; sentenceIndex < splitTranslations.length; sentenceIndex++) {
+                Translation splitTranslation = splitTranslations[sentenceIndex];
+                Sentence splitSentence = splitSentences[sentenceIndex];
+
+
+                /*merge alignments if alignment must be considered*/
+                if (splitTranslation.hasAlignment()) {
+                    int[] localSrcIndexes = splitTranslation.getWordAlignment().getSourceIndexes();   // possibly not initialized
+                    int[] localTrgIndexes = splitTranslation.getWordAlignment().getTargetIndexes();   // possibly not initialized
+                    for (int localIndex = 0; localIndex < localSrcIndexes.length; localIndex++)
+                        globalSrcIndexes[localIndex + latestGlobalPosition] = localSrcIndexes[localIndex] + srcWordsOffset;
+                    for (int localIndex = 0; localIndex < localTrgIndexes.length; localIndex++)
+                        globalTrgIndexes[localIndex + latestGlobalPosition] = localTrgIndexes[localIndex] + trgWordsOffset;
+
+                    latestGlobalPosition += localSrcIndexes.length;
+                }
+
+                /*merge words*/
+                Word[] localWords = splitTranslation.getWords();
+                System.arraycopy(localWords, 0, globalWords, trgWordsOffset, localWords.length);
+
+                srcWordsOffset += splitSentence.length();
+                trgWordsOffset += splitTranslation.length();
+            }
+
+            Alignment globalAlignment = new Alignment(globalSrcIndexes, globalTrgIndexes);
+            return new Translation(globalWords, originalSentence, globalAlignment);
         }
 
         @Override

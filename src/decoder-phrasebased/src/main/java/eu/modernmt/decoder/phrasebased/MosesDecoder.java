@@ -2,7 +2,6 @@ package eu.modernmt.decoder.phrasebased;
 
 import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.DataListener;
-import eu.modernmt.data.Deletion;
 import eu.modernmt.decoder.*;
 import eu.modernmt.io.DefaultCharset;
 import eu.modernmt.io.Paths;
@@ -239,4 +238,8 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
 
     private native long dispose(long handle);
 
+    @Override
+    public boolean supportsSentenceSplit() {
+        return false;
+    }
 }
