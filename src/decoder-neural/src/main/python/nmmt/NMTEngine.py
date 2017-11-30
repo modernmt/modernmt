@@ -137,10 +137,7 @@ class NMTEngine(object):
             model.load_state_dict(checkpoint['model'])
             generator.load_state_dict(checkpoint['generator'])
 
-
         return NMTEngine(src_dict, trg_dict, _checkpoint_initializer, processor, metadata=metadata)
-
-
 
     def __init__(self, src_dict, trg_dict, initializer, processor, metadata=None):
         self._logger = logging.getLogger('nmmt.NMTEngine')
@@ -170,7 +167,7 @@ class NMTEngine(object):
         model.cpu()
         generator.cpu()
 
-        self._initializer(model,generator)
+        self._initializer(model, generator)
 
         model.generator = generator
         model.eval()
@@ -188,16 +185,14 @@ class NMTEngine(object):
     def __unload(self):
         del self.model
         del self._model_init_state
+        del self._translator
         self.model = None
         self._model_init_state = None
-
-        del self._translator
         self._translator = None
-        
+
         self._model_loaded = False
 
     def __gpu(self):
-
         model = self.model
         generator = self.model.generator
 
@@ -358,8 +353,6 @@ class NMTEngine(object):
             torch.save(dictionary, path + '.vcb')
 
     def _get_state_dicts(self):
-        is_multi_gpu = torch_is_multi_gpu()
-
         model_state_dict = {k: v for k, v in self.model.state_dict().items() if 'generator' not in k}
         generator_state_dict = self.model.generator.state_dict()
 
@@ -371,10 +364,8 @@ class NMTEngine(object):
 
     @running_state.setter
     def running_state(self, value):
-
         if not (value == self.COLD or value == self.WARM or value == self.HOT):
             raise ValueError('Invalid Value %d' % value)
-
 
         if self._running_state == self.COLD:
             if value == self.WARM:

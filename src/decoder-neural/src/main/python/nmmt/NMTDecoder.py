@@ -14,38 +14,29 @@ class UnsupportedLanguageException(BaseException):
 
 
 class NMTDecoder:
+    @staticmethod
+    def _get_int(settings, section, option, default):
+        try:
+            return settings.getint(section, option)
+        except ConfigParser.NoSectionError:
+            return default
+        except ConfigParser.NoOptionError:
+            return default
+
     def __init__(self, model_path, gpu_id=None, random_seed=None):
         torch_setup(gpus=[gpu_id] if gpu_id is not None else None, random_seed=random_seed)
 
         self._logger = logging.getLogger('nmmt.NMTDecoder')
         self._engines, self._engines_checkpoint = {}, {}
         self._cold_engines, self._warm_engines, self._hot_engines = [], [], []
-        self._cold_size, self._warm_size, self._hot_size = 1000, 5, 2
 
         # create and put in its map a TextProcessor and a NMTEngine for each line in model.conf
         settings = ConfigParser.ConfigParser()
         settings.read(os.path.join(model_path, 'model.conf'))
 
-        try:
-            self._cold_size = settings.getint('settings', 'cold_size')
-        except ConfigParser.NoSectionError:
-            pass
-        except ConfigParser.NoOptionError:
-            pass
-
-        try:
-            self._warm_size = settings.getint('settings', 'warm_size')
-        except ConfigParser.NoSectionError:
-            pass
-        except ConfigParser.NoOptionError:
-            pass
-
-        try:
-            self._hot_size = settings.getint('settings', 'hot_size')
-        except ConfigParser.NoSectionError:
-            pass
-        except ConfigParser.NoOptionError:
-            pass
+        self._cold_size = self._get_int(settings, 'settings', 'cold_size', 1000)
+        self._warm_size = self._get_int(settings, 'settings', 'warm_size', 5)
+        self._hot_size = self._get_int(settings, 'settings', 'hot_size', 2)
 
         if self._cold_size < 1:
             raise ValueError("Cold size must be larger than 0!")
@@ -56,13 +47,12 @@ class NMTDecoder:
         if self._hot_size < 1:
             raise ValueError("Hot size must be larger than 0!")
 
-        self._logger.debug("Model sizes: hot:%d warm:%d cold:%d" % (self._hot_size,self._warm_size,self._cold_size))
+        self._logger.debug("Model sizes: hot:%d warm:%d cold:%d" % (self._hot_size, self._warm_size, self._cold_size))
 
         if not settings.has_section('models'):
             raise Exception('no model specified in %s' % os.path.join(model_path, 'model.conf'))
 
         for key, model_name in settings.items('models'):
-
             model_file = os.path.join(model_path, model_name)
 
             # the running state of the engines depend on their position in the configration file:
@@ -82,7 +72,8 @@ class NMTDecoder:
                 else:
                     self._cold_engines.append(key)
 
-        self._logger.debug("Running states of the models: hot:%s, warm:%s, cold:%s" % (self._hot_engines, self._warm_engines, self._cold_engines))
+        self._logger.debug("Running states of the models: hot:%s, warm:%s, cold:%s" %
+                           (self._hot_engines, self._warm_engines, self._cold_engines))
         # Public-editable options
         self.beam_size = 5
         self.max_sent_length = 160
@@ -96,32 +87,31 @@ class NMTDecoder:
 
         engine = self._engines[key]
 
-        if engine.running_state != NMTEngine.HOT: # the running state of the required engine is COLD; upgrade to HOT
-
+        if engine.running_state != NMTEngine.HOT:  # the running state of the required engine is COLD; upgrade to HOT
             with log_timed_action(self._logger, 'Upgrading "%s" model' % key):
-                if engine.running_state == NMTEngine.WARM: # the running state of the required engine is WARM
+                if engine.running_state == NMTEngine.WARM:  # the running state of the required engine is WARM
                     self._warm_engines.remove(key)
-                else: # the running state of the required engine is COLD
+                else:  # the running state of the required engine is COLD
                     self._cold_engines.remove(key)
 
-                if len(self._hot_engines) >= self._hot_size: # no more space among the hot engines
-                    if len(self._warm_engines) >= self._warm_size: # no more space among the warm engines
-                    # move the last warm engine to cold
-                        tmpkey = self._warm_engines.pop()
-                        self._engines[tmpkey].running_state = NMTEngine.COLD
-                        self._cold_engines.insert(0, tmpkey)
+                if len(self._hot_engines) >= self._hot_size:  # no more space among the hot engines
+                    if len(self._warm_engines) >= self._warm_size:  # no more space among the warm engines
+                        # move the last warm engine to cold
+                        tmp_key = self._warm_engines.pop()
+                        self._engines[tmp_key].running_state = NMTEngine.COLD
+                        self._cold_engines.insert(0, tmp_key)
 
                     # move the last hot engine to warm, which has at least one space
-                    tmpkey = self._hot_engines.pop()
-                    self._engines[tmpkey].running_state = NMTEngine.WARM
-                    self._warm_engines.insert(0, tmpkey)
+                    tmp_key = self._hot_engines.pop()
+                    self._engines[tmp_key].running_state = NMTEngine.WARM
+                    self._warm_engines.insert(0, tmp_key)
 
                 # insert the required engine in the first position  of the hot models
                 engine.running_state = NMTEngine.HOT
                 self._hot_engines.insert(0, key)
 
-
-        self._logger.debug("Running states of the models: hot:%s, warm:%s, cold:%s" % (self._hot_engines, self._warm_engines, self._cold_engines))
+        self._logger.debug("Running states of the models: hot:%s, warm:%s, cold:%s" %
+                           (self._hot_engines, self._warm_engines, self._cold_engines))
 
         return engine
 
