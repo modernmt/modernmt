@@ -213,6 +213,8 @@ class NMTDecoder:
                 with _log_timed_action(self._logger, 'Creating engine from scratch'):
                     engine = NMTEngine.new_instance(src_dict, tgt_dict, bpe_encoder, metadata=metadata)
 
+        engine.running_state = NMTEngine.HOT
+
         trainer = NMTEngineTrainer(engine, state=state, options=training_opts)
 
         # Training model -----------------------------------------------------------------------------------------------

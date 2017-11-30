@@ -48,6 +48,9 @@ public class NeuralDecoder implements Decoder, DecoderWithNBest, DataListenerPro
         }
 
         this.directions = config.getAvailableTranslationDirections();
+
+        logger.info("Directions of the engine: " + this.directions);
+
         this.suggestionsLimit = config.getSuggestionsLimit();
 
         File pythonHome = new File(FileConst.getLibPath(), "pynmt");
