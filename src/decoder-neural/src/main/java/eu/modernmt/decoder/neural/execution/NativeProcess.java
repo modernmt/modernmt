@@ -349,7 +349,7 @@ class NativeProcess implements Closeable {
 
             for (Map.Entry<String, Level> entry : LOG_LEVELS.entrySet()) {
                 if (level.equals(entry.getValue()))
-                    return entry.getKey();
+                    return entry.getKey().toLowerCase();
             }
 
             return null;
