@@ -190,6 +190,9 @@ class NMTEngine(object):
         del self._model_init_state
         self.model = None
         self._model_init_state = None
+
+        del self._translator
+        self._translator = None
         
         self._model_loaded = False
 

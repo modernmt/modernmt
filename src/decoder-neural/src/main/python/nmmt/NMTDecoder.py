@@ -48,7 +48,7 @@ class NMTDecoder:
             pass
 
 
-        self._logger.info("Model sizes: hot:%d warm:%d hot:%d" % (self._cold_size,self._warm_size,self._hot_size))
+        self._logger.debug("Model sizes: hot:%d warm:%d cold:%d" % (self._hot_size,self._warm_size,self._cold_size))
 
         if not settings.has_section('models'):
             raise Exception('no model specified in %s' % os.path.join(model_path, 'model.conf'))
@@ -74,9 +74,7 @@ class NMTDecoder:
                 else:
                     self._cold_engines.append(key)
 
-            self._logger.info("Model %s loaded (%s), with running state %s" % (key, self._engines[key], self._engines[key].running_state))
-
-        self._logger.info("Running states of the models: hot:%s, warm:%s, cold:%s" % (self._hot_engines, self._warm_engines, self._cold_engines))
+        self._logger.debug("Running states of the models: hot:%s, warm:%s, cold:%s" % (self._hot_engines, self._warm_engines, self._cold_engines))
         # Public-editable options
         self.beam_size = 5
         self.max_sent_length = 160
@@ -89,8 +87,6 @@ class NMTDecoder:
             return None
 
         engine = self._engines[key]
-
-        self._logger.info("Required engine %s has running state: %s" % (key, self._engines[key].running_state))
 
         if engine.running_state != NMTEngine.HOT: # the running state of the required engine is COLD; upgrade to HOT
 
@@ -106,21 +102,18 @@ class NMTDecoder:
                         tmpkey = self._warm_engines.pop()
                         self._engines[tmpkey].running_state = NMTEngine.COLD
                         self._cold_engines.insert(0, tmpkey)
-                        self._logger.info("Model %s has been downgraded to %s" % (tmpkey, NMTEngine.COLD))
 
                     # move the last hot engine to warm, which has at least one space
                     tmpkey = self._hot_engines.pop()
                     self._engines[tmpkey].running_state = NMTEngine.WARM
                     self._warm_engines.insert(0, tmpkey)
-                    self._logger.info("Model %s has been downgraded to %s" % (tmpkey, NMTEngine.WARM))
 
                 # insert the required engine in the first position  of the hot models
                 engine.running_state = NMTEngine.HOT
                 self._hot_engines.insert(0, key)
-                self._logger.info("Model %s has been updated to %s" % (key, NMTEngine.HOT))
 
 
-        self._logger.info("Running states of the models: hot:%s, warm:%s, cold:%s" % (self._hot_engines, self._warm_engines, self._cold_engines))
+        self._logger.debug("Running states of the models: hot:%s, warm:%s, cold:%s" % (self._hot_engines, self._warm_engines, self._cold_engines))
 
         return engine
 
