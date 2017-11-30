@@ -254,7 +254,9 @@ class NMTEngineTrainer:
             checkpoint_stats = _Stats()
             report_stats = _Stats()
 
-            number_of_batches_per_epoch = int(math.ceil(float(len(train_dataset)) / self.opts.batch_size))
+            iterator = train_dataset.iterator(self.opts.batch_size, loop=True, start_position=step)
+
+            number_of_batches_per_epoch = len(iterator)
             self._log('Number of steps per epoch: %d' % number_of_batches_per_epoch)
 
             # forcing step limits to be smaller or (at most) equal to the number of steps per epochs
@@ -263,7 +265,7 @@ class NMTEngineTrainer:
             checkpoint_steps = min(self.opts.checkpoint_steps, number_of_batches_per_epoch)
             lr_decay_steps = min(self.opts.lr_decay_steps, number_of_batches_per_epoch)
 
-            for step, batch in train_dataset.iterator(self.opts.batch_size, loop=True, start_position=step):
+            for step, batch in iterator:
                 # Terminate policy -------------------------------------------------------------------------------------
                 if valid_ppl_stalled >= self.opts.early_stop \
                         or (self.opts.step_limit is not None and step >= self.opts.step_limit):
