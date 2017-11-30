@@ -1,3 +1,4 @@
+import math
 import mmap
 import os
 import random
@@ -6,8 +7,8 @@ import struct
 
 import torch
 
-from IDataset import IDataset
 from onmt import Dataset
+from IDataset import IDataset
 from torch_utils import torch_is_using_cuda
 
 
@@ -278,12 +279,6 @@ class _Heap:
         for word_count, pointer, data_size in self._idx.read_all():
             yield self._data.read(pointer, data_size)
 
-    def read_all_metadata(self):
-        i = 0
-        for word_count, pointer, data_size in self._idx.read_all():
-            yield i, word_count
-            i += 1
-
     def read(self, index, length):
         return self._data.read_batch(self._idx.read(index, length))
 
@@ -321,44 +316,21 @@ class MMapDataset(IDataset):
         return len(self._heap)
 
     def iterator(self, batch_size, shuffle=True, volatile=False, start_position=0, loop=False, random_seed=1):
-        batches = []
-
-        batch_begin, batch_lines = 0, 0
-        batch_max_line = 0
-
-        for i, word_count in self._heap.read_all_metadata():
-            if word_count > batch_size:
-                raise ValueError('Batch size too small: %d' % batch_size)
-
-            max_line = max(batch_max_line, word_count)
-
-            if (batch_lines + 1) * max_line <= batch_size:
-                batch_lines += 1
-                batch_max_line = max_line
-            else:
-                batches.append((batch_begin, batch_lines))
-
-                batch_begin = i
-                batch_lines = 1
-                batch_max_line = word_count
-
-        batches.append((batch_begin, batch_lines))
-
-        return _Iterator(self._heap, batches,
+        return _Iterator(self._heap, batch_size,
                          shuffle=shuffle, volatile=volatile, start_position=start_position, loop=loop,
                          random_seed=random_seed)
 
 
 class _Iterator(IDataset.Iterator):
-    def __init__(self, heap, batches, shuffle=True, volatile=False, start_position=0, loop=False, random_seed=1):
+    def __init__(self, heap, batch_size, shuffle=True, volatile=False, start_position=0, loop=False, random_seed=1):
         self._heap = heap
-        self._batches = batches
-        self._batch_count = len(self._batches)
+        self._batch_size = batch_size
+        self._batch_count = int(math.ceil(float(len(heap)) / batch_size))
         self._shuffle = shuffle
         self._random_seed = random_seed
         self._loop = loop
 
-        self._dataset = Dataset([], [], 1, torch_is_using_cuda(), volatile=volatile, data_type="text")
+        self._dataset = Dataset([], [], batch_size, torch_is_using_cuda(), volatile=volatile, data_type="text")
         self._dataset.numBatches = 1
 
         self._current_batch_order = None
@@ -382,10 +354,8 @@ class _Iterator(IDataset.Iterator):
         if index < 0 or index >= self._batch_count:
             raise IndexError('dataset index out of bound')
 
-        batch_begin, batch_size = self._batches[index]
-        batch = self._heap.read(batch_begin, batch_size)
+        batch = self._heap.read(index * self._batch_size, self._batch_size)
 
-        self._dataset.batchSize = batch_size
         self._dataset.src = [torch.LongTensor(x[0]) for x in batch]
         self._dataset.tgt = [torch.LongTensor(x[1]) for x in batch]
 
