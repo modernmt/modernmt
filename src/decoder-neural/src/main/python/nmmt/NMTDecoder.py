@@ -47,6 +47,14 @@ class NMTDecoder:
         except ConfigParser.NoOptionError:
             pass
 
+        if self._cold_size < 1:
+            raise ValueError("Cold size must be larger than 0!")
+
+        if self._warm_size < 1:
+            raise ValueError("Warm size must be larger than 0!")
+
+        if self._hot_size < 1:
+            raise ValueError("Hot size must be larger than 0!")
 
         self._logger.debug("Model sizes: hot:%d warm:%d cold:%d" % (self._hot_size,self._warm_size,self._cold_size))
 
