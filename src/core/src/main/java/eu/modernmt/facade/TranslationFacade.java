@@ -452,7 +452,10 @@ public class TranslationFacade {
             }
 
             Alignment globalAlignment = new Alignment(globalSrcIndexes, globalTrgIndexes);
-            return new Translation(globalWords, originalSentence, globalAlignment);
+
+            Translation globalTranslation = new Translation(globalWords, originalSentence, globalAlignment);
+            globalTranslation.setElapsedTime(globalElapsedTime);
+            return globalTranslation;
         }
 
         @Override
