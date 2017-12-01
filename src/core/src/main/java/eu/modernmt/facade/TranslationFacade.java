@@ -414,21 +414,22 @@ public class TranslationFacade {
             }
 
             /* create and initialize the data structures for the global translation using the computed sizes */
+            long globalElapsedTime = 0L;
             Word[] globalWords = new Word[globalWordsSize];
             int[] globalSrcIndexes = new int[globalWordAlignmentSize];    //size 0 if translations do not have alignments
             int[] globalTrgIndexes = new int[globalWordAlignmentSize];    //size 0 if translations do not have alignments
 
+            /* for each partial translation get words and alignment indexes and  merge them in the right positions of the global translation arrays */
             int srcWordsOffset = 0;  /* in each iteration, this is the amount of src words seen in the previous sentences*/
             int trgWordsOffset = 0; /* in each iteration, this is the amount of trg words seen in the previous sentences*/
-
             /* this is the latest visited position in the global indexes in the last iteration*/
             int latestGlobalPosition = 0;
-
-            /* for each partial translation get words and alignment indexes and  merge them in the right positions of the global translation arrays */
             for (int sentenceIndex = 0; sentenceIndex < splitTranslations.length; sentenceIndex++) {
                 Translation splitTranslation = splitTranslations[sentenceIndex];
                 Sentence splitSentence = splitSentences[sentenceIndex];
 
+                /* add the partial elapsed time to the global one */
+                globalElapsedTime += splitTranslation.getElapsedTime();
 
                 /*merge alignments if alignment must be considered*/
                 if (splitTranslation.hasAlignment()) {
