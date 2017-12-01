@@ -496,9 +496,10 @@ public class ClusterNode {
      * @return the obtained Member
      */
     private Member getRandomMember() {
-        Member[] members = (Member[]) hazelcast.getCluster().getMembers().toArray();
-        int randomIndex = new Random().nextInt(members.length);
-        return members[randomIndex];
+        Set<Member> members = hazelcast.getCluster().getMembers();
+        Member[] array = members.toArray(new Member[members.size()]);
+        int randomIndex = new Random().nextInt(array.length);
+        return array[randomIndex];
     }
 
     /**
