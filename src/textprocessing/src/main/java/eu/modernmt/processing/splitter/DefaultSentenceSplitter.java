@@ -22,7 +22,7 @@ public class DefaultSentenceSplitter extends SentenceSplitter {
         Word[] words = sentence.getWords();
 
         /*the the first and last words can not be split (they don't even have predecessor or successor)*/
-        if (wordIndex == 0 || wordIndex == words.length)
+        if (wordIndex == 0 || wordIndex == words.length-1)
             return false;
 
         Word current = words[wordIndex];
