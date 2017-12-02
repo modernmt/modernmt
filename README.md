@@ -33,7 +33,7 @@ Read [INSTALL.md](INSTALL.md)
 The distribution includes a small dataset (folder `examples/data/train`) to train and test translations from 
 English to Italian in three domains. 
 
-**Note**: the following quickstart example is run with a *phrase-based* engine for practical reasons. Neural training and Phrase-based training are two deeply different processes and if, for phrase-based engines, it is possible to achieve decent quality (under centains conditions) event with tiny datesets, Neural engines require more data and much more time in order to achive good performance.
+**Note**: the following quickstart example is run with a *phrase-based* engine for practical reasons. Neural training and Phrase-based training are two deeply different processes and if, for phrase-based engines, it is possible to achieve decent quality (under certain conditions) even with tiny datesets, Neural engines require more data and much more time in order to achive good performance.
 
 ### Create an engine
 
