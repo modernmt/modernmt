@@ -72,7 +72,6 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
             sum += probs[i];
         }
 
-
         if (use_null) {
             double count = probs[0] / sum;
 
