@@ -166,4 +166,9 @@ We also have an **MMT Enterprise Edition**, managed by the MMT company and not a
 - Enterprise Customer Support via Video Conference Call, Phone and Email on business hours and optionally 24x7.
 - Custom developments billed per hour of work.
 
+MMT Enterprise is avaialble in 3 operating modes:
+- On **Customer Premises**. Maxmimum security, higher cost for throughput and high availability.
+- On **dedicated servers** on Amazon Web Services. Excellent security, mid cost for throughput and high availability.
+- **Shared servers** on Amazon Web Services. Good Security, Low cost for excellent throughput and high availability.
+
 For any information please email Marcello Federico, mrcfdr@gmail.com
