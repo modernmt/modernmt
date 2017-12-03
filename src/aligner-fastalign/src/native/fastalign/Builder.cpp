@@ -71,9 +71,11 @@ public:
         for (size_t i = 0; i < data.size(); ++i) {
             unordered_map<word_t, pair<double, double>> &row = data[i];
 
+//TODO: is it possible to erase an element while scanning
             for (auto cell = row.cbegin(); cell != row.cend(); /* no increment */) {
                 if (cell->second.first <= threshold)
-                    row.erase(cell++);
+                    cell = row.erase(cell); //function erase returns an iterator pointing to the position immediately following the last of the elements erased.
+//                    row.erase(cell++);
                 else
                     ++cell;
             }
@@ -152,6 +154,7 @@ Builder::Builder(Options options) : mean_srclen_multiplier(options.mean_srclen_m
                                     alpha(options.alpha),
                                     use_null(options.use_null),
                                     buffer_size(options.buffer_size),
+                                    pruning(options.pruning),
                                     threads((options.threads == 0) ? (int) thread::hardware_concurrency()
                                                                    : options.threads) {
 
@@ -334,7 +337,7 @@ Model *Builder::BuildModel(const Vocabulary *vocab, const Corpus &corpus, bool f
     }
 
     if (listener) listener->Begin(forward, kBuilderStepPruning, 0);
-    model->Prune();
+    model->Prune(pruning);
     if (listener) listener->End(forward, kBuilderStepPruning, 0);
 
     if (listener) listener->End(forward);
