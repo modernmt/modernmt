@@ -45,7 +45,7 @@ $ ./mmt create en it examples/data/train
 ```bash
 $ ./mmt create en it examples/data/train --neural
 ```
-Neural Engine on this tiny example data does not give any resonable output. We reccommend to complete the tutorial and then add more data and try neural.
+Neural Engine on this tiny example data does not give any resonable output. We reccommend to complete the tutorial and then add more data to try neural.
 
 ### Start the engine
 
