@@ -53,7 +53,7 @@ void help(const char *name) {
 bool InitCommandLine(int argc, char **argv) {
     while (true) {
         int oi;
-        int c = getopt_long(argc, argv, "s:t:m:I:n:", options, &oi);
+        int c = getopt_long(argc, argv, "s:t:m:I:n:p:", options, &oi);
         if (c == -1) break;
 
         switch (c) {
