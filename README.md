@@ -41,11 +41,11 @@ In order to create a *phrase-based* engine you can simply:
 $ ./mmt create en it examples/data/train
 ```
 
-*Note:* if you wish to create an *neural* engine, add more data and you add the `--neural` flag:
+*Note:* if you wish to create an *neural* engine, please add more data to the training set and specify the `--neural` flag:
 ```bash
 $ ./mmt create en it examples/data/train --neural
 ```
-Neural on this example data only does not give any resonable output. We reccommend to finish the tutorial and then add data and try neural.
+Neural Engine on this tiny example data does not give any resonable output. We reccommend to complete the tutorial and then add more data and try neural.
 
 ### Start the engine
 
