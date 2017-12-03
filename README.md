@@ -33,8 +33,6 @@ Read [INSTALL.md](INSTALL.md)
 The distribution includes a small dataset (folder `examples/data/train`) to train and test translations from 
 English to Italian in three domains. 
 
-**Note**: the following quickstart example is run with a *phrase-based* engine for practical reasons. Neural training and Phrase-based training are two deeply different processes and if, for phrase-based engines, it is possible to achieve decent quality (under certain conditions) even with tiny datesets, Neural engines require more data and much more time in order to achive good performance.
-
 ### Create an engine
 
 In order to create a *phrase-based* engine you can simply:
@@ -43,11 +41,11 @@ In order to create a *phrase-based* engine you can simply:
 $ ./mmt create en it examples/data/train
 ```
 
-*Note:* if you wish to create an *neural* engine, you can just add the `--neural` flag:
+*Note:* if you wish to create an *neural* engine, add more data and you add the `--neural` flag:
 ```bash
 $ ./mmt create en it examples/data/train --neural
 ```
-Please notice however that the training process will take much more time and you will need a dedicated hardware (GPUs) in order to create and use the neural engine.
+Neural on this example data only does not give any resonable output. We reccommend to finish the tutorial and then add data and try neural.
 
 ### Start the engine
 
