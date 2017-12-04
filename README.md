@@ -41,11 +41,11 @@ In order to create a *phrase-based* engine you can simply:
 $ ./mmt create en it examples/data/train
 ```
 
-*Note:* if you wish to create an *neural* engine, you can just add the `--neural` flag:
+*Note:* if you wish to create an *neural* engine, please add more data to the training set and specify the `--neural` flag:
 ```bash
 $ ./mmt create en it examples/data/train --neural
 ```
-Please notice however that the training process will take much more time and you will need a dedicated hardware (GPUs) in order to create and use the neural engine.
+Neural Engine on this tiny example data does not give any resonable output. We reccommend to complete the tutorial and then add more data to try neural.
 
 ### Start the engine
 
@@ -163,5 +163,10 @@ We also have an **MMT Enterprise Edition**, managed by the MMT company and not a
 - Support for 69 files formats without format loss (Office, Adobe, Localization, etc).
 - Enterprise Customer Support via Video Conference Call, Phone and Email on business hours and optionally 24x7.
 - Custom developments billed per hour of work.
+
+MMT Enterprise is avaialble in 3 operating modes:
+- On **Customer Premises**. Maxmimum security, higher cost for throughput and high availability.
+- On **dedicated servers** on Amazon Web Services. Excellent security, mid cost for throughput and high availability.
+- **Shared servers** on Amazon Web Services. Good Security, Low cost for excellent throughput and high availability.
 
 For any information please email Marcello Federico, mrcfdr@gmail.com
