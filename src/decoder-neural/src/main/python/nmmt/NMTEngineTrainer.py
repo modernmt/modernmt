@@ -55,6 +55,7 @@ class NMTEngineTrainer:
 
             self.bpe_symbols = 32000
             self.max_vocab_size = None  # Unlimited
+            self.vocab_pruning_threshold = None  # Skip pruning
 
             self.batch_size = 64
             self.max_generator_batches = 32  # Maximum batches of words in a seq to run the generator on in parallel.
@@ -72,6 +73,7 @@ class NMTEngineTrainer:
             self.lr_decay_start_at = 50000  # start learning rate decay after 'start_decay_at' steps
 
             self.early_stop = 10  # terminate training if validations is stalled for 'early_stop' times
+            self.n_checkpoints = 20  # save up to 'n_checkpoints' checkpoints during training
             self.n_avg_checkpoints = 5  # number of checkpoints to merge at the end of training process
 
         def load_from_dict(self, d):
@@ -103,31 +105,17 @@ class NMTEngineTrainer:
             for path in glob.glob(checkpoint['file'] + '.*'):
                 os.remove(path)
 
-        def _contains(self, checkpoint):
-            for h in self.history:
-                if h['file'] == checkpoint['file']:
-                    return True
-            return False
-
         def add_checkpoint(self, step, file_path, perplexity):
-            if self.checkpoint is not None and not self._contains(self.checkpoint):
-                self._delete_checkpoint(self.checkpoint)
-
             self.checkpoint = {
                 'step': step,
                 'file': file_path,
                 'perplexity': perplexity
             }
 
-            self.history.append(self.checkpoint)
-            self.history.sort(key=lambda e: e['perplexity'], reverse=False)
+            self.history.insert(0, self.checkpoint)
 
             if len(self.history) > self.size:
-                for c in self.history[self.size:]:
-                    if c['file'] != file_path:  # do not remove last checkpoint
-                        self._delete_checkpoint(c)
-
-                self.history = self.history[:self.size]
+                self._delete_checkpoint(self.history.pop())
 
         def save_to_file(self, file_path):
             with open(file_path, 'w') as stream:
@@ -145,7 +133,7 @@ class NMTEngineTrainer:
         self._engine = engine
         self.opts = options if options is not None else NMTEngineTrainer.Options()
 
-        self.state = state if state is not None else NMTEngineTrainer.State(self.opts.n_avg_checkpoints)
+        self.state = state if state is not None else NMTEngineTrainer.State(self.opts.n_checkpoints)
 
         if optimizer is None:
             optimizer = Optim(self.opts.optimizer, self.opts.learning_rate, max_grad_norm=self.opts.max_grad_norm,
@@ -266,7 +254,9 @@ class NMTEngineTrainer:
             checkpoint_stats = _Stats()
             report_stats = _Stats()
 
-            number_of_batches_per_epoch = int(math.ceil(float(len(train_dataset)) / self.opts.batch_size))
+            iterator = train_dataset.iterator(self.opts.batch_size, loop=True, start_position=step)
+
+            number_of_batches_per_epoch = len(iterator)
             self._log('Number of steps per epoch: %d' % number_of_batches_per_epoch)
 
             # forcing step limits to be smaller or (at most) equal to the number of steps per epochs
@@ -275,7 +265,7 @@ class NMTEngineTrainer:
             checkpoint_steps = min(self.opts.checkpoint_steps, number_of_batches_per_epoch)
             lr_decay_steps = min(self.opts.lr_decay_steps, number_of_batches_per_epoch)
 
-            for step, batch in train_dataset.iterator(self.opts.batch_size, loop=True, start_position=step):
+            for step, batch in iterator:
                 # Terminate policy -------------------------------------------------------------------------------------
                 if valid_ppl_stalled >= self.opts.early_stop \
                         or (self.opts.step_limit is not None and step >= self.opts.step_limit):

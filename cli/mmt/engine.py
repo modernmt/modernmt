@@ -199,13 +199,13 @@ class Engine(object):
     def exists(self):
         return os.path.isfile(self.config_path)
 
-    def get_logfile(self, name, ensure=True):
+    def get_logfile(self, name, ensure=True, append=False):
         if ensure and not os.path.isdir(self.logs_path):
             fileutils.makedirs(self.logs_path, exist_ok=True)
 
         logfile = os.path.join(self.logs_path, name + '.log')
 
-        if ensure and os.path.isfile(logfile):
+        if not append and ensure and os.path.isfile(logfile):
             os.remove(logfile)
 
         return logfile
@@ -436,7 +436,8 @@ class EngineBuilder:
             os.makedirs(self._engine.path)
 
         # Create a new logger for the building activities,
-        log_stream = open(self._engine.get_logfile('training'), 'wb')
+        log_file = self._engine.get_logfile('training', append=resume)
+        log_stream = open(log_file, 'ab' if resume else 'wb')
         logging.basicConfig(format='%(asctime)-15s [%(levelname)s] - %(message)s',
                             level=logging.DEBUG, stream=log_stream)
         logger = logging.getLogger('EngineBuilder')
