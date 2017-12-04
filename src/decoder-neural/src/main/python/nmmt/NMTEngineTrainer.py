@@ -278,6 +278,10 @@ class NMTEngineTrainer:
             lr_decay_steps = min(self.opts.lr_decay_steps, number_of_batches_per_epoch)
 
             for step, batch in iterator:
+                # Steps limit ------------------------------------------------------------------------------------------
+                if self.opts.step_limit is not None and step >= self.opts.step_limit:
+                    break
+
                 # Run step ---------------------------------------------------------------------------------------------
                 self._train_step(batch, criterion, [checkpoint_stats, report_stats])
                 step += 1
@@ -353,9 +357,11 @@ class NMTEngineTrainer:
 
                     # Terminate policy ---------------------------------------------------------------------------------
                     perplexity_improves = len(self.state) < self.opts.n_checkpoints or avg_ppl < previous_avg_ppl
-                    steps_limit_reached = self.opts.step_limit is not None and step >= self.opts.step_limit
 
-                    if not perplexity_improves or steps_limit_reached:
+                    self._logger.info('Terminate policy: avg_ppl = %.2f, previous_avg_ppl = %.2f, stopping = %r'
+                                      % (avg_ppl, previous_avg_ppl, perplexity_improves))
+
+                    if not perplexity_improves:
                         break
         except KeyboardInterrupt:
             pass
