@@ -339,7 +339,7 @@ class NMTEngine(object):
             self.processor.save_to_file(path + '.bpe')
 
         if store_data:
-            model_state_dict, generator_state_dict = self._get_state_dicts()
+            model_state_dict, generator_state_dict = self._get_state_dicts(on_saving=True)
 
             checkpoint = {
                 'model': model_state_dict,
@@ -352,9 +352,17 @@ class NMTEngine(object):
             }
             torch.save(dictionary, path + '.vcb')
 
-    def _get_state_dicts(self):
-        model_state_dict = {k: v for k, v in self.model.state_dict().items() if 'generator' not in k}
-        generator_state_dict = self.model.generator.state_dict()
+    def _get_state_dicts(self, on_saving=False):
+
+        if on_saving == True and torch_is_multi_gpu():
+            model = self.model.module
+            generator = self.model.generator.module
+        else:
+            model = self.model
+            generator = self.model.generator
+
+        model_state_dict = {k: v for k, v in model.state_dict().items() if 'generator' not in k}
+        generator_state_dict = generator.state_dict()
 
         return copy.deepcopy(model_state_dict), copy.deepcopy(generator_state_dict)
 
