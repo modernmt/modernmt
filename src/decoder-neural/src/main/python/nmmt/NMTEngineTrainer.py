@@ -359,7 +359,7 @@ class NMTEngineTrainer:
                     perplexity_improves = len(self.state) < self.opts.n_checkpoints or avg_ppl < previous_avg_ppl
 
                     self._logger.info('Terminate policy: avg_ppl = %.2f, previous_avg_ppl = %.2f, stopping = %r'
-                                      % (avg_ppl, previous_avg_ppl, perplexity_improves))
+                                      % (avg_ppl, previous_avg_ppl, not perplexity_improves))
 
                     if not perplexity_improves:
                         break
