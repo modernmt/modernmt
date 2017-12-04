@@ -130,13 +130,12 @@ def main_create(argv):
     nmt_arguments.add_argument('--step-limit', dest='step_limit', type=int, default=None,
                                help='if neural is set, run for this number of steps at most '
                                     '(default value is infinite).')
-    nmt_arguments.add_argument('--early-stop', dest='early_stop', type=int, default=10,
-                               help='if neural is set, terminate training if validations is stalled for this '
-                                    'number of times (default value is 10).')
-    # Not yet supported
-    # nmt_arguments.add_argument('--number-avg-checkpoints', dest='n_avg_checkpoints', type=int, default=5,
-    #                            help='if neural is set, number of checkpoints to merge at the end of training process '
-    #                                 '(default value is 5).')
+    nmt_arguments.add_argument('--checkpoints', dest='n_checkpoints', type=int, default=20,
+                               help='if neural is set, this is the number of checkpoints saved during the training and '
+                                    'used to evaluate terminate condition (default value is 20).')
+    nmt_arguments.add_argument('--average-checkpoints', dest='n_avg_checkpoints', type=int, default=20,
+                               help='if neural is set, number of checkpoints to merge at the end of training process '
+                                    '(default value is 20).')
 
     if len(argv) > 0:
         # Parse args

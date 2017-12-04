@@ -72,9 +72,8 @@ class NMTEngineTrainer:
             self.lr_decay_steps = 10000  # decrease learning rate every 'lr_decay_steps' steps
             self.lr_decay_start_at = 50000  # start learning rate decay after 'start_decay_at' steps
 
-            self.early_stop = 10  # terminate training if validations is stalled for 'early_stop' times
-            self.n_checkpoints = 20  # save up to 'n_checkpoints' checkpoints during training
-            self.n_avg_checkpoints = 5  # number of checkpoints to merge at the end of training process
+            self.n_checkpoints = 20  # checkpoints saved during training and used for termination condition
+            self.n_avg_checkpoints = 20  # number of checkpoints to merge at the end of training process
 
         def load_from_dict(self, d):
             for key in self.__dict__:
@@ -96,9 +95,22 @@ class NMTEngineTrainer:
         def empty(self):
             return len(self.history) == 0
 
+        def __len__(self):
+            return len(self.history)
+
         @property
         def last_step(self):
             return self.checkpoint['step'] if self.checkpoint is not None else 0
+
+        def average_perplexity(self):
+            if self.empty():
+                return 0
+
+            s = 0
+            for checkpoint in self.history:
+                s += checkpoint['perplexity']
+
+            return s / len(self.history)
 
         @staticmethod
         def _delete_checkpoint(checkpoint):
@@ -266,11 +278,6 @@ class NMTEngineTrainer:
             lr_decay_steps = min(self.opts.lr_decay_steps, number_of_batches_per_epoch)
 
             for step, batch in iterator:
-                # Terminate policy -------------------------------------------------------------------------------------
-                if valid_ppl_stalled >= self.opts.early_stop \
-                        or (self.opts.step_limit is not None and step >= self.opts.step_limit):
-                    break
-
                 # Run step ---------------------------------------------------------------------------------------------
                 self._train_step(batch, criterion, [checkpoint_stats, report_stats])
                 step += 1
@@ -333,14 +340,23 @@ class NMTEngineTrainer:
                     checkpoint_ppl = valid_perplexity if valid_perplexity is not None else checkpoint_stats.perplexity
                     checkpoint_file = os.path.join(save_path, 'checkpoint_%d' % step)
 
+                    previous_avg_ppl = self.state.average_perplexity()
+
                     self._log('Checkpoint at step %d (epoch %.2f): %s' % (step, epoch, str(checkpoint_stats)))
                     self._engine.save(checkpoint_file)
                     self.state.add_checkpoint(step, checkpoint_file, checkpoint_ppl)
                     self.state.save_to_file(state_file_path)
                     self._logger.info('Checkpoint saved: path = %s ppl = %.2f' % (checkpoint_file, checkpoint_ppl))
 
+                    avg_ppl = self.state.average_perplexity()
                     checkpoint_stats = _Stats()
 
+                    # Terminate policy ---------------------------------------------------------------------------------
+                    perplexity_improves = len(self.state) < self.opts.n_checkpoints or avg_ppl < previous_avg_ppl
+                    steps_limit_reached = self.opts.step_limit is not None and step >= self.opts.step_limit
+
+                    if not perplexity_improves or steps_limit_reached:
+                        break
         except KeyboardInterrupt:
             pass
 
