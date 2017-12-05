@@ -249,10 +249,8 @@ class NMTDecoder:
 
 
 class NeuralEngine(Engine):
-    def __init__(self, name, source_lang, target_lang, bpe_symbols, max_vocab_size=None, vocab_pruning_threshold=None,
-                 gpus=None):
+    def __init__(self, name, source_lang, target_lang, bpe_symbols, max_vocab_size=None, vocab_pruning_threshold=None):
         Engine.__init__(self, name, source_lang, target_lang)
-        torch_setup(gpus=gpus, random_seed=3435)
 
         self._bleu_script = os.path.join(PYOPT_DIR, 'mmt-bleu.perl')
 
@@ -346,6 +344,7 @@ class NeuralEngineBuilder(EngineBuilder):
     def __init__(self, name, source_lang, target_lang, roots, debug=False, steps=None, split_trainingset=True,
                  validation_corpora=None, checkpoint=None, metadata=None, max_training_words=None, gpus=None,
                  training_args=None):
+        torch_setup(gpus=gpus, random_seed=3435)
 
         self._training_opts = NMTEngineTrainer.Options()
         if training_args is not None:
@@ -353,7 +352,7 @@ class NeuralEngineBuilder(EngineBuilder):
 
         engine = NeuralEngine(name, source_lang, target_lang, bpe_symbols=self._training_opts.bpe_symbols,
                               max_vocab_size=self._training_opts.max_vocab_size,
-                              vocab_pruning_threshold=self._training_opts.vocab_pruning_threshold, gpus=gpus)
+                              vocab_pruning_threshold=self._training_opts.vocab_pruning_threshold)
         EngineBuilder.__init__(self, engine, roots, debug, steps, split_trainingset, max_training_words)
 
         self._valid_corpora_path = validation_corpora if validation_corpora is not None \

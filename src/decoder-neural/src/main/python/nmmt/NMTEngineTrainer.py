@@ -158,7 +158,8 @@ class NMTEngineTrainer:
         self.optimizer.set_parameters(self._engine.model.parameters())
 
     def _log(self, message):
-        self._logger.log(self.opts.log_level, message)
+        if self.opts.log_level > logging.NOTSET:
+            self._logger.log(self.opts.log_level, message)
 
     @staticmethod
     def _new_nmt_criterion(vocab_size):
@@ -278,6 +279,10 @@ class NMTEngineTrainer:
             lr_decay_steps = min(self.opts.lr_decay_steps, number_of_batches_per_epoch)
 
             for step, batch in iterator:
+                # Steps limit ------------------------------------------------------------------------------------------
+                if self.opts.step_limit is not None and step >= self.opts.step_limit:
+                    break
+
                 # Run step ---------------------------------------------------------------------------------------------
                 self._train_step(batch, criterion, [checkpoint_stats, report_stats])
                 step += 1
@@ -346,16 +351,18 @@ class NMTEngineTrainer:
                     self._engine.save(checkpoint_file)
                     self.state.add_checkpoint(step, checkpoint_file, checkpoint_ppl)
                     self.state.save_to_file(state_file_path)
-                    self._logger.info('Checkpoint saved: path = %s ppl = %.2f' % (checkpoint_file, checkpoint_ppl))
+                    self._log('Checkpoint saved: path = %s ppl = %.2f' % (checkpoint_file, checkpoint_ppl))
 
                     avg_ppl = self.state.average_perplexity()
                     checkpoint_stats = _Stats()
 
                     # Terminate policy ---------------------------------------------------------------------------------
                     perplexity_improves = len(self.state) < self.opts.n_checkpoints or avg_ppl < previous_avg_ppl
-                    steps_limit_reached = self.opts.step_limit is not None and step >= self.opts.step_limit
 
-                    if not perplexity_improves or steps_limit_reached:
+                    self._log('Terminate policy: avg_ppl = %.2f, previous_avg_ppl = %.2f, stopping = %r'
+                              % (avg_ppl, previous_avg_ppl, not perplexity_improves))
+
+                    if not perplexity_improves:
                         break
         except KeyboardInterrupt:
             pass

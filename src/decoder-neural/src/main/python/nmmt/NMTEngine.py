@@ -211,6 +211,9 @@ class NMTEngine(object):
         self.model.cpu()
         self.model.generator.cpu()
 
+    def _is_data_parallel(self):
+        return isinstance(self.model, nn.DataParallel) or isinstance(self.model.generator, nn.DataParallel)
+
     def reset_model(self):
         with log_timed_action(self._logger, 'Restoring model initial state', log_start=False):
             self.model.load_state_dict(self._model_init_state)
@@ -339,7 +342,7 @@ class NMTEngine(object):
             self.processor.save_to_file(path + '.bpe')
 
         if store_data:
-            model_state_dict, generator_state_dict = self._get_state_dicts(on_saving=True)
+            model_state_dict, generator_state_dict = self._get_state_dicts()
 
             checkpoint = {
                 'model': model_state_dict,
@@ -352,9 +355,8 @@ class NMTEngine(object):
             }
             torch.save(dictionary, path + '.vcb')
 
-    def _get_state_dicts(self, on_saving=False):
-
-        if on_saving == True and torch_is_multi_gpu():
+    def _get_state_dicts(self):
+        if self._is_data_parallel():
             model = self.model.module
             generator = self.model.generator.module
         else:
