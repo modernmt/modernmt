@@ -15,6 +15,7 @@ namespace mmt {
 
         static const word_t kNullWord = 0;
         static const word_t kUnknownWord = 1;
+        static const size_t vocab_threshold = 1;
 
         static const std::string kEmptyResult = "";
 

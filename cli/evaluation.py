@@ -10,6 +10,7 @@ import cli
 from cli import IllegalArgumentException
 from cli.libs import multithread, shell, fileutils
 from cli.mmt import BilingualCorpus
+from cli.mmt.cluster import ClusterNode
 from cli.mmt.processing import XMLEncoder
 
 DEFAULT_GOOGLE_KEY = 'AIzaSyBl9WAoivTkEfRdBBSCs4CruwnGL_aV74c'
@@ -167,7 +168,8 @@ class MMTTranslator(Translator):
             if len(line) > 4096:
                 line = line[:4096]
 
-            translation = self._api.translate(self.source_lang, self.target_lang, line, context=context_vector)
+            translation = self._api.translate(self.source_lang, self.target_lang, line,
+                                              context=context_vector, priority=ClusterNode.Api.PRIORITY_BACKGROUND)
         except requests.exceptions.ConnectionError:
             raise TranslateError('Unable to connect to MMT. '
                                  'Please check if engine is running on port %d.' % self._api.port)
@@ -180,11 +182,22 @@ class MMTTranslator(Translator):
         return text, decoding_time
 
 
+class GoogleRateLimitError(TranslateError):
+    def __init__(self, *args, **kwargs):
+        super(GoogleRateLimitError, self).__init__(*args, **kwargs)
+
+
+class GoogleServerError(TranslateError):
+    def __init__(self, *args, **kwargs):
+        super(GoogleServerError, self).__init__(*args, **kwargs)
+
+
 class GoogleTranslate(Translator):
     def __init__(self, source_lang, target_lang, key=None, nmt=False):
-        Translator.__init__(self, source_lang, target_lang, threads=10)
+        Translator.__init__(self, source_lang, target_lang, threads=5)
         self._key = key if key is not None else DEFAULT_GOOGLE_KEY
         self._nmt = nmt
+        self._delay = 0
 
         self._url = 'https://translation.googleapis.com/language/translate/v2' if self._nmt \
             else 'https://www.googleapis.com/language/translate/v2'
@@ -196,19 +209,30 @@ class GoogleTranslate(Translator):
     def _pack_error(request):
         json = request.json()
 
-        daily_limit = False
-
         if request.status_code == 403:
             for error in json['error']['errors']:
                 if error['reason'] == 'dailyLimitExceeded':
-                    daily_limit = True
-                    break
+                    return TranslateError('Google Translate free quota is over. Please use option --gt-key'
+                                          ' to specify your GT API key.')
+                elif error['reason'] == 'userRateLimitExceeded':
+                    return GoogleRateLimitError('Google Translate rate limit exceeded')
+        elif 500 <= request.status_code < 600:
+            return GoogleServerError('Google Translate server error (%d): %s' %
+                                     (request.status_code, json['error']['message']))
 
-        if daily_limit:
-            return TranslateError('Google Translate free quota is over. Please use option --gt-key'
-                                  ' to specify your GT API key.')
+        return TranslateError('Google Translate error (%d): %s' % (request.status_code, json['error']['message']))
+
+    def _increment_delay(self):
+        if self._delay < 0.002:
+            self._delay = 0.05
         else:
-            return TranslateError('Google Translate error (%d): %s' % (request.status_code, json['error']['message']))
+            self._delay = min(1, self._delay * 1.05)
+
+    def _decrement_delay(self):
+        self._delay *= 0.95
+
+        if self._delay < 0.002:
+            self._delay = 0
 
     def _get_translation(self, line, corpus):
         data = {
@@ -226,12 +250,37 @@ class GoogleTranslate(Translator):
             'X-HTTP-Method-Override': 'GET'
         }
 
-        begin = time.time()
-        r = requests.post(self._url, data=data, headers=headers)
-        elapsed = time.time() - begin
+        rate_limit_reached = False
+        server_error_count = 0
 
-        if r.status_code != requests.codes.ok:
-            raise self._pack_error(r)
+        while True:
+            if self._delay > 0:
+                delay = self._delay * random.uniform(0.5, 1)
+                time.sleep(delay)
+
+            begin = time.time()
+            r = requests.post(self._url, data=data, headers=headers)
+            elapsed = time.time() - begin
+
+            if r.status_code != requests.codes.ok:
+                e = self._pack_error(r)
+                if isinstance(e, GoogleRateLimitError):
+                    rate_limit_reached = True
+                    self._increment_delay()
+                elif isinstance(e, GoogleServerError):
+                    server_error_count += 1
+
+                    if server_error_count < 10:
+                        time.sleep(1.)
+                    else:
+                        raise e
+                else:
+                    raise e
+            else:
+                break
+
+        if not rate_limit_reached and self._delay > 0:
+            self._decrement_delay()
 
         text = r.json()['data']['translations'][0]['translatedText']
 

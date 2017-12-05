@@ -202,5 +202,4 @@ public abstract class Engine implements Closeable, DataListenerProvider {
         IOUtils.closeQuietly(aligner);
         IOUtils.closeQuietly(contextAnalyzer);
     }
-
 }

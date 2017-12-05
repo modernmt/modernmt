@@ -45,7 +45,7 @@ namespace mmt {
 
         class CorpusReader {
         public:
-            CorpusReader(const Corpus &corpus, const Vocabulary *vocabulary = nullptr);
+            CorpusReader(const Corpus &corpus, const Vocabulary *vocabulary = nullptr, const size_t maxL=150);
 
             bool Read(sentence_t &outSource, sentence_t &outTarget);
 
@@ -61,6 +61,8 @@ namespace mmt {
             const Vocabulary *vocabulary;
             std::ifstream source;
             std::ifstream target;
+
+            const size_t maxLength;
         };
     }
 }

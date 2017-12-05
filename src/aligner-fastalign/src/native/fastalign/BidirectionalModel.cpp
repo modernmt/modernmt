@@ -56,6 +56,7 @@ void BidirectionalModel::Open(const string &filename, Model **outForward, Model 
 
             in.read((char *) &targetWord, sizeof(word_t));
             in.read((char *) &first, sizeof(float));
+
             in.read((char *) &second, sizeof(float));
 
             row[targetWord] = pair<float, float>(first, second);

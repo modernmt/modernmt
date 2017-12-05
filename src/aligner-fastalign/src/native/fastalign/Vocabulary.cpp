@@ -4,6 +4,7 @@
 
 #include "Vocabulary.h"
 #include <iostream>
+#include <unordered_map>
 
 using namespace std;
 using namespace mmt;
@@ -14,13 +15,40 @@ const Vocabulary *Vocabulary::FromCorpus(const Corpus &corpus) {
     unordered_set<string> src_terms;
     unordered_set<string> trg_terms;
 
+    unordered_map<string,size_t> src_terms_map;
+    unordered_map<string,size_t> trg_terms_map;
+
     CorpusReader reader(corpus);
     vector<string> src, trg;
 
+    size_t lines = 0;
     while (reader.Read(src, trg)) {
-        src_terms.insert(src.begin(), src.end());
-        trg_terms.insert(trg.begin(), trg.end());
+        for (auto w=src.begin(); w!=src.end(); ++w)
+            if (src_terms_map.find(*w) != src_terms_map.end())
+                ++src_terms_map[*w];
+            else
+                src_terms_map[*w] = 1;
+
+        for (auto w=trg.begin(); w!=trg.end(); ++w)
+            if (trg_terms_map.find(*w) != trg_terms_map.end())
+                ++trg_terms_map[*w];
+            else
+                trg_terms_map[*w] = 1;
+        ++lines;
     }
+
+    std::cerr << std::endl << "Corpus size after removal of empty segments:" << lines << std::endl;
+
+    for (auto e=src_terms_map.begin(); e!=src_terms_map.end(); ++e){
+        if (e->second > vocab_threshold)
+            src_terms.insert(e->first);
+    }
+    for (auto e=trg_terms_map.begin(); e!=trg_terms_map.end(); ++e){
+        if (e->second > vocab_threshold)
+            trg_terms.insert(e->first);
+    }
+    std::cerr << "Source vocabulary size:" << src_terms.size() << " (before pruning of singletons:" << src_terms_map.size() << ")" << std::endl;
+    std::cerr << "Target vocabulary size:" << trg_terms.size() << " (before pruning of singletons:" << trg_terms_map.size() << ")" << std::endl;
 
     for (auto term = src_terms.begin(); term != src_terms.end(); ++term)
         trg_terms.erase(*term);

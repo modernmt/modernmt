@@ -9,6 +9,8 @@ import eu.modernmt.cluster.db.EmbeddedCassandra;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.cluster.kafka.EmbeddedKafka;
 import eu.modernmt.cluster.kafka.KafkaDataManager;
+import eu.modernmt.cluster.services.TranslationService;
+import eu.modernmt.cluster.services.TranslationServiceProxy;
 import eu.modernmt.config.*;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
@@ -18,15 +20,18 @@ import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.decoder.DecoderWithFeatures;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
+import eu.modernmt.facade.exceptions.TranslationException;
 import eu.modernmt.hw.NetworkUtils;
 import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.model.Translation;
 import eu.modernmt.persistence.Database;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by davide on 18/04/16.
@@ -49,9 +54,7 @@ public class ClusterNode {
     }
 
     public interface StatusListener {
-
         void onStatusChanged(ClusterNode node, Status currentStatus, Status previousStatus);
-
     }
 
     private final Logger logger = LogManager.getLogger(ClusterNode.class);
@@ -63,10 +66,11 @@ public class ClusterNode {
     private ArrayList<StatusListener> statusListeners = new ArrayList<>();
 
     private HazelcastInstance hazelcast;
-    private IExecutorService executor;
     private DataManager dataManager;
     private Database database;
     private ITopic<Map<String, float[]>> decoderWeightsTopic;
+
+    private TranslationServiceProxy translationService;
 
     private ArrayList<EmbeddedService> services = new ArrayList<>(2);
 
@@ -80,11 +84,6 @@ public class ClusterNode {
 //            } catch (IOException e) {
 //                // Ignore exception
 //            }
-
-            /*shutdown the executor only if this member is the only member left in the cluster*/
-            if (hazelcast.getCluster().getMembers().size() == 1)
-                forcefullyClose(executor);
-
             forcefullyClose(hazelcast);
 
             // Close engine resources
@@ -104,14 +103,6 @@ public class ClusterNode {
     private static void forcefullyClose(Closeable closeable) {
         try {
             if (closeable != null) closeable.close();
-        } catch (Throwable e) {
-            // Ignore
-        }
-    }
-
-    private static void forcefullyClose(ExecutorService executor) {
-        try {
-            if (executor != null) executor.shutdownNow();
         } catch (Throwable e) {
             // Ignore
         }
@@ -246,11 +237,16 @@ public class ClusterNode {
             hazelcastConfig.setProperty("hazelcast.initial.min.cluster.size", "1");
         }
 
-        int executorPoolSize = nodeConfig.getEngineConfig().getDecoderConfig().getParallelismDegree();
+        /* for the translation service use as many threads as the decoder threads */
+        EngineConfig engineConfig = nodeConfig.getEngineConfig();
+        TranslationQueueConfig queueConfig = nodeConfig.getTranslationQueueConfig();
+        int threads = engineConfig.getDecoderConfig().getParallelismDegree();
 
-        hazelcastConfig.getExecutorConfig(ClusterConstants.TRANSLATION_EXECUTOR_NAME)
-                .setPoolSize(executorPoolSize)
-                .setQueueCapacity(0);
+        TranslationService.getConfig(hazelcastConfig)
+                .setThreads(threads)
+                .setHighPriorityQueueSize(queueConfig.getHighPrioritySize())
+                .setNormalPriorityQueueSize(queueConfig.getNormalPrioritySize())
+                .setBackgroundPriorityQueueSize(queueConfig.getBackgroundPrioritySize());
 
         return hazelcastConfig;
     }
@@ -260,7 +256,6 @@ public class ClusterNode {
     }
 
     public void start(NodeConfig nodeConfig, long joinTimeoutInterval, TimeUnit joinTimeoutUnit) throws FailedToJoinClusterException, BootstrapException {
-
         Timer globalTimer = new Timer();
         Timer timer = new Timer();
 
@@ -410,9 +405,10 @@ public class ClusterNode {
         }
 
 
-        // ========================
+        // ===========  Hazelcast services init =============
 
-        executor = hazelcast.getExecutorService(ClusterConstants.TRANSLATION_EXECUTOR_NAME);
+        translationService = hazelcast.getDistributedObject(TranslationService.SERVICE_NAME,
+                ClusterConstants.TRANSLATION_SERVICE_NAME);
 
         decoderWeightsTopic = hazelcast.getTopic(ClusterConstants.DECODER_WEIGHTS_TOPIC_NAME);
         decoderWeightsTopic.addMessageListener(this::onDecoderWeightsChanged);
@@ -468,17 +464,67 @@ public class ClusterNode {
         return nodes;
     }
 
-    public <V> Future<V> submit(Callable<V> callable) {
-        return executor.submit(callable);
+    /**
+     * This method dispatches a TranslationTask to perform to a random Member of the cluster
+     * that supports a specific LanguagePair.
+     * It returns a Future for the TranslationTask result.
+     *
+     * @param task the translationTask with all the information on the translation job to execute
+     * @return the resulting Translation object.
+     */
+    public Future<Translation> submit(TranslationTask task, LanguagePair direction) throws TranslationException {
+        Member member = this.getRandomMember(direction);
+        return member != null ? translationService.submit(task, member.getAddress()) : null;
     }
 
-    public <V> Future<V> submit(Callable<V> callable, LanguagePair direction) {
-        try {
-            return executor.submit(callable, member -> NodeInfo.hasTranslationDirection(member, direction));
-        } catch (RejectedExecutionException e) {
+    /**
+     * This method dispatches a TranslationTask to perform to a random Member of the cluster.
+     * It returns a Future for the TranslationTask result.
+     *
+     * @param task the translationTask with all the information on the translation job to execute
+     * @return the resulting Translation object.
+     */
+    public Future<Translation> submit(TranslationTask task) {
+        Member member = this.getRandomMember();
+        return translationService.submit(task, member.getAddress());
+    }
+
+
+    /**
+     * This private method gets a random Member of the mmt cluster that this node is part of too
+     *
+     * @return the obtained Member
+     */
+    private Member getRandomMember() {
+        Set<Member> members = hazelcast.getCluster().getMembers();
+        Member[] array = members.toArray(new Member[members.size()]);
+        int randomIndex = new Random().nextInt(array.length);
+        return array[randomIndex];
+    }
+
+    /**
+     * This private method gets a random Member of the mmt cluster that this node is part of too,
+     * after making sure that it supports a specific language direction
+     *
+     * @param languagePair the language direction that the Member to retrieve must support
+     * @return the obtained Member, or null if in the cluster there is no member supporting the passed language pair
+     */
+    private Member getRandomMember(LanguagePair languagePair) {
+        Set<Member> allMembers = hazelcast.getCluster().getMembers();
+        ArrayList<Member> candidates = new ArrayList<>();
+
+        for (Member member : allMembers)
+            if (NodeInfo.hasTranslationDirection(member, languagePair))
+                candidates.add(member);
+
+        if (candidates.size() == 0) {
             return null;
+        } else {
+            int randomIndex = new Random().nextInt(candidates.size());
+            return candidates.get(randomIndex);
         }
     }
+
 
     public synchronized void shutdown() {
         if (setStatus(Status.SHUTDOWN, Status.READY))

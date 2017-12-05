@@ -31,7 +31,7 @@ public class TrainingFacade {
         Engine.initialize();
     }
 
-    public static final int DEFAULT_PARTITION_SIZE = 1200;
+    public static final int DEFAULT_PARTITION_SIZE = 2000;
 
     public static class TrainingOptions {
 

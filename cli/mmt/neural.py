@@ -71,11 +71,12 @@ class TranslationMemory:
 
 
 class NMTPreprocessor:
-    def __init__(self, source_lang, target_lang, bpe_symbols, max_vocab_size):
+    def __init__(self, source_lang, target_lang, bpe_symbols, max_vocab_size, vocab_pruning_threshold):
         self._source_lang = source_lang
         self._target_lang = target_lang
         self._bpe_symbols = bpe_symbols
         self._max_vocab_size = max_vocab_size
+        self._vocab_pruning_threshold = vocab_pruning_threshold
 
         self._logger = logging.getLogger('mmt.neural.NMTPreprocessor')
         self._ram_limit_mb = 1024
@@ -100,7 +101,8 @@ class NMTPreprocessor:
         else:
             with _log_timed_action(self._logger, 'Creating BPE model'):
                 vb_builder = SubwordTextProcessor.Builder(symbols=self._bpe_symbols,
-                                                          max_vocabulary_size=self._max_vocab_size)
+                                                          max_vocabulary_size=self._max_vocab_size,
+                                                          vocab_pruning_threshold=self._vocab_pruning_threshold)
                 bpe_encoder = vb_builder.build([c.reader([self._source_lang, self._target_lang]) for c in corpora])
                 bpe_encoder.save_to_file(bpe_output_path)
 
@@ -211,6 +213,8 @@ class NMTDecoder:
                 with _log_timed_action(self._logger, 'Creating engine from scratch'):
                     engine = NMTEngine.new_instance(src_dict, tgt_dict, bpe_encoder, metadata=metadata)
 
+        engine.running_state = NMTEngine.HOT
+
         trainer = NMTEngineTrainer(engine, state=state, options=training_opts)
 
         # Training model -----------------------------------------------------------------------------------------------
@@ -240,13 +244,13 @@ class NMTDecoder:
 
             with open(os.path.join(model_folder, 'model.conf'), 'w') as model_map:
                 filename = os.path.basename(self.model)
-                model_map.write('model.%s__%s = %s\n' % (self._source_lang, self._target_lang, filename))
+                model_map.write('[models]\n')
+                model_map.write('%s__%s = %s\n' % (self._source_lang, self._target_lang, filename))
 
 
 class NeuralEngine(Engine):
-    def __init__(self, name, source_lang, target_lang, bpe_symbols, max_vocab_size=None, gpus=None):
+    def __init__(self, name, source_lang, target_lang, bpe_symbols, max_vocab_size=None, vocab_pruning_threshold=None):
         Engine.__init__(self, name, source_lang, target_lang)
-        torch_setup(gpus=gpus, random_seed=3435)
 
         self._bleu_script = os.path.join(PYOPT_DIR, 'mmt-bleu.perl')
 
@@ -260,7 +264,8 @@ class NeuralEngine(Engine):
 
         self.memory = TranslationMemory(memory_path, self.source_lang, self.target_lang)
         self.nmt_preprocessor = NMTPreprocessor(self.source_lang, self.target_lang,
-                                                bpe_symbols=bpe_symbols, max_vocab_size=max_vocab_size)
+                                                bpe_symbols=bpe_symbols, max_vocab_size=max_vocab_size,
+                                                vocab_pruning_threshold=vocab_pruning_threshold)
         self.decoder = NMTDecoder(decoder_model, self.source_lang, self.target_lang)
 
     def type(self):
@@ -339,13 +344,15 @@ class NeuralEngineBuilder(EngineBuilder):
     def __init__(self, name, source_lang, target_lang, roots, debug=False, steps=None, split_trainingset=True,
                  validation_corpora=None, checkpoint=None, metadata=None, max_training_words=None, gpus=None,
                  training_args=None):
+        torch_setup(gpus=gpus, random_seed=3435)
 
         self._training_opts = NMTEngineTrainer.Options()
         if training_args is not None:
             self._training_opts.load_from_dict(training_args.__dict__)
 
         engine = NeuralEngine(name, source_lang, target_lang, bpe_symbols=self._training_opts.bpe_symbols,
-                              max_vocab_size=self._training_opts.max_vocab_size, gpus=gpus)
+                              max_vocab_size=self._training_opts.max_vocab_size,
+                              vocab_pruning_threshold=self._training_opts.vocab_pruning_threshold)
         EngineBuilder.__init__(self, engine, roots, debug, steps, split_trainingset, max_training_words)
 
         self._valid_corpora_path = validation_corpora if validation_corpora is not None \

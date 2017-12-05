@@ -94,8 +94,9 @@ def main_create(argv):
                                     '(dev set used by default).', default=None)
 
     nmt_arguments.add_argument('--gpus', dest='gpus', nargs='+', type=int, default=None,
-                               help='if neural is set, you can specify the list of GPUs used during training '
-                                    '(default value is all available GPUs). Specify the value -1 to not use any GPU.')
+                               help='if neural is set, you can specify the list of GPUs available to MMT. '
+                                    '(default value is all available GPUs). Specify the value -1 to not use any GPU. '
+                                    'WARNING: MMT only uses one GPU in training, choosing it among the available ones.')
 
     nmt_arguments.add_argument('--bpe-symbols', dest='bpe_symbols', type=int,
                                help='if neural is set, this is the number of symbols of the BPE encoder '
@@ -103,6 +104,9 @@ def main_create(argv):
     nmt_arguments.add_argument('--max-vocabulary-size', dest='max_vocab_size', type=int,
                                help='if neural is set, this is the maximum size of the vocabulary '
                                     '(default value is unbound).', default=None)
+    nmt_arguments.add_argument('--vocabulary-prune', dest='vocab_pruning_threshold', type=float,
+                               help='if neural is set, this is the threshold to prune out subwords of the vocabulary '
+                                    '(default value is unbound, must be within (0,1].', default=None)
     nmt_arguments.add_argument('--batch-size', dest='batch_size', type=int, default=64,
                                help='if neural is set, set the batch size (default value is 64).')
     nmt_arguments.add_argument('--learning-rate', dest='learning_rate', type=float, default=1.0,
@@ -126,13 +130,12 @@ def main_create(argv):
     nmt_arguments.add_argument('--step-limit', dest='step_limit', type=int, default=None,
                                help='if neural is set, run for this number of steps at most '
                                     '(default value is infinite).')
-    nmt_arguments.add_argument('--early-stop', dest='early_stop', type=int, default=10,
-                               help='if neural is set, terminate training if validations is stalled for this '
-                                    'number of times (default value is 10).')
-    # Not yet supported
-    # nmt_arguments.add_argument('--number-avg-checkpoints', dest='n_avg_checkpoints', type=int, default=5,
-    #                            help='if neural is set, number of checkpoints to merge at the end of training process '
-    #                                 '(default value is 5).')
+    nmt_arguments.add_argument('--checkpoints', dest='n_checkpoints', type=int, default=20,
+                               help='if neural is set, this is the number of checkpoints saved during the training and '
+                                    'used to evaluate terminate condition (default value is 20).')
+    nmt_arguments.add_argument('--average-checkpoints', dest='n_avg_checkpoints', type=int, default=20,
+                               help='if neural is set, number of checkpoints to merge at the end of training process '
+                                    '(default value is 20).')
 
     if len(argv) > 0:
         # Parse args

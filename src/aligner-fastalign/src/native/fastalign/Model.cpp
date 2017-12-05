@@ -95,7 +95,6 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
         }
         assert(isnormal(sum));
 
-
         if (use_null) {
             double count = probs[0] / sum;
 

@@ -73,9 +73,11 @@ public:
         for (size_t i = 0; i < data.size(); ++i) {
             unordered_map<word_t, pair<double, double>> &row = data[i];
 
+//TODO: is it possible to erase an element while scanning
             for (auto cell = row.cbegin(); cell != row.cend(); /* no increment */) {
                 if (cell->second.first <= threshold)
-                    row.erase(cell++);
+                    cell = row.erase(cell); //function erase returns an iterator pointing to the position immediately following the last of the elements erased.
+//                    row.erase(cell++);
                 else
                     ++cell;
             }
@@ -163,8 +165,11 @@ Builder::Builder(Options options) : initial_diagonal_tension(options.initial_dia
                                     alpha(options.alpha),
                                     use_null(options.use_null),
                                     buffer_size(options.buffer_size),
+                                    pruning(options.pruning),
+                                    maxLength(options.length),
                                     threads((options.threads == 0) ? (int) thread::hardware_concurrency()
                                                                    : options.threads) {
+
     if (variational_bayes && alpha <= 0.0)
         throw invalid_argument("Parameter 'alpha' must be greather than 0");
 
@@ -207,7 +212,9 @@ void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const Corpus &
     size_t buffer_items = 0;
     wordvec_t src, trg;
 
+    size_t lines = 0;
     while (reader.Read(src, trg)) {
+
         if (model->is_reverse)
             swap(src, trg);
 
@@ -237,6 +244,7 @@ void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const Corpus &
         }
 
         ++size_counts_[make_pair<length_t, length_t>((length_t) trg.size(), (length_t) src.size())];
+        ++lines;
     }
 
     for (auto p = size_counts_.begin(); p != size_counts_.end(); ++p) {
@@ -252,12 +260,12 @@ void Builder::Build(const Corpus &corpus, const string &path) {
     if (listener) listener->VocabularyBuildEnd();
 
     BuilderModel *forward = (BuilderModel *) BuildModel(vocab, corpus, true);
-    fs::path fwd_model_filename = fs::absolute(fs::path(path) / fs::path("fwd_model.tmp"));
+    fs::path fwd_model_filename = fs::absolute(fs::path(path) / fs::path("fwd_model.dat"));
     forward->Store(fwd_model_filename.string());
     delete forward;
 
     BuilderModel *backward = (BuilderModel *) BuildModel(vocab, corpus, false);
-    fs::path bwd_model_filename = fs::absolute(fs::path(path) / fs::path("bwd_model.tmp"));
+    fs::path bwd_model_filename = fs::absolute(fs::path(path) / fs::path("bwd_model.dat"));
     backward->Store(bwd_model_filename.string());
     delete backward;
 
@@ -316,10 +324,12 @@ Model *Builder::BuildModel(const Vocabulary *vocab, const Corpus &corpus, bool f
 #pragma omp parallel for reduction(+:mod_feat)
                 for (size_t i = 0; i < size_counts.size(); ++i) {
                     const pair<length_t, length_t> &p = size_counts[i].first;
+                    double tmp = 0.0;
                     for (length_t j = 1; j <= p.first; ++j)
-                        mod_feat += size_counts[i].second *
-                                    DiagonalAlignment::ComputeDLogZ(j, p.first, p.second, model->diagonal_tension);
+                        tmp += DiagonalAlignment::ComputeDLogZ(j, p.first, p.second, model->diagonal_tension);
+                    mod_feat += size_counts[i].second * tmp;
                 }
+
                 mod_feat /= n_target_tokens;
                 model->diagonal_tension += (emp_feat - mod_feat) * 20.0;
                 if (model->diagonal_tension <= 0.1) model->diagonal_tension = 0.1;
@@ -338,7 +348,7 @@ Model *Builder::BuildModel(const Vocabulary *vocab, const Corpus &corpus, bool f
     }
 
     if (listener) listener->Begin(forward, kBuilderStepPruning, 0);
-    model->Prune();
+    model->Prune(pruning);
     if (listener) listener->End(forward, kBuilderStepPruning, 0);
 
     if (listener) listener->End(forward);

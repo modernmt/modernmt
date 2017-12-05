@@ -154,4 +154,8 @@ public class NeuralDecoder implements Decoder, DecoderWithNBest, DataListenerPro
         IOUtils.closeQuietly(this.memory);
     }
 
+    @Override
+    public boolean supportsSentenceSplit() {
+        return true;
+    }
 }
