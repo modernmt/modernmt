@@ -226,26 +226,36 @@ class NMTDecoder:
         with _log_timed_action(self._logger, 'Train model'):
             state = trainer.train_model(train_dataset, valid_dataset=valid_dataset, save_path=working_dir)
 
-        # Saving last checkpoint ---------------------------------------------------------------------------------------
         if state.empty():
             raise Exception('Training interrupted before first checkpoint could be saved')
 
-        checkpoint = state.history[0]['file']
-        self._logger.info('Copying checkpoint at %s' % checkpoint)
+    def merge_checkpoints(self, checkpoints_folder, limit=None):
+        state = NMTEngineTrainer.State.load_from_file(os.path.join(checkpoints_folder, 'state.json'))
 
-        with _log_timed_action(self._logger, 'Storing model'):
-            model_folder = os.path.abspath(os.path.join(self.model, os.path.pardir))
-            if not os.path.isdir(model_folder):
-                os.mkdir(model_folder)
+        # Create destination folder
+        model_folder = os.path.abspath(os.path.join(self.model, os.path.pardir))
+        if not os.path.isdir(model_folder):
+            os.mkdir(model_folder)
 
-            for f in glob.glob(checkpoint + '.*'):
-                _, extension = os.path.splitext(f)
+        # Copy checkpoints files excluding .dat
+        for f in glob.glob(state.checkpoint['file'] + '.*'):
+            _, extension = os.path.splitext(f)
+
+            if extension != '.dat':
                 shutil.copy(f, self.model + extension)
 
-            with open(os.path.join(model_folder, 'model.conf'), 'w') as model_map:
-                filename = os.path.basename(self.model)
-                model_map.write('[models]\n')
-                model_map.write('%s__%s = %s\n' % (self._source_lang, self._target_lang, filename))
+        # Merging checkpoints
+        checkpoints = [c['file'] + '.dat' for c in state.history]
+        if limit is not None and len(checkpoints) > limit:
+            checkpoints = checkpoints[:limit]
+
+        with _log_timed_action(self._logger, 'Merge checkpoints %r to %s' % (checkpoints, model_folder)):
+            NMTEngineTrainer.merge_checkpoints(checkpoints, self.model + '.dat')
+
+        with open(os.path.join(model_folder, 'model.conf'), 'w') as model_map:
+            filename = os.path.basename(self.model)
+            model_map.write('[models]\n')
+            model_map.write('%s__%s = %s\n' % (self._source_lang, self._target_lang, filename))
 
 
 class NeuralEngine(Engine):
@@ -362,7 +372,7 @@ class NeuralEngineBuilder(EngineBuilder):
 
     def _build_schedule(self):
         return EngineBuilder._build_schedule(self) + \
-               [self._build_memory, self._prepare_training_data, self._train_decoder]
+               [self._build_memory, self._prepare_training_data, self._train_decoder, self._merge_checkpoints]
 
     def _check_constraints(self):
         recommended_gpu_ram = 2 * self._GB
@@ -425,12 +435,16 @@ class NeuralEngineBuilder(EngineBuilder):
                 shutil.rmtree(processed_valid_path, ignore_errors=True)
 
     @EngineBuilder.Step('Neural decoder training')
-    def _train_decoder(self, args, skip=False, delete_on_exit=False):
+    def _train_decoder(self, args, skip=False):
         working_dir = self._get_tempdir('onmt_model')
 
         if not skip:
             self._engine.decoder.train(args.onmt_training_path, working_dir, self._training_opts,
                                        checkpoint_path=self._checkpoint, metadata_path=self._metadata)
 
-            if delete_on_exit:
-                shutil.rmtree(working_dir, ignore_errors=True)
+    @EngineBuilder.Step('Saving neural model', optional=False)
+    def _merge_checkpoints(self, _, skip=False):
+        working_dir = self._get_tempdir('onmt_model')
+
+        if not skip:
+            self._engine.decoder.merge_checkpoints(working_dir, limit=self._training_opts.n_avg_checkpoints)

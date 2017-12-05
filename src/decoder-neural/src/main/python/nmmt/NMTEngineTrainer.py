@@ -368,3 +368,40 @@ class NMTEngineTrainer:
             pass
 
         return self.state
+
+    @staticmethod
+    def merge_checkpoints(checkpoint_paths, output_path):
+        if len(checkpoint_paths) < 2:
+            raise ValueError('Need to specify more than one checkpoint, %d provided.' % len(checkpoint_paths))
+
+        def __sum(source, destination):
+            for key, value in source.items():
+                if isinstance(value, dict):
+                    node = destination.setdefault(key, {})
+                    __sum(value, node)
+                else:
+                    if isinstance(value, torch.FloatTensor):
+                        destination[key] = torch.add(destination[key], 1.0, value)
+
+            return destination
+
+        def __divide(source, denominator):
+            for key, value in source.items():
+                if isinstance(value, dict):
+                    node = source.setdefault(key, {})
+                    __divide(node, denominator)
+                else:
+                    if isinstance(value, torch.FloatTensor):
+                        source[key] = torch.div(value, denominator)
+
+            return source
+
+        output_checkpoint = torch.load(checkpoint_paths[0])
+
+        for checkpoint_path in checkpoint_paths[1:]:
+            checkpoint = torch.load(checkpoint_path)
+            output_checkpoint = __sum(checkpoint, output_checkpoint)
+
+        output_checkpoint = __divide(output_checkpoint, len(checkpoint_paths))
+
+        torch.save(output_checkpoint, output_path)
