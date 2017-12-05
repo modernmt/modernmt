@@ -10,7 +10,7 @@ using namespace std;
 using namespace mmt;
 using namespace mmt::fastalign;
 
-const Vocabulary *Vocabulary::FromCorpus(const Corpus &corpus) {
+const Vocabulary *Vocabulary::FromCorpus(const Corpus &corpus, size_t maxL) {
     // For model efficiency all source words have the lowest id possible
     unordered_set<string> src_terms;
     unordered_set<string> trg_terms;
@@ -19,6 +19,8 @@ const Vocabulary *Vocabulary::FromCorpus(const Corpus &corpus) {
     unordered_map<string,size_t> trg_terms_map;
 
     CorpusReader reader(corpus);
+    reader.SkipEmptyLines(true);
+    reader.SetMaxLength(maxL);
     vector<string> src, trg;
 
     size_t lines = 0;

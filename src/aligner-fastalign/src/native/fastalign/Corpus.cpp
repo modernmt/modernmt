@@ -85,9 +85,7 @@ static inline void ParseLine(const Vocabulary *vocab, const string &line, wordve
 }
 
 CorpusReader::CorpusReader(const Corpus &corpus, const Vocabulary *vocabulary, const size_t maxL)
-        : drained(false), vocabulary(vocabulary), source(corpus.sourcePath.c_str()), target(corpus.targetPath.c_str()), maxLength(maxL) {
-
-}
+        : drained(false), vocabulary(vocabulary), source(corpus.sourcePath.c_str()), target(corpus.targetPath.c_str()), maxLength(maxL), skipEmpty(false){}
 
 bool CorpusReader::Read(sentence_t &outSource, sentence_t &outTarget) {
     if (drained)
@@ -103,7 +101,11 @@ bool CorpusReader::Read(sentence_t &outSource, sentence_t &outTarget) {
         ParseLine(sourceLine, outSource);
         ParseLine(targetLine, outTarget);
 
-        if (length_limit(maxLength, outSource, outTarget)) return true;
+        if (!skipEmpty)
+            return true;
+
+        if  ( length_limit(maxLength, outSource, outTarget) )
+            return true;
     }
 }
 
@@ -125,25 +127,34 @@ bool CorpusReader::Read(vector<pair<sentence_t, sentence_t>> &outBuffer, size_t 
     if (batch.empty())
         return false;
 
+    if (skipEmpty){
 //    outBuffer.resize(batch.size());
-    vector<pair<sentence_t, sentence_t>> outBufferTmp(batch.size());
+        vector<pair<sentence_t, sentence_t>> outBufferTmp(batch.size());
 #pragma omp parallel for schedule(dynamic)
-    for (size_t i = 0; i < batch.size(); ++i) {
-        ParseLine(batch[i].first, outBufferTmp[i].first);
-        ParseLine(batch[i].second, outBufferTmp[i].second);
-    }
+        for (size_t i = 0; i < batch.size(); ++i) {
+            ParseLine(batch[i].first, outBufferTmp[i].first);
+            ParseLine(batch[i].second, outBufferTmp[i].second);
+        }
 
-    outBuffer.resize(batch.size());
-    size_t j = 0;
-    for (size_t i = 0; i < outBufferTmp.size(); ++i) {
+        outBuffer.resize(batch.size());
+        size_t j = 0;
+        for (size_t i = 0; i < outBufferTmp.size(); ++i) {
 
-        if (length_limit(maxLength, outBufferTmp[i].first, outBufferTmp[i].second)){
-            outBuffer[j].first = outBufferTmp[i].first;
-            outBuffer[j].second = outBufferTmp[i].second;
-            ++j;
+            if (length_limit(maxLength, outBufferTmp[i].first, outBufferTmp[i].second)){
+                outBuffer[j].first = outBufferTmp[i].first;
+                outBuffer[j].second = outBufferTmp[i].second;
+                ++j;
+            }
+        }
+        outBuffer.resize(j);
+    } else{
+        outBuffer.resize(batch.size());
+#pragma omp parallel for schedule(dynamic)
+        for (size_t i = 0; i < batch.size(); ++i) {
+            ParseLine(batch[i].first, outBuffer[i].first);
+            ParseLine(batch[i].second, outBuffer[i].second);
         }
     }
-    outBuffer.resize(j);
 
     if (outBuffer.empty())
         return false;
@@ -165,7 +176,11 @@ bool CorpusReader::Read(wordvec_t &outSource, wordvec_t &outTarget) {
         ParseLine(vocabulary, sourceLine, outSource);
         ParseLine(vocabulary, targetLine, outTarget);
 
-        if (length_limit(maxLength, outSource, outTarget)) return true;
+        if (!skipEmpty)
+            return true;
+
+        if  ( length_limit(maxLength, outSource, outTarget) )
+            return true;
     }
 }
 
@@ -187,24 +202,33 @@ bool CorpusReader::Read(std::vector<std::pair<wordvec_t, wordvec_t>> &outBuffer,
     if (batch.empty())
         return false;
 
-    std::vector<std::pair<wordvec_t, wordvec_t>> outBufferTmp(batch.size());
+    if (skipEmpty){
+        std::vector<std::pair<wordvec_t, wordvec_t>> outBufferTmp(batch.size());
 //    outBuffer.resize(batch.size());
 #pragma omp parallel for schedule(dynamic)
-    for (size_t i = 0; i < batch.size(); ++i) {
-        ParseLine(vocabulary, batch[i].first, outBufferTmp[i].first);
-        ParseLine(vocabulary, batch[i].second, outBufferTmp[i].second);
-    }
+        for (size_t i = 0; i < batch.size(); ++i) {
+            ParseLine(vocabulary, batch[i].first, outBufferTmp[i].first);
+            ParseLine(vocabulary, batch[i].second, outBufferTmp[i].second);
+        }
 
-    outBuffer.resize(batch.size());
-    size_t j = 0;
-    for (size_t i = 0; i < outBufferTmp.size(); ++i) {
-        if (length_limit(maxLength, outBufferTmp[i].first, outBufferTmp[i].second)){
-            outBuffer[j].first = outBufferTmp[i].first;
-            outBuffer[j].second = outBufferTmp[i].second;
-            ++j;
+        outBuffer.resize(batch.size());
+        size_t j = 0;
+        for (size_t i = 0; i < outBufferTmp.size(); ++i) {
+            if (length_limit(maxLength, outBufferTmp[i].first, outBufferTmp[i].second)){
+                outBuffer[j].first = outBufferTmp[i].first;
+                outBuffer[j].second = outBufferTmp[i].second;
+                ++j;
+            }
+        }
+        outBuffer.resize(j);
+    } else{
+        outBuffer.resize(batch.size());
+#pragma omp parallel for schedule(dynamic)
+        for (size_t i = 0; i < batch.size(); ++i) {
+            ParseLine(vocabulary, batch[i].first, outBuffer[i].first);
+            ParseLine(vocabulary, batch[i].second, outBuffer[i].second);
         }
     }
-    outBuffer.resize(j);
 
     if (outBuffer.empty())
         return false;

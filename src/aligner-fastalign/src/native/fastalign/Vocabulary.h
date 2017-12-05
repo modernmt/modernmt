@@ -22,7 +22,7 @@ namespace mmt {
         class Vocabulary {
         public:
 
-            static const Vocabulary *FromCorpus(const Corpus &corpus);
+            static const Vocabulary *FromCorpus(const Corpus &corpus, size_t maxL=150);
 
             Vocabulary(const std::string &filename, bool direct = true, bool reverse = true);
 

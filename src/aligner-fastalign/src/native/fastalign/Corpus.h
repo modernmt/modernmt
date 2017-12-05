@@ -47,6 +47,9 @@ namespace mmt {
         public:
             CorpusReader(const Corpus &corpus, const Vocabulary *vocabulary = nullptr, const size_t maxL=150);
 
+            inline void SkipEmptyLines(bool value){ skipEmpty = value; }
+            inline void SetMaxLength(size_t value){ maxLength = value; }
+
             bool Read(sentence_t &outSource, sentence_t &outTarget);
 
             bool Read(std::vector<std::pair<sentence_t, sentence_t>> &outBuffer, size_t limit);
@@ -62,7 +65,8 @@ namespace mmt {
             std::ifstream source;
             std::ifstream target;
 
-            const size_t maxLength;
+            size_t maxLength;
+            bool skipEmpty;
         };
     }
 }

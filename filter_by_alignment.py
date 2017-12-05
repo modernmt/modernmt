@@ -41,31 +41,34 @@ def main(argv):
                         with open(os.path.join(path_out,"train_removed.en"),"w") as source_removed_stream:
                             with open(os.path.join(path_out,"train_removed.it"),"w") as target_removed_stream:
                                 with open(os.path.join(path_out,"train_removed.score"),"w") as score_removed_stream:
-                                    line = 0
-                                    selected = 0
-                                    while (True):
-                                        source_line = source_stream.readline()
-                                        target_line = target_stream.readline()
-                                        if not source_line or not target_line:
-                                            break
+                                    with open(os.path.join(path_out,"train_removed.score"),"w") as output_stream:
+                                        line = 0
+                                        selected = 0
+                                        while (True):
+                                            source_line = source_stream.readline()
+                                            target_line = target_stream.readline()
+                                            if not source_line or not target_line:
+                                                break
 
-                                        if selected_scores[line] == True:
-                                            source_filtered_stream.write(source_line)
-                                            target_filtered_stream.write(target_line)
-                                            if scores[line] > -1000.0:
-                                                score_filtered_stream.write("%f %f\n" % (scores[line], z_scores[line]))
+                                            if selected_scores[line] == True:
+                                                source_filtered_stream.write(source_line)
+                                                target_filtered_stream.write(target_line)
+                                                output_stream.write("1\n")  # TMOP value for BAD
+                                                if scores[line] > -1000.0:
+                                                    score_filtered_stream.write("%f %f\n" % (scores[line], z_scores[line]))
+                                                else:
+                                                    score_filtered_stream.write("MY_NAN %f\n" % (z_scores[line]))
+                                                selected += 1
                                             else:
-                                                score_filtered_stream.write("MY_NAN %f\n" % (z_scores[line]))
-                                            selected += 1
-                                        else:
-                                            source_removed_stream.write(source_line)
-                                            target_removed_stream.write(target_line)
-                                            if scores[line] > -1000.0:
-                                                score_removed_stream.write("%f %f\n" % (scores[line], z_scores[line]))
-                                            else:
-                                                score_removed_stream.write("MY_NAN %f\n" % (z_scores[line]))
+                                                source_removed_stream.write(source_line)
+                                                target_removed_stream.write(target_line)
+                                                output_stream.write("3\n")  # TMOP value for BAD
+                                                if scores[line] > -1000.0:
+                                                    score_removed_stream.write("%f %f\n" % (scores[line], z_scores[line]))
+                                                else:
+                                                    score_removed_stream.write("MY_NAN %f\n" % (z_scores[line]))
 
-                                        line += 1
+                                            line += 1
 
     sys.stderr.write("%s selected among %s sentence pairs\n" % (selected, len(scores)))
 

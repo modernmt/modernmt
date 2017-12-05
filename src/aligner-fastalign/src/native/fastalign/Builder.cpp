@@ -204,6 +204,8 @@ void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const Corpus &
                           vector<pair<pair<length_t, length_t>, size_t>> *size_counts) {
     BuilderModel *model = (BuilderModel *) _model;
     CorpusReader reader(corpus, vocab);
+    reader.SkipEmptyLines(true);
+    reader.SetMaxLength(maxLength);
 
     unordered_map<pair<length_t, length_t>, size_t, LengthPairHash> size_counts_;
 
@@ -256,7 +258,7 @@ void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const Corpus &
 
 void Builder::Build(const Corpus &corpus, const string &path) {
     if (listener) listener->VocabularyBuildBegin();
-    const Vocabulary *vocab = Vocabulary::FromCorpus(corpus);
+    const Vocabulary *vocab = Vocabulary::FromCorpus(corpus, maxLength);
     if (listener) listener->VocabularyBuildEnd();
 
     BuilderModel *forward = (BuilderModel *) BuildModel(vocab, corpus, true);
@@ -305,6 +307,9 @@ Model *Builder::BuildModel(const Vocabulary *vocab, const Corpus &corpus, bool f
         double emp_feat = 0.0;
 
         CorpusReader reader(corpus, vocab);
+        reader.SkipEmptyLines(true);
+        reader.SetMaxLength(maxLength);
+
         vector<pair<wordvec_t, wordvec_t>> batch;
 
         if (listener) listener->Begin(forward, kBuilderStepAligning, iter + 1);

@@ -92,13 +92,17 @@ void printScore(vector<double> &scores, ofstream &out) {
 }
 
 void ScoreCorpus(const Corpus &corpus, size_t buffer_size, Symmetrization strategy, FastAligner &aligner) {
+    cerr << "void ScoreCorpus START" << endl;
     CorpusReader reader(corpus, aligner.vocabulary);
+    cerr << "void ScoreCorpus reader created" << endl;
 
     vector<pair<wordvec_t, wordvec_t>> batch;
     vector<double> scores;
 
     ofstream scoreStream(corpus.GetOutputScorePath().c_str());
+    cerr << "void ScoreCorpus buffer_size" << buffer_size << endl;
     while (reader.Read(batch, buffer_size)) {
+        cerr << "void ScoreCorpus batch.size()" << batch.size() << endl;
         aligner.GetScores(batch, scores, strategy);
 
         printScore(scores, scoreStream);
@@ -147,7 +151,9 @@ int main(int argc, const char *argv[]) {
     //perform alignment of all corpora sequentially; multithreading is used for each corpus
     for (size_t i = 0; i < corpora.size(); ++i) {
         Corpus &corpus = corpora[i];
+        cerr << "HERE 1" << endl;
         ScoreCorpus(corpus, args.buffer_size, args.strategy, aligner);
+        cerr << "HERE 2" << endl;
     }
 
     return SUCCESS;
