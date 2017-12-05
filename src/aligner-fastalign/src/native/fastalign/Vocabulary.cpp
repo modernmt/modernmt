@@ -5,6 +5,7 @@
 #include "Vocabulary.h"
 #include <iostream>
 #include <unordered_map>
+#include <algorithm>
 
 using namespace std;
 using namespace mmt;

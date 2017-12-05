@@ -23,7 +23,7 @@ void Model::ComputeScores(const vector<pair<wordvec_t, wordvec_t>> &batch,
                           vector<double> &outScores) {
     outScores.resize(batch.size());
 
-#pragma omp parallel for schedule(dynamic) reduction(+:emp_feat)
+#pragma omp parallel for schedule(dynamic)
     for (size_t i = 0; i < batch.size(); ++i) {
         const pair<wordvec_t, wordvec_t> &p = batch[i];
         double score;
