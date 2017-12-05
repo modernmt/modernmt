@@ -32,7 +32,6 @@ namespace {
         string source_lang;
         string target_lang;
 
-        Symmetrization strategy = GrowDiagonalFinalAnd;
         size_t buffer_size = 100000;
     };
 } // namespace
@@ -51,7 +50,6 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
             ("source,s", po::value<string>()->required(), "source language")
             ("target,t", po::value<string>()->required(), "target language")
             ("input,i", po::value<string>()->required(), "input folder with input corpora")
-            ("strategy,a", po::value<size_t>(), "Symmetrization (1 = GrowDiagonalFinal, 2 = GrowDiagonal, 3 = Intersection, 4 = Union)")
             ("buffer,b", po::value<size_t>(), "size of the buffer");
 
     po::variables_map vm;
@@ -71,9 +69,6 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
         args->source_lang = vm["source"].as<string>();
         args->target_lang = vm["target"].as<string>();
 
-        if (vm.count("strategy"))
-            args->strategy = (Symmetrization) vm["strategy"].as<size_t>();
-
         if (vm.count("buffer"))
             args->buffer_size = vm["buffer"].as<size_t>();
     } catch (po::error &e) {
@@ -91,7 +86,7 @@ void printScore(vector<double> &scores, ofstream &out) {
     }
 }
 
-void ScoreCorpus(const Corpus &corpus, size_t buffer_size, Symmetrization strategy, FastAligner &aligner) {
+void ScoreCorpus(const Corpus &corpus, size_t buffer_size, FastAligner &aligner) {
     cerr << "void ScoreCorpus START" << endl;
     CorpusReader reader(corpus, aligner.vocabulary);
     cerr << "void ScoreCorpus reader created" << endl;
@@ -103,7 +98,7 @@ void ScoreCorpus(const Corpus &corpus, size_t buffer_size, Symmetrization strate
     cerr << "void ScoreCorpus buffer_size" << buffer_size << endl;
     while (reader.Read(batch, buffer_size)) {
         cerr << "void ScoreCorpus batch.size()" << batch.size() << endl;
-        aligner.GetScores(batch, scores, strategy);
+        aligner.GetScores(batch, scores);
 
         printScore(scores, scoreStream);
 
@@ -152,7 +147,7 @@ int main(int argc, const char *argv[]) {
     for (size_t i = 0; i < corpora.size(); ++i) {
         Corpus &corpus = corpora[i];
         cerr << "HERE 1" << endl;
-        ScoreCorpus(corpus, args.buffer_size, args.strategy, aligner);
+        ScoreCorpus(corpus, args.buffer_size, aligner);
         cerr << "HERE 2" << endl;
     }
 

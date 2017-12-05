@@ -20,9 +20,7 @@ Model::Model(bool is_reverse, bool use_null, bool favor_diagonal, double prob_al
 }
 
 void Model::ComputeScores(const vector<pair<wordvec_t, wordvec_t>> &batch,
-                                vector<double> &outScores) {
-    double current_emp_feat = 0.0, emp_feat = 0.0;
-
+                          vector<double> &outScores) {
     outScores.resize(batch.size());
 
 #pragma omp parallel for schedule(dynamic) reduction(+:emp_feat)
@@ -75,7 +73,6 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
             if (favor_diagonal)
                 prob_a_i = prob_align_null;
             probs[0] = GetProbability(kNullWord, f_j) * prob_a_i;
-//            std::cerr << "j:" << j << " i:" << 0 <<" GetProbability(kNullWord, f_j):" << GetProbability(kNullWord, f_j) << endl;
             sum += probs[0];
         }
 
@@ -152,42 +149,3 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
 
     return emp_feat;
 }
-
-
-//double Model::ComputeScore(const wordvec_t &source, const wordvec_t &target) {
-//    double total = 0.0;
-//
-//    const wordvec_t src = is_reverse ? target : source;
-//    const wordvec_t trg = is_reverse ? source : target;
-//
-//    vector<double> sums(trg.size());
-//
-//    length_t src_size = (length_t) src.size();
-//    length_t trg_size = (length_t) trg.size();
-//
-//    for (length_t j = 0; j < trg_size; ++j) {
-//        sums[j] = 0.0;
-//    }
-//
-//    for (length_t j = 0; j < trg_size; ++j) {
-//        const word_t &f_j = trg[j];
-//        sums[j] = GetProbability(kNullWord, f_j);
-//
-//        for (length_t i = 1; i <= src_size; ++i) {
-//            sums[j] += GetProbability(src[i - 1], f_j);
-//        }
-//    }
-//    for (length_t j = 0; j < trg_size; ++j) {
-//        const word_t &f_j = trg[j];
-//        double sum = GetProbability(kNullWord, f_j);
-//
-//        for (length_t i = 1; i <= src_size; ++i) {
-//            sum += GetProbability(src[i - 1], f_j) / sums[j];
-//        }
-//        total += log(sum);
-//    }
-//
-//    total -= trg_size * log(src_size + 1);
-//
-//    return total;
-//}

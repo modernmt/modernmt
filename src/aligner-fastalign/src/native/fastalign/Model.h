@@ -32,10 +32,8 @@ namespace mmt {
                 ComputeAlignments(batch, NULL, &outAlignments);
             }
 
-            //double ComputeScore(const wordvec_t &source, const wordvec_t &target);
-
             void ComputeScores(const std::vector<std::pair<wordvec_t, wordvec_t>> &batch,
-                                          std::vector<double> &outScores);
+                               std::vector<double> &outScores);
 
             virtual double GetProbability(word_t source, word_t target) = 0;
 
@@ -52,7 +50,7 @@ namespace mmt {
             double diagonal_tension;
 
             double ComputeAlignment(const wordvec_t &source, const wordvec_t &target, Model *outModel,
-                                    alignment_t *outAlignment, double *outScore=NULL);
+                                    alignment_t *outAlignment, double *outScore = NULL);
 
             double ComputeAlignments(const std::vector<std::pair<wordvec_t, wordvec_t>> &batch,
                                      Model *outModel, std::vector<alignment_t> *outAlignments);
