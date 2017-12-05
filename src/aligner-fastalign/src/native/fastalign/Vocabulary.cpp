@@ -36,6 +36,7 @@ inline void PruneTerms(unordered_map<string, size_t> &terms, double threshold) {
     size_t min_size = 0;
     for (auto entry = entries.begin(); entry != entries.end(); ++entry) {
         counter += entry->second;
+
         if (counter / total >= threshold) {
             min_size = entry->second;
             break;
@@ -70,12 +71,12 @@ const Vocabulary *Vocabulary::FromCorpus(CorpusReader &reader, double threshold)
         PruneTerms(src_terms, threshold);
         PruneTerms(trg_terms, threshold);
     }
-
+    
     for (auto term = src_terms.begin(); term != src_terms.end(); ++term)
         trg_terms.erase(term->first);
 
     Vocabulary *result = new Vocabulary();
-    result->terms.reserve(src_terms.size() * trg_terms.size());
+    result->terms.reserve(src_terms.size() + trg_terms.size());
 
     for (auto term = src_terms.begin(); term != src_terms.end(); ++term)
         result->terms.push_back(term->first);
