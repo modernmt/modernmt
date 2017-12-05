@@ -37,6 +37,7 @@ struct option options[] = {
         {"threads",    optional_argument, NULL, 0},
         {"iterations", optional_argument, NULL, 0},
         {"pruning",    optional_argument, NULL, 0},
+        {"length",    optional_argument, NULL, 0},
         {0, 0, 0,                               0}
 };
 
@@ -47,13 +48,14 @@ void help(const char *name) {
          << "  -m: [REQ] Output model path\n"
          << "  -I: number of iterations in EM training (default = 5)\n"
          << "  -n: Number of threads. (default = number of CPUs)\n"
-         << "  -p: Pruning threshols. (default = 1.e-20)\n";
+         << "  -p: Pruning threshold. (default = 1.e-20)\n"
+         << "  -l: Max sentence length. (default = 80)\n";
 }
 
 bool InitCommandLine(int argc, char **argv) {
     while (true) {
         int oi;
-        int c = getopt_long(argc, argv, "s:t:m:I:n:p:", options, &oi);
+        int c = getopt_long(argc, argv, "s:t:m:I:n:p:l:", options, &oi);
         if (c == -1) break;
 
         switch (c) {
@@ -74,6 +76,9 @@ bool InitCommandLine(int argc, char **argv) {
                 break;
             case 'p':
                 builderOptions.pruning = atof(optarg);
+                break;
+            case 'l':
+                builderOptions.length = atoi(optarg);
                 break;
             default:
                 return false;

@@ -40,9 +40,9 @@ namespace mmt {
                 // no-op
             }
 
-            void ExportLexicalModel(const std::string &filename, const Vocabulary *vb, bool bidirectional=true);
+            void ExportLexicalModel(const std::string &filename, const Vocabulary *vb);
 
-            static void Open(const std::string &filename, Model **outForward, Model **outBackward, bool bidirectional=true);
+            static void Open(const std::string &filename, Model **outForward, Model **outBackward);
 
         private:
             const std::shared_ptr<bitable_t> table;

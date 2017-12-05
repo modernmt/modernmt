@@ -155,6 +155,7 @@ Builder::Builder(Options options) : mean_srclen_multiplier(options.mean_srclen_m
                                     use_null(options.use_null),
                                     buffer_size(options.buffer_size),
                                     pruning(options.pruning),
+                                    maxLength(options.length),
                                     threads((options.threads == 0) ? (int) thread::hardware_concurrency()
                                                                    : options.threads) {
 
@@ -200,10 +201,8 @@ void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const Corpus &
     size_t buffer_items = 0;
     wordvec_t src, trg;
 
+    size_t lines = 0;
     while (reader.Read(src, trg)) {
-        //skip if either source or target sentence is empty
-        if (trg.size()==0 || src.size()==0)
-            continue;
 
         if (model->is_reverse)
             swap(src, trg);
@@ -234,6 +233,7 @@ void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const Corpus &
         }
 
         ++size_counts_[make_pair<length_t, length_t>((length_t) trg.size(), (length_t) src.size())];
+        ++lines;
     }
 
     for (auto p = size_counts_.begin(); p != size_counts_.end(); ++p) {

@@ -27,6 +27,7 @@ namespace mmt {
             int threads = 0; // Default is number of CPUs
             size_t buffer_size = 10000;
             double pruning = 1.e-20;
+            size_t length = 80;
         };
 
         typedef int BuilderStep;
@@ -81,6 +82,7 @@ namespace mmt {
             const bool use_null;
             const size_t buffer_size;
             double pruning;
+            size_t maxLength;
             const int threads;
 
             Listener *listener;
