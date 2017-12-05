@@ -23,8 +23,8 @@ namespace mmt {
             Corpus(const std::string &sourceFilePath, const std::string &targetFilePath,
                    const std::string &outputAlignPath = "",
                    const std::string &outputScorePath = "") : sourcePath(sourceFilePath), targetPath(targetFilePath),
-                                                             outputAlignPath(outputAlignPath),
-                                                             outputScorePath(outputScorePath) {};
+                                                              outputAlignPath(outputAlignPath),
+                                                              outputScorePath(outputScorePath) {};
 
             static void List(const std::string &path, const std::string &outPath,
                              const std::string &sourceLang, const std::string &targetLang, std::vector<Corpus> &list);
@@ -32,6 +32,7 @@ namespace mmt {
             const std::string &GetOutputAlignPath() const {
                 return outputAlignPath;
             }
+
             const std::string &GetOutputScorePath() const {
                 return outputScorePath;
             }
@@ -45,10 +46,8 @@ namespace mmt {
 
         class CorpusReader {
         public:
-            CorpusReader(const Corpus &corpus, const Vocabulary *vocabulary = nullptr, const size_t maxL=150);
-
-            inline void SkipEmptyLines(bool value){ skipEmpty = value; }
-            inline void SetMaxLength(size_t value){ maxLength = value; }
+            CorpusReader(const Corpus &corpus, const Vocabulary *vocabulary = nullptr,
+                         const size_t maxLineLength = 0, const bool skipEmptyLines = false);
 
             bool Read(sentence_t &outSource, sentence_t &outTarget);
 
@@ -65,8 +64,22 @@ namespace mmt {
             std::ifstream source;
             std::ifstream target;
 
-            size_t maxLength;
-            bool skipEmpty;
+            const size_t maxLineLength;
+            const bool skipEmptyLines;
+
+            inline bool Skip(const sentence_t &source, const sentence_t &target) const {
+                if (skipEmptyLines && (source.empty() || target.empty()))
+                    return true;
+
+                return maxLineLength > 0 && (source.size() > maxLineLength || target.size() > maxLineLength);
+            }
+
+            inline bool Skip(const wordvec_t &source, const wordvec_t &target) const {
+                if (skipEmptyLines && (source.empty() || target.empty()))
+                    return true;
+
+                return maxLineLength > 0 && (source.size() > maxLineLength || target.size() > maxLineLength);
+            }
         };
     }
 }

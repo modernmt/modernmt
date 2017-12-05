@@ -19,19 +19,6 @@ using namespace mmt::fastalign;
 
 namespace fs = boost::filesystem;
 
-static inline bool length_limit(size_t lenLimit, wordvec_t &outSource, wordvec_t &outTarget){
-    if ( outSource.size() > 0 && outSource.size() <= lenLimit && outTarget.size() > 0 && outTarget.size() <= lenLimit )
-         return true;
-    else
-        return false;
-}
-static inline bool length_limit(size_t lenLimit, sentence_t &outSource, sentence_t &outTarget){
-    if ( outSource.size() > 0 && outSource.size() <= lenLimit && outTarget.size() > 0 && outTarget.size() <= lenLimit )
-         return true;
-    else
-        return false;
-}
-
 
 void Corpus::List(const string &path, const string &outPath,
                   const string &sourceLang, const string &targetLang, vector<Corpus> &list) {
@@ -56,10 +43,11 @@ void Corpus::List(const string &path, const string &outPath,
             if (!fs::is_regular_file(targetFile))
                 continue;
 
-            if (fs::is_regular_file(alignmentFile)) //alignment file already present
+            if (fs::is_regular_file(alignmentFile)) // alignment file already present
                 continue;
 
-            list.push_back(Corpus(sourceFile.string(), targetFile.string(), alignmentFile.string(), scoreFile.string()));
+            list.push_back(
+                    Corpus(sourceFile.string(), targetFile.string(), alignmentFile.string(), scoreFile.string()));
         }
     }
 }
@@ -84,15 +72,18 @@ static inline void ParseLine(const Vocabulary *vocab, const string &line, wordve
         output.push_back(vocab->Get(word));
 }
 
-CorpusReader::CorpusReader(const Corpus &corpus, const Vocabulary *vocabulary, const size_t maxL)
-        : drained(false), vocabulary(vocabulary), source(corpus.sourcePath.c_str()), target(corpus.targetPath.c_str()), maxLength(maxL), skipEmpty(false){}
+CorpusReader::CorpusReader(const Corpus &corpus, const Vocabulary *vocabulary,
+                           const size_t maxLineLength, const bool skipEmptyLines)
+        : drained(false), vocabulary(vocabulary), source(corpus.sourcePath.c_str()), target(corpus.targetPath.c_str()),
+          maxLineLength(maxLineLength), skipEmptyLines(skipEmptyLines) {
+}
 
 bool CorpusReader::Read(sentence_t &outSource, sentence_t &outTarget) {
     if (drained)
         return false;
 
     string sourceLine, targetLine;
-    while (true){
+    while (true) {
         if (!getline(source, sourceLine) || !getline(target, targetLine)) {
             drained = true;
             return false;
@@ -101,11 +92,10 @@ bool CorpusReader::Read(sentence_t &outSource, sentence_t &outTarget) {
         ParseLine(sourceLine, outSource);
         ParseLine(targetLine, outTarget);
 
-        if (!skipEmpty)
-            return true;
+        if (Skip(outSource, outTarget))
+            continue;
 
-        if  ( length_limit(maxLength, outSource, outTarget) )
-            return true;
+        return true;
     }
 }
 
@@ -127,39 +117,23 @@ bool CorpusReader::Read(vector<pair<sentence_t, sentence_t>> &outBuffer, size_t 
     if (batch.empty())
         return false;
 
-    if (skipEmpty){
-//    outBuffer.resize(batch.size());
-        vector<pair<sentence_t, sentence_t>> outBufferTmp(batch.size());
+    outBuffer.resize(batch.size());
 #pragma omp parallel for schedule(dynamic)
-        for (size_t i = 0; i < batch.size(); ++i) {
-            ParseLine(batch[i].first, outBufferTmp[i].first);
-            ParseLine(batch[i].second, outBufferTmp[i].second);
-        }
+    for (size_t i = 0; i < batch.size(); ++i) {
+        ParseLine(batch[i].first, outBuffer[i].first);
+        ParseLine(batch[i].second, outBuffer[i].second);
+    }
 
-        outBuffer.resize(batch.size());
-        size_t j = 0;
-        for (size_t i = 0; i < outBufferTmp.size(); ++i) {
-
-            if (length_limit(maxLength, outBufferTmp[i].first, outBufferTmp[i].second)){
-                outBuffer[j].first = outBufferTmp[i].first;
-                outBuffer[j].second = outBufferTmp[i].second;
-                ++j;
-            }
-        }
-        outBuffer.resize(j);
-    } else{
-        outBuffer.resize(batch.size());
-#pragma omp parallel for schedule(dynamic)
-        for (size_t i = 0; i < batch.size(); ++i) {
-            ParseLine(batch[i].first, outBuffer[i].first);
-            ParseLine(batch[i].second, outBuffer[i].second);
+    if (skipEmptyLines || maxLineLength > 0) {
+        for(auto sentence = outBuffer.begin(); sentence != outBuffer.end(); /* no increment */) {
+            if (Skip(sentence->first, sentence->second))
+                sentence = outBuffer.erase(sentence);
+            else
+                ++sentence;
         }
     }
 
-    if (outBuffer.empty())
-        return false;
-
-    return true;
+    return !outBuffer.empty();
 }
 
 bool CorpusReader::Read(wordvec_t &outSource, wordvec_t &outTarget) {
@@ -167,7 +141,7 @@ bool CorpusReader::Read(wordvec_t &outSource, wordvec_t &outTarget) {
         return false;
 
     string sourceLine, targetLine;
-    while (true){
+    while (true) {
         if (!getline(source, sourceLine) || !getline(target, targetLine)) {
             drained = true;
             return false;
@@ -176,11 +150,10 @@ bool CorpusReader::Read(wordvec_t &outSource, wordvec_t &outTarget) {
         ParseLine(vocabulary, sourceLine, outSource);
         ParseLine(vocabulary, targetLine, outTarget);
 
-        if (!skipEmpty)
-            return true;
+        if (Skip(outSource, outTarget))
+            continue;
 
-        if  ( length_limit(maxLength, outSource, outTarget) )
-            return true;
+        return true;
     }
 }
 
@@ -202,36 +175,21 @@ bool CorpusReader::Read(std::vector<std::pair<wordvec_t, wordvec_t>> &outBuffer,
     if (batch.empty())
         return false;
 
-    if (skipEmpty){
-        std::vector<std::pair<wordvec_t, wordvec_t>> outBufferTmp(batch.size());
-//    outBuffer.resize(batch.size());
+    outBuffer.resize(batch.size());
 #pragma omp parallel for schedule(dynamic)
-        for (size_t i = 0; i < batch.size(); ++i) {
-            ParseLine(vocabulary, batch[i].first, outBufferTmp[i].first);
-            ParseLine(vocabulary, batch[i].second, outBufferTmp[i].second);
-        }
+    for (size_t i = 0; i < batch.size(); ++i) {
+        ParseLine(vocabulary, batch[i].first, outBuffer[i].first);
+        ParseLine(vocabulary, batch[i].second, outBuffer[i].second);
+    }
 
-        outBuffer.resize(batch.size());
-        size_t j = 0;
-        for (size_t i = 0; i < outBufferTmp.size(); ++i) {
-            if (length_limit(maxLength, outBufferTmp[i].first, outBufferTmp[i].second)){
-                outBuffer[j].first = outBufferTmp[i].first;
-                outBuffer[j].second = outBufferTmp[i].second;
-                ++j;
-            }
-        }
-        outBuffer.resize(j);
-    } else{
-        outBuffer.resize(batch.size());
-#pragma omp parallel for schedule(dynamic)
-        for (size_t i = 0; i < batch.size(); ++i) {
-            ParseLine(vocabulary, batch[i].first, outBuffer[i].first);
-            ParseLine(vocabulary, batch[i].second, outBuffer[i].second);
+    if (skipEmptyLines || maxLineLength > 0) {
+        for(auto sentence = outBuffer.begin(); sentence != outBuffer.end(); /* no increment */) {
+            if (Skip(sentence->first, sentence->second))
+                sentence = outBuffer.erase(sentence);
+            else
+                ++sentence;
         }
     }
 
-    if (outBuffer.empty())
-        return false;
-
-    return true;
+    return !outBuffer.empty();
 }

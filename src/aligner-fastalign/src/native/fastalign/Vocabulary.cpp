@@ -10,54 +10,76 @@ using namespace std;
 using namespace mmt;
 using namespace mmt::fastalign;
 
-const Vocabulary *Vocabulary::FromCorpus(const Corpus &corpus, size_t maxL) {
+bool __terms_compare(const pair<string, size_t> &a, const pair<string, size_t> &b) {
+    return b.second < a.second;
+}
+
+inline void PruneTerms(unordered_map<string, size_t> &terms, double threshold) {
+    vector<pair<string, size_t>> entries;
+    entries.resize(terms.size());
+
+    size_t total = 0;
+    size_t i = 0;
+    for (auto entry = terms.begin(); entry != terms.end(); ++entry) {
+        entries[i].first = entry->first;
+        entries[i].second = entry->second;
+
+        total += entry->second;
+
+        i++;
+    }
+
+    std::sort(entries.begin(), entries.end(), __terms_compare);
+
+    double counter = 0;
+    size_t min_size = 0;
+    for (auto entry = entries.begin(); entry != entries.end(); ++entry) {
+        counter += entry->second;
+        if (counter / total >= threshold) {
+            min_size = entry->second;
+            break;
+        }
+    }
+
+    if (min_size > 1) {
+        for (auto entry = terms.begin(); entry != terms.end(); /* no increment */) {
+            if (entry->second < min_size)
+                entry = terms.erase(entry);
+            else
+                ++entry;
+        }
+    }
+}
+
+const Vocabulary *Vocabulary::FromCorpus(CorpusReader &reader, double threshold) {
     // For model efficiency all source words have the lowest id possible
-    unordered_set<string> src_terms;
-    unordered_set<string> trg_terms;
+    unordered_map<string, size_t> src_terms;
+    unordered_map<string, size_t> trg_terms;
 
-    unordered_map<string,size_t> src_terms_map;
-    unordered_map<string,size_t> trg_terms_map;
-
-    CorpusReader reader(corpus);
-    reader.SkipEmptyLines(true);
-    reader.SetMaxLength(maxL);
     vector<string> src, trg;
-
-    size_t lines = 0;
     while (reader.Read(src, trg)) {
-        for (auto w=src.begin(); w!=src.end(); ++w)
-            if (src_terms_map.find(*w) != src_terms_map.end())
-                ++src_terms_map[*w];
-            else
-                src_terms_map[*w] = 1;
+        for (auto w = src.begin(); w != src.end(); ++w)
+            src_terms[*w] += 1;
 
-        for (auto w=trg.begin(); w!=trg.end(); ++w)
-            if (trg_terms_map.find(*w) != trg_terms_map.end())
-                ++trg_terms_map[*w];
-            else
-                trg_terms_map[*w] = 1;
-        ++lines;
+        for (auto w = trg.begin(); w != trg.end(); ++w)
+            trg_terms[*w] += 1;
     }
 
-    std::cerr << std::endl << "Corpus size after removal of empty segments:" << lines << std::endl;
-
-    for (auto e=src_terms_map.begin(); e!=src_terms_map.end(); ++e){
-        if (e->second > vocab_threshold)
-            src_terms.insert(e->first);
+    if (threshold > 0) {
+        PruneTerms(src_terms, threshold);
+        PruneTerms(trg_terms, threshold);
     }
-    for (auto e=trg_terms_map.begin(); e!=trg_terms_map.end(); ++e){
-        if (e->second > vocab_threshold)
-            trg_terms.insert(e->first);
-    }
-    std::cerr << "Source vocabulary size:" << src_terms.size() << " (before pruning of singletons:" << src_terms_map.size() << ")" << std::endl;
-    std::cerr << "Target vocabulary size:" << trg_terms.size() << " (before pruning of singletons:" << trg_terms_map.size() << ")" << std::endl;
 
     for (auto term = src_terms.begin(); term != src_terms.end(); ++term)
-        trg_terms.erase(*term);
+        trg_terms.erase(term->first);
 
     Vocabulary *result = new Vocabulary();
-    result->terms.insert(result->terms.end(), src_terms.begin(), src_terms.end());
-    result->terms.insert(result->terms.end(), trg_terms.begin(), trg_terms.end());
+    result->terms.reserve(src_terms.size() * trg_terms.size());
+
+    for (auto term = src_terms.begin(); term != src_terms.end(); ++term)
+        result->terms.push_back(term->first);
+    for (auto term = trg_terms.begin(); term != trg_terms.end(); ++term)
+        result->terms.push_back(term->first);
 
     for (word_t id = 0; id < result->terms.size(); ++id)
         result->vocab[result->terms[id]] = (id + 2);

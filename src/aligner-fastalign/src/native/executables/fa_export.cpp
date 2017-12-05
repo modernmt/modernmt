@@ -83,11 +83,6 @@ int main(int argc, const char *argv[]) {
     const Vocabulary *vb = new Vocabulary(vb_filename.string());
     BidirectionalModel::Open(model_filename.string(), (Model **)&forward, (Model **)&backward);
 
-
-    std::cerr << "model_filename:" << model_filename << std::endl;
-    std::cerr << "vb_filename:" << vb_filename << std::endl;
-    std::cerr << "args.output_path:" << args.output_path << std::endl;
-
     forward->ExportLexicalModel(args.output_path, vb);
 
     delete forward;

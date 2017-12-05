@@ -37,8 +37,8 @@ struct option options[] = {
         {"threads",    optional_argument, NULL, 0},
         {"iterations", optional_argument, NULL, 0},
         {"pruning",    optional_argument, NULL, 0},
-        {"length",    optional_argument, NULL, 0},
-        {0, 0, 0,                               0}
+        {"length",     optional_argument, NULL, 0},
+        {0,            0, 0,                    0}
 };
 
 void help(const char *name) {
@@ -75,10 +75,10 @@ bool InitCommandLine(int argc, char **argv) {
                 builderOptions.threads = atoi(optarg);
                 break;
             case 'p':
-                builderOptions.pruning = atof(optarg);
+                builderOptions.pruning_threshold = atof(optarg);
                 break;
             case 'l':
-                builderOptions.length = atoi(optarg);
+                builderOptions.max_line_length = atoi(optarg);
                 break;
             default:
                 return false;
