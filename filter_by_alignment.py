@@ -41,7 +41,7 @@ def main(argv):
                         with open(os.path.join(path_out,"train_removed.en"),"w") as source_removed_stream:
                             with open(os.path.join(path_out,"train_removed.it"),"w") as target_removed_stream:
                                 with open(os.path.join(path_out,"train_removed.score"),"w") as score_removed_stream:
-                                    with open(os.path.join(path_out,"train_removed.score"),"w") as output_stream:
+                                    with open(os.path.join(path_out,"train.label"),"w") as output_stream:
                                         line = 0
                                         selected = 0
                                         while (True):
