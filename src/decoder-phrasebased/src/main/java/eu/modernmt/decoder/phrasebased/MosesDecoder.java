@@ -156,9 +156,8 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
 
         ContextXObject context = ContextXObject.build(contextVector);
 
-        if (logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled())
             logger.debug("Translating: \"" + text + "\"");
-        }
 
         long start = System.currentTimeMillis();
         TranslationXObject xtranslation = this.xtranslate(text,
@@ -171,7 +170,8 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
         Translation translation = xtranslation.getTranslation(sentence, this.featuresMap);
         translation.setElapsedTime(elapsed);
 
-        logger.info("Translation of " + sentence.length() + " words took " + (((double) elapsed) / 1000.) + "s");
+        if (logger.isDebugEnabled())
+            logger.debug("Translation of " + sentence.length() + " words took " + (((double) elapsed) / 1000.) + "s");
 
         return translation;
     }
