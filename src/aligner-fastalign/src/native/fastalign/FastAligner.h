@@ -35,6 +35,10 @@ namespace mmt {
             void GetAlignments(const std::vector<std::pair<wordvec_t, wordvec_t>> &batch,
                                std::vector<alignment_t> &outAlignments, Symmetrization symmetrization);
 
+            void GetScores(const std::vector<std::pair<sentence_t, sentence_t>> &batch, std::vector<double> &outScores);
+
+            void GetScores(const std::vector<std::pair<wordvec_t, wordvec_t>> &batch, std::vector<double> &outScores);
+
             virtual ~FastAligner();
 
         private:

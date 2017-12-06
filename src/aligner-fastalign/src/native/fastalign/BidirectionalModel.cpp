@@ -3,7 +3,6 @@
 //
 
 #include "BidirectionalModel.h"
-#include <fstream>
 
 using namespace std;
 using namespace mmt;
@@ -14,7 +13,7 @@ BidirectionalModel::BidirectionalModel(shared_ptr<bitable_t> table, bool forward
         : Model(!forward, use_null, favor_diagonal, prob_align_null, diagonal_tension), table(table) {
 }
 
-void BidirectionalModel::Open(const string &filename, Model **outForward, Model **outBackward, bool bidirectional) {
+void BidirectionalModel::Open(const string &filename, Model **outForward, Model **outBackward) {
     bool use_null;
     bool favor_diagonal;
     double prob_align_null;
@@ -27,10 +26,7 @@ void BidirectionalModel::Open(const string &filename, Model **outForward, Model 
 
     in.read((char *) &prob_align_null, sizeof(double));
     in.read((char *) &fwd_diagonal_tension, sizeof(double));
-    if (bidirectional)
-        in.read((char *) &bwd_diagonal_tension, sizeof(double));
-    else
-        bwd_diagonal_tension = kNullProbability;
+    in.read((char *) &bwd_diagonal_tension, sizeof(double));
 
     shared_ptr<bitable_t> table(new bitable_t);
 
@@ -58,11 +54,7 @@ void BidirectionalModel::Open(const string &filename, Model **outForward, Model 
 
             in.read((char *) &targetWord, sizeof(word_t));
             in.read((char *) &first, sizeof(float));
-
-            if (bidirectional)
-                in.read((char *) &second, sizeof(float));
-            else
-                second = kNullProbability;
+            in.read((char *) &second, sizeof(float));
 
             row[targetWord] = pair<float, float>(first, second);
         }
@@ -73,7 +65,7 @@ void BidirectionalModel::Open(const string &filename, Model **outForward, Model 
                                           bwd_diagonal_tension);
 }
 
-void BidirectionalModel::ExportLexicalModel(const string &filename, const Vocabulary *vb, bool bidirectional) {
+void BidirectionalModel::ExportLexicalModel(const string &filename, const Vocabulary *vb) {
     ofstream out(filename, ios::binary | ios::out);
 
     for (word_t sid = 0; sid < table->size(); ++sid) {
@@ -87,16 +79,7 @@ void BidirectionalModel::ExportLexicalModel(const string &filename, const Vocabu
 
         for (auto it = row.begin(); it != row.end(); ++it) {
             word_t tid = it->first;
-            if (bidirectional){
-                out << "  <" << vb->Get(tid) << "> " << it->second.first << " " << it->second.second << endl;
-            }
-            else
-                if (is_reverse){
-                    out << "  <" << vb->Get(tid) << "> " << it->second.second << endl;
-                }
-                else{
-                    out << "  <" << vb->Get(tid) << "> " << it->second.first << endl;
-                }
+            out << "  <" << vb->Get(tid) << "> " << it->second.first << " " << it->second.second << endl;
         }
     }
 }

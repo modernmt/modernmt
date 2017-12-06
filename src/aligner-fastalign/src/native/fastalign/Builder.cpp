@@ -11,6 +11,8 @@
 #include "Builder.h"
 #include "BidirectionalModel.h"
 
+#include <math.h>       /* isnormal */
+
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -71,11 +73,9 @@ public:
         for (size_t i = 0; i < data.size(); ++i) {
             unordered_map<word_t, pair<double, double>> &row = data[i];
 
-//TODO: is it possible to erase an element while scanning
             for (auto cell = row.cbegin(); cell != row.cend(); /* no increment */) {
                 if (cell->second.first <= threshold)
-                    cell = row.erase(cell); //function erase returns an iterator pointing to the position immediately following the last of the elements erased.
-//                    row.erase(cell++);
+                    cell = row.erase(cell);
                 else
                     ++cell;
             }
@@ -94,6 +94,8 @@ public:
 
             if (alpha > 0)
                 row_norm = digamma(row_norm);
+
+            assert(isnormal(row_norm));
 
             for (auto cell = row.begin(); cell != row.end(); ++cell)
                 cell->second.first =
@@ -144,8 +146,7 @@ public:
     }
 };
 
-Builder::Builder(Options options) : mean_srclen_multiplier(options.mean_srclen_multiplier),
-                                    initial_diagonal_tension(options.initial_diagonal_tension),
+Builder::Builder(Options options) : initial_diagonal_tension(options.initial_diagonal_tension),
                                     iterations(options.iterations),
                                     favor_diagonal(options.favor_diagonal),
                                     prob_align_null(options.prob_align_null),
@@ -154,10 +155,11 @@ Builder::Builder(Options options) : mean_srclen_multiplier(options.mean_srclen_m
                                     alpha(options.alpha),
                                     use_null(options.use_null),
                                     buffer_size(options.buffer_size),
-                                    pruning(options.pruning),
+                                    pruning(options.pruning_threshold),
+                                    max_length(options.max_line_length),
+                                    vocabulary_threshold(options.vocabulary_threshold),
                                     threads((options.threads == 0) ? (int) thread::hardware_concurrency()
                                                                    : options.threads) {
-
     if (variational_bayes && alpha <= 0.0)
         throw invalid_argument("Parameter 'alpha' must be greather than 0");
 
@@ -191,7 +193,7 @@ void Builder::AllocateTTableSpace(Model *_model, const unordered_map<word_t, wor
 void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const Corpus &corpus, double *n_target_tokens,
                           vector<pair<pair<length_t, length_t>, size_t>> *size_counts) {
     BuilderModel *model = (BuilderModel *) _model;
-    CorpusReader reader(corpus, vocab);
+    CorpusReader reader(corpus, vocab, max_length, true);
 
     unordered_map<pair<length_t, length_t>, size_t, LengthPairHash> size_counts_;
 
@@ -201,10 +203,6 @@ void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const Corpus &
     wordvec_t src, trg;
 
     while (reader.Read(src, trg)) {
-        //skip if either source or target sentence is empty
-        if (trg.size()==0 || src.size()==0)
-            continue;
-
         if (model->is_reverse)
             swap(src, trg);
 
@@ -244,17 +242,19 @@ void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const Corpus &
 }
 
 void Builder::Build(const Corpus &corpus, const string &path) {
+    CorpusReader reader(corpus, nullptr, max_length, true);
+
     if (listener) listener->VocabularyBuildBegin();
-    const Vocabulary *vocab = Vocabulary::FromCorpus(corpus);
+    const Vocabulary *vocab = Vocabulary::FromCorpus(reader, vocabulary_threshold);
     if (listener) listener->VocabularyBuildEnd();
 
     BuilderModel *forward = (BuilderModel *) BuildModel(vocab, corpus, true);
-    fs::path fwd_model_filename = fs::absolute(fs::path(path) / fs::path("fwd_model.dat"));
+    fs::path fwd_model_filename = fs::absolute(fs::path(path) / fs::path("fwd_model.tmp"));
     forward->Store(fwd_model_filename.string());
     delete forward;
 
     BuilderModel *backward = (BuilderModel *) BuildModel(vocab, corpus, false);
-    fs::path bwd_model_filename = fs::absolute(fs::path(path) / fs::path("bwd_model.dat"));
+    fs::path bwd_model_filename = fs::absolute(fs::path(path) / fs::path("bwd_model.tmp"));
     backward->Store(bwd_model_filename.string());
     delete backward;
 
@@ -293,7 +293,8 @@ Model *Builder::BuildModel(const Vocabulary *vocab, const Corpus &corpus, bool f
 
         double emp_feat = 0.0;
 
-        CorpusReader reader(corpus, vocab);
+        CorpusReader reader(corpus, vocab, max_length, true);
+
         vector<pair<wordvec_t, wordvec_t>> batch;
 
         if (listener) listener->Begin(forward, kBuilderStepAligning, iter + 1);
@@ -313,10 +314,10 @@ Model *Builder::BuildModel(const Vocabulary *vocab, const Corpus &corpus, bool f
 #pragma omp parallel for reduction(+:mod_feat)
                 for (size_t i = 0; i < size_counts.size(); ++i) {
                     const pair<length_t, length_t> &p = size_counts[i].first;
-                    double tmp = 0.0;
+                    double _tmp_mod_feat = 0.0;
                     for (length_t j = 1; j <= p.first; ++j)
-                        tmp += DiagonalAlignment::ComputeDLogZ(j, p.first, p.second, model->diagonal_tension);
-                    mod_feat += size_counts[i].second * tmp;
+                        _tmp_mod_feat += DiagonalAlignment::ComputeDLogZ(j, p.first, p.second, model->diagonal_tension);
+                    mod_feat += size_counts[i].second * _tmp_mod_feat;
                 }
 
                 mod_feat /= n_target_tokens;
@@ -346,7 +347,6 @@ Model *Builder::BuildModel(const Vocabulary *vocab, const Corpus &corpus, bool f
 }
 
 void Builder::MergeAndStore(const string &fwd_path, const string &bwd_path, const string &out_path) {
-
     //creating the bitable
     bitable_t *table = new bitable_t;
 

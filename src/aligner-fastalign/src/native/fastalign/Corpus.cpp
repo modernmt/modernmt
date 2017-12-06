@@ -2,17 +2,23 @@
 // Created by Davide  Caroselli on 23/08/16.
 //
 
+
+#include <iostream>
+
 #include "Corpus.h"
 #include "Vocabulary.h"
 #include <boost/filesystem.hpp>
 
 #define AlignFileExt "align"
+#define ScoreFileExt "score"
+
 
 using namespace std;
 using namespace mmt;
 using namespace mmt::fastalign;
 
 namespace fs = boost::filesystem;
+
 
 void Corpus::List(const string &path, const string &outPath,
                   const string &sourceLang, const string &targetLang, vector<Corpus> &list) {
@@ -28,18 +34,20 @@ void Corpus::List(const string &path, const string &outPath,
             fs::path sourceFile = file;
             fs::path targetFile = file;
             fs::path alignmentFile = outPath / file.filename();
+            fs::path scoreFile = outPath / file.filename();
 
             targetFile = targetFile.replace_extension(fs::path(targetLang));
             alignmentFile = alignmentFile.replace_extension(fs::path(AlignFileExt));
+            scoreFile = scoreFile.replace_extension(fs::path(ScoreFileExt));
 
             if (!fs::is_regular_file(targetFile))
                 continue;
 
-            if (fs::is_regular_file(alignmentFile)) //alignment file already present
+            if (fs::is_regular_file(alignmentFile)) // alignment file already present
                 continue;
 
-            list.push_back(Corpus(sourceFile.string(), targetFile.string(), alignmentFile.string()));
-
+            list.push_back(
+                    Corpus(sourceFile.string(), targetFile.string(), alignmentFile.string(), scoreFile.string()));
         }
     }
 }
@@ -64,9 +72,10 @@ static inline void ParseLine(const Vocabulary *vocab, const string &line, wordve
         output.push_back(vocab->Get(word));
 }
 
-CorpusReader::CorpusReader(const Corpus &corpus, const Vocabulary *vocabulary)
-        : drained(false), vocabulary(vocabulary), source(corpus.sourcePath.c_str()), target(corpus.targetPath.c_str()) {
-
+CorpusReader::CorpusReader(const Corpus &corpus, const Vocabulary *vocabulary,
+                           const size_t maxLineLength, const bool skipEmptyLines)
+        : drained(false), vocabulary(vocabulary), source(corpus.sourcePath.c_str()), target(corpus.targetPath.c_str()),
+          maxLineLength(maxLineLength), skipEmptyLines(skipEmptyLines) {
 }
 
 bool CorpusReader::Read(sentence_t &outSource, sentence_t &outTarget) {
@@ -74,15 +83,20 @@ bool CorpusReader::Read(sentence_t &outSource, sentence_t &outTarget) {
         return false;
 
     string sourceLine, targetLine;
-    if (!getline(source, sourceLine) || !getline(target, targetLine)) {
-        drained = true;
-        return false;
+    while (true) {
+        if (!getline(source, sourceLine) || !getline(target, targetLine)) {
+            drained = true;
+            return false;
+        }
+
+        ParseLine(sourceLine, outSource);
+        ParseLine(targetLine, outTarget);
+
+        if (Skip(outSource, outTarget))
+            continue;
+
+        return true;
     }
-
-    ParseLine(sourceLine, outSource);
-    ParseLine(targetLine, outTarget);
-
-    return true;
 }
 
 bool CorpusReader::Read(vector<pair<sentence_t, sentence_t>> &outBuffer, size_t limit) {
@@ -110,7 +124,16 @@ bool CorpusReader::Read(vector<pair<sentence_t, sentence_t>> &outBuffer, size_t 
         ParseLine(batch[i].second, outBuffer[i].second);
     }
 
-    return true;
+    if (skipEmptyLines || maxLineLength > 0) {
+        for(auto sentence = outBuffer.begin(); sentence != outBuffer.end(); /* no increment */) {
+            if (Skip(sentence->first, sentence->second))
+                sentence = outBuffer.erase(sentence);
+            else
+                ++sentence;
+        }
+    }
+
+    return !outBuffer.empty();
 }
 
 bool CorpusReader::Read(wordvec_t &outSource, wordvec_t &outTarget) {
@@ -118,15 +141,20 @@ bool CorpusReader::Read(wordvec_t &outSource, wordvec_t &outTarget) {
         return false;
 
     string sourceLine, targetLine;
-    if (!getline(source, sourceLine) || !getline(target, targetLine)) {
-        drained = true;
-        return false;
+    while (true) {
+        if (!getline(source, sourceLine) || !getline(target, targetLine)) {
+            drained = true;
+            return false;
+        }
+
+        ParseLine(vocabulary, sourceLine, outSource);
+        ParseLine(vocabulary, targetLine, outTarget);
+
+        if (Skip(outSource, outTarget))
+            continue;
+
+        return true;
     }
-
-    ParseLine(vocabulary, sourceLine, outSource);
-    ParseLine(vocabulary, targetLine, outTarget);
-
-    return true;
 }
 
 bool CorpusReader::Read(std::vector<std::pair<wordvec_t, wordvec_t>> &outBuffer, size_t limit) {
@@ -154,5 +182,14 @@ bool CorpusReader::Read(std::vector<std::pair<wordvec_t, wordvec_t>> &outBuffer,
         ParseLine(vocabulary, batch[i].second, outBuffer[i].second);
     }
 
-    return true;
+    if (skipEmptyLines || maxLineLength > 0) {
+        for(auto sentence = outBuffer.begin(); sentence != outBuffer.end(); /* no increment */) {
+            if (Skip(sentence->first, sentence->second))
+                sentence = outBuffer.erase(sentence);
+            else
+                ++sentence;
+        }
+    }
+
+    return !outBuffer.empty();
 }

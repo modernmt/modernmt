@@ -32,7 +32,6 @@ namespace {
         string source_lang;
         string target_lang;
 
-        Symmetrization strategy = GrowDiagonalFinalAnd;
         size_t buffer_size = 100000;
     };
 } // namespace
@@ -51,7 +50,6 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
             ("source,s", po::value<string>()->required(), "source language")
             ("target,t", po::value<string>()->required(), "target language")
             ("input,i", po::value<string>()->required(), "input folder with input corpora")
-            ("strategy,a", po::value<size_t>(), "Symmetrization (1 = GrowDiagonalFinal, 2 = GrowDiagonal, 3 = Intersection, 4 = Union)")
             ("buffer,b", po::value<size_t>(), "size of the buffer");
 
     po::variables_map vm;
@@ -71,9 +69,6 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
         args->source_lang = vm["source"].as<string>();
         args->target_lang = vm["target"].as<string>();
 
-        if (vm.count("strategy"))
-            args->strategy = (Symmetrization) vm["strategy"].as<size_t>();
-
         if (vm.count("buffer"))
             args->buffer_size = vm["buffer"].as<size_t>();
     } catch (po::error &e) {
@@ -85,34 +80,29 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
     return true;
 }
 
-
-void printAlignment(vector<alignment_t> &alignments, ofstream &out) {
-    for (auto a = alignments.begin(); a != alignments.end(); ++a) {
-        for (size_t i = 0; i < a->size(); ++i) {
-            if (i > 0)
-                out << ' ';
-            out << a->at(i).first << '-' << a->at(i).second;
-        }
-
-        out << endl;
+void printScore(vector<double> &scores, ofstream &out) {
+    for (auto a = scores.begin(); a != scores.end(); ++a) {
+        out << *a << endl;
     }
 }
 
-
-
-void AlignCorpus(const Corpus &corpus, size_t buffer_size, Symmetrization strategy, FastAligner &aligner) {
+void ScoreCorpus(const Corpus &corpus, size_t buffer_size, FastAligner &aligner) {
+    cerr << "void ScoreCorpus START" << endl;
     CorpusReader reader(corpus, aligner.vocabulary);
+    cerr << "void ScoreCorpus reader created" << endl;
 
     vector<pair<wordvec_t, wordvec_t>> batch;
-    vector<alignment_t> alignments;
+    vector<double> scores;
 
-    ofstream alignStream(corpus.GetOutputAlignPath().c_str());
+    ofstream scoreStream(corpus.GetOutputScorePath().c_str());
+    cerr << "void ScoreCorpus buffer_size" << buffer_size << endl;
     while (reader.Read(batch, buffer_size)) {
-        aligner.GetAlignments(batch, alignments, strategy);
+        cerr << "void ScoreCorpus batch.size()" << batch.size() << endl;
+        aligner.GetScores(batch, scores);
 
-        printAlignment(alignments, alignStream);
+        printScore(scores, scoreStream);
 
-        alignments.clear();
+        scores.clear();
         batch.clear();
     }
 }
@@ -156,7 +146,9 @@ int main(int argc, const char *argv[]) {
     //perform alignment of all corpora sequentially; multithreading is used for each corpus
     for (size_t i = 0; i < corpora.size(); ++i) {
         Corpus &corpus = corpora[i];
-        AlignCorpus(corpus, args.buffer_size, args.strategy, aligner);
+        cerr << "HERE 1" << endl;
+        ScoreCorpus(corpus, args.buffer_size, aligner);
+        cerr << "HERE 2" << endl;
     }
 
     return SUCCESS;
