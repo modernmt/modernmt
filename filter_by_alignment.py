@@ -33,13 +33,13 @@ def main(argv):
 
 
     #print selected sentence pairs
-    with open(os.path.join(path_in,"train.en"),"r") as source_stream:
-        with open(os.path.join(path_in,"train.it"),"r") as target_stream:
-            with open(os.path.join(path_out,"train_filtered.en"),"w") as source_filtered_stream:
-                with open(os.path.join(path_out,"train_filtered.it"),"w") as target_filtered_stream:
+    with open(os.path.join(path_in,"train.src"),"r") as source_stream:
+        with open(os.path.join(path_in,"train.trg"),"r") as target_stream:
+            with open(os.path.join(path_out,"train_filtered.src"),"w") as source_filtered_stream:
+                with open(os.path.join(path_out,"train_filtered.trg"),"w") as target_filtered_stream:
                     with open(os.path.join(path_out,"train_filtered.score"),"w") as score_filtered_stream:
-                        with open(os.path.join(path_out,"train_removed.en"),"w") as source_removed_stream:
-                            with open(os.path.join(path_out,"train_removed.it"),"w") as target_removed_stream:
+                        with open(os.path.join(path_out,"train_removed.src"),"w") as source_removed_stream:
+                            with open(os.path.join(path_out,"train_removed.trg"),"w") as target_removed_stream:
                                 with open(os.path.join(path_out,"train_removed.score"),"w") as score_removed_stream:
                                     with open(os.path.join(path_out,"train.label"),"w") as output_stream:
                                         line = 0
