@@ -557,8 +557,13 @@ class EngineBuilder:
                                                                                    self._engine.target_lang,
                                                                                    roots=preprocessed_folder)
         else:
+            corpora = args.bilingual_corpora + args.monolingual_corpora
+            if not corpora:
+                raise CorpusNotFoundInFolderException("Could not find any valid %s -> %s segments in your input." %
+                                                      (self._engine.source_lang, self._engine.target_lang))
+
             processed_bicorpora, processed_monocorpora = self._engine.training_preprocessor.process(
-                args.bilingual_corpora + args.monolingual_corpora,
+                corpora,
                 preprocessed_folder,
                 data_path=(self._engine.data_path if self._split_trainingset else None),
                 vb_path=self._engine.vocabulary_path,
