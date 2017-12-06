@@ -325,7 +325,7 @@ public class RESTRequest {
             builder.append(" /");
             builder.append(getPath());
 
-            String query = request.getQueryString();
+            String query = getQueryString();
             if (!query.isEmpty()) {
                 builder.append('?');
                 builder.append(query);
