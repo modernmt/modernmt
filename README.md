@@ -58,10 +58,10 @@ You can stop it with the command `stop`.
 
 Let's now use the command-line tool `mmt` to query the engine with the sentence *hello world* and context *computer*:
 ```
-$ ./mmt translate --context computer "hello world"
+$ ./mmt translate --context "programming language tutorial" "hello world"
 
 ModernMT Translate command line
->> Context: ibm 87%, europarl 13%
+>> Context: ibm 64%, microsoft 27%, europarl 9%
 
 >> hello mondo
 ```
@@ -78,10 +78,10 @@ Let's now add a contribution to the existing engine, **without** need for retrai
 ```
 And now repeat the previous translation query: the engine has just learned a new word and the result is immediately visible.
 ```
-$ ./mmt translate --context computer "hello world"
+$ ./mmt translate --context "programming language tutorial" "hello world"
 
 ModernMT Translate command line
->> Context: ibm 87%, europarl 13%
+>> Context: ibm 64%, microsoft 27%, europarl 9%
 
 >> ciao mondo
 ```
