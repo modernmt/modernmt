@@ -14,16 +14,13 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
                                      description='Port a 2.0.2 model to version 2.0.3')
 
-    parser.add_argument('--engine', dest='engine', help='the name of the 2.0.2 engine to port', default='default')
+    parser.add_argument('--engine-path', dest='engine_path', help='the path to the 2.0.2 engine to port')
 
     argv = sys.argv[1:]     # ignore sys.argv[0], that is './convert_from_v2.0.2_to_v2.0.3.py'
 
     # Parse args
     args = parser.parse_args(argv)
-
-    cur_dir = os.path.dirname(os.path.realpath(__file__))
-    mmt_home = os.path.realpath(os.path.join(cur_dir, os.pardir, os.pardir))
-    engine_models_path = os.path.join(mmt_home, 'engines', args.engine, 'models')
+    engine_models_path = os.path.join(os.path.realpath(args.engine_path), 'models')
     decoder_path = os.path.join(engine_models_path, 'decoder')
     backup_decoder_path = os.path.join(decoder_path, 'backup')
 
