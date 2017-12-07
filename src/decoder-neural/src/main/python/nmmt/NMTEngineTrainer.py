@@ -246,6 +246,7 @@ class NMTEngineTrainer:
 
     def train_model(self, train_dataset, valid_dataset=None, save_path=None):
         state_file_path = None if save_path is None else os.path.join(save_path, 'state.json')
+        optimizer_file_path = None if save_path is None else os.path.join(save_path, 'optimizer.dat')
 
         # set the mask to None; required when the same model is trained after a translation
         if torch_is_multi_gpu():
@@ -277,6 +278,9 @@ class NMTEngineTrainer:
             validation_steps = min(self.opts.validation_steps, number_of_batches_per_epoch)
             checkpoint_steps = min(self.opts.checkpoint_steps, number_of_batches_per_epoch)
             lr_decay_steps = min(self.opts.lr_decay_steps, number_of_batches_per_epoch)
+
+            self._log('Initial optimizer parameters: lr = %f, lr_decay = %f'
+                      % (self.optimizer.lr, self.optimizer.lr_decay))
 
             for step, batch in iterator:
                 # Steps limit ------------------------------------------------------------------------------------------
@@ -351,6 +355,9 @@ class NMTEngineTrainer:
                     self._engine.save(checkpoint_file)
                     self.state.add_checkpoint(step, checkpoint_file, checkpoint_ppl)
                     self.state.save_to_file(state_file_path)
+
+                    torch.save(self.optimizer, optimizer_file_path)
+
                     self._log('Checkpoint saved: path = %s ppl = %.2f' % (checkpoint_file, checkpoint_ppl))
 
                     avg_ppl = self.state.average_perplexity()
