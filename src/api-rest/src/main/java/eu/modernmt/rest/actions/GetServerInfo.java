@@ -13,7 +13,7 @@ import java.io.IOException;
 /**
  * Created by davide on 23/12/15.
  */
-@Route(aliases = "", method = HttpMethod.GET)
+@Route(aliases = "", method = HttpMethod.GET, log = false)
 public class GetServerInfo extends ObjectAction<ServerInfo> {
 
     @Override

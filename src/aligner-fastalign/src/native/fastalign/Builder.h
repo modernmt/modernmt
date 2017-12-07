@@ -15,7 +15,6 @@ namespace mmt {
     namespace fastalign {
 
         struct Options {
-            double mean_srclen_multiplier = 1.0;
             int iterations = 5;
             bool favor_diagonal = true;
             double prob_align_null = 0.08;
@@ -26,6 +25,9 @@ namespace mmt {
             bool use_null = true;
             int threads = 0; // Default is number of CPUs
             size_t buffer_size = 10000;
+            double vocabulary_threshold = 0.9999;
+            double pruning_threshold = 1.e-20;
+            size_t max_line_length = 80;
         };
 
         typedef int BuilderStep;
@@ -69,7 +71,6 @@ namespace mmt {
             void Build(const Corpus &corpus, const std::string &path);
 
         private:
-            const double mean_srclen_multiplier;
             const double initial_diagonal_tension;
             const int iterations;
             const bool favor_diagonal;
@@ -79,6 +80,9 @@ namespace mmt {
             const double alpha;
             const bool use_null;
             const size_t buffer_size;
+            double pruning;
+            size_t max_length;
+            double vocabulary_threshold;
             const int threads;
 
             Listener *listener;

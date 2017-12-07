@@ -3,26 +3,23 @@ package eu.modernmt.processing.string;
 /**
  * created by andrea on 25/02/17
  * <p>
- * An IndexMap object maps the position of each character
- * in the SentenceBuilder current String
- * to the positions of the corresponding character
- * in the SentenceBuilder original string.
+ * An IndexMap object maps the position of each character in the SentenceBuilder current String
+ * to the positions of the corresponding character in the SentenceBuilder original string.
  * <p>
- * The IndexMap thus stores information from all the editing activities
- * committed so far on the current String.
+ * The IndexMap thus stores information from all the editing activities committed so far on the current String.
  * When the SentenceBuilder starts working on a new string,
  * the IndexMap is just re-initialized instead of creating a new one,
  * in order to save memory and time:
  * a SentenceBuilder uses one and only IndexMap object during its whole lifecycle.
  */
 public class IndexMap {
-    /*array that actually represents the mapping:
+    /* array that actually represents the mapping:
     for each int i representing a position in the SentenceBuilder current String,
     positions[i] represents the corresponding position in the SentenceBuilder original String*/
     private int[] positions;
-    /*Length of the relevant portion in the positions array;
-    * (positions is managed as a buffer, so its constant length as a data structure
-    * may not be the same as the length of its relevant portion)*/
+    /* Length of the relevant portion in the positions array;
+    * (positions is managed as a buffer, so as a data structure it has constant length.
+    * Nonetheless, its constant length (positions.length) may not be the same as the length of its relevant portion)*/
     private int arrayLength;
 
     /**

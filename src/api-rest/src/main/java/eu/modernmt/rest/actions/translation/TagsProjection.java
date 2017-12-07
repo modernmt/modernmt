@@ -6,6 +6,7 @@ import eu.modernmt.facade.ModernMT;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
+import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
@@ -20,7 +21,7 @@ import eu.modernmt.rest.model.ProjectedTranslation;
 public class TagsProjection extends ObjectAction<ProjectedTranslation> {
 
     @Override
-    protected ProjectedTranslation execute(RESTRequest req, Parameters _params) throws AlignerException {
+    protected ProjectedTranslation execute(RESTRequest req, Parameters _params) throws AlignerException, ProcessingException {
         Params params = (Params) _params;
 
         Translation taggedTranslation;

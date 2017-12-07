@@ -7,6 +7,7 @@ import requests
 
 from cli import IllegalArgumentException, IllegalStateException
 from cli.libs import multithread
+from cli.mmt.cluster import ClusterNode
 
 __author__ = 'Davide Caroselli'
 
@@ -16,6 +17,7 @@ class Translator:
                  print_nbest=None, nbest_file=None):
         self.source_lang = node.engine.source_lang
         self.target_lang = node.engine.target_lang
+        self._priority = ClusterNode.Api.PRIORITY_BACKGROUND
         self._api = node.api
         self._print_nbest = print_nbest
 
@@ -73,8 +75,8 @@ class Translator:
         ]
 
     def _translate(self, line, _=None):
-        return self._api.translate(self.source_lang, self.target_lang, line,
-                                   context=self._context, nbest=self._print_nbest)
+        return self._api.translate(self.source_lang, self.target_lang, line, context=self._context,
+                                   nbest=self._print_nbest, priority=self._priority)
 
     def execute(self, line):
         pass
@@ -130,7 +132,6 @@ class BatchTranslator(Translator):
 
 
 class XLIFFTranslator(Translator):
-
     DEFAULT_NAMESPACE = 'urn:oasis:names:tc:xliff:document:1.2'
     SDL_NAMESPACE = 'http://sdl.com/FileTypes/SdlXliff/1.0'
 
@@ -151,7 +152,7 @@ class XLIFFTranslator(Translator):
         if self._has_sdl_match(tu):
             return None
 
-        source_tag = tu.find('{' + self.DEFAULT_NAMESPACE+ '}source')
+        source_tag = tu.find('{' + self.DEFAULT_NAMESPACE + '}source')
         seg_source_tag = tu.find('{' + self.DEFAULT_NAMESPACE + '}seg-source')
         target_tag = tu.find('{' + self.DEFAULT_NAMESPACE + '}target')
 
@@ -167,7 +168,8 @@ class XLIFFTranslator(Translator):
 
                 # if no <mrk> node with the right type and ID exists in <target>, raise an exception
                 if target_mrk_tag is None:
-                    raise IllegalArgumentException("<seg-source><mrk> tag with mid %s has no corresponding <target><mrk> tag" %mrk_tag_id)
+                    raise IllegalArgumentException(
+                        "<seg-source><mrk> tag with mid %s has no corresponding <target><mrk> tag" % mrk_tag_id)
 
                 # extract the text to translate:
 
@@ -236,6 +238,7 @@ class InteractiveTranslator(Translator):
     def __init__(self, node, context_string=None, context_file=None, context_vector=None,
                  print_nbest=False, nbest_file=None):
         Translator.__init__(self, node, context_string, context_file, context_vector, print_nbest, nbest_file)
+        self._priority = ClusterNode.Api.PRIORITY_NORMAL
 
         print '\nModernMT Translate command line'
 

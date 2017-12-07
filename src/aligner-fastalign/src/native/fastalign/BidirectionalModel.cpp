@@ -3,7 +3,6 @@
 //
 
 #include "BidirectionalModel.h"
-#include <fstream>
 
 using namespace std;
 using namespace mmt;

@@ -133,10 +133,10 @@ public class NeuralDecoder implements Decoder, DecoderWithNBest, DataListenerPro
         long elapsed = System.currentTimeMillis() - start;
         translation.setElapsedTime(elapsed);
 
-        logger.info("Translation of " + text.length() + " words took " + (((double) elapsed) / 1000.) + "s");
+        if (logger.isDebugEnabled())
+            logger.debug("Translation of " + text.length() + " words took " + (((double) elapsed) / 1000.) + "s");
 
         return translation;
-
     }
 
     // DataListenerProvider
@@ -154,4 +154,8 @@ public class NeuralDecoder implements Decoder, DecoderWithNBest, DataListenerPro
         IOUtils.closeQuietly(this.memory);
     }
 
+    @Override
+    public boolean supportsSentenceSplit() {
+        return true;
+    }
 }

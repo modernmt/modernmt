@@ -5,22 +5,23 @@ import argparse
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
 from cli.libs import shell
-
-
-class IllegalArgumentException(Exception):
-    def __init__(self, error):
-        super(Exception, self).__init__(error)
-        self.message = error
-
+from cli import IllegalArgumentException
 
 def main():
     # Set unbuffered stdout
     unbuffered = os.fdopen(sys.stdout.fileno(), 'w', 0)
     sys.stdout = unbuffered
 
-    parser = argparse.ArgumentParser(description="Translate all files in the passed folder")
+    parser = argparse.ArgumentParser(description="Translate the passed file, or all the files in the passed folder")
     parser.prog = 'translate_xliff.sh'
-    parser.add_argument('input', metavar='INPUT', help='the xliff file to translate, or the folder containing the xliff files to translate')
+    parser.add_argument('input', metavar='INPUT', help='the xliff file or the folder containing the xliff files to translate')
+    parser.add_argument('--context', metavar='CONTEXT', dest='context', default=None,
+                        help='A string to be used as translation context')
+    parser.add_argument('--context-file', metavar='CONTEXT_FILE', dest='context_file', default=None,
+                        help='A local file to be used as translation context')
+    parser.add_argument('--context-vector', metavar='CONTEXT_VECTOR', dest='context_vector', default=None,
+                        help='The context vector with format: <document 1>:<score 1>[,<document N>:<score N>]')
+
 
     args = parser.parse_args(sys.argv[1:])
 
@@ -31,7 +32,7 @@ def main():
                 raise IllegalArgumentException('Input file must be either .xliff or .sdlxliff')
 
         output_file = "/".join(input_file.split('/')[:-1]) + "/" + "out_" + input_file.split('/')[-1]
-        translate_xliff_file(input_file, output_file)
+        translate_xliff_file(input_file, output_file, args.context, args.context_file, args.context_vector)
 
     elif os.path.isdir(os.path.abspath(args.input)):
         input_folder = os.path.abspath(args.input)
@@ -50,21 +51,30 @@ def main():
                     continue
 
                 output_file_abspath = os.path.join(output_folder, "out_" + input_file)
-                translate_xliff_file(input_file_abspath, output_file_abspath)
+                translate_xliff_file(input_file_abspath, output_file_abspath,
+                                     args.context, args.context_file, args.context_vector)
     else:
         raise IllegalArgumentException('Input file/folder does not exist')
 
     return
 
 
-def translate_xliff_file(input_file_abspath, output_file_abspath):
+def translate_xliff_file(input_file_abspath, output_file_abspath, context=None, context_file=None, context_vector=None):
         mmt_script = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'mmt'))
-        command = [mmt_script, 'translate', '--batch', '--xliff', '<', input_file_abspath, '>', output_file_abspath]
+        command = [mmt_script, 'translate', '--batch', '--xliff']
+
+        if context:
+            command.extend(['--context', context])
+        if context_file:
+            command.extend(['--context-file', context_file])
+        if context_vector:
+            command.extend(['--context-vector', context_vector])
+
+        command.extend(['<', input_file_abspath, '>', output_file_abspath])
 
         print "Translating %s into %s..." % (input_file_abspath, output_file_abspath)
         shell.execute(" ".join(command))
         print "Done."
-
 
 if __name__ == '__main__':
     main()

@@ -40,6 +40,7 @@ public class RESTRequest {
     private JsonObject jsonObject = null;
     private JsonArray jsonArray = null;
     private String json = null;
+    private String toString = null;
 
     public RESTRequest(HttpServletRequest request, RouteTree routes) {
         this.request = request;
@@ -316,4 +317,23 @@ public class RESTRequest {
             return jsonArray;
     }
 
+    @Override
+    public String toString() {
+        if (toString == null) {
+            StringBuilder builder = new StringBuilder();
+            builder.append(getHttpMethod());
+            builder.append(" /");
+            builder.append(getPath());
+
+            String query = getQueryString();
+            if (!query.isEmpty()) {
+                builder.append('?');
+                builder.append(query);
+            }
+
+            toString = builder.toString();
+        }
+
+        return toString;
+    }
 }

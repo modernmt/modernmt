@@ -15,7 +15,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
-import java.util.UUID;
 
 public abstract class RouterServlet extends HttpServlet {
 
@@ -66,72 +65,54 @@ public abstract class RouterServlet extends HttpServlet {
 
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) {
+        long start = System.currentTimeMillis();
+
         RESTRequest restRequest = wrapRequest(req);
         RESTResponse restResponse = new RESTResponse(resp);
 
-        String logUUID = null;
-
-        if (logger.isInfoEnabled()) {
-            logUUID = UUID.randomUUID().toString();
-
-            StringBuilder log = new StringBuilder();
-            log.append("REST Request (");
-            log.append(logUUID);
-            log.append("): ");
-            log.append(restRequest.getHttpMethod());
-            log.append(" /");
-            log.append(restRequest.getPath());
-
-            String query = restRequest.getQueryString();
-            if (!query.isEmpty()) {
-                log.append('?');
-                log.append(query);
-            }
-
-            logger.info(log.toString());
-        }
+        Route route = null;
 
         try {
             Class<? extends Action> actionClass = restRequest.getActionClass();
-
             if (actionClass == null) {
                 restResponse.apiNotFound();
             } else {
+                route = actionClass.getAnnotation(Route.class);
+
                 Action action = actionClass.newInstance();
-
-                if (logger.isDebugEnabled())
-                    logger.debug("Executing REST action " + action);
-
                 action.execute(restRequest, restResponse);
             }
         } catch (Throwable e) {
             logger.error("Unexpected exceptions", e);
             restResponse.unexpectedError(e);
         } finally {
-            if (logger.isInfoEnabled()) {
+            long elapsedTime = System.currentTimeMillis() - start;
+
+            if (logger.isInfoEnabled() && route != null && route.log()) {
                 StringBuilder log = new StringBuilder();
-                log.append("REST Response (");
-                log.append(logUUID);
-                log.append("): ");
+                log.append('"');
+                log.append(restRequest);
+                log.append("\" ");
                 log.append(restResponse.getHttpStatus());
+                log.append(' ');
+                log.append(elapsedTime);
 
                 if (logger.isDebugEnabled()) {
                     JsonElement json = restResponse.getContent();
 
                     if (json != null) {
                         String content = json.toString();
-                        if (content.length() > 200)
-                            content = content.substring(0, 199) + "[...]";
+                        if (content.length() > 500)
+                            content = content.substring(0, 499) + "[...]";
 
                         log.append(' ');
                         log.append(content);
                     }
                 }
 
-                logger.info(log.toString());
+                logger.info(log);
             }
         }
-
     }
 
 }

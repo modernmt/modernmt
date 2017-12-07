@@ -2,7 +2,6 @@ package eu.modernmt.decoder.phrasebased;
 
 import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.DataListener;
-import eu.modernmt.data.Deletion;
 import eu.modernmt.decoder.*;
 import eu.modernmt.io.DefaultCharset;
 import eu.modernmt.io.Paths;
@@ -157,9 +156,8 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
 
         ContextXObject context = ContextXObject.build(contextVector);
 
-        if (logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled())
             logger.debug("Translating: \"" + text + "\"");
-        }
 
         long start = System.currentTimeMillis();
         TranslationXObject xtranslation = this.xtranslate(text,
@@ -172,7 +170,8 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
         Translation translation = xtranslation.getTranslation(sentence, this.featuresMap);
         translation.setElapsedTime(elapsed);
 
-        logger.info("Translation of " + sentence.length() + " words took " + (((double) elapsed) / 1000.) + "s");
+        if (logger.isDebugEnabled())
+            logger.debug("Translation of " + sentence.length() + " words took " + (((double) elapsed) / 1000.) + "s");
 
         return translation;
     }
@@ -239,4 +238,8 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
 
     private native long dispose(long handle);
 
+    @Override
+    public boolean supportsSentenceSplit() {
+        return false;
+    }
 }

@@ -18,5 +18,7 @@ public @interface Route {
 
     HttpMethod method();
 
+    boolean log() default true;
+
 }
 

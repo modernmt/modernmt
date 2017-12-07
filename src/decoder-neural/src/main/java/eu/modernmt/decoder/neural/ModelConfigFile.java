@@ -1,71 +1,79 @@
 package eu.modernmt.decoder.neural;
 
 import eu.modernmt.lang.LanguagePair;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.HierarchicalINIConfiguration;
+import org.apache.commons.configuration.SubnodeConfiguration;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by davide on 02/08/17.
  */
 public class ModelConfigFile {
 
-    private final Properties properties;
+    private final int DEFAULT_SUGGESTIONS_LIMIT = 1;
+    private final int DEFAULT_QUERY_MIN_RESULTS = 10;
+
+    private final HierarchicalINIConfiguration config;
 
     public static ModelConfigFile load(File path) throws IOException {
-        Properties properties = new Properties();
-
-        Reader reader = null;
         try {
-            reader = new FileReader(path);
-            properties.load(reader);
-        } finally {
-            IOUtils.closeQuietly(reader);
+            return new ModelConfigFile(new HierarchicalINIConfiguration(path));
+        } catch (ConfigurationException e) {
+            throw new IOException(e);
         }
-
-        return new ModelConfigFile(properties);
     }
 
-    private ModelConfigFile(Properties properties) {
-        this.properties = properties;
+    private ModelConfigFile(HierarchicalINIConfiguration config) {
+        this.config = config;
     }
 
     public Set<LanguagePair> getAvailableTranslationDirections() {
         HashSet<LanguagePair> result = new HashSet<>();
 
-        for (Object _key : this.properties.keySet()) {
-            String key = _key.toString();
+        SubnodeConfiguration models;
 
-            if (key.startsWith("model.")) {
-                key = key.substring(6);
+        try {
+            models = config.configurationAt("models");
+        } catch (IllegalArgumentException iex) {
+            // the passed in key does not map to exactly one node
+            return result;
+        }
 
-                String[] parts = key.split("__");
-                result.add(new LanguagePair(Locale.forLanguageTag(parts[0]), Locale.forLanguageTag(parts[1])));
-            }
+        Iterator<String> keyIterator = models.getKeys();
+        while (keyIterator.hasNext()) {
+            String key = keyIterator.next();
+
+            String[] parts = key.split("__");
+            result.add(new LanguagePair(Locale.forLanguageTag(parts[0]), Locale.forLanguageTag(parts[1])));
         }
 
         return result;
     }
 
     public int getSuggestionsLimit() {
-        if (properties.containsKey("memory_suggestions_limit"))
-            return Integer.parseInt(properties.getProperty("memory_suggestions_limit"));
-        else
-            return 1; // default
+        try {
+            SubnodeConfiguration settings = config.configurationAt("settings");
+            return settings.getInt("memory_suggestions_limit",  DEFAULT_SUGGESTIONS_LIMIT);
+        } catch (IllegalArgumentException iex) {
+            return DEFAULT_SUGGESTIONS_LIMIT;
+        }
     }
 
     public int getQueryMinimumResults() {
-        if (properties.containsKey("memory_query_min_results"))
-            return Integer.parseInt(properties.getProperty("memory_query_min_results"));
-        else
-            return 10; // default
+        try {
+            SubnodeConfiguration settings = config.configurationAt("settings");
+            return settings.getInt("memory_query_min_results",  DEFAULT_QUERY_MIN_RESULTS);
+        } catch (IllegalArgumentException iex) {
+            return DEFAULT_QUERY_MIN_RESULTS;
+        }
     }
 
 }

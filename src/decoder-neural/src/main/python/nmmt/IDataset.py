@@ -31,6 +31,9 @@ class DatasetWrapper(IDataset):
             def __iter__(self):
                 return self
 
+            def __len__(self):
+                return self._dataset.batchSize
+
             def _reset(self, position=None):
                 # TODO: shuffle?
                 if position is not None:

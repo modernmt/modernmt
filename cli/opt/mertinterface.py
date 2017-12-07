@@ -62,16 +62,17 @@ class _DocumentTranslator:
             line = line[:4096]
 
         translation = Api.translate(self.source_lang, self.target_lang, line,
-                                    context=context_vector, nbest=nbest, verbose=True)
+                                    context=context_vector, nbest=nbest, verbose=True,
+                                    priority=ClusterNode.Api.PRIORITY_BACKGROUND)
 
         if 'nbest' not in translation or len(translation['nbest']) == 0:
             return {'translation': ''}
 
         nbest_list = [{
-            'scores': e['scores'],
-            'totalScore': e['totalScore'],
-            'translation': self._serialize_tokens(e['translationTokens'])
-        } for e in translation['nbest']]
+                          'scores': e['scores'],
+                          'totalScore': e['totalScore'],
+                          'translation': self._serialize_tokens(e['translationTokens'])
+                      } for e in translation['nbest']]
 
         nbest_list.sort(key=lambda hypo: hypo['totalScore'], reverse=True)
 

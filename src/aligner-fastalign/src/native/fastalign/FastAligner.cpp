@@ -46,6 +46,35 @@ FastAligner::~FastAligner() {
     delete vocabulary;
 }
 
+void
+FastAligner::GetScores(const std::vector<std::pair<sentence_t, sentence_t>> &_batch, std::vector<double> &outScores) {
+    vector<pair<wordvec_t, wordvec_t>> batch;
+    batch.resize(_batch.size());
+
+#pragma omp parallel for schedule(dynamic)
+    for (size_t i = 0; i < batch.size(); ++i) {
+        vocabulary->Encode(_batch[i].first, batch[i].first);
+        vocabulary->Encode(_batch[i].second, batch[i].second);
+    }
+
+    GetScores(batch, outScores);
+}
+
+void FastAligner::GetScores(const std::vector<std::pair<wordvec_t, wordvec_t>> &batch, std::vector<double> &outScores) {
+    vector<double> forwards;
+    vector<double> backwards;
+
+    forwardModel->ComputeScores(batch, forwards);
+    backwardModel->ComputeScores(batch, backwards);
+
+    outScores.resize(batch.size());
+
+#pragma omp parallel for schedule(dynamic)
+    for (size_t i = 0; i < batch.size(); ++i) {
+        outScores[i] = (forwards[i] + backwards[i]) / 2;
+    }
+}
+
 alignment_t FastAligner::GetAlignment(const sentence_t &_source, const sentence_t &_target,
                                       Symmetrization symmetrization) {
     wordvec_t source, target;

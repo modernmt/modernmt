@@ -18,8 +18,7 @@ CREATE TABLE mmt_import_jobs (
   end             BIGINT      NOT NULL,
   data_channel    SMALLINT    NOT NULL,
 
-  PRIMARY KEY (id),
-  FOREIGN KEY (memory) REFERENCES memories (id)
+  PRIMARY KEY (id)
 )
   ENGINE InnoDB
   DEFAULT CHARSET = utf8;

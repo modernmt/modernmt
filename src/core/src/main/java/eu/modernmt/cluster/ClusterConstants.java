@@ -5,7 +5,7 @@ package eu.modernmt.cluster;
  */
 public class ClusterConstants {
 
-    public static final String TRANSLATION_EXECUTOR_NAME = "TranslationsExecutor";
+    public static final String TRANSLATION_SERVICE_NAME = "TranslationService";
     public static final String DECODER_WEIGHTS_TOPIC_NAME = "DecoderWeightsTopic";
 
 }

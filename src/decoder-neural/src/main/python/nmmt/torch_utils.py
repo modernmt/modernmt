@@ -3,6 +3,23 @@ import torch
 _torch_gpus = None
 
 
+class CudaNotAvailableError(Exception):
+    def __init__(self):
+        super(CudaNotAvailableError, self).__init__('CUDA not found, please install CUDA drivers and/or GPU hardware')
+
+
+class InvalidGpuError(Exception):
+    def __init__(self, i):
+        super(InvalidGpuError, self).__init__('Invalid GPU specified: %d. Value must be between 0 and %d'
+                                              % (i, torch.cuda.device_count() - 1))
+
+
+class MultiGpuNotSupportedError(Exception):
+    def __init__(self):
+        super(MultiGpuNotSupportedError, self).__init__(
+            'Invalid GPUs specified: training is currently limited to single-GPU')
+
+
 def torch_setup(gpus=None, random_seed=None):
     global _torch_gpus
 
@@ -10,13 +27,24 @@ def torch_setup(gpus=None, random_seed=None):
         if gpus is None:
             gpus = range(torch.cuda.device_count()) if torch.cuda.is_available() else None
         else:
-            # remove indexes of GPUs which are not valid,
+            max_device_index = torch.cuda.device_count() - 1
+
+            # Identify indexes of GPUs which are not valid,
             # because larger than the number of available GPU or smaller than 0
-            gpus = [x for x in gpus if x < torch.cuda.device_count() or x < 0]
+            for i in gpus:
+                if i < 0 or i > max_device_index:
+                    raise InvalidGpuError(i)
+
             if len(gpus) == 0:
                 gpus = None
     else:
+        if len(gpus) > 0:
+            raise CudaNotAvailableError()
+
         gpus = None
+
+    if len(gpus) > 1:
+        raise MultiGpuNotSupportedError()
 
     if random_seed is not None:
         torch.manual_seed(random_seed)

@@ -71,11 +71,12 @@ class TranslationMemory:
 
 
 class NMTPreprocessor:
-    def __init__(self, source_lang, target_lang, bpe_symbols, max_vocab_size):
+    def __init__(self, source_lang, target_lang, bpe_symbols, max_vocab_size, vocab_pruning_threshold):
         self._source_lang = source_lang
         self._target_lang = target_lang
         self._bpe_symbols = bpe_symbols
         self._max_vocab_size = max_vocab_size
+        self._vocab_pruning_threshold = vocab_pruning_threshold
 
         self._logger = logging.getLogger('mmt.neural.NMTPreprocessor')
         self._ram_limit_mb = 1024
@@ -100,7 +101,8 @@ class NMTPreprocessor:
         else:
             with _log_timed_action(self._logger, 'Creating BPE model'):
                 vb_builder = SubwordTextProcessor.Builder(symbols=self._bpe_symbols,
-                                                          max_vocabulary_size=self._max_vocab_size)
+                                                          max_vocabulary_size=self._max_vocab_size,
+                                                          vocab_pruning_threshold=self._vocab_pruning_threshold)
                 bpe_encoder = vb_builder.build([c.reader([self._source_lang, self._target_lang]) for c in corpora])
                 bpe_encoder.save_to_file(bpe_output_path)
 
@@ -174,6 +176,7 @@ class NMTDecoder:
 
         state = None
         state_file = os.path.join(working_dir, 'state.json')
+        optimizer_file = os.path.join(working_dir, 'optimizer.dat')
 
         if os.path.isfile(state_file):
             state = NMTEngineTrainer.State.load_from_file(state_file)
@@ -190,9 +193,13 @@ class NMTDecoder:
             src_dict, tgt_dict = vocab['src'], vocab['tgt']
 
         # Creating trainer ---------------------------------------------------------------------------------------------
+        optimizer = None
+
         if state is not None and state.checkpoint is not None:
             with _log_timed_action(self._logger, 'Resuming engine from step %d' % state.checkpoint['step']):
                 engine = NMTEngine.load_from_checkpoint(state.checkpoint['file'])
+                optimizer = torch.load(optimizer_file)
+                optimizer.optimizer.load_state_dict(optimizer.optimizer.state_dict())
         else:
             if checkpoint_path is not None:
                 with _log_timed_action(self._logger, 'Loading engine from %s' % checkpoint_path):
@@ -211,7 +218,9 @@ class NMTDecoder:
                 with _log_timed_action(self._logger, 'Creating engine from scratch'):
                     engine = NMTEngine.new_instance(src_dict, tgt_dict, bpe_encoder, metadata=metadata)
 
-        trainer = NMTEngineTrainer(engine, state=state, options=training_opts)
+        engine.running_state = NMTEngine.HOT
+
+        trainer = NMTEngineTrainer(engine, state=state, optimizer=optimizer, options=training_opts)
 
         # Training model -----------------------------------------------------------------------------------------------
         self._logger.info('Vocabulary size. source = %d; target = %d' % (src_dict.size(), tgt_dict.size()))
@@ -222,31 +231,41 @@ class NMTDecoder:
         with _log_timed_action(self._logger, 'Train model'):
             state = trainer.train_model(train_dataset, valid_dataset=valid_dataset, save_path=working_dir)
 
-        # Saving last checkpoint ---------------------------------------------------------------------------------------
         if state.empty():
             raise Exception('Training interrupted before first checkpoint could be saved')
 
-        checkpoint = state.history[0]['file']
-        self._logger.info('Copying checkpoint at %s' % checkpoint)
+    def merge_checkpoints(self, checkpoints_folder, limit=None):
+        state = NMTEngineTrainer.State.load_from_file(os.path.join(checkpoints_folder, 'state.json'))
 
-        with _log_timed_action(self._logger, 'Storing model'):
-            model_folder = os.path.abspath(os.path.join(self.model, os.path.pardir))
-            if not os.path.isdir(model_folder):
-                os.mkdir(model_folder)
+        # Create destination folder
+        model_folder = os.path.abspath(os.path.join(self.model, os.path.pardir))
+        if not os.path.isdir(model_folder):
+            os.mkdir(model_folder)
 
-            for f in glob.glob(checkpoint + '.*'):
-                _, extension = os.path.splitext(f)
+        # Copy checkpoints files excluding .dat
+        for f in glob.glob(state.checkpoint['file'] + '.*'):
+            _, extension = os.path.splitext(f)
+
+            if extension != '.dat':
                 shutil.copy(f, self.model + extension)
 
-            with open(os.path.join(model_folder, 'model.conf'), 'w') as model_map:
-                filename = os.path.basename(self.model)
-                model_map.write('model.%s__%s = %s\n' % (self._source_lang, self._target_lang, filename))
+        # Merging checkpoints
+        checkpoints = [c['file'] + '.dat' for c in state.history]
+        if limit is not None and len(checkpoints) > limit:
+            checkpoints = checkpoints[:limit]
+
+        with _log_timed_action(self._logger, 'Merge checkpoints %r to %s' % (checkpoints, model_folder)):
+            NMTEngineTrainer.merge_checkpoints(checkpoints, self.model + '.dat')
+
+        with open(os.path.join(model_folder, 'model.conf'), 'w') as model_map:
+            filename = os.path.basename(self.model)
+            model_map.write('[models]\n')
+            model_map.write('%s__%s = %s\n' % (self._source_lang, self._target_lang, filename))
 
 
 class NeuralEngine(Engine):
-    def __init__(self, name, source_lang, target_lang, bpe_symbols, max_vocab_size=None, gpus=None):
+    def __init__(self, name, source_lang, target_lang, bpe_symbols, max_vocab_size=None, vocab_pruning_threshold=None):
         Engine.__init__(self, name, source_lang, target_lang)
-        torch_setup(gpus=gpus, random_seed=3435)
 
         self._bleu_script = os.path.join(PYOPT_DIR, 'mmt-bleu.perl')
 
@@ -260,7 +279,8 @@ class NeuralEngine(Engine):
 
         self.memory = TranslationMemory(memory_path, self.source_lang, self.target_lang)
         self.nmt_preprocessor = NMTPreprocessor(self.source_lang, self.target_lang,
-                                                bpe_symbols=bpe_symbols, max_vocab_size=max_vocab_size)
+                                                bpe_symbols=bpe_symbols, max_vocab_size=max_vocab_size,
+                                                vocab_pruning_threshold=vocab_pruning_threshold)
         self.decoder = NMTDecoder(decoder_model, self.source_lang, self.target_lang)
 
     def type(self):
@@ -339,13 +359,15 @@ class NeuralEngineBuilder(EngineBuilder):
     def __init__(self, name, source_lang, target_lang, roots, debug=False, steps=None, split_trainingset=True,
                  validation_corpora=None, checkpoint=None, metadata=None, max_training_words=None, gpus=None,
                  training_args=None):
+        torch_setup(gpus=gpus, random_seed=3435)
 
         self._training_opts = NMTEngineTrainer.Options()
         if training_args is not None:
             self._training_opts.load_from_dict(training_args.__dict__)
 
         engine = NeuralEngine(name, source_lang, target_lang, bpe_symbols=self._training_opts.bpe_symbols,
-                              max_vocab_size=self._training_opts.max_vocab_size, gpus=gpus)
+                              max_vocab_size=self._training_opts.max_vocab_size,
+                              vocab_pruning_threshold=self._training_opts.vocab_pruning_threshold)
         EngineBuilder.__init__(self, engine, roots, debug, steps, split_trainingset, max_training_words)
 
         self._valid_corpora_path = validation_corpora if validation_corpora is not None \
@@ -355,7 +377,7 @@ class NeuralEngineBuilder(EngineBuilder):
 
     def _build_schedule(self):
         return EngineBuilder._build_schedule(self) + \
-               [self._build_memory, self._prepare_training_data, self._train_decoder]
+               [self._build_memory, self._prepare_training_data, self._train_decoder, self._merge_checkpoints]
 
     def _check_constraints(self):
         recommended_gpu_ram = 2 * self._GB
@@ -418,12 +440,16 @@ class NeuralEngineBuilder(EngineBuilder):
                 shutil.rmtree(processed_valid_path, ignore_errors=True)
 
     @EngineBuilder.Step('Neural decoder training')
-    def _train_decoder(self, args, skip=False, delete_on_exit=False):
+    def _train_decoder(self, args, skip=False):
         working_dir = self._get_tempdir('onmt_model')
 
         if not skip:
             self._engine.decoder.train(args.onmt_training_path, working_dir, self._training_opts,
                                        checkpoint_path=self._checkpoint, metadata_path=self._metadata)
 
-            if delete_on_exit:
-                shutil.rmtree(working_dir, ignore_errors=True)
+    @EngineBuilder.Step('Saving neural model', optional=False)
+    def _merge_checkpoints(self, _, skip=False):
+        working_dir = self._get_tempdir('onmt_model')
+
+        if not skip:
+            self._engine.decoder.merge_checkpoints(working_dir, limit=self._training_opts.n_avg_checkpoints)

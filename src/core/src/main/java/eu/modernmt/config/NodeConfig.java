@@ -9,6 +9,7 @@ public class NodeConfig {
     private final DataStreamConfig dataStreamConfig = new DataStreamConfig();
     private final DatabaseConfig databaseConfig = new DatabaseConfig();
     private final EngineConfig engineConfig = new EngineConfig();
+    private final TranslationQueueConfig translationQueueConfig = new TranslationQueueConfig();
 
     public NetworkConfig getNetworkConfig() {
         return networkConfig;
@@ -26,9 +27,14 @@ public class NodeConfig {
         return engineConfig;
     }
 
+    public TranslationQueueConfig getTranslationQueueConfig() {
+        return translationQueueConfig;
+    }
+
     @Override
     public String toString() {
         return "[Node]\n" +
+                "  " + translationQueueConfig.toString().replace("\n", "\n  ") + "\n" +
                 "  " + networkConfig.toString().replace("\n", "\n  ") + "\n" +
                 "  " + dataStreamConfig.toString().replace("\n", "\n  ") + "\n" +
                 "  " + databaseConfig.toString().replace("\n", "\n  ") + "\n" +

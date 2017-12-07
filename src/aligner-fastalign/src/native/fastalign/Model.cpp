@@ -7,6 +7,9 @@
 #include "DiagonalAlignment.h"
 #include "Corpus.h"
 
+#include <iostream>
+#include <math.h>       /* isnormal */
+
 using namespace std;
 using namespace mmt;
 using namespace mmt::fastalign;
@@ -14,6 +17,19 @@ using namespace mmt::fastalign;
 Model::Model(bool is_reverse, bool use_null, bool favor_diagonal, double prob_align_null, double diagonal_tension)
         : is_reverse(is_reverse), use_null(use_null), favor_diagonal(favor_diagonal), prob_align_null(prob_align_null),
           diagonal_tension(diagonal_tension) {
+}
+
+void Model::ComputeScores(const vector<pair<wordvec_t, wordvec_t>> &batch,
+                          vector<double> &outScores) {
+    outScores.resize(batch.size());
+
+#pragma omp parallel for schedule(dynamic)
+    for (size_t i = 0; i < batch.size(); ++i) {
+        const pair<wordvec_t, wordvec_t> &p = batch[i];
+        double score;
+        ComputeAlignment(p.first, p.second, NULL, NULL, &score);
+        outScores[i] = score;
+    }
 }
 
 double Model::ComputeAlignments(const vector<pair<wordvec_t, wordvec_t>> &batch, Model *outModel,
@@ -29,11 +45,12 @@ double Model::ComputeAlignments(const vector<pair<wordvec_t, wordvec_t>> &batch,
         emp_feat += ComputeAlignment(p.first, p.second, outModel, outAlignments ? &outAlignments->at(i) : NULL);
     }
 
+    assert(isnormal(emp_feat));
     return emp_feat;
 }
 
 double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target, Model *outModel,
-                               alignment_t *outAlignment) {
+                               alignment_t *outAlignment, double *outScore) {
     double emp_feat = 0.0;
 
     const wordvec_t src = is_reverse ? target : source;
@@ -44,6 +61,7 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
     length_t src_size = (length_t) src.size();
     length_t trg_size = (length_t) trg.size();
 
+    double outProb = 0.0;
     for (length_t j = 0; j < trg_size; ++j) {
         const word_t &f_j = trg[j];
         double sum = 0;
@@ -58,6 +76,7 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
             sum += probs[0];
         }
 
+        assert(isnormal(sum));
         double az = 0;
         if (favor_diagonal)
             az = DiagonalAlignment::ComputeZ(j + 1, trg_size, src_size, diagonal_tension) /
@@ -71,10 +90,12 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
             probs[i] = GetProbability(src[i - 1], f_j) * prob_a_i;
             sum += probs[i];
         }
-
+        assert(isnormal(sum));
 
         if (use_null) {
             double count = probs[0] / sum;
+
+            assert(isnormal(count));
 
             if (outModel)
                 outModel->IncrementProbability(kNullWord, f_j, count);
@@ -83,6 +104,8 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
         for (length_t i = 1; i <= src_size; ++i) {
             const double p = probs[i] / sum;
 
+            assert(isnormal(p));
+
             if (outModel)
                 outModel->IncrementProbability(src[i - 1], f_j, p);
 
@@ -90,7 +113,10 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
         }
 
 
-        if (outAlignment) {
+        assert(isnormal(emp_feat));
+
+
+        if (outAlignment || outScore) {
             double max_p = -1;
             int max_index = -1;
             if (use_null) {
@@ -105,7 +131,10 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
                 }
             }
 
-            if (max_index > 0) {
+            if (outScore)
+                outProb += log(max_p);
+
+            if (outAlignment && max_index > 0) {
                 if (is_reverse)
                     outAlignment->push_back(pair<length_t, length_t>(j, max_index - 1));
                 else
@@ -113,6 +142,10 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
             }
         }
     }
+    outProb /= trg_size;
+
+    if (outScore)
+        *outScore = outProb;
 
     return emp_feat;
 }

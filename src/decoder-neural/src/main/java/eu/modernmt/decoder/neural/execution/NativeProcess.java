@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -79,6 +80,12 @@ class NativeProcess implements Closeable {
             command.add("python");
             command.add("main_loop.py");
             command.add(model.getAbsolutePath());
+
+            String logLevel = LogThread.getNativeLogLevel();
+            if (logLevel != null) {
+                command.add("--log-level");
+                command.add(logLevel);
+            }
 
             if (gpu >= 0) {
                 command.add("--gpu");
@@ -335,6 +342,17 @@ class NativeProcess implements Closeable {
             LOG_LEVELS.put("WARNING", Level.WARN);
             LOG_LEVELS.put("INFO", Level.INFO);
             LOG_LEVELS.put("DEBUG", Level.DEBUG);
+        }
+
+        public static String getNativeLogLevel() {
+            Level level = logger.getLevel();
+
+            for (Map.Entry<String, Level> entry : LOG_LEVELS.entrySet()) {
+                if (level.equals(entry.getValue()))
+                    return entry.getKey().toLowerCase();
+            }
+
+            return null;
         }
 
         private final BufferedReader reader;

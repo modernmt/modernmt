@@ -55,6 +55,7 @@ class NMTEngineTrainer:
 
             self.bpe_symbols = 32000
             self.max_vocab_size = None  # Unlimited
+            self.vocab_pruning_threshold = None  # Skip pruning
 
             self.batch_size = 64
             self.max_generator_batches = 32  # Maximum batches of words in a seq to run the generator on in parallel.
@@ -71,8 +72,8 @@ class NMTEngineTrainer:
             self.lr_decay_steps = 10000  # decrease learning rate every 'lr_decay_steps' steps
             self.lr_decay_start_at = 50000  # start learning rate decay after 'start_decay_at' steps
 
-            self.early_stop = 10  # terminate training if validations is stalled for 'early_stop' times
-            self.n_avg_checkpoints = 5  # number of checkpoints to merge at the end of training process
+            self.n_checkpoints = 20  # checkpoints saved during training and used for termination condition
+            self.n_avg_checkpoints = 20  # number of checkpoints to merge at the end of training process
 
         def load_from_dict(self, d):
             for key in self.__dict__:
@@ -94,40 +95,39 @@ class NMTEngineTrainer:
         def empty(self):
             return len(self.history) == 0
 
+        def __len__(self):
+            return len(self.history)
+
         @property
         def last_step(self):
             return self.checkpoint['step'] if self.checkpoint is not None else 0
+
+        def average_perplexity(self):
+            if self.empty():
+                return 0
+
+            s = 0
+            for checkpoint in self.history:
+                s += checkpoint['perplexity']
+
+            return s / len(self.history)
 
         @staticmethod
         def _delete_checkpoint(checkpoint):
             for path in glob.glob(checkpoint['file'] + '.*'):
                 os.remove(path)
 
-        def _contains(self, checkpoint):
-            for h in self.history:
-                if h['file'] == checkpoint['file']:
-                    return True
-            return False
-
         def add_checkpoint(self, step, file_path, perplexity):
-            if self.checkpoint is not None and not self._contains(self.checkpoint):
-                self._delete_checkpoint(self.checkpoint)
-
             self.checkpoint = {
                 'step': step,
                 'file': file_path,
                 'perplexity': perplexity
             }
 
-            self.history.append(self.checkpoint)
-            self.history.sort(key=lambda e: e['perplexity'], reverse=False)
+            self.history.insert(0, self.checkpoint)
 
             if len(self.history) > self.size:
-                for c in self.history[self.size:]:
-                    if c['file'] != file_path:  # do not remove last checkpoint
-                        self._delete_checkpoint(c)
-
-                self.history = self.history[:self.size]
+                self._delete_checkpoint(self.history.pop())
 
         def save_to_file(self, file_path):
             with open(file_path, 'w') as stream:
@@ -145,7 +145,7 @@ class NMTEngineTrainer:
         self._engine = engine
         self.opts = options if options is not None else NMTEngineTrainer.Options()
 
-        self.state = state if state is not None else NMTEngineTrainer.State(self.opts.n_avg_checkpoints)
+        self.state = state if state is not None else NMTEngineTrainer.State(self.opts.n_checkpoints)
 
         if optimizer is None:
             optimizer = Optim(self.opts.optimizer, self.opts.learning_rate, max_grad_norm=self.opts.max_grad_norm,
@@ -158,7 +158,8 @@ class NMTEngineTrainer:
         self.optimizer.set_parameters(self._engine.model.parameters())
 
     def _log(self, message):
-        self._logger.log(self.opts.log_level, message)
+        if self.opts.log_level > logging.NOTSET:
+            self._logger.log(self.opts.log_level, message)
 
     @staticmethod
     def _new_nmt_criterion(vocab_size):
@@ -245,6 +246,7 @@ class NMTEngineTrainer:
 
     def train_model(self, train_dataset, valid_dataset=None, save_path=None):
         state_file_path = None if save_path is None else os.path.join(save_path, 'state.json')
+        optimizer_file_path = None if save_path is None else os.path.join(save_path, 'optimizer.dat')
 
         # set the mask to None; required when the same model is trained after a translation
         if torch_is_multi_gpu():
@@ -266,7 +268,9 @@ class NMTEngineTrainer:
             checkpoint_stats = _Stats()
             report_stats = _Stats()
 
-            number_of_batches_per_epoch = int(math.ceil(float(len(train_dataset)) / self.opts.batch_size))
+            iterator = train_dataset.iterator(self.opts.batch_size, loop=True, start_position=step)
+
+            number_of_batches_per_epoch = len(iterator)
             self._log('Number of steps per epoch: %d' % number_of_batches_per_epoch)
 
             # forcing step limits to be smaller or (at most) equal to the number of steps per epochs
@@ -275,10 +279,12 @@ class NMTEngineTrainer:
             checkpoint_steps = min(self.opts.checkpoint_steps, number_of_batches_per_epoch)
             lr_decay_steps = min(self.opts.lr_decay_steps, number_of_batches_per_epoch)
 
-            for step, batch in train_dataset.iterator(self.opts.batch_size, loop=True, start_position=step):
-                # Terminate policy -------------------------------------------------------------------------------------
-                if valid_ppl_stalled >= self.opts.early_stop \
-                        or (self.opts.step_limit is not None and step >= self.opts.step_limit):
+            self._log('Initial optimizer parameters: lr = %f, lr_decay = %f'
+                      % (self.optimizer.lr, self.optimizer.lr_decay))
+
+            for step, batch in iterator:
+                # Steps limit ------------------------------------------------------------------------------------------
+                if self.opts.step_limit is not None and step >= self.opts.step_limit:
                     break
 
                 # Run step ---------------------------------------------------------------------------------------------
@@ -343,15 +349,66 @@ class NMTEngineTrainer:
                     checkpoint_ppl = valid_perplexity if valid_perplexity is not None else checkpoint_stats.perplexity
                     checkpoint_file = os.path.join(save_path, 'checkpoint_%d' % step)
 
+                    previous_avg_ppl = self.state.average_perplexity()
+
                     self._log('Checkpoint at step %d (epoch %.2f): %s' % (step, epoch, str(checkpoint_stats)))
                     self._engine.save(checkpoint_file)
                     self.state.add_checkpoint(step, checkpoint_file, checkpoint_ppl)
                     self.state.save_to_file(state_file_path)
-                    self._logger.info('Checkpoint saved: path = %s ppl = %.2f' % (checkpoint_file, checkpoint_ppl))
 
+                    torch.save(self.optimizer, optimizer_file_path)
+
+                    self._log('Checkpoint saved: path = %s ppl = %.2f' % (checkpoint_file, checkpoint_ppl))
+
+                    avg_ppl = self.state.average_perplexity()
                     checkpoint_stats = _Stats()
 
+                    # Terminate policy ---------------------------------------------------------------------------------
+                    perplexity_improves = len(self.state) < self.opts.n_checkpoints or avg_ppl < previous_avg_ppl
+
+                    self._log('Terminate policy: avg_ppl = %.2f, previous_avg_ppl = %.2f, stopping = %r'
+                              % (avg_ppl, previous_avg_ppl, not perplexity_improves))
+
+                    if not perplexity_improves:
+                        break
         except KeyboardInterrupt:
             pass
 
         return self.state
+
+    @staticmethod
+    def merge_checkpoints(checkpoint_paths, output_path):
+        if len(checkpoint_paths) < 2:
+            raise ValueError('Need to specify more than one checkpoint, %d provided.' % len(checkpoint_paths))
+
+        def __sum(source, destination):
+            for key, value in source.items():
+                if isinstance(value, dict):
+                    node = destination.setdefault(key, {})
+                    __sum(value, node)
+                else:
+                    if isinstance(value, torch.FloatTensor):
+                        destination[key] = torch.add(destination[key], 1.0, value)
+
+            return destination
+
+        def __divide(source, denominator):
+            for key, value in source.items():
+                if isinstance(value, dict):
+                    node = source.setdefault(key, {})
+                    __divide(node, denominator)
+                else:
+                    if isinstance(value, torch.FloatTensor):
+                        source[key] = torch.div(value, denominator)
+
+            return source
+
+        output_checkpoint = torch.load(checkpoint_paths[0])
+
+        for checkpoint_path in checkpoint_paths[1:]:
+            checkpoint = torch.load(checkpoint_path)
+            output_checkpoint = __sum(checkpoint, output_checkpoint)
+
+        output_checkpoint = __divide(output_checkpoint, len(checkpoint_paths))
+
+        torch.save(output_checkpoint, output_path)
