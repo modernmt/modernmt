@@ -364,13 +364,14 @@ class NMTEngineTrainer:
                     checkpoint_stats = _Stats()
 
                     # Terminate policy ---------------------------------------------------------------------------------
-                    perplexity_improves = len(self.state) < self.opts.n_checkpoints or avg_ppl < previous_avg_ppl
+                    if len(self.state) >= self.opts.n_checkpoints:
+                        perplexity_improves = previous_avg_ppl - avg_ppl > 0.0001
 
-                    self._log('Terminate policy: avg_ppl = %.2f, previous_avg_ppl = %.2f, stopping = %r'
-                              % (avg_ppl, previous_avg_ppl, not perplexity_improves))
+                        self._log('Terminate policy: avg_ppl = %g, previous_avg_ppl = %g, stopping = %r'
+                                  % (avg_ppl, previous_avg_ppl, not perplexity_improves))
 
-                    if not perplexity_improves:
-                        break
+                        if not perplexity_improves:
+                            break
         except KeyboardInterrupt:
             pass
 
