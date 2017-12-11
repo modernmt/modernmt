@@ -3,7 +3,9 @@ package eu.modernmt.model;
 import eu.modernmt.xml.XMLUtils;
 
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 
 /**
  * Created by davide on 17/02/16.
@@ -12,6 +14,7 @@ public class Sentence implements Serializable, Iterable<Token> {
 
     protected final Word[] words;
     protected Tag[] tags;
+    protected Set<String> annotations;
 
     public Sentence(Word[] words) {
         this(words, null);
@@ -49,6 +52,23 @@ public class Sentence implements Serializable, Iterable<Token> {
      */
     public void setTags(Tag[] tags) {
         this.tags = tags;
+    }
+
+    public void addAnnotations(Set<String> annotations) {
+        if (this.annotations == null)
+            this.annotations = new HashSet<>(annotations);
+        else
+            this.annotations.addAll(annotations);
+    }
+
+    public void addAnnotation(String annotation) {
+        if (annotations == null)
+            annotations = new HashSet<>(5);
+        annotations.add(annotation);
+    }
+
+    public boolean hasAnnotation(String annotation) {
+        return annotations != null && annotations.contains(annotation);
     }
 
     @Override
