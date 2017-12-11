@@ -1,7 +1,9 @@
 package eu.modernmt.config;
 
 import eu.modernmt.hw.Graphics;
+import eu.modernmt.io.RuntimeIOException;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 /**
@@ -9,41 +11,41 @@ import java.util.Arrays;
  */
 public class NeuralDecoderConfig extends DecoderConfig {
 
-    private int[] gpus = Graphics.getAvailableGPUs();
+    private static final int[] DEFAULT_GPUS = new int[0];
+
+    private int[] gpus = DEFAULT_GPUS;
 
     public int[] getGPUs() {
+        if (gpus == DEFAULT_GPUS) {
+            try {
+                gpus = Graphics.getAvailableGPUs();
+            } catch (IOException e) {
+                throw new RuntimeIOException(e);
+            }
+        }
+
         return gpus;
     }
 
     // exclude gpus, specified in the config file, but not available
     // multiple occurrences of the same gpu are allowed
     public void setGPUs(int[] gpus) {
-        int[] availableGPUs = Graphics.getAvailableGPUs();
+        int[] availableGPUs;
+        try {
+            availableGPUs = Graphics.getAvailableGPUs();
+        } catch (IOException e) {
+            throw new RuntimeIOException(e);
+        }
 
         if (availableGPUs.length == 0 || gpus == null || gpus.length == 0) {
             this.gpus = null;
         } else {
-            int size = 0;
-            for (int i = 0; i < gpus.length; i++) {
-                if (0 <= gpus[i] && gpus[i] < availableGPUs.length)
-                    size++;
-                else
-                    gpus[i] = -1;
+            for (int gpu : gpus) {
+                if (gpu < 0 || gpu >= availableGPUs.length)
+                    throw new IllegalArgumentException("Invalid GPU index: " + gpu);
             }
 
-            int[] copy = null;
-
-            if (size > 0) {
-                copy = new int[size];
-
-                int i = 0;
-                for (int gpu : gpus) {
-                    if (gpu >= -1)
-                        copy[i++] = gpu;
-                }
-            }
-
-            this.gpus = copy;
+            this.gpus = gpus;
         }
     }
 
