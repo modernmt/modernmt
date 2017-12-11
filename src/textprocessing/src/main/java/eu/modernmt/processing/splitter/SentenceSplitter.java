@@ -8,9 +8,9 @@ import java.util.*;
 
 /**
  * A SentenceSplitter is a preprocessing component that is capable of
- *   - receiving a list of tokens obtained from a text
- *   - decide whether they form multiple sentences
- *   - return the positions after which a sentence ends (splits)
+ * - receiving a list of tokens obtained from a text
+ * - decide whether they form multiple sentences
+ * - return the positions after which a sentence ends (splits)
  */
 public abstract class SentenceSplitter {
 
@@ -31,11 +31,12 @@ public abstract class SentenceSplitter {
      * A split is a Word in correspondence of which a sentence ends.
      * So, if splits are found, it means that multiple sentences are contained in the passed text,
      * (and they should be handled separately by the translation engine.)
-     * @param originalSentence the text to find the splits of, in the form of a Word array
+     *
+     * @param sentence the text to find the splits of, in the form of a Word array
      * @return a List containing the split positions in the array.
      */
-    public Sentence[] split(Sentence originalSentence) {
-        Word[] originalWords = originalSentence.getWords();
+    public Sentence[] split(Sentence sentence) {
+        Word[] originalWords = sentence.getWords();
         List<Sentence> splitSentences = new ArrayList<>();
 
         int prevSplit = -1;
@@ -44,7 +45,7 @@ public abstract class SentenceSplitter {
             if (i - prevSplit < MIN_SENTENCE_SIZE)
                 continue;
 
-            if (isSplit(originalSentence, i)) {
+            if (isSplit(sentence, i)) {
                 Word[] newSplitSentenceWords = new Word[i - prevSplit];
                 for (int j = 0; j < i - prevSplit; j++)
                     newSplitSentenceWords[j] = originalWords[j + prevSplit + 1];
@@ -65,7 +66,8 @@ public abstract class SentenceSplitter {
 
     /**
      * This method checks if the a Word at a certain index in a Sentence is a split.
-     * @param sentence the sentence to check the presence of splits in
+     *
+     * @param sentence  the sentence to check the presence of splits in
      * @param wordIndex the index of the word to check
      * @return TRUE is the current word is a split, FALSE otherwise.
      */
