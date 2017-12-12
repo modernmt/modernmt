@@ -88,15 +88,16 @@ class NMTPreprocessor:
         if checkpoint is not None:
             existing_bpe_path = checkpoint + '.bpe'
             existing_dat_path = checkpoint + '.dat'
+            existing_vcb_path = checkpoint + '.vcb'
 
             with _log_timed_action(self._logger, 'Loading BPE model from %s' % existing_bpe_path):
                 shutil.copy(existing_bpe_path, bpe_output_path)
                 bpe_encoder = SubwordTextProcessor.load_from_file(bpe_output_path)
 
             with _log_timed_action(self._logger, 'Loading vocabularies from %s' % existing_dat_path):
-                checkpoint_dat = torch.load(existing_dat_path, map_location=lambda storage, loc: storage)
-                src_vocab = checkpoint_dat['dicts']['src']
-                trg_vocab = checkpoint_dat['dicts']['tgt']
+                checkpoint_vcb = torch.load(existing_vcb_path, map_location=lambda storage, loc: storage)
+                src_vocab = checkpoint_vcb['src']
+                trg_vocab = checkpoint_vcb['tgt']
 
         else:
             with _log_timed_action(self._logger, 'Creating BPE model'):
