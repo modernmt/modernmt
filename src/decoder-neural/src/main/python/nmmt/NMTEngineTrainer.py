@@ -184,7 +184,7 @@ class NMTEngineTrainer:
             scores_t = generator(out_t)
             loss_t = criterion(scores_t, targ_t.view(-1))
             pred_t = scores_t.max(1)[1]
-            num_correct_t = pred_t.data.eq(targ_t.data).masked_select(targ_t.ne(Constants.PAD).data).sum()
+            num_correct_t = pred_t.data.eq(targ_t.view(-1).data).masked_select(targ_t.ne(Constants.PAD).view(-1).data).sum()
             num_correct += num_correct_t
             loss += loss_t.data[0]
             if not evaluation:
