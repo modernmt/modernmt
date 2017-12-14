@@ -25,9 +25,13 @@ public abstract class DecoderConfig {
         this.enabled = enabled;
     }
 
-    public abstract int getThreads();
+    public int getThreads() {
+        return threads;
+    }
 
-    public abstract void setThreads(int threads);
+    public void setThreads(int threads) {
+        this.threads = threads;
+    }
 
     public abstract int getParallelismDegree();
 

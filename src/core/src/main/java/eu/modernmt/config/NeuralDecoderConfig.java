@@ -49,16 +49,6 @@ public class NeuralDecoderConfig extends DecoderConfig {
     }
 
     @Override
-    public int getThreads() {
-        return threads;
-    }
-
-    @Override
-    public void setThreads(int threads) {
-        this.threads = threads;
-    }
-
-    @Override
     public int getParallelismDegree() {
         int[] gpus = this.getGPUs();
         return (gpus != null && gpus.length != 0) ? gpus.length : threads;
@@ -72,7 +62,8 @@ public class NeuralDecoderConfig extends DecoderConfig {
     @Override
     public String toString() {
         return "[Neural decoder]\n" +
-                "  Graphics = " + Arrays.toString(gpus) + "\n" +
+                "  threads = " + threads + "\n" +
+                "  gpus = " + Arrays.toString(gpus) + "\n" +
                 "  enabled = " + enabled;
     }
 }

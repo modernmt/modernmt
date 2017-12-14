@@ -11,16 +11,6 @@ public class PhraseBasedDecoderConfig extends DecoderConfig {
     }
 
     @Override
-    public int getThreads() {
-        return threads;
-    }
-
-    @Override
-    public void setThreads(int threads) {
-        this.threads = threads;
-    }
-
-    @Override
     public String toString() {
         return "[Phrase-based decoder]\n" +
                 "  threads = " + threads + "\n" +

@@ -90,31 +90,21 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
         }
 
         public DecoderConfig build(DecoderConfig config) throws ConfigException {
-
             if (hasAttribute("enabled"))
                 config.setEnabled(getBooleanAttribute("enabled"));
 
-            // can not set both gpus and threads
-            if (hasAttribute("threads") && hasAttribute("gpus"))
-                throw new ConfigException("Decoder can not have both 'threads' element and 'gpus' attributes");
-
-            // (This may be either a phrase-based decoder or a neural decoder config )
             if (hasAttribute("threads"))
                 config.setThreads(getIntAttribute("threads"));
 
-            // If 'gpus' is set, this is a neural decoder config
-            if (hasAttribute("gpus"))
-                nConfig(config).setGPUs(getIntArrayAttribute("gpus"));
+            if (hasAttribute("gpus")) {
+                NeuralDecoderConfig neuralConfig = nConfig(config);
+                neuralConfig.setGPUs(getIntArrayAttribute("gpus"));
+
+                if (neuralConfig.isUsingGPUs() && hasAttribute("threads"))
+                    throw new ConfigException("In order to specify 'threads', you have to add gpu='none'");
+            }
 
             return config;
-        }
-
-        private static PhraseBasedDecoderConfig pbConfig(DecoderConfig config) throws ConfigException {
-            try {
-                return (PhraseBasedDecoderConfig) config;
-            } catch (ClassCastException e) {
-                throw new ConfigException("Decoder is not phrase-based");
-            }
         }
 
         private static NeuralDecoderConfig nConfig(DecoderConfig config) throws ConfigException {
