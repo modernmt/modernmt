@@ -19,30 +19,28 @@ public interface ExecutionQueue extends Closeable {
 
     Logger logger = LogManager.getLogger(ExecutionQueue.class);
 
-    static ExecutionQueue newInstance(File home, File model, int[] gpus) throws NeuralDecoderException {
-
-
-        if (gpus == null || gpus.length == 0) {
-            ArrayList<StartNativeProcessCpuTask> startTasks = new ArrayList<>();
-            int cpus = Runtime.getRuntime().availableProcessors();
-            if (cpus > 1) {
-                for (int i = 0; i < cpus; i++)
-                    startTasks.add(i, new StartNativeProcessCpuTask(home, model));
-                return ParallelExecutionQueue.forCPUs(startTasks);
-            } else {
-                return SingletonExecutionQueue.forCPU(new StartNativeProcessCpuTask(home, model));
-            }
+    static ExecutionQueue newGPUInstance(File home, File model, int[] gpus) throws NeuralDecoderException {
+        if (gpus.length > 1) {
+            ArrayList<StartNativeProcessGpuTask> startTasks = new ArrayList<>();
+            for (int i = 0; i < gpus.length; i++)
+                startTasks.add(i, new StartNativeProcessGpuTask(home, model, gpus[i]));
+            return ParallelExecutionQueue.forGPUs(startTasks);
         } else {
-            if (gpus.length > 1) {
-                ArrayList<StartNativeProcessGpuTask> startTasks = new ArrayList<>();
-                for (int i = 0; i < gpus.length; i++)
-                    startTasks.add(i, new StartNativeProcessGpuTask(home, model, gpus[i]));
-                return ParallelExecutionQueue.forGPUs(startTasks);
-            } else {
-                return SingletonExecutionQueue.forGPU(new StartNativeProcessGpuTask(home, model, gpus[0]));
-            }
+            return SingletonExecutionQueue.forGPU(new StartNativeProcessGpuTask(home, model, gpus[0]));
         }
     }
+
+    static ExecutionQueue newCPUInstance(File home, File model, int cpus) throws NeuralDecoderException {
+        if (cpus > 1) {
+            ArrayList<StartNativeProcessCpuTask> startTasks = new ArrayList<>();
+            for (int i = 0; i < cpus; i++)
+                startTasks.add(i, new StartNativeProcessCpuTask(home, model));
+            return ParallelExecutionQueue.forCPUs(startTasks);
+        } else {
+            return SingletonExecutionQueue.forCPU(new StartNativeProcessCpuTask(home, model));
+        }
+    }
+
 
     Translation execute(LanguagePair direction, Sentence sentence, int nBest) throws NeuralDecoderException;
 

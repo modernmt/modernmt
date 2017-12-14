@@ -162,7 +162,7 @@ class NMTEngine(object):
         decoder = Models.Decoder(self.metadata, self.trg_dict)
         model = Models.NMTModel(encoder, decoder)
 
-        generator = nn.Sequential(nn.Linear(self.metadata.rnn_size, self.trg_dict.size()), nn.LogSoftmax())
+        generator = nn.Sequential(nn.Linear(self.metadata.rnn_size, self.trg_dict.size()), nn.LogSoftmax(dim=1))
 
         model.cpu()
         generator.cpu()

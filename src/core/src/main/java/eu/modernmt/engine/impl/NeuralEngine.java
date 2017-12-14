@@ -27,10 +27,14 @@ public class NeuralEngine extends Engine {
 
         try {
             NeuralDecoderConfig decoderConfig = (NeuralDecoderConfig) config.getDecoderConfig();
-            if (decoderConfig.isEnabled())
-                this.decoder = new NeuralDecoder(new File(this.models, "decoder"), decoderConfig.getGPUs());
-            else
+            if (decoderConfig.isEnabled()) {
+                this.decoder = decoderConfig.isUsingGPUs() ?
+                    new NeuralDecoder(new File(this.models, "decoder"), decoderConfig.getGPUs()) :
+                    new NeuralDecoder(new File(this.models, "decoder"), decoderConfig.getThreads());
+            }
+            else{
                 this.decoder = null;
+            }
         } catch (NeuralDecoderException e) {
             throw new BootstrapException("Failed to instantiate NMT Decoder", e);
         }

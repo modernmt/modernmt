@@ -26,6 +26,11 @@ def torch_setup(gpus=None, random_seed=None):
     if torch.cuda.is_available():
         if gpus is None:
             gpus = range(torch.cuda.device_count()) if torch.cuda.is_available() else None
+
+            if gpus is not None and len(gpus) > 1:  # Current version only supports single GPU
+                gpus = gpus[:1]
+        elif len(gpus) == 0:
+            gpus = None
         else:
             max_device_index = torch.cuda.device_count() - 1
 
@@ -38,12 +43,12 @@ def torch_setup(gpus=None, random_seed=None):
             if len(gpus) == 0:
                 gpus = None
     else:
-        if len(gpus) > 0:
+        if gpus is not None and len(gpus) > 0:
             raise CudaNotAvailableError()
 
         gpus = None
 
-    if len(gpus) > 1:
+    if gpus is not None and len(gpus) > 1:
         raise MultiGpuNotSupportedError()
 
     if random_seed is not None:

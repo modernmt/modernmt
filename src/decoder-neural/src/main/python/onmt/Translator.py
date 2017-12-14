@@ -39,7 +39,7 @@ class Translator(object):
 
         generator = nn.Sequential(
             nn.Linear(model_opt.rnn_size, self.tgt_dict.size()),
-            nn.LogSoftmax())
+            nn.LogSoftmax(dim=1))
 
         model.load_state_dict(checkpoint['model'])
         generator.load_state_dict(checkpoint['generator'])
