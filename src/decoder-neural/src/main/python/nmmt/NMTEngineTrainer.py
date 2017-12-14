@@ -3,6 +3,7 @@ import json
 import logging
 import math
 import time
+import shutil
 
 import os
 from torch import nn, torch
@@ -184,7 +185,7 @@ class NMTEngineTrainer:
             scores_t = generator(out_t)
             loss_t = criterion(scores_t, targ_t.view(-1))
             pred_t = scores_t.max(1)[1]
-            num_correct_t = pred_t.data.eq(targ_t.data).masked_select(targ_t.ne(Constants.PAD).data).sum()
+            num_correct_t = pred_t.data.eq(targ_t.view(-1).data).masked_select(targ_t.ne(Constants.PAD).view(-1).data).sum()
             num_correct += num_correct_t
             loss += loss_t.data[0]
             if not evaluation:
@@ -379,8 +380,11 @@ class NMTEngineTrainer:
 
     @staticmethod
     def merge_checkpoints(checkpoint_paths, output_path):
+        if checkpoint_paths is None or len(checkpoint_paths) < 1:
+            raise ValueError('Need to specify at least one checkpoint, %d provided.' % len(checkpoint_paths))
+
         if len(checkpoint_paths) < 2:
-            raise ValueError('Need to specify more than one checkpoint, %d provided.' % len(checkpoint_paths))
+            shutil.copyfile(checkpoint_paths[0], output_path)
 
         def __sum(source, destination):
             for key, value in source.items():

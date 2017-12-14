@@ -23,22 +23,21 @@ We recommend at least 8GB GPU memory for training and at least 2GB GPU memory fo
 # Pre-installation actions
 
 ## CUDA drivers (required for neural engine)
-In order to run the Neural Adaptive MMT engine, NVIDIA CUDA 8 drivers are required no matter the option you choose for installing MMT.
+In order to run the Neural Adaptive MMT engine, NVIDIA CUDA 9 drivers are required no matter the option you choose for installing MMT.
 
-Here we report the procedure for installing CUDA 8.0 for Ubuntu on a x86_64 machine; a detailed guide for different platforms  is available on the NVIDIA website: [NVIDIA CUDA Installation Guide for Linux](https://developer.nvidia.com/cuda-80-ga2-download-archive).
+Here we report the procedure for installing CUDA 9.0 for Ubuntu on a x86_64 machine; a detailed guide for different platforms  is available on the NVIDIA website: [NVIDIA CUDA Installation Guide for Linux](https://developer.nvidia.com/cuda-downloads).
 ```
-wget -O cuda-repo-ubuntu1604-8-0-local-ga2_8.0.61-1_amd64.deb https://developer.nvidia.com/compute/cuda/8.0/Prod2/local_installers/cuda-repo-ubuntu1604-8-0-local-ga2_8.0.61-1_amd64-deb
-wget -O cuda-repo-ubuntu1604-8-0-local-cublas-performance-update_8.0.61-1_amd64.deb https://developer.nvidia.com/compute/cuda/8.0/Prod2/patches/2/cuda-repo-ubuntu1604-8-0-local-cublas-performance-update_8.0.61-1_amd64-deb
+wget -O cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64.deb https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64-deb
 
-sudo dpkg -i cuda-repo-ubuntu1604-8-0-local-ga2_8.0.61-1_amd64.deb
-sudo dpkg -i cuda-repo-ubuntu1604-8-0-local-cublas-performance-update_8.0.61-1_amd64.deb
+sudo dpkg -i cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64.deb
+sudo apt-key add /var/cuda-repo-<version>/7fa2af80.pub # exact version printed by previous command
 sudo apt-get update
 sudo apt-get install cuda
 
 rm cuda-*
 ```
 
-Optionally, you can also install the **CUDNN 6.0** drivers in order to speed-up the deep-neural network computation. You can follow the steps described in this guide: [NVIDIA cuDNN](https://developer.nvidia.com/cudnn).
+Optionally, you can also install the **CuDNN 7.0** drivers in order to speed-up the deep-neural network computation. You can follow the steps described in this guide: [NVIDIA cuDNN](https://developer.nvidia.com/cudnn).
 
 ## Max open files limit
 The current version of ModernMT does not limit the maximum number of open files for performance reasons. For this reason, if you plan to create an engine with a high number of different domains you could hit the OS limit and MMT will crash.
@@ -121,13 +120,12 @@ pip install -U requests
 ```
 
 ### PyTorch (for Neural engine)
-Install *PyTorch 0.2* with `pip`:
+Install *PyTorch 0.3* with `pip`:
 ```bash
-pip install http://download.pytorch.org/whl/cu80/torch-0.2.0.post3-cp27-cp27mu-manylinux1_x86_64.whl 
-```
-If the above command does not work, then you have python 2.7 UCS2, use this command 
-```
-pip install http://download.pytorch.org/whl/cu80/torch-0.2.0.post3-cp27-cp27m-manylinux1_x86_64.whl
+pip install http://download.pytorch.org/whl/cu90/torch-0.3.0.post4-cp27-cp27mu-linux_x86_64.whl 
+
+# if the above command does not work, then you have python 2.7 UCS2, use this command 
+pip install http://download.pytorch.org/whl/cu90/torch-0.3.0.post4-cp27-cp27m-linux_x86_64.whl
 ```
 
 ## Install the MMT Binaries
@@ -164,13 +162,13 @@ sudo apt-get install libsnappy-dev zlib1g-dev libbz2-dev libboost-all-dev libspa
 ```
 
 ## PyTorch (for Neural engine)
-Install *PyTorch 0.2* with `pip`:
+Install *PyTorch 0.3* with `pip`:
 
 ```bash
-pip install http://download.pytorch.org/whl/cu80/torch-0.2.0.post3-cp27-cp27mu-manylinux1_x86_64.whl 
+pip install http://download.pytorch.org/whl/cu90/torch-0.3.0.post4-cp27-cp27mu-linux_x86_64.whl 
 
 # if the above command does not work, then you have python 2.7 UCS2, use this command 
-pip install http://download.pytorch.org/whl/cu80/torch-0.2.0.post3-cp27-cp27m-manylinux1_x86_64.whl
+pip install http://download.pytorch.org/whl/cu90/torch-0.3.0.post4-cp27-cp27m-linux_x86_64.whl
 ```
 
 ## Install MMT
