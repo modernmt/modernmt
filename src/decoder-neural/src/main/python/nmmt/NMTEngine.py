@@ -44,7 +44,8 @@ class NMTEngine(object):
         __custom_values = {'True': True, 'False': False, 'None': None}
 
         def __init__(self):
-            self.layers = 2  # Number of layers in the LSTM encoder/decoder
+            self.enc_layers = 2  # Number of layers in the LSTM encoder/decoder
+            self.dec_layers = 2  # Number of layers in the LSTM encoder/decoder
             self.rnn_size = 500  # Size of hidden states
             self.rnn_type = 'LSTM'  # The gate type used in the RNNs
             self.word_vec_size = 500  # Word embedding sizes

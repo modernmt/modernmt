@@ -10,7 +10,7 @@ from torch.nn.utils.rnn import pack_padded_sequence as pack
 class Encoder(nn.Module):
 
     def __init__(self, opt, dicts):
-        self.layers = opt.layers
+        self.layers = opt.enc_layers
         self.num_directions = 2 if opt.brnn else 1
         assert opt.rnn_size % self.num_directions == 0
         self.hidden_size = opt.rnn_size // self.num_directions
@@ -22,7 +22,7 @@ class Encoder(nn.Module):
                                      padding_idx=onmt.Constants.PAD)
         self.rnn = getattr(nn, opt.rnn_type)(
              input_size, self.hidden_size,
-             num_layers=opt.layers,
+             num_layers=self.layers,
              dropout=opt.dropout,
              bidirectional=opt.brnn)
 
@@ -102,7 +102,7 @@ class StackedGRU(nn.Module):
 class Decoder(nn.Module):
 
     def __init__(self, opt, dicts):
-        self.layers = opt.layers
+        self.layers = opt.dec_layers
         self.input_feed = opt.input_feed
         input_size = opt.word_vec_size
         if self.input_feed:
@@ -114,7 +114,7 @@ class Decoder(nn.Module):
                                      padding_idx=onmt.Constants.PAD)
 
         stackedCell = StackedLSTM if opt.rnn_type == "LSTM" else StackedGRU
-        self.rnn = stackedCell(opt.layers, input_size,
+        self.rnn = stackedCell(self.layers, input_size,
                                opt.rnn_size, opt.dropout)
         self.attn = onmt.modules.GlobalAttention(opt.rnn_size)
         self.context_gate = None
