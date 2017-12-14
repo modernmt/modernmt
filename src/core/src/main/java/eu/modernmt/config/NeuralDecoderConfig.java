@@ -23,7 +23,6 @@ public class NeuralDecoderConfig extends DecoderConfig {
                 throw new RuntimeIOException(e);
             }
         }
-
         return gpus;
     }
 
@@ -50,8 +49,24 @@ public class NeuralDecoderConfig extends DecoderConfig {
     }
 
     @Override
+    public int getThreads() {
+        return threads;
+    }
+
+    @Override
+    public void setThreads(int threads) {
+        this.threads = threads;
+    }
+
+    @Override
     public int getParallelismDegree() {
-        return gpus == null || gpus.length == 0 ? Runtime.getRuntime().availableProcessors() : gpus.length;
+        int[] gpus = this.getGPUs();
+        return (gpus != null && gpus.length != 0) ? gpus.length : threads;
+    }
+
+    public boolean isUsingGPUs() {
+        int[] gpus = this.getGPUs();
+        return (gpus != null && gpus.length != 0);
     }
 
     @Override

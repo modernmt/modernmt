@@ -5,28 +5,19 @@ package eu.modernmt.config;
  */
 public class PhraseBasedDecoderConfig extends DecoderConfig {
 
-    private static final int DEFAULT_THREADS;
-
-    static {
-        int cores = Runtime.getRuntime().availableProcessors();
-        cores = cores > 1 ? (cores * 2) / 3 : cores;
-
-        DEFAULT_THREADS = cores;
-    }
-
-    private int threads = DEFAULT_THREADS;
-
     @Override
     public int getParallelismDegree() {
         return threads;
     }
 
+    @Override
     public int getThreads() {
         return threads;
     }
 
-    public void setThreads(int thread) {
-        this.threads = thread;
+    @Override
+    public void setThreads(int threads) {
+        this.threads = threads;
     }
 
     @Override
