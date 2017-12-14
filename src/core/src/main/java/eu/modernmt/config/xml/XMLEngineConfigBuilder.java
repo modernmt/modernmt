@@ -96,23 +96,16 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
             if (hasAttribute("threads"))
                 config.setThreads(getIntAttribute("threads"));
 
-            if (hasAttribute("gpus")) {
-                NeuralDecoderConfig neuralConfig = nConfig(config);
-                neuralConfig.setGPUs(getIntArrayAttribute("gpus"));
+            if (config instanceof NeuralDecoderConfig) {
+                NeuralDecoderConfig neuralConfig = (NeuralDecoderConfig) config;
+                if (hasAttribute("gpus"))
+                    neuralConfig.setGPUs(getIntArrayAttribute("gpus"));
 
                 if (neuralConfig.isUsingGPUs() && hasAttribute("threads"))
                     throw new ConfigException("In order to specify 'threads', you have to add gpu='none'");
             }
 
             return config;
-        }
-
-        private static NeuralDecoderConfig nConfig(DecoderConfig config) throws ConfigException {
-            try {
-                return (NeuralDecoderConfig) config;
-            } catch (ClassCastException e) {
-                throw new ConfigException("Decoder is not neural");
-            }
         }
     }
 }
