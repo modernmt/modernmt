@@ -24,7 +24,7 @@ class NMTDecoder:
             return default
 
     def __init__(self, model_path, gpu_id=None, random_seed=None):
-        torch_setup(gpus=[gpu_id] if gpu_id is not None else None, random_seed=random_seed)
+        torch_setup(gpus=[gpu_id] if gpu_id is not None else [], random_seed=random_seed)
 
         self._logger = logging.getLogger('nmmt.NMTDecoder')
         self._engines, self._engines_checkpoint = {}, {}

@@ -152,6 +152,9 @@ def main_create(argv):
                 raise CLIArgsException(parser, 'you must specify a validation set (remove --no-split option or use '
                                                '--validation-corpora option)')
 
+            if args.gpus == [-1]:
+                args.gpus = []
+
             training = Training.neural(name=args.engine,
                                        source_lang=args.source_lang,
                                        target_lang=args.target_lang,

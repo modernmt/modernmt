@@ -37,7 +37,7 @@ public class NeuralDecoderConfig extends DecoderConfig {
             throw new RuntimeIOException(e);
         }
 
-        if (availableGPUs.length == 0 || gpus == null || gpus.length == 0) {
+        if (gpus == null || gpus.length == 0) {
             this.gpus = null;
         } else {
             for (int gpu : gpus) {
