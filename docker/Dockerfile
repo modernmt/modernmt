@@ -27,7 +27,7 @@ RUN echo "LC_ALL=en_US.UTF-8" >> /etc/environment
 RUN echo "LANG=en_US.UTF-8" >> /etc/environment
 
 # Install PyTorch
-RUN pip install http://download.pytorch.org/whl/cu80/torch-0.2.0.post3-cp27-cp27mu-manylinux1_x86_64.whl
+RUN pip install http://download.pytorch.org/whl/cu80/torch-0.3.0.post4-cp27-cp27mu-linux_x86_64.whl
 
 # Create a new user "mmt" and login as "mmt"
 RUN apt-get install -y sudo && rm -rf /var/lib/apt/lists/*
