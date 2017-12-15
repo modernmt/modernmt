@@ -102,7 +102,7 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
                     neuralConfig.setGPUs(getIntArrayAttribute("gpus"));
 
                 if (neuralConfig.isUsingGPUs() && hasAttribute("threads"))
-                    throw new ConfigException("In order to specify 'threads', you have to add gpu='none'");
+                    throw new ConfigException("In order to specify 'threads', you have to add gpus='none'");
             }
 
             return config;
