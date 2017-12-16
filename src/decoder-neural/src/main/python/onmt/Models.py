@@ -6,11 +6,10 @@ from onmt.modules.Gate import ContextGateFactory
 from torch.nn.utils.rnn import pad_packed_sequence as unpack
 from torch.nn.utils.rnn import pack_padded_sequence as pack
 
-
 class Encoder(nn.Module):
 
     def __init__(self, opt, dicts):
-        self.layers = opt.enc_layers
+        self.layers = opt.encoder_layers
         self.num_directions = 2 if opt.brnn else 1
         assert opt.rnn_size % self.num_directions == 0
         self.hidden_size = opt.rnn_size // self.num_directions
@@ -20,6 +19,7 @@ class Encoder(nn.Module):
         self.word_lut = nn.Embedding(dicts.size(),
                                      opt.word_vec_size,
                                      padding_idx=onmt.Constants.PAD)
+
         self.rnn = getattr(nn, opt.rnn_type)(
              input_size, self.hidden_size,
              num_layers=self.layers,
@@ -102,7 +102,7 @@ class StackedGRU(nn.Module):
 class Decoder(nn.Module):
 
     def __init__(self, opt, dicts):
-        self.layers = opt.dec_layers
+        self.layers = opt.decoder_layers
         self.input_feed = opt.input_feed
         input_size = opt.word_vec_size
         if self.input_feed:
@@ -135,6 +135,9 @@ class Decoder(nn.Module):
     def forward(self, input, hidden, context, init_output):
         emb = self.word_lut(input)
 
+        hidden = tuple(self._fix_dec_hidden(hidden[i])
+                               for i in range(len(hidden)))
+
         # n.b. you can increase performance if you compute W_ih * x for all
         # iterations in parallel, but that's only possible if
         # self.input_feed=False
@@ -144,7 +147,6 @@ class Decoder(nn.Module):
             emb_inp = emb_t.squeeze(0)
             if self.input_feed:
                 emb_inp = torch.cat([emb_inp, output], 1)
-
             rnn_output, hidden = self.rnn(emb_inp, hidden)
             attn_output, attn = self.attn(rnn_output, context.transpose(0, 1))
             if self.context_gate is not None:
@@ -159,6 +161,16 @@ class Decoder(nn.Module):
         outputs = torch.stack(outputs)
         return outputs, hidden, attn
 
+    def _fix_dec_hidden(self, h):
+        if h.size(0) > self.layers: # ecnoder has more layers than decoder; just keep the first ones
+            h = h[:self.layers]
+            return h
+        elif h.size(0) < self.layers: # encoder has less layers than decoder; initialize last layers with zero
+            new_h = torch.autograd.Variable(type(h.data)(self.layers-h.size(0),h.size(1),h.size(2)).zero_())
+            h = torch.cat([h,new_h],0)
+            return h
+        else:
+            return h
 
 class NMTModel(nn.Module):
 
