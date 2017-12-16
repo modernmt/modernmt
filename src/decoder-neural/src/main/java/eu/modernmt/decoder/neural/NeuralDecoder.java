@@ -35,32 +35,42 @@ public class NeuralDecoder implements Decoder, DecoderWithNBest, DataListenerPro
     private static final Logger logger = LogManager.getLogger(NeuralDecoder.class);
 
     private final int suggestionsLimit;
-    private final ExecutionQueue executor;
     private final TranslationMemory memory;
     private final Set<LanguagePair> directions;
 
-    public NeuralDecoder(File modelPath, int[] gpus) throws NeuralDecoderException {
-        ModelConfigFile config;
+    private ExecutionQueue executor;
+
+    private NeuralDecoder(File modelPath) throws NeuralDecoderException {
+        ModelConfigFile modelConfigFile;
         try {
-            config = ModelConfigFile.load(new File(modelPath, "model.conf"));
+            modelConfigFile = ModelConfigFile.load(new File(modelPath, "model.conf"));
         } catch (IOException e) {
             throw new NeuralDecoderException("Failed to read file model.conf", e);
         }
 
-        this.directions = config.getAvailableTranslationDirections();
-        this.suggestionsLimit = config.getSuggestionsLimit();
+        this.directions = modelConfigFile.getAvailableTranslationDirections();
+        this.suggestionsLimit = modelConfigFile.getSuggestionsLimit();
 
-        File pythonHome = new File(FileConst.getLibPath(), "pynmt");
         File storageModelPath = new File(modelPath, "memory");
-
-        this.executor = ExecutionQueue.newInstance(pythonHome, modelPath, gpus);
-
         try {
-            this.memory = new LuceneTranslationMemory(new LanguageIndex(this.directions), storageModelPath, config.getQueryMinimumResults());
+            this.memory = new LuceneTranslationMemory(new LanguageIndex(this.directions), storageModelPath, modelConfigFile.getQueryMinimumResults());
         } catch (IOException e) {
             throw new NeuralDecoderException("Failed to initialize memory", e);
         }
     }
+
+    public NeuralDecoder(File modelPath, int[] gpus) throws NeuralDecoderException {
+        this(modelPath);
+        File pythonHome = new File(FileConst.getLibPath(), "pynmt");
+        this.executor = ExecutionQueue.newGPUInstance(pythonHome, modelPath, gpus);
+    }
+
+    public NeuralDecoder(File modelPath, int cpus) throws NeuralDecoderException {
+        this(modelPath);
+        File pythonHome = new File(FileConst.getLibPath(), "pynmt");
+        this.executor = ExecutionQueue.newCPUInstance(pythonHome, modelPath, cpus);
+    }
+
 
     // Decoder
 
