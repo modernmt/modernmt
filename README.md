@@ -1,4 +1,4 @@
-# MMT 2.0.2 - Neural Adaptive Machine Translation
+# MMT 2.1 - Neural Adaptive Machine Translation
 We think that artificial intelligence is going to be the next big thing in our nearby future. It will bring humanity to a new era of access and organization of information.
 Language translation is probably the most complex of the human tasks for a machine to learn but it is also the one with the greatest potential to make the world a single family.
 

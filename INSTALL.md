@@ -27,10 +27,10 @@ In order to run the Neural Adaptive MMT engine, NVIDIA CUDA 9 drivers are requir
 
 Here we report the procedure for installing CUDA 9.0 for Ubuntu on a x86_64 machine; a detailed guide for different platforms  is available on the NVIDIA website: [NVIDIA CUDA Installation Guide for Linux](https://developer.nvidia.com/cuda-downloads).
 ```
-wget -O cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64.deb https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64-deb
+wget -O cuda-repo-ubuntu1604-9-1-local_9.1.85-1_amd64.deb https://developer.nvidia.com/compute/cuda/9.1/Prod/local_installers/cuda-repo-ubuntu1604-9-1-local_9.1.85-1_amd64
 
-sudo dpkg -i cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64.deb
-sudo apt-key add /var/cuda-repo-<version>/7fa2af80.pub # exact version printed by previous command
+sudo dpkg -i cuda-repo-ubuntu1604-9-1-local_9.1.85-1_amd64.deb
+sudo apt-key add /var/cuda-repo-9-1-local/7fa2af80.pub
 sudo apt-get update
 sudo apt-get install cuda
 

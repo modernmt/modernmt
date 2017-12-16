@@ -27,7 +27,7 @@ RUN echo "LC_ALL=en_US.UTF-8" >> /etc/environment
 RUN echo "LANG=en_US.UTF-8" >> /etc/environment
 
 # Install PyTorch
-RUN pip install http://download.pytorch.org/whl/cu80/torch-0.2.0.post3-cp27-cp27mu-manylinux1_x86_64.whl
+RUN pip install http://download.pytorch.org/whl/cu80/torch-0.3.0.post4-cp27-cp27mu-linux_x86_64.whl
 
 # Create a new user "mmt" and login as "mmt"
 RUN apt-get install -y sudo && rm -rf /var/lib/apt/lists/*
@@ -39,7 +39,7 @@ RUN chown mmt:mmt /home/mmt
 USER mmt
 
 # Install MMT
-RUN wget -qO- https://github.com/ModernMT/MMT/releases/download/v2.0.2/mmt-2.0.2-ubuntu.tar.gz | tar xvfz -
+RUN wget -qO- https://github.com/ModernMT/MMT/releases/download/v2.1/mmt-2.1-ubuntu.tar.gz | tar xvfz -
 WORKDIR /home/mmt/mmt
 
 # Make MMT example engine
