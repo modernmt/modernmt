@@ -19,11 +19,11 @@ def main():
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
-                                     description='Port a 2.0.2 model to version 2.0.3')
+                                     description='Port a 2.0.2 model to version 2.1')
 
     parser.add_argument('--engine-path', dest='engine_path', help='the path to the 2.0.2 engine to port')
 
-    argv = sys.argv[1:]     # ignore sys.argv[0], that is './convert_from_v2.0.2_to_v2.0.3'
+    argv = sys.argv[1:]     # ignore sys.argv[0], that is './convert_from_v2.0.2_to_v2.1'
 
     # Parse args
     args = parser.parse_args(argv)
@@ -74,7 +74,7 @@ def main():
         for key in engines:
             convert_model(backup_decoder_path, decoder_path, engines[key])
         print "Done."
-        print "\nCongratulations! Your 2.0.2 engine was successfully ported to version 2.0.3"
+        print "\nCongratulations! Your 2.0.2 engine was successfully ported to version 2.1"
 
     except Exception as e:
         print "An error occurred. Reverting the backup data into the decoder..." ,
