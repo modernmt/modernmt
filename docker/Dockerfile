@@ -3,10 +3,12 @@ MAINTAINER Davide Caroselli <davide.caroselli@translated.net>
 
 # Install dependencies
 RUN apt-get -y update
+
 RUN apt-get install -y software-properties-common
 RUN apt-get install -y wget
-RUN apt-get install -y libnuma-dev
+RUN apt-get -y update --fix-missing
 
+RUN apt-get install -y libnuma-dev
 RUN add-apt-repository -y ppa:openjdk-r/ppa
 RUN apt-get -y update
 
