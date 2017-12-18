@@ -27,6 +27,7 @@
     <processor source="fr">eu.modernmt.processing.chars.GuillemetsToQuotesProcessor</processor>
 
     <processor>eu.modernmt.processing.numbers.NumericWordPostprocessor</processor>
+    <processor>eu.modernmt.processing.recaser.UpperCasePostprocessor</processor>
     <processor>eu.modernmt.processing.recaser.SimpleRecaser</processor>
 
     <processor>eu.modernmt.processing.xml.XMLTagProcessor</processor>

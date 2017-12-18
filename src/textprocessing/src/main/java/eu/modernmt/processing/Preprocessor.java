@@ -20,6 +20,7 @@ public class Preprocessor implements Closeable {
 
     private static final int DEFAULT_THREADS = Runtime.getRuntime().availableProcessors();
 
+    private final int threads;
     private final PipelineExecutor<String, Sentence> executor;
 
     public Preprocessor() throws IOException {
@@ -32,6 +33,7 @@ public class Preprocessor implements Closeable {
 
     public Preprocessor(int threads, XMLPipelineBuilder<String, Sentence> builder) throws IOException {
         this.executor = new PipelineExecutor<>(builder, threads);
+        this.threads = threads;
     }
 
     public Sentence[] process(LanguagePair language, String[] batch) throws ProcessingException {
@@ -45,6 +47,10 @@ public class Preprocessor implements Closeable {
 
     public Sentence process(LanguagePair language, String text) throws ProcessingException {
         return this.executor.process(language, text);
+    }
+
+    public int getThreads() {
+        return threads;
     }
 
     @Override
