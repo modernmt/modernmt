@@ -64,11 +64,11 @@ def translate_xliff_file(input_file_abspath, output_file_abspath, context=None, 
         command = [mmt_script, 'translate', '--batch', '--xliff']
 
         if context:
-            command.extend(['--context', context])
+            command.extend(['--context', '"' + str(context) + '"'])
         if context_file:
-            command.extend(['--context-file', context_file])
+            command.extend(['--context-file', '"' + str(context_file) + '"'])
         if context_vector:
-            command.extend(['--context-vector', context_vector])
+            command.extend(['--context-vector', '"' + str(context_vector) + '"'])
 
         command.extend(['<', input_file_abspath, '>', output_file_abspath])
 
