@@ -621,6 +621,7 @@ def main_import(argv):
             node.import_corpus(memory['id'], corpus, callback=_import_callback)
             progressbar.complete()
         except BaseException as e:
+            node.delete_memory(memory['id'])
             progressbar.abort(repr(e))
             raise
 

@@ -179,6 +179,9 @@ class ClusterNode(object):
             params = {'name': name}
             return self._post('memories', params=params)
 
+        def delete_memory(self, memory_id):
+            return self._delete('memories/' + str(memory_id))
+
         def append_to_memory(self, source, target, memory, sentence, translation):
             params = {'sentence': sentence, 'translation': translation, 'source': source, 'target': target}
             return self._post('memories/' + str(memory) + '/corpus', params=params)
@@ -568,6 +571,9 @@ class ClusterNode(object):
 
     def new_memory(self, name):
         return self.api.create_memory(name)
+
+    def delete_memory(self, id):
+        return self.api.delete_memory(id)
 
     def import_corpus(self, memory_id, corpus, callback=None, refresh_rate_in_seconds=1):
         if type(corpus) == TMXCorpus:
