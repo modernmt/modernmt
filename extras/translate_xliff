@@ -70,7 +70,7 @@ def translate_xliff_file(input_file_abspath, output_file_abspath, context=None, 
         if context_vector:
             command.extend(['--context-vector', '"' + str(context_vector) + '"'])
 
-        command.extend(['<', input_file_abspath, '>', output_file_abspath])
+        command.extend(['<', '"' + str(input_file_abspath) + '"', '>', '"' + str(output_file_abspath) + '"'])
 
         print "Translating %s into %s..." % (input_file_abspath, output_file_abspath)
         shell.execute(" ".join(command))
