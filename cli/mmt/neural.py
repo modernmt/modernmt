@@ -177,7 +177,6 @@ class NMTDecoder:
 
         state = None
         state_file = os.path.join(working_dir, 'state.json')
-        optimizer_file = os.path.join(working_dir, 'optimizer.dat')
 
         if os.path.isfile(state_file):
             state = NMTEngineTrainer.State.load_from_file(state_file)
@@ -194,13 +193,9 @@ class NMTDecoder:
             src_dict, tgt_dict = vocab['src'], vocab['tgt']
 
         # Creating trainer ---------------------------------------------------------------------------------------------
-        optimizer = None
-
         if state is not None and state.checkpoint is not None:
             with _log_timed_action(self._logger, 'Resuming engine from step %d' % state.checkpoint['step']):
                 engine = NMTEngine.load_from_checkpoint(state.checkpoint['file'])
-                optimizer = torch.load(optimizer_file)
-                optimizer.optimizer.load_state_dict(optimizer.optimizer.state_dict())
         else:
             if checkpoint_path is not None:
                 with _log_timed_action(self._logger, 'Loading engine from %s' % checkpoint_path):
@@ -221,7 +216,7 @@ class NMTDecoder:
 
         engine.running_state = NMTEngine.HOT
 
-        trainer = NMTEngineTrainer(engine, state=state, optimizer=optimizer, options=training_opts)
+        trainer = NMTEngineTrainer(engine, state=state, options=training_opts)
 
         # Training model -----------------------------------------------------------------------------------------------
         self._logger.info('Vocabulary size. source = %d; target = %d' % (src_dict.size(), tgt_dict.size()))

@@ -90,6 +90,7 @@ class NMTEngineTrainer:
     class State(object):
         def __init__(self, size):
             self.size = size
+            self.learning_rate = None
             self.checkpoint = None
             self.history = []
 
@@ -141,18 +142,17 @@ class NMTEngineTrainer:
                 state.__dict__ = json.loads(stream.read())
             return state
 
-    def __init__(self, engine, options=None, optimizer=None, state=None):
+    def __init__(self, engine, options=None, state=None):
         self._logger = logging.getLogger('nmmt.NMTEngineTrainer')
         self._engine = engine
         self.opts = options if options is not None else NMTEngineTrainer.Options()
 
         self.state = state if state is not None else NMTEngineTrainer.State(self.opts.n_checkpoints)
 
-        if optimizer is None:
-            optimizer = Optim(self.opts.optimizer, self.opts.learning_rate, max_grad_norm=self.opts.max_grad_norm,
-                              lr_decay=self.opts.lr_decay, lr_start_decay_at=self.opts.lr_decay_start_at)
-            optimizer.set_parameters(engine.model.parameters())
-        self.optimizer = optimizer
+        learning_rate = self.opts.learning_rate if self.state.learning_rate is None else self.state.learning_rate
+        self.optimizer = Optim(self.opts.optimizer, learning_rate, max_grad_norm=self.opts.max_grad_norm,
+                               lr_decay=self.opts.lr_decay, lr_start_decay_at=self.opts.lr_decay_start_at)
+        self.optimizer.set_parameters(engine.model.parameters())
 
     def reset_learning_rate(self, value):
         self.optimizer.lr = value
@@ -185,7 +185,8 @@ class NMTEngineTrainer:
             scores_t = generator(out_t)
             loss_t = criterion(scores_t, targ_t.view(-1))
             pred_t = scores_t.max(1)[1]
-            num_correct_t = pred_t.data.eq(targ_t.view(-1).data).masked_select(targ_t.ne(Constants.PAD).view(-1).data).sum()
+            num_correct_t = pred_t.data.eq(targ_t.view(-1).data).masked_select(
+                targ_t.ne(Constants.PAD).view(-1).data).sum()
             num_correct += num_correct_t
             loss += loss_t.data[0]
             if not evaluation:
@@ -247,7 +248,6 @@ class NMTEngineTrainer:
 
     def train_model(self, train_dataset, valid_dataset=None, save_path=None):
         state_file_path = None if save_path is None else os.path.join(save_path, 'state.json')
-        optimizer_file_path = None if save_path is None else os.path.join(save_path, 'optimizer.dat')
 
         # set the mask to None; required when the same model is trained after a translation
         if torch_is_multi_gpu():
@@ -356,8 +356,6 @@ class NMTEngineTrainer:
                     self._engine.save(checkpoint_file)
                     self.state.add_checkpoint(step, checkpoint_file, checkpoint_ppl)
                     self.state.save_to_file(state_file_path)
-
-                    torch.save(self.optimizer, optimizer_file_path)
 
                     self._log('Checkpoint saved: path = %s ppl = %.2f' % (checkpoint_file, checkpoint_ppl))
 
