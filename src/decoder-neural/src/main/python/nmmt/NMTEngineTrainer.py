@@ -355,6 +355,7 @@ class NMTEngineTrainer:
                     self._log('Checkpoint at step %d (epoch %.2f): %s' % (step, epoch, str(checkpoint_stats)))
                     self._engine.save(checkpoint_file)
                     self.state.add_checkpoint(step, checkpoint_file, checkpoint_ppl)
+                    self.state.learning_rate = self.optimizer.lr
                     self.state.save_to_file(state_file_path)
 
                     self._log('Checkpoint saved: path = %s ppl = %.2f' % (checkpoint_file, checkpoint_ppl))
