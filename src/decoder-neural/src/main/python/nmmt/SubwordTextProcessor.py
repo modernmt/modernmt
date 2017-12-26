@@ -3,34 +3,12 @@ import os
 from collections import Counter
 from collections import defaultdict
 
-from math import sqrt
-
 import re
 
 import copy
 
 import sys
-
-
-def _cosine_similarity(a, b):
-    dot_product = 0
-    for key in set(a.keys() + b.keys()):
-        a_value = a[key] if key in a else 0
-        b_value = b[key] if key in b else 0
-
-        dot_product += a_value * b_value
-
-    a_magnitude = 0
-    for _, value in a.iteritems():
-        a_magnitude += value * value
-    a_magnitude = sqrt(a_magnitude)
-
-    b_magnitude = 0
-    for _, value in b.iteritems():
-        b_magnitude += value * value
-    b_magnitude = sqrt(b_magnitude)
-
-    return dot_product / (a_magnitude * b_magnitude)
+from multiprocessing import Pipe, Process
 
 
 class _BPE:
@@ -425,17 +403,15 @@ class SubwordTextProcessor:
         return indexes
 
     class Builder:
-        def __init__(self, symbols, max_vocabulary_size=None, vocab_pruning_threshold=None, min_frequency=2,
-                     similarity_threshold=.5, separator='@@'):
+        def __init__(self, symbols, max_vocabulary_size=None, vocab_pruning_threshold=None,
+                     min_frequency=2, separator='@@'):
             self._symbols = symbols
             self._max_vocabulary_size = max_vocabulary_size
             self._vocab_pruning_threshold = vocab_pruning_threshold
             self._min_frequency = min_frequency
-            self._similarity_threshold = similarity_threshold
             self._separator = separator
 
             self._dictionaries = (Counter(), Counter())
-            self._alphabets = (Counter(), Counter())
 
         def build(self, data_sources):
             """
@@ -454,28 +430,29 @@ class SubwordTextProcessor:
                         self._add_line(source, is_source=True)
                         self._add_line(target, is_source=False)
 
-            # Learns BPE
-            if _cosine_similarity(*self._alphabets) > self._similarity_threshold:
-                source_bpe = _BPE.learn_from_terms(self._dictionaries[0] + self._dictionaries[1], symbols=self._symbols,
-                                                   min_frequency=self._min_frequency, separator=self._separator)
-                target_bpe = None
-            else:
-                source_bpe = _BPE.learn_from_terms(self._dictionaries[0], symbols=self._symbols,
-                                                   min_frequency=self._min_frequency, separator=self._separator)
-                target_bpe = _BPE.learn_from_terms(self._dictionaries[1], symbols=self._symbols,
-                                                   min_frequency=self._min_frequency, separator=self._separator)
+            # Create BPEs
+            source_parent_conn, source_child_conn = Pipe()
+            source_worker = Process(target=SubwordTextProcessor.Builder._build_bpe,
+                                    args=(source_child_conn, self._dictionaries[0], self._symbols, self._min_frequency,
+                                          self._separator, self._vocab_pruning_threshold, self._max_vocabulary_size))
 
-            # Create vocabularies
-            source_subwords = self._collect_subwords(self._dictionaries[0], source_bpe)
-            target_subwords = self._collect_subwords(self._dictionaries[1],
-                                                     target_bpe if target_bpe is not None else source_bpe)
+            target_parent_conn, target_child_conn = Pipe()
+            target_worker = Process(target=SubwordTextProcessor.Builder._build_bpe,
+                                    args=(target_child_conn, self._dictionaries[1], self._symbols, self._min_frequency,
+                                          self._separator, self._vocab_pruning_threshold, self._max_vocabulary_size))
+
+            source_worker.start()
+            target_worker.start()
+
+            source_subwords, source_codes = source_parent_conn.recv()
+            target_subwords, target_codes = target_parent_conn.recv()
+
+            source_worker.join()
+            target_worker.join()
 
             # Cleanup
-            for counter in self._alphabets + self._dictionaries:
+            for counter in self._dictionaries:
                 counter.clear()
-
-            source_codes = source_bpe.bpe_codes
-            target_codes = target_bpe.bpe_codes if target_bpe is not None else None
 
             return SubwordTextProcessor(source_codes, source_subwords, target_codes, target_subwords, self._separator)
 
@@ -487,52 +464,52 @@ class SubwordTextProcessor:
                 line = line.strip().split()
 
             dictionary = self._dictionaries[0 if is_source else 1]
-            alphabet = self._alphabets[0 if is_source else 1]
 
             for word in line:
                 dictionary[word] += 1
 
-                for c in word:
-                    alphabet[c] += 1
+        @staticmethod
+        def _build_bpe(connection, dictionary, symbols, min_frequency, separator,
+                       vocab_pruning_threshold, max_vocabulary_size):
+            bpe = _BPE.learn_from_terms(dictionary, symbols, min_frequency, separator)
+            subwords = SubwordTextProcessor.Builder._collect_subwords(dictionary, bpe,
+                                                                      vocab_pruning_threshold=vocab_pruning_threshold,
+                                                                      max_vocabulary_size=max_vocabulary_size)
+            connection.send((subwords, bpe.bpe_codes))
+            connection.close()
 
-        def _collect_subwords(self, terms, bpe):
-
-            voc = Counter()
+        @staticmethod
+        def _collect_subwords(terms, bpe, vocab_pruning_threshold, max_vocabulary_size):
+            vocab = Counter()
 
             for word, count in terms.iteritems():
                 for subword in bpe.apply([word]):
-                    voc[subword] += count
+                    vocab[subword] += count
 
-            if self._vocab_pruning_threshold is not None:
-                self._prune_rare_terms(voc)
+            # Prune rare terms
+            if vocab_pruning_threshold is not None:
+                total = sum(vocab.values())
+                counter = 0
+                threshold = 0
 
-            if self._max_vocabulary_size is not None and len(voc) > self._max_vocabulary_size:
-                voc = self._reduce_vocabulary(voc)
+                for w, c in vocab.most_common():
+                    counter += c
+                    if counter >= total * vocab_pruning_threshold:
+                        threshold = c
+                        break
+
+                for w, c in vocab.items():
+                    if c < threshold:
+                        del vocab[w]
+
+            # Reduce vocabulary
+            if max_vocabulary_size is not None and len(vocab) > max_vocabulary_size:
+                entries = vocab.most_common()[:max_vocabulary_size]
+                vocab = set(x for x, _ in entries)
             else:
-                voc = set(voc.keys())
+                vocab = set(vocab.keys())
 
-            return voc
-
-        def _prune_rare_terms(self, terms):
-            total = sum(terms.values())
-            counter = 0
-            threshold = 0
-
-            for w, c in terms.most_common():
-                counter += c
-                if counter >= total * self._vocab_pruning_threshold:
-                    threshold = c
-                    break
-
-            for w, c in terms.items():
-                if c < threshold:
-                    del terms[w]
-
-            return terms
-
-        def _reduce_vocabulary(self, c):
-            entries = c.most_common()[:self._max_vocabulary_size]
-            return set(x for x, _ in entries)
+            return vocab
 
 
 def bpe_main(model_path, is_source):

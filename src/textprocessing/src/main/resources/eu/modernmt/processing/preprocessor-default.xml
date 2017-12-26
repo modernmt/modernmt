@@ -11,6 +11,10 @@
     <processor>eu.modernmt.processing.chars.RareCharsNormalizer</processor>
     <processor>eu.modernmt.processing.chars.WhitespacesNormalizer</processor>
     <processor>eu.modernmt.processing.numbers.NumericPlaceholderNormalizer</processor>
+    <processor>eu.modernmt.processing.recaser.UpperCasePreprocessor</processor>
+
+    <!-- Fix italian accents like "e'" or "perche'" -->
+    <processor source="it">eu.modernmt.processing.chars.ItalianAccentMarkProcessor</processor>
 
     <!-- Tokenization -->
     <processorGroup>
