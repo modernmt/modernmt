@@ -142,16 +142,19 @@ class NMTEngineTrainer:
                 state.__dict__ = json.loads(stream.read())
             return state
 
-    def __init__(self, engine, options=None, state=None):
+    def __init__(self, engine, options=None, state=None, optimizer=None):
         self._logger = logging.getLogger('nmmt.NMTEngineTrainer')
         self._engine = engine
         self.opts = options if options is not None else NMTEngineTrainer.Options()
 
         self.state = state if state is not None else NMTEngineTrainer.State(self.opts.n_checkpoints)
 
-        learning_rate = self.opts.learning_rate if self.state.learning_rate is None else self.state.learning_rate
-        self.optimizer = Optim(self.opts.optimizer, learning_rate, max_grad_norm=self.opts.max_grad_norm,
-                               lr_decay=self.opts.lr_decay, lr_start_decay_at=self.opts.lr_decay_start_at)
+        if optimizer is None:
+            learning_rate = self.opts.learning_rate if self.state.learning_rate is None else self.state.learning_rate
+            optimizer = Optim(self.opts.optimizer, learning_rate, max_grad_norm=self.opts.max_grad_norm,
+                              lr_decay=self.opts.lr_decay, lr_start_decay_at=self.opts.lr_decay_start_at)
+
+        self.optimizer = optimizer
         self.optimizer.set_parameters(engine.model.parameters())
 
     def reset_learning_rate(self, value):
