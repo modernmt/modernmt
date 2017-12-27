@@ -2,6 +2,7 @@ package eu.modernmt.cleaning;
 
 import eu.modernmt.cleaning.filters.*;
 import eu.modernmt.cleaning.filters.draft.DraftFilter;
+import eu.modernmt.cleaning.filters.lang.LanguageFilter;
 import eu.modernmt.cleaning.filters.ngrams.RareNgramFilter;
 import eu.modernmt.cleaning.normalizers.ControlCharsStripper;
 import eu.modernmt.cleaning.normalizers.XMLStripper;
@@ -23,6 +24,7 @@ public class CorporaCleaning {
             options.filterBySentenceLength = true;
             options.filterNumericSentences = true;
             options.filterVerbatimTranslations = true;
+            options.filterByLanguage = true;
             return options;
         }
 
@@ -33,6 +35,7 @@ public class CorporaCleaning {
         public boolean filterBySentenceLength = false;
         public boolean filterNumericSentences = false;
         public boolean filterVerbatimTranslations = false;
+        public boolean filterByLanguage = false;
 
     }
 
@@ -62,6 +65,8 @@ public class CorporaCleaning {
             filteredCorpus.addFilter(new DraftFilter());
         if (options.filterBySentenceLength)
             filteredCorpus.addFilter(new SentenceLengthFilter());
+        if (options.filterByLanguage)
+            filteredCorpus.addFilter(new LanguageFilter());
 
         return filteredCorpus;
     }
