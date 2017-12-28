@@ -142,6 +142,7 @@ class XLIFFTranslator(Translator):
 
         ElementTree.register_namespace('', self.DEFAULT_NAMESPACE)
         ElementTree.register_namespace('sdl', self.SDL_NAMESPACE)
+        ElementTree.register_namespace('mq', 'MQXliff')
 
     def execute(self, line):
         self._content.append(line)
