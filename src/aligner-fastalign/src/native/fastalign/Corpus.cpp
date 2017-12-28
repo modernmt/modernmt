@@ -9,9 +9,6 @@
 #include "Vocabulary.h"
 #include <boost/filesystem.hpp>
 
-#define AlignFileExt "align"
-#define ScoreFileExt "score"
-
 
 using namespace std;
 using namespace mmt;
@@ -19,9 +16,12 @@ using namespace mmt::fastalign;
 
 namespace fs = boost::filesystem;
 
+Corpus::Corpus(const std::string &sourceFile, const std::string &targetFile) :
+        name(fs::path(sourceFile).stem().string()), sourceFile(sourceFile), targetFile(targetFile) {
+}
 
-void Corpus::List(const string &path, const string &outPath,
-                  const string &sourceLang, const string &targetLang, vector<Corpus> &list) {
+void Corpus::List(const std::string &path, const std::string &sourceLang, const std::string &targetLang,
+                  std::vector<Corpus> &outList) {
     fs::recursive_directory_iterator endit;
 
     for (fs::recursive_directory_iterator it(path); it != endit; ++it) {
@@ -33,21 +33,13 @@ void Corpus::List(const string &path, const string &outPath,
         if (file.extension().string() == "." + sourceLang) {
             fs::path sourceFile = file;
             fs::path targetFile = file;
-            fs::path alignmentFile = outPath / file.filename();
-            fs::path scoreFile = outPath / file.filename();
 
             targetFile = targetFile.replace_extension(fs::path(targetLang));
-            alignmentFile = alignmentFile.replace_extension(fs::path(AlignFileExt));
-            scoreFile = scoreFile.replace_extension(fs::path(ScoreFileExt));
 
             if (!fs::is_regular_file(targetFile))
                 continue;
 
-            if (fs::is_regular_file(alignmentFile)) // alignment file already present
-                continue;
-
-            list.push_back(
-                    Corpus(sourceFile.string(), targetFile.string(), alignmentFile.string(), scoreFile.string()));
+            outList.push_back(Corpus(sourceFile.string(), targetFile.string()));
         }
     }
 }
@@ -74,7 +66,7 @@ static inline void ParseLine(const Vocabulary *vocab, const string &line, wordve
 
 CorpusReader::CorpusReader(const Corpus &corpus, const Vocabulary *vocabulary,
                            const size_t maxLineLength, const bool skipEmptyLines)
-        : drained(false), vocabulary(vocabulary), source(corpus.sourcePath.c_str()), target(corpus.targetPath.c_str()),
+        : drained(false), vocabulary(vocabulary), source(corpus.sourceFile.c_str()), target(corpus.targetFile.c_str()),
           maxLineLength(maxLineLength), skipEmptyLines(skipEmptyLines) {
 }
 
@@ -125,7 +117,7 @@ bool CorpusReader::Read(vector<pair<sentence_t, sentence_t>> &outBuffer, size_t 
     }
 
     if (skipEmptyLines || maxLineLength > 0) {
-        for(auto sentence = outBuffer.begin(); sentence != outBuffer.end(); /* no increment */) {
+        for (auto sentence = outBuffer.begin(); sentence != outBuffer.end(); /* no increment */) {
             if (Skip(sentence->first, sentence->second))
                 sentence = outBuffer.erase(sentence);
             else
@@ -183,7 +175,7 @@ bool CorpusReader::Read(std::vector<std::pair<wordvec_t, wordvec_t>> &outBuffer,
     }
 
     if (skipEmptyLines || maxLineLength > 0) {
-        for(auto sentence = outBuffer.begin(); sentence != outBuffer.end(); /* no increment */) {
+        for (auto sentence = outBuffer.begin(); sentence != outBuffer.end(); /* no increment */) {
             if (Skip(sentence->first, sentence->second))
                 sentence = outBuffer.erase(sentence);
             else

@@ -15,9 +15,16 @@ namespace mmt {
         typedef uint32_t word_t;
         typedef uint16_t length_t;
 
-        typedef std::vector<std::pair<length_t, length_t>> alignment_t;
         typedef std::vector<std::string> sentence_t;
         typedef std::vector<word_t> wordvec_t;
+        typedef float score_t;
+
+        struct alignment_t {
+            score_t score;
+            std::vector<std::pair<length_t, length_t>> points;
+
+            alignment_t() : score(0), points() {};
+        };
 
     }
 }

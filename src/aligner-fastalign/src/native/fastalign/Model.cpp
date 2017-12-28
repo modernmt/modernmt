@@ -19,19 +19,6 @@ Model::Model(bool is_reverse, bool use_null, bool favor_diagonal, double prob_al
           diagonal_tension(diagonal_tension) {
 }
 
-void Model::ComputeScores(const vector<pair<wordvec_t, wordvec_t>> &batch,
-                          vector<double> &outScores) {
-    outScores.resize(batch.size());
-
-#pragma omp parallel for schedule(dynamic)
-    for (size_t i = 0; i < batch.size(); ++i) {
-        const pair<wordvec_t, wordvec_t> &p = batch[i];
-        double score;
-        ComputeAlignment(p.first, p.second, NULL, NULL, &score);
-        outScores[i] = score;
-    }
-}
-
 double Model::ComputeAlignments(const vector<pair<wordvec_t, wordvec_t>> &batch, Model *outModel,
                                 vector<alignment_t> *outAlignments) {
     double emp_feat = 0.0;
@@ -50,7 +37,7 @@ double Model::ComputeAlignments(const vector<pair<wordvec_t, wordvec_t>> &batch,
 }
 
 double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target, Model *outModel,
-                               alignment_t *outAlignment, double *outScore) {
+                               alignment_t *outAlignment) {
     double emp_feat = 0.0;
 
     const wordvec_t src = is_reverse ? target : source;
@@ -62,6 +49,7 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
     length_t trg_size = (length_t) trg.size();
 
     double outProb = 0.0;
+
     for (length_t j = 0; j < trg_size; ++j) {
         const word_t &f_j = trg[j];
         double sum = 0;
@@ -116,9 +104,10 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
         assert(isnormal(emp_feat));
 
 
-        if (outAlignment || outScore) {
+        if (outAlignment) {
             double max_p = -1;
             int max_index = -1;
+
             if (use_null) {
                 max_index = 0;
                 max_p = probs[0];
@@ -131,21 +120,19 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
                 }
             }
 
-            if (outScore)
-                outProb += log(max_p);
+            outProb += log(max_p);
 
-            if (outAlignment && max_index > 0) {
+            if (max_index > 0) {
                 if (is_reverse)
-                    outAlignment->push_back(pair<length_t, length_t>(j, max_index - 1));
+                    outAlignment->points.push_back(pair<length_t, length_t>(j, max_index - 1));
                 else
-                    outAlignment->push_back(pair<length_t, length_t>(max_index - 1, j));
+                    outAlignment->points.push_back(pair<length_t, length_t>(max_index - 1, j));
             }
         }
     }
-    outProb /= trg_size;
 
-    if (outScore)
-        *outScore = outProb;
+    if (outAlignment)
+        outAlignment->score = (score_t) (outProb / trg_size);
 
     return emp_feat;
 }
