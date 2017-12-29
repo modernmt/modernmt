@@ -171,8 +171,7 @@ class XLIFFTranslator(Translator):
         if source_content is None:
             return None
 
-        # translation = self._translate(source_content)
-        translation = {'translation': source_content}
+        translation = self._translate(source_content)
         self._append_translation(translation['translation'], target_tag, placeholders)
 
         return None
@@ -208,7 +207,7 @@ class XLIFFTranslator(Translator):
         return (content, _placeholders) if len(content) > 0 else (None, None)
 
     def _append_translation(self, content, element, placeholders):
-        content = '<content xmlns="%s">%s</content>' % (self.NAMESPACES['xlf'], content)
+        content = u'<content xmlns="%s">%s</content>' % (self.NAMESPACES['xlf'], content)
         content = ElementTree.fromstring(content.encode('utf-8'))
 
         # Replace placeholders
