@@ -22,7 +22,7 @@ public class XMLUtils {
         for (int i = 0; i < string.length(); i++) {
             char c = string.charAt(i);
 
-            if (builder == null && (c == '&' || c == '<')) {
+            if (builder == null && (c == '&' || c == '<' || c == '>')) {
                 builder = new StringBuilder((int) (string.length() * 1.4));
                 builder.append(string, 0, i);
             }
@@ -33,6 +33,9 @@ public class XMLUtils {
                     break;
                 case '<':
                     builder.append("&lt;");
+                    break;
+                case '>':
+                    builder.append("&gt;");
                     break;
                 default:
                     if (builder != null)
