@@ -69,7 +69,7 @@ public class Translation extends Sentence {
                 shiftAlignment(source.getTags(), sourceIdxs);
                 shiftAlignment(this.getTags(), targetIdxs);
 
-                sentenceAlignment = new Alignment(sourceIdxs, targetIdxs);
+                sentenceAlignment = new Alignment(sourceIdxs, targetIdxs, wordAlignment.getScore());
             }
         }
 

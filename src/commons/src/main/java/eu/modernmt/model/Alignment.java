@@ -11,8 +11,13 @@ public class Alignment implements Iterable<int[]>, Serializable {
 
     private final int[] sourceIndexes;
     private final int[] targetIndexes;
+    private final float score;
 
     public static Alignment fromAlignmentPairs(int[][] pairs) {
+        return fromAlignmentPairs(pairs, 0);
+    }
+
+    public static Alignment fromAlignmentPairs(int[][] pairs, float score) {
         int[] sourceIndexes = new int[pairs.length];
         int[] targetIndexes = new int[pairs.length];
 
@@ -21,12 +26,17 @@ public class Alignment implements Iterable<int[]>, Serializable {
             targetIndexes[i] = pairs[i][1];
         }
 
-        return new Alignment(sourceIndexes, targetIndexes);
+        return new Alignment(sourceIndexes, targetIndexes, score);
     }
 
     public Alignment(int[] sourceIndexes, int[] targetIndexes) {
+        this(sourceIndexes, targetIndexes, 0);
+    }
+
+    public Alignment(int[] sourceIndexes, int[] targetIndexes, float score) {
         this.sourceIndexes = sourceIndexes;
         this.targetIndexes = targetIndexes;
+        this.score = score;
     }
 
     public int[] getSourceIndexes() {
@@ -41,8 +51,12 @@ public class Alignment implements Iterable<int[]>, Serializable {
         return sourceIndexes.length;
     }
 
+    public float getScore() {
+        return score;
+    }
+
     public Alignment getInverse() {
-        return new Alignment(targetIndexes, sourceIndexes);
+        return new Alignment(targetIndexes, sourceIndexes, score);
     }
 
     @Override
@@ -73,17 +87,18 @@ public class Alignment implements Iterable<int[]>, Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Alignment ints = (Alignment) o;
+        Alignment alignment = (Alignment) o;
 
-        if (!Arrays.equals(sourceIndexes, ints.sourceIndexes)) return false;
-        return Arrays.equals(targetIndexes, ints.targetIndexes);
-
+        if (Float.compare(alignment.score, score) != 0) return false;
+        if (!Arrays.equals(sourceIndexes, alignment.sourceIndexes)) return false;
+        return Arrays.equals(targetIndexes, alignment.targetIndexes);
     }
 
     @Override
     public int hashCode() {
         int result = Arrays.hashCode(sourceIndexes);
         result = 31 * result + Arrays.hashCode(targetIndexes);
+        result = 31 * result + (score != +0.0f ? Float.floatToIntBits(score) : 0);
         return result;
     }
 
