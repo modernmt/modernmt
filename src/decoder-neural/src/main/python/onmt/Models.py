@@ -9,7 +9,7 @@ from torch.nn.utils.rnn import pack_padded_sequence as pack
 class Encoder(nn.Module):
 
     def __init__(self, opt, dicts):
-        self.layers = opt.encoder_layers
+        self.layers = opt.encoder_layers or opt.layers
         self.num_directions = 2 if opt.brnn else 1
         assert opt.rnn_size % self.num_directions == 0
         self.hidden_size = opt.rnn_size // self.num_directions
@@ -102,7 +102,7 @@ class StackedGRU(nn.Module):
 class Decoder(nn.Module):
 
     def __init__(self, opt, dicts):
-        self.layers = opt.decoder_layers
+        self.layers = opt.decoder_layers or opt.layers
         self.input_feed = opt.input_feed
         input_size = opt.word_vec_size
         if self.input_feed:
