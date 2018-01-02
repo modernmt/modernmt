@@ -112,7 +112,7 @@ public class Sentence implements Serializable, Iterable<Token> {
                 builder.append(token.getText());
             } else {
                 String text = printPlaceholders || !token.hasText() ? token.getPlaceholder() : token.getText();
-                builder.append(XMLUtils.escape(text));
+                builder.append(XMLUtils.escapeText(text));
             }
 
             if (token.hasRightSpace())

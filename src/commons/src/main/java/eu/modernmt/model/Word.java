@@ -58,7 +58,7 @@ public class Word extends Token {
     public String toString(boolean escape) {
         if (escape) {
             if (xmlEscapedString == null)
-                xmlEscapedString = XMLUtils.escape(super.toString());
+                xmlEscapedString = XMLUtils.escapeText(super.toString());
 
             return xmlEscapedString;
         } else {

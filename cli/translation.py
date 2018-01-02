@@ -3,6 +3,7 @@ import sys
 import threading
 from xml.etree import ElementTree
 
+import copy
 import requests
 
 from cli import IllegalArgumentException, IllegalStateException
@@ -132,6 +133,11 @@ class BatchTranslator(Translator):
 
 
 class XLIFFTranslator(Translator):
+    NAMESPACES = {
+        'xlf': 'urn:oasis:names:tc:xliff:document:1.2',
+        'sdl': 'http://sdl.com/FileTypes/SdlXliff/1.0',
+        'mq': 'MQXliff'
+    }
     DEFAULT_NAMESPACE = 'urn:oasis:names:tc:xliff:document:1.2'
     SDL_NAMESPACE = 'http://sdl.com/FileTypes/SdlXliff/1.0'
 
@@ -140,87 +146,99 @@ class XLIFFTranslator(Translator):
         self._content = []
         self._pool = multithread.Pool(100)
 
-        ElementTree.register_namespace('', self.DEFAULT_NAMESPACE)
-        ElementTree.register_namespace('sdl', self.SDL_NAMESPACE)
+        for namespace, uri in self.NAMESPACES.iteritems():
+            if namespace == 'xlf':
+                namespace = ''
+            ElementTree.register_namespace(namespace, uri)
 
     def execute(self, line):
         self._content.append(line)
 
     def _translate_transunit(self, tu, _=None):
-
-        # if there is a sdl match to 
-        if self._has_sdl_match(tu):
+        # if there is a 100% sdl match
+        if self._skip_translation_unit(tu):
             return None
 
-        source_tag = tu.find('{' + self.DEFAULT_NAMESPACE + '}source')
-        seg_source_tag = tu.find('{' + self.DEFAULT_NAMESPACE + '}seg-source')
-        target_tag = tu.find('{' + self.DEFAULT_NAMESPACE + '}target')
+        ns = self.NAMESPACES
 
-        # if this XLIFF file uses <seg-source> nodes, find its <mrk> children that have an ID and that are segments,
-        # translate them and put the translation in the corresponding <mrk> children in <target>
-        if seg_source_tag is not None:
-            source_mrk_tags = seg_source_tag.findall('.//{' + self.DEFAULT_NAMESPACE + '}mrk[@mid]')
+        source_tag = tu.find('xlf:seg-source', ns)
+        if source_tag is None:
+            source_tag = tu.find('xlf:source', ns)
+        target_tag = tu.find('xlf:target', ns)
 
-            # for each <mrk> element, find the corresponding <mrk> in <target>
-            for source_mrk_tag in source_mrk_tags:
-                mrk_tag_id = str(source_mrk_tag.attrib["mid"])
-                target_mrk_tag = target_tag.find('.//{' + self.DEFAULT_NAMESPACE + '}mrk[@mid="' + mrk_tag_id + '"]')
+        source_content, placeholders = self._get_source_content(source_tag)
 
-                # if no <mrk> node with the right type and ID exists in <target>, raise an exception
-                if target_mrk_tag is None:
-                    raise IllegalArgumentException(
-                        "<seg-source><mrk> tag with mid %s has no corresponding <target><mrk> tag" % mrk_tag_id)
+        if source_content is None:
+            return None
 
-                # extract the text to translate:
-
-                # if there are more <mrk> descendants under this <mrk>, ignore this <mrk>;
-                # the <mrk> descendants will be handled one by one by following iterations
-                if len(source_mrk_tag.findall('.//{' + self.DEFAULT_NAMESPACE + '}mrk')) > 0:
-                    continue
-
-                # get the content of the mrk tag to translate, translate it,
-                # parse the translation result as an XML element and append it under the target mrk tag
-                source_text = self._get_string_content_of(source_mrk_tag)
-                if source_text:
-                    translation = self._translate(source_text)
-                    self._append_xmlstring_to(translation['translation'], target_mrk_tag)
-
-        # else just use the <source> and <target> nodes directly
-        else:
-            if source_tag is not None and target_tag is not None and source_tag.text:
-                translation = self._translate(source_tag.text)
-                target_tag.text = translation['translation']
+        translation = self._translate(source_content)
+        self._append_translation(translation['translation'], target_tag, placeholders)
 
         return None
 
-    # This method checks if the passed trans-unit has an SDL match content and must therefore be skipped
-    def _has_sdl_match(self, tu):
-        match = tu.find('.//{' + self.SDL_NAMESPACE + '}seg[@percent="100"]')
+    def _skip_translation_unit(self, tu):
+        match = tu.find('.//sdl:seg[@percent="100"]', self.NAMESPACES)
         return True if match is not None else False
 
-    # This method takes an ElementTree element and gets its content (text + subelements) as a string
-    def _get_string_content_of(self, element):
-        s = element.text or ""
-        for sub_element in element:
-            s += ElementTree.tostring(sub_element).replace('xmlns="' + self.DEFAULT_NAMESPACE + '" ', '')
-        s += element.tail or ""
-        return s
+    @staticmethod
+    def _get_source_content(element):
+        if element is None:
+            return None, None
 
-    # This method parses an xml string and appends its elements and text to the passed XML Element
-    def _append_xmlstring_to(self, string, element_to_fill):
-        parseable = "<container>" + string + "</container>"
-        xml = ElementTree.fromstring(parseable.encode('utf-8'))
+        def _navigate(el, placeholders):
+            for child in list(el):
+                name = child.tag if '}' not in child.tag else child.tag.split('}', 1)[1]
+                if name in ['ph', 'bpt', 'ept', 'it']:
+                    clone = copy.deepcopy(child)
+                    clone.tail = None
+                    placeholders.append(clone)
 
-        element_to_fill.text = xml.text
-        for xml_el in list(xml):
-            element_to_fill.append(xml_el)
-        element_to_fill.tail = xml.tail
+                    child.text = None
+                    child.attrib = {'id': str(len(placeholders))}
+                else:
+                    _navigate(child, placeholders)
+
+            return el, placeholders
+
+        content, _placeholders = _navigate(copy.deepcopy(element), [])
+        content = ElementTree.tostring(content, encoding='utf-8', method='xml')
+        content = content[content.find('>') + 1:]
+        content = content[:content.rfind('</source>')]
+        return (content, _placeholders) if len(content) > 0 else (None, None)
+
+    def _append_translation(self, content, element, placeholders):
+        content = u'<content xmlns="%s">%s</content>' % (self.NAMESPACES['xlf'], content)
+        content = ElementTree.fromstring(content.encode('utf-8'))
+
+        # Replace placeholders
+        parent_map = dict((c, p) for p in content.getiterator() for c in p)
+
+        for i, source in enumerate(placeholders):
+            target = content.find('.//%s[@id="%d"]' % (source.tag, i + 1))
+            if target is not None:
+                source.tail = target.tail
+
+                parent = parent_map[target]
+                parent_index = list(parent).index(target)
+                parent.remove(target)
+                parent.insert(parent_index, source)
+
+        # Clear target element
+        for child in list(element):
+            element.remove(child)
+
+        # Replace target content
+        element.text = content.text
+        element.tail = content.tail
+        for child in list(content):
+            content.remove(child)
+            element.append(child)
 
     def flush(self):
         xliff = ElementTree.fromstring('\n'.join(self._content))
         jobs = []
 
-        for tu in xliff.findall('.//{' + self.DEFAULT_NAMESPACE + '}trans-unit'):
+        for tu in xliff.findall('.//xlf:trans-unit', self.NAMESPACES):
             job = self._pool.apply_async(self._translate_transunit, (tu, None))
             jobs.append(job)
 

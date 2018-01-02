@@ -29,7 +29,7 @@ public class TokensOutputStream implements Closeable {
             } else {
                 text = printPlaceholders || !token.hasText() ? token.getPlaceholder() : token.getText();
                 if (printTags)
-                    text = XMLUtils.escape(text);
+                    text = XMLUtils.escapeText(text);
             }
 
             tokens[i++] = text.replace(' ', '\u00A0');

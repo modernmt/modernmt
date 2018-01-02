@@ -16,26 +16,20 @@ import java.util.Iterator;
  */
 public class XMLUtils {
 
-    public static String escape(String string) {
+    public static String escapeText(String string) {
         StringBuilder builder = null;
 
         for (int i = 0; i < string.length(); i++) {
             char c = string.charAt(i);
 
-            if (builder == null && (c == '"' || c == '&' || c == '\'' || c == '<' || c == '>')) {
+            if (builder == null && (c == '&' || c == '<' || c == '>')) {
                 builder = new StringBuilder((int) (string.length() * 1.4));
                 builder.append(string, 0, i);
             }
 
             switch (c) {
-                case '"':
-                    builder.append("&quot;");
-                    break;
                 case '&':
                     builder.append("&amp;");
-                    break;
-                case '\'':
-                    builder.append("&apos;");
                     break;
                 case '<':
                     builder.append("&lt;");

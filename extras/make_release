@@ -1,0 +1,76 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+	echo "Usage: make-release.sh RELEASE_NAME"
+	exit 1
+fi
+
+branch=$2
+target=$1.tar.gz
+temp="./tmp_release"
+
+function finish {
+	rm -rf $temp
+}
+trap finish EXIT
+
+
+rm -rf $temp &> /dev/null
+rm -rf $target &> /dev/null
+
+mkdir $temp
+pushd $temp
+git clone https://github.com/ModernMT/MMT.git mmt
+if [ ! -z "$branch" ]; then
+	cd mmt
+	git checkout $branch || { echo "ERROR failed to checkout $branch" ; exit 1; }
+	cd ..
+fi
+popd
+
+pushd $temp/mmt
+git submodule init
+git submodule update
+popd
+
+pushd $temp/mmt/vendor
+./compile || { echo 'ERROR failed to compile vendor folder' ; exit 1; }
+popd
+
+pushd $temp/mmt/src
+mvn clean install || { echo 'ERROR failed to compile src folder' ; exit 1; }
+popd
+
+find $temp/mmt -name ".git*" | xargs rm -rf &> /dev/null
+find $temp/mmt -name ".DS_Store" | xargs rm -rf &> /dev/null
+find $temp/mmt -name "*.pyc" | xargs rm -rf &> /dev/null
+rm -rf $temp/mmt/src &> /dev/null
+rm -rf $temp/mmt/test &> /dev/null
+rm -rf $temp/mmt/engines &> /dev/null
+mkdir $temp/mmt/engines &> /dev/null
+rm -rf $temp/mmt/runtime &> /dev/null
+mkdir $temp/mmt/runtime &> /dev/null
+mkdir $temp/mmt/vendor2 &> /dev/null
+mv $temp/mmt/vendor/cassandra-* $temp/mmt/vendor2/ &> /dev/null
+mv $temp/mmt/vendor/kafka-* $temp/mmt/vendor2/ &> /dev/null
+rm -rf $temp/mmt/vendor &> /dev/null
+mv $temp/mmt/vendor2  $temp/mmt/vendor &> /dev/null
+
+rm -rf $temp/mmt/build/include &> /dev/null
+pushd $temp/mmt/build/lib
+cp /usr/lib/x86_64-linux-gnu/libboost_filesystem.so.1.* . || { echo 'ERROR failed to copy lib' ; exit 1; }
+cp /usr/lib/x86_64-linux-gnu/libboost_iostreams.so.1.* . || { echo 'ERROR failed to copy lib' ; exit 1; }
+cp /usr/lib/x86_64-linux-gnu/libboost_program_options.so.1.* . || { echo 'ERROR failed to copy lib' ; exit 1; }
+cp /usr/lib/x86_64-linux-gnu/libboost_system.so.1.* . || { echo 'ERROR failed to copy lib' ; exit 1; }
+cp /usr/lib/x86_64-linux-gnu/libboost_thread.so.1.* . || { echo 'ERROR failed to copy lib' ; exit 1; }
+cp /usr/lib/x86_64-linux-gnu/libboost_serialization.so.1.* . || { echo 'ERROR failed to copy lib' ; exit 1; }
+cp /usr/lib/x86_64-linux-gnu/libgomp.so.1 . || { echo 'ERROR failed to copy lib' ; exit 1; }
+cp /usr/lib/x86_64-linux-gnu/libsnappy.so.1 . || { echo 'ERROR failed to copy lib' ; exit 1; }
+popd
+
+pushd $temp
+tar -zcvf $target mmt || { echo 'ERROR: failed to create archive' ; exit 1; }
+popd
+
+mv $temp/$target ./
+
