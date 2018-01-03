@@ -1,7 +1,10 @@
 package eu.modernmt.processing.numbers;
 
 import eu.modernmt.lang.UnsupportedLanguageException;
-import eu.modernmt.model.*;
+import eu.modernmt.model.Alignment;
+import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Translation;
+import eu.modernmt.model.Word;
 import eu.modernmt.processing.ProcessingException;
 import org.junit.Test;
 

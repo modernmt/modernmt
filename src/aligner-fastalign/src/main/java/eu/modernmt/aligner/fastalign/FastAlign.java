@@ -95,11 +95,12 @@ public class FastAlign implements Aligner {
         if (nativeHandle == null)
             throw new UnsupportedLanguageException(direction);
 
-        int[] alignment = align(nativeHandle, reversed, XUtils.toTokensArray(source), XUtils.toTokensArray(target), XUtils.toInt(strategy));
-        return XUtils.parseAlignment(alignment);
+        int[][] output = new int[1][];
+        float score = align(nativeHandle, reversed, XUtils.toTokensArray(source), XUtils.toTokensArray(target), XUtils.toInt(strategy), output);
+        return XUtils.parseAlignment(output[0], score);
     }
 
-    private native int[] align(long nativeHandle, boolean reversed, String[] source, String[] target, int strategy);
+    private native float align(long nativeHandle, boolean reversed, String[] source, String[] target, int strategy, int[][] result);
 
     @Override
     public Alignment[] getAlignments(LanguagePair direction, List<? extends Sentence> sources, List<? extends Sentence> targets) throws AlignerException {
@@ -135,15 +136,15 @@ public class FastAlign implements Aligner {
         int[][] result = new int[sourceArray.length][];
         Alignment[] alignments = new Alignment[result.length];
 
-        align(nativeHandle, reversed, sourceArray, targetArray, result, XUtils.toInt(strategy));
+        float[] scores = align(nativeHandle, reversed, sourceArray, targetArray, XUtils.toInt(strategy), result);
 
         for (int j = 0; j < result.length; j++)
-            alignments[j] = XUtils.parseAlignment(result[j]);
+            alignments[j] = XUtils.parseAlignment(result[j], scores[j]);
 
         return alignments;
     }
 
-    private native void align(long nativeHandle, boolean reversed, String[][] sources, String[][] targets, int[][] result, int strategy);
+    private native float[] align(long nativeHandle, boolean reversed, String[][] sources, String[][] targets, int strategy, int[][] outputAlignment);
 
     @Override
     protected void finalize() throws Throwable {

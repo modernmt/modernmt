@@ -29,7 +29,7 @@ class XUtils {
         return TokensOutputStream.tokens(sentence, false, true);
     }
 
-    public static Alignment parseAlignment(int[] encoded) {
+    public static Alignment parseAlignment(int[] encoded, float score) {
         if (encoded.length % 2 == 1)
             throw new Error("Invalid native result length: " + encoded.length);
 
@@ -41,7 +41,7 @@ class XUtils {
         System.arraycopy(encoded, 0, source, 0, size);
         System.arraycopy(encoded, size, target, 0, size);
 
-        return new Alignment(source, target);
+        return new Alignment(source, target, score);
     }
 
 }

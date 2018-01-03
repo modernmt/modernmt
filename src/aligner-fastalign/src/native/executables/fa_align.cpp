@@ -31,6 +31,8 @@ namespace {
         string input_path;
         string source_lang;
         string target_lang;
+        bool print_alignments;
+        bool print_scores;
 
         Symmetrization strategy = GrowDiagonalFinalAnd;
         size_t buffer_size = 100000;
@@ -39,7 +41,6 @@ namespace {
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
-
 
 
 bool ParseArgs(int argc, const char *argv[], args_t *args) {
@@ -51,8 +52,11 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
             ("source,s", po::value<string>()->required(), "source language")
             ("target,t", po::value<string>()->required(), "target language")
             ("input,i", po::value<string>()->required(), "input folder with input corpora")
-            ("strategy,a", po::value<size_t>(), "Symmetrization (1 = GrowDiagonalFinal, 2 = GrowDiagonal, 3 = Intersection, 4 = Union)")
-            ("buffer,b", po::value<size_t>(), "size of the buffer");
+            ("strategy,a", po::value<size_t>(),
+             "Symmetrization (1 = GrowDiagonalFinal, 2 = GrowDiagonal, 3 = Intersection, 4 = Union)")
+            ("buffer,b", po::value<size_t>(), "size of the buffer")
+            ("skip-alignments,", "if specified, .align file will be omitted")
+            ("skip-scores,", "if specified, .score file will be omitted");
 
     po::variables_map vm;
     try {
@@ -71,6 +75,9 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
         args->source_lang = vm["source"].as<string>();
         args->target_lang = vm["target"].as<string>();
 
+        args->print_alignments = !vm.count("skip-alignments");
+        args->print_scores = !vm.count("skip-scores");
+
         if (vm.count("strategy"))
             args->strategy = (Symmetrization) vm["strategy"].as<size_t>();
 
@@ -88,29 +95,47 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
 
 void printAlignment(vector<alignment_t> &alignments, ofstream &out) {
     for (auto a = alignments.begin(); a != alignments.end(); ++a) {
-        for (size_t i = 0; i < a->size(); ++i) {
+        for (size_t i = 0; i < a->points.size(); ++i) {
             if (i > 0)
                 out << ' ';
-            out << a->at(i).first << '-' << a->at(i).second;
+            out << a->points[i].first << '-' << a->points[i].second;
         }
 
         out << endl;
     }
 }
 
+void printScore(vector<alignment_t> &alignments, ofstream &out) {
+    for (auto a = alignments.begin(); a != alignments.end(); ++a) {
+        out << a->score << endl;
+    }
+}
 
-
-void AlignCorpus(const Corpus &corpus, size_t buffer_size, Symmetrization strategy, FastAligner &aligner) {
+void AlignCorpus(const Corpus &corpus, size_t buffer_size, Symmetrization strategy, FastAligner &aligner,
+                 const string &outputPath, bool printAlignments, bool printScores) {
     CorpusReader reader(corpus, aligner.vocabulary);
 
     vector<pair<wordvec_t, wordvec_t>> batch;
     vector<alignment_t> alignments;
 
-    ofstream alignStream(corpus.GetOutputAlignPath().c_str());
+    string alignPath = (fs::path(outputPath) / (corpus.GetName() + ".align")).string();
+    string scorePath = (fs::path(outputPath) / (corpus.GetName() + ".score")).string();
+
+    ofstream alignStream;
+    if (printAlignments)
+        alignStream.open(alignPath.c_str(), ios_base::out);
+
+    ofstream scoreStream;
+    if (printScores)
+        scoreStream.open(scorePath.c_str(), ios_base::out);
+
     while (reader.Read(batch, buffer_size)) {
         aligner.GetAlignments(batch, alignments, strategy);
 
-        printAlignment(alignments, alignStream);
+        if (printAlignments)
+            printAlignment(alignments, alignStream);
+        if (printScores)
+            printScore(alignments, scoreStream);
 
         alignments.clear();
         batch.clear();
@@ -146,17 +171,18 @@ int main(int argc, const char *argv[]) {
         fs::create_directories(args.output_path);
 
     vector<Corpus> corpora;
-    Corpus::List(args.input_path, args.output_path, args.source_lang, args.target_lang, corpora);
+    Corpus::List(args.input_path, args.source_lang, args.target_lang, corpora);
 
     if (corpora.empty())
         exit(0);
 
     FastAligner aligner(args.model_path, threads);
 
-    //perform alignment of all corpora sequentially; multithreading is used for each corpus
+    // perform alignment of all corpora sequentially; multi-threading is used for each corpus
     for (size_t i = 0; i < corpora.size(); ++i) {
         Corpus &corpus = corpora[i];
-        AlignCorpus(corpus, args.buffer_size, args.strategy, aligner);
+        AlignCorpus(corpus, args.buffer_size, args.strategy, aligner, args.output_path,
+                    args.print_alignments, args.print_scores);
     }
 
     return SUCCESS;

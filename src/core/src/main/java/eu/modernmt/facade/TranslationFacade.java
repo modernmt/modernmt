@@ -305,13 +305,14 @@ public class TranslationFacade {
 
         /**
          * This private method asks the passed Engine to translate one single sentence
+         *
          * @param sentence the Sentence object to translate
-         * @param engine the engine to which the translation must be requested
+         * @param engine   the engine to which the translation must be requested
          * @return the obtained Translation
          * @throws DecoderException if there is an error in the Decoding process
          * @throws AlignerException if there is an error while computing the alignments
          */
-        private Translation translate(Sentence sentence, Engine engine) throws DecoderException, AlignerException{
+        private Translation translate(Sentence sentence, Engine engine) throws DecoderException, AlignerException {
             Decoder decoder = engine.getDecoder();
 
             Translation translation;
@@ -327,17 +328,18 @@ public class TranslationFacade {
 
         /**
          * This private method asks the passed Engine to translate, one by one, the passed sentences
+         *
          * @param sentences an array containing the Sentence objects to translate
-         * @param engine the engine to which the translations must be requested
+         * @param engine    the engine to which the translations must be requested
          * @return an array containing, for each passed Sentence, the corresponding Translation
          * @throws DecoderException if there is an error in the Decoding process
          * @throws AlignerException if there is an error while computing the alignments
          */
-        private Translation[] translate(Sentence[] sentences, Engine engine) throws DecoderException, AlignerException{
+        private Translation[] translate(Sentence[] sentences, Engine engine) throws DecoderException, AlignerException {
 
             Translation[] translations = new Translation[sentences.length];
 
-            for(int i = 0; i < sentences.length; i++)
+            for (int i = 0; i < sentences.length; i++)
                 translations[i] = this.translate(sentences[i], engine);
 
             return translations;
@@ -346,14 +348,14 @@ public class TranslationFacade {
         /**
          * This private method merges a group of split translations back into a single Translation.
          * If necessary, it also takes into account the Translation NBests.
-         *
+         * <p>
          * This method is typically called by the TranslationTaskImpl "translate" method when
          * the original sentence was split into multiple sentences and it needs
          * It is first used on the obtained split translation and then, if those translation had NBests too,
          * it is also called iteratively on their NBests to merge them too.
          *
-         * @param originalSentence the original Sentence to translate
-         * @param splitSentences the sub-sentences obtained by splitting the first Sentence
+         * @param originalSentence  the original Sentence to translate
+         * @param splitSentences    the sub-sentences obtained by splitting the first Sentence
          * @param splitTranslations the sub-translations obtained by translating the sub-sentences one by one
          * @return the Translation obtained by merging the sub-translations back into one
          */
@@ -390,14 +392,14 @@ public class TranslationFacade {
         /**
          * This private method merges a group of split translations back into a single Translation
          * without taking into account the Translation NBests.
-         *
+         * <p>
          * This method is typically called by the TranslationTaskImpl "merge" method when
          * the original sentence was split into multiple sentences and so multiple translations were obtained.
          * It is first used on the obtained split translation and then, if those translation had NBests too,
          * it is also called iteratively on their NBests to merge them too.
          *
-         * @param originalSentence the original Sentence to translate
-         * @param splitSentences the sub-sentences obtained by splitting the first Sentence
+         * @param originalSentence  the original Sentence to translate
+         * @param splitSentences    the sub-sentences obtained by splitting the first Sentence
          * @param splitTranslations the sub-translations obtained by translating the sub-sentences one by one
          * @return the Translation obtained by merging the sub-translations back into one
          */
@@ -424,6 +426,8 @@ public class TranslationFacade {
             int trgWordsOffset = 0; /* in each iteration, this is the amount of trg words seen in the previous sentences*/
             /* this is the latest visited position in the global indexes in the last iteration*/
             int latestGlobalPosition = 0;
+            float score = 0;
+
             for (int sentenceIndex = 0; sentenceIndex < splitTranslations.length; sentenceIndex++) {
                 Translation splitTranslation = splitTranslations[sentenceIndex];
                 Sentence splitSentence = splitSentences[sentenceIndex];
@@ -433,8 +437,12 @@ public class TranslationFacade {
 
                 /*merge alignments if alignment must be considered*/
                 if (splitTranslation.hasAlignment()) {
-                    int[] localSrcIndexes = splitTranslation.getWordAlignment().getSourceIndexes();   // possibly not initialized
-                    int[] localTrgIndexes = splitTranslation.getWordAlignment().getTargetIndexes();   // possibly not initialized
+                    Alignment wordAlignment = splitTranslation.getWordAlignment();
+
+                    score += wordAlignment.getScore();
+
+                    int[] localSrcIndexes = wordAlignment.getSourceIndexes();   // possibly not initialized
+                    int[] localTrgIndexes = wordAlignment.getTargetIndexes();   // possibly not initialized
                     for (int localIndex = 0; localIndex < localSrcIndexes.length; localIndex++)
                         globalSrcIndexes[localIndex + latestGlobalPosition] = localSrcIndexes[localIndex] + srcWordsOffset;
                     for (int localIndex = 0; localIndex < localTrgIndexes.length; localIndex++)
@@ -451,7 +459,8 @@ public class TranslationFacade {
                 trgWordsOffset += splitTranslation.length();
             }
 
-            Alignment globalAlignment = new Alignment(globalSrcIndexes, globalTrgIndexes);
+            score /= splitTranslations.length;
+            Alignment globalAlignment = new Alignment(globalSrcIndexes, globalTrgIndexes, score);
 
             Translation globalTranslation = new Translation(globalWords, originalSentence, globalAlignment);
             globalTranslation.setElapsedTime(globalElapsedTime);

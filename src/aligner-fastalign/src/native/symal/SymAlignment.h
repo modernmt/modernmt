@@ -40,6 +40,7 @@ namespace mmt {
         private:
             size_t source_length = 0;
             size_t target_length = 0;
+            score_t score = 0;
 
             uint8_t *m = NULL;
             uint8_t *src_coverage = NULL;
@@ -54,10 +55,12 @@ namespace mmt {
             }
 
             inline void Merge(const alignment_t &forward, const alignment_t &backward) {
-                for (auto it = forward.begin(); it != forward.end(); ++it)
+                score = (forward.score + backward.score) / 2;
+
+                for (auto it = forward.points.begin(); it != forward.points.end(); ++it)
                     m[idx(it->first, it->second)] |= 0x01;
 
-                for (auto it = backward.begin(); it != backward.end(); ++it) {
+                for (auto it = backward.points.begin(); it != backward.points.end(); ++it) {
                     size_t i = idx(it->first, it->second);
 
                     m[i] |= 0x02;

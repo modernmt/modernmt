@@ -31,6 +31,7 @@ static const int kGrowDiagonalNeighbors[8][2] = {
 };
 
 void SymAlignment::Reset(size_t _source_length, size_t _target_length) {
+    score = 0;
     source_length = _source_length;
     target_length = _target_length;
 
@@ -130,11 +131,12 @@ void SymAlignment::Grow(const alignment_t &forward, const alignment_t &backward,
 
 alignment_t SymAlignment::ToAlignment() {
     alignment_t alignment;
+    alignment.score = score;
 
     for (size_t s = 0; s < source_length; ++s) {
         for (size_t t = 0; t < target_length; ++t) {
             if (m[idx(s, t)] > 0)
-                alignment.push_back(pair<size_t, size_t>(s, t));
+                alignment.points.push_back(pair<size_t, size_t>(s, t));
         }
     }
 
