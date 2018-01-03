@@ -69,7 +69,6 @@ class TMCleaner:
         extended_heap_mb = int(mem_mb * 90 / 100)
 
         args = ['-s', self._source_lang, '-t', self._target_lang,
-                '--filters', 'normalize', 'punctuation', 'odd_sentences', 'drafts', 'sentence_length',
                 '--output', output_path, '--input']
 
         input_paths = set([corpus.get_folder() for corpus in corpora])
