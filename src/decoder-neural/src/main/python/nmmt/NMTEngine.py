@@ -241,7 +241,7 @@ class NMTEngine(object):
             epochs = epochs if epochs is not None else _epochs
             learning_rate = learning_rate if learning_rate is not None else _learning_rate
 
-        if learning_rate > 0. or epochs > 0:
+        if learning_rate > 0. and epochs > 0:
             if self._tuner is None:
                 from nmmt.NMTEngineTrainer import NMTEngineTrainer
 
