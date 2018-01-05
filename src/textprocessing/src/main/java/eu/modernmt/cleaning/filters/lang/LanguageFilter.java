@@ -11,6 +11,7 @@ import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -18,6 +19,7 @@ import java.util.Map;
  */
 public class LanguageFilter implements MultilingualCorpusFilter {
 
+    private static final int MIN_SIZE = 50;
     private static LanguageDetector detectorInstance = null;
 
     public static LanguageDetector getLanguageDetector() {
@@ -53,7 +55,7 @@ public class LanguageFilter implements MultilingualCorpusFilter {
             }
 
             @Override
-            public void onPair(MultilingualCorpus corpus, MultilingualCorpus.StringPair pair, int index) throws IOException {
+            public void onPair(MultilingualCorpus corpus, MultilingualCorpus.StringPair pair, int index) {
                 Batch batch = batches.computeIfAbsent(pair.language, (key) -> new Batch());
                 batch.add(pair.source, pair.target, index);
 
@@ -83,12 +85,14 @@ public class LanguageFilter implements MultilingualCorpusFilter {
                     if (!entry.getValue().isEmpty())
                         analyze(entry.getKey(), entry.getValue());
                 }
+
+                blacklists.entrySet().removeIf(entry -> entry.getValue().size() < MIN_SIZE);
             }
         };
     }
 
     @Override
-    public boolean accept(MultilingualCorpus.StringPair pair, int index) throws IOException {
+    public boolean accept(MultilingualCorpus.StringPair pair, int index) {
         Blacklist blacklist = blacklists.get(pair.language);
         return blacklist == null || !blacklist.contains(index);
     }
