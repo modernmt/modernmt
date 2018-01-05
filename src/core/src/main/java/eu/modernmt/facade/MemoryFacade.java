@@ -5,6 +5,7 @@ import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.NodeInfo;
 import eu.modernmt.data.DataManager;
 import eu.modernmt.data.DataManagerException;
+import eu.modernmt.data.EmptyCorpusException;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.Memory;
@@ -190,7 +191,7 @@ public class MemoryFacade {
             ImportJob job = dataManager.upload(memoryId, corpus, DataManager.MEMORY_UPLOAD_CHANNEL_ID);
 
             if (job == null)
-                return null;
+                throw new EmptyCorpusException();
 
             ImportJobDAO jobDAO = db.getImportJobDAO(connection);
             job = jobDAO.store(job);
