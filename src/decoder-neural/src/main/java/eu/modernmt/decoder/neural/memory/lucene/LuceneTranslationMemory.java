@@ -45,6 +45,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
     private final Rescorer rescorer;
     private final IndexWriter indexWriter;
     private final LanguageIndex languages;
+    private DataFilter filter;
 
     private DirectoryReader _indexReader;
     private IndexSearcher _indexSearcher;
@@ -239,6 +240,11 @@ public class LuceneTranslationMemory implements TranslationMemory {
         return entries;
     }
 
+    @Override
+    public void setDataFilter(DataFilter filter) {
+        this.filter = filter;
+    }
+
     // DataListener
 
     @Override
@@ -273,7 +279,12 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     private void onTranslationUnitsReceived(Collection<TranslationUnit> units) throws IOException {
+        DataFilter filter = this.filter;
+
         for (TranslationUnit unit : units) {
+            if (filter != null && !filter.accept(unit))
+                continue;
+
             Long currentPosition = this.channels.get(unit.channel);
 
             if (currentPosition == null || currentPosition < unit.channelPosition) {

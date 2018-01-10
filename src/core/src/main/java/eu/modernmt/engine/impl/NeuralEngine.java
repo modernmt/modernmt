@@ -19,7 +19,7 @@ import java.util.Collection;
  */
 public class NeuralEngine extends Engine {
 
-    private static final ContributionOptions CONTRIBUTION_OPTIONS = new ContributionOptions(true, false);
+    private static final ContributionOptions CONTRIBUTION_OPTIONS = new ContributionOptions(true, true);
     private final NeuralDecoder decoder;
 
     public NeuralEngine(EngineConfig config) throws BootstrapException {
@@ -29,10 +29,9 @@ public class NeuralEngine extends Engine {
             NeuralDecoderConfig decoderConfig = (NeuralDecoderConfig) config.getDecoderConfig();
             if (decoderConfig.isEnabled()) {
                 this.decoder = decoderConfig.isUsingGPUs() ?
-                    new NeuralDecoder(new File(this.models, "decoder"), decoderConfig.getGPUs()) :
-                    new NeuralDecoder(new File(this.models, "decoder"), decoderConfig.getThreads());
-            }
-            else{
+                        new NeuralDecoder(new File(this.models, "decoder"), decoderConfig.getGPUs()) :
+                        new NeuralDecoder(new File(this.models, "decoder"), decoderConfig.getThreads());
+            } else {
                 this.decoder = null;
             }
         } catch (NeuralDecoderException e) {

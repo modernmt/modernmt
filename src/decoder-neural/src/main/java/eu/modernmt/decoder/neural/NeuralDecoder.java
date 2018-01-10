@@ -6,6 +6,7 @@ import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderListener;
 import eu.modernmt.decoder.DecoderWithNBest;
 import eu.modernmt.decoder.neural.execution.ExecutionQueue;
+import eu.modernmt.decoder.neural.memory.AlignmentDataFilter;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.decoder.neural.memory.TranslationMemory;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
@@ -25,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -41,22 +43,26 @@ public class NeuralDecoder implements Decoder, DecoderWithNBest, DataListenerPro
     private ExecutionQueue executor;
 
     private NeuralDecoder(File modelPath) throws NeuralDecoderException {
-        ModelConfigFile modelConfigFile;
+        ModelConfig config;
         try {
-            modelConfigFile = ModelConfigFile.load(new File(modelPath, "model.conf"));
+            config = ModelConfig.load(new File(modelPath, "model.conf"));
         } catch (IOException e) {
             throw new NeuralDecoderException("Failed to read file model.conf", e);
         }
 
-        this.directions = modelConfigFile.getAvailableTranslationDirections();
-        this.suggestionsLimit = modelConfigFile.getSuggestionsLimit();
+        this.directions = config.getAvailableTranslationDirections();
+        this.suggestionsLimit = config.getSuggestionsLimit();
 
         File storageModelPath = new File(modelPath, "memory");
         try {
-            this.memory = new LuceneTranslationMemory(new LanguageIndex(this.directions), storageModelPath, modelConfigFile.getQueryMinimumResults());
+            this.memory = new LuceneTranslationMemory(new LanguageIndex(this.directions), storageModelPath, config.getQueryMinimumResults());
         } catch (IOException e) {
             throw new NeuralDecoderException("Failed to initialize memory", e);
         }
+
+        Map<LanguagePair, Float> thresholds = config.getAlignmentThresholds();
+        if (thresholds != null && !thresholds.isEmpty())
+            this.memory.setDataFilter(new AlignmentDataFilter(thresholds));
     }
 
     public NeuralDecoder(File modelPath, int[] gpus) throws NeuralDecoderException {
