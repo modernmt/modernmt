@@ -52,7 +52,7 @@ public class QueryBuilder {
         int length = sentence.getWords().length;
         boolean isLongQuery = length > 4;
 
-        int minMatches = isLongQuery ? Math.max(1, (int) (length * .33)) : 1;
+        int minMatches = isLongQuery ? Math.max(1, (int) (length * .5)) : length;
         Analyzer analyzer = isLongQuery ? Analyzers.getLongQueryAnalyzer() : Analyzers.getShortQueryAnalyzer();
 
         // Language filter
