@@ -19,6 +19,8 @@ import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.splitter.SentenceSplitter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.util.*;
@@ -30,6 +32,8 @@ import java.util.concurrent.RejectedExecutionException;
  * Created by davide on 31/01/17.
  */
 public class TranslationFacade {
+
+    private static final Logger logger = LogManager.getLogger(TranslationFacade.class);
 
     public enum Priority {
         HIGH(0), NORMAL(1), BACKGROUND(2);  //three priority values are allowed
@@ -104,7 +108,12 @@ public class TranslationFacade {
             if (future == null)
                 future = node.submit(task);
 
-            return future.get();
+            Translation translation = future.get();
+
+            if (logger.isDebugEnabled())
+                logger.debug("Translation of " + translation.getSource().length() + " words took " + (((double) translation.getElapsedTime()) / 1000.) + "s");
+
+            return translation;
         } catch (InterruptedException e) {
             throw new SystemShutdownException(e);
         } catch (ExecutionException e) {
@@ -250,6 +259,8 @@ public class TranslationFacade {
             Postprocessor postprocessor = engine.getPostprocessor();
 
             try {
+                long begin = System.currentTimeMillis();
+
                 Sentence sentence = preprocessor.process(direction, text);
                 Translation translation;
 
@@ -293,6 +304,9 @@ public class TranslationFacade {
                     }
                     postprocessor.process(direction, hypotheses);
                 }
+
+                translation.setElapsedTime(System.currentTimeMillis() - begin);
+
                 return translation;
             } catch (ProcessingException e) {
                 throw new TranslationException("Problem while processing translation", e);
@@ -406,7 +420,7 @@ public class TranslationFacade {
         private Translation join(Sentence originalSentence, Sentence[] splitSentences, Translation[] splitTranslations) {
 
             /* get the sizes for the data structures of the "global" translation: wordsSize, wordAlignmentSize.
-            * [do not use tags because they are still projected in the translation */
+             * [do not use tags because they are still projected in the translation */
             int globalWordsSize = 0;
             int globalWordAlignmentSize = 0;
             for (Translation splitTranslation : splitTranslations) {

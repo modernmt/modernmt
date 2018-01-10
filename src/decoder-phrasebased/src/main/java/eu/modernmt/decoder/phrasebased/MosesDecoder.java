@@ -159,21 +159,12 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
         if (logger.isDebugEnabled())
             logger.debug("Translating: \"" + text + "\"");
 
-        long start = System.currentTimeMillis();
         TranslationXObject xtranslation = this.xtranslate(text,
                 context == null ? null : context.keys,
                 context == null ? null : context.values,
                 nbestListSize);
 
-        long elapsed = System.currentTimeMillis() - start;
-
-        Translation translation = xtranslation.getTranslation(sentence, this.featuresMap);
-        translation.setElapsedTime(elapsed);
-
-        if (logger.isDebugEnabled())
-            logger.debug("Translation of " + sentence.length() + " words took " + (((double) elapsed) / 1000.) + "s");
-
-        return translation;
+        return xtranslation.getTranslation(sentence, this.featuresMap);
     }
 
     private native TranslationXObject xtranslate(String text, long[] contextKeys, float[] contextValues, int nbest);
@@ -181,7 +172,7 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
     // DataListener
 
     @Override
-    public void onDataReceived(DataBatch batch) throws Exception {
+    public void onDataReceived(DataBatch batch) {
         DataBatchXObject xbatch = new DataBatchXObject(batch, this.direction);
 
         this.dataReceived(

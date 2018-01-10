@@ -99,9 +99,6 @@ public class NeuralDecoder implements Decoder, DecoderWithNBest, DataListenerPro
         if (!this.directions.contains(direction))
             throw new UnsupportedLanguageException(direction);
 
-        long start = System.currentTimeMillis();
-
-
         Translation translation;
 
         if (text.hasWords()) {
@@ -140,12 +137,6 @@ public class NeuralDecoder implements Decoder, DecoderWithNBest, DataListenerPro
             translation = Translation.emptyTranslation(text);
         }
 
-        long elapsed = System.currentTimeMillis() - start;
-        translation.setElapsedTime(elapsed);
-
-        if (logger.isDebugEnabled())
-            logger.debug("Translation of " + text.length() + " words took " + (((double) elapsed) / 1000.) + "s");
-
         return translation;
     }
 
@@ -159,7 +150,7 @@ public class NeuralDecoder implements Decoder, DecoderWithNBest, DataListenerPro
     // Closeable
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         IOUtils.closeQuietly(this.executor);
         IOUtils.closeQuietly(this.memory);
     }
