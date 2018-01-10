@@ -17,6 +17,7 @@ public class F1BleuRescorer implements Rescorer {
 
     private static final int N = 4;
     private static final double EPSILON = 0.1;
+    private static final float MAX_SUGGESTION_EXPANSION = 2.f;
 
     @Override
     public void rescore(Sentence input, ScoreEntry[] entries) {
@@ -27,12 +28,25 @@ public class F1BleuRescorer implements Rescorer {
     public void rescore(Sentence input, ScoreEntry[] entries, ContextVector context) {
         String[] inputWords = TokensOutputStream.tokens(input, false, true);
 
+        // Set negative score for suggestions too different in length
+        for (ScoreEntry entry : entries) {
+            float l1 = inputWords.length;
+            float l2 = entry.sentence.length;
+
+            float expansion = Math.max(l1, l2) / Math.min(l1, l2);
+
+            if (expansion > MAX_SUGGESTION_EXPANSION)
+                entry.score = -1;
+        }
+
         // Compute F1-BLEU score
         HashMap<NGram, Counter> inputNGrams = split(inputWords, N);
 
         for (ScoreEntry entry : entries) {
-            HashMap<NGram, Counter> entryNGrams = split(entry.sentence, N);
-            entry.score = getF1BleuScore(inputNGrams, inputWords.length, entryNGrams, entry.sentence.length);
+            if (entry.score >= 0) {
+                HashMap<NGram, Counter> entryNGrams = split(entry.sentence, N);
+                entry.score = getF1BleuScore(inputNGrams, inputWords.length, entryNGrams, entry.sentence.length);
+            }
         }
 
         // Apply context scores if possible
@@ -43,9 +57,16 @@ public class F1BleuRescorer implements Rescorer {
             }
 
             for (ScoreEntry entry : entries) {
-                Float contextScore = contextScores.get(entry.memory);
-                entry.score = entry.score * .5f + (contextScore == null ? 0.f : contextScore) * .5f;
+                if (entry.score >= 0) {
+                    Float contextScore = contextScores.get(entry.memory);
+                    entry.score = entry.score * .5f + (contextScore == null ? 0.f : contextScore) * .5f;
+                }
             }
+        }
+
+        for (ScoreEntry entry : entries) {
+            if (entry.score < 0)
+                entry.score = 0;
         }
 
         Arrays.sort(entries);
