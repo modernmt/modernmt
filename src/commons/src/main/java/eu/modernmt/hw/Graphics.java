@@ -24,7 +24,12 @@ public class Graphics {
     }
 
     private static int[] computeAvailableGPUs() throws IOException {
-        Process nvidia = Runtime.getRuntime().exec(new String[]{"nvidia-smi", "--list-gpus"});
+        Process nvidia;
+        try {
+            nvidia = Runtime.getRuntime().exec(new String[]{"nvidia-smi", "--list-gpus"});
+        } catch (IOException e) {
+            return new int[0];
+        }
 
         try {
             if (!nvidia.waitFor(10, TimeUnit.MINUTES))
