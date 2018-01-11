@@ -49,18 +49,18 @@ public class F1BleuRescorer implements Rescorer {
             }
         }
 
-        // Apply context scores if possible
-        if (context != null && context.size() > 0) {
-            HashMap<Long, Float> contextScores = new HashMap<>(context.size());
-            for (ContextVector.Entry ce : context) {
-                contextScores.put(ce.memory.getId(), ce.score);
-            }
+        // Apply context scores
+        HashMap<Long, Float> contextScores = new HashMap<>();
 
-            for (ScoreEntry entry : entries) {
-                if (entry.score >= 0) {
-                    Float contextScore = contextScores.get(entry.memory);
-                    entry.score = entry.score * .5f + (contextScore == null ? 0.f : contextScore) * .5f;
-                }
+        if (context != null && context.size() > 0) {
+            for (ContextVector.Entry ce : context)
+                contextScores.put(ce.memory.getId(), ce.score);
+        }
+
+        for (ScoreEntry entry : entries) {
+            if (entry.score >= 0) {
+                Float contextScore = contextScores.get(entry.memory);
+                entry.score = entry.score * .5f + (contextScore == null ? 0.f : contextScore) * .5f;
             }
         }
 
