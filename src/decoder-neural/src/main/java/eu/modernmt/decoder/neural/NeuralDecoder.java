@@ -18,6 +18,7 @@ import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
+import eu.modernmt.model.Word;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -116,10 +117,20 @@ public class NeuralDecoder implements Decoder, DecoderWithNBest, DataListenerPro
                 throw new NeuralDecoderException("Failed to retrieve suggestions from memory", e);
             }
 
-            if (suggestions != null && suggestions.length > 0)
-                translation = executor.execute(direction, text, suggestions, nbestListSize);
-            else
+            if (suggestions != null && suggestions.length > 0) {
+                // if perfect match, return suggestion instead
+                if (suggestions[0].score == 1.f) {
+                    Word[] words = new Word[suggestions[0].translation.length];
+                    for (int i = 0; i < words.length; i++)
+                        words[i] = new Word(suggestions[0].translation[i], " ");
+
+                    translation = new Translation(words, text, null);
+                } else {
+                    translation = executor.execute(direction, text, suggestions, nbestListSize);
+                }
+            } else {
                 translation = executor.execute(direction, text, nbestListSize);
+            }
 
             if (logger.isTraceEnabled()) {
                 String sourceText = TokensOutputStream.serialize(text, false, true);
