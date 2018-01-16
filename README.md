@@ -164,10 +164,10 @@ We also have an **MMT Enterprise Edition**, managed by the MMT company and not a
 - Enterprise Customer Support via Video Conference Call, Phone and Email on business hours and optionally 24x7.
 - Custom developments billed per hour of work.
 
-MMT Enterprise is avaialble in two operating modes:
+MMT Enterprise is avaialble in three operating modes:
 - **Private Memory** on Amazon Web Services. Privacy of data, low cost for excellent throughput and maintenance, customer support.
 - **Confidential** on Amazon Web Services. Higher privacy of data, higher cost for throughput and maintenance, customer support.
-- **On-Premise** on customer infrastructure, maximum privacy, software lincences, customer support.
+- **On-Premise** on customer infrastructure, maximum privacy, per server lincences, customer support.
 
 
 For any information please email Marcello Federico, mrcfdr@gmail.com
