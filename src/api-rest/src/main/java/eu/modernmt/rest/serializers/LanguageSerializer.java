@@ -11,7 +11,7 @@ import java.lang.reflect.Type;
 /**
  * Created by davide on 17/12/15.
  */
-public class LocaleSerializer implements JsonSerializer<Language> {
+public class LanguageSerializer implements JsonSerializer<Language> {
 
     @Override
     public JsonElement serialize(Language src, Type typeOfSrc, JsonSerializationContext context) {

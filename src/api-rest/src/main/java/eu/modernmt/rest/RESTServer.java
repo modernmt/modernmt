@@ -31,7 +31,7 @@ public class RESTServer {
         JSONSerializer.registerCustomSerializer(TranslationResponse.class, new TranslationResponseSerializer());
         JSONSerializer.registerCustomSerializer(Alignment.class, new AlignmentSerializer());
         JSONSerializer.registerCustomSerializer(ContextVectorResult.class, new ContextVectorResultSerializer());
-        JSONSerializer.registerCustomSerializer(Language.class, new LocaleSerializer());
+        JSONSerializer.registerCustomSerializer(Language.class, new LanguageSerializer());
         JSONSerializer.registerCustomSerializer(ImportJob.class, new ImportJobSerializer());
     }
 
