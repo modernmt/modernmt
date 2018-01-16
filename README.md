@@ -165,9 +165,9 @@ We also have an **MMT Enterprise Edition**, managed by the MMT company and not a
 - Custom developments billed per hour of work.
 
 MMT Enterprise is avaialble in two cloud-based operating modes:
-- **Private**  Privacy of data, low cost for excellent throughput and maintenance, customer support.
-- **Confidential** Higher privacy of data, higher cost for throughput and maintenance, customer support.
+- **Private**  Privacy of data, adaptivity, low cost for excellent throughput and maintenance, customer support.
+- **Confidential** Higher privacy of data, adaptivity, higher cost for throughput and maintenance, customer support.
 
-We can also provide support for large **On-Premise** installations.
+We can provide support for large **On-Premise** installations, too.
 
 For any information please email Marcello Federico, mrcfdr@gmail.com
