@@ -1,14 +1,14 @@
 package eu.modernmt.processing.numbers;
 
+import eu.modernmt.lang.Language;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Phrase;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.lang.UnsupportedLanguageException;
 
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -16,7 +16,7 @@ import java.util.Map;
  */
 public class NumericWordPostprocessor extends TextProcessor<Translation, Translation> {
 
-    public NumericWordPostprocessor(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
+    public NumericWordPostprocessor(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
     }
 

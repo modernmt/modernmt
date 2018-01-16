@@ -3,6 +3,7 @@ package eu.modernmt.cli;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.aligner.fastalign.FastAlign;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
@@ -14,7 +15,6 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Locale;
 
 /**
  * Created by davide on 18/09/17.
@@ -49,8 +49,8 @@ public class AlignerMain {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
-            Locale sourceLang = Locale.forLanguageTag(cli.getOptionValue("s"));
-            Locale targetLang = Locale.forLanguageTag(cli.getOptionValue("t"));
+            Language sourceLang = Language.fromString(cli.getOptionValue("s"));
+            Language targetLang = Language.fromString(cli.getOptionValue("t"));
             language = new LanguagePair(sourceLang, targetLang);
             model = new File(cli.getOptionValue("model"));
             source = new File(cli.getOptionValue("source"));

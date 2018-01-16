@@ -1,13 +1,13 @@
 package eu.modernmt.context.lucene.storage;
 
 import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
-import java.util.Locale;
 
 /**
  * Created by davide on 22/09/16.
@@ -34,8 +34,8 @@ public class CorpusBucket implements Closeable {
             String[] parts = line.split(",");
 
             long memory = Long.parseLong(parts[0]);
-            Locale source = Locale.forLanguageTag(parts[1]);
-            Locale target = Locale.forLanguageTag(parts[2]);
+            Language source = Language.fromString(parts[1]);
+            Language target = Language.fromString(parts[2]);
             long analyzerOffset = Long.parseUnsignedLong(parts[3], 16);
             long currentOffset = Long.parseUnsignedLong(parts[4], 16);
 
@@ -59,7 +59,7 @@ public class CorpusBucket implements Closeable {
     private final File path;
     private FileOutputStream stream = null;
 
-    private static String toString(Locale locale) {
+    private static String toString(Language locale) {
         return locale.toLanguageTag().replace('-', '_');
     }
 

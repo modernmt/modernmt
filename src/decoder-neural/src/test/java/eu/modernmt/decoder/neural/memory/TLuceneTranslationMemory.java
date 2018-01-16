@@ -4,6 +4,7 @@ import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import org.apache.lucene.document.Document;
@@ -56,7 +57,7 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
 
             String[] langs = doc.get("language").split("__");
 
-            LanguagePair language = new LanguagePair(Locale.forLanguageTag(langs[0]), Locale.forLanguageTag(langs[1]));
+            LanguagePair language = new LanguagePair(Language.fromString(langs[0]), Language.fromString(langs[1]));
             String source = doc.get("content::" + langs[0]);
             String target = doc.get("content::" + langs[1]);
 

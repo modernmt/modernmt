@@ -4,10 +4,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.rest.framework.routing.RouteTemplate;
-
-import java.util.Locale;
 
 public class Parameters {
 
@@ -181,35 +180,35 @@ public class Parameters {
         }
     }
 
-    public Locale getLocale(String name) throws ParameterParsingException {
-        return Locale.forLanguageTag(getString(name, false));
+    public Language getLanguage(String name) throws ParameterParsingException {
+        return Language.fromString(getString(name, false));
     }
 
-    public Locale getLocale(String name, Locale def) throws ParameterParsingException {
+    public Language getLanguage(String name, Language def) throws ParameterParsingException {
         String tag = getString(name, false, null);
-        return tag == null ? def : Locale.forLanguageTag(tag);
+        return tag == null ? def : Language.fromString(tag);
     }
 
-    public Locale[] getLocaleArray(String name) throws ParameterParsingException {
+    public Language[] getLanguageArray(String name) throws ParameterParsingException {
         String[] rawArray = getString(name, false).split(",");
-        Locale[] array = new Locale[rawArray.length];
+        Language[] array = new Language[rawArray.length];
 
         for (int i = 0; i < rawArray.length; i++)
-            array[i] = Locale.forLanguageTag(rawArray[i]);
+            array[i] = Language.fromString(rawArray[i]);
 
         return array;
     }
 
-    public Locale[] getLocaleArray(String name, Locale[] def) throws ParameterParsingException {
+    public Language[] getLanguageArray(String name, Language[] def) throws ParameterParsingException {
         String rawValue = getString(name, false, null);
         if (rawValue == null)
             return def;
 
         String[] rawArray = rawValue.split(",");
-        Locale[] array = new Locale[rawArray.length];
+        Language[] array = new Language[rawArray.length];
 
         for (int i = 0; i < rawArray.length; i++)
-            array[i] = Locale.forLanguageTag(rawArray[i]);
+            array[i] = Language.fromString(rawArray[i]);
 
         return array;
     }
@@ -226,8 +225,8 @@ public class Parameters {
      * @throws ParameterParsingException
      */
     public LanguagePair getLanguagePair(String sourceName, String targetName, LanguagePair def) throws ParameterParsingException {
-        Locale sourceLanguage = getLocale(sourceName, null);
-        Locale targetLanguage = getLocale(targetName, null);
+        Language sourceLanguage = getLanguage(sourceName, null);
+        Language targetLanguage = getLanguage(targetName, null);
 
         if (sourceLanguage == null && targetLanguage == null) {
             return def;
@@ -249,7 +248,7 @@ public class Parameters {
      * @throws ParameterParsingException if the parameter with name sourceName and/or the parameter with name targetName can not be found in the request
      */
     public LanguagePair getLanguagePair(String sourceName, String targetName) throws ParameterParsingException {
-        return new LanguagePair(getLocale(sourceName), getLocale(targetName));
+        return new LanguagePair(getLanguage(sourceName), getLanguage(targetName));
     }
 
 

@@ -1,8 +1,8 @@
 package eu.modernmt.cluster.storage.rsync;
 
-import eu.modernmt.engine.Engine;
 import eu.modernmt.cluster.storage.DirectorySynchronizer;
 import eu.modernmt.cluster.storage.StorageService;
+import eu.modernmt.engine.Engine;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;

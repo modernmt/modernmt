@@ -29,7 +29,7 @@ public class CassandraIdGenerator {
         that has been employed when storing an object in that table.*/
 
         /*statement for getting the last ID used in the table under analysis
-        * from the Counters_table*/
+         * from the Counters_table*/
         BuiltStatement get = QueryBuilder.select("table_counter").
                 from(CassandraDatabase.COUNTERS_TABLE).
                 where(QueryBuilder.eq("table_id", tableId));
@@ -53,8 +53,8 @@ public class CassandraIdGenerator {
                     onlyIf(QueryBuilder.eq("table_counter", oldCount));
 
             /* Try to execute the statement; if it succeeded,
-            * then it means that no-one has updated the last ID
-            * after this thread has read it, so it can use it*/
+             * then it means that no-one has updated the last ID
+             * after this thread has read it, so it can use it*/
             if (CassandraUtils.checkedExecute(connection, set).wasApplied())
                 return oldCount + 1L;
         }
@@ -81,11 +81,11 @@ public class CassandraIdGenerator {
                 .where(QueryBuilder.eq("table_id", tableID));
 
         /*Try to update the last ID and check if you have succeeded.
-        * If you have not succeeded, try again.
-        * If succeeded OR if the new value you are trying to write is too small
-        * (e.g. a bigger value was written in the meantime,
-        * and the advance is not successful)
-        * return whether you have the advance or not*/
+         * If you have not succeeded, try again.
+         * If succeeded OR if the new value you are trying to write is too small
+         * (e.g. a bigger value was written in the meantime,
+         * and the advance is not successful)
+         * return whether you have the advance or not*/
         while (true) {
             boolean wasApplied = CassandraUtils.checkedExecute(connection, update).wasApplied();
             long counter = CassandraUtils.checkedExecute(connection, get).one().getLong("table_counter");

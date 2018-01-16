@@ -18,8 +18,8 @@ public class IndexMap {
     positions[i] represents the corresponding position in the SentenceBuilder original String*/
     private int[] positions;
     /* Length of the relevant portion in the positions array;
-    * (positions is managed as a buffer, so as a data structure it has constant length.
-    * Nonetheless, its constant length (positions.length) may not be the same as the length of its relevant portion)*/
+     * (positions is managed as a buffer, so as a data structure it has constant length.
+     * Nonetheless, its constant length (positions.length) may not be the same as the length of its relevant portion)*/
     private int arrayLength;
 
     /**
@@ -70,7 +70,7 @@ public class IndexMap {
             this.positions = new int[this.arrayLength];
 
         /*positions is initialized so that in each position i it contains the value i itself:
-        * therefore, at the very beginning it maps the original string with itself*/
+         * therefore, at the very beginning it maps the original string with itself*/
         for (int i = 0; i < this.arrayLength; i++) {
             positions[i] = i;
         }
@@ -110,8 +110,8 @@ public class IndexMap {
             /*shift rightwards the array portion that follows the end of the text to replace*/
             shiftPortion(end, this.arrayLength, newLength - oldLength);
             /*update the positions between start and the new end
-            * with values that distribute proportionally in relation to
-            * the values at start and at the end of the new portion*/
+             * with values that distribute proportionally in relation to
+             * the values at start and at the end of the new portion*/
             double ratio = ((double) newLength) / oldLength;
             for (int i = 1; i < newLength; i++) {
                 this.positions[start + i] = (int) Math.round(this.positions[start] + ((this.positions[start + i] - positions[start]) * ratio));
@@ -121,21 +121,21 @@ public class IndexMap {
         /*else, the replacement is shorter than the text to replace*/
         else if (newLength < oldLength) {
             /*first update the portion between start and the new end
-            * with values that distribute proportionally in relation to
-            * the values at start and at the end of the new portion*/
+             * with values that distribute proportionally in relation to
+             * the values at start and at the end of the new portion*/
             double ratio = ((double) newLength) / oldLength;
             for (int i = 1; i < newLength; i++) {
                 this.positions[start + i] = (int) Math.round(this.positions[start] + ((this.positions[start + i] - positions[start]) * ratio));
             }
 
             /*after that shift leftwards the whole portion of the array
-            * that comes after the end of the text to replace*/
+             * that comes after the end of the text to replace*/
 
             /*if the replacement length is 0, it means we are
             either at the beginning of the string or at its end*/
             if (newLength == 0) {
                 /*if this is the beginning of the string
-                * actually we can do the same update we usually make*/
+                 * actually we can do the same update we usually make*/
                 if (start == 0) {
                     shiftPortion(end, this.positions.length, newLength - oldLength);
                 }

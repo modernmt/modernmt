@@ -1,10 +1,13 @@
 package eu.modernmt.processing.splitter;
 
-import eu.modernmt.lang.Languages;
+import eu.modernmt.lang.Language;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A SentenceSplitter is a preprocessing component that is capable of
@@ -15,14 +18,14 @@ import java.util.*;
 public abstract class SentenceSplitter {
 
     private static final SentenceSplitter DEFAULT_IMPL = new DefaultSentenceSplitter();
-    private static final Map<Locale, SentenceSplitter> IMPLEMENTATIONS = new HashMap<>();
+    private static final Map<Language, SentenceSplitter> IMPLEMENTATIONS = new HashMap<>();
     private static final int MIN_SENTENCE_SIZE = 20;
 
     static {
-        IMPLEMENTATIONS.put(Languages.ENGLISH, DEFAULT_IMPL);
+        IMPLEMENTATIONS.put(Language.ENGLISH, DEFAULT_IMPL);
     }
 
-    public static SentenceSplitter forLanguage(Locale locale) {
+    public static SentenceSplitter forLanguage(Language locale) {
         return IMPLEMENTATIONS.getOrDefault(locale, DEFAULT_IMPL);
     }
 

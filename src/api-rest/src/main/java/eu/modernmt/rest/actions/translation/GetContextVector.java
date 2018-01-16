@@ -3,6 +3,7 @@ package eu.modernmt.rest.actions.translation;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.io.FileProxy;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.persistence.PersistenceException;
@@ -15,7 +16,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -46,7 +46,7 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
     @Override
     protected ContextVectorResult execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, PersistenceException, IOException {
         Params params = (Params) _params;
-        Map<Locale, ContextVector> contexts;
+        Map<Language, ContextVector> contexts;
 
         File temp = null;
 
@@ -91,8 +91,8 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
 
         public static final int DEFAULT_LIMIT = 10;
 
-        public final Locale source;
-        public final Locale[] targets;
+        public final Language source;
+        public final Language[] targets;
         public final int limit;
         public final String text;
         public final File localFile;
@@ -105,15 +105,15 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
 
             this.limit = getInt("limit", DEFAULT_LIMIT);
 
-            Locale sourceLanguage = getLocale("source", null);
-            Locale[] targetLanguages = getLocaleArray("targets", null);
+            Language sourceLanguage = getLanguage("source", null);
+            Language[] targetLanguages = getLanguageArray("targets", null);
 
             if (sourceLanguage == null && targetLanguages == null) {
                 LanguagePair engineDirection = ModernMT.getNode().getEngine().getLanguages().asSingleLanguagePair();
 
                 if (engineDirection != null) {
                     this.source = engineDirection.source;
-                    this.targets = new Locale[]{engineDirection.target};
+                    this.targets = new Language[]{engineDirection.target};
                     this.backwardCompatible = true;
                 } else {
                     throw new ParameterParsingException("source");

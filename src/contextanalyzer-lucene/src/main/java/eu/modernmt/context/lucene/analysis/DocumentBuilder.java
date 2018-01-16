@@ -1,5 +1,6 @@
 package eu.modernmt.context.lucene.analysis;
 
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.Corpus;
 import org.apache.lucene.document.Document;
@@ -12,7 +13,6 @@ import org.apache.lucene.util.NumericUtils;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Locale;
 
 /**
  * Created by davide on 23/09/15.
@@ -57,9 +57,9 @@ public class DocumentBuilder {
         return document.get(DOCID_FIELD);
     }
 
-    public static Locale getContentFieldLanguage(String fieldName) {
+    public static Language getContentFieldLanguage(String fieldName) {
         if (fieldName.startsWith(CONTENT_PREFIX_FIELD))
-            return Locale.forLanguageTag(fieldName.substring(CONTENT_PREFIX_FIELD.length()));
+            return Language.fromString(fieldName.substring(CONTENT_PREFIX_FIELD.length()));
         else
             return null;
     }

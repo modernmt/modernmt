@@ -1,5 +1,6 @@
 package eu.modernmt.model.corpus;
 
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
@@ -73,7 +74,7 @@ public class Corpora {
         public int count = 0;
     }
 
-    public static List<Corpus> list(Locale language, File... roots) throws IOException {
+    public static List<Corpus> list(Language language, File... roots) throws IOException {
         String tag = language.toLanguageTag();
 
         ArrayList<Corpus> corpora = new ArrayList<>();
@@ -89,7 +90,7 @@ public class Corpora {
         return corpora;
     }
 
-    public static void list(Collection<Corpus> monolingualOutput, boolean monolingualIsTarget, Collection<MultilingualCorpus> bilingualOutput, Locale sourceLanguage, Locale targetLanguage, File... roots) throws IOException {
+    public static void list(Collection<Corpus> monolingualOutput, boolean monolingualIsTarget, Collection<MultilingualCorpus> bilingualOutput, Language sourceLanguage, Language targetLanguage, File... roots) throws IOException {
         for (File directory : roots) {
             HashMap<String, CorpusBuilder> builders = new HashMap<>();
 
@@ -109,7 +110,7 @@ public class Corpora {
                 if (TMX_EXTENSION.equalsIgnoreCase(extension)) {
                     builders.put(filename, new CorpusBuilder(filename, sourceLanguage, targetLanguage, file));
                 } else {
-                    Locale locale = Locale.forLanguageTag(extension);
+                    Language locale = Language.fromString(extension);
 
                     if (sourceLanguage.getLanguage().equals(locale.getLanguage())) {
                         CorpusBuilder builder = builders.get(filename);
@@ -161,11 +162,11 @@ public class Corpora {
         private File targetFile = null;
         private final File tmxFile;
 
-        CorpusBuilder(String name, Locale sourceLanguage, Locale targetLanguage) {
+        CorpusBuilder(String name, Language sourceLanguage, Language targetLanguage) {
             this(name, sourceLanguage, targetLanguage, null);
         }
 
-        CorpusBuilder(String name, Locale sourceLanguage, Locale targetLanguage, File tmxFile) {
+        CorpusBuilder(String name, Language sourceLanguage, Language targetLanguage, File tmxFile) {
             this.language = new LanguagePair(sourceLanguage, targetLanguage);
             this.tmxFile = tmxFile;
             this.name = name;

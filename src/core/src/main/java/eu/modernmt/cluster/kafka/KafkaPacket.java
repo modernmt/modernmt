@@ -4,12 +4,12 @@ import eu.modernmt.data.DataMessage;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Date;
-import java.util.Locale;
 
 /**
  * Created by davide on 06/09/16.
@@ -66,8 +66,8 @@ public class KafkaPacket {
             case TYPE_OVERWRITE:
                 Charset charset = DefaultCharset.get();
 
-                Locale source = Locale.forLanguageTag(deserializeString(buffer, charset));
-                Locale target = Locale.forLanguageTag(deserializeString(buffer, charset));
+                Language source = Language.fromString(deserializeString(buffer, charset));
+                Language target = Language.fromString(deserializeString(buffer, charset));
                 direction = new LanguagePair(source, target);
 
                 sentence = deserializeString(buffer, charset);

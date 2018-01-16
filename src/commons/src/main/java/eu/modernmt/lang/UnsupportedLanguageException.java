@@ -1,7 +1,5 @@
 package eu.modernmt.lang;
 
-import java.util.Locale;
-
 /**
  * Created by davide on 27/07/17.
  */
@@ -9,22 +7,22 @@ public class UnsupportedLanguageException extends RuntimeException {
 
     private final LanguagePair languagePair;
 
-    private static String toString(Locale language) {
+    private static String toString(Language language) {
         return language == null ? "[null]" : language.toLanguageTag();
     }
 
-    private static String makeMessage(Locale source, Locale target) {
+    private static String makeMessage(Language source, Language target) {
         if (source != null && target != null)
             return "Language pair not supported: " + toString(source) + " > " + toString(target);
         else
             return "Language not supported: " + toString(source == null ? target : source);
     }
 
-    public UnsupportedLanguageException(Locale language) {
+    public UnsupportedLanguageException(Language language) {
         this(language, null);
     }
 
-    public UnsupportedLanguageException(Locale source, Locale target) {
+    public UnsupportedLanguageException(Language source, Language target) {
         this(new LanguagePair(source, target));
     }
 

@@ -1,10 +1,9 @@
 package eu.modernmt.config.xml;
 
+import eu.modernmt.lang.Language;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
-import java.util.Locale;
 
 /**
  * Created by davide on 04/01/17.
@@ -108,12 +107,12 @@ abstract class XMLAbstractBuilder {
         return getIntAttribute(element, attr);
     }
 
-    protected static Locale getLocaleAttribute(Element element, String attr) {
+    protected static Language getLocaleAttribute(Element element, String attr) {
         String value = getStringAttribute(element, attr);
-        return value == null ? null : Locale.forLanguageTag(value);
+        return value == null ? null : Language.fromString(value);
     }
 
-    protected Locale getLocaleAttribute(String attr) {
+    protected Language getLocaleAttribute(String attr) {
         return getLocaleAttribute(element, attr);
     }
 

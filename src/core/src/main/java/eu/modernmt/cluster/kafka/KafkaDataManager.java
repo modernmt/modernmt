@@ -109,7 +109,7 @@ public class KafkaDataManager implements DataManager {
                     normalizedPrefix.length() + contributionsTopicName.length()) + 1;
 
             /*if even only one of the two names are too long,
-            * cut away a part of the engine name from both of them*/
+             * cut away a part of the engine name from both of them*/
             if (length > maxLength)
                 normalizedPrefix = normalizedPrefix.substring(0, length - maxLength - 1).replaceAll("/[^A-Za-z0-9\\._\\-]/", "");
 

@@ -1,5 +1,6 @@
 package eu.modernmt.training;
 
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.BaseMultilingualCorpus;
 
@@ -7,7 +8,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.Locale;
 
 /**
  * Created by davide on 14/03/16.
@@ -15,7 +15,7 @@ import java.util.Locale;
 public class MockMultilingualCorpus extends BaseMultilingualCorpus {
 
     private static final long MOCK_EPOCH = new Date().getTime();
-    private static final LanguagePair MOCK_LANGUAGE = new LanguagePair(Locale.ENGLISH, Locale.ITALIAN);
+    private static final LanguagePair MOCK_LANGUAGE = new LanguagePair(Language.ENGLISH, Language.ITALIAN);
 
     private final String name;
     private final StringPair[] lines;

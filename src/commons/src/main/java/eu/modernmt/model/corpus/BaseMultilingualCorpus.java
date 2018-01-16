@@ -2,12 +2,12 @@ package eu.modernmt.model.corpus;
 
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -65,7 +65,7 @@ public abstract class BaseMultilingualCorpus implements MultilingualCorpus {
         }
 
         @Override
-        public Locale getLanguage() {
+        public Language getLanguage() {
             return source ? direction.source : direction.target;
         }
 

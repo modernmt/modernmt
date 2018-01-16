@@ -4,6 +4,7 @@ import eu.modernmt.io.DefaultCharset;
 import eu.modernmt.io.FileProxy;
 import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.io.UnixLineWriter;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.BaseMultilingualCorpus;
 import org.apache.commons.io.FilenameUtils;
@@ -12,7 +13,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Locale;
 
 /**
  * Created by davide on 31/07/17.
@@ -96,7 +96,7 @@ public class CompactFileCorpus extends BaseMultilingualCorpus {
 
             LanguagePair language = cachedLanguagePairs.computeIfAbsent(parts[1], key -> {
                 String[] langs = key.split(" ");
-                return new LanguagePair(Locale.forLanguageTag(langs[0]), Locale.forLanguageTag(langs[1]));
+                return new LanguagePair(Language.fromString(langs[0]), Language.fromString(langs[1]));
             });
 
             return new StringPair(language, source, target, timestamp);

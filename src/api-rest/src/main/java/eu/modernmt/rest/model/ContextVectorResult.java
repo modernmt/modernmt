@@ -1,8 +1,8 @@
 package eu.modernmt.rest.model;
 
+import eu.modernmt.lang.Language;
 import eu.modernmt.model.ContextVector;
 
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -10,11 +10,11 @@ import java.util.Map;
  */
 public class ContextVectorResult {
 
-    public final Locale source;
-    public final Map<Locale, ContextVector> map;
+    public final Language source;
+    public final Map<Language, ContextVector> map;
     public final boolean backwardCompatible;
 
-    public ContextVectorResult(Locale source, Map<Locale, ContextVector> map, boolean backwardCompatible) {
+    public ContextVectorResult(Language source, Map<Language, ContextVector> map, boolean backwardCompatible) {
         this.map = map;
         this.source = source;
         this.backwardCompatible = backwardCompatible;

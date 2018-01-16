@@ -1,6 +1,6 @@
 package eu.modernmt.processing.tokenizer.languagetool;
 
-import eu.modernmt.lang.Languages;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
@@ -14,7 +14,10 @@ import org.languagetool.tokenizers.km.KhmerWordTokenizer;
 import org.languagetool.tokenizers.ml.MalayalamWordTokenizer;
 import org.languagetool.tokenizers.uk.UkrainianWordTokenizer;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -26,7 +29,7 @@ import java.util.stream.Collectors;
  * <p>
  * It has knowledge of all the tokenizer classes that languageTool can employ,
  * one for each source language that languageTool supports.
- * The languages that the languageTool library supports are:
+ * The Language that the languageTool library supports are:
  * Breton, Esperanto, Galician, Khmer, Malayalam, Ukrainian, Tagalog.
  */
 public class LanguageToolTokenizer extends TextProcessor<SentenceBuilder, SentenceBuilder> {
@@ -34,32 +37,32 @@ public class LanguageToolTokenizer extends TextProcessor<SentenceBuilder, Senten
       this map stores a couple
        <language -> Class of the languageTool tokenizer for that language>
 
-        The language is a Locale object, obtained as Languages.LANGUAGE_NAME
+        The language is a Language object, obtained as Language.LANGUAGE_NAME
         The Tokenizer is taken from languageTool library as LanguageNameTokenizer.class.
         In languageTool, all specific Tokenizers extend a common interface Tokenizer.*/
-    private static final Map<Locale, Class<? extends org.languagetool.tokenizers.Tokenizer>> TOKENIZERS = new HashMap<>();
+    private static final Map<Language, Class<? extends org.languagetool.tokenizers.Tokenizer>> TOKENIZERS = new HashMap<>();
 
     static {
-        TOKENIZERS.put(Languages.BRETON, BretonWordTokenizer.class);
-        TOKENIZERS.put(Languages.ESPERANTO, EsperantoWordTokenizer.class);
-        TOKENIZERS.put(Languages.GALICIAN, GalicianWordTokenizer.class);
-        TOKENIZERS.put(Languages.KHMER, KhmerWordTokenizer.class);
-        TOKENIZERS.put(Languages.MALAYALAM, MalayalamWordTokenizer.class);
-        TOKENIZERS.put(Languages.UKRAINIAN, UkrainianWordTokenizer.class);
-        TOKENIZERS.put(Languages.TAGALOG, TagalogWordTokenizer.class);
+        TOKENIZERS.put(Language.BRETON, BretonWordTokenizer.class);
+        TOKENIZERS.put(Language.ESPERANTO, EsperantoWordTokenizer.class);
+        TOKENIZERS.put(Language.GALICIAN, GalicianWordTokenizer.class);
+        TOKENIZERS.put(Language.KHMER, KhmerWordTokenizer.class);
+        TOKENIZERS.put(Language.MALAYALAM, MalayalamWordTokenizer.class);
+        TOKENIZERS.put(Language.UKRAINIAN, UkrainianWordTokenizer.class);
+        TOKENIZERS.put(Language.TAGALOG, TagalogWordTokenizer.class);
 
         /* Excluded tokenizers */
-//        TOKENIZERS.put(Languages.CATALAN, CatalanWordTokenizer.class);
-//        TOKENIZERS.put(Languages.GREEK, GreekWordTokenizer.class);
-//        TOKENIZERS.put(Languages.ENGLISH, EnglishWordTokenizer.class);
-//        TOKENIZERS.put(Languages.SPANISH, SpanishWordTokenizer.class);
-//        TOKENIZERS.put(Languages.JAPANESE, JapaneseWordTokenizer.class);
-//        TOKENIZERS.put(Languages.DUTCH, DutchWordTokenizer.class);
-//        TOKENIZERS.put(Languages.POLISH, PolishWordTokenizer.class);
-//        TOKENIZERS.put(Languages.ROMANIAN, RomanianWordTokenizer.class);
+//        TOKENIZERS.put(Language.CATALAN, CatalanWordTokenizer.class);
+//        TOKENIZERS.put(Language.GREEK, GreekWordTokenizer.class);
+//        TOKENIZERS.put(Language.ENGLISH, EnglishWordTokenizer.class);
+//        TOKENIZERS.put(Language.SPANISH, SpanishWordTokenizer.class);
+//        TOKENIZERS.put(Language.JAPANESE, JapaneseWordTokenizer.class);
+//        TOKENIZERS.put(Language.DUTCH, DutchWordTokenizer.class);
+//        TOKENIZERS.put(Language.POLISH, PolishWordTokenizer.class);
+//        TOKENIZERS.put(Language.ROMANIAN, RomanianWordTokenizer.class);
     }
 
-    /*among all tokenizers for all languages supported by languageTool,
+    /*among all tokenizers for all Language supported by languageTool,
      * this is the tokenizer for the source language
      * (the language of the SentenceBuilder string to edit)*/
     private org.languagetool.tokenizers.Tokenizer tokenizer;
@@ -75,7 +78,7 @@ public class LanguageToolTokenizer extends TextProcessor<SentenceBuilder, Senten
      * @param targetLanguage the language the input String must be translated to
      * @throws UnsupportedLanguageException the requested language is not supported by this software
      */
-    public LanguageToolTokenizer(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
+    public LanguageToolTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
         Class<? extends org.languagetool.tokenizers.Tokenizer> tokenizerClass = TOKENIZERS.get(sourceLanguage);

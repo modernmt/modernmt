@@ -2,6 +2,7 @@ package eu.modernmt.cli;
 
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.io.IOCorporaUtils;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
@@ -12,7 +13,6 @@ import org.apache.logging.log4j.Level;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.Locale;
 
 /**
  * Created by davide on 04/07/16.
@@ -30,13 +30,13 @@ public class ConvertMain {
     }
 
     private interface InputFormat {
-        MultilingualCorpus parse(Locale sourceLanguage, Locale targetLanguage, File[] files) throws ParseException;
+        MultilingualCorpus parse(Language sourceLanguage, Language targetLanguage, File[] files) throws ParseException;
 
     }
 
     private static class TMXInputFormat implements InputFormat {
         @Override
-        public MultilingualCorpus parse(Locale sourceLanguage, Locale targetLanguage, File[] files) throws ParseException {
+        public MultilingualCorpus parse(Language sourceLanguage, Language targetLanguage, File[] files) throws ParseException {
             if (files.length != 1)
                 throw new ParseException("Invalid number of arguments: expected 1 file");
             return new TMXCorpus(files[0]);
@@ -45,7 +45,7 @@ public class ConvertMain {
 
     private static class CompactInputFormat implements InputFormat {
         @Override
-        public MultilingualCorpus parse(Locale sourceLanguage, Locale targetLanguage, File[] files) throws ParseException {
+        public MultilingualCorpus parse(Language sourceLanguage, Language targetLanguage, File[] files) throws ParseException {
             if (files.length != 1)
                 throw new ParseException("Invalid number of arguments: expected 1 file");
             return new CompactFileCorpus(files[0]);
@@ -54,7 +54,7 @@ public class ConvertMain {
 
     private static class ParallelFileInputFormat implements InputFormat {
         @Override
-        public MultilingualCorpus parse(Locale sourceLanguage, Locale targetLanguage, File[] files) throws ParseException {
+        public MultilingualCorpus parse(Language sourceLanguage, Language targetLanguage, File[] files) throws ParseException {
             if (files.length != 2)
                 throw new ParseException("Invalid number of arguments: expected 2 files");
             if (sourceLanguage == null)
@@ -90,8 +90,8 @@ public class ConvertMain {
 
         public final MultilingualCorpus input;
         public final MultilingualCorpus output;
-        public final Locale sourceLanguage;
-        public final Locale targetLanguage;
+        public final Language sourceLanguage;
+        public final Language targetLanguage;
 
         private MultilingualCorpus getCorpusInstance(CommandLine cli, String prefix) throws ParseException {
             String formatName = cli.getOptionValue(prefix + "-format");
@@ -113,8 +113,8 @@ public class ConvertMain {
             CommandLine cli = parser.parse(cliOptions, args);
 
             /*source and target language may be null if conversion is from tmx to compact or vice versa*/
-            sourceLanguage = cli.hasOption('s') ? Locale.forLanguageTag(cli.getOptionValue("s")) : null;
-            targetLanguage = cli.hasOption('t') ? Locale.forLanguageTag(cli.getOptionValue("t")) : null;
+            sourceLanguage = cli.hasOption('s') ? Language.fromString(cli.getOptionValue("s")) : null;
+            targetLanguage = cli.hasOption('t') ? Language.fromString(cli.getOptionValue("t")) : null;
 
             input = getCorpusInstance(cli, "input");
             output = getCorpusInstance(cli, "output");

@@ -1,12 +1,11 @@
 package eu.modernmt.context.lucene.analysis;
 
 import eu.modernmt.context.lucene.analysis.lang.LanguageAnalyzer;
+import eu.modernmt.lang.Language;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenCountAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-
-import java.util.Locale;
 
 public class CorpusAnalyzer extends DelegatingAnalyzerWrapper {
 
@@ -20,7 +19,7 @@ public class CorpusAnalyzer extends DelegatingAnalyzerWrapper {
     protected Analyzer getWrappedAnalyzer(String fieldName) {
         Analyzer analyzer;
 
-        Locale language = DocumentBuilder.getContentFieldLanguage(fieldName);
+        Language language = DocumentBuilder.getContentFieldLanguage(fieldName);
         if (language == null)
             analyzer = new StandardAnalyzer();
         else

@@ -1,11 +1,11 @@
 package eu.modernmt.processing.chars;
 
+import eu.modernmt.lang.Language;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.string.SentenceBuilder;
 
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -27,7 +27,7 @@ public class WhitespacesNormalizer extends TextProcessor<SentenceBuilder, Senten
      * @param targetLanguage the language the input String must be translated to
      * @throws UnsupportedLanguageException the requested language is not supported by this software
      */
-    public WhitespacesNormalizer(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
+    public WhitespacesNormalizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
     }
 
@@ -66,21 +66,21 @@ public class WhitespacesNormalizer extends TextProcessor<SentenceBuilder, Senten
             /*if the current character is a whitespace character*/
             if (isWhitespace(c)) {
                 /*if whitespaceStart is still -1,
-                * then this is the first whitespace char in a new whitespace chars sequence
-                * so update whitespaceStart to the current position*/
+                 * then this is the first whitespace char in a new whitespace chars sequence
+                 * so update whitespaceStart to the current position*/
                 if (whitespaceStart == -1)
                     whitespaceStart = i;
                      /*else, this is a whitespace char but it is not the first in the sequence,
                      so do nothing*/
 
-             /*if the current character is not a whitespace character*/
+                /*if the current character is not a whitespace character*/
             } else {
                 if (whitespaceStart >= 0) {
                     /*if the whitespace sequence is at the beginning of the string
                     the editor must just delete it*/
                     if (sentenceBegin)
                         editor.delete(whitespaceStart, i - whitespaceStart);
-                    /*else, it the editor must replace it with a blank space (" ")*/
+                        /*else, it the editor must replace it with a blank space (" ")*/
                     else
                         editor.replace(whitespaceStart, i - whitespaceStart, " ");
                     /*in both cases, mark that we are not in a whitespace sequence anymore*/
@@ -92,8 +92,8 @@ public class WhitespacesNormalizer extends TextProcessor<SentenceBuilder, Senten
         }
 
         /*if the string ends with a whitespace sequence,
-        * after the scan is over whitespaceStart will still be >= 0;
-        * in this case too these whitespaces must be deleted, not just replaced*/
+         * after the scan is over whitespaceStart will still be >= 0;
+         * in this case too these whitespaces must be deleted, not just replaced*/
         if (whitespaceStart >= 0)
             editor.delete(whitespaceStart, i - whitespaceStart);
 

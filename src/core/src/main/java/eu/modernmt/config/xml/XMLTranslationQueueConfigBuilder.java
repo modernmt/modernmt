@@ -1,7 +1,6 @@
 package eu.modernmt.config.xml;
 
 import eu.modernmt.config.ConfigException;
-import eu.modernmt.config.DatabaseConfig;
 import eu.modernmt.config.TranslationQueueConfig;
 import org.w3c.dom.Element;
 

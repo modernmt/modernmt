@@ -1,12 +1,12 @@
 package eu.modernmt.processing.xml;
 
+import eu.modernmt.lang.Language;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Tag;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.string.SentenceBuilder;
 
-import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 
@@ -28,7 +28,7 @@ public class XMLTagIdentifier extends TextProcessor<SentenceBuilder, SentenceBui
      * @param targetLanguage the language the input String must be translated to
      * @throws UnsupportedLanguageException the requested language is not supported by this software
      */
-    public XMLTagIdentifier(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
+    public XMLTagIdentifier(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
     }
 
@@ -56,8 +56,8 @@ public class XMLTagIdentifier extends TextProcessor<SentenceBuilder, SentenceBui
         SentenceBuilder.Editor editor = builder.edit();
 
         /*for each tag found,
-        * ask the creation of a separate Tag token
-        * and replace the tag text on the StringBuilder currentString with " " */
+         * ask the creation of a separate Tag token
+         * and replace the tag text on the StringBuilder currentString with " " */
         while (m.find()) {
             int start = m.start();
             int end = m.end();

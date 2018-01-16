@@ -1,11 +1,11 @@
 package eu.modernmt.processing.xml;
 
+import eu.modernmt.lang.Language;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.string.SentenceBuilder;
 
-import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 
@@ -29,7 +29,7 @@ public class XMLEntityEscaper extends TextProcessor<SentenceBuilder, SentenceBui
      * @param targetLanguage the language the input String must be translated to
      * @throws UnsupportedLanguageException the requested language is not supported by this software
      */
-    public XMLEntityEscaper(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
+    public XMLEntityEscaper(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
     }
 
@@ -61,9 +61,9 @@ public class XMLEntityEscaper extends TextProcessor<SentenceBuilder, SentenceBui
         SentenceBuilder.Editor editor = builder.edit();
 
         /*for each entity found,
-        * ask the editor to replace the entity text
-        * with the character it stands for,
-        * obtained by asking it to the XMLCharacterEntity*/
+         * ask the editor to replace the entity text
+         * with the character it stands for,
+         * obtained by asking it to the XMLCharacterEntity*/
         while (m.find()) {
             int start = m.start();
             int end = m.end();

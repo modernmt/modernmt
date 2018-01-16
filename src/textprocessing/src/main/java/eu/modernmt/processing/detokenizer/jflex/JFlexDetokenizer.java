@@ -1,9 +1,9 @@
 package eu.modernmt.processing.detokenizer.jflex;
 
-import eu.modernmt.lang.Languages;
+import eu.modernmt.lang.Language;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.ProcessingException;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.detokenizer.Detokenizer;
 import eu.modernmt.processing.detokenizer.jflex.annotators.EnglishSpaceAnnotator;
 import eu.modernmt.processing.detokenizer.jflex.annotators.FrenchSpaceAnnotator;
@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -22,17 +21,17 @@ import java.util.Map;
  */
 public class JFlexDetokenizer extends Detokenizer {
 
-    private static final Map<Locale, Class<? extends JFlexSpaceAnnotator>> ANNOTATORS = new HashMap<>();
+    private static final Map<Language, Class<? extends JFlexSpaceAnnotator>> ANNOTATORS = new HashMap<>();
 
     static {
-        ANNOTATORS.put(Languages.ENGLISH, EnglishSpaceAnnotator.class);
-        ANNOTATORS.put(Languages.ITALIAN, ItalianSpaceAnnotator.class);
-        ANNOTATORS.put(Languages.FRENCH, FrenchSpaceAnnotator.class);
+        ANNOTATORS.put(Language.ENGLISH, EnglishSpaceAnnotator.class);
+        ANNOTATORS.put(Language.ITALIAN, ItalianSpaceAnnotator.class);
+        ANNOTATORS.put(Language.FRENCH, FrenchSpaceAnnotator.class);
     }
 
     private final JFlexSpaceAnnotator annotator;
 
-    public static JFlexSpaceAnnotator newAnnotator(Locale language) {
+    public static JFlexSpaceAnnotator newAnnotator(Language language) {
         Class<? extends JFlexSpaceAnnotator> annotatorClass = ANNOTATORS.get(language);
         if (annotatorClass == null) {
             return new StandardSpaceAnnotator((Reader) null);
@@ -45,12 +44,12 @@ public class JFlexDetokenizer extends Detokenizer {
         }
     }
 
-    public JFlexDetokenizer(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
+    public JFlexDetokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
         this.annotator = getAnnotator(targetLanguage);
     }
 
-    protected JFlexSpaceAnnotator getAnnotator(Locale language) {
+    protected JFlexSpaceAnnotator getAnnotator(Language language) {
         return newAnnotator(language);
     }
 

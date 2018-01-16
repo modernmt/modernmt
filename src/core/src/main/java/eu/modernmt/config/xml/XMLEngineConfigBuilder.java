@@ -1,10 +1,10 @@
 package eu.modernmt.config.xml;
 
 import eu.modernmt.config.*;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import org.w3c.dom.Element;
 
-import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -24,8 +24,8 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
     public EngineConfig build(EngineConfig config) throws ConfigException {
         if (hasAttribute("source-language") || hasAttribute("target-language")) {
             if (hasAttribute("source-language") && hasAttribute("target-language")) {
-                Locale source = getLocaleAttribute("source-language");
-                Locale target = getLocaleAttribute("target-language");
+                Language source = getLocaleAttribute("source-language");
+                Language target = getLocaleAttribute("target-language");
 
                 config.addLanguagePair(new LanguagePair(source, target));
             } else {
@@ -57,11 +57,11 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
             if (child == null)
                 continue;
 
-            Locale source = getLocaleAttribute(child, "source");
+            Language source = getLocaleAttribute(child, "source");
             if (source == null)
                 throw new ConfigException("Missing 'source' attribute");
 
-            Locale target = getLocaleAttribute(child, "target");
+            Language target = getLocaleAttribute(child, "target");
             if (target == null)
                 throw new ConfigException("Missing 'target' attribute");
 

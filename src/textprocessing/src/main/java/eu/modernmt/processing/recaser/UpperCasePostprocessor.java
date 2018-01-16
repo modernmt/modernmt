@@ -1,11 +1,11 @@
 package eu.modernmt.processing.recaser;
 
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
 import eu.modernmt.processing.TextProcessor;
 
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -13,7 +13,7 @@ import java.util.Map;
  */
 public class UpperCasePostprocessor extends TextProcessor<Translation, Translation> {
 
-    public UpperCasePostprocessor(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
+    public UpperCasePostprocessor(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
     }
 

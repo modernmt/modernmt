@@ -1,9 +1,9 @@
 package eu.modernmt.processing.chars;
 
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.TextProcessor;
 
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -11,7 +11,7 @@ import java.util.Map;
  */
 public class ControlCharsRemover extends TextProcessor<String, String> {
 
-    public ControlCharsRemover(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
+    public ControlCharsRemover(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
     }
 

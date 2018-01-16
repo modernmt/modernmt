@@ -1,6 +1,7 @@
 package eu.modernmt.cli;
 
 import eu.modernmt.io.*;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Preprocessor;
@@ -9,7 +10,6 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Locale;
 
 /**
  * Created by davide on 17/12/15.
@@ -44,8 +44,8 @@ public class PreprocessorMain {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
-            Locale source = Locale.forLanguageTag(cli.getOptionValue("s"));
-            Locale target = Locale.forLanguageTag(cli.getOptionValue("t"));
+            Language source = Language.fromString(cli.getOptionValue("s"));
+            Language target = Language.fromString(cli.getOptionValue("t"));
             language = new LanguagePair(source, target);
             printTags = !cli.hasOption("no-tags");
             printPlaceholders = cli.hasOption("print-placeholders");
