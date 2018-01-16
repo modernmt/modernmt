@@ -167,7 +167,7 @@ We also have an **MMT Enterprise Edition**, managed by the MMT company and not a
 MMT Enterprise is avaialble in two operating modes:
 - **Private** on Amazon Web Services. Privacy of data, low cost for excellent throughput and maintenance, customer support.
 - **Confidential** on Amazon Web Services. Higher privacy of data, higher cost for throughput and maintenance, customer support.
-- 
-We also provide support for large **On-Premise** installations.
+
+We can also provide support for large **On-Premise** installations.
 
 For any information please email Marcello Federico, mrcfdr@gmail.com
