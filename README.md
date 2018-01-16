@@ -161,7 +161,7 @@ We also have an **MMT Enterprise Edition**, managed by the MMT company and not a
 - Pre-trained generic and custom models in 9 language pairs (and more to come!) on multiple billion words of premium data.
 - Support for cluster of servers for higher throughput, load balancing and high availability. 
 - Support for 69 files formats without format loss (Office, Adobe, Localization, etc).
-- Enterprise Customer Support via Video Conference Call, Phone and Email on business hours and optionally 24x7.
+- Enterprise Customer Support via Video Conference Call, Phone and Email on business hours (CET) and optionally 24x7.
 - Custom developments billed per hour of work.
 
 MMT Enterprise is avaialble in three operating modes:
