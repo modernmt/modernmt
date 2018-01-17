@@ -1,13 +1,13 @@
 package eu.modernmt.model.corpus.impl.parallel;
 
 import eu.modernmt.io.*;
+import eu.modernmt.lang.Language;
 import eu.modernmt.model.corpus.Corpus;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.Locale;
 
 /**
  * Created by davide on 10/07/15.
@@ -16,16 +16,18 @@ public class FileCorpus implements Corpus {
 
     private FileProxy file;
     private String name;
-    private Locale language;
+    private Language language;
 
     private static String getNameFromFilename(String filename) {
         int lastDot = filename.lastIndexOf('.');
         return lastDot < 0 ? filename : filename.substring(0, lastDot);
     }
 
-    private static Locale getLangFromFilename(String filename) {
+    private static Language getLangFromFilename(String filename) {
         int lastDot = filename.lastIndexOf('.');
-        return lastDot < 0 ? Locale.getDefault() : Locale.forLanguageTag(filename.substring(lastDot + 1));
+        if (lastDot < 0)
+            throw new IllegalArgumentException(filename);
+        return Language.fromString(filename.substring(lastDot + 1));
     }
 
     public FileCorpus(File file) {
@@ -36,7 +38,7 @@ public class FileCorpus implements Corpus {
         this(FileProxy.wrap(file), name, null);
     }
 
-    public FileCorpus(File file, String name, Locale language) {
+    public FileCorpus(File file, String name, Language language) {
         this(FileProxy.wrap(file), name, language);
     }
 
@@ -48,7 +50,7 @@ public class FileCorpus implements Corpus {
         this(file, name, null);
     }
 
-    public FileCorpus(FileProxy file, String name, Locale language) {
+    public FileCorpus(FileProxy file, String name, Language language) {
         this.file = file;
         this.name = (name == null ? getNameFromFilename(file.getFilename()) : name);
         this.language = (language == null ? getLangFromFilename(file.getFilename()) : language);
@@ -60,7 +62,7 @@ public class FileCorpus implements Corpus {
     }
 
     @Override
-    public Locale getLanguage() {
+    public Language getLanguage() {
         return language;
     }
 

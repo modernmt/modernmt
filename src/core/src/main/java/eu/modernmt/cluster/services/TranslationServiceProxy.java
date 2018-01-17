@@ -1,4 +1,3 @@
-
 package eu.modernmt.cluster.services;
 
 import com.hazelcast.nio.Address;
@@ -12,10 +11,11 @@ import java.util.concurrent.Future;
 
 /**
  * A TranslationServiceProxy is an Hazelcast proxy for a TranslationService service.
+ *
  * @see TranslationService
- *
+ * <p>
  * It is used by cluster members as a local endpoint to a remote TranslationService instance.
- *
+ * <p>
  * A TranslationServiceProxy is typically spawned by a TranslationService instance in its own cluster node,
  * and keeps a reference to its TranslationService.
  */
@@ -43,7 +43,7 @@ public class TranslationServiceProxy extends AbstractDistributedObject<Translati
      * The local TranslationServiceProxy creates a TranslationOperation for the task and
      * uses the local OperationService to pass it to the TranslationService of the remote member.
      *
-     * @param task the TranslationTask to run
+     * @param task    the TranslationTask to run
      * @param address the Address of the Member that should run this task
      * @return a Future for the Translation that this task will output
      */

@@ -1,7 +1,7 @@
 package eu.modernmt.decoder;
 
-import eu.modernmt.model.ContextVector;
 import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 

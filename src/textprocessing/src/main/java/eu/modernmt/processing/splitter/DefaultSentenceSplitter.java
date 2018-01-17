@@ -13,7 +13,8 @@ public class DefaultSentenceSplitter extends SentenceSplitter {
      * In this implementation, it checks the current Word, its predecessor and its successor.
      * The first word (with no predecessors) and the last words (with no successors) are never splits.
      * A word is a split if it is a stop word, no spaces separate it from its predecessor, and its successor starts with an uppercase char.
-     * @param sentence the sentence to check the presence of splits in
+     *
+     * @param sentence  the sentence to check the presence of splits in
      * @param wordIndex the index of the word to check
      * @return TRUE is the current word is a split, FALSE otherwise.
      */
@@ -22,12 +23,12 @@ public class DefaultSentenceSplitter extends SentenceSplitter {
         Word[] words = sentence.getWords();
 
         /*the the first and last words can not be split (they don't even have predecessor or successor)*/
-        if (wordIndex == 0 || wordIndex == words.length-1)
+        if (wordIndex == 0 || wordIndex == words.length - 1)
             return false;
 
         Word current = words[wordIndex];
-        Word predecessor = words[wordIndex-1];
-        Word successor = words[wordIndex+1];
+        Word predecessor = words[wordIndex - 1];
+        Word successor = words[wordIndex + 1];
         return isStop(current) && !predecessor.hasRightSpace() && Character.isUpperCase(successor.getText().charAt(0));
     }
 

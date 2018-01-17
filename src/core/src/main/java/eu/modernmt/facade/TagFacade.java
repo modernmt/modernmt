@@ -14,9 +14,6 @@ import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.xml.XMLTagProjector;
 
-import java.io.Serializable;
-import java.util.concurrent.Callable;
-
 /**
  * Created by davide on 20/04/16.
  */

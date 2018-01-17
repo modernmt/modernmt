@@ -1,11 +1,11 @@
 package eu.modernmt.processing.recaser;
 
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.SentenceBuilder;
 
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -15,7 +15,7 @@ public class UpperCasePreprocessor extends TextProcessor<SentenceBuilder, Senten
 
     public static final String ANNOTATION = UpperCasePreprocessor.class.getCanonicalName();
 
-    public UpperCasePreprocessor(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
+    public UpperCasePreprocessor(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
     }
 

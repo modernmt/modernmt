@@ -4,13 +4,13 @@ import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
 import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.io.UnixLineWriter;
+import eu.modernmt.lang.Language;
 import eu.modernmt.model.corpus.Corpus;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.util.Locale;
 
 /**
  * Created by davide on 24/02/16.
@@ -18,10 +18,10 @@ import java.util.Locale;
 public class StringCorpus implements Corpus {
 
     private final String name;
-    private final Locale language;
+    private final Language language;
     private String content;
 
-    public StringCorpus(String name, Locale language, String content) {
+    public StringCorpus(String name, Language language, String content) {
         this.name = name;
         this.language = language;
         this.content = content;
@@ -33,7 +33,7 @@ public class StringCorpus implements Corpus {
     }
 
     @Override
-    public Locale getLanguage() {
+    public Language getLanguage() {
         return language;
     }
 

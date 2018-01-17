@@ -1,6 +1,6 @@
 package eu.modernmt.processing.tokenizer.jflex;
 
-import eu.modernmt.lang.Languages;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -33,36 +32,36 @@ public class JFlexTokenizer extends TextProcessor<SentenceBuilder, SentenceBuild
     /*For each language that the JFlex library supports, this map stores a couple
         <language -> Class of the JFlex annotator for that language>
 
-	The language is a Locale object, obtained as Languages.LANGUAGE_NAME
+	The language is a Language object, obtained as Language.LANGUAGE_NAME
 	The Annotator class is taken from JFlex library as AnnotatorLanguageName.class.
 	In JFlex, all specific annotators extend a common interface Annotator.*/
-    private static final Map<Locale, Class<? extends JFlexTokenAnnotator>> ANNOTATORS = new HashMap<>();
+    private static final Map<Language, Class<? extends JFlexTokenAnnotator>> ANNOTATORS = new HashMap<>();
 
     static {
-        ANNOTATORS.put(Languages.CATALAN, CatalanTokenAnnotator.class);
-        ANNOTATORS.put(Languages.CZECH, CzechTokenAnnotator.class);
-        ANNOTATORS.put(Languages.GERMAN, GermanTokenAnnotator.class);
-        ANNOTATORS.put(Languages.GREEK, GreekTokenAnnotator.class);
-        ANNOTATORS.put(Languages.ENGLISH, EnglishTokenAnnotator.class);
-        ANNOTATORS.put(Languages.SPANISH, SpanishTokenAnnotator.class);
-        ANNOTATORS.put(Languages.FINNISH, FinnishTokenAnnotator.class);
-        ANNOTATORS.put(Languages.FRENCH, FrenchTokenAnnotator.class);
-        ANNOTATORS.put(Languages.HUNGARIAN, HungarianTokenAnnotator.class);
-        ANNOTATORS.put(Languages.ICELANDIC, IcelandicTokenAnnotator.class);
-        ANNOTATORS.put(Languages.ITALIAN, ItalianTokenAnnotator.class);
-        ANNOTATORS.put(Languages.LATVIAN, LatvianTokenAnnotator.class);
-        ANNOTATORS.put(Languages.DUTCH, DutchTokenAnnotator.class);
-        ANNOTATORS.put(Languages.POLISH, PolishTokenAnnotator.class);
-        ANNOTATORS.put(Languages.PORTUGUESE, PortugueseTokenAnnotator.class);
-        ANNOTATORS.put(Languages.ROMANIAN, RomanianTokenAnnotator.class);
-        ANNOTATORS.put(Languages.RUSSIAN, RussianTokenAnnotator.class);
-        ANNOTATORS.put(Languages.SLOVAK, SlovakTokenAnnotator.class);
-        ANNOTATORS.put(Languages.SLOVENE, SloveneTokenAnnotator.class);
-        ANNOTATORS.put(Languages.SWEDISH, SwedishTokenAnnotator.class);
-        ANNOTATORS.put(Languages.TAMIL, TamilTokenAnnotator.class);
+        ANNOTATORS.put(Language.CATALAN, CatalanTokenAnnotator.class);
+        ANNOTATORS.put(Language.CZECH, CzechTokenAnnotator.class);
+        ANNOTATORS.put(Language.GERMAN, GermanTokenAnnotator.class);
+        ANNOTATORS.put(Language.GREEK, GreekTokenAnnotator.class);
+        ANNOTATORS.put(Language.ENGLISH, EnglishTokenAnnotator.class);
+        ANNOTATORS.put(Language.SPANISH, SpanishTokenAnnotator.class);
+        ANNOTATORS.put(Language.FINNISH, FinnishTokenAnnotator.class);
+        ANNOTATORS.put(Language.FRENCH, FrenchTokenAnnotator.class);
+        ANNOTATORS.put(Language.HUNGARIAN, HungarianTokenAnnotator.class);
+        ANNOTATORS.put(Language.ICELANDIC, IcelandicTokenAnnotator.class);
+        ANNOTATORS.put(Language.ITALIAN, ItalianTokenAnnotator.class);
+        ANNOTATORS.put(Language.LATVIAN, LatvianTokenAnnotator.class);
+        ANNOTATORS.put(Language.DUTCH, DutchTokenAnnotator.class);
+        ANNOTATORS.put(Language.POLISH, PolishTokenAnnotator.class);
+        ANNOTATORS.put(Language.PORTUGUESE, PortugueseTokenAnnotator.class);
+        ANNOTATORS.put(Language.ROMANIAN, RomanianTokenAnnotator.class);
+        ANNOTATORS.put(Language.RUSSIAN, RussianTokenAnnotator.class);
+        ANNOTATORS.put(Language.SLOVAK, SlovakTokenAnnotator.class);
+        ANNOTATORS.put(Language.SLOVENE, SloveneTokenAnnotator.class);
+        ANNOTATORS.put(Language.SWEDISH, SwedishTokenAnnotator.class);
+        ANNOTATORS.put(Language.TAMIL, TamilTokenAnnotator.class);
     }
 
-    /*among all annotators for all languages supported by JFlex,
+    /*among all annotators for all Language supported by JFlex,
      * this is the specific annotator for the source language
      * (the language of the SentenceBuilder string to edit)*/
     private final JFlexTokenAnnotator annotator;
@@ -77,7 +76,7 @@ public class JFlexTokenizer extends TextProcessor<SentenceBuilder, SentenceBuild
      * @param targetLanguage the language the input String must be translated to
      * @throws UnsupportedLanguageException the requested language is not supported by this software
      */
-    public JFlexTokenizer(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
+    public JFlexTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
         Class<? extends JFlexTokenAnnotator> annotatorClass = ANNOTATORS.get(sourceLanguage);

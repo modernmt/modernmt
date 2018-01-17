@@ -2,6 +2,7 @@ package eu.modernmt.aligner.fastalign;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Alignment;
@@ -15,7 +16,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Created by lucamastrostefano on 15/03/16.
@@ -42,7 +42,7 @@ public class FastAlign implements Aligner {
         if (parts.length != 2)
             throw new IOException("Invalid FastAlign model: " + file);
 
-        return new LanguagePair(Locale.forLanguageTag(parts[0]), Locale.forLanguageTag(parts[1]));
+        return new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1]));
     }
 
     public FastAlign(File modelPath) throws IOException {

@@ -3,13 +3,13 @@ package eu.modernmt.decoder.neural.memory.lucene;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import org.apache.lucene.document.*;
 import org.apache.lucene.util.BytesRef;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -72,7 +72,7 @@ public class DocumentBuilder {
         return l1 + "__" + l2;
     }
 
-    public static String getContentFieldName(Locale locale) {
+    public static String getContentFieldName(Language locale) {
         return CONTENT_PREFIX_FIELD + locale.toLanguageTag();
     }
 

@@ -1,12 +1,12 @@
 package eu.modernmt.processing.numbers;
 
+import eu.modernmt.lang.Language;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.string.SentenceBuilder;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,7 +36,7 @@ public class NumericPlaceholderNormalizer extends TextProcessor<SentenceBuilder,
      * @param targetLanguage the language the input String must be translated to
      * @throws UnsupportedLanguageException the requested language is not supported by this software
      */
-    public NumericPlaceholderNormalizer(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
+    public NumericPlaceholderNormalizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
     }
 

@@ -1,18 +1,17 @@
 package eu.modernmt.lang;
 
 import java.io.Serializable;
-import java.util.Locale;
 
 /**
  * Created by davide on 27/07/17.
  */
 public final class LanguagePair implements Serializable {
 
-    public final Locale source;
-    public final Locale target;
+    public final Language source;
+    public final Language target;
     private transient LanguagePair reversed = null;
 
-    public LanguagePair(Locale source, Locale target) {
+    public LanguagePair(Language source, Language target) {
         this.source = source;
         this.target = target;
     }
@@ -58,7 +57,7 @@ public final class LanguagePair implements Serializable {
 
     @Override
     public String toString() {
-        return source.toLanguageTag() + " \u2192 " + target.toLanguageTag();
+        return source + " \u2192 " + target;
     }
 
 }

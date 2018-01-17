@@ -63,8 +63,8 @@ class ParallelExecutionQueue implements ExecutionQueue {
         boolean success = true;
 
         /*get all the NativeProcesses for all the futures.
-        * if an exception is thrown, mark that something has gone wrong
-        * and keep getting the processes (so it will be possible to stop them all later)*/
+         * if an exception is thrown, mark that something has gone wrong
+         * and keep getting the processes (so it will be possible to stop them all later)*/
         for (int i = 0; i < futures.size(); i++) {
             try {
                 processes[i] = futures.get(i).get();

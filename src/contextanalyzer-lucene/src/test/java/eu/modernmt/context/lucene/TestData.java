@@ -3,6 +3,7 @@ package eu.modernmt.context.lucene;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.io.LineReader;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Sentence;
@@ -20,12 +21,12 @@ import java.util.*;
  */
 public class TestData {
 
-    public static final Locale EN = new Locale("en");
-    public static final Locale EN_US = new Locale("en", "US");
-    public static final Locale FR = new Locale("fr");
-    public static final Locale FR_CA = new Locale("fr", "CA");
-    public static final Locale IT = new Locale("it");
-    public static final Locale IT_CH = new Locale("it", "CH");
+    public static final Language EN = new Language("en");
+    public static final Language EN_US = new Language("en", "US");
+    public static final Language FR = new Language("fr");
+    public static final Language FR_CA = new Language("fr", "CA");
+    public static final Language IT = new Language("it");
+    public static final Language IT_CH = new Language("it", "CH");
 
     public static final LanguagePair FR__EN = new LanguagePair(TestData.FR, TestData.EN);
     public static final LanguagePair EN__IT = new LanguagePair(TestData.EN, TestData.IT);
@@ -210,9 +211,9 @@ public class TestData {
 
     // Content
 
-    public static String getContent(Locale... locales) {
+    public static String getContent(Language... locales) {
         StringBuilder builder = new StringBuilder();
-        for (Locale locale : locales) {
+        for (Language locale : locales) {
             builder.append(EXAMPLE_CONTENTS.get(locale.getLanguage()));
             builder.append('\n');
         }
@@ -220,9 +221,9 @@ public class TestData {
         return builder.substring(0, builder.length() - 1);
     }
 
-    public static Set<String> getTerms(Locale... locales) throws IOException {
+    public static Set<String> getTerms(Language... locales) throws IOException {
         HashSet<String> terms = new HashSet<>();
-        for (Locale locale : locales)
+        for (Language locale : locales)
             terms.addAll(EXAMPLE_TERMS.get(locale.getLanguage()));
 
         return terms;

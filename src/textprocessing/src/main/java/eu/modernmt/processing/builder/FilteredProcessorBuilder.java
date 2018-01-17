@@ -1,8 +1,9 @@
 package eu.modernmt.processing.builder;
 
+import eu.modernmt.lang.Language;
+
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Locale;
 
 /**
  * Created by davide on 31/05/16.
@@ -32,7 +33,7 @@ class FilteredProcessorBuilder extends ProcessorBuilder {
             return new OrFilter(definition.split("\\s+"));
     }
 
-    public boolean accept(Locale sourceLanguage, Locale targetLanguage) {
+    public boolean accept(Language sourceLanguage, Language targetLanguage) {
         if (this.sourceFilter != null && !this.sourceFilter.accept(sourceLanguage))
             return false;
         if (this.targetFilter != null && !this.targetFilter.accept(targetLanguage))
@@ -42,7 +43,7 @@ class FilteredProcessorBuilder extends ProcessorBuilder {
 
     private interface Filter {
 
-        boolean accept(Locale language);
+        boolean accept(Language language);
 
     }
 
@@ -56,7 +57,7 @@ class FilteredProcessorBuilder extends ProcessorBuilder {
         }
 
         @Override
-        public boolean accept(Locale language) {
+        public boolean accept(Language language) {
             if (language == null)
                 return false;
             String tag = language.toLanguageTag();
@@ -71,7 +72,7 @@ class FilteredProcessorBuilder extends ProcessorBuilder {
         }
 
         @Override
-        public boolean accept(Locale language) {
+        public boolean accept(Language language) {
             return !super.accept(language);
         }
     }

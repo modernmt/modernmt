@@ -2,6 +2,7 @@ package eu.modernmt.cli;
 
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Memory;
@@ -15,7 +16,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Locale;
 
 /**
  * Created by davide on 17/12/15.
@@ -41,15 +41,15 @@ public class TranslationMemoryMain {
 
         public final File modelPath;
         public final File[] corporaRoots;
-        public final Locale sourceLanguage;
-        public final Locale targetLanguage;
+        public final Language sourceLanguage;
+        public final Language targetLanguage;
 
         public Args(String[] args) throws ParseException {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
-            sourceLanguage = Locale.forLanguageTag(cli.getOptionValue('s'));
-            targetLanguage = Locale.forLanguageTag(cli.getOptionValue('t'));
+            sourceLanguage = Language.fromString(cli.getOptionValue('s'));
+            targetLanguage = Language.fromString(cli.getOptionValue('t'));
             modelPath = new File(cli.getOptionValue('m'));
 
             String[] roots = cli.getOptionValues('c');

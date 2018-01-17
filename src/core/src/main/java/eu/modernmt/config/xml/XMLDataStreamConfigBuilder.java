@@ -2,7 +2,6 @@ package eu.modernmt.config.xml;
 
 import eu.modernmt.config.ConfigException;
 import eu.modernmt.config.DataStreamConfig;
-import eu.modernmt.config.DatabaseConfig;
 import org.w3c.dom.Element;
 
 /**

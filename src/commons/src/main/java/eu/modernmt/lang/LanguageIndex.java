@@ -55,7 +55,7 @@ public class LanguageIndex implements Iterable<LanguagePair> {
         if (output != null)
             return output == NONE ? null : output;
 
-        Locale reducedSource = new Locale(pair.source.getLanguage());
+        Language reducedSource = new Language(pair.source.getLanguage());
         LanguagePair reduced;
 
         // Test language pair with reduced source language
@@ -67,7 +67,7 @@ public class LanguageIndex implements Iterable<LanguagePair> {
             return reduced;
         }
 
-        Locale reducedTarget = new Locale(pair.target.getLanguage());
+        Language reducedTarget = new Language(pair.target.getLanguage());
 
         // Test language pair with reduced target language
         // Before: en-GB > pt-BR

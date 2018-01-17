@@ -1,12 +1,12 @@
 package eu.modernmt.rest.serializers;
 
 import com.google.gson.*;
+import eu.modernmt.lang.Language;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Memory;
 import eu.modernmt.rest.model.ContextVectorResult;
 
 import java.lang.reflect.Type;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -41,8 +41,8 @@ public class ContextVectorResultSerializer implements JsonSerializer<ContextVect
             JsonObject jsonMap = new JsonObject();
             object.add("vectors", jsonMap);
 
-            for (Map.Entry<Locale, ContextVector> entry : src.map.entrySet()) {
-                Locale target = entry.getKey();
+            for (Map.Entry<Language, ContextVector> entry : src.map.entrySet()) {
+                Language target = entry.getKey();
                 jsonMap.add(target.toLanguageTag(), serialize(entry.getValue(), context));
             }
 

@@ -1,6 +1,6 @@
 package eu.modernmt.processing.chars;
 
-import eu.modernmt.lang.Languages;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
@@ -22,10 +22,10 @@ public class ItalianAccentMarkProcessor extends TextProcessor<SentenceBuilder, S
                     "bench|ch|checch|cosicch|dopodich|finch|fintantoch|fuorch|giacch|granch|macch|nonch|perch|poich" +
                     "|pressocch|pressoch|semprech|sennonch|senonch|sicch)(e'|è)", Pattern.CASE_INSENSITIVE);
 
-    public ItalianAccentMarkProcessor(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
+    public ItalianAccentMarkProcessor(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        if (!Languages.sameLanguage(Locale.ITALIAN, sourceLanguage))
+        if (!Language.ITALIAN.getLanguage().equals(sourceLanguage.getLanguage()))
             throw new UnsupportedLanguageException(sourceLanguage, targetLanguage);
     }
 

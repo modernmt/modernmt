@@ -6,16 +6,15 @@ import edu.stanford.nlp.international.spanish.process.SpanishTokenizer;
 import edu.stanford.nlp.ling.HasOffset;
 import edu.stanford.nlp.process.PTBTokenizer;
 import edu.stanford.nlp.process.TokenizerFactory;
-import eu.modernmt.lang.Languages;
+import eu.modernmt.lang.Language;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.string.SentenceBuilder;
 
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -35,20 +34,20 @@ public class CoreNLPTokenizer extends TextProcessor<SentenceBuilder, SentenceBui
     /*For each language that the CoreNLP library supports, this map stores a couple
        <language -> Reference to CoreNLP Factory of tokenizers for that language>
 
-   * The language is a Locale object, obtained as Languages.LANGUAGE_NAME
+   * The language is a Language object, obtained as Languages.LANGUAGE_NAME
    * The Factory reference is obtained as SPECIFIC_LANGUAGE_Tokenizer.factory()*/
-    private static final Map<Locale, TokenizerFactory<?>> FACTORIES = new HashMap<>();
+    private static final Map<Language, TokenizerFactory<?>> FACTORIES = new HashMap<>();
 
     static {
-        FACTORIES.put(Languages.ENGLISH, PTBTokenizer.factory());
-        FACTORIES.put(Languages.ARABIC, ArabicTokenizer.factory());
-        FACTORIES.put(Languages.FRENCH, FrenchTokenizer.factory());
-        FACTORIES.put(Languages.SPANISH, SpanishTokenizer.factory());
+        FACTORIES.put(Language.ENGLISH, PTBTokenizer.factory());
+        FACTORIES.put(Language.ARABIC, ArabicTokenizer.factory());
+        FACTORIES.put(Language.FRENCH, FrenchTokenizer.factory());
+        FACTORIES.put(Language.SPANISH, SpanishTokenizer.factory());
     }
 
     /*among all factories for all languages tokenizers in CoreNLP,
-    * this is the analyzer for the tokenizer of the source language
-    * (the language of the SentenceBuilder string to edit)*/
+     * this is the analyzer for the tokenizer of the source language
+     * (the language of the SentenceBuilder string to edit)*/
     private final TokenizerFactory<?> factory;
 
     /**
@@ -61,7 +60,7 @@ public class CoreNLPTokenizer extends TextProcessor<SentenceBuilder, SentenceBui
      * @param targetLanguage the language the input String must be translated to
      * @throws UnsupportedLanguageException the requested language is not supported by this software
      */
-    public CoreNLPTokenizer(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
+    public CoreNLPTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
         this.factory = FACTORIES.get(sourceLanguage);
@@ -69,7 +68,7 @@ public class CoreNLPTokenizer extends TextProcessor<SentenceBuilder, SentenceBui
             throw new UnsupportedLanguageException(sourceLanguage);
 
         /*sets special options if source language is English*/
-        if (Languages.sameLanguage(Languages.ENGLISH, sourceLanguage))
+        if (Language.ENGLISH.getLanguage().equals(sourceLanguage.getLanguage()))
             this.factory.setOptions("ptb3Escaping=false,asciiQuotes=true,normalizeSpace=false");
     }
 

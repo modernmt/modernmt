@@ -1,9 +1,9 @@
 package eu.modernmt.training.cleaning;
 
-import eu.modernmt.cleaning.filters.draft.DraftFilter;
 import eu.modernmt.cleaning.FilteredMultilingualCorpus;
-import eu.modernmt.training.MockMultilingualCorpus;
+import eu.modernmt.cleaning.filters.draft.DraftFilter;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.training.MockMultilingualCorpus;
 import org.junit.Test;
 
 import java.io.IOException;

@@ -101,6 +101,7 @@ public class TranslationService implements ManagedService, RemoteService {
 
     /**
      * This method returns a local proxy to the TranslationService.
+     *
      * @param objectName
      * @return
      */
@@ -116,6 +117,7 @@ public class TranslationService implements ManagedService, RemoteService {
 
     /**
      * This static method gets from the passed Hazelcast Config object the specific configuration for the TranslationService
+     *
      * @param hazelcastConfig a Hazelcast Config object
      * @return the TranslationServiceConfig parsed from the Config
      */

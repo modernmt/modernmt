@@ -7,6 +7,7 @@ import eu.modernmt.config.DataStreamConfig;
 import eu.modernmt.data.DataManager;
 import eu.modernmt.data.DataManagerException;
 import eu.modernmt.data.HostUnreachableException;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -20,7 +21,6 @@ import org.apache.logging.log4j.Level;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -40,12 +40,12 @@ public class CorpusUploadMain {
     }
 
     private interface InputFormat {
-        MultilingualCorpus parse(Locale sourceLanguage, Locale targetLanguage, File[] files) throws ParseException;
+        MultilingualCorpus parse(Language sourceLanguage, Language targetLanguage, File[] files) throws ParseException;
     }
 
     private static class TMXInputFormat implements InputFormat {
         @Override
-        public MultilingualCorpus parse(Locale sourceLanguage, Locale targetLanguage, File[] files) throws ParseException {
+        public MultilingualCorpus parse(Language sourceLanguage, Language targetLanguage, File[] files) throws ParseException {
             if (files.length != 1)
                 throw new ParseException("Invalid number of arguments: expected 1 file");
             return new TMXCorpus(files[0]);
@@ -54,7 +54,7 @@ public class CorpusUploadMain {
 
     private static class CompactInputFormat implements InputFormat {
         @Override
-        public MultilingualCorpus parse(Locale sourceLanguage, Locale targetLanguage, File[] files) throws ParseException {
+        public MultilingualCorpus parse(Language sourceLanguage, Language targetLanguage, File[] files) throws ParseException {
             if (files.length != 1)
                 throw new ParseException("Invalid number of arguments: expected 1 file");
             return new CompactFileCorpus(files[0]);
@@ -63,7 +63,7 @@ public class CorpusUploadMain {
 
     private static class ParallelFileInputFormat implements InputFormat {
         @Override
-        public MultilingualCorpus parse(Locale sourceLanguage, Locale targetLanguage, File[] files) throws ParseException {
+        public MultilingualCorpus parse(Language sourceLanguage, Language targetLanguage, File[] files) throws ParseException {
             if (files.length != 2)
                 throw new ParseException("Invalid number of arguments: expected 2 files");
             if (sourceLanguage == null)
@@ -101,8 +101,8 @@ public class CorpusUploadMain {
             cliOptions.addOption(name);
         }
 
-        public final Locale sourceLanguage;
-        public final Locale targetLanguage;
+        public final Language sourceLanguage;
+        public final Language targetLanguage;
         public final MultilingualCorpus corpus;
         public final long memory;
         public final String host;
@@ -128,8 +128,8 @@ public class CorpusUploadMain {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
-            sourceLanguage = cli.hasOption('s') ? Locale.forLanguageTag(cli.getOptionValue("s")) : null;
-            targetLanguage = cli.hasOption('t') ? Locale.forLanguageTag(cli.getOptionValue("t")) : null;
+            sourceLanguage = cli.hasOption('s') ? Language.fromString(cli.getOptionValue("s")) : null;
+            targetLanguage = cli.hasOption('t') ? Language.fromString(cli.getOptionValue("t")) : null;
             corpus = getCorpusInstance(cli, "input");
             memory = Long.parseLong(cli.getOptionValue("memory"));
 

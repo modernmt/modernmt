@@ -2,6 +2,7 @@ package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
@@ -16,20 +17,20 @@ import java.util.*;
  */
 public class TestData {
 
-    public static final Locale EN = new Locale("en");
-    public static final Locale EN_US = new Locale("en", "US");
-    public static final Locale ES = new Locale("es");
-    public static final Locale ES_AR = new Locale("es", "AR");
-    public static final Locale FR = new Locale("fr");
-    public static final Locale FR_CA = new Locale("fr", "CA");
-    public static final Locale IT = new Locale("it");
-    public static final Locale IT_CH = new Locale("it", "CH");
-    public static final Locale NL = new Locale("nl");
-    public static final Locale NL_BE = new Locale("nl", "BE");
-    public static final Locale DE = new Locale("de");
-    public static final Locale DE_LU = new Locale("de", "LU");
-    public static final Locale PT = new Locale("pt");
-    public static final Locale PT_BR = new Locale("pt", "BR");
+    public static final Language EN = new Language("en");
+    public static final Language EN_US = new Language("en", "US");
+    public static final Language ES = new Language("es");
+    public static final Language ES_AR = new Language("es", "AR");
+    public static final Language FR = new Language("fr");
+    public static final Language FR_CA = new Language("fr", "CA");
+    public static final Language IT = new Language("it");
+    public static final Language IT_CH = new Language("it", "CH");
+    public static final Language NL = new Language("nl");
+    public static final Language NL_BE = new Language("nl", "BE");
+    public static final Language DE = new Language("de");
+    public static final Language DE_LU = new Language("de", "LU");
+    public static final Language PT = new Language("pt");
+    public static final Language PT_BR = new Language("pt", "BR");
 
     public static final LanguagePair FR__ES = new LanguagePair(TestData.FR, TestData.ES);
     public static final LanguagePair FR__EN = new LanguagePair(TestData.FR, TestData.EN);

@@ -1,19 +1,19 @@
 package eu.modernmt.processing.detokenizer;
 
+import eu.modernmt.lang.Language;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.detokenizer.jflex.JFlexDetokenizer;
 import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
 import eu.modernmt.processing.detokenizer.jflex.SpacesAnnotatedString;
 
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -23,7 +23,7 @@ public class WhitespaceProjector extends TextProcessor<Translation, Translation>
 
     private final JFlexSpaceAnnotator annotator;
 
-    public WhitespaceProjector(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
+    public WhitespaceProjector(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
         this.annotator = JFlexDetokenizer.newAnnotator(sourceLanguage);
     }

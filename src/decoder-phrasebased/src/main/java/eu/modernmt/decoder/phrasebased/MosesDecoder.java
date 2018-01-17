@@ -5,6 +5,7 @@ import eu.modernmt.data.DataListener;
 import eu.modernmt.decoder.*;
 import eu.modernmt.io.DefaultCharset;
 import eu.modernmt.io.Paths;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.ContextVector;
@@ -19,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -50,7 +50,7 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
         String raw = FileUtils.readFileToString(Paths.join(path, "language.info"), DefaultCharset.get());
         String[] parts = raw.trim().split(" ");
 
-        this.direction = new LanguagePair(Locale.forLanguageTag(parts[0]), Locale.forLanguageTag(parts[1]));
+        this.direction = new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1]));
         this.storage = new FeatureWeightsStorage(Paths.join(path, "weights.dat"));
 
         File vocabulary = Paths.join(path, "vocab.vb");

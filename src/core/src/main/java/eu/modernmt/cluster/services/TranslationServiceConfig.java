@@ -21,11 +21,11 @@ public class TranslationServiceConfig {
     }
 
     /*NOTE:
-    * The getters are typically used by the TranslationService at its creation (its "init" method)
-    * The setters are typically used by the ClusterNode when it starts Hazelcast
-    * Getters and setters are invoked on different TranslationServiceConfig instances,
-    * but they refer to the same Properties object so the side-effects are ensured nonetheless.
-    * */
+     * The getters are typically used by the TranslationService at its creation (its "init" method)
+     * The setters are typically used by the ClusterNode when it starts Hazelcast
+     * Getters and setters are invoked on different TranslationServiceConfig instances,
+     * but they refer to the same Properties object so the side-effects are ensured nonetheless.
+     * */
 
     public TranslationServiceConfig setThreads(int threads) {
         properties.setProperty("threads", Integer.toString(threads));
@@ -52,6 +52,7 @@ public class TranslationServiceConfig {
      * If no "threads" property was set in the Properties,
      * this method will return as a default value the amount of locally available processors
      * (and the TranslationService will thus use in its ExecutorService a separate thread for each processor)
+     *
      * @return the amount of threads to use in the ExecutorService of the TranslationService
      */
     public int getThreads() {
@@ -64,6 +65,7 @@ public class TranslationServiceConfig {
     /**
      * Get the size of the high priority queue as it is explicitly set in the Properties for this TranslationService.
      * If no "highPriorityQueueSize" property was set in the Properties, this method will return the DEFAULT_QUEUE_SIZE.
+     *
      * @return the size to use for the high priority queue in this TranslationExecutor
      */
     public int getHighPriorityQueueSize() {
@@ -76,6 +78,7 @@ public class TranslationServiceConfig {
     /**
      * Get the size of the normal priority queue as it is explicitly set in the Properties for this TranslationService.
      * If no "normalPriorityQueueSize" property was set in the Properties, this method will return the DEFAULT_QUEUE_SIZE.
+     *
      * @return the size to use for the normal priority queue in this TranslationExecutor
      */
     public int getNormalPriorityQueueSize() {
@@ -88,6 +91,7 @@ public class TranslationServiceConfig {
     /**
      * Get the size of the background priority queue as it is explicitly set in the Properties for this TranslationService.
      * If no "backgroundPriorityQueueSize" property is set in the Properties this method will return the DEFAULT_QUEUE_SIZE.
+     *
      * @return the background to use for the normal priority queue in this TranslationExecutor
      */
     public int getBackgroundPriorityQueueSize() {

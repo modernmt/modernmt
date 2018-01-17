@@ -4,6 +4,7 @@ import eu.modernmt.io.DefaultCharset;
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.io.UnixLineWriter;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Preprocessor;
@@ -13,7 +14,6 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Locale;
 import java.util.concurrent.SynchronousQueue;
 
 /**
@@ -38,7 +38,7 @@ public class SentenceSplitMain {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
-            Locale lang = Locale.forLanguageTag(cli.getOptionValue("l"));
+            Language lang = Language.fromString(cli.getOptionValue("l"));
             language = new LanguagePair(lang, lang);
         }
 
@@ -91,7 +91,7 @@ public class SentenceSplitMain {
         private final UnixLineWriter writer;
         private final SynchronousQueue<Sentence[]> job = new SynchronousQueue<>();
 
-        public SentenceOutputter(Locale language) {
+        public SentenceOutputter(Language language) {
             this.writer = new UnixLineWriter(System.out, DefaultCharset.get());
             this.splitter = SentenceSplitter.forLanguage(language);
         }

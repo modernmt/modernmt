@@ -77,7 +77,7 @@ public class DatabaseLoader {
                 database.create();
 
             /*Now try to initialize the db (this atomic operation only succeeds if the db was not initialized yet).
-            * If the initialization succeeds, upload all the baseline memories in the DB.*/
+             * If the initialization succeeds, upload all the baseline memories in the DB.*/
             if (database.initialize()) {
                 File baselineMemories = Paths.join(engine.getModelsPath(), "db", "baseline_memories.json");
                 List<Memory> memories = BaselineMemoryCollection.load(baselineMemories);

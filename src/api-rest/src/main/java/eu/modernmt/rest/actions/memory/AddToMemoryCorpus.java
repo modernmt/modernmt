@@ -3,6 +3,7 @@ package eu.modernmt.rest.actions.memory;
 import eu.modernmt.data.DataManagerException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.io.FileProxy;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -16,7 +17,6 @@ import eu.modernmt.rest.framework.routing.Route;
 import eu.modernmt.rest.framework.routing.TemplateException;
 
 import java.io.File;
-import java.util.Locale;
 
 /**
  * Created by davide on 15/12/15.
@@ -77,8 +77,8 @@ public class AddToMemoryCorpus extends ObjectAction<ImportJob> {
                         corpus = new TMXCorpus(getFileProxy(null, gzipped));
                         break;
                     case PARALLEL:
-                        Locale sourceLanguage = getLocale("source");
-                        Locale targetLanguage = getLocale("target");
+                        Language sourceLanguage = getLanguage("source");
+                        Language targetLanguage = getLanguage("target");
                         LanguagePair language = new LanguagePair(sourceLanguage, targetLanguage);
 
                         corpus = new ParallelFileCorpus(language, getFileProxy("source", gzipped), getFileProxy("target", gzipped));
@@ -94,8 +94,8 @@ public class AddToMemoryCorpus extends ObjectAction<ImportJob> {
                 if (target == null)
                     throw new ParameterParsingException("translation");
 
-                Locale sourceLanguage = getLocale("source");
-                Locale targetLanguage = getLocale("target");
+                Language sourceLanguage = getLanguage("source");
+                Language targetLanguage = getLanguage("target");
                 direction = new LanguagePair(sourceLanguage, targetLanguage);
 
                 corpus = null;

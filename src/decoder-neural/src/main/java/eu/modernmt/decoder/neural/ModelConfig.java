@@ -1,5 +1,6 @@
 package eu.modernmt.decoder.neural;
 
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
@@ -48,7 +49,7 @@ public class ModelConfig {
             String key = keyIterator.next();
 
             String[] parts = key.split("__");
-            result.add(new LanguagePair(Locale.forLanguageTag(parts[0]), Locale.forLanguageTag(parts[1])));
+            result.add(new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1])));
         }
 
         return result;
@@ -90,7 +91,7 @@ public class ModelConfig {
             float threshold = thresholds.getFloat(key);
 
             String[] parts = key.split("__");
-            LanguagePair pair = new LanguagePair(Locale.forLanguageTag(parts[0]), Locale.forLanguageTag(parts[1]));
+            LanguagePair pair = new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1]));
 
             result.put(pair, threshold);
         }

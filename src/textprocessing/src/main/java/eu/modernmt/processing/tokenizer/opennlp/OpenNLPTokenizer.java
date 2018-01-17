@@ -1,5 +1,6 @@
 package eu.modernmt.processing.tokenizer.opennlp;
 
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessingModels;
@@ -14,7 +15,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -38,7 +38,7 @@ public class OpenNLPTokenizer extends TextProcessor<SentenceBuilder, SentenceBui
      * @param targetLanguage the language that string must be translated to
      * @throws UnsupportedLanguageException if a not supported language is involved
      */
-    public OpenNLPTokenizer(Locale sourceLanguage, Locale targetLanguage) throws UnsupportedLanguageException {
+    public OpenNLPTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
         /*new file for...*/
@@ -46,15 +46,15 @@ public class OpenNLPTokenizer extends TextProcessor<SentenceBuilder, SentenceBui
         /*The File object allows to read the language model file for the source language*/
         File modelFile = new File(opennlp, sourceLanguage.getLanguage() + "-token.bin");
 
-                /*if there is no file on the path specified by modelFile,
-        * it means that the sourceLanguage is not supported*/
+        /*if there is no file on the path specified by modelFile,
+         * it means that the sourceLanguage is not supported*/
         if (!modelFile.isFile())
             throw new UnsupportedLanguageException(sourceLanguage);
 
         InputStream modelResource = null;
 
         /*try to open the language model file
-        * and to use it to create a tokenizer*/
+         * and to use it to create a tokenizer*/
         try {
             modelResource = new FileInputStream(modelFile);
             TokenizerModel model = new TokenizerModel(modelResource);

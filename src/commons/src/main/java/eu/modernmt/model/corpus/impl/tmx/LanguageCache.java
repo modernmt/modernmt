@@ -1,9 +1,9 @@
 package eu.modernmt.model.corpus.impl.tmx;
 
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 
 import java.util.HashMap;
-import java.util.Locale;
 
 /**
  * Created by davide on 31/07/17.
@@ -52,7 +52,7 @@ class LanguageCache {
 
         LanguagePair language = cache.get(probe);
         if (language == null) {
-            language = new LanguagePair(Locale.forLanguageTag(source), Locale.forLanguageTag(target));
+            language = new LanguagePair(Language.fromString(source), Language.fromString(target));
             cache.put(new SKey(source, target), language);
         }
 

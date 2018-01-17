@@ -1,5 +1,6 @@
 package eu.modernmt.context.lucene.analysis.lang;
 
+import eu.modernmt.lang.Language;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
@@ -7,7 +8,6 @@ import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 public abstract class LanguageAnalyzer extends StopwordAnalyzerBase {
@@ -88,19 +88,19 @@ public abstract class LanguageAnalyzer extends StopwordAnalyzerBase {
         this.config = config;
     }
 
-    public static Analyzer getByLanguage(Locale locale) {
+    public static Analyzer getByLanguage(Language locale) {
         return getByLanguage(locale, new AnalyzerConfig());
     }
 
-    public static Analyzer getByLanguage(Locale locale, Analyzer def) {
+    public static Analyzer getByLanguage(Language locale, Analyzer def) {
         return getByLanguage(locale, new AnalyzerConfig(), def);
     }
 
-    public static Analyzer getByLanguage(Locale locale, AnalyzerConfig config) {
+    public static Analyzer getByLanguage(Language locale, AnalyzerConfig config) {
         return getByLanguage(locale, config, new DefaultAnalyzer(config));
     }
 
-    public static Analyzer getByLanguage(Locale locale, AnalyzerConfig config, Analyzer def) {
+    public static Analyzer getByLanguage(Language locale, AnalyzerConfig config, Analyzer def) {
         Class<? extends Analyzer> analyzerClass = ANALYZERS.get(locale.toLanguageTag());
         if (analyzerClass == null)
             analyzerClass = ANALYZERS.get(locale.getLanguage());
