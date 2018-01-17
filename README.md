@@ -168,6 +168,4 @@ MMT Enterprise is avaialble in two cloud-based operating modes:
 - **Private**  Privacy of data, adaptivity, low cost for excellent throughput and maintenance, customer support.
 - **Confidential** Higher privacy of data, adaptivity, higher cost for throughput and maintenance, customer support.
 
-We can provide support for large **On-Premise** installations, too.
-
-For any information please email Marcello Federico, mrcfdr@gmail.com
+We can provide support for large **On-Premise** installations, too. For any information please email Marcello Federico, marcello@modenrmt.eu
