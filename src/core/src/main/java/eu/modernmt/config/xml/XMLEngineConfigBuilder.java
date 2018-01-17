@@ -24,8 +24,8 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
     public EngineConfig build(EngineConfig config) throws ConfigException {
         if (hasAttribute("source-language") || hasAttribute("target-language")) {
             if (hasAttribute("source-language") && hasAttribute("target-language")) {
-                Language source = getLocaleAttribute("source-language");
-                Language target = getLocaleAttribute("target-language");
+                Language source = getLanguageAttribute("source-language");
+                Language target = getLanguageAttribute("target-language");
 
                 config.addLanguagePair(new LanguagePair(source, target));
             } else {
@@ -57,11 +57,11 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
             if (child == null)
                 continue;
 
-            Language source = getLocaleAttribute(child, "source");
+            Language source = getLanguageAttribute(child, "source");
             if (source == null)
                 throw new ConfigException("Missing 'source' attribute");
 
-            Language target = getLocaleAttribute(child, "target");
+            Language target = getLanguageAttribute(child, "target");
             if (target == null)
                 throw new ConfigException("Missing 'target' attribute");
 

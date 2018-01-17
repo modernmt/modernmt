@@ -107,13 +107,13 @@ abstract class XMLAbstractBuilder {
         return getIntAttribute(element, attr);
     }
 
-    protected static Language getLocaleAttribute(Element element, String attr) {
+    protected static Language getLanguageAttribute(Element element, String attr) {
         String value = getStringAttribute(element, attr);
         return value == null ? null : Language.fromString(value);
     }
 
-    protected Language getLocaleAttribute(String attr) {
-        return getLocaleAttribute(element, attr);
+    protected Language getLanguageAttribute(String attr) {
+        return getLanguageAttribute(element, attr);
     }
 
     protected static int[] getIntArrayAttribute(Element element, String attr) {
