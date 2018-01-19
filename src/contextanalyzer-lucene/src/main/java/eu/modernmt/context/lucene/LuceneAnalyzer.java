@@ -86,12 +86,12 @@ public class LuceneAnalyzer implements ContextAnalyzer {
 
     @Override
     public ContextVector getContextVector(LanguagePair direction, String query, int limit) throws ContextAnalyzerException {
-        return getContextVector(direction, new StringCorpus(null, null, query), limit);
+        return getContextVector(direction, new StringCorpus(null, direction.source, query), limit);
     }
 
     @Override
     public ContextVector getContextVector(LanguagePair direction, File source, int limit) throws ContextAnalyzerException {
-        return getContextVector(direction, new FileCorpus(source, null, null), limit);
+        return getContextVector(direction, new FileCorpus(source, null, direction.source), limit);
     }
 
     @Override
