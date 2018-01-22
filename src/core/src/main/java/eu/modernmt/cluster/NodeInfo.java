@@ -19,21 +19,24 @@ public class NodeInfo {
     public final ClusterNode.Status status;
     public final Map<Short, Long> channels;
     public final Set<LanguagePair> languages;
+    public final String address;
 
     static NodeInfo fromMember(Member member) {
         String uuid = member.getUuid();
         ClusterNode.Status status = ClusterNode.Status.valueOf(member.getStringAttribute(STATUS_ATTRIBUTE));
         Map<Short, Long> positions = deserializeChannels(member.getStringAttribute(DATA_CHANNELS_ATTRIBUTE));
         Set<LanguagePair> languages = deserializeLanguages(member.getStringAttribute(TRANSLATION_DIRECTIONS_ATTRIBUTE));
+        String address = member.getAddress().getHost();
 
-        return new NodeInfo(uuid, status, positions, languages);
+        return new NodeInfo(uuid, status, positions, languages, address);
     }
 
-    private NodeInfo(String uuid, ClusterNode.Status status, Map<Short, Long> channels, Set<LanguagePair> languages) {
+    private NodeInfo(String uuid, ClusterNode.Status status, Map<Short, Long> channels, Set<LanguagePair> languages, String address) {
         this.uuid = uuid;
         this.status = status;
         this.channels = channels;
         this.languages = languages;
+        this.address = address;
     }
 
     // Utils
@@ -137,5 +140,4 @@ public class NodeInfo {
 
         return result;
     }
-
 }

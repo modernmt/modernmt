@@ -5,6 +5,8 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.net.*;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -17,10 +19,25 @@ public class NetworkUtils {
      */
     public static String getMyIpv4Address() {
         try {
-            return Inet4Address.getLocalHost().getHostAddress();
-        } catch (UnknownHostException e) {
-            return null;
+
+            Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
+
+            for (NetworkInterface netInterface : Collections.list(nets)) {
+                Enumeration<InetAddress> inetAddresses = netInterface.getInetAddresses();
+
+                if (!netInterface.isUp() || netInterface.isVirtual() || netInterface.isLoopback())
+                    continue;
+
+                for (InetAddress inetAddress : Collections.list(inetAddresses)) {
+                    if (!inetAddress.isLinkLocalAddress() && !inetAddress.isLoopbackAddress() && (inetAddress instanceof Inet4Address))
+                        return inetAddress.getHostAddress();
+                }
+
+            }
+        } catch (SocketException e) {
+            // ignore it
         }
+        return "127.0.0.1";
     }
 
     public static boolean isAvailable(int port) {
