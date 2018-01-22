@@ -1,6 +1,8 @@
 package eu.modernmt.lang;
 
-public final class Language {
+import java.io.Serializable;
+
+public final class Language implements Serializable {
 
     // sorted by ISO 639-1 codes
     public static final Language ARABIC = Language.fromString("ar");
