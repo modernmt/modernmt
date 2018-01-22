@@ -15,6 +15,7 @@ import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.training.LazyWriterMultilingualCorpus;
 import eu.modernmt.training.MultilingualCorpusMask;
 import org.apache.commons.cli.*;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.Level;
 
@@ -83,19 +84,26 @@ public class AlignerFilterMain {
         if (bilingualCorpora.isEmpty())
             throw new ParseException("Input path does not contains valid bilingual data");
 
-        FastAlign aligner = new FastAlign(args.model);
-        Preprocessor preprocessor = new Preprocessor();
+        FileUtils.deleteDirectory(args.outputRoot);
+        FileUtils.forceMkdir(args.outputRoot);
 
         LanguagePair languagePair = new LanguagePair(args.sourceLanguage, args.targetLanguage);
         LanguageIndex languageIndex = new LanguageIndex(languagePair);
 
-        Filter filter = new Filter(languagePair, aligner, preprocessor);
+        FastAlign aligner = new FastAlign(args.model);
+        Preprocessor preprocessor = new Preprocessor();
 
-        for (MultilingualCorpus _corpus : bilingualCorpora) {
-            MultilingualCorpus corpus = new MultilingualCorpusMask(languageIndex, _corpus);
-            MultilingualCorpus output = new LazyWriterMultilingualCorpus(Corpora.rename(corpus, args.outputRoot));
+        try {
+            Filter filter = new Filter(languagePair, aligner, preprocessor);
 
-            filter.apply(corpus, output, args.threshold);
+            for (MultilingualCorpus _corpus : bilingualCorpora) {
+                MultilingualCorpus corpus = new MultilingualCorpusMask(languageIndex, _corpus);
+                MultilingualCorpus output = new LazyWriterMultilingualCorpus(Corpora.rename(corpus, args.outputRoot));
+
+                filter.apply(corpus, output, args.threshold);
+            }
+        } finally {
+            IOUtils.closeQuietly(preprocessor);
         }
     }
 
