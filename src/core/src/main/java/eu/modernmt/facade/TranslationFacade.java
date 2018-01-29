@@ -35,6 +35,7 @@ import java.util.concurrent.RejectedExecutionException;
 public class TranslationFacade {
 
     private static final Logger logger = LogManager.getLogger(TranslationFacade.class);
+    private LanguagePair lastTranslationLanguage = null;
 
     public enum Priority {
         HIGH(0), NORMAL(1), BACKGROUND(2);  //three priority values are allowed
@@ -123,7 +124,7 @@ public class TranslationFacade {
     }
 
     public void test() throws TranslationException {
-        LanguagePair language = selectForTest(ModernMT.getNode().getEngine().getLanguages());
+        LanguagePair language = selectForTest();
         String text = "Translation test " + new Random().nextInt();
 
 
@@ -133,13 +134,29 @@ public class TranslationFacade {
             throw new TranslationException("Empty translation for test sentence '" + text + "'");
     }
 
-    private static LanguagePair selectForTest(LanguageIndex index) {
-        for (LanguagePair pair : index.getLanguages()) {
-            if ("en".equalsIgnoreCase(pair.source.getLanguage()))
-                return pair;
+    private LanguagePair selectForTest() {
+        LanguagePair language = getLastTranslationLanguage();
+
+        if (language == null) {
+            LanguageIndex index = ModernMT.getNode().getEngine().getLanguages();
+
+            for (LanguagePair pair : index.getLanguages()) {
+                if ("en".equalsIgnoreCase(pair.source.getLanguage()))
+                    return pair;
+            }
+
+            language = index.getLanguages().iterator().next();
         }
 
-        return index.getLanguages().iterator().next();
+        return language;
+    }
+
+    private synchronized LanguagePair getLastTranslationLanguage() {
+        return this.lastTranslationLanguage;
+    }
+
+    private synchronized void setLastTranslationLanguage(LanguagePair lastTranslationLanguage) {
+        this.lastTranslationLanguage = lastTranslationLanguage;
     }
 
     // =============================
@@ -272,6 +289,8 @@ public class TranslationFacade {
 
         @Override
         public Translation call() throws TranslationException {
+            ModernMT.translation.setLastTranslationLanguage(direction);
+
             ClusterNode node = ModernMT.getNode();
 
             Engine engine = node.getEngine();
