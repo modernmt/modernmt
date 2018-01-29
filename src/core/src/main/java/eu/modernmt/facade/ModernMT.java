@@ -7,6 +7,10 @@ import eu.modernmt.cluster.ServerInfo;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.config.NodeConfig;
 import eu.modernmt.engine.BootstrapException;
+import eu.modernmt.facade.exceptions.TestFailedException;
+import eu.modernmt.facade.exceptions.TranslationException;
+import eu.modernmt.persistence.Database;
+import eu.modernmt.persistence.PersistenceException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,5 +60,32 @@ public class ModernMT {
 
         return new ServerInfo(new ServerInfo.ClusterInfo(nodes), new ServerInfo.BuildInfo(buildVersion, buildNumber));
     }
+
+    public static void test() throws TestFailedException {
+        ClusterNode node = getNode();
+
+        // 1 - Testing cluster
+        try {
+            cluster.getNodes();
+        } catch (RuntimeException e) {
+            throw new TestFailedException("Failed to retrieve cluster members", e);
+        }
+
+        // 2 - Testing database connection
+        try {
+            Database db = node.getDatabase();
+            db.testConnection();
+        } catch (PersistenceException e) {
+            throw new TestFailedException("Failed to connect to database", e);
+        }
+
+        // 3 - Testing translation engine
+        try {
+            translation.test();
+        } catch (TranslationException e) {
+            throw new TestFailedException("Failed to translate test sentence", e);
+        }
+    }
+
 
 }

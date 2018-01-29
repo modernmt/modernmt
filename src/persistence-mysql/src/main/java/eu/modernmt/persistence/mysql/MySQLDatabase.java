@@ -3,16 +3,20 @@ package eu.modernmt.persistence.mysql;
 import com.mysql.cj.jdbc.MysqlDataSource;
 import eu.modernmt.persistence.*;
 import eu.modernmt.persistence.mysql.utils.SQLUtils;
+import org.apache.commons.io.IOUtils;
 
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 /**
  * Created by andrea on 25/04/17.
  */
 public class MySQLDatabase extends Database {
+
     private String name;
     private DataSource dataSource;
 
@@ -40,7 +44,7 @@ public class MySQLDatabase extends Database {
      * @throws PersistenceException
      */
     @Override
-    public Connection getConnection(boolean cached) throws PersistenceException {
+    public MySQLConnection getConnection(boolean cached) throws PersistenceException {
         try {
             return new MySQLConnection(dataSource.getConnection());
         } catch (SQLException e) {
@@ -96,6 +100,25 @@ public class MySQLDatabase extends Database {
         } finally {
             SQLUtils.closeQuietly(connection);
             SQLUtils.closeQuietly(statement);
+        }
+    }
+
+    @Override
+    public void testConnection() throws PersistenceException {
+        MySQLConnection connection = null;
+        Statement statement = null;
+        ResultSet result = null;
+
+        try {
+            connection = getConnection(true);
+            statement = connection.getDataSourceConnection().createStatement();
+            result = statement.executeQuery("SELECT 1");
+        } catch (SQLException e) {
+            throw new PersistenceException(e);
+        } finally {
+            SQLUtils.closeQuietly(statement);
+            SQLUtils.closeQuietly(result);
+            IOUtils.closeQuietly(connection);
         }
     }
 }

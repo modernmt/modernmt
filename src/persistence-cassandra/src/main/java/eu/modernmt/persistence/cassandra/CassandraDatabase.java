@@ -250,6 +250,18 @@ public class CassandraDatabase extends Database {
         return this.cluster.getMetadata().getKeyspace('"' + this.keyspace + '"');
     }
 
+    @Override
+    public void testConnection() throws PersistenceException {
+        CassandraConnection connection = null;
+
+        try {
+            connection = getConnection(true);
+            if (connection.session.isClosed())
+                throw new PersistenceException("connection closed");
+        } finally {
+            IOUtils.closeQuietly(connection);
+        }
+    }
 
     /**
      * This method inserts an entry id:1, initialized:false in the initialization metadata.

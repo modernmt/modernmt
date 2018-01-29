@@ -122,6 +122,26 @@ public class TranslationFacade {
         }
     }
 
+    public void test() throws TranslationException {
+        LanguagePair language = selectForTest(ModernMT.getNode().getEngine().getLanguages());
+        String text = "Translation test " + new Random().nextInt();
+
+
+        TranslationTaskImpl task = new TranslationTaskImpl(language, text, null, 0, TranslationFacade.Priority.HIGH);
+        Translation translation = task.call();
+        if (!translation.hasWords())
+            throw new TranslationException("Empty translation for test sentence '" + text + "'");
+    }
+
+    private static LanguagePair selectForTest(LanguageIndex index) {
+        for (LanguagePair pair : index.getLanguages()) {
+            if ("en".equalsIgnoreCase(pair.source.getLanguage()))
+                return pair;
+        }
+
+        return index.getLanguages().iterator().next();
+    }
+
     // =============================
     //  Languages
     // =============================
