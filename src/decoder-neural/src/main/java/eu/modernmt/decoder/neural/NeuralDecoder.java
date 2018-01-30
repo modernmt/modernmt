@@ -87,22 +87,22 @@ public class NeuralDecoder implements Decoder, DecoderWithNBest, DataListenerPro
     }
 
     @Override
-    public Translation translate(LanguagePair direction, Sentence text) throws NeuralDecoderException {
-        return translate(direction, text, null, 0);
+    public Translation translate(LanguagePair direction, String variant, Sentence text) throws NeuralDecoderException {
+        return translate(direction, variant, text, null, 0);
     }
 
     @Override
-    public Translation translate(LanguagePair direction, Sentence text, int nbestListSize) throws NeuralDecoderException {
-        return translate(direction, text, null, nbestListSize);
+    public Translation translate(LanguagePair direction, String variant, Sentence text, int nbestListSize) throws NeuralDecoderException {
+        return translate(direction, variant, text, null, nbestListSize);
     }
 
     @Override
-    public Translation translate(LanguagePair direction, Sentence text, ContextVector contextVector) throws NeuralDecoderException {
-        return translate(direction, text, contextVector, 0);
+    public Translation translate(LanguagePair direction, String variant, Sentence text, ContextVector contextVector) throws NeuralDecoderException {
+        return translate(direction, variant, text, contextVector, 0);
     }
 
     @Override
-    public Translation translate(LanguagePair direction, Sentence text, ContextVector contextVector, int nbestListSize) throws NeuralDecoderException {
+    public Translation translate(LanguagePair direction, String variant, Sentence text, ContextVector contextVector, int nbestListSize) throws NeuralDecoderException {
         if (!this.directions.contains(direction))
             throw new UnsupportedLanguageException(direction);
 
@@ -126,10 +126,10 @@ public class NeuralDecoder implements Decoder, DecoderWithNBest, DataListenerPro
 
                     translation = new Translation(words, text, null);
                 } else {
-                    translation = executor.execute(direction, text, suggestions, nbestListSize);
+                    translation = executor.execute(direction, variant, text, suggestions, nbestListSize);
                 }
             } else {
-                translation = executor.execute(direction, text, nbestListSize);
+                translation = executor.execute(direction, variant, text, nbestListSize);
             }
 
             if (logger.isTraceEnabled()) {

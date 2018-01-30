@@ -15,9 +15,11 @@ class UnsupportedLanguageException(BaseException):
 
 class NMTDecoder:
     @staticmethod
-    def _get_int(settings, section, option, default):
+    def _get_p_nz_int(settings, section, option, default):
         try:
-            return settings.getint(section, option)
+            value = settings.getint(section, option)
+            if value < 1:
+                raise ValueError('Option "%s" must be greater than 0' % option)
         except ConfigParser.NoSectionError:
             return default
         except ConfigParser.NoOptionError:
@@ -34,18 +36,9 @@ class NMTDecoder:
         settings = ConfigParser.ConfigParser()
         settings.read(os.path.join(model_path, 'model.conf'))
 
-        self._cold_size = self._get_int(settings, 'settings', 'cold_size', 1000)
-        self._warm_size = self._get_int(settings, 'settings', 'warm_size', 5)
-        self._hot_size = self._get_int(settings, 'settings', 'hot_size', 2)
-
-        if self._cold_size < 1:
-            raise ValueError("Cold size must be larger than 0!")
-
-        if self._warm_size < 1:
-            raise ValueError("Warm size must be larger than 0!")
-
-        if self._hot_size < 1:
-            raise ValueError("Hot size must be larger than 0!")
+        self._cold_size = self._get_p_nz_int(settings, 'settings', 'cold_size', 1000)
+        self._warm_size = self._get_p_nz_int(settings, 'settings', 'warm_size', 5)
+        self._hot_size = self._get_p_nz_int(settings, 'settings', 'hot_size', 2)
 
         self._logger.debug("Model sizes: hot:%d warm:%d cold:%d" % (self._hot_size, self._warm_size, self._cold_size))
 
@@ -80,8 +73,13 @@ class NMTDecoder:
 
     def get_engine(self, source_lang, target_lang, variant=None):
         key = source_lang + '__' + target_lang
+
         if variant is not None:
-            key += "__" + variant
+            variant_key = key + '__' + variant
+
+            if variant_key in self._engines:
+                key = variant_key
+
         if key not in self._engines:
             return None
 

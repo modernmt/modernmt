@@ -81,20 +81,20 @@ public class TranslationFacade {
     //  Translation
     // =============================
 
-    public Translation get(LanguagePair direction, String sentence, Priority priority) throws TranslationException {
-        return get(new TranslationTaskImpl(direction, sentence, null, 0, priority));
+    public Translation get(LanguagePair direction, String sentence, Priority priority, String variant) throws TranslationException {
+        return get(new TranslationTaskImpl(direction, sentence, null, 0, priority, variant));
     }
 
-    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, Priority priority) throws TranslationException {
-        return get(new TranslationTaskImpl(direction, sentence, translationContext, 0, priority));
+    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, Priority priority, String variant) throws TranslationException {
+        return get(new TranslationTaskImpl(direction, sentence, translationContext, 0, priority, variant));
     }
 
-    public Translation get(LanguagePair direction, String sentence, int nbest, Priority priority) throws TranslationException {
-        return get(new TranslationTaskImpl(direction, sentence, null, nbest, priority));
+    public Translation get(LanguagePair direction, String sentence, int nbest, Priority priority, String variant) throws TranslationException {
+        return get(new TranslationTaskImpl(direction, sentence, null, nbest, priority, variant));
     }
 
-    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, int nbest, Priority priority) throws TranslationException {
-        return get(new TranslationTaskImpl(direction, sentence, translationContext, nbest, priority));
+    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, int nbest, Priority priority, String variant) throws TranslationException {
+        return get(new TranslationTaskImpl(direction, sentence, translationContext, nbest, priority, variant));
     }
 
     private Translation get(TranslationTaskImpl task) throws TranslationException {
@@ -128,7 +128,7 @@ public class TranslationFacade {
         String text = "Translation test " + new Random().nextInt();
 
 
-        TranslationTaskImpl task = new TranslationTaskImpl(language, text, null, 0, TranslationFacade.Priority.HIGH);
+        TranslationTaskImpl task = new TranslationTaskImpl(language, text, null, 0, TranslationFacade.Priority.HIGH, null);
         Translation translation = task.call();
         if (!translation.hasWords())
             throw new TranslationException("Empty translation for test sentence '" + text + "'");
@@ -278,13 +278,15 @@ public class TranslationFacade {
         public final ContextVector context;
         public final int nbest;
         public final Priority priority;
+        public final String variant;
 
-        public TranslationTaskImpl(LanguagePair direction, String text, ContextVector context, int nbest, Priority priority) {
+        public TranslationTaskImpl(LanguagePair direction, String text, ContextVector context, int nbest, Priority priority, String variant) {
             this.direction = direction;
             this.text = text;
             this.context = context;
             this.nbest = nbest;
             this.priority = priority;
+            this.variant = variant;
         }
 
         @Override
@@ -364,18 +366,17 @@ public class TranslationFacade {
          * @param engine   the engine to which the translation must be requested
          * @return the obtained Translation
          * @throws DecoderException if there is an error in the Decoding process
-         * @throws AlignerException if there is an error while computing the alignments
          */
-        private Translation translate(Sentence sentence, Engine engine) throws DecoderException, AlignerException {
+        private Translation translate(Sentence sentence, Engine engine) throws DecoderException {
             Decoder decoder = engine.getDecoder();
 
             Translation translation;
 
             if (nbest > 0) {
                 DecoderWithNBest nBestDecoder = (DecoderWithNBest) decoder;
-                translation = nBestDecoder.translate(direction, sentence, context, nbest);
+                translation = nBestDecoder.translate(direction, variant, sentence, context, nbest);
             } else {
-                translation = decoder.translate(direction, sentence, context);
+                translation = decoder.translate(direction, variant, sentence, context);
             }
             return translation;
         }
@@ -387,10 +388,8 @@ public class TranslationFacade {
          * @param engine    the engine to which the translations must be requested
          * @return an array containing, for each passed Sentence, the corresponding Translation
          * @throws DecoderException if there is an error in the Decoding process
-         * @throws AlignerException if there is an error while computing the alignments
          */
-        private Translation[] translate(Sentence[] sentences, Engine engine) throws DecoderException, AlignerException {
-
+        private Translation[] translate(Sentence[] sentences, Engine engine) throws DecoderException {
             Translation[] translations = new Translation[sentences.length];
 
             for (int i = 0; i < sentences.length; i++)
@@ -414,7 +413,6 @@ public class TranslationFacade {
          * @return the Translation obtained by merging the sub-translations back into one
          */
         private Translation merge(Sentence originalSentence, Sentence[] splitSentences, Translation[] splitTranslations) {
-
             Translation translation = this.join(originalSentence, splitSentences, splitTranslations);
 
             /* If there are nbests in the obtained translations, they must be merged too.

@@ -10,8 +10,8 @@ import eu.modernmt.model.Translation;
  */
 public interface DecoderWithNBest extends Decoder {
 
-    Translation translate(LanguagePair direction, Sentence text, int nbestListSize) throws DecoderException;
+    Translation translate(LanguagePair direction, String variant, Sentence text, int nbestListSize) throws DecoderException;
 
-    Translation translate(LanguagePair direction, Sentence text, ContextVector contextVector, int nbestListSize) throws DecoderException;
+    Translation translate(LanguagePair direction, String variant, Sentence text, ContextVector contextVector, int nbestListSize) throws DecoderException;
 
 }

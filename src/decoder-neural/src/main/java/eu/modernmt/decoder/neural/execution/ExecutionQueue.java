@@ -42,8 +42,8 @@ public interface ExecutionQueue extends Closeable {
     }
 
 
-    Translation execute(LanguagePair direction, Sentence sentence, int nBest) throws NeuralDecoderException;
+    Translation execute(LanguagePair direction, String variant, Sentence sentence, int nBest) throws NeuralDecoderException;
 
-    Translation execute(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws NeuralDecoderException;
+    Translation execute(LanguagePair direction, String variant, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws NeuralDecoderException;
 
 }

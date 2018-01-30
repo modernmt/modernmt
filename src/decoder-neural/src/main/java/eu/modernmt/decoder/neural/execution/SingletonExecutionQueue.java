@@ -57,13 +57,13 @@ class SingletonExecutionQueue implements ExecutionQueue {
     }
 
     @Override
-    public synchronized Translation execute(LanguagePair direction, Sentence sentence, int nBest) throws NeuralDecoderException {
-        return decoder.translate(direction, sentence, nBest);
+    public synchronized Translation execute(LanguagePair direction, String variant, Sentence sentence, int nBest) throws NeuralDecoderException {
+        return decoder.translate(direction, variant, sentence, nBest);
     }
 
     @Override
-    public synchronized Translation execute(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws NeuralDecoderException {
-        return decoder.translate(direction, sentence, suggestions, nBest);
+    public synchronized Translation execute(LanguagePair direction, String variant, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws NeuralDecoderException {
+        return decoder.translate(direction, variant, sentence, suggestions, nBest);
     }
 
     /**

@@ -96,17 +96,17 @@ class ParallelExecutionQueue implements ExecutionQueue {
     }
 
     @Override
-    public Translation execute(LanguagePair direction, Sentence sentence, int nBest) throws NeuralDecoderException {
-        return execute(direction, sentence, null, nBest);
+    public Translation execute(LanguagePair direction, String variant, Sentence sentence, int nBest) throws NeuralDecoderException {
+        return execute(direction, variant, sentence, null, nBest);
     }
 
     @Override
-    public Translation execute(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws NeuralDecoderException {
+    public Translation execute(LanguagePair direction, String variant, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws NeuralDecoderException {
         NativeProcess decoder = null;
 
         try {
             decoder = this.queue.take();
-            return decoder.translate(direction, sentence, suggestions, nBest);
+            return decoder.translate(direction, variant, sentence, suggestions, nBest);
         } catch (InterruptedException e) {
             throw new NeuralDecoderException("No NMT processes available", e);
         } finally {

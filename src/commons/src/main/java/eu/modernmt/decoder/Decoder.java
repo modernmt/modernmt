@@ -14,9 +14,9 @@ public interface Decoder extends Closeable {
 
     void setListener(DecoderListener listener);
 
-    Translation translate(LanguagePair direction, Sentence text) throws DecoderException;
+    Translation translate(LanguagePair direction, String variant, Sentence text) throws DecoderException;
 
-    Translation translate(LanguagePair direction, Sentence text, ContextVector contextVector) throws DecoderException;
+    Translation translate(LanguagePair direction, String variant, Sentence text, ContextVector contextVector) throws DecoderException;
 
     /**
      * This method states whether this decoder supports the sentence splittin feature or not.
