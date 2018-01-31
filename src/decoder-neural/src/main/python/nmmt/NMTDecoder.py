@@ -80,6 +80,8 @@ class NMTDecoder:
 
             if variant_key in self._engines:
                 key = variant_key
+            else:
+                self._logger.warning('Variant "%s" not found, falling back to "%s"' % (variant_key, key))
 
         if key not in self._engines:
             return None
