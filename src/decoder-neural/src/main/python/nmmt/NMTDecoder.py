@@ -20,6 +20,7 @@ class NMTDecoder:
             value = settings.getint(section, option)
             if value < 1:
                 raise ValueError('Option "%s" must be greater than 0' % option)
+            return value
         except ConfigParser.NoSectionError:
             return default
         except ConfigParser.NoOptionError:
