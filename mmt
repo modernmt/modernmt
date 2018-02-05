@@ -86,7 +86,8 @@ def main_create(argv):
     nmt_arguments.add_argument('--neural', action='store_true', dest='neural', default=False,
                                help='if set, the process will train a neural engine (default is phrase-based)')
     nmt_arguments.add_argument('--checkpoint', dest='checkpoint',
-                               help='initial model for the training, by default a random network is used')
+                               help='initial model for the training, by default a random network is used. '
+                                    'You must use the model prefix, i.e. "path/to/engine/models/decoder/model.en__it")')
     nmt_arguments.add_argument('--metadata', dest='metadata',
                                help='the path to the neural engine metadata file')
     nmt_arguments.add_argument('--validation-corpora', dest='validation_corpora',
