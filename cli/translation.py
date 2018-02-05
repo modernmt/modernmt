@@ -143,6 +143,7 @@ class XLIFFTranslator(Translator):
 
     def __init__(self, node, context_string=None, context_file=None, context_vector=None):
         Translator.__init__(self, node, context_string, context_file, context_vector)
+        self._target_lang = node.engine.target_lang
         self._content = []
         self._pool = multithread.Pool(100)
 
@@ -170,6 +171,12 @@ class XLIFFTranslator(Translator):
 
         if source_content is None:
             return None
+
+        if target_tag is None:
+            target_tag = ElementTree.Element('target', attrib={
+                'xml:lang': self._target_lang
+            })
+            tu.append(target_tag)
 
         translation = self._translate(source_content)
         self._append_translation(translation['translation'], target_tag, placeholders)
