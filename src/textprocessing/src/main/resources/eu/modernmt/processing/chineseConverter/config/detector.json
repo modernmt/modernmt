@@ -1,0 +1,46 @@
+{
+  "name": "Detector",
+  "dicts": [{
+      "name": "s",
+      "description":"Simplified Chinese Vocabulary",
+      "dicts": [
+        "STCharacters.txt"
+      ],
+      "revdicts": [
+        "TSCharacters.txt"
+      ]}, {
+      "name":"t",
+      "description":"Traditional Chinese Vocabulary",
+      "dicts": [
+        "TSCharacters.txt"
+      ],
+      "revdicts": [
+        "STCharacters.txt"
+      ],
+      "variants": [
+        "TWVariantsRev.txt",
+        "HKVariantsRev.txt"
+      ]}, {
+      "name":"tw",
+      "description":"Traditional Chinese Vocabulary (Taiwan standard)",
+      "dicts": [
+        "TSCharacters.txt"       
+      ],
+      "revdicts": [
+        "STCharacters.txt"
+      ],
+      "variants": [
+        "TWVariants.txt"
+      ]}, {
+      "name":"hk",
+      "description":"Traditional Chinese Vocabulary (Hong Kong standard)",
+      "dicts": [
+        "TSCharacters.txt"      
+      ],
+      "revdicts": [
+        "STCharacters.txt"
+      ],
+      "variants": [
+        "HKVariants.txt"
+      ]}]
+}
