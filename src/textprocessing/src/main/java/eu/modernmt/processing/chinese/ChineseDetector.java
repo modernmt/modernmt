@@ -1,12 +1,9 @@
-package eu.modernmt.processing.chineseConverter;
+package eu.modernmt.processing.chinese;
 /**
  * Created by nicolabertoldi on 04/02/18.
  */
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 
 import java.io.File;
 import java.io.FileReader;
@@ -15,15 +12,15 @@ import java.nio.file.Files;
 import java.util.*;
 
 /**
- * Detector holds the vocabularies of Simplified/Traditional Chinese and variants for detecting the actual language of a text
+ * ChineseDetector holds the vocabularies of Simplified/Traditional Chinese and variants for detecting the actual language of a text
  */
-public class Detector {
+public class ChineseDetector {
 
     protected String name;
     protected String config;
-    protected Map<String,Set<String>> dicts;
-    protected Map<String,Float> priorities;
-    protected Map<String,String> names;
+    protected Map<String, Set<String>> dicts;
+    protected Map<String, Float> priorities;
+    protected Map<String, String> names;
     protected String resourcesPath;
 
     protected boolean verbose = false;
@@ -40,15 +37,15 @@ public class Detector {
         this.resourcesPath = resources;
     }
 
-    public Detector() {
+    public ChineseDetector() {
         this("detector");
     }
 
     /**
      * @param config the config to use
      */
-    public Detector(String config) {
-        resourcesPath = Preprocessor.class.getPackage().getName().replace('.', '/');
+    public ChineseDetector(String config) {
+        resourcesPath = getClass().getPackage().getName().replace('.', '/');
 
         dicts = new HashMap<>();
         priorities = new HashMap<>();
@@ -56,8 +53,8 @@ public class Detector {
         this.config = "";
 
         setConfig(config);
-        if (verbose){
-            System.err.println("Detector configuration file:" + this.config);
+        if (verbose) {
+            System.err.println("ChineseDetector configuration file:" + this.config);
             System.err.println("resources:" + getResourcesPath());
         }
     }
@@ -143,10 +140,10 @@ public class Detector {
                         }
                     }
                 }
-                dicts.put(_name,_set);
+                dicts.put(_name, _set);
                 priorities.put(_name, prior);
                 names.put(_name, _description);
-                prior = prior/2;
+                prior = prior / 2;
             }
 
         } catch (IOException | JsonParseException e) {
@@ -155,18 +152,18 @@ public class Detector {
         }
     }
 
-    public void printStats () {
+    public void printStats() {
         for (String _name : dicts.keySet()) {
             System.out.println(getDescription(_name) + ": " + dicts.get(_name).size() + " symbols");
         }
     }
 
-    private Map<String,Float> computeScores(String string) {
+    private Map<String, Float> computeScores(String string) {
         String[] chars = string.trim().split("");
-        Map<String,Float> scores = new HashMap<>();
+        Map<String, Float> scores = new HashMap<>();
 
         for (String _name : dicts.keySet()) {
-            scores.put(_name, priorities.get(_name) );
+            scores.put(_name, priorities.get(_name));
             scores.put(_name, 0.0f);
             for (String c : chars) {
                 if (dicts.get(_name).contains(c)) {
@@ -179,6 +176,7 @@ public class Detector {
 
     /**
      * detect the language of the string
+     *
      * @param string input string to convert
      * @return language
      */
@@ -193,19 +191,19 @@ public class Detector {
                 best = s;
                 language = _name;
             }
-            if (verbose){
+            if (verbose) {
                 System.err.println(names.get(_name) + ":" + scores.get(_name) + " out of " + string.length() + " priorities:" + priorities.get(_name));
             }
         }
         return language;
     }
 
-    public String detectDescription(String string){
+    public String detectDescription(String string) {
         String language = detect(string);
         return names.get(language);
     }
 
-    public String getDescription(String language){
+    public String getDescription(String language) {
         return names.get(language);
     }
 }

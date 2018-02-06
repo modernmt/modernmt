@@ -1,4 +1,4 @@
-package eu.modernmt.processing.chineseConverter;
+package eu.modernmt.processing.chinese;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -17,7 +17,7 @@ import java.util.Map;
 /**
  * Dictionary holds the mappings for converting Chinese characters
  */
-public class Dictionary {
+class Dictionary {
 
     protected String name;
     protected String config;
@@ -38,13 +38,13 @@ public class Dictionary {
     public void setResources(String resources) {
         this.resourcesPath = resources;
     }
+
     /**
-     *
      * @param config the config to use, including "hk2s", "s2hk", "s2t", "s2tw", "s2twp",
      *               "t2hk", "t2s", "t2tw", "tw2s", and "tw2sp"
      */
     public Dictionary(String config) {
-        resourcesPath = Preprocessor.class.getPackage().getName().replace('.', '/');
+        resourcesPath = getClass().getPackage().getName().replace('.', '/');
 
         dictChain = new ArrayList<>();
 
@@ -52,14 +52,13 @@ public class Dictionary {
         this.config = "";
 
         setConfig(config);
-        if (verbose){
+        if (verbose) {
             System.err.println("resources:" + getResourcesPath());
             System.err.println("Dictionary configuration file:" + this.config);
         }
     }
 
     /**
-     *
      * @return dict name
      */
     public String getDictName() {
@@ -69,6 +68,7 @@ public class Dictionary {
 
     /**
      * set config
+     *
      * @param config the config to use, including "hk2s", "s2hk", "s2t", "s2tw", "s2twp",
      *               "t2hk", "t2s", "t2tw", "tw2s", and "tw2sp"
      */
@@ -134,7 +134,7 @@ public class Dictionary {
 
         for (String filename : dictFileNames) {
             dict = new HashMap<>();
-            filename = getResourcesPath() + "/dictionary/"  + filename;
+            filename = getResourcesPath() + "/dictionary/" + filename;
 
             try {
                 File file = new File(filename);
@@ -160,8 +160,7 @@ public class Dictionary {
 
         if (type.equals("txt")) {
             filenames.add(dictObject.get("file").getAsString());
-        }
-        else if (type.equals("group")) {
+        } else if (type.equals("group")) {
             JsonArray dictGroup = (JsonArray) dictObject.get("dicts");
             for (Object obj : dictGroup) {
                 filenames.addAll(getDictFileNames((JsonObject) obj));
@@ -173,7 +172,6 @@ public class Dictionary {
 
 
     /**
-     *
      * @return dictChain
      */
     public List<Map<String, String>> getDictChain() {
