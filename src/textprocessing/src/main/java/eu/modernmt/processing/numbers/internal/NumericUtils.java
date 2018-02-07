@@ -33,7 +33,7 @@ public class NumericUtils {
     public static String obfuscate(String text) {
         char[] chars = text.toCharArray();
 
-        for (int i = 0; i < chars[i]; i++) {
+        for (int i = 0; i < chars.length; i++) {
             char c = chars[i];
             if (c >= '0' && c <= '9')
                 chars[i] = '?';
