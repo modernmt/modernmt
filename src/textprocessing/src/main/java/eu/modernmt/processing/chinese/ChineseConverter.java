@@ -1,55 +1,151 @@
 package eu.modernmt.processing.chinese;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+
+import java.io.*;
+import java.net.URL;
+import java.nio.file.Files;
+import java.util.*;
 
 /**
  * ChineseConverter converts Simplified Chinese to Traditional Chinese (including Taiwan and Hong Konf standard) and vice versa
  */
 public class ChineseConverter {
 
-    Dictionary dictionary;
-    protected boolean verbose = false;
+    protected String name;
+    protected String description;
+    protected String config;
+    protected Map<String, String> dictionary;
 
-    public void setVerbose(boolean verbose) {
-        dictionary.setVerbose(verbose);
-        this.verbose = verbose;
-    }
 
     /**
-     * construct ChineseConverter with default config of "s2t"
+     * construct ChineseConverter with default config of "CN2TW"
      */
-    public ChineseConverter() {
-        this("s2t");
+    public ChineseConverter() throws IOException {
+        this("CN-TW");
     }
 
     /**
      * construct ChineseConverter with conversion
      *
-     * @param conversion options are "hk2s", "s2hk", "s2t", "s2tw", "s2twp", "t2hk", "t2s",
-     *                   "t2tw", "tw2s", and "tw2sp"
+     * @param conversion options are "CN-TW" or "TW-CN"
      */
-    public ChineseConverter(String conversion) {
-        dictionary = new Dictionary(conversion);
+    public ChineseConverter(String conversion) throws IOException {
+        dictionary = new TreeMap<>();
+        name = conversion;
+        this.config = "";
+        setConfig(name);
     }
 
     /**
      * @return dict name
      */
     public String getDictName() {
-        return dictionary.getDictName();
+        return name;
     }
 
     /**
      * set ChineseConverter a new conversion
      *
-     * @param conversion options are "hk2s", "s2hk", "s2t", "s2tw", "s2twp", "t2hk", "t2s",
-     *                   "t2tw", "tw2s", and "tw2sp"
+     * @param conversion options are "CN-TW" or "TW-CN"
      */
-    public void setConversion(String conversion) {
-        dictionary.setConfig(conversion);
+    public void setConversion(String conversion) throws IOException {
+       setConfig(conversion);
     }
 
+    /**
+     * set config
+     * @param config the config to use, including "hk2s", "s2hk", "s2t", "s2tw", "s2twp",
+     *               "t2hk", "t2s", "t2tw", "tw2s", and "tw2sp"
+     */
+    public void setConfig(String config) throws IOException {
+        config = config.toUpperCase();
+
+        if (this.config.equals(config)) {
+            return;
+        }
+        this.config = config;
+
+        loadDict();
+    }
+
+
+    /**
+     * load dictionary files into dictChain
+     */
+    private void loadDict() throws IOException{
+        dictionary.clear();
+        JsonParser jsonParser = new JsonParser();
+
+        String filename = "";
+
+        try {
+            String xmlPath = getClass().getPackage().getName().replace('.', '/');
+            xmlPath = xmlPath + "/config/" + config + ".json";
+            URL url = getClass().getClassLoader().getResource(xmlPath);
+            File file;
+            if (url.toString().startsWith("jar:")) {
+                InputStream inputStream = getClass().getResourceAsStream(xmlPath);
+                file = File.createTempFile("tmpfile", ".tmp");
+                OutputStream outputStream = new FileOutputStream(file);
+
+                int read;
+                byte[] bytes = new byte[1024];
+                while ((read = inputStream.read(bytes)) != -1) {
+                    outputStream.write(bytes, 0, read);
+                }
+
+                file.deleteOnExit();
+            }
+            else {
+                file = new File(url.getFile());
+            }
+
+            Object object = jsonParser.parse(new FileReader(file));
+            JsonObject dictRoot = (JsonObject) object;
+
+            name = dictRoot.get("name").getAsString();
+            description = dictRoot.get("description").getAsString();
+            filename = dictRoot.get("dict").getAsString();
+
+        } catch (JsonSyntaxException e) {
+            throw new Error("Json format error",e);
+        }
+
+        try {
+            String xmlPath = getClass().getPackage().getName().replace('.', '/');
+            xmlPath = xmlPath + "/mapping/" + filename;
+            URL url = getClass().getClassLoader().getResource(xmlPath);
+            File file;
+            if (url.toString().startsWith("jar:")) {
+                InputStream inputStream = getClass().getResourceAsStream(xmlPath);
+                file = File.createTempFile("tmpfile", ".tmp");
+                OutputStream outputStream = new FileOutputStream(file);
+
+                int read;
+                byte[] bytes = new byte[1024];
+                while ((read = inputStream.read(bytes)) != -1) {
+                    outputStream.write(bytes, 0, read);
+                }
+
+                file.deleteOnExit();
+            } else {
+                file = new File(url.getFile());
+            }
+
+            List<String> lines = Files.readAllLines(file.toPath());
+
+            for (String line : lines) {
+                String[] words = line.trim().split("\t");
+                dictionary.put(words[0], words[1]);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
 
     /**
      * convert the string
@@ -62,46 +158,34 @@ public class ChineseConverter {
             return "";
         }
 
-        StringBuilder stringBuilder = new StringBuilder(string);
+        StringBuilder outputStringBuilder = new StringBuilder(string);
 
-        for (Map<String, String> dictMap : dictionary.getDictChain()) {
-            for (String key : dictMap.keySet()) {
-                int fromIndex = 0;
-                int pos = stringBuilder.indexOf(key, fromIndex);
-                while (pos >= 0) {
-                    String converted = dictMap.get(key);
-                    converted = converted.split(" ")[0];  // get the 1st result if multiple choices available
-                    stringBuilder.replace(pos, pos + key.length(), converted);
-                    fromIndex = pos + converted.length();
-                    pos = stringBuilder.indexOf(key, fromIndex);
-                }
+        for (int i = 0; i < string.length(); ++i){
+            String c = string.substring(i,i+1);
+            if (dictionary.containsKey(c)) {
+                outputStringBuilder.replace(i,i+1,dictionary.get(c));
             }
         }
 
-        return stringBuilder.toString();
+        return outputStringBuilder.toString();
     }
 
-    public static void main(String[] args) {
-        String targetLanguage = "s";   //simplified
+    public static void main(String[] args) throws IOException {
+        String targetLanguage = "TW";   //internal language is Traditional Chinese (TW)
+
+        ChineseConverter conv = new ChineseConverter();
 
         Map<String, ChineseConverter> converters = new HashMap<>();
         ChineseDetector detector = new ChineseDetector();
 
-//        String from;
-//        from = "开放中文转换"; //simplified
-//        from = "開放中文轉換"; //traditional
-//        from = "偽"; //tw or hk
-//        from = "香菸（英語：Cigarette，為菸草製品的一種。滑鼠是一種很常見及常用的電腦輸入裝置";
-        String sourceLanguage, conversion;
+        String sourceLanguage;
         String to;
 
         String[] fromList = {"开放中文转换", "開放中文轉換", "偽", "香菸（英語：Cigarette，為菸草製品的一種。滑鼠是一種很常見及常用的電腦輸入裝置"};
 
         for (String from : fromList) {
             sourceLanguage = detector.detect(from);
-            conversion = sourceLanguage + "2" + targetLanguage;
-
-            System.err.println("conversion:" + conversion);
+            String conversion = sourceLanguage + "-" + targetLanguage;
 
             if (sourceLanguage.equals(targetLanguage)) {
                 to = from;
@@ -112,7 +196,7 @@ public class ChineseConverter {
                 ChineseConverter converter = converters.get(conversion);
                 to = converter.convert(from);
             }
-            System.out.println(to);
+            System.out.println("from:" + from + " to:" + to + "\n");
         }
     }
 }

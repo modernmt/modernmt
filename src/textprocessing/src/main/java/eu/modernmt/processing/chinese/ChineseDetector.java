@@ -3,11 +3,12 @@ package eu.modernmt.processing.chinese;
  * Created by nicolabertoldi on 04/02/18.
  */
 
-import com.google.gson.*;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import com.google.gson.*;
+import eu.modernmt.lang.Language;
+
+import java.io.*;
+import java.net.URL;
 import java.nio.file.Files;
 import java.util.*;
 
@@ -21,42 +22,25 @@ public class ChineseDetector {
     protected Map<String, Set<String>> dicts;
     protected Map<String, Float> priorities;
     protected Map<String, String> names;
-    protected String resourcesPath;
-
-    protected boolean verbose = false;
-
-    public void setVerbose(boolean verbose) {
-        this.verbose = verbose;
-    }
-
-    public String getResourcesPath() {
-        return resourcesPath;
-    }
-
-    public void setResources(String resources) {
-        this.resourcesPath = resources;
-    }
 
     public ChineseDetector() {
         this("detector");
+    }
+
+    public Map<String, String> getNames() {
+        return names;
     }
 
     /**
      * @param config the config to use
      */
     public ChineseDetector(String config) {
-        resourcesPath = getClass().getPackage().getName().replace('.', '/');
-
         dicts = new HashMap<>();
         priorities = new HashMap<>();
         names = new HashMap<>();
         this.config = "";
 
         setConfig(config);
-        if (verbose) {
-            System.err.println("ChineseDetector configuration file:" + this.config);
-            System.err.println("resources:" + getResourcesPath());
-        }
     }
 
 
@@ -74,6 +58,7 @@ public class ChineseDetector {
         }
         this.config = config;
         loadDict();
+        printSupportedLanguages();
     }
 
 
@@ -85,70 +70,90 @@ public class ChineseDetector {
         JsonParser jsonParser = new JsonParser();
 
         try {
-            String filename = getResourcesPath() + "/config/" + config + ".json";
-            File file = new File(filename);
+            String xmlPath = getClass().getPackage().getName().replace('.', '/');
+            xmlPath = xmlPath + "/config/" + config + ".json";
+            URL url = getClass().getClassLoader().getResource(xmlPath);
+            File file;
+            if (url.toString().startsWith("jar:")) {
+                InputStream inputStream = getClass().getResourceAsStream(xmlPath);
+                file = File.createTempFile("tmpfile", ".tmp");
+                OutputStream outputStream = new FileOutputStream(file);
+
+                int read;
+                byte[] bytes = new byte[1024];
+                while ((read = inputStream.read(bytes)) != -1) {
+                    outputStream.write(bytes, 0, read);
+                }
+
+                file.deleteOnExit();
+            }
+            else {
+                file = new File(url.getFile());
+            }
 
             Object object = jsonParser.parse(new FileReader(file));
-
             JsonObject dictRoot = (JsonObject) object;
+
             name = dictRoot.get("name").getAsString();
             JsonArray jsonArray = dictRoot.get("dicts").getAsJsonArray();
 
             Float prior = 0.1f;
+            //loop over all languages
             for (Object obj : jsonArray) {
 
                 JsonObject _dictRoot = (JsonObject) obj;
                 String _name = _dictRoot.get("name").getAsString();
                 String _description = _dictRoot.get("description").getAsString();
+                String _files = _dictRoot.get("description").getAsString();
 
                 Set<String> _set = new HashSet<>();
 
-                //read all characters from the first tab-separated column of all files "dicts"
+
+
+                // read all characters from the first tab-separated column of all files "dicts"
                 for (JsonElement _obj : _dictRoot.get("dicts").getAsJsonArray()) {
-                    File _file = new File(getResourcesPath() + "/dictionary/" + _obj.getAsString());
+                    xmlPath = getClass().getPackage().getName().replace('.', '/');
+                    xmlPath = xmlPath + "/vocabulary/" + _name + ".voc";
+                    url = getClass().getClassLoader().getResource(xmlPath);
+                    try {
+                        if (url.toString().startsWith("jar:")) {
+                            InputStream inputStream = getClass().getResourceAsStream(xmlPath);
+                            file = File.createTempFile("tmpdictfile", ".tmp");
+                            OutputStream outputStream = new FileOutputStream(file);
 
-                    List<String> lines = Files.readAllLines(_file.toPath());
-                    for (String line : lines) {
-                        String[] chars = line.trim().split("\t")[0].trim().split("");
-                        _set.addAll(Arrays.asList(chars));
-                    }
-                }
-                //read all characters from the second tab-separated column of all files "revdicts"
-                for (JsonElement _obj : _dictRoot.get("revdicts").getAsJsonArray()) {
-                    File _file = new File(getResourcesPath() + "/dictionary/" + _obj.getAsString());
-
-                    List<String> lines = Files.readAllLines(_file.toPath());
-                    for (String line : lines) {
-                        String[] chars = line.trim().split("\t")[1].trim().split("");
-                        _set.addAll(Arrays.asList(chars));
-                    }
-                }
-
-                //handle variants for Taiwan and Hong Kong standards
-                if (_dictRoot.has("variants")) {
-                    for (JsonElement _obj : _dictRoot.get("variants").getAsJsonArray()) {
-                        File _file = new File(getResourcesPath() + "/dictionary/" + _obj.getAsString());
-
-                        List<String> lines = Files.readAllLines(_file.toPath());
-                        for (String line : lines) {
-                            String[] from_chars = line.trim().split("\t")[0].trim().split("");
-                            String[] to_chars = line.trim().split("\t")[1].trim().split("");
-                            for (int i = 0; i < from_chars.length; ++i) {
-                                _set.remove(from_chars[i]);
-                                _set.add(to_chars[i]);
+                            int read;
+                            byte[] bytes = new byte[1024];
+                            while ((read = inputStream.read(bytes)) != -1) {
+                                outputStream.write(bytes, 0, read);
                             }
+
+                            file.deleteOnExit();
+                        } else {
+                            file = new File(url.getFile());
                         }
+
+                        List<String> lines = Files.readAllLines(file.toPath());
+                        for (String line : lines) {
+                            String[] chars = line.trim().split("\t")[0].trim().split("");
+                            _set.addAll(Arrays.asList(chars));
+                        }
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
                 }
+
+
                 dicts.put(_name, _set);
                 priorities.put(_name, prior);
                 names.put(_name, _description);
                 prior = prior / 2;
             }
 
-        } catch (IOException | JsonParseException e) {
+        } catch (JsonParseException e) {
             e.printStackTrace();
-            System.exit(1);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -191,9 +196,6 @@ public class ChineseDetector {
                 best = s;
                 language = _name;
             }
-            if (verbose) {
-                System.err.println(names.get(_name) + ":" + scores.get(_name) + " out of " + string.length() + " priorities:" + priorities.get(_name));
-            }
         }
         return language;
     }
@@ -205,5 +207,27 @@ public class ChineseDetector {
 
     public String getDescription(String language) {
         return names.get(language);
+    }
+
+    public void printSupportedLanguages() {
+        for (String language : names.keySet()){
+            System.err.println("supported language:" + language);
+        }
+    }
+
+    public boolean support(Language language){
+        String region = language.getRegion();
+
+        if (language.getLanguage() == "zh") { //language must be zh
+            if (region == null) {
+                region = "TW"; //default region if not specified; override with Traditional Chinese (TW)
+            }
+
+            if (getNames().containsKey(region)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
