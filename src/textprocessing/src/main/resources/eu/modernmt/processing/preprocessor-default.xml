@@ -7,6 +7,9 @@
     <processor>eu.modernmt.processing.xml.XMLTagIdentifier</processor>
     <processor>eu.modernmt.processing.xml.XMLEntityEscaper</processor>
 
+    <!-- Chinese Pre-Processing -->
+    <processor source="zh zh-CN">eu.modernmt.processing.chinese.ChinesePreprocessor</processor>
+
     <!-- String normalization -->
     <processor>eu.modernmt.processing.chars.RareCharsNormalizer</processor>
     <processor>eu.modernmt.processing.chars.WhitespacesNormalizer</processor>
