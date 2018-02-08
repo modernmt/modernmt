@@ -1,12 +1,14 @@
 package eu.modernmt.processing.chinese;
 
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
+import eu.modernmt.lang.Language;
+import eu.modernmt.lang.UnsupportedLanguageException;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.file.Files;
 import java.util.*;
 
 /**
@@ -17,26 +19,38 @@ public class ChineseConverter {
     protected String name;
     protected String description;
     protected String config;
-    protected Map<String, String> dictionary;
+    private static final  Map<Character, Character> dictionary = new TreeMap<>();
 
 
     /**
-     * construct ChineseConverter with default config of "CN2TW"
+     * construct ChineseConverter with default config of "CN-TW"
      */
-    public ChineseConverter() throws IOException {
-        this("CN-TW");
+    public ChineseConverter() throws IOException, UnsupportedLanguageException {
+        this(new Language("zh","CN"),new Language("zh","TW")); //the default conversion is from Simplified CHinese (CN) to Traditional Chinese (TW)
     }
 
     /**
      * construct ChineseConverter with conversion
      *
-     * @param conversion options are "CN-TW" or "TW-CN"
+     * @param src language for converting into
+     * @param trg language for converting into
      */
-    public ChineseConverter(String conversion) throws IOException {
-        dictionary = new TreeMap<>();
-        name = conversion;
+    public ChineseConverter(Language src, Language trg) throws IOException, UnsupportedLanguageException {
+
+        String srcRegion = src.getRegion();
+        String trgRegion = trg.getRegion();
+        if (srcRegion == null){ srcRegion = "CN"; }
+        if (trgRegion == null){ trgRegion = "TW"; }
+
+        name = srcRegion + "-" + trgRegion;
+        if ( ! name.equals("CN-TW") && ! name.equals("TW-CN") ){
+            throw new UnsupportedLanguageException(src,trg);
+        }
         this.config = "";
-        setConfig(name);
+
+        if (dictionary.size() == 0) {
+            setConfig(name);
+        }
     }
 
     /**
@@ -57,8 +71,7 @@ public class ChineseConverter {
 
     /**
      * set config
-     * @param config the config to use, including "hk2s", "s2hk", "s2t", "s2tw", "s2twp",
-     *               "t2hk", "t2s", "t2tw", "tw2s", and "tw2sp"
+     * @param config the config to use, including "CN-TW" or "TW-CN"
      */
     public void setConfig(String config) throws IOException {
         config = config.toUpperCase();
@@ -79,72 +92,37 @@ public class ChineseConverter {
         dictionary.clear();
         JsonParser jsonParser = new JsonParser();
 
-        String filename = "";
+        String filename;
+        List<String> maps = null;
 
         try {
             String xmlPath = getClass().getPackage().getName().replace('.', '/');
             xmlPath = xmlPath + "/config/" + config + ".json";
             URL url = getClass().getClassLoader().getResource(xmlPath);
-            File file;
-            if (url.toString().startsWith("jar:")) {
-                InputStream inputStream = getClass().getResourceAsStream(xmlPath);
-                file = File.createTempFile("tmpfile", ".tmp");
-                OutputStream outputStream = new FileOutputStream(file);
+            BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()));
 
-                int read;
-                byte[] bytes = new byte[1024];
-                while ((read = inputStream.read(bytes)) != -1) {
-                    outputStream.write(bytes, 0, read);
+            String inputLine;
+            while ((inputLine = in.readLine()) != null) {
+                String _name = inputLine.trim();
+                xmlPath = getClass().getPackage().getName().replace('.', '/');
+                xmlPath = xmlPath + "/mapping/" + _name;
+                url = getClass().getClassLoader().getResource(xmlPath);
+                BufferedReader mapReader = new BufferedReader(new InputStreamReader(url.openStream()));
+
+                Set<Character> _set = new HashSet<>();
+                while ((inputLine = mapReader.readLine()) != null) {
+                    String[] words = inputLine.trim().split("\t");
+                    dictionary.put(words[0].charAt(0), words[1].charAt(0));
+                    _set.add(inputLine.charAt(0));
                 }
-
-                file.deleteOnExit();
+                mapReader.close();
             }
-            else {
-                file = new File(url.getFile());
-            }
-
-            Object object = jsonParser.parse(new FileReader(file));
-            JsonObject dictRoot = (JsonObject) object;
-
-            name = dictRoot.get("name").getAsString();
-            description = dictRoot.get("description").getAsString();
-            filename = dictRoot.get("dict").getAsString();
-
-        } catch (JsonSyntaxException e) {
-            throw new Error("Json format error",e);
-        }
-
-        try {
-            String xmlPath = getClass().getPackage().getName().replace('.', '/');
-            xmlPath = xmlPath + "/mapping/" + filename;
-            URL url = getClass().getClassLoader().getResource(xmlPath);
-            File file;
-            if (url.toString().startsWith("jar:")) {
-                InputStream inputStream = getClass().getResourceAsStream(xmlPath);
-                file = File.createTempFile("tmpfile", ".tmp");
-                OutputStream outputStream = new FileOutputStream(file);
-
-                int read;
-                byte[] bytes = new byte[1024];
-                while ((read = inputStream.read(bytes)) != -1) {
-                    outputStream.write(bytes, 0, read);
-                }
-
-                file.deleteOnExit();
-            } else {
-                file = new File(url.getFile());
-            }
-
-            List<String> lines = Files.readAllLines(file.toPath());
-
-            for (String line : lines) {
-                String[] words = line.trim().split("\t");
-                dictionary.put(words[0], words[1]);
-            }
+            in.close();
+        } catch (MalformedURLException e) {
+            throw new Error(e);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new Error(e);
         }
-
     }
 
     /**
@@ -159,11 +137,10 @@ public class ChineseConverter {
         }
 
         StringBuilder outputStringBuilder = new StringBuilder(string);
-
         for (int i = 0; i < string.length(); ++i){
-            String c = string.substring(i,i+1);
+            Character c = string.charAt(i);
             if (dictionary.containsKey(c)) {
-                outputStringBuilder.replace(i,i+1,dictionary.get(c));
+                outputStringBuilder.setCharAt(i, dictionary.get(c));
             }
         }
 
@@ -171,32 +148,27 @@ public class ChineseConverter {
     }
 
     public static void main(String[] args) throws IOException {
-        String targetLanguage = "TW";   //internal language is Traditional Chinese (TW)
+        Language srcLanguage, trgLanguage;
+        srcLanguage = new Language("zh","CN");
+        trgLanguage = new Language("zh","TW");
 
-        ChineseConverter conv = new ChineseConverter();
+        String conversion= srcLanguage.getRegion() + "-" + trgLanguage.getRegion();
+        ChineseConverter converter = new ChineseConverter(srcLanguage,trgLanguage);
+        String[] strings = {"开放中文转换", "開放中文轉換", "偽", "香菸（英語：Cigarette", "為菸草製品的一種。滑鼠是一種很常見及", "常用的電腦輸入裝置"};
 
-        Map<String, ChineseConverter> converters = new HashMap<>();
-        ChineseDetector detector = new ChineseDetector();
-
-        String sourceLanguage;
-        String to;
-
-        String[] fromList = {"开放中文转换", "開放中文轉換", "偽", "香菸（英語：Cigarette，為菸草製品的一種。滑鼠是一種很常見及常用的電腦輸入裝置"};
-
-        for (String from : fromList) {
-            sourceLanguage = detector.detect(from);
-            String conversion = sourceLanguage + "-" + targetLanguage;
-
-            if (sourceLanguage.equals(targetLanguage)) {
-                to = from;
-            } else {
-                if (!converters.containsKey(conversion)) {
-                    converters.put(conversion, new ChineseConverter(conversion));
-                }
-                ChineseConverter converter = converters.get(conversion);
-                to = converter.convert(from);
-            }
-            System.out.println("from:" + from + " to:" + to + "\n");
+        for (String from : strings) {
+            System.out.println("conversion:" + conversion + " from:" + from + "  ==>  to:" + converter.convert(from));
         }
+
+        srcLanguage = new Language("zh","TW");
+        trgLanguage = new Language("zh","CN");
+        converter = new ChineseConverter(srcLanguage, trgLanguage);
+        for (String from : strings) {
+            System.out.println("conversion:" + conversion + " from:" + from + "  ==>  to:" + converter.convert(from));
+        }
+
+        srcLanguage = new Language("zh","CN");
+        trgLanguage = new Language("zh","CN");
+        converter = new ChineseConverter(srcLanguage, trgLanguage);
     }
 }
