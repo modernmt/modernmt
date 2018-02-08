@@ -1,14 +1,2 @@
-{
-  "name": "Detector",
-  "dicts": [{
-      "name": "CN",
-      "description":"Simplified Chinese Vocabulary",
-      "dicts": [
-        "CN.voc"
-      ]}, {
-      "name":"TW",
-      "description":"Traditional Chinese Vocabulary",
-      "dicts": [
-        "TW.voc"
-      ]}]
-}
+TW = TW.voc
+CN = CN.voc
