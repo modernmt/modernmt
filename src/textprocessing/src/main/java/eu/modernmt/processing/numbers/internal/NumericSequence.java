@@ -66,8 +66,11 @@ public class NumericSequence implements Iterable<NumericPlaceholder> {
 
             @Override
             public void remove() {
-                delegate.remove();
-                index2element.remove(e.getIndex());
+                if (e != null) {
+                    delegate.remove();
+                    index2element.remove(e.getIndex());
+                    e = null;
+                }
             }
 
             @Override
