@@ -7,9 +7,7 @@ import eu.modernmt.model.Word;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,70 +29,72 @@ public class ChinesePostprocessor extends TextProcessor<Translation, Translation
     public ChinesePostprocessor(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
         this.targetLanguage = targetLanguage;
-        internalLanguage = new Language("zh",null,"TW"); //by default, we use Traditional Chinese (zh-TW) internally
+        internalLanguage = new Language("zh", null, "TW"); //by default, we use Traditional Chinese (zh-TW) internally
 
-        if ( ! detector.support(this.targetLanguage) ) {
+        if (!detector.support(this.targetLanguage)) {
             throw new UnsupportedLanguageException(sourceLanguage);
         }
     }
 
     @Override
     public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
-        if (targetLanguage.equals(internalLanguage)) {
-            return translation;
-        }
-
-        String conversion = internalLanguage.getRegion() + "-" + targetLanguage.getRegion();
-        if (!converters.containsKey(conversion)) {
-            try {
-                converters.put(conversion, new ChineseConverter(internalLanguage,targetLanguage));
-            } catch (IOException e) {
-                throw new Error(e);
-            }
-        }
-        ChineseConverter converter = converters.get(conversion);
-
-        //convert best translation
-        Translation convertedTranslation = convert(converter,translation);
-
-        //convert all nbest
-        if (translation.hasNbest()) {
-            List<Translation> convertedNbest = null;
-            for (Translation tr : translation.getNbest()) {
-                convertedNbest.add(convert(converter, tr));
-            }
-            convertedTranslation.setNbest(convertedNbest);
-        }
-        return convertedTranslation;
+//        if (targetLanguage.equals(internalLanguage)) {
+//            return translation;
+//        }
+//
+//        String conversion = internalLanguage.getRegion() + "-" + targetLanguage.getRegion();
+//        if (!converters.containsKey(conversion)) {
+//            try {
+//                converters.put(conversion, new ChineseConverter(internalLanguage,targetLanguage));
+//            } catch (IOException e) {
+//                throw new Error(e);
+//            }
+//        }
+//        ChineseConverter converter = converters.get(conversion);
+//
+//        //convert best translation
+//        Translation convertedTranslation = convert(converter,translation);
+//
+//        //convert all nbest
+//        if (translation.hasNbest()) {
+//            List<Translation> convertedNbest = null;
+//            for (Translation tr : translation.getNbest()) {
+//                convertedNbest.add(convert(converter, tr));
+//            }
+//            convertedTranslation.setNbest(convertedNbest);
+//        }
+//        return convertedTranslation;
+        return null;
     }
 
     public Translation call_with_detection(Translation translation, Map<String, Object> metadata) throws ProcessingException {
-        String conversion = internalLanguage.getRegion() + "-" + targetLanguage.getRegion();
-        if (!converters.containsKey(conversion)) {
-            try {
-                converters.put(conversion, new ChineseConverter(internalLanguage, targetLanguage));
-            } catch (IOException e) {
-                throw new Error(e);
-            }
-        }
-        ChineseConverter converter = converters.get(conversion);
-
-        //convert best translation
-        Translation convertedTranslation = convert(converter,translation);
-
-        //convert all nbest
-        if (translation.hasNbest()) {
-            List<Translation> convertedNbest = null;
-            for (Translation tr : translation.getNbest()) {
-                convertedNbest.add(convert(converter, tr));
-            }
-            convertedTranslation.setNbest(convertedNbest);
-        }
-        return convertedTranslation;
+//        String conversion = internalLanguage.getRegion() + "-" + targetLanguage.getRegion();
+//        if (!converters.containsKey(conversion)) {
+//            try {
+//                converters.put(conversion, new ChineseConverter(internalLanguage, targetLanguage));
+//            } catch (IOException e) {
+//                throw new Error(e);
+//            }
+//        }
+//        ChineseConverter converter = converters.get(conversion);
+//
+//        //convert best translation
+//        Translation convertedTranslation = convert(converter, translation);
+//
+//        //convert all nbest
+//        if (translation.hasNbest()) {
+//            List<Translation> convertedNbest = null;
+//            for (Translation tr : translation.getNbest()) {
+//                convertedNbest.add(convert(converter, tr));
+//            }
+//            convertedTranslation.setNbest(convertedNbest);
+//        }
+//        return convertedTranslation;
+        return null;
     }
 
-    private Translation convert(ChineseConverter converter, Translation translation){
-        Word[] inputWords  = translation.getWords();
+    private Translation convert(ChineseConverter converter, Translation translation) {
+        Word[] inputWords = translation.getWords();
         Word[] convertedWords = new Word[inputWords.length];
         for (int i = 0; i < inputWords.length; ++i) {
             convertedWords[i] = new Word(converter.convert(inputWords[i].toString()));

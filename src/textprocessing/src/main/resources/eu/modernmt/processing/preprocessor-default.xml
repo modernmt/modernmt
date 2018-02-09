@@ -8,7 +8,7 @@
     <processor>eu.modernmt.processing.xml.XMLEntityEscaper</processor>
 
     <!-- Chinese Pre-Processing -->
-    <processor source="zh zh-CN">eu.modernmt.processing.chinese.ChinesePreprocessor</processor>
+    <!--<processor source="zh">eu.modernmt.processing.chinese.ChinesePreprocessor</processor>-->
 
     <!-- String normalization -->
     <processor>eu.modernmt.processing.chars.RareCharsNormalizer</processor>
