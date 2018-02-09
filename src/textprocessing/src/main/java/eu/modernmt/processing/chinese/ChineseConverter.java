@@ -2,8 +2,6 @@ package eu.modernmt.processing.chinese;
 
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.UnsupportedLanguageException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -24,8 +22,6 @@ public class ChineseConverter {
     protected String description;
     protected String config;
     private static final  Map<Character, Character> dictionary = new TreeMap<>();
-
-    private final Logger logger = LogManager.getLogger(ChineseConverter.class);
 
     /**
      * construct ChineseConverter with default config of "CN-TW"
@@ -95,7 +91,6 @@ public class ChineseConverter {
      */
     private void loadDict() throws IOException{
         dictionary.clear();
-        logger.info("loadDict(): converting with map " + config);
 
         try {
             String xmlPath = getClass().getPackage().getName().replace('.', '/');
