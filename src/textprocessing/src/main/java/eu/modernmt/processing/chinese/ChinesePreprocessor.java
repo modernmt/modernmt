@@ -9,6 +9,7 @@ import eu.modernmt.processing.string.SentenceBuilder;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 
 /**
  * Created by nicola on 06/02/18
@@ -58,24 +59,12 @@ public class ChinesePreprocessor extends TextProcessor<SentenceBuilder, Sentence
      */
     @Override
     public SentenceBuilder call(SentenceBuilder inputText, Map<String, Object> metadata) throws ProcessingException {
-        if (sourceLanguage.equals(internalLanguage)) {
-            return inputText;
+        Language srcLanguage = null;
+        if (sourceLanguage.getRegion()== null){
+            srcLanguage = detector.detectLanguage(inputText.toString());
+        } else {
+            srcLanguage = sourceLanguage;
         }
-        String conversion = sourceLanguage.getRegion() + "-" + internalLanguage.getRegion();
-        if (!converters.containsKey(conversion)) {
-            try {
-                converters.put(conversion, new ChineseConverter(sourceLanguage, internalLanguage));
-            } catch (IOException e) {
-                throw new Error(e);
-            }
-        }
-        ChineseConverter converter = converters.get(conversion);
-        String convertedText = converter.convert(inputText.toString());
-        return new SentenceBuilder(convertedText);
-    }
-
-    public SentenceBuilder call_with_detection(SentenceBuilder inputText, Map<String, Object> metadata) throws ProcessingException {
-        Language srcLanguage = detector.detectLanguage(inputText.toString());
         if (srcLanguage.getRegion().equals(internalLanguage.getRegion())) {
             return inputText;
         } else {
@@ -104,22 +93,18 @@ public class ChinesePreprocessor extends TextProcessor<SentenceBuilder, Sentence
         System.out.println("start up of normalizer; duration l: " + l + " milliseconds");
 
 
+        Scanner in = new Scanner(System.in);
+
         String from, to;
-        from = "开 開 放 中 文 转 换 㑶㑮開放 中文轉換開 放中文轉換開放";
-        SentenceBuilder builder = new SentenceBuilder(from);
-
-        startTime = System.nanoTime();
-        to = normalizer.call(builder, metadata).toString();
+        int N = 0;
+        while(in.hasNext()) {
+            from = in.next();
+            SentenceBuilder builder = new SentenceBuilder(from);
+            to = normalizer.call(builder, metadata).toString();
+            System.out.println(to);
+            N++;
+        }
         l = (System.nanoTime() - startTime)/1000000;
-        System.out.println("start up of converter; duration l: " + l + " milliseconds");
-        System.out.println("from:" + from + " ==> to:" + to);
-
-        startTime = System.nanoTime();
-        int N=10000;
-        for (int i=0; i < N; ++i) { to = normalizer.call(builder, metadata).toString(); }
-        l = (System.nanoTime() - startTime)/1000000;
-        System.out.println("from:" + from + " ==> to:" + to);
-        System.out.println("duration l: " + l + " milliseconds");
-        System.out.println("speed: " + ((float) l)/N + " milliseconds/sentence");
+        System.out.println("duration l: " + l + " milliseconds speed: " + ((float) l)/N + " milliseconds/sentence");
     }
 }

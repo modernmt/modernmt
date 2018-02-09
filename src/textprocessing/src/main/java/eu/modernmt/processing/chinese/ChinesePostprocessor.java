@@ -68,7 +68,6 @@ public class ChinesePostprocessor extends TextProcessor<Translation, Translation
         return convertedTranslation;
     }
 
-    //    @Override
     public Translation call_with_detection(Translation translation, Map<String, Object> metadata) throws ProcessingException {
         String conversion = internalLanguage.getRegion() + "-" + targetLanguage.getRegion();
         if (!converters.containsKey(conversion)) {
@@ -103,41 +102,4 @@ public class ChinesePostprocessor extends TextProcessor<Translation, Translation
 
         return new Translation(convertedWords, translation.getTags(), translation.getSource(), translation.getWordAlignment());
     }
-
-//    public static void main(String[] args) throws ProcessingException {
-//        Language src = new Language("en");
-//        Language trg = new Language("zh","CN");
-//
-//        long startTime = System.nanoTime();
-//        ChinesePostprocessor normalizer = new ChinesePostprocessor(src, trg);
-//        long l = (System.nanoTime() - startTime)/1000000;
-//        System.out.println("start up of normalizer; duration l: " + l + " milliseconds");
-//
-//        String from;
-//        from = "閈 开 開 开 開 放 中 文 转 换 㑶㑮開放 中文轉換開 放中文轉換開放";
-//
-//        String[] fromString = from.split(" ");
-//        Word[] fromWords = new Word[fromString.length];
-//        for (int i = 0; i < fromString.length; ++i) {
-//            fromWords[i] = new Word(fromString[i]);
-//        }
-//
-//        Translation translation = new Translation(fromWords, new Sentence(fromWords), null);
-//        Map<String, Object> metadata = new HashMap<>();
-//
-//        startTime = System.nanoTime();
-//        Translation to = normalizer.call(translation, metadata);
-//        l = (System.nanoTime() - startTime)/1000000;
-//        System.out.println("start up of converter; duration l: " + l + " milliseconds");
-//        System.out.println("from:" + from + " ==>  to :" + to);
-//
-//        startTime = System.nanoTime();
-//        int N=10000;
-//        for (int i=0; i < N; ++i) { to = normalizer.call(translation, metadata); }
-//        l = (System.nanoTime() - startTime)/1000000;
-//        System.out.println("from:" + from + " ==>  to :" + to);
-//        System.out.println("duration l: " + l + " milliseconds");
-//        System.out.println("speed: " + ((float) l)/N + " milliseconds/sentence");
-//
-//    }
 }

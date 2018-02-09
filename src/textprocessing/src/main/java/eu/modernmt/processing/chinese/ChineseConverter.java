@@ -8,10 +8,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * ChineseConverter converts Simplified Chinese to Traditional Chinese (including Taiwan and Hong Konf standard) and vice versa
@@ -19,7 +16,6 @@ import java.util.TreeMap;
 public class ChineseConverter {
 
     protected String name;
-    protected String description;
     protected String config;
     private static final  Map<Character, Character> dictionary = new TreeMap<>();
 
@@ -145,27 +141,19 @@ public class ChineseConverter {
     }
 
     public static void main(String[] args) throws IOException {
+
         Language srcLanguage, trgLanguage;
-        srcLanguage = new Language("zh","CN");
-        trgLanguage = new Language("zh","TW");
+        srcLanguage = new Language("zh",args[0]);
+        trgLanguage = new Language("zh",args[1]);
+        System.err.println("converting from " + srcLanguage + " to " + trgLanguage);
 
-        String conversion= srcLanguage.getRegion() + "-" + trgLanguage.getRegion();
         ChineseConverter converter = new ChineseConverter(srcLanguage,trgLanguage);
-        String[] strings = {"开放中文转换", "開放中文轉換", "偽", "香菸（英語：Cigarette", "為菸草製品的一種。滑鼠是一種很常見及", "常用的電腦輸入裝置"};
 
-        for (String from : strings) {
-            System.out.println("conversion:" + conversion + " from:" + from + "  ==>  to:" + converter.convert(from));
+        Scanner in = new Scanner(System.in);
+
+        while(in.hasNext()) {
+            String from = in.next();
+            System.out.println(converter.convert(from));
         }
-
-        srcLanguage = new Language("zh","TW");
-        trgLanguage = new Language("zh","CN");
-        converter = new ChineseConverter(srcLanguage, trgLanguage);
-        for (String from : strings) {
-            System.out.println("conversion:" + conversion + " from:" + from + "  ==>  to:" + converter.convert(from));
-        }
-
-        srcLanguage = new Language("zh","CN");
-        trgLanguage = new Language("zh","CN");
-        converter = new ChineseConverter(srcLanguage, trgLanguage);
     }
 }
