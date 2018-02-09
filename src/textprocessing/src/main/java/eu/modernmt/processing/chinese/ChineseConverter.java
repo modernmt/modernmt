@@ -1,15 +1,19 @@
 package eu.modernmt.processing.chinese;
 
-import com.google.gson.JsonParser;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.UnsupportedLanguageException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * ChineseConverter converts Simplified Chinese to Traditional Chinese (including Taiwan and Hong Konf standard) and vice versa
@@ -21,6 +25,7 @@ public class ChineseConverter {
     protected String config;
     private static final  Map<Character, Character> dictionary = new TreeMap<>();
 
+    private final Logger logger = LogManager.getLogger(ChineseConverter.class);
 
     /**
      * construct ChineseConverter with default config of "CN-TW"
@@ -90,10 +95,7 @@ public class ChineseConverter {
      */
     private void loadDict() throws IOException{
         dictionary.clear();
-        JsonParser jsonParser = new JsonParser();
-
-        String filename;
-        List<String> maps = null;
+        logger.info("loadDict(): converting with map " + config);
 
         try {
             String xmlPath = getClass().getPackage().getName().replace('.', '/');
