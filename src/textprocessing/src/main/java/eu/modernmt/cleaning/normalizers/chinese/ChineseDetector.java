@@ -1,4 +1,4 @@
-package eu.modernmt.processing.chinese;
+package eu.modernmt.cleaning.normalizers.chinese;
 /**
  * Created by nicolabertoldi on 04/02/18.
  */

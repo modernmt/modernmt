@@ -23,7 +23,13 @@ public class PipelineExecutor<P, R> {
     }
 
     public R process(LanguagePair language, P input) throws ProcessingException {
-        return pipelines.get(language).call(input);
+        ProcessingPipeline<P, R> pipeline = pipelines.get(language);
+
+        try {
+            return pipeline.call(input);
+        } finally {
+            pipelines.release(language, pipeline);
+        }
     }
 
     public R[] processBatch(LanguagePair language, P[] batch, R[] output) throws ProcessingException {

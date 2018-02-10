@@ -30,9 +30,6 @@
     <processor>eu.modernmt.processing.recaser.UpperCasePostprocessor</processor>
     <processor>eu.modernmt.processing.recaser.SimpleRecaser</processor>
 
-    <!-- Chinese Post-Processing -->
-    <processor source="zh zh-TW">eu.modernmt.processing.chinese.ChinesePostprocessor</processor>
-
     <processor>eu.modernmt.processing.xml.XMLTagProcessor</processor>
 
 </pipeline>

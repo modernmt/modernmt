@@ -13,6 +13,7 @@ import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
 
 //pyflex include ../stddetok-rules.pyx
 
-/* Language Specific - CJK */
+/* Language Specific - CJKV */
 
-{CJK}{_}{CJK}                                                       { return REMOVE_FIRST; }
+{CJKV}{_}                                                       { return REMOVE_FIRST; }
+{_}{CJKV}                                                       { return REMOVE_FIRST; }
