@@ -64,7 +64,7 @@ public final class Language implements Serializable {
         this(language, null, region);
     }
 
-    public Language(String language, String script, String region) {
+    private Language(String language, String script, String region) {
         this.language = language;
         this.script = script;
         this.region = region;
