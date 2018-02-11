@@ -172,7 +172,7 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
     // DataListener
 
     @Override
-    public void onDataReceived(DataBatch batch) {
+    public void OLDonDataReceived(DataBatch batch) {
         DataBatchXObject xbatch = new DataBatchXObject(batch, this.direction);
 
         this.dataReceived(

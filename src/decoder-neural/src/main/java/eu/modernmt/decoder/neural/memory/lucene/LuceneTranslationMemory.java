@@ -248,7 +248,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
     // DataListener
 
     @Override
-    public void onDataReceived(DataBatch batch) throws IOException {
+    public void OLDonDataReceived(DataBatch batch) throws IOException {
         boolean success = false;
 
         try {

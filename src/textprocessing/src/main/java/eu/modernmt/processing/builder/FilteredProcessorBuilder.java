@@ -2,7 +2,6 @@ package eu.modernmt.processing.builder;
 
 import eu.modernmt.lang.Language;
 
-import java.util.Collections;
 import java.util.HashSet;
 
 /**
@@ -49,26 +48,30 @@ class FilteredProcessorBuilder extends ProcessorBuilder {
 
     private static class OrFilter implements Filter {
 
-        protected final HashSet<String> langs;
+        private final HashSet<String> languages;
 
-        private OrFilter(String[] langs) {
-            this.langs = new HashSet<>();
-            Collections.addAll(this.langs, langs);
+        private OrFilter(String[] languages) {
+            this.languages = new HashSet<>(languages.length);
+
+            for (String lang : languages) {
+                Language parsed = Language.fromString(lang);
+                if (parsed.getRegion() != null)
+                    throw new IllegalArgumentException("Region not supported for language: " + lang);
+
+                this.languages.add(parsed.getLanguage());
+            }
         }
 
         @Override
         public boolean accept(Language language) {
-            if (language == null)
-                return false;
-            String tag = language.toLanguageTag();
-            return langs.contains(tag);
+            return language != null && languages.contains(language.getLanguage());
         }
     }
 
     private static class NorFilter extends OrFilter {
 
-        private NorFilter(String[] langs) {
-            super(langs);
+        private NorFilter(String[] languages) {
+            super(languages);
         }
 
         @Override

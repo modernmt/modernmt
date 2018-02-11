@@ -10,7 +10,7 @@ public class LanguageIndex implements Iterable<LanguagePair> {
 
     private final Set<LanguagePair> languages;
     private final HashMap<LanguageKey, HashSet<LanguagePair>> index;
-    private final ConcurrentHashMap<LanguagePair, Set<LanguagePair>> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<LanguagePair, List<LanguagePair>> cache = new ConcurrentHashMap<>();
 
     public LanguageIndex(LanguagePair... languages) {
         this(Arrays.asList(languages));
@@ -39,33 +39,58 @@ public class LanguageIndex implements Iterable<LanguagePair> {
         return pair != null && languages.contains(pair);
     }
 
-    public Set<LanguagePair> map(LanguagePair pair) {
-        Set<LanguagePair> result = cache.get(pair);
+    public boolean match(LanguagePair pair) {
+        return !map(pair).isEmpty();
+    }
+
+    public LanguagePair mapToBestMatching(LanguagePair pair) {
+        if (languages.contains(pair) || languages.contains(pair.reversed()))
+            return pair;
+
+        List<LanguagePair> mapping = map(pair);
+        return mapping.isEmpty() ? null : mapping.get(0);
+    }
+
+    public List<LanguagePair> map(LanguagePair pair) {
+        List<LanguagePair> result = cache.get(pair);
 
         if (result != null)
             return result;
 
-        LanguageKey key = LanguageKey.fromLanguage(pair);
-        Set<LanguagePair> mappings = this.index.get(key);
+        Set<LanguagePair> set;
+        set = map(pair, null, false);
+        set = map(pair.reversed(), set, true);
 
-        if (mappings == null)
-            return Collections.emptySet();
+        if (set != null) {
+            result = new ArrayList<>(set);
+            result.sort((a, b) -> {
+                int cmp = a.source.compareTo(b.source);
+                return -(cmp == 0 ? a.target.compareTo(b.target) : cmp);
+            });
 
-        for (LanguagePair mapping : mappings) {
-            if (match(pair, mapping)) {
-                if (result == null)
-                    result = new HashSet<>(4);
-
-                result.add(mapping);
-            }
-        }
-
-        if (result != null) {
-            result = Collections.unmodifiableSet(result);
+            result = Collections.unmodifiableList(result);
             cache.put(pair, result);
         }
 
-        return result == null ? Collections.emptySet() : result;
+        return result == null ? Collections.emptyList() : result;
+    }
+
+    private Set<LanguagePair> map(LanguagePair pair, Set<LanguagePair> result, boolean reverse) {
+        LanguageKey key = LanguageKey.fromLanguage(pair);
+        Set<LanguagePair> mappings = this.index.get(key);
+
+        if (mappings != null) {
+            for (LanguagePair mapping : mappings) {
+                if (match(pair, mapping)) {
+                    if (result == null)
+                        result = new HashSet<>(4);
+
+                    result.add(reverse ? mapping.reversed() : mapping);
+                }
+            }
+        }
+
+        return result;
     }
 
     private static boolean match(LanguagePair a, LanguagePair b) {

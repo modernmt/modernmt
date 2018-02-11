@@ -130,7 +130,7 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
     // DataListener utils
 
     public void onDelete(final Deletion deletion) throws IOException {
-        super.onDataReceived(new DataBatch() {
+        super.OLDonDataReceived(new DataBatch() {
 
             @Override
             public Collection<TranslationUnit> getTranslationUnits() {
@@ -159,7 +159,7 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
                 positions.put(unit.channel, unit.channelPosition);
         }
 
-        super.onDataReceived(new DataBatch() {
+        super.OLDonDataReceived(new DataBatch() {
             @Override
             public Collection<TranslationUnit> getTranslationUnits() {
                 return units;
