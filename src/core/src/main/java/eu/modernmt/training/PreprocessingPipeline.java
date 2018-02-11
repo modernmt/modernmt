@@ -24,19 +24,19 @@ public class PreprocessingPipeline {
     private final int threads;
     private final CorporaPartition mainPartition;
     private final CorpusWriter corpusWriter;
-    private final LanguageIndex languages;
+    private final LanguagePair language;
 
     private ArrayList<CorporaPartition> extraPartitions = new ArrayList<>();
 
-    public PreprocessingPipeline(LanguageIndex languages, CorporaPartition mainPartition, CorpusWriter writer) {
-        this(languages, mainPartition, writer, Runtime.getRuntime().availableProcessors() * 2);
+    public PreprocessingPipeline(LanguagePair language, CorporaPartition mainPartition, CorpusWriter writer) {
+        this(language, mainPartition, writer, Runtime.getRuntime().availableProcessors() * 2);
     }
 
-    public PreprocessingPipeline(LanguageIndex languages, CorporaPartition mainPartition, CorpusWriter writer, int threads) {
+    public PreprocessingPipeline(LanguagePair language, CorporaPartition mainPartition, CorpusWriter writer, int threads) {
         this.threads = threads;
         this.mainPartition = mainPartition;
         this.corpusWriter = writer;
-        this.languages = languages;
+        this.language = language;
     }
 
     public void addExtraPartition(CorporaPartition partition) {
@@ -47,7 +47,7 @@ public class PreprocessingPipeline {
         // Masking input corpora
         ArrayList<MultilingualCorpus> maskedMultilingualCorpora = new ArrayList<>(multilingualCorpora.size());
         for (MultilingualCorpus corpus : multilingualCorpora)
-            maskedMultilingualCorpora.add(new MultilingualCorpusMask(languages, corpus));
+            maskedMultilingualCorpora.add(new MultilingualCorpusMask(language, corpus));
 
         // Start processing
         Preprocessor preprocessor = new Preprocessor(threads);

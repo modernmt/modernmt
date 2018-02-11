@@ -76,7 +76,7 @@ public class TrainingPipelineMain {
         Log4jConfiguration.setup(Level.INFO);
 
         Args args = new Args(_args);
-        LanguageIndex languages = new LanguageIndex(new LanguagePair(args.sourceLanguage, args.targetLanguage));
+        LanguagePair language = new LanguagePair(args.sourceLanguage, args.targetLanguage);
 
         ArrayList<Corpus> monolingualCorpora = new ArrayList<>();
         ArrayList<MultilingualCorpus> bilingualCorpora = new ArrayList<>();
@@ -98,7 +98,7 @@ public class TrainingPipelineMain {
             options.vocabulary = args.vocabulary;
 
 
-        ModernMT.training.preprocess(languages, bilingualCorpora, monolingualCorpora, args.outputRoot, options);
+        ModernMT.training.preprocess(language, bilingualCorpora, monolingualCorpora, args.outputRoot, options);
     }
 
 }

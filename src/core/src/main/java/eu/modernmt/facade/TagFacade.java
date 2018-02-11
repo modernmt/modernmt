@@ -34,10 +34,10 @@ public class TagFacade {
 
         LanguageIndex languages = engine.getLanguages();
 
-        LanguagePair mappedDirection = languages.map(direction);
+        LanguagePair mappedDirection = languages.mapToBestMatching(direction);
         if (mappedDirection == null) {
             // Aligner is always bi-directional even if the engine does not support it
-            mappedDirection = languages.map(direction.reversed());
+            mappedDirection = languages.mapToBestMatching(direction.reversed());
 
             if (mappedDirection == null)
                 throw new UnsupportedLanguageException(direction);

@@ -250,7 +250,7 @@ public class TranslationFacade {
 
     private void ensureLanguagePairIsSupported(LanguagePair pair) {
         LanguageIndex languages = ModernMT.getNode().getEngine().getLanguages();
-        if (!languages.isSupported(pair))
+        if (!languages.contains(pair))
             throw new UnsupportedLanguageException(pair);
     }
 
@@ -261,7 +261,7 @@ public class TranslationFacade {
         for (Language target : targets) {
             LanguagePair language = new LanguagePair(source, target);
 
-            if (languages.isSupported(language))
+            if (languages.contains(language))
                 result.add(language);
         }
 
