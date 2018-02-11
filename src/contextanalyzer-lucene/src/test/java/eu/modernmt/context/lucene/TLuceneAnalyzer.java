@@ -157,7 +157,7 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
     // DataListener utils
 
     public void onDelete(final Deletion deletion) throws ContextAnalyzerException {
-        super.OLDonDataReceived(new DataBatch() {
+        super.onDataReceived(new DataBatch() {
 
             @Override
             public Collection<TranslationUnit> getTranslationUnits() {
@@ -186,7 +186,7 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
                 positions.put(unit.channel, unit.channelPosition);
         }
 
-        super.OLDonDataReceived(new DataBatch() {
+        super.onDataReceived(new DataBatch() {
             @Override
             public Collection<TranslationUnit> getTranslationUnits() {
                 return units;
