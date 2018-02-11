@@ -13,7 +13,7 @@ public class TranslationUnit extends DataMessage {
 
     public final long memory;
 
-    public LanguagePair direction;
+    public final LanguagePair direction;
     public final String rawSentence;
     public final String rawTranslation;
     public final String rawPreviousSentence;

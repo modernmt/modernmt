@@ -68,20 +68,18 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
             HashSet<Entry> result = new HashSet<>(units.size());
 
             for (TranslationUnit unit : units) {
-                LanguagePair direction = languages.map(unit.direction);
-                if (direction == null)
-                    direction = unit.direction;
+                for (LanguagePair direction : languages.map(unit.direction)) {
+                    String source = direction.source.toLanguageTag();
+                    String target = direction.target.toLanguageTag();
 
-                String source = direction.source.toLanguageTag();
-                String target = direction.target.toLanguageTag();
+                    Entry entry;
+                    if (source.compareTo(target) < 0)
+                        entry = new Entry(unit.memory, direction, unit.rawSentence, unit.rawTranslation);
+                    else
+                        entry = new Entry(unit.memory, direction.reversed(), unit.rawTranslation, unit.rawSentence);
 
-                Entry entry;
-                if (source.compareTo(target) < 0)
-                    entry = new Entry(unit.memory, direction, unit.rawSentence, unit.rawTranslation);
-                else
-                    entry = new Entry(unit.memory, direction.reversed(), unit.rawTranslation, unit.rawSentence);
-
-                result.add(entry);
+                    result.add(entry);
+                }
             }
 
             return result;
@@ -130,7 +128,7 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
     // DataListener utils
 
     public void onDelete(final Deletion deletion) throws IOException {
-        super.OLDonDataReceived(new DataBatch() {
+        super.onDataReceived(new DataBatch() {
 
             @Override
             public Collection<TranslationUnit> getTranslationUnits() {
@@ -159,7 +157,7 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
                 positions.put(unit.channel, unit.channelPosition);
         }
 
-        super.OLDonDataReceived(new DataBatch() {
+        super.onDataReceived(new DataBatch() {
             @Override
             public Collection<TranslationUnit> getTranslationUnits() {
                 return units;

@@ -118,7 +118,7 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     // UpdateListener
 
     @Override
-    public void OLDonDataReceived(DataBatch batch) throws ContextAnalyzerException {
+    public void onDataReceived(DataBatch batch) throws ContextAnalyzerException {
         Collection<Deletion> deletions;
 
         try {

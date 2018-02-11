@@ -180,9 +180,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
             MultilingualCorpus.StringPair pair;
             while ((pair = reader.read()) != null) {
-                LanguagePair direction = languages.map(pair.language);
-
-                if (direction != null) {
+                for (LanguagePair direction : languages.map(pair.language)) {
                     Document document = DocumentBuilder.build(direction, memory, pair.source, pair.target);
                     this.indexWriter.addDocument(document);
                 }
@@ -248,7 +246,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
     // DataListener
 
     @Override
-    public void OLDonDataReceived(DataBatch batch) throws IOException {
+    public void onDataReceived(DataBatch batch) throws IOException {
         boolean success = false;
 
         try {
@@ -282,21 +280,23 @@ public class LuceneTranslationMemory implements TranslationMemory {
         DataFilter filter = this.filter;
 
         for (TranslationUnit unit : units) {
-            if (filter != null && !filter.accept(unit))
-                continue;
+            for (LanguagePair direction : this.languages.map(unit.direction)) {
+                if (filter != null && !filter.accept(unit))
+                    continue;
 
-            Long currentPosition = this.channels.get(unit.channel);
+                Long currentPosition = this.channels.get(unit.channel);
 
-            if (currentPosition == null || currentPosition < unit.channelPosition) {
-                if (unit.rawPreviousSentence != null && unit.rawPreviousTranslation != null) {
-                    String hash = HashGenerator.hash(unit.direction, unit.rawPreviousSentence, unit.rawPreviousTranslation);
-                    Query hashQuery = QueryBuilder.getByHash(unit.memory, unit.direction, hash);
+                if (currentPosition == null || currentPosition < unit.channelPosition) {
+                    if (unit.rawPreviousSentence != null && unit.rawPreviousTranslation != null) {
+                        String hash = HashGenerator.hash(direction, unit.rawPreviousSentence, unit.rawPreviousTranslation);
+                        Query hashQuery = QueryBuilder.getByHash(unit.memory, direction, hash);
 
-                    this.indexWriter.deleteDocuments(hashQuery);
+                        this.indexWriter.deleteDocuments(hashQuery);
+                    }
+
+                    Document document = DocumentBuilder.build(direction, unit);
+                    this.indexWriter.addDocument(document);
                 }
-
-                Document document = DocumentBuilder.build(unit);
-                this.indexWriter.addDocument(document);
             }
         }
     }
