@@ -3,7 +3,9 @@ package eu.modernmt.lang;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -22,8 +24,8 @@ public class LanguageIndexTest {
         return new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1]));
     }
 
-    private static Set<LanguagePair> set(String string) {
-        HashSet<LanguagePair> result = new HashSet<>();
+    private static List<LanguagePair> list(String string) {
+        ArrayList<LanguagePair> result = new ArrayList<>();
         for (String part : string.split(","))
             result.add(lp(part.trim()));
         return result;
@@ -44,12 +46,12 @@ public class LanguageIndexTest {
 
     @Test
     public void testMap() {
-        assertEquals(set("en fr"), index.map(lp("en-GB fr")));
-        assertEquals(set("en fr"), index.map(lp("en fr")));
-        assertTrue(index.map(lp("fr en")).isEmpty());
-        assertEquals(set("zh-TW en, zh-CN en"), index.map(lp("zh en-GB")));
-        assertEquals(set("en zh-TW, en zh-CN"), index.map(lp("en zh")));
+        assertEquals(list("en fr"), index.map(lp("en-GB fr")));
+        assertEquals(list("en fr"), index.map(lp("en fr")));
+        assertEquals(list("fr en"), index.map(lp("fr en")));
+        assertEquals(list("zh-TW en, zh-CN en"), index.map(lp("zh en-GB")));
+        assertEquals(list("en zh-TW, en zh-CN"), index.map(lp("en zh")));
         assertTrue(index.map(lp("zh-TW pt-PT")).isEmpty());
-        assertEquals(set("zh-CN pt-PT, zh-CN pt-BR"), index.map(lp("zh-CN pt")));
+        assertEquals(list("zh-CN pt-PT, zh-CN pt-BR"), index.map(lp("zh-CN pt")));
     }
 }
