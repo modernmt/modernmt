@@ -122,6 +122,9 @@ public class CorpusSplitMain {
                     }
 
                     int corpusLength = corpus.getLineCount(languagePair);
+                    if (args.testSize + args.devSize >= corpusLength){
+                        throw new Error("Original corpus does not have enough entries (" + corpusLength+ ") to split into " + args.testSize + " test sentences and " + args.devSize + " dev sentences and ");
+                    }
                     Random randomGenerator = new Random(corpusLength);
                     ArrayList<Integer> testRandom = new ArrayList<>(args.devSize);
                     ArrayList<Integer> devRandom = new ArrayList<>(args.testSize);
