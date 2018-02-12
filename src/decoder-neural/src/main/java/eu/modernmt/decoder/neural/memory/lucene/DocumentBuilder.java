@@ -59,6 +59,19 @@ public class DocumentBuilder {
         return new ScoreEntry(memory, sentence, translation);
     }
 
+    public static IndexEntry parseIndexEntry(Document doc) {
+        long memory = Long.parseLong(doc.get(MEMORY_ID_FIELD));
+
+        if (memory == 0L)
+            return null;
+
+        LanguagePair language = decodeLanguage(doc.get(LANGUAGE_FIELD));
+        String[] sentence = doc.get(getContentFieldName(language.source)).split(" ");
+        String[] translation = doc.get(getContentFieldName(language.target)).split(" ");
+
+        return new IndexEntry(memory, language, sentence, translation);
+    }
+
     public static String encode(LanguagePair direction) {
         String l1 = direction.source.toLanguageTag();
         String l2 = direction.target.toLanguageTag();
@@ -70,6 +83,11 @@ public class DocumentBuilder {
         }
 
         return l1 + "__" + l2;
+    }
+
+    private static LanguagePair decodeLanguage(String encoded) {
+        String[] parts = encoded.split("__");
+        return new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1]));
     }
 
     public static String getContentFieldName(Language locale) {
@@ -106,5 +124,4 @@ public class DocumentBuilder {
 
         return result;
     }
-
 }

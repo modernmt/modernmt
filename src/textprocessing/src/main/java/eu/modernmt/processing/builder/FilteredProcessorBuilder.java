@@ -27,7 +27,7 @@ class FilteredProcessorBuilder extends ProcessorBuilder {
             return null;
 
         if (definition.charAt(0) == '^')
-            return new NorFilter(definition.substring(1).split("\\s+"));
+            return new NorFilter(definition.substring(1).trim().split("\\s+"));
         else
             return new OrFilter(definition.split("\\s+"));
     }

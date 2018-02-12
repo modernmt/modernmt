@@ -29,9 +29,9 @@ import org.apache.lucene.util.Version;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Created by davide on 23/05/17.
@@ -131,6 +131,17 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
     public IndexWriter getIndexWriter() {
         return this.indexWriter;
+    }
+
+    public void dump(Consumer<IndexEntry> consumer) throws IOException {
+        IndexReader reader = getIndexReader();
+        int size = reader.numDocs();
+
+        for (int i = 0; i < size; i++) {
+            IndexEntry entry = DocumentBuilder.parseIndexEntry(reader.document(i));
+            if (entry != null)
+                consumer.accept(entry);
+        }
     }
 
     // TranslationMemory
