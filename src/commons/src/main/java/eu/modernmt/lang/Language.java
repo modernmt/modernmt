@@ -51,6 +51,8 @@ public final class Language implements Serializable {
     public static final Language TURKISH = Language.fromString("tr");
     public static final Language UKRAINIAN = Language.fromString("uk");
     public static final Language CHINESE = Language.fromString("zh");
+    public static final Language CHINESE_SIMPLIFIED = Language.fromString("zh-CN");
+    public static final Language CHINESE_TRADITIONAL = Language.fromString("zh-TW");
 
     private final String language;
     private final String script;
