@@ -1,6 +1,0 @@
-{
-	"enabled": true,
-	"description": "It computes the post editing effort after the tag projection on a given set of translation without tags",
-	"full_description": "For each translation pair in which only the source has tags, it projects the tags in the translation and compute the post editing effort needed to get the reference translation.",
-	"author": "Luca Mastrostefano from Translated"
-}

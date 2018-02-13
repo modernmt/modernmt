@@ -186,12 +186,17 @@ class ClusterNode(object):
             params = {'sentence': sentence, 'translation': translation, 'source': source, 'target': target}
             return self._post('memories/' + str(memory) + '/corpus', params=params)
 
-        def import_into_memory(self, memory, tmx=None,
+        def import_into_memory(self, memory, tmx=None, compact=None,
                                source_file=None, target_file=None, source_lang=None, target_lang=None):
             if tmx is not None:
                 params = {
                     'content_type': 'tmx',
                     'local_file': tmx
+                }
+            elif compact is not None:
+                params = {
+                    'content_type': 'compact',
+                    'local_file': compact
                 }
             else:
                 params = {
