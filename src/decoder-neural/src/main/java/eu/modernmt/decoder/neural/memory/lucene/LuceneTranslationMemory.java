@@ -29,9 +29,10 @@ import org.apache.lucene.util.Version;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * Created by davide on 23/05/17.
@@ -134,11 +135,15 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     public void dump(Consumer<IndexEntry> consumer) throws IOException {
+        IndexSearcher searcher = getIndexSearcher();
         IndexReader reader = getIndexReader();
+
         int size = reader.numDocs();
 
-        for (int i = 0; i < size; i++) {
-            IndexEntry entry = DocumentBuilder.parseIndexEntry(reader.document(i));
+        TopDocs docs = searcher.search(new MatchAllDocsQuery(), size);
+
+        for (ScoreDoc doc : docs.scoreDocs) {
+            IndexEntry entry = DocumentBuilder.parseIndexEntry(reader.document(doc.doc));
             if (entry != null)
                 consumer.accept(entry);
         }

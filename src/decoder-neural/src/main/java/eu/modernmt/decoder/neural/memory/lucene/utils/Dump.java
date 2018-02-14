@@ -16,7 +16,7 @@ public class Dump {
 
         LuceneTranslationMemory memory = new LuceneTranslationMemory(null, new File(args[0]), 1);
         memory.dump(entry -> {
-            String str = StringUtils.join(new String[] {
+            String str = StringUtils.join(new String[]{
                     Long.toString(entry.memory),
                     entry.language.source.toLanguageTag(),
                     entry.language.target.toLanguageTag(),

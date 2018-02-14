@@ -136,8 +136,8 @@ class ClusterNode(object):
             scores = [(m['id'] if isinstance(m, dict) else m, s) for m, s in scores]
             return ','.join(['%d:%f' % e for e in scores])
 
-        def stats(self):
-            return self._get('_stat')
+        def info(self):
+            return self._get('')
 
         def update_features(self, features):
             return self._put('decoder/features', json=features)
