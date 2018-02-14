@@ -20,6 +20,8 @@ import java.util.Set;
 public class ChineseDetector {
     private static Set<Integer> simplifiedVoc = null;
     private static Set<Integer> traditionalVoc = null;
+    private static Set<Integer> simplifiedIssues = null;
+    private static Set<Integer> traditionalIssues = null;
 
     private static ChineseDetector instance = null;
 
@@ -43,6 +45,23 @@ public class ChineseDetector {
         // load all Traditional-only Chinese character
         if (traditionalVoc == null) {
             traditionalVoc = loadDict("TW");
+        }
+
+        printStats();
+
+        //Removed common characters
+        Set<Integer> intersection = new HashSet<>(simplifiedVoc);
+        intersection.retainAll(traditionalVoc);
+        simplifiedVoc.removeAll(intersection);
+        traditionalVoc.removeAll(intersection);
+
+        printStats();
+
+        if (simplifiedIssues == null) {
+            simplifiedIssues = new HashSet<>();
+        }
+        if (traditionalIssues == null) {
+            traditionalIssues = new HashSet<>();
         }
     }
 
@@ -87,6 +106,26 @@ public class ChineseDetector {
         System.err.println("Traditional-only Chinese vocabulary: " + traditionalVoc.size() + " symbols");
     }
 
+    public void printVoc() {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (Integer c : simplifiedVoc){
+            stringBuilder.append("cn:|");
+            stringBuilder.appendCodePoint(c);
+            stringBuilder.append("|\n");
+        }
+        System.err.println("### Simplified-only Chinese vocabulary)");
+        System.err.println(stringBuilder.toString());
+
+        stringBuilder.setLength(0);
+        for (Integer c : traditionalVoc){
+            stringBuilder.append("tw:");
+            stringBuilder.appendCodePoint(c);
+            stringBuilder.append('\n');
+        }
+        System.err.println("### Traditional-only Chinese vocabulary)");
+        System.err.println(stringBuilder.toString());
+    }
+
 
     /**
      * detect the language of the string
@@ -106,12 +145,15 @@ public class ChineseDetector {
                 traditionalCount++;
             }
         }
-        if (simplifiedCount > traditionalCount) { return Language.CHINESE_SIMPLIFIED; }
-        else if (traditionalCount > 0) { return Language.CHINESE_TRADITIONAL;  }
-        else {return Language.CHINESE;  }
+        if (simplifiedCount > traditionalCount) {
+            return Language.CHINESE_SIMPLIFIED;
+        } else if (traditionalCount > 0) {
+            return Language.CHINESE_TRADITIONAL;
+        } else {
+            return Language.CHINESE;
+        }
     }
 
-    //    public Language detectLanguage(String string) {
     public String scoreLanguage(String string) {
         int simplifiedCount = 0, traditionalCount = 0;
         PrimitiveIterator.OfInt stream = string.codePoints().iterator();
@@ -127,9 +169,53 @@ public class ChineseDetector {
         return simplifiedCount + " " + traditionalCount;
     }
 
+    public void setProblems(String string) {
+        int simplifiedCount = 0, traditionalCount = 0;
+        PrimitiveIterator.OfInt stream = string.codePoints().iterator();
+        while (stream.hasNext()) {
+            int codepoint = stream.nextInt();
+            if (simplifiedVoc.contains(codepoint)) {
+                simplifiedCount++;
+            }
+            if (traditionalVoc.contains(codepoint)) {
+                traditionalCount++;
+            }
+        }
+
+        if (traditionalCount < simplifiedCount && traditionalCount == 1) {
+            StringBuilder stringBuilder = new StringBuilder();
+            stream = string.codePoints().iterator();
+            while (stream.hasNext()) {
+                int codepoint = stream.nextInt();
+                if (traditionalVoc.contains(codepoint)) {
+                    traditionalIssues.add(codepoint);
+                    stringBuilder.appendCodePoint(codepoint);
+                    stringBuilder.append(' ');
+                }
+            }
+            System.out.println(simplifiedCount + " " + traditionalCount + " TW issue: " +stringBuilder.toString() + " sentence:" + string);
+        }
+
+        if (simplifiedCount < traditionalCount && simplifiedCount == 1) {
+            stream = string.codePoints().iterator();
+            StringBuilder stringBuilder = new StringBuilder();
+            while (stream.hasNext()) {
+                int codepoint = stream.nextInt();
+                if (simplifiedVoc.contains(codepoint)) {
+                    simplifiedIssues.add(codepoint);
+                    stringBuilder.appendCodePoint(codepoint);
+                    stringBuilder.append(' ');
+                }
+            }
+            System.out.println(simplifiedCount + " " + traditionalCount + " CN issue: " + stringBuilder.toString() + " sentence:" + string);
+        }
+    }
+
+
+
     public static void main(String[] args) throws IOException {
         ChineseDetector detector = ChineseDetector.getInstance();
-        detector.printStats();
+//        detector.printVoc();
 
         BufferedReader in = null;
         try {
@@ -138,14 +224,88 @@ public class ChineseDetector {
             //loop forever an stream interruption is caught
             //in case of empty line it returns an empty line
             while ((inputLine = in.readLine()) != null) {
-                System.out.println(detector.detectLanguage(inputLine) + " " + inputLine);
+//                System.out.println(detector.detectLanguage(inputLine) + " " + inputLine);
                 System.out.println(detector.scoreLanguage(inputLine) + " " + inputLine);
+//                detector.setProblems(inputLine);
             }
         } finally {
-            if (in != null){
+            if (in != null) {
                 in.close();
             }
         }
+        if (false) {
+            StringBuilder stringBuilder = new StringBuilder();
+            for (Integer c : simplifiedIssues) {
+                stringBuilder.appendCodePoint(c);
+                stringBuilder.append('\n');
+            }
+            System.out.println("### Simplified Issues");
+            System.out.println(stringBuilder.toString());
+
+            stringBuilder = new StringBuilder();
+            for (Integer c : traditionalIssues) {
+                stringBuilder.appendCodePoint(c);
+                stringBuilder.append('\n');
+            }
+            System.out.println("### Traditional Issues");
+            System.out.println(stringBuilder.toString());
+        }
     }
+
+//
+//    public static void main(String[] args) throws IOException {
+//
+//        Set<Integer> issues = new HashSet<>();
+//
+//        String xmlPath = "/Users/nicolabertoldi/Work/Software/ModernMT/GitHubRepository/ModernMT_MAC/src/textprocessing/src/main/resources/eu/modernmt/cleaning/normalizers/chinese/ISSUES.txt";
+//
+//        BufferedReader inIssues = null;
+//        try {
+//            inIssues = new BufferedReader(new InputStreamReader(new FileInputStream(xmlPath)));
+//            String inputLine;
+//            //loop forever an stream interruption is caught
+//            //in case of empty line it returns an empty line
+//            PrimitiveIterator.OfInt stream = null;
+//            StringBuilder sb = new StringBuilder();
+//            while ((inputLine = inIssues.readLine()) != null) {
+//                stream = inputLine.codePoints().iterator();
+//                sb.setLength(0);
+//                while (stream.hasNext()) {
+//                    Integer codepoint = stream.nextInt();
+//                    issues.add(codepoint);
+//                }
+//            }
+//        } finally {
+//            if (inIssues != null) {
+//                inIssues.close();
+//            }
+//        }
+//
+//        BufferedReader in = null;
+//        try {
+//            in = new BufferedReader(new InputStreamReader(System.in));
+//            String inputLine;
+//            StringBuilder sb = new StringBuilder();
+//            //loop forever an stream interruption is caught
+//            //in case of empty line it returns an empty line
+//            while ((inputLine = in.readLine()) != null) {
+//                PrimitiveIterator.OfInt stream = null;
+//                stream = inputLine.codePoints().iterator();
+//                sb.setLength(0);
+//                while (stream.hasNext()) {
+//                    Integer codepoint = stream.nextInt();
+//                    sb.setLength(0);
+//                    sb.appendCodePoint(codepoint);
+//                    if (!issues.contains(codepoint)) {
+//                        System.out.println(sb.toString());
+//                    }
+//                }
+//            }
+//        } finally {
+//            if (in != null) {
+//                in.close();
+//            }
+//        }
+//    }
 }
 
