@@ -209,6 +209,9 @@ def main_start(argv):
     parser.add_argument('--join-leader', dest='leader', metavar='NODE_IP', default=None,
                         help='use this option to join this node to an existent cluster. '
                              'NODE is the IP of the remote host to connect to.')
+    parser.add_argument('-d', '--remote-debug', action='store_true', dest='remote_debug',
+                        help='setting this option allows Java to connect for remote debug '
+                             '(intended only for development purpose)')
 
     # Parse args
     args = parser.parse_args(argv)
@@ -227,7 +230,8 @@ def main_start(argv):
                    datastream_port=args.datastream_port,
                    db_port=args.db_port,
                    leader=args.leader,
-                   verbosity=args.verbosity)
+                   verbosity=args.verbosity,
+                   remote_debug=args.remote_debug)
 
         # wait for the node to start
         node.wait('JOINED')

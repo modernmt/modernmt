@@ -137,7 +137,18 @@ class ModernMT(object):
         self.stop()
         self.start()
 
-    def import_corpus(self, tmx=None, compact=None):
+    def add_contributions(self, source, target, entries, memory=None, wait=True):
+        if memory is None:
+            memory = self.api.create_memory('TestMemory')['id']
+
+        job = None
+        for sentence, translation in entries:
+            job = self.api.append_to_memory(source, target, memory, sentence, translation)
+
+        if wait:
+            self.wait_job(job)
+
+    def import_corpus(self, tmx=None, compact=None, wait=True):
         content_path = tmx if tmx is not None else compact
         name, _ = os.path.splitext(content_path)
         _, name = os.path.split(name)
@@ -147,7 +158,10 @@ class ModernMT(object):
 
         job = self.api.import_into_memory(memory_id, tmx=tmx, compact=compact)
 
-        return job, memory
+        if wait:
+            self.wait_job(job)
+
+        return memory
 
     def wait_job(self, job, callback=None, refresh_rate_in_seconds=1):
         if callback is not None:

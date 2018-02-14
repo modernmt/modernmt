@@ -267,10 +267,10 @@ class ClusterNode(object):
         self._update_properties()
 
     def start(self, api_port=None, cluster_port=None, datastream_port=None,
-              db_port=None, leader=None, verbosity=None):
+              db_port=None, leader=None, verbosity=None, remote_debug=False):
 
         success = False
-        process = self._start_process(api_port, cluster_port, datastream_port, db_port, leader, verbosity)
+        process = self._start_process(api_port, cluster_port, datastream_port, db_port, leader, verbosity, remote_debug)
         pid = process.pid
 
         if pid > 0:
@@ -286,7 +286,7 @@ class ClusterNode(object):
         if not success:
             raise Exception('failed to start node, check log file for more details: ' + self._log_file)
 
-    def _start_process(self, api_port, cluster_port, datastream_port, db_port, leader, verbosity):
+    def _start_process(self, api_port, cluster_port, datastream_port, db_port, leader, verbosity, remote_debug):
         if not os.path.isdir(self.engine.runtime_path):
             fileutils.makedirs(self.engine.runtime_path, exist_ok=True)
         logs_folder = os.path.abspath(os.path.join(self._log_file, os.pardir))
@@ -319,7 +319,8 @@ class ClusterNode(object):
             args.append('--leader')
             args.append(leader)
 
-        command = mmt_javamain('eu.modernmt.cli.ClusterNodeMain', args, hserr_path=logs_folder)
+        command = mmt_javamain('eu.modernmt.cli.ClusterNodeMain', args,
+                               hserr_path=logs_folder, remote_debug=remote_debug)
 
         if os.path.isfile(self._status_file):
             os.remove(self._status_file)

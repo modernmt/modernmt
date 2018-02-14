@@ -5,6 +5,7 @@ import tarfile
 import unittest
 
 import time
+from distutils.dir_util import copy_tree
 
 from commons import ModernMT, CompactCorpus
 
@@ -53,9 +54,7 @@ class OnlineLearningLanguageTest(_OnlineLearningTest):
 
         for source, target in [('en', 'de'), ('en', 'fr'), ('en', 'it'), ('en', 'pt'), ('en', 'zh')]:
             corpus = CompactCorpus(os.path.join(RES_FOLDER, 'Memory.%s__%s.cpt' % (source, target)))
-            job, memory = self.mmt.import_corpus(compact=corpus.path)
-
-            self.mmt.wait_job(job)
+            memory = self.mmt.import_corpus(compact=corpus.path)
 
             memories['%s_%s' % (source, target)] = memory
 
@@ -234,8 +233,30 @@ class OnlineLearningChannelsTest(_OnlineLearningTest):
     def setUp(self):
         super(OnlineLearningChannelsTest, self).setUp()
 
-        self.mmt.api.create_memory('TestMemory')
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(0, 0))
+    def _prepare_partial(self, context=True, memory=True):
+        self.mmt.add_contributions('en', 'it', [
+            (u'This is en__it example one', u'Questo è un esempio en__it uno'),
+            (u'This is en__it example two', u'Questo è un esempio en__it due')])
+        self.mmt.stop()
+
+        os.rename(self.mmt.context_analyzer.path, self.mmt.context_analyzer.path + '.bak')
+        os.rename(self.mmt.memory.path, self.mmt.memory.path + '.bak')
+
+        self.mmt.start()
+        self.mmt.add_contributions('en', 'it', [
+            (u'This is en__it example three', u'Questo è un esempio en__it tre'),
+            (u'This is en__it example four', u'Questo è un esempio en__it quattro')], memory=1)
+        self.mmt.stop()
+
+        if context:
+            shutil.rmtree(self.mmt.context_analyzer.path)
+            os.rename(self.mmt.context_analyzer.path + '.bak', self.mmt.context_analyzer.path)
+
+        if memory:
+            shutil.rmtree(self.mmt.memory.path)
+            os.rename(self.mmt.memory.path + '.bak', self.mmt.memory.path)
+
+        self.mmt.start()
 
     def _verify_index_integrity(self):
         ctx_source = self.mmt.context_analyzer.get_content(1, 'en', 'it')
@@ -246,173 +267,88 @@ class OnlineLearningChannelsTest(_OnlineLearningTest):
         self.assertEqual(0, len(ctx_target))
         self.assertEqual(4, len(mem_data))
 
-        self.assertInContent(ctx_source, 'This is en__it example one')
-        self.assertInContent(ctx_source, 'This is en__it example two')
-        self.assertInContent(ctx_source, 'This is en__it example three')
-        self.assertInContent(ctx_source, 'This is en__it example four')
-        self.assertInParallelContent(mem_data, 'This is en__it example one', 'Questo è un esempio en__it uno')
-        self.assertInParallelContent(mem_data, 'This is en__it example two', 'Questo è un esempio en__it due')
-        self.assertInParallelContent(mem_data, 'This is en__it example three', 'Questo è un esempio en__it tre')
-        self.assertInParallelContent(mem_data, 'This is en__it example four', 'Questo è un esempio en__it quattro')
+        self.assertInContent(ctx_source, u'This is en__it example one')
+        self.assertInContent(ctx_source, u'This is en__it example two')
+        self.assertInContent(ctx_source, u'This is en__it example three')
+        self.assertInContent(ctx_source, u'This is en__it example four')
+        self.assertInParallelContent(mem_data, u'This is en__it example one', u'Questo è un esempio en__it uno')
+        self.assertInParallelContent(mem_data, u'This is en__it example two', u'Questo è un esempio en__it due')
+        self.assertInParallelContent(mem_data, u'This is en__it example three', u'Questo è un esempio en__it tre')
+        self.assertInParallelContent(mem_data, u'This is en__it example four', u'Questo è un esempio en__it quattro')
 
     # Tests
 
     def test_single_contribution(self):
-        job = self.mmt.api.append_to_memory('en', 'it', 1, 'Hello world', 'Ciao mondo')
-        self.mmt.wait_job(job)
+        self.mmt.add_contributions('en', 'it', [(u'Hello world', u'Ciao mondo')])
 
         ctx_source = self.mmt.context_analyzer.get_content(1, 'en', 'it')
         ctx_target = self.mmt.context_analyzer.get_content(1, 'it', 'en')
         mem_data = self.mmt.memory.dump().get_content(1, 'en', 'it')
 
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(0, 1))
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(0, 0))
 
         self.assertEqual(1, len(ctx_source))
         self.assertEqual(0, len(ctx_target))
         self.assertEqual(1, len(mem_data))
 
-        self.assertInContent(ctx_source, 'Hello world')
-        self.assertInParallelContent(mem_data, 'Hello world', 'Ciao mondo')
+        self.assertInContent(ctx_source, u'Hello world')
+        self.assertInParallelContent(mem_data, u'Hello world', u'Ciao mondo')
 
     def test_upload_domain(self):
         corpus = CompactCorpus(os.path.join(RES_FOLDER, 'Memory.en__it.cpt'))
-
         self.mmt.import_corpus(compact=corpus.path)
 
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(4, 0))
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(3, 0))
         self._verify_index_integrity()
 
     def test_updating_from_scratch_all(self):
         corpus = CompactCorpus(os.path.join(RES_FOLDER, 'Memory.en__it.cpt'))
         self.mmt.import_corpus(compact=corpus.path)
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(4, 0))
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(3, 0))
 
         self.mmt.stop()
         shutil.rmtree(self.mmt.memory.path)
         shutil.rmtree(self.mmt.context_analyzer.path)
         self.mmt.start()
 
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(4, 0))
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(3, 0))
         self._verify_index_integrity()
 
-        #
-        # def test_updating_from_scratch_context():
-        #     copy_engine('_test_4C_2TM', 'default')
-        #     copy_engine_model('context', '_test_base', 'default')
-        #
-        #     mmt_start()
-        #     assert_equals(mmt_stream_status(), StreamsStatus(0, 0))
-        #     sleep(5)
-        #     assert_equals(mmt_api_count_domains(), 5)
-        #     mmt_stop()
-        #
-        #     assert_equals(mmt_engine_size(), mmt_engine_size('_test_4C_2TM'))
-        #     mmt_start()
-        #     assert_equals(mmt_stream_status(), StreamsStatus(8, 4))
-        #     sleep(5)
-        #     mmt_stop()
-        #     assert_equals(mmt_engine_size(), mmt_engine_size('_test_4C_2TM'))
-        #
-        # def test_updating_from_scratch_ilm():
-        #     copy_engine('_test_4C_2TM', 'default')
-        #     copy_engine_model('ilm', '_test_base', 'default')
-        #
-        #     mmt_start()
-        #     assert_equals(mmt_stream_status(), StreamsStatus(0, 0))
-        #     sleep(5)
-        #     assert_equals(mmt_api_count_domains(), 5)
-        #     mmt_stop()
-        #
-        #     assert_equals(mmt_engine_size(), mmt_engine_size('_test_4C_2TM'))
-        #     mmt_start()
-        #     assert_equals(mmt_stream_status(), StreamsStatus(8, 4))
-        #     sleep(5)
-        #     mmt_stop()
-        #     assert_equals(mmt_engine_size(), mmt_engine_size('_test_4C_2TM'))
-        #
-        # def test_updating_from_scratch_sapt():
-        #     copy_engine('_test_4C_2TM', 'default')
-        #     copy_engine_model('sapt', '_test_base', 'default')
-        #
-        #     mmt_start()
-        #     assert_equals(mmt_stream_status(), StreamsStatus(0, 0))
-        #     sleep(5)
-        #     assert_equals(mmt_api_count_domains(), 5)
-        #     mmt_stop()
-        #
-        #     assert_equals(mmt_engine_size(), mmt_engine_size('_test_4C_2TM'))
-        #     mmt_start()
-        #     assert_equals(mmt_stream_status(), StreamsStatus(8, 4))
-        #     sleep(5)
-        #     mmt_stop()
-        #     assert_equals(mmt_engine_size(), mmt_engine_size('_test_4C_2TM'))
-        #
-        # def test_updating_from_partial_all():
-        #     copy_engine('_test_4C_2TM', 'default')
-        #     copy_engine_model('context', '_test_2C_1TM', 'default')
-        #     copy_engine_model('ilm', '_test_2C_1TM', 'default')
-        #     copy_engine_model('sapt', '_test_2C_1TM', 'default')
-        #
-        #     mmt_start()
-        #     assert_equals(mmt_stream_status(), StreamsStatus(4, 2))
-        #     sleep(5)
-        #     assert_equals(mmt_api_count_domains(), 5)
-        #     mmt_stop()
-        #
-        #     assert_equals(mmt_engine_size(), mmt_engine_size('_test_4C_2TM'))
-        #     mmt_start()
-        #     assert_equals(mmt_stream_status(), StreamsStatus(8, 4))
-        #     sleep(5)
-        #     mmt_stop()
-        #     assert_equals(mmt_engine_size(), mmt_engine_size('_test_4C_2TM'))
-        #
-        # def test_updating_from_partial_context():
-        #     copy_engine('_test_4C_2TM', 'default')
-        #     copy_engine_model('context', '_test_2C_1TM', 'default')
-        #
-        #     mmt_start()
-        #     assert_equals(mmt_stream_status(), StreamsStatus(4, 2))
-        #     sleep(5)
-        #     assert_equals(mmt_api_count_domains(), 5)
-        #     mmt_stop()
-        #
-        #     assert_equals(mmt_engine_size(), mmt_engine_size('_test_4C_2TM'))
-        #     mmt_start()
-        #     assert_equals(mmt_stream_status(), StreamsStatus(8, 4))
-        #     sleep(5)
-        #     mmt_stop()
-        #     assert_equals(mmt_engine_size(), mmt_engine_size('_test_4C_2TM'))
-        #
-        # def test_updating_from_partial_ilm():
-        #     copy_engine('_test_4C_2TM', 'default')
-        #     copy_engine_model('ilm', '_test_2C_1TM', 'default')
-        #
-        #     mmt_start()
-        #     assert_equals(mmt_stream_status(), StreamsStatus(4, 2))
-        #     sleep(5)
-        #     assert_equals(mmt_api_count_domains(), 5)
-        #     mmt_stop()
-        #
-        #     assert_equals(mmt_engine_size(), mmt_engine_size('_test_4C_2TM'))
-        #     mmt_start()
-        #     assert_equals(mmt_stream_status(), StreamsStatus(8, 4))
-        #     sleep(5)
-        #     mmt_stop()
-        #     assert_equals(mmt_engine_size(), mmt_engine_size('_test_4C_2TM'))
-        #
-        # def test_updating_from_partial_sapt():
-        #     copy_engine('_test_4C_2TM', 'default')
-        #     copy_engine_model('sapt', '_test_2C_1TM', 'default')
-        #
-        #     mmt_start()
-        #     assert_equals(mmt_stream_status(), StreamsStatus(4, 2))
-        #     sleep(5)
-        #     assert_equals(mmt_api_count_domains(), 5)
-        #     mmt_stop()
-        #
-        #     assert_equals(mmt_engine_size(), mmt_engine_size('_test_4C_2TM'))
-        #     mmt_start()
-        #     assert_equals(mmt_stream_status(), StreamsStatus(8, 4))
-        #     sleep(5)
-        #     mmt_stop()
-        #     assert_equals(mmt_engine_size(), mmt_engine_size('_test_4C_2TM'))
+    def test_updating_from_scratch_context(self):
+        corpus = CompactCorpus(os.path.join(RES_FOLDER, 'Memory.en__it.cpt'))
+        self.mmt.import_corpus(compact=corpus.path)
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(3, 0))
+
+        self.mmt.stop()
+        shutil.rmtree(self.mmt.context_analyzer.path)
+        self.mmt.start()
+
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(3, 0))
+        self._verify_index_integrity()
+
+    def test_updating_from_scratch_memory(self):
+        corpus = CompactCorpus(os.path.join(RES_FOLDER, 'Memory.en__it.cpt'))
+        self.mmt.import_corpus(compact=corpus.path)
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(3, 0))
+
+        self.mmt.stop()
+        shutil.rmtree(self.mmt.memory.path)
+        self.mmt.start()
+
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(3, 0))
+        self._verify_index_integrity()
+
+    def test_updating_partial_all(self):
+        self._prepare_partial()
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(0, 3))
+        self._verify_index_integrity()
+
+    def test_updating_partial_context(self):
+        self._prepare_partial(context=True, memory=False)
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(0, 3))
+        self._verify_index_integrity()
+
+    def test_updating_partial_memory(self):
+        self._prepare_partial(context=False, memory=True)
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(0, 3))
+        self._verify_index_integrity()
