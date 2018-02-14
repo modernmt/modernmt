@@ -33,6 +33,7 @@ def _exe(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
 
 class ContextAnalyzer(object):
     def __init__(self, path):
+        self.path = path
         self._storage_path = os.path.join(path, 'storage')
 
     def get_domains(self):
@@ -74,13 +75,13 @@ class Memory(object):
             return self._data[memory_id]['%s__%s' % (source, target)]
 
     def __init__(self, path):
-        self._index_path = path
+        self.path = path
 
     def dump(self):
         tmp_folder = tempfile.mkdtemp()
 
         try:
-            copy_tree(self._index_path, tmp_folder)
+            copy_tree(self.path, tmp_folder)
             os.unlink(os.path.join(tmp_folder, 'write.lock'))
 
             process = _exe('java -cp %s eu.modernmt.decoder.neural.memory.lucene.utils.Dump %s' % (MMT_JAR, tmp_folder))
@@ -102,6 +103,9 @@ class ModernMT(object):
         def __str__(self):
             return str(self.__dict__)
 
+        def __repr__(self):
+            return repr(self.__dict__)
+
         def __eq__(self, other):
             if isinstance(other, ModernMT.Channels):
                 return self.__dict__ == other.__dict__
@@ -109,10 +113,10 @@ class ModernMT(object):
             return NotImplemented
 
     def __init__(self, engine='default'):
-        self.engines_path = os.path.join(MMT_HOME, 'engines')
+        self.engine_path = os.path.join(MMT_HOME, 'engines', engine)
 
         self._engine = engine
-        self._models_path = os.path.join(self.engines_path, self._engine, 'models')
+        self._models_path = os.path.join(self.engine_path, 'models')
 
         self.api = ClusterNode.Api(port=8045)
         self.context_analyzer = ContextAnalyzer(os.path.join(self._models_path, 'context'))
