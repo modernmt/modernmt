@@ -1,6 +1,6 @@
 package eu.modernmt.cleaning.filters;
 
-import eu.modernmt.cleaning.MultilingualCorpusFilter;
+import eu.modernmt.cleaning.Filter;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.io.IOException;
@@ -10,13 +10,13 @@ import java.util.regex.Pattern;
 /**
  * Created by davide on 28/08/17.
  */
-public class PunctuationFilter implements MultilingualCorpusFilter {
+public class PunctuationFilter implements Filter {
 
     private static final Pattern PLACEHOLDER_REGEX = Pattern.compile("(_+)|(\\s+)|(\\.+)|(\\*+)|(…+)|(-+)");
     private static final Pattern LETTER_REGEX = Pattern.compile("[\\p{Digit}\\p{L}]");
 
     @Override
-    public FilterInitializer getInitializer() {
+    public Initializer getInitializer() {
         return null;
     }
 

@@ -4,7 +4,7 @@ import com.optimaize.langdetect.LanguageDetector;
 import com.optimaize.langdetect.LanguageDetectorBuilder;
 import com.optimaize.langdetect.ngram.NgramExtractors;
 import com.optimaize.langdetect.profiles.LanguageProfileReader;
-import eu.modernmt.cleaning.MultilingualCorpusFilter;
+import eu.modernmt.cleaning.Filter;
 import eu.modernmt.io.RuntimeIOException;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * Created by davide on 27/12/17.
  */
-public class LanguageFilter implements MultilingualCorpusFilter {
+public class LanguageFilter implements Filter {
 
     private static final int MIN_SIZE = 50;
     private static LanguageDetector detectorInstance = null;
@@ -43,8 +43,8 @@ public class LanguageFilter implements MultilingualCorpusFilter {
     private final HashMap<LanguagePair, Blacklist> blacklists = new HashMap<>();
 
     @Override
-    public FilterInitializer getInitializer() {
-        return new FilterInitializer() {
+    public Initializer getInitializer() {
+        return new Initializer() {
 
             private HashMap<LanguagePair, Batch> batches = new HashMap<>();
 

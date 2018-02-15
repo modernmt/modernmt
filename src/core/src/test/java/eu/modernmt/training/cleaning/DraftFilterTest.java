@@ -1,5 +1,6 @@
 package eu.modernmt.training.cleaning;
 
+import eu.modernmt.cleaning.FilterEngine;
 import eu.modernmt.cleaning.FilteredMultilingualCorpus;
 import eu.modernmt.cleaning.filters.draft.DraftFilter;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -15,15 +16,20 @@ import static org.junit.Assert.assertEquals;
  */
 public class DraftFilterTest {
 
+    private static FilteredMultilingualCorpus wrap(MockMultilingualCorpus corpus) {
+        FilterEngine.Builder builder = new FilterEngine.Builder();
+        builder.add(new DraftFilter());
+
+        return new FilteredMultilingualCorpus(corpus, builder.build());
+    }
+
     @Test
     public void testAllUniqueWithoutDate() throws IOException {
         MockMultilingualCorpus corpus = new MockMultilingualCorpus(new String[][]{
                 {"A", "a"}, {"B", "b"}, {"C", "c"}, {"D", "d"},
         });
 
-        FilteredMultilingualCorpus filteredCorpus = new FilteredMultilingualCorpus(corpus);
-        filteredCorpus.addFilter(new DraftFilter());
-
+        FilteredMultilingualCorpus filteredCorpus = wrap(corpus);
         MockMultilingualCorpus output = MockMultilingualCorpus.drain(filteredCorpus.getContentReader());
 
         assertEquals(corpus, output);
@@ -38,9 +44,7 @@ public class DraftFilterTest {
                 {"A", "a"}, {"B", "b"}, {"C", "c"}, {"D", "d"},
         });
 
-        FilteredMultilingualCorpus filteredCorpus = new FilteredMultilingualCorpus(corpus);
-        filteredCorpus.addFilter(new DraftFilter());
-
+        FilteredMultilingualCorpus filteredCorpus = wrap(corpus);
         MockMultilingualCorpus output = MockMultilingualCorpus.drain(filteredCorpus.getContentReader());
 
         assertEquals(expected, output);
@@ -55,9 +59,7 @@ public class DraftFilterTest {
                 {"A", "a"}, {"D", "d"}, {"C", "c"}, {"B", "b"}
         });
 
-        FilteredMultilingualCorpus filteredCorpus = new FilteredMultilingualCorpus(corpus);
-        filteredCorpus.addFilter(new DraftFilter());
-
+        FilteredMultilingualCorpus filteredCorpus = wrap(corpus);
         MockMultilingualCorpus output = MockMultilingualCorpus.drain(filteredCorpus.getContentReader());
 
         assertEquals(expected, output);
@@ -72,9 +74,7 @@ public class DraftFilterTest {
                 MockMultilingualCorpus.pair("D", "d", 3),
         });
 
-        FilteredMultilingualCorpus filteredCorpus = new FilteredMultilingualCorpus(corpus);
-        filteredCorpus.addFilter(new DraftFilter());
-
+        FilteredMultilingualCorpus filteredCorpus = wrap(corpus);
         MockMultilingualCorpus output = MockMultilingualCorpus.drain(filteredCorpus.getContentReader());
 
         assertEquals(corpus, output);
@@ -99,9 +99,7 @@ public class DraftFilterTest {
                 MockMultilingualCorpus.pair("B", "b", 6),
         });
 
-        FilteredMultilingualCorpus filteredCorpus = new FilteredMultilingualCorpus(corpus);
-        filteredCorpus.addFilter(new DraftFilter());
-
+        FilteredMultilingualCorpus filteredCorpus = wrap(corpus);
         MockMultilingualCorpus output = MockMultilingualCorpus.drain(filteredCorpus.getContentReader());
 
         assertEquals(expected, output);
@@ -126,9 +124,7 @@ public class DraftFilterTest {
                 MockMultilingualCorpus.pair("B", "b", 6),
         });
 
-        FilteredMultilingualCorpus filteredCorpus = new FilteredMultilingualCorpus(corpus);
-        filteredCorpus.addFilter(new DraftFilter());
-
+        FilteredMultilingualCorpus filteredCorpus = wrap(corpus);
         MockMultilingualCorpus output = MockMultilingualCorpus.drain(filteredCorpus.getContentReader());
 
         assertEquals(expected, output);
@@ -152,9 +148,7 @@ public class DraftFilterTest {
 
         });
 
-        FilteredMultilingualCorpus filteredCorpus = new FilteredMultilingualCorpus(corpus);
-        filteredCorpus.addFilter(new DraftFilter());
-
+        FilteredMultilingualCorpus filteredCorpus = wrap(corpus);
         MockMultilingualCorpus output = MockMultilingualCorpus.drain(filteredCorpus.getContentReader());
 
         assertEquals(expected, output);

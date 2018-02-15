@@ -1,6 +1,6 @@
 package eu.modernmt.cleaning.normalizers.chinese;
 
-import eu.modernmt.cleaning.MultilingualCorpusNormalizer;
+import eu.modernmt.cleaning.Normalizer;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -8,7 +8,7 @@ import eu.modernmt.model.corpus.MultilingualCorpus;
 /**
  * Created by davide on 15/02/18.
  */
-public class ChineseNormalizer implements MultilingualCorpusNormalizer {
+public class ChineseNormalizer implements Normalizer {
 
     private final ChineseDetector detector = ChineseDetector.getInstance();
 

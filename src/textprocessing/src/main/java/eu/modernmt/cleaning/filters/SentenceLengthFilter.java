@@ -1,6 +1,6 @@
 package eu.modernmt.cleaning.filters;
 
-import eu.modernmt.cleaning.MultilingualCorpusFilter;
+import eu.modernmt.cleaning.Filter;
 import eu.modernmt.cleaning.filters.util.Sequence;
 import eu.modernmt.io.WordCounter;
 import eu.modernmt.lang.LanguagePair;
@@ -12,7 +12,7 @@ import java.util.HashMap;
 /**
  * Created by davide on 25/08/17.
  */
-public class SentenceLengthFilter implements MultilingualCorpusFilter {
+public class SentenceLengthFilter implements Filter {
 
     public static final int MIN_CORPUS_LINES = 1000;
     public static final int DEFAULT_MAX_LINE_LENGTH = 1024;
@@ -29,8 +29,8 @@ public class SentenceLengthFilter implements MultilingualCorpusFilter {
     }
 
     @Override
-    public FilterInitializer getInitializer() {
-        return new FilterInitializer() {
+    public Initializer getInitializer() {
+        return new Initializer() {
 
             @Override
             public void onBegin() {

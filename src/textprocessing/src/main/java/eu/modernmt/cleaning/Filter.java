@@ -7,9 +7,9 @@ import java.io.IOException;
 /**
  * Created by davide on 14/03/16.
  */
-public interface MultilingualCorpusFilter {
+public interface Filter {
 
-    interface FilterInitializer {
+    interface Initializer {
 
         void onBegin();
 
@@ -18,7 +18,7 @@ public interface MultilingualCorpusFilter {
         void onEnd();
     }
 
-    FilterInitializer getInitializer();
+    Initializer getInitializer();
 
     boolean accept(MultilingualCorpus.StringPair pair, int index) throws IOException;
 

@@ -1,6 +1,7 @@
 package eu.modernmt.facade;
 
 import eu.modernmt.cleaning.CorporaCleaning;
+import eu.modernmt.cleaning.StringPairFilter;
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.NodeInfo;
 import eu.modernmt.data.DataManager;
@@ -13,6 +14,7 @@ import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.persistence.*;
 import org.apache.commons.io.IOUtils;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -20,6 +22,8 @@ import java.util.stream.Collectors;
  * Created by davide on 06/09/16.
  */
 public class MemoryFacade {
+
+    private final StringPairFilter contributionFilter = CorporaCleaning.forStringPairs();
 
     public Collection<Memory> list() throws PersistenceException {
         Connection connection = null;
@@ -116,6 +120,23 @@ public class MemoryFacade {
     }
 
     public ImportJob add(LanguagePair direction, long memoryId, String source, String target) throws DataManagerException, PersistenceException {
+        // Normalizing
+        MultilingualCorpus.StringPair pair = new MultilingualCorpus.StringPair(direction, source, target);
+        contributionFilter.normalize(pair);
+
+        // Filtering
+        try {
+            if (!contributionFilter.accept(pair))
+                return ImportJob.createEphemeralJob(memoryId, 0, DataManager.CONTRIBUTIONS_CHANNEL_ID);
+        } catch (IOException e) {
+            throw new DataManagerException(e);
+        }
+
+        direction = pair.language;
+        source = pair.source;
+        target = pair.target;
+
+        // Adding
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
@@ -145,6 +166,27 @@ public class MemoryFacade {
     public ImportJob replace(LanguagePair direction, long memoryId, String sentence, String translation,
                              String previousSentence, String previousTranslation)
             throws DataManagerException, PersistenceException {
+        // Normalizing
+        MultilingualCorpus.StringPair previous = new MultilingualCorpus.StringPair(direction, previousSentence, previousTranslation);
+        MultilingualCorpus.StringPair current = new MultilingualCorpus.StringPair(direction, sentence, translation);
+        contributionFilter.normalize(previous);
+        contributionFilter.normalize(current);
+
+        // Filtering
+        try {
+            if (!contributionFilter.accept(current))
+                return ImportJob.createEphemeralJob(memoryId, 0, DataManager.CONTRIBUTIONS_CHANNEL_ID);
+        } catch (IOException e) {
+            throw new DataManagerException(e);
+        }
+
+        direction = current.language;
+        sentence = current.source;
+        translation = current.target;
+        previousSentence = previous.source;
+        previousTranslation = previous.target;
+
+        // Replacing
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 

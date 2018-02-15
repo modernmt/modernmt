@@ -29,6 +29,19 @@ public class CorporaCleaning {
             return options;
         }
 
+        public static Options pairDefaultOptions() {
+            Options options = new Options();
+            options.normalize = true;
+            options.filterByPunctuation = true;
+            options.filterNumericSentences = true;
+            options.filterVerbatimTranslations = true;
+            options.filterOddSentences = false;
+            options.filterDrafts = false;
+            options.filterBySentenceLength = false;
+            options.filterByLanguage = false;
+            return options;
+        }
+
         public boolean normalize = false;
         public boolean filterByPunctuation = false;
         public boolean filterOddSentences = false;
@@ -45,32 +58,46 @@ public class CorporaCleaning {
     }
 
     public static FilteredMultilingualCorpus wrap(MultilingualCorpus corpus, Options options) {
-        FilteredMultilingualCorpus filteredCorpus = new FilteredMultilingualCorpus(corpus);
+        FilterEngine engine = make(options);
+        return new FilteredMultilingualCorpus(corpus, engine);
+    }
+
+    public static StringPairFilter forStringPairs() {
+        return forStringPairs(Options.pairDefaultOptions());
+    }
+
+    public static StringPairFilter forStringPairs(Options options) {
+        FilterEngine engine = make(options);
+        return new StringPairFilter(engine);
+    }
+
+    private static FilterEngine make(Options options) {
+        FilterEngine.Builder builder = new FilterEngine.Builder();
 
         if (options.normalize) {
-            filteredCorpus.addNormalizer(new ControlCharsStripper());
-            filteredCorpus.addNormalizer(new XMLStripper());
-            filteredCorpus.addNormalizer(new ChineseNormalizer());
+            builder.add(new ControlCharsStripper());
+            builder.add(new XMLStripper());
+            builder.add(new ChineseNormalizer());
         }
 
-        filteredCorpus.addFilter(new EmptyLinesFilter());
+        builder.add(new EmptyLinesFilter());
 
         if (options.filterByPunctuation)
-            filteredCorpus.addFilter(new PunctuationFilter());
+            builder.add(new PunctuationFilter());
         if (options.filterNumericSentences)
-            filteredCorpus.addFilter(new NumericTextFilter());
+            builder.add(new NumericTextFilter());
         if (options.filterVerbatimTranslations)
-            filteredCorpus.addFilter(new VerbatimTranslationFilter());
+            builder.add(new VerbatimTranslationFilter());
         if (options.filterOddSentences)
-            filteredCorpus.addFilter(new RareNgramFilter());
+            builder.add(new RareNgramFilter());
         if (options.filterDrafts)
-            filteredCorpus.addFilter(new DraftFilter());
+            builder.add(new DraftFilter());
         if (options.filterBySentenceLength)
-            filteredCorpus.addFilter(new SentenceLengthFilter());
+            builder.add(new SentenceLengthFilter());
         if (options.filterByLanguage)
-            filteredCorpus.addFilter(new LanguageFilter());
+            builder.add(new LanguageFilter());
 
-        return filteredCorpus;
+        return builder.build();
     }
 
 }
