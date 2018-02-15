@@ -14,6 +14,7 @@ class TrainingTest(unittest.TestCase):
     mmt = ModernMT('TrainingTest')
 
     def tearDown(self):
+        self.mmt.stop()
         self.mmt.delete_engine()
 
     @staticmethod

@@ -138,7 +138,6 @@ class ModernMT(object):
         _exe('./mmt create -e %s %s' % (self.engine_name, args))
 
     def delete_engine(self):
-        self.stop()
         shutil.rmtree(self.engine_path, ignore_errors=True)
         shutil.rmtree(self.engine_runtime_path, ignore_errors=True)
 

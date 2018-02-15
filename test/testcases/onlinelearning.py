@@ -26,6 +26,7 @@ class _OnlineLearningTest(unittest.TestCase):
         self.mmt.start()
 
     def tearDown(self):
+        self.mmt.stop()
         self.mmt.delete_engine()
 
     # Assertion
