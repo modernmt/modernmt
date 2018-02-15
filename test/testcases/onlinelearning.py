@@ -46,6 +46,39 @@ class _OnlineLearningTest(unittest.TestCase):
 
 
 class OnlineLearningLanguageTest(_OnlineLearningTest):
+    def test_chinese_conversion(self):
+        self.mmt.api.create_memory('TestMemory')
+        self.mmt.add_contributions('en', 'zh', [(u'This is en__zh example one', u'這是en__zh例子一')], memory=1)
+        self.mmt.add_contributions('en', 'zh', [(u'This is en__zh example two', u'这是en__zh例子二')], memory=1)
+
+        tm_content = self.mmt.memory.dump()
+
+        # en__zh-CN
+        ctx_source = self.mmt.context_analyzer.get_content(1, 'en', 'zh-CN')
+        ctx_target = self.mmt.context_analyzer.get_content(1, 'zh-CN', 'en')
+        mem_data = tm_content.get_content(1, 'en', 'zh-CN')
+
+        self.assertEqual(1, len(ctx_source))
+        self.assertEqual(1, len(ctx_target))
+        self.assertInContent(ctx_source, u'This is en__zh example two')
+        self.assertInContent(ctx_target, u'这是en__zh例子二')
+
+        self.assertEqual(1, len(mem_data))
+        self.assertInParallelContent(mem_data, u'This is en__zh example two', u'这是en__zh例子二')
+
+        # en__zh-TW
+        ctx_source = self.mmt.context_analyzer.get_content(1, 'en', 'zh-TW')
+        ctx_target = self.mmt.context_analyzer.get_content(1, 'zh-TW', 'en')
+        mem_data = tm_content.get_content(1, 'en', 'zh-TW')
+
+        self.assertEqual(1, len(ctx_source))
+        self.assertEqual(1, len(ctx_target))
+        self.assertInContent(ctx_source, u'This is en__zh example one')
+        self.assertInContent(ctx_target, u'這是en__zh例子一')
+
+        self.assertEqual(1, len(mem_data))
+        self.assertInParallelContent(mem_data, u'This is en__zh example one', u'這是en__zh例子一')
+
     def test_import_with_all_language_combinations(self):
         memories = {}
 
