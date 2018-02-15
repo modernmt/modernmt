@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 from operator import attrgetter
 
@@ -18,21 +19,48 @@ class _CorpusBuilder:
 
     def build(self):
         return TMXCorpus(self.name, self.tmx) if self.tmx is not None else FileParallelCorpus(self.name,
-                                                                                                self.lang2file)
+                                                                                              self.lang2file)
 
 
 def _parse_lang(lang):
-    if lang is None:
-        return None
+    def _looks_like_script_code(string):
+        return len(string) == 4 and re.match('[A-Z][a-z]{3}', string)
 
-    idx = lang.find('-')
-    if idx > 0:
-        if idx > 3:
-            return None
+    def _looks_like_geo_code_3166(string):
+        return len(string) == 2 and re.match('[A-Z]{2}', string)
+
+    def _looks_like_geo_code_numeric(string):
+        return len(string) == 3 and re.match('[0-9]{3}', string)
+
+    def _looks_like_language(string):
+        return re.match('[a-z]{2,3}', string) is not None
+
+    parts = lang.split('-')
+
+    language = None
+    script = None
+    region = None
+
+    for i in range(len(parts)):
+        part = parts[i]
+
+        if i == 0:
+            if _looks_like_language(part):
+                language = part
+            else:
+                raise ValueError(lang)
         else:
-            lang = lang[:idx]
+            if script is None and region is None and _looks_like_script_code(part):
+                script = part
+            elif region is None and (_looks_like_geo_code_3166(part) or _looks_like_geo_code_numeric(part)):
+                region = part
+            else:
+                raise ValueError(lang)
 
-    return lang.lower()
+    if region is None:
+        return language
+    else:
+        return '%s-%s' % (language, region)
 
 
 class BilingualCorpus(object):
@@ -103,7 +131,7 @@ class BilingualCorpus(object):
         lang2file = {}
 
         for lang in langs:
-            lang2file[lang] = os.path.join(folder, name + '.' + lang.lower())
+            lang2file[lang] = os.path.join(folder, name + '.' + lang)
 
         return FileParallelCorpus(name, lang2file)
 

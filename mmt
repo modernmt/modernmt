@@ -799,17 +799,20 @@ def main():
         sys.stderr.write(message)
         exit(1)
     except CorpusNotFoundInFolderException as e:
-        sys.stderr.write('ERROR Corpus not found: {message}\n'.format(message=e.message))
+        sys.stderr.write('\nERROR Corpus not found: {message}\n'.format(message=e.message))
         exit(1)
     except IllegalArgumentException as e:
-        sys.stderr.write('ERROR Illegal Argument: {message}\n'.format(message=e.message))
+        sys.stderr.write('\nERROR Illegal Argument: {message}\n'.format(message=e.message))
         exit(1)
     except IllegalStateException as e:
-        sys.stderr.write('ERROR Illegal State: {message}\n'.format(message=e.message))
+        sys.stderr.write('\nERROR Illegal State: {message}\n'.format(message=e.message))
+        exit(1)
+    except KeyboardInterrupt:
+        sys.stderr.write('\nERROR Process Interrupted')
         exit(1)
     except Exception as e:
-        sys.stderr.write('ERROR Unexpected exception:\n\t{message}\n'.format(message=repr(e)))
-        exit(1)
+        sys.stderr.write('\nERROR Unexpected exception:\n\t{message}\n'.format(message=repr(e)))
+        raise
 
 
 # Check that the node is running
