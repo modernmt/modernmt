@@ -12,7 +12,7 @@ from distutils.dir_util import copy_tree
 MMT_HOME = os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, os.pardir))
 sys.path.insert(0, MMT_HOME)
 
-from cli.mmt.cluster import ClusterNode
+from cli.mmt.cluster import ClusterNode, ApiException
 from cli.libs.shell import ShellError
 from cli import MMT_JAR
 
@@ -114,8 +114,9 @@ class ModernMT(object):
 
     def __init__(self, engine='default'):
         self.engine_path = os.path.join(MMT_HOME, 'engines', engine)
+        self.engine_runtime_path = os.path.join(MMT_HOME, 'runtime', engine)
+        self.engine_name = engine
 
-        self._engine = engine
         self._models_path = os.path.join(self.engine_path, 'models')
 
         self.api = ClusterNode.Api(port=8045)
@@ -123,19 +124,30 @@ class ModernMT(object):
         self.memory = Memory(os.path.join(self._models_path, 'decoder', 'memory'))
 
     def start(self):
-        _exe('./mmt stop -e ' + self._engine)
+        _exe('./mmt stop -e ' + self.engine_name)
 
-        runtime = os.path.join(MMT_HOME, 'runtime', self._engine)
+        runtime = os.path.join(MMT_HOME, 'runtime', self.engine_name)
         shutil.rmtree(runtime, ignore_errors=True)
 
-        _exe('./mmt start -e ' + self._engine)
+        _exe('./mmt start -e ' + self.engine_name)
 
     def stop(self):
-        _exe('./mmt stop -e ' + self._engine)
+        _exe('./mmt stop -e ' + self.engine_name)
+
+    def create(self, args):
+        _exe('./mmt create -e %s %s' % (self.engine_name, args))
+
+    def delete_engine(self):
+        self.stop()
+        shutil.rmtree(self.engine_path, ignore_errors=True)
+        shutil.rmtree(self.engine_runtime_path, ignore_errors=True)
 
     def restart(self):
         self.stop()
         self.start()
+
+    def translate(self, source, target, sentence):
+        return self.api.translate(source, target, sentence)['translation']
 
     def add_contributions(self, source, target, entries, memory=None, wait=True):
         if memory is None:

@@ -47,6 +47,7 @@ class NMTDecoder:
             raise Exception('no model specified in %s' % os.path.join(model_path, 'model.conf'))
 
         for key, model_name in settings.items('models'):
+            key = key.lower()  # ConfigParser seems to interfere with key casing
             model_file = os.path.join(model_path, model_name)
 
             # the running state of the engines depend on their position in the configration file:
@@ -82,6 +83,8 @@ class NMTDecoder:
                 key = variant_key
             else:
                 self._logger.warning('Variant "%s" not found, falling back to "%s"' % (variant_key, key))
+
+        key = key.lower()  # ConfigParser seems to interfere with key casing
 
         if key not in self._engines:
             return None

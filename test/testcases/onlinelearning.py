@@ -16,11 +16,8 @@ class _OnlineLearningTest(unittest.TestCase):
     mmt = ModernMT('OnlineLearningTest')
     _engine_tar = os.path.join(RES_FOLDER, 'engine.tar.gz')
 
-    def _delete_engine(self):
-        shutil.rmtree(self.mmt.engine_path, ignore_errors=True)
-
     def setUp(self):
-        self._delete_engine()
+        self.mmt.delete_engine()
 
         tar = tarfile.open(self._engine_tar, 'r:gz')
         tar.extractall(os.path.abspath(os.path.join(self.mmt.engine_path, os.pardir)))
@@ -29,8 +26,7 @@ class _OnlineLearningTest(unittest.TestCase):
         self.mmt.start()
 
     def tearDown(self):
-        self.mmt.stop()
-        self._delete_engine()
+        self.mmt.delete_engine()
 
     # Assertion
 

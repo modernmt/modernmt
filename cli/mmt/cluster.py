@@ -19,6 +19,11 @@ from cli.mmt.processing import Tokenizer
 __author__ = 'Davide Caroselli'
 
 
+class ApiException(Exception):
+    def __init__(self, *args, **kwargs):
+        super(ApiException, self).__init__(*args, **kwargs)
+
+
 class ClusterNode(object):
     class TuneListener:
         def __init__(self):
@@ -89,7 +94,7 @@ class ClusterNode(object):
         @staticmethod
         def _unpack(r):
             if r.status_code != requests.codes.ok:
-                raise Exception('HTTP request failed with code ' + str(r.status_code) + ': ' + r.url)
+                raise ApiException('HTTP request failed with code ' + str(r.status_code) + ': ' + r.url)
             content = r.json()
 
             return content['data'] if 'data' in content else None
