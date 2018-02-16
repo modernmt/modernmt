@@ -1,5 +1,5 @@
-FROM nvidia/cuda:8.0-cudnn7-runtime-ubuntu16.04
-MAINTAINER Davide Caroselli <davide.caroselli@translated.net>
+FROM nvidia/cuda:9.1-cudnn7-runtime-ubuntu16.04
+MAINTAINER Davide Caroselli <davide@modernmt.eu>
 
 # Install dependencies
 RUN apt-get -y update
@@ -29,7 +29,7 @@ RUN echo "LC_ALL=en_US.UTF-8" >> /etc/environment
 RUN echo "LANG=en_US.UTF-8" >> /etc/environment
 
 # Install PyTorch
-RUN pip install http://download.pytorch.org/whl/cu80/torch-0.3.0.post4-cp27-cp27mu-linux_x86_64.whl
+RUN pip install http://download.pytorch.org/whl/cu91/torch-0.3.1-cp27-cp27mu-linux_x86_64.whl
 
 # Create a new user "mmt" and login as "mmt"
 RUN apt-get install -y sudo && rm -rf /var/lib/apt/lists/*
@@ -41,7 +41,7 @@ RUN chown mmt:mmt /home/mmt
 USER mmt
 
 # Install MMT
-RUN wget -qO- https://github.com/ModernMT/MMT/releases/download/v2.3/mmt-2.3-ubuntu.tar.gz | tar xvfz -
+RUN wget -qO- https://github.com/ModernMT/MMT/releases/download/v2.4/mmt-2.4-ubuntu.tar.gz | tar xvfz -
 WORKDIR /home/mmt/mmt
 
 # Make MMT example engine
