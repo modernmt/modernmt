@@ -87,17 +87,16 @@ public class AlignerFilterMain {
         FileUtils.deleteDirectory(args.outputRoot);
         FileUtils.forceMkdir(args.outputRoot);
 
-        LanguagePair languagePair = new LanguagePair(args.sourceLanguage, args.targetLanguage);
-        LanguageIndex languageIndex = new LanguageIndex(languagePair);
+        LanguagePair language = new LanguagePair(args.sourceLanguage, args.targetLanguage);
 
         FastAlign aligner = new FastAlign(args.model);
         Preprocessor preprocessor = new Preprocessor();
 
         try {
-            Filter filter = new Filter(languagePair, aligner, preprocessor);
+            Filter filter = new Filter(language, aligner, preprocessor);
 
             for (MultilingualCorpus _corpus : bilingualCorpora) {
-                MultilingualCorpus corpus = new MultilingualCorpusMask(languageIndex, _corpus);
+                MultilingualCorpus corpus = new MultilingualCorpusMask(language, _corpus);
                 MultilingualCorpus output = new LazyWriterMultilingualCorpus(Corpora.rename(corpus, args.outputRoot));
 
                 filter.apply(corpus, output, args.threshold);

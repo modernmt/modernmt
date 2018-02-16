@@ -25,16 +25,11 @@ public class TokensAnnotatedString {
                 (0x2000 <= c && c <= 0x200A) || c == 0x202F || c == 0x205F || c == 0x3000);
     }
 
-    private static boolean isCJK(char c) {
-        return (0x4E00 <= c && c <= 0x62FF) || (0x6300 <= c && c <= 0x77FF) ||
-                (0x7800 <= c && c <= 0x8CFF) || (0x8D00 <= c && c <= 0x9FFF);
+    public TokensAnnotatedString(String string, boolean splitCJKV) {
+        this(string.toCharArray(), splitCJKV);
     }
 
-    public TokensAnnotatedString(String string, boolean splitCJK) {
-        this(string.toCharArray(), splitCJK);
-    }
-
-    public TokensAnnotatedString(char[] source, boolean splitCJK) {
+    public TokensAnnotatedString(char[] source, boolean splitCJKV) {
         this.chars = new char[source.length + 2];
         this.flags = new byte[source.length + 3];
 
@@ -42,14 +37,20 @@ public class TokensAnnotatedString {
         boolean whitespace = false;
 
         int index = 1;
+        char previousChar = '\0';
 
         for (char c : source) {
             int type = 0;
 
             if (isWhitespace(c)) {
                 type = WHITESPACE;
-            } else if ((splitCJK && isCJK(c)) || (c != '-' && !Character.isLetterOrDigit(c))) {
-                type = BREAK;
+            } else {
+                boolean isCJKV = splitCJKV && (Character.isSurrogate(c) || Character.isIdeographic(c));
+                boolean isNonBreakableChar = (c == '-') || Character.isLetterOrDigit(c);
+
+                if (isCJKV || !isNonBreakableChar) {
+                    type = BREAK;
+                }
             }
 
             switch (type) {
@@ -73,9 +74,14 @@ public class TokensAnnotatedString {
                         this.flags[index] = this.flags[index + 1] = SPLIT_FLAG;
                     }
 
+                    if (Character.isSurrogatePair(previousChar, c))
+                        this.flags[index] |= PROTECTED_FLAG;
+
                     index++;
                     break;
             }
+
+            previousChar = c;
         }
 
         this.length = index + 1;

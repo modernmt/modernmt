@@ -123,8 +123,7 @@ public class CleaningPipelineMain {
             }
         }
 
-        LanguageIndex languages = new LanguageIndex(new LanguagePair(args.sourceLanguage, args.targetLanguage));
-        ModernMT.training.clean(languages, bilingualCorpora, args.outputRoot, options);
+        ModernMT.training.clean(bilingualCorpora, args.outputRoot, options);
     }
 
 }

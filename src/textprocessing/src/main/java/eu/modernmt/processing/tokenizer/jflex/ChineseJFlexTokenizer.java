@@ -11,6 +11,7 @@ public class ChineseJFlexTokenizer extends JFlexTokenizer {
 
     public ChineseJFlexTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
+        System.out.println("sono qui");
 
         if (!Language.CHINESE.getLanguage().equals(sourceLanguage.getLanguage()))
             throw new UnsupportedLanguageException(sourceLanguage, targetLanguage);

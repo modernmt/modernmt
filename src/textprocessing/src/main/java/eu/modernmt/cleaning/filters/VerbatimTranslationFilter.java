@@ -1,6 +1,6 @@
 package eu.modernmt.cleaning.filters;
 
-import eu.modernmt.cleaning.MultilingualCorpusFilter;
+import eu.modernmt.cleaning.Filter;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.io.IOException;
@@ -8,10 +8,10 @@ import java.io.IOException;
 /**
  * Created by davide on 10/11/17.
  */
-public class VerbatimTranslationFilter implements MultilingualCorpusFilter {
+public class VerbatimTranslationFilter implements Filter {
 
     @Override
-    public FilterInitializer getInitializer() {
+    public Initializer getInitializer() {
         return null;
     }
 

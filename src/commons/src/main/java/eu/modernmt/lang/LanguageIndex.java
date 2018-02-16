@@ -8,10 +8,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class LanguageIndex implements Iterable<LanguagePair> {
 
-    private static final LanguagePair NONE = new LanguagePair(null, null);
-
     private final Set<LanguagePair> languages;
-    private final ConcurrentHashMap<LanguagePair, LanguagePair> cache = new ConcurrentHashMap<>();
+    private final HashMap<LanguageKey, HashSet<LanguagePair>> index;
+    private final ConcurrentHashMap<LanguagePair, List<LanguagePair>> cache = new ConcurrentHashMap<>();
 
     public LanguageIndex(LanguagePair... languages) {
         this(Arrays.asList(languages));
@@ -19,6 +18,13 @@ public class LanguageIndex implements Iterable<LanguagePair> {
 
     public LanguageIndex(Collection<LanguagePair> languages) {
         this.languages = Collections.unmodifiableSet(new HashSet<>(languages));
+
+        this.index = new HashMap<>(languages.size());
+        for (LanguagePair language : languages) {
+            LanguageKey key = LanguageKey.fromLanguage(language);
+            HashSet<LanguagePair> entry = this.index.computeIfAbsent(key, (k) -> new HashSet<>(4));
+            entry.add(language);
+        }
     }
 
     public Set<LanguagePair> getLanguages() {
@@ -29,66 +35,76 @@ public class LanguageIndex implements Iterable<LanguagePair> {
         return languages.size();
     }
 
-    public boolean isSupported(LanguagePair pair) {
+    public boolean contains(LanguagePair pair) {
         return pair != null && languages.contains(pair);
     }
 
-    public LanguagePair map(LanguagePair pair) {
-        LanguagePair mapped = strictMap(pair);
-
-        if (mapped == null) {
-            mapped = strictMap(pair.reversed());
-
-            if (mapped != null)
-                mapped = mapped.reversed();
-        }
-
-        return mapped;
+    public boolean match(LanguagePair pair) {
+        return !map(pair).isEmpty();
     }
 
-    private LanguagePair strictMap(LanguagePair pair) {
-        if (languages.contains(pair))
+    public LanguagePair mapToBestMatching(LanguagePair pair) {
+        if (languages.contains(pair) || languages.contains(pair.reversed()))
             return pair;
 
-        // Search in mapping cache
-        LanguagePair output = cache.get(pair);
-        if (output != null)
-            return output == NONE ? null : output;
+        List<LanguagePair> mapping = map(pair);
+        return mapping.isEmpty() ? null : mapping.get(0);
+    }
 
-        Language reducedSource = new Language(pair.source.getLanguage());
-        LanguagePair reduced;
+    public List<LanguagePair> map(LanguagePair pair) {
+        List<LanguagePair> result = cache.get(pair);
 
-        // Test language pair with reduced source language
-        // Before: en-GB > pt-BR
-        // After:  en > pt-BR
-        reduced = new LanguagePair(reducedSource, pair.target);
-        if (languages.contains(reduced)) {
-            cache.put(pair, reduced);
-            return reduced;
+        if (result != null)
+            return result;
+
+        Set<LanguagePair> set;
+        set = map(pair, null, false);
+        set = map(pair.reversed(), set, true);
+
+        if (set != null) {
+            result = new ArrayList<>(set);
+            result.sort((a, b) -> {
+                int cmp = a.source.compareTo(b.source);
+                return -(cmp == 0 ? a.target.compareTo(b.target) : cmp);
+            });
+
+            result = Collections.unmodifiableList(result);
+            cache.put(pair, result);
         }
 
-        Language reducedTarget = new Language(pair.target.getLanguage());
+        return result == null ? Collections.emptyList() : result;
+    }
 
-        // Test language pair with reduced target language
-        // Before: en-GB > pt-BR
-        // After:  en-GB > pt
-        reduced = new LanguagePair(pair.source, reducedTarget);
-        if (languages.contains(reduced)) {
-            cache.put(pair, reduced);
-            return reduced;
+    private Set<LanguagePair> map(LanguagePair pair, Set<LanguagePair> result, boolean reverse) {
+        LanguageKey key = LanguageKey.fromLanguage(pair);
+        Set<LanguagePair> mappings = this.index.get(key);
+
+        if (mappings != null) {
+            for (LanguagePair mapping : mappings) {
+                if (match(pair, mapping)) {
+                    if (result == null)
+                        result = new HashSet<>(4);
+
+                    result.add(reverse ? mapping.reversed() : mapping);
+                }
+            }
         }
 
-        // Test language pair with reduced source and target languages
-        // Before: en-GB > pt-BR
-        // After:  en > pt
-        reduced = new LanguagePair(reducedSource, reducedTarget);
-        if (languages.contains(reduced)) {
-            cache.put(pair, reduced);
-            return reduced;
-        } else {
-            cache.put(pair, NONE);
-            return null;
-        }
+        return result;
+    }
+
+    private static boolean match(LanguagePair a, LanguagePair b) {
+        return match(a.source, b.source) && match(a.target, b.target);
+    }
+
+    private static boolean match(Language a, Language b) {
+        if (!a.getLanguage().equals(b.getLanguage()))
+            return false;
+
+        String aRegion = a.getRegion();
+        String bRegion = b.getRegion();
+
+        return aRegion == null || bRegion == null || aRegion.equals(bRegion);
     }
 
     /**
@@ -104,6 +120,39 @@ public class LanguageIndex implements Iterable<LanguagePair> {
     @Override
     public Iterator<LanguagePair> iterator() {
         return languages.iterator();
+    }
+
+    private static final class LanguageKey {
+
+        private final String source;
+        private final String target;
+
+        public static LanguageKey fromLanguage(LanguagePair language) {
+            return new LanguageKey(language.source.getLanguage(), language.target.getLanguage());
+        }
+
+        private LanguageKey(String source, String target) {
+            this.source = source;
+            this.target = target;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            LanguageKey that = (LanguageKey) o;
+
+            if (!source.equals(that.source)) return false;
+            return target.equals(that.target);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = source.hashCode();
+            result = 31 * result + target.hashCode();
+            return result;
+        }
     }
 
 }

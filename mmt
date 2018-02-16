@@ -209,6 +209,9 @@ def main_start(argv):
     parser.add_argument('--join-leader', dest='leader', metavar='NODE_IP', default=None,
                         help='use this option to join this node to an existent cluster. '
                              'NODE is the IP of the remote host to connect to.')
+    parser.add_argument('-d', '--remote-debug', action='store_true', dest='remote_debug',
+                        help='setting this option allows Java to connect for remote debug '
+                             '(intended only for development purpose)')
 
     # Parse args
     args = parser.parse_args(argv)
@@ -227,7 +230,8 @@ def main_start(argv):
                    datastream_port=args.datastream_port,
                    db_port=args.db_port,
                    leader=args.leader,
-                   verbosity=args.verbosity)
+                   verbosity=args.verbosity,
+                   remote_debug=args.remote_debug)
 
         # wait for the node to start
         node.wait('JOINED')
@@ -795,17 +799,20 @@ def main():
         sys.stderr.write(message)
         exit(1)
     except CorpusNotFoundInFolderException as e:
-        sys.stderr.write('ERROR Corpus not found: {message}\n'.format(message=e.message))
+        sys.stderr.write('\nERROR Corpus not found: {message}\n'.format(message=e.message))
         exit(1)
     except IllegalArgumentException as e:
-        sys.stderr.write('ERROR Illegal Argument: {message}\n'.format(message=e.message))
+        sys.stderr.write('\nERROR Illegal Argument: {message}\n'.format(message=e.message))
         exit(1)
     except IllegalStateException as e:
-        sys.stderr.write('ERROR Illegal State: {message}\n'.format(message=e.message))
+        sys.stderr.write('\nERROR Illegal State: {message}\n'.format(message=e.message))
+        exit(1)
+    except KeyboardInterrupt:
+        sys.stderr.write('\nERROR Process Interrupted')
         exit(1)
     except Exception as e:
-        sys.stderr.write('ERROR Unexpected exception:\n\t{message}\n'.format(message=repr(e)))
-        exit(1)
+        sys.stderr.write('\nERROR Unexpected exception:\n\t{message}\n'.format(message=repr(e)))
+        raise
 
 
 # Check that the node is running

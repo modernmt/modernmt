@@ -99,11 +99,8 @@ public class CorpusSplitMain {
         }
 
         LanguagePair languagePair = new LanguagePair(args.sourceLanguage, args.targetLanguage);
-        LanguageIndex languageIndex = new LanguageIndex(languagePair);
 
         try {
-
-
             MultilingualCorpus.MultilingualLineReader inputReader = null;
             MultilingualCorpus.MultilingualLineWriter trainWriter = null;
             MultilingualCorpus.MultilingualLineWriter testWriter = null;
@@ -112,7 +109,7 @@ public class CorpusSplitMain {
             for (MultilingualCorpus _corpus : bilingualCorpora) {
 
                 try {
-                    MultilingualCorpus corpus = new MultilingualCorpusMask(languageIndex, _corpus);
+                    MultilingualCorpus corpus = new MultilingualCorpusMask(languagePair, _corpus);
                     inputReader = corpus.getContentReader();
 
                     trainWriter = new LazyWriterMultilingualCorpus(Corpora.rename(corpus, args.trainOutputRoot)).getContentWriter(false);

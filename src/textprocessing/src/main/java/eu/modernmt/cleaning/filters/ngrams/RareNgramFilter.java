@@ -1,6 +1,6 @@
 package eu.modernmt.cleaning.filters.ngrams;
 
-import eu.modernmt.cleaning.MultilingualCorpusFilter;
+import eu.modernmt.cleaning.Filter;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
@@ -11,13 +11,13 @@ import java.util.Map;
 /**
  * Created by davide on 17/11/16.
  */
-public class RareNgramFilter implements MultilingualCorpusFilter {
+public class RareNgramFilter implements Filter {
 
     private final HashMap<LanguagePair, Vocabulary> ngrams = new HashMap<>();
 
     @Override
-    public FilterInitializer getInitializer() {
-        return new FilterInitializer() {
+    public Initializer getInitializer() {
+        return new Initializer() {
 
             private final HashMap<LanguagePair, Vocabulary.Builder> vocabs = new HashMap<>();
 

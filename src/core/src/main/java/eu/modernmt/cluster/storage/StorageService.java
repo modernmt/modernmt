@@ -14,8 +14,12 @@ public abstract class StorageService implements Closeable {
     private static StorageService instance = null;
 
     public static StorageService getInstance() {
-        if (instance == null)
-            instance = new RSyncStorage();
+        if (instance == null) {
+            synchronized (StorageService.class) {
+                if (instance == null)
+                    instance = new RSyncStorage();
+            }
+        }
 
         return instance;
     }

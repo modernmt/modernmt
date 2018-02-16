@@ -122,10 +122,7 @@ pip install -U requests
 ### PyTorch (for Neural engine)
 Install *PyTorch 0.3* with `pip`:
 ```bash
-pip install http://download.pytorch.org/whl/cu90/torch-0.3.0.post4-cp27-cp27mu-linux_x86_64.whl 
-
-# if the above command does not work, then you have python 2.7 UCS2, use this command 
-pip install http://download.pytorch.org/whl/cu90/torch-0.3.0.post4-cp27-cp27m-linux_x86_64.whl
+pip install http://download.pytorch.org/whl/cu91/torch-0.3.1-cp27-cp27mu-linux_x86_64.whl 
 ```
 
 ## Install the MMT Binaries
@@ -165,10 +162,7 @@ sudo apt-get install libsnappy-dev zlib1g-dev libbz2-dev libboost-all-dev libspa
 Install *PyTorch 0.3* with `pip`:
 
 ```bash
-pip install http://download.pytorch.org/whl/cu90/torch-0.3.0.post4-cp27-cp27mu-linux_x86_64.whl 
-
-# if the above command does not work, then you have python 2.7 UCS2, use this command 
-pip install http://download.pytorch.org/whl/cu90/torch-0.3.0.post4-cp27-cp27m-linux_x86_64.whl
+pip install http://download.pytorch.org/whl/cu91/torch-0.3.1-cp27-cp27mu-linux_x86_64.whl 
 ```
 
 ## Install MMT

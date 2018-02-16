@@ -73,8 +73,8 @@ public class ReducingCorporaMain {
         if (corpora.isEmpty())
             throw new ParseException("Input path does not contains valid bilingual data");
 
-        LanguageIndex languages = new LanguageIndex(new LanguagePair(args.sourceLanguage, args.targetLanguage));
-        ModernMT.training.reduce(languages, corpora, args.outputRoot, args.maxWordCount);
+        LanguagePair language = new LanguagePair(args.sourceLanguage, args.targetLanguage);
+        ModernMT.training.reduce(language, corpora, args.outputRoot, args.maxWordCount);
     }
 
 }

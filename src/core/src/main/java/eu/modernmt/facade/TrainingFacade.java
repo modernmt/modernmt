@@ -42,11 +42,11 @@ public class TrainingFacade {
 
     }
 
-    public void clean(LanguageIndex languages, List<MultilingualCorpus> corpora, File outputDirectory, CorporaCleaning.Options options) throws IOException {
+    public void clean(List<MultilingualCorpus> corpora, File outputDirectory, CorporaCleaning.Options options) throws IOException {
         BatchCopyProcess copyProcess = new BatchCopyProcess(corpus -> new LazyWriterMultilingualCorpus(Corpora.rename(corpus, outputDirectory)));
 
         for (MultilingualCorpus corpus : corpora)
-            copyProcess.add(CorporaCleaning.wrap(new MultilingualCorpusMask(languages, corpus), options));
+            copyProcess.add(CorporaCleaning.wrap(corpus, options));
 
         FileUtils.deleteDirectory(outputDirectory);
         FileUtils.forceMkdir(outputDirectory);
@@ -54,11 +54,11 @@ public class TrainingFacade {
         copyProcess.run();
     }
 
-    public void preprocess(LanguageIndex languages, List<MultilingualCorpus> multilingualCorpora, List<Corpus> monolingualCorpora, File destFolder) throws ProcessingException, IOException {
-        preprocess(languages, multilingualCorpora, monolingualCorpora, destFolder, new TrainingOptions());
+    public void preprocess(LanguagePair language, List<MultilingualCorpus> multilingualCorpora, List<Corpus> monolingualCorpora, File destFolder) throws ProcessingException, IOException {
+        preprocess(language, multilingualCorpora, monolingualCorpora, destFolder, new TrainingOptions());
     }
 
-    public void preprocess(LanguageIndex languages, List<MultilingualCorpus> multilingualCorpora, List<Corpus> monolingualCorpora, File destFolder, TrainingOptions options) throws ProcessingException, IOException {
+    public void preprocess(LanguagePair language, List<MultilingualCorpus> multilingualCorpora, List<Corpus> monolingualCorpora, File destFolder, TrainingOptions options) throws ProcessingException, IOException {
         FilesCorporaPartition mainPartition = new FilesCorporaPartition(destFolder);
 
         CorpusWriter writer;
@@ -67,7 +67,7 @@ public class TrainingFacade {
         else
             writer = new TermsCollectorWriter(options.vocabulary);
 
-        PreprocessingPipeline pipeline = new PreprocessingPipeline(languages, mainPartition, writer);
+        PreprocessingPipeline pipeline = new PreprocessingPipeline(language, mainPartition, writer);
 
         FileUtils.deleteDirectory(destFolder);
 
@@ -84,22 +84,18 @@ public class TrainingFacade {
         pipeline.process(multilingualCorpora, monolingualCorpora);
     }
 
-    public void reduce(LanguageIndex languages, List<MultilingualCorpus> originalCorpora, File outputDirectory, long maxWordCount) throws IOException {
+    public void reduce(LanguagePair language, List<MultilingualCorpus> originalCorpora, File outputDirectory, long maxWordCount) throws IOException {
         ArrayList<ReducedMultilingualCorpus> corpora = new ArrayList<>(originalCorpora.size());
         for (MultilingualCorpus corpus : originalCorpora)
-            corpora.add(new ReducedMultilingualCorpus(new MultilingualCorpusMask(languages, corpus)));
+            corpora.add(new ReducedMultilingualCorpus(new MultilingualCorpusMask(language, corpus)));
 
         Map<LanguagePair, Long> counts = IOCorporaUtils.wordCount(corpora, Runtime.getRuntime().availableProcessors());
+        long count = counts.get(language);
 
-        for (Map.Entry<LanguagePair, Long> e : counts.entrySet()) {
-            LanguagePair language = e.getKey();
-            long count = e.getValue();
-
-            if (count > maxWordCount) {
-                double reduction = maxWordCount / ((double) count);
-                for (ReducedMultilingualCorpus corpus : corpora)
-                    corpus.reduce(language, reduction);
-            }
+        if (count > maxWordCount) {
+            double reduction = maxWordCount / ((double) count);
+            for (ReducedMultilingualCorpus corpus : corpora)
+                corpus.reduce(language, reduction);
         }
 
         FileUtils.deleteDirectory(outputDirectory);

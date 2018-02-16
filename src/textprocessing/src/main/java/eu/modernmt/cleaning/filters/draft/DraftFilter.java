@@ -1,6 +1,6 @@
 package eu.modernmt.cleaning.filters.draft;
 
-import eu.modernmt.cleaning.MultilingualCorpusFilter;
+import eu.modernmt.cleaning.Filter;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
@@ -11,17 +11,17 @@ import java.util.HashMap;
 /**
  * Created by davide on 14/03/16.
  */
-public class DraftFilter implements MultilingualCorpusFilter {
+public class DraftFilter implements Filter {
 
     private final HashMap<LanguagePair, DraftFilterData> filters = new HashMap<>();
     private boolean dataReady = false;
 
     @Override
-    public FilterInitializer getInitializer() {
+    public Initializer getInitializer() {
         if (dataReady)
             return null;
 
-        return new FilterInitializer() {
+        return new Initializer() {
 
             private Date lastTimestamp = new Date(0L);
 

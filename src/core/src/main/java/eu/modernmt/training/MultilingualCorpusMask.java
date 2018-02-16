@@ -17,9 +17,9 @@ public class MultilingualCorpusMask extends BaseMultilingualCorpus implements Mu
     private final MultilingualCorpus corpus;
     private final LanguageIndex languages;
 
-    public MultilingualCorpusMask(LanguageIndex languages, MultilingualCorpus corpus) {
+    public MultilingualCorpusMask(LanguagePair language, MultilingualCorpus corpus) {
         this.corpus = corpus;
-        this.languages = languages;
+        this.languages = new LanguageIndex(language);
     }
 
     @Override
@@ -37,15 +37,15 @@ public class MultilingualCorpusMask extends BaseMultilingualCorpus implements Mu
             public StringPair read() throws IOException {
                 StringPair pair;
                 while ((pair = reader.read()) != null) {
-                    pair.language = languages.map(pair.language);
+                    pair.language = languages.mapToBestMatching(pair.language);
 
                     if (pair.language == null)
                         continue;
 
-                    if (languages.isSupported(pair.language))
+                    if (languages.contains(pair.language))
                         return pair;
 
-                    if (languages.isSupported(pair.language.reversed()))
+                    if (languages.contains(pair.language.reversed()))
                         return reverse(pair);
                 }
 
@@ -77,11 +77,11 @@ public class MultilingualCorpusMask extends BaseMultilingualCorpus implements Mu
 
             @Override
             public void write(StringPair pair) throws IOException {
-                LanguagePair mapped = languages.map(pair.language);
+                LanguagePair mapped = languages.mapToBestMatching(pair.language);
 
-                if (languages.isSupported(pair.language))
+                if (languages.contains(mapped))
                     writer.write(new StringPair(mapped, pair.source, pair.target, pair.timestamp));
-                else if (languages.isSupported(pair.language.reversed()))
+                else if (languages.contains(mapped.reversed()))
                     writer.write(new StringPair(mapped.reversed(), pair.target, pair.source, pair.timestamp));
                 else
                     throw new UnsupportedLanguageException(pair.language);

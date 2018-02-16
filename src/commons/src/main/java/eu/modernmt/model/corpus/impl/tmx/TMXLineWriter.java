@@ -111,7 +111,7 @@ class TMXLineWriter implements MultilingualCorpus.MultilingualLineWriter {
         writer.writeAttribute("datatype", "plaintext");
         writer.writeAttribute("o-tmf", "ModernMT");
         writer.writeAttribute("segtype", "sentence");
-        writer.writeAttribute("adminlang", "en-us");
+        writer.writeAttribute("adminlang", "en");
         if (sourceLanguage != null)
             writer.writeAttribute("srclang", sourceLanguage.toLanguageTag());
 

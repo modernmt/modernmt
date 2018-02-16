@@ -45,11 +45,11 @@ class KafkaDataBatch implements DataBatch {
         currentPositions.clear();
     }
 
-    private DataPartition getDataPartition(int expectedSize) {
+    private DataPartition getDataPartition(LanguagePair direction, int expectedSize) {
         if (cachedPartitions.isEmpty())
-            return new DataPartition().reset(expectedSize);
+            return new DataPartition().reset(direction, expectedSize);
         else
-            return cachedPartitions.pop().reset(expectedSize);
+            return cachedPartitions.pop().reset(direction, expectedSize);
     }
 
     private void releaseDataPartition(DataPartition partition) {
@@ -79,11 +79,11 @@ class KafkaDataBatch implements DataBatch {
             if (message instanceof TranslationUnit) {
                 TranslationUnit unit = (TranslationUnit) message;
 
-                LanguagePair direction = languages.map(unit.direction);
-                if (direction != null) {
-                    unit.direction = direction;
-                    cachedDataSet.computeIfAbsent(unit.direction, key -> getDataPartition(size))
-                            .add(unit);
+                LanguagePair mapping = languages.mapToBestMatching(unit.direction);
+
+                if (mapping != null) {
+                    DataPartition partition = cachedDataSet.computeIfAbsent(mapping, key -> getDataPartition(key, size));
+                    partition.add(unit);
                 }
 
             } else {
@@ -122,12 +122,14 @@ class KafkaDataBatch implements DataBatch {
 
     private static class DataPartition {
 
+        private LanguagePair direction;
         public final ArrayList<TranslationUnit> units = new ArrayList<>();
         public final ArrayList<String> sources = new ArrayList<>();
         public final ArrayList<String> targets = new ArrayList<>();
 
-        public DataPartition reset(int size) {
+        public DataPartition reset(LanguagePair direction, int size) {
             this.clear();
+            this.direction = direction;
 
             units.ensureCapacity(size);
             sources.ensureCapacity(size);
@@ -157,7 +159,6 @@ class KafkaDataBatch implements DataBatch {
             ContributionOptions options = engine.getContributionOptions();
 
             if (options.process) {
-                LanguagePair direction = units.get(0).direction;
                 Preprocessor preprocessor = engine.getPreprocessor();
                 List<Sentence> sourceSentences = preprocessor.process(direction, sources);
                 List<Sentence> targetSentences = preprocessor.process(direction.reversed(), targets);

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tmx version="1.4">
+    <header creationtool="ModernMT - modernmt.eu" creationtoolversion="1.0" datatype="plaintext" o-tmf="ModernMT"
+            segtype="sentence" adminlang="en" srclang="en"/>
+    <body>
+        <tu srclang="en" datatype="plaintext" creationdate="20160323T072431Z">
+            <tuv xml:lang="en">
+                <seg>The en__zh example one</seg>
+            </tuv>
+            <tuv xml:lang="zh">
+                <seg>en__zh例子之一</seg>
+            </tuv>
+        </tu>
+        <tu srclang="en" datatype="plaintext" creationdate="20160323T072814Z">
+            <tuv xml:lang="en">
+                <seg>This is en__zh example two</seg>
+            </tuv>
+            <tuv xml:lang="zh-CN">
+                <seg>这是en__zh例子二</seg>
+            </tuv>
+        </tu>
+        <tu srclang="en" datatype="plaintext" creationdate="20160323T072820Z">
+            <tuv xml:lang="en">
+                <seg>This is en__zh example three</seg>
+            </tuv>
+            <tuv xml:lang="zh-TW">
+                <seg>這是en__zh例子三</seg>
+            </tuv>
+        </tu>
+        <tu srclang="en" datatype="plaintext" creationdate="20160323T072820Z">
+            <tuv xml:lang="en">
+                <seg>This is en__zh example four</seg>
+            </tuv>
+            <tuv xml:lang="zh">
+                <seg>這是en__zh例子四</seg>
+            </tuv>
+        </tu>
+    </body>
+</tmx>

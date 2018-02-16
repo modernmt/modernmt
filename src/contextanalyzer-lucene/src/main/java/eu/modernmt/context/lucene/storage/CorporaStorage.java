@@ -73,16 +73,18 @@ public class CorporaStorage {
             if (!index.shouldAcceptData(unit.channel, unit.channelPosition))
                 continue;
 
-            if (languages.isSupported(unit.direction)) {
-                CorpusBucket bucket = index.getBucket(unit.direction, unit.memory);
-                bucket.append(unit.rawSentence);
-                pendingUpdatesBuckets.add(bucket);
-            }
+            for (LanguagePair direction : languages.map(unit.direction)) {
+                if (languages.contains(direction)) {
+                    CorpusBucket bucket = index.getBucket(direction, unit.memory);
+                    bucket.append(unit.rawSentence);
+                    pendingUpdatesBuckets.add(bucket);
+                }
 
-            if (languages.isSupported(unit.direction.reversed())) {
-                CorpusBucket bucket = index.getBucket(unit.direction.reversed(), unit.memory);
-                bucket.append(unit.rawTranslation);
-                pendingUpdatesBuckets.add(bucket);
+                if (languages.contains(direction.reversed())) {
+                    CorpusBucket bucket = index.getBucket(direction.reversed(), unit.memory);
+                    bucket.append(unit.rawTranslation);
+                    pendingUpdatesBuckets.add(bucket);
+                }
             }
         }
 
@@ -143,48 +145,25 @@ public class CorporaStorage {
     public void bulkInsert(long memory, MultilingualCorpus corpus) throws IOException {
         MultilingualCorpus.MultilingualLineReader reader = null;
 
-        HashMap<LanguagePair, CorpusBucket> buckets = new HashMap<>();
-
         try {
             reader = corpus.getContentReader();
 
             MultilingualCorpus.StringPair pair;
             while ((pair = reader.read()) != null) {
-                LanguagePair language = languages.map(pair.language);
+                for (LanguagePair direction : languages.map(pair.language)) {
+                    if (languages.contains(direction)) {
+                        CorpusBucket bucket = index.getBucket(direction, memory);
+                        bucket.append(pair.source);
+                        pendingUpdatesBuckets.add(bucket);
+                    }
 
-                if (language == null)
-                    continue;
-
-                if (languages.isSupported(language)) {
-                    CorpusBucket bucket = buckets.computeIfAbsent(language, direction -> {
-                        try {
-                            return index.getBucket(direction, memory);
-                        } catch (IOException e) {
-                            throw new RuntimeIOException(e);
-                        }
-                    });
-
-                    bucket.append(pair.source);
-                }
-
-                language = language.reversed();
-
-                if (languages.isSupported(language)) {
-                    CorpusBucket bucket = buckets.computeIfAbsent(language, direction -> {
-                        try {
-                            return index.getBucket(direction, memory);
-                        } catch (IOException e) {
-                            throw new RuntimeIOException(e);
-                        }
-                    });
-
-                    bucket.append(pair.target);
+                    if (languages.contains(direction.reversed())) {
+                        CorpusBucket bucket = index.getBucket(direction.reversed(), memory);
+                        bucket.append(pair.target);
+                        pendingUpdatesBuckets.add(bucket);
+                    }
                 }
             }
-
-            pendingUpdatesBuckets.addAll(buckets.values());
-        } catch (RuntimeIOException e) {
-            throw e.cause;
         } finally {
             IOUtils.closeQuietly(reader);
         }

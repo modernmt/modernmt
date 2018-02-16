@@ -6,29 +6,19 @@ import eu.modernmt.model.corpus.MultilingualCorpusWrapper;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by davide on 14/03/16.
  */
 public class FilteredMultilingualCorpus extends BaseMultilingualCorpus implements MultilingualCorpusWrapper {
 
-    private MultilingualCorpus corpus;
-    private ArrayList<MultilingualCorpusFilter> filters;
-    private ArrayList<MultilingualCorpusNormalizer> normalizers;
+    private final MultilingualCorpus corpus;
+    private final FilterEngine filter;
 
-    public FilteredMultilingualCorpus(MultilingualCorpus corpus) {
+    public FilteredMultilingualCorpus(MultilingualCorpus corpus, FilterEngine filter) {
         this.corpus = corpus;
-        this.filters = new ArrayList<>(10);
-        this.normalizers = new ArrayList<>(10);
-    }
-
-    public void addFilter(MultilingualCorpusFilter filter) {
-        this.filters.add(filter);
-    }
-
-    public void addNormalizer(MultilingualCorpusNormalizer normalizer) {
-        this.normalizers.add(normalizer);
+        this.filter = filter;
     }
 
     @Override
@@ -45,17 +35,8 @@ public class FilteredMultilingualCorpus extends BaseMultilingualCorpus implement
                 StringPair next;
 
                 while ((next = reader.read()) != null) {
-                    for (MultilingualCorpusNormalizer normalizer : normalizers)
-                        normalizer.normalize(next, index);
-
-                    boolean accept = true;
-
-                    for (MultilingualCorpusFilter filter : filters) {
-                        if (!filter.accept(next, index)) {
-                            accept = false;
-                            break;
-                        }
-                    }
+                    filter.normalize(next, index);
+                    boolean accept = filter.accept(next, index);
 
                     index++;
 
@@ -69,23 +50,16 @@ public class FilteredMultilingualCorpus extends BaseMultilingualCorpus implement
             @Override
             public void close() throws IOException {
                 reader.close();
-
-                for (MultilingualCorpusFilter filter : filters)
-                    filter.clear();
+                filter.clear();
             }
         };
     }
 
     private void initialize() throws IOException {
-        ArrayList<MultilingualCorpusFilter.FilterInitializer> initializers = new ArrayList<>(filters.size());
-        for (MultilingualCorpusFilter filter : filters) {
-            MultilingualCorpusFilter.FilterInitializer initializer = filter.getInitializer();
-            if (initializer != null)
-                initializers.add(initializer);
-        }
+        List<Filter.Initializer> initializers = this.filter.getInitializers();
 
         if (initializers.size() > 0) {
-            for (MultilingualCorpusFilter.FilterInitializer initializer : initializers)
+            for (Filter.Initializer initializer : initializers)
                 initializer.onBegin();
 
             MultilingualLineReader reader = null;
@@ -97,10 +71,9 @@ public class FilteredMultilingualCorpus extends BaseMultilingualCorpus implement
                 StringPair pair;
 
                 while ((pair = reader.read()) != null) {
-                    for (MultilingualCorpusNormalizer normalizer : normalizers)
-                        normalizer.normalize(pair, index);
+                    filter.normalize(pair, index);
 
-                    for (MultilingualCorpusFilter.FilterInitializer initializer : initializers)
+                    for (Filter.Initializer initializer : initializers)
                         initializer.onPair(corpus, pair, index);
 
                     index++;
@@ -109,7 +82,7 @@ public class FilteredMultilingualCorpus extends BaseMultilingualCorpus implement
                 IOUtils.closeQuietly(reader);
             }
 
-            for (MultilingualCorpusFilter.FilterInitializer initializer : initializers)
+            for (Filter.Initializer initializer : initializers)
                 initializer.onEnd();
         }
     }

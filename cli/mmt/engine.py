@@ -47,7 +47,8 @@ class ContextAnalyzer:
 
 class FastAlign:
     def __init__(self, model, source_lang, target_lang):
-        self._model = os.path.join(model, '%s__%s.mdl' % (source_lang, target_lang))
+        # FastAlign only supports base languages, without regions
+        self._model = os.path.join(model, '%s__%s.mdl' % (source_lang.split('-')[0], target_lang.split('-')[0]))
         self._source_lang = source_lang
         self._target_lang = target_lang
 

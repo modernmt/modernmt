@@ -6,6 +6,7 @@ import eu.modernmt.decoder.*;
 import eu.modernmt.io.DefaultCharset;
 import eu.modernmt.io.Paths;
 import eu.modernmt.lang.Language;
+import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.ContextVector;
@@ -40,7 +41,7 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
         NativeLogger.initialize();
     }
 
-    private final LanguagePair direction;
+    private final LanguageIndex language;
     private final FeatureWeightsStorage storage;
     private final HashMap<String, DecoderFeature> featuresMap;
     private final MosesFeature[] features;
@@ -50,7 +51,8 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
         String raw = FileUtils.readFileToString(Paths.join(path, "language.info"), DefaultCharset.get());
         String[] parts = raw.trim().split(" ");
 
-        this.direction = new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1]));
+        this.language = new LanguageIndex(
+                new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1])));
         this.storage = new FeatureWeightsStorage(Paths.join(path, "weights.dat"));
 
         File vocabulary = Paths.join(path, "vocab.vb");
@@ -126,7 +128,7 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
 
     @Override
     public void setListener(DecoderListener listener) {
-        listener.onTranslationDirectionsChanged(Collections.singleton(this.direction));
+        listener.onTranslationDirectionsChanged(Collections.singleton(this.language.asSingleLanguagePair()));
     }
 
     @Override
@@ -146,7 +148,7 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
 
     @Override
     public Translation translate(LanguagePair direction, String variant, Sentence sentence, ContextVector contextVector, int nbestListSize) throws DecoderException {
-        if (!this.direction.equals(direction))
+        if (!this.language.contains(direction))
             throw new UnsupportedLanguageException(direction);
 
         if (sentence.getWords().length == 0)
@@ -173,7 +175,7 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
 
     @Override
     public void onDataReceived(DataBatch batch) {
-        DataBatchXObject xbatch = new DataBatchXObject(batch, this.direction);
+        DataBatchXObject xbatch = new DataBatchXObject(batch, this.language);
 
         this.dataReceived(
                 xbatch.tuChannels, xbatch.tuChannelPositions, xbatch.tuMemories,

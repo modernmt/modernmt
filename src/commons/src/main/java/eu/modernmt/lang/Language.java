@@ -2,7 +2,7 @@ package eu.modernmt.lang;
 
 import java.io.Serializable;
 
-public final class Language implements Serializable {
+public final class Language implements Serializable, Comparable<Language> {
 
     // sorted by ISO 639-1 codes
     public static final Language ARABIC = Language.fromString("ar");
@@ -51,22 +51,18 @@ public final class Language implements Serializable {
     public static final Language TURKISH = Language.fromString("tr");
     public static final Language UKRAINIAN = Language.fromString("uk");
     public static final Language CHINESE = Language.fromString("zh");
+    public static final Language CHINESE_SIMPLIFIED = Language.fromString("zh-CN");
+    public static final Language CHINESE_TRADITIONAL = Language.fromString("zh-TW");
 
     private final String language;
-    private final String script;
     private final String region;
 
     public Language(String language) {
-        this(language, null, null);
+        this(language, null);
     }
 
     public Language(String language, String region) {
-        this(language, null, region);
-    }
-
-    private Language(String language, String script, String region) {
         this.language = language;
-        this.script = script;
         this.region = region;
     }
 
@@ -101,7 +97,7 @@ public final class Language implements Serializable {
 
         assert language != null;
 
-        return new Language(language, script, region);
+        return new Language(language, region);
     }
 
     private static boolean looksLikeScriptCode(String string) {
@@ -124,19 +120,9 @@ public final class Language implements Serializable {
         return this.toString();
     }
 
-    /**
-     * The output of this can be fed to the fromString() method.
-     *
-     * @return for example "de" or "de-Latn" or "de-CH" or "de-Latn-CH", see class header.
-     */
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(language);
-
-        if (script != null) {
-            sb.append('-');
-            sb.append(script);
-        }
 
         if (region != null) {
             sb.append('-');
@@ -161,13 +147,6 @@ public final class Language implements Serializable {
         return region;
     }
 
-    /**
-     * @return ISO 15924 script code, eg "Latn".
-     */
-    public String getScript() {
-        return script;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -176,16 +155,25 @@ public final class Language implements Serializable {
         Language language1 = (Language) o;
 
         if (!language.equals(language1.language)) return false;
-        if (script != null ? !script.equals(language1.script) : language1.script != null) return false;
         return region != null ? region.equals(language1.region) : language1.region == null;
     }
 
     @Override
     public int hashCode() {
         int result = language.hashCode();
-        result = 31 * result + (script != null ? script.hashCode() : 0);
         result = 31 * result + (region != null ? region.hashCode() : 0);
         return result;
     }
 
+    @Override
+    public int compareTo(Language o) {
+        int cmp = language.compareTo(o.language);
+        if (cmp != 0)
+            return cmp;
+
+        if (region == null)
+            return o.region == null ? 0 : -1;
+
+        return o.region == null ? 1 : region.compareTo(o.region);
+    }
 }
