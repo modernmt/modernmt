@@ -188,13 +188,17 @@ class XLIFFTranslator(Translator):
         return True if match is not None else False
 
     @staticmethod
+    def _get_tag_name(e):
+        return e.tag if '}' not in e.tag else e.tag.split('}', 1)[1]
+
+    @staticmethod
     def _get_source_content(element):
         if element is None:
             return None, None
 
         def _navigate(el, placeholders):
             for child in list(el):
-                name = child.tag if '}' not in child.tag else child.tag.split('}', 1)[1]
+                name = XLIFFTranslator._get_tag_name(child)
                 if name in ['ph', 'bpt', 'ept', 'it']:
                     clone = copy.deepcopy(child)
                     clone.tail = None
@@ -210,7 +214,7 @@ class XLIFFTranslator(Translator):
         content, _placeholders = _navigate(copy.deepcopy(element), [])
         content = ElementTree.tostring(content, encoding='utf-8', method='xml')
         content = content[content.find('>') + 1:]
-        content = content[:content.rfind('</source>')]
+        content = content[:content.rfind('</%s>' % XLIFFTranslator._get_tag_name(element))]
         return (content, _placeholders) if len(content) > 0 else (None, None)
 
     def _append_translation(self, content, element, placeholders):
