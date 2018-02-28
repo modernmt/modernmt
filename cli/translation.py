@@ -141,6 +141,50 @@ class XLIFFTranslator(Translator):
     DEFAULT_NAMESPACE = 'urn:oasis:names:tc:xliff:document:1.2'
     SDL_NAMESPACE = 'http://sdl.com/FileTypes/SdlXliff/1.0'
 
+    class TransUnit(object):
+        @staticmethod
+        def parse(tu, target_lang):
+            entries = []
+            ns = XLIFFTranslator.NAMESPACES
+
+            # Target part
+            target_tag = tu.find('xlf:target', ns)
+            if target_tag is None:
+                target_tag = ElementTree.Element('target', attrib={
+                    'xml:lang': target_lang
+                })
+                tu.append(target_tag)
+
+            # Source part
+            source_tag = tu.find('xlf:seg-source', ns)
+            if source_tag is None:
+                source_tag = tu.find('xlf:source', ns)
+
+            segments = source_tag.findall('.//xlf:mrk[@mtype="seg"]', ns)
+
+            if segments is None or len(segments) == 0:
+                entries.append((source_tag, target_tag))
+            else:
+                for source_segment in segments:
+                    mid = source_segment.get('mid')
+                    if mid is None:
+                        raise ValueError('Invalid XLIFF, missing "mid" for <mrk>')
+
+                    target_segment = target_tag.find('.//xlf:mrk[@mtype="seg"][@mid="%s"]' % mid, ns)
+                    if target_segment is None:
+                        raise ValueError('Invalid XLIFF, unable to locate <mrk> element for "mid" %s '
+                                         'in <target> element' % mid)
+
+                    entries.append((source_segment, target_segment))
+
+            return XLIFFTranslator.TransUnit(entries)
+
+        def __init__(self, entries):
+            self._entries = entries
+
+        def __iter__(self):
+            return (x for x in self._entries)
+
     def __init__(self, node, context_string=None, context_file=None, context_vector=None):
         Translator.__init__(self, node, context_string, context_file, context_vector)
         self._target_lang = node.engine.target_lang
@@ -160,26 +204,14 @@ class XLIFFTranslator(Translator):
         if self._skip_translation_unit(tu):
             return None
 
-        ns = self.NAMESPACES
+        trans_unit = XLIFFTranslator.TransUnit.parse(tu, self._target_lang)
+        for source_tag, target_tag in trans_unit:
+            source_content, placeholders = self._get_source_content(source_tag)
+            if source_content is None:
+                continue
 
-        source_tag = tu.find('xlf:seg-source', ns)
-        if source_tag is None:
-            source_tag = tu.find('xlf:source', ns)
-        target_tag = tu.find('xlf:target', ns)
-
-        source_content, placeholders = self._get_source_content(source_tag)
-
-        if source_content is None:
-            return None
-
-        if target_tag is None:
-            target_tag = ElementTree.Element('target', attrib={
-                'xml:lang': self._target_lang
-            })
-            tu.append(target_tag)
-
-        translation = self._translate(source_content)
-        self._append_translation(translation['translation'], target_tag, placeholders)
+            translation = self._translate(source_content)
+            self._append_translation(translation['translation'], target_tag, placeholders)
 
         return None
 
