@@ -51,7 +51,7 @@ def main():
             input_file_abspath = os.path.join(input_folder, input_file)
 
             if os.path.isfile(input_file_abspath):
-                if not input_file_abspath.lower().endswith(('.xliff', '.sdlxliff')):
+                if not input_file_abspath.lower().endswith(('.xliff', '.sdlxliff', '.mqxliff')):
                     continue
 
                 output_file_abspath = os.path.join(output_folder, "out_" + input_file)
