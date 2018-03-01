@@ -8,7 +8,7 @@ import eu.modernmt.model.Translation;
 /**
  * Created by davide on 23/05/17.
  */
-public interface DecoderWithNBest extends Decoder {
+public interface DecoderWithNBest {
 
     Translation translate(LanguagePair direction, String variant, Sentence text, int nbestListSize) throws DecoderException;
 

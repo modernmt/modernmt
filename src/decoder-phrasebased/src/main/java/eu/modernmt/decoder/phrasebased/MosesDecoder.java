@@ -1,5 +1,6 @@
 package eu.modernmt.decoder.phrasebased;
 
+import eu.modernmt.config.DecoderConfig;
 import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.decoder.*;
@@ -26,7 +27,7 @@ import java.util.Map;
 /**
  * Created by davide on 26/11/15.
  */
-public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNBest, DataListener {
+public class MosesDecoder extends Decoder implements DecoderWithFeatures, DecoderWithNBest, DataListener {
 
     private static final Logger logger = LogManager.getLogger(MosesDecoder.class);
 
@@ -47,35 +48,41 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
     private final MosesFeature[] features;
     private long nativeHandle;
 
-    public MosesDecoder(File path, int threads) throws IOException {
-        String raw = FileUtils.readFileToString(Paths.join(path, "language.info"), DefaultCharset.get());
-        String[] parts = raw.trim().split(" ");
+    public MosesDecoder(File model, DecoderConfig config) throws DecoderException {
+        super(model, config);
 
-        this.language = new LanguageIndex(
-                new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1])));
-        this.storage = new FeatureWeightsStorage(Paths.join(path, "weights.dat"));
+        try {
+            String raw = FileUtils.readFileToString(Paths.join(model, "language.info"), DefaultCharset.get());
+            String[] parts = raw.trim().split(" ");
 
-        File vocabulary = Paths.join(path, "vocab.vb");
-        File iniTemplate = Paths.join(path, "moses.ini");
-        MosesINI mosesINI = MosesINI.load(iniTemplate, path);
+            this.language = new LanguageIndex(
+                    new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1])));
+            this.storage = new FeatureWeightsStorage(Paths.join(model, "weights.dat"));
 
-        Map<String, float[]> featureWeights = storage.getWeights();
-        if (featureWeights != null)
-            mosesINI.setWeights(featureWeights);
+            File vocabulary = Paths.join(model, "vocab.vb");
+            File iniTemplate = Paths.join(model, "moses.ini");
+            MosesINI mosesINI = MosesINI.load(iniTemplate, model);
 
-        mosesINI.setThreads(threads);
+            Map<String, float[]> featureWeights = storage.getWeights();
+            if (featureWeights != null)
+                mosesINI.setWeights(featureWeights);
 
-        File iniFile = File.createTempFile("mmtmoses", "ini");
-        iniFile.deleteOnExit();
+            mosesINI.setThreads(config.getThreads());
 
-        FileUtils.write(iniFile, mosesINI.toString(), false);
+            File iniFile = File.createTempFile("mmtmoses", "ini");
+            iniFile.deleteOnExit();
 
-        this.nativeHandle = instantiate(iniFile.getAbsolutePath(), vocabulary.getAbsolutePath());
-        this.features = features();
-        this.featuresMap = new HashMap<>(this.features.length);
+            FileUtils.write(iniFile, mosesINI.toString(), false);
 
-        for (MosesFeature feature : features)
-            this.featuresMap.put(feature.getName(), feature);
+            this.nativeHandle = instantiate(iniFile.getAbsolutePath(), vocabulary.getAbsolutePath());
+            this.features = features();
+            this.featuresMap = new HashMap<>(this.features.length);
+
+            for (MosesFeature feature : features)
+                this.featuresMap.put(feature.getName(), feature);
+        } catch (IOException e) {
+            throw new DecoderException(e);
+        }
     }
 
     private native long instantiate(String inifile, String vocabulary);
@@ -185,6 +192,16 @@ public class MosesDecoder implements Decoder, DecoderWithFeatures, DecoderWithNB
 
                 xbatch.channels, xbatch.channelPositions
         );
+    }
+
+    @Override
+    public boolean needsProcessing() {
+        return true;
+    }
+
+    @Override
+    public boolean needsAlignment() {
+        return true;
     }
 
     private native void dataReceived(

@@ -34,7 +34,7 @@ public class RSyncStorage extends StorageService implements AutoCloseable {
             throw new IllegalStateException("StorageService already started");
 
         // Writing config files
-        File folder = engine.getRuntimeFolder("rsync", true);
+        File folder = engine.createRuntimeFolder("rsync", true);
         File secretsFile = writeSecretsFile(folder);
         File configFile = writeConfigFile(folder, engine, secretsFile);
 

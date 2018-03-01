@@ -1,8 +1,11 @@
 package eu.modernmt.decoder.neural;
 
+import eu.modernmt.config.DecoderConfig;
+import eu.modernmt.config.NeuralDecoderConfig;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.Decoder;
+import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.DecoderListener;
 import eu.modernmt.decoder.DecoderWithNBest;
 import eu.modernmt.decoder.neural.execution.ExecutionQueue;
@@ -33,7 +36,7 @@ import java.util.Set;
 /**
  * Created by davide on 22/05/17.
  */
-public class NeuralDecoder implements Decoder, DecoderWithNBest, DataListenerProvider {
+public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataListenerProvider {
 
     private static final Logger logger = LogManager.getLogger(NeuralDecoder.class);
 
@@ -43,41 +46,38 @@ public class NeuralDecoder implements Decoder, DecoderWithNBest, DataListenerPro
 
     private ExecutionQueue executor;
 
-    private NeuralDecoder(File modelPath) throws NeuralDecoderException {
-        ModelConfig config;
+    public NeuralDecoder(File model, DecoderConfig _config) throws DecoderException {
+        super(model, _config);
+
+        NeuralDecoderConfig config = (NeuralDecoderConfig) _config;
+
+        ModelConfig modelConfig;
         try {
-            config = ModelConfig.load(new File(modelPath, "model.conf"));
+            modelConfig = ModelConfig.load(new File(model, "model.conf"));
         } catch (IOException e) {
             throw new NeuralDecoderException("Failed to read file model.conf", e);
         }
 
-        this.directions = config.getAvailableTranslationDirections();
-        this.suggestionsLimit = config.getSuggestionsLimit();
+        this.directions = modelConfig.getAvailableTranslationDirections();
+        this.suggestionsLimit = modelConfig.getSuggestionsLimit();
 
-        File storageModelPath = new File(modelPath, "memory");
+        File storageModelPath = new File(model, "memory");
         try {
-            this.memory = new LuceneTranslationMemory(new LanguageIndex(this.directions), storageModelPath, config.getQueryMinimumResults());
+            this.memory = new LuceneTranslationMemory(new LanguageIndex(this.directions), storageModelPath, modelConfig.getQueryMinimumResults());
         } catch (IOException e) {
             throw new NeuralDecoderException("Failed to initialize memory", e);
         }
 
-        Map<LanguagePair, Float> thresholds = config.getAlignmentThresholds();
+        Map<LanguagePair, Float> thresholds = modelConfig.getAlignmentThresholds();
         if (thresholds != null && !thresholds.isEmpty())
             this.memory.setDataFilter(new AlignmentDataFilter(thresholds));
-    }
 
-    public NeuralDecoder(File modelPath, int[] gpus) throws NeuralDecoderException {
-        this(modelPath);
         File pythonHome = new File(FileConst.getLibPath(), "pynmt");
-        this.executor = ExecutionQueue.newGPUInstance(pythonHome, modelPath, gpus);
+        if (config.isUsingGPUs())
+            this.executor = ExecutionQueue.newGPUInstance(pythonHome, model, config.getGPUs());
+        else
+            this.executor = ExecutionQueue.newCPUInstance(pythonHome, model, config.getThreads());
     }
-
-    public NeuralDecoder(File modelPath, int cpus) throws NeuralDecoderException {
-        this(modelPath);
-        File pythonHome = new File(FileConst.getLibPath(), "pynmt");
-        this.executor = ExecutionQueue.newCPUInstance(pythonHome, modelPath, cpus);
-    }
-
 
     // Decoder
 

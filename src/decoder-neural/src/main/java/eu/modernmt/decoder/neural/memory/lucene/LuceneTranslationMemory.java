@@ -292,6 +292,16 @@ public class LuceneTranslationMemory implements TranslationMemory {
         }
     }
 
+    @Override
+    public boolean needsProcessing() {
+        return true;
+    }
+
+    @Override
+    public boolean needsAlignment() {
+        return true;
+    }
+
     private void onTranslationUnitsReceived(Collection<TranslationUnit> units) throws IOException {
         DataFilter filter = this.filter;
 

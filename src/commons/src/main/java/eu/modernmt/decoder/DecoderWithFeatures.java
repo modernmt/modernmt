@@ -5,7 +5,7 @@ import java.util.Map;
 /**
  * Created by davide on 23/05/17.
  */
-public interface DecoderWithFeatures extends Decoder {
+public interface DecoderWithFeatures {
 
     DecoderFeature[] getFeatures();
 
