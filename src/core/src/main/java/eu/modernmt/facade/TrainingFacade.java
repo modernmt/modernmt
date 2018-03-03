@@ -27,10 +27,6 @@ import java.util.Map;
  */
 public class TrainingFacade {
 
-    static {
-        Engine.initialize();
-    }
-
     public static final int DEFAULT_PARTITION_SIZE = 2000;
 
     public static class TrainingOptions {
