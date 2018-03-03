@@ -18,7 +18,6 @@ import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
-import eu.modernmt.processing.TextProcessingModels;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -35,14 +34,6 @@ import java.util.Set;
  * Created by davide on 19/04/16.
  */
 public class Engine implements Closeable, DataListenerProvider {
-
-    static {
-        initialize();
-    }
-
-    public static void initialize() {
-        TextProcessingModels.setPath(FileConst.getResourcePath());
-    }
 
     public static final String ENGINE_CONFIG_PATH = "engine.xconf";
 
