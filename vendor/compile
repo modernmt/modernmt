@@ -11,7 +11,7 @@ import subprocess
 import os
 import multiprocessing
 
-CASSANDRA_VERSION = '3.11.0'
+CASSANDRA_VERSION = '3.11.2'
 KAFKA_VERSION = '0.10.2.1'
 KAFKA_SCALA_VERSION = '2.12'
 
