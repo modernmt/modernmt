@@ -1,6 +1,7 @@
 <pipeline>
     <!-- Pre EditableString processors -->
-    <processor>eu.modernmt.processing.chars.ControlCharsRemover</processor>
+    <processor>eu.modernmt.processing.normalizers.ControlCharsRemover</processor>
+    <processor source="en fr it nl">eu.modernmt.processing.normalizers.apos.ApostropheNormalizer</processor>
     <processor>eu.modernmt.processing.string.SentenceConstructor</processor>
 
     <!-- XML preprocessors -->
@@ -8,13 +9,13 @@
     <processor>eu.modernmt.processing.xml.XMLEntityEscaper</processor>
 
     <!-- String normalization -->
-    <processor>eu.modernmt.processing.chars.RareCharsNormalizer</processor>
-    <processor>eu.modernmt.processing.chars.WhitespacesNormalizer</processor>
+    <processor>eu.modernmt.processing.normalizers.RareCharsNormalizer</processor>
+    <processor>eu.modernmt.processing.normalizers.WhitespacesNormalizer</processor>
     <processor>eu.modernmt.processing.numbers.NumericPlaceholderNormalizer</processor>
     <processor>eu.modernmt.processing.recaser.UpperCasePreprocessor</processor>
 
     <!-- Fix italian accents like "e'" or "perche'" -->
-    <processor source="it">eu.modernmt.processing.chars.ItalianAccentMarkProcessor</processor>
+    <processor source="it">eu.modernmt.processing.normalizers.ItalianAccentMarkProcessor</processor>
 
     <!-- Tokenization -->
     <processorGroup>

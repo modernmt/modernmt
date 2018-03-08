@@ -2,7 +2,7 @@ package eu.modernmt.cleaning.normalizers;
 
 import eu.modernmt.cleaning.Normalizer;
 import eu.modernmt.model.corpus.MultilingualCorpus;
-import eu.modernmt.processing.chars.ControlCharsRemover;
+import eu.modernmt.processing.normalizers.ControlCharsRemover;
 
 /**
  * Created by davide on 17/11/16.
