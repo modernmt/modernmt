@@ -364,19 +364,22 @@ class MatecatScore(Score):
         return (document_lines, reference_lines) if len(reference_lines) > 0 else (None, None)
 
     def calculate(self, document, reference):
-        scores = []
+        try:
+            scores = []
 
-        with open(reference) as reference_input:
-            with open(document) as document_input:
-                while True:
-                    document_lines, reference_lines = self._read_lines(document_input, reference_input)
+            with open(reference) as reference_input:
+                with open(document) as document_input:
+                    while True:
+                        document_lines, reference_lines = self._read_lines(document_input, reference_input)
 
-                    if document_lines is None:
-                        break
+                        if document_lines is None:
+                            break
 
-                    scores += self._get_score(document_lines, reference_lines)
+                        scores += self._get_score(document_lines, reference_lines)
 
-        return reduce(lambda x, y: x + y, scores) / len(scores)
+            return reduce(lambda x, y: x + y, scores) / len(scores)
+        except:
+            return 'ERROR'
 
 
 class _evaluate_logger:
@@ -418,9 +421,13 @@ class _evaluate_logger:
                 result = scores[i]
 
                 if result.error is None:
-                    text = '%.2f' % (getattr(result, field) * 100)
-                    if i == 0:
-                        text += ' (Winner)'
+                    value = getattr(result, field)
+                    if isinstance(value, basestring):
+                        text = value
+                    else:
+                        text = '%.2f' % (getattr(result, field) * 100)
+                        if i == 0:
+                            text += ' (Winner)'
                 else:
                     text = str(result.error)
 
