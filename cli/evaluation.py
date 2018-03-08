@@ -15,7 +15,6 @@ from cli.mmt.processing import XMLEncoder
 
 DEFAULT_GOOGLE_KEY = 'AIzaSyBl9WAoivTkEfRdBBSCs4CruwnGL_aV74c'
 
-
 class TranslateError(Exception):
     def __init__(self, *args, **kwargs):
         super(TranslateError, self).__init__(*args, **kwargs)
@@ -303,6 +302,22 @@ class BLEUScore(Score):
 
         return float(stdout)
 
+class CharCutScore(Score):
+    def __init__(self):
+        Score.__init__(self)
+
+    def name(self):
+        return 'CharCut Accuracy Score'
+
+    def calculate(self, document, reference):
+        script = os.path.join(cli.PYOPT_DIR, 'charcut.py')
+        command = ['python', script, '-c','/dev/stdin','-r',reference]
+
+        with open(document) as input_stream:
+            stdout, _ = shell.execute(command, stdin=input_stream)
+
+        return 1.0 - float(stdout)
+
 
 class MatecatScore(Score):
     DEFAULT_TIMEOUT = 60  # secs
@@ -349,22 +364,19 @@ class MatecatScore(Score):
         return (document_lines, reference_lines) if len(reference_lines) > 0 else (None, None)
 
     def calculate(self, document, reference):
-        try:
-            scores = []
+        scores = []
 
-            with open(reference) as reference_input:
-                with open(document) as document_input:
-                    while True:
-                        document_lines, reference_lines = self._read_lines(document_input, reference_input)
+        with open(reference) as reference_input:
+            with open(document) as document_input:
+                while True:
+                    document_lines, reference_lines = self._read_lines(document_input, reference_input)
 
-                        if document_lines is None:
-                            break
+                    if document_lines is None:
+                        break
 
-                        scores += self._get_score(document_lines, reference_lines)
+                    scores += self._get_score(document_lines, reference_lines)
 
-            return reduce(lambda x, y: x + y, scores) / len(scores)
-        except:
-            return 'ERROR'
+        return reduce(lambda x, y: x + y, scores) / len(scores)
 
 
 class _evaluate_logger:
@@ -406,13 +418,9 @@ class _evaluate_logger:
                 result = scores[i]
 
                 if result.error is None:
-                    value = getattr(result, field)
-                    if isinstance(value, basestring):
-                        text = value
-                    else:
-                        text = '%.2f' % (getattr(result, field) * 100)
-                        if i == 0:
-                            text += ' (Winner)'
+                    text = '%.2f' % (getattr(result, field) * 100)
+                    if i == 0:
+                        text += ' (Winner)'
                 else:
                     text = str(result.error)
 
@@ -542,6 +550,12 @@ class Evaluator:
 
             # Scoring
             scorers = [(MatecatScore(), 'pes'), (BLEUScore(), 'bleu')]
+
+            try:
+                import regex
+                scorers.append((CharCutScore(), 'charcut'))
+            except ImportError:
+                pass
 
             for scorer, field in scorers:
                 with logger.step('Calculating %s' % scorer.name()) as _:
