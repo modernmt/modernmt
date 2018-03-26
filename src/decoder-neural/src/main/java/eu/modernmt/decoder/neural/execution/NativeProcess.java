@@ -98,28 +98,21 @@ class NativeProcess implements Closeable {
             if (logger.isDebugEnabled())
                 logger.debug("Starting process from \"" + home + "\": " + StringUtils.join(command, ' '));
 
-            return new NativeProcess(builder.start());
+            return new NativeProcess(builder.start(), gpu);
         }
 
     }
 
     private static final JsonParser parser = new JsonParser();
 
-    private final Process decoder;          // the decoder Python process
-    private final OutputStream stdin;       // stream to the standard input that the decoder process will read
-    private final BufferedReader stdout;    // reader to the standard output that the decoder process will write
-    private final LogThread logThread;      // separate thread for logging
+    private final int gpu;
+    private final Process decoder;
+    private final OutputStream stdin;
+    private final BufferedReader stdout;
+    private final LogThread logThread;
 
-    /**
-     * Create a new NativeProcess that connects to a specific NeuralDecoder process.
-     * After it is created, the NativeProcess allows communication with the decoder.
-     * NOTE: The process must be running already.
-     *
-     * @param decoder an already running decoder process
-     * @throws IOException
-     * @throws NeuralDecoderException
-     */
-    NativeProcess(Process decoder) throws IOException, NeuralDecoderException {
+    NativeProcess(Process decoder, int gpu) throws IOException, NeuralDecoderException {
+        this.gpu = gpu;
         this.decoder = decoder;
         this.stdin = decoder.getOutputStream();
         this.stdout = new BufferedReader(new InputStreamReader(decoder.getInputStream()));
@@ -140,29 +133,18 @@ class NativeProcess implements Closeable {
 
     }
 
-    /**
-     * This method requests a translation to this decoder process.
-     *
-     * @param direction the direction of the translation to execute
-     * @param sentence  the source sentence to translate
-     * @param nBest     number of hypothesis to return (default 0)
-     * @return the translation of the passed sentence
-     * @throws NeuralDecoderException
-     */
+    public int getGPU() {
+        return gpu;
+    }
+
+    public boolean isAlive() {
+        return decoder.isAlive();
+    }
+
     public Translation translate(LanguagePair direction, String variant, Sentence sentence, int nBest) throws NeuralDecoderException {
         return translate(direction, variant, sentence, null, nBest);
     }
 
-    /**
-     * This method requests a translation to this decoder process.
-     *
-     * @param direction   the direction of the translation to execute
-     * @param sentence    the source sentence to translate
-     * @param suggestions an array of translation suggestions that the decoder will study before the translation
-     * @param nBest       number of hypothesis to return (default 0)
-     * @return the translation of the passed sentence
-     * @throws NeuralDecoderException
-     */
     public Translation translate(LanguagePair direction, String variant, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws NeuralDecoderException {
         if (!decoder.isAlive())
             throw new NeuralDecoderRejectedExecutionException();
@@ -307,14 +289,8 @@ class NativeProcess implements Closeable {
         return new Alignment(sourceIndexes, targetIndexes);
     }
 
-    /**
-     * This method kills this decoder process.
-     * <p>
-     * It first tries to gently kill it.
-     * If after 5 seconds the process is still alive, it is forcibly destroyed.
-     */
     @Override
-    public void close() throws IOException {
+    public void close() {
         decoder.destroy();
 
         try {

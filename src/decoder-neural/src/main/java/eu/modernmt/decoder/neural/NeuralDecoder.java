@@ -8,7 +8,7 @@ import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.DecoderListener;
 import eu.modernmt.decoder.DecoderWithNBest;
-import eu.modernmt.decoder.neural.execution.ExecutionQueue;
+import eu.modernmt.decoder.neural.execution.DecoderQueue;
 import eu.modernmt.decoder.neural.memory.AlignmentDataFilter;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.decoder.neural.memory.TranslationMemory;
@@ -44,7 +44,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
     private final TranslationMemory memory;
     private final Set<LanguagePair> directions;
 
-    private ExecutionQueue executor;
+    private DecoderQueue decoderImpl;
 
     public NeuralDecoder(File model, DecoderConfig _config) throws DecoderException {
         super(model, _config);
@@ -74,9 +74,9 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
         File pythonHome = new File(FileConst.getLibPath(), "pynmt");
         if (config.isUsingGPUs())
-            this.executor = ExecutionQueue.newGPUInstance(pythonHome, model, config.getGPUs());
+            this.decoderImpl = DecoderQueue.newGPUInstance(pythonHome, model, config.getGPUs());
         else
-            this.executor = ExecutionQueue.newCPUInstance(pythonHome, model, config.getThreads());
+            this.decoderImpl = DecoderQueue.newCPUInstance(pythonHome, model, config.getThreads());
     }
 
     // Decoder
@@ -126,10 +126,10 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
                     translation = new Translation(words, text, null);
                 } else {
-                    translation = executor.execute(direction, variant, text, suggestions, nbestListSize);
+                    translation = decoderImpl.translate(direction, variant, text, suggestions, nbestListSize);
                 }
             } else {
-                translation = executor.execute(direction, variant, text, nbestListSize);
+                translation = decoderImpl.translate(direction, variant, text, nbestListSize);
             }
 
             if (logger.isTraceEnabled()) {
@@ -168,7 +168,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
     @Override
     public void close() {
-        IOUtils.closeQuietly(this.executor);
+        IOUtils.closeQuietly(this.decoderImpl);
         IOUtils.closeQuietly(this.memory);
     }
 
