@@ -140,6 +140,7 @@ public abstract class DecoderQueue implements Closeable {
             NativeProcess process;
 
             try {
+                logger.info("Starting native decoder process");
                 process = startProcess(processBuilder);
             } catch (NeuralDecoderException e) {
                 logger.error("Failed to start new decoder process", e);
