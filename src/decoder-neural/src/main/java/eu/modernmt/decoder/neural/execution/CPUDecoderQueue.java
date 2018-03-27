@@ -1,6 +1,7 @@
 package eu.modernmt.decoder.neural.execution;
 
 import eu.modernmt.decoder.neural.NeuralDecoderException;
+import eu.modernmt.decoder.neural.natv.NativeProcess;
 
 import java.io.IOException;
 

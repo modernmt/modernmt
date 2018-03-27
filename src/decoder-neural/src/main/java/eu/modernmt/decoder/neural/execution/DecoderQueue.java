@@ -2,6 +2,7 @@ package eu.modernmt.decoder.neural.execution;
 
 import eu.modernmt.decoder.neural.NeuralDecoderException;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
+import eu.modernmt.decoder.neural.natv.NativeProcess;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -84,6 +85,8 @@ public abstract class DecoderQueue implements Closeable {
                 this.queue.offer(process);
             } else {
                 this.aliveProcesses.decrementAndGet();
+                IOUtils.closeQuietly(process);
+
                 this.onProcessDied(process);
 
                 if (this.active)

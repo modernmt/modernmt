@@ -99,17 +99,16 @@ class MainController:
                 self._stdout.flush()
         except KeyboardInterrupt:
             pass
+        except BaseException as e:
+            self._logger.exception(e)
+            raise
 
     def process(self, line):
-        try:
-            request = TranslationRequest.from_json_string(line)
-            translations = self._decoder.translate(request.source_lang, request.target_lang, request.source,
-                                                   suggestions=request.suggestions, n_best=request.n_best,
-                                                   variant=request.variant)
-            return TranslationResponse(translations=translations)
-        except BaseException as e:
-            self._logger.exception('Failed to process request "' + line + '"')
-            return TranslationResponse(exception=e)
+        request = TranslationRequest.from_json_string(line)
+        translations = self._decoder.translate(request.source_lang, request.target_lang, request.source,
+                                               suggestions=request.suggestions, n_best=request.n_best,
+                                               variant=request.variant)
+        return TranslationResponse(translations=translations)
 
 
 class JSONLogFormatter(logging.Formatter):
@@ -180,6 +179,7 @@ def run_main():
         pass  # ignore and exit
     except BaseException as e:
         logger.exception(e)
+        raise
 
 
 if __name__ == '__main__':

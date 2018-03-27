@@ -40,18 +40,7 @@ class XUtils {
     }
 
     public static Word[] explode(String text) {
-        if (text.isEmpty())
-            return new Word[0];
-
-        String[] parts = TokensOutputStream.deserialize(text);
-        Word[] words = new Word[parts.length];
-
-        for (int i = 0; i < parts.length; i++) {
-            String rightSpace = i < parts.length - 1 ? " " : null;
-            words[i] = new Word(parts[i], rightSpace);
-        }
-
-        return words;
+        return TokensOutputStream.deserializeWords(text);
     }
 
 }
