@@ -15,12 +15,7 @@ import java.util.HashMap;
 public class LevenshteinRescorer implements Rescorer {
 
     @Override
-    public void rescore(Sentence input, ScoreEntry[] entries) {
-        this.rescore(input, entries, null);
-    }
-
-    @Override
-    public void rescore(Sentence input, ScoreEntry[] entries, ContextVector context) {
+    public ScoreEntry[] rescore(Sentence input, ScoreEntry[] entries, ContextVector context) {
         String[] words = TokensOutputStream.tokens(input, false, true);
 
         for (ScoreEntry entry : entries)
@@ -39,6 +34,8 @@ public class LevenshteinRescorer implements Rescorer {
 
         Arrays.sort(entries);
         ArrayUtils.reverse(entries);
+
+        return entries;
     }
 
     private static float getLevenshteinDistance(String[] s, String[] t) {

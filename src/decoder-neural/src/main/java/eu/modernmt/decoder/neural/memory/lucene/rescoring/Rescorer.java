@@ -9,8 +9,6 @@ import eu.modernmt.model.Sentence;
  */
 public interface Rescorer {
 
-    void rescore(Sentence input, ScoreEntry[] entries);
-
-    void rescore(Sentence input, ScoreEntry[] entries, ContextVector context);
+    ScoreEntry[] rescore(Sentence input, ScoreEntry[] entries, ContextVector context);
 
 }

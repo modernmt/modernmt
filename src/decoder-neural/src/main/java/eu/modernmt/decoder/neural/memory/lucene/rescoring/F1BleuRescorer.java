@@ -20,12 +20,7 @@ public class F1BleuRescorer implements Rescorer {
     private static final float MAX_SUGGESTION_EXPANSION = 2.f;
 
     @Override
-    public void rescore(Sentence input, ScoreEntry[] entries) {
-        this.rescore(input, entries, null);
-    }
-
-    @Override
-    public void rescore(Sentence input, ScoreEntry[] entries, ContextVector context) {
+    public ScoreEntry[] rescore(Sentence input, ScoreEntry[] entries, ContextVector context) {
         String[] inputWords = TokensOutputStream.tokens(input, false, true);
 
         // Set negative score for suggestions too different in length
@@ -71,6 +66,8 @@ public class F1BleuRescorer implements Rescorer {
 
         Arrays.sort(entries);
         ArrayUtils.reverse(entries);
+
+        return entries;
     }
 
     private static HashMap<NGram, Counter> split(String[] sentence, int order) {
@@ -195,50 +192,5 @@ public class F1BleuRescorer implements Rescorer {
         }
 
     }
-
-//    public static void main(String[] args) {
-//        String src_sentence = "This is a hypothesis sentence .";
-//
-//        String[] src_toks = src_sentence.split(" ");
-//        Word[] src_words = new Word[src_toks.length];
-//
-//        for (int i = 0; i < src_toks.length; ++i)
-//            src_words[i] = new Word(src_toks[i]);
-//
-//        Sentence input = new Sentence(src_words);
-//
-//        ScoreEntry[] suggestions = new ScoreEntry[4];
-//        String sugg_sentence = "This is another suggestion .";
-//        String[] sugg_toks = sugg_sentence.split(" ");
-//        suggestions[0] = new ScoreEntry(0, sugg_toks, sugg_toks);
-//
-//        sugg_sentence = "Short suggestion";
-//        sugg_toks = sugg_sentence.split(" ");
-//        suggestions[1] = new ScoreEntry(1, sugg_toks, sugg_toks);
-//
-//
-//        sugg_sentence = "This is another suggestion .";
-//        sugg_toks = sugg_sentence.split(" ");
-//        suggestions[2] = new ScoreEntry(2, sugg_toks, sugg_toks);
-//
-//        sugg_sentence = "This is a hypothesis sentence .";
-//        sugg_toks = sugg_sentence.split(" ");
-//        suggestions[3] = new ScoreEntry(3, sugg_toks, sugg_toks);
-//
-//        System.err.println("src:" + src_sentence);
-//
-//        System.err.println("suggestions before rescoring");
-//        for (ScoreEntry sugg : suggestions) {
-//            System.err.println("sugg: " + sugg);
-//        }
-//
-//        F1BleuRescorer scorer = new F1BleuRescorer();
-//        scorer.rescore(input, suggestions);
-//
-//        System.err.println("suggestions after rescoring");
-//        for (ScoreEntry sugg : suggestions) {
-//            System.err.println("sugg: " + sugg);
-//        }
-//    }
 
 }
