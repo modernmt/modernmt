@@ -164,7 +164,7 @@ We also have an **MMT Enterprise Edition**, managed by the MMT company and not a
 - Enterprise Customer Support via Video Conference Call, Phone and Email on business hours (CET) and optionally 24x7.
 - Custom developments billed per hour of work.
 
-MMT Enterprise is avaialble in two cloud-based operating modes:
+MMT Enterprise is available in two cloud-based operating modes:
 - **Private**  Privacy of data, adaptivity, low cost for excellent throughput and maintenance, customer support.
 - **Confidential** Higher privacy of data, adaptivity, higher cost for throughput and maintenance, customer support.
 
