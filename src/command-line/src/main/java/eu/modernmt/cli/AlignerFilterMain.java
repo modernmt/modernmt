@@ -4,7 +4,6 @@ import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.aligner.fastalign.FastAlign;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
@@ -37,6 +36,7 @@ public class AlignerFilterMain {
             Option outputPath = Option.builder().longOpt("output").hasArg().required().build();
             Option model = Option.builder().longOpt("model").hasArg().required().build();
             Option threshold = Option.builder().longOpt("threshold").hasArg().required().build();
+            Option verbose = Option.builder().longOpt("verbose").hasArg(false).build();
 
             cliOptions = new Options();
             cliOptions.addOption(sourceLanguage);
@@ -45,6 +45,7 @@ public class AlignerFilterMain {
             cliOptions.addOption(outputPath);
             cliOptions.addOption(model);
             cliOptions.addOption(threshold);
+            cliOptions.addOption(verbose);
         }
 
         public final Language sourceLanguage;
@@ -53,6 +54,7 @@ public class AlignerFilterMain {
         public final File outputRoot;
         public final File model;
         public final float threshold;
+        public final boolean verbose;
 
         public Args(String[] args) throws ParseException {
             CommandLineParser parser = new DefaultParser();
@@ -69,6 +71,7 @@ public class AlignerFilterMain {
             outputRoot = new File(cli.getOptionValue("output"));
             model = new File(cli.getOptionValue("model"));
             threshold = Float.parseFloat(cli.getOptionValue("threshold"));
+            verbose = cli.hasOption("verbose");
         }
 
     }
@@ -99,7 +102,7 @@ public class AlignerFilterMain {
                 MultilingualCorpus corpus = new MultilingualCorpusMask(language, _corpus);
                 MultilingualCorpus output = new LazyWriterMultilingualCorpus(Corpora.rename(corpus, args.outputRoot));
 
-                filter.apply(corpus, output, args.threshold);
+                filter.apply(corpus, output, args.threshold, args.verbose);
             }
         } finally {
             IOUtils.closeQuietly(preprocessor);
@@ -118,7 +121,7 @@ public class AlignerFilterMain {
             this.preprocessor = preprocessor;
         }
 
-        public void apply(MultilingualCorpus corpus, MultilingualCorpus output, float threshold) throws IOException {
+        public void apply(MultilingualCorpus corpus, MultilingualCorpus output, float threshold, boolean verbose) throws IOException {
             Batch batch = new Batch();
 
             MultilingualCorpus.MultilingualLineReader reader = null;
@@ -131,13 +134,13 @@ public class AlignerFilterMain {
                 MultilingualCorpus.StringPair pair;
                 while ((pair = reader.read()) != null) {
                     while (!batch.add(pair)) {
-                        processBatch(batch, threshold, writer);
+                        processBatch(batch, threshold, writer, verbose);
                         batch.clear();
                     }
                 }
 
                 if (batch.size() > 0) {
-                    processBatch(batch, threshold, writer);
+                    processBatch(batch, threshold, writer, verbose);
                     batch.clear();
                 }
             } catch (ProcessingException | AlignerException e) {
@@ -148,7 +151,7 @@ public class AlignerFilterMain {
             }
         }
 
-        private void processBatch(Batch batch, float threshold, MultilingualCorpus.MultilingualLineWriter writer)
+        private void processBatch(Batch batch, float threshold, MultilingualCorpus.MultilingualLineWriter writer, boolean verbose)
                 throws ProcessingException, AlignerException, IOException {
             List<Sentence> sources = preprocessor.process(language, batch.getSources());
             List<Sentence> targets = preprocessor.process(language.reversed(), batch.getTargets());
@@ -156,8 +159,11 @@ public class AlignerFilterMain {
 
             int i = 0;
             for (MultilingualCorpus.StringPair pair : batch.getPairs()) {
-                if (alignments[i].getScore() > threshold) {
+                if (alignments[i].getScore() >= threshold) {
                     writer.write(pair);
+                } else {
+                    if (verbose)
+                        System.err.println(pair);
                 }
 
                 i++;

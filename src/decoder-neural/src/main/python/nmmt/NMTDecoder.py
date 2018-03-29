@@ -69,6 +69,8 @@ class NMTDecoder:
 
         self._logger.debug("Running states of the models: hot:%s, warm:%s, cold:%s" %
                            (self._hot_engines, self._warm_engines, self._cold_engines))
+        self._logger.info('Loading of %d engines completed successfully' % len(self._engines))
+
         # Public-editable options
         self.beam_size = 5
         self.max_sent_length = 160

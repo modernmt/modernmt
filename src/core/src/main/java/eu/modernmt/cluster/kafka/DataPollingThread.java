@@ -133,7 +133,17 @@ class DataPollingThread extends Thread {
                 if (records.isEmpty())
                     continue;
 
-                batch.load(records);
+                boolean process = false;
+                boolean align = false;
+                for (DataListener listener : listeners) {
+                    if (process && align)
+                        break;
+
+                    process |= listener.needsProcessing();
+                    align |= listener.needsAlignment();
+                }
+
+                batch.load(records, process, align);
 
                 if (logger.isDebugEnabled())
                     logger.debug("Delivering batch of " + batch.size() + " updates");

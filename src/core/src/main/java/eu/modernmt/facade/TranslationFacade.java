@@ -463,7 +463,7 @@ public class TranslationFacade {
             int globalWordAlignmentSize = 0;
             for (Translation splitTranslation : splitTranslations) {
                 globalWordsSize += splitTranslation.getWords().length;
-                if (splitTranslations[0].hasAlignment())
+                if (splitTranslation.hasAlignment())
                     globalWordAlignmentSize += splitTranslation.getWordAlignment().size();  //remains 0 if translations do not have alignments
             }
 

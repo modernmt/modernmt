@@ -51,8 +51,8 @@ public class EmbeddedCassandra extends EmbeddedService {
     private EmbeddedCassandra(Engine engine) throws IOException {
         this.clusterName = "mmt-cluster";
         this.db = Paths.join(engine.getModelsPath(), "db", "cassandra");
-        this.runtime = engine.getRuntimeFolder("cassandra", true);
-        this.logFile = engine.getLogFile("embedded-cassandra.log");
+        this.runtime = engine.createRuntimeFolder("cassandra", true);
+        this.logFile = new File(engine.getLogsPath(), "embedded-cassandra.log");
 
         File cassandraHome = Paths.join(FileConst.getVendorPath(), "cassandra-" + VERSION);
 

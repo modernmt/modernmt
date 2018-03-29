@@ -6,13 +6,8 @@ import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Created by davide on 04/05/17.
@@ -20,6 +15,62 @@ import java.util.concurrent.Executors;
 public class IOCorporaUtils {
 
     private static final int MAX_IO_THREADS = 10;
+
+    // Line count ------------------------------------------------------------------------------------------------------
+
+    public static Map<LanguagePair, Long> countLines(Collection<MultilingualCorpus> corpora) throws IOException {
+        return countLines(corpora, Runtime.getRuntime().availableProcessors());
+    }
+
+    public static Map<LanguagePair, Long> countLines(Collection<MultilingualCorpus> corpora, int threads) throws IOException {
+        ExecutorService executor = null;
+
+        try {
+            executor = threads > 1 ? Executors.newFixedThreadPool(threads) : Executors.newSingleThreadExecutor();
+
+            ArrayList<Future<HashMap<LanguagePair, Long>>> futures = new ArrayList<>(corpora.size());
+
+            for (MultilingualCorpus corpus : corpora) {
+                futures.add(executor.submit(() -> {
+                    Set<LanguagePair> languages = corpus.getLanguages();
+                    HashMap<LanguagePair, Long> counts = new HashMap<>(languages.size());
+
+                    for (LanguagePair language : languages)
+                        counts.put(language, (long) corpus.getLineCount(language));
+
+                    return counts;
+                }));
+            }
+
+            HashMap<LanguagePair, Long> result = new HashMap<>();
+
+            for (Future<HashMap<LanguagePair, Long>> future : futures) {
+                try {
+                    for (Map.Entry<LanguagePair, Long> count : future.get().entrySet()) {
+                        Long old = result.get(count.getKey());
+                        result.put(count.getKey(), (old == null ? 0L : old) + count.getValue());
+                    }
+                } catch (ExecutionException e) {
+                    unwrapException(e);
+                } catch (InterruptedException e) {
+                    throw new IOException("Interrupted execution", e);
+                }
+            }
+
+            return result;
+        } finally {
+            if (executor != null) {
+                executor.shutdown();
+
+                try {
+                    if (!executor.awaitTermination(1, TimeUnit.SECONDS))
+                        executor.shutdownNow();
+                } catch (InterruptedException e) {
+                    executor.shutdownNow();
+                }
+            }
+        }
+    }
 
     // Word count ------------------------------------------------------------------------------------------------------
 
@@ -35,7 +86,7 @@ public class IOCorporaUtils {
     }
 
     public static Map<LanguagePair, Long> wordCount(Collection<? extends MultilingualCorpus> corpora) throws IOException {
-        return wordCount(corpora, 1);
+        return wordCount(corpora, Runtime.getRuntime().availableProcessors());
     }
 
     public static Map<LanguagePair, Long> wordCount(Collection<? extends MultilingualCorpus> corpora, int threads) throws IOException {
@@ -50,7 +101,6 @@ public class IOCorporaUtils {
         Map<LanguagePair, Counter> accumulator = null;
 
         try {
-
             for (int i = 0; i < corpora.size(); i++) {
                 try {
                     Map<LanguagePair, Counter> result = results.take().get();
@@ -62,15 +112,7 @@ public class IOCorporaUtils {
                             accumulator.computeIfAbsent(e.getKey(), key -> new Counter()).value += e.getValue().value;
                     }
                 } catch (ExecutionException e) {
-                    Throwable cause = e.getCause();
-
-                    if (cause instanceof IOException) {
-                        throw (IOException) cause;
-                    } else if (cause instanceof RuntimeException) {
-                        throw (RuntimeException) cause;
-                    } else {
-                        throw new Error("Unexpected exception", cause);
-                    }
+                    unwrapException(e);
                 } catch (InterruptedException e) {
                     throw new IOException("Execution interrupted", e);
                 }
@@ -170,4 +212,17 @@ public class IOCorporaUtils {
         copy(source, destination, Long.MAX_VALUE);
     }
 
+    // Utils -----------------------------------------------------------------------------------------------------------
+
+    private static void unwrapException(ExecutionException e) throws IOException {
+        Throwable cause = e.getCause();
+
+        if (cause instanceof IOException) {
+            throw (IOException) cause;
+        } else if (cause instanceof RuntimeException) {
+            throw (RuntimeException) cause;
+        } else {
+            throw new Error("Unexpected exception", cause);
+        }
+    }
 }

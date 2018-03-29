@@ -2,27 +2,30 @@ package eu.modernmt.engine;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.fastalign.FastAlign;
+import eu.modernmt.config.DecoderConfig;
 import eu.modernmt.config.EngineConfig;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.lucene.LuceneAnalyzer;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.Decoder;
-import eu.modernmt.engine.impl.NeuralEngine;
-import eu.modernmt.engine.impl.PhraseBasedEngine;
+import eu.modernmt.decoder.DecoderException;
+import eu.modernmt.decoder.neural.NeuralDecoder;
+import eu.modernmt.decoder.phrasebased.MosesDecoder;
 import eu.modernmt.io.FileConst;
 import eu.modernmt.io.Paths;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
-import eu.modernmt.processing.TextProcessingModels;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
@@ -30,110 +33,124 @@ import java.util.Set;
 /**
  * Created by davide on 19/04/16.
  */
-public abstract class Engine implements Closeable, DataListenerProvider {
-
-    static {
-        initialize();
-    }
-
-    public static void initialize() {
-        TextProcessingModels.setPath(FileConst.getResourcePath());
-    }
+public class Engine implements Closeable, DataListenerProvider {
 
     public static final String ENGINE_CONFIG_PATH = "engine.xconf";
-
-    public static File getRootPath(String engine) {
-        return FileConst.getEngineRoot(engine);
-    }
 
     public static File getConfigFile(String engine) {
         return new File(FileConst.getEngineRoot(engine), ENGINE_CONFIG_PATH);
     }
 
-    protected final String name;
-    protected final LanguageIndex languages;
+    private final String name;
+    private final LanguageIndex languages;
 
-    protected final File root;
-    protected final File runtime;
-    protected final File models;
-    protected final File logs;
-
-    protected final Aligner aligner;
-    protected final Preprocessor preprocessor;
-    protected final Postprocessor postprocessor;
-    protected final ContextAnalyzer contextAnalyzer;
+    private final Aligner aligner;
+    private final Preprocessor preprocessor;
+    private final Postprocessor postprocessor;
+    private final ContextAnalyzer contextAnalyzer;
+    private final Decoder decoder;
 
     public static Engine load(EngineConfig config) throws BootstrapException {
-        EngineConfig.Type type = config.getType();
+        DecoderConfig decoderConfig = config.getDecoderConfig();
 
-        if (type == EngineConfig.Type.NEURAL)
-            return new NeuralEngine(config);
-        else if (type == EngineConfig.Type.PHRASE_BASED)
-            return new PhraseBasedEngine(config);
-        else
-            throw new BootstrapException("Missing engine type (neural|phrase-based)");
-    }
+        String name = config.getName();
+        LanguageIndex languages = new LanguageIndex(config.getLanguagePairs());
 
-    protected Engine(String name, LanguageIndex languages) {
-        this.name = name;
-        this.languages = languages;
+        File models = Paths.join(FileConst.getEngineRoot(name), "models");
 
-        this.root = null;
-        this.runtime = null;
-        this.models = null;
-        this.logs = null;
-
-        this.aligner = null;
-        this.preprocessor = null;
-        this.postprocessor = null;
-        this.contextAnalyzer = null;
-    }
-
-    protected Engine(EngineConfig config) throws BootstrapException {
-        this.name = config.getName();
-        this.languages = new LanguageIndex(config.getLanguagePairs());
-
-        this.root = FileConst.getEngineRoot(name);
-        this.runtime = FileConst.getEngineRuntime(name);
-        this.models = Paths.join(this.root, "models");
-        this.logs = Paths.join(this.runtime, "logs");
-
+        Preprocessor preprocessor;
         try {
-            this.preprocessor = new Preprocessor();
+            preprocessor = new Preprocessor();
         } catch (IOException e) {
             throw new BootstrapException("Failed to load pre-processor", e);
         }
 
+        Postprocessor postprocessor;
         try {
-            this.postprocessor = new Postprocessor();
+            postprocessor = new Postprocessor();
         } catch (IOException e) {
             throw new BootstrapException("Failed to load post-processor", e);
         }
 
+        Aligner aligner = null;
         if (config.getAlignerConfig().isEnabled()) {
             try {
-                this.aligner = new FastAlign(Paths.join(this.models, "aligner"));
+                aligner = new FastAlign(Paths.join(models, "aligner"));
             } catch (IOException e) {
                 throw new BootstrapException("Failed to instantiate aligner", e);
             }
-        } else {
-            aligner = null;
         }
 
+        ContextAnalyzer contextAnalyzer;
         try {
-            this.contextAnalyzer = new LuceneAnalyzer(this.languages, Paths.join(this.models, "context"));
+            contextAnalyzer = new LuceneAnalyzer(languages, Paths.join(models, "context"));
         } catch (IOException e) {
             throw new BootstrapException("Failed to instantiate context analyzer", e);
         }
+
+        Decoder decoder = null;
+        if (decoderConfig.isEnabled()) {
+            try {
+                File decoderModel = new File(models, "decoder");
+                String decoderClass = decoderConfig.getDecoderClass();
+
+                if (decoderClass == null) {
+                    EngineConfig.Type decoderType = config.getType();
+
+                    if (decoderType == EngineConfig.Type.NEURAL)
+                        decoder = new NeuralDecoder(decoderModel, decoderConfig);
+                    else if (decoderType == EngineConfig.Type.PHRASE_BASED)
+                        decoder = new MosesDecoder(decoderModel, decoderConfig);
+                    else
+                        throw new BootstrapException("Missing engine type (neural|phrase-based)");
+                } else {
+                    ClassLoader classLoader = ClassLoader.getSystemClassLoader();
+                    Class<?> decoderCls = classLoader.loadClass(decoderClass);
+                    Constructor<?> constructor = decoderCls.getConstructor(File.class, DecoderConfig.class);
+                    decoder = (Decoder) constructor.newInstance(decoderModel, decoderConfig);
+                }
+            } catch (ClassNotFoundException e) {
+                throw new BootstrapException("Decoder class not found", e);
+            } catch (NoSuchMethodException | IllegalAccessException e) {
+                throw new BootstrapException("Invalid decoder class specified: missing constructor", e);
+            } catch (DecoderException e) {
+                throw new BootstrapException("Failed to instantiate decoder", e);
+            } catch (InstantiationException e) {
+                throw new BootstrapException("Invalid decoder class specified: class is abstract", e);
+            } catch (InvocationTargetException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof RuntimeException) {
+                    throw (RuntimeException) cause;
+                } else if (cause instanceof DecoderException) {
+                    throw new BootstrapException("Failed to instantiate decoder", cause);
+                }
+            }
+        }
+
+        return new Engine(name, languages, aligner, preprocessor, postprocessor, contextAnalyzer, decoder);
     }
 
-    public abstract ContributionOptions getContributionOptions();
+    protected Engine(String name, LanguageIndex languages,
+                     Aligner aligner, Preprocessor preprocessor, Postprocessor postprocessor, ContextAnalyzer contextAnalyzer, Decoder decoder) {
+        this.name = name;
+        this.languages = languages;
+        this.aligner = aligner;
+        this.preprocessor = preprocessor;
+        this.postprocessor = postprocessor;
+        this.contextAnalyzer = contextAnalyzer;
+        this.decoder = decoder;
+    }
 
     public String getName() {
         return name;
     }
 
-    public abstract Decoder getDecoder();
+    public Decoder getDecoder() {
+        if (decoder == null)
+            throw new UnsupportedOperationException("Decoder unavailable");
+
+        return decoder;
+    }
 
     public Aligner getAligner() {
         if (aligner == null)
@@ -166,15 +183,23 @@ public abstract class Engine implements Closeable, DataListenerProvider {
     }
 
     public File getRootPath() {
-        return root;
+        return FileConst.getEngineRoot(name);
     }
 
     public File getModelsPath() {
-        return models;
+        return Paths.join(getRootPath(), "models");
     }
 
-    public File getRuntimeFolder(String folderName, boolean ensure) throws IOException {
-        File folder = new File(this.runtime, folderName);
+    public File getRuntimePath() {
+        return FileConst.getEngineRuntime(name);
+    }
+
+    public File getLogsPath() {
+        return Paths.join(getRuntimePath(), "logs");
+    }
+
+    public File createRuntimeFolder(String folderName, boolean ensure) throws IOException {
+        File folder = new File(getRuntimePath(), folderName);
 
         if (ensure) {
             FileUtils.deleteDirectory(folder);
@@ -187,16 +212,25 @@ public abstract class Engine implements Closeable, DataListenerProvider {
     @Override
     public Collection<DataListener> getDataListeners() {
         ArrayList<DataListener> listeners = new ArrayList<>();
-        listeners.add(contextAnalyzer);
+        addDataListener(contextAnalyzer, listeners);
+        addDataListener(decoder, listeners);
+
         return listeners;
     }
 
-    public File getLogFile(String name) {
-        return new File(this.logs, name);
+    private static void addDataListener(Object object, ArrayList<DataListener> listeners) {
+        if (object == null)
+            return;
+
+        if (object instanceof DataListener)
+            listeners.add((DataListener) object);
+        if (object instanceof DataListenerProvider)
+            listeners.addAll(((DataListenerProvider) object).getDataListeners());
     }
 
     @Override
     public void close() {
+        IOUtils.closeQuietly(decoder);
         IOUtils.closeQuietly(preprocessor);
         IOUtils.closeQuietly(postprocessor);
         IOUtils.closeQuietly(aligner);

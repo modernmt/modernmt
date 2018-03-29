@@ -45,8 +45,8 @@ public class EmbeddedKafka extends EmbeddedService {
 
     private EmbeddedKafka(Engine engine) throws IOException {
         this.data = new File(engine.getModelsPath(), "kafka");
-        this.runtime = engine.getRuntimeFolder("kafka", true);
-        this.logFile = engine.getLogFile("embedded-kafka.log");
+        this.runtime = engine.createRuntimeFolder("kafka", true);
+        this.logFile = new File(engine.getLogsPath(), "embedded-kafka.log");
 
         File kafkaHome = Paths.join(FileConst.getVendorPath(), "kafka-" + VERSION);
 

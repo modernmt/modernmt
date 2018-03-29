@@ -13,6 +13,7 @@ RUNTIME_DIR = os.path.join(MMT_ROOT, 'runtime')
 BUILD_DIR = os.path.join(MMT_ROOT, 'build')
 VENDOR_DIR = os.path.join(MMT_ROOT, 'vendor')
 
+PLUGINS_DIR = os.path.join(BUILD_DIR, 'plugins')
 LIB_DIR = os.path.join(BUILD_DIR, 'lib')
 BIN_DIR = os.path.join(BUILD_DIR, 'bin')
 
@@ -25,7 +26,16 @@ os.environ['LANG'] = 'en_US.UTF-8'
 
 
 def mmt_javamain(main_class, args=None, hserr_path=None, remote_debug=False, max_heap_mb=None):
-    command = ['java', '-cp', MMT_JAR, '-Dmmt.home=' + MMT_ROOT, '-Djava.library.path=' + LIB_DIR, main_class]
+    classpath = [MMT_JAR]
+
+    if os.path.isdir(PLUGINS_DIR):
+        for filename in os.listdir(PLUGINS_DIR):
+            if filename.endswith('.jar'):
+                classpath.append(os.path.join(PLUGINS_DIR, filename))
+
+    classpath = ':'.join(classpath)
+
+    command = ['java', '-cp', classpath, '-Dmmt.home=' + MMT_ROOT, '-Djava.library.path=' + LIB_DIR, main_class]
 
     if remote_debug:
         command.insert(1, '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005')

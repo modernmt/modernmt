@@ -52,11 +52,18 @@ class LanguageCache {
 
         LanguagePair language = cache.get(probe);
         if (language == null) {
-            language = new LanguagePair(Language.fromString(source), Language.fromString(target));
+            language = new LanguagePair(
+                    Language.fromString(normalize(source)),
+                    Language.fromString(normalize(target)));
             cache.put(new SKey(source, target), language);
         }
 
         return language;
+    }
+
+    // Some TMXs have language tas with underscore instead of dash, i.e. en_US
+    private static String normalize(String languageTag) {
+        return languageTag.replace('_', '-');
     }
 
 }

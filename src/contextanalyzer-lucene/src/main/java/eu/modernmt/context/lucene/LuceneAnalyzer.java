@@ -164,4 +164,14 @@ public class LuceneAnalyzer implements ContextAnalyzer {
         return storage.getLatestChannelPositions();
     }
 
+    @Override
+    public boolean needsProcessing() {
+        return false;
+    }
+
+    @Override
+    public boolean needsAlignment() {
+        return false;
+    }
+
 }

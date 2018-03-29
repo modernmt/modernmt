@@ -1,5 +1,7 @@
 package eu.modernmt.processing;
 
+import eu.modernmt.io.FileConst;
+
 import java.io.File;
 
 /**
@@ -24,14 +26,16 @@ public class TextProcessingModels {
     public static File getPath() {
         if (path == null) {
             String value = System.getProperty(ENV_VARNAME);
-            if (value == null)
-                throw new IllegalStateException("Missing system property '" + ENV_VARNAME + "'");
 
-            File path = new File(value).getAbsoluteFile();
-            if (!path.isDirectory())
-                throw new IllegalStateException("Invalid value for system property '" + ENV_VARNAME + "'. Path is not a valid directory: " + value);
+            if (value != null) {
+                File path = new File(value).getAbsoluteFile();
+                if (!path.isDirectory())
+                    throw new IllegalStateException("Invalid value for system property '" + ENV_VARNAME + "'. Path is not a valid directory: " + value);
 
-            TextProcessingModels.path = path;
+                TextProcessingModels.path = path;
+            } else {
+                TextProcessingModels.path = FileConst.getResourcePath();
+            }
         }
 
         return path;

@@ -10,6 +10,7 @@ import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.training.*;
+import eu.modernmt.training.filters.CorporaBloomFilter;
 import eu.modernmt.training.partitioning.FilesCorporaPartition;
 import eu.modernmt.training.preprocessing.CorpusWriter;
 import eu.modernmt.training.preprocessing.PlainTextWriter;
@@ -26,10 +27,6 @@ import java.util.Map;
  * Created by davide on 17/08/16.
  */
 public class TrainingFacade {
-
-    static {
-        Engine.initialize();
-    }
 
     public static final int DEFAULT_PARTITION_SIZE = 2000;
 
@@ -102,6 +99,22 @@ public class TrainingFacade {
         FileUtils.forceMkdir(outputDirectory);
 
         BatchCopyProcess copyProcess = new BatchCopyProcess(corpus -> Corpora.rename(corpus, outputDirectory));
+        copyProcess.addAll(corpora);
+        copyProcess.run();
+    }
+
+    public void deduplicate(List<MultilingualCorpus> corpora, File outputDirectory) throws IOException {
+        long lines = 0;
+        for (long count : IOCorporaUtils.countLines(corpora).values())
+            lines += count;
+
+        FileUtils.deleteDirectory(outputDirectory);
+        FileUtils.forceMkdir(outputDirectory);
+
+        CorporaBloomFilter bloomFilter = new CorporaBloomFilter(lines);
+
+        BatchCopyProcess copyProcess = new BatchCopyProcess(corpus ->
+                new LazyWriterMultilingualCorpus(bloomFilter.wrap(Corpora.rename(corpus, outputDirectory))));
         copyProcess.addAll(corpora);
         copyProcess.run();
     }

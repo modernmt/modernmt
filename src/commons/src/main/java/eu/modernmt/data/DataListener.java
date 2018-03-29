@@ -11,4 +11,8 @@ public interface DataListener {
 
     Map<Short, Long> getLatestChannelPositions();
 
+    boolean needsProcessing();
+
+    boolean needsAlignment();
+
 }

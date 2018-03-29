@@ -15,6 +15,7 @@ public abstract class DecoderConfig {
     }
 
     protected int threads = DEFAULT_THREADS;
+    protected String decoderClass = null;
     protected boolean enabled = true;
 
     public boolean isEnabled() {
@@ -31,6 +32,14 @@ public abstract class DecoderConfig {
 
     public void setThreads(int threads) {
         this.threads = threads;
+    }
+
+    public String getDecoderClass() {
+        return decoderClass;
+    }
+
+    public void setDecoderClass(String decoderClass) {
+        this.decoderClass = decoderClass;
     }
 
     public abstract int getParallelismDegree();

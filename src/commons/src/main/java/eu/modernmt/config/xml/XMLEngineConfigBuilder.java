@@ -96,6 +96,9 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
             if (hasAttribute("threads"))
                 config.setThreads(getIntAttribute("threads"));
 
+            if (hasAttribute("class"))
+                config.setDecoderClass(getStringAttribute("class"));
+
             if (config instanceof NeuralDecoderConfig) {
                 NeuralDecoderConfig neuralConfig = (NeuralDecoderConfig) config;
                 if (hasAttribute("gpus"))

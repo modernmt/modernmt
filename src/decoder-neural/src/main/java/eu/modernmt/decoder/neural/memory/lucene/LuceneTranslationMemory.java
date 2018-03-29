@@ -119,6 +119,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
                 this._indexReader.incRef();
 
                 this._indexSearcher = new IndexSearcher(this._indexReader);
+                this._indexSearcher.setSimilarity(new CustomSimilarity());
             }
         }
 
@@ -231,8 +232,6 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
         IndexSearcher searcher = getIndexSearcher();
 
-        searcher.setSimilarity(new CustomSimilarity());
-
         int queryLimit = Math.max(this.minQuerySize, limit * 2);
         ScoreDoc[] docs = searcher.search(query, queryLimit).scoreDocs;
 
@@ -243,7 +242,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         }
 
         if (rescorer != null)
-            rescorer.rescore(source, entries, contextVector);
+            entries = rescorer.rescore(source, entries, contextVector);
 
         if (entries.length > limit) {
             ScoreEntry[] temp = new ScoreEntry[limit];
@@ -290,6 +289,16 @@ public class LuceneTranslationMemory implements TranslationMemory {
             if (!success)
                 this.indexWriter.rollback();
         }
+    }
+
+    @Override
+    public boolean needsProcessing() {
+        return true;
+    }
+
+    @Override
+    public boolean needsAlignment() {
+        return true;
     }
 
     private void onTranslationUnitsReceived(Collection<TranslationUnit> units) throws IOException {

@@ -6,7 +6,6 @@ import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.DataMessage;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.engine.ContributionOptions;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
@@ -56,13 +55,13 @@ class KafkaDataBatch implements DataBatch {
         cachedPartitions.push(partition.clear());
     }
 
-    public void load(ConsumerRecords<Integer, KafkaPacket> records) throws ProcessingException, AlignerException {
+    public void load(ConsumerRecords<Integer, KafkaPacket> records, boolean process, boolean align) throws ProcessingException, AlignerException {
         LanguageIndex languages = engine.getLanguages();
 
+        // Load records
+
         this.clear();
-
         int size = records.count();
-
         this.cachedDataSet.clear();
         for (ConsumerRecord<Integer, KafkaPacket> record : records) {
             KafkaChannel channel = this.manager.getChannel(record.topic());
@@ -91,9 +90,11 @@ class KafkaDataBatch implements DataBatch {
             }
         }
 
+        // Process translation units
+
         this.translationUnits.ensureCapacity(size);
         for (DataPartition partition : cachedDataSet.values()) {
-            partition.process(engine);
+            partition.process(engine, process, align);
             this.translationUnits.addAll(partition.units);
             releaseDataPartition(partition);
         }
@@ -152,19 +153,17 @@ class KafkaDataBatch implements DataBatch {
             targets.add(unit.rawTranslation);
         }
 
-        public void process(Engine engine) throws ProcessingException, AlignerException {
+        public void process(Engine engine, boolean process, boolean align) throws ProcessingException, AlignerException {
             if (units.isEmpty())
                 return;
 
-            ContributionOptions options = engine.getContributionOptions();
-
-            if (options.process) {
+            if (process || align) {
                 Preprocessor preprocessor = engine.getPreprocessor();
                 List<Sentence> sourceSentences = preprocessor.process(direction, sources);
                 List<Sentence> targetSentences = preprocessor.process(direction.reversed(), targets);
                 Alignment[] alignments = null;
 
-                if (options.align) {
+                if (align) {
                     Aligner aligner = engine.getAligner();
                     alignments = aligner.getAlignments(direction, sourceSentences, targetSentences);
                 }

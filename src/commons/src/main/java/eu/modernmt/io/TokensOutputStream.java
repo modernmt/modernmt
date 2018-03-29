@@ -3,6 +3,7 @@ package eu.modernmt.io;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Tag;
 import eu.modernmt.model.Token;
+import eu.modernmt.model.Word;
 import eu.modernmt.xml.XMLUtils;
 
 import java.io.*;
@@ -67,6 +68,21 @@ public class TokensOutputStream implements Closeable {
             pieces[i] = pieces[i].replace('\u00A0', ' ');
 
         return pieces;
+    }
+
+    public static Word[] deserializeWords(String text) {
+        if (text.isEmpty())
+            return new Word[0];
+
+        String[] pieces = deserialize(text);
+        Word[] words = new Word[pieces.length];
+
+        for (int i = 0; i < pieces.length; i++) {
+            String rightSpace = i < pieces.length - 1 ? " " : null;
+            words[i] = new Word(pieces[i], rightSpace);
+        }
+
+        return words;
     }
 
     private final LineWriter writer;

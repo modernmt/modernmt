@@ -1,11 +1,10 @@
-package eu.modernmt.decoder.neural.execution;
+package eu.modernmt.decoder.neural.natv;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import eu.modernmt.decoder.neural.NeuralDecoderException;
-import eu.modernmt.decoder.neural.NeuralDecoderRejectedExecutionException;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguagePair;
@@ -15,14 +14,14 @@ import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -32,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  * The NativeProcess object is thus to run and request translations to its specific decoder process.
  * If necessary, it also handles its close.
  */
-class NativeProcess implements Closeable {
+public class NativeProcess implements Closeable {
 
     private static final Logger logger = LogManager.getLogger(NativeProcess.class);
 
@@ -98,74 +97,62 @@ class NativeProcess implements Closeable {
             if (logger.isDebugEnabled())
                 logger.debug("Starting process from \"" + home + "\": " + StringUtils.join(command, ' '));
 
-            return new NativeProcess(builder.start());
+            return new NativeProcess(builder.start(), gpu);
         }
 
     }
 
     private static final JsonParser parser = new JsonParser();
 
-    private final Process decoder;          // the decoder Python process
-    private final OutputStream stdin;       // stream to the standard input that the decoder process will read
-    private final BufferedReader stdout;    // reader to the standard output that the decoder process will write
-    private final LogThread logThread;      // separate thread for logging
+    private final int gpu;
+    private final Process decoder;
+    private final OutputStream stdin;
+    private final StdoutThread stdoutThread;
+    private final LogThread logThread;
 
-    /**
-     * Create a new NativeProcess that connects to a specific NeuralDecoder process.
-     * After it is created, the NativeProcess allows communication with the decoder.
-     * NOTE: The process must be running already.
-     *
-     * @param decoder an already running decoder process
-     * @throws IOException
-     * @throws NeuralDecoderException
-     */
-    NativeProcess(Process decoder) throws IOException, NeuralDecoderException {
+    NativeProcess(Process decoder, int gpu) throws NeuralDecoderException {
+        this.gpu = gpu;
         this.decoder = decoder;
         this.stdin = decoder.getOutputStream();
-        this.stdout = new BufferedReader(new InputStreamReader(decoder.getInputStream()));
+        this.stdoutThread = new StdoutThread(decoder.getInputStream());
         this.logThread = new LogThread(decoder.getErrorStream());
 
+        this.stdoutThread.start();
         this.logThread.start();
 
-        /*Wait for feedback from the engine: it can be either "ok" or an exception. */
         try {
-            String line = this.stdout.readLine();
+            String line;
+
+            try {
+                line = this.stdoutThread.readLine();
+            } catch (IOException e) {
+                throw new NeuralDecoderException("Failed to start neural decoder", e);
+            }
+
             if (line == null || !line.trim().equals("ok"))
-                deserialize(null, line, false);
-        } catch (IOException | NeuralDecoderException e) {
-            IOUtils.closeQuietly(this.stdin);
-            IOUtils.closeQuietly(this.stdout);
+                throw new NeuralDecoderException("Failed to start neural decoder (cause): " + line);
+        } catch (NeuralDecoderException e) {
+            close();
             throw e;
         }
 
     }
 
-    /**
-     * This method requests a translation to this decoder process.
-     *
-     * @param direction the direction of the translation to execute
-     * @param sentence  the source sentence to translate
-     * @param nBest     number of hypothesis to return (default 0)
-     * @return the translation of the passed sentence
-     * @throws NeuralDecoderException
-     */
+    public int getGPU() {
+        return gpu;
+    }
+
+    public boolean isAlive() {
+        return decoder.isAlive();
+    }
+
     public Translation translate(LanguagePair direction, String variant, Sentence sentence, int nBest) throws NeuralDecoderException {
         return translate(direction, variant, sentence, null, nBest);
     }
 
-    /**
-     * This method requests a translation to this decoder process.
-     *
-     * @param direction   the direction of the translation to execute
-     * @param sentence    the source sentence to translate
-     * @param suggestions an array of translation suggestions that the decoder will study before the translation
-     * @param nBest       number of hypothesis to return (default 0)
-     * @return the translation of the passed sentence
-     * @throws NeuralDecoderException
-     */
     public Translation translate(LanguagePair direction, String variant, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws NeuralDecoderException {
         if (!decoder.isAlive())
-            throw new NeuralDecoderRejectedExecutionException();
+            throw new NeuralDecoderException("Neural decoder process not available");
 
         String payload = serialize(direction, variant, sentence, suggestions, nBest);
 
@@ -174,23 +161,27 @@ class NativeProcess implements Closeable {
             this.stdin.write('\n');
             this.stdin.flush();
         } catch (IOException e) {
-            throw new NeuralDecoderException("Failed to send request to NMT decoder", e);
+            this.close();
+            throw new NeuralDecoderException("Failed to send request to decoder process", e);
         }
 
         String line;
         try {
-            line = stdout.readLine();
+            line = stdoutThread.readLine(30, TimeUnit.SECONDS);
         } catch (IOException e) {
-            throw new NeuralDecoderException("Failed to read response from NMT decoder", e);
+            this.close();
+            throw new NeuralDecoderException("Failed to read response from decoder process", e);
         }
 
-        if (line == null)
+        if (line == null) {
+            this.close();
             throw new NeuralDecoderException("No response from NMT process, request was '" + payload + "'");
+        }
 
         return deserialize(sentence, line, nBest > 0);
     }
 
-    private static String serialize(LanguagePair direction, String variant, Sentence sentence, ScoreEntry[] suggestions, int nBest) {
+    private String serialize(LanguagePair direction, String variant, Sentence sentence, ScoreEntry[] suggestions, int nBest) {
         String text = TokensOutputStream.serialize(sentence, false, true);
 
         JsonObject json = new JsonObject();
@@ -222,11 +213,12 @@ class NativeProcess implements Closeable {
         return json.toString().replace('\n', ' ');
     }
 
-    private static Translation deserialize(Sentence sentence, String response, boolean includeNBest) throws NeuralDecoderException {
+    private Translation deserialize(Sentence sentence, String response, boolean includeNBest) throws NeuralDecoderException {
         JsonObject json;
         try {
             json = parser.parse(response).getAsJsonObject();
         } catch (JsonSyntaxException e) {
+            this.close();
             throw new NeuralDecoderException("Invalid response from NMT decoder: " + response, e);
         }
 
@@ -251,7 +243,7 @@ class NativeProcess implements Closeable {
         for (int i = 0; i < jsonArray.size(); i++) {
             JsonObject jsonTranslation = jsonArray.get(i).getAsJsonObject();
 
-            Word[] text = explodeText(jsonTranslation.get("text").getAsString());
+            Word[] text = TokensOutputStream.deserializeWords(jsonTranslation.get("text").getAsString());
             Alignment alignment = parseAlignment(jsonTranslation.get("alignment").getAsJsonArray());
 
             translations.add(new Translation(text, sentence, alignment));
@@ -273,21 +265,6 @@ class NativeProcess implements Closeable {
         return result;
     }
 
-    private static Word[] explodeText(String text) {
-        if (text.isEmpty())
-            return new Word[0];
-
-        String[] pieces = TokensOutputStream.deserialize(text);
-        Word[] words = new Word[pieces.length];
-
-        for (int i = 0; i < pieces.length; i++) {
-            String rightSpace = i < pieces.length - 1 ? " " : null;
-            words[i] = new Word(pieces[i], rightSpace);
-        }
-
-        return words;
-    }
-
     private static Alignment parseAlignment(JsonArray array) {
         if (array.size() == 0)
             return new Alignment(new int[0], new int[0]);
@@ -307,14 +284,13 @@ class NativeProcess implements Closeable {
         return new Alignment(sourceIndexes, targetIndexes);
     }
 
-    /**
-     * This method kills this decoder process.
-     * <p>
-     * It first tries to gently kill it.
-     * If after 5 seconds the process is still alive, it is forcibly destroyed.
-     */
     @Override
-    public void close() throws IOException {
+    public void close() {
+        logThread.interrupt();
+        stdoutThread.interrupt();
+
+        IOUtils.closeQuietly(stdin);
+
         decoder.destroy();
 
         try {
@@ -331,64 +307,6 @@ class NativeProcess implements Closeable {
         } catch (InterruptedException e) {
             // Nothing to do
         }
-
-        this.logThread.interrupt();
-    }
-
-    private static class LogThread extends Thread {
-
-        private static final HashMap<String, Level> LOG_LEVELS = new HashMap<>(5);
-
-        static {
-            LOG_LEVELS.put("CRITICAL", Level.FATAL);
-            LOG_LEVELS.put("ERROR", Level.ERROR);
-            LOG_LEVELS.put("WARNING", Level.WARN);
-            LOG_LEVELS.put("INFO", Level.INFO);
-            LOG_LEVELS.put("DEBUG", Level.DEBUG);
-        }
-
-        public static String getNativeLogLevel() {
-            Level level = logger.getLevel();
-
-            for (Map.Entry<String, Level> entry : LOG_LEVELS.entrySet()) {
-                if (level.equals(entry.getValue()))
-                    return entry.getKey().toLowerCase();
-            }
-
-            return null;
-        }
-
-        private final BufferedReader reader;
-
-        private LogThread(InputStream stream) {
-            this.reader = new BufferedReader(new InputStreamReader(stream));
-        }
-
-        @Override
-        public void run() {
-            String line;
-
-            try {
-                while ((line = reader.readLine()) != null) {
-                    JsonObject json;
-                    try {
-                        json = parser.parse(line).getAsJsonObject();
-
-                        String strLevel = json.get("level").getAsString();
-                        String message = json.get("message").getAsString();
-                        String loggerName = json.get("logger").getAsString();
-
-                        Level level = LOG_LEVELS.getOrDefault(strLevel, Level.DEBUG);
-                        logger.log(level, "(" + loggerName + ") " + message);
-                    } catch (JsonSyntaxException e) {
-                        logger.warn("Unable to parse python log entry: " + line);
-                    }
-                }
-            } catch (IOException e) {
-                logger.info("Closing log thread for NMT process");
-            }
-        }
-
     }
 
 }
