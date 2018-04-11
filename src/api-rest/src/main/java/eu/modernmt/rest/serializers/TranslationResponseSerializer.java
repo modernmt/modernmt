@@ -77,13 +77,8 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
 
     private static JsonArray serializeTokens(Sentence sentence) {
         JsonArray array = new JsonArray();
-        for (Token token : sentence) {
-            JsonArray jToken = new JsonArray();
-            jToken.add(token.toString());
-            jToken.add(token.hasRightSpace() ? token.getRightSpace() : "");
-
-            array.add(jToken);
-        }
+        for (Token token : sentence)
+            array.add(token.toString());
         return array;
     }
 
