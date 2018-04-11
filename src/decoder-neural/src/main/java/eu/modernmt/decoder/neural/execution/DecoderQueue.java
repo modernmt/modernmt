@@ -20,13 +20,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public abstract class DecoderQueue implements Closeable {
 
-    public static DecoderQueue newGPUInstance(File home, File model, int[] gpus) throws NeuralDecoderException {
-        NativeProcess.Builder builder = new NativeProcess.Builder(home, model);
+    public static DecoderQueue newGPUInstance(File pythonExec, File model, int[] gpus) throws NeuralDecoderException {
+        NativeProcess.Builder builder = new NativeProcess.Builder(pythonExec, model);
         return new GPUDecoderQueue(builder, gpus).init();
     }
 
-    public static DecoderQueue newCPUInstance(File home, File model, int cpus) throws NeuralDecoderException {
-        NativeProcess.Builder builder = new NativeProcess.Builder(home, model);
+    public static DecoderQueue newCPUInstance(File pythonExec, File model, int cpus) throws NeuralDecoderException {
+        NativeProcess.Builder builder = new NativeProcess.Builder(pythonExec, model);
         return new CPUDecoderQueue(builder, cpus).init();
     }
 

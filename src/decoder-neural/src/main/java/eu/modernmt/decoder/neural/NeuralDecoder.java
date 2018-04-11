@@ -14,6 +14,7 @@ import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.decoder.neural.memory.TranslationMemory;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.io.FileConst;
+import eu.modernmt.io.Paths;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
@@ -72,7 +73,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         if (thresholds != null && !thresholds.isEmpty())
             this.memory.setDataFilter(new AlignmentDataFilter(thresholds));
 
-        File pythonHome = new File(FileConst.getLibPath(), "pynmt");
+        File pythonHome = Paths.join(FileConst.getLibPath(), "pynmt", "main_loop.py");
         if (config.isUsingGPUs())
             this.decoderImpl = DecoderQueue.newGPUInstance(pythonHome, model, config.getGPUs());
         else

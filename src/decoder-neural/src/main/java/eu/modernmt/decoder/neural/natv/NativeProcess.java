@@ -42,11 +42,11 @@ public class NativeProcess implements Closeable {
      */
     public static class Builder {
 
-        private final File home;
+        private final File pythonExec;
         private final File model;
 
-        public Builder(File home, File model) {
-            this.home = home;
+        public Builder(File pythonExec, File model) {
+            this.pythonExec = pythonExec;
             this.model = model;
         }
 
@@ -77,7 +77,7 @@ public class NativeProcess implements Closeable {
         private NativeProcess start(int gpu) throws IOException, NeuralDecoderException {
             ArrayList<String> command = new ArrayList<>(5);
             command.add("python");
-            command.add("main_loop.py");
+            command.add(pythonExec.getAbsolutePath());
             command.add(model.getAbsolutePath());
 
             String logLevel = LogThread.getNativeLogLevel();
@@ -92,10 +92,9 @@ public class NativeProcess implements Closeable {
             }
 
             ProcessBuilder builder = new ProcessBuilder(command);
-            builder.directory(home);
 
             if (logger.isDebugEnabled())
-                logger.debug("Starting process from \"" + home + "\": " + StringUtils.join(command, ' '));
+                logger.debug("Starting process from \"" + pythonExec + "\": " + StringUtils.join(command, ' '));
 
             return new NativeProcess(builder.start(), gpu);
         }
