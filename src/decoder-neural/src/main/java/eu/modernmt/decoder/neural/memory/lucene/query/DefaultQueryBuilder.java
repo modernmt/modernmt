@@ -1,5 +1,7 @@
-package eu.modernmt.decoder.neural.memory.lucene;
+package eu.modernmt.decoder.neural.memory.lucene.query;
 
+import eu.modernmt.decoder.neural.memory.lucene.Analyzers;
+import eu.modernmt.decoder.neural.memory.lucene.DocumentBuilder;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Sentence;
@@ -17,9 +19,10 @@ import java.io.IOException;
 /**
  * Created by davide on 24/05/17.
  */
-public class QueryBuilder {
+public class DefaultQueryBuilder implements QueryBuilder {
 
-    public static Query getByHash(long memory, LanguagePair direction, String hash) {
+    @Override
+    public Query getByHash(long memory, LanguagePair direction, String hash) {
         PhraseQuery hashQuery = new PhraseQuery();
         for (String h : hash.split(" "))
             hashQuery.add(new Term(DocumentBuilder.HASH_FIELD, h));
@@ -40,15 +43,18 @@ public class QueryBuilder {
         return query;
     }
 
-    public static Term memoryTerm(long memory) {
+    @Override
+    public Term memoryTerm(long memory) {
         return newLongTerm(DocumentBuilder.MEMORY_ID_FIELD, memory);
     }
 
-    public static Term channelsTerm() {
+    @Override
+    public Term channelsTerm() {
         return newLongTerm(DocumentBuilder.MEMORY_ID_FIELD, 0);
     }
 
-    public static Query bestMatchingSuggestion(LanguagePair direction, Sentence sentence) {
+    @Override
+    public Query bestMatchingSuggestion(LanguagePair direction, Sentence sentence) {
         int length = sentence.getWords().length;
         boolean isLongQuery = length > 4;
 

@@ -5,8 +5,10 @@ import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.decoder.neural.memory.TranslationMemory;
-import eu.modernmt.decoder.neural.memory.lucene.rescoring.F1BleuRescorer;
-import eu.modernmt.decoder.neural.memory.lucene.rescoring.Rescorer;
+import eu.modernmt.decoder.neural.memory.lucene.query.DefaultQueryBuilder;
+import eu.modernmt.decoder.neural.memory.lucene.query.QueryBuilder;
+import eu.modernmt.decoder.neural.memory.lucene.query.rescoring.F1BleuRescorer;
+import eu.modernmt.decoder.neural.memory.lucene.query.rescoring.Rescorer;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
@@ -43,6 +45,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
     private final int minQuerySize;
     private final Directory indexDirectory;
+    private final QueryBuilder queryBuilder;
     private final Rescorer rescorer;
     private final IndexWriter indexWriter;
     private final LanguageIndex languages;
@@ -70,8 +73,17 @@ public class LuceneTranslationMemory implements TranslationMemory {
         this(languages, FSDirectory.open(forceMkdir(indexPath)), rescorer, minQuerySize);
     }
 
+    public LuceneTranslationMemory(LanguageIndex languages, File indexPath, QueryBuilder queryBuilder, Rescorer rescorer, int minQuerySize) throws IOException {
+        this(languages, FSDirectory.open(forceMkdir(indexPath)), queryBuilder, rescorer, minQuerySize);
+    }
+
     public LuceneTranslationMemory(LanguageIndex languages, Directory directory, Rescorer rescorer, int minQuerySize) throws IOException {
+        this(languages, directory, new DefaultQueryBuilder(), rescorer, minQuerySize);
+    }
+
+    public LuceneTranslationMemory(LanguageIndex languages, Directory directory, QueryBuilder queryBuilder, Rescorer rescorer, int minQuerySize) throws IOException {
         this.indexDirectory = directory;
+        this.queryBuilder = queryBuilder;
         this.rescorer = rescorer;
         this.languages = languages;
         this.minQuerySize = minQuerySize;
@@ -90,7 +102,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         // Read channels status
         IndexSearcher searcher = this.getIndexSearcher();
 
-        Query query = new TermQuery(QueryBuilder.channelsTerm());
+        Query query = new TermQuery(this.queryBuilder.channelsTerm());
         TopDocs docs = searcher.search(query, 1);
 
         if (docs.scoreDocs.length > 0) {
@@ -228,7 +240,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     public ScoreEntry[] search(LanguagePair direction, Sentence source, ContextVector contextVector, Rescorer rescorer, int limit) throws IOException {
-        Query query = QueryBuilder.bestMatchingSuggestion(direction, source);
+        Query query = this.queryBuilder.bestMatchingSuggestion(direction, source);
 
         IndexSearcher searcher = getIndexSearcher();
 
@@ -279,7 +291,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
             }
 
             Document channelsDocument = DocumentBuilder.build(newChannels);
-            this.indexWriter.updateDocument(QueryBuilder.channelsTerm(), channelsDocument);
+            this.indexWriter.updateDocument(this.queryBuilder.channelsTerm(), channelsDocument);
             this.indexWriter.commit();
 
             this.channels.putAll(newChannels);
@@ -314,7 +326,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
                 if (currentPosition == null || currentPosition < unit.channelPosition) {
                     if (unit.rawPreviousSentence != null && unit.rawPreviousTranslation != null) {
                         String hash = HashGenerator.hash(direction, unit.rawPreviousSentence, unit.rawPreviousTranslation);
-                        Query hashQuery = QueryBuilder.getByHash(unit.memory, direction, hash);
+                        Query hashQuery = this.queryBuilder.getByHash(unit.memory, direction, hash);
 
                         this.indexWriter.deleteDocuments(hashQuery);
                     }
@@ -331,7 +343,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
             Long currentPosition = this.channels.get(deletion.channel);
 
             if (currentPosition == null || currentPosition < deletion.channelPosition)
-                this.indexWriter.deleteDocuments(QueryBuilder.memoryTerm(deletion.memory));
+                this.indexWriter.deleteDocuments(this.queryBuilder.memoryTerm(deletion.memory));
         }
     }
 

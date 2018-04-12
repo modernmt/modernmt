@@ -2,7 +2,7 @@ package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.neural.memory.lucene.DocumentBuilder;
-import eu.modernmt.decoder.neural.memory.lucene.QueryBuilder;
+import eu.modernmt.decoder.neural.memory.lucene.query.DefaultQueryBuilder;
 import eu.modernmt.lang.LanguagePair;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -48,7 +48,7 @@ public class LuceneTranslationMemoryTest_hash {
         indexWriter.addDocument(DocumentBuilder.build(EN__IT, 1, "1-3", "1-3", "D C B Z"));
         indexWriter.commit();
 
-        Query query = QueryBuilder.getByHash(1, EN__IT, "A B C D");
+        Query query = new DefaultQueryBuilder().getByHash(1, EN__IT, "A B C D");
 
         IndexSearcher searcher = memory.getIndexSearcher();
         ScoreDoc[] result = searcher.search(query, 10).scoreDocs;

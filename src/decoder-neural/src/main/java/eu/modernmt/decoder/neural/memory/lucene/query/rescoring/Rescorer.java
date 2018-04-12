@@ -1,4 +1,4 @@
-package eu.modernmt.decoder.neural.memory.lucene.rescoring;
+package eu.modernmt.decoder.neural.memory.lucene.query.rescoring;
 
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.model.ContextVector;
