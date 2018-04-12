@@ -13,6 +13,7 @@ import eu.modernmt.decoder.neural.memory.AlignmentDataFilter;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.decoder.neural.memory.TranslationMemory;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
+import eu.modernmt.decoder.neural.natv.NativeProcess;
 import eu.modernmt.io.FileConst;
 import eu.modernmt.io.Paths;
 import eu.modernmt.io.TokensOutputStream;
@@ -39,45 +40,69 @@ import java.util.Set;
  */
 public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataListenerProvider {
 
-    private static final Logger logger = LogManager.getLogger(NeuralDecoder.class);
+    private final Logger logger = LogManager.getLogger(getClass());
 
     private final int suggestionsLimit;
     private final TranslationMemory memory;
     private final Set<LanguagePair> directions;
-
-    private DecoderQueue decoderImpl;
+    private final DecoderQueue decoderImpl;
 
     public NeuralDecoder(File model, DecoderConfig _config) throws DecoderException {
         super(model, _config);
 
         NeuralDecoderConfig config = (NeuralDecoderConfig) _config;
 
+        // Load ModelConfig
         ModelConfig modelConfig;
         try {
-            modelConfig = ModelConfig.load(new File(model, "model.conf"));
+            modelConfig = this.loadModelConfig(new File(model, "model.conf"));
         } catch (IOException e) {
             throw new NeuralDecoderException("Failed to read file model.conf", e);
         }
 
-        this.directions = modelConfig.getAvailableTranslationDirections();
-        this.suggestionsLimit = modelConfig.getSuggestionsLimit();
-
-        File storageModelPath = new File(model, "memory");
+        // Translation Memory
+        TranslationMemory memory;
         try {
-            this.memory = new LuceneTranslationMemory(new LanguageIndex(this.directions), storageModelPath, modelConfig.getQueryMinimumResults());
+            memory = loadTranslationMemory(modelConfig, new File(model, "memory"));
         } catch (IOException e) {
             throw new NeuralDecoderException("Failed to initialize memory", e);
         }
 
-        Map<LanguagePair, Float> thresholds = modelConfig.getAlignmentThresholds();
-        if (thresholds != null && !thresholds.isEmpty())
-            this.memory.setDataFilter(new AlignmentDataFilter(thresholds));
+        // Decoder Queue
+        DecoderQueue queue = loadDecoderQueue(modelConfig, config, model);
 
-        File pythonHome = Paths.join(FileConst.getLibPath(), "pynmt", "main_loop.py");
-        if (config.isUsingGPUs())
-            this.decoderImpl = DecoderQueue.newGPUInstance(pythonHome, model, config.getGPUs());
+        // Init class fields
+        this.suggestionsLimit = modelConfig.getSuggestionsLimit();
+        this.memory = memory;
+        this.directions = modelConfig.getAvailableTranslationDirections();
+        this.decoderImpl = queue;
+    }
+
+    protected ModelConfig loadModelConfig(File filepath) throws IOException {
+        return ModelConfig.load(filepath);
+    }
+
+    protected TranslationMemory loadTranslationMemory(ModelConfig config, File model) throws IOException {
+        LanguageIndex languages = new LanguageIndex(config.getAvailableTranslationDirections());
+        int queryMinResults = config.getQueryMinimumResults();
+
+        LuceneTranslationMemory memory = new LuceneTranslationMemory(languages, model, queryMinResults);
+
+        Map<LanguagePair, Float> thresholds = config.getAlignmentThresholds();
+        if (thresholds != null && !thresholds.isEmpty())
+            memory.setDataFilter(new AlignmentDataFilter(thresholds));
+
+        return memory;
+    }
+
+    protected DecoderQueue loadDecoderQueue(ModelConfig modelConfig, NeuralDecoderConfig decoderConfig, File model) throws NeuralDecoderException {
+        File pythonExec = Paths.join(FileConst.getLibPath(), "pynmt", "main_loop.py");
+        NativeProcess.Builder builder = new NativeProcess.Builder(pythonExec, model);
+
+        if (decoderConfig.isUsingGPUs())
+            return DecoderQueue.newGPUInstance(builder, decoderConfig.getGPUs());
         else
-            this.decoderImpl = DecoderQueue.newCPUInstance(pythonHome, model, config.getThreads());
+            return DecoderQueue.newCPUInstance(builder, decoderConfig.getThreads());
     }
 
     // Decoder

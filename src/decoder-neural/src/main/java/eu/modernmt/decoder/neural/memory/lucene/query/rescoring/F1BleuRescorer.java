@@ -15,7 +15,6 @@ import java.util.Map;
  */
 public class F1BleuRescorer implements Rescorer {
 
-
     private static final float MAX_SUGGESTION_EXPANSION = 2.f;
 
     @Override
@@ -65,6 +64,5 @@ public class F1BleuRescorer implements Rescorer {
 
         return entries;
     }
-
 
 }

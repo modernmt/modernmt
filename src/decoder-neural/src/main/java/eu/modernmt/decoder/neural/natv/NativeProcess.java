@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -44,10 +45,16 @@ public class NativeProcess implements Closeable {
 
         private final File pythonExec;
         private final File model;
+        private final String[] extraArgs;
 
         public Builder(File pythonExec, File model) {
+            this(pythonExec, null, model);
+        }
+
+        public Builder(File pythonExec, String[] extraArgs, File model) {
             this.pythonExec = pythonExec;
             this.model = model;
+            this.extraArgs = extraArgs;
         }
 
         /**
@@ -79,6 +86,9 @@ public class NativeProcess implements Closeable {
             command.add("python");
             command.add(pythonExec.getAbsolutePath());
             command.add(model.getAbsolutePath());
+
+            if (extraArgs != null && extraArgs.length > 0)
+                command.addAll(Arrays.asList(extraArgs));
 
             String logLevel = LogThread.getNativeLogLevel();
             if (logLevel != null) {
