@@ -20,7 +20,8 @@ BIN_DIR = os.path.join(BUILD_DIR, 'bin')
 MMT_JAR = os.path.join(BUILD_DIR, 'mmt-' + MMT_VERSION + '.jar')
 
 # Environment setup
-os.environ['LD_LIBRARY_PATH'] = LIB_DIR
+os.environ['LD_LIBRARY_PATH'] = os.pathsep.join(
+    [LIB_DIR] + [x for x in os.environ['LD_LIBRARY_PATH'].split(os.pathsep) if len(x) > 0])
 os.environ['LC_ALL'] = 'en_US.UTF-8'
 os.environ['LANG'] = 'en_US.UTF-8'
 
