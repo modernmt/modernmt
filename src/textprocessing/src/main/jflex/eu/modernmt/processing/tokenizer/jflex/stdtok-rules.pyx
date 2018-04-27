@@ -12,7 +12,7 @@
 [0-9]{1,4}(\/[0-9]{1,4}){0,2}                                                                                            { return PROTECT; }
 
 /* URL */
-((https?|HTTPS?)\:\/\/)?({UrlPart}\.)+{UrlPart}\/?({UrlPart}\/?)*(\.[:letter:]+)?(\?({UrlPart}(\={UrlPart})?\&?)*)?      { return PROTECT; }
+((https?|HTTPS?)\:\/\/)?({UrlPart}\.)+{UrlPart}\/?({UrlPart}\/?)*(\.{Letter}+)?(\?({UrlPart}(\={UrlPart})?\&?)*)?        { return PROTECT; }
 
 /* E-mail */
 ([a-z0-9_\.-]+)@([\da-z\.-]+)\.([a-z\.]{2,6})                                                                            { return PROTECT; }
@@ -24,7 +24,7 @@
 {Letter}\&{Letter}                                                                                                       { return PROTECT; }
 
 /* Pseudo HTML Entities */
-\&#?[[:letter:][:digit:]\-\_]+;                                                                                          { return PROTECT; }
+\&#?[a-zA-Z0-9\-\_]+;                                                                                            { return PROTECT; }
 
 /* File extension */
 \.{Letter}+                                                                                                              { return PROTECT; }
@@ -37,4 +37,4 @@
 \.\.+                                                                                                                    { return PROTECT; }
 
 /* Names with apostrophe, like "O'Malley" */
-{_}[A-Z]'[A-Z][:letter:]+                                                                                                { return PROTECT; }
+{_}[A-Z]'[A-Z]{Letter}+                                                                                                  { return PROTECT; }

@@ -77,19 +77,26 @@ public class JFlexTokenizer extends TextProcessor<SentenceBuilder, SentenceBuild
      * @throws UnsupportedLanguageException the requested language is not supported by this software
      */
     public JFlexTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
-        super(sourceLanguage, targetLanguage);
+        this(sourceLanguage, targetLanguage, loadAnnotator(sourceLanguage));
+    }
 
+    private static JFlexTokenAnnotator loadAnnotator(Language sourceLanguage) {
         Class<? extends JFlexTokenAnnotator> annotatorClass = ANNOTATORS.get(sourceLanguage);
 
         if (annotatorClass == null) {
-            this.annotator = new StandardTokenAnnotator((Reader) null);
+            return new StandardTokenAnnotator((Reader) null);
         } else {
             try {
-                this.annotator = annotatorClass.getConstructor(Reader.class).newInstance((Reader) null);
+                return annotatorClass.getConstructor(Reader.class).newInstance((Reader) null);
             } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException | InstantiationException e) {
                 throw new Error("Error during class instantiation: " + annotatorClass.getName(), e);
             }
         }
+    }
+
+    protected JFlexTokenizer(Language sourceLanguage, Language targetLanguage, JFlexTokenAnnotator annotator) {
+        super(sourceLanguage, targetLanguage);
+        this.annotator = annotator;
     }
 
     /**

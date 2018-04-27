@@ -40,6 +40,7 @@
         <processor source="ja">
             eu.modernmt.processing.tokenizer.kuromoji.KuromojiTokenizer
         </processor>
+
         <processor source="zh">
             eu.modernmt.processing.tokenizer.jflex.ChineseJFlexTokenizer
         </processor>
@@ -49,6 +50,11 @@
             eu.modernmt.processing.tokenizer.jflex.JFlexTokenizer
         </processor>
     </processorGroup>
+
+    <!-- For Japanese use base entity recognition tokenizer in addition (i.e. URLs, emails, ...) -->
+    <processor source="ja">
+        eu.modernmt.processing.tokenizer.jflex.BaseJFlexTokenizer
+    </processor>
 
     <processor>eu.modernmt.processing.string.SentenceCompiler</processor>
 </pipeline>
