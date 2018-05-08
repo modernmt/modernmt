@@ -3,7 +3,7 @@ import argparse
 import os
 
 import sys
-from random import shuffle
+import random
 
 
 class Translation:
@@ -34,7 +34,7 @@ class Translations:
                 else:
                     translation.mts[key] = line
 
-    def __init__(self, path):
+    def __init__(self, path, random_seed=None):
         source = None
         reference = None
         mts = []
@@ -61,6 +61,7 @@ class Translations:
         self._translations = {}
         self.__load(reference, self._translations, '#ref')
         self.__load(source, self._translations, '#src')
+        self._random_seed = random_seed
 
         for mt in mts:
             name = os.path.basename(mt)
@@ -69,7 +70,13 @@ class Translations:
             self.mts.append(name)
 
     def __iter__(self):
-        for translation in self._translations.values():
+        values = self._translations.values()
+
+        if self._random_seed:
+            values = values[:]
+            random.Random(self._random_seed).shuffle(values)
+
+        for translation in values:
             yield translation
 
     def __len__(self):
@@ -151,7 +158,7 @@ def evaluate(index, translation, scoreboard):
         maxlen = max(maxlen, len(key))
 
     mts = scoreboard.mts[:]
-    shuffle(mts)
+    random.shuffle(mts)
 
     print 'line #'.rjust(maxlen), index
     print 'source'.rjust(maxlen), translation.source
@@ -202,9 +209,11 @@ def main():
 
     parser.add_argument('path', metavar='PATH', help='the path to the Human Evaluation folder '
                                                      'created by Evaluate command.')
+    parser.add_argument('-r', '--random-seed', dest='seed', type=int, default=None,
+                        help='a random seed used to shuffle sentences (by default no shuffling is performed)')
     args = parser.parse_args()
 
-    translations = Translations(args.path)
+    translations = Translations(args.path, random_seed=args.seed)
     scores = ScoreBoard(translations.mts)
 
     os.system('clear')
