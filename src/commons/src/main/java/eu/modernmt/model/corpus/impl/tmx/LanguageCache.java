@@ -2,6 +2,7 @@ package eu.modernmt.model.corpus.impl.tmx;
 
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
 
@@ -61,9 +62,36 @@ class LanguageCache {
         return language;
     }
 
-    // Some TMXs have language tas with underscore instead of dash, i.e. en_US
+    // Some TMXs have noisy language tas; i.e. en_US, EN-US, EN ecc..
     private static String normalize(String languageTag) {
-        return languageTag.replace('_', '-');
-    }
+        languageTag = languageTag.replace('_', '-');
 
+        if (languageTag.indexOf('-') != -1) {
+            String[] parts = languageTag.split("-");
+
+            parts[0] = parts[0].toLowerCase(); // language code
+            for (int i = 1; i < parts.length; i++) {
+                String part = parts[i];
+
+                switch (part.length()) {
+                    case 4: // script code
+                        part = Character.toUpperCase(part.charAt(0)) + part.substring(1);
+                        break;
+                    case 2: // ISO 3166-1 Geo Code
+                        part = part.toUpperCase();
+                        break;
+
+                }
+
+                parts[i] = part;
+            }
+
+            languageTag = StringUtils.join(parts, '-');
+        } else {
+            languageTag = languageTag.toLowerCase();
+        }
+
+        return languageTag;
+    }
+    
 }

@@ -709,7 +709,7 @@ def tokenization_international(line):
     while m:
         found_num = m.group(0)
         numList.append(found_num)
-        norm_text = norm_text.replace(found_tag, ' MTEVALXMLTAG%d ' % i, 1)
+        norm_text = norm_text.replace(found_num, ' MTEVALXMLTAG%d ' % i, 1)
         i += 1
         m = p.search(norm_text)
     #
