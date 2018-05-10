@@ -21,7 +21,7 @@ public class CorporaBloomFilter {
         this.bloomFilter = BloomFilter.create(new StringPairFunnel(), expectedEntries, fpp);
     }
 
-    public MultilingualCorpus wrap(final MultilingualCorpus corpus) {
+    public MultilingualCorpus wrap(final MultilingualCorpus corpus, final int lengthThreshold) {
         return new BaseMultilingualCorpus() {
 
             @Override
@@ -44,8 +44,13 @@ public class CorporaBloomFilter {
                     public void write(StringPair pair) throws IOException {
                         boolean write;
 
-                        synchronized (CorporaBloomFilter.this) {
-                            write = bloomFilter.put(pair); // This is not thread safe, even in v24
+                        if (lengthThreshold > 0 &&
+                                pair.source.length() < lengthThreshold && pair.target.length() < lengthThreshold) {
+                            write = true;
+                        } else {
+                            synchronized (CorporaBloomFilter.this) {
+                                write = bloomFilter.put(pair); // This is not thread safe, even in v24
+                            }
                         }
 
                         if (write)

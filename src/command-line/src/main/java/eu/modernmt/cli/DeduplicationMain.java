@@ -20,18 +20,21 @@ public class DeduplicationMain {
         static {
             Option sourceLanguage = Option.builder("s").hasArg().required().build();
             Option targetLanguage = Option.builder("t").hasArg().required().build();
+            Option lengthThreshold = Option.builder("l").hasArg().required(false).build();
             Option inputPath = Option.builder().longOpt("input").hasArgs().required().build();
             Option outputPath = Option.builder().longOpt("output").hasArg().required().build();
 
             cliOptions = new Options();
             cliOptions.addOption(sourceLanguage);
             cliOptions.addOption(targetLanguage);
+            cliOptions.addOption(lengthThreshold);
             cliOptions.addOption(inputPath);
             cliOptions.addOption(outputPath);
         }
 
         public final Language sourceLanguage;
         public final Language targetLanguage;
+        public final int lengthThreshold;
         public final File[] inputRoots;
         public final File outputRoot;
 
@@ -41,6 +44,7 @@ public class DeduplicationMain {
 
             sourceLanguage = Language.fromString(cli.getOptionValue('s'));
             targetLanguage = Language.fromString(cli.getOptionValue('t'));
+            lengthThreshold = cli.hasOption("l") ? Integer.parseInt(cli.getOptionValue("lengthThreshold")) : 0;
 
             String[] roots = cli.getOptionValues("input");
             inputRoots = new File[roots.length];
@@ -63,6 +67,6 @@ public class DeduplicationMain {
         if (bilingualCorpora.isEmpty())
             throw new ParseException("Input path does not contains valid bilingual data");
 
-        ModernMT.training.deduplicate(bilingualCorpora, args.outputRoot);
+        ModernMT.training.deduplicate(bilingualCorpora, args.outputRoot, args.lengthThreshold);
     }
 }

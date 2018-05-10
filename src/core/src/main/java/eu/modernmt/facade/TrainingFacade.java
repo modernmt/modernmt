@@ -103,7 +103,7 @@ public class TrainingFacade {
         copyProcess.run();
     }
 
-    public void deduplicate(List<MultilingualCorpus> corpora, File outputDirectory) throws IOException {
+    public void deduplicate(List<MultilingualCorpus> corpora, File outputDirectory, int lengthThreshold) throws IOException {
         long lines = 0;
         for (long count : IOCorporaUtils.countLines(corpora).values())
             lines += count;
@@ -114,7 +114,7 @@ public class TrainingFacade {
         CorporaBloomFilter bloomFilter = new CorporaBloomFilter(lines);
 
         BatchCopyProcess copyProcess = new BatchCopyProcess(corpus ->
-                new LazyWriterMultilingualCorpus(bloomFilter.wrap(Corpora.rename(corpus, outputDirectory))));
+                new LazyWriterMultilingualCorpus(bloomFilter.wrap(Corpora.rename(corpus, outputDirectory), lengthThreshold)));
         copyProcess.addAll(corpora);
         copyProcess.run();
     }
