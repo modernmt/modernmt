@@ -44,7 +44,7 @@ public class DeduplicationMain {
 
             sourceLanguage = Language.fromString(cli.getOptionValue('s'));
             targetLanguage = Language.fromString(cli.getOptionValue('t'));
-            lengthThreshold = cli.hasOption("l") ? Integer.parseInt(cli.getOptionValue("lengthThreshold")) : 0;
+            lengthThreshold = cli.hasOption("l") ? Integer.parseInt(cli.getOptionValue("l")) : 0;
 
             String[] roots = cli.getOptionValues("input");
             inputRoots = new File[roots.length];
