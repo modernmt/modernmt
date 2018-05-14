@@ -80,7 +80,7 @@ class _DocumentTranslator:
 
     @staticmethod
     def _serialize_tokens(tokens):
-        tokens = [XMLEncoder.unescape(text) for text, _ in tokens if not XMLEncoder.is_xml_tag(text)]
+        tokens = [XMLEncoder.unescape(text) for text in tokens if not XMLEncoder.is_xml_tag(text)]
         return u' '.join(tokens)
 
     def _print(self, translation, nbest_out):
