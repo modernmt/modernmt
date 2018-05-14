@@ -103,12 +103,6 @@ class Training(EngineBuilder.Listener):
 
 class Tuning(ClusterNode.TuneListener):
     @staticmethod
-    def neural(max_lines=None, lr_delta=0.1, max_epochs=10, gpus=None):
-        return Tuning(lambda node, corpora, listener, debug:
-                      node.nmt_tune(corpora=corpora, debug=debug, listener=listener,
-                                    max_lines=max_lines, lr_delta=lr_delta, max_epochs=max_epochs, gpus=gpus), False)
-
-    @staticmethod
     def phrase_based(context_enabled=True, random_seeds=True, max_iterations=25, accuracy='default'):
         if accuracy == 'fast':
             accuracy = 10

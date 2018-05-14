@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import argparse
+import getpass
 import os
 import shutil
 import sys
-import getpass
 
 from cli import IllegalStateException, IllegalArgumentException, CorpusNotFoundInFolderException
 from cli.evaluation import Evaluator
@@ -11,8 +11,8 @@ from cli.libs import shell
 from cli.libs.datahub import DataHub
 from cli.libs.progressbar import Progressbar, UndefinedProgressbar
 from cli.mmt import BilingualCorpus, TMXCorpus, FileParallelCorpus
-from cli.mmt.engine import Engine
 from cli.mmt.cluster import ClusterNode
+from cli.mmt.engine import Engine
 from cli.mmt.processing import TrainingPreprocessor
 from cli.training import Training, Tuning
 from cli.translation import BatchTranslator, InteractiveTranslator, XLIFFTranslator
@@ -294,44 +294,30 @@ def main_tune(argv):
                                                                                  'logging and prevents temporary files '
                                                                                  'to be removed after execution')
 
-    # Phrase-based tuning
-    pb_arguments = parser.add_argument_group('phrase-based decoder only arguments')
-    pb_arguments.add_argument('--skip-context-analysis', dest='context_enabled', default=True, action='store_false',
-                              help='if set, context analysis is skipped')
-    pb_arguments.add_argument('--random-seeds', dest='random_seeds', help='if set, uses random seed for tuning',
-                              default=False, action='store_true')
-    pb_arguments.add_argument('--max-iterations', dest='max_iterations', default=25, type=int,
-                              help='set maximum iterations during tuning (default is 25)')
-    pb_arguments.add_argument('--accuracy', dest='accuracy', choices=['default', 'fast', 'best'], default='default',
-                              help='accuracy value set the trade-off between quality and speed, possible values are: '
-                                   '"default" - for good trade-off between translation quality and process duration, '
-                                   '"best" - for best translation quality and slower tuning process, '
-                                   '"fast" - for fastest tuning process at the expense of translation quality.')
-
-    # Neural tuning
-    nmt_arguments = parser.add_argument_group('neural decoder only arguments')
-    nmt_arguments.add_argument('--max-lines', dest='max_lines', default=None, type=int,
-                               help='the maximum number of lines to be randomly picked from the tuning corpora '
-                                    '(default: use all lines in the tuning corpora)')
-    nmt_arguments.add_argument('--learning-rate-step', dest='lr_delta', type=float, default=0.1,
-                               help='learning rate step to be used during tuning (default is 0.1)')
-    nmt_arguments.add_argument('--max-epochs', dest='max_epochs', default=10, type=int,
-                               help='the max number of epochs to be used during adaptation (default is 10)')
-    nmt_arguments.add_argument('--gpus', dest='gpus', nargs='+', type=int, default=None,
-                               help='if neural is set, you can specify the list of GPUs used during training '
-                                    '(default value is all available GPUs). Specify the value -1 to not use any GPU.')
+    parser.add_argument('--skip-context-analysis', dest='context_enabled', default=True, action='store_false',
+                        help='if set, context analysis is skipped')
+    parser.add_argument('--random-seeds', dest='random_seeds', help='if set, uses random seed for tuning',
+                        default=False, action='store_true')
+    parser.add_argument('--max-iterations', dest='max_iterations', default=25, type=int,
+                        help='set maximum iterations during tuning (default is 25)')
+    parser.add_argument('--accuracy', dest='accuracy', choices=['default', 'fast', 'best'], default='default',
+                        help='accuracy value set the trade-off between quality and speed, possible values are: '
+                             '"default" - for good trade-off between translation quality and process duration, '
+                             '"best" - for best translation quality and slower tuning process, '
+                             '"fast" - for fastest tuning process at the expense of translation quality.')
 
     # Parse args
     args = parser.parse_args(argv)
 
     # Setting up cluster node and tuning process
     node = ClusterNode.connect(args.engine)
+
     if node.engine.type() == 'neural':
-        tuning = Tuning.neural(max_lines=args.max_lines, lr_delta=args.lr_delta,
-                               max_epochs=args.max_epochs, gpus=args.gpus)
-    else:
-        tuning = Tuning.phrase_based(context_enabled=args.context_enabled, random_seeds=args.random_seeds,
-                                     max_iterations=args.max_iterations, accuracy=args.accuracy)
+        print 'Tuning process is only necessary for phrase-based engines. Aborting.'
+        return
+
+    tuning = Tuning.phrase_based(context_enabled=args.context_enabled, random_seeds=args.random_seeds,
+                                 max_iterations=args.max_iterations, accuracy=args.accuracy)
 
     if tuning.requires_node_running():
         ensure_running(node)
