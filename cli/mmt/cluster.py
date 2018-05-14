@@ -247,6 +247,9 @@ class ClusterNode(object):
     # (and therefore with an already existing node.status file)
     @staticmethod
     def connect(engine_name, silent=False):
+        if os.sep in engine_name:
+            raise IllegalArgumentException('Invalid engine name: "%s"' % engine_name)
+
         engine = None
 
         try:
