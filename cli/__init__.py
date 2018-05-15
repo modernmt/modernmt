@@ -1,10 +1,9 @@
+import glob
 import os
 
 __author__ = 'Davide Caroselli'
 
 __self_dir = os.path.dirname(os.path.realpath(__file__))
-
-MMT_VERSION = '2.4'
 
 PYOPT_DIR = os.path.join(__self_dir, 'opt')
 MMT_ROOT = os.path.abspath(os.path.join(__self_dir, os.pardir))
@@ -17,7 +16,14 @@ PLUGINS_DIR = os.path.join(BUILD_DIR, 'plugins')
 LIB_DIR = os.path.join(BUILD_DIR, 'lib')
 BIN_DIR = os.path.join(BUILD_DIR, 'bin')
 
-MMT_JAR = os.path.join(BUILD_DIR, 'mmt-' + MMT_VERSION + '.jar')
+
+def mmt_jar(pattern):
+    jars = [f for f in glob.glob(pattern)]
+    jars.sort(key=lambda x: os.path.getmtime(x))
+    return jars[-1]
+
+
+MMT_JAR = mmt_jar(os.path.join(BUILD_DIR, 'mmt-*.jar'))
 
 # Environment setup
 os.environ['LD_LIBRARY_PATH'] = os.pathsep.join(
