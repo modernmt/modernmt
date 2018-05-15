@@ -1,5 +1,6 @@
 package eu.modernmt.model.corpus;
 
+import eu.modernmt.io.FileProxy;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
@@ -45,6 +46,27 @@ public class Corpora {
         } else {
             throw new IllegalArgumentException("Unknown multilingual corpus: " + corpus.getClass().getSimpleName());
         }
+    }
+
+    public static long fileSize(MultilingualCorpus corpus) {
+        corpus = unwrap(corpus);
+
+        if (corpus instanceof TMXCorpus) {
+            TMXCorpus tmxCorpus = (TMXCorpus) corpus;
+            return fileSize(tmxCorpus.getFile());
+        } else if (corpus instanceof ParallelFileCorpus) {
+            ParallelFileCorpus parallelFileCorpus = ((ParallelFileCorpus) corpus);
+            return fileSize(parallelFileCorpus.getSourceFile()) + fileSize(parallelFileCorpus.getTargetFile());
+        } else {
+            throw new IllegalArgumentException("Unknown multilingual corpus: " + corpus.getClass().getSimpleName());
+        }
+    }
+
+    private static long fileSize(FileProxy proxy) {
+        if (proxy instanceof FileProxy.NativeFileProxy)
+            return ((FileProxy.NativeFileProxy) proxy).getFile().length();
+        else
+            return -1;
     }
 
     public static Map<LanguagePair, Integer> countLines(MultilingualCorpus corpus) throws IOException {

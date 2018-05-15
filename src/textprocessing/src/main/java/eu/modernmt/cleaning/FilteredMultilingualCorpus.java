@@ -102,4 +102,8 @@ public class FilteredMultilingualCorpus extends BaseMultilingualCorpus implement
         return corpus;
     }
 
+    @Override
+    public String toString() {
+        return corpus.toString();
+    }
 }

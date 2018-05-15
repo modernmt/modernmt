@@ -51,6 +51,9 @@ public class BatchCopyProcess {
     }
 
     public void run() throws IOException {
+        if (this.corpora.isEmpty())
+            return;
+
         int totalCorporaCount = this.corpora.size();
         int ioThreads = Math.min(Math.min(this.ioThreads, MAX_IO_THREADS), totalCorporaCount);
 

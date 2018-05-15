@@ -26,7 +26,8 @@ import java.util.Map;
  */
 public class TrainingFacade {
 
-    public static final int DEFAULT_PARTITION_SIZE = 2000;
+    private static final int DEFAULT_PARTITION_SIZE = 2000;
+    private static final long DEFAULT_MAX_FILE_SIZE_PARALLEL_CLEANING = 2L * 1024L * 1024L * 1024L; // 2Gb
 
     public static class TrainingOptions {
 
@@ -42,15 +43,31 @@ public class TrainingFacade {
     }
 
     public void clean(List<MultilingualCorpus> corpora, File outputDirectory, CorporaCleaning.Options options, BatchCopyProcess.OutputCorpusFactory factory) throws IOException {
-        BatchCopyProcess copyProcess = new BatchCopyProcess(corpus -> new LazyWriterMultilingualCorpus(factory.getOutput(corpus)));
+        long sizeThreshold = DEFAULT_MAX_FILE_SIZE_PARALLEL_CLEANING;
 
-        for (MultilingualCorpus corpus : corpora)
-            copyProcess.add(CorporaCleaning.wrap(corpus, options));
+        long maxMemory = Runtime.getRuntime().maxMemory();
+        if (maxMemory < Long.MAX_VALUE)
+            sizeThreshold = maxMemory / 10;
+
+        BatchCopyProcess parallelCopyProcess = new BatchCopyProcess(c -> new LazyWriterMultilingualCorpus(factory.getOutput(c)));
+        BatchCopyProcess serializedCopyProcess = new BatchCopyProcess(c -> new LazyWriterMultilingualCorpus(factory.getOutput(c)));
+        serializedCopyProcess.setIoThreads(1);
+
+        for (MultilingualCorpus corpus : corpora) {
+            long fileSize = Corpora.fileSize(corpus);
+            corpus = CorporaCleaning.wrap(corpus, options);
+
+            if (fileSize < sizeThreshold)
+                parallelCopyProcess.add(corpus);
+            else
+                serializedCopyProcess.add(corpus);
+        }
 
         FileUtils.deleteDirectory(outputDirectory);
         FileUtils.forceMkdir(outputDirectory);
 
-        copyProcess.run();
+        parallelCopyProcess.run();
+        serializedCopyProcess.run();
     }
 
     public void preprocess(LanguagePair language, List<MultilingualCorpus> multilingualCorpora, List<Corpus> monolingualCorpora, File destFolder) throws ProcessingException, IOException {

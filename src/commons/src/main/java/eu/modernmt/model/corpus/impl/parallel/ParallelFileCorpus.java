@@ -49,6 +49,14 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
         return language;
     }
 
+    public FileProxy getSourceFile() {
+        return source;
+    }
+
+    public FileProxy getTargetFile() {
+        return target;
+    }
+
     @Override
     public Corpus getCorpus(LanguagePair language, boolean source) {
         if (this.language.equals(language))

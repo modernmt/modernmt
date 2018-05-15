@@ -35,6 +35,10 @@ public class TMXCorpus extends BaseMultilingualCorpus {
         this.tmx = tmx;
     }
 
+    public FileProxy getFile() {
+        return tmx;
+    }
+
     @Override
     public String getName() {
         return name;
