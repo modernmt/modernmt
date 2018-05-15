@@ -2,10 +2,9 @@ package eu.modernmt.cli;
 
 import eu.modernmt.cleaning.CorporaCleaning;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
+import eu.modernmt.cli.utils.FileFormat;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguageIndex;
-import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.cli.*;
@@ -32,6 +31,7 @@ public class CleaningPipelineMain {
             Option targetLanguage = Option.builder("t").hasArg().required().build();
             Option inputPath = Option.builder().longOpt("input").hasArgs().required().build();
             Option outputPath = Option.builder().longOpt("output").hasArg().required().build();
+            Option outputFormat = Option.builder().longOpt("output-format").hasArgs().build();
             Option filters = Option.builder().longOpt("filters").hasArgs().build();
 
             cliOptions = new Options();
@@ -39,6 +39,7 @@ public class CleaningPipelineMain {
             cliOptions.addOption(targetLanguage);
             cliOptions.addOption(inputPath);
             cliOptions.addOption(outputPath);
+            cliOptions.addOption(outputFormat);
             cliOptions.addOption(filters);
         }
 
@@ -46,6 +47,7 @@ public class CleaningPipelineMain {
         public final Language targetLanguage;
         public final File[] inputRoots;
         public final File outputRoot;
+        public final FileFormat outputFormat;
         public final Filter[] filters;
 
         public Args(String[] args) throws ParseException {
@@ -61,6 +63,7 @@ public class CleaningPipelineMain {
                 inputRoots[i] = new File(roots[i]);
 
             outputRoot = new File(cli.getOptionValue("output"));
+            outputFormat = cli.hasOption("output-format") ? FileFormat.fromName(cli.getOptionValue("output-format")) : null;
 
             if (cli.hasOption("filters")) {
                 String[] values = cli.getOptionValues("filters");
@@ -123,7 +126,12 @@ public class CleaningPipelineMain {
             }
         }
 
-        ModernMT.training.clean(bilingualCorpora, args.outputRoot, options);
+        if (args.outputFormat == null) {
+            ModernMT.training.clean(bilingualCorpora, args.outputRoot, options);
+        } else {
+            ModernMT.training.clean(bilingualCorpora, args.outputRoot, options,
+                    corpus -> args.outputFormat.rename(args.sourceLanguage, args.targetLanguage, corpus, args.outputRoot));
+        }
     }
 
 }

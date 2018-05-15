@@ -1,71 +1,19 @@
 package eu.modernmt.cli;
 
 import eu.modernmt.cli.log4j.Log4jConfiguration;
+import eu.modernmt.cli.utils.FileFormat;
 import eu.modernmt.io.IOCorporaUtils;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.MultilingualCorpus;
-import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
-import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
-import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.Level;
 
 import java.io.File;
-import java.util.HashMap;
 
 /**
  * Created by davide on 04/07/16.
  */
 public class ConvertMain {
-
-    private static final HashMap<String, InputFormat> FORMATS;
-
-    //input formats
-    static {
-        FORMATS = new HashMap<>();
-        FORMATS.put("tmx", new TMXInputFormat());
-        FORMATS.put("parallel", new ParallelFileInputFormat());
-        FORMATS.put("compact", new CompactInputFormat());
-    }
-
-    private interface InputFormat {
-        MultilingualCorpus parse(Language sourceLanguage, Language targetLanguage, File[] files) throws ParseException;
-
-    }
-
-    private static class TMXInputFormat implements InputFormat {
-        @Override
-        public MultilingualCorpus parse(Language sourceLanguage, Language targetLanguage, File[] files) throws ParseException {
-            if (files.length != 1)
-                throw new ParseException("Invalid number of arguments: expected 1 file");
-            return new TMXCorpus(files[0]);
-        }
-    }
-
-    private static class CompactInputFormat implements InputFormat {
-        @Override
-        public MultilingualCorpus parse(Language sourceLanguage, Language targetLanguage, File[] files) throws ParseException {
-            if (files.length != 1)
-                throw new ParseException("Invalid number of arguments: expected 1 file");
-            return new CompactFileCorpus(files[0]);
-        }
-    }
-
-    private static class ParallelFileInputFormat implements InputFormat {
-        @Override
-        public MultilingualCorpus parse(Language sourceLanguage, Language targetLanguage, File[] files) throws ParseException {
-            if (files.length != 2)
-                throw new ParseException("Invalid number of arguments: expected 2 files");
-            if (sourceLanguage == null)
-                throw new ParseException("Invalid input: source language is mandatory for parallel corpora");
-            if (targetLanguage == null)
-                throw new ParseException("Invalid input: target language is mandatory for parallel corpora");
-
-            return new ParallelFileCorpus(new LanguagePair(sourceLanguage, targetLanguage), files[0], files[1]);
-        }
-    }
-
 
     private static class Args {
 
@@ -95,10 +43,7 @@ public class ConvertMain {
 
         private MultilingualCorpus getCorpusInstance(CommandLine cli, String prefix) throws ParseException {
             String formatName = cli.getOptionValue(prefix + "-format");
-            InputFormat format = FORMATS.get(formatName.toLowerCase());
-
-            if (format == null)
-                throw new ParseException("Invalid format '" + formatName + "', must be one of " + FORMATS.keySet());
+            FileFormat format = FileFormat.fromName(formatName);
 
             String[] arg = cli.getOptionValues(prefix);
             File[] files = new File[arg.length];

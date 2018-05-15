@@ -1,9 +1,7 @@
 package eu.modernmt.facade;
 
 import eu.modernmt.cleaning.CorporaCleaning;
-import eu.modernmt.engine.Engine;
 import eu.modernmt.io.IOCorporaUtils;
-import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
@@ -40,7 +38,11 @@ public class TrainingFacade {
     }
 
     public void clean(List<MultilingualCorpus> corpora, File outputDirectory, CorporaCleaning.Options options) throws IOException {
-        BatchCopyProcess copyProcess = new BatchCopyProcess(corpus -> new LazyWriterMultilingualCorpus(Corpora.rename(corpus, outputDirectory)));
+        this.clean(corpora, outputDirectory, options, corpus -> Corpora.rename(corpus, outputDirectory));
+    }
+
+    public void clean(List<MultilingualCorpus> corpora, File outputDirectory, CorporaCleaning.Options options, BatchCopyProcess.OutputCorpusFactory factory) throws IOException {
+        BatchCopyProcess copyProcess = new BatchCopyProcess(corpus -> new LazyWriterMultilingualCorpus(factory.getOutput(corpus)));
 
         for (MultilingualCorpus corpus : corpora)
             copyProcess.add(CorporaCleaning.wrap(corpus, options));
