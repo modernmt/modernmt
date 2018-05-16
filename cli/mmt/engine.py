@@ -56,25 +56,18 @@ class FastAlign:
         self._align_bin = os.path.join(cli.BIN_DIR, 'fa_align')
         self._export_bin = os.path.join(cli.BIN_DIR, 'fa_export')
 
-    def build(self, corpora, working_dir='.', log=None):
+    def build(self, corpora, log=None):
         if log is None:
             log = shell.DEVNULL
 
         shutil.rmtree(self._model, ignore_errors=True)
         fileutils.makedirs(self._model, exist_ok=True)
 
-        if not os.path.isdir(working_dir):
-            fileutils.makedirs(working_dir, exist_ok=True)
+        source_path = set([corpus.get_folder() for corpus in corpora])
+        assert len(source_path) == 1
+        source_path = source_path.pop()
 
-        merged_corpus = BilingualCorpus.make_parallel('merge', working_dir, (self._source_lang, self._target_lang))
-
-        fileutils.merge([corpus.get_file(self._source_lang) for corpus in corpora],
-                        merged_corpus.get_file(self._source_lang))
-        fileutils.merge([corpus.get_file(self._target_lang) for corpus in corpora],
-                        merged_corpus.get_file(self._target_lang))
-
-        command = [self._build_bin,
-                   '-s', merged_corpus.get_file(self._source_lang), '-t', merged_corpus.get_file(self._target_lang),
+        command = [self._build_bin, '-s', self._source_lang, '-t', self._target_lang, '-i', source_path,
                    '-m', self._model, '-I', '4']
         shell.execute(command, stdout=log, stderr=log)
 
@@ -583,12 +576,7 @@ class EngineBuilder:
     def _train_aligner(self, args, skip=False, log=None, delete_on_exit=False):
         if not skip:
             corpora = filter(None, [args.processed_bilingual_corpora, args.bilingual_corpora])[0]
-
-            working_dir = self._get_tempdir('aligner', delete_if_exists=True)
-            self._engine.aligner.build(corpora, working_dir, log=log)
-
-            if delete_on_exit:
-                shutil.rmtree(working_dir, ignore_errors=True)
+            self._engine.aligner.build(corpora, log=log)
 
     @Step('Writing config', optional=False, hidden=True)
     def _write_config(self, _):

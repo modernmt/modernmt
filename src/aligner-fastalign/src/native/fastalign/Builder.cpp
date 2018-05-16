@@ -190,10 +190,9 @@ void Builder::AllocateTTableSpace(Model *_model, const unordered_map<word_t, wor
     }
 }
 
-void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const Corpus &corpus, double *n_target_tokens,
-                          vector<pair<pair<length_t, length_t>, size_t>> *size_counts) {
-    BuilderModel *model = (BuilderModel *) _model;
-    CorpusReader reader(corpus, vocab, max_length, true);
+void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const std::vector<Corpus> &corpora,
+                          double *n_target_tokens, vector<pair<pair<length_t, length_t>, size_t>> *size_counts) {
+    auto *model = (BuilderModel *) _model;
 
     unordered_map<pair<length_t, length_t>, size_t, LengthPairHash> size_counts_;
 
@@ -202,36 +201,40 @@ void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const Corpus &
     size_t buffer_items = 0;
     wordvec_t src, trg;
 
-    while (reader.Read(src, trg)) {
-        if (model->is_reverse)
-            swap(src, trg);
+    for (auto corpus = corpora.begin(); corpus != corpora.end(); ++corpus) {
+        CorpusReader reader(*corpus, vocab, max_length, true);
 
-        *n_target_tokens += trg.size();
+        while (reader.Read(src, trg)) {
+            if (model->is_reverse)
+                swap(src, trg);
 
-        if (use_null) {
-            for (size_t idxf = 0; idxf < trg.size(); ++idxf) {
-                buffer[kNullWord].push_back(trg[idxf]);
+            *n_target_tokens += trg.size();
+
+            if (use_null) {
+                for (size_t idxf = 0; idxf < trg.size(); ++idxf) {
+                    buffer[kNullWord].push_back(trg[idxf]);
+                }
+
+                buffer_items += trg.size();
             }
 
-            buffer_items += trg.size();
-        }
-
-        for (size_t idxe = 0; idxe < src.size(); ++idxe) {
-            for (size_t idxf = 0; idxf < trg.size(); ++idxf) {
-                maxSourceWord = max(maxSourceWord, src[idxe]);
-                buffer[src[idxe]].push_back(trg[idxf]);
+            for (size_t idxe = 0; idxe < src.size(); ++idxe) {
+                for (size_t idxf = 0; idxf < trg.size(); ++idxf) {
+                    maxSourceWord = max(maxSourceWord, src[idxe]);
+                    buffer[src[idxe]].push_back(trg[idxf]);
+                }
+                buffer_items += trg.size();
             }
-            buffer_items += trg.size();
-        }
 
-        if (buffer_items > buffer_size * 100) {
-            AllocateTTableSpace(model, buffer, maxSourceWord);
-            buffer_items = 0;
-            maxSourceWord = 0;
-            buffer.clear();
-        }
+            if (buffer_items > buffer_size * 100) {
+                AllocateTTableSpace(model, buffer, maxSourceWord);
+                buffer_items = 0;
+                maxSourceWord = 0;
+                buffer.clear();
+            }
 
-        ++size_counts_[make_pair<length_t, length_t>((length_t) trg.size(), (length_t) src.size())];
+            ++size_counts_[make_pair<length_t, length_t>((length_t) trg.size(), (length_t) src.size())];
+        }
     }
 
     for (auto p = size_counts_.begin(); p != size_counts_.end(); ++p) {
@@ -241,19 +244,17 @@ void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const Corpus &
     AllocateTTableSpace(model, buffer, maxSourceWord);
 }
 
-void Builder::Build(const Corpus &corpus, const string &path) {
-    CorpusReader reader(corpus, nullptr, max_length, true);
-
+void Builder::Build(const std::vector<Corpus> &corpora, const string &path) {
     if (listener) listener->VocabularyBuildBegin();
-    const Vocabulary *vocab = Vocabulary::FromCorpus(reader, vocabulary_threshold);
+    const Vocabulary *vocab = Vocabulary::FromCorpora(corpora, max_length, vocabulary_threshold);
     if (listener) listener->VocabularyBuildEnd();
 
-    BuilderModel *forward = (BuilderModel *) BuildModel(vocab, corpus, true);
+    BuilderModel *forward = (BuilderModel *) BuildModel(vocab, corpora, true);
     fs::path fwd_model_filename = fs::absolute(fs::path(path) / fs::path("fwd_model.tmp"));
     forward->Store(fwd_model_filename.string());
     delete forward;
 
-    BuilderModel *backward = (BuilderModel *) BuildModel(vocab, corpus, false);
+    BuilderModel *backward = (BuilderModel *) BuildModel(vocab, corpora, false);
     fs::path bwd_model_filename = fs::absolute(fs::path(path) / fs::path("bwd_model.tmp"));
     backward->Store(bwd_model_filename.string());
     delete backward;
@@ -275,7 +276,7 @@ void Builder::Build(const Corpus &corpus, const string &path) {
     if (listener) listener->ModelDumpEnd();
 }
 
-Model *Builder::BuildModel(const Vocabulary *vocab, const Corpus &corpus, bool forward) {
+Model *Builder::BuildModel(const Vocabulary *vocab, const std::vector<Corpus> &corpora, bool forward) {
     BuilderModel *model = new BuilderModel(!forward, use_null, favor_diagonal, prob_align_null,
                                            initial_diagonal_tension);
 
@@ -285,7 +286,7 @@ Model *Builder::BuildModel(const Vocabulary *vocab, const Corpus &corpus, bool f
     double n_target_tokens = 0;
 
     if (listener) listener->Begin(forward, kBuilderStepSetup, 0);
-    InitialPass(vocab, model, corpus, &n_target_tokens, &size_counts);
+    InitialPass(vocab, model, corpora, &n_target_tokens, &size_counts);
     if (listener) listener->End(forward, kBuilderStepSetup, 0);
 
     for (int iter = 0; iter < iterations; ++iter) {
@@ -293,14 +294,16 @@ Model *Builder::BuildModel(const Vocabulary *vocab, const Corpus &corpus, bool f
 
         double emp_feat = 0.0;
 
-        CorpusReader reader(corpus, vocab, max_length, true);
-
         vector<pair<wordvec_t, wordvec_t>> batch;
 
         if (listener) listener->Begin(forward, kBuilderStepAligning, iter + 1);
-        while (reader.Read(batch, buffer_size)) {
-            emp_feat += model->ComputeAlignments(batch, model, NULL);
-            batch.clear();
+        for (auto corpus = corpora.begin(); corpus != corpora.end(); ++corpus) {
+            CorpusReader reader(*corpus, vocab, max_length, true);
+
+            while (reader.Read(batch, buffer_size)) {
+                emp_feat += model->ComputeAlignments(batch, model, NULL);
+                batch.clear();
+            }
         }
         if (listener) listener->End(forward, kBuilderStepAligning, iter + 1);
 

@@ -21,9 +21,10 @@ namespace mmt {
         class Vocabulary {
         public:
 
-            static const Vocabulary *FromCorpus(CorpusReader &reader, double threshold = 0.);
+            static const Vocabulary *
+            FromCorpora(const std::vector<Corpus> &corpora, size_t maxLineLength, double threshold = 0.);
 
-            Vocabulary(const std::string &filename, bool direct = true, bool reverse = true);
+            explicit Vocabulary(const std::string &filename, bool direct = true, bool reverse = true);
 
             void Store(const std::string &filename) const;
 

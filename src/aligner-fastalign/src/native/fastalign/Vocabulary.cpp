@@ -53,18 +53,23 @@ inline void PruneTerms(unordered_map<string, size_t> &terms, double threshold) {
     }
 }
 
-const Vocabulary *Vocabulary::FromCorpus(CorpusReader &reader, double threshold) {
+const Vocabulary *Vocabulary::FromCorpora(const vector<Corpus> &corpora, size_t maxLineLength, double threshold) {
     // For model efficiency all source words have the lowest id possible
     unordered_map<string, size_t> src_terms;
     unordered_map<string, size_t> trg_terms;
 
     vector<string> src, trg;
-    while (reader.Read(src, trg)) {
-        for (auto w = src.begin(); w != src.end(); ++w)
-            src_terms[*w] += 1;
 
-        for (auto w = trg.begin(); w != trg.end(); ++w)
-            trg_terms[*w] += 1;
+    for (auto corpus = corpora.begin(); corpus != corpora.end(); ++corpus) {
+        CorpusReader reader(*corpus, nullptr, maxLineLength, true);
+
+        while (reader.Read(src, trg)) {
+            for (auto w = src.begin(); w != src.end(); ++w)
+                src_terms[*w] += 1;
+
+            for (auto w = trg.begin(); w != trg.end(); ++w)
+                trg_terms[*w] += 1;
+        }
     }
 
     if (threshold > 0) {

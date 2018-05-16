@@ -24,8 +24,9 @@ using namespace std;
 using namespace mmt;
 using namespace mmt::fastalign;
 
-string source_input;
-string target_input;
+string source_lang;
+string target_lang;
+string input_path;
 string model_path;
 
 Options builderOptions;
@@ -33,18 +34,20 @@ Options builderOptions;
 struct option options[] = {
         {"source",     required_argument, NULL, 0},
         {"target",     required_argument, NULL, 0},
+        {"input",      required_argument, NULL, 0},
         {"model",      required_argument, NULL, 0},
         {"threads",    optional_argument, NULL, 0},
         {"iterations", optional_argument, NULL, 0},
         {"pruning",    optional_argument, NULL, 0},
         {"length",     optional_argument, NULL, 0},
-        {0,            0, 0,                    0}
+        {0, 0, 0,                               0}
 };
 
 void help(const char *name) {
     cerr << "Usage: " << name << " -s file.fr -t file.en -m model\n"
-         << "  -s: [REQ] Input source corpus\n"
-         << "  -t: [REQ] Input target corpus\n"
+         << "  -s: [REQ] Source language\n"
+         << "  -t: [REQ] Target language\n"
+         << "  -i: [REQ] Input path with training corpora\n"
          << "  -m: [REQ] Output model path\n"
          << "  -I: number of iterations in EM training (default = 5)\n"
          << "  -n: Number of threads. (default = number of CPUs)\n"
@@ -55,15 +58,18 @@ void help(const char *name) {
 bool InitCommandLine(int argc, char **argv) {
     while (true) {
         int oi;
-        int c = getopt_long(argc, argv, "s:t:m:I:n:p:l:", options, &oi);
+        int c = getopt_long(argc, argv, "s:t:i:m:I:n:p:l:", options, &oi);
         if (c == -1) break;
 
         switch (c) {
             case 's':
-                source_input = optarg;
+                source_lang = optarg;
                 break;
             case 't':
-                target_input = optarg;
+                target_lang = optarg;
+                break;
+            case 'i':
+                input_path = optarg;
                 break;
             case 'm':
                 model_path = optarg;
@@ -78,14 +84,14 @@ bool InitCommandLine(int argc, char **argv) {
                 builderOptions.pruning_threshold = atof(optarg);
                 break;
             case 'l':
-                builderOptions.max_line_length = atoi(optarg);
+                builderOptions.max_line_length = static_cast<size_t>(atoi(optarg));
                 break;
             default:
                 return false;
         }
     }
 
-    return !source_input.empty() && !target_input.empty() && !model_path.empty();
+    return !source_lang.empty() && !target_lang.empty() && !input_path.empty() && !model_path.empty();
 }
 
 class ProcessListener : public Builder::Listener {
@@ -182,10 +188,11 @@ int main(int argc, char **argv) {
     }
 
     ProcessListener listener;
-    Corpus corpus(source_input, target_input);
+    vector<Corpus> corpora;
+    Corpus::List(input_path, source_lang, target_lang, corpora);
 
     Builder builder(builderOptions);
     builder.setListener(&listener);
 
-    builder.Build(corpus, model_path);
+    builder.Build(corpora, model_path);
 }

@@ -51,9 +51,9 @@ namespace mmt {
 
                 virtual void IterationBegin(bool forward, int iteration) = 0;
 
-                virtual void Begin(bool forward, const BuilderStep step, int iteration) = 0;
+                virtual void Begin(bool forward, BuilderStep step, int iteration) = 0;
 
-                virtual void End(bool forward, const BuilderStep step, int iteration) = 0;
+                virtual void End(bool forward, BuilderStep step, int iteration) = 0;
 
                 virtual void IterationEnd(bool forward, int iteration) = 0;
 
@@ -64,11 +64,11 @@ namespace mmt {
                 virtual void ModelDumpEnd() = 0;
             };
 
-            Builder(Options options = Options());
+            explicit Builder(Options options = Options());
 
             void setListener(Listener *listener);
 
-            void Build(const Corpus &corpus, const std::string &path);
+            void Build(const std::vector<Corpus> &corpora, const std::string &path);
 
         private:
             const double initial_diagonal_tension;
@@ -87,13 +87,14 @@ namespace mmt {
 
             Listener *listener;
 
-            void AllocateTTableSpace(Model *_model, const std::unordered_map<word_t , wordvec_t> &values,
-                                     const word_t sourceWordMaxValue);
+            void AllocateTTableSpace(Model *_model, const std::unordered_map<word_t, wordvec_t> &values,
+                                     word_t sourceWordMaxValue);
 
-            void InitialPass(const Vocabulary *vocab, Model *model, const Corpus &corpus, double *n_target_tokens,
+            void InitialPass(const Vocabulary *vocab, Model *model, const std::vector<Corpus> &corpora,
+                             double *n_target_tokens,
                              std::vector<std::pair<std::pair<length_t, length_t>, size_t>> *size_counts);
 
-            Model *BuildModel(const Vocabulary *vocab, const Corpus &corpus, bool forward);
+            Model *BuildModel(const Vocabulary *vocab, const std::vector<Corpus> &corpora, bool forward);
 
             void MergeAndStore(const std::string &fwd_path, const std::string &bwd_path, const std::string &out_path);
         };
