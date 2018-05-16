@@ -4,8 +4,8 @@ package eu.modernmt.processing.tokenizer.lucene;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
-import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.processing.string.SentenceBuilder;
+import eu.modernmt.processing.tokenizer.TokenizedString;
+import eu.modernmt.processing.tokenizer.BaseTokenizer;
 import eu.modernmt.processing.tokenizer.lucene.analyzers.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -15,31 +15,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Created by davide on 13/11/15.
- * Updated by andrearossi on 01/03/2017
- * <p>
- * A LuceneTokenizer is an object that performs word tokenization of a string
- * based on the Lucene tokenization and analysis library.
- * <p>
- * It has knowledge of all the tokenizer classes (that Lucene calls analyzers)
- * that Lucene can employ, one for each source language that Lucene supports.
- * The Language that the Lucene library supports are:
- * Arabic, German, Persian, Hindi, Thai, Hebrew, Chinese .
- * (for which Lucene has specific analyzer classes)
- * and Bulgarian, Brazilian, Catalan, Czech, Danish, Greek, English, Spanish, Basque
- * Finnish, French, Irish, Galician, Hungarian, Armenian, Indonesian, Italian,
- * Latvian, Dutch, Norwegian, Portuguese, Romanian, Russian, Swedish, Turkish
- * (that Lucene handles with a common, standard analyzer).
- */
-public class LuceneTokenizer extends TextProcessor<SentenceBuilder, SentenceBuilder> {
+public class LuceneTokenAnnotator implements BaseTokenizer.Annotator {
 
-    /*For each language that the Lucene library supports, this map stores a couple
-    <language -> Class of the analyzer for that language in the Lucene library>
-
-	The language is a Language object, obtained as Language.LANGUAGE_NAME
-	The Analyzer is taken from Lucene library as AnalyzerClassName.class.
-	In Lucene, all specific analyzers extend a common interface Analyzer.*/
     private static final Map<Language, Class<? extends Analyzer>> ANALYZERS = new HashMap<>();
 
     static {
@@ -78,38 +55,35 @@ public class LuceneTokenizer extends TextProcessor<SentenceBuilder, SentenceBuil
         ANALYZERS.put(Language.TURKISH, LiteStandardAnalyzer.class);
     }
 
-    /*among all analyzers for all Language supported by Lucene,
-     * this is the analyzer for the source language
-     * (the language of the SentenceBuilder string to edit)*/
     private final Analyzer analyzer;
 
-    public LuceneTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
-        super(sourceLanguage, targetLanguage);
-
-        Class<? extends Analyzer> analyzerClass = ANALYZERS.get(sourceLanguage);
+    public static LuceneTokenAnnotator forLanguage(Language language) throws UnsupportedLanguageException {
+        Class<? extends Analyzer> analyzerClass = ANALYZERS.get(language);
         if (analyzerClass == null)
-            throw new UnsupportedLanguageException(sourceLanguage);
+            throw new UnsupportedLanguageException(language);
 
         try {
-            this.analyzer = analyzerClass.newInstance();
+            return new LuceneTokenAnnotator(analyzerClass.newInstance());
         } catch (IllegalAccessException | InstantiationException e) {
             throw new Error("Error during class instantiation: " + analyzerClass.getName(), e);
         }
     }
 
+    private LuceneTokenAnnotator(Analyzer analyzer) {
+        this.analyzer = analyzer;
+    }
+
     @Override
-    public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) throws ProcessingException {
-        char[] chars = builder.toCharArray();
+    public void annotate(TokenizedString string) throws ProcessingException {
+        char[] chars = string.toString().toCharArray();
 
         TokenStream stream = null;
 
         try {
-            stream = analyzer.tokenStream("none", builder.toString());
+            stream = analyzer.tokenStream("none", string.toString());
             stream.reset();
 
             OffsetAttribute offsetAttribute = stream.getAttribute(OffsetAttribute.class);
-
-            SentenceBuilder.Editor editor = builder.edit();
 
             int maxOffset = 0;
             while (stream.incrementToken()) {
@@ -123,10 +97,10 @@ public class LuceneTokenizer extends TextProcessor<SentenceBuilder, SentenceBuil
                     break;
 
                 if (startOffset > maxOffset && maxOffset < chars.length)
-                    annotate(editor, chars, maxOffset, startOffset - maxOffset);
+                    annotate(string, chars, maxOffset, startOffset - maxOffset);
 
                 if (endOffset > startOffset)
-                    annotate(editor, chars, startOffset, endOffset - startOffset);
+                    annotate(string, chars, startOffset, endOffset - startOffset);
 
                 maxOffset = endOffset;
 
@@ -138,9 +112,7 @@ public class LuceneTokenizer extends TextProcessor<SentenceBuilder, SentenceBuil
             stream.close();
 
             if (maxOffset < chars.length)
-                annotate(editor, chars, maxOffset, chars.length - maxOffset);
-
-            return editor.commit();
+                annotate(string, chars, maxOffset, chars.length - maxOffset);
         } catch (IOException e) {
             throw new ProcessingException(e.getMessage(), e);
         } finally {
@@ -153,13 +125,13 @@ public class LuceneTokenizer extends TextProcessor<SentenceBuilder, SentenceBuil
         }
     }
 
-    private static void annotate(SentenceBuilder.Editor editor, char[] chars, int offset, int length) {
+    private static void annotate(TokenizedString string, char[] chars, int offset, int length) {
         int beginIndex = -1;
 
         for (int i = 0; i < length; i++) {
             if (Character.isWhitespace(chars[offset + i])) {
                 if (beginIndex >= 0) {
-                    editor.setWord(beginIndex + offset, i - beginIndex, null);
+                    string.setWord(beginIndex + offset, i + offset);
                     beginIndex = -1;
                 }
             } else {
@@ -169,6 +141,7 @@ public class LuceneTokenizer extends TextProcessor<SentenceBuilder, SentenceBuil
         }
 
         if (beginIndex >= 0)
-            editor.setWord(beginIndex + offset, length - beginIndex, null);
+            string.setWord(beginIndex + offset, length + offset);
     }
+
 }

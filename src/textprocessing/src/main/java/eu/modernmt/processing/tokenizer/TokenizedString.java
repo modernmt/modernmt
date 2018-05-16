@@ -1,14 +1,11 @@
-package eu.modernmt.processing.tokenizer.jflex;
+package eu.modernmt.processing.tokenizer;
 
 import eu.modernmt.processing.string.SentenceBuilder;
 
 import java.io.CharArrayReader;
 import java.io.Reader;
 
-/**
- * Created by davide on 01/02/16.
- */
-public class TokensAnnotatedString {
+public class TokenizedString {
 
     public static final byte SPLIT_FLAG = (byte) (1);
     public static final byte PROTECTED_FLAG = (byte) (1 << 1);
@@ -16,20 +13,21 @@ public class TokensAnnotatedString {
     private static final int WHITESPACE = 1;
     private static final int BREAK = 3;
 
-    private char[] chars;
+    private final String string;
+    private final char[] chars;
+    private final int length;
     private byte[] flags;
-    private int length;
 
     private static boolean isWhitespace(char c) {
         return ((0x0009 <= c && c <= 0x000D) || c == 0x0020 || c == 0x00A0 || c == 0x1680 ||
                 (0x2000 <= c && c <= 0x200A) || c == 0x202F || c == 0x205F || c == 0x3000);
     }
 
-    public TokensAnnotatedString(String string, boolean splitCJKV) {
+    public TokenizedString(String string, boolean splitCJKV) {
         this(string.toCharArray(), splitCJKV);
     }
 
-    public TokensAnnotatedString(char[] source, boolean splitCJKV) {
+    public TokenizedString(char[] source, boolean splitCJKV) {
         this.chars = new char[source.length + 2];
         this.flags = new byte[source.length + 3];
 
@@ -87,6 +85,16 @@ public class TokensAnnotatedString {
         this.length = index + 1;
         this.chars[0] = this.chars[this.length - 1] = ' ';
         this.flags[this.length] = SPLIT_FLAG;
+        this.string = new String(chars, 0, length);
+    }
+
+    public void setWord(int start, int end) {
+        for (int i = start + 1; i < end; i++) {
+            this.flags[i] |= PROTECTED_FLAG;
+        }
+
+        this.flags[start] = SPLIT_FLAG;
+        this.flags[end] = SPLIT_FLAG;
     }
 
     public void protect(int start, int end) {
@@ -113,8 +121,8 @@ public class TokensAnnotatedString {
         for (int i = 0; i < length + 1; i++) {
             byte flag = this.flags[i];
 
-            boolean protect = (flag & TokensAnnotatedString.PROTECTED_FLAG) > 0;
-            boolean split = (flag & TokensAnnotatedString.SPLIT_FLAG) > 0;
+            boolean protect = (flag & PROTECTED_FLAG) > 0;
+            boolean split = (flag & SPLIT_FLAG) > 0;
 
             if (!protect && split) {
                 int tokenLength = 1 + tokenEnd - tokenStart;
@@ -142,7 +150,7 @@ public class TokensAnnotatedString {
 
     @Override
     public String toString() {
-        return new String(chars, 0, length);
+        return string;
     }
 
 }

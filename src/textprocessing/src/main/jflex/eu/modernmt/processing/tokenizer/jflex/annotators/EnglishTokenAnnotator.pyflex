@@ -6,16 +6,15 @@ import eu.modernmt.processing.tokenizer.jflex.JFlexTokenAnnotator;
 
 //pyflex class JFlexTokenAnnotator
 
-//pyflex include ../macros.pyx
-
 //pyflex prefixes ../prefixes/en.txt caseless
 
 EnglishContractions = [:letter:]\'[:letter:]
-PossessiveCase = \'s{_}
+PossessiveCase = \'s" "
 
 %%
 
-//pyflex include ../stdtok-rules.pyx
+/* Default Ignore */
+.                                                                                                       { /* ignore */ }
 
 {EnglishContractions}                                               { yypushback(1); return PROTECT_RIGHT; }
 {PossessiveCase}                                                    { yypushback(1); return PROTECT; }

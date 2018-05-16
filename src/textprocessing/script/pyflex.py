@@ -105,8 +105,8 @@ def _contractions(path):
                 continue
 
             for token in (line.lower(), line.upper(), line[:1].upper() + line[1:].lower()):
-                pattern = token.replace('\'', '{_}?{apos}{_}?')
-                if pattern.endswith('{_}?'):
+                pattern = token.replace('\'', '" "?{apos}" "?')
+                if pattern.endswith('" "?'):
                     pattern = pattern[:-4]
 
                 result.append(pattern)
@@ -170,10 +170,10 @@ def generate_jflex(parent_dir, template_file, target_dir):
                 raise Exception("Unknown command " + command)
 
     if has_regular_patterns:
-        content.append('[^[:letter:]]{ProtectedPatterns}[^[:letter:]] '
-                       '{ zzStartReadOffset = 1; yypushback(1); return PROTECT; }')
+        content.append(u'[ !¡\\"#$%&\'*+,\\-./:;<=>?¿@\\[\\]\\^_`{|}~()]{ProtectedPatterns} '
+                       '{ zzStartReadOffset = 1; return PROTECT; }')
     if has_numeric_only_patterns:
-        content.append('[^[:letter:]]{NumericProtectedPatters}{_}[:digit:] '
+        content.append(u'[ !¡\\"#$%&\'*+,\\-./:;<=>?¿@\\[\\]\\^_`{|}~()]{NumericProtectedPatters}" "[:digit:] '
                        '{ zzStartReadOffset = 1; yypushback(2); return PROTECT; }')
 
     if not os.path.isdir(parent_target):

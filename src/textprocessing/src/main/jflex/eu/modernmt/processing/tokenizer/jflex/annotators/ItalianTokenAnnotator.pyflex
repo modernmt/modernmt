@@ -6,14 +6,13 @@ import eu.modernmt.processing.tokenizer.jflex.JFlexTokenAnnotator;
 
 //pyflex class JFlexTokenAnnotator
 
-//pyflex include ../macros.pyx
-
 //pyflex prefixes ../prefixes/it.txt caseless
 
 ItalianContractions = [:letter:]\'[:letter:]
 
 %%
 
-//pyflex include ../stdtok-rules.pyx
+/* Default Ignore */
+.                                                                                                       { /* ignore */ }
 
 {ItalianContractions}                                               { yypushback(1); return PROTECT; }

@@ -18,43 +18,7 @@
     <processor source="it">eu.modernmt.processing.normalizers.ItalianAccentMarkProcessor</processor>
 
     <!-- Tokenization -->
-    <processorGroup>
-        <!-- Language specific -->
-        <processor source="ca cs de el en es fi fr hu is it ko lv nl pl pt ro ru sk sl sv ta">
-            eu.modernmt.processing.tokenizer.jflex.JFlexTokenizer
-        </processor>
-
-        <processor source="ar">
-            eu.modernmt.processing.tokenizer.corenlp.CoreNLPTokenizer
-        </processor>
-        <processor source="da se">
-            eu.modernmt.processing.tokenizer.opennlp.OpenNLPTokenizer
-        </processor>
-        <processor source="fa he hi th bg eu ga hy id no tr">
-            eu.modernmt.processing.tokenizer.lucene.LuceneTokenizer
-        </processor>
-        <processor source="br eo km ml uk gl tl">
-            eu.modernmt.processing.tokenizer.languagetool.LanguageToolTokenizer
-        </processor>
-
-        <processor source="ja">
-            eu.modernmt.processing.tokenizer.kuromoji.KuromojiTokenizer
-        </processor>
-
-        <processor source="zh">
-            eu.modernmt.processing.tokenizer.jflex.ChineseJFlexTokenizer
-        </processor>
-
-        <!-- Backoff strategy: default implementation -->
-        <processor>
-            eu.modernmt.processing.tokenizer.jflex.JFlexTokenizer
-        </processor>
-    </processorGroup>
-
-    <!-- For Japanese use base entity recognition tokenizer in addition (i.e. URLs, emails, ...) -->
-    <processor source="ja">
-        eu.modernmt.processing.tokenizer.jflex.BaseJFlexTokenizer
-    </processor>
+    <processor>eu.modernmt.processing.tokenizer.Tokenizer</processor>
 
     <processor>eu.modernmt.processing.string.SentenceCompiler</processor>
 </pipeline>
