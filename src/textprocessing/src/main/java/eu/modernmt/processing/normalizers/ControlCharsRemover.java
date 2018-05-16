@@ -23,7 +23,7 @@ public class ControlCharsRemover extends TextProcessor<String, String> {
         for (int i = 0; i < buffer.length; i++) {
             char c = buffer[i];
 
-            if (c > 0x0008) {
+            if (c >= 0x0020) {
                 buffer[newSize] = c;
                 newSize++;
             }
