@@ -79,6 +79,8 @@ public class XMLFixInputStreamReader extends Reader {
             if (result == -1)
                 break;
 
+            escapeControlChars(buffer, offset + read, result);
+
             read += result;
             if (read == length)
                 break;
@@ -129,10 +131,20 @@ public class XMLFixInputStreamReader extends Reader {
     }
 
     private static boolean accept(int c) {
+        // https://www.w3.org/TR/REC-xml/#charsets
         return (c == 0x09) || (c == 0x0A) || (c == 0x0D) ||
                 (0x20 <= c && c <= 0xD7FF) ||
                 (0xE000 <= c && c <= 0xFFFD) ||
                 (0x10000 <= c && c <= 0x10FFFF);
+    }
+
+    private static void escapeControlChars(char[] buffer, int offset, int length) {
+        for (int i = 0; i < length; i++) {
+            char c = buffer[offset + i];
+
+            if (!accept(c))
+                buffer[offset + i] = ' ';
+        }
     }
 
 }

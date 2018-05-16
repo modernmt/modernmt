@@ -23,7 +23,7 @@ public class ControlCharsRemover extends TextProcessor<String, String> {
 
         for (int i = 0; i < buffer.length; i++) {
             char c = buffer[i];
-            if ((c == 0x09) || (0x0A <= c && c <= 0x0D) || (c >= 0x0020)) {
+            if ((0x09 <= c && c <= 0x0D) || (c >= 0x0020)) {
                 buffer[newSize] = c;
                 newSize++;
             }
@@ -37,12 +37,4 @@ public class ControlCharsRemover extends TextProcessor<String, String> {
         return strip(param);
     }
 
-    public static void main(String[] args) throws Throwable {
-        "\t\n\u000B\f\r".codePoints().forEach(new IntConsumer() {
-            @Override
-            public void accept(int value) {
-                System.out.println(Integer.toHexString(value));
-            }
-        });
-    }
 }
