@@ -10,7 +10,7 @@ import eu.modernmt.context.lucene.storage.Options;
 import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import org.apache.commons.io.FileUtils;
@@ -77,7 +77,7 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
 
             try {
                 stream = bucket.getContentStream();
-                content = IOUtils.toString(stream, DefaultCharset.get());
+                content = IOUtils.toString(stream, UTF8Charset.get());
             } finally {
                 IOUtils.closeQuietly(stream);
             }

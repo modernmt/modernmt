@@ -90,11 +90,11 @@ public class TokensOutputStream implements Closeable {
     private final boolean printPlaceholders;
 
     public TokensOutputStream(File file, boolean append, boolean printTags, boolean printPlaceholders) throws FileNotFoundException {
-        this(new UnixLineWriter(new FileOutputStream(file, append), DefaultCharset.get()), printTags, printPlaceholders);
+        this(new UnixLineWriter(new FileOutputStream(file, append), UTF8Charset.get()), printTags, printPlaceholders);
     }
 
     public TokensOutputStream(OutputStream stream, boolean printTags, boolean printPlaceholders) {
-        this(new UnixLineWriter(stream, DefaultCharset.get()), printTags, printPlaceholders);
+        this(new UnixLineWriter(stream, UTF8Charset.get()), printTags, printPlaceholders);
     }
 
     public TokensOutputStream(Writer writer, boolean includeTags, boolean usePlaceholders) {

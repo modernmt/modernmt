@@ -1,6 +1,6 @@
 package eu.modernmt.context.lucene.storage;
 
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import org.apache.commons.io.FileUtils;
@@ -92,7 +92,7 @@ public class CorpusBucket implements Closeable {
     }
 
     public void append(String line) throws IOException {
-        stream.write(line.getBytes(DefaultCharset.get()));
+        stream.write(line.getBytes(UTF8Charset.get()));
         stream.write('\n');
     }
 

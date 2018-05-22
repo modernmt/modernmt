@@ -1,6 +1,6 @@
 package eu.modernmt.rest;
 
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.Language;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.ImportJob;
@@ -121,7 +121,7 @@ public class RESTServer {
                 ArrayList<Class<?>> classes = new ArrayList<>();
 
                 stream = getClass().getClassLoader().getResourceAsStream("rest-actions.list");
-                LineIterator lines = IOUtils.lineIterator(stream, DefaultCharset.get());
+                LineIterator lines = IOUtils.lineIterator(stream, UTF8Charset.get());
 
                 while (lines.hasNext()) {
                     String line = lines.nextLine();

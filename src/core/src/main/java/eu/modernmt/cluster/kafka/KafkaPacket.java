@@ -3,7 +3,7 @@ package eu.modernmt.cluster.kafka;
 import eu.modernmt.data.DataMessage;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 
@@ -64,7 +64,7 @@ public class KafkaPacket {
                 break;
             case TYPE_ADDITION:
             case TYPE_OVERWRITE:
-                Charset charset = DefaultCharset.get();
+                Charset charset = UTF8Charset.get();
 
                 Language source = Language.fromString(deserializeString(buffer, charset));
                 Language target = Language.fromString(deserializeString(buffer, charset));
@@ -139,7 +139,7 @@ public class KafkaPacket {
                 break;
             case TYPE_ADDITION:
             case TYPE_OVERWRITE:
-                Charset charset = DefaultCharset.get();
+                Charset charset = UTF8Charset.get();
 
                 directionSource = this.direction.source.toLanguageTag().getBytes(charset);
                 directionTarget = this.direction.target.toLanguageTag().getBytes(charset);

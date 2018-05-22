@@ -3,7 +3,7 @@ package eu.modernmt.training.filters;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnel;
 import com.google.common.hash.PrimitiveSink;
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.model.corpus.BaseMultilingualCorpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
@@ -76,9 +76,9 @@ public class CorporaBloomFilter {
 
         @Override
         public void funnel(MultilingualCorpus.StringPair from, PrimitiveSink into) {
-            into.putString(from.language.toString(), DefaultCharset.get());
-            into.putString(from.source, DefaultCharset.get());
-            into.putString(from.target, DefaultCharset.get());
+            into.putString(from.language.toString(), UTF8Charset.get());
+            into.putString(from.source, UTF8Charset.get());
+            into.putString(from.target, UTF8Charset.get());
         }
 
     }

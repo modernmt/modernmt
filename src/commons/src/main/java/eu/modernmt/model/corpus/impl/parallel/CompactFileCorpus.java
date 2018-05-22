@@ -1,6 +1,6 @@
 package eu.modernmt.model.corpus.impl.parallel;
 
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.io.FileProxy;
 import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.io.UnixLineWriter;
@@ -60,7 +60,7 @@ public class CompactFileCorpus extends BaseMultilingualCorpus {
         private final HashMap<String, LanguagePair> cachedLanguagePairs = new HashMap<>();
 
         private CompactLineReader(FileProxy file) throws IOException {
-            this.reader = new UnixLineReader(file.getInputStream(), DefaultCharset.get());
+            this.reader = new UnixLineReader(file.getInputStream(), UTF8Charset.get());
         }
 
         @Override
@@ -114,7 +114,7 @@ public class CompactFileCorpus extends BaseMultilingualCorpus {
         private final UnixLineWriter writer;
 
         private CompactLineWriter(FileProxy file, boolean append) throws IOException {
-            this.writer = new UnixLineWriter(file.getOutputStream(append), DefaultCharset.get());
+            this.writer = new UnixLineWriter(file.getOutputStream(append), UTF8Charset.get());
         }
 
         @Override

@@ -1,6 +1,6 @@
 package eu.modernmt.hw;
 
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
@@ -116,7 +116,7 @@ public class NetworkUtils {
         }
 
         public void send(String message) throws IOException {
-            this.output.write(message.getBytes(DefaultCharset.get()));
+            this.output.write(message.getBytes(UTF8Charset.get()));
             this.output.flush();
         }
 

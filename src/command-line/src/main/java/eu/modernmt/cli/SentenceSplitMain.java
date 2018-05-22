@@ -1,6 +1,6 @@
 package eu.modernmt.cli;
 
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.io.UnixLineWriter;
@@ -50,7 +50,7 @@ public class SentenceSplitMain {
         Preprocessor preprocessor = null;
         SentenceOutputter output = null;
 
-        LineReader input = new UnixLineReader(System.in, DefaultCharset.get());
+        LineReader input = new UnixLineReader(System.in, UTF8Charset.get());
 
         try {
             preprocessor = new Preprocessor();
@@ -92,7 +92,7 @@ public class SentenceSplitMain {
         private final SynchronousQueue<Sentence[]> job = new SynchronousQueue<>();
 
         public SentenceOutputter(Language language) {
-            this.writer = new UnixLineWriter(System.out, DefaultCharset.get());
+            this.writer = new UnixLineWriter(System.out, UTF8Charset.get());
             this.splitter = SentenceSplitter.forLanguage(language);
         }
 

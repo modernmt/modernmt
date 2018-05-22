@@ -3,7 +3,7 @@ package eu.modernmt.cluster.db;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.model.Memory;
 import org.apache.commons.io.IOUtils;
 
@@ -40,7 +40,7 @@ class BaselineMemoryCollection {
             jsonReader = new JsonReader(
                     new InputStreamReader(
                             new FileInputStream(memoriesJsonPath),
-                            DefaultCharset.get()
+                            UTF8Charset.get()
                     )
             );
             return gson.fromJson(jsonReader, MEMORIES_TYPE);

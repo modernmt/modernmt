@@ -1,6 +1,6 @@
 package eu.modernmt.decoder.neural.memory.lucene;
 
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.LanguagePair;
 
 /**
@@ -42,7 +42,7 @@ class HashGenerator {
 
     private static long FNV_1a_lazy_mod_mapping(String sentence) {
         long hash = FNV_OFFSET_BASIS;
-        for (byte b : sentence.getBytes(DefaultCharset.get())) {
+        for (byte b : sentence.getBytes(UTF8Charset.get())) {
             hash ^= (b & 0xff);
             hash *= FNV_PRIME;
         }

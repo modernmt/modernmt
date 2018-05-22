@@ -1,6 +1,6 @@
 package eu.modernmt.xml;
 
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 import org.apache.commons.io.input.BOMInputStream;
 
 import javax.xml.XMLConstants;
@@ -49,7 +49,7 @@ public class XMLUtils {
 
     public static XMLEventReader createEventReader(InputStream stream) throws XMLStreamException {
         XMLInputFactory factory = XMLInputFactory.newInstance();
-        return factory.createXMLEventReader(new XMLFixInputStreamReader(new BOMInputStream(stream, false), DefaultCharset.get()));
+        return factory.createXMLEventReader(new XMLFixInputStreamReader(new BOMInputStream(stream, false), UTF8Charset.get()));
     }
 
     public static void closeQuietly(XMLEventReader reader) {
@@ -62,7 +62,7 @@ public class XMLUtils {
     }
 
     public static XMLStreamWriter createStreamWriter(OutputStream stream) throws XMLStreamException {
-        Charset charset = DefaultCharset.get();
+        Charset charset = UTF8Charset.get();
 
         XMLOutputFactory factory = XMLOutputFactory.newInstance();
         return new IndentingXMLStreamWriter(factory.createXMLStreamWriter(new OutputStreamWriter(stream, charset)));

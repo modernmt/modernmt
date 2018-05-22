@@ -117,8 +117,8 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
             boolean success = false;
 
             try {
-                this.sourceReader = new UnixLineReader(source.getInputStream(), DefaultCharset.get());
-                this.targetReader = new UnixLineReader(target.getInputStream(), DefaultCharset.get());
+                this.sourceReader = new UnixLineReader(source.getInputStream(), UTF8Charset.get());
+                this.targetReader = new UnixLineReader(target.getInputStream(), UTF8Charset.get());
                 this.index = 0;
 
                 success = true;
@@ -160,8 +160,8 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
             boolean success = false;
 
             try {
-                this.sourceWriter = new UnixLineWriter(source.getOutputStream(append), DefaultCharset.get());
-                this.targetWriter = new UnixLineWriter(target.getOutputStream(append), DefaultCharset.get());
+                this.sourceWriter = new UnixLineWriter(source.getOutputStream(append), UTF8Charset.get());
+                this.targetWriter = new UnixLineWriter(target.getOutputStream(append), UTF8Charset.get());
 
                 success = true;
             } finally {

@@ -68,17 +68,17 @@ public class FileCorpus implements Corpus {
 
     @Override
     public LineReader getContentReader() throws IOException {
-        return new UnixLineReader(file.getInputStream(), DefaultCharset.get());
+        return new UnixLineReader(file.getInputStream(), UTF8Charset.get());
     }
 
     @Override
     public LineWriter getContentWriter(boolean append) throws IOException {
-        return new UnixLineWriter(file.getOutputStream(append), DefaultCharset.get());
+        return new UnixLineWriter(file.getOutputStream(append), UTF8Charset.get());
     }
 
     @Override
     public Reader getRawContentReader() throws IOException {
-        return new InputStreamReader(file.getInputStream(), DefaultCharset.get());
+        return new InputStreamReader(file.getInputStream(), UTF8Charset.get());
     }
 
     @Override

@@ -2,7 +2,7 @@ package eu.modernmt.context.lucene.storage;
 
 import eu.modernmt.context.lucene.analysis.ContextAnalyzerIndex;
 import eu.modernmt.context.lucene.analysis.DocumentBuilder;
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.LanguagePair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,7 +37,7 @@ class AnalysisTask implements Callable<Void> {
         logger.info("Indexing bucket " + bucket);
 
         try {
-            Reader reader = new InputStreamReader(bucket.getContentStream(), DefaultCharset.get());
+            Reader reader = new InputStreamReader(bucket.getContentStream(), UTF8Charset.get());
 
             Document document = DocumentBuilder.createDocument(direction, memory, reader);
             index.update(document);

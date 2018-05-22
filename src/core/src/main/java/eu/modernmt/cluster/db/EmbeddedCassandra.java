@@ -5,7 +5,7 @@ import eu.modernmt.cluster.EmbeddedService;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.hw.NetworkUtils;
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.io.FileConst;
 import eu.modernmt.io.Paths;
 import org.apache.commons.io.FileUtils;
@@ -126,9 +126,9 @@ public class EmbeddedCassandra extends EmbeddedService {
         Writer out = null;
 
         try {
-            out = new OutputStreamWriter(new FileOutputStream(config, false), DefaultCharset.get());
+            out = new OutputStreamWriter(new FileOutputStream(config, false), UTF8Charset.get());
 
-            Iterator<String> input = FileUtils.lineIterator(this.configTemplate, DefaultCharset.get().name());
+            Iterator<String> input = FileUtils.lineIterator(this.configTemplate, UTF8Charset.get().name());
             while (input.hasNext()) {
                 String line = input.next();
 
@@ -183,7 +183,7 @@ public class EmbeddedCassandra extends EmbeddedService {
             if (!this.process.isAlive())
                 throw new IOException("Unable to start Cassandra process, more details here: " + this.logFile.getAbsolutePath());
 
-            LineIterator lines = FileUtils.lineIterator(this.logFile, DefaultCharset.get().name());
+            LineIterator lines = FileUtils.lineIterator(this.logFile, UTF8Charset.get().name());
 
             while (lines.hasNext()) {
                 String line = lines.next();

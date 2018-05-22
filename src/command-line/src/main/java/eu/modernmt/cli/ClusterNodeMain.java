@@ -9,7 +9,7 @@ import eu.modernmt.config.*;
 import eu.modernmt.config.xml.XMLConfigBuilder;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.facade.ModernMT;
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.rest.RESTServer;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
@@ -319,7 +319,7 @@ public class ClusterNodeMain {
          */
         private void store() {
             try {
-                FileUtils.write(file, this.properties.toString(), DefaultCharset.get(), false);
+                FileUtils.write(file, this.properties.toString(), UTF8Charset.get(), false);
             } catch (IOException e) {
                 // Nothing to do
             }

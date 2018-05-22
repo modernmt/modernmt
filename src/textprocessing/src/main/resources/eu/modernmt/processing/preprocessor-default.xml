@@ -11,7 +11,8 @@
     <!-- String normalization -->
     <processor>eu.modernmt.processing.normalizers.RareCharsNormalizer</processor>
     <processor>eu.modernmt.processing.normalizers.WhitespacesNormalizer</processor>
-    <processor>eu.modernmt.processing.numbers.NumericPlaceholderNormalizer</processor>
+    <!-- Best for small training corpora, skip vor large training sets -->
+    <!--<processor>eu.modernmt.processing.numbers.NumericPlaceholderNormalizer</processor>-->
     <processor>eu.modernmt.processing.recaser.UpperCasePreprocessor</processor>
 
     <!-- Fix italian accents like "e'" or "perche'" -->

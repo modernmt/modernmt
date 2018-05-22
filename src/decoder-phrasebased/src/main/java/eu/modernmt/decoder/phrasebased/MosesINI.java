@@ -1,6 +1,6 @@
 package eu.modernmt.decoder.phrasebased;
 
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -13,7 +13,7 @@ import java.util.Map;
 class MosesINI {
 
     public static MosesINI load(File templateFile, File enginePath) throws IOException {
-        String template = FileUtils.readFileToString(templateFile, DefaultCharset.get());
+        String template = FileUtils.readFileToString(templateFile, UTF8Charset.get());
         String engine = enginePath.getAbsolutePath();
         if (!engine.endsWith(File.separator))
             engine = engine + File.separator;

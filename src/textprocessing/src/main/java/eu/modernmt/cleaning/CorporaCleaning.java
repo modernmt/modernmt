@@ -2,7 +2,7 @@ package eu.modernmt.cleaning;
 
 import eu.modernmt.cleaning.filters.*;
 import eu.modernmt.cleaning.filters.draft.DraftFilter;
-import eu.modernmt.cleaning.filters.lang.LanguageFilter;
+import eu.modernmt.cleaning.filters.lang.cld2.CLD2LanguageFilter;
 import eu.modernmt.cleaning.filters.ngrams.RareNgramFilter;
 import eu.modernmt.cleaning.normalizers.ControlCharsStripper;
 import eu.modernmt.cleaning.normalizers.XMLStripper;
@@ -58,7 +58,7 @@ public class CorporaCleaning {
     }
 
     public static FilteredMultilingualCorpus wrap(MultilingualCorpus corpus, Options options) {
-        FilterEngine engine = make(options);
+        FilterEngine engine = make(options, false);
         return new FilteredMultilingualCorpus(corpus, engine);
     }
 
@@ -67,11 +67,11 @@ public class CorporaCleaning {
     }
 
     public static StringPairFilter forStringPairs(Options options) {
-        FilterEngine engine = make(options);
+        FilterEngine engine = make(options, true);
         return new StringPairFilter(engine);
     }
 
-    private static FilterEngine make(Options options) {
+    private static FilterEngine make(Options options, boolean cld2AcceptUnknown) {
         FilterEngine.Builder builder = new FilterEngine.Builder();
 
         if (options.normalize) {
@@ -95,7 +95,7 @@ public class CorporaCleaning {
         if (options.filterBySentenceLength)
             builder.add(new SentenceLengthFilter());
         if (options.filterByLanguage)
-            builder.add(new LanguageFilter());
+            builder.add(new CLD2LanguageFilter(cld2AcceptUnknown));
 
         return builder.build();
     }

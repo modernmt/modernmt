@@ -1,6 +1,6 @@
 package eu.modernmt.training.preprocessing;
 
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.io.LineWriter;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.io.UnixLineWriter;
@@ -57,7 +57,7 @@ public class TermsCollectorWriter extends CorpusWriter {
         UnixLineWriter writer = null;
 
         try {
-            writer = new UnixLineWriter(new FileOutputStream(file, false), DefaultCharset.get());
+            writer = new UnixLineWriter(new FileOutputStream(file, false), UTF8Charset.get());
 
             for (String word : words)
                 writer.writeLine(word);

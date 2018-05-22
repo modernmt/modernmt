@@ -5,7 +5,7 @@ import eu.modernmt.cluster.EmbeddedService;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.hw.NetworkUtils;
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.io.FileConst;
 import eu.modernmt.io.Paths;
 import org.apache.commons.io.FileUtils;
@@ -164,7 +164,7 @@ public class EmbeddedKafka extends EmbeddedService {
                 if (!kafka.isAlive())
                     throw new IOException("Unable to start Kafka process, more details here: " + this.logFile.getAbsolutePath());
 
-                LineIterator lines = FileUtils.lineIterator(this.logFile, DefaultCharset.get().name());
+                LineIterator lines = FileUtils.lineIterator(this.logFile, UTF8Charset.get().name());
 
                 while (lines.hasNext()) {
                     String line = lines.next();

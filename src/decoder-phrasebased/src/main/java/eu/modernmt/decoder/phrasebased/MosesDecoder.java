@@ -4,7 +4,7 @@ import eu.modernmt.config.DecoderConfig;
 import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.decoder.*;
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.io.Paths;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageIndex;
@@ -52,7 +52,7 @@ public class MosesDecoder extends Decoder implements DecoderWithFeatures, Decode
         super(model, config);
 
         try {
-            String raw = FileUtils.readFileToString(Paths.join(model, "language.info"), DefaultCharset.get());
+            String raw = FileUtils.readFileToString(Paths.join(model, "language.info"), UTF8Charset.get());
             String[] parts = raw.trim().split(" ");
 
             this.language = new LanguageIndex(

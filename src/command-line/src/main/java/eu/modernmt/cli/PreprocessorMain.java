@@ -60,7 +60,7 @@ public class PreprocessorMain {
         Preprocessor preprocessor = null;
         Outputter output = null;
 
-        LineReader input = new UnixLineReader(System.in, DefaultCharset.get());
+        LineReader input = new UnixLineReader(System.in, UTF8Charset.get());
 
         try {
             preprocessor = new Preprocessor();
@@ -94,7 +94,7 @@ public class PreprocessorMain {
         private final boolean printPlaceholders;
 
         public SentenceOutputter(boolean printTags, boolean printPlaceholders) {
-            this.writer = new UnixLineWriter(System.out, DefaultCharset.get());
+            this.writer = new UnixLineWriter(System.out, UTF8Charset.get());
             this.printTags = printTags;
             this.printPlaceholders = printPlaceholders;
         }

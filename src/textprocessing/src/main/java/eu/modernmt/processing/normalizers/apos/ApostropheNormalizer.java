@@ -1,6 +1,6 @@
 package eu.modernmt.processing.normalizers.apos;
 
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.io.RuntimeIOException;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.UnsupportedLanguageException;
@@ -30,7 +30,7 @@ public class ApostropheNormalizer extends TextProcessor<String, String> {
                     throw new UnsupportedLanguageException(language);
 
                 StringBuilder regex = new StringBuilder();
-                for (String contraction : IOUtils.readLines(stream, DefaultCharset.get())) {
+                for (String contraction : IOUtils.readLines(stream, UTF8Charset.get())) {
                     String prefix;
                     if (contraction.charAt(0) != '\'')
                         prefix = "[^\\p{L}]";

@@ -26,7 +26,8 @@
 
     <processor source="fr">eu.modernmt.processing.normalizers.GuillemetsToQuotesProcessor</processor>
 
-    <processor>eu.modernmt.processing.numbers.NumericWordPostprocessor</processor>
+    <!-- Best for small training corpora, skip vor large training sets -->
+    <!--<processor>eu.modernmt.processing.numbers.NumericWordPostprocessor</processor>-->
     <processor>eu.modernmt.processing.recaser.UpperCasePostprocessor</processor>
     <processor>eu.modernmt.processing.recaser.SimpleRecaser</processor>
 

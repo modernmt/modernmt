@@ -1,6 +1,6 @@
 package eu.modernmt.decoder.neural.natv;
 
-import eu.modernmt.io.DefaultCharset;
+import eu.modernmt.io.UTF8Charset;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -13,7 +13,7 @@ abstract class StreamPollingThread extends Thread {
     private boolean active = true;
 
     public StreamPollingThread(InputStream stdout) {
-        this.reader = new BufferedReader(new InputStreamReader(stdout, DefaultCharset.get()));
+        this.reader = new BufferedReader(new InputStreamReader(stdout, UTF8Charset.get()));
     }
 
     @Override
