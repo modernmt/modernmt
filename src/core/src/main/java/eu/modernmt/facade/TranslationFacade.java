@@ -376,10 +376,18 @@ public class TranslationFacade {
 				Translation translation = this.translate(sentences[i], decoder);
 				// Alignment
 				if (!translation.hasAlignment()) {
-					Aligner aligner = engine.getAligner();
-					Alignment alignment = aligner.getAlignment(direction, sentences[i], translation);
-					translation.setWordAlignment(alignment);
-				}
+                    Aligner aligner = engine.getAligner();
+
+                    Alignment alignment = aligner.getAlignment(direction, sentences[i], translation);
+                    translation.setWordAlignment(alignment);
+
+                    if (translation.hasNbest()) {
+                        for (Translation nbest : translation.getNbest()) {
+                            Alignment nbestAlignment = aligner.getAlignment(direction, sentences[i], nbest);
+                            nbest.setWordAlignment(nbestAlignment);
+                        }
+                    }
+                }
 				translations[i] = translation;
 			}
             return translations;
