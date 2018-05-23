@@ -369,29 +369,30 @@ public class TranslationFacade {
             }
         }
 
-        private Translation[] translate(Sentence[] sentences, Decoder decoder, Engine engine) throws DecoderException, AlignerException {
-            Translation[] translations = new Translation[sentences.length];
+		private Translation[] translate(Sentence[] sentences, Decoder decoder, Engine engine)
+				throws DecoderException, AlignerException {
+			Translation[] translations = new Translation[sentences.length];
 
 			for (int i = 0; i < sentences.length; i++) {
 				Translation translation = this.translate(sentences[i], decoder);
 				// Alignment
 				if (!translation.hasAlignment()) {
-                    Aligner aligner = engine.getAligner();
+					Aligner aligner = engine.getAligner();
 
-                    Alignment alignment = aligner.getAlignment(direction, sentences[i], translation);
-                    translation.setWordAlignment(alignment);
+					Alignment alignment = aligner.getAlignment(direction, sentences[i], translation);
+					translation.setWordAlignment(alignment);
 
-                    if (translation.hasNbest()) {
-                        for (Translation nbest : translation.getNbest()) {
-                            Alignment nbestAlignment = aligner.getAlignment(direction, sentences[i], nbest);
-                            nbest.setWordAlignment(nbestAlignment);
-                        }
-                    }
-                }
+					if (translation.hasNbest()) {
+						for (Translation nbest : translation.getNbest()) {
+							Alignment nbestAlignment = aligner.getAlignment(direction, sentences[i], nbest);
+							nbest.setWordAlignment(nbestAlignment);
+						}
+					}
+				}
 				translations[i] = translation;
 			}
-            return translations;
-        }
+			return translations;
+		}
 
         private Translation translate(Sentence sentence, Decoder decoder) throws DecoderException {
             Translation translation;
