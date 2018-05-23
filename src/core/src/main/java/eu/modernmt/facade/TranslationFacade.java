@@ -312,7 +312,7 @@ public class TranslationFacade {
 
                 if (decoder.supportsSentenceSplit()) {
                     Sentence[] sentencePieces = SentenceSplitter.forLanguage(direction.source).split(sentence);
-                    Translation[] translationPieces = translate(sentencePieces, decoder);
+                    Translation[] translationPieces = translate(sentencePieces, decoder, engine);
 
                     translation = this.merge(sentence, sentencePieces, translationPieces);
                 } else {
@@ -369,12 +369,19 @@ public class TranslationFacade {
             }
         }
 
-        private Translation[] translate(Sentence[] sentences, Decoder decoder) throws DecoderException {
+        private Translation[] translate(Sentence[] sentences, Decoder decoder, Engine engine) throws DecoderException, AlignerException {
             Translation[] translations = new Translation[sentences.length];
 
-            for (int i = 0; i < sentences.length; i++)
-                translations[i] = this.translate(sentences[i], decoder);
-
+			for (int i = 0; i < sentences.length; i++) {
+				Translation translation = this.translate(sentences[i], decoder);
+				// Alignment
+				if (!translation.hasAlignment()) {
+					Aligner aligner = engine.getAligner();
+					Alignment alignment = aligner.getAlignment(direction, sentences[i], translation);
+					translation.setWordAlignment(alignment);
+				}
+				translations[i] = translation;
+			}
             return translations;
         }
 
