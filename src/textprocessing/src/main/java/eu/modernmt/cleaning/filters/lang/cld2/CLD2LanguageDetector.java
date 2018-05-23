@@ -58,7 +58,7 @@ public class CLD2LanguageDetector {
 
     public Language detect(String text, boolean reliableOnly) {
         int lang = detectLanguage(text.getBytes(UTF8Charset.get()), reliableOnly);
-        return 0 < lang && lang < LANGUAGES.length ? LANGUAGES[lang] : null;
+        return 0 <= lang && lang < LANGUAGES.length ? LANGUAGES[lang] : null;
     }
 
     private native int detectLanguage(byte[] utf8text, boolean reliableOnly);
