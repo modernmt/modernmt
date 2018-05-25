@@ -1,6 +1,7 @@
 package eu.modernmt.model.corpus.impl.parallel;
 
 import eu.modernmt.io.*;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.corpus.BaseMultilingualCorpus;
@@ -77,7 +78,7 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
 
     @Override
     public MultilingualLineWriter getContentWriter(boolean append) throws IOException {
-        return new ParallelFileLineWriter(append, source, target);
+        return new ParallelFileLineWriter(append, language, source, target);
     }
 
     @Override
@@ -107,8 +108,8 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
     private static class ParallelFileLineReader implements MultilingualLineReader {
 
         private final LanguagePair language;
-        private UnixLineReader sourceReader;
-        private UnixLineReader targetReader;
+        private final UnixLineReader sourceReader;
+        private final UnixLineReader targetReader;
         private int index;
 
         private ParallelFileLineReader(LanguagePair language, FileProxy source, FileProxy target) throws IOException {
@@ -153,10 +154,13 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
 
     private static class ParallelFileLineWriter implements MultilingualLineWriter {
 
-        private LineWriter sourceWriter;
-        private LineWriter targetWriter;
+        private final LanguagePair language;
+        private final LineWriter sourceWriter;
+        private final LineWriter targetWriter;
 
-        private ParallelFileLineWriter(boolean append, FileProxy source, FileProxy target) throws IOException {
+        private ParallelFileLineWriter(boolean append, LanguagePair language, FileProxy source, FileProxy target) throws IOException {
+            this.language = language;
+
             boolean success = false;
 
             try {
@@ -172,8 +176,24 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
 
         @Override
         public void write(StringPair pair) throws IOException {
-            sourceWriter.writeLine(pair.source);
-            targetWriter.writeLine(pair.target);
+            if (match(pair.language, language)) {
+                sourceWriter.writeLine(pair.source);
+                targetWriter.writeLine(pair.target);
+            } else if (match(pair.language, language.reversed())) {
+                sourceWriter.writeLine(pair.target);
+                targetWriter.writeLine(pair.source);
+            } else {
+                throw new IOException("Unrecognized language: " + pair.language);
+            }
+        }
+
+        private static boolean match(LanguagePair test, LanguagePair ref) {
+            return match(test.source, ref.source) && match(test.target, ref.target);
+        }
+
+        private static boolean match(Language test, Language ref) {
+            return test.getLanguage().equals(ref.getLanguage()) &&
+                    (ref.getRegion() == null || ref.getRegion().equals(test.getRegion()));
         }
 
         @Override
