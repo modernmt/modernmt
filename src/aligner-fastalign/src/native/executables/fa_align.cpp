@@ -146,7 +146,7 @@ int main(int argc, const char *argv[]) {
     int threads = 1;
 
 #ifdef _OPENMP
-    threads = std::min((thread::hardware_concurrency() * 2) / 3, 8U);
+    threads = thread::hardware_concurrency();
 
     omp_set_dynamic(0);
     omp_set_num_threads(threads);
