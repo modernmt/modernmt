@@ -5,7 +5,7 @@ import eu.modernmt.decoder.neural.natv.NativeProcess;
 
 import java.io.IOException;
 
-class CPUDecoderQueue extends DecoderQueue {
+class CPUDecoderQueue extends DecoderQueueImpl {
 
     CPUDecoderQueue(NativeProcess.Builder processBuilder, int capacity) {
         super(processBuilder, capacity);

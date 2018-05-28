@@ -5,7 +5,7 @@ import eu.modernmt.decoder.neural.natv.NativeProcess;
 
 import java.io.IOException;
 
-class GPUDecoderQueue extends DecoderQueue {
+class GPUDecoderQueue extends DecoderQueueImpl {
 
     private final int[] gpus;
     private int idx;

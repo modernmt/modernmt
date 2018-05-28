@@ -8,6 +8,7 @@ import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.DecoderListener;
 import eu.modernmt.decoder.DecoderWithNBest;
+import eu.modernmt.decoder.neural.execution.DecoderQueueImpl;
 import eu.modernmt.decoder.neural.execution.DecoderQueue;
 import eu.modernmt.decoder.neural.memory.AlignmentDataFilter;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
@@ -100,9 +101,9 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         NativeProcess.Builder builder = new NativeProcess.Builder(pythonExec, model);
 
         if (decoderConfig.isUsingGPUs())
-            return DecoderQueue.newGPUInstance(builder, decoderConfig.getGPUs());
+            return DecoderQueueImpl.newGPUInstance(builder, decoderConfig.getGPUs());
         else
-            return DecoderQueue.newCPUInstance(builder, decoderConfig.getThreads());
+            return DecoderQueueImpl.newCPUInstance(builder, decoderConfig.getThreads());
     }
 
     // Decoder
