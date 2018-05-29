@@ -30,8 +30,8 @@ public class CLD2LanguageFilter implements Filter {
                 WordCounter.count(pair.target, pair.language.target) < MIN_WORDS)
             return true;
 
-        Language source = detector.detect(pair.source, !acceptUnknown);
-        Language target = detector.detect(pair.target, !acceptUnknown);
+        Language source = detector.detect(pair.source, false);
+        Language target = detector.detect(pair.target, false);
 
         if (source == null || target == null)
             return acceptUnknown;
