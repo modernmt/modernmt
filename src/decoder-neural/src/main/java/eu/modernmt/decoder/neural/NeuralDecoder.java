@@ -8,8 +8,8 @@ import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.DecoderListener;
 import eu.modernmt.decoder.DecoderWithNBest;
-import eu.modernmt.decoder.neural.execution.DecoderQueueImpl;
 import eu.modernmt.decoder.neural.execution.DecoderQueue;
+import eu.modernmt.decoder.neural.execution.DecoderQueueImpl;
 import eu.modernmt.decoder.neural.memory.AlignmentDataFilter;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.decoder.neural.memory.TranslationMemory;
@@ -58,7 +58,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         try {
             modelConfig = this.loadModelConfig(new File(model, "model.conf"));
         } catch (IOException e) {
-            throw new NeuralDecoderException("Failed to read file model.conf", e);
+            throw new DecoderException("Failed to read file model.conf", e);
         }
 
         // Translation Memory
@@ -66,7 +66,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         try {
             memory = loadTranslationMemory(modelConfig, new File(model, "memory"));
         } catch (IOException e) {
-            throw new NeuralDecoderException("Failed to initialize memory", e);
+            throw new DecoderException("Failed to initialize memory", e);
         }
 
         // Decoder Queue
@@ -96,7 +96,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         return memory;
     }
 
-    protected DecoderQueue loadDecoderQueue(ModelConfig modelConfig, NeuralDecoderConfig decoderConfig, File model) throws NeuralDecoderException {
+    protected DecoderQueue loadDecoderQueue(ModelConfig modelConfig, NeuralDecoderConfig decoderConfig, File model) throws DecoderException {
         File pythonExec = Paths.join(FileConst.getLibPath(), "pynmt", "main_loop.py");
         NativeProcess.Builder builder = new NativeProcess.Builder(pythonExec, model);
 
@@ -114,22 +114,22 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
     }
 
     @Override
-    public Translation translate(LanguagePair direction, String variant, Sentence text) throws NeuralDecoderException {
+    public Translation translate(LanguagePair direction, String variant, Sentence text) throws DecoderException {
         return translate(direction, variant, text, null, 0);
     }
 
     @Override
-    public Translation translate(LanguagePair direction, String variant, Sentence text, int nbestListSize) throws NeuralDecoderException {
+    public Translation translate(LanguagePair direction, String variant, Sentence text, int nbestListSize) throws DecoderException {
         return translate(direction, variant, text, null, nbestListSize);
     }
 
     @Override
-    public Translation translate(LanguagePair direction, String variant, Sentence text, ContextVector contextVector) throws NeuralDecoderException {
+    public Translation translate(LanguagePair direction, String variant, Sentence text, ContextVector contextVector) throws DecoderException {
         return translate(direction, variant, text, contextVector, 0);
     }
 
     @Override
-    public Translation translate(LanguagePair direction, String variant, Sentence text, ContextVector contextVector, int nbestListSize) throws NeuralDecoderException {
+    public Translation translate(LanguagePair direction, String variant, Sentence text, ContextVector contextVector, int nbestListSize) throws DecoderException {
         if (!this.directions.contains(direction))
             throw new UnsupportedLanguageException(direction);
 
@@ -141,7 +141,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
             try {
                 suggestions = memory.search(direction, text, contextVector, this.suggestionsLimit);
             } catch (IOException e) {
-                throw new NeuralDecoderException("Failed to retrieve suggestions from memory", e);
+                throw new DecoderException("Failed to retrieve suggestions from memory", e);
             }
 
             if (suggestions != null && suggestions.length > 0) {

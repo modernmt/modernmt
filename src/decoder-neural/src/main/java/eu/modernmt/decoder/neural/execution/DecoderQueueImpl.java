@@ -1,6 +1,7 @@
 package eu.modernmt.decoder.neural.execution;
 
-import eu.modernmt.decoder.neural.NeuralDecoderException;
+import eu.modernmt.decoder.DecoderException;
+import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.decoder.neural.natv.NativeProcess;
 import eu.modernmt.lang.LanguagePair;
@@ -10,7 +11,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.Closeable;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -19,11 +19,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public abstract class DecoderQueueImpl implements DecoderQueue {
 
-    public static DecoderQueueImpl newGPUInstance(NativeProcess.Builder builder, int[] gpus) throws NeuralDecoderException {
+    public static DecoderQueueImpl newGPUInstance(NativeProcess.Builder builder, int[] gpus) throws DecoderException {
         return new GPUDecoderQueue(builder, gpus).init();
     }
 
-    public static DecoderQueueImpl newCPUInstance(NativeProcess.Builder builder, int cpus) throws NeuralDecoderException {
+    public static DecoderQueueImpl newCPUInstance(NativeProcess.Builder builder, int cpus) throws DecoderException {
         return new CPUDecoderQueue(builder, cpus).init();
     }
 
@@ -44,7 +44,7 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
         this.initExecutor = capacity > 1 ? Executors.newCachedThreadPool() : Executors.newSingleThreadExecutor();
     }
 
-    protected final DecoderQueueImpl init() throws NeuralDecoderException {
+    protected final DecoderQueueImpl init() throws DecoderException {
         Future<?>[] array = new Future<?>[capacity];
         for (int i = 0; i < capacity; i++)
             array[i] = this.initExecutor.submit(new Initializer());
@@ -53,24 +53,24 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
             try {
                 array[i].get();
             } catch (InterruptedException e) {
-                throw new NeuralDecoderException("Initialization interrupted", e);
+                throw new DecoderException("Initialization interrupted", e);
             } catch (ExecutionException e) {
-                throw new NeuralDecoderException("Unexpected error during initialization", e.getCause());
+                throw new DecoderException("Unexpected error during initialization", e.getCause());
             }
         }
 
         return this;
     }
 
-    private NativeProcess getProcess() throws NeuralDecoderException {
+    private NativeProcess getProcess() throws DecoderException {
         if (this.active && this.aliveProcesses.get() > 0) {
             try {
                 return this.queue.take();
             } catch (InterruptedException e) {
-                throw new NeuralDecoderException("No NMT processes available", e);
+                throw new DecoderUnavailableException("No NMT processes available", e);
             }
         } else {
-            throw new NeuralDecoderException("No alive NMT processes available");
+            throw new DecoderUnavailableException("No alive NMT processes available");
         }
     }
 
@@ -93,7 +93,7 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
     }
 
     @Override
-    public final Translation translate(LanguagePair direction, String variant, Sentence sentence, int nBest) throws NeuralDecoderException {
+    public final Translation translate(LanguagePair direction, String variant, Sentence sentence, int nBest) throws DecoderException {
         NativeProcess process = getProcess();
 
         try {
@@ -104,7 +104,7 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
     }
 
     @Override
-    public final Translation translate(LanguagePair direction, String variant, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws NeuralDecoderException {
+    public final Translation translate(LanguagePair direction, String variant, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException {
         NativeProcess process = getProcess();
 
         try {
@@ -114,7 +114,7 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
         }
     }
 
-    protected abstract NativeProcess startProcess(NativeProcess.Builder processBuilder) throws NeuralDecoderException;
+    protected abstract NativeProcess startProcess(NativeProcess.Builder processBuilder) throws DecoderException;
 
     protected abstract void onProcessDied(NativeProcess process);
 
@@ -144,7 +144,7 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
             try {
                 logger.info("Starting native decoder process");
                 process = startProcess(processBuilder);
-            } catch (NeuralDecoderException e) {
+            } catch (DecoderException e) {
                 logger.error("Failed to start new decoder process", e);
                 System.exit(2);
 

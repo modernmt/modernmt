@@ -1,12 +1,14 @@
 package eu.modernmt.rest.actions.translation;
 
+import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.context.ContextAnalyzerException;
+import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.facade.TranslationFacade;
-import eu.modernmt.facade.exceptions.TranslationException;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.persistence.PersistenceException;
+import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.rest.actions.util.ContextUtils;
 import eu.modernmt.rest.framework.HttpMethod;
 import eu.modernmt.rest.framework.Parameters;
@@ -24,7 +26,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
     public static final int MAX_QUERY_LENGTH = 5000;
 
     @Override
-    protected TranslationResponse execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, PersistenceException, TranslationException {
+    protected TranslationResponse execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, PersistenceException, DecoderException, AlignerException, ProcessingException {
         Params params = (Params) _params;
 
         TranslationResponse result = new TranslationResponse();

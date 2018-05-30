@@ -4,7 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import eu.modernmt.decoder.neural.NeuralDecoderException;
+import eu.modernmt.decoder.DecoderException;
+import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguagePair;
@@ -62,10 +63,10 @@ public class NativeProcess implements Closeable {
          * and returns a NativeProcess that allows to interact with such process.
          *
          * @return a NativeProcess object, referencing the launched process
-         * @throws IOException            if the communication with the decoder process raised unexpected issues
-         * @throws NeuralDecoderException if the decoder process itself raised unexpected issues
+         * @throws IOException      if the communication with the decoder process raised unexpected issues
+         * @throws DecoderException if the decoder process itself raised unexpected issues
          */
-        public NativeProcess startOnCPU() throws IOException, NeuralDecoderException {
+        public NativeProcess startOnCPU() throws IOException, DecoderException {
             return start(-1);
         }
 
@@ -74,14 +75,14 @@ public class NativeProcess implements Closeable {
          * and returns a NativeProcess that allows to interact with such process.
          *
          * @return a NativeProcess object, referencing the launched process
-         * @throws IOException            if the communication with the decoder process raised unexpected issues
-         * @throws NeuralDecoderException if the decoder process itself raised unexpected issues
+         * @throws IOException      if the communication with the decoder process raised unexpected issues
+         * @throws DecoderException if the decoder process itself raised unexpected issues
          */
-        public NativeProcess startOnGPU(int gpu) throws IOException, NeuralDecoderException {
+        public NativeProcess startOnGPU(int gpu) throws IOException, DecoderException {
             return start(gpu);
         }
 
-        private NativeProcess start(int gpu) throws IOException, NeuralDecoderException {
+        private NativeProcess start(int gpu) throws IOException, DecoderException {
             ArrayList<String> command = new ArrayList<>(5);
             command.add("python");
             command.add(pythonExec.getAbsolutePath());
@@ -119,7 +120,7 @@ public class NativeProcess implements Closeable {
     private final StdoutThread stdoutThread;
     private final LogThread logThread;
 
-    NativeProcess(Process decoder, int gpu) throws NeuralDecoderException {
+    NativeProcess(Process decoder, int gpu) throws DecoderException {
         this.gpu = gpu;
         this.decoder = decoder;
         this.stdin = decoder.getOutputStream();
@@ -135,12 +136,12 @@ public class NativeProcess implements Closeable {
             try {
                 line = this.stdoutThread.readLine();
             } catch (IOException e) {
-                throw new NeuralDecoderException("Failed to start neural decoder", e);
+                throw new DecoderException("Failed to start neural decoder", e);
             }
 
             if (line == null || !line.trim().equals("ok"))
-                throw new NeuralDecoderException("Failed to start neural decoder (cause): " + line);
-        } catch (NeuralDecoderException e) {
+                throw new DecoderException("Failed to start neural decoder (cause): " + line);
+        } catch (DecoderException e) {
             close();
             throw e;
         }
@@ -155,13 +156,13 @@ public class NativeProcess implements Closeable {
         return decoder.isAlive();
     }
 
-    public Translation translate(LanguagePair direction, String variant, Sentence sentence, int nBest) throws NeuralDecoderException {
+    public Translation translate(LanguagePair direction, String variant, Sentence sentence, int nBest) throws DecoderException {
         return translate(direction, variant, sentence, null, nBest);
     }
 
-    public Translation translate(LanguagePair direction, String variant, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws NeuralDecoderException {
+    public Translation translate(LanguagePair direction, String variant, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException {
         if (!decoder.isAlive())
-            throw new NeuralDecoderException("Neural decoder process not available");
+            throw new DecoderUnavailableException("Neural decoder process not available");
 
         String payload = serialize(direction, variant, sentence, suggestions, nBest);
 
@@ -171,7 +172,7 @@ public class NativeProcess implements Closeable {
             this.stdin.flush();
         } catch (IOException e) {
             this.close();
-            throw new NeuralDecoderException("Failed to send request to decoder process", e);
+            throw new DecoderException("Failed to send request to decoder process", e);
         }
 
         String line;
@@ -179,12 +180,12 @@ public class NativeProcess implements Closeable {
             line = stdoutThread.readLine(30, TimeUnit.SECONDS);
         } catch (IOException e) {
             this.close();
-            throw new NeuralDecoderException("Failed to read response from decoder process", e);
+            throw new DecoderException("Failed to read response from decoder process", e);
         }
 
         if (line == null) {
             this.close();
-            throw new NeuralDecoderException("No response from NMT process, request was '" + payload + "'");
+            throw new DecoderException("No response from NMT process, request was '" + payload + "'");
         }
 
         return deserialize(sentence, line, nBest > 0);
@@ -222,13 +223,13 @@ public class NativeProcess implements Closeable {
         return json.toString().replace('\n', ' ');
     }
 
-    private Translation deserialize(Sentence sentence, String response, boolean includeNBest) throws NeuralDecoderException {
+    private Translation deserialize(Sentence sentence, String response, boolean includeNBest) throws DecoderException {
         JsonObject json;
         try {
             json = parser.parse(response).getAsJsonObject();
         } catch (JsonSyntaxException e) {
             this.close();
-            throw new NeuralDecoderException("Invalid response from NMT decoder: " + response, e);
+            throw new DecoderException("Invalid response from NMT decoder: " + response, e);
         }
 
         if (json.has("error")) {
@@ -239,7 +240,10 @@ public class NativeProcess implements Closeable {
             if (jsonError.has("message"))
                 message = jsonError.get("message").getAsString();
 
-            throw NeuralDecoderException.fromPythonError(type, message);
+            if (message == null)
+                throw new DecoderException(type);
+            else
+                throw new DecoderException(type + " - " + message);
         }
 
         JsonArray jsonArray = json.getAsJsonArray("result");

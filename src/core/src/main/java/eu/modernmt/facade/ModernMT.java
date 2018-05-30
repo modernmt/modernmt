@@ -1,16 +1,18 @@
 package eu.modernmt.facade;
 
 import eu.modernmt.Pom;
+import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.NodeInfo;
 import eu.modernmt.cluster.ServerInfo;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.config.NodeConfig;
+import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.facade.exceptions.TestFailedException;
-import eu.modernmt.facade.exceptions.TranslationException;
 import eu.modernmt.persistence.Database;
 import eu.modernmt.persistence.PersistenceException;
+import eu.modernmt.processing.ProcessingException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -82,7 +84,7 @@ public class ModernMT {
         // 3 - Testing translation engine
         try {
             translation.test();
-        } catch (TranslationException e) {
+        } catch (AlignerException | DecoderException | ProcessingException e) {
             throw new TestFailedException("Failed to translate test sentence", e);
         }
     }

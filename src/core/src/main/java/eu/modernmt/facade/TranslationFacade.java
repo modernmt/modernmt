@@ -9,8 +9,6 @@ import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.decoder.*;
 import eu.modernmt.engine.Engine;
-import eu.modernmt.facade.exceptions.TranslationException;
-import eu.modernmt.facade.exceptions.TranslationRejectedException;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
@@ -31,7 +29,6 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
 
 /**
  * Created by davide on 31/01/17.
@@ -85,23 +82,23 @@ public class TranslationFacade {
     //  Translation
     // =============================
 
-    public Translation get(LanguagePair direction, String sentence, Priority priority, String variant) throws TranslationException {
+    public Translation get(LanguagePair direction, String sentence, Priority priority, String variant) throws ProcessingException, DecoderException, AlignerException {
         return get(new TranslationTaskImpl(direction, sentence, null, 0, priority, variant));
     }
 
-    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, Priority priority, String variant) throws TranslationException {
+    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, Priority priority, String variant) throws ProcessingException, DecoderException, AlignerException {
         return get(new TranslationTaskImpl(direction, sentence, translationContext, 0, priority, variant));
     }
 
-    public Translation get(LanguagePair direction, String sentence, int nbest, Priority priority, String variant) throws TranslationException {
+    public Translation get(LanguagePair direction, String sentence, int nbest, Priority priority, String variant) throws ProcessingException, DecoderException, AlignerException {
         return get(new TranslationTaskImpl(direction, sentence, null, nbest, priority, variant));
     }
 
-    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, int nbest, Priority priority, String variant) throws TranslationException {
+    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, int nbest, Priority priority, String variant) throws ProcessingException, DecoderException, AlignerException {
         return get(new TranslationTaskImpl(direction, sentence, translationContext, nbest, priority, variant));
     }
 
-    private Translation get(TranslationTaskImpl task) throws TranslationException {
+    private Translation get(TranslationTaskImpl task) throws ProcessingException, DecoderException, AlignerException {
         ensureLanguagePairIsSupported(task.direction);
 
         if (task.nbest > 0)
@@ -123,11 +120,22 @@ public class TranslationFacade {
         } catch (InterruptedException e) {
             throw new SystemShutdownException(e);
         } catch (ExecutionException e) {
-            throw unwrapException(e);
+            Throwable cause = e.getCause();
+
+            if (cause instanceof ProcessingException)
+                throw (ProcessingException) cause;
+            else if (cause instanceof DecoderException)
+                throw (DecoderException) cause;
+            else if (cause instanceof AlignerException)
+                throw (AlignerException) cause;
+            else if (cause instanceof RuntimeException)
+                throw (RuntimeException) cause;
+            else
+                throw new Error("Unexpected exception thrown: " + cause.getMessage(), cause);
         }
     }
 
-    public void test() throws TranslationException {
+    public void test() throws DecoderException, AlignerException, ProcessingException {
         LanguagePair language = selectForTest();
         String text = "Translation test " + new Random().nextInt();
 
@@ -135,7 +143,7 @@ public class TranslationFacade {
         TranslationTaskImpl task = new TranslationTaskImpl(language, text, null, 0, TranslationFacade.Priority.HIGH, null);
         Translation translation = task.call();
         if (!translation.hasWords())
-            throw new TranslationException("Empty translation for test sentence '" + text + "'");
+            throw new DecoderException("Empty translation for test sentence '" + text + "'");
     }
 
     private LanguagePair selectForTest() {
@@ -233,19 +241,6 @@ public class TranslationFacade {
     //  Util functions
     // -----------------------------
 
-    private TranslationException unwrapException(ExecutionException e) {
-        Throwable cause = e.getCause();
-
-        if (cause instanceof TranslationException)
-            return (TranslationException) cause;
-        else if (cause instanceof RejectedExecutionException)
-            return new TranslationRejectedException();
-        else if (cause instanceof RuntimeException)
-            throw (RuntimeException) cause;
-        else
-            throw new Error("Unexpected exception: " + cause.getMessage(), cause);
-    }
-
     private void ensureDecoderSupportsNBest() {
         Decoder decoder = ModernMT.getNode().getEngine().getDecoder();
         if (!(decoder instanceof DecoderWithNBest))
@@ -294,7 +289,7 @@ public class TranslationFacade {
         }
 
         @Override
-        public Translation call() throws TranslationException {
+        public Translation call() throws ProcessingException, DecoderException, AlignerException {
             ModernMT.translation.setLastTranslationLanguage(direction);
 
             ClusterNode node = ModernMT.getNode();
@@ -304,39 +299,31 @@ public class TranslationFacade {
             Preprocessor preprocessor = engine.getPreprocessor();
             Postprocessor postprocessor = engine.getPostprocessor();
 
-            try {
-                long begin = System.currentTimeMillis();
+            long begin = System.currentTimeMillis();
 
-                Sentence sentence = preprocessor.process(direction, text);
-                Translation translation;
+            Sentence sentence = preprocessor.process(direction, text);
+            Translation translation;
 
-                if (decoder.supportsSentenceSplit()) {
-                    Sentence[] sentencePieces = SentenceSplitter.forLanguage(direction.source).split(sentence);
-                    Translation[] translationPieces = translate(sentencePieces, decoder);
+            if (decoder.supportsSentenceSplit()) {
+                Sentence[] sentencePieces = SentenceSplitter.forLanguage(direction.source).split(sentence);
+                Translation[] translationPieces = translate(sentencePieces, decoder);
 
-                    translation = this.merge(sentence, sentencePieces, translationPieces);
-                } else {
-                    translation = translate(sentence, decoder);
-                }
-
-                postprocessor.process(direction, translation);
-
-                // NBest list
-                if (translation.hasNbest()) {
-                    List<Translation> hypotheses = translation.getNbest();
-                    postprocessor.process(direction, hypotheses);
-                }
-
-                translation.setElapsedTime(System.currentTimeMillis() - begin);
-
-                return translation;
-            } catch (ProcessingException e) {
-                throw new TranslationException("Problem while processing translation", e);
-            } catch (AlignerException e) {
-                throw new TranslationException("Problem while aligning source sentence to its translation", e);
-            } catch (DecoderException e) {
-                throw new TranslationException("Problem while decoding source sentence", e);
+                translation = this.merge(sentence, sentencePieces, translationPieces);
+            } else {
+                translation = translate(sentence, decoder);
             }
+
+            postprocessor.process(direction, translation);
+
+            // NBest list
+            if (translation.hasNbest()) {
+                List<Translation> hypotheses = translation.getNbest();
+                postprocessor.process(direction, hypotheses);
+            }
+
+            translation.setElapsedTime(System.currentTimeMillis() - begin);
+
+            return translation;
         }
 
         private Translation[] translate(Sentence[] sentences, Decoder decoder)

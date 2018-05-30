@@ -2,8 +2,8 @@ package eu.modernmt.rest.framework.actions;
 
 import com.google.gson.JsonElement;
 import eu.modernmt.cluster.error.SystemShutdownException;
+import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.facade.exceptions.AuthenticationException;
-import eu.modernmt.facade.exceptions.TranslationRejectedException;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
@@ -38,7 +38,7 @@ public abstract class JSONAction implements Action {
             if (logger.isDebugEnabled())
                 logger.debug("Unable to complete action " + this + ": system is shutting down", e);
             resp.unavailable(e);
-        } catch (TranslationRejectedException e) {
+        } catch (DecoderUnavailableException e) {
             resp.unavailable(e);
         } catch (Throwable e) {
             logger.error("Internal error while executing action " + this, e);

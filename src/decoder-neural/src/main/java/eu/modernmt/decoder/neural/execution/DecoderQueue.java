@@ -1,6 +1,6 @@
 package eu.modernmt.decoder.neural.execution;
 
-import eu.modernmt.decoder.neural.NeuralDecoderException;
+import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Sentence;
@@ -10,8 +10,8 @@ import java.io.Closeable;
 
 public interface DecoderQueue extends Closeable {
 
-    Translation translate(LanguagePair direction, String variant, Sentence sentence, int nBest) throws NeuralDecoderException;
+    Translation translate(LanguagePair direction, String variant, Sentence sentence, int nBest) throws DecoderException;
 
-    Translation translate(LanguagePair direction, String variant, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws NeuralDecoderException;
+    Translation translate(LanguagePair direction, String variant, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException;
 
 }

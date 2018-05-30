@@ -20,7 +20,6 @@ import eu.modernmt.decoder.DecoderFeature;
 import eu.modernmt.decoder.DecoderWithFeatures;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
-import eu.modernmt.facade.exceptions.TranslationException;
 import eu.modernmt.hw.NetworkUtils;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Translation;
@@ -472,7 +471,7 @@ public class ClusterNode {
      * @param task the translationTask with all the information on the translation job to execute
      * @return the resulting Translation object.
      */
-    public Future<Translation> submit(TranslationTask task, LanguagePair direction) throws TranslationException {
+    public Future<Translation> submit(TranslationTask task, LanguagePair direction) {
         Member member = this.getRandomMember(direction);
         return member != null ? translationService.submit(task, member.getAddress()) : null;
     }
