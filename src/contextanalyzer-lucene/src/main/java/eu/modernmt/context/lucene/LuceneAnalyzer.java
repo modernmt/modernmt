@@ -7,7 +7,6 @@ import eu.modernmt.context.lucene.storage.CorporaStorage;
 import eu.modernmt.context.lucene.storage.Options;
 import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
-import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Memory;
@@ -23,6 +22,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -35,11 +35,11 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     private final ContextAnalyzerIndex index;
     private final CorporaStorage storage;
 
-    public LuceneAnalyzer(LanguageIndex languages, File indexPath) throws IOException {
+    public LuceneAnalyzer(Collection<LanguagePair> languages, File indexPath) throws IOException {
         this(languages, indexPath, new Options());
     }
 
-    public LuceneAnalyzer(LanguageIndex languages, File indexPath, Options options) throws IOException {
+    public LuceneAnalyzer(Collection<LanguagePair> languages, File indexPath, Options options) throws IOException {
         this.index = new ContextAnalyzerIndex(new File(indexPath, "index"));
         this.storage = new CorporaStorage(new File(indexPath, "storage"), options, this.index, languages);
     }

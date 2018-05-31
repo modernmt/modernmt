@@ -83,31 +83,28 @@ public class TranslationFacade {
     // =============================
 
     public Translation get(LanguagePair direction, String sentence, Priority priority, String variant) throws ProcessingException, DecoderException, AlignerException {
-        return get(new TranslationTaskImpl(direction, sentence, null, 0, priority, variant));
+        return get(direction, sentence, null, 0, priority, variant);
     }
 
     public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, Priority priority, String variant) throws ProcessingException, DecoderException, AlignerException {
-        return get(new TranslationTaskImpl(direction, sentence, translationContext, 0, priority, variant));
+        return get(direction, sentence, translationContext, 0, priority, variant);
     }
 
     public Translation get(LanguagePair direction, String sentence, int nbest, Priority priority, String variant) throws ProcessingException, DecoderException, AlignerException {
-        return get(new TranslationTaskImpl(direction, sentence, null, nbest, priority, variant));
+        return get(direction, sentence, null, nbest, priority, variant);
     }
 
     public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, int nbest, Priority priority, String variant) throws ProcessingException, DecoderException, AlignerException {
-        return get(new TranslationTaskImpl(direction, sentence, translationContext, nbest, priority, variant));
-    }
-
-    private Translation get(TranslationTaskImpl task) throws ProcessingException, DecoderException, AlignerException {
-        ensureLanguagePairIsSupported(task.direction);
-
-        if (task.nbest > 0)
+        direction = mapLanguagePair(direction);
+        if (nbest > 0)
             ensureDecoderSupportsNBest();
+
+        TranslationTask task = new TranslationTaskImpl(direction, sentence, translationContext, nbest, priority, variant);
 
         try {
             ClusterNode node = ModernMT.getNode();
 
-            Future<Translation> future = node.submit(task, task.direction);
+            Future<Translation> future = node.submit(task, direction);
             if (future == null)
                 future = node.submit(task);
 
@@ -139,7 +136,6 @@ public class TranslationFacade {
         LanguagePair language = selectForTest();
         String text = "Translation test " + new Random().nextInt();
 
-
         TranslationTaskImpl task = new TranslationTaskImpl(language, text, null, 0, TranslationFacade.Priority.HIGH, null);
         Translation translation = task.call();
         if (!translation.hasWords())
@@ -150,7 +146,7 @@ public class TranslationFacade {
         LanguagePair language = getLastTranslationLanguage();
 
         if (language == null) {
-            LanguageIndex index = ModernMT.getNode().getEngine().getLanguages();
+            LanguageIndex index = ModernMT.getNode().getEngine().getLanguageIndex();
 
             for (LanguagePair pair : index.getLanguages()) {
                 if ("en".equalsIgnoreCase(pair.source.getLanguage()))
@@ -184,7 +180,16 @@ public class TranslationFacade {
     // =============================
 
     public ContextVector getContextVector(LanguagePair direction, File context, int limit) throws ContextAnalyzerException {
-        ensureLanguagePairIsSupported(direction);
+        direction = mapLanguagePair(direction);
+
+        Engine engine = ModernMT.getNode().getEngine();
+        ContextAnalyzer analyzer = engine.getContextAnalyzer();
+
+        return analyzer.getContextVector(direction, context, limit);
+    }
+
+    public ContextVector getContextVector(LanguagePair direction, String context, int limit) throws ContextAnalyzerException {
+        direction = mapLanguagePair(direction);
 
         Engine engine = ModernMT.getNode().getEngine();
         ContextAnalyzer analyzer = engine.getContextAnalyzer();
@@ -193,7 +198,7 @@ public class TranslationFacade {
     }
 
     public Map<Language, ContextVector> getContextVectors(File context, int limit, Language source, Language... targets) throws ContextAnalyzerException {
-        List<LanguagePair> languages = filterUnsupportedLanguages(source, targets);
+        List<LanguagePair> languages = mapLanguagePairs(source, targets);
 
         if (languages.isEmpty())
             return Collections.emptyMap();
@@ -210,17 +215,8 @@ public class TranslationFacade {
         return result;
     }
 
-    public ContextVector getContextVector(LanguagePair direction, String context, int limit) throws ContextAnalyzerException {
-        ensureLanguagePairIsSupported(direction);
-
-        Engine engine = ModernMT.getNode().getEngine();
-        ContextAnalyzer analyzer = engine.getContextAnalyzer();
-
-        return analyzer.getContextVector(direction, context, limit);
-    }
-
     public Map<Language, ContextVector> getContextVectors(String context, int limit, Language source, Language... targets) throws ContextAnalyzerException {
-        List<LanguagePair> languages = filterUnsupportedLanguages(source, targets);
+        List<LanguagePair> languages = mapLanguagePairs(source, targets);
 
         if (languages.isEmpty())
             return Collections.emptyMap();
@@ -247,20 +243,23 @@ public class TranslationFacade {
             throw new UnsupportedOperationException("Decoder '" + decoder.getClass().getSimpleName() + "' does not support N-best.");
     }
 
-    private void ensureLanguagePairIsSupported(LanguagePair pair) {
-        LanguageIndex languages = ModernMT.getNode().getEngine().getLanguages();
-        if (!languages.contains(pair))
+    private LanguagePair mapLanguagePair(LanguagePair pair) {
+        LanguageIndex index = ModernMT.getNode().getEngine().getLanguageIndex();
+
+        LanguagePair mapped = index.map(pair);
+        if (mapped == null)
             throw new UnsupportedLanguageException(pair);
+
+        return mapped;
     }
 
-    private List<LanguagePair> filterUnsupportedLanguages(Language source, Language[] targets) {
+    private List<LanguagePair> mapLanguagePairs(Language source, Language[] targets) {
         ArrayList<LanguagePair> result = new ArrayList<>(targets.length);
 
-        LanguageIndex languages = ModernMT.getNode().getEngine().getLanguages();
+        LanguageIndex index = ModernMT.getNode().getEngine().getLanguageIndex();
         for (Language target : targets) {
-            LanguagePair language = new LanguagePair(source, target);
-
-            if (languages.contains(language))
+            LanguagePair language = index.map(new LanguagePair(source, target));
+            if (language != null)
                 result.add(language);
         }
 
@@ -272,6 +271,7 @@ public class TranslationFacade {
     // -----------------------------
 
     private static class TranslationTaskImpl implements TranslationTask {
+
         public final LanguagePair direction;
         public final String text;
         public final ContextVector context;
@@ -400,5 +400,6 @@ public class TranslationFacade {
         public int getPriority() {
             return this.priority.intValue;
         }
+
     }
 }

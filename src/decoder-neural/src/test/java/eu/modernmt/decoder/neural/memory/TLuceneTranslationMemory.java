@@ -5,7 +5,6 @@ import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
@@ -20,7 +19,7 @@ import java.util.*;
 public class TLuceneTranslationMemory extends LuceneTranslationMemory {
 
     public TLuceneTranslationMemory(LanguagePair... languages) throws IOException {
-        super(new LanguageIndex(Arrays.asList(languages)), new RAMDirectory(), 10);
+        super(Arrays.asList(languages), new RAMDirectory(), 10);
     }
 
     public int size() throws IOException {
@@ -64,19 +63,19 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
             return new Entry(memory, language, source, target);
         }
 
-        public static Set<Entry> asEntrySet(LanguageIndex languages, Collection<TranslationUnit> units) {
+        public static Set<Entry> asEntrySet(Set<LanguagePair> languages, Collection<TranslationUnit> units) {
             HashSet<Entry> result = new HashSet<>(units.size());
 
             for (TranslationUnit unit : units) {
-                for (LanguagePair direction : languages.map(unit.direction)) {
-                    String source = direction.source.toLanguageTag();
-                    String target = direction.target.toLanguageTag();
+                if (languages.contains(unit.direction) || languages.contains(unit.direction.reversed())) {
+                    String source = unit.direction.source.toLanguageTag();
+                    String target = unit.direction.target.toLanguageTag();
 
                     Entry entry;
                     if (source.compareTo(target) < 0)
-                        entry = new Entry(unit.memory, direction, unit.rawSentence, unit.rawTranslation);
+                        entry = new Entry(unit.memory, unit.direction, unit.rawSentence, unit.rawTranslation);
                     else
-                        entry = new Entry(unit.memory, direction.reversed(), unit.rawTranslation, unit.rawSentence);
+                        entry = new Entry(unit.memory, unit.direction.reversed(), unit.rawTranslation, unit.rawSentence);
 
                     result.add(entry);
                 }

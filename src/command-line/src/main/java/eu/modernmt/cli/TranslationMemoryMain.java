@@ -3,7 +3,6 @@ package eu.modernmt.cli;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.Corpora;
@@ -77,11 +76,10 @@ public class TranslationMemoryMain {
         }
 
         LanguagePair direction = new LanguagePair(args.sourceLanguage, args.targetLanguage);
-        LanguageIndex languages = new LanguageIndex(Collections.singleton(direction));
 
         LuceneTranslationMemory memory = null;
         try {
-            memory = new LuceneTranslationMemory(languages, args.modelPath, 10);
+            memory = new LuceneTranslationMemory(Collections.singleton(direction), args.modelPath, 10);
             memory.bulkInsert(memory2corpus);
         } finally {
             IOUtils.closeQuietly(memory);

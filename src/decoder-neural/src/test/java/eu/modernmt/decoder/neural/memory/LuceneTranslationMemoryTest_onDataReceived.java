@@ -35,7 +35,7 @@ public class LuceneTranslationMemoryTest_onDataReceived {
         int size = units.size();
         Map<Short, Long> expectedChannels = TestData.channels(0, size - 1);
         Set<TLuceneTranslationMemory.Entry> expectedEntries =
-                TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguageIndex(), units);
+                TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguages(), units);
 
         memory.onDataReceived(units);
 

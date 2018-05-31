@@ -3,27 +3,59 @@ package eu.modernmt.lang;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Created by davide on 31/07/17.
- */
-public class LanguageIndex implements Iterable<LanguagePair> {
+public class LanguageIndex {
 
-    private final Set<LanguagePair> languages;
-    private final HashMap<LanguageKey, HashSet<LanguagePair>> index;
-    private final ConcurrentHashMap<LanguagePair, List<LanguagePair>> cache = new ConcurrentHashMap<>();
+    public static class Builder {
 
-    public LanguageIndex(LanguagePair... languages) {
-        this(Arrays.asList(languages));
+        private final Set<LanguagePair> languages = new HashSet<>();
+        private final Map<LanguageKey, List<LanguageEntry>> index = new HashMap<>();
+        private final Map<String, List<LanguageRule>> rules = new HashMap<>();
+
+        public Builder add(LanguagePair pair) {
+            LanguageKey key = LanguageKey.fromLanguage(pair);
+            LanguageEntry entry = LanguageEntry.fromLanguage(pair);
+
+            languages.add(pair);
+            index.computeIfAbsent(key, k -> new ArrayList<>()).add(entry);
+
+            return this;
+        }
+
+        public Builder addWildcardRule(Language lang, Language to) {
+            return addRule(lang, null, to);
+        }
+
+        public Builder addRule(Language lang, Language from, Language to) {
+            if (lang.getRegion() != null)
+                throw new IllegalArgumentException("Language region not supported for rule: " + lang);
+
+            rules.computeIfAbsent(lang.getLanguage(), k -> new ArrayList<>()).add(LanguageRule.make(from, to));
+
+            return this;
+        }
+
+        public LanguageIndex build() {
+            return new LanguageIndex(languages, index, rules);
+        }
+
     }
 
-    public LanguageIndex(Collection<LanguagePair> languages) {
-        this.languages = Collections.unmodifiableSet(new HashSet<>(languages));
+    private final Set<LanguagePair> languages;
+    private final Map<LanguageKey, List<LanguageEntry>> index;
+    private final Map<String, List<LanguageRule>> rules;
+    private final Set<Language> rulesSkipList;
+    private final ConcurrentHashMap<LanguagePair, LanguagePair> mappingCache = new ConcurrentHashMap<>();
 
-        this.index = new HashMap<>(languages.size());
-        for (LanguagePair language : languages) {
-            LanguageKey key = LanguageKey.fromLanguage(language);
-            HashSet<LanguagePair> entry = this.index.computeIfAbsent(key, (k) -> new HashSet<>(4));
-            entry.add(language);
+    private LanguageIndex(Set<LanguagePair> languages, Map<LanguageKey, List<LanguageEntry>> index, Map<String, List<LanguageRule>> rules) {
+        this.languages = Collections.unmodifiableSet(languages);
+        this.index = index;
+        this.rules = rules;
+
+        this.rulesSkipList = new HashSet<>();
+        for (List<LanguageRule> list : rules.values()) {
+            for (LanguageRule rule : list) {
+                this.rulesSkipList.add(rule.getLanguage());
+            }
         }
     }
 
@@ -35,91 +67,92 @@ public class LanguageIndex implements Iterable<LanguagePair> {
         return languages.size();
     }
 
-    public boolean contains(LanguagePair pair) {
-        return pair != null && languages.contains(pair);
-    }
-
-    public boolean match(LanguagePair pair) {
-        return !map(pair).isEmpty();
-    }
-
-    public LanguagePair mapToBestMatching(LanguagePair pair) {
-        if (languages.contains(pair) || languages.contains(pair.reversed()))
-            return pair;
-
-        List<LanguagePair> mapping = map(pair);
-        return mapping.isEmpty() ? null : mapping.get(0);
-    }
-
-    public List<LanguagePair> map(LanguagePair pair) {
-        List<LanguagePair> result = cache.get(pair);
-
-        if (result != null)
-            return result;
-
-        Set<LanguagePair> set;
-        set = map(pair, null, false);
-        set = map(pair.reversed(), set, true);
-
-        if (set != null) {
-            result = new ArrayList<>(set);
-            result.sort((a, b) -> {
-                int cmp = a.source.compareTo(b.source);
-                return -(cmp == 0 ? a.target.compareTo(b.target) : cmp);
-            });
-
-            result = Collections.unmodifiableList(result);
-            cache.put(pair, result);
-        }
-
-        return result == null ? Collections.emptyList() : result;
-    }
-
-    private Set<LanguagePair> map(LanguagePair pair, Set<LanguagePair> result, boolean reverse) {
-        LanguageKey key = LanguageKey.fromLanguage(pair);
-        Set<LanguagePair> mappings = this.index.get(key);
-
-        if (mappings != null) {
-            for (LanguagePair mapping : mappings) {
-                if (match(pair, mapping)) {
-                    if (result == null)
-                        result = new HashSet<>(4);
-
-                    result.add(reverse ? mapping.reversed() : mapping);
-                }
-            }
-        }
-
-        return result;
-    }
-
-    private static boolean match(LanguagePair a, LanguagePair b) {
-        return match(a.source, b.source) && match(a.target, b.target);
-    }
-
-    private static boolean match(Language a, Language b) {
-        if (!a.getLanguage().equals(b.getLanguage()))
-            return false;
-
-        String aRegion = a.getRegion();
-        String bRegion = b.getRegion();
-
-        return aRegion == null || bRegion == null || aRegion.equals(bRegion);
-    }
-
-    /**
-     * If this LanguageIndex only supports one LanguagePair, this method returns it.
-     * Else, it returns null.
-     *
-     * @return the language pair, if only one is supported; null otherwise
-     */
     public LanguagePair asSingleLanguagePair() {
         return languages.size() == 1 ? languages.iterator().next() : null;
     }
 
+    public LanguagePair mapIgnoringDirection(LanguagePair pair) {
+        LanguagePair cached = mappingCache.get(pair);
+        if (cached != null)
+            return cached;
+        cached = mappingCache.get(pair.reversed());
+        if (cached != null)
+            return cached.reversed();
+
+        LanguagePair mapped = map(pair);
+
+        if (mapped == null) {
+            mapped = map(pair.reversed());
+            if (mapped != null)
+                mapped = mapped.reversed();
+        }
+
+        return mapped;
+    }
+
+    /**
+     * Map the input language pair to one of the supported ones trying to adapt language and region if necessary.
+     * It does not try to map the reversed language pair, if needed call mapIgnoringDirection()
+     *
+     * @param pair the pair to search for
+     * @return the supported language pair that matches the input pair
+     */
+    public LanguagePair map(LanguagePair pair) {
+        return mappingCache.computeIfAbsent(pair, this::search);
+    }
+
+    private LanguagePair search(LanguagePair language) {
+        language = transform(language);
+
+        LanguageKey key = LanguageKey.fromLanguage(language);
+        List<LanguageEntry> entries = index.get(key);
+
+        if (entries == null)
+            return null;
+
+        for (LanguageEntry entry : entries) {
+            if (entry.match(language))
+                return entry.getLanguagePair();
+        }
+
+        return null;
+    }
+
+    private LanguagePair transform(LanguagePair language) {
+        Language source = transform(language.source);
+        Language target = transform(language.target);
+
+        if (source == null && target == null)
+            return language;
+
+        if (source == null)
+            source = language.source;
+        if (target == null)
+            target = language.target;
+
+        return new LanguagePair(source, target);
+    }
+
+    private Language transform(Language language) {
+        if (rulesSkipList.contains(language))
+            return null;
+
+        List<LanguageRule> rules = this.rules.get(language.getLanguage());
+
+        if (rules == null)
+            return null;
+
+        for (LanguageRule rule : rules) {
+            if (rule.match(language))
+                return rule.getLanguage();
+        }
+
+        return null;
+    }
+
     @Override
-    public Iterator<LanguagePair> iterator() {
-        return languages.iterator();
+    public String toString() {
+        return "i" + languages;
     }
 
     private static final class LanguageKey {
@@ -153,6 +186,80 @@ public class LanguageIndex implements Iterable<LanguagePair> {
             result = 31 * result + target.hashCode();
             return result;
         }
+
+        @Override
+        public String toString() {
+            return source + " > " + target;
+        }
+    }
+
+    private static final class LanguageEntry {
+
+        public static LanguageEntry fromLanguage(LanguagePair pair) {
+            return new LanguageEntry(pair, Matcher.forLanguage(pair.source), Matcher.forLanguage(pair.target));
+        }
+
+        private final LanguagePair pair;
+        private final Matcher source;
+        private final Matcher target;
+
+        private LanguageEntry(LanguagePair pair, Matcher source, Matcher target) {
+            this.pair = pair;
+            this.source = source;
+            this.target = target;
+        }
+
+        public boolean match(LanguagePair pair) {
+            return this.target.match(pair.target) && this.source.match(pair.source);
+        }
+
+        public LanguagePair getLanguagePair() {
+            return pair;
+        }
+
+    }
+
+    private static final class LanguageRule {
+
+        public static LanguageRule make(Language from, Language to) {
+            Matcher matcher = (from == null) ? Matcher.wildcardMatcher() : Matcher.exactMatcher(from);
+            return new LanguageRule(matcher, to);
+        }
+
+        private final Matcher matcher;
+        private final Language language;
+
+        private LanguageRule(Matcher matcher, Language language) {
+            this.matcher = matcher;
+            this.language = language;
+        }
+
+        public boolean match(Language language) {
+            return matcher.match(language);
+        }
+
+        public Language getLanguage() {
+            return language;
+        }
+
+    }
+
+    private interface Matcher {
+
+        boolean match(Language language);
+
+        static Matcher forLanguage(Language language) {
+            return language.getRegion() == null ? wildcardMatcher() : exactMatcher(language);
+        }
+
+        static Matcher wildcardMatcher() {
+            return language -> true;
+        }
+
+        static Matcher exactMatcher(Language language) {
+            return language::equals;
+        }
+
     }
 
 }

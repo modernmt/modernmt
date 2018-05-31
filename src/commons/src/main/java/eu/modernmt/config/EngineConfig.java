@@ -1,5 +1,6 @@
 package eu.modernmt.config;
 
+import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 
 import java.util.HashSet;
@@ -15,7 +16,7 @@ public class EngineConfig {
     }
 
     private String name = "default";
-    private Set<LanguagePair> languagePairs = null;
+    private LanguageIndex languageIndex = null;
     private Type type = Type.PHRASE_BASED;
     private DecoderConfig decoderConfig = new PhraseBasedDecoderConfig();
     private AlignerConfig alignerConfig = new AlignerConfig();
@@ -41,18 +42,12 @@ public class EngineConfig {
         this.decoderConfig = type == Type.PHRASE_BASED ? new PhraseBasedDecoderConfig() : new NeuralDecoderConfig();
     }
 
-    public Set<LanguagePair> getLanguagePairs() {
-        return languagePairs;
+    public LanguageIndex getLanguageIndex() {
+        return languageIndex;
     }
 
-    public void setLanguagePairs(Set<LanguagePair> languagePairs) {
-        this.languagePairs = new HashSet<>(languagePairs);
-    }
-
-    public void addLanguagePair(LanguagePair pair) {
-        if (this.languagePairs == null)
-            this.languagePairs = new HashSet<>();
-        this.languagePairs.add(pair);
+    public void setLanguageIndex(LanguageIndex languageIndex) {
+        this.languageIndex = languageIndex;
     }
 
     public DecoderConfig getDecoderConfig() {
@@ -68,7 +63,7 @@ public class EngineConfig {
         return "[Engine]\n" +
                 "  name = " + name + "\n" +
                 "  type = " + type + "\n" +
-                "  languages = " + languagePairs + "\n" +
+                "  languages = " + languageIndex + "\n" +
                 "  " + decoderConfig.toString().replace("\n", "\n  ");
     }
 }

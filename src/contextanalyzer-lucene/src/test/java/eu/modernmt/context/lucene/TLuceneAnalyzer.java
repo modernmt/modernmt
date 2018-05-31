@@ -11,7 +11,6 @@ import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.io.UTF8Charset;
-import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -45,7 +44,7 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
     }
 
     private TLuceneAnalyzer(File path, Options options, LanguagePair... languages) throws IOException {
-        super(new LanguageIndex(Arrays.asList(languages)), path, options);
+        super(Arrays.asList(languages), path, options);
         this.path = path;
     }
 

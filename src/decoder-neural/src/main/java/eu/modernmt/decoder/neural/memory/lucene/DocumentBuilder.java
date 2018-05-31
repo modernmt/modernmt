@@ -26,12 +26,12 @@ public class DocumentBuilder {
 
     // TranslationUnit entries
 
-    public static Document build(LanguagePair direction, TranslationUnit unit) {
+    public static Document build(TranslationUnit unit) {
         String sentence = TokensOutputStream.serialize(unit.sentence, false, true);
         String translation = TokensOutputStream.serialize(unit.translation, false, true);
-        String hash = HashGenerator.hash(direction, unit.rawSentence, unit.rawTranslation);
+        String hash = HashGenerator.hash(unit.direction, unit.rawSentence, unit.rawTranslation);
 
-        return build(direction, unit.memory, sentence, translation, hash);
+        return build(unit.direction, unit.memory, sentence, translation, hash);
     }
 
     public static Document build(LanguagePair direction, long memory, String sentence, String translation) {

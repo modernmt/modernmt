@@ -18,7 +18,6 @@ import eu.modernmt.decoder.neural.natv.NativeProcess;
 import eu.modernmt.io.FileConst;
 import eu.modernmt.io.Paths;
 import eu.modernmt.io.TokensOutputStream;
-import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.ContextVector;
@@ -84,7 +83,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
     }
 
     protected TranslationMemory loadTranslationMemory(ModelConfig config, File model) throws IOException {
-        LanguageIndex languages = new LanguageIndex(config.getAvailableTranslationDirections());
+        Set<LanguagePair> languages = config.getAvailableTranslationDirections();
         int queryMinResults = config.getQueryMinimumResults();
 
         LuceneTranslationMemory memory = new LuceneTranslationMemory(languages, model, queryMinResults);

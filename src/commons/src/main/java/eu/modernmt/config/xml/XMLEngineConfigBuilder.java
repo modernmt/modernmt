@@ -2,10 +2,9 @@ package eu.modernmt.config.xml;
 
 import eu.modernmt.config.*;
 import eu.modernmt.lang.Language;
+import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import org.w3c.dom.Element;
-
-import java.util.Set;
 
 /**
  * Created by davide on 04/01/17.
@@ -27,7 +26,11 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
                 Language source = getLanguageAttribute("source-language");
                 Language target = getLanguageAttribute("target-language");
 
-                config.addLanguagePair(new LanguagePair(source, target));
+                LanguageIndex languageIndex = new LanguageIndex.Builder()
+                        .add(new LanguagePair(source, target))
+                        .build();
+
+                config.setLanguageIndex(languageIndex);
             } else {
                 throw new ConfigException("Missing source/target language specifier in <engine> element");
             }
@@ -35,8 +38,7 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
             parseLanguages(getChild("languages"), config);
         }
 
-        Set<LanguagePair> pairs = config.getLanguagePairs();
-        if (pairs == null || pairs.isEmpty())
+        if (config.getLanguageIndex() == null)
             throw new ConfigException("Missing language specification for <engine> element");
 
         if (hasAttribute("type"))
@@ -49,23 +51,60 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
     }
 
     private static void parseLanguages(Element element, EngineConfig config) throws ConfigException {
-        Element[] children = getChildren(element, "pair");
-        if (children == null)
+        Element[] pairs = getChildren(element, "pair");
+        if (pairs == null)
             return;
 
-        for (Element child : children) {
-            if (child == null)
+        LanguageIndex.Builder builder = null;
+
+        for (Element pair : pairs) {
+            if (pair == null)
                 continue;
 
-            Language source = getLanguageAttribute(child, "source");
+            Language source = getLanguageAttribute(pair, "source");
             if (source == null)
                 throw new ConfigException("Missing 'source' attribute");
 
-            Language target = getLanguageAttribute(child, "target");
+            Language target = getLanguageAttribute(pair, "target");
             if (target == null)
                 throw new ConfigException("Missing 'target' attribute");
 
-            config.addLanguagePair(new LanguagePair(source, target));
+            if (builder == null)
+                builder = new LanguageIndex.Builder();
+
+            builder.add(new LanguagePair(source, target));
+        }
+
+        if (builder != null) {
+            parseLanguageRules(getChild(element, "rules"), builder);
+            config.setLanguageIndex(builder.build());
+        }
+    }
+
+    private static void parseLanguageRules(Element element, LanguageIndex.Builder builder) throws ConfigException {
+        Element[] rules = getChildren(element, "pair");
+        if (rules == null)
+            return;
+
+        for (Element rule : rules) {
+            Language lang = getLanguageAttribute(rule, "lang");
+            if (lang == null)
+                throw new ConfigException("Missing 'lang' attribute");
+
+            String _from = getStringAttribute(rule, "from");
+            if (_from == null)
+                throw new ConfigException("Missing 'from' attribute");
+            _from = _from.trim();
+            Language from = "*".equals(_from) ? null : Language.fromString(_from);
+
+            Language to = getLanguageAttribute(rule, "to");
+            if (to == null)
+                throw new ConfigException("Missing 'to' attribute");
+
+            if (from == null)
+                builder.addWildcardRule(lang, to);
+            else
+                builder.addRule(lang, from, to);
         }
     }
 

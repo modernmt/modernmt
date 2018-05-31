@@ -4,7 +4,6 @@ import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.engine.Engine;
-import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Alignment;
@@ -25,27 +24,17 @@ public class TagFacade {
         return project(direction, sentence, translation, null);
     }
 
-    public Translation project(LanguagePair direction, String sentenceString, String translationString,
+    public Translation project(LanguagePair _direction, String sentenceString, String translationString,
                                Aligner.SymmetrizationStrategy strategy) throws AlignerException, ProcessingException {
         ClusterNode node = ModernMT.getNode();
         Engine engine = node.getEngine();
         Aligner aligner = engine.getAligner();
         Preprocessor preprocessor = engine.getPreprocessor();
 
-        LanguageIndex languages = engine.getLanguages();
+        LanguagePair direction = engine.getLanguageIndex().mapIgnoringDirection(_direction);
 
-        LanguagePair mappedDirection = languages.mapToBestMatching(direction);
-        if (mappedDirection == null) {
-            // Aligner is always bi-directional even if the engine does not support it
-            mappedDirection = languages.mapToBestMatching(direction.reversed());
-
-            if (mappedDirection == null)
-                throw new UnsupportedLanguageException(direction);
-            else
-                mappedDirection = mappedDirection.reversed();
-        }
-
-        direction = mappedDirection;
+        if (direction == null)
+            throw new UnsupportedLanguageException(_direction);
 
         Sentence sentence = preprocessor.process(direction, sentenceString);
         Sentence translation = preprocessor.process(direction.reversed(), translationString);

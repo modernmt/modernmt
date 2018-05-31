@@ -73,7 +73,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
                 throw new ParameterParsingException("q", query.substring(0, 10) + "...",
                         "max query length of " + MAX_QUERY_LENGTH + " exceeded");
 
-            LanguagePair engineDirection = ModernMT.getNode().getEngine().getLanguages().asSingleLanguagePair();
+            LanguagePair engineDirection = ModernMT.getNode().getEngine().getLanguageIndex().asSingleLanguagePair();
             direction = engineDirection != null ?
                     getLanguagePair("source", "target", engineDirection) :
                     getLanguagePair("source", "target");

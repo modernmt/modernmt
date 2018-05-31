@@ -109,7 +109,7 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
             Language[] targetLanguages = getLanguageArray("targets", null);
 
             if (sourceLanguage == null && targetLanguages == null) {
-                LanguagePair engineDirection = ModernMT.getNode().getEngine().getLanguages().asSingleLanguagePair();
+                LanguagePair engineDirection = ModernMT.getNode().getEngine().getLanguageIndex().asSingleLanguagePair();
 
                 if (engineDirection != null) {
                     this.source = engineDirection.source;

@@ -72,7 +72,7 @@ public class LuceneTranslationMemoryTest_hash {
         memory.onDataReceived(Collections.singletonList(overwrite));
 
         Set<TLuceneTranslationMemory.Entry> expectedEntries =
-                TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguageIndex(), Arrays.asList(original, overwrite));
+                TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguages(), Arrays.asList(original, overwrite));
 
         assertEquals(expectedEntries, memory.entrySet());
     }
@@ -89,7 +89,7 @@ public class LuceneTranslationMemoryTest_hash {
         memory.onDataReceived(Collections.singletonList(overwrite));
 
         Set<TLuceneTranslationMemory.Entry> expectedEntries =
-                TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguageIndex(), Collections.singletonList(overwrite));
+                TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguages(), Collections.singletonList(overwrite));
 
         assertEquals(expectedEntries, memory.entrySet());
     }

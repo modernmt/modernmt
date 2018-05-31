@@ -42,7 +42,7 @@ public class Engine implements Closeable, DataListenerProvider {
     }
 
     private final String name;
-    private final LanguageIndex languages;
+    private final LanguageIndex languageIndex;
 
     private final Aligner aligner;
     private final Preprocessor preprocessor;
@@ -54,7 +54,7 @@ public class Engine implements Closeable, DataListenerProvider {
         DecoderConfig decoderConfig = config.getDecoderConfig();
 
         String name = config.getName();
-        LanguageIndex languages = new LanguageIndex(config.getLanguagePairs());
+        LanguageIndex languageIndex = config.getLanguageIndex();
 
         File models = Paths.join(FileConst.getEngineRoot(name), "models");
 
@@ -83,7 +83,7 @@ public class Engine implements Closeable, DataListenerProvider {
 
         ContextAnalyzer contextAnalyzer;
         try {
-            contextAnalyzer = new LuceneAnalyzer(languages, Paths.join(models, "context"));
+            contextAnalyzer = new LuceneAnalyzer(languageIndex.getLanguages(), Paths.join(models, "context"));
         } catch (IOException e) {
             throw new BootstrapException("Failed to instantiate context analyzer", e);
         }
@@ -127,13 +127,13 @@ public class Engine implements Closeable, DataListenerProvider {
             }
         }
 
-        return new Engine(name, languages, aligner, preprocessor, postprocessor, contextAnalyzer, decoder);
+        return new Engine(name, languageIndex, aligner, preprocessor, postprocessor, contextAnalyzer, decoder);
     }
 
-    protected Engine(String name, LanguageIndex languages,
+    protected Engine(String name, LanguageIndex languageIndex,
                      Aligner aligner, Preprocessor preprocessor, Postprocessor postprocessor, ContextAnalyzer contextAnalyzer, Decoder decoder) {
         this.name = name;
-        this.languages = languages;
+        this.languageIndex = languageIndex;
         this.aligner = aligner;
         this.preprocessor = preprocessor;
         this.postprocessor = postprocessor;
@@ -174,12 +174,12 @@ public class Engine implements Closeable, DataListenerProvider {
         return postprocessor;
     }
 
-    public LanguageIndex getLanguages() {
-        return this.languages;
+    public LanguageIndex getLanguageIndex() {
+        return this.languageIndex;
     }
 
     public Set<LanguagePair> getAvailableLanguagePairs() {
-        return this.languages.getLanguages();
+        return this.languageIndex.getLanguages();
     }
 
     public File getRootPath() {

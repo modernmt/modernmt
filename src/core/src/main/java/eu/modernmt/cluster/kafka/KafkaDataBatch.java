@@ -56,13 +56,14 @@ class KafkaDataBatch implements DataBatch {
     }
 
     public void load(ConsumerRecords<Integer, KafkaPacket> records, boolean process, boolean align) throws ProcessingException, AlignerException {
-        LanguageIndex languages = engine.getLanguages();
+        LanguageIndex languageIndex = engine.getLanguageIndex();
 
         // Load records
 
         this.clear();
         int size = records.count();
         this.cachedDataSet.clear();
+
         for (ConsumerRecord<Integer, KafkaPacket> record : records) {
             KafkaChannel channel = this.manager.getChannel(record.topic());
             long offset = record.offset();
@@ -77,14 +78,12 @@ class KafkaDataBatch implements DataBatch {
 
             if (message instanceof TranslationUnit) {
                 TranslationUnit unit = (TranslationUnit) message;
+                unit.direction = languageIndex.mapIgnoringDirection(unit.direction);
 
-                LanguagePair mapping = languages.mapToBestMatching(unit.direction);
-
-                if (mapping != null) {
-                    DataPartition partition = cachedDataSet.computeIfAbsent(mapping, key -> getDataPartition(key, size));
+                if (unit.direction != null) {
+                    DataPartition partition = cachedDataSet.computeIfAbsent(unit.direction, key -> getDataPartition(key, size));
                     partition.add(unit);
                 }
-
             } else {
                 deletions.add((Deletion) message);
             }

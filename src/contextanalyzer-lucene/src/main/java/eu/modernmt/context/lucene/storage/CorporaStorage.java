@@ -4,7 +4,6 @@ import eu.modernmt.context.lucene.analysis.ContextAnalyzerIndex;
 import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.io.FileUtils;
@@ -33,11 +32,11 @@ public class CorporaStorage {
 
     private final ContextAnalyzerIndex contextAnalyzer;
     private final CorporaIndex index;
-    private final LanguageIndex languages;
+    private final Set<LanguagePair> languages;
     private HashSet<CorpusBucket> pendingUpdatesBuckets = new HashSet<>();
 
-    public CorporaStorage(File path, Options options, ContextAnalyzerIndex contextAnalyzer, LanguageIndex languages) throws IOException {
-        this.languages = languages;
+    public CorporaStorage(File path, Options options, ContextAnalyzerIndex contextAnalyzer, Collection<LanguagePair> languages) throws IOException {
+        this.languages = new HashSet<>(languages);
         this.analysisExecutor = Executors.newFixedThreadPool(options.analysisThreads);
 
         this.options = options;
@@ -73,18 +72,16 @@ public class CorporaStorage {
             if (!index.shouldAcceptData(unit.channel, unit.channelPosition))
                 continue;
 
-            for (LanguagePair direction : languages.map(unit.direction)) {
-                if (languages.contains(direction)) {
-                    CorpusBucket bucket = index.getBucket(direction, unit.memory);
-                    bucket.append(unit.rawSentence);
-                    pendingUpdatesBuckets.add(bucket);
-                }
+            if (languages.contains(unit.direction)) {
+                CorpusBucket bucket = index.getBucket(unit.direction, unit.memory);
+                bucket.append(unit.rawSentence);
+                pendingUpdatesBuckets.add(bucket);
+            }
 
-                if (languages.contains(direction.reversed())) {
-                    CorpusBucket bucket = index.getBucket(direction.reversed(), unit.memory);
-                    bucket.append(unit.rawTranslation);
-                    pendingUpdatesBuckets.add(bucket);
-                }
+            if (languages.contains(unit.direction.reversed())) {
+                CorpusBucket bucket = index.getBucket(unit.direction.reversed(), unit.memory);
+                bucket.append(unit.rawTranslation);
+                pendingUpdatesBuckets.add(bucket);
             }
         }
 
@@ -150,18 +147,16 @@ public class CorporaStorage {
 
             MultilingualCorpus.StringPair pair;
             while ((pair = reader.read()) != null) {
-                for (LanguagePair direction : languages.map(pair.language)) {
-                    if (languages.contains(direction)) {
-                        CorpusBucket bucket = index.getBucket(direction, memory);
-                        bucket.append(pair.source);
-                        pendingUpdatesBuckets.add(bucket);
-                    }
+                if (languages.contains(pair.language)) {
+                    CorpusBucket bucket = index.getBucket(pair.language, memory);
+                    bucket.append(pair.source);
+                    pendingUpdatesBuckets.add(bucket);
+                }
 
-                    if (languages.contains(direction.reversed())) {
-                        CorpusBucket bucket = index.getBucket(direction.reversed(), memory);
-                        bucket.append(pair.target);
-                        pendingUpdatesBuckets.add(bucket);
-                    }
+                if (languages.contains(pair.language.reversed())) {
+                    CorpusBucket bucket = index.getBucket(pair.language.reversed(), memory);
+                    bucket.append(pair.target);
+                    pendingUpdatesBuckets.add(bucket);
                 }
             }
         } finally {

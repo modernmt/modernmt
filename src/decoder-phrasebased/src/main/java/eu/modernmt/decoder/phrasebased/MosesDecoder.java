@@ -4,10 +4,9 @@ import eu.modernmt.config.DecoderConfig;
 import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.decoder.*;
-import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.io.Paths;
+import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.ContextVector;
@@ -42,7 +41,7 @@ public class MosesDecoder extends Decoder implements DecoderWithFeatures, Decode
         NativeLogger.initialize();
     }
 
-    private final LanguageIndex language;
+    private final LanguagePair language;
     private final FeatureWeightsStorage storage;
     private final HashMap<String, DecoderFeature> featuresMap;
     private final MosesFeature[] features;
@@ -55,8 +54,7 @@ public class MosesDecoder extends Decoder implements DecoderWithFeatures, Decode
             String raw = FileUtils.readFileToString(Paths.join(model, "language.info"), UTF8Charset.get());
             String[] parts = raw.trim().split(" ");
 
-            this.language = new LanguageIndex(
-                    new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1])));
+            this.language = new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1]));
             this.storage = new FeatureWeightsStorage(Paths.join(model, "weights.dat"));
 
             File vocabulary = Paths.join(model, "vocab.vb");
@@ -135,7 +133,7 @@ public class MosesDecoder extends Decoder implements DecoderWithFeatures, Decode
 
     @Override
     public void setListener(DecoderListener listener) {
-        listener.onTranslationDirectionsChanged(Collections.singleton(this.language.asSingleLanguagePair()));
+        listener.onTranslationDirectionsChanged(Collections.singleton(this.language));
     }
 
     @Override
@@ -155,7 +153,7 @@ public class MosesDecoder extends Decoder implements DecoderWithFeatures, Decode
 
     @Override
     public Translation translate(LanguagePair direction, String variant, Sentence sentence, ContextVector contextVector, int nbestListSize) throws DecoderException {
-        if (!this.language.contains(direction))
+        if (!this.language.equals(direction))
             throw new UnsupportedLanguageException(direction);
 
         if (sentence.getWords().length == 0)

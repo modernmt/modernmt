@@ -1,6 +1,6 @@
 package eu.modernmt.training;
 
-import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.corpus.BaseMultilingualCorpus;
@@ -15,11 +15,11 @@ import java.io.IOException;
 public class MultilingualCorpusMask extends BaseMultilingualCorpus implements MultilingualCorpusWrapper {
 
     private final MultilingualCorpus corpus;
-    private final LanguageIndex languages;
+    private final LanguagePair language;
 
     public MultilingualCorpusMask(LanguagePair language, MultilingualCorpus corpus) {
         this.corpus = corpus;
-        this.languages = new LanguageIndex(language);
+        this.language = language;
     }
 
     @Override
@@ -37,16 +37,14 @@ public class MultilingualCorpusMask extends BaseMultilingualCorpus implements Mu
             public StringPair read() throws IOException {
                 StringPair pair;
                 while ((pair = reader.read()) != null) {
-                    pair.language = languages.mapToBestMatching(pair.language);
-
-                    if (pair.language == null)
-                        continue;
-
-                    if (languages.contains(pair.language))
+                    if (match(pair.language)) {
+                        pair.language = language;
                         return pair;
-
-                    if (languages.contains(pair.language.reversed()))
-                        return reverse(pair);
+                    } else if (match(pair.language.reversed())) {
+                        pair = reverse(pair);
+                        pair.language = language;
+                        return pair;
+                    }
                 }
 
                 return null;
@@ -60,8 +58,6 @@ public class MultilingualCorpusMask extends BaseMultilingualCorpus implements Mu
     }
 
     private static StringPair reverse(StringPair pair) {
-        pair.language = pair.language.reversed();
-
         String temp = pair.target;
         pair.target = pair.source;
         pair.source = temp;
@@ -77,12 +73,10 @@ public class MultilingualCorpusMask extends BaseMultilingualCorpus implements Mu
 
             @Override
             public void write(StringPair pair) throws IOException {
-                LanguagePair mapped = languages.mapToBestMatching(pair.language);
-
-                if (languages.contains(mapped))
-                    writer.write(new StringPair(mapped, pair.source, pair.target, pair.timestamp));
-                else if (languages.contains(mapped.reversed()))
-                    writer.write(new StringPair(mapped.reversed(), pair.target, pair.source, pair.timestamp));
+                if (match(pair.language))
+                    writer.write(new StringPair(language, pair.source, pair.target, pair.timestamp));
+                else if (match(pair.language.reversed()))
+                    writer.write(new StringPair(language, pair.target, pair.source, pair.timestamp));
                 else
                     throw new UnsupportedLanguageException(pair.language);
             }
@@ -102,6 +96,15 @@ public class MultilingualCorpusMask extends BaseMultilingualCorpus implements Mu
     @Override
     public MultilingualCorpus getWrappedCorpus() {
         return corpus;
+    }
+
+    private boolean match(LanguagePair pair) {
+        return match(pair.source, this.language.source) && match(pair.target, this.language.target);
+    }
+
+    private static boolean match(Language test, Language ref) {
+        return ref.getLanguage().equals(test.getLanguage()) &&
+                (ref.getRegion() == null || ref.getRegion().equals(test.getRegion()));
     }
 
 }

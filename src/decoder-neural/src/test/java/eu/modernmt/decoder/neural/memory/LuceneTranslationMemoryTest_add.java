@@ -34,7 +34,7 @@ public class LuceneTranslationMemoryTest_add {
 
     private void testSuccess(List<TranslationUnit> units) throws IOException {
         Set<TLuceneTranslationMemory.Entry> expectedEntries =
-                TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguageIndex(), units);
+                TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguages(), units);
 
         memory.bulkInsert(new Memory(1), TestData.corpus("none", units));
 
