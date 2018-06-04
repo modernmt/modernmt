@@ -26,102 +26,33 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
         return getIndexReader().numDocs();
     }
 
-    public Set<Entry> entrySet() throws IOException {
-        IndexReader reader = getIndexReader();
-        int size = reader.numDocs();
-
-        HashSet<Entry> result = new HashSet<>(size);
-        for (int i = 0; i < size; i++) {
-            Entry entry = Entry.parse(reader.document(i));
-
-            if (entry != null)
-                result.add(entry);
-        }
-
+    public Set<ScoreEntry> entrySet() throws IOException {
+        HashSet<ScoreEntry> result = new HashSet<>();
+        super.dump(result::add);
         return result;
     }
 
-    public static class Entry {
+    public static Set<ScoreEntry> asEntrySet(Set<LanguagePair> languages, Collection<TranslationUnit> units) {
+        HashSet<ScoreEntry> result = new HashSet<>(units.size());
 
-        private final long memory;
-        private final LanguagePair language;
-        private final String source;
-        private final String target;
+        for (TranslationUnit unit : units) {
+            if (languages.contains(unit.direction) || languages.contains(unit.direction.reversed())) {
+                String source = unit.direction.source.toLanguageTag();
+                String target = unit.direction.target.toLanguageTag();
 
-        private static Entry parse(Document doc) {
-            long memory = Long.parseLong(doc.get("memory"));
+                ScoreEntry entry;
+                if (source.compareTo(target) < 0)
+                    entry = new ScoreEntry(unit.memory, unit.direction,
+                            unit.rawSentence.split("\\s+"), unit.rawTranslation.split("\\s+"));
+                else
+                    entry = new ScoreEntry(unit.memory, unit.direction.reversed(),
+                            unit.rawTranslation.split("\\s+"), unit.rawSentence.split("\\s+"));
 
-            if (memory == 0L)
-                return null;
-
-            String[] langs = doc.get("language").split("__");
-
-            LanguagePair language = new LanguagePair(Language.fromString(langs[0]), Language.fromString(langs[1]));
-            String source = doc.get("content::" + langs[0]);
-            String target = doc.get("content::" + langs[1]);
-
-            return new Entry(memory, language, source, target);
-        }
-
-        public static Set<Entry> asEntrySet(Set<LanguagePair> languages, Collection<TranslationUnit> units) {
-            HashSet<Entry> result = new HashSet<>(units.size());
-
-            for (TranslationUnit unit : units) {
-                if (languages.contains(unit.direction) || languages.contains(unit.direction.reversed())) {
-                    String source = unit.direction.source.toLanguageTag();
-                    String target = unit.direction.target.toLanguageTag();
-
-                    Entry entry;
-                    if (source.compareTo(target) < 0)
-                        entry = new Entry(unit.memory, unit.direction, unit.rawSentence, unit.rawTranslation);
-                    else
-                        entry = new Entry(unit.memory, unit.direction.reversed(), unit.rawTranslation, unit.rawSentence);
-
-                    result.add(entry);
-                }
+                result.add(entry);
             }
-
-            return result;
         }
 
-        public Entry(long memory, LanguagePair language, String source, String target) {
-            this.memory = memory;
-            this.language = language;
-            this.source = source;
-            this.target = target;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Entry entry = (Entry) o;
-
-            if (memory != entry.memory) return false;
-            if (!language.equals(entry.language)) return false;
-            if (!source.equals(entry.source)) return false;
-            return target.equals(entry.target);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = (int) (memory ^ (memory >>> 32));
-            result = 31 * result + language.hashCode();
-            result = 31 * result + source.hashCode();
-            result = 31 * result + target.hashCode();
-            return result;
-        }
-
-        @Override
-        public String toString() {
-            return "Entry{" +
-                    "memory=" + memory +
-                    ", language=" + language +
-                    ", source='" + source + '\'' +
-                    ", target='" + target + '\'' +
-                    '}';
-        }
+        return result;
     }
 
     // DataListener utils

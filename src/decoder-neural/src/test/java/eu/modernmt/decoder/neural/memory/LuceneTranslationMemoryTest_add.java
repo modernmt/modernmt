@@ -33,8 +33,7 @@ public class LuceneTranslationMemoryTest_add {
     }
 
     private void testSuccess(List<TranslationUnit> units) throws IOException {
-        Set<TLuceneTranslationMemory.Entry> expectedEntries =
-                TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguages(), units);
+        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(memory.getLanguages(), units);
 
         memory.bulkInsert(new Memory(1), TestData.corpus("none", units));
 
@@ -63,21 +62,9 @@ public class LuceneTranslationMemoryTest_add {
     }
 
     @Test
-    public void monoDirectionalMemoryAndDialectMemory() throws Throwable {
-        setup(EN__IT);
-        testSuccess(TestData.tuList(EN_US__IT, 10));
-    }
-
-    @Test
     public void biDirectionalMemory() throws Throwable {
         setup(EN__IT, IT__EN);
         testSuccess(TestData.tuList(EN__IT, 10));
-    }
-
-    @Test
-    public void biDirectionalMemoryAndDialectMemory() throws Throwable {
-        setup(EN__IT, IT__EN);
-        testSuccess(TestData.tuList(EN_US__IT, 10));
     }
 
     @Test

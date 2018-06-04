@@ -39,8 +39,7 @@ public class LuceneTranslationMemoryTest_onDelete {
         List<TranslationUnit> units1 = TestData.tuList(1, EN__IT, 10);
         List<TranslationUnit> units2 = TestData.tuList(2, EN__IT, 10);
 
-        Set<TLuceneTranslationMemory.Entry> expectedEntries =
-                TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguages(), units2);
+        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(memory.getLanguages(), units2);
 
         memory.bulkInsert(new Memory(1), TestData.corpus("none", units1));
         memory.bulkInsert(new Memory(2), TestData.corpus("none", units2));
@@ -65,8 +64,7 @@ public class LuceneTranslationMemoryTest_onDelete {
         );
         List<TranslationUnit> units2 = TestData.tuList(2, EN__IT, 10);
 
-        Set<TLuceneTranslationMemory.Entry> expectedEntries =
-                TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguages(), units2);
+        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(memory.getLanguages(), units2);
 
         memory.bulkInsert(new Memory(1), TestData.corpus("none", units1));
         memory.bulkInsert(new Memory(2), TestData.corpus("none", units2));
@@ -103,8 +101,7 @@ public class LuceneTranslationMemoryTest_onDelete {
         List<TranslationUnit> units1 = TestData.tuList(0, 0, 1, EN__IT, 10);
         List<TranslationUnit> units2 = TestData.tuList(0, 10, 2, EN__IT, 10);
 
-        Set<TLuceneTranslationMemory.Entry> expectedEntries =
-                TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguages(), units2);
+        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(memory.getLanguages(), units2);
 
         memory.onDataReceived(units1);
         memory.onDataReceived(units2);
@@ -124,9 +121,9 @@ public class LuceneTranslationMemoryTest_onDelete {
         List<TranslationUnit> units1 = TestData.tuList(1, 0, 1, EN__IT, 10);
         List<TranslationUnit> units2 = TestData.tuList(1, 10, 2, EN__IT, 10);
 
-        Set<TLuceneTranslationMemory.Entry> expectedEntries = new HashSet<>();
-        expectedEntries.addAll(TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguages(), units1));
-        expectedEntries.addAll(TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguages(), units2));
+        Set<ScoreEntry> expectedEntries = new HashSet<>();
+        expectedEntries.addAll(TLuceneTranslationMemory.asEntrySet(memory.getLanguages(), units1));
+        expectedEntries.addAll(TLuceneTranslationMemory.asEntrySet(memory.getLanguages(), units2));
 
         memory.onDataReceived(units1);
         memory.onDataReceived(units2);

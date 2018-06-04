@@ -149,6 +149,8 @@ public class LuceneTranslationMemory implements TranslationMemory {
         IndexReader reader = getIndexReader();
 
         int size = reader.numDocs();
+        if (size == 0)
+            return;
 
         TopDocs docs = searcher.search(new MatchAllDocsQuery(), size);
 

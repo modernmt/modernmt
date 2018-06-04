@@ -53,11 +53,18 @@ public class LuceneTranslationMemoryTest_hash {
         IndexSearcher searcher = memory.getIndexSearcher();
         ScoreDoc[] result = searcher.search(query, 10).scoreDocs;
 
-        assertEquals(1, result.length);
+        assertEquals(2, result.length);
 
-        ScoreEntry entry = DocumentBuilder.asEntry(searcher.doc(result[0].doc), EN__IT);
+        ScoreEntry e1 = DocumentBuilder.asEntry(searcher.doc(result[0].doc));
+        ScoreEntry e2 = DocumentBuilder.asEntry(searcher.doc(result[1].doc));
 
-        assertArrayEquals(new String[]{"1-1"}, entry.sentence);
+        if ("fr".equals(e1.language.target.getLanguage())) {
+            assertArrayEquals(new String[]{"1-1F"}, e1.sentence);
+            assertArrayEquals(new String[]{"1-1"}, e2.sentence);
+        } else {
+            assertArrayEquals(new String[]{"1-1F"}, e2.sentence);
+            assertArrayEquals(new String[]{"1-1"}, e1.sentence);
+        }
     }
 
     @Test
@@ -71,8 +78,7 @@ public class LuceneTranslationMemoryTest_hash {
                 "hello world __", "ciao mondo __", null);
         memory.onDataReceived(Collections.singletonList(overwrite));
 
-        Set<TLuceneTranslationMemory.Entry> expectedEntries =
-                TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguages(), Arrays.asList(original, overwrite));
+        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(memory.getLanguages(), Arrays.asList(original, overwrite));
 
         assertEquals(expectedEntries, memory.entrySet());
     }
@@ -88,8 +94,7 @@ public class LuceneTranslationMemoryTest_hash {
                 "hello world", "ciao mondo", null);
         memory.onDataReceived(Collections.singletonList(overwrite));
 
-        Set<TLuceneTranslationMemory.Entry> expectedEntries =
-                TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguages(), Collections.singletonList(overwrite));
+        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(memory.getLanguages(), Collections.singletonList(overwrite));
 
         assertEquals(expectedEntries, memory.entrySet());
     }

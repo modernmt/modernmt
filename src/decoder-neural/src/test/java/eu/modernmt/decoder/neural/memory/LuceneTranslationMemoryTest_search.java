@@ -76,6 +76,42 @@ public class LuceneTranslationMemoryTest_search {
     }
 
     @Test
+    public void directSearchWithItalianDialect() throws Throwable {
+        ScoreEntry[] result = this.memory.search(EN_US__IT_CH, TestData.sentence("Hello world"), 100);
+
+        assertEquals(2, result.length);
+        assertTrue(contains(result, 1, EN__IT, "Hello world 1", "Ciao mondo 1"));
+        assertTrue(contains(result, 2, EN__IT, "Hello world 2", "Ciao mondo 2"));
+    }
+
+    @Test
+    public void reversedSearchWithItalianHelloWorld() throws Throwable {
+        ScoreEntry[] result = this.memory.search(IT__EN, TestData.sentence("Ciao mondo"), 100);
+
+        assertEquals(2, result.length);
+        assertTrue(contains(result, 1, IT__EN, "Ciao mondo 1", "Hello world 1"));
+        assertTrue(contains(result, 2, IT__EN, "Ciao mondo 2", "Hello world 2"));
+    }
+
+    @Test
+    public void reversedSearchWithItalianTheTest() throws Throwable {
+        ScoreEntry[] result = this.memory.search(IT__EN, TestData.sentence("Il test"), 100);
+
+        assertEquals(2, result.length);
+        assertTrue(contains(result, 1, IT__EN, "Il test 1", "The test 1"));
+        assertTrue(contains(result, 2, IT__EN, "Il test 2", "The test 2"));
+    }
+
+    @Test
+    public void reversedSearchWithItalianDialect() throws Throwable {
+        ScoreEntry[] result = this.memory.search(IT_CH__EN_US, TestData.sentence("Ciao mondo"), 100);
+
+        assertEquals(2, result.length);
+        assertTrue(contains(result, 1, IT__EN, "Ciao mondo 1", "Hello world 1"));
+        assertTrue(contains(result, 2, IT__EN, "Ciao mondo 2", "Hello world 2"));
+    }
+
+    @Test
     public void directSearchWithFrenchHelloWorld() throws Throwable {
         ScoreEntry[] result = this.memory.search(EN__FR, TestData.sentence("Hello world"), 100);
 
@@ -85,12 +121,12 @@ public class LuceneTranslationMemoryTest_search {
     }
 
     @Test
-    public void reversedSearchWithItalianHelloWorld() throws Throwable {
-        ScoreEntry[] result = this.memory.search(IT__EN, TestData.sentence("Ciao mondo"), 100);
+    public void directSearchWithFrenchDialect() throws Throwable {
+        ScoreEntry[] result = this.memory.search(EN_US__FR_CA, TestData.sentence("Hello world"), 100);
 
         assertEquals(2, result.length);
-        assertTrue(contains(result, 1, EN__FR, "Ciao mondo 1", "Hello world 1"));
-        assertTrue(contains(result, 2, EN__FR, "Ciao mondo 2", "Hello world 2"));
+        assertTrue(contains(result, 1, EN__FR, "Hello world 1", "Bonjour monde 1"));
+        assertTrue(contains(result, 2, EN__FR, "Hello world 2", "Bonjour monde 2"));
     }
 
     @Test
@@ -98,8 +134,17 @@ public class LuceneTranslationMemoryTest_search {
         ScoreEntry[] result = this.memory.search(FR__EN, TestData.sentence("Bonjour monde"), 100);
 
         assertEquals(2, result.length);
-        assertTrue(contains(result, 1, EN__FR, "Bonjour monde 1", "Hello world 1"));
-        assertTrue(contains(result, 2, EN__FR, "Bonjour monde 2", "Hello world 2"));
+        assertTrue(contains(result, 1, FR__EN, "Bonjour monde 1", "Hello world 1"));
+        assertTrue(contains(result, 2, FR__EN, "Bonjour monde 2", "Hello world 2"));
+    }
+
+    @Test
+    public void reversedSearchWithFrenchDialect() throws Throwable {
+        ScoreEntry[] result = this.memory.search(FR_CA__EN_US, TestData.sentence("Bonjour monde"), 100);
+
+        assertEquals(2, result.length);
+        assertTrue(contains(result, 1, FR__EN, "Bonjour monde 1", "Hello world 1"));
+        assertTrue(contains(result, 2, FR__EN, "Bonjour monde 2", "Hello world 2"));
     }
 
 }

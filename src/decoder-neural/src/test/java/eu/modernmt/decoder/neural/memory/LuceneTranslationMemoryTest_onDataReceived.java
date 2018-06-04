@@ -26,7 +26,7 @@ public class LuceneTranslationMemoryTest_onDataReceived {
     }
 
     @After
-    public void teardown() throws Throwable {
+    public void teardown() {
         this.memory.close();
         this.memory = null;
     }
@@ -34,8 +34,7 @@ public class LuceneTranslationMemoryTest_onDataReceived {
     private void test(List<TranslationUnit> units) throws IOException {
         int size = units.size();
         Map<Short, Long> expectedChannels = TestData.channels(0, size - 1);
-        Set<TLuceneTranslationMemory.Entry> expectedEntries =
-                TLuceneTranslationMemory.Entry.asEntrySet(memory.getLanguages(), units);
+        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(memory.getLanguages(), units);
 
         memory.onDataReceived(units);
 
@@ -60,24 +59,6 @@ public class LuceneTranslationMemoryTest_onDataReceived {
     public void biDirectionalMemory() throws Throwable {
         setup(EN__IT, IT__EN);
         test(TestData.tuList(EN__IT, 4));
-    }
-
-    @Test
-    public void dialectMonoDirectionalMemoryAndDirectContributions() throws Throwable {
-        setup(EN_US__IT);
-        test(TestData.tuList(EN_US__IT, 4));
-    }
-
-    @Test
-    public void dialectMonoDirectionalMemoryAndReversedContributions() throws Throwable {
-        setup(EN_US__IT);
-        test(TestData.tuList(IT__EN_US, 4));
-    }
-
-    @Test
-    public void dialectBiDirectionalMemory() throws Throwable {
-        setup(EN_US__IT, IT__EN_US);
-        test(TestData.tuList(EN_US__IT, 4));
     }
 
     @Test
