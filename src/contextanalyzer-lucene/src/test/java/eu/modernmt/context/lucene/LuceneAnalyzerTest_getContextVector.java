@@ -1,5 +1,8 @@
 package eu.modernmt.context.lucene;
 
+import eu.modernmt.context.ContextAnalyzerException;
+import eu.modernmt.lang.Language;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -64,48 +67,54 @@ public class LuceneAnalyzerTest_getContextVector {
         return false;
     }
 
+    private void test(LanguagePair lang, String query, int... memories) throws ContextAnalyzerException {
+        ContextVector result = analyzer.getContextVector(lang, query, 100);
+
+        assertEquals(memories == null ? 0 : memories.length, result.size());
+        if (memories != null) {
+            for (int memory : memories)
+                assertTrue(contains(result, memory));
+        }
+    }
+
     @Test
     public void directSearchWithItalianHelloWorld() throws Throwable {
-        ContextVector result = analyzer.getContextVector(EN__IT, "hello world", 100);
-
-        assertEquals(3, result.size());
-        assertTrue(contains(result, 1));
-        assertTrue(contains(result, 12));
-        assertTrue(contains(result, 13));
+        test(EN__IT, "hello world", 1, 12, 13);
     }
 
     @Test
     public void directSearchWithItalianTheTest() throws Throwable {
-        ContextVector result = analyzer.getContextVector(EN__IT, "the test", 100);
-
-        assertEquals(2, result.size());
-        assertTrue(contains(result, 3));
-        assertTrue(contains(result, 13));
+        test(EN__IT, "the test", 3, 13);
     }
 
     @Test
-    public void directSearchWithFrenchHelloWorld() throws Throwable {
-        ContextVector result = analyzer.getContextVector(EN__FR, "hello world", 100);
-
-        assertEquals(2, result.size());
-        assertTrue(contains(result, 2));
-        assertTrue(contains(result, 12));
+    public void directSearchWithItalianDialect() throws Throwable {
+        test(EN_US__IT_CH, "hello world", 1, 12, 13);
     }
 
     @Test
     public void reversedSearchWithItalianHelloWorld() throws Throwable {
-        ContextVector result = analyzer.getContextVector(IT__EN, "ciao mondo", 100);
+        test(IT__EN, "ciao mondo", 1, 12, 13);
+    }
 
-        assertEquals(3, result.size());
-        assertTrue(contains(result, 1));
-        assertTrue(contains(result, 12));
-        assertTrue(contains(result, 13));
+    @Test
+    public void reversedSearchWithItalianTheTest() throws Throwable {
+        test(IT__EN, "il test", 3, 13);
+    }
+
+    @Test
+    public void reversedSearchWithItalianDialect() throws Throwable {
+        test(IT_CH__EN_US, "ciao mondo", 1, 12, 13);
+    }
+
+    @Test
+    public void directSearchWithFrenchHelloWorld() throws Throwable {
+        test(EN__FR, "hello world", 2, 12);
     }
 
     @Test
     public void reversedSearchWithFrenchHelloWorld() throws Throwable {
-        ContextVector result = analyzer.getContextVector(FR__EN, "bonjour monde", 100);
-        assertEquals(0, result.size());
+        test(FR__EN, "bonjour monde");
     }
 
 }

@@ -85,60 +85,6 @@ public class LuceneAnalyzerTest_onDataReceived {
     }
 
     @Test
-    public void dialectMonoDirectionalAnalyzerAndDirectContributions() throws Throwable {
-        setup(EN_US__IT);
-
-        List<TranslationUnit> units = TestData.tuList(EN_US__IT, 4);
-        analyzer.onDataReceived(units);
-
-        Map<Short, Long> expectedChannels = TestData.channels(0, 3);
-        TLuceneAnalyzer.Entry entry = analyzer.getEntry(1, EN_US__IT);
-
-        assertEquals(1, analyzer.getIndexSize());
-        assertEquals(1, analyzer.getStorageSize());
-        assertEquals(expectedChannels, analyzer.getLatestChannelPositions());
-        assertEquals(TestData.tuGetTerms(units, true), entry.terms);
-        assertEquals(TestData.tuGetContent(units, true), entry.content);
-    }
-
-    @Test
-    public void dialectMonoDirectionalAnalyzerAndReversedContributions() throws Throwable {
-        setup(EN_US__IT);
-
-        List<TranslationUnit> units = TestData.tuList(IT__EN_US, 4);
-        analyzer.onDataReceived(units);
-
-        Map<Short, Long> expectedChannels = TestData.channels(0, 3);
-        TLuceneAnalyzer.Entry entry = analyzer.getEntry(1, EN_US__IT);
-
-        assertEquals(1, analyzer.getIndexSize());
-        assertEquals(1, analyzer.getStorageSize());
-        assertEquals(expectedChannels, analyzer.getLatestChannelPositions());
-        assertEquals(TestData.tuGetTerms(units, false), entry.terms);
-        assertEquals(TestData.tuGetContent(units, false), entry.content);
-    }
-
-    @Test
-    public void dialectBiDirectionalAnalyzer() throws Throwable {
-        setup(EN_US__IT, IT__EN_US);
-
-        List<TranslationUnit> units = TestData.tuList(EN_US__IT, 4);
-        analyzer.onDataReceived(units);
-
-        Map<Short, Long> expectedChannels = TestData.channels(0, 3);
-        TLuceneAnalyzer.Entry fwdEntry = analyzer.getEntry(1, EN_US__IT);
-        TLuceneAnalyzer.Entry bwdEntry = analyzer.getEntry(1, IT__EN_US);
-
-        assertEquals(2, analyzer.getIndexSize());
-        assertEquals(2, analyzer.getStorageSize());
-        assertEquals(expectedChannels, analyzer.getLatestChannelPositions());
-        assertEquals(TestData.tuGetTerms(units, true), fwdEntry.terms);
-        assertEquals(TestData.tuGetContent(units, true), fwdEntry.content);
-        assertEquals(TestData.tuGetTerms(units, false), bwdEntry.terms);
-        assertEquals(TestData.tuGetContent(units, false), bwdEntry.content);
-    }
-
-    @Test
     public void multilingualAnalyzerWithOneDirectionContributions() throws Throwable {
         setup(IT__EN, EN__FR);
 

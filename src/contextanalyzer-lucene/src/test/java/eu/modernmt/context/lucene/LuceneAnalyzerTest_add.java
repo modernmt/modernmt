@@ -16,7 +16,7 @@ public class LuceneAnalyzerTest_add {
 
     private TLuceneAnalyzer analyzer;
 
-    public void setup(LanguagePair... languages) throws Throwable {
+    private void setup(LanguagePair... languages) throws Throwable {
         this.analyzer = new TLuceneAnalyzer(languages);
     }
 
@@ -63,12 +63,8 @@ public class LuceneAnalyzerTest_add {
         DummyBilingualCorpus corpus = TestData.corpus("dummy", EN_US__IT);
         analyzer.add(new Memory(1), corpus);
 
-        TLuceneAnalyzer.Entry entry = analyzer.getEntry(1, EN__IT);
-
-        assertEquals(1, analyzer.getIndexSize());
-        assertEquals(1, analyzer.getStorageSize());
-        assertEquals(corpus.getSourceCorpus(), entry.content);
-        assertEquals(TestData.getTerms(EN), entry.terms);
+        assertEquals(0, analyzer.getIndexSize());
+        assertEquals(0, analyzer.getStorageSize());
     }
 
     @Test
@@ -96,96 +92,8 @@ public class LuceneAnalyzerTest_add {
         DummyBilingualCorpus corpus = TestData.corpus("dummy", EN_US__IT);
         analyzer.add(new Memory(1), corpus);
 
-        TLuceneAnalyzer.Entry fwdEntry = analyzer.getEntry(1, EN__IT);
-        TLuceneAnalyzer.Entry bwdEntry = analyzer.getEntry(1, IT__EN);
-
-        assertEquals(2, analyzer.getIndexSize());
-        assertEquals(2, analyzer.getStorageSize());
-        assertEquals(corpus.getSourceCorpus(), fwdEntry.content);
-        assertEquals(TestData.getTerms(EN), fwdEntry.terms);
-        assertEquals(corpus.getTargetCorpus(), bwdEntry.content);
-        assertEquals(TestData.getTerms(IT), bwdEntry.terms);
-    }
-
-    @Test
-    public void dialectMonoDirectionalAnalyzerAndDirectMemory() throws Throwable {
-        setup(EN_US__IT);
-
-        DummyBilingualCorpus corpus = TestData.corpus("dummy", EN__IT);
-        analyzer.add(new Memory(1), corpus);
-
-        assertEquals(0, analyzer.getStorageSize());
         assertEquals(0, analyzer.getIndexSize());
-    }
-
-    @Test
-    public void dialectMonoDirectionalAnalyzerAndReversedMemory() throws Throwable {
-        setup(EN_US__IT);
-
-        DummyBilingualCorpus corpus = TestData.corpus("dummy", IT__EN);
-        analyzer.add(new Memory(1), corpus);
-
         assertEquals(0, analyzer.getStorageSize());
-        assertEquals(0, analyzer.getIndexSize());
-    }
-
-    @Test
-    public void dialectMonoDirectionalAnalyzerAndDialectMemory() throws Throwable {
-        setup(EN_US__IT);
-
-        DummyBilingualCorpus corpus = TestData.corpus("dummy", EN_US__IT);
-        analyzer.add(new Memory(1), corpus);
-
-        TLuceneAnalyzer.Entry entry = analyzer.getEntry(1, EN_US__IT);
-
-        assertEquals(1, analyzer.getIndexSize());
-        assertEquals(1, analyzer.getStorageSize());
-        assertEquals(corpus.getSourceCorpus(), entry.content);
-        assertEquals(TestData.getTerms(EN), entry.terms);
-    }
-
-    @Test
-    public void dialectMonoDirectionalAnalyzerAndDialectReversedMemory() throws Throwable {
-        setup(EN_US__IT);
-
-        DummyBilingualCorpus corpus = TestData.corpus("dummy", IT__EN_US);
-        analyzer.add(new Memory(1), corpus);
-
-        TLuceneAnalyzer.Entry entry = analyzer.getEntry(1, EN_US__IT);
-
-        assertEquals(1, analyzer.getIndexSize());
-        assertEquals(1, analyzer.getStorageSize());
-        assertEquals(corpus.getTargetCorpus(), entry.content);
-        assertEquals(TestData.getTerms(EN), entry.terms);
-    }
-
-    @Test
-    public void dialectBiDirectionalAnalyzer() throws Throwable {
-        setup(EN_US__IT, IT__EN_US);
-
-        DummyBilingualCorpus corpus = TestData.corpus("dummy", EN__IT);
-        analyzer.add(new Memory(1), corpus);
-
-        assertEquals(0, analyzer.getStorageSize());
-        assertEquals(0, analyzer.getIndexSize());
-    }
-
-    @Test
-    public void dialectBiDirectionalAnalyzerAndDialectMemory() throws Throwable {
-        setup(EN_US__IT, IT__EN_US);
-
-        DummyBilingualCorpus corpus = TestData.corpus("dummy", EN_US__IT);
-        analyzer.add(new Memory(1), corpus);
-
-        TLuceneAnalyzer.Entry fwdEntry = analyzer.getEntry(1, EN_US__IT);
-        TLuceneAnalyzer.Entry bwdEntry = analyzer.getEntry(1, IT__EN_US);
-
-        assertEquals(2, analyzer.getIndexSize());
-        assertEquals(2, analyzer.getStorageSize());
-        assertEquals(corpus.getSourceCorpus(), fwdEntry.content);
-        assertEquals(TestData.getTerms(EN), fwdEntry.terms);
-        assertEquals(corpus.getTargetCorpus(), bwdEntry.content);
-        assertEquals(TestData.getTerms(IT), bwdEntry.terms);
     }
 
     @Test
