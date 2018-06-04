@@ -35,16 +35,16 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
         return Files.createTempDirectory("TLuceneAnalyzer").toFile();
     }
 
-    public TLuceneAnalyzer(LanguagePair... languages) throws IOException {
-        this(new Options(), languages);
+    public TLuceneAnalyzer() throws IOException {
+        this(new Options());
     }
 
-    public TLuceneAnalyzer(Options options, LanguagePair... languages) throws IOException {
-        this(getTempDirectory(), options, languages);
+    public TLuceneAnalyzer(Options options) throws IOException {
+        this(getTempDirectory(), options);
     }
 
-    private TLuceneAnalyzer(File path, Options options, LanguagePair... languages) throws IOException {
-        super(Arrays.asList(languages), path, options);
+    private TLuceneAnalyzer(File path, Options options) throws IOException {
+        super(path, options);
         this.path = path;
     }
 

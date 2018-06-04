@@ -44,7 +44,7 @@ public class LanguageIndex {
     private final Map<LanguageKey, List<LanguageEntry>> index;
     private final Map<String, List<LanguageRule>> rules;
     private final Set<Language> rulesSkipList;
-    private final ConcurrentHashMap<LanguagePair, LanguagePair> mappingCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<LanguagePair, CacheEntry> mappingCache = new ConcurrentHashMap<>();
 
     private LanguageIndex(Set<LanguagePair> languages, Map<LanguageKey, List<LanguageEntry>> index, Map<String, List<LanguageRule>> rules) {
         this.languages = Collections.unmodifiableSet(languages);
@@ -52,10 +52,11 @@ public class LanguageIndex {
         this.rules = rules;
 
         this.rulesSkipList = new HashSet<>();
-        for (List<LanguageRule> list : rules.values()) {
-            for (LanguageRule rule : list) {
-                this.rulesSkipList.add(rule.getLanguage());
-            }
+        for (LanguagePair pair : languages) {
+            if (pair.source.getRegion() != null)
+                this.rulesSkipList.add(pair.source);
+            if (pair.target.getRegion() != null)
+                this.rulesSkipList.add(pair.target);
         }
     }
 
@@ -71,18 +72,18 @@ public class LanguageIndex {
         return languages.size() == 1 ? languages.iterator().next() : null;
     }
 
-    public LanguagePair mapIgnoringDirection(LanguagePair pair) {
-        LanguagePair cached = mappingCache.get(pair);
+    public LanguagePair mapIgnoringDirection(LanguagePair pair, boolean mask) {
+        CacheEntry cached = mappingCache.get(pair);
         if (cached != null)
-            return cached;
+            return mask ? cached.masked : cached.normalized;
         cached = mappingCache.get(pair.reversed());
         if (cached != null)
-            return cached.reversed();
+            return (mask ? cached.masked : cached.normalized).reversed();
 
-        LanguagePair mapped = map(pair);
+        LanguagePair mapped = map(pair, mask);
 
         if (mapped == null) {
-            mapped = map(pair.reversed());
+            mapped = map(pair.reversed(), mask);
             if (mapped != null)
                 mapped = mapped.reversed();
         }
@@ -91,17 +92,22 @@ public class LanguageIndex {
     }
 
     /**
-     * Map the input language pair to one of the supported ones trying to adapt language and region if necessary.
+     * Map the input language pair to one that is compatible with the supported ones,
+     * trying to adapt language and region if necessary.
      * It does not try to map the reversed language pair, if needed call mapIgnoringDirection()
      *
      * @param pair the pair to search for
+     * @param mask if true, forces the result to be one of the supported languages
      * @return the supported language pair that matches the input pair
      */
-    public LanguagePair map(LanguagePair pair) {
-        return mappingCache.computeIfAbsent(pair, this::search);
+    public LanguagePair map(LanguagePair pair, boolean mask) {
+        CacheEntry cached = mappingCache.computeIfAbsent(pair, this::search);
+        if (cached == null)
+            return null;
+        return mask ? cached.masked : cached.normalized;
     }
 
-    private LanguagePair search(LanguagePair language) {
+    private CacheEntry search(LanguagePair language) {
         language = transform(language);
 
         LanguageKey key = LanguageKey.fromLanguage(language);
@@ -112,7 +118,7 @@ public class LanguageIndex {
 
         for (LanguageEntry entry : entries) {
             if (entry.match(language))
-                return entry.getLanguagePair();
+                return new CacheEntry(language, entry.getLanguagePair());
         }
 
         return null;
@@ -139,15 +145,14 @@ public class LanguageIndex {
 
         List<LanguageRule> rules = this.rules.get(language.getLanguage());
 
-        if (rules == null)
-            return null;
-
-        for (LanguageRule rule : rules) {
-            if (rule.match(language))
-                return rule.getLanguage();
+        if (rules != null) {
+            for (LanguageRule rule : rules) {
+                if (rule.match(language))
+                    return rule.getLanguage();
+            }
         }
 
-        return null;
+        return language.getRegion() == null ? null : new Language(language.getLanguage());
     }
 
     @Override
@@ -258,6 +263,18 @@ public class LanguageIndex {
 
         static Matcher exactMatcher(Language language) {
             return language::equals;
+        }
+
+    }
+
+    private static final class CacheEntry {
+
+        public final LanguagePair normalized;
+        public final LanguagePair masked;
+
+        public CacheEntry(LanguagePair normalized, LanguagePair masked) {
+            this.normalized = normalized;
+            this.masked = masked;
         }
 
     }

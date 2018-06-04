@@ -71,6 +71,12 @@ public class FastAlign implements Aligner {
     private native long instantiate(String modelDirectory, int threads);
 
     @Override
+    public boolean isSupported(LanguagePair direction) {
+        LanguageKey key = LanguageKey.parse(direction);
+        return models.containsKey(key) || models.containsKey(key.reversed());
+    }
+
+    @Override
     public void setDefaultSymmetrizationStrategy(SymmetrizationStrategy strategy) {
         this.strategy = strategy;
     }

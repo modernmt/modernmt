@@ -31,4 +31,6 @@ public interface Aligner extends Closeable {
 
     Alignment[] getAlignments(LanguagePair direction, List<? extends Sentence> sources, List<? extends Sentence> targets, SymmetrizationStrategy strategy) throws AlignerException;
 
+    boolean isSupported(LanguagePair direction);
+
 }

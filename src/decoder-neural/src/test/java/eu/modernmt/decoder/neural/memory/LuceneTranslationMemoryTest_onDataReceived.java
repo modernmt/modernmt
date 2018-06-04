@@ -3,6 +3,7 @@ package eu.modernmt.decoder.neural.memory;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.lang.LanguagePair;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -21,8 +22,9 @@ public class LuceneTranslationMemoryTest_onDataReceived {
 
     private TLuceneTranslationMemory memory;
 
-    public void setup(LanguagePair... languages) throws Throwable {
-        this.memory = new TLuceneTranslationMemory(languages);
+    @Before
+    public void setup() throws Throwable {
+        this.memory = new TLuceneTranslationMemory();
     }
 
     @After
@@ -34,7 +36,7 @@ public class LuceneTranslationMemoryTest_onDataReceived {
     private void test(List<TranslationUnit> units) throws IOException {
         int size = units.size();
         Map<Short, Long> expectedChannels = TestData.channels(0, size - 1);
-        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(memory.getLanguages(), units);
+        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(units);
 
         memory.onDataReceived(units);
 
@@ -44,33 +46,17 @@ public class LuceneTranslationMemoryTest_onDataReceived {
     }
 
     @Test
-    public void monoDirectionalMemoryAndDirectContributions() throws Throwable {
-        setup(EN__IT);
+    public void directContributions() throws Throwable {
         test(TestData.tuList(EN__IT, 4));
     }
 
     @Test
-    public void monoDirectionalMemoryAndReversedContributions() throws Throwable {
-        setup(EN__IT);
+    public void reversedContributions() throws Throwable {
         test(TestData.tuList(IT__EN, 4));
     }
 
     @Test
-    public void biDirectionalMemory() throws Throwable {
-        setup(EN__IT, IT__EN);
-        test(TestData.tuList(EN__IT, 4));
-    }
-
-    @Test
-    public void multilingualMemoryWithOneDirectionContributions() throws Throwable {
-        setup(EN__IT, FR__ES);
-        test(TestData.tuList(EN__IT, 4));
-    }
-
-    @Test
-    public void multilingualMemoryWithAllDirectionContributions() throws Throwable {
-        setup(EN__IT, FR__ES);
-
+    public void allDirectionsContributions() throws Throwable {
         List<TranslationUnit> units = Arrays.asList(
                 TestData.tu(0, 0L, 1L, EN__IT, null),
                 TestData.tu(0, 1L, 2L, EN__IT, null),
@@ -83,8 +69,6 @@ public class LuceneTranslationMemoryTest_onDataReceived {
 
     @Test
     public void duplicateContribution() throws Throwable {
-        setup(EN__IT, FR__ES);
-
         List<TranslationUnit> units = Arrays.asList(
                 TestData.tu(1, 0L, 1L, EN__IT, null),
                 TestData.tu(1, 1L, 1L, EN__IT, null)

@@ -2,7 +2,6 @@
 import os
 import unittest
 
-from cli.libs.shell import ShellError
 from commons import ModernMT, ApiException
 
 RES_FOLDER = os.path.abspath(os.path.join(__file__, os.pardir, 'res', 'training'))
@@ -55,26 +54,6 @@ class TrainingTest(unittest.TestCase):
 
     # Tests
 
-    def test_chinese_conversion(self):
-        try:
-            self.mmt.create('en zh %s --debug -s clean_tms' % TRAIN_FOLDER)
-        except ShellError:
-            pass
-
-        training_folder = os.path.join(self.mmt.engine_runtime_path, 'tmp', 'training')
-
-        d_clean_tmx = self._get_tmx_content(os.path.join(training_folder, 'clean_corpora', 'Memory.en__zh.tmx'))
-        d_original_tmx = self._get_tmx_content(os.path.join(TRAIN_FOLDER, 'Memory.en__zh.tmx'))
-        r_clean_tmx = self._get_tmx_content(os.path.join(training_folder, 'clean_corpora', 'Memory.zh__en.tmx'))
-        r_original_tmx = self._get_tmx_content(os.path.join(TRAIN_FOLDER, 'Memory.zh__en.tmx'))
-
-        self.assertEqual(r_clean_tmx, r_original_tmx)
-
-        self.assertNotEqual(d_clean_tmx, d_original_tmx)
-        d_clean_tmx = d_clean_tmx.replace(u'<tuv xml:lang="zh-TW"> <seg>這是en__zh例子四</seg> </tuv>',
-                                          u'<tuv xml:lang="zh"> <seg>這是en__zh例子四</seg> </tuv>')
-        self.assertEqual(d_clean_tmx, d_original_tmx)
-
     def test_train_chinese(self):
         self.mmt.create('en zh %s --neural --debug --no-split --validation-corpora %s' % (TRAIN_FOLDER, DEV_FOLDER))
 
@@ -89,12 +68,17 @@ class TrainingTest(unittest.TestCase):
         mem_data = tm_content.get_content(1, 'en', 'zh')
 
         self.assertEqual(4, len(ctx_source))
-        self.assertEqual(0, len(ctx_target))
+        self.assertEqual(4, len(ctx_target))
 
         self.assertInContent(ctx_source, u'The en__zh example one')
         self.assertInContent(ctx_source, u'This is en__zh example two')
         self.assertInContent(ctx_source, u'This is en__zh example three')
         self.assertInContent(ctx_source, u'This is en__zh example four')
+
+        self.assertInContent(ctx_target, u'en__zh例子之一')
+        self.assertInContent(ctx_target, u'这是en__zh例子二')
+        self.assertInContent(ctx_target, u'這是en__zh例子三')
+        self.assertInContent(ctx_target, u'這是en__zh例子四')
 
         self.assertEqual(4, len(mem_data))
         self.assertInParallelContent(mem_data, u'The en__zh example one', u'en__zh例子之一')
@@ -108,9 +92,10 @@ class TrainingTest(unittest.TestCase):
         mem_data = tm_content.get_content(2, 'en', 'zh')
 
         self.assertEqual(1, len(ctx_source))
-        self.assertEqual(0, len(ctx_target))
+        self.assertEqual(1, len(ctx_target))
 
         self.assertInContent(ctx_source, u'The zh__en example one')
+        self.assertInContent(ctx_target, u'zh__en例子之一')
 
         self.assertEqual(1, len(mem_data))
         self.assertInParallelContent(mem_data, u'The zh__en example one', u'zh__en例子之一')

@@ -5,7 +5,6 @@ import eu.modernmt.context.lucene.analysis.DocumentBuilder;
 import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -33,14 +32,9 @@ public class CorporaStorage {
 
     private final ContextAnalyzerIndex contextAnalyzer;
     private final CorporaIndex index;
-    private final Set<LanguageKey> languages;
     private HashSet<CorpusBucket> pendingUpdatesBuckets = new HashSet<>();
 
-    public CorporaStorage(File path, Options options, ContextAnalyzerIndex contextAnalyzer, Collection<LanguagePair> languages) throws IOException {
-        this.languages = new HashSet<>(languages.size());
-        for (LanguagePair pair : languages)
-            this.languages.add(LanguageKey.fromLanguagePair(pair));
-
+    public CorporaStorage(File path, Options options, ContextAnalyzerIndex contextAnalyzer) throws IOException {
         this.analysisExecutor = Executors.newFixedThreadPool(options.analysisThreads);
 
         this.options = options;
@@ -76,19 +70,13 @@ public class CorporaStorage {
             if (!index.shouldAcceptData(unit.channel, unit.channelPosition))
                 continue;
 
-            if (languages.contains(LanguageKey.fromLanguagePair(unit.direction))) {
-                String id = DocumentBuilder.makeId(unit.memory, unit.direction);
-                CorpusBucket bucket = index.getBucket(id);
-                bucket.append(unit.rawSentence);
-                pendingUpdatesBuckets.add(bucket);
-            }
+            CorpusBucket fwdBucket = index.getBucket(DocumentBuilder.makeId(unit.memory, unit.direction));
+            fwdBucket.append(unit.rawSentence);
+            pendingUpdatesBuckets.add(fwdBucket);
 
-            if (languages.contains(LanguageKey.fromLanguagePair(unit.direction.reversed()))) {
-                String id = DocumentBuilder.makeId(unit.memory, unit.direction.reversed());
-                CorpusBucket bucket = index.getBucket(id);
-                bucket.append(unit.rawTranslation);
-                pendingUpdatesBuckets.add(bucket);
-            }
+            CorpusBucket bwdBucket = index.getBucket(DocumentBuilder.makeId(unit.memory, unit.direction.reversed()));
+            bwdBucket.append(unit.rawTranslation);
+            pendingUpdatesBuckets.add(bwdBucket);
         }
 
         for (Deletion deletion : batch.getDeletions()) {
@@ -153,19 +141,13 @@ public class CorporaStorage {
 
             MultilingualCorpus.StringPair pair;
             while ((pair = reader.read()) != null) {
-                if (languages.contains(pair.language)) {
-                    String id = DocumentBuilder.makeId(memory, pair.language);
-                    CorpusBucket bucket = index.getBucket(id);
-                    bucket.append(pair.source);
-                    pendingUpdatesBuckets.add(bucket);
-                }
+                CorpusBucket fwdBucket = index.getBucket(DocumentBuilder.makeId(memory, pair.language));
+                fwdBucket.append(pair.source);
+                pendingUpdatesBuckets.add(fwdBucket);
 
-                if (languages.contains(pair.language.reversed())) {
-                    String id = DocumentBuilder.makeId(memory, pair.language.reversed());
-                    CorpusBucket bucket = index.getBucket(id);
-                    bucket.append(pair.target);
-                    pendingUpdatesBuckets.add(bucket);
-                }
+                CorpusBucket bwdBucket = index.getBucket(DocumentBuilder.makeId(memory, pair.language.reversed()));
+                bwdBucket.append(pair.target);
+                pendingUpdatesBuckets.add(bwdBucket);
             }
         } finally {
             IOUtils.closeQuietly(reader);
@@ -305,37 +287,4 @@ public class CorporaStorage {
 
     }
 
-    private static final class LanguageKey {
-
-        public static LanguageKey fromLanguagePair(LanguagePair pair) {
-            return new LanguageKey(pair.source.getLanguage(), pair.target.getLanguage());
-        }
-
-        private final String source;
-        private final String target;
-
-        private LanguageKey(String source, String target) {
-            this.source = source;
-            this.target = target;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            LanguageKey that = (LanguageKey) o;
-            return Objects.equals(source, that.source) &&
-                    Objects.equals(target, that.target);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(source, target);
-        }
-
-        @Override
-        public String toString() {
-            return source + '_' + target;
-        }
-    }
 }

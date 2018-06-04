@@ -82,7 +82,7 @@ public class ContextAnalyzerMain {
 
         ContextAnalyzer contextAnalyzer = null;
         try {
-            contextAnalyzer = new LuceneAnalyzer(Collections.singleton(direction), args.indexPath, eu.modernmt.context.lucene.storage.Options.prepareForBulkLoad());
+            contextAnalyzer = new LuceneAnalyzer(args.indexPath, eu.modernmt.context.lucene.storage.Options.prepareForBulkLoad());
             contextAnalyzer.add(memory2corpus);
         } finally {
             IOUtils.closeQuietly(contextAnalyzer);

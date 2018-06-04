@@ -24,17 +24,15 @@ public class TagFacade {
         return project(direction, sentence, translation, null);
     }
 
-    public Translation project(LanguagePair _direction, String sentenceString, String translationString,
+    public Translation project(LanguagePair direction, String sentenceString, String translationString,
                                Aligner.SymmetrizationStrategy strategy) throws AlignerException, ProcessingException {
         ClusterNode node = ModernMT.getNode();
         Engine engine = node.getEngine();
         Aligner aligner = engine.getAligner();
         Preprocessor preprocessor = engine.getPreprocessor();
 
-        LanguagePair direction = engine.getLanguageIndex().mapIgnoringDirection(_direction);
-
-        if (direction == null)
-            throw new UnsupportedLanguageException(_direction);
+        if (!aligner.isSupported(direction))
+            throw new UnsupportedLanguageException(direction);
 
         Sentence sentence = preprocessor.process(direction, sentenceString);
         Sentence translation = preprocessor.process(direction.reversed(), translationString);

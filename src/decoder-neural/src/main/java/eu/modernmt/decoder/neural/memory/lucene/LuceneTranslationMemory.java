@@ -45,7 +45,6 @@ public class LuceneTranslationMemory implements TranslationMemory {
     private final QueryBuilder queryBuilder;
     private final Rescorer rescorer;
     private final IndexWriter indexWriter;
-    private final Set<LanguagePair> languages;
     private DataFilter filter;
 
     private DirectoryReader _indexReader;
@@ -58,31 +57,30 @@ public class LuceneTranslationMemory implements TranslationMemory {
         return directory;
     }
 
-    public LuceneTranslationMemory(Collection<LanguagePair> languages, File indexPath, int minQuerySize) throws IOException {
-        this(languages, indexPath, new F1BleuRescorer(), minQuerySize);
+    public LuceneTranslationMemory(File indexPath, int minQuerySize) throws IOException {
+        this(indexPath, new F1BleuRescorer(), minQuerySize);
     }
 
-    public LuceneTranslationMemory(Collection<LanguagePair> languages, Directory directory, int minQuerySize) throws IOException {
-        this(languages, directory, new F1BleuRescorer(), minQuerySize);
+    public LuceneTranslationMemory(Directory directory, int minQuerySize) throws IOException {
+        this(directory, new F1BleuRescorer(), minQuerySize);
     }
 
-    public LuceneTranslationMemory(Collection<LanguagePair> languages, File indexPath, Rescorer rescorer, int minQuerySize) throws IOException {
-        this(languages, FSDirectory.open(forceMkdir(indexPath)), rescorer, minQuerySize);
+    public LuceneTranslationMemory(File indexPath, Rescorer rescorer, int minQuerySize) throws IOException {
+        this(FSDirectory.open(forceMkdir(indexPath)), rescorer, minQuerySize);
     }
 
-    public LuceneTranslationMemory(Collection<LanguagePair> languages, File indexPath, QueryBuilder queryBuilder, Rescorer rescorer, int minQuerySize) throws IOException {
-        this(languages, FSDirectory.open(forceMkdir(indexPath)), queryBuilder, rescorer, minQuerySize);
+    public LuceneTranslationMemory(File indexPath, QueryBuilder queryBuilder, Rescorer rescorer, int minQuerySize) throws IOException {
+        this(FSDirectory.open(forceMkdir(indexPath)), queryBuilder, rescorer, minQuerySize);
     }
 
-    public LuceneTranslationMemory(Collection<LanguagePair> languages, Directory directory, Rescorer rescorer, int minQuerySize) throws IOException {
-        this(languages, directory, new DefaultQueryBuilder(), rescorer, minQuerySize);
+    public LuceneTranslationMemory(Directory directory, Rescorer rescorer, int minQuerySize) throws IOException {
+        this(directory, new DefaultQueryBuilder(), rescorer, minQuerySize);
     }
 
-    public LuceneTranslationMemory(Collection<LanguagePair> languages, Directory directory, QueryBuilder queryBuilder, Rescorer rescorer, int minQuerySize) throws IOException {
+    public LuceneTranslationMemory(Directory directory, QueryBuilder queryBuilder, Rescorer rescorer, int minQuerySize) throws IOException {
         this.indexDirectory = directory;
         this.queryBuilder = queryBuilder;
         this.rescorer = rescorer;
-        this.languages = new HashSet<>(languages);
         this.minQuerySize = minQuerySize;
 
         // Index writer setup
@@ -108,10 +106,6 @@ public class LuceneTranslationMemory implements TranslationMemory {
         } else {
             this.channels = new HashMap<>();
         }
-    }
-
-    public Set<LanguagePair> getLanguages() {
-        return languages;
     }
 
     protected synchronized IndexReader getIndexReader() throws IOException {
@@ -210,10 +204,8 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
             MultilingualCorpus.StringPair pair;
             while ((pair = reader.read()) != null) {
-                if (languages.contains(pair.language) || languages.contains(pair.language.reversed())) {
-                    Document document = DocumentBuilder.newInstance(pair.language, memory, pair.source, pair.target);
-                    this.indexWriter.addDocument(document);
-                }
+                Document document = DocumentBuilder.newInstance(pair.language, memory, pair.source, pair.target);
+                this.indexWriter.addDocument(document);
             }
 
             double elapsed = System.currentTimeMillis() - begin;
@@ -318,23 +310,21 @@ public class LuceneTranslationMemory implements TranslationMemory {
         DataFilter filter = this.filter;
 
         for (TranslationUnit unit : units) {
-            if (languages.contains(unit.direction) || languages.contains(unit.direction.reversed())) {
-                if (filter != null && !filter.accept(unit))
-                    continue;
+            if (filter != null && !filter.accept(unit))
+                continue;
 
-                Long currentPosition = this.channels.get(unit.channel);
+            Long currentPosition = this.channels.get(unit.channel);
 
-                if (currentPosition == null || currentPosition < unit.channelPosition) {
-                    if (unit.rawPreviousSentence != null && unit.rawPreviousTranslation != null) {
-                        String hash = HashGenerator.hash(unit.rawPreviousSentence, unit.rawPreviousTranslation);
-                        Query hashQuery = this.queryBuilder.getByHash(unit.memory, hash);
+            if (currentPosition == null || currentPosition < unit.channelPosition) {
+                if (unit.rawPreviousSentence != null && unit.rawPreviousTranslation != null) {
+                    String hash = HashGenerator.hash(unit.rawPreviousSentence, unit.rawPreviousTranslation);
+                    Query hashQuery = this.queryBuilder.getByHash(unit.memory, hash);
 
-                        this.indexWriter.deleteDocuments(hashQuery);
-                    }
-
-                    Document document = DocumentBuilder.newInstance(unit);
-                    this.indexWriter.addDocument(document);
+                    this.indexWriter.deleteDocuments(hashQuery);
                 }
+
+                Document document = DocumentBuilder.newInstance(unit);
+                this.indexWriter.addDocument(document);
             }
         }
     }

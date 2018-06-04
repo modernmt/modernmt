@@ -9,6 +9,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -26,8 +27,9 @@ public class LuceneTranslationMemoryTest_hash {
 
     private TLuceneTranslationMemory memory;
 
-    public void setup(LanguagePair... languages) throws Throwable {
-        this.memory = new TLuceneTranslationMemory(languages);
+    @Before
+    public void setup() throws Throwable {
+        this.memory = new TLuceneTranslationMemory();
     }
 
     @After
@@ -38,8 +40,6 @@ public class LuceneTranslationMemoryTest_hash {
 
     @Test
     public void queryWithMisleadingHashes() throws Throwable {
-        setup(EN__IT, EN__FR);
-
         IndexWriter indexWriter = memory.getIndexWriter();
         indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 2, "2-1", "2-1", "A B C D"));
         indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 1, "1-1", "1-1", "A B C D"));
@@ -69,8 +69,6 @@ public class LuceneTranslationMemoryTest_hash {
 
     @Test
     public void overwriteNotExisting() throws Throwable {
-        setup(EN__IT, EN__FR);
-
         TranslationUnit original = tu(0, 0L, 1L, EN__IT, "hello world", "ciao mondo", null);
         memory.onDataReceived(Collections.singletonList(original));
 
@@ -78,15 +76,13 @@ public class LuceneTranslationMemoryTest_hash {
                 "hello world __", "ciao mondo __", null);
         memory.onDataReceived(Collections.singletonList(overwrite));
 
-        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(memory.getLanguages(), Arrays.asList(original, overwrite));
+        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(Arrays.asList(original, overwrite));
 
         assertEquals(expectedEntries, memory.entrySet());
     }
 
     @Test
     public void overwriteExisting() throws Throwable {
-        setup(EN__IT, EN__FR);
-
         TranslationUnit original = tu(0, 0L, 1L, EN__IT, "hello world", "ciao mondo", null);
         memory.onDataReceived(Collections.singletonList(original));
 
@@ -94,7 +90,7 @@ public class LuceneTranslationMemoryTest_hash {
                 "hello world", "ciao mondo", null);
         memory.onDataReceived(Collections.singletonList(overwrite));
 
-        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(memory.getLanguages(), Collections.singletonList(overwrite));
+        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(Collections.singletonList(overwrite));
 
         assertEquals(expectedEntries, memory.entrySet());
     }

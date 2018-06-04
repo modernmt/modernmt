@@ -18,8 +18,8 @@ import java.util.*;
  */
 public class TLuceneTranslationMemory extends LuceneTranslationMemory {
 
-    public TLuceneTranslationMemory(LanguagePair... languages) throws IOException {
-        super(Arrays.asList(languages), new RAMDirectory(), 10);
+    public TLuceneTranslationMemory() throws IOException {
+        super(new RAMDirectory(), 10);
     }
 
     public int size() throws IOException {
@@ -32,24 +32,22 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
         return result;
     }
 
-    public static Set<ScoreEntry> asEntrySet(Set<LanguagePair> languages, Collection<TranslationUnit> units) {
+    public static Set<ScoreEntry> asEntrySet(Collection<TranslationUnit> units) {
         HashSet<ScoreEntry> result = new HashSet<>(units.size());
 
         for (TranslationUnit unit : units) {
-            if (languages.contains(unit.direction) || languages.contains(unit.direction.reversed())) {
-                String source = unit.direction.source.toLanguageTag();
-                String target = unit.direction.target.toLanguageTag();
+            String source = unit.direction.source.toLanguageTag();
+            String target = unit.direction.target.toLanguageTag();
 
-                ScoreEntry entry;
-                if (source.compareTo(target) < 0)
-                    entry = new ScoreEntry(unit.memory, unit.direction,
-                            unit.rawSentence.split("\\s+"), unit.rawTranslation.split("\\s+"));
-                else
-                    entry = new ScoreEntry(unit.memory, unit.direction.reversed(),
-                            unit.rawTranslation.split("\\s+"), unit.rawSentence.split("\\s+"));
+            ScoreEntry entry;
+            if (source.compareTo(target) < 0)
+                entry = new ScoreEntry(unit.memory, unit.direction,
+                        unit.rawSentence.split("\\s+"), unit.rawTranslation.split("\\s+"));
+            else
+                entry = new ScoreEntry(unit.memory, unit.direction.reversed(),
+                        unit.rawTranslation.split("\\s+"), unit.rawSentence.split("\\s+"));
 
-                result.add(entry);
-            }
+            result.add(entry);
         }
 
         return result;

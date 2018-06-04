@@ -1,9 +1,9 @@
 package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Memory;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -22,8 +22,9 @@ public class LuceneTranslationMemoryTest_add {
 
     private TLuceneTranslationMemory memory;
 
-    public void setup(LanguagePair... languages) throws Throwable {
-        this.memory = new TLuceneTranslationMemory(languages);
+    @Before
+    public void setup() throws Throwable {
+        this.memory = new TLuceneTranslationMemory();
     }
 
     @After
@@ -32,8 +33,8 @@ public class LuceneTranslationMemoryTest_add {
         this.memory = null;
     }
 
-    private void testSuccess(List<TranslationUnit> units) throws IOException {
-        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(memory.getLanguages(), units);
+    private void test(List<TranslationUnit> units) throws IOException {
+        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(units);
 
         memory.bulkInsert(new Memory(1), TestData.corpus("none", units));
 
@@ -42,77 +43,28 @@ public class LuceneTranslationMemoryTest_add {
         assertTrue(memory.getLatestChannelPositions().isEmpty());
     }
 
-    private void testFail(List<TranslationUnit> units) throws IOException {
-        memory.bulkInsert(new Memory(1), TestData.corpus("none", units));
-
-        assertEquals(0, memory.size());
-        assertTrue(memory.entrySet().isEmpty());
+    @Test
+    public void directMemory() throws Throwable {
+        test(TestData.tuList(EN__IT, 10));
     }
 
     @Test
-    public void monoDirectionalMemoryAndDirectMemory() throws Throwable {
-        setup(EN__IT);
-        testSuccess(TestData.tuList(EN__IT, 10));
+    public void reversedMemory() throws Throwable {
+        test(TestData.tuList(IT__EN, 10));
     }
 
     @Test
-    public void monoDirectionalMemoryAndReversedMemory() throws Throwable {
-        setup(EN__IT);
-        testSuccess(TestData.tuList(IT__EN, 10));
+    public void directDialectMemory() throws Throwable {
+        test(TestData.tuList(EN_US__IT, 10));
     }
 
     @Test
-    public void biDirectionalMemory() throws Throwable {
-        setup(EN__IT, IT__EN);
-        testSuccess(TestData.tuList(EN__IT, 10));
+    public void reversedDialectMemory() throws Throwable {
+        test(TestData.tuList(IT__EN_US, 10));
     }
 
     @Test
-    public void dialectMonoDirectionalMemoryAndDirectMemory() throws Throwable {
-        setup(EN_US__IT);
-        testFail(TestData.tuList(EN__IT, 10));
-    }
-
-    @Test
-    public void dialectMonoDirectionalMemoryAndReversedMemory() throws Throwable {
-        setup(EN_US__IT);
-        testFail(TestData.tuList(IT__EN, 10));
-    }
-
-    @Test
-    public void dialectMonoDirectionalMemoryAndDialectMemory() throws Throwable {
-        setup(EN_US__IT);
-        testSuccess(TestData.tuList(EN_US__IT, 10));
-    }
-
-    @Test
-    public void dialectMonoDirectionalMemoryAndDialectReversedMemory() throws Throwable {
-        setup(EN_US__IT);
-        testSuccess(TestData.tuList(IT__EN_US, 10));
-    }
-
-    @Test
-    public void dialectBiDirectionalMemory() throws Throwable {
-        setup(EN_US__IT, IT__EN_US);
-        testFail(TestData.tuList(EN__IT, 10));
-    }
-
-    @Test
-    public void dialectBiDirectionalMemoryAndDialectMemory() throws Throwable {
-        setup(EN_US__IT, IT__EN_US);
-        testSuccess(TestData.tuList(EN_US__IT, 10));
-    }
-
-    @Test
-    public void multilingualMemoryAndOneDirectionMemory() throws Throwable {
-        setup(EN__IT, FR__ES);
-        testSuccess(TestData.tuList(EN__IT, 10));
-    }
-
-    @Test
-    public void multilingualMemoryAndAllDirectionMemory() throws Throwable {
-        setup(EN__IT, FR__ES);
-
+    public void allDirectionsMemory() throws Throwable {
         List<TranslationUnit> units = Arrays.asList(
                 TestData.tu(0, 0L, 1L, EN__IT, null),
                 TestData.tu(0, 1L, 1L, EN__IT, null),
@@ -120,7 +72,7 @@ public class LuceneTranslationMemoryTest_add {
                 TestData.tu(0, 3L, 1L, FR__ES, null)
         );
 
-        testSuccess(units);
+        test(units);
     }
 
 }

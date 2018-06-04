@@ -22,7 +22,7 @@ public class LuceneTranslationMemoryTest_search {
 
     @Before
     public void setup() throws Throwable {
-        this.memory = new TLuceneTranslationMemory(EN__IT, IT__EN, EN__FR);
+        this.memory = new TLuceneTranslationMemory();
 
         ArrayList<TranslationUnit> units1 = new ArrayList<>();
         units1.add(TestData.tu(EN__IT, "Hello world 1", "Ciao mondo 1", null));

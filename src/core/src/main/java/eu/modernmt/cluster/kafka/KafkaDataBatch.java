@@ -80,7 +80,7 @@ class KafkaDataBatch implements DataBatch {
             if (packetType == KafkaPacket.TYPE_DELETION) {
                 deletions.add(packet.asDeletion());
             } else {
-                LanguagePair direction = languageIndex.mapIgnoringDirection(packet.getDirection());
+                LanguagePair direction = languageIndex.mapIgnoringDirection(packet.getDirection(), false);
                 if (direction != null) {
                     DataPartition partition = cachedDataSet.computeIfAbsent(direction, key -> getDataPartition(key, size));
                     partition.add(packet);

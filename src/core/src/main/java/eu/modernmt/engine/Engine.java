@@ -83,7 +83,7 @@ public class Engine implements Closeable, DataListenerProvider {
 
         ContextAnalyzer contextAnalyzer;
         try {
-            contextAnalyzer = new LuceneAnalyzer(languageIndex.getLanguages(), Paths.join(models, "context"));
+            contextAnalyzer = new LuceneAnalyzer(Paths.join(models, "context"));
         } catch (IOException e) {
             throw new BootstrapException("Failed to instantiate context analyzer", e);
         }

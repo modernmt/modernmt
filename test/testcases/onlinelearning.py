@@ -81,24 +81,24 @@ class OnlineLearningLanguageTest(_OnlineLearningTest):
 
         self._verify_index_integrity(memories)
 
-    # def test_add_with_all_language_combinations(self):
-    #     memories = {}
-    #
-    #     for source, target in [('en', 'de'), ('en', 'fr'), ('en', 'it'), ('en', 'es'), ('en', 'zh')]:
-    #         corpus = CompactCorpus(os.path.join(RES_FOLDER, 'Memory.%s__%s.cpt' % (source, target)))
-    #         memory = self.mmt.api.create_memory('Memory.%s__%s' % (source, target))
-    #
-    #         job = None
-    #         with corpus.reader() as reader:
-    #             for s, t, sentence, translation in reader:
-    #                 job = self.mmt.api.append_to_memory(s, t, memory['id'], sentence, translation)
-    #
-    #         if job is not None:
-    #             self.mmt.wait_job(job)
-    #
-    #         memories['%s_%s' % (source, target)] = memory
-    #
-    #     self._verify_index_integrity(memories)
+    def test_add_with_all_language_combinations(self):
+        memories = {}
+
+        for source, target in [('en', 'de'), ('en', 'fr'), ('en', 'it'), ('en', 'es'), ('en', 'zh')]:
+            corpus = CompactCorpus(os.path.join(RES_FOLDER, 'Memory.%s__%s.cpt' % (source, target)))
+            memory = self.mmt.api.create_memory('Memory.%s__%s' % (source, target))
+
+            job = None
+            with corpus.reader() as reader:
+                for s, t, sentence, translation in reader:
+                    job = self.mmt.api.append_to_memory(s, t, memory['id'], sentence, translation)
+
+            if job is not None:
+                self.mmt.wait_job(job)
+
+            memories['%s_%s' % (source, target)] = memory
+
+        self._verify_index_integrity(memories)
 
     def _verify_index_integrity(self, memories):
         tm_content = self.mmt.memory.dump()
@@ -122,16 +122,20 @@ class OnlineLearningLanguageTest(_OnlineLearningTest):
         ctx_target = self.mmt.context_analyzer.get_content(memory['id'], 'fr', 'en')
         mem_data = tm_content.get_content(memory['id'], 'en', 'fr')
 
-        self.assertEqual(2, len(ctx_source))
-        self.assertEqual(2, len(ctx_target))
-        self.assertInContent(ctx_source, u'This is en__fr example one')
-        self.assertInContent(ctx_source, u'This is en__fr example two')
-        self.assertInContent(ctx_target, u'C\'est en__fr exemple un')
-        self.assertInContent(ctx_target, u'C\'est en__fr exemple deux')
+        self.assertEqual(8, len(ctx_source))
+        self.assertEqual(8, len(ctx_target))
 
-        self.assertEqual(2, len(mem_data))
-        self.assertInParallelContent(mem_data, u'This is en__fr example one', u'C\'est en__fr exemple un')
-        self.assertInParallelContent(mem_data, u'This is en__fr example two', u'C\'est en__fr exemple deux')
+        for i in range(1, 9):
+            self.assertInContent(ctx_source, u'This is en__fr example ' + (u'O' * i))
+        for i in range(1, 9):
+            self.assertInContent(ctx_target, u'C\'est en__fr exemple ' + (u'O' * i))
+
+        self.assertEqual(8, len(mem_data))
+
+        for i in range(1, 9):
+            self.assertInParallelContent(mem_data,
+                                         u'This is en__fr example ' + (u'O' * i),
+                                         u'C\'est en__fr exemple ' + (u'O' * i))
 
         # en__it
         memory = memories['en_it']
@@ -139,18 +143,20 @@ class OnlineLearningLanguageTest(_OnlineLearningTest):
         ctx_target = self.mmt.context_analyzer.get_content(memory['id'], 'it', 'en')
         mem_data = tm_content.get_content(memory['id'], 'en', 'it')
 
-        self.assertEqual(4, len(ctx_source))
-        self.assertEqual(0, len(ctx_target))
-        self.assertInContent(ctx_source, u'This is en__it example one')
-        self.assertInContent(ctx_source, u'This is en__it example two')
-        self.assertInContent(ctx_source, u'This is en__it example three')
-        self.assertInContent(ctx_source, u'This is en__it example four')
+        self.assertEqual(8, len(ctx_source))
+        self.assertEqual(8, len(ctx_target))
 
-        self.assertEqual(4, len(mem_data))
-        self.assertInParallelContent(mem_data, u'This is en__it example one', u'Questo è un esempio en__it uno')
-        self.assertInParallelContent(mem_data, u'This is en__it example two', u'Questo è un esempio en__it due')
-        self.assertInParallelContent(mem_data, u'This is en__it example three', u'Questo è un esempio en__it tre')
-        self.assertInParallelContent(mem_data, u'This is en__it example four', u'Questo è un esempio en__it quattro')
+        for i in range(1, 9):
+            self.assertInContent(ctx_source, u'This is en__it example ' + (u'O' * i))
+        for i in range(1, 9):
+            self.assertInContent(ctx_target, u'Questo è un esempio en__it ' + (u'O' * i))
+
+        self.assertEqual(8, len(mem_data))
+
+        for i in range(1, 9):
+            self.assertInParallelContent(mem_data,
+                                         u'This is en__it example ' + (u'O' * i),
+                                         u'Questo è un esempio en__it ' + (u'O' * i))
 
         # en__es
         memory = memories['en_es']
@@ -159,19 +165,27 @@ class OnlineLearningLanguageTest(_OnlineLearningTest):
         es_mem_data = tm_content.get_content(memory['id'], 'en', 'es-ES')
         mx_mem_data = tm_content.get_content(memory['id'], 'en', 'es-MX')
 
-        self.assertEqual(4, len(ctx_source))
-        self.assertEqual(0, len(ctx_target))
-        self.assertInContent(ctx_source, u'This is en__es example one')
-        self.assertInContent(ctx_source, u'This is en__es example two')
-        self.assertInContent(ctx_source, u'This is en__es example three')
-        self.assertInContent(ctx_source, u'This is en__es example four')
+        self.assertEqual(10, len(ctx_source))
+        self.assertEqual(10, len(ctx_target))
 
-        self.assertEqual(2, len(es_mem_data))
-        self.assertEqual(2, len(mx_mem_data))
-        self.assertInParallelContent(es_mem_data, u'This is en__es example one', u'Esto es ejemplo en__es uno')
-        self.assertInParallelContent(es_mem_data, u'This is en__es example two', u'Esto es ejemplo en__es dos')
-        self.assertInParallelContent(mx_mem_data, u'This is en__es example three', u'Esto es ejemplo en__es tres')
-        self.assertInParallelContent(mx_mem_data, u'This is en__es example four', u'Esto es ejemplo en__es cuatro')
+        for i in range(1, 11):
+            self.assertInContent(ctx_source, u'This is en__es example ' + (u'O' * i))
+        for i in range(1, 11):
+            self.assertInContent(ctx_target, u'Esto es ejemplo en__es ' + (u'O' * i))
+
+        self.assertEqual(4, len(es_mem_data))
+
+        for i in [1, 2, 6, 7]:
+            self.assertInParallelContent(es_mem_data,
+                                         u'This is en__es example ' + (u'O' * i),
+                                         u'Esto es ejemplo en__es ' + (u'O' * i))
+
+        self.assertEqual(6, len(mx_mem_data))
+
+        for i in [3, 4, 5, 8, 9, 10]:
+            self.assertInParallelContent(mx_mem_data,
+                                         u'This is en__es example ' + (u'O' * i),
+                                         u'Esto es ejemplo en__es ' + (u'O' * i))
 
         # en__zh
         memory = memories['en_zh']
@@ -181,25 +195,26 @@ class OnlineLearningLanguageTest(_OnlineLearningTest):
         tw_mem_data = tm_content.get_content(memory['id'], 'en', 'zh-TW')
         mem_data = tm_content.get_content(memory['id'], 'en', 'zh')
 
-        self.assertEqual(4, len(ctx_source))
-        self.assertEqual(4, len(ctx_target))
+        self.assertEqual(12, len(ctx_source))
+        self.assertEqual(12, len(ctx_target))
 
-        self.assertInContent(ctx_source, u'The en__zh example one')
-        self.assertInContent(ctx_source, u'This is en__zh example two')
-        self.assertInContent(ctx_source, u'This is en__zh example three')
-        self.assertInContent(ctx_source, u'This is en__zh example four')
-        self.assertInContent(ctx_target, u'en__zh例子之一')
-        self.assertInContent(ctx_target, u'这是en__zh例子二')
-        self.assertInContent(ctx_target, u'這是en__zh例子三')
-        self.assertInContent(ctx_target, u'這是en__zh例子四')
+        for i in range(1, 13):
+            self.assertInContent(ctx_source, u'The en__zh example ' + (u'O' * i))
+        for i in range(1, 13):
+            self.assertInContent(ctx_target, u'这是en__zh例子' + (u'O' * i))
 
-        self.assertEqual(2, len(cn_mem_data))
-        self.assertEqual(2, len(tw_mem_data))
+        self.assertEqual(6, len(cn_mem_data))
+        self.assertEqual(6, len(tw_mem_data))
         self.assertEqual(0, len(mem_data))
-        self.assertInParallelContent(cn_mem_data, u'The en__zh example one', u'en__zh例子之一')
-        self.assertInParallelContent(cn_mem_data, u'This is en__zh example two', u'这是en__zh例子二')
-        self.assertInParallelContent(tw_mem_data, u'This is en__zh example three', u'這是en__zh例子三')
-        self.assertInParallelContent(tw_mem_data, u'This is en__zh example four', u'這是en__zh例子四')
+
+        for i in [1, 2, 3, 7, 8, 9]:
+            self.assertInParallelContent(cn_mem_data,
+                                         u'The en__zh example ' + (u'O' * i),
+                                         u'这是en__zh例子' + (u'O' * i))
+        for i in [4, 5, 6, 10, 11, 12]:
+            self.assertInParallelContent(tw_mem_data,
+                                         u'The en__zh example ' + (u'O' * i),
+                                         u'这是en__zh例子' + (u'O' * i))
 
 
 class OnlineLearningChannelsTest(_OnlineLearningTest):
@@ -208,8 +223,8 @@ class OnlineLearningChannelsTest(_OnlineLearningTest):
 
     def _prepare_partial(self, context=True, memory=True):
         self.mmt.add_contributions('en', 'it', [
-            (u'This is en__it example one', u'Questo è un esempio en__it uno'),
-            (u'This is en__it example two', u'Questo è un esempio en__it due')])
+            (u'This is en__it example O', u'Questo è un esempio en__it O'),
+            (u'This is en__it example OO', u'Questo è un esempio en__it OO')])
         self.mmt.stop()
 
         os.rename(self.mmt.context_analyzer.path, self.mmt.context_analyzer.path + '.bak')
@@ -217,8 +232,8 @@ class OnlineLearningChannelsTest(_OnlineLearningTest):
 
         self.mmt.start()
         self.mmt.add_contributions('en', 'it', [
-            (u'This is en__it example three', u'Questo è un esempio en__it tre'),
-            (u'This is en__it example four', u'Questo è un esempio en__it quattro')], memory=1)
+            (u'This is en__it example OOO', u'Questo è un esempio en__it OOO'),
+            (u'This is en__it example OOOO', u'Questo è un esempio en__it OOOO')], memory=1)
         self.mmt.stop()
 
         if context:
@@ -236,18 +251,20 @@ class OnlineLearningChannelsTest(_OnlineLearningTest):
         ctx_target = self.mmt.context_analyzer.get_content(1, 'it', 'en')
         mem_data = self.mmt.memory.dump().get_content(1, 'en', 'it')
 
-        self.assertEqual(4, len(ctx_source))
-        self.assertEqual(0, len(ctx_target))
-        self.assertEqual(4, len(mem_data))
+        self.assertEqual(8, len(ctx_source))
+        self.assertEqual(8, len(ctx_target))
 
-        self.assertInContent(ctx_source, u'This is en__it example one')
-        self.assertInContent(ctx_source, u'This is en__it example two')
-        self.assertInContent(ctx_source, u'This is en__it example three')
-        self.assertInContent(ctx_source, u'This is en__it example four')
-        self.assertInParallelContent(mem_data, u'This is en__it example one', u'Questo è un esempio en__it uno')
-        self.assertInParallelContent(mem_data, u'This is en__it example two', u'Questo è un esempio en__it due')
-        self.assertInParallelContent(mem_data, u'This is en__it example three', u'Questo è un esempio en__it tre')
-        self.assertInParallelContent(mem_data, u'This is en__it example four', u'Questo è un esempio en__it quattro')
+        for i in range(1, 9):
+            self.assertInContent(ctx_source, u'This is en__it example ' + (u'O' * i))
+        for i in range(1, 9):
+            self.assertInContent(ctx_target, u'Questo è un esempio en__it ' + (u'O' * i))
+
+        self.assertEqual(8, len(mem_data))
+
+        for i in range(1, 9):
+            self.assertInParallelContent(mem_data,
+                                         u'This is en__it example ' + (u'O' * i),
+                                         u'Questo è un esempio en__it ' + (u'O' * i))
 
     # Tests
 
@@ -261,54 +278,55 @@ class OnlineLearningChannelsTest(_OnlineLearningTest):
         self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(0, 0))
 
         self.assertEqual(1, len(ctx_source))
-        self.assertEqual(0, len(ctx_target))
+        self.assertEqual(1, len(ctx_target))
         self.assertEqual(1, len(mem_data))
 
         self.assertInContent(ctx_source, u'Hello world')
+        self.assertInContent(ctx_target, u'Ciao mondo')
         self.assertInParallelContent(mem_data, u'Hello world', u'Ciao mondo')
 
     def test_upload_domain(self):
         corpus = CompactCorpus(os.path.join(RES_FOLDER, 'Memory.en__it.cpt'))
         self.mmt.import_corpus(compact=corpus.path)
 
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(3, 0))
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(7, 0))
         self._verify_index_integrity()
 
     def test_updating_from_scratch_all(self):
         corpus = CompactCorpus(os.path.join(RES_FOLDER, 'Memory.en__it.cpt'))
         self.mmt.import_corpus(compact=corpus.path)
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(3, 0))
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(7, 0))
 
         self.mmt.stop()
         shutil.rmtree(self.mmt.memory.path)
         shutil.rmtree(self.mmt.context_analyzer.path)
         self.mmt.start()
 
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(3, 0))
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(7, 0))
         self._verify_index_integrity()
 
     def test_updating_from_scratch_context(self):
         corpus = CompactCorpus(os.path.join(RES_FOLDER, 'Memory.en__it.cpt'))
         self.mmt.import_corpus(compact=corpus.path)
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(3, 0))
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(7, 0))
 
         self.mmt.stop()
         shutil.rmtree(self.mmt.context_analyzer.path)
         self.mmt.start()
 
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(3, 0))
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(7, 0))
         self._verify_index_integrity()
 
     def test_updating_from_scratch_memory(self):
         corpus = CompactCorpus(os.path.join(RES_FOLDER, 'Memory.en__it.cpt'))
         self.mmt.import_corpus(compact=corpus.path)
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(3, 0))
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(7, 0))
 
         self.mmt.stop()
         shutil.rmtree(self.mmt.memory.path)
         self.mmt.start()
 
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(3, 0))
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(7, 0))
         self._verify_index_integrity()
 
     def test_updating_partial_all(self):

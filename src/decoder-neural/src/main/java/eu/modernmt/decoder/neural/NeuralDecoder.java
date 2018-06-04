@@ -83,10 +83,9 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
     }
 
     protected TranslationMemory loadTranslationMemory(ModelConfig config, File model) throws IOException {
-        Set<LanguagePair> languages = config.getAvailableTranslationDirections();
         int queryMinResults = config.getQueryMinimumResults();
 
-        LuceneTranslationMemory memory = new LuceneTranslationMemory(languages, model, queryMinResults);
+        LuceneTranslationMemory memory = new LuceneTranslationMemory(model, queryMinResults);
 
         Map<LanguagePair, Float> thresholds = config.getAlignmentThresholds();
         if (thresholds != null && !thresholds.isEmpty())

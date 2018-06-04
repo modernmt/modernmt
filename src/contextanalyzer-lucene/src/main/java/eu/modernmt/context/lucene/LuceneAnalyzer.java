@@ -35,13 +35,13 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     private final ContextAnalyzerIndex index;
     private final CorporaStorage storage;
 
-    public LuceneAnalyzer(Collection<LanguagePair> languages, File indexPath) throws IOException {
-        this(languages, indexPath, new Options());
+    public LuceneAnalyzer(File indexPath) throws IOException {
+        this(indexPath, new Options());
     }
 
-    public LuceneAnalyzer(Collection<LanguagePair> languages, File indexPath, Options options) throws IOException {
+    public LuceneAnalyzer(File indexPath, Options options) throws IOException {
         this.index = new ContextAnalyzerIndex(new File(indexPath, "index"));
-        this.storage = new CorporaStorage(new File(indexPath, "storage"), options, this.index, languages);
+        this.storage = new CorporaStorage(new File(indexPath, "storage"), options, this.index);
     }
 
     public LuceneAnalyzer(ContextAnalyzerIndex index, CorporaStorage storage) {

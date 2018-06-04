@@ -75,11 +75,9 @@ public class TranslationMemoryMain {
             memory2corpus.put(memory, corpus);
         }
 
-        LanguagePair direction = new LanguagePair(args.sourceLanguage, args.targetLanguage);
-
         LuceneTranslationMemory memory = null;
         try {
-            memory = new LuceneTranslationMemory(Collections.singleton(direction), args.modelPath, 10);
+            memory = new LuceneTranslationMemory(args.modelPath, 10);
             memory.bulkInsert(memory2corpus);
         } finally {
             IOUtils.closeQuietly(memory);

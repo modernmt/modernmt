@@ -246,7 +246,7 @@ public class TranslationFacade {
     private LanguagePair mapLanguagePair(LanguagePair pair) {
         LanguageIndex index = ModernMT.getNode().getEngine().getLanguageIndex();
 
-        LanguagePair mapped = index.map(pair);
+        LanguagePair mapped = index.map(pair, true);
         if (mapped == null)
             throw new UnsupportedLanguageException(pair);
 
@@ -258,7 +258,7 @@ public class TranslationFacade {
 
         LanguageIndex index = ModernMT.getNode().getEngine().getLanguageIndex();
         for (Language target : targets) {
-            LanguagePair language = index.map(new LanguagePair(source, target));
+            LanguagePair language = index.map(new LanguagePair(source, target), true);
             if (language != null)
                 result.add(language);
         }
