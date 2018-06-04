@@ -82,7 +82,7 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
     }
 
     private static void parseLanguageRules(Element element, LanguageIndex.Builder builder) throws ConfigException {
-        Element[] rules = getChildren(element, "pair");
+        Element[] rules = getChildren(element, "rule");
         if (rules == null)
             return;
 

@@ -8,6 +8,7 @@ import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.training.MultilingualCorpusMask;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.Level;
@@ -64,6 +65,7 @@ public class ContextAnalyzerMain {
         Log4jConfiguration.setup(Level.INFO);
 
         Args args = new Args(_args);
+        LanguagePair language = new LanguagePair(args.sourceLanguage, args.targetLanguage);
 
         ArrayList<MultilingualCorpus> corpora = new ArrayList<>();
         Corpora.list(null, false, corpora, args.sourceLanguage, args.targetLanguage, args.corporaRoots);
@@ -73,7 +75,7 @@ public class ContextAnalyzerMain {
             long id = Long.parseLong(corpus.getName());
 
             Memory memory = new Memory(id);
-            memory2corpus.put(memory, corpus);
+            memory2corpus.put(memory, new MultilingualCorpusMask(language, corpus));
         }
 
         LanguagePair direction = new LanguagePair(args.sourceLanguage, args.targetLanguage);

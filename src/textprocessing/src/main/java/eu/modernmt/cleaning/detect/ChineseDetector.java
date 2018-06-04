@@ -1,4 +1,4 @@
-package eu.modernmt.cleaning.normalizers.chinese;
+package eu.modernmt.cleaning.detect;
 /**
  * Created by nicolabertoldi on 04/02/18.
  */

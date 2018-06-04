@@ -33,11 +33,14 @@ public class CorporaStorage {
 
     private final ContextAnalyzerIndex contextAnalyzer;
     private final CorporaIndex index;
-    private final Set<LanguagePair> languages;
+    private final Set<LanguageKey> languages;
     private HashSet<CorpusBucket> pendingUpdatesBuckets = new HashSet<>();
 
     public CorporaStorage(File path, Options options, ContextAnalyzerIndex contextAnalyzer, Collection<LanguagePair> languages) throws IOException {
-        this.languages = new HashSet<>(languages);
+        this.languages = new HashSet<>(languages.size());
+        for (LanguagePair pair : languages)
+            this.languages.add(LanguageKey.fromLanguagePair(pair));
+
         this.analysisExecutor = Executors.newFixedThreadPool(options.analysisThreads);
 
         this.options = options;
@@ -73,14 +76,14 @@ public class CorporaStorage {
             if (!index.shouldAcceptData(unit.channel, unit.channelPosition))
                 continue;
 
-            if (languages.contains(unit.direction)) {
+            if (languages.contains(LanguageKey.fromLanguagePair(unit.direction))) {
                 String id = DocumentBuilder.makeId(unit.memory, unit.direction);
                 CorpusBucket bucket = index.getBucket(id);
                 bucket.append(unit.rawSentence);
                 pendingUpdatesBuckets.add(bucket);
             }
 
-            if (languages.contains(unit.direction.reversed())) {
+            if (languages.contains(LanguageKey.fromLanguagePair(unit.direction.reversed()))) {
                 String id = DocumentBuilder.makeId(unit.memory, unit.direction.reversed());
                 CorpusBucket bucket = index.getBucket(id);
                 bucket.append(unit.rawTranslation);
@@ -300,5 +303,39 @@ public class CorporaStorage {
             }
         }
 
+    }
+
+    private static final class LanguageKey {
+
+        public static LanguageKey fromLanguagePair(LanguagePair pair) {
+            return new LanguageKey(pair.source.getLanguage(), pair.target.getLanguage());
+        }
+
+        private final String source;
+        private final String target;
+
+        private LanguageKey(String source, String target) {
+            this.source = source;
+            this.target = target;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            LanguageKey that = (LanguageKey) o;
+            return Objects.equals(source, that.source) &&
+                    Objects.equals(target, that.target);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(source, target);
+        }
+
+        @Override
+        public String toString() {
+            return source + '_' + target;
+        }
     }
 }

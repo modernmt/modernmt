@@ -74,6 +74,7 @@ class KafkaDataBatch implements DataBatch {
                 this.currentPositions.put(channelId, offset);
 
             KafkaPacket packet = record.value();
+            packet.setChannelInfo(channelId, offset);
             byte packetType = packet.getType();
 
             if (packetType == KafkaPacket.TYPE_DELETION) {

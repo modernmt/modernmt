@@ -4,6 +4,7 @@ import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
+import java.util.Collections;
 
 /**
  * Created by davide on 12/02/18.
@@ -14,7 +15,7 @@ public class Dump {
         if (args.length != 1)
             throw new IllegalArgumentException("Wrong number of arguments, usage: <model-path>");
 
-        LuceneTranslationMemory memory = new LuceneTranslationMemory(null, new File(args[0]), 1);
+        LuceneTranslationMemory memory = new LuceneTranslationMemory(Collections.emptySet(), new File(args[0]), 1);
         memory.dump(entry -> {
             String str = StringUtils.join(new String[]{
                     Long.toString(entry.memory),

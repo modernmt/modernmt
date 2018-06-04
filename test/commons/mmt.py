@@ -46,9 +46,7 @@ class ContextAnalyzer(object):
         return domains
 
     def get_content(self, memory_id, source, target):
-        source = source.replace('-', '_')
-        target = target.replace('-', '_')
-        file_path = os.path.join(self._storage_path, '%d_%s__%s' % (memory_id, source, target))
+        file_path = os.path.join(self._storage_path, '%d_%s_%s' % (memory_id, source, target))
 
         result = []
         if os.path.isfile(file_path):
@@ -122,6 +120,14 @@ class ModernMT(object):
         self.api = ClusterNode.Api(port=8045)
         self.context_analyzer = ContextAnalyzer(os.path.join(self._models_path, 'context'))
         self.memory = Memory(os.path.join(self._models_path, 'decoder', 'memory'))
+
+    def backup(self, runtime=False, engine=False):
+        if runtime:
+            shutil.rmtree(self.engine_runtime_path + '_BAK', ignore_errors=True)
+            shutil.copytree(self.engine_runtime_path, self.engine_runtime_path + '_BAK')
+        if engine:
+            shutil.rmtree(self.engine_path + '_BAK', ignore_errors=True)
+            shutil.copytree(self.engine_path, self.engine_path + '_BAK')
 
     def start(self):
         _exe('./mmt stop -e ' + self.engine_name)

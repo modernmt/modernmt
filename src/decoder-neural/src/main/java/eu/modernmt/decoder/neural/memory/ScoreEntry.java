@@ -16,8 +16,8 @@ public class ScoreEntry implements Comparable<ScoreEntry> {
     public final String[] sentence;
     public final String[] translation;
 
+    public float auxiliaryScore = 0.f;
     public float score = 0.f;
-    public float similarityScore = 0.f;
 
     public ScoreEntry(long memory, LanguagePair language, String[] sentence, String[] translation) {
         this.memory = memory;
@@ -58,7 +58,6 @@ public class ScoreEntry implements Comparable<ScoreEntry> {
                 ", sentence=" + Arrays.toString(sentence) +
                 ", translation=" + Arrays.toString(translation) +
                 ", score=" + score +
-                ", similarityScore=" + similarityScore +
                 '}';
     }
 

@@ -6,7 +6,6 @@ import eu.modernmt.cleaning.filters.lang.cld2.CLD2LanguageFilter;
 import eu.modernmt.cleaning.filters.ngrams.RareNgramFilter;
 import eu.modernmt.cleaning.normalizers.ControlCharsStripper;
 import eu.modernmt.cleaning.normalizers.XMLStripper;
-import eu.modernmt.cleaning.normalizers.chinese.ChineseNormalizer;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
 /**
@@ -77,7 +76,6 @@ public class CorporaCleaning {
         if (options.normalize) {
             builder.add(new ControlCharsStripper());
             builder.add(new XMLStripper());
-            builder.add(new ChineseNormalizer());
         }
 
         builder.add(new EmptyLinesFilter());

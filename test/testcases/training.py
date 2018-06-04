@@ -63,24 +63,27 @@ class TrainingTest(unittest.TestCase):
 
         training_folder = os.path.join(self.mmt.engine_runtime_path, 'tmp', 'training')
 
-        clean_tmx = self._get_tmx_content(os.path.join(training_folder, 'clean_corpora', 'Memory.en__zh.tmx'))
-        original_tmx = self._get_tmx_content(os.path.join(TRAIN_FOLDER, 'Memory.en__zh.tmx'))
+        d_clean_tmx = self._get_tmx_content(os.path.join(training_folder, 'clean_corpora', 'Memory.en__zh.tmx'))
+        d_original_tmx = self._get_tmx_content(os.path.join(TRAIN_FOLDER, 'Memory.en__zh.tmx'))
+        r_clean_tmx = self._get_tmx_content(os.path.join(training_folder, 'clean_corpora', 'Memory.zh__en.tmx'))
+        r_original_tmx = self._get_tmx_content(os.path.join(TRAIN_FOLDER, 'Memory.zh__en.tmx'))
 
-        self.assertNotEqual(clean_tmx, original_tmx)
+        self.assertEqual(r_clean_tmx, r_original_tmx)
 
-        clean_tmx = clean_tmx.replace(u'<tuv xml:lang="zh-TW"> <seg>這是en__zh例子四</seg> </tuv>',
-                                      u'<tuv xml:lang="zh"> <seg>這是en__zh例子四</seg> </tuv>')
-
-        self.assertEqual(clean_tmx, original_tmx)
+        self.assertNotEqual(d_clean_tmx, d_original_tmx)
+        d_clean_tmx = d_clean_tmx.replace(u'<tuv xml:lang="zh-TW"> <seg>這是en__zh例子四</seg> </tuv>',
+                                          u'<tuv xml:lang="zh"> <seg>這是en__zh例子四</seg> </tuv>')
+        self.assertEqual(d_clean_tmx, d_original_tmx)
 
     def test_train_chinese(self):
         self.mmt.create('en zh %s --neural --debug --no-split --validation-corpora %s' % (TRAIN_FOLDER, DEV_FOLDER))
 
         tm_content = self.mmt.memory.dump()
 
-        self.assertEqual({1}, self.mmt.context_analyzer.get_domains())
-        self.assertEqual({1}, tm_content.get_domains())
+        self.assertEqual({1, 2}, self.mmt.context_analyzer.get_domains())
+        self.assertEqual({1, 2}, tm_content.get_domains())
 
+        # Direct TM test
         ctx_source = self.mmt.context_analyzer.get_content(1, 'en', 'zh')
         ctx_target = self.mmt.context_analyzer.get_content(1, 'zh', 'en')
         mem_data = tm_content.get_content(1, 'en', 'zh')
@@ -99,90 +102,30 @@ class TrainingTest(unittest.TestCase):
         self.assertInParallelContent(mem_data, u'This is en__zh example three', u'這是en__zh例子三')
         self.assertInParallelContent(mem_data, u'This is en__zh example four', u'這是en__zh例子四')
 
+        # Reverse TM test
+        ctx_source = self.mmt.context_analyzer.get_content(2, 'en', 'zh')
+        ctx_target = self.mmt.context_analyzer.get_content(2, 'zh', 'en')
+        mem_data = tm_content.get_content(2, 'en', 'zh')
+
+        self.assertEqual(1, len(ctx_source))
+        self.assertEqual(0, len(ctx_target))
+
+        self.assertInContent(ctx_source, u'The zh__en example one')
+
+        self.assertEqual(1, len(mem_data))
+        self.assertInParallelContent(mem_data, u'The zh__en example one', u'zh__en例子之一')
+
+        # Runtime test
         self.mmt.start()
 
         self.assertTranslateMatch('en', 'zh', u'This is example', {u'这', u'這', u'是', u'例', u'子'})
-        self.assertTranslateFail('en', 'zh-CN', u'This is example')
-        self.assertTranslateFail('en', 'zh-TW', u'This is example')
+        self.assertTranslateMatch('en', 'zh-CN', u'This is example', {u'这', u'這', u'是', u'例', u'子'})
+        self.assertTranslateMatch('en', 'zh-TW', u'This is example', {u'这', u'這', u'是', u'例', u'子'})
 
         self.mmt.add_contributions('en', 'zh', [(u'The en__zh example five', u'en__zh例子五')], 1)
 
         ctx_source = self.mmt.context_analyzer.get_content(1, 'en', 'zh')
         mem_data = self.mmt.memory.dump().get_content(1, 'en', 'zh')
-
-        self.assertInContent(ctx_source, u'The en__zh example five')
-        self.assertInParallelContent(mem_data, u'The en__zh example five', u'en__zh例子五')
-
-    def test_train_simplified_chinese(self):
-        self.mmt.create('en zh-CN %s --neural --debug --no-split --validation-corpora %s' % (TRAIN_FOLDER, DEV_FOLDER))
-
-        tm_content = self.mmt.memory.dump()
-
-        self.assertEqual({1}, self.mmt.context_analyzer.get_domains())
-        self.assertEqual({1}, tm_content.get_domains())
-
-        ctx_source = self.mmt.context_analyzer.get_content(1, 'en', 'zh-CN')
-        ctx_target = self.mmt.context_analyzer.get_content(1, 'zh-CN', 'en')
-        mem_data = tm_content.get_content(1, 'en', 'zh-CN')
-
-        self.assertEqual(2, len(ctx_source))
-        self.assertEqual(0, len(ctx_target))
-
-        self.assertInContent(ctx_source, u'The en__zh example one')
-        self.assertInContent(ctx_source, u'This is en__zh example two')
-
-        self.assertEqual(2, len(mem_data))
-        self.assertInParallelContent(mem_data, u'The en__zh example one', u'en__zh例子之一')
-        self.assertInParallelContent(mem_data, u'This is en__zh example two', u'这是en__zh例子二')
-
-        self.mmt.start()
-
-        self.assertTranslateMatch('en', 'zh-CN', u'This is example', {u'这', u'是', u'例', u'子'})
-        self.assertTranslateFail('en', 'zh', u'This is example')
-        self.assertTranslateFail('en', 'zh-TW', u'This is example')
-
-        self.mmt.add_contributions('en', 'zh', [(u'The en__zh example five', u'en__zh例子五')], 1)
-
-        ctx_source = self.mmt.context_analyzer.get_content(1, 'en', 'zh-CN')
-        mem_data = self.mmt.memory.dump().get_content(1, 'en', 'zh-CN')
-
-        self.assertInContent(ctx_source, u'The en__zh example five')
-        self.assertInParallelContent(mem_data, u'The en__zh example five', u'en__zh例子五')
-
-    def test_train_traditional_chinese(self):
-        self.mmt.create('en zh-TW %s --neural --debug --no-split --validation-corpora %s' % (TRAIN_FOLDER, DEV_FOLDER))
-
-        tm_content = self.mmt.memory.dump()
-
-        self.assertEqual({1}, self.mmt.context_analyzer.get_domains())
-        self.assertEqual({1}, tm_content.get_domains())
-
-        ctx_source = self.mmt.context_analyzer.get_content(1, 'en', 'zh-TW')
-        ctx_target = self.mmt.context_analyzer.get_content(1, 'zh-TW', 'en')
-        mem_data = tm_content.get_content(1, 'en', 'zh-TW')
-
-        self.assertEqual(3, len(ctx_source))
-        self.assertEqual(0, len(ctx_target))
-
-        self.assertInContent(ctx_source, u'The en__zh example one')
-        self.assertInContent(ctx_source, u'This is en__zh example three')
-        self.assertInContent(ctx_source, u'This is en__zh example four')
-
-        self.assertEqual(3, len(mem_data))
-        self.assertInParallelContent(mem_data, u'The en__zh example one', u'en__zh例子之一')
-        self.assertInParallelContent(mem_data, u'This is en__zh example three', u'這是en__zh例子三')
-        self.assertInParallelContent(mem_data, u'This is en__zh example four', u'這是en__zh例子四')
-
-        self.mmt.start()
-
-        self.assertTranslateMatch('en', 'zh-TW', u'This is example', {u'這', u'是', u'例', u'子'})
-        self.assertTranslateFail('en', 'zh-CN', u'This is example')
-        self.assertTranslateFail('en', 'zh', u'This is example')
-
-        self.mmt.add_contributions('en', 'zh', [(u'The en__zh example five', u'en__zh例子五')], 1)
-
-        ctx_source = self.mmt.context_analyzer.get_content(1, 'en', 'zh-TW')
-        mem_data = self.mmt.memory.dump().get_content(1, 'en', 'zh-TW')
 
         self.assertInContent(ctx_source, u'The en__zh example five')
         self.assertInParallelContent(mem_data, u'The en__zh example five', u'en__zh例子五')

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tmx version="1.4">
+    <header creationtool="ModernMT - modernmt.eu" creationtoolversion="1.0" datatype="plaintext" o-tmf="ModernMT"
+            segtype="sentence" adminlang="en" srclang="zh"/>
+    <body>
+        <tu srclang="zh" datatype="plaintext" creationdate="20160323T072431Z">
+            <tuv xml:lang="zh">
+                <seg>zh__en例子之一</seg>
+            </tuv>
+            <tuv xml:lang="en">
+                <seg>The zh__en example one</seg>
+            </tuv>
+        </tu>
+    </body>
+</tmx>
