@@ -13,20 +13,20 @@ public class TranslationUnit extends DataMessage {
 
     public final long memory;
 
-    public LanguagePair direction;
+    public final LanguagePair direction;
     public final String rawSentence;
     public final String rawTranslation;
     public final String rawPreviousSentence;
     public final String rawPreviousTranslation;
+    public final Date timestamp;
 
-    public Sentence sentence = null;
-    public Sentence translation = null;
-    public Alignment alignment = null;
-
-    public Date timestamp = null;
+    public final Sentence sentence;
+    public final Sentence translation;
+    public final Alignment alignment;
 
     public TranslationUnit(short channel, long channelPosition, LanguagePair direction, long memory, String rawSentence,
-                           String rawTranslation, String rawPreviousSentence, String rawPreviousTranslation, Date timestamp) {
+                           String rawTranslation, String rawPreviousSentence, String rawPreviousTranslation, Date timestamp,
+                           Sentence sentence, Sentence translation, Alignment alignment) {
         super(channel, channelPosition);
         this.memory = memory;
         this.direction = direction;
@@ -35,6 +35,10 @@ public class TranslationUnit extends DataMessage {
         this.rawPreviousSentence = rawPreviousSentence;
         this.rawPreviousTranslation = rawPreviousTranslation;
         this.timestamp = timestamp;
+
+        this.sentence = sentence;
+        this.translation = translation;
+        this.alignment = alignment;
     }
 
     @Override

@@ -116,10 +116,9 @@ public class TestData {
     }
 
     public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguagePair language, String source, String target, String previousSource, String previousTarget, Date timestamp) {
-        TranslationUnit tu = new TranslationUnit((short) channel, channelPosition, language, memory, source, target, previousSource, previousTarget, timestamp);
-        tu.sentence = sentence(source);
-        tu.translation = sentence(target);
-        return tu;
+        return new TranslationUnit((short) channel, channelPosition, language, memory,
+                source, target, previousSource, previousTarget, timestamp,
+                sentence(source), sentence(target), null);
     }
 
     // Corpus

@@ -153,10 +153,9 @@ public class TestData {
     }
 
     public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguagePair language, String source, String target, Date timestamp) {
-        TranslationUnit tu = new TranslationUnit((short) channel, channelPosition, language, memory, source, target, null, null, timestamp);
-        tu.sentence = sentence(source);
-        tu.translation = sentence(target);
-        return tu;
+        return new TranslationUnit((short) channel, channelPosition, language, memory,
+                source, target, null, null, timestamp,
+                sentence(source), sentence(target), null);
     }
 
     public static Set<String> tuGetTerms(List<TranslationUnit> units, boolean source) throws IOException {

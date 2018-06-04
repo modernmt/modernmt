@@ -74,18 +74,16 @@ class KafkaDataBatch implements DataBatch {
                 this.currentPositions.put(channelId, offset);
 
             KafkaPacket packet = record.value();
-            DataMessage message = packet.toDataMessage(channel.getId(), offset);
+            byte packetType = packet.getType();
 
-            if (message instanceof TranslationUnit) {
-                TranslationUnit unit = (TranslationUnit) message;
-                unit.direction = languageIndex.mapIgnoringDirection(unit.direction);
-
-                if (unit.direction != null) {
-                    DataPartition partition = cachedDataSet.computeIfAbsent(unit.direction, key -> getDataPartition(key, size));
-                    partition.add(unit);
-                }
+            if (packetType == KafkaPacket.TYPE_DELETION) {
+                deletions.add(packet.asDeletion());
             } else {
-                deletions.add((Deletion) message);
+                LanguagePair direction = languageIndex.mapIgnoringDirection(packet.getDirection());
+                if (direction != null) {
+                    DataPartition partition = cachedDataSet.computeIfAbsent(direction, key -> getDataPartition(key, size));
+                    partition.add(packet);
+                }
             }
         }
 
@@ -93,8 +91,7 @@ class KafkaDataBatch implements DataBatch {
 
         this.translationUnits.ensureCapacity(size);
         for (DataPartition partition : cachedDataSet.values()) {
-            partition.process(engine, process, align);
-            this.translationUnits.addAll(partition.units);
+            partition.process(engine, process, align, this.translationUnits);
             releaseDataPartition(partition);
         }
 
@@ -123,7 +120,7 @@ class KafkaDataBatch implements DataBatch {
     private static class DataPartition {
 
         private LanguagePair direction;
-        public final ArrayList<TranslationUnit> units = new ArrayList<>();
+        public final ArrayList<KafkaPacket> packets = new ArrayList<>();
         public final ArrayList<String> sources = new ArrayList<>();
         public final ArrayList<String> targets = new ArrayList<>();
 
@@ -131,7 +128,7 @@ class KafkaDataBatch implements DataBatch {
             this.clear();
             this.direction = direction;
 
-            units.ensureCapacity(size);
+            packets.ensureCapacity(size);
             sources.ensureCapacity(size);
             targets.ensureCapacity(size);
 
@@ -139,21 +136,21 @@ class KafkaDataBatch implements DataBatch {
         }
 
         public DataPartition clear() {
-            units.clear();
+            packets.clear();
             sources.clear();
             targets.clear();
 
             return this;
         }
 
-        public void add(TranslationUnit unit) {
-            units.add(unit);
-            sources.add(unit.rawSentence);
-            targets.add(unit.rawTranslation);
+        public void add(KafkaPacket packet) {
+            packets.add(packet);
+            sources.add(packet.getSentence());
+            targets.add(packet.getTranslation());
         }
 
-        public void process(Engine engine, boolean process, boolean align) throws ProcessingException, AlignerException {
-            if (units.isEmpty())
+        public void process(Engine engine, boolean process, boolean align, Collection<TranslationUnit> output) throws ProcessingException, AlignerException {
+            if (packets.isEmpty())
                 return;
 
             if (process || align) {
@@ -167,13 +164,12 @@ class KafkaDataBatch implements DataBatch {
                     alignments = aligner.getAlignments(direction, sourceSentences, targetSentences);
                 }
 
-                for (int i = 0; i < units.size(); i++) {
-                    TranslationUnit unit = units.get(i);
-                    unit.sentence = sourceSentences.get(i);
-                    unit.translation = targetSentences.get(i);
+                for (int i = 0; i < packets.size(); i++) {
+                    Sentence sentence = sourceSentences.get(i);
+                    Sentence translation = targetSentences.get(i);
+                    Alignment alignment = alignments != null ? alignments[i] : null;
 
-                    if (alignments != null)
-                        unit.alignment = alignments[i];
+                    output.add(packets.get(i).asTranslationUnit(direction, sentence, translation, alignment));
                 }
             }
         }

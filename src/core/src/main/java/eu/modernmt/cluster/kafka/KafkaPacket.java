@@ -1,11 +1,12 @@
 package eu.modernmt.cluster.kafka;
 
-import eu.modernmt.data.DataMessage;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.model.Alignment;
+import eu.modernmt.model.Sentence;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -16,9 +17,12 @@ import java.util.Date;
  */
 public class KafkaPacket {
 
-    private static final byte TYPE_DELETION = 0x00;
-    private static final byte TYPE_ADDITION = 0x01;
-    private static final byte TYPE_OVERWRITE = 0x02;
+    public static final byte TYPE_DELETION = 0x00;
+    public static final byte TYPE_ADDITION = 0x01;
+    public static final byte TYPE_OVERWRITE = 0x02;
+
+    private short channel = -1;
+    private long position = -1;
 
     private final byte type;
     private final long memory;
@@ -100,17 +104,57 @@ public class KafkaPacket {
         this.timestamp = timestamp;
     }
 
-    public DataMessage toDataMessage(short channel, long position) {
-        switch (type) {
-            case TYPE_DELETION:
-                return new Deletion(channel, position, memory);
-            case TYPE_ADDITION:
-                return new TranslationUnit(channel, position, direction, memory, sentence, translation, null, null, timestamp);
-            case TYPE_OVERWRITE:
-                return new TranslationUnit(channel, position, direction, memory, sentence, translation, previousSentence, previousTranslation, timestamp);
-            default:
-                throw new IllegalArgumentException("Invalid packet received, unknown type: " + (int) type);
-        }
+    public void setChannelInfo(short channel, long position) {
+        this.channel = channel;
+        this.position = position;
+    }
+
+    public byte getType() {
+        return type;
+    }
+
+    public long getMemory() {
+        return memory;
+    }
+
+    public LanguagePair getDirection() {
+        return direction;
+    }
+
+    public String getSentence() {
+        return sentence;
+    }
+
+    public String getTranslation() {
+        return translation;
+    }
+
+    public String getPreviousSentence() {
+        return previousSentence;
+    }
+
+    public String getPreviousTranslation() {
+        return previousTranslation;
+    }
+
+    public Date getTimestamp() {
+        return timestamp;
+    }
+
+    public Deletion asDeletion() {
+        if (channel < 0 || position < 0)
+            throw new IllegalStateException("Call setChannelInfo() before parsing methods.");
+
+        return new Deletion(channel, position, memory);
+    }
+
+    public TranslationUnit asTranslationUnit(LanguagePair direction, Sentence sSentence, Sentence sTranslation, Alignment alignment) {
+        if (channel < 0 || position < 0)
+            throw new IllegalStateException("Call setChannelInfo() before parsing methods.");
+
+        return new TranslationUnit(channel, position, direction, memory,
+                sentence, translation, previousSentence, previousTranslation, timestamp,
+                sSentence, sTranslation, alignment);
     }
 
     /**
@@ -202,4 +246,5 @@ public class KafkaPacket {
             buffer.put(string);
         }
     }
+
 }
