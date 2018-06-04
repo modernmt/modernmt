@@ -1,6 +1,7 @@
 package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Memory;
 import org.junit.After;
 import org.junit.Before;
@@ -45,8 +46,8 @@ public class LuceneTranslationMemoryTest_search {
         this.memory = null;
     }
 
-    private static boolean contains(ScoreEntry[] entries, long memory, String sentence, String translation) {
-        ScoreEntry target = new ScoreEntry(memory, sentence.split(" "), translation.split(" "));
+    private static boolean contains(ScoreEntry[] entries, long memory, LanguagePair direction, String sentence, String translation) {
+        ScoreEntry target = new ScoreEntry(memory, direction, sentence.split(" "), translation.split(" "));
 
         for (ScoreEntry entry : entries) {
             if (entry.equals(target))
@@ -61,8 +62,8 @@ public class LuceneTranslationMemoryTest_search {
         ScoreEntry[] result = this.memory.search(EN__IT, TestData.sentence("Hello world"), 100);
 
         assertEquals(2, result.length);
-        assertTrue(contains(result, 1, "Hello world 1", "Ciao mondo 1"));
-        assertTrue(contains(result, 2, "Hello world 2", "Ciao mondo 2"));
+        assertTrue(contains(result, 1, EN__IT, "Hello world 1", "Ciao mondo 1"));
+        assertTrue(contains(result, 2, EN__IT, "Hello world 2", "Ciao mondo 2"));
     }
 
     @Test
@@ -70,8 +71,8 @@ public class LuceneTranslationMemoryTest_search {
         ScoreEntry[] result = this.memory.search(EN__IT, TestData.sentence("The test"), 100);
 
         assertEquals(2, result.length);
-        assertTrue(contains(result, 1, "The test 1", "Il test 1"));
-        assertTrue(contains(result, 2, "The test 2", "Il test 2"));
+        assertTrue(contains(result, 1, EN__IT, "The test 1", "Il test 1"));
+        assertTrue(contains(result, 2, EN__IT, "The test 2", "Il test 2"));
     }
 
     @Test
@@ -79,8 +80,8 @@ public class LuceneTranslationMemoryTest_search {
         ScoreEntry[] result = this.memory.search(EN__FR, TestData.sentence("Hello world"), 100);
 
         assertEquals(2, result.length);
-        assertTrue(contains(result, 1, "Hello world 1", "Bonjour monde 1"));
-        assertTrue(contains(result, 2, "Hello world 2", "Bonjour monde 2"));
+        assertTrue(contains(result, 1, EN__FR, "Hello world 1", "Bonjour monde 1"));
+        assertTrue(contains(result, 2, EN__FR, "Hello world 2", "Bonjour monde 2"));
     }
 
     @Test
@@ -88,8 +89,8 @@ public class LuceneTranslationMemoryTest_search {
         ScoreEntry[] result = this.memory.search(IT__EN, TestData.sentence("Ciao mondo"), 100);
 
         assertEquals(2, result.length);
-        assertTrue(contains(result, 1, "Ciao mondo 1", "Hello world 1"));
-        assertTrue(contains(result, 2, "Ciao mondo 2", "Hello world 2"));
+        assertTrue(contains(result, 1, EN__FR, "Ciao mondo 1", "Hello world 1"));
+        assertTrue(contains(result, 2, EN__FR, "Ciao mondo 2", "Hello world 2"));
     }
 
     @Test
@@ -97,8 +98,8 @@ public class LuceneTranslationMemoryTest_search {
         ScoreEntry[] result = this.memory.search(FR__EN, TestData.sentence("Bonjour monde"), 100);
 
         assertEquals(2, result.length);
-        assertTrue(contains(result, 1, "Bonjour monde 1", "Hello world 1"));
-        assertTrue(contains(result, 2, "Bonjour monde 2", "Hello world 2"));
+        assertTrue(contains(result, 1, EN__FR, "Bonjour monde 1", "Hello world 1"));
+        assertTrue(contains(result, 2, EN__FR, "Bonjour monde 2", "Hello world 2"));
     }
 
 }

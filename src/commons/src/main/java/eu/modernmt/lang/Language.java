@@ -56,6 +56,7 @@ public final class Language implements Serializable, Comparable<Language> {
 
     private final String language;
     private final String region;
+    private final String tag;
 
     public Language(String language) {
         this(language, null);
@@ -64,6 +65,16 @@ public final class Language implements Serializable, Comparable<Language> {
     public Language(String language, String region) {
         this.language = language;
         this.region = region;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(language);
+
+        if (region != null) {
+            sb.append('-');
+            sb.append(region);
+        }
+
+        this.tag = sb.toString();
     }
 
     public static Language fromString(String string) {
@@ -117,19 +128,11 @@ public final class Language implements Serializable, Comparable<Language> {
     }
 
     public String toLanguageTag() {
-        return this.toString();
+        return tag;
     }
 
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(language);
-
-        if (region != null) {
-            sb.append('-');
-            sb.append(region);
-        }
-
-        return sb.toString();
+        return tag;
     }
 
 

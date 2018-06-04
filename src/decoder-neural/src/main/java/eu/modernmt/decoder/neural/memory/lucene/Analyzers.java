@@ -57,7 +57,7 @@ public class Analyzers {
 
         @Override
         protected Analyzer getWrappedAnalyzer(String fieldName) {
-            if (DocumentBuilder.HASH_FIELD.equals(fieldName))
+            if (DocumentBuilder.isHashField(fieldName))
                 return getHashAnalyzer();
             else
                 return new ContentAnalyzer(SHINGLE_SIZE, true);

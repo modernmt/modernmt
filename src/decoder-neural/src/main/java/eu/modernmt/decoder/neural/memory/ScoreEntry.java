@@ -1,8 +1,10 @@
 package eu.modernmt.decoder.neural.memory;
 
+import eu.modernmt.lang.LanguagePair;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Created by davide on 24/05/17.
@@ -10,13 +12,16 @@ import java.util.Arrays;
 public class ScoreEntry implements Comparable<ScoreEntry> {
 
     public final long memory;
+    public final LanguagePair language;
     public final String[] sentence;
     public final String[] translation;
 
     public float score = 0.f;
+    public float similarityScore = 0.f;
 
-    public ScoreEntry(long memory, String[] sentence, String[] translation) {
+    public ScoreEntry(long memory, LanguagePair language, String[] sentence, String[] translation) {
         this.memory = memory;
+        this.language = language;
         this.sentence = sentence;
         this.translation = translation;
     }
@@ -30,19 +35,16 @@ public class ScoreEntry implements Comparable<ScoreEntry> {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
-        ScoreEntry entry = (ScoreEntry) o;
-
-        if (memory != entry.memory) return false;
-        // Probably incorrect - comparing Object[] arrays with Arrays.equals
-        if (!Arrays.equals(sentence, entry.sentence)) return false;
-        // Probably incorrect - comparing Object[] arrays with Arrays.equals
-        return Arrays.equals(translation, entry.translation);
+        ScoreEntry that = (ScoreEntry) o;
+        return memory == that.memory &&
+                Objects.equals(language, that.language) &&
+                Arrays.equals(sentence, that.sentence) &&
+                Arrays.equals(translation, that.translation);
     }
 
     @Override
     public int hashCode() {
-        int result = (int) (memory ^ (memory >>> 32));
+        int result = Objects.hash(memory, language);
         result = 31 * result + Arrays.hashCode(sentence);
         result = 31 * result + Arrays.hashCode(translation);
         return result;
@@ -52,9 +54,12 @@ public class ScoreEntry implements Comparable<ScoreEntry> {
     public String toString() {
         return "ScoreEntry{" +
                 "memory=" + memory +
-                ", sentence=" + StringUtils.join(sentence, ' ') +
-                ", translation=" + StringUtils.join(translation, ' ') +
+                ", language=" + language +
+                ", sentence=" + Arrays.toString(sentence) +
+                ", translation=" + Arrays.toString(translation) +
                 ", score=" + score +
+                ", similarityScore=" + similarityScore +
                 '}';
     }
+
 }

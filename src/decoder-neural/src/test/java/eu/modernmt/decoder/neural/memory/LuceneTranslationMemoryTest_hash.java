@@ -41,21 +41,21 @@ public class LuceneTranslationMemoryTest_hash {
         setup(EN__IT, EN__FR);
 
         IndexWriter indexWriter = memory.getIndexWriter();
-        indexWriter.addDocument(DocumentBuilder.build(EN__IT, 2, "2-1", "2-1", "A B C D"));
-        indexWriter.addDocument(DocumentBuilder.build(EN__IT, 1, "1-1", "1-1", "A B C D"));
-        indexWriter.addDocument(DocumentBuilder.build(EN__FR, 1, "1-1F", "1-1F", "A B C D"));
-        indexWriter.addDocument(DocumentBuilder.build(EN__IT, 1, "1-2", "1-2", "D C B A"));
-        indexWriter.addDocument(DocumentBuilder.build(EN__IT, 1, "1-3", "1-3", "D C B Z"));
+        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 2, "2-1", "2-1", "A B C D"));
+        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 1, "1-1", "1-1", "A B C D"));
+        indexWriter.addDocument(DocumentBuilder.newInstance(EN__FR, 1, "1-1F", "1-1F", "A B C D"));
+        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 1, "1-2", "1-2", "D C B A"));
+        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 1, "1-3", "1-3", "D C B Z"));
         indexWriter.commit();
 
-        Query query = new DefaultQueryBuilder().getByHash(1, EN__IT, "A B C D");
+        Query query = new DefaultQueryBuilder().getByHash(1, "A B C D");
 
         IndexSearcher searcher = memory.getIndexSearcher();
         ScoreDoc[] result = searcher.search(query, 10).scoreDocs;
 
         assertEquals(1, result.length);
 
-        ScoreEntry entry = DocumentBuilder.parseEntry(EN__IT, searcher.doc(result[0].doc));
+        ScoreEntry entry = DocumentBuilder.asEntry(searcher.doc(result[0].doc), EN__IT);
 
         assertArrayEquals(new String[]{"1-1"}, entry.sentence);
     }

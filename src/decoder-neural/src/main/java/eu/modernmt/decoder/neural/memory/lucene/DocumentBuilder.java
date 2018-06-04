@@ -6,7 +6,11 @@ import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import org.apache.lucene.document.*;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.NumericUtils;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -17,86 +21,36 @@ import java.util.Map;
  */
 public class DocumentBuilder {
 
-    private static final String CHANNELS_FIELD = "channels";
+    // Factory methods
 
-    public static final String MEMORY_ID_FIELD = "memory";
-    public static final String HASH_FIELD = "hash";
-    public static final String LANGUAGE_FIELD = "language";
-    private static final String CONTENT_PREFIX_FIELD = "content::";
-
-    // TranslationUnit entries
-
-    public static Document build(TranslationUnit unit) {
+    public static Document newInstance(TranslationUnit unit) {
         String sentence = TokensOutputStream.serialize(unit.sentence, false, true);
         String translation = TokensOutputStream.serialize(unit.translation, false, true);
-        String hash = HashGenerator.hash(unit.direction, unit.rawSentence, unit.rawTranslation);
+        String hash = HashGenerator.hash(unit.rawSentence, unit.rawTranslation);
 
-        return build(unit.direction, unit.memory, sentence, translation, hash);
+        return newInstance(unit.direction, unit.memory, sentence, translation, hash);
     }
 
-    public static Document build(LanguagePair direction, long memory, String sentence, String translation) {
-        return build(direction, memory, sentence, translation, null);
+    public static Document newInstance(LanguagePair direction, long memory, String sentence, String translation) {
+        return newInstance(direction, memory, sentence, translation, null);
     }
 
-    public static Document build(LanguagePair direction, long memory, String sentence, String translation, String hash) {
+    public static Document newInstance(LanguagePair direction, long memory, String sentence, String translation, String hash) {
         Document document = new Document();
-        document.add(new LongField(MEMORY_ID_FIELD, memory, Field.Store.YES));
-        document.add(new StringField(LANGUAGE_FIELD, encode(direction), Field.Store.YES));
-        document.add(new TextField(getContentFieldName(direction.source), sentence, Field.Store.YES));
-        document.add(new TextField(getContentFieldName(direction.target), translation, Field.Store.YES));
+        document.add(new LongField(MEMORY_FIELD, memory, Field.Store.YES));
 
         if (hash != null)
             document.add(new HashField(HASH_FIELD, hash, Field.Store.NO));
 
+        document.add(new StoredField(makeLanguageFieldName(direction.source), direction.source.toLanguageTag()));
+        document.add(new StoredField(makeLanguageFieldName(direction.target), direction.target.toLanguageTag()));
+        document.add(new TextField(makeContentFieldName(direction), sentence, Field.Store.YES));
+        document.add(new TextField(makeContentFieldName(direction.reversed()), translation, Field.Store.YES));
+
         return document;
     }
 
-    public static ScoreEntry parseEntry(LanguagePair direction, Document doc) {
-        long memory = Long.parseLong(doc.get(MEMORY_ID_FIELD));
-        String[] sentence = doc.get(getContentFieldName(direction.source)).split(" ");
-        String[] translation = doc.get(getContentFieldName(direction.target)).split(" ");
-
-        return new ScoreEntry(memory, sentence, translation);
-    }
-
-    public static IndexEntry parseIndexEntry(Document doc) {
-        long memory = Long.parseLong(doc.get(MEMORY_ID_FIELD));
-
-        if (memory == 0L)
-            return null;
-
-        LanguagePair language = decodeLanguage(doc.get(LANGUAGE_FIELD));
-        String[] sentence = doc.get(getContentFieldName(language.source)).split(" ");
-        String[] translation = doc.get(getContentFieldName(language.target)).split(" ");
-
-        return new IndexEntry(memory, language, sentence, translation);
-    }
-
-    public static String encode(LanguagePair direction) {
-        String l1 = direction.source.toLanguageTag();
-        String l2 = direction.target.toLanguageTag();
-
-        if (l1.compareTo(l2) > 0) {
-            String tmp = l1;
-            l1 = l2;
-            l2 = tmp;
-        }
-
-        return l1 + "__" + l2;
-    }
-
-    private static LanguagePair decodeLanguage(String encoded) {
-        String[] parts = encoded.split("__");
-        return new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1]));
-    }
-
-    public static String getContentFieldName(Language locale) {
-        return CONTENT_PREFIX_FIELD + locale.toLanguageTag();
-    }
-
-    // Channels data entry
-
-    public static Document build(Map<Short, Long> channels) {
+    public static Document newChannelsInstance(Map<Short, Long> channels) {
         ByteBuffer buffer = ByteBuffer.allocate(10 * channels.size());
         for (Map.Entry<Short, Long> entry : channels.entrySet()) {
             buffer.putShort(entry.getKey());
@@ -104,16 +58,86 @@ public class DocumentBuilder {
         }
 
         Document document = new Document();
-        document.add(new LongField(MEMORY_ID_FIELD, 0, Field.Store.YES));
+        document.add(new LongField(MEMORY_FIELD, 0, Field.Store.YES));
         document.add(new StoredField(CHANNELS_FIELD, buffer.array()));
 
         return document;
     }
 
-    public static Map<Short, Long> parseChannels(Document document) {
+    private static final String CHANNELS_FIELD = "channels";
+    private static final String MEMORY_FIELD = "memory";
+    private static final String HASH_FIELD = "hash";
+    private static final String LANGUAGE_PREFIX_FIELD = "lang_";
+    private static final String CONTENT_PREFIX_FIELD = "content_";
+
+    // Getters
+
+    public static long getMemory(Document self) {
+        return Long.parseLong(self.get(MEMORY_FIELD));
+    }
+
+    // Parsing
+
+    public static ScoreEntry asEntry(Document self) {
+        Language source = null;
+        Language target = null;
+
+        for (IndexableField field : self.getFields()) {
+            String name = field.name();
+
+            if (name.startsWith(LANGUAGE_PREFIX_FIELD)) {
+                Language l = Language.fromString(name.substring(LANGUAGE_PREFIX_FIELD.length()));
+
+                if (source == null) {
+                    source = l;
+                } else {
+                    target = l;
+                    break;
+                }
+            }
+        }
+
+        if (source == null || target == null)
+            throw new IllegalArgumentException("Invalid document: missing language info.");
+
+        if (source.compareTo(target) < 0)
+            return asEntry(self, new LanguagePair(source, target));
+        else
+            return asEntry(self, new LanguagePair(target, source));
+    }
+
+    public static ScoreEntry asEntry(Document self, LanguagePair direction) {
+        long memory = Long.parseLong(self.get(MEMORY_FIELD));
+        String[] sentence = self.get(makeContentFieldName(direction)).split(" ");
+        String[] translation = self.get(makeContentFieldName(direction.reversed())).split(" ");
+
+        String _source = self.get(makeLanguageFieldName(direction.source));
+        String _target = self.get(makeLanguageFieldName(direction.target));
+
+        boolean differ = false;
+        Language source = direction.source;
+        Language target = direction.target;
+
+        if (!_source.equals(direction.source.toLanguageTag())) {
+            source = Language.fromString(_source);
+            differ = true;
+        }
+
+        if (!_target.equals(direction.target.toLanguageTag())) {
+            target = Language.fromString(_target);
+            differ = true;
+        }
+
+        if (differ)
+            direction = new LanguagePair(source, target);
+
+        return new ScoreEntry(memory, direction, sentence, translation);
+    }
+
+    public static Map<Short, Long> asChannels(Document self) {
         HashMap<Short, Long> result = new HashMap<>();
 
-        BytesRef value = document.getBinaryValue(CHANNELS_FIELD);
+        BytesRef value = self.getBinaryValue(CHANNELS_FIELD);
         ByteBuffer buffer = ByteBuffer.wrap(value.bytes);
 
         while (buffer.hasRemaining()) {
@@ -124,4 +148,78 @@ public class DocumentBuilder {
 
         return result;
     }
+
+//
+//    public static ScoreEntry parseEntry(LanguagePair direction, Document doc) {
+//        long memory = Long.parseLong(doc.get(MEMORY_ID_FIELD));
+//        String[] sentence = doc.get(getContentFieldName(direction.source)).split(" ");
+//        String[] translation = doc.get(getContentFieldName(direction.target)).split(" ");
+//
+//        return new ScoreEntry(memory, sentence, translation);
+//    }
+//
+//    public static IndexEntry parseIndexEntry(Document doc) {
+//        long memory = Long.parseLong(doc.get(MEMORY_ID_FIELD));
+//
+//        if (memory == 0L)
+//            return null;
+//
+//        LanguagePair language = decodeLanguage(doc.get(LANGUAGE_FIELD));
+//        String[] sentence = doc.get(getContentFieldName(language.source)).split(" ");
+//        String[] translation = doc.get(getContentFieldName(language.target)).split(" ");
+//
+//        return new IndexEntry(memory, language, sentence, translation);
+//    }
+//
+//    public static String encode(LanguagePair direction) {
+//        String l1 = direction.source.toLanguageTag();
+//        String l2 = direction.target.toLanguageTag();
+//
+//        if (l1.compareTo(l2) > 0) {
+//            String tmp = l1;
+//            l1 = l2;
+//            l2 = tmp;
+//        }
+//
+//        return l1 + "__" + l2;
+//    }
+//
+//    private static LanguagePair decodeLanguage(String encoded) {
+//        String[] parts = encoded.split("__");
+//        return new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1]));
+//    }
+//
+
+
+    // Term constructors
+
+    public static Term makeHashTerm(String h) {
+        return new Term(HASH_FIELD, h);
+    }
+
+    public static Term makeMemoryTerm(long memory) {
+        BytesRefBuilder builder = new BytesRefBuilder();
+        NumericUtils.longToPrefixCoded(memory, 0, builder);
+
+        return new Term(MEMORY_FIELD, builder.toBytesRef());
+    }
+
+    public static Term makeChannelsTerm() {
+        return makeMemoryTerm(0L);
+    }
+
+    // Fields builders
+
+    public static boolean isHashField(String field) {
+        return HASH_FIELD.equals(field);
+    }
+
+    public static String makeLanguageFieldName(Language language) {
+        return LANGUAGE_PREFIX_FIELD + language.getLanguage();
+    }
+
+    public static String makeContentFieldName(LanguagePair direction) {
+        return CONTENT_PREFIX_FIELD + direction.source.getLanguage() + '_' + direction.target.getLanguage();
+    }
+
 }

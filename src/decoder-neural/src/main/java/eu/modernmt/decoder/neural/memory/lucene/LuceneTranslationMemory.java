@@ -99,12 +99,12 @@ public class LuceneTranslationMemory implements TranslationMemory {
         // Read channels status
         IndexSearcher searcher = this.getIndexSearcher();
 
-        Query query = new TermQuery(this.queryBuilder.channelsTerm());
+        Query query = new TermQuery(DocumentBuilder.makeChannelsTerm());
         TopDocs docs = searcher.search(query, 1);
 
         if (docs.scoreDocs.length > 0) {
             Document channelsDocument = searcher.doc(docs.scoreDocs[0].doc);
-            this.channels = DocumentBuilder.parseChannels(channelsDocument);
+            this.channels = DocumentBuilder.asChannels(channelsDocument);
         } else {
             this.channels = new HashMap<>();
         }
@@ -114,7 +114,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         return languages;
     }
 
-    public synchronized IndexReader getIndexReader() throws IOException {
+    protected synchronized IndexReader getIndexReader() throws IOException {
         if (this._indexReader == null) {
             this._indexReader = DirectoryReader.open(this.indexDirectory);
             this._indexReader.incRef();
@@ -144,7 +144,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         return this.indexWriter;
     }
 
-    public void dump(Consumer<IndexEntry> consumer) throws IOException {
+    public void dump(Consumer<ScoreEntry> consumer) throws IOException {
         IndexSearcher searcher = getIndexSearcher();
         IndexReader reader = getIndexReader();
 
@@ -152,18 +152,20 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
         TopDocs docs = searcher.search(new MatchAllDocsQuery(), size);
 
-        for (ScoreDoc doc : docs.scoreDocs) {
-            IndexEntry entry = DocumentBuilder.parseIndexEntry(reader.document(doc.doc));
-            if (entry != null)
+        for (ScoreDoc scoreDoc : docs.scoreDocs) {
+            Document document = reader.document(scoreDoc.doc);
+            if (DocumentBuilder.getMemory(document) > 0) {
+                ScoreEntry entry = DocumentBuilder.asEntry(document);
                 consumer.accept(entry);
+            }
         }
     }
 
     // TranslationMemory
 
     @Override
-    /* This method does not store segments hash. Update of content inserted with this method is not possible */
     public void bulkInsert(Map<Memory, MultilingualCorpus> batch) throws IOException {
+        /* This method does not store segments hash. Update of content inserted with this method is not possible */
         boolean success = false;
 
         try {
@@ -180,8 +182,8 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     @Override
-    /* This method does not store segments hash. Update of content inserted with this method is not possible */
     public void bulkInsert(Memory memory, MultilingualCorpus corpus) throws IOException {
+        /* This method does not store segments hash. Update of content inserted with this method is not possible */
         boolean success = false;
 
         try {
@@ -207,7 +209,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
             MultilingualCorpus.StringPair pair;
             while ((pair = reader.read()) != null) {
                 if (languages.contains(pair.language) || languages.contains(pair.language.reversed())) {
-                    Document document = DocumentBuilder.build(pair.language, memory, pair.source, pair.target);
+                    Document document = DocumentBuilder.newInstance(pair.language, memory, pair.source, pair.target);
                     this.indexWriter.addDocument(document);
                 }
             }
@@ -246,7 +248,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
         ScoreEntry[] entries = new ScoreEntry[docs.length];
         for (int i = 0; i < docs.length; i++) {
-            entries[i] = DocumentBuilder.parseEntry(direction, searcher.doc(docs[i].doc));
+            entries[i] = DocumentBuilder.asEntry(searcher.doc(docs[i].doc), direction);
             entries[i].score = docs[i].score;
         }
 
@@ -287,8 +289,8 @@ public class LuceneTranslationMemory implements TranslationMemory {
                     newChannels.put(entry.getKey(), position);
             }
 
-            Document channelsDocument = DocumentBuilder.build(newChannels);
-            this.indexWriter.updateDocument(this.queryBuilder.channelsTerm(), channelsDocument);
+            Document channelsDocument = DocumentBuilder.newChannelsInstance(newChannels);
+            this.indexWriter.updateDocument(DocumentBuilder.makeChannelsTerm(), channelsDocument);
             this.indexWriter.commit();
 
             this.channels.putAll(newChannels);
@@ -322,13 +324,13 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
                 if (currentPosition == null || currentPosition < unit.channelPosition) {
                     if (unit.rawPreviousSentence != null && unit.rawPreviousTranslation != null) {
-                        String hash = HashGenerator.hash(unit.direction, unit.rawPreviousSentence, unit.rawPreviousTranslation);
-                        Query hashQuery = this.queryBuilder.getByHash(unit.memory, unit.direction, hash);
+                        String hash = HashGenerator.hash(unit.rawPreviousSentence, unit.rawPreviousTranslation);
+                        Query hashQuery = this.queryBuilder.getByHash(unit.memory, hash);
 
                         this.indexWriter.deleteDocuments(hashQuery);
                     }
 
-                    Document document = DocumentBuilder.build(unit);
+                    Document document = DocumentBuilder.newInstance(unit);
                     this.indexWriter.addDocument(document);
                 }
             }
@@ -340,7 +342,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
             Long currentPosition = this.channels.get(deletion.channel);
 
             if (currentPosition == null || currentPosition < deletion.channelPosition)
-                this.indexWriter.deleteDocuments(this.queryBuilder.memoryTerm(deletion.memory));
+                this.indexWriter.deleteDocuments(DocumentBuilder.makeMemoryTerm(deletion.memory));
         }
     }
 

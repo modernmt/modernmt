@@ -10,11 +10,7 @@ import org.apache.lucene.search.Query;
  */
 public interface QueryBuilder {
 
-    Query getByHash(long memory, LanguagePair direction, String hash);
-
-    Term memoryTerm(long memory);
-
-    Term channelsTerm();
+    Query getByHash(long memory, String hash);
 
     Query bestMatchingSuggestion(LanguagePair direction, Sentence sentence);
 

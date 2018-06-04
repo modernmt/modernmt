@@ -93,6 +93,8 @@ public class DocumentBuilder {
         return Long.toString(memory) + '_' + direction.source.getLanguage() + '_' + direction.target.getLanguage();
     }
 
+    // Fields builders
+
     public static String makeContentFieldName(LanguagePair direction) {
         return CONTENT_PREFIX_FIELD + direction.source.getLanguage() + '_' + direction.target.getLanguage();
     }

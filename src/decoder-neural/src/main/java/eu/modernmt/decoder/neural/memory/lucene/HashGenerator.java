@@ -14,11 +14,8 @@ class HashGenerator {
     private static final long FNV_OFFSET_BASIS = 0xcbf29ce484222325L;
     private static final String CHARS = "0123456789ABCDEF";
 
-    public static String hash(LanguagePair direction, String sentence, String translation) {
-        String l1 = direction.source.toLanguageTag();
-        String l2 = direction.target.toLanguageTag();
-
-        if (l1.compareTo(l2) > 0) {
+    public static String hash(String sentence, String translation) {
+        if (sentence.compareTo(translation) > 0) {
             String tmp = sentence;
             sentence = translation;
             translation = tmp;

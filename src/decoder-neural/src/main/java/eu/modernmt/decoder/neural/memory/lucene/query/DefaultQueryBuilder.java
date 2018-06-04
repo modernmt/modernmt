@@ -22,35 +22,18 @@ import java.io.IOException;
 public class DefaultQueryBuilder implements QueryBuilder {
 
     @Override
-    public Query getByHash(long memory, LanguagePair direction, String hash) {
+    public Query getByHash(long memory, String hash) {
         PhraseQuery hashQuery = new PhraseQuery();
         for (String h : hash.split(" "))
-            hashQuery.add(new Term(DocumentBuilder.HASH_FIELD, h));
+            hashQuery.add(DocumentBuilder.makeHashTerm(h));
 
-        TermQuery langQuery = new TermQuery(
-                new Term(DocumentBuilder.LANGUAGE_FIELD, DocumentBuilder.encode(direction))
-        );
-
-        TermQuery memoryQuery = new TermQuery(
-                newLongTerm(DocumentBuilder.MEMORY_ID_FIELD, memory)
-        );
+        TermQuery memoryQuery = new TermQuery(DocumentBuilder.makeMemoryTerm(memory));
 
         BooleanQuery query = new BooleanQuery();
         query.add(hashQuery, BooleanClause.Occur.MUST);
-        query.add(langQuery, BooleanClause.Occur.MUST);
         query.add(memoryQuery, BooleanClause.Occur.MUST);
 
         return query;
-    }
-
-    @Override
-    public Term memoryTerm(long memory) {
-        return newLongTerm(DocumentBuilder.MEMORY_ID_FIELD, memory);
-    }
-
-    @Override
-    public Term channelsTerm() {
-        return newLongTerm(DocumentBuilder.MEMORY_ID_FIELD, 0);
     }
 
     @Override
@@ -61,16 +44,12 @@ public class DefaultQueryBuilder implements QueryBuilder {
         int minMatches = isLongQuery ? Math.max(1, (int) (length * .5)) : length;
         Analyzer analyzer = isLongQuery ? Analyzers.getLongQueryAnalyzer() : Analyzers.getShortQueryAnalyzer();
 
-        // Language filter
-        TermsFilter langFilter = new TermsFilter(new Term(DocumentBuilder.LANGUAGE_FIELD, DocumentBuilder.encode(direction)));
-
         // Content query
         BooleanQuery termsQuery = new BooleanQuery();
-        loadTerms(DocumentBuilder.getContentFieldName(direction.source), sentence, analyzer, termsQuery);
+        loadTerms(DocumentBuilder.makeContentFieldName(direction), sentence, analyzer, termsQuery);
         termsQuery.setMinimumNumberShouldMatch(minMatches);
 
-        // Main query
-        return new FilteredQuery(termsQuery, langFilter);
+        return termsQuery;
     }
 
     private static void loadTerms(String fieldName, Sentence sentence, Analyzer analyzer, BooleanQuery output) {
@@ -93,10 +72,4 @@ public class DefaultQueryBuilder implements QueryBuilder {
         }
     }
 
-    private static Term newLongTerm(String field, long value) {
-        BytesRefBuilder builder = new BytesRefBuilder();
-        NumericUtils.longToPrefixCoded(value, 0, builder);
-
-        return new Term(field, builder.toBytesRef());
-    }
 }
