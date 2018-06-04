@@ -1,6 +1,7 @@
 package eu.modernmt.context.lucene.storage;
 
 import eu.modernmt.context.lucene.analysis.ContextAnalyzerIndex;
+import eu.modernmt.context.lucene.analysis.DocumentBuilder;
 import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
@@ -57,8 +58,8 @@ public class CorporaStorage {
         this.analysisTimer.start();
     }
 
-    public CorpusBucket getBucket(long memory, LanguagePair direction) throws IOException {
-        return this.index.getBucket(direction, memory, false);
+    public CorpusBucket getBucket(String docId) throws IOException {
+        return this.index.getBucket(docId, false);
     }
 
     public int size() {
@@ -73,13 +74,15 @@ public class CorporaStorage {
                 continue;
 
             if (languages.contains(unit.direction)) {
-                CorpusBucket bucket = index.getBucket(unit.direction, unit.memory);
+                String id = DocumentBuilder.makeId(unit.memory, unit.direction);
+                CorpusBucket bucket = index.getBucket(id);
                 bucket.append(unit.rawSentence);
                 pendingUpdatesBuckets.add(bucket);
             }
 
             if (languages.contains(unit.direction.reversed())) {
-                CorpusBucket bucket = index.getBucket(unit.direction.reversed(), unit.memory);
+                String id = DocumentBuilder.makeId(unit.memory, unit.direction.reversed());
+                CorpusBucket bucket = index.getBucket(id);
                 bucket.append(unit.rawTranslation);
                 pendingUpdatesBuckets.add(bucket);
             }
@@ -148,13 +151,15 @@ public class CorporaStorage {
             MultilingualCorpus.StringPair pair;
             while ((pair = reader.read()) != null) {
                 if (languages.contains(pair.language)) {
-                    CorpusBucket bucket = index.getBucket(pair.language, memory);
+                    String id = DocumentBuilder.makeId(memory, pair.language);
+                    CorpusBucket bucket = index.getBucket(id);
                     bucket.append(pair.source);
                     pendingUpdatesBuckets.add(bucket);
                 }
 
                 if (languages.contains(pair.language.reversed())) {
-                    CorpusBucket bucket = index.getBucket(pair.language.reversed(), memory);
+                    String id = DocumentBuilder.makeId(memory, pair.language.reversed());
+                    CorpusBucket bucket = index.getBucket(id);
                     bucket.append(pair.target);
                     pendingUpdatesBuckets.add(bucket);
                 }

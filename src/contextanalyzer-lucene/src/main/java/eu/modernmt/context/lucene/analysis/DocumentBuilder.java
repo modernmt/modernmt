@@ -19,21 +19,65 @@ import java.io.Reader;
  */
 public class DocumentBuilder {
 
-    public static final String DOCID_FIELD = "docid";
-    private static final String MEMORY_FIELD = "memory";
-    private static final String LANGUAGE_FIELD = "language";
-    private static final String CONTENT_PREFIX_FIELD = "content__";
+    // Factory methods
 
-    // Fields
-
-    public static String getContentFieldName(LanguagePair direction) {
-        return CONTENT_PREFIX_FIELD + direction.source.toLanguageTag();
+    public static Document newInstance(LanguagePair direction, Corpus corpus) throws IOException {
+        return newInstance(0L, direction, corpus);
     }
 
-    // Terms
+    public static Document newInstance(long memory, LanguagePair direction, Corpus corpus) throws IOException {
+        return newInstance(memory, direction, corpus.getRawContentReader());
+    }
 
-    public static Term makeLanguageTerm(LanguagePair direction) {
-        return new Term(LANGUAGE_FIELD, makeLanguageTag(direction));
+    public static Document updatedInstance(String docId, Reader contentReader) {
+        String[] parts = docId.split("_");
+        if (parts.length != 3)
+            throw new IllegalArgumentException("Invalid Document ID: " + docId);
+
+        long memory = Long.parseLong(parts[0]);
+        LanguagePair direction = new LanguagePair(new Language(parts[1]), new Language(parts[2]));
+
+        return newInstance(memory, direction, contentReader);
+    }
+
+    public static Document newInstance(long memory, LanguagePair direction, Reader contentReader) {
+        Document document = new Document();
+        document.add(new StringField(DOC_ID_FIELD, makeId(memory, direction), Field.Store.NO));
+        document.add(new LongField(MEMORY_FIELD, memory, Field.Store.YES));
+        document.add(new CorpusContentField(makeContentFieldName(direction), contentReader));
+
+        return document;
+    }
+
+    private static final String DOC_ID_FIELD = "cid";
+    private static final String MEMORY_FIELD = "memory";
+    private static final String CONTENT_PREFIX_FIELD = "content_";
+
+    // Getters
+
+    public static String getId(Document self) {
+        return self.get(DOC_ID_FIELD);
+    }
+
+    public static long getMemory(Document self) {
+        return Long.parseLong(self.get(MEMORY_FIELD));
+    }
+
+    public static long getMemory(String documentId) {
+        return Long.parseLong(documentId.substring(0, documentId.indexOf('_')));
+    }
+
+    public static String getLanguageForContentField(String field) {
+        if (!field.startsWith(CONTENT_PREFIX_FIELD))
+            return null;
+
+        return field.substring(CONTENT_PREFIX_FIELD.length(), field.lastIndexOf('_'));
+    }
+
+    // Term constructors
+
+    public static Term makeIdTerm(String id) {
+        return new Term(DocumentBuilder.DOC_ID_FIELD, id);
     }
 
     public static Term makeMemoryTerm(long memory) {
@@ -43,65 +87,14 @@ public class DocumentBuilder {
         return new Term(MEMORY_FIELD, builder.toBytesRef());
     }
 
-    public static Term makeDocumentIdTerm(long memory, LanguagePair direction) {
-        return new Term(DOCID_FIELD, makeDocumentId(direction, memory));
+    // Value builders
+
+    public static String makeId(long memory, LanguagePair direction) {
+        return Long.toString(memory) + '_' + direction.source.getLanguage() + '_' + direction.target.getLanguage();
     }
 
-    // Terms and fields parsing
-
-    public static long getMemory(Document document) {
-        return Long.parseLong(document.get(MEMORY_FIELD));
-    }
-
-    public static String getDocumentId(Document document) {
-        return document.get(DOCID_FIELD);
-    }
-
-    public static Language getContentFieldLanguage(String fieldName) {
-        if (fieldName.startsWith(CONTENT_PREFIX_FIELD))
-            return Language.fromString(fieldName.substring(CONTENT_PREFIX_FIELD.length()));
-        else
-            return null;
-    }
-
-    // Document creation
-
-    public static Document createDocument(LanguagePair direction, Corpus corpus) throws IOException {
-        return createDocument(direction, 0L, corpus);
-    }
-
-    public static Document createDocument(LanguagePair direction, long memory, Corpus corpus) throws IOException {
-        Reader reader = corpus.getRawContentReader();
-        return createDocument(direction, memory, reader);
-    }
-
-    public static Document createDocument(LanguagePair direction, long memory, Reader contentReader) {
-        Document document = new Document();
-        document.add(new StringField(DOCID_FIELD, makeDocumentId(direction, memory), Field.Store.NO));
-        document.add(new LongField(MEMORY_FIELD, memory, Field.Store.YES));
-        document.add(new StringField(LANGUAGE_FIELD, makeLanguageTag(direction), Field.Store.NO));
-        document.add(new CorpusContentField(getContentFieldName(direction), contentReader));
-
-        return document;
-    }
-
-    // Utils
-
-    private static String makeDocumentId(LanguagePair direction, long memory) {
-        return Long.toString(memory) + "::" + direction.source.toLanguageTag() + "::" + direction.target.toLanguageTag();
-    }
-
-    public static String makeLanguageTag(LanguagePair direction) {
-        String l1 = direction.source.toLanguageTag();
-        String l2 = direction.target.toLanguageTag();
-
-        if (l1.compareTo(l2) > 0) {
-            String tmp = l1;
-            l1 = l2;
-            l2 = tmp;
-        }
-
-        return l1 + "__" + l2;
+    public static String makeContentFieldName(LanguagePair direction) {
+        return CONTENT_PREFIX_FIELD + direction.source.getLanguage() + '_' + direction.target.getLanguage();
     }
 
 }

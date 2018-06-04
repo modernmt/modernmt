@@ -1,6 +1,5 @@
 package eu.modernmt.context.lucene.storage;
 
-import eu.modernmt.lang.LanguagePair;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -56,7 +55,7 @@ public class CorporaIndex implements Closeable {
     private final File swapFile;
     private final Options.AnalysisOptions analysisOptions;
     private final File bucketsFolder;
-    private final HashMap<BucketKey, CorpusBucket> bucketByKey;
+    private final HashMap<String, CorpusBucket> bucketById;
     private final HashMap<Long, HashSet<CorpusBucket>> bucketsByMemory;
     private final HashMap<Short, Long> channels;
 
@@ -71,12 +70,11 @@ public class CorporaIndex implements Closeable {
         this.bucketsFolder = bucketsFolder;
         this.channels = channels;
 
-        this.bucketByKey = new HashMap<>(buckets.size());
+        this.bucketById = new HashMap<>(buckets.size());
         this.bucketsByMemory = new HashMap<>(buckets.size());
 
         for (CorpusBucket bucket : buckets) {
-            BucketKey key = BucketKey.forBucket(bucket);
-            this.bucketByKey.put(key, bucket);
+            this.bucketById.put(bucket.getDocumentId(), bucket);
             this.bucketsByMemory.computeIfAbsent(bucket.getMemory(), k -> new HashSet<>()).add(bucket);
         }
 
@@ -98,23 +96,21 @@ public class CorporaIndex implements Closeable {
         }
     }
 
-    public CorpusBucket getBucket(LanguagePair direction, long memory) throws IOException {
-        return getBucket(direction, memory, true);
+    public CorpusBucket getBucket(String docId) throws IOException {
+        return getBucket(docId, true);
     }
 
-    public CorpusBucket getBucket(LanguagePair direction, long memory, boolean createIfAbsent) throws IOException {
-        BucketKey key = new BucketKey(direction, memory);
-
-        CorpusBucket bucket = bucketByKey.get(key);
+    public CorpusBucket getBucket(String docId, boolean createIfAbsent) throws IOException {
+        CorpusBucket bucket = bucketById.get(docId);
 
         if (bucket == null) {
             if (!createIfAbsent)
                 return null;
 
-            bucket = new CorpusBucket(analysisOptions, bucketsFolder, direction, memory);
+            bucket = new CorpusBucket(analysisOptions, bucketsFolder, docId);
 
-            this.bucketByKey.put(key, bucket);
-            this.bucketsByMemory.computeIfAbsent(memory, k -> new HashSet<>()).add(bucket);
+            this.bucketById.put(docId, bucket);
+            this.bucketsByMemory.computeIfAbsent(bucket.getMemory(), k -> new HashSet<>()).add(bucket);
         }
 
         if (!bucket.isOpen())
@@ -130,9 +126,8 @@ public class CorporaIndex implements Closeable {
 
     public void remove(CorpusBucket bucket) {
         Long memory = bucket.getMemory();
-        BucketKey key = BucketKey.forBucket(bucket);
 
-        bucketByKey.remove(key);
+        bucketById.remove(bucket.getDocumentId());
         HashSet<CorpusBucket> buckets = bucketsByMemory.get(memory);
 
         if (buckets != null) {
@@ -144,7 +139,7 @@ public class CorporaIndex implements Closeable {
     }
 
     public Collection<CorpusBucket> getBuckets() {
-        return bucketByKey.values();
+        return bucketById.values();
     }
 
     public synchronized HashMap<Short, Long> getChannels() {
@@ -177,10 +172,10 @@ public class CorporaIndex implements Closeable {
 
             // Writing buckets
 
-            writer.append(Integer.toString(bucketByKey.size()));
+            writer.append(Integer.toString(bucketById.size()));
             writer.append('\n');
 
-            for (CorpusBucket bucket : bucketByKey.values())
+            for (CorpusBucket bucket : bucketById.values())
                 CorpusBucket.serialize(bucket, writer);
         } finally {
             IOUtils.closeQuietly(writer);
@@ -189,39 +184,7 @@ public class CorporaIndex implements Closeable {
 
     @Override
     public void close() throws IOException {
-        bucketByKey.values().forEach(IOUtils::closeQuietly);
+        bucketById.values().forEach(IOUtils::closeQuietly);
     }
 
-    private static final class BucketKey {
-
-        private final LanguagePair direction;
-        private final long memory;
-
-        public static BucketKey forBucket(CorpusBucket bucket) {
-            return new BucketKey(bucket.getLanguageDirection(), bucket.getMemory());
-        }
-
-        public BucketKey(LanguagePair direction, long memory) {
-            this.direction = direction;
-            this.memory = memory;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            BucketKey bucketKey = (BucketKey) o;
-
-            if (memory != bucketKey.memory) return false;
-            return direction.equals(bucketKey.direction);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = direction.hashCode();
-            result = 31 * result + (int) (memory ^ (memory >>> 32));
-            return result;
-        }
-    }
 }

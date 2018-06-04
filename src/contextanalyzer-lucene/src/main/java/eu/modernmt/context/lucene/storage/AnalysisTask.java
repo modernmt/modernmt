@@ -31,15 +31,13 @@ class AnalysisTask implements Callable<Void> {
 
     @Override
     public Void call() throws IOException {
-        long memory = bucket.getMemory();
-        LanguagePair direction = bucket.getLanguageDirection();
+        String id = bucket.getDocumentId();
 
         logger.info("Indexing bucket " + bucket);
 
         try {
             Reader reader = new InputStreamReader(bucket.getContentStream(), UTF8Charset.get());
-
-            Document document = DocumentBuilder.createDocument(direction, memory, reader);
+            Document document = DocumentBuilder.updatedInstance(id, reader);
             index.update(document);
 
             bucket.onAnalysisCompleted();

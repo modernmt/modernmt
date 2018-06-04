@@ -1,5 +1,6 @@
 package eu.modernmt.context.lucene.storage;
 
+import eu.modernmt.context.lucene.analysis.DocumentBuilder;
 import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
@@ -8,6 +9,7 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
+import java.util.Objects;
 
 /**
  * Created by davide on 22/09/16.
@@ -15,11 +17,7 @@ import java.nio.channels.FileChannel;
 public class CorpusBucket implements Closeable {
 
     public static void serialize(CorpusBucket bucket, Writer writer) throws IOException {
-        writer.append(Long.toString(bucket.memory));
-        writer.append(',');
-        writer.append(bucket.direction.source.toLanguageTag());
-        writer.append(',');
-        writer.append(bucket.direction.target.toLanguageTag());
+        writer.append(bucket.documentId);
         writer.append(',');
         writer.append(Long.toHexString(bucket.analyzerOffset));
         writer.append(',');
@@ -33,15 +31,11 @@ public class CorpusBucket implements Closeable {
         try {
             String[] parts = line.split(",");
 
-            long memory = Long.parseLong(parts[0]);
-            Language source = Language.fromString(parts[1]);
-            Language target = Language.fromString(parts[2]);
-            long analyzerOffset = Long.parseUnsignedLong(parts[3], 16);
-            long currentOffset = Long.parseUnsignedLong(parts[4], 16);
+            String documentId = parts[0];
+            long analyzerOffset = Long.parseUnsignedLong(parts[1], 16);
+            long currentOffset = Long.parseUnsignedLong(parts[2], 16);
 
-            LanguagePair direction = new LanguagePair(source, target);
-
-            return new CorpusBucket(analysisOptions, folder, direction, memory, analyzerOffset, currentOffset);
+            return new CorpusBucket(analysisOptions, folder, documentId, analyzerOffset, currentOffset);
         } catch (RuntimeException e) {
             throw new IOException("Unexpected CorpusBucket serialized data: " + line, e);
         }
@@ -49,8 +43,8 @@ public class CorpusBucket implements Closeable {
 
     private final Options.AnalysisOptions analysisOptions;
 
+    private final String documentId;
     private final long memory;
-    private final LanguagePair direction;
 
     private long analyzerOffset;
     private long currentOffset;
@@ -59,18 +53,14 @@ public class CorpusBucket implements Closeable {
     private final File path;
     private FileOutputStream stream = null;
 
-    private static String toString(Language locale) {
-        return locale.toLanguageTag().replace('-', '_');
+    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, String documentId) {
+        this(analysisOptions, folder, documentId, 0L, 0L);
     }
 
-    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, LanguagePair direction, long memory) {
-        this(analysisOptions, folder, direction, memory, 0L, 0L);
-    }
-
-    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, LanguagePair direction, long memory, long analyzerOffset, long currentOffset) {
-        this.direction = direction;
-        this.memory = memory;
-        this.path = new File(folder, memory + "_" + toString(direction.source) + "__" + toString(direction.target));
+    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, String documentId, long analyzerOffset, long currentOffset) {
+        this.documentId = documentId;
+        this.memory = DocumentBuilder.getMemory(documentId);
+        this.path = new File(folder, documentId);
         this.analysisOptions = analysisOptions;
 
         this.analyzerOffset = analyzerOffset;
@@ -118,8 +108,8 @@ public class CorpusBucket implements Closeable {
         return memory;
     }
 
-    public LanguagePair getLanguageDirection() {
-        return direction;
+    public String getDocumentId() {
+        return documentId;
     }
 
     public boolean hasUnanalyzedContent() {
@@ -159,26 +149,18 @@ public class CorpusBucket implements Closeable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         CorpusBucket that = (CorpusBucket) o;
-
-        if (memory != that.memory) return false;
-        return direction.equals(that.direction);
+        return Objects.equals(documentId, that.documentId);
     }
 
     @Override
     public int hashCode() {
-        int result = (int) (memory ^ (memory >>> 32));
-        result = 31 * result + direction.hashCode();
-        return result;
+        return Objects.hash(documentId);
     }
 
     @Override
     public String toString() {
-        return "CorpusBucket{" +
-                "memory=" + memory +
-                ", direction=" + direction +
-                '}';
+        return "CorpusBucket{" + documentId + "}";
     }
 
     @Override

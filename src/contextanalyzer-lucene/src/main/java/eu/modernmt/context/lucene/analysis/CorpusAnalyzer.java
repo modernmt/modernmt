@@ -19,7 +19,7 @@ public class CorpusAnalyzer extends DelegatingAnalyzerWrapper {
     protected Analyzer getWrappedAnalyzer(String fieldName) {
         Analyzer analyzer;
 
-        Language language = DocumentBuilder.getContentFieldLanguage(fieldName);
+        String language = DocumentBuilder.getLanguageForContentField(fieldName);
         if (language == null)
             analyzer = new StandardAnalyzer();
         else

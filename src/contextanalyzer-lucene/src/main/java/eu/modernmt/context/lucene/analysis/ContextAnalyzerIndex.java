@@ -10,9 +10,11 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
-import org.apache.lucene.queries.TermFilter;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -110,10 +112,8 @@ public class ContextAnalyzerIndex implements Closeable {
     }
 
     public void update(Document document) throws IOException {
-        String id = DocumentBuilder.getDocumentId(document);
-        Term term = new Term(DocumentBuilder.DOCID_FIELD, id);
-
-        this.indexWriter.updateDocument(term, document);
+        String id = DocumentBuilder.getId(document);
+        this.indexWriter.updateDocument(DocumentBuilder.makeIdTerm(id), document);
     }
 
     public void delete(long memory) throws IOException {
@@ -135,7 +135,7 @@ public class ContextAnalyzerIndex implements Closeable {
     }
 
     public ContextVector getContextVector(LanguagePair direction, Corpus queryDocument, int limit, Rescorer rescorer) throws IOException {
-        String contentFieldName = DocumentBuilder.getContentFieldName(direction);
+        String contentFieldName = DocumentBuilder.makeContentFieldName(direction);
 
         IndexSearcher searcher = this.getIndexSearcher();
         IndexReader reader = searcher.getIndexReader();
@@ -157,9 +157,7 @@ public class ContextAnalyzerIndex implements Closeable {
         Reader queryDocumentReader = queryDocument.getRawContentReader();
 
         try {
-            Query mltQuery = mlt.like(contentFieldName, queryDocumentReader);
-            Filter langFilter = new TermFilter(DocumentBuilder.makeLanguageTerm(direction));
-            FilteredQuery query = new FilteredQuery(mltQuery, langFilter);
+            Query query = mlt.like(contentFieldName, queryDocumentReader);
             searcher.search(query, collector);
         } finally {
             IOUtils.closeQuietly(queryDocumentReader);
@@ -170,7 +168,7 @@ public class ContextAnalyzerIndex implements Closeable {
         // Rescore result
 
         if (rescorer != null) {
-            Document referenceDocument = DocumentBuilder.createDocument(direction, queryDocument);
+            Document referenceDocument = DocumentBuilder.newInstance(direction, queryDocument);
             rescorer.rescore(reader, this.analyzer, topDocs, referenceDocument, contentFieldName);
         }
 
@@ -190,7 +188,7 @@ public class ContextAnalyzerIndex implements Closeable {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         IOUtils.closeQuietly(this._indexReader);
         IOUtils.closeQuietly(this.indexWriter);
         IOUtils.closeQuietly(this.indexDirectory);

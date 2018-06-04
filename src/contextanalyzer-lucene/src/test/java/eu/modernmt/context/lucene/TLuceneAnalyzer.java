@@ -66,11 +66,13 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
 
         this.flush();
 
+        String docId = DocumentBuilder.makeId(memory, direction);
+
         // Bucket for content
 
         String content = null;
 
-        CorpusBucket bucket = storage.getBucket(memory, direction);
+        CorpusBucket bucket = storage.getBucket(docId);
         if (bucket != null) {
             InputStream stream = null;
 
@@ -87,11 +89,11 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
         Set<String> terms = null;
 
         IndexSearcher searcher = index.getIndexSearcher();
-        TermQuery query = new TermQuery(DocumentBuilder.makeDocumentIdTerm(memory, direction));
+        TermQuery query = new TermQuery(DocumentBuilder.makeIdTerm(docId));
         TopDocs docs = searcher.search(query, 1);
 
         if (docs.scoreDocs.length > 0) {
-            String filedName = DocumentBuilder.getContentFieldName(direction);
+            String filedName = DocumentBuilder.makeContentFieldName(direction);
             terms = LuceneUtils.getTermFrequencies(searcher.getIndexReader(), docs.scoreDocs[0].doc, filedName).keySet();
         }
 
@@ -123,7 +125,7 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
             this.memory = memory;
             this.language = language;
             this.terms = Collections.unmodifiableSet(new HashSet<>(terms));
-            this.content = content.trim();
+            this.content = content == null ? null : content.trim();
         }
 
         @Override
