@@ -224,7 +224,9 @@ class OnlineLearningChannelsTest(_OnlineLearningTest):
     def _prepare_partial(self, context=True, memory=True):
         self.mmt.add_contributions('en', 'it', [
             (u'This is en__it example O', u'Questo è un esempio en__it O'),
-            (u'This is en__it example OO', u'Questo è un esempio en__it OO')])
+            (u'This is en__it example OO', u'Questo è un esempio en__it OO'),
+            (u'This is en__it example OOO', u'Questo è un esempio en__it OOO'),
+            (u'This is en__it example OOOO', u'Questo è un esempio en__it OOOO')])
         self.mmt.stop()
 
         os.rename(self.mmt.context_analyzer.path, self.mmt.context_analyzer.path + '.bak')
@@ -232,8 +234,10 @@ class OnlineLearningChannelsTest(_OnlineLearningTest):
 
         self.mmt.start()
         self.mmt.add_contributions('en', 'it', [
-            (u'This is en__it example OOO', u'Questo è un esempio en__it OOO'),
-            (u'This is en__it example OOOO', u'Questo è un esempio en__it OOOO')], memory=1)
+            (u'This is en__it example OOOOO', u'Questo è un esempio en__it OOOOO'),
+            (u'This is en__it example OOOOOO', u'Questo è un esempio en__it OOOOOO'),
+            (u'This is en__it example OOOOOOO', u'Questo è un esempio en__it OOOOOOO'),
+            (u'This is en__it example OOOOOOOO', u'Questo è un esempio en__it OOOOOOOO')], memory=1)
         self.mmt.stop()
 
         if context:
@@ -331,15 +335,15 @@ class OnlineLearningChannelsTest(_OnlineLearningTest):
 
     def test_updating_partial_all(self):
         self._prepare_partial()
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(0, 3))
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(0, 7))
         self._verify_index_integrity()
 
     def test_updating_partial_context(self):
         self._prepare_partial(context=True, memory=False)
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(0, 3))
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(0, 7))
         self._verify_index_integrity()
 
     def test_updating_partial_memory(self):
         self._prepare_partial(context=False, memory=True)
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(0, 3))
+        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(0, 7))
         self._verify_index_integrity()
