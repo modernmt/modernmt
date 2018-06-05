@@ -26,15 +26,15 @@ public class LuceneTranslationMemoryTest_search {
 
         ArrayList<TranslationUnit> units1 = new ArrayList<>();
         units1.add(TestData.tu(EN__IT, "Hello world 1", "Ciao mondo 1", null));
-        units1.add(TestData.tu(EN__IT, "The test 1", "Il test 1", null));
+        units1.add(TestData.tu(EN_US__IT_CH, "The test 1", "Il test 1", null));
         units1.add(TestData.tu(EN__FR, "Hello world 1", "Bonjour monde 1", null));
         units1.add(TestData.tu(EN__FR, "The test 1", "Le preuve 1", null));
 
         ArrayList<TranslationUnit> units2 = new ArrayList<>();
-        units2.add(TestData.tu(EN__IT, "Hello world 2", "Ciao mondo 2", null));
-        units2.add(TestData.tu(EN__IT, "The test 2", "Il test 2", null));
-        units2.add(TestData.tu(EN__FR, "Hello world 2", "Bonjour monde 2", null));
-        units2.add(TestData.tu(EN__FR, "The test 2", "Le preuve 2", null));
+        units2.add(TestData.tu(IT__EN, "Ciao mondo 2", "Hello world 2", null));
+        units2.add(TestData.tu(IT_CH__EN_US, "Il test 2", "The test 2", null));
+        units2.add(TestData.tu(FR__EN, "Bonjour monde 2", "Hello world 2", null));
+        units2.add(TestData.tu(FR__EN, "Le preuve 2", "The test 2", null));
 
         this.memory.bulkInsert(new Memory(1), TestData.corpus("memory-1", units1));
         this.memory.bulkInsert(new Memory(2), TestData.corpus("memory-2", units2));
@@ -71,8 +71,8 @@ public class LuceneTranslationMemoryTest_search {
         ScoreEntry[] result = this.memory.search(EN__IT, TestData.sentence("The test"), 100);
 
         assertEquals(2, result.length);
-        assertTrue(contains(result, 1, EN__IT, "The test 1", "Il test 1"));
-        assertTrue(contains(result, 2, EN__IT, "The test 2", "Il test 2"));
+        assertTrue(contains(result, 1, EN_US__IT_CH, "The test 1", "Il test 1"));
+        assertTrue(contains(result, 2, EN_US__IT_CH, "The test 2", "Il test 2"));
     }
 
     @Test
@@ -98,8 +98,8 @@ public class LuceneTranslationMemoryTest_search {
         ScoreEntry[] result = this.memory.search(IT__EN, TestData.sentence("Il test"), 100);
 
         assertEquals(2, result.length);
-        assertTrue(contains(result, 1, IT__EN, "Il test 1", "The test 1"));
-        assertTrue(contains(result, 2, IT__EN, "Il test 2", "The test 2"));
+        assertTrue(contains(result, 1, IT_CH__EN_US, "Il test 1", "The test 1"));
+        assertTrue(contains(result, 2, IT_CH__EN_US, "Il test 2", "The test 2"));
     }
 
     @Test
