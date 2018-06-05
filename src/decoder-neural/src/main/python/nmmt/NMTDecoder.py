@@ -75,17 +75,8 @@ class NMTDecoder:
         self.beam_size = 5
         self.max_sent_length = 160
 
-    def get_engine(self, source_lang, target_lang, variant=None):
+    def get_engine(self, source_lang, target_lang):
         key = source_lang + '__' + target_lang
-
-        if variant is not None:
-            variant_key = key + '__' + variant
-
-            if variant_key in self._engines:
-                key = variant_key
-            else:
-                self._logger.warning('Variant "%s" not found, falling back to "%s"' % (variant_key, key))
-
         key = key.lower()  # ConfigParser seems to interfere with key casing
 
         if key not in self._engines:
@@ -122,12 +113,12 @@ class NMTDecoder:
         return engine
 
     def translate(self, source_lang, target_lang, text, suggestions=None, n_best=1,
-                  tuning_epochs=None, tuning_learning_rate=None, variant=None):
-        # (0) Get NMTEngine for current key (direction and variant if specified);
+                  tuning_epochs=None, tuning_learning_rate=None):
+        # (0) Get NMTEngine for current key (direction);
         #     and if needed it upgrades the engine to running state HOT
         #     if it does not exist, raise an exception
 
-        engine = self.get_engine(source_lang, target_lang, variant)
+        engine = self.get_engine(source_lang, target_lang)
 
         reset_model = False
 

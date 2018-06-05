@@ -20,9 +20,9 @@ public abstract class Decoder implements Closeable {
 
     public abstract void setListener(DecoderListener listener);
 
-    public abstract Translation translate(LanguagePair direction, String variant, Sentence text) throws DecoderException;
+    public abstract Translation translate(LanguagePair direction, Sentence text) throws DecoderException;
 
-    public abstract Translation translate(LanguagePair direction, String variant, Sentence text, ContextVector contextVector) throws DecoderException;
+    public abstract Translation translate(LanguagePair direction, Sentence text, ContextVector contextVector) throws DecoderException;
 
     /**
      * This method states whether this decoder supports the sentence splitting feature or not.

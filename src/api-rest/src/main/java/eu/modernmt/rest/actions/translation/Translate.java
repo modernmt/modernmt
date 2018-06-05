@@ -33,12 +33,12 @@ public class Translate extends ObjectAction<TranslationResponse> {
         result.verbose = params.verbose;
 
         if (params.context != null) {
-            result.translation = ModernMT.translation.get(params.direction, params.query, params.context, params.nbest, params.priority, params.variant);
+            result.translation = ModernMT.translation.get(params.direction, params.query, params.context, params.nbest, params.priority);
         } else if (params.contextString != null) {
             result.context = ModernMT.translation.getContextVector(params.direction, params.contextString, params.contextLimit);
-            result.translation = ModernMT.translation.get(params.direction, params.query, result.context, params.nbest, params.priority, params.variant);
+            result.translation = ModernMT.translation.get(params.direction, params.query, result.context, params.nbest, params.priority);
         } else {
-            result.translation = ModernMT.translation.get(params.direction, params.query, params.nbest, params.priority, params.variant);
+            result.translation = ModernMT.translation.get(params.direction, params.query, params.nbest, params.priority);
         }
 
 
@@ -63,7 +63,6 @@ public class Translate extends ObjectAction<TranslationResponse> {
         public final int nbest;
         public final TranslationFacade.Priority priority;
         public final boolean verbose;
-        public final String variant;
 
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
@@ -82,9 +81,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
             nbest = getInt("nbest", 0);
 
             priority = getEnum("priority", TranslationFacade.Priority.class, TranslationFacade.Priority.NORMAL);
-
             verbose = getBoolean("verbose", false);
-            variant = getString("variant", false, null);
 
             String weights = getString("context_vector", false, null);
 

@@ -93,22 +93,22 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
     }
 
     @Override
-    public final Translation translate(LanguagePair direction, String variant, Sentence sentence, int nBest) throws DecoderException {
+    public final Translation translate(LanguagePair direction, Sentence sentence, int nBest) throws DecoderException {
         NativeProcess process = getProcess();
 
         try {
-            return process.translate(direction, variant, sentence, nBest);
+            return process.translate(direction, sentence, nBest);
         } finally {
             releaseProcess(process);
         }
     }
 
     @Override
-    public final Translation translate(LanguagePair direction, String variant, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException {
+    public final Translation translate(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException {
         NativeProcess process = getProcess();
 
         try {
-            return process.translate(direction, variant, sentence, suggestions, nBest);
+            return process.translate(direction, sentence, suggestions, nBest);
         } finally {
             releaseProcess(process);
         }

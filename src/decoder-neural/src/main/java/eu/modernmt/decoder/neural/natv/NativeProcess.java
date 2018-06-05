@@ -156,15 +156,15 @@ public class NativeProcess implements Closeable {
         return decoder.isAlive();
     }
 
-    public Translation translate(LanguagePair direction, String variant, Sentence sentence, int nBest) throws DecoderException {
-        return translate(direction, variant, sentence, null, nBest);
+    public Translation translate(LanguagePair direction, Sentence sentence, int nBest) throws DecoderException {
+        return translate(direction, sentence, null, nBest);
     }
 
-    public Translation translate(LanguagePair direction, String variant, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException {
+    public Translation translate(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException {
         if (!decoder.isAlive())
             throw new DecoderUnavailableException("Neural decoder process not available");
 
-        String payload = serialize(direction, variant, sentence, suggestions, nBest);
+        String payload = serialize(direction, sentence, suggestions, nBest);
 
         try {
             this.stdin.write(payload.getBytes("UTF-8"));
@@ -191,16 +191,13 @@ public class NativeProcess implements Closeable {
         return deserialize(sentence, line, nBest > 0);
     }
 
-    private String serialize(LanguagePair direction, String variant, Sentence sentence, ScoreEntry[] suggestions, int nBest) {
+    private String serialize(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) {
         String text = TokensOutputStream.serialize(sentence, false, true);
 
         JsonObject json = new JsonObject();
         json.addProperty("source", text);
         json.addProperty("source_language", direction.source.toLanguageTag());
         json.addProperty("target_language", direction.target.toLanguageTag());
-
-        if (variant != null && !variant.isEmpty())
-            json.addProperty("variant", variant);
 
         if (nBest > 0)
             json.addProperty("n_best", nBest);

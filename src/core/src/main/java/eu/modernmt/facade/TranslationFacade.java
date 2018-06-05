@@ -82,24 +82,24 @@ public class TranslationFacade {
     //  Translation
     // =============================
 
-    public Translation get(LanguagePair direction, String sentence, Priority priority, String variant) throws ProcessingException, DecoderException, AlignerException {
-        return get(direction, sentence, null, 0, priority, variant);
+    public Translation get(LanguagePair direction, String sentence, Priority priority) throws ProcessingException, DecoderException, AlignerException {
+        return get(direction, sentence, null, 0, priority);
     }
 
-    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, Priority priority, String variant) throws ProcessingException, DecoderException, AlignerException {
-        return get(direction, sentence, translationContext, 0, priority, variant);
+    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, Priority priority) throws ProcessingException, DecoderException, AlignerException {
+        return get(direction, sentence, translationContext, 0, priority);
     }
 
-    public Translation get(LanguagePair direction, String sentence, int nbest, Priority priority, String variant) throws ProcessingException, DecoderException, AlignerException {
-        return get(direction, sentence, null, nbest, priority, variant);
+    public Translation get(LanguagePair direction, String sentence, int nbest, Priority priority) throws ProcessingException, DecoderException, AlignerException {
+        return get(direction, sentence, null, nbest, priority);
     }
 
-    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, int nbest, Priority priority, String variant) throws ProcessingException, DecoderException, AlignerException {
+    public Translation get(LanguagePair direction, String sentence, ContextVector translationContext, int nbest, Priority priority) throws ProcessingException, DecoderException, AlignerException {
         direction = mapLanguagePair(direction);
         if (nbest > 0)
             ensureDecoderSupportsNBest();
 
-        TranslationTask task = new TranslationTaskImpl(direction, sentence, translationContext, nbest, priority, variant);
+        TranslationTask task = new TranslationTaskImpl(direction, sentence, translationContext, nbest, priority);
 
         try {
             ClusterNode node = ModernMT.getNode();
@@ -136,7 +136,7 @@ public class TranslationFacade {
         LanguagePair language = selectForTest();
         String text = "Translation test " + new Random().nextInt();
 
-        TranslationTaskImpl task = new TranslationTaskImpl(language, text, null, 0, TranslationFacade.Priority.HIGH, null);
+        TranslationTaskImpl task = new TranslationTaskImpl(language, text, null, 0, TranslationFacade.Priority.HIGH);
         Translation translation = task.call();
         if (!translation.hasWords())
             throw new DecoderException("Empty translation for test sentence '" + text + "'");
@@ -277,15 +277,13 @@ public class TranslationFacade {
         public final ContextVector context;
         public final int nbest;
         public final Priority priority;
-        public final String variant;
 
-        public TranslationTaskImpl(LanguagePair direction, String text, ContextVector context, int nbest, Priority priority, String variant) {
+        public TranslationTaskImpl(LanguagePair direction, String text, ContextVector context, int nbest, Priority priority) {
             this.direction = direction;
             this.text = text;
             this.context = context;
             this.nbest = nbest;
             this.priority = priority;
-            this.variant = variant;
         }
 
         @Override
@@ -341,9 +339,9 @@ public class TranslationFacade {
 
             if (nbest > 0) {
                 DecoderWithNBest nBestDecoder = (DecoderWithNBest) decoder;
-                translation = nBestDecoder.translate(direction, variant, sentence, context, nbest);
+                translation = nBestDecoder.translate(direction, sentence, context, nbest);
             } else {
-                translation = decoder.translate(direction, variant, sentence, context);
+                translation = decoder.translate(direction, sentence, context);
             }
 
             // Compute alignments if missing

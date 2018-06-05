@@ -10,8 +10,8 @@ import java.io.Closeable;
 
 public interface DecoderQueue extends Closeable {
 
-    Translation translate(LanguagePair direction, String variant, Sentence sentence, int nBest) throws DecoderException;
+    Translation translate(LanguagePair direction, Sentence sentence, int nBest) throws DecoderException;
 
-    Translation translate(LanguagePair direction, String variant, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException;
+    Translation translate(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException;
 
 }

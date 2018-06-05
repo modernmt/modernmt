@@ -112,22 +112,22 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
     }
 
     @Override
-    public Translation translate(LanguagePair direction, String variant, Sentence text) throws DecoderException {
-        return translate(direction, variant, text, null, 0);
+    public Translation translate(LanguagePair direction, Sentence text) throws DecoderException {
+        return translate(direction, text, null, 0);
     }
 
     @Override
-    public Translation translate(LanguagePair direction, String variant, Sentence text, int nbestListSize) throws DecoderException {
-        return translate(direction, variant, text, null, nbestListSize);
+    public Translation translate(LanguagePair direction, Sentence text, int nbestListSize) throws DecoderException {
+        return translate(direction, text, null, nbestListSize);
     }
 
     @Override
-    public Translation translate(LanguagePair direction, String variant, Sentence text, ContextVector contextVector) throws DecoderException {
-        return translate(direction, variant, text, contextVector, 0);
+    public Translation translate(LanguagePair direction, Sentence text, ContextVector contextVector) throws DecoderException {
+        return translate(direction, text, contextVector, 0);
     }
 
     @Override
-    public Translation translate(LanguagePair direction, String variant, Sentence text, ContextVector contextVector, int nbestListSize) throws DecoderException {
+    public Translation translate(LanguagePair direction, Sentence text, ContextVector contextVector, int nbestListSize) throws DecoderException {
         if (!this.directions.contains(direction))
             throw new UnsupportedLanguageException(direction);
 
@@ -151,10 +151,10 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
                     translation = new Translation(words, text, null);
                 } else {
-                    translation = decoderImpl.translate(direction, variant, text, suggestions, nbestListSize);
+                    translation = decoderImpl.translate(direction, text, suggestions, nbestListSize);
                 }
             } else {
-                translation = decoderImpl.translate(direction, variant, text, nbestListSize);
+                translation = decoderImpl.translate(direction, text, nbestListSize);
             }
 
             if (logger.isTraceEnabled()) {
